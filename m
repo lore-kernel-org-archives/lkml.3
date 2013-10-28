@@ -1,89 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721Ab3J1JUu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 05:20:50 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39714 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948Ab3J1JUt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 05:20:49 -0400
-Message-ID: <526E2C59.5070907@jp.fujitsu.com>
-Date: Mon, 28 Oct 2013 18:20:25 +0900
-From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Eric Paris <eparis@redhat.com>
-CC: toshi.okajima@jp.fujitsu.com, Richard Guy Briggs <rgb@redhat.com>,
-        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Gao feng <gaofeng@cn.fujitsu.com>
-Subject: Re: [BUG][PATCH] audit: audit_log_start running on auditd should
- not stop
-References: <20131011103645.6643fabff0eceb152e0be6c2@jp.fujitsu.com>  <5257C5D7.80308@cn.fujitsu.com> <5257EF15.6080209@jp.fujitsu.com>  <20131015134345.98d72df42a39e9e1ad77a73c@jp.fujitsu.com>  <525CE10A.90907@cn.fujitsu.com>  <20131023195550.GA9109@madcap2.tricolour.ca>  <5269CB06.5060101@jp.fujitsu.com> <1382713941.2954.19.camel@flatline.rdu.redhat.com>
-In-Reply-To: <1382713941.2954.19.camel@flatline.rdu.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755900Ab3J1JXE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 05:23:04 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:23107 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754172Ab3J1JXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 05:23:01 -0400
+X-Greylist: delayed 1405 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Oct 2013 05:23:01 EDT
+From: Jan Kiszka <jan.kiszka@siemens.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        Borislav Petkov <bp@suse.de>,
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [PATCH v6 17/21] scripts/gdb: Add internal helper and convenience function for per-cpu lookup
+Date: Mon, 28 Oct 2013 09:58:54 +0100
+Message-Id: <80aea3074baa9e75c09bd8510707d0e88cec8655.1382950737.git.jan.kiszka@siemens.com>
+X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
+In-Reply-To: <cover.1382950737.git.jan.kiszka@siemens.com>
+References: <cover.1382950737.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1382950737.git.jan.kiszka@siemens.com>
+References: <cover.1382950737.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+This function allows to obtain a per-cpu variable, either of the current
+or an explicitly specified CPU.
 
-(2013/10/26 0:12), Eric Paris wrote:
-> On Fri, 2013-10-25 at 10:36 +0900, Toshiyuki Okajima wrote:
-> 
->> systemd                                    |auditd
->> -------------------------------------------+-----------------------------------
->> ...                                        |
->> -> audit_receive                           |...
->>    -> mutex_lock(&audit_cmd_mutex)         |-> audit_receive
->>       ... -> audit_log_start               |   -> mutex_lock(&audit_cmd_mutex)
->>              -> wait_for_auditd            |      // wait for systemd
->>                 -> schedule_timeout(60*HZ) |
-> 
+Note: sparc64 version is untested.
 
-> Ugggh, definitely a problem.  Adding a similar hack to systemd really
-> does not seem like an acceptable answer.  It seems to me that in
-I think so, too. We should fix it against the various cases.
+CC: "David S. Miller" <davem@davemloft.net>
+CC: sparclinux@vger.kernel.org
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ scripts/gdb/linux/cpus.py  | 68 ++++++++++++++++++++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |  1 +
+ 2 files changed, 69 insertions(+)
+ create mode 100644 scripts/gdb/linux/cpus.py
 
-> audit_receive_msg()
-> 
-> case AUDIT_USER:
-> case AUDIT_FIRST_USER_MSG ... AUDIT_LAST_USER_MSG:
-> case AUDIT_FIRST_USER_MSG2 ... AUDIT_LAST_USER_MSG2:
-> 
-> we do not need to hold the audit_cmd_mutex.  So a quick and dirty patch
-> should be to just drop the mutex there (and we need to verify there
-> aren't issues running the audit_filter_user() without the lock).  That
-> will take care of systemd and anything USING audit.  It still means that
-> you could race with something configuring audit and auditd shutting
-> down.  Seems like a good quick and dirty 'fix' while we work on a better
-> fix...
-> 
-> To take care of that I think maybe we could drop the cmd_mutex every
-> time we call audit_log_start.  That's not necessarily going to be
-> pretty.  Maybe make a new switch at the top of the function which knows
-> which operations we are going to have to allocate an audit_buffer.  Drop
-> the lock, allocate the buffer, then retake the lock to finish running
-> audit_receive_msg()....
-> 
-
-> Maybe that second option isn't so hard and we can go directly after that
-> instead of just dealing with userspace audit messages?
-> 
-> Thoughts?
-Does it mean that we can also fix the problem only in the userspace? 
-
-Even if we fix userspace process (auditd, readahead-collector and systemd) only, 
-the problem would happen again if a new userspace audit process is implemented.
-Therefore, I think we should fix only in the kernel.
-Sorry, but I don't have clear method to fix it.
-
-Regards,
-Toshiyuki Okajima
-
-> 
-> 
-> 
-
-
+diff --git a/scripts/gdb/linux/cpus.py b/scripts/gdb/linux/cpus.py
+new file mode 100644
+index 0000000..18337e0
+--- /dev/null
++++ b/scripts/gdb/linux/cpus.py
+@@ -0,0 +1,68 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  per-cpu tools
++#
++# Copyright (c) Siemens AG, 2011-2013
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
++
++import gdb
++
++from linux import tasks, utils
++
++
++MAX_CPUS = 4096
++
++
++def get_current_cpu():
++    if utils.get_gdbserver_type() == utils.GDBSERVER_QEMU:
++        return gdb.selected_thread().num - 1
++    elif utils.get_gdbserver_type() == utils.GDBSERVER_KGDB:
++        tid = gdb.selected_thread().ptid[2]
++        if tid > (0x100000000 - MAX_CPUS - 2):
++            return 0x100000000 - tid - 2
++        else:
++            return tasks.get_thread_info(tasks.get_task_by_pid(tid))['cpu']
++    else:
++        raise gdb.GdbError("Sorry, obtaining the current CPU is not yet "
++                           "supported with this gdb server.")
++
++
++def per_cpu(var_ptr, cpu):
++    if cpu == -1:
++        cpu = get_current_cpu()
++    if utils.is_target_arch("sparc:v9"):
++        offset = gdb.parse_and_eval(
++            "trap_block[{0}].__per_cpu_base".format(str(cpu)))
++    else:
++        try:
++            offset = gdb.parse_and_eval(
++                "__per_cpu_offset[{0}]".format(str(cpu)))
++        except gdb.error:
++            # !CONFIG_SMP case
++            offset = 0
++    pointer = var_ptr.cast(utils.get_long_type()) + offset
++    return pointer.cast(var_ptr.type).dereference()
++
++
++class PerCpu(gdb.Function):
++    """Return per-cpu variable.
++
++$lx_per_cpu("VAR"[, CPU]): Return the per-cpu variable called VAR for the
++given CPU number. If CPU is omitted, the CPU of the current context is used.
++Note that VAR has to be quoted as string."""
++
++    def __init__(self):
++        super(PerCpu, self).__init__("lx_per_cpu")
++
++    def invoke(self, var_name, cpu=-1):
++        var_ptr = gdb.parse_and_eval("&" + var_name.string())
++        return per_cpu(var_ptr, cpu)
++
++
++PerCpu()
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+index 4d7eb2c..4848928 100644
+--- a/scripts/gdb/vmlinux-gdb.py
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -27,3 +27,4 @@ else:
+     import linux.modules
+     import linux.dmesg
+     import linux.tasks
++    import linux.cpus
+-- 
+1.8.1.1.298.ge7eed54
 
