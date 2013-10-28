@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932815Ab3J1PE2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 11:04:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59845 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932122Ab3J1PEZ (ORCPT
+	id S932828Ab3J1PEy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 11:04:54 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:36736 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932122Ab3J1PEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 11:04:25 -0400
-Date: Mon, 28 Oct 2013 08:03:36 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-vrbo1wik997ahjzl1chm3bdm@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
-        markus@trippelsdorf.de, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
-        markus@trippelsdorf.de, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: Fix up /proc/PID/maps parsing
-Git-Commit-ID: 2fd869f08aec5a8e4cbf01bc3fa345c4e53342d7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 28 Oct 2013 11:04:52 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Subject: Re: [PATCH 16/16] wl1251: Add sysfs file address for setting permanent mac address
+Date: Mon, 28 Oct 2013 16:04:48 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.1; x86_64; ; )
+Cc: Dan Williams <dcbw@redhat.com>, Luciano Coelho <luca@coelho.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
+        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
+        joni.lapilainen@gmail.com
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com> <1382971562.1542.6.camel@dcbw.foobar.com> <1382972215.17956.30.camel@jlt4.sipsolutions.net>
+In-Reply-To: <1382972215.17956.30.camel@jlt4.sipsolutions.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 28 Oct 2013 08:03:43 -0700 (PDT)
+Content-Type: multipart/signed;
+  boundary="nextPart2778838.sUdns2WpWe";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201310281604.48542@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2fd869f08aec5a8e4cbf01bc3fa345c4e53342d7
-Gitweb:     http://git.kernel.org/tip/2fd869f08aec5a8e4cbf01bc3fa345c4e53342d7
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 28 Oct 2013 09:38:12 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 28 Oct 2013 09:38:12 -0300
+--nextPart2778838.sUdns2WpWe
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-perf tools: Fix up /proc/PID/maps parsing
+On Monday 28 October 2013 15:56:55 Johannes Berg wrote:
+> On Mon, 2013-10-28 at 09:46 -0500, Dan Williams wrote:
+> > If the device doesn't actually *have* a permanent MAC
+> > address, then it shouldn't be returning one via ethtool,
+> > and should return an error for ETHTOOL_GPERMADDR.
+>=20
+> There's currently no provision for that, but I agree it would
+> be better to do so.
+>=20
+> johannes
 
-When introducing support for MMAP2 we considered more parts of each map
-representation in /proc/PID/maps, and when disabling it we forgot to
-reduce the number of expected parsed/assigned entries in the sscanf
-call, fix it to expect the right number of desired fields, 5.
+So what to do with devices which has MAC address stored in some=20
+obscure place and there is userspace binary which can read it?
 
-Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Based-on-a-patch-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-vrbo1wik997ahjzl1chm3bdm@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/event.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I think that there should be some way to tell kernel that *this*=20
+is the permanent address and it should use it.
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 63df031..49096ea 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -213,7 +213,7 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		       &event->mmap.pgoff,
- 		       execname);
- 
--		if (n != 8)
-+		if (n != 5)
- 			continue;
- 
- 		if (prot[2] != 'x')
+This is reason why I proposed patch which adding sysfs entry for=20
+setting permanent address from userspace in wl1251 driver.
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2778838.sUdns2WpWe
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlJufRAACgkQi/DJPQPkQ1KECACeNMxT+Rq5qW4t1CA69hwHLEkd
+FdMAn0+XsNTX/OUaWrQLU8u6fOgFtY88
+=TAVc
+-----END PGP SIGNATURE-----
+
+--nextPart2778838.sUdns2WpWe--
