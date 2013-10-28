@@ -1,108 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab3J1URM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 16:17:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16252 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755775Ab3J1URL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 16:17:11 -0400
-Date: Mon, 28 Oct 2013 21:17:35 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Victor Kaplansky <VICTORK@il.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>
-Subject: Re: perf events ring buffer memory barrier on powerpc
-Message-ID: <20131028201735.GA15629@redhat.com>
-References: <12083.1382486094@ale.ozlabs.ibm.com> <20131023141948.GB3566@localhost.localdomain> <20131025173749.GG19466@laptop.lan> <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com> <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com> <20131028132634.GO19466@laptop.lan> <20131028163418.GD4126@linux.vnet.ibm.com>
+	id S1757338Ab3J1UZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 16:25:59 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:58438 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755775Ab3J1UZ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 16:25:57 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Cc: linux@arm.linux.org.uk, mturquette@linaro.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, jiada_wang@mentor.com,
+        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
+        t.figa@samsung.com, g.liakhovetski@gmx.de,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, LMML <linux-media@vger.kernel.org>
+Subject: Re: [PATCH v6 0/5] clk: clock deregistration support
+Date: Mon, 28 Oct 2013 21:26:22 +0100
+Message-ID: <1918100.pYljUktTbF@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.10.7-gentoo-r1; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <525D9FC1.2040204@gmail.com>
+References: <1377874402-2944-1-git-send-email-s.nawrocki@samsung.com> <3160771.O1gFkR91vK@avalon> <525D9FC1.2040204@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131028163418.GD4126@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28, Paul E. McKenney wrote:
->
-> On Mon, Oct 28, 2013 at 02:26:34PM +0100, Peter Zijlstra wrote:
-> > --- linux-2.6.orig/kernel/events/ring_buffer.c
-> > +++ linux-2.6/kernel/events/ring_buffer.c
-> > @@ -87,10 +87,31 @@ static void perf_output_put_handle(struc
-> >  		goto out;
-> >
-> >  	/*
-> > -	 * Publish the known good head. Rely on the full barrier implied
-> > -	 * by atomic_dec_and_test() order the rb->head read and this
-> > -	 * write.
-> > +	 * Since the mmap() consumer (userspace) can run on a different CPU:
-> > +	 *
-> > +	 *   kernel				user
-> > +	 *
-> > +	 *   READ ->data_tail			READ ->data_head
-> > +	 *   smp_rmb()	(A)			smp_rmb()	(C)
->
-> Given that both of the kernel's subsequent operations are stores/writes,
-> doesn't (A) need to be smp_mb()?
+Hi Sylwester,
 
-Yes, this is my understanding^Wfeeling too, but I have to admit that
-I can't really explain to myself why _exactly_ we need mb() here.
+On Tuesday 15 October 2013 22:04:17 Sylwester Nawrocki wrote:
+> Hi,
+> 
+> (adding linux-media mailing list at Cc)
+> 
+> On 09/25/2013 11:47 AM, Laurent Pinchart wrote:
+> > On Tuesday 24 September 2013 23:38:44 Sylwester Nawrocki wrote:
+> [...]
+> 
+> >> The only issue I found might be at the omap3isp driver, which provides
+> >> clock to its sub-drivers and takes reference on the sub-driver modules.
+> >> When sub-driver calls clk_get() all modules would get locked in memory,
+> >> due to circular reference. One solution to that could be to pass NULL
+> >> struct device pointer, as in the below patch.
+> > 
+> > Doesn't that introduce race conditions ? If the sub-drivers require the
+> > clock, they want to be sure that the clock won't disappear beyond their
+> > backs. I agree that the circular dependency needs to be solved somehow,
+> > but we probably need a more generic solution. The problem will become
+> > more widespread in the future with DT-based device instantiation in both
+> > V4L2 and KMS.
+> 
+> I'm wondering whether subsystems and drivers itself should be written so
+> they deal with such dependencies they are aware of.
+> 
+> There is similar situation in the regulator API, regulator_get() simply
+> takes a reference on a module providing the regulator object.
+> 
+> Before a "more generic solution" is available, what do you think about
+> keeping obtaining a reference on a clock provider module in clk_get() and
+> doing clk_get(), clk_prepare_enable(), ..., clk_unprepare_disable(),
+> clk_put() in sub-driver whenever a clock is actively used, to avoid
+> permanent circular reference ?
 
-And let me copy-and-paste the artificial example from my previous
-email,
+That's a workaround I can live with in the short term, as long as we work on a 
+generic solution to this problem. It will bite us back in the not too distant 
+future if we pretend to forget about it.
 
-	bool	BUSY;
-	data_t 	DATA;
+-- 
+Regards,
 
-	bool try_to_get(data_t *data)
-	{
-		if (!BUSY)
-			return false;
-
-		rmb();
-
-		*data = DATA;
-		mb();
-		BUSY = false;
-
-		return true;
-	}
-
-	bool try_to_put(data_t *data)
-	{
-		if (BUSY)
-			return false;
-
-		mb();	// XXXXXXXX: do we really need it? I think yes.
-
-		DATA = *data;
-		wmb();
-		BUSY = true;
-
-		return true;
-	}
-
-(just in case, the code above obviously assumes that _get or _put
- can't race with itself, but they can race with each other).
-
-Could you confirm that try_to_put() actually needs mb() between
-LOAD(BUSY) and STORE(DATA) ?
-
-I am sure it actually needs, but I will appreciate it if you can
-explain why. IOW, how it is possible that without mb() try_to_put()
-can overwrite DATA before try_to_get() completes its "*data = DATA"
-in this particular case.
-
-Perhaps this can happen if, say, reader and writer share a level of
-cache or something like this...
-
-Oleg.
+Laurent Pinchart
 
