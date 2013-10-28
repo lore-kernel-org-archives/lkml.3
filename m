@@ -1,114 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184Ab3J1Vzj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 17:55:39 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:38896 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932116Ab3J1Vzh (ORCPT
+	id S1757634Ab3J1V4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 17:56:07 -0400
+Received: from smtprelay0016.hostedemail.com ([216.40.44.16]:51547 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753501Ab3J1V4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 17:55:37 -0400
-Date: Mon, 28 Oct 2013 14:55:16 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Alex Courbot <acourbot@nvidia.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Dave Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 1/5] ARM: add basic support for Trusted Foundations
-Message-ID: <20131028215516.GA10833@quad.lixom.net>
-References: <1381527938-22840-1-git-send-email-acourbot@nvidia.com>
- <1381527938-22840-2-git-send-email-acourbot@nvidia.com>
- <20131015110725.GZ25034@n2100.arm.linux.org.uk>
- <525D7969.5060908@nvidia.com>
- <CA+Ln22FdkcxOfq-yxVVQ7vTLWC3TYRBbAOZ=e3WmpSKkgk_DRg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+Ln22FdkcxOfq-yxVVQ7vTLWC3TYRBbAOZ=e3WmpSKkgk_DRg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 28 Oct 2013 17:56:05 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2691:2828:2895:3138:3139:3140:3141:3142:3352:3622:3653:3865:3866:3867:3868:3870:3871:3874:4321:5007:6119:7576:7652:7903:9545:10004:10400:10848:10967:11026:11232:11473:11658:11914:12043:12262:12296:12438:12517:12519:12555:12679:12740:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fish96_34cd7dd94fe3f
+X-Filterd-Recvd-Size: 2756
+Message-ID: <1382997361.8718.11.camel@joe-AO722>
+Subject: Re: [PATCH] Scripts: checkpatch.pl: Fix incorrect warning in
+ multi-line seq_printf()
+From: Joe Perches <joe@perches.com>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: opw-kernel@googlegroups.com, gregkh@linuxfoundation.org,
+        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Date: Mon, 28 Oct 2013 14:56:01 -0700
+In-Reply-To: <1382995962-7023-1-git-send-email-rashika.kheria@gmail.com>
+References: <1382995962-7023-1-git-send-email-rashika.kheria@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 12:04:43PM +0100, Tomasz Figa wrote:
-> Hi,
-> 
-> 2013/10/15 Alex Courbot <acourbot@nvidia.com>:
-> > On 10/15/2013 04:07 AM, Russell King - ARM Linux wrote:
-> >>
-> >> On Fri, Oct 11, 2013 at 02:45:34PM -0700, Alexandre Courbot wrote:
-> >>>
-> >>> Trusted Foundations is a TrustZone-based secure monitor for ARM that
-> >>> can be invoked using the same SMC-based API on all supported
-> >>> platforms. This patch adds initial basic support for Trusted
-> >>> Foundations using the ARM firmware API. Current features are limited
-> >>> to the ability to boot secondary processors.
-> >>>
-> >>> Note: The API followed by Trusted Foundations does *not* follow the SMC
-> >>> calling conventions. It has nothing to do with PSCI neither and is only
-> >>> relevant to devices that use Trusted Foundations (like most Tegra-based
-> >>> retail devices).
-> >>>
-> >>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> >>> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> >>> Reviewed-by: Stephen Warren <swarren@nvidia.com>
-> >>> ---
-> >>>   .../arm/firmware/tl,trusted-foundations.txt        | 20 ++++++
-> >>>   .../devicetree/bindings/vendor-prefixes.txt        |  1 +
-> >>>   arch/arm/Kconfig                                   |  2 +
-> >>>   arch/arm/Makefile                                  |  1 +
-> >>>   arch/arm/firmware/Kconfig                          | 28 ++++++++
-> >>>   arch/arm/firmware/Makefile                         |  1 +
-> >>>   arch/arm/firmware/trusted_foundations.c            | 79
-> >>> ++++++++++++++++++++++
-> >>>   arch/arm/include/asm/trusted_foundations.h         | 68
-> >>> +++++++++++++++++++
-> >>>   8 files changed, 200 insertions(+)
-> >>>   create mode 100644
-> >>> Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
-> >>>   create mode 100644 arch/arm/firmware/Kconfig
-> >>>   create mode 100644 arch/arm/firmware/Makefile
-> >>>   create mode 100644 arch/arm/firmware/trusted_foundations.c
-> >>>   create mode 100644 arch/arm/include/asm/trusted_foundations.h
-> >>
-> >>
-> >> Is having this under arch/arm appropriate?  What happens if the API
-> >> gets re-used on ARM64 for example?  Would drivers/firmware be a better
-> >> cross-arch location for this?
-> >
-> >
-> > The reason why this has been put into arch/arm is that the firmware_ops
-> > feature this patch depends also resides there
-> > (arch/arm/include/asm/firmware.h).
-> >
-> > On the other hand it might also make sense to move firmware_ops out of ARM
-> > since I don't see anything ARM-specific with it. Tomasz, could we have your
-> > thoughts on this?
-> 
-> I don't see anything wrong in moving this out of arch/arm, feel free
-> to do so.
-> 
-> However I guess that some (or all) of the names will have to
-> be put into a more separate namespace, as the term "firmware" is a bit
-> too generic IMHO. Possibly something like platform_firmware could be
-> better.
-> 
-> What do you think?
+On Tue, 2013-10-29 at 03:02 +0530, Rashika Kheria wrote:
+> This patch fixes the following incorrect warning given by checkpatch.pl
+> in case of multi-line seq_printf() statements-
 
-I think we can probably merge this under arch/arm now, and when we figure out
-what needs to be common with ARM64 we can move it out to a good location. It
-might be that mostly just a header file with ABI conventions needs to be
-shared, not actual implementation, for example.
+I believe this is already fixed in -next
+
+>From 7f1b7c2810888bba02311ec75b19e0cbd598ef83 Mon Sep 17 00:00:00 2001
+From: Joe Perches <joe@perches.com>
+Date: Fri, 27 Sep 2013 10:14:51 +1000
+Subject: [PATCH] checkpatch: update seq_<foo> tests
+
+seq_vprintf, seq_printf and seq_puts are logging functions and should be
+allowed to exceed the maximium line length.
+
+Add maximum line length exceptions for these functions.
+
+Also, suggesting seq_printf conversions to seq_puts should be tested for
+arguments after the format.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+ scripts/checkpatch.pl | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index c03e427..42567bc 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -323,7 +323,8 @@ our $logFunctions = qr{(?x:
+ 	(?:[a-z0-9]+_){1,2}(?:printk|emerg|alert|crit|err|warning|warn|notice|info|debug|dbg|vdbg|devel|cont|WARN)(?:_ratelimited|_once|)|
+ 	WARN(?:_RATELIMIT|_ONCE|)|
+ 	panic|
+-	MODULE_[A-Z_]+
++	MODULE_[A-Z_]+|
++	seq_vprintf|seq_printf|seq_puts
+ )};
+ 
+ our $signature_tags = qr{(?xi:
+@@ -3909,9 +3910,9 @@ sub string_find_replace {
+ 		}
+ 
+ # check for seq_printf uses that could be seq_puts
+-		if ($line =~ /\bseq_printf\s*\(/) {
++		if ($sline =~ /\bseq_printf\s*\(.*"\s*\)\s*;\s*$/) {
+ 			my $fmt = get_quoted_string($line, $rawline);
+-			if ($fmt !~ /[^\\]\%/) {
++			if ($fmt ne "" && $fmt !~ /[^\\]\%/) {
+ 				if (WARN("PREFER_SEQ_PUTS",
+ 					 "Prefer seq_puts to seq_printf\n" . $herecurr) &&
+ 				    $fix) {
 
 
--Olof
