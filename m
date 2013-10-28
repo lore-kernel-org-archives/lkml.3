@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756230Ab3J1MeV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 08:34:21 -0400
-Received: from mail-gg0-f171.google.com ([209.85.161.171]:63196 "EHLO
-	mail-gg0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755572Ab3J1MeU (ORCPT
+	id S1756328Ab3J1Mfd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 08:35:33 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:55142 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754133Ab3J1Mfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 08:34:20 -0400
-Date: Mon, 28 Oct 2013 09:34:11 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL] perf fixes
-Message-ID: <20131028123411.GB16948@ghostprotocols.net>
-References: <20131026122414.GA25026@gmail.com>
- <20131028082848.GA276@x4>
- <20131028090236.GA274@x4>
- <20131028093430.GB274@x4>
+	Mon, 28 Oct 2013 08:35:32 -0400
+Date: Mon, 28 Oct 2013 12:35:28 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] EFI changes
+Message-ID: <20131028123528.GM1982@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131028093430.GB274@x4>
-X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Oct 28, 2013 at 10:34:30AM +0100, Markus Trippelsdorf escreveu:
-> On 2013.10.28 at 10:02 +0100, Markus Trippelsdorf wrote:
-> > On 2013.10.28 at 09:28 +0100, Markus Trippelsdorf wrote:
-> > > On 2013.10.26 at 14:24 +0200, Ingo Molnar wrote:
-> > > >  - Reversal of the new 'MMAP2' extended mmap record ABI, introduced 
+This is a respin of the EFI earlyprintk support with the fix for the
+allmodconfig build breakage that Ingo reported.
 
-> > > commit 3090ffb5a2515990182f3f55b0688a7817325488
-> > > Author: Stephane Eranian <eranian@google.com>
+The following changes since commit c158c3bf59951bbb44bd7ccca9e6665dfd1617c5:
 
-> > >     perf: Disable PERF_RECORD_MMAP2 support
+  boot, efi: Remove redundant memset() (2013-10-04 20:07:47 +0100)
 
-> The following patch fixes the issue:
- 
-> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
->  		/* 00400000-0040c000 r-xp 00000000 fd:01 41038  /bin/cat */
-> -		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %*x:%*x %*u %s\n",
-> +		sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %*x:%*x %*u %s\n",
->  		       &event->mmap.start, &event->mmap.len, prot,
->  		       &event->mmap.pgoff,
->  		       execname);
-  
-> -		if (n != 8)
-> -			continue;
-> -
+are available in the git repository at:
 
-Yeah, this one was added in the patch that introduced MMAP2 support in
-the tooling side, it was unrelated to what the patch needed, i.e. should
-have come in a separate patch, checking sscanf number of itens
-successfully matched/assigned.
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
 
-And then, when reverting it, Stephane forgot to match the number number
-of expected entries to be matched/assigned from 8 to 5, can you try with
-the following patch instead?
+for you to fetch changes up to 265434a91cf3377d65dc2b6d80065271514b5696:
 
-- Arnaldo
+  x86/efi: Add EFI framebuffer earlyprintk support (2013-10-28 11:57:58 +0000)
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 63df031fc9c7..49096ea58a15 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -213,7 +213,7 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		       &event->mmap.pgoff,
- 		       execname);
- 
--		if (n != 8)
-+		if (n != 5)
- 			continue;
- 
- 		if (prot[2] != 'x')
+----------------------------------------------------------------
+ * Add support for earlyprintk=efi which uses the EFI framebuffer. Very
+   useful for debugging boot issues.
+
+----------------------------------------------------------------
+Matt Fleming (2):
+      efi: Add asm-generic/efi.h for non-x86
+      x86/efi: Add EFI framebuffer earlyprintk support
+
+ Documentation/kernel-parameters.txt  |   8 +-
+ arch/ia64/include/asm/efi.h          |   6 ++
+ arch/x86/Kconfig.debug               |  10 ++
+ arch/x86/boot/compressed/eboot.c     |   1 -
+ arch/x86/include/asm/efi.h           |  12 +++
+ arch/x86/kernel/early_printk.c       |   6 ++
+ arch/x86/kernel/setup.c              |   1 -
+ arch/x86/platform/efi/Makefile       |   1 +
+ arch/x86/platform/efi/early_printk.c | 191 +++++++++++++++++++++++++++++++++++
+ arch/x86/platform/efi/efi.c          |   1 -
+ arch/x86/platform/efi/efi_32.c       |   1 -
+ arch/x86/platform/efi/efi_64.c       |   1 -
+ arch/x86/platform/uv/bios_uv.c       |   1 -
+ include/asm-generic/efi.h            |  17 ++++
+ include/linux/efi.h                  |  31 +-----
+ 15 files changed, 250 insertions(+), 38 deletions(-)
+ create mode 100644 arch/ia64/include/asm/efi.h
+ create mode 100644 arch/x86/platform/efi/early_printk.c
+ create mode 100644 include/asm-generic/efi.h
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
