@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab3J1JRb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 05:17:31 -0400
+	id S1755868Ab3J1JRe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 05:17:34 -0400
 Received: from goliath.siemens.de ([192.35.17.28]:34889 "EHLO
 	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753488Ab3J1JR3 (ORCPT
+	with ESMTP id S1753488Ab3J1JRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 05:17:29 -0400
+	Mon, 28 Oct 2013 05:17:32 -0400
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
@@ -14,9 +14,9 @@ Cc: Jason Wessel <jason.wessel@windriver.com>,
         Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
         Borislav Petkov <bp@suse.de>,
         Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v6 09/21] scripts/gdb: Add get_target_endianness helper
-Date: Mon, 28 Oct 2013 09:58:46 +0100
-Message-Id: <dada7443499e77ea285011b53e1fb7699d9fe531.1382950737.git.jan.kiszka@siemens.com>
+Subject: [PATCH v6 20/21] scripts/gdb: Add lx-lsmod command
+Date: Mon, 28 Oct 2013 09:58:57 +0100
+Message-Id: <28c40473b87b9ac08cd1a8cc938064b82a32e18b.1382950737.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
 In-Reply-To: <cover.1382950737.git.jan.kiszka@siemens.com>
 References: <cover.1382950737.git.jan.kiszka@siemens.com>
@@ -26,41 +26,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parse the target endianness from the output of "show endian" and cache
-the result to return it via the new helper get_target_endiannes. We will
-need it for reading integers from buffers that contain target memory.
+This adds a lsmod-like command to list all currently loaded modules of
+the target.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/linux/utils.py | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ scripts/gdb/linux/modules.py | 46 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 45 insertions(+), 1 deletion(-)
 
-diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
-index c9d705b..10a227b 100644
---- a/scripts/gdb/linux/utils.py
-+++ b/scripts/gdb/linux/utils.py
-@@ -67,3 +67,21 @@ Note that TYPE and ELEMENT have to be quoted as strings."""
-                             elementname.string())
+diff --git a/scripts/gdb/linux/modules.py b/scripts/gdb/linux/modules.py
+index 531f763..e7c99e9 100644
+--- a/scripts/gdb/linux/modules.py
++++ b/scripts/gdb/linux/modules.py
+@@ -13,7 +13,7 @@
  
- ContainerOf()
+ import gdb
+ 
+-from linux import utils
++from linux import cpus, utils
+ 
+ 
+ module_type = utils.CachedType("struct module")
+@@ -65,3 +65,47 @@ of the target and return that module variable which MODULE matches."""
+ 
+ 
+ LxModule()
 +
 +
-+BIG_ENDIAN = 0
-+LITTLE_ENDIAN = 1
-+target_endianness = None
++class LxLsmod(gdb.Command):
++    """List currently loaded modules."""
++
++    _module_use_type = utils.CachedType("struct module_use")
++
++    def __init__(self):
++        super(LxLsmod, self).__init__("lx-lsmod", gdb.COMMAND_DATA)
++
++    def invoke(self, arg, from_tty):
++        gdb.write(
++            "Address{0}    Module                  Size  Used by\n".format(
++                "        " if utils.get_long_type().sizeof == 8 else ""))
++
++        for module in ModuleList():
++            ref = 0
++            module_refptr = module['refptr']
++            for cpu in cpus.CpuList("cpu_possible_mask"):
++                refptr = cpus.per_cpu(module_refptr, cpu)
++                ref += refptr['incs']
++                ref -= refptr['decs']
++
++            gdb.write("{address} {name:<19} {size:>8}  {ref}".format(
++                address=str(module['module_core']).split()[0],
++                name=module['name'].string(),
++                size=module['core_size'],
++                ref=ref))
++
++            source_list = module['source_list']
++            t = self._module_use_type.get_type().pointer()
++            entry = source_list['next']
++            first = True
++            while entry != source_list.address:
++                use = utils.container_of(entry, t, "source_list")
++                gdb.write("{separator}{name}".format(
++                    separator=" " if first else ",",
++                    name=use['source']['name'].string()))
++                first = False
++                entry = entry['next']
++            gdb.write("\n")
 +
 +
-+def get_target_endianness():
-+    global target_endianness
-+    if target_endianness is None:
-+        endian = gdb.execute("show endian", to_string=True)
-+        if "little endian" in endian:
-+            target_endianness = LITTLE_ENDIAN
-+        elif "big endian" in endian:
-+            target_endianness = BIG_ENDIAN
-+        else:
-+            raise gdb.GdgError("unknown endianness '{0}'".format(endian))
-+    return target_endianness
++LxLsmod()
 -- 
 1.8.1.1.298.ge7eed54
 
