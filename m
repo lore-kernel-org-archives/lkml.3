@@ -1,46 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757035Ab3J1QCR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 12:02:17 -0400
-Received: from nm44.bullet.mail.ne1.yahoo.com ([98.138.120.51]:41624 "EHLO
-	nm44.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756644Ab3J1QCN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 12:02:13 -0400
-X-Yahoo-Newman-Property: ymail-4
-X-Yahoo-Newman-Id: 747605.76509.bm@omp1006.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=sKiv0i827CK9UglPNrWDnciGjO27IAAk5z/8GXqNHzM/BnE1Vao8/pp0Y743difrSi0gcBnMuR1u83DnW7TcvnHMTEPzbZrLSGrbrEbt8IdrGSIhmKs7KcYTht2ltSVojSkU4oFcTFxceV0PRwjdu0bX8p+SW/6X3CYVO9G318M=;
-X-YMail-OSG: Zz7LkNUVM1lIKMWBlhSnY8T_MjuIL4YMdPi5UsV1iQ1cDqU
- X0B0jq7lfd6WEBExFCCUVIw37iSWZK.CeEiKOEWU-
-X-Rocket-MIMEInfo: 002.001,DQpIZWxsbw0KDQoNCk15IG5hbWUgaXMgTXJzIFNhbW9yYSBNdXNhLEkgaGF2ZSBiZWVuIHN1ZmZlcmluZyBmcm9tIE92YXJpYW4gY2FuY2VyIGRpc2Vhc2UgYW5kIHRoZSBkb2N0b3Igc2F5cyB0aGF0IGkgaGF2ZSBqdXN0IGZldyBkYXlzIHRvIGxlYXZlLkkgYW0gZnJvbSBMaWJ5YSwgYnV0IGJhc2VkIGluIEJ1cmtpbmEgRmFzbyxBZnJpY2Egc2luY2UgdGVuIHllYXJzIGFnbyBhcyBhIGJ1c2luZXNzIHdvbWFuIGRlYWxpbmcgd2l0aCBjb2NvYSBleHBvcnRhdGlvbixub3cgdGhhdCBpIGFtIGFib3V0IHRvIGUBMAEBAQE-
-X-RocketYMMF: abumusa2
-X-Mailer: YahooMailClassic/362 YahooMailWebService/0.8.160.587
-Message-ID: <1382976120.70218.YahooMailBasic@web122002.mail.ne1.yahoo.com>
-Date: Mon, 28 Oct 2013 09:02:00 -0700 (PDT)
-From: MRS MUSA SAMORA <musasamora111@gmail.com>
-Reply-To: musasamora111@outlook.com
-Subject: PLEASE CONFIRM YOUR INTEREST  
-To: undisclosed recipients:;
+	id S1757003Ab3J1QCP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 12:02:15 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51776 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756280Ab3J1QCL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 12:02:11 -0400
+Date: Mon, 28 Oct 2013 09:00:15 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Sebastian Reichel <sre@ring0.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        alsa-devel@alsa-project.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Message-ID: <20131028160015.GA13643@sirena.org.uk>
+References: <1382909086-10493-1-git-send-email-sre@debian.org>
+ <1382909086-10493-2-git-send-email-sre@debian.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="T4sUOijqQbZv57TR"
+Content-Disposition: inline
+In-Reply-To: <1382909086-10493-2-git-send-email-sre@debian.org>
+X-Cookie: You fill a much-needed gap.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 66.78.236.243
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC 1/4] ASoC: omap: rx51: Use snd_soc_register_card
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hello
+--T4sUOijqQbZv57TR
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Sun, Oct 27, 2013 at 10:24:43PM +0100, Sebastian Reichel wrote:
+> From: Pali Roh=E1r <pali.rohar@gmail.com>
+>=20
+> This patch converts the rx51 ASoC module to use
+> snd_soc_register_card. It also adds module alias
+> to support driver autoloading.
 
-My name is Mrs Samora Musa,I have been suffering from Ovarian cancer disease and the doctor says that i have just few days to leave.I am from Libya, but based in Burkina Faso,Africa since ten years ago as a business woman dealing with cocoa exportation,now that i am about to end the race like this,without any family members and no child.I have $1.1 Million US DOLLARS in Bank of Africa(BOA)Burkina Faso which i instructed the bank to give African union leaders to help sick people around Africa.But my mind is not at rest because i am writing this letter now through the help of my nurse beside me here in my hospital room.
- 
-I also have $2.1 Million US Dollars in another bank in Burkina Faso which i want you to claim from the bank and use help less privileged people in your country,but you must assure me that you will  take only 40% of the total money and give the rest 60% to the orphanage home in your country for my heart to rest.
- 
-Upon the receipt of your email that you are willing and capable to execute my plan, i will instruct the bank management to make the immediate transfer into your account.
- 
-Sincerely,
- 
-Mrs Samora Musa.
+You should really use devm_snd_soc_register_card() here.
+
+--T4sUOijqQbZv57TR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSbooGAAoJELSic+t+oim95JIP/iM6CcdgQoi38u29uqn9Wngk
+Ybk5NgxgSlgX5BEsPmh38fD2V4Vx+BrY6gPrMM0ibBCuWQGKDmsZRIvfdkbYxiXD
+tysn3aKwrR+cL3AFteb6K3QByYo8JigxZoubvN/mRO+6EOt/k+I8RcA5uV+IwVXB
+kkPKSibo6aBlnFj6kwqNaiEmhhVLfszIifgAuaibh9+MGjUkj304ZiID/0/Qww3n
+55dZkUnqG2+co+fRgIR+95wq/gQKjN4AwiP91bEt50NpdcjMcNcxBUzjjgXdzJ7Q
+a+gKjwlivR3SwsU3KRcrVDHnk4FmHXMZaNk9H/T7CNN5oKq4HTpCeNQcBYQD/5KV
+/vvxDCQpBuGy/uAS5+5HP4UzNVLJDDkxi10NxXZbp1mJt1WIp4juCxFiMybnpNwU
+wlpUFXoq9SKRvfDfvf/PcakO5CFkKSgbztkQxj+8dzbI1yRiKYQRvNDXZ/bbSD4+
+E36g/xJJIU4l4ASPWYFHDmKIquypCli10zphQuKGkGD2OKK9X1xta9E7SqN7XvB5
+zaDlkMndHss677LWiyQ+DzQIVmkL0e5OQrI/r/Vt8Qyf5Y/Es0NkZ25DLACPtfFu
+oDJrGyINpVhZKNpIw4IasoVpdufy3yysZoOwHvLWAN5YMwlofNRb7Ktld8NKpVxU
+V10ybJaRt9O2qlAb0+cV
+=S7Vd
+-----END PGP SIGNATURE-----
+
+--T4sUOijqQbZv57TR--
