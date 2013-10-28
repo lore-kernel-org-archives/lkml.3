@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756385Ab3J1LZM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 07:25:12 -0400
-Received: from mout.gmx.net ([212.227.17.21]:54224 "EHLO mout.gmx.net"
+	id S1756409Ab3J1LZs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 07:25:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40521 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753542Ab3J1LZK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 07:25:10 -0400
-Date: Mon, 28 Oct 2013 12:25:05 +0100
-From: Andreas Werner <wernerandy@gmx.de>
+	id S1755888Ab3J1LZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 07:25:47 -0400
+Date: Mon, 28 Oct 2013 19:24:58 +0800
+From: Dave Young <dyoung@redhat.com>
 To: Borislav Petkov <bp@alien8.de>
-Cc: Ingo Molnar <mingo@kernel.org>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, dave@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] X86: MM: Add PAT Type write-through in combination with
- mtrr
-Message-ID: <20131028112505.GD2278@thinkpad.fritz.box>
-References: <1382878525-3410-1-git-send-email-wernerandy@gmx.de>
- <20131027133401.GB24817@pd.tnic>
- <20131027165159.GD1617@thinkpad.fritz.box>
- <20131027173131.GC21868@pd.tnic>
- <20131027175608.GA1340@thinkpad.fritz.box>
- <20131027190148.GD21868@pd.tnic>
- <20131028062946.GA1391@thinkpad.fritz.box>
- <20131028101749.GA4389@gmail.com>
- <20131028103428.GA2278@thinkpad.fritz.box>
- <20131028105731.GF4314@pd.tnic>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.fedoraproject.org, kexec@lists.infradead.org
+Subject: Re: [patch 3/6] Cleanup efi_enter_virtual_mode function
+Message-ID: <20131028112458.GD29133@dhcp-16-126.nay.redhat.com>
+References: <20131027034713.481920209@dhcp-16-126.nay.redhat.com>
+ <20131027035923.081819853@dhcp-16-126.nay.redhat.com>
+ <20131028093206.GB4314@pd.tnic>
+ <20131028094049.GC25527@dhcp-16-126.nay.redhat.com>
+ <20131028095117.GD25527@dhcp-16-126.nay.redhat.com>
+ <20131028100402.GC4314@pd.tnic>
+ <20131028101011.GF25527@dhcp-16-126.nay.redhat.com>
+ <20131028112045.GH4314@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131028105731.GF4314@pd.tnic>
+In-Reply-To: <20131028112045.GH4314@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V03:K0:O+6oCvh2Nr+ihVUD8DxcInN1X4+/UGX2lBOOjfdG5eCz4hHL+kA
- LL/H15D2W68CAHj/7+r2WVHElU+iPetpjEknXHAVty6QRYy5K10U/RZupZJ7zFDoem3Nch8
- K1gsR7lLN1aD81pY80NaYjSQr/W73RagQYpRn3Np7/dCxI6QGKwqDpcYziCAtnH41Mg1272
- OeqF7eGpEInYldKGXr6Bg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 11:57:31AM +0100, Borislav Petkov wrote:
-> On Mon, Oct 28, 2013 at 11:34:28AM +0100, Andreas Werner wrote:
-> > Yes the reads are only for packet data, the commands or configuration
-> > registers are mapped non cachable.
-> > 
-> > I´ve tried WB, but on PCIe Tracer i could not see any burst access.
-> > Thats the reason why i have created this patch.
-> > 
-> > Is there a chance to get this patch into the kernel? Or
-> > is this solution so special?
+On 10/28/13 at 12:20pm, Borislav Petkov wrote:
+> On Mon, Oct 28, 2013 at 06:10:11PM +0800, Dave Young wrote:
+> > Sorry, I have not any public git account. Attached the patch I applied
+> > with git
 > 
-> Ok, but your patch returns WB pat type for WT MTRR type, AFAICT.
+> Still doesn't work:
 > 
-> You want to do:
+> $ patch -p1 --dry-run -i /tmp/02-efi-enter-virtual-mode-cleanup-1.patch.new 
+> checking file arch/x86/platform/efi/efi.c
+> Hunk #1 succeeded at 788 (offset -1 lines).
+> Hunk #2 succeeded at 821 (offset -1 lines).
+> Hunk #3 FAILED at 853.
+> 1 out of 3 hunks FAILED
 > 
->   PAT=Write-Back + MTRR=Write-Through = Effective Memory of Write-Through
->
-Yes thats right.
- 
-> but you end up doing
-> 
->   PAT=Write-Back + MTRR=Write-Through = Effective Memory of Write-Back
->
-No the effective memory type is WT, check out the Intel document with the
-table of Effective memory type combinations.
- 
-> What am I missing or misunderstanding?
-> 
-> AFAICT, you want to return _PAGE_PWT for MTRR_TYPE_WRTHROUGH, no?
+> I'm using Matt's next branch + my efi runtime branch. What are you
+> basing your stuff ontop?
 
-Yes but, there is no way in the kernel to mark a memory WT,
-there is just ioremap_wc for Write combining and ioremap_cache
-for Write Back, and as you can see in the Intel Effective Memory type
-table, if you combine PAT=WB and MTRR=WT you will get a effective memory
-of WT.
-
-regards 
-Andy
-> 
-> -- 
-> Regards/Gruss,
->     Boris.
-> 
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+I use linus tree, git pull Matt's efi-next tree, then apply your 12 patches
+and my patches. I applied your previous 11 patches + the last update patch
+12/12, but the last one does not apply, I manually shift a hunk to make it
+apply.
