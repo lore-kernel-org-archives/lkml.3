@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755756Ab3J1Ior (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 04:44:47 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33272 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751848Ab3J1Iop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 04:44:45 -0400
-Date: Mon, 28 Oct 2013 09:44:41 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Young <dyoung@redhat.com>
-Cc: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.fedoraproject.org, kexec@lists.infradead.org
-Subject: Re: [patch 2/6] x86 efi: reserve boot service fix
-Message-ID: <20131028084440.GA4314@pd.tnic>
-References: <20131027034713.481920209@dhcp-16-126.nay.redhat.com>
- <20131027035922.924386710@dhcp-16-126.nay.redhat.com>
- <20131027105009.GA21868@pd.tnic>
- <20131027203058.GE1982@console-pimps.org>
- <20131028011824.GD4397@dhcp-16-126.nay.redhat.com>
+	id S1754811Ab3J1Iqp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 04:46:45 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41772 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998Ab3J1Iqn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 04:46:43 -0400
+Date: Mon, 28 Oct 2013 08:45:37 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Jean Pihet <jean.pihet@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the tip tree
+Message-ID: <20131028084537.GH16735@n2100.arm.linux.org.uk>
+References: <1382632289-18523-1-git-send-email-treding@nvidia.com> <1382706224-8859-1-git-send-email-treding@nvidia.com> <1382706224-8859-4-git-send-email-treding@nvidia.com> <20131025132553.GE9999@mudshark.cambridge.arm.com> <20131026084033.GA14237@gmail.com> <20131026140125.GA13424@mudshark.cambridge.arm.com> <20131027071237.GA448@gmail.com> <20131027100047.GY16735@n2100.arm.linux.org.uk> <20131028074716.GC6629@ulmo.nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131028011824.GD4397@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131028074716.GC6629@ulmo.nvidia.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 09:18:24AM +0800, Dave Young wrote:
-> There should be some people see below message with non-kexec kernel:
-> "Could not reserve boot range ..."
+On Mon, Oct 28, 2013 at 08:47:22AM +0100, Thierry Reding wrote:
+> On Sun, Oct 27, 2013 at 10:00:48AM +0000, Russell King - ARM Linux wrote:
+> > On Sun, Oct 27, 2013 at 08:12:37AM +0100, Ingo Molnar wrote:
+> > > 
+> > > * Will Deacon <will.deacon@arm.com> wrote:
+> > > > In future, I'll push back on any perf changes outside of arch/ in my 
+> > > > tree, but that doesn't help us get out of the current situation: the 
+> > > > patches are currently sitting in rmk's tree for 3.13, so that won't meet 
+> > > > with -tip (outside of next) until Linus pulls them both. What can we do 
+> > > > about that?
+> > > 
+> > > Unless you guys want to do a revert I guess there's not much to do but to 
+> > > warn Linus in the ARM pull request that a conflict is coming up.
+> > 
+> > From Will's description, it sounded like this could be quite hairy to
+> > fix up, so I'd like to include the conflict resolution in the pull
+> > request so Linus has something to refer to if needed.  Could someone
+> > please forward me that?
+> 
+> Hi Russell,
+> 
+> I've attached the relevant parts of the resolution, although I'm not
+> sure if anybody's actually confirmed that it's correct.
 
-I can find one other report like that: https://lkml.org/lkml/2013/7/16/309
+I'm not sure whether that can happen any time before -final - Will is
+(storm dependent) flying out to Linaro Connect today, and I've no idea
+who to turn to for this to be tested for ARM.
 
-[    0.000000] efi: Could not reserve boot range [0x0000000000-0x0000000fff]
-
-for
-
-efi: mem00: type=3, attr=0xf, range=[0x0000000000000000-0x0000000000001000) (0MB)
-
-which is EFI_BOOT_SERVICES_CODE and
-
-efi: Could not reserve boot range [0x000005f000-0x000009ffff]
-
-for
-
-efi: mem06: type=3, attr=0xf, range=[0x000000000005f000-0x00000000000a0000) (0MB)
-
-which is of the same type.
-
-> But it's hard for them to notice the bad functionality because
-> it's only one mem range which might be not the boot range what
-> SetVirtualAddressMap need
-
-Right.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+I guess we have some time given that Linus has released -rc7 and his
+comments during the Kernel Summit/in the rc7 announcement.
