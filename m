@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab3J1UZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 16:25:59 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:58438 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755775Ab3J1UZ5 (ORCPT
+	id S1756766Ab3J1Ua7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 16:30:59 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:49780 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755810Ab3J1Ua5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 16:25:57 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Cc: linux@arm.linux.org.uk, mturquette@linaro.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, jiada_wang@mentor.com,
-        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
-        t.figa@samsung.com, g.liakhovetski@gmx.de,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, LMML <linux-media@vger.kernel.org>
-Subject: Re: [PATCH v6 0/5] clk: clock deregistration support
-Date: Mon, 28 Oct 2013 21:26:22 +0100
-Message-ID: <1918100.pYljUktTbF@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.10.7-gentoo-r1; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <525D9FC1.2040204@gmail.com>
-References: <1377874402-2944-1-git-send-email-s.nawrocki@samsung.com> <3160771.O1gFkR91vK@avalon> <525D9FC1.2040204@gmail.com>
+	Mon, 28 Oct 2013 16:30:57 -0400
+Date: Mon, 28 Oct 2013 20:30:52 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] EFI changes
+Message-ID: <20131028203052.GO1982@console-pimps.org>
+References: <20131028123528.GM1982@console-pimps.org>
+ <20131028134413.GA10163@gmail.com>
+ <20131028155215.GN1982@console-pimps.org>
+ <20131028155525.GA13987@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131028155525.GA13987@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sylwester,
-
-On Tuesday 15 October 2013 22:04:17 Sylwester Nawrocki wrote:
-> Hi,
+On Mon, 28 Oct, at 04:55:25PM, Ingo Molnar wrote:
 > 
-> (adding linux-media mailing list at Cc)
+> * Matt Fleming <matt@console-pimps.org> wrote:
 > 
-> On 09/25/2013 11:47 AM, Laurent Pinchart wrote:
-> > On Tuesday 24 September 2013 23:38:44 Sylwester Nawrocki wrote:
-> [...]
-> 
-> >> The only issue I found might be at the omap3isp driver, which provides
-> >> clock to its sub-drivers and takes reference on the sub-driver modules.
-> >> When sub-driver calls clk_get() all modules would get locked in memory,
-> >> due to circular reference. One solution to that could be to pass NULL
-> >> struct device pointer, as in the below patch.
+> > On Mon, 28 Oct, at 02:44:13PM, Ingo Molnar wrote:
+> > > and this breaks the ARM build:
+> > > 
+> > > In file included from /home/mingo/tip/init/main.c:44:
+> > > /home/mingo/tip/include/linux/efi.h:842:21: error: asm/efi.h: No such file or directory
+> > > /home/mingo/tip/init/main.c: In function 'start_kernel':
+> > > /home/mingo/tip/init/main.c:638: error: implicit declaration of function 'efi_enabled'
+> > > /home/mingo/tip/init/main.c:639: error: implicit declaration of function 'efi_late_init'
+> > > /home/mingo/tip/init/main.c:640: error: implicit declaration of function 'efi_free_boot_services'
 > > 
-> > Doesn't that introduce race conditions ? If the sub-drivers require the
-> > clock, they want to be sure that the clock won't disappear beyond their
-> > backs. I agree that the circular dependency needs to be solved somehow,
-> > but we probably need a more generic solution. The problem will become
-> > more widespread in the future with DT-based device instantiation in both
-> > V4L2 and KMS.
+> > Ah, that's my own fault because my 'next' branch doesn't include 
+> > the ARM EFI support. Where did you get the patches from? Are they 
+> > in linux-next?
 > 
-> I'm wondering whether subsystems and drivers itself should be written so
-> they deal with such dependencies they are aware of.
+> It's all in tip:x86/efi.
 > 
-> There is similar situation in the regulator API, regulator_get() simply
-> takes a reference on a module providing the regulator object.
+> > I'm inclined to drop the cleanup patch for now and do it later, 
+> > once things have settled because it's also causing conflicts for 
+> > Borislav's work.
 > 
-> Before a "more generic solution" is available, what do you think about
-> keeping obtaining a reference on a clock provider module in clk_get() and
-> doing clk_get(), clk_prepare_enable(), ..., clk_unprepare_disable(),
-> clk_put() in sub-driver whenever a clock is actively used, to avoid
-> permanent circular reference ?
+> Sure.
 
-That's a workaround I can live with in the short term, as long as we work on a 
-generic solution to this problem. It will bite us back in the not too distant 
-future if we pretend to forget about it.
+OK, I've pushed out the 'next' branch and retagged it as 'efi-next'
+(again), which hopefully should be finally free from build errors.
 
 -- 
-Regards,
-
-Laurent Pinchart
-
+Matt Fleming, Intel Open Source Technology Center
