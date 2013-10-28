@@ -1,129 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900Ab3J1JXE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 05:23:04 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:23107 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754172Ab3J1JXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 05:23:01 -0400
-X-Greylist: delayed 1405 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Oct 2013 05:23:01 EDT
-From: Jan Kiszka <jan.kiszka@siemens.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: [PATCH v6 17/21] scripts/gdb: Add internal helper and convenience function for per-cpu lookup
-Date: Mon, 28 Oct 2013 09:58:54 +0100
-Message-Id: <80aea3074baa9e75c09bd8510707d0e88cec8655.1382950737.git.jan.kiszka@siemens.com>
-X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
-In-Reply-To: <cover.1382950737.git.jan.kiszka@siemens.com>
-References: <cover.1382950737.git.jan.kiszka@siemens.com>
-In-Reply-To: <cover.1382950737.git.jan.kiszka@siemens.com>
-References: <cover.1382950737.git.jan.kiszka@siemens.com>
+	id S1756093Ab3J1JXX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 05:23:23 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46113 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755548Ab3J1JXU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 05:23:20 -0400
+Date: Mon, 28 Oct 2013 10:22:59 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Victor Kaplansky <VICTORK@il.ibm.com>
+Cc: anton@samba.org, benh@kernel.crashing.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        michael@ellerman.id.au, Michael Neuling <mikey@neuling.org>
+Subject: Re: perf events ring buffer memory barrier on powerpc
+Message-ID: <20131028092259.GJ19466@laptop.lan>
+References: <12083.1382486094@ale.ozlabs.ibm.com>
+ <20131023141948.GB3566@localhost.localdomain>
+ <20131025173749.GG19466@laptop.lan>
+ <OF1519E98D.692AF083-ON42257C11.002E693E-42257C11.00317D48@il.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <OF1519E98D.692AF083-ON42257C11.002E693E-42257C11.00317D48@il.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function allows to obtain a per-cpu variable, either of the current
-or an explicitly specified CPU.
+On Sun, Oct 27, 2013 at 11:00:33AM +0200, Victor Kaplansky wrote:
+> Peter Zijlstra <peterz@infradead.org> wrote on 10/25/2013 07:37:49 PM:
+> 
+> > I would argue for:
+> >
+> >   READ ->data_tail         READ ->data_head
+> >     smp_rmb()   (A)          smp_rmb()   (C)
+> >   WRITE $data              READ $data
+> >     smp_wmb()   (B)          smp_mb()   (D)
+> >   STORE ->data_head        WRITE ->data_tail
+> >
+> > Where A pairs with D, and B pairs with C.
+> 
+> 1. I agree. My only concern is that architectures which do use atomic
+> operations
+> with memory barriers, will issue two consecutive barriers now, which is
+> sub-optimal.
 
-Note: sparc64 version is untested.
+Yeah, although that would be fairly easy to optimize by the CPUs itself;
+not sure they actually do this though.
 
-CC: "David S. Miller" <davem@davemloft.net>
-CC: sparclinux@vger.kernel.org
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- scripts/gdb/linux/cpus.py  | 68 ++++++++++++++++++++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py |  1 +
- 2 files changed, 69 insertions(+)
- create mode 100644 scripts/gdb/linux/cpus.py
+But we don't really have much choice aside of introducing things like:
 
-diff --git a/scripts/gdb/linux/cpus.py b/scripts/gdb/linux/cpus.py
-new file mode 100644
-index 0000000..18337e0
---- /dev/null
-+++ b/scripts/gdb/linux/cpus.py
-@@ -0,0 +1,68 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  per-cpu tools
-+#
-+# Copyright (c) Siemens AG, 2011-2013
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
-+
-+import gdb
-+
-+from linux import tasks, utils
-+
-+
-+MAX_CPUS = 4096
-+
-+
-+def get_current_cpu():
-+    if utils.get_gdbserver_type() == utils.GDBSERVER_QEMU:
-+        return gdb.selected_thread().num - 1
-+    elif utils.get_gdbserver_type() == utils.GDBSERVER_KGDB:
-+        tid = gdb.selected_thread().ptid[2]
-+        if tid > (0x100000000 - MAX_CPUS - 2):
-+            return 0x100000000 - tid - 2
-+        else:
-+            return tasks.get_thread_info(tasks.get_task_by_pid(tid))['cpu']
-+    else:
-+        raise gdb.GdbError("Sorry, obtaining the current CPU is not yet "
-+                           "supported with this gdb server.")
-+
-+
-+def per_cpu(var_ptr, cpu):
-+    if cpu == -1:
-+        cpu = get_current_cpu()
-+    if utils.is_target_arch("sparc:v9"):
-+        offset = gdb.parse_and_eval(
-+            "trap_block[{0}].__per_cpu_base".format(str(cpu)))
-+    else:
-+        try:
-+            offset = gdb.parse_and_eval(
-+                "__per_cpu_offset[{0}]".format(str(cpu)))
-+        except gdb.error:
-+            # !CONFIG_SMP case
-+            offset = 0
-+    pointer = var_ptr.cast(utils.get_long_type()) + offset
-+    return pointer.cast(var_ptr.type).dereference()
-+
-+
-+class PerCpu(gdb.Function):
-+    """Return per-cpu variable.
-+
-+$lx_per_cpu("VAR"[, CPU]): Return the per-cpu variable called VAR for the
-+given CPU number. If CPU is omitted, the CPU of the current context is used.
-+Note that VAR has to be quoted as string."""
-+
-+    def __init__(self):
-+        super(PerCpu, self).__init__("lx_per_cpu")
-+
-+    def invoke(self, var_name, cpu=-1):
-+        var_ptr = gdb.parse_and_eval("&" + var_name.string())
-+        return per_cpu(var_ptr, cpu)
-+
-+
-+PerCpu()
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index 4d7eb2c..4848928 100644
---- a/scripts/gdb/vmlinux-gdb.py
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -27,3 +27,4 @@ else:
-     import linux.modules
-     import linux.dmesg
-     import linux.tasks
-+    import linux.cpus
--- 
-1.8.1.1.298.ge7eed54
+smp_wmb__after_local_$op; and I'm fairly sure people won't like adding a
+ton of conditional barriers like that either.
 
+
+> 2. I think the comment in "include/linux/perf_event.h" describing
+> "data_head" and
+> "data_tail" for user space need an update as well. Current version -
+
+Oh, indeed. Thanks; I'll update that too!
