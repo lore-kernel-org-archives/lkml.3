@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab3J1LsG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 07:48:06 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:60335 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756032Ab3J1LsE (ORCPT
+	id S1756282Ab3J1Lsr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 07:48:47 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:46987 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754133Ab3J1Lsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 07:48:04 -0400
+	Mon, 28 Oct 2013 07:48:45 -0400
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: josh <josh@joshtriplett.org>, opw-kernel@googlegroups.com,
         Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
         Nitin Gupta <ngupta@vflare.org>,
         Jerome Marchand <jmarchand@redhat.com>, linux-kernel@vger.kernel.org,
         "linux-kernel @ vger . kernGreg KH" <gregkh@linuxfoundation.org>
-Subject: [PATCH v5 1/3] Staging: zram: Fix access of NULL pointer
-Date: Mon, 28 Oct 2013 17:17:51 +0530
-Message-Id: <cc16130b4e23207971139eff313a4ec71f51c187.1382959029.git.rashika.kheria@gmail.com>
+Subject: [PATCH v5 3/3] Staging: zram: Fix decrement of variable by calling bdput()
+Date: Mon, 28 Oct 2013 17:18:32 +0530
+Message-Id: <7d016b6c725b88e5f61e21daaacf6c2e205537e0.1382959029.git.rashika.kheria@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <20131019110539.GA25167@gmail.com>
 References: <20131019110539.GA25167@gmail.com>
+In-Reply-To: <cc16130b4e23207971139eff313a4ec71f51c187.1382959029.git.rashika.kheria@gmail.com>
+References: <cc16130b4e23207971139eff313a4ec71f51c187.1382959029.git.rashika.kheria@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the bug in reset_store caused by accessing NULL pointer.
-Hence, It introduces a check for bdev. It also removes unnecessary check
-of bdev for fsync_bdev().
+As suggested by Jerome Marchand "The code in reset_store get the block device
+(bdget_disk()) but it does not put it (bdput()) when it's done using it.
+The usage count is therefor incremented but never decremented."
+
+Hence, this patch introduces a call to bdput() to decrement the variable after usage. 
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 ---
-
-This revision fixes the following issues of the previous revision-
-Seperate patch into Bug Fix and Smatch Fix
-
- drivers/staging/zram/zram_drv.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/staging/zram/zram_drv.c |    1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 2c4ed52..d640a8f 100644
+index 9027975..98dac15 100644
 --- a/drivers/staging/zram/zram_drv.c
 +++ b/drivers/staging/zram/zram_drv.c
-@@ -648,6 +648,9 @@ static ssize_t reset_store(struct device *dev,
- 	zram = dev_to_zram(dev);
- 	bdev = bdget_disk(zram->disk, 0);
- 
-+	if (!bdev)
-+		return -EBUSY;
-+
- 	/* Do not reset an active device! */
- 	if (bdev->bd_holders)
- 		return -EBUSY;
-@@ -660,8 +663,7 @@ static ssize_t reset_store(struct device *dev,
- 		return -EINVAL;
+@@ -664,6 +664,7 @@ static ssize_t reset_store(struct device *dev,
  
  	/* Make sure all pending I/O is finished */
--	if (bdev)
--		fsync_bdev(bdev);
-+	fsync_bdev(bdev);
+ 	fsync_bdev(bdev);
++	bdput(bdev);
  
  	zram_reset_device(zram, true);
  	return len;
