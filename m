@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab3J1KDk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 06:03:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18118 "EHLO mx1.redhat.com"
+	id S1756272Ab3J1KD5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 06:03:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6137 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751635Ab3J1KDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 06:03:39 -0400
-Date: Mon, 28 Oct 2013 11:05:48 +0100
+	id S1756249Ab3J1KD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 06:03:56 -0400
+Date: Mon, 28 Oct 2013 11:06:06 +0100
 From: Alexander Gordeev <agordeev@redhat.com>
 To: Kent Overstreet <kmo@daterainc.com>
 Cc: Oleg Nesterov <oleg@redhat.com>, Jens Axboe <axboe@kernel.dk>,
         "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] percpu_ida: Optimize freeing tags when maximum cache
- size is 1
-Message-ID: <20131028100547.GD5744@dhcp-26-207.brq.redhat.com>
+Subject: [PATCH 4/5] percpu_ida: Sanity check initialization parameters
+Message-ID: <20131028100605.GE5744@dhcp-26-207.brq.redhat.com>
 References: <cover.1382950629.git.agordeev@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,38 +24,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case percpu_max_size is 1 percpu_ida_free() sets bit in
-the cpumask and immediately transfers the tag to the pool.
-As result, the very next call to percpu_ida_alloc() on the
-same CPU will have to pull a tag from the pool to the local
-cache and so on. Hence, positive effects of local caching
-become largely negated.
-
-This update assumes stealing tags is faster than ping-ponging
-between local caches and the pool and prevents returning tags
-to the pool in case percpu_max_size is 1.
-
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- lib/percpu_ida.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ lib/percpu_ida.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
 diff --git a/lib/percpu_ida.c b/lib/percpu_ida.c
-index 9dd8741..4adc3e5 100644
+index 4adc3e5..1fc89f9 100644
 --- a/lib/percpu_ida.c
 +++ b/lib/percpu_ida.c
-@@ -243,9 +243,8 @@ void percpu_ida_free(struct percpu_ida *pool, unsigned tag)
- 		 */
- 		smp_wmb();
- 		wake_up = true;
--	} 
--
--	if (nr_free == pool->percpu_max_size) {
-+	} else if ((nr_free == pool->percpu_max_size) &&
-+		   (pool->percpu_max_size > 1)) {
- 		spin_lock(&pool->lock);
+@@ -298,6 +298,11 @@ int __percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags,
+ {
+ 	unsigned i, cpu, order;
  
- 		/*
++	if (batch_size > max_size)
++		return -ERANGE;
++	if (!batch_size)
++		return -EINVAL;
++
+ 	memset(pool, 0, sizeof(*pool));
+ 
+ 	init_waitqueue_head(&pool->wait);
 -- 
 1.7.7.6
 
