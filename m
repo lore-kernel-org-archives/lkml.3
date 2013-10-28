@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932531Ab3J1O5J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 10:57:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51211 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932306Ab3J1Otb (ORCPT
+	id S932545Ab3J1O5Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:57:24 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:34523 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932330Ab3J1O5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:49:31 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+	Mon, 28 Oct 2013 10:57:09 -0400
+Message-ID: <1382972215.17956.30.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH 16/16] wl1251: Add sysfs file address for setting
+ permanent mac address
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Dan Williams <dcbw@redhat.com>
+Cc: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Luciano Coelho <luca@coelho.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 41/64] net: mv643xx_eth: fix orphaned statistics timer crash
-Date: Mon, 28 Oct 2013 14:48:00 +0000
-Message-Id: <1382971703-17393-42-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
-References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
+        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
+        joni.lapilainen@gmail.com
+Date: Mon, 28 Oct 2013 15:56:55 +0100
+In-Reply-To: <1382971562.1542.6.camel@dcbw.foobar.com>
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
+	 <201310281449.58170@pali> <1382968522.17956.11.camel@jlt4.sipsolutions.net>
+	 <201310281500.24159@pali> <1382971562.1542.6.camel@dcbw.foobar.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.24 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, 2013-10-28 at 09:46 -0500, Dan Williams wrote:
 
-------------------
+> If the device doesn't actually *have* a permanent MAC address, then it
+> shouldn't be returning one via ethtool, and should return an error for
+> ETHTOOL_GPERMADDR.
 
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+There's currently no provision for that, but I agree it would be better
+to do so.
 
-commit f564412c935111c583b787bcc18157377b208e2e upstream.
-
-The periodic statistics timer gets started at port _probe() time, but
-is stopped on _stop() only. In a modular environment, this can cause
-the timer to access already deallocated memory, if the module is unloaded
-without starting the eth device. To fix this, we add the timer right
-before the port is started, instead of at _probe() time.
-
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/ethernet/marvell/mv643xx_eth.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
-index ae50dd6..02b03b5 100644
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -2366,6 +2366,7 @@ static int mv643xx_eth_open(struct net_device *dev)
- 		mp->int_mask |= INT_TX_END_0 << i;
- 	}
- 
-+	add_timer(&mp->mib_counters_timer);
- 	port_start(mp);
- 
- 	wrlp(mp, INT_MASK_EXT, INT_EXT_LINK_PHY | INT_EXT_TX);
-@@ -2913,7 +2914,6 @@ static int mv643xx_eth_probe(struct platform_device *pdev)
- 	mp->mib_counters_timer.data = (unsigned long)mp;
- 	mp->mib_counters_timer.function = mib_counters_timer_wrapper;
- 	mp->mib_counters_timer.expires = jiffies + 30 * HZ;
--	add_timer(&mp->mib_counters_timer);
- 
- 	spin_lock_init(&mp->mib_counters_lock);
- 
--- 
-1.8.3.2
+johannes
 
