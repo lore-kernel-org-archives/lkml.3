@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003Ab3J1QCP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 12:02:15 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51776 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756280Ab3J1QCL (ORCPT
+	id S1757088Ab3J1QEN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 12:04:13 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:60950 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756703Ab3J1QEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 12:02:11 -0400
-Date: Mon, 28 Oct 2013 09:00:15 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Sebastian Reichel <sre@ring0.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        alsa-devel@alsa-project.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Message-ID: <20131028160015.GA13643@sirena.org.uk>
-References: <1382909086-10493-1-git-send-email-sre@debian.org>
- <1382909086-10493-2-git-send-email-sre@debian.org>
+	Mon, 28 Oct 2013 12:04:11 -0400
+Message-ID: <526E8AF9.6070300@codeaurora.org>
+Date: Mon, 28 Oct 2013 09:04:09 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="T4sUOijqQbZv57TR"
-Content-Disposition: inline
-In-Reply-To: <1382909086-10493-2-git-send-email-sre@debian.org>
-X-Cookie: You fill a much-needed gap.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 66.78.236.243
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC 1/4] ASoC: omap: rx51: Use snd_soc_register_card
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: zhang.mingjun@linaro.org, minchan@kernel.org, m.szyprowski@samsung.com,
+        akpm@linux-foundation.org, mgorman@suse.de, haojian.zhuang@linaro.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+CC: Mingjun Zhang <troy.zhangmingjun@linaro.org>
+Subject: Re: [PATCH] mm: cma: free cma page to buddy instead of being cpu
+ hot  page
+References: <1382960569-6564-1-git-send-email-zhang.mingjun@linaro.org>
+In-Reply-To: <1382960569-6564-1-git-send-email-zhang.mingjun@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/28/2013 4:42 AM, zhang.mingjun@linaro.org wrote:
+> From: Mingjun Zhang <troy.zhangmingjun@linaro.org>
+>
+> free_contig_range frees cma pages one by one and MIGRATE_CMA pages will be
+> used as MIGRATE_MOVEABLE pages in the pcp list, it causes unnecessary
+> migration action when these pages reused by CMA.
+>
+> Signed-off-by: Mingjun Zhang <troy.zhangmingjun@linaro.org>
+> ---
+>   mm/page_alloc.c |    3 ++-
+>   1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 0ee638f..84b9d84 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1362,7 +1362,8 @@ void free_hot_cold_page(struct page *page, int cold)
+>   	 * excessively into the page allocator
+>   	 */
+>   	if (migratetype >= MIGRATE_PCPTYPES) {
+> -		if (unlikely(is_migrate_isolate(migratetype))) {
+> +		if (unlikely(is_migrate_isolate(migratetype))
+> +			|| is_migrate_cma(migratetype))
+>   			free_one_page(zone, page, 0, migratetype);
+>   			goto out;
+>   		}
+>
 
---T4sUOijqQbZv57TR
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Sun, Oct 27, 2013 at 10:24:43PM +0100, Sebastian Reichel wrote:
-> From: Pali Roh=E1r <pali.rohar@gmail.com>
->=20
-> This patch converts the rx51 ASoC module to use
-> snd_soc_register_card. It also adds module alias
-> to support driver autoloading.
+I submitted something very similar a while ago 
+http://marc.info/?l=linaro-mm-sig&m=137645764208287&w=2 . Has the 
+opinion on this patch changed?
 
-You should really use devm_snd_soc_register_card() here.
+Thanks,
+Laura
 
---T4sUOijqQbZv57TR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSbooGAAoJELSic+t+oim95JIP/iM6CcdgQoi38u29uqn9Wngk
-Ybk5NgxgSlgX5BEsPmh38fD2V4Vx+BrY6gPrMM0ibBCuWQGKDmsZRIvfdkbYxiXD
-tysn3aKwrR+cL3AFteb6K3QByYo8JigxZoubvN/mRO+6EOt/k+I8RcA5uV+IwVXB
-kkPKSibo6aBlnFj6kwqNaiEmhhVLfszIifgAuaibh9+MGjUkj304ZiID/0/Qww3n
-55dZkUnqG2+co+fRgIR+95wq/gQKjN4AwiP91bEt50NpdcjMcNcxBUzjjgXdzJ7Q
-a+gKjwlivR3SwsU3KRcrVDHnk4FmHXMZaNk9H/T7CNN5oKq4HTpCeNQcBYQD/5KV
-/vvxDCQpBuGy/uAS5+5HP4UzNVLJDDkxi10NxXZbp1mJt1WIp4juCxFiMybnpNwU
-wlpUFXoq9SKRvfDfvf/PcakO5CFkKSgbztkQxj+8dzbI1yRiKYQRvNDXZ/bbSD4+
-E36g/xJJIU4l4ASPWYFHDmKIquypCli10zphQuKGkGD2OKK9X1xta9E7SqN7XvB5
-zaDlkMndHss677LWiyQ+DzQIVmkL0e5OQrI/r/Vt8Qyf5Y/Es0NkZ25DLACPtfFu
-oDJrGyINpVhZKNpIw4IasoVpdufy3yysZoOwHvLWAN5YMwlofNRb7Ktld8NKpVxU
-V10ybJaRt9O2qlAb0+cV
-=S7Vd
------END PGP SIGNATURE-----
-
---T4sUOijqQbZv57TR--
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
