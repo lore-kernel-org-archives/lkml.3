@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284Ab3J1Ot0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 10:49:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51154 "EHLO
+	id S1756976Ab3J1Oti (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:49:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51183 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932247Ab3J1OtT (ORCPT
+	with ESMTP id S932281Ab3J1Ot0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:49:19 -0400
+	Mon, 28 Oct 2013 10:49:26 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Jonghwan Choi <jhbird.choi@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 32/64] powerpc: Restore registers on error exit from csum_partial_copy_generic()
-Date: Mon, 28 Oct 2013 14:47:51 +0000
-Message-Id: <1382971703-17393-33-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 36/64] [media] sh_vou: almost forever loop in sh_vou_try_fmt_vid_out()
+Date: Mon, 28 Oct 2013 14:47:55 +0000
+Message-Id: <1382971703-17393-37-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
 References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
@@ -29,163 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 8f21bd0090052e740944f9397e2be5ac7957ded7 upstream.
+commit 47c32ec9392a1fc7dec9d7cfde084e1432fcee82 upstream.
 
-The csum_partial_copy_generic() function saves the PowerPC non-volatile
-r14, r15, and r16 registers for the main checksum-and-copy loop.
-Unfortunately, it fails to restore them upon error exit from this loop,
-which results in silent corruption of these registers in the presumably
-rare event of an access exception within that loop.
+The "i < " part of the "i < ARRAY_SIZE()" condition was missing.
 
-This commit therefore restores these register on error exit from the loop.
-
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+[g.liakhovetski@gmx.de: remove unrelated superfluous braces]
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Jonghwan Choi <jhbird.choi@gmail.com>
 [ luis: backported to 3.5:
-  - following bwh's port to 3.2 kernel, register name macros use
-    lower-case 'r' ]
+  - file rename: drivers/media/platform/sh_vou.c ->
+    drivers/media/video/sh_vou.c ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/lib/checksum_64.S | 54 +++++++++++++++++++++++++++++++-----------
- 1 file changed, 40 insertions(+), 14 deletions(-)
+ drivers/media/video/sh_vou.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/lib/checksum_64.S b/arch/powerpc/lib/checksum_64.S
-index afa2eba..3cdbc64 100644
---- a/arch/powerpc/lib/checksum_64.S
-+++ b/arch/powerpc/lib/checksum_64.S
-@@ -229,19 +229,35 @@ _GLOBAL(csum_partial)
- 	blr
+diff --git a/drivers/media/video/sh_vou.c b/drivers/media/video/sh_vou.c
+index 8fd1874..1ca38b0 100644
+--- a/drivers/media/video/sh_vou.c
++++ b/drivers/media/video/sh_vou.c
+@@ -776,7 +776,7 @@ static int sh_vou_try_fmt_vid_out(struct file *file, void *priv,
+ 	v4l_bound_align_image(&pix->width, 0, VOU_MAX_IMAGE_WIDTH, 1,
+ 			      &pix->height, 0, VOU_MAX_IMAGE_HEIGHT, 1, 0);
  
+-	for (i = 0; ARRAY_SIZE(vou_fmt); i++)
++	for (i = 0; i < ARRAY_SIZE(vou_fmt); i++)
+ 		if (vou_fmt[i].pfmt == pix->pixelformat)
+ 			return 0;
  
--	.macro source
-+	.macro srcnr
- 100:
- 	.section __ex_table,"a"
- 	.align 3
--	.llong 100b,.Lsrc_error
-+	.llong 100b,.Lsrc_error_nr
- 	.previous
- 	.endm
- 
--	.macro dest
-+	.macro source
-+150:
-+	.section __ex_table,"a"
-+	.align 3
-+	.llong 150b,.Lsrc_error
-+	.previous
-+	.endm
-+
-+	.macro dstnr
- 200:
- 	.section __ex_table,"a"
- 	.align 3
--	.llong 200b,.Ldest_error
-+	.llong 200b,.Ldest_error_nr
-+	.previous
-+	.endm
-+
-+	.macro dest
-+250:
-+	.section __ex_table,"a"
-+	.align 3
-+	.llong 250b,.Ldest_error
- 	.previous
- 	.endm
- 
-@@ -277,11 +293,11 @@ _GLOBAL(csum_partial_copy_generic)
- 	mtctr	r6
- 
- 1:
--source;	lhz	r6,0(r3)		/* align to doubleword */
-+srcnr;	lhz	r6,0(r3)		/* align to doubleword */
- 	subi	r5,r5,2
- 	addi	r3,r3,2
- 	adde	r0,r0,r6
--dest;	sth	r6,0(r4)
-+dstnr;	sth	r6,0(r4)
- 	addi	r4,r4,2
- 	bdnz	1b
- 
-@@ -395,10 +411,10 @@ dest;	std	r16,56(r4)
- 
- 	mtctr	r6
- 3:
--source;	ld	r6,0(r3)
-+srcnr;	ld	r6,0(r3)
- 	addi	r3,r3,8
- 	adde	r0,r0,r6
--dest;	std	r6,0(r4)
-+dstnr;	std	r6,0(r4)
- 	addi	r4,r4,8
- 	bdnz	3b
- 
-@@ -408,10 +424,10 @@ dest;	std	r6,0(r4)
- 	srdi.	r6,r5,2
- 	beq	.Lcopy_tail_halfword
- 
--source;	lwz	r6,0(r3)
-+srcnr;	lwz	r6,0(r3)
- 	addi	r3,r3,4
- 	adde	r0,r0,r6
--dest;	stw	r6,0(r4)
-+dstnr;	stw	r6,0(r4)
- 	addi	r4,r4,4
- 	subi	r5,r5,4
- 
-@@ -419,10 +435,10 @@ dest;	stw	r6,0(r4)
- 	srdi.	r6,r5,1
- 	beq	.Lcopy_tail_byte
- 
--source;	lhz	r6,0(r3)
-+srcnr;	lhz	r6,0(r3)
- 	addi	r3,r3,2
- 	adde	r0,r0,r6
--dest;	sth	r6,0(r4)
-+dstnr;	sth	r6,0(r4)
- 	addi	r4,r4,2
- 	subi	r5,r5,2
- 
-@@ -430,10 +446,10 @@ dest;	sth	r6,0(r4)
- 	andi.	r6,r5,1
- 	beq	.Lcopy_finish
- 
--source;	lbz	r6,0(r3)
-+srcnr;	lbz	r6,0(r3)
- 	sldi	r9,r6,8			/* Pad the byte out to 16 bits */
- 	adde	r0,r0,r9
--dest;	stb	r6,0(r4)
-+dstnr;	stb	r6,0(r4)
- 
- .Lcopy_finish:
- 	addze	r0,r0			/* add in final carry */
-@@ -443,6 +459,11 @@ dest;	stb	r6,0(r4)
- 	blr
- 
- .Lsrc_error:
-+	ld	r14,STK_REG(r14)(r1)
-+	ld	r15,STK_REG(r15)(r1)
-+	ld	r16,STK_REG(r16)(r1)
-+	addi	r1,r1,STACKFRAMESIZE
-+.Lsrc_error_nr:
- 	cmpdi	0,r7,0
- 	beqlr
- 	li	r6,-EFAULT
-@@ -450,6 +471,11 @@ dest;	stb	r6,0(r4)
- 	blr
- 
- .Ldest_error:
-+	ld	r14,STK_REG(r14)(r1)
-+	ld	r15,STK_REG(r15)(r1)
-+	ld	r16,STK_REG(r16)(r1)
-+	addi	r1,r1,STACKFRAMESIZE
-+.Ldest_error_nr:
- 	cmpdi	0,r8,0
- 	beqlr
- 	li	r6,-EFAULT
 -- 
 1.8.3.2
 
