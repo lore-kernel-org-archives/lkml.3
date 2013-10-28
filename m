@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755784Ab3J1IrN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 04:47:13 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:58988 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755050Ab3J1IrL (ORCPT
+	id S1755814Ab3J1Is1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 04:48:27 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:37471 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab3J1Is0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 04:47:11 -0400
-Date: Mon, 28 Oct 2013 09:47:07 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] locking fix
-Message-ID: <20131028084707.GA2981@gmail.com>
-References: <20131026121902.GA24890@gmail.com>
- <CA+55aFwLwZ2SoqLdD9itnXrFJyS9szC+g4J01pLxHFgKYCvrog@mail.gmail.com>
- <526D62D8.8050001@canonical.com>
- <CA+55aFz3MLHcAFqF=WBwmHGQ+8+uU+Hd7avXt=P9L-ohv08bnw@mail.gmail.com>
- <526D6B6D.2000605@canonical.com>
- <CA+55aFz4Fd-dibRL0+VKxz3PhppasvqCU7E6ToW2AWfnsenP_w@mail.gmail.com>
- <526D6FF9.9020003@canonical.com>
- <CA+55aFyud32TExCVaL-k5dCPqrEBD9AZd-st6ooziwZCy9HZDg@mail.gmail.com>
+	Mon, 28 Oct 2013 04:48:26 -0400
+Date: Mon, 28 Oct 2013 01:48:21 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>, linux-kernel@vger.kernel.org
+Subject: Re: blk-mq flush fix
+Message-ID: <20131028084821.GA31270@infradead.org>
+References: <20131026114612.GA8576@infradead.org>
+ <20131026153124.GA22227@infradead.org>
+ <20131027222914.GG22549@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFyud32TExCVaL-k5dCPqrEBD9AZd-st6ooziwZCy9HZDg@mail.gmail.com>
+In-Reply-To: <20131027222914.GG22549@kernel.dk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Sun, Oct 27, 2013 at 12:56 PM, Maarten Lankhorst
-> <maarten.lankhorst@canonical.com> wrote:
-> >
-> > And this is why ww_ctx == NULL is now passed as an inline 
-> > argument. :)
+On Sun, Oct 27, 2013 at 10:29:25PM +0000, Jens Axboe wrote:
+> On Sat, Oct 26 2013, Christoph Hellwig wrote:
+> > I think this variant of the patch from Alexander should fix the issue
+> > in a minimally invasive way.  Longer term I'd prefer to use q->flush_rq
+> > like in the non-mq case by copying over the context and tag information.
 > 
-> Well, more than that - the "optimization" has been done at the 
-> source code level, so that the behavior is no longer a matter 
-> about how well the compiler optimizes it any more.
-> 
-> I'm not complaining about the fix. I'm complaining about how the 
-> fix was claimed to be due to a compiler bug. The "documentation" 
-> for the fix (ie the commit message) was actively misleading.
+> This one is pretty simple, we could definitely use it as a band aid. I
+> too would greatly prefer using the static ->flush_rq instead. Just have
+> it marked to bypass most of the free logic.
 
-Agreed, there was quite a bit of back and forth and I genuinely got 
-confused and thought it's purely about a compiler bug (hence the 
-misleading pull request) - will watch out for that pattern better 
-next time around.
+We already bypass the free logical by setting and end_io callback for
+a while, similar to what the old code does.  Maybe it's not all that
+hard to prealloc the request, let me give a sping.  Using the static
+allocated one will be hard due to the driver-specific extra data,
+though.
 
-Thanks,
+> I'll add this one.
 
-	Ingo
+Gimme another day or so to figure this out.
