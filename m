@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380Ab3J1SU6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 14:20:58 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:34503 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756661Ab3J1SU5 (ORCPT
+	id S1757402Ab3J1SXT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 14:23:19 -0400
+Received: from alpha.arachsys.com ([91.203.57.7]:59141 "EHLO
+	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756672Ab3J1SXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 14:20:57 -0400
-Message-ID: <526EAB05.6090800@gmail.com>
-Date: Mon, 28 Oct 2013 12:20:53 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Mon, 28 Oct 2013 14:23:18 -0400
+Date: Mon, 28 Oct 2013 18:23:09 +0000
+From: Richard Davies <richard@arachsys.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: Unnecessary mass OOM kills on Linux 3.11 virtualization host
+Message-ID: <20131028182309.GA21822@alpha.arachsys.com>
+References: <20131024224326.GA19654@alpha.arachsys.com>
+ <20131025103946.GA30649@alpha.arachsys.com>
+ <20131028082825.GA30504@alpha.arachsys.com>
+ <526EA947.7060608@intel.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andi Kleen <andi@firstfloor.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 1/4] perf tools: Split -g and --call-graph for record
- command
-References: <20131026120336.GA24439@gmail.com> <1382797536-32303-1-git-send-email-jolsa@redhat.com> <1382797536-32303-2-git-send-email-jolsa@redhat.com> <526D317E.80408@gmail.com> <20131028174613.GA3811@infradead.org>
-In-Reply-To: <20131028174613.GA3811@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <526EA947.7060608@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/13 11:46 AM, Arnaldo Carvalho de Melo wrote:
-> Added this:
+Dave Hansen wrote:
+> Richard Davies wrote:
+> > I further attach some other types of memory manager errors found in the
+> > kernel logs around the same time. There are several occurrences of each, but
+> > I have only copied one here for brevity:
+> >
+> > 19:18:27 kernel: BUG: Bad page map in process qemu-system-x86  pte:00000608 pmd:1d57fd067
 >
-> --call-graph::
->          Setup and enable call-graph (stack chain/backtrace) recording,
->          implies -g.
->
->          Allows specifying "fp" (frame pointer) or "dwarf"
->          (DWARF's CFI - Call Frame Information) as the method to collect
->          the information used to show the call graphs.
->
->          In some systems, where binaries are build wit gcc
+> FWIW, I took a quick look through your OOM report and didn't see any
+> obvious causes for it.  But, INMHO, you should probably ignore the OOM
+> issue until you've fixed these "Bad page map" problems.   Those are a
+> sign of a much deeper problem.
 
-s/wit/with/
+Thanks! What investigation should I do for these? It is on stock 3.11.3.
 
-David
+Richard.
