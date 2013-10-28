@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab3J1Pxh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 11:53:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53367 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756004Ab3J1Pxf (ORCPT
+	id S1756938Ab3J1Py3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 11:54:29 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:62027 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756004Ab3J1Py1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 11:53:35 -0400
-Date: Mon, 28 Oct 2013 16:53:16 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Cc: Mike Galbraith <bitbucket@online.de>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@kernel.org>, Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 3/3] sched: Aggressive balance in domains whose groups
- share package resources
-Message-ID: <20131028155316.GQ19466@laptop.lan>
-References: <20131021114002.13291.31478.stgit@drishya>
- <20131021114502.13291.60794.stgit@drishya>
+	Mon, 28 Oct 2013 11:54:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131021114502.13291.60794.stgit@drishya>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131028121747.GL19466@laptop.lan>
+References: <1382533085-7166-1-git-send-email-eranian@google.com>
+	<1382533085-7166-4-git-send-email-eranian@google.com>
+	<20131025111422.GC1219@krava.redhat.com>
+	<CABPqkBR0gEz7cauev0hk=oofO1m9RP=wP3NK3j0y7EiNE8j3tg@mail.gmail.com>
+	<CABPqkBShxTc3wBkwWej6gaWJK3GmdtV71hNdozabnbwpesXx_A@mail.gmail.com>
+	<20131028121747.GL19466@laptop.lan>
+Date: Mon, 28 Oct 2013 16:54:26 +0100
+Message-ID: <CABPqkBTtMyxA4-n0ExQ5Q0HjwW94h_qiON--92n2SVyHZ4E2fw@mail.gmail.com>
+Subject: Re: [PATCH v3 3/4] perf,x86: add Intel RAPL PMU support
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Borislav Petkov <bp@alien8.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 21, 2013 at 05:15:02PM +0530, Vaidyanathan Srinivasan wrote:
-> From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-> 
-> The current logic in load balance is such that after picking the
-> busiest group, the load is attempted to be moved from the busiest cpu
-> in that group to the dst_cpu. If the load cannot be moved from the
-> busiest cpu to dst_cpu due to either tsk_cpus_allowed mask or cache
-> hot tasks, then the dst_cpu is changed to be another idle cpu within
-> the dst->grpmask. If even then, the load cannot be moved from the
-> busiest cpu, then the source group is changed. The next busiest group
-> is found and the above steps are repeated.
-> 
-> However if the cpus in the group share package resources, then when
-> a load movement from the busiest cpu in this group fails as above,
-> instead of finding the next busiest group to move load from, find the
-> next busiest cpu *within the same group* from which to move load away.
-> By doing so, a conscious effort is made during load balancing to keep
-> just one cpu busy as much as possible within domains that have
-> SHARED_PKG_RESOURCES flag set unless under scenarios of high load.
-> Having multiple cpus busy within a domain which share package resource
-> could lead to a performance hit.
-> 
-> A similar scenario arises in active load balancing as well. When the
-> current task on the busiest cpu cannot be moved away due to task
-> pinning, currently no more attempts at load balancing is made.
+Peter,
 
-> This
-> patch checks if the balancing is being done on a group whose cpus
-> share package resources. If so, then check if the load balancing can
-> be done for other cpus in the same group.
+On Mon, Oct 28, 2013 at 1:17 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, Oct 28, 2013 at 11:33:50AM +0100, Stephane Eranian wrote:
+>> If we have that, then it may not be necessary anymore
+>> to express the raw count in the 1/2^32 J unit like we
+>> are currently doing. This loses a bit of precision. We
+>> could as well expose the actual raw count and export
+>> the actual unit via sysfs. For instance, on SNB/IVB the
+>> unit is 1/2^16, but on Haswell it is 1/2^14.
+>
+> 2^-32 can losslessly express both 2^-16 and 2^-14.
+>
+> Notably: 2^18/2^32 = 2^(18-32) = 2^-14.
+>
+> So no, 2^-32 does not loose precision.
+>
+You are correct. No bits are lost.
 
-So I absolutely hate this patch... Also I'm not convinced I actually
-understand the explanation above.
+> The only side effect of always using 2^-32 is that we can only maximally
+> represent 2^32 (from 64-32), whereas when using 2^-14 we could maximally
+> represent 2^50.
+>
+> That said; 2^32 Joule ~ 4.2 GJ which is a rather large quantity of
+> energy; one I would hope is out there when measuring package energy
+> costs over any reasonable amount of time.
+>
+> So the only reason to switch away from using the 32.32 fixed point would
+> be if someone can make a reasonable argument for why 4.2 GJ is not
+> sufficient and they need 1 PJ (yes, peta-joule, as in we need a private
+> nuclear reactor to power this CPU).
 
-Furthermore; there is nothing special about spreading tasks for
-SHARED_PKG_RESOURCES and special casing that one case is just wrong.
+I think we are fine with what we have. Simple, no precision lost, constant
+user-visible scaling factor easy to export as a string to user tools. Comparison
+of raw count possible directly.
 
-If anything it should be keyed off of SD_PREFER_SIBLING and or
-cpu_power.
+I will post v4 very soon.
+Thanks.
