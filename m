@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463Ab3J1PJd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 11:09:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51017 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756875Ab3J1Osi (ORCPT
+	id S932586Ab3J1PJl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 11:09:41 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:33492 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932470Ab3J1PJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:48:38 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Chris Metcalf <cmetcalf@tilera.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 05/64] tile: use a more conservative __my_cpu_offset in CONFIG_PREEMPT
-Date: Mon, 28 Oct 2013 14:47:24 +0000
-Message-Id: <1382971703-17393-6-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
-References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Mon, 28 Oct 2013 11:09:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMpEsFHO5yrwxK9q=hQtOxwC=0_p4BznBGjvomPgFZogwXABRA@mail.gmail.com>
+References: <20131019110539.GA25167@gmail.com>
+	<cc16130b4e23207971139eff313a4ec71f51c187.1382962788.git.rashika.kheria@gmail.com>
+	<CAL1ERfPD7zhmuO6ZuwUcJzVshJ3vqQKAman_x27rTPaur4eEAw@mail.gmail.com>
+	<CAMpEsFHO5yrwxK9q=hQtOxwC=0_p4BznBGjvomPgFZogwXABRA@mail.gmail.com>
+Date: Mon, 28 Oct 2013 23:09:36 +0800
+Message-ID: <CAL1ERfOEurbxjy1r8fqGJBXT2Go+7BRM3u6Cg4XfCSdtjFzTYQ@mail.gmail.com>
+Subject: Re: [PATCH v6 1/3] Staging: zram: Fix access of NULL pointer
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: opw-kernel <opw-kernel@googlegroups.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchand@redhat.com>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.24 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Oct 28, 2013 at 10:33 PM, Rashika Kheria
+<rashika.kheria@gmail.com> wrote:
+>
+>
+>
+> On Mon, Oct 28, 2013 at 7:15 PM, Weijie Yang <weijie.yang.kh@gmail.com>
+> wrote:
+>>
+>> On Mon, Oct 28, 2013 at 8:21 PM, Rashika Kheria
+>> <rashika.kheria@gmail.com> wrote:
+>> > This patch fixes the bug in reset_store caused by accessing NULL
+>> > pointer.
+>> > Hence, It introduces a check for bdev. It also removes unnecessary check
+>> > of bdev for fsync_bdev().
+>> >
+>> > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+>> > ---
+>> >
+>> > This revision fixes the following issues of the previous revision-
+>> > Seperating patches into Bug fix and Smatch fix
+>> >
+>> >  drivers/staging/zram/zram_drv.c |    6 ++++--
+>> >  1 file changed, 4 insertions(+), 2 deletions(-)
+>> >
+>> > diff --git a/drivers/staging/zram/zram_drv.c
+>> > b/drivers/staging/zram/zram_drv.c
+>> > index 2c4ed52..d640a8f 100644
+>> > --- a/drivers/staging/zram/zram_drv.c
+>> > +++ b/drivers/staging/zram/zram_drv.c
+>> > @@ -648,6 +648,9 @@ static ssize_t reset_store(struct device *dev,
+>> >         zram = dev_to_zram(dev);
+>> >         bdev = bdget_disk(zram->disk, 0);
+>> >
+>> > +       if (!bdev)
+>> > +               return -EBUSY;
+>> > +
+>>
+>> I am not sure how does it happen. Would you please make it clear to me?
+>>
+>
+> Hi Weijie,
+>
+> The bdev gets its value from bdget_disk() which could fail when memory is
+> less available and hence bdev can be NULL.
+>
+> If this check is not introduced then we might reference NULL pointer in the
+> later part of the code.
 
-------------------
+I see. Thanks!
 
-From: Chris Metcalf <cmetcalf@tilera.com>
-
-commit f862eefec0b68e099a9fa58d3761ffb10bad97e1 upstream.
-
-It turns out the kernel relies on barrier() to force a reload of the
-percpu offset value.  Since we can't easily modify the definition of
-barrier() to include "tp" as an output register, we instead provide a
-definition of __my_cpu_offset as extended assembly that includes a fake
-stack read to hazard against barrier(), forcing gcc to know that it
-must reread "tp" and recompute anything based on "tp" after a barrier.
-
-This fixes observed hangs in the slub allocator when we are looping
-on a percpu cmpxchg_double.
-
-A similar fix for ARMv7 was made in June in change 509eb76ebf97.
-
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/tile/include/asm/percpu.h | 34 +++++++++++++++++++++++++++++++---
- 1 file changed, 31 insertions(+), 3 deletions(-)
-
-diff --git a/arch/tile/include/asm/percpu.h b/arch/tile/include/asm/percpu.h
-index 63294f5..4f7ae39 100644
---- a/arch/tile/include/asm/percpu.h
-+++ b/arch/tile/include/asm/percpu.h
-@@ -15,9 +15,37 @@
- #ifndef _ASM_TILE_PERCPU_H
- #define _ASM_TILE_PERCPU_H
- 
--register unsigned long __my_cpu_offset __asm__("tp");
--#define __my_cpu_offset __my_cpu_offset
--#define set_my_cpu_offset(tp) (__my_cpu_offset = (tp))
-+register unsigned long my_cpu_offset_reg asm("tp");
-+
-+#ifdef CONFIG_PREEMPT
-+/*
-+ * For full preemption, we can't just use the register variable
-+ * directly, since we need barrier() to hazard against it, causing the
-+ * compiler to reload anything computed from a previous "tp" value.
-+ * But we also don't want to use volatile asm, since we'd like the
-+ * compiler to be able to cache the value across multiple percpu reads.
-+ * So we use a fake stack read as a hazard against barrier().
-+ * The 'U' constraint is like 'm' but disallows postincrement.
-+ */
-+static inline unsigned long __my_cpu_offset(void)
-+{
-+	unsigned long tp;
-+	register unsigned long *sp asm("sp");
-+	asm("move %0, tp" : "=r" (tp) : "U" (*sp));
-+	return tp;
-+}
-+#define __my_cpu_offset __my_cpu_offset()
-+#else
-+/*
-+ * We don't need to hazard against barrier() since "tp" doesn't ever
-+ * change with PREEMPT_NONE, and with PREEMPT_VOLUNTARY it only
-+ * changes at function call points, at which we are already re-reading
-+ * the value of "tp" due to "my_cpu_offset_reg" being a global variable.
-+ */
-+#define __my_cpu_offset my_cpu_offset_reg
-+#endif
-+
-+#define set_my_cpu_offset(tp) (my_cpu_offset_reg = (tp))
- 
- #include <asm-generic/percpu.h>
- 
--- 
-1.8.3.2
-
+> I hope I am clear.
+>
+> Thanks,
+>
+> --
+> Rashika Kheria
+> B.Tech CSE
+> IIIT Hyderabad
