@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab3J1LUZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 07:20:25 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42556 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755563Ab3J1LUX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 07:20:23 -0400
-Date: Mon, 28 Oct 2013 22:20:07 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Chris Ball <cjb@laptop.org>
-Subject: linux-next: manual merge of the driver-core tree with the mmc tree
-Message-Id: <20131028222007.30619a9f7d18f5acd9b1ae60@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__28_Oct_2013_22_20_07_+1100_0MRmy.RDzThOFZz0"
+	id S1756298Ab3J1LUu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 07:20:50 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56442 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753542Ab3J1LUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 07:20:48 -0400
+Date: Mon, 28 Oct 2013 12:20:45 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.fedoraproject.org, kexec@lists.infradead.org
+Subject: Re: [patch 3/6] Cleanup efi_enter_virtual_mode function
+Message-ID: <20131028112045.GH4314@pd.tnic>
+References: <20131027034713.481920209@dhcp-16-126.nay.redhat.com>
+ <20131027035923.081819853@dhcp-16-126.nay.redhat.com>
+ <20131028093206.GB4314@pd.tnic>
+ <20131028094049.GC25527@dhcp-16-126.nay.redhat.com>
+ <20131028095117.GD25527@dhcp-16-126.nay.redhat.com>
+ <20131028100402.GC4314@pd.tnic>
+ <20131028101011.GF25527@dhcp-16-126.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131028101011.GF25527@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__28_Oct_2013_22_20_07_+1100_0MRmy.RDzThOFZz0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Oct 28, 2013 at 06:10:11PM +0800, Dave Young wrote:
+> Sorry, I have not any public git account. Attached the patch I applied
+> with git
 
-Hi Greg,
+Still doesn't work:
 
-Today's linux-next merge of the driver-core tree got a conflict in
-drivers/mmc/host/mvsdio.c between commit 50596285e0be ("mmc: mvsdio:
-Remove redundant suspend and resume callbacks") from the mmc tree and
-commit 1867adee6ed7 ("mmc: mvsdio: fix deferred probe from __init") from
-the driver-core tree.
+$ patch -p1 --dry-run -i /tmp/02-efi-enter-virtual-mode-cleanup-1.patch.new 
+checking file arch/x86/platform/efi/efi.c
+Hunk #1 succeeded at 788 (offset -1 lines).
+Hunk #2 succeeded at 821 (offset -1 lines).
+Hunk #3 FAILED at 853.
+1 out of 3 hunks FAILED
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+I'm using Matt's next branch + my efi runtime branch. What are you
+basing your stuff ontop?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+-- 
+Regards/Gruss,
+    Boris.
 
-diff --cc drivers/mmc/host/mvsdio.c
-index 22ba4d33e95b,deecee08c288..000000000000
---- a/drivers/mmc/host/mvsdio.c
-+++ b/drivers/mmc/host/mvsdio.c
-@@@ -845,7 -872,10 +845,8 @@@ static const struct of_device_id mvsdio
-  MODULE_DEVICE_TABLE(of, mvsdio_dt_ids);
- =20
-  static struct platform_driver mvsd_driver =3D {
-- 	.remove		=3D __exit_p(mvsd_remove),
-+ 	.probe		=3D mvsd_probe,
-+ 	.remove		=3D mvsd_remove,
- -	.suspend	=3D mvsd_suspend,
- -	.resume		=3D mvsd_resume,
-  	.driver		=3D {
-  		.name	=3D DRIVER_NAME,
-  		.of_match_table =3D mvsdio_dt_ids,
-
---Signature=_Mon__28_Oct_2013_22_20_07_+1100_0MRmy.RDzThOFZz0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSbkhsAAoJEMDTa8Ir7ZwVEKMP/2f7Mz0GCWpalD0R8CAwbT0y
-ROms8T3aXpzWAYj5i150KXa93gYphFg2/pDRyEmxPyX9WleS/pCkiBmhamNLyVTd
-PoQoaF+6OPY5qKyGoadJvsUJZCA+KLW70HtdnpvK9SBZ3yZTb+JflLys2bMR3Bh7
-uTxjY/iDH6mj1jg3xneDgKtzU7kT7c/yyRoG/BuxAmrSXXQVwqcqW0Qt70ObmOUE
-pIDYV3PYAWp6dR7DRvQDRboRpupLRst6F1HrIy/jtpR7TahlsC6wGZqZltYtRIL/
-Ex6ECBOuqOHulpK8srl9Wyn0xAZewKHis+Si7QA03UJnZqGM5BNEWpr/QlcSIR2q
-5Z6iTqssYKT1D9cS7QTr55y++vMEmDqhDPrfQ9cjE7o/OjnsS9jxkWhd5x2yM9yt
-JLPv3F6e4ApKYH+NsC1nQ3kG2qV4P0LyfRDO/2MnuCfQo0YN/8O0P2w7gGWvPFiM
-0FA3NLDTN6vLwiRmDw78FySjDRZul5dPYKtGzNDnGM7idFEwsRnaCz81rPbNsarV
-HHwmAlCdt7QmH3IKkoNTTT2bWEk2mXg3kR922/7uWV8R0VXEMV0S2VYfiobP8h+7
-o0emFj6oLnqob6RxUOW5bI5jZk91C5cgObvUjP4C1qTjBO0kUrIXM5syqahIkd49
-btAr2D86RpqQkQijte07
-=fQ5p
------END PGP SIGNATURE-----
-
---Signature=_Mon__28_Oct_2013_22_20_07_+1100_0MRmy.RDzThOFZz0--
+Sent from a fat crate under my desk. Formatting is fine.
+--
