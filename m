@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756433Ab3J1NKX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 09:10:23 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:62367 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755037Ab3J1NKV convert rfc822-to-8bit (ORCPT
+	id S1756497Ab3J1NQE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 09:16:04 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50308 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756127Ab3J1NQC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 09:10:21 -0400
+	Mon, 28 Oct 2013 09:16:02 -0400
+Date: Mon, 28 Oct 2013 14:15:56 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: RFC: paravirtualizing perf_clock
+Message-ID: <20131028131556.GN19466@laptop.lan>
+References: <526DBD7F.1010807@gmail.com>
 MIME-Version: 1.0
-Reply-To: martin-eric.racine@iki.fi
-In-Reply-To: <CACiveRviYfpfo=hzJsLPZ8TWcxjzvDOJkJH7SAWcC8B6GMSHDQ@mail.gmail.com>
-References: <CACiveRuQNOw5Xww-ivQu8kHdBcMcmcZKxy-68uGkN2paM=Db_A@mail.gmail.com>
-	<CACiveRviYfpfo=hzJsLPZ8TWcxjzvDOJkJH7SAWcC8B6GMSHDQ@mail.gmail.com>
-Date: Mon, 28 Oct 2013 15:10:19 +0200
-X-Google-Sender-Auth: l7P6fAG2-7JJ55TUj-JfK1DXX6Q
-Message-ID: <CAPZXPQc-F=+CHLTt-zsXEnvyCxrOCvGxA68+OBZAy=SujLzivg@mail.gmail.com>
-Subject: Re: Gspca and kernel 3.x ?
-From: =?UTF-8?Q?Martin=2D=C3=89ric_Racine?= <martin-eric.racine@iki.fi>
-To: Karim <gouchi@gmail.com>
-Cc: Jonathan Nieder <jrnieder@gmail.com>,
-        =?UTF-8?Q?Jean=2DFran=C3=A7ois_Moine?= <moinejf@free.fr>,
-        677533@bugs.debian.org, linux-media@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <526DBD7F.1010807@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/28 Karim <gouchi@gmail.com>:
-> It seems we can request datasheet of VC0321, maybe it can help ?
->
-> http://www.vimicro.com/english/product/d_vc0321_n.htm
+On Sun, Oct 27, 2013 at 07:27:27PM -0600, David Ahern wrote:
+> Often when debugging performance problems in a virtualized environment you
+> need to correlate what is happening in the guest with what is happening in
+> the host. To correlate events you need a common time basis (or the ability
+> to directly correlate the two).
+> 
+> The attached patch paravirtualizes perf_clock, pulling the timestamps in VMs
+> from the host using an MSR read if the option is available (exposed via KVM
+> feature flag). I realize this is not the correct end code but it illustrates
+> what I would like to see -- host and guests using the same perf_clock so
+> timestamps directly correlate.
+> 
+> Any suggestions on how to do this and without impacting performance. I
+> noticed the MSR path seems to take about twice as long as the current
+> implementation (which I believe results in rdtsc in the VM for x86 with
+> stable TSC).
 
-Karim,
+So assuming all the TSCs are in fact stable; you could implement this by
+syncing up the guest TSC to the host TSC on guest boot. I don't think
+anything _should_ rely on the absolute TSC value.
 
-Thanks for following up on this bug report.
-
-It could be a good idea to reply directly to the bug report, rather
-than e-mailing me and Jonathan separately. This way, more people can
-participate in resolving this issue as a group effort.
-
-Cheers!
-Martin-Éric
+Of course you then also need to make sure the host and guest tsc
+multipliers (cyc2ns) are identical, you can play games with
+cyc2ns_offset if you're brave.
