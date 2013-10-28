@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824Ab3J1PI4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 11:08:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51023 "EHLO
+	id S932463Ab3J1PJd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 11:09:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51017 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756882Ab3J1Osk (ORCPT
+	with ESMTP id S1756875Ab3J1Osi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:48:40 -0400
+	Mon, 28 Oct 2013 10:48:38 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: fzu@wemgehoertderstaat.de, Daniel Mack <zonque@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>,
+Cc: Chris Metcalf <cmetcalf@tilera.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 06/64] ALSA: snd-usb-usx2y: remove bogus frame checks
-Date: Mon, 28 Oct 2013 14:47:25 +0000
-Message-Id: <1382971703-17393-7-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 05/64] tile: use a more conservative __my_cpu_offset in CONFIG_PREEMPT
+Date: Mon, 28 Oct 2013 14:47:24 +0000
+Message-Id: <1382971703-17393-6-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
 References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
@@ -28,88 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-commit a9d14bc0b188a822e42787d01e56c06fe9750162 upstream.
+commit f862eefec0b68e099a9fa58d3761ffb10bad97e1 upstream.
 
-The frame check in i_usX2Y_urb_complete() and
-i_usX2Y_usbpcm_urb_complete() is bogus and produces false positives as
-described in this LAU thread:
+It turns out the kernel relies on barrier() to force a reload of the
+percpu offset value.  Since we can't easily modify the definition of
+barrier() to include "tp" as an output register, we instead provide a
+definition of __my_cpu_offset as extended assembly that includes a fake
+stack read to hazard against barrier(), forcing gcc to know that it
+must reread "tp" and recompute anything based on "tp" after a barrier.
 
-  http://linuxaudio.org/mailarchive/lau/2013/5/20/200177
+This fixes observed hangs in the slub allocator when we are looping
+on a percpu cmpxchg_double.
 
-This patch removes the check code entirely.
+A similar fix for ARMv7 was made in June in change 509eb76ebf97.
 
-Cc: fzu@wemgehoertderstaat.de
-Reported-by: Dr Nicholas J Bailey <nicholas.bailey@glasgow.ac.uk>
-Suggested-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/usb/usx2y/usbusx2yaudio.c | 22 +++-------------------
- sound/usb/usx2y/usx2yhwdeppcm.c |  7 +------
- 2 files changed, 4 insertions(+), 25 deletions(-)
+ arch/tile/include/asm/percpu.h | 34 +++++++++++++++++++++++++++++++---
+ 1 file changed, 31 insertions(+), 3 deletions(-)
 
-diff --git a/sound/usb/usx2y/usbusx2yaudio.c b/sound/usb/usx2y/usbusx2yaudio.c
-index 43d337d..bdc4ddb 100644
---- a/sound/usb/usx2y/usbusx2yaudio.c
-+++ b/sound/usb/usx2y/usbusx2yaudio.c
-@@ -299,19 +299,6 @@ static void usX2Y_error_urb_status(struct usX2Ydev *usX2Y,
- 	usX2Y_clients_stop(usX2Y);
- }
+diff --git a/arch/tile/include/asm/percpu.h b/arch/tile/include/asm/percpu.h
+index 63294f5..4f7ae39 100644
+--- a/arch/tile/include/asm/percpu.h
++++ b/arch/tile/include/asm/percpu.h
+@@ -15,9 +15,37 @@
+ #ifndef _ASM_TILE_PERCPU_H
+ #define _ASM_TILE_PERCPU_H
  
--static void usX2Y_error_sequence(struct usX2Ydev *usX2Y,
--				 struct snd_usX2Y_substream *subs, struct urb *urb)
--{
--	snd_printk(KERN_ERR
--"Sequence Error!(hcd_frame=%i ep=%i%s;wait=%i,frame=%i).\n"
--"Most probably some urb of usb-frame %i is still missing.\n"
--"Cause could be too long delays in usb-hcd interrupt handling.\n",
--		   usb_get_current_frame_number(usX2Y->dev),
--		   subs->endpoint, usb_pipein(urb->pipe) ? "in" : "out",
--		   usX2Y->wait_iso_frame, urb->start_frame, usX2Y->wait_iso_frame);
--	usX2Y_clients_stop(usX2Y);
--}
--
- static void i_usX2Y_urb_complete(struct urb *urb)
- {
- 	struct snd_usX2Y_substream *subs = urb->context;
-@@ -328,12 +315,9 @@ static void i_usX2Y_urb_complete(struct urb *urb)
- 		usX2Y_error_urb_status(usX2Y, subs, urb);
- 		return;
- 	}
--	if (likely((urb->start_frame & 0xFFFF) == (usX2Y->wait_iso_frame & 0xFFFF)))
--		subs->completed_urb = urb;
--	else {
--		usX2Y_error_sequence(usX2Y, subs, urb);
--		return;
--	}
+-register unsigned long __my_cpu_offset __asm__("tp");
+-#define __my_cpu_offset __my_cpu_offset
+-#define set_my_cpu_offset(tp) (__my_cpu_offset = (tp))
++register unsigned long my_cpu_offset_reg asm("tp");
 +
-+	subs->completed_urb = urb;
++#ifdef CONFIG_PREEMPT
++/*
++ * For full preemption, we can't just use the register variable
++ * directly, since we need barrier() to hazard against it, causing the
++ * compiler to reload anything computed from a previous "tp" value.
++ * But we also don't want to use volatile asm, since we'd like the
++ * compiler to be able to cache the value across multiple percpu reads.
++ * So we use a fake stack read as a hazard against barrier().
++ * The 'U' constraint is like 'm' but disallows postincrement.
++ */
++static inline unsigned long __my_cpu_offset(void)
++{
++	unsigned long tp;
++	register unsigned long *sp asm("sp");
++	asm("move %0, tp" : "=r" (tp) : "U" (*sp));
++	return tp;
++}
++#define __my_cpu_offset __my_cpu_offset()
++#else
++/*
++ * We don't need to hazard against barrier() since "tp" doesn't ever
++ * change with PREEMPT_NONE, and with PREEMPT_VOLUNTARY it only
++ * changes at function call points, at which we are already re-reading
++ * the value of "tp" due to "my_cpu_offset_reg" being a global variable.
++ */
++#define __my_cpu_offset my_cpu_offset_reg
++#endif
 +
- 	{
- 		struct snd_usX2Y_substream *capsubs = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE],
- 			*playbacksubs = usX2Y->subs[SNDRV_PCM_STREAM_PLAYBACK];
-diff --git a/sound/usb/usx2y/usx2yhwdeppcm.c b/sound/usb/usx2y/usx2yhwdeppcm.c
-index 8e40b6e..1da1eca 100644
---- a/sound/usb/usx2y/usx2yhwdeppcm.c
-+++ b/sound/usb/usx2y/usx2yhwdeppcm.c
-@@ -244,13 +244,8 @@ static void i_usX2Y_usbpcm_urb_complete(struct urb *urb)
- 		usX2Y_error_urb_status(usX2Y, subs, urb);
- 		return;
- 	}
--	if (likely((urb->start_frame & 0xFFFF) == (usX2Y->wait_iso_frame & 0xFFFF)))
--		subs->completed_urb = urb;
--	else {
--		usX2Y_error_sequence(usX2Y, subs, urb);
--		return;
--	}
++#define set_my_cpu_offset(tp) (my_cpu_offset_reg = (tp))
  
-+	subs->completed_urb = urb;
- 	capsubs = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE];
- 	capsubs2 = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE + 2];
- 	playbacksubs = usX2Y->subs[SNDRV_PCM_STREAM_PLAYBACK];
+ #include <asm-generic/percpu.h>
+ 
 -- 
 1.8.3.2
 
