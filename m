@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab3J1BwZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 21:52:25 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:63482 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755055Ab3J1BwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 21:52:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=A92eJCOmHUw0G9Ce2iygCjjtnC+DNLPJ
-	uowes5iH5v7Xnp7uSTfujQ+BnHvtnevOrAERysNCFUGIe2urj2qwGw+9YnTqestk
-	e8Utm2GZjDZTs8yWNJFEKcGUtZIo0mSJPCW9ltyWkvvR0p4x5KsvtUMfGdX41fXQ
-	c02K8GE7E/0=
-From: Junio C Hamano <gitster@pobox.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: git@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg KH <greg@kroah.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        ksummit-attendees@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] commit: Add -f, --fixes <commit> option to add Fixes: line
-References: <20131024122255.GI9378@mwanda> <20131024122512.GB9534@mwanda>
-	<20131026181709.GB10488@kroah.com> <20131027013402.GA7146@leaf>
-Date: Sun, 27 Oct 2013 18:52:18 -0700
-In-Reply-To: <20131027013402.GA7146@leaf> (Josh Triplett's message of "Sun, 27
-	Oct 2013 01:34:02 +0000")
-Message-ID: <xmqqa9hui2lp.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1755361Ab3J1CDC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 22:03:02 -0400
+Received: from trent.utfs.org ([94.185.90.103]:42770 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754546Ab3J1CDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 22:03:00 -0400
+Date: Sun, 27 Oct 2013 19:02:49 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: mmarek@suse.cz, yann.morin.1998@free.fr, akpm@linux-foundation.org,
+        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+Subject: Re: [PATCH] scripts/kconfig/menu.c: warning: jump may be used
+ uninitialized in this function
+In-Reply-To: <alpine.DEB.2.11.1310271822540.31521@trent.utfs.org>
+Message-ID: <alpine.DEB.2.11.1310271859320.31521@trent.utfs.org>
+References: <alpine.DEB.2.11.1310271822540.31521@trent.utfs.org>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 95B4CA4E-3F73-11E3-98EB-8F264F2CC097-77302942!b-pb-sasl-quonix.pobox.com
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are unbound number of kinds of trailers people would want to
-add, depending on their projects' needs.  We should not have to add
-a specific support for a tailer like this one, before thinking
-through to see if we can add generic support for adding arbitrary
-trailers to avoid code and interface bloat.
+On Sun, 27 Oct 2013 at 18:28, Christian Kujau wrote:
+> While doing "make oldconfig" on 3.12-rc7 with gcc-4.7.2 (Debian), the 
+> following warning is printed:
+> 
+>   HOSTCC  scripts/kconfig/zconf.tab.o
+> In file included from scripts/kconfig/zconf.tab.c:2537:0:
+> /usr/local/src/linux-git/scripts/kconfig/menu.c: In function ‘get_symbol_str’:
+> /usr/local/src/linux-git/scripts/kconfig/menu.c:586:18: warning: ‘jump’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+> /usr/local/src/linux-git/scripts/kconfig/menu.c:547:19: note: ‘jump’ was declared here
 
-Think of the existing --signoff as a historical mistake.  Such a
-generic "adding arbitrary trailers" support, when done properly,
-should be able to express what "--signoff" does, and we should be
-able to redo "--signoff" as a special case of that generic "adding
-arbitrary trailers" support, and at that point, "Fixes:" trailer the
-kernel project wants to use should fall out as a natural consequence.
+Grrr, only after I sent this message I found this was reported in 
+September already by Madhavan Srinivasan:  https://lkml.org/lkml/2013/9/19/24
 
+Does anybody know the state of this fix?
 
+Thanks,
+Christian.
 
+> The following patch seems to fix that:
+> 
+>  Signed-off-by: Christian Kujau <lists@nerdbynature.de>
+> 
+> diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
+> index c1d5320..23b1827 100644
+> --- a/scripts/kconfig/menu.c
+> +++ b/scripts/kconfig/menu.c
+> @@ -544,7 +544,7 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
+>  {
+>  	int i, j;
+>  	struct menu *submenu[8], *menu, *location = NULL;
+> -	struct jump_key *jump;
+> +	struct jump_key *jump = NULL;
+>  
+>  	str_printf(r, _("Prompt: %s\n"), _(prop->text));
+>  	menu = prop->menu->parent;
+> 
+> 
+> Christian.
+> -- 
+> BOFH excuse #177:
+> 
+> sticktion
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
+-- 
+BOFH excuse #449:
+
+greenpeace free'd the mallocs
