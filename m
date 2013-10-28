@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab3J1KCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 06:02:05 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:34101 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755849Ab3J1KCD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 06:02:03 -0400
+	id S1756191Ab3J1KCj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 06:02:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23895 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755842Ab3J1KCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 06:02:37 -0400
+Date: Mon, 28 Oct 2013 11:04:44 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/5] percpu_ida: Various tweaks
+Message-ID: <20131028100440.GA5744@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20131025173749.GG19466@laptop.lan>
-References: <12083.1382486094@ale.ozlabs.ibm.com>
-	<20131023141948.GB3566@localhost.localdomain>
-	<20131025173749.GG19466@laptop.lan>
-Date: Mon, 28 Oct 2013 11:02:01 +0100
-Message-ID: <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com>
-Subject: Re: perf events ring buffer memory barrier on powerpc
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Anton Blanchard <anton@samba.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Victor Kaplansky <VICTORK@il.ibm.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/25 Peter Zijlstra <peterz@infradead.org>:
-> On Wed, Oct 23, 2013 at 03:19:51PM +0100, Frederic Weisbecker wrote:
-> I would argue for:
->
->   READ ->data_tail                      READ ->data_head
->   smp_rmb()     (A)                     smp_rmb()       (C)
->   WRITE $data                           READ $data
->   smp_wmb()     (B)                     smp_mb()        (D)
->   STORE ->data_head                     WRITE ->data_tail
->
-> Where A pairs with D, and B pairs with C.
->
-> I don't think A needs to be a full barrier because we won't in fact
-> write data until we see the store from userspace. So we simply don't
-> issue the data WRITE until we observe it.
->
-> OTOH, D needs to be a full barrier since it separates the data READ from
-> the tail WRITE.
->
-> For B a WMB is sufficient since it separates two WRITEs, and for C an
-> RMB is sufficient since it separates two READs.
+Hi Kent,
 
-Hmm, I need to defer on you for that, I'm not yet comfortable with
-picking specific barrier flavours when both write and read are
-involved in a same side :)
+Here is an update of few behaviours which caught my eye.
+I have not tested any, so it is up to your judgement ;)
+
+Alexander Gordeev (5):
+  percpu_ida: Fix data race on cpus_have_tags cpumask
+  percpu_ida: Move waking up waiters out of atomic contexts
+  percpu_ida: Optimize freeing tags when maximum cache size is 1
+  percpu_ida: Sanity check initialization parameters
+  percpu_ida: Allow variable maximum number of cached tags
+
+ block/blk-mq-tag.c         |    9 +++++----
+ include/linux/percpu_ida.h |    5 +++--
+ lib/percpu_ida.c           |   38 ++++++++++++++++++++++++++++----------
+ 3 files changed, 36 insertions(+), 16 deletions(-)
+
+-- 
+1.7.7.6
+
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
