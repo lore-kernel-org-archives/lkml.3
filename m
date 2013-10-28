@@ -1,141 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab3J1KEP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 06:04:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55405 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756309Ab3J1KEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 06:04:13 -0400
-Date: Mon, 28 Oct 2013 11:06:21 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] percpu_ida: Allow variable maximum number of cached tags
-Message-ID: <20131028100620.GF5744@dhcp-26-207.brq.redhat.com>
-References: <cover.1382950629.git.agordeev@redhat.com>
+	id S1755966Ab3J1KGn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 06:06:43 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:52421 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754764Ab3J1KGl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 06:06:41 -0400
+Date: Mon, 28 Oct 2013 11:06:38 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Arto Merilainen <amerilainen@nvidia.com>
+Cc: tbergstrom@nvidia.com, dri-devel@lists.freedesktop.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 0/4] gpu: host1x: Add syncpoint base support
+Message-ID: <20131028100637.GA12355@ulmo.nvidia.com>
+References: <1381753315-21778-1-git-send-email-amerilainen@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jRHKVT23PllUwdXP"
 Content-Disposition: inline
-In-Reply-To: <cover.1382950629.git.agordeev@redhat.com>
+In-Reply-To: <1381753315-21778-1-git-send-email-amerilainen@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently a threshold for stealing tags from remote CPUs
-is set to a half of the total number of tags. However,
-in general case this threshold is a function not only of
-the total number of tags and maximum number of tags per
-CPU, but also of a usage pattern. Just let percpu_ida
-users decide how big this threshold value should be.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- block/blk-mq-tag.c         |    9 +++++----
- include/linux/percpu_ida.h |    5 +++--
- lib/percpu_ida.c           |    7 +++++--
- 3 files changed, 13 insertions(+), 8 deletions(-)
+--jRHKVT23PllUwdXP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/block/blk-mq-tag.c b/block/blk-mq-tag.c
-index d64a02f..da0b3dd 100644
---- a/block/blk-mq-tag.c
-+++ b/block/blk-mq-tag.c
-@@ -145,10 +145,11 @@ struct blk_mq_tags *blk_mq_init_tags(unsigned int total_tags,
- 	tags->nr_max_cache = nr_cache;
- 	tags->nr_batch_move = max(1u, nr_cache / 2);
- 
--	ret = __percpu_ida_init(&tags->free_tags, tags->nr_tags -
--				tags->nr_reserved_tags,
-+	ret = __percpu_ida_init(&tags->free_tags,
-+				tags->nr_tags - tags->nr_reserved_tags,
- 				tags->nr_max_cache,
--				tags->nr_batch_move);
-+				tags->nr_batch_move,
-+				(tags->nr_tags - tags->nr_reserved_tags) / 2);
- 	if (ret)
- 		goto err_free_tags;
- 
-@@ -158,7 +159,7 @@ struct blk_mq_tags *blk_mq_init_tags(unsigned int total_tags,
- 		 * no cached. It's fine reserved tags allocation is slow.
- 		 */
- 		ret = __percpu_ida_init(&tags->reserved_tags, reserved_tags,
--				1, 1);
-+				1, 1, 0);
- 		if (ret)
- 			goto err_reserved_tags;
- 	}
-diff --git a/include/linux/percpu_ida.h b/include/linux/percpu_ida.h
-index 1900bd0..d874cca 100644
---- a/include/linux/percpu_ida.h
-+++ b/include/linux/percpu_ida.h
-@@ -18,6 +18,7 @@ struct percpu_ida {
- 	unsigned			nr_tags;
- 	unsigned			percpu_max_size;
- 	unsigned			percpu_batch_size;
-+	unsigned			max_cached;
- 
- 	struct percpu_ida_cpu __percpu	*tag_cpu;
- 
-@@ -66,11 +67,11 @@ void percpu_ida_free(struct percpu_ida *pool, unsigned tag);
- 
- void percpu_ida_destroy(struct percpu_ida *pool);
- int __percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags,
--	unsigned long max_size, unsigned long batch_size);
-+	unsigned long max_size, unsigned long batch_size, unsigned max_cached);
- static inline int percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags)
- {
- 	return __percpu_ida_init(pool, nr_tags, IDA_DEFAULT_PCPU_SIZE,
--		IDA_DEFAULT_PCPU_BATCH_MOVE);
-+		IDA_DEFAULT_PCPU_BATCH_MOVE, nr_tags / 2);
- }
- 
- typedef int (*percpu_ida_cb)(unsigned, void *);
-diff --git a/lib/percpu_ida.c b/lib/percpu_ida.c
-index 1fc89f9..241f8a3 100644
---- a/lib/percpu_ida.c
-+++ b/lib/percpu_ida.c
-@@ -74,7 +74,7 @@ static inline void steal_tags(struct percpu_ida *pool,
- 	smp_rmb();
- 
- 	for (cpus_have_tags = cpumask_weight(&pool->cpus_have_tags);
--	     cpus_have_tags * pool->percpu_max_size > pool->nr_tags / 2;
-+	     cpus_have_tags * pool->percpu_max_size > pool->max_cached;
- 	     cpus_have_tags--) {
- 		cpu = cpumask_next(cpu, &pool->cpus_have_tags);
- 
-@@ -294,7 +294,7 @@ EXPORT_SYMBOL_GPL(percpu_ida_destroy);
-  * performance, the workload should not span more cpus than nr_tags / 128.
-  */
- int __percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags,
--	unsigned long max_size, unsigned long batch_size)
-+	unsigned long max_size, unsigned long batch_size, unsigned max_cached)
- {
- 	unsigned i, cpu, order;
- 
-@@ -302,6 +302,8 @@ int __percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags,
- 		return -ERANGE;
- 	if (!batch_size)
- 		return -EINVAL;
-+	if (max_cached > nr_tags)
-+		return -EINVAL;
- 
- 	memset(pool, 0, sizeof(*pool));
- 
-@@ -310,6 +312,7 @@ int __percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags,
- 	pool->nr_tags = nr_tags;
- 	pool->percpu_max_size = max_size;
- 	pool->percpu_batch_size = batch_size;
-+	pool->max_cached = max_cached;
- 
- 	/* Guard against overflow */
- 	if (nr_tags > (unsigned) INT_MAX + 1) {
--- 
-1.7.7.6
+On Mon, Oct 14, 2013 at 03:21:51PM +0300, Arto Merilainen wrote:
+> The host1x driver uses currently syncpoints statically from host1x point =
+of
+> view. If we do a wait inside a job, it always has a constant value to wai=
+t.
+> host1x supports also doing relative syncpoint waits with respect to syncp=
+oint
+> bases. This allows doing multiple operations inside a single submit and
+> waiting an operation to complete before moving to next one.
+>=20
+> This set of patches adds support for syncpoint bases to host1x driver and
+> enables the support for gr2d client.
+>=20
+> I have tested the series using the host1x test application (available at =
+[0],
+> function test_wait_base() in tests/tegra/host1x/tegra_host1x_test.c) on c=
+ardhu.
+> I would appreciate help in reviewing the series and testing the patches
+> on other boards.
+>=20
+> Changes in v2:
+> - Reordered various code blocks to improve code consistency
+> - Functions host1x_syncpt_alloc() and host1x_syncpt_request() take now a =
+single
+> bitfield argument instead of separate boolean arguments
+> - Added a separate ioctl call for querying the base associated with some
+> syncpoint
+>=20
+> [0] https://gitorious.org/linux-host1x/libdrm-host1x
+>=20
+> Arto Merilainen (4):
+>   gpu: host1x: Add 'flags' field to syncpt request
+>   gpu: host1x: Add syncpoint base support
+>   drm/tegra: Deliver syncpoint base to user space
+>   drm/tegra: Reserve base for gr2d
+>=20
+>  drivers/gpu/host1x/dev.h                   |  2 ++
+>  drivers/gpu/host1x/drm/drm.c               | 25 +++++++++++++
+>  drivers/gpu/host1x/drm/gr2d.c              |  2 +-
+>  drivers/gpu/host1x/hw/channel_hw.c         | 19 ++++++++++
+>  drivers/gpu/host1x/hw/hw_host1x01_uclass.h |  6 ++++
+>  drivers/gpu/host1x/syncpt.c                | 58 ++++++++++++++++++++++++=
++-----
+>  drivers/gpu/host1x/syncpt.h                | 10 +++++-
+>  include/uapi/drm/tegra_drm.h               | 26 +++++++++-----
+>  8 files changed, 128 insertions(+), 20 deletions(-)
 
+I've applied the series, though I had to rework some of it because
+host1x and DRM have significantly changed in the meantime.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Thierry
+
+--jRHKVT23PllUwdXP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSbjctAAoJEN0jrNd/PrOhSxAQALctpcYYXbn8b1GUiewfxbdq
+QeBPxqUxzk0x41oCdRSFtgf7BF+f3R0gX4UG5IjIcy/9QwgoELhIEJn8E9qKEPM/
+Td5tJ3TgOREWcgVq07coavsWXYyZAOOg4ZdvR9O2kzzamOhnePCD0RnV2PvqrT0j
+js2NiUawx7zdVkJpH46pJmbIWZxVZwddmSSiYJRiEzw9yzhpOvtMPNaFtLHr0Nm9
+8sWnbfzwrB+hlZsxTfU9YkdIqXGC7E42zucqqazNz3xA6CLSlff7kir4wI375siP
+a2EoUCGDcjhExonrBbiwDs5NVB5twoNnqmq9xoJk8RMJtAj/ZMLP/vGBfzoEl4bG
+PeMwgOxLd6T3OGWIaHUdoJyYaCkkSAKavAsqH4WGFj0T4ZIl+ZzaEwYn8i8TbEMR
+8V6WVW1VEXTaQVlxOzwPwDqfrYgYjFsFe9RKM+WHYuu5Ca4xgG0jmEWClFGrzTqy
+cPJGn5UF7i2HEan/7YxbbVBFC8sCNRyXSE5qEVr4S1yrdeMPYfbGouvpkC3ORpgs
+0GEhEhNXVxGybAY9dI58XhbT5Mhr2qj0SEG/gRApBgK5kiMflPsazy3BFKW14Vlm
+bsAOip805grW36wpduL7SLaOINzMUV5UXlogZNB5cbZq6FJPIxuHVaA7/QeyzBU6
+EnrkxcI6q9J8Oo2Jjrwg
+=ny0z
+-----END PGP SIGNATURE-----
+
+--jRHKVT23PllUwdXP--
