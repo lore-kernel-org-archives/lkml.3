@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757304Ab3J1RcG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 13:32:06 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:53564 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756645Ab3J1RcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 13:32:04 -0400
-Date: Mon, 28 Oct 2013 23:01:52 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Pekka Enberg <penberg@iki.fi>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
-        anton@redhat.com, systemtap@sourceware.org,
-        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com
-Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
-Message-ID: <20131028173152.GB1040@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20131023044511.1886.82571.stgit@hemant-fedora>
- <20131023050502.1886.15779.stgit@hemant-fedora>
- <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com>
- <526E4940.8000608@hitachi.com>
- <526E5BA5.7050103@iki.fi>
- <20131028141152.GA1040@linux.vnet.ibm.com>
- <526E72EC.9060400@iki.fi>
+	id S1757351Ab3J1Rcz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 13:32:55 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:64859 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757333Ab3J1Rcx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 13:32:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <526E72EC.9060400@iki.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102817-5806-0000-0000-0000233D5409
+In-Reply-To: <526BF37E.8040801@intel.com>
+References: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com>
+ <1381493941-4650-6-git-send-email-tianyu.lan@intel.com> <20131016235541.GD17866@google.com>
+ <525F7F0F.5010306@intel.com> <CAErSpo7P+n5c2uUoodT=LOjE3UH3LBcjifbj8reXzAeWydsoLA@mail.gmail.com>
+ <52612D1C.4070701@intel.com> <20131023223904.GA18454@google.com> <526BF37E.8040801@intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 28 Oct 2013 11:32:30 -0600
+Message-ID: <CAErSpo50_JQEhGOK6mcnaj36f6Fhgp3VcHKSmziC6JB_Ycu0Xg@mail.gmail.com>
+Subject: Re: [Resend PATCH 5/5] IA64/PCI/ACPI: Rework PCI root bridge ACPI
+ resource conversion
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: Tony Luck <tony.luck@intel.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Yoknis, Mike" <mike.yoknis@hp.com>,
+        "Pearson, Greg" <greg.pearson@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >
-> >But what if a system has both 32 bit libc and 64 bit libc?
-> >Wont we could end up with 2 libc:setjmp?
-> >Should we give some more intelligence into perf to choose the 64 bit
-> >libc over 32 bit one?
-> 
-> You can just trace both of them by default, no?
-> 
+On Sat, Oct 26, 2013 at 10:53 AM, Lan Tianyu <tianyu.lan@intel.com> wrote:
+> On 10/24/2013 06:39 AM, Bjorn Helgaas wrote:
+>> On Fri, Oct 18, 2013 at 08:44:12PM +0800, Lan Tianyu wrote:
+>>>
+>>> On 10/18/2013 04:33 AM, Bjorn Helgaas wrote:
 
-There has to be a one to one association with the event name and its
-mapping.  Every event name will finally map to a unique inode and an
-offset.
+>>>> I wonder if it would make sense to make
+>>>> acpi_dev_resource_address_space() ignore addr.translation_offset for
+>>>> IO resources.  Or maybe ignore it if the _TTP (type translation) bit
+>>>> is set?
+>>>
+>>>
+>>> I wonder why current code doesn't check _TTP? The code in the
+>>> add_io_space() seems to think _TTP is always set, right?
+>>
+>> I think it's an oversight, and you should fix it.  I suggest that you
+>> ignore the _TRA value when _TTP is set.  Obviously this only applies
+>> to I/O port resources, since _TTP is only defined in the I/O Resource
+>> Flag (Table 6-185 in ACPI 5.0 spec).
+>
+> _TTP is also defined in the Memory Resource flag, Please have a look at
+> Table 6-184 in the ACPI 5.0 Spec.
 
-One option would be for perf to look at these markers and have a
-different event name for similar markers in different executables. 
+Yes, you're right.  That would be for a host bridge that converts I/O
+on the primary (upstream) side of the bridge to memory on the PCI
+side.  I've never seen such a bridge, and I can't really imagine why
+anybody would do that.  But I guess you should be able to safely
+ignore _TRA when _TTP is set in either a MEM or IO descriptor, because
+the same reasoning should apply to both.
 
--- 
-Thanks and Regards
-Srikar Dronamraju
+> I am not sure how to deal with _TTP unsetting io resource? _TTP unsetting
+> mean the resource is IO on the primary side and also IO on the secondary
+> side.
 
+If _TTP is not set, I guess you would apply _TRA.  That's what you
+already do for MEM descriptors, and think you should just do the same
+for IO descriptors.  I would guess that having _TTP = 0 and _TRA != 0
+is rare for IO descriptors, but I suppose it could happen.
+
+Bjorn
