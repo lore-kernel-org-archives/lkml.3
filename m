@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab3J1JLh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 05:11:37 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:29837 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754581Ab3J1JLf (ORCPT
+	id S1755683Ab3J1JPa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 05:15:30 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:65454 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754764Ab3J1JP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 05:11:35 -0400
-X-Greylist: delayed 720 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Oct 2013 05:11:34 EDT
-From: Jan Kiszka <jan.kiszka@siemens.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
-Subject: [PATCH v6 14/21] scripts/gdb: Add is_target_arch helper
-Date: Mon, 28 Oct 2013 09:58:51 +0100
-Message-Id: <1ce57083617f4f166a7716a7508ed8f3561d94b2.1382950737.git.jan.kiszka@siemens.com>
-X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
-In-Reply-To: <cover.1382950737.git.jan.kiszka@siemens.com>
-References: <cover.1382950737.git.jan.kiszka@siemens.com>
-In-Reply-To: <cover.1382950737.git.jan.kiszka@siemens.com>
-References: <cover.1382950737.git.jan.kiszka@siemens.com>
+	Mon, 28 Oct 2013 05:15:29 -0400
+X-AuditID: 9c930197-b7b3eae00000122e-5f-526e2b2f26c0
+From: Namhyung Kim <namhyung@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 6/8] perf tools: Add new comm infrastructure
+References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
+	<1381468543-25334-7-git-send-email-namhyung@kernel.org>
+	<CAFTL4hz-4ASg8iba6A7_wyU8RaT9a7e9oRkobAbz5+qOt9i9RQ@mail.gmail.com>
+	<20131025130417.GB20423@ghostprotocols.net>
+	<526A8F54.2040601@gmail.com>
+	<CAFTL4hzX=0-_gK6E9V7oH3hrrCerVn_s8TVBsDspzLvpQEmtpw@mail.gmail.com>
+	<526AB61B.80505@gmail.com> <871u369cq0.fsf@sejong.aot.lge.com>
+	<CAFTL4hxbfJy9Tfw2j5ptW5k5AjCBYSuf5_+7U9ShWUQaDqOpdw@mail.gmail.com>
+Date: Mon, 28 Oct 2013 18:15:26 +0900
+In-Reply-To: <CAFTL4hxbfJy9Tfw2j5ptW5k5AjCBYSuf5_+7U9ShWUQaDqOpdw@mail.gmail.com>
+	(Frederic Weisbecker's message of "Mon, 28 Oct 2013 10:09:46 +0100")
+Message-ID: <8738nl92oh.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This helper caches to result of "show architecture" and matches the
-provided arch (sub-)string against that output.
+Hi Frederic,
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- scripts/gdb/linux/utils.py | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+On Mon, 28 Oct 2013 10:09:46 +0100, Frederic Weisbecker wrote:
+> Ah cool! Could you please remind me the name of that branch so that I
+> can do some tests and work on top of it?
 
-diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
-index 808a265..71ee48c 100644
---- a/scripts/gdb/linux/utils.py
-+++ b/scripts/gdb/linux/utils.py
-@@ -106,3 +106,16 @@ def read_u64(buffer):
-         return read_u32(buffer[0:4]) + (read_u32(buffer[4:8]) << 32)
-     else:
-         return read_u32(buffer[4:8]) + (read_u32(buffer[0:4]) << 32)
-+
-+
-+target_arch = None
-+
-+
-+def is_target_arch(arch):
-+    if hasattr(gdb.Frame, 'architecture'):
-+        return arch in gdb.newest_frame().architecture().name()
-+    else:
-+        global target_arch
-+        if target_arch is None:
-+            target_arch = gdb.execute("show architecture", to_string=True)
-+        return arch in target_arch
--- 
-1.8.1.1.298.ge7eed54
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+    perf/callchain-v5
 
+Thanks,
+Namhyung
