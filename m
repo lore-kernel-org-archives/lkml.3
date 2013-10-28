@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab3J1GFS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 02:05:18 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:50432 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755456Ab3J1GE7 (ORCPT
+	id S1755516Ab3J1GFQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 02:05:16 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:37212 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755418Ab3J1GEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 02:04:59 -0400
-From: RUC_SoftSec <rucsoftsec@gmail.com>
-To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        RUC_SoftSec <rucsoftsec@gmail.com>
-Subject: [PATCH 1/1] acpi: check return value of acpi_os_map_memory
-Date: Mon, 28 Oct 2013 14:04:19 +0800
-Message-Id: <1382940259-15183-1-git-send-email-rucsoftsec@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 28 Oct 2013 02:04:53 -0400
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, stephen@networkplumber.org,
+        davem@davemloft.net, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [PATCH v2 3/3] net, iovec: fix the incorrect comment in memcpy_fromiovecend()
+Date: Mon, 28 Oct 2013 14:01:50 +0800
+Message-Id: <1382940110-10737-3-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1382940110-10737-1-git-send-email-zwu.kernel@gmail.com>
+References: <1382940110-10737-1-git-send-email-zwu.kernel@gmail.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102806-9332-0000-0000-000001F23AB3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function acpi_os_map_memory() may return a NULL pointer, it should be validated non-NULL before used.
-This bug is found by a static tool developed by RUC_SoftSec, supported by China.X.Orion.
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-Signed-off-by: RUC_SoftSec <rucsoftsec@gmail.com>
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- drivers/acpi/osl.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/core/iovec.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index e5f416c..bf8f93f 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -717,6 +717,8 @@ acpi_os_physical_table_override(struct acpi_table_header *existing_table,
+diff --git a/net/core/iovec.c b/net/core/iovec.c
+index b77eeec..4cdb7c4 100644
+--- a/net/core/iovec.c
++++ b/net/core/iovec.c
+@@ -100,7 +100,7 @@ int memcpy_toiovecend(const struct iovec *iov, unsigned char *kdata,
+ EXPORT_SYMBOL(memcpy_toiovecend);
  
- 		table = acpi_os_map_memory(acpi_tables_addr + table_offset,
- 					   ACPI_HEADER_SIZE);
-+		if (table == NULL)
-+			return AE_OK;
+ /*
+- *	Copy iovec from kernel. Returns -EFAULT on error.
++ *	Copy iovec to kernel. Returns -EFAULT on error.
+  */
  
- 		if (table_offset + table->length > all_tables_size) {
- 			acpi_os_unmap_memory(table, ACPI_HEADER_SIZE);
+ int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
 -- 
-1.7.9.5
+1.7.11.7
 
