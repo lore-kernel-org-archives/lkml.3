@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab3J1KDS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 06:03:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41095 "EHLO mx1.redhat.com"
+	id S1756247Ab3J1KDk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 06:03:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18118 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754376Ab3J1KDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 06:03:17 -0400
-Date: Mon, 28 Oct 2013 11:05:25 +0100
+	id S1751635Ab3J1KDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 06:03:39 -0400
+Date: Mon, 28 Oct 2013 11:05:48 +0100
 From: Alexander Gordeev <agordeev@redhat.com>
 To: Kent Overstreet <kmo@daterainc.com>
 Cc: Oleg Nesterov <oleg@redhat.com>, Jens Axboe <axboe@kernel.dk>,
         "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] percpu_ida: Move waking up waiters out of atomic contexts
-Message-ID: <20131028100522.GC5744@dhcp-26-207.brq.redhat.com>
+Subject: [PATCH 3/5] percpu_ida: Optimize freeing tags when maximum cache
+ size is 1
+Message-ID: <20131028100547.GD5744@dhcp-26-207.brq.redhat.com>
 References: <cover.1382950629.git.agordeev@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -24,57 +25,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently percpu_ida_free() waikes up waiters always with local
-interrupts disabled and sometimes with pool->lock held. Yet, it
-does not appear there is any reason why it could not be done out
-of these atomic contexts.
+In case percpu_max_size is 1 percpu_ida_free() sets bit in
+the cpumask and immediately transfers the tag to the pool.
+As result, the very next call to percpu_ida_alloc() on the
+same CPU will have to pull a tag from the pool to the local
+cache and so on. Hence, positive effects of local caching
+become largely negated.
+
+This update assumes stealing tags is faster than ping-ponging
+between local caches and the pool and prevents returning tags
+to the pool in case percpu_max_size is 1.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- lib/percpu_ida.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
+ lib/percpu_ida.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
 diff --git a/lib/percpu_ida.c b/lib/percpu_ida.c
-index 96cfacf..9dd8741 100644
+index 9dd8741..4adc3e5 100644
 --- a/lib/percpu_ida.c
 +++ b/lib/percpu_ida.c
-@@ -223,6 +223,7 @@ void percpu_ida_free(struct percpu_ida *pool, unsigned tag)
- 	struct percpu_ida_cpu *tags;
- 	unsigned long flags;
- 	unsigned nr_free;
-+	bool wake_up = false;
- 
- 	BUG_ON(tag >= pool->nr_tags);
- 
-@@ -241,8 +242,8 @@ void percpu_ida_free(struct percpu_ida *pool, unsigned tag)
- 		 * Pairs with smp_rmb() in steal_tags()
+@@ -243,9 +243,8 @@ void percpu_ida_free(struct percpu_ida *pool, unsigned tag)
  		 */
  		smp_wmb();
--		wake_up(&pool->wait);
--	}
-+		wake_up = true;
-+	} 
- 
- 	if (nr_free == pool->percpu_max_size) {
- 		spin_lock(&pool->lock);
-@@ -255,13 +256,15 @@ void percpu_ida_free(struct percpu_ida *pool, unsigned tag)
- 			move_tags(pool->freelist, &pool->nr_free,
- 				  tags->freelist, &tags->nr_free,
- 				  pool->percpu_batch_size);
+ 		wake_up = true;
+-	} 
 -
--			wake_up(&pool->wait);
-+			wake_up = true;
- 		}
- 		spin_unlock(&pool->lock);
- 	}
+-	if (nr_free == pool->percpu_max_size) {
++	} else if ((nr_free == pool->percpu_max_size) &&
++		   (pool->percpu_max_size > 1)) {
+ 		spin_lock(&pool->lock);
  
- 	local_irq_restore(flags);
-+
-+	if (wake_up)
-+		wake_up(&pool->wait);
- }
- EXPORT_SYMBOL_GPL(percpu_ida_free);
- 
+ 		/*
 -- 
 1.7.7.6
 
