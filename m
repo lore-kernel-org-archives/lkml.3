@@ -1,95 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756448Ab3J1NTx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 09:19:53 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:36172 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755883Ab3J1NTv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 09:19:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <526E55B9.20902@hitachi.com>
-References: <20131024075813.GA26929@gmail.com>
-	<CAGdX0WFu=sxWUckkZiUQMTxo_tOFbxX-paqU2p_5YR8NaN6gSA@mail.gmail.com>
-	<20131025101511.GB3439@gmail.com>
-	<CAGdX0WGrGbb-eJvS4HHg9umk7X3-vrzyrJCuhAJrfGvOriKHSQ@mail.gmail.com>
-	<20131026085955.GD14237@gmail.com>
-	<526E55B9.20902@hitachi.com>
-Date: Mon, 28 Oct 2013 21:19:50 +0800
-Message-ID: <CAGdX0WE-m1M8GEqx3N8ccX=KkO0Hj_igN1XkrpjHW=qkrwtCAw@mail.gmail.com>
-Subject: Re: Re: ktap inclusion in drivers/staging/?
-From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
+	id S1756588Ab3J1NUY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 09:20:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34246 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756367Ab3J1NUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 09:20:22 -0400
+Date: Mon, 28 Oct 2013 09:19:46 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Andi Kleen <ak@linux.intel.com>, dave.hansen@linux.intel.com,
+        Stephane Eranian <eranian@google.com>, jmario@redhat.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH] perf, x86: Optimize intel_pmu_pebs_fixup_ip()
+Message-ID: <20131028131946.GG108330@redhat.com>
+References: <20131017163039.GR10651@twins.programming.kicks-ass.net>
+ <CA+55aFx-1Xu2aSvAMi8SSUwq-J9Yo3oJGY8yUYWyAZmZmr8prQ@mail.gmail.com>
+ <20131017220156.GB10651@twins.programming.kicks-ass.net>
+ <CA+55aFyCCdwF78dM1=Km=0wqtoyosp-ChyoJuBb1DdBvmGe2vA@mail.gmail.com>
+ <20131022211237.GH2490@laptop.programming.kicks-ass.net>
+ <CA+55aFwfsyofuZtNyUGKPWdvqc=4gOW=HTFPxsiM-3GS1G8KKQ@mail.gmail.com>
+ <20131023204838.GB19466@laptop.lan>
+ <20131024105206.GM2490@laptop.programming.kicks-ass.net>
+ <20131025163303.GD108330@redhat.com>
+ <20131026103651.GA21294@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131026103651.GA21294@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 8:16 PM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> (2013/10/26 17:59), Ingo Molnar wrote:
->>
->> * Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
->>
->>> Thanks. An addition question I want to discuss in here is the ktap
->>> code structure layout in first patch series, this don't need to
->>> dig out any ktap design detail, so we can make agreement on this
->>> point, and ease for me to prepare patch series.
->>>
->>> Do I need to prepare patchset target on staging tree or "real"
->>> part of kernel? [...]
->>
->> I'd suggest adding it to the core, i.e. kernel/tracing/ and
->> kernel/trace/trace_events_filter.c in particular which includes the
->> current filter script interpreter.
->
-> It means we'll need to put Lua compiler in the kernel...
-> I just recommend to put the ktap *on* the ftrace or perf. Not directly
-> integrate it. Bytecode interpreter is good, limited fomula parser is also
-> good, but IMHO, integrating complete lua compiler into the kernel looks
-> crazy.
-> I think it is just enough to include lua compiler as a tool in the kernel.
->
-Agree, putting lua language compiler into kernel is a crazy idea, and I
-cannot find the good reason for this, IMO.
+On Sat, Oct 26, 2013 at 12:36:52PM +0200, Ingo Molnar wrote:
+> 
+> * Don Zickus <dzickus@redhat.com> wrote:
+> 
+> > On Thu, Oct 24, 2013 at 12:52:06PM +0200, Peter Zijlstra wrote:
+> > > On Wed, Oct 23, 2013 at 10:48:38PM +0200, Peter Zijlstra wrote:
+> > > > I'll also make sure to test we actually hit the fault path
+> > > > by concurrently running something like:
+> > > > 
+> > > >  while :; echo 1 > /proc/sys/vm/drop_caches ; done
+> > > > 
+> > > > while doing perf top or so.. 
+> > > 
+> > > So the below appears to work; I've ran:
+> > > 
+> > >   while :; do echo 1 > /proc/sys/vm/drop_caches; sleep 1; done &
+> > >   while :; do make O=defconfig-build/ clean; perf record -a -g fp -e cycles:pp make O=defconfig-build/ -s -j64; done
+> > > 
+> > > And verified that the if (in_nmi()) trace_printk() was visible in the
+> > > trace output verifying we indeed took the fault from the NMI code.
+> > > 
+> > > I've had this running for ~ 30 minutes or so and the machine is still
+> > > healthy.
+> > > 
+> > > Don, can you give this stuff a spin on your system?
+> > 
+> > Hi Peter,
+> > 
+> > I finally had a chance to run this on my machine.  From my 
+> > testing, it looks good.  Better performance numbers.  I think my 
+> > longest latency went from 300K cycles down to 150K cycles and very 
+> > few of those (most are under 100K cycles).
+> 
+> Btw., do we know where those ~100k-150k cycles are spent 
+> specifically? 100k cycles is still an awful lot of time to spend in 
+> NMI context ...
 
-If you knows lua, they combine compiler and interpreter together, but
-when I decided to start ktap, I decoupled the compiler and interpreter,
-some reasons behind that decision:
+I agree, there is still a bunch of latency in the nmi path.  I believe it
+is still in the pebs code.  I share the machine with a colleague right
+now, so I haven't been able to isolate it.
 
-- focus on interpreter(ktapvm)
-   we should optimize interpreter as much as we can, but if we also put
-   compiler into kernel, we need to open another eye on compiler, to be
-   careful on performance/overhead of compiler design, too crazy to
-   consider those issues, and not needed.
+But going from a few hundred samples over a million cycles to about a
+couple dozen over 100K was a big step.  :-)
 
-- debugging info (like vmline, CTF, dwarf)
-   debugging info should handle in userspace, not kernel.
+I still see perf throttling and people are complaining about it here so I
+still plan to keep investigating.  Just taking me a while.  Sorry about
+that.
 
-- less kernel problems (aka, safety)
-
-- future language syntax change
-  easy to change the compiler in userspace, also it's have a possibility
-  one kernel interpreter back end for different compiler.
-
-ktap is defined as"lightweight", mainly for ktapvm. if putting compiler
-into kernel, then it's not "lightweight" anymore.
-
-Thanks.
-
-Jovi
+Cheers,
+Don
