@@ -1,205 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab3J1JXV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 05:23:21 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:23107 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754376Ab3J1JXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 05:23:03 -0400
-X-Greylist: delayed 1406 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Oct 2013 05:23:03 EDT
-From: Jan Kiszka <jan.kiszka@siemens.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org
-Subject: [PATCH v6 21/21] scripts/gdb: Add basic documentation
-Date: Mon, 28 Oct 2013 09:58:58 +0100
-Message-Id: <09fd0723f610c8bb33465c8a909f4269a35cdcf4.1382950737.git.jan.kiszka@siemens.com>
-X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
-In-Reply-To: <cover.1382950737.git.jan.kiszka@siemens.com>
-References: <cover.1382950737.git.jan.kiszka@siemens.com>
-In-Reply-To: <cover.1382950737.git.jan.kiszka@siemens.com>
-References: <cover.1382950737.git.jan.kiszka@siemens.com>
+	id S1756115Ab3J1JY7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 05:24:59 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60022 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755563Ab3J1JY6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 05:24:58 -0400
+Date: Mon, 28 Oct 2013 20:24:42 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the tip tree
+Message-Id: <20131028202442.5033ddf42639863d5f1dcf67@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__28_Oct_2013_20_24_42_+1100_vfWK/gyPhHXn7=c9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: Rob Landley <rob@landley.net>
-CC: linux-doc@vger.kernel.org
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+--Signature=_Mon__28_Oct_2013_20_24_42_+1100_vfWK/gyPhHXn7=c9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi all,
+
+After merging the tip tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
+
+In file included from /scratch/sfr/next/include/linux/mmzone.h:9:0,
+                 from /scratch/sfr/next/include/linux/gfp.h:4,
+                 from /scratch/sfr/next/include/linux/kmod.h:22,
+                 from /scratch/sfr/next/include/linux/module.h:13,
+                 from /scratch/sfr/next/block/blk-mq.c:2:
+/scratch/sfr/next/block/blk-mq.c: In function 'blk_mq_queue_enter':
+/scratch/sfr/next/include/linux/wait.h:772:2: error: expected ';' before '_=
+_ret'
+  __ret;        \
+  ^
+/scratch/sfr/next/block/blk-mq.c:108:8: note: in expansion of macro 'wait_e=
+vent_interruptible_lock_irq'
+  ret =3D wait_event_interruptible_lock_irq(q->mq_freeze_wq,
+        ^
+/scratch/sfr/next/block/blk-mq.c:108:6: error: void value not ignored as it=
+ ought to be
+  ret =3D wait_event_interruptible_lock_irq(q->mq_freeze_wq,
+      ^
+
+Caused by commit 35a2af94c7ce ("sched/wait: Make the __wait_event*()
+interface more friendly").
+
+Since this was also in next-20131025, I applied the following merge fix
+commit for today, please fix this in the tip tree.
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 28 Oct 2013 20:19:27 +1100
+Subject: [PATCH] sched/wait: fix missing semicolon
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- Documentation/gdb-kernel-debugging.txt | 159 +++++++++++++++++++++++++++++++++
- 1 file changed, 159 insertions(+)
- create mode 100644 Documentation/gdb-kernel-debugging.txt
+ include/linux/wait.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Documentation/gdb-kernel-debugging.txt b/Documentation/gdb-kernel-debugging.txt
-new file mode 100644
-index 0000000..944f2d2
---- /dev/null
-+++ b/Documentation/gdb-kernel-debugging.txt
-@@ -0,0 +1,159 @@
-+Debugging kernel and modules via gdb
-+====================================
-+
-+The kernel debugger kgdb, hypervisors like QEMU or JTAG-based hardware
-+interfaces allow to debug the Linux kernel and its modules during runtime
-+using gdb. Gdb comes with a powerful scripting interface for python. The
-+kernel provides a collection of helper scripts that can simplify typical
-+kernel debugging steps. This is a short tutorial about how to enable and use
-+them. It focuses on QEMU/KVM virtual machines as target, but the examples can
-+be transferred to the other gdb stubs as well.
-+
-+
-+Requirements
-+------------
-+
-+ o gdb 7.2+ (recommended: 7.4+) with python support enabled (typically true
-+   for distributions)
-+
-+
-+Setup
-+-----
-+
-+ o Create a virtual Linux machine for QEMU/KVM (see www.linux-kvm.org and
-+   www.qemu.org for more details). For cross-development,
-+   http://landley.net/aboriginal/bin keeps a pool of machine images and
-+   toolchains that can be helpful to start from.
-+
-+ o Build the kernel with CONFIG_DEBUG_INFO and CONFIG_KALLSYMS enabled, but
-+   leave CONFIG_DEBUG_INFO_REDUCED off.
-+
-+ o Install that kernel on the guest.
-+
-+   Alternatively, QEMU allows to boot the kernel directly using -kernel,
-+   -append, -initrd command line switches. This is generally only useful if
-+   you do not depend on modules. See QEMU documentation for more details on
-+   this mode.
-+
-+ o Enable the gdb stub of QEMU/KVM, either
-+    - at VM startup time by appending "-s" to the QEMU command line
-+   or
-+    - during runtime by issuing "gdbserver" from the QEMU monitor
-+      console
-+
-+ o cd /path/to/linux-build
-+
-+ o Start gdb: gdb vmlinux
-+
-+   Note: Some distros may restrict auto-loading of gdb scripts to known safe
-+   directories. In case gdb reports to refuse loading vmlinux-gdb.py, add
-+
-+    add-add-auto-load-safe-path /path/to/linux-build
-+
-+   to ~/.gdbinit. See gdb help for more details.
-+
-+ o Attach to the booted guest:
-+    (gdb) target remote :1234
-+
-+
-+Examples of using the Linux-provided gdb helpers
-+------------------------------------------------
-+
-+ o Load module (and main kernel) symbols:
-+    (gdb) lx-symbols
-+    loading vmlinux
-+    scanning for modules in /home/user/linux/build
-+    loading @0xffffffffa0020000: /home/user/linux/build/net/netfilter/xt_tcpudp.ko
-+    loading @0xffffffffa0016000: /home/user/linux/build/net/netfilter/xt_pkttype.ko
-+    loading @0xffffffffa0002000: /home/user/linux/build/net/netfilter/xt_limit.ko
-+    loading @0xffffffffa00ca000: /home/user/linux/build/net/packet/af_packet.ko
-+    loading @0xffffffffa003c000: /home/user/linux/build/fs/fuse/fuse.ko
-+    ...
-+    loading @0xffffffffa0000000: /home/user/linux/build/drivers/ata/ata_generic.ko
-+
-+ o Set a breakpoint on some not yet loaded module function, e.g.:
-+    (gdb) b btrfs_init_sysfs
-+    Function "btrfs_init_sysfs" not defined.
-+    Make breakpoint pending on future shared library load? (y or [n]) y
-+    Breakpoint 1 (btrfs_init_sysfs) pending.
-+
-+ o Continue the target
-+    (gdb) c
-+
-+ o Load the module on the target and watch the symbols being loaded as well as
-+   the breakpoint hit:
-+    loading @0xffffffffa0034000: /home/user/linux/build/lib/libcrc32c.ko
-+    loading @0xffffffffa0050000: /home/user/linux/build/lib/lzo/lzo_compress.ko
-+    loading @0xffffffffa006e000: /home/user/linux/build/lib/zlib_deflate/zlib_deflate.ko
-+    loading @0xffffffffa01b1000: /home/user/linux/build/fs/btrfs/btrfs.ko
-+
-+    Breakpoint 1, btrfs_init_sysfs () at /home/user/linux/fs/btrfs/sysfs.c:36
-+    36              btrfs_kset = kset_create_and_add("btrfs", NULL, fs_kobj);
-+
-+ o Dump the log buffer of the target kernel:
-+    (gdb) lx-dmesg
-+    [     0.000000] Initializing cgroup subsys cpuset
-+    [     0.000000] Initializing cgroup subsys cpu
-+    [     0.000000] Linux version 3.8.0-rc4-dbg+ (...
-+    [     0.000000] Command line: root=/dev/sda2 resume=/dev/sda1 vga=0x314
-+    [     0.000000] e820: BIOS-provided physical RAM map:
-+    [     0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff] usable
-+    [     0.000000] BIOS-e820: [mem 0x000000000009fc00-0x000000000009ffff] reserved
-+    ....
-+
-+ o Examine fields of the current task struct:
-+    (gdb) p $lx_current().pid
-+    $1 = 4998
-+    (gdb) p $lx_current().comm
-+    $2 = "modprobe\000\000\000\000\000\000\000"
-+
-+ o Make use of the per-cpu function for the current or a specified CPU:
-+    (gdb) p $lx_per_cpu("runqueues").nr_running
-+    $3 = 1
-+    (gdb) p $lx_per_cpu("runqueues", 2).nr_running
-+    $4 = 0
-+
-+ o Dig into hrtimers using the container_of helper:
-+    (gdb) set $next = $lx_per_cpu("hrtimer_bases").clock_base[0].active.next
-+    (gdb) p *$container_of($next, "struct hrtimer", "node")
-+    $5 = {
-+      node = {
-+        node = {
-+          __rb_parent_color = 18446612133355256072,
-+          rb_right = 0x0 <irq_stack_union>,
-+          rb_left = 0x0 <irq_stack_union>
-+        },
-+        expires = {
-+          tv64 = 1835268000000
-+        }
-+      },
-+      _softexpires = {
-+        tv64 = 1835268000000
-+      },
-+      function = 0xffffffff81078232 <tick_sched_timer>,
-+      base = 0xffff88003fd0d6f0,
-+      state = 1,
-+      start_pid = 0,
-+      start_site = 0xffffffff81055c1f <hrtimer_start_range_ns+20>,
-+      start_comm = "swapper/2\000\000\000\000\000\000"
-+    }
-+
-+
-+List of commands and functions
-+------------------------------
-+
-+The number of commands and convenience functions may evolve over the time,
-+this is just a snapshot of the initial version:
-+
-+ (gdb) apropos lx
-+ function lx_current -- Return current task
-+ function lx_module -- Find module by name and return the module variable
-+ function lx_per_cpu -- Return per-cpu variable
-+ function lx_task_by_pid -- Find Linux task by PID and return the task_struct variable
-+ function lx_thread_info -- Calculate Linux thread_info from task variable
-+ lx-dmesg -- Print Linux kernel log buffer
-+ lx-lsmod -- List currently loaded modules
-+ lx-symbols -- (Re-)load symbols of Linux kernel and currently loaded modules
-+
-+Detailed help can be obtained via "help <command-name>" for commands and "help
-+function <function-name>" for convenience functions.
--- 
-1.8.1.1.298.ge7eed54
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 7f8caa519128..fcc968087f05 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -768,7 +768,7 @@ do {									\
+ 	int __ret =3D 0;							\
+ 	if (!(condition))						\
+ 		__ret =3D __wait_event_interruptible_lock_irq(wq,		\
+-						condition, lock,)	\
++						condition, lock,);	\
+ 	__ret;								\
+ })
+=20
+--=20
+1.8.4.rc3
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__28_Oct_2013_20_24_42_+1100_vfWK/gyPhHXn7=c9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSbi1fAAoJEMDTa8Ir7ZwV5KIP/1pIhud1/lJlLmVOe4EgUm5M
+/oFPj/w+CGWEmcuq+bMce8KLhEBzxRv7L8vkqUCKP4kdQvWTv5meAUGgsUbmsb5j
+5ImFB/rMONRZm66NBAh8wP7x1Q33uxwav5ywAcfFl+QuFXwd3tHZRYzWMdoB1c+h
+YVAP6mt3ZaCcUD+hCFTD99ahPzhsHyXlhbffYKkgsgc/14uvCiUz4srZv76G+Ivb
+1dEpBjTN4noLm+5VEj5TbTTa7Qdj6TrceAi1RZMQDIcOZJ5o1NR6qrNG7gpFwq8O
+gI1pG8+M33Yt1G2DMnrmtFrRMOuDu2hlcxwSwGQnJ1KynHwDbhpME0ei8z0PWdhe
+hkrGAi8fcGJvPIWf1oNDcVApR2r+3hzoVuj0+gLmrPZ/7MnM65yUPJqf1nQiMFqw
+6HeuUyWLu0oE+fuZp+1xHF2x2FhJcVr09NA89KLOD6z10KmIWIgcgvbm4ySDB7pB
+QlOuWKkhGhJht0HWkPHequub6kfk4R8ugtz0N3YmegLvWiDhr0qCfFQO5oZlDR6Q
+pvOJOe4TatfTi2seJa++rgqsq58Q2WUgHQaZ1SYmIeVHtf2hFwbfoY2iaWpiXUOO
+fO7ZrWUmI8tL3CZ/irKwARsoN18M5zL0RiVKFUv7/WMRlZ/A7HJRdWrxR0ifaAU3
+mEVu+u7sMqW+2Nu5jl0p
+=LFxX
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__28_Oct_2013_20_24_42_+1100_vfWK/gyPhHXn7=c9--
