@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291Ab3J1Mm0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 08:42:26 -0400
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:45950 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755382Ab3J1MmY (ORCPT
+	id S1756313Ab3J1Mmf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 08:42:35 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:48262 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756101Ab3J1Mm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 08:42:24 -0400
-Date: Mon, 28 Oct 2013 09:42:18 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL] perf fixes
-Message-ID: <20131028124218.GD16948@ghostprotocols.net>
-References: <20131026122414.GA25026@gmail.com>
- <20131028082848.GA276@x4>
- <20131028090236.GA274@x4>
- <20131028093430.GB274@x4>
- <20131028123411.GB16948@ghostprotocols.net>
+	Mon, 28 Oct 2013 08:42:26 -0400
+X-Sasl-enc: 6FHEn2/SOPLYfzEJs7n8kfxXQRm2F2gv4rwd++/jBrnX 1382964136
+Message-ID: <526E5BA5.7050103@iki.fi>
+Date: Mon, 28 Oct 2013 14:42:13 +0200
+From: Pekka Enberg <penberg@iki.fi>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="oyUTqETQ0mS9luUI"
-Content-Disposition: inline
-In-Reply-To: <20131028123411.GB16948@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
+        anton@redhat.com, systemtap@sourceware.org,
+        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com
+Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
+References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora> <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com> <526E4940.8000608@hitachi.com>
+In-Reply-To: <526E4940.8000608@hitachi.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/28/13 1:23 PM, Masami Hiramatsu wrote:
+> By the way, what happens if multiple binaries has same SDT marker?
+> Yeah, perf list shows just one and ignores others. However, if we
+> probe one, and run binary which use the other one, user will never
+> see the marker.
+>
+> So, it still needs a concrete binary path to list or, we should
+> support a syntax which specify actual binary, as like as below.
+>
+>   perf probe 'my_event=%libc:setjmp@/lib64/libc.so.6'
+>
+> And perf list may show the marker as in same syntax (for copy&paste).
+>
+> # perf list --sdt
+>   %libc:setjmp@/lib64/libc.so.6
+>   ...
+>
+> Note that we need '%' to separate namespace :(, since user can define
+> any marker(provider) name in their binary...
 
---oyUTqETQ0mS9luUI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sure, you need to support that sort of 'fully qualified name' for
+duplicate symbols but the default 'libc:setjmp' should still point
+to system libc.
 
-Em Mon, Oct 28, 2013 at 09:34:11AM -0300, Arnaldo Carvalho de Melo escreveu:
-> And then, when reverting it, Stephane forgot to match the number number
-> of expected entries to be matched/assigned from 8 to 5, can you try with
-> the following patch instead?
+This is an example where tracing libc that's relevant to most of
+the users should take priority over the 'duplicate marker in
+obscure executable' corner case case.
 
-Does the wording on this commit log sounds about right to you?
-
-- Arnaldo
-
---oyUTqETQ0mS9luUI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="a.patch"
-
-commit 2fd869f08aec5a8e4cbf01bc3fa345c4e53342d7
-Author: Arnaldo Carvalho de Melo <acme@redhat.com>
-Date:   Mon Oct 28 09:38:12 2013 -0300
-
-    perf tools: Fix up /proc/PID/maps parsing
-    
-    When introducing support for MMAP2 we considered more parts of each map
-    representation in /proc/PID/maps, and when disabling it we forgot to
-    reduce the number of expected parsed/assigned entries in the sscanf
-    call, fix it to expect the right number of desired fields, 5.
-    
-    Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-    Based-on-a-patch-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-    Cc: Adrian Hunter <adrian.hunter@intel.com>
-    Cc: David Ahern <dsahern@gmail.com>
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    Cc: Jiri Olsa <jolsa@redhat.com>
-    Cc: Mike Galbraith <efault@gmx.de>
-    Cc: Paul Mackerras <paulus@samba.org>
-    Cc: Peter Zijlstra <peterz@infradead.org>
-    Cc: Stephane Eranian <eranian@google.com>
-    Link: http://lkml.kernel.org/n/tip-vrbo1wik997ahjzl1chm3bdm@git.kernel.org
-    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 63df031fc9c7..49096ea58a15 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -213,7 +213,7 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		       &event->mmap.pgoff,
- 		       execname);
- 
--		if (n != 8)
-+		if (n != 5)
- 			continue;
- 
- 		if (prot[2] != 'x')
-
---oyUTqETQ0mS9luUI--
+                         Pekka
