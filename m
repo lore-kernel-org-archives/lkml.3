@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932873Ab3J1PGK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 11:06:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51068 "EHLO
+	id S932857Ab3J1PGI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 11:06:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51071 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932107Ab3J1Osw (ORCPT
+	with ESMTP id S932113Ab3J1Osx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:48:52 -0400
+	Mon, 28 Oct 2013 10:48:53 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Cyril Hrubis <chrubis@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 14/64] mm, show_mem: suppress page counts in non-blockable contexts
-Date: Mon, 28 Oct 2013 14:47:33 +0000
-Message-Id: <1382971703-17393-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 15/64] mm/mmap: check for RLIMIT_AS before unmapping
+Date: Mon, 28 Oct 2013 14:47:34 +0000
+Message-Id: <1382971703-17393-16-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
 References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
@@ -30,152 +28,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Cyril Hrubis <chrubis@suse.cz>
 
-commit 4b59e6c4730978679b414a8da61514a2518da512 upstream.
+commit e8420a8ece80b3fe810415ecf061d54ca7fab266 upstream.
 
-On large systems with a lot of memory, walking all RAM to determine page
-types may take a half second or even more.
+Fix a corner case for MAP_FIXED when requested mapping length is larger
+than rlimit for virtual memory.  In such case any overlapping mappings
+are unmapped before we check for the limit and return ENOMEM.
 
-In non-blockable contexts, the page allocator will emit a page allocation
-failure warning unless __GFP_NOWARN is specified.  In such contexts, irqs
-are typically disabled and such a lengthy delay may even result in NMI
-watchdog timeouts.
+The check is moved before the loop that unmaps overlapping parts of
+existing mappings.  When we are about to hit the limit (currently mapped
+pages + len > limit) we scan for overlapping pages and check again
+accounting for them.
 
-To fix this, suppress the page walk in such contexts when printing the
-page allocation failure warning.
+This fixes situation when userspace program expects that the previous
+mappings are preserved after the mmap() syscall has returned with error.
+(POSIX clearly states that successfull mapping shall replace any
+previous mappings.)
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+This corner case was found and can be tested with LTP testcase:
+
+testcases/open_posix_testsuite/conformance/interfaces/mmap/24-2.c
+
+In this case the mmap, which is clearly over current limit, unmaps
+dynamic libraries and the testcase segfaults right after returning into
+userspace.
+
+I've also looked at the second instance of the unmapping loop in the
+do_brk().  The do_brk() is called from brk() syscall and from vm_brk().
+The brk() syscall checks for overlapping mappings and bails out when
+there are any (so it can't be triggered from the brk syscall).  The
+vm_brk() is called only from binmft handlers so it shouldn't be
+triggered unless binmft handler created overlapping mappings.
+
+Signed-off-by: Cyril Hrubis <chrubis@suse.cz>
+Reviewed-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mm/init.c       | 3 +++
- arch/ia64/mm/contig.c    | 2 ++
- arch/ia64/mm/discontig.c | 2 ++
- arch/parisc/mm/init.c    | 2 ++
- arch/unicore32/mm/init.c | 3 +++
- include/linux/mm.h       | 3 ++-
- lib/show_mem.c           | 3 +++
- mm/page_alloc.c          | 7 +++++++
- 8 files changed, 24 insertions(+), 1 deletion(-)
+ mm/mmap.c | 50 ++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 46 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index f54d592..01ad1f6 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -99,6 +99,9 @@ void show_mem(unsigned int filter)
- 	printk("Mem-info:\n");
- 	show_free_areas(filter);
- 
-+	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-+		return;
-+
- 	for_each_bank (i, mi) {
- 		struct membank *bank = &mi->bank[i];
- 		unsigned int pfn1, pfn2;
-diff --git a/arch/ia64/mm/contig.c b/arch/ia64/mm/contig.c
-index 1516d1d..f2652fc 100644
---- a/arch/ia64/mm/contig.c
-+++ b/arch/ia64/mm/contig.c
-@@ -47,6 +47,8 @@ void show_mem(unsigned int filter)
- 	printk(KERN_INFO "Mem-info:\n");
- 	show_free_areas(filter);
- 	printk(KERN_INFO "Node memory in pages:\n");
-+	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-+		return;
- 	for_each_online_pgdat(pgdat) {
- 		unsigned long present;
- 		unsigned long flags;
-diff --git a/arch/ia64/mm/discontig.c b/arch/ia64/mm/discontig.c
-index c641333..2230817 100644
---- a/arch/ia64/mm/discontig.c
-+++ b/arch/ia64/mm/discontig.c
-@@ -623,6 +623,8 @@ void show_mem(unsigned int filter)
- 
- 	printk(KERN_INFO "Mem-info:\n");
- 	show_free_areas(filter);
-+	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-+		return;
- 	printk(KERN_INFO "Node memory in pages:\n");
- 	for_each_online_pgdat(pgdat) {
- 		unsigned long present;
-diff --git a/arch/parisc/mm/init.c b/arch/parisc/mm/init.c
-index 3ac462d..cf2da13 100644
---- a/arch/parisc/mm/init.c
-+++ b/arch/parisc/mm/init.c
-@@ -697,6 +697,8 @@ void show_mem(unsigned int filter)
- 
- 	printk(KERN_INFO "Mem-info:\n");
- 	show_free_areas(filter);
-+	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-+		return;
- #ifndef CONFIG_DISCONTIGMEM
- 	i = max_mapnr;
- 	while (i-- > 0) {
-diff --git a/arch/unicore32/mm/init.c b/arch/unicore32/mm/init.c
-index de186bd..6444828 100644
---- a/arch/unicore32/mm/init.c
-+++ b/arch/unicore32/mm/init.c
-@@ -66,6 +66,9 @@ void show_mem(unsigned int filter)
- 	printk(KERN_DEFAULT "Mem-info:\n");
- 	show_free_areas(filter);
- 
-+	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-+		return;
-+
- 	for_each_bank(i, mi) {
- 		struct membank *bank = &mi->bank[i];
- 		unsigned int pfn1, pfn2;
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 920beba..53eb728 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -868,7 +868,8 @@ extern void pagefault_out_of_memory(void);
-  * Flags passed to show_mem() and show_free_areas() to suppress output in
-  * various contexts.
+diff --git a/mm/mmap.c b/mm/mmap.c
+index f1a9a72..74e0d0d 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -6,6 +6,7 @@
+  * Address space accounting code	<alan@lxorguk.ukuu.org.uk>
   */
--#define SHOW_MEM_FILTER_NODES	(0x0001u)	/* filter disallowed nodes */
-+#define SHOW_MEM_FILTER_NODES		(0x0001u)	/* disallowed nodes */
-+#define SHOW_MEM_FILTER_PAGE_COUNT	(0x0002u)	/* page type count */
  
- extern void show_free_areas(unsigned int flags);
- extern bool skip_free_areas_node(unsigned int flags, int nid);
-diff --git a/lib/show_mem.c b/lib/show_mem.c
-index 4407f8c..b7c7231 100644
---- a/lib/show_mem.c
-+++ b/lib/show_mem.c
-@@ -18,6 +18,9 @@ void show_mem(unsigned int filter)
- 	printk("Mem-Info:\n");
- 	show_free_areas(filter);
++#include <linux/kernel.h>
+ #include <linux/slab.h>
+ #include <linux/backing-dev.h>
+ #include <linux/mm.h>
+@@ -393,6 +394,34 @@ find_vma_prepare(struct mm_struct *mm, unsigned long addr,
+ 	return vma;
+ }
  
-+	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
-+		return;
++static unsigned long count_vma_pages_range(struct mm_struct *mm,
++		unsigned long addr, unsigned long end)
++{
++	unsigned long nr_pages = 0;
++	struct vm_area_struct *vma;
 +
- 	for_each_online_pgdat(pgdat) {
- 		unsigned long i, flags;
++	/* Find first overlaping mapping */
++	vma = find_vma_intersection(mm, addr, end);
++	if (!vma)
++		return 0;
++
++	nr_pages = (min(end, vma->vm_end) -
++		max(addr, vma->vm_start)) >> PAGE_SHIFT;
++
++	/* Iterate over the rest of the overlaps */
++	for (vma = vma->vm_next; vma; vma = vma->vm_next) {
++		unsigned long overlap_len;
++
++		if (vma->vm_start > end)
++			break;
++
++		overlap_len = min(end, vma->vm_end) - vma->vm_start;
++		nr_pages += overlap_len >> PAGE_SHIFT;
++	}
++
++	return nr_pages;
++}
++
+ void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		struct rb_node **rb_link, struct rb_node *rb_parent)
+ {
+@@ -1228,6 +1257,23 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
+ 	unsigned long charged = 0;
+ 	struct inode *inode =  file ? file->f_path.dentry->d_inode : NULL;
  
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 63e6fa4..715b395 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1929,6 +1929,13 @@ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
- 		return;
++	/* Check against address space limit. */
++	if (!may_expand_vm(mm, len >> PAGE_SHIFT)) {
++		unsigned long nr_pages;
++
++		/*
++		 * MAP_FIXED may remove pages of mappings that intersects with
++		 * requested mapping. Account for the pages it would unmap.
++		 */
++		if (!(vm_flags & MAP_FIXED))
++			return -ENOMEM;
++
++		nr_pages = count_vma_pages_range(mm, addr, addr + len);
++
++		if (!may_expand_vm(mm, (len >> PAGE_SHIFT) - nr_pages))
++			return -ENOMEM;
++	}
++
+ 	/* Clear old maps */
+ 	error = -ENOMEM;
+ munmap_back:
+@@ -1238,10 +1284,6 @@ munmap_back:
+ 		goto munmap_back;
+ 	}
  
+-	/* Check against address space limit. */
+-	if (!may_expand_vm(mm, len >> PAGE_SHIFT))
+-		return -ENOMEM;
+-
  	/*
-+	 * Walking all memory to count page types is very expensive and should
-+	 * be inhibited in non-blockable contexts.
-+	 */
-+	if (!(gfp_mask & __GFP_WAIT))
-+		filter |= SHOW_MEM_FILTER_PAGE_COUNT;
-+
-+	/*
- 	 * This documents exceptions given to allocations in certain
- 	 * contexts that are allowed to allocate outside current's set
- 	 * of allowed nodes.
+ 	 * Set 'VM_NORESERVE' if we should not account for the
+ 	 * memory use of this mapping.
 -- 
 1.8.3.2
 
