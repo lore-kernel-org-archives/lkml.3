@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab3J1N7x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 09:59:53 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:45630 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756441Ab3J1N7w (ORCPT
+	id S1756723Ab3J1OA3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:00:29 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:41840 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756441Ab3J1OA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 09:59:52 -0400
-Date: Mon, 28 Oct 2013 10:07:48 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Will Deacon <will.deacon@arm.com>
-cc: Vince Weaver <vincent.weaver@maine.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: perf: PERF_EVENT_IOC_PERIOD on ARM vs everywhere else
-In-Reply-To: <20131028085700.GB20218@mudshark.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.10.1310281002020.24060@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1310272233120.12721@vincent-weaver-1.um.maine.edu> <20131028085700.GB20218@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 28 Oct 2013 10:00:27 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Subject: Re: [PATCH 16/16] wl1251: Add sysfs file address for setting permanent mac address
+Date: Mon, 28 Oct 2013 15:00:24 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.1; x86_64; ; )
+Cc: Luciano Coelho <luca@coelho.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
+        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
+        joni.lapilainen@gmail.com
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com> <201310281449.58170@pali> <1382968522.17956.11.camel@jlt4.sipsolutions.net>
+In-Reply-To: <1382968522.17956.11.camel@jlt4.sipsolutions.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed;
+  boundary="nextPart345760620.OzhjffakOm";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201310281500.24159@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Oct 2013, Will Deacon wrote:
+--nextPart345760620.OzhjffakOm
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-> This was in response to complaints from both internal users and people on
-> public lists:
-> 
->   http://www.mail-archive.com/perfmon2-devel@lists.sourceforge.net/msg02657.html
-> 
-> I believe the scenario was something like:
-> 
->  (1) An instruction counter is set up to overflow after 200 instructions,
->      with a SIGIO handler to print some information. It is initially
->      disabled.
-> 
->  (2) At some point, the counter is enabled for 1 overflow (IOC_REFRESH)
-> 
->  (3) The counter eventually overflows and the SIGIO handler is triggered.
->      At this pointer the counter is disabled.
-> 
->  (4) The signal handler changes the period to 200k instructions using
->      IOC_PERIOD and enables the counter for a further overflow.
-> 
->  (5) SIGIO is taken after 200 instructions, rather than 200k.
+On Monday 28 October 2013 14:55:22 Johannes Berg wrote:
+> On Mon, 2013-10-28 at 14:49 +0100, Pali Roh=C3=A1r wrote:
+> > On Monday 28 October 2013 14:45:05 Johannes Berg wrote:
+> > > On Sat, 2013-10-26 at 22:34 +0200, Pali Roh=C3=A1r wrote:
+> > > > Driver wl1251 generating mac address randomly at startup
+> > > > and there is no way to set permanent mac address via
+> > > > SET_IEEE80211_PERM_ADDR. This patch export sysfs file
+> > > > which can set permanent mac address by userspace helper
+> > > > program. Patch is needed for devices which do not store
+> > > > mac address in internal wl1251 eeprom.
+> > >=20
+> > > This doesn't really seem like a good idea since you can
+> > > also just use 'ip' or whatever to set the MAC address.
+> > >=20
+> > > johannes
+> >=20
+> > AFAIK you cannot set permanent address (show by ethtool -P
+> > wlan0) via ip/ifconfig.
+>=20
+> You probably can't, but that address also doesn't matter at
+> all and isn't really used anywhere.
+>=20
+> johannes
 
-It would be nice if changelogs for patches had this level of detail.
+There are some (proprietary) applications which using permanent=20
+address for something...
 
-It's also a shame this change apprently didn't hit the linux-kernel list 
-as far as I can tell.  I do my best to try to note all of the perf 
-ABI-related changes there, but if things like this are going to start 
-getting merged in architecture trees then things get that much harder 
-to keep track of.
+And also more important: some network managing tools using it.=20
+NetworkManager resetting current MAC address to permanent one=20
+before starting configuring interface.
 
-> I don't want to be the `oddball' architecture (at least, not more than I am
-> already :), but I do find it tricky to follow the required semantics of perf
-> as opposed to `it happens to work this way', especially when so much of it
-> is buried in the various arch backends. So if somebody using the thing on
-> ARM has (what looks to me like) a valid issue, then I usually try and fix
-> it.
+So this will lead to never use correct MAC address (but random=20
+permanent one) assigned for that wl1251 wireless card...
 
-But it was global behavior that was common on all architectures.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Now any cross-platform tool like PAPI is going to have to have a mess of 
-#ifdefs around every use of this ioctl, and it will only get worse if 
-other architectures decide to "fix" the problem too.
+--nextPart345760620.OzhjffakOm
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Vince
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlJubfgACgkQi/DJPQPkQ1JkVgCePETpdDNGvuSuoZV7u+ya1GhY
+dq8Anja0MntOATEspX7Bvjqs640xJ85L
+=kxw3
+-----END PGP SIGNATURE-----
+
+--nextPart345760620.OzhjffakOm--
