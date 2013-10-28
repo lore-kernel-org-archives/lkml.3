@@ -1,81 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859Ab3J1Hrw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 03:47:52 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34453 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755799Ab3J1Hrt (ORCPT
+	id S1755837Ab3J1Hrv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 03:47:51 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:48087 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755795Ab3J1Hrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Oct 2013 03:47:49 -0400
-Date: Mon, 28 Oct 2013 18:47:40 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Morris <jmorris@namei.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: linux-next: manual merge of the security tree with the  tree
-Message-Id: <20131028184740.ee58871cc5bd149901cbdf03@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__28_Oct_2013_18_47_40_+1100_yz/Fz+OO.245Eh3l"
+Date: Mon, 28 Oct 2013 08:47:44 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: Jeremie Samuel <jeremie.samuel.ext@parrot.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: sdhci: dove: Fix build breakage
+Message-ID: <20131028074744.GD6629@ulmo.nvidia.com>
+References: <1382533832-21085-1-git-send-email-treding@nvidia.com>
+ <87ppqqkh2g.fsf@octavius.laptop.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zjcmjzIkjQU2rmur"
+Content-Disposition: inline
+In-Reply-To: <87ppqqkh2g.fsf@octavius.laptop.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__28_Oct_2013_18_47_40_+1100_yz/Fz+OO.245Eh3l
-Content-Type: text/plain; charset=US-ASCII
+
+--zjcmjzIkjQU2rmur
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi James,
+On Sun, Oct 27, 2013 at 08:56:55AM -0400, Chris Ball wrote:
+> Hi,
+>=20
+> On Wed, Oct 23 2013, Thierry Reding wrote:
+> > Commit 2d7c51f (mmc: sdhci: Use work structs instead of tasklets)
+> > converts tasklets to work structs, but typos the conversion in the Dove
+> > driver.
+> >
+> > Signed-off-by: Thierry Reding <treding@nvidia.com>
+> > ---
+> >  drivers/mmc/host/sdhci-dove.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/mmc/host/sdhci-dove.c b/drivers/mmc/host/sdhci-dov=
+e.c
+> > index 45c7f25..95f1076 100644
+> > --- a/drivers/mmc/host/sdhci-dove.c
+> > +++ b/drivers/mmc/host/sdhci-dove.c
+> > @@ -39,7 +39,7 @@ static irqreturn_t sdhci_dove_carddetect_irq(int irq,=
+ void *data)
+> >  {
+> >  	struct sdhci_host *host =3D data;
+> > =20
+> > -	schedule_schedule(&host->card_detect_work);
+> > +	schedule_work(&host->card_detect_work);
+> >  	return IRQ_HANDLED;
+> >  }
+>=20
+> Thanks, Thierry -- I hope it's okay with you if I merge your fix into
+> the original patch and add your S-o-b to that patch:
+>=20
+>     Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+>     Signed-off-by: Jeremie Samuel <jeremie.samuel.ext@parrot.com>
+>     [treding: Fix typo causing sdhci-dove build breakage]
+>     Signed-off-by: Thierry Reding <treding@nvidia.com>
+>     Signed-off-by: Chris Ball <cjb@laptop.org>
 
-Today's linux-next merge of the security tree got a conflict in
-crypto/Makefile between commit a62b01cd6cc1 ("crypto: create generic
-version of ablk_helper") from the crypto tree and commit ee08997fee16
-("crypto: provide single place for hash algo information") from the
-security tree.
+Sure, no problem.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Thierry
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc crypto/Makefile
-index e0b7cf4e18b6,b3a7e807e08b..000000000000
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@@ -109,4 -104,4 +109,5 @@@ obj-$(CONFIG_CRYPTO_USER_API_SKCIPHER)=20
-  obj-$(CONFIG_XOR_BLOCKS) +=3D xor.o
-  obj-$(CONFIG_ASYNC_CORE) +=3D async_tx/
-  obj-$(CONFIG_ASYMMETRIC_KEY_TYPE) +=3D asymmetric_keys/
- +obj-$(CONFIG_CRYPTO_ABLK_HELPER) +=3D ablk_helper.o
-+ obj-$(CONFIG_CRYPTO_HASH_INFO) +=3D hash_info.o
-
---Signature=_Mon__28_Oct_2013_18_47_40_+1100_yz/Fz+OO.245Eh3l
+--zjcmjzIkjQU2rmur
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBCAAGBQJSbhahAAoJEMDTa8Ir7ZwVtXUQAI0S/ZmU+E9f9Nyqhyq+nuG/
-gzSZVGixO6GkqteRQekOOBFnb4kx4oBHp/20D5jRu0/tslnAsB7yz9k7G85CpKm0
-pB7V0DjY+0P/7oBdB6fVSyTK66gARgqc3bXhNUiGuFT8RhAujEv31w4kfHzjrrVq
-UhCWosVev7FGjqey/O9Kw0uHVcT6vNzZoPRc3t+utauf9xY3vrdtk15rjhOANMCC
-Y2Bvps69CC+ayBu6dZHZdnmvGZ3MlxBoxbEjIyoM80bk8Altd9BXEGfs4j8eH6PJ
-BFFiL3tP/94Gsuw/qVTvMXIRwyT2sACT2kQ/Nl15+IbhwE/8WgmpjHo9io/HjDgA
-viGQNhLVf2siLQqXF+zgvFZ0cvjIiojUYfowFSudhNROU3PZimiNl6Z82qtHQPvZ
-yMgLEwz5/2DzccoJluD+I259iZxtI+hsbmpYwTS4dwfgdwepNLYzXopjq4GE4SaZ
-cjpR1FwF1ZnQZj/GuJfRAEAOUwb7goy61JpQdpQvvpQn6LmnRPf9RnlfP+2DOrjS
-RLBHGHSWYgB/oLsTXyf4/adARwLIF/Lq9SyVP1ifa7Q2GezjM1ezx2SzEhgSICkN
-bmBkPCxgGNv9XrBncKCYHFU0rWJmQElAXowiakhuLjPSUzRJHykkgt/kEPjQbwzS
-8vP/2zhHgu3aTTU2zfRE
-=sQdB
+iQIcBAEBAgAGBQJSbhagAAoJEN0jrNd/PrOh2LcQALwF1OL2ke7UL2BnxMdMoYQu
+cr4CLHo9EuDi/Io8HajA/vuyY9bHLo8FLmm1vMzIYxk5Xh51J8N8gMP8pOaQ5lrp
+7pFIugg9/24A+ojncB9QEu8n40qb4SG06VwZq3g9gRk04pn3ppesR9H/DBWRVSFH
+omyvrljnUE88/QzJbkfAgKZKoZZDvw2/nCk/Twl7xDFrSpbWNbUFzXVgFP4NWoff
++YeXp+c6h/4jUuTGlTeOLmYGqURSIMoRHx/P4MwZK5/vszvO/eXYmVTngGNBWf+b
+1nmwOnvpdsqNTpxczszL5qKy2m4vLKS4RiGwWCEh3qHCnJQMTyJQc/VVSke4xTpA
+Pku/qLsEkEVFccydXtGFD5Qz+jhk9OqMbl65rxK9hSu+1HrTiWgUfPSbph5IrpoA
+gEKXI1sLZQNXu2/acYNkYyhZjRZ4tXnirFM4FyYyNh6uv2GPDsXYhnkjpnhGWeqm
+NY1CxhAfj45ssJ2t4+WbTIb68tZfo5PHANiqiQI/PSls2q3k3vSO5MTWYicDJuyq
+Avmt/ModuqBDGK9wSJL3mSsVVdJVAzCGc+zc3SBO47ILvOuxmA7xarPijaECMYkG
+DkwtQApkFKu46pCdWpValVOIkHdJci+vQKWiOKdAFab0DrFP+uRqQPkDgntnZpff
+5BLrDCNBPcAX9AHlDxKB
+=/Nly
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__28_Oct_2013_18_47_40_+1100_yz/Fz+OO.245Eh3l--
+--zjcmjzIkjQU2rmur--
