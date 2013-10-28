@@ -1,85 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab3J1K5u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 06:57:50 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:58059 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756177Ab3J1K5t (ORCPT
+	id S1756255Ab3J1K7r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 06:59:47 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:46579 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753542Ab3J1K7p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 06:57:49 -0400
-Message-ID: <526E4328.1010702@hitachi.com>
-Date: Mon, 28 Oct 2013 19:57:44 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
-        anton@redhat.com, systemtap@sourceware.org,
-        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com
-Subject: Re: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
-References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora> <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com> <20131025125921.GA29424@linux.vnet.ibm.com> <20131026095023.GF14237@gmail.com>
-In-Reply-To: <20131026095023.GF14237@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Oct 2013 06:59:45 -0400
+Subject: Re: [RFC][PATCHv5 4/4] Documentation: Add device tree bindings for Freescale FTM PWM.
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1382951151-31517-1-git-send-email-Li.Xiubo@freescale.com>
+Date: Mon, 28 Oct 2013 05:59:41 -0500
+Cc: <r65073@freescale.com>, <thierry.reding@gmail.com>,
+        <grant.likely@linaro.org>, <ian.campbell@citrix.com>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
+        <rob.herring@calxeda.com>, <matt.porter@linaro.org>,
+        <s.hauer@pengutronix.de>, <swarren@wwwdotorg.org>,
+        <t.figa@samsung.com>, <linux@arm.linux.org.uk>, <rob@landley.net>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-pwm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <224C2E26-6C33-4DBB-BC06-A4BA470FDA39@codeaurora.org>
+References: <1382951151-31517-1-git-send-email-Li.Xiubo@freescale.com>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/26 18:50), Ingo Molnar wrote:
-> 
-> * Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
-> 
->> Hi Pekka,
->>
->>>>
->>>> You can now use it in all perf tools, such as:
->>>>
->>>>     perf record -e libc:my_event -aR sleep 1
->>>
->>> Is there a technical reason why 'perf list' could not show all the
->>> available SDT markers on a system and that the 'market to event'
->>> mapping cannot happen automatically?
->>>
->>
->> Technically feasible. But then we would have to parse each of the 
->> libraries and executables to list them. Right? I am not sure if 
->> such a delay is acceptable.
-> 
-> I'd say lets try Pekka's suggestion and make it more palatable if 
-> there's complaints about the delay. (SSD systems are becoming 
-> dominant and there the search should be reasonably fast.)
-> 
-> We could also make 'perf list' more sophisticated, if invoked 
-> naively as 'perf list' then maybe it should first display the 
-> various event categories, with a (rough) count:
-> 
-> $ perf list
->    34 hardware events       # use 'perf list --hw'    to list them
->    40 hw-cache events       # use 'perf list --cache' to list them
->    20 software events       # use 'perf list --sw'    to list them
->     2 raw events            # use 'perf list --raw'   to list them
->   120 tracepoints           # use 'perf list --tp'    to list them
->   >10 SDT tracepoints       # use 'perf list --sdt'   to list them
-> 
->  # use 'perf list -a' to list all events
->  # use 'perf list ./binary' to list events in a given binary
-> 
-> I.e. bring a bit more structure into it.
 
-Ah, that's nice to me too ;)
+On Oct 28, 2013, at 4:05 AM, Xiubo Li wrote:
 
-Thank you,
+> The RFC patch only added "See ../clock/clock-bindings.txt for details of
+> the property values."
+> 
+> 
+> 
+> This adds the Document for Freescale FTM PWM driver under
+> Documentation/devicetree/bindings/pwm/.
+> 
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+> .../devicetree/bindings/pwm/pwm-fsl-ftm.txt        | 34 ++++++++++++++++++++++
+> 1 file changed, 34 insertions(+)
+> create mode 100644 Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt b/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
+> new file mode 100644
+> index 0000000..175b762
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
+> @@ -0,0 +1,34 @@
+> +Freescale FTM PWM controller
+
+What does FTM stand for, and can we spell out PWM at least once early on.
+
+> +
+> +Required properties:
+> +- compatible: Should be "fsl,vf610-ftm-pwm"
+> +- reg: Physical base address and length of the controller's registers
+> +- #pwm-cells: Should be 3. See pwm.txt in this directory for a description of
+> +  the cells format.
+> +- clock-names : Includes the following module clock source entries:
+> +    "ftm0" (system clock),
+> +    "ftm0_fix_sel" (fixed frequency clock),
+> +    "ftm0_ext_sel" (external clock)
+> +- clocks : Must contain a clock specifier for each entry in clock-names,
+> +  See ../clock/clock-bindings.txt for details of the property values.
+> +- fsl,pwm-counter-clk: The FTM PWM counter clock source, should be one of the
+> +  entries in clock-names.
+
+Why do we need this, why not just have only the clock-names/clocks reference the clk that is actually used?
+
+> +- pinctrl-names: must contain a "default" entry.
+> +- pinctrl-NNN: One property must exist for each entry in pinctrl-names.
+> +  See ../pinctrl/pinctrl-bindings.txt for details of the property values.
+
+let's drop the .. when making directory references.
+
+> +
+> +
+> +Example:
+> +
+> +pwm0: pwm@40038000 {
+> +		compatible = "fsl,vf610-ftm-pwm";
+> +		reg = <0x40038000 0x1000>;
+> +		#pwm-cells = <3>;
+> +		clock-names = "ftm0", "ftm0_fix_sel", "ftm0_ext_sel";
+> +		clocks = <&clks VF610_CLK_FTM0>,
+> +			<&clks VF610_CLK_FTM0_FIX_SEL>,
+> +			<&clks VF610_CLK_FTM0_EXT_SEL>;
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&pinctrl_pwm0_1>;
+> +		fsl,pwm-counter-clk = "ftm0_ext_sel";
+> +};
+> -- 
+> 1.8.4
+
+- k
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
