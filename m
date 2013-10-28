@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab3J1OVp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 10:21:45 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:42153 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756536Ab3J1OVn (ORCPT
+	id S1756781Ab3J1OXJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:23:09 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:49229 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756367Ab3J1OXI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:21:43 -0400
-X-Sasl-enc: 4ixMC0LfZSUT/yJ741IGU/4w4cRG7shmjBuZ3J8Olhu4 1382970094
-Message-ID: <526E72EC.9060400@iki.fi>
-Date: Mon, 28 Oct 2013 16:21:32 +0200
-From: Pekka Enberg <penberg@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 28 Oct 2013 10:23:08 -0400
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
-        anton@redhat.com, systemtap@sourceware.org,
-        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com
-Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
-References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora> <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com> <526E4940.8000608@hitachi.com> <526E5BA5.7050103@iki.fi> <20131028141152.GA1040@linux.vnet.ibm.com>
-In-Reply-To: <20131028141152.GA1040@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-ID: <72e26ba4-7b4f-4b64-b58c-0042cbe89202@default>
+Date: Mon, 28 Oct 2013 07:22:55 -0700 (PDT)
+From: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+To: David Miller <davem@davemloft.net>, ben@decadent.org.uk
+Cc: linux-kernel@vger.kernel.org, rds-devel@oss.oracle.com,
+        netdev@vger.kernel.org
+Subject: RE: [PATCH 7/8] rds: Pass pointers to virt_to_page(), not integers
+References: <1382910437.2994.43.camel@deadeye.wl.decadent.org.uk>
+ <1382910856.2994.51.camel@deadeye.wl.decadent.org.uk>
+ <20131028.002654.404759341390215962.davem@davemloft.net>
+In-Reply-To: <20131028.002654.404759341390215962.davem@davemloft.net>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.8  (707110) [OL
+ 12.0.6680.5000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2013 04:11 PM, Srikar Dronamraju wrote:
->
-> But what if a system has both 32 bit libc and 64 bit libc?
-> Wont we could end up with 2 libc:setjmp?
-> Should we give some more intelligence into perf to choose the 64 bit
-> libc over 32 bit one?
+-----Original Message-----
+From: David Miller [mailto:davem@davemloft.net] 
+Sent: Sunday, October 27, 2013 11:27 PM
+To: ben@decadent.org.uk
+Cc: Venkat Venkatsubra; linux-kernel@vger.kernel.org; rds-devel@oss.oracle.com; netdev@vger.kernel.org
+Subject: Re: [PATCH 7/8] rds: Pass pointers to virt_to_page(), not integers
 
-You can just trace both of them by default, no?
+From: Ben Hutchings <ben@decadent.org.uk>
+Date: Sun, 27 Oct 2013 21:54:16 +0000
 
-                         Pekka
+> Most architectures define virt_to_page() as a macro that casts its 
+> argument such that an argument of type unsigned long will be accepted 
+> without complaint.  However, the proper type is void *, and passing 
+> unsigned long results in a warning on MIPS.
+> 
+> Compile-tested only.
+> 
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+
+This looks fine:
+
+Acked-by: David S. Miller <davem@davemloft.net>
+Acked-by: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
