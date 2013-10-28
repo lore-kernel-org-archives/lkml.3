@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757129Ab3J1QqJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 12:46:09 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:33392 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756006Ab3J1QqH (ORCPT
+	id S1757181Ab3J1Qqt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 12:46:49 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:39277 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756786Ab3J1Qqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 12:46:07 -0400
+	Mon, 28 Oct 2013 12:46:48 -0400
+Date: Mon, 28 Oct 2013 09:46:41 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>, linux-kernel@vger.kernel.org
+Subject: Re: blk-mq flush fix
+Message-ID: <20131028164641.GA1046@infradead.org>
+References: <20131026114612.GA8576@infradead.org>
+ <20131026153124.GA22227@infradead.org>
+ <20131027222914.GG22549@kernel.dk>
+ <20131028084821.GA31270@infradead.org>
+ <526E90D7.1070604@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <3901382977358@web14h.yandex.ru>
-References: <55541379679397@web20h.yandex.ru> <CAP+RiCAVuUEfyjg02+ZjeFXgUuaRW+fuMB490Ce2Hq_4qHBL=A@mail.gmail.com>
- <loom.20131023T201657-894@post.gmane.org> <237221382623942@web21m.yandex.ru>
- <106621382627723@web13g.yandex.ru> <3901382977358@web14h.yandex.ru>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Mon, 28 Oct 2013 09:45:23 -0700
-Message-ID: <CAGVrzcYj91m=rC5ye9eAo=eMN0mBzk9-Bv8K6myTpnH28PLUxQ@mail.gmail.com>
-Subject: Re: lz4hc compression in UBIFS?
-To: Konstantin Tokarev <annulen@yandex.ru>
-Cc: Yann Collet <yann.collet.73@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Brent Taylor <motobud@gmail.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <526E90D7.1070604@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/28 Konstantin Tokarev <annulen@yandex.ru>:
->
->
-> 24.10.2013, 19:15, "Konstantin Tokarev" <annulen@yandex.ru>:
->> Attached patch to crypto API wrapper for lz4hc seems to fix the issue. I can save
->> and read files on LZ4HC-compressed volume, and I'm running on LZ4HC-compressed rootfs,
->> flashed from mkfs.ubifs generated image (patch by Elie De Brauwer). My software
->> works correctly.
->>
->> Unfortunately, on my board LZ4HC-compressed UBIFS volume performs noticeable worse
->> than LZO, while still faster than zlib. I guess the reason is that CPU is no longer a
->> bottleneck for my system, but NAND speed.
->>
->> Thank you all for your help!
->
-> Can anyone review the correctness of my patch? Looks like API of LZ4 decompressor is
-> used wrong way in crypto API.
+On Mon, Oct 28, 2013 at 10:29:11AM -0600, Jens Axboe wrote:
+> It's not that I think the existing patch is THAT bad, it fits in alright
+> with the reserved tagging and works regardless of whether a driver uses
+> reserved tags or not. And it does have the upside of not requiring
+> special checks or logic for this special non-tagged request that using
+> the preallocated would might need.
 
-Can you make a formal submission of it? That would probably help reviewing it.
---
-Florian
+The problem with it is that it will pass a tag number to the low level
+driver which it doesn't expect.  In case the tags are used 1:1 as
+hardware tags that would lead to nasy bugs.
+
+At vefy least we'd need to mess with ->tag for this special request.
+
