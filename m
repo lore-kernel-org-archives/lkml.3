@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab3J1K3K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 06:29:10 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:3487 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756126Ab3J1K3H (ORCPT
+	id S1756262Ab3J1K3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 06:29:19 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:8283 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756228Ab3J1K3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 06:29:07 -0400
+	Mon, 28 Oct 2013 06:29:15 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 28 Oct 2013 03:28:41 -0700
+	by hqnvupgp07.nvidia.com on Mon, 28 Oct 2013 03:28:49 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Stephen Warren <swarren@wwwdotorg.org>,
         Russell King <linux@arm.linux.org.uk>,
@@ -21,9 +21,9 @@ CC: Olof Johansson <olof@lixom.net>, Dave Martin <Dave.Martin@arm.com>,
         <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v9 3/5] ARM: tegra: split setting of CPU reset handler
-Date: Mon, 28 Oct 2013 19:28:36 +0900
-Message-ID: <1382956118-12495-4-git-send-email-acourbot@nvidia.com>
+Subject: [PATCH v9 5/5] ARM: tegra: support Trusted Foundations by default
+Date: Mon, 28 Oct 2013 19:28:38 +0900
+Message-ID: <1382956118-12495-6-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.8.4.1
 In-Reply-To: <1382956118-12495-1-git-send-email-acourbot@nvidia.com>
 References: <1382956118-12495-1-git-send-email-acourbot@nvidia.com>
@@ -34,75 +34,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not all Tegra devices can set the CPU reset handler in the same way.
-In particular, devices using a TrustZone secure monitor cannot set the
-reset handler directly and need to do it through a firmware operation.
-
-This patch separates the act of setting the reset handler from its
-preparation, so the former can be implemented in a different way.
+Support for Trusted Foundations is light and allows the kernel to run on
+a wider range of devices, so enable it by default.
 
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 Reviewed-by: Stephen Warren <swarren@nvidia.com>
 ---
- arch/arm/mach-tegra/reset.c | 27 +++++++++++++++++----------
- 1 file changed, 17 insertions(+), 10 deletions(-)
+ arch/arm/configs/tegra_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/mach-tegra/reset.c b/arch/arm/mach-tegra/reset.c
-index fd0bbf8..e282395 100644
---- a/arch/arm/mach-tegra/reset.c
-+++ b/arch/arm/mach-tegra/reset.c
-@@ -33,26 +33,18 @@
- 
- static bool is_enabled;
- 
--static void __init tegra_cpu_reset_handler_enable(void)
-+static void __init tegra_cpu_reset_handler_set(const u32 reset_address)
- {
--	void __iomem *iram_base = IO_ADDRESS(TEGRA_IRAM_RESET_BASE);
- 	void __iomem *evp_cpu_reset =
- 		IO_ADDRESS(TEGRA_EXCEPTION_VECTORS_BASE + 0x100);
- 	void __iomem *sb_ctrl = IO_ADDRESS(TEGRA_SB_BASE);
- 	u32 reg;
- 
--	BUG_ON(is_enabled);
--	BUG_ON(tegra_cpu_reset_handler_size > TEGRA_IRAM_RESET_HANDLER_SIZE);
--
--	memcpy(iram_base, (void *)__tegra_cpu_reset_handler_start,
--			tegra_cpu_reset_handler_size);
--
- 	/*
- 	 * NOTE: This must be the one and only write to the EVP CPU reset
- 	 *       vector in the entire system.
- 	 */
--	writel(TEGRA_IRAM_RESET_BASE + tegra_cpu_reset_handler_offset,
--			evp_cpu_reset);
-+	writel(reset_address, evp_cpu_reset);
- 	wmb();
- 	reg = readl(evp_cpu_reset);
- 
-@@ -66,6 +58,21 @@ static void __init tegra_cpu_reset_handler_enable(void)
- 		writel(reg, sb_ctrl);
- 		wmb();
- 	}
-+}
-+
-+static void __init tegra_cpu_reset_handler_enable(void)
-+{
-+	void __iomem *iram_base = IO_ADDRESS(TEGRA_IRAM_RESET_BASE);
-+	const u32 reset_address = TEGRA_IRAM_RESET_BASE +
-+						tegra_cpu_reset_handler_offset;
-+
-+	BUG_ON(is_enabled);
-+	BUG_ON(tegra_cpu_reset_handler_size > TEGRA_IRAM_RESET_HANDLER_SIZE);
-+
-+	memcpy(iram_base, (void *)__tegra_cpu_reset_handler_start,
-+			tegra_cpu_reset_handler_size);
-+
-+	tegra_cpu_reset_handler_set(reset_address);
- 
- 	is_enabled = true;
- }
+diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+index ea042e8..dddb97b 100644
+--- a/arch/arm/configs/tegra_defconfig
++++ b/arch/arm/configs/tegra_defconfig
+@@ -32,6 +32,7 @@ CONFIG_PCI=y
+ CONFIG_PCI_MSI=y
+ CONFIG_PCI_TEGRA=y
+ CONFIG_PCIEPORTBUS=y
++CONFIG_TRUSTED_FOUNDATIONS=y
+ CONFIG_SMP=y
+ CONFIG_PREEMPT=y
+ CONFIG_AEABI=y
 -- 
 1.8.4.1
 
