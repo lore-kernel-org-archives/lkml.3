@@ -1,74 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757861Ab3J1XUr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 19:20:47 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:51046 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757647Ab3J1XUp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 19:20:45 -0400
-Message-ID: <526EF149.8060304@gmail.com>
-Date: Mon, 28 Oct 2013 18:20:41 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
+	id S932124Ab3J1X0m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 19:26:42 -0400
+Received: from ring0.de ([91.143.88.219]:37532 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757623Ab3J1X0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 19:26:38 -0400
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Tue, 29 Oct 2013 00:26:26 +0100
+From: Sebastian Reichel <sre@ring0.de>
+To: Mark Brown <broonie@kernel.org>
+Cc: Grazvydas Ignotas <notasas@gmail.com>, Alexander Shiyan <shc_work@mail.ru>,
+        Luciano Coelho <luca@coelho.fi>, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Chris Ball <cjb@laptop.org>, Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/2] mmc: arasan: Add driver for Arasan SDHCI
-References: <1381864085-8806-1-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1381864085-8806-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Bill Pemberton <wfp5p@virginia.edu>, Felipe Balbi <balbi@ti.com>,
+        Rob Landley <rob@landley.net>, netdev@vger.kernel.org,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/4] wl1251: move power GPIO handling into the driver
+Message-ID: <20131028232624.GA950@earth.universe>
+Mail-Followup-To: Mark Brown <broonie@kernel.org>,
+	Grazvydas Ignotas <notasas@gmail.com>,
+	Alexander Shiyan <shc_work@mail.ru>,
+	Luciano Coelho <luca@coelho.fi>,
+	Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+	Russell King <linux@arm.linux.org.uk>,
+	Pawel Moll <pawel.moll@arm.com>,
+	Ian Campbell <ijc+devicetree@hellion.org.uk>,
+	Tony Lindgren <tony@atomide.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
+	"John W. Linville" <linville@tuxdriver.com>,
+	Rob Herring <rob.herring@calxeda.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Sachin Kamat <sachin.kamat@linaro.org>,
+	Bill Pemberton <wfp5p@virginia.edu>, Felipe Balbi <balbi@ti.com>,
+	Rob Landley <rob@landley.net>, netdev@vger.kernel.org,
+	"linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+	"linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>
+References: <1382890469-25286-1-git-send-email-sre@debian.org>
+ <1382890469-25286-3-git-send-email-sre@debian.org>
+ <1382891056.102746625@f315.i.mail.ru>
+ <20131027201218.GA4414@earth.universe>
+ <CANOLnONKcC1i19ypb4rh2Rff3WsVhhuUhNvZvYwDV2-ZNtjVxQ@mail.gmail.com>
+ <20131028192354.GA18208@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
+Content-Disposition: inline
+In-Reply-To: <20131028192354.GA18208@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 02:08 PM, Soren Brinkmann wrote:
-> Add a driver for Arasan's SDHCI controller core.
-> 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
->  .../devicetree/bindings/mmc/arasan,sdhci.txt       |  23 +++
->  MAINTAINERS                                        |   1 +
->  drivers/mmc/host/Kconfig                           |  12 ++
->  drivers/mmc/host/Makefile                          |   1 +
->  drivers/mmc/host/sdhci-of-arasan.c                 | 224 +++++++++++++++++++++
->  5 files changed, 261 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
->  create mode 100644 drivers/mmc/host/sdhci-of-arasan.c
-> 
-> diff --git a/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt b/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
-> new file mode 100644
-> index 000000000000..20f0fc25e270
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
-> @@ -0,0 +1,23 @@
-> +Device Tree Bindings for the Arasan SDCHI Controller
-> +
-> +  The bindings follow the mmc[1] and the clock bindings[2]. Only deviations are
-> +  documented here.
-> +
-> +  [1] Documentation/devicetree/bindings/mmc/mmc.txt
-> +  [2] Documentation/devicetree/bindings/clock/clock-bindings.txt
-> +
-> +Required Properties:
-> +  - compatible: Compatibility string. Must be 'arasan,sdhci'
 
-This string is a bit non-specific. Vendor IP typically has configurable
-options, different revs of IP with fixes/differences, and the
-possibility of integration wierdness or bugs. So it is better to be as
-specific as possible in case the kernel needs to know exactly what
-version of h/w this is.
+--uAKRQypu60I7Lcqm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Rob
+Hi,
 
+On Mon, Oct 28, 2013 at 12:23:54PM -0700, Mark Brown wrote:
+> On Mon, Oct 28, 2013 at 07:29:52PM +0200, Grazvydas Ignotas wrote:
+>=20
+> > When wl12xx family of chips is connected through SDIO, we already have
+> > that pin set up as a regulator controlled with the help of mmc
+> > subsystem. When time comes to communicate with the chip, mmc subsystem
+> > sees this as yet another SD card and looks for associated regulator
+> > for it, and the board file has that set up as a fixed regulator
+> > controlling that pin (see pandora_vmmc3 in
+> > arch/arm/mach-omap2/board-omap3pandora.c). To prevent poweroff after
+> > first SDIO communications are over, pm_runtime calls are used in
+> > drivers/net/wireless/ti/wl1251/sdio.c .
+>=20
+> Is this actually controlling VMMC though, or is it some other control?
+> If it's not controlling VMMC then it shouldn't say that it is.
+>=20
+> > I don't know if something similar can be done done in SPI case, but
+> > I'm sure this is not the first your-so-called regulator misuse.
+>=20
+> It's not the first but that doesn't make controlling something other
+> than a regulator through the regulator API any less broken.
+
+I gave it a second try to find out details for this pin:
+
+1. The pin is named PMEN in the Nokia N900 schematics
+2. PMEN is described as "Power management enable - system shutdown"
+   in a crippled datasheet of the wl1253, which I found in the internet.
+
+I don't think this is supposed to be handled by the regulator API.
+
+-- Sebastian
+
+--uAKRQypu60I7Lcqm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSbvKgAAoJENju1/PIO/qa9/4P/3bgI8we1v7yHBUBlbrUZ/qn
+9aIlsdohRsCHxuW5eTOTIEV3zXuEczUy//fijue0OK0nMXg3OI2xk7YPyj5Lncuh
+IiV1dYLfy0vQN9iMersFJJDdeR21t07jn8x9Cq+X+lA8SJsMMLIVYqaX+PyTE8+U
+ERNEjWsOuTfAmOxZXysFJPWF/xJ1gN1TygZ9WfncDxD4dZlBd6PMmWYSWbvpa4nr
+yOSSCuThLpQfwTYad/PqLZlwKwdS/V0zG56Lf9jyAPv2Qx7JmrSl+KvIi8aGsD03
+NXnjTOv0P8EeVXy9NVwpoT50qyOVq0qE9PNkuVMqkwgk20MDrE5YpSgha8BYn9E4
+Ia8RLEUCY86h4/EuxuUhDbio80HlYpjcVC72/dPWO66ZJ8BvkP9vbwm7wR04R607
+vcPjlHgxCUJSVTMoszstNOrO+JBq4IO3w1VTrE3cMF0Ge17pvj+x5/mt1aYzIC3R
+z2s9XCjh0AiHI1DpBUi8iBwHNRYK2EnrJNW560C5FKf70PTUwvP+K83H/2tBUn79
+M762U1cxOkb8ikgoeSsmdPDf/H5tsRRbUW4/4IX8yf8VPKLAGz9u2G6XFt4JDAQO
+2g2yh6MeAOq6T8DPFv3DnUEmyXK9Hn00dMs3VowgdIhmCh/Vamn1HXY5f9bnVMD6
+u+xk0uvWdCm39RJFUJQD
+=uEvP
+-----END PGP SIGNATURE-----
+
+--uAKRQypu60I7Lcqm--
