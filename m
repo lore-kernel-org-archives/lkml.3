@@ -1,50 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab3J1NQE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 09:16:04 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50308 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756127Ab3J1NQC (ORCPT
+	id S1756448Ab3J1NTx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 09:19:53 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:36172 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755883Ab3J1NTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 09:16:02 -0400
-Date: Mon, 28 Oct 2013 14:15:56 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: RFC: paravirtualizing perf_clock
-Message-ID: <20131028131556.GN19466@laptop.lan>
-References: <526DBD7F.1010807@gmail.com>
+	Mon, 28 Oct 2013 09:19:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <526DBD7F.1010807@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <526E55B9.20902@hitachi.com>
+References: <20131024075813.GA26929@gmail.com>
+	<CAGdX0WFu=sxWUckkZiUQMTxo_tOFbxX-paqU2p_5YR8NaN6gSA@mail.gmail.com>
+	<20131025101511.GB3439@gmail.com>
+	<CAGdX0WGrGbb-eJvS4HHg9umk7X3-vrzyrJCuhAJrfGvOriKHSQ@mail.gmail.com>
+	<20131026085955.GD14237@gmail.com>
+	<526E55B9.20902@hitachi.com>
+Date: Mon, 28 Oct 2013 21:19:50 +0800
+Message-ID: <CAGdX0WE-m1M8GEqx3N8ccX=KkO0Hj_igN1XkrpjHW=qkrwtCAw@mail.gmail.com>
+Subject: Re: Re: ktap inclusion in drivers/staging/?
+From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 07:27:27PM -0600, David Ahern wrote:
-> Often when debugging performance problems in a virtualized environment you
-> need to correlate what is happening in the guest with what is happening in
-> the host. To correlate events you need a common time basis (or the ability
-> to directly correlate the two).
-> 
-> The attached patch paravirtualizes perf_clock, pulling the timestamps in VMs
-> from the host using an MSR read if the option is available (exposed via KVM
-> feature flag). I realize this is not the correct end code but it illustrates
-> what I would like to see -- host and guests using the same perf_clock so
-> timestamps directly correlate.
-> 
-> Any suggestions on how to do this and without impacting performance. I
-> noticed the MSR path seems to take about twice as long as the current
-> implementation (which I believe results in rdtsc in the VM for x86 with
-> stable TSC).
+On Mon, Oct 28, 2013 at 8:16 PM, Masami Hiramatsu
+<masami.hiramatsu.pt@hitachi.com> wrote:
+> (2013/10/26 17:59), Ingo Molnar wrote:
+>>
+>> * Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
+>>
+>>> Thanks. An addition question I want to discuss in here is the ktap
+>>> code structure layout in first patch series, this don't need to
+>>> dig out any ktap design detail, so we can make agreement on this
+>>> point, and ease for me to prepare patch series.
+>>>
+>>> Do I need to prepare patchset target on staging tree or "real"
+>>> part of kernel? [...]
+>>
+>> I'd suggest adding it to the core, i.e. kernel/tracing/ and
+>> kernel/trace/trace_events_filter.c in particular which includes the
+>> current filter script interpreter.
+>
+> It means we'll need to put Lua compiler in the kernel...
+> I just recommend to put the ktap *on* the ftrace or perf. Not directly
+> integrate it. Bytecode interpreter is good, limited fomula parser is also
+> good, but IMHO, integrating complete lua compiler into the kernel looks
+> crazy.
+> I think it is just enough to include lua compiler as a tool in the kernel.
+>
+Agree, putting lua language compiler into kernel is a crazy idea, and I
+cannot find the good reason for this, IMO.
 
-So assuming all the TSCs are in fact stable; you could implement this by
-syncing up the guest TSC to the host TSC on guest boot. I don't think
-anything _should_ rely on the absolute TSC value.
+If you knows lua, they combine compiler and interpreter together, but
+when I decided to start ktap, I decoupled the compiler and interpreter,
+some reasons behind that decision:
 
-Of course you then also need to make sure the host and guest tsc
-multipliers (cyc2ns) are identical, you can play games with
-cyc2ns_offset if you're brave.
+- focus on interpreter(ktapvm)
+   we should optimize interpreter as much as we can, but if we also put
+   compiler into kernel, we need to open another eye on compiler, to be
+   careful on performance/overhead of compiler design, too crazy to
+   consider those issues, and not needed.
+
+- debugging info (like vmline, CTF, dwarf)
+   debugging info should handle in userspace, not kernel.
+
+- less kernel problems (aka, safety)
+
+- future language syntax change
+  easy to change the compiler in userspace, also it's have a possibility
+  one kernel interpreter back end for different compiler.
+
+ktap is defined as"lightweight", mainly for ktapvm. if putting compiler
+into kernel, then it's not "lightweight" anymore.
+
+Thanks.
+
+Jovi
