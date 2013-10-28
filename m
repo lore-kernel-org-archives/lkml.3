@@ -1,90 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723Ab3J1OA3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 10:00:29 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:41840 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756441Ab3J1OA1 (ORCPT
+	id S1756575Ab3J1OGZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:06:25 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:53745 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756164Ab3J1OGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:00:27 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [PATCH 16/16] wl1251: Add sysfs file address for setting permanent mac address
-Date: Mon, 28 Oct 2013 15:00:24 +0100
-User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.1; x86_64; ; )
-Cc: Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
-        joni.lapilainen@gmail.com
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com> <201310281449.58170@pali> <1382968522.17956.11.camel@jlt4.sipsolutions.net>
-In-Reply-To: <1382968522.17956.11.camel@jlt4.sipsolutions.net>
+	Mon, 28 Oct 2013 10:06:24 -0400
+Message-ID: <526E6F58.8040405@synopsys.com>
+Date: Mon, 28 Oct 2013 19:36:16 +0530
+From: Vineet Gupta <vineetg76@gmail.com>
+Organization: Synopsys
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart345760620.OzhjffakOm";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Chen Gang <gang.chen@asianux.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arc: kernel: export symbol for save_stack_trace() in
+ stacktrace.c
+References: <526DD356.5020101@asianux.com>
+In-Reply-To: <526DD356.5020101@asianux.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201310281500.24159@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart345760620.OzhjffakOm
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On 10/28/2013 08:30 AM, Chen Gang wrote:
+> Need export its symbol just like other architectures done, or can not
+> pass compiling with allmodconfig, the related error:
+> 
+>     MODPOST 2994 modules
+>   ERROR: "save_stack_trace" [kernel/backtracetest.ko] undefined!
+>   ERROR: "save_stack_trace" [drivers/md/persistent-data/dm-persistent-data.ko] undefined!
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 
-On Monday 28 October 2013 14:55:22 Johannes Berg wrote:
-> On Mon, 2013-10-28 at 14:49 +0100, Pali Roh=C3=A1r wrote:
-> > On Monday 28 October 2013 14:45:05 Johannes Berg wrote:
-> > > On Sat, 2013-10-26 at 22:34 +0200, Pali Roh=C3=A1r wrote:
-> > > > Driver wl1251 generating mac address randomly at startup
-> > > > and there is no way to set permanent mac address via
-> > > > SET_IEEE80211_PERM_ADDR. This patch export sysfs file
-> > > > which can set permanent mac address by userspace helper
-> > > > program. Patch is needed for devices which do not store
-> > > > mac address in internal wl1251 eeprom.
-> > >=20
-> > > This doesn't really seem like a good idea since you can
-> > > also just use 'ip' or whatever to set the MAC address.
-> > >=20
-> > > johannes
-> >=20
-> > AFAIK you cannot set permanent address (show by ethtool -P
-> > wlan0) via ip/ifconfig.
->=20
-> You probably can't, but that address also doesn't matter at
-> all and isn't really used anywhere.
->=20
-> johannes
+Applied for 3.13
 
-There are some (proprietary) applications which using permanent=20
-address for something...
-
-And also more important: some network managing tools using it.=20
-NetworkManager resetting current MAC address to permanent one=20
-before starting configuring interface.
-
-So this will lead to never use correct MAC address (but random=20
-permanent one) assigned for that wl1251 wireless card...
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart345760620.OzhjffakOm
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlJubfgACgkQi/DJPQPkQ1JkVgCePETpdDNGvuSuoZV7u+ya1GhY
-dq8Anja0MntOATEspX7Bvjqs640xJ85L
-=kxw3
------END PGP SIGNATURE-----
-
---nextPart345760620.OzhjffakOm--
+Thx,
+-Vineet
