@@ -1,118 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756598Ab3J1M7P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 08:59:15 -0400
-Received: from vsp-authed02.binero.net ([195.74.38.226]:27770 "EHLO
-	vsp-authed-02-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756573Ab3J1M7K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 08:59:10 -0400
-Message-ID: <526E5F96.9090904@gaisler.com>
-Date: Mon, 28 Oct 2013 13:59:02 +0100
-From: Andreas Larsson <andreas@gaisler.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1756601Ab3J1NBd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 09:01:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35345 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755303Ab3J1NBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 09:01:31 -0400
+Date: Mon, 28 Oct 2013 15:00:56 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
+        yoshihiro.yunomae.ez@hitachi.com
+Subject: Re: RFC: paravirtualizing perf_clock
+Message-ID: <20131028130056.GT15657@redhat.com>
+References: <526DBD7F.1010807@gmail.com>
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        software@gaisler.com
-Subject: Re: [PATCH] usb: gadget: Add UDC driver for Aeroflex Gaisler GRUSBDC
-References: <1376316310-27989-1-git-send-email-andreas@gaisler.com> <20130918171506.GQ21559@radagast> <524A8927.6090500@gaisler.com> <20131001141958.GQ1476@radagast>
-In-Reply-To: <20131001141958.GQ1476@radagast>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <526DBD7F.1010807@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-10-01 16:19, Felipe Balbi wrote:
->>>> +static void gr_finish_request(struct gr_ep *ep, struct gr_request *req,
->>>> +			      int status)
->>>> +{
->>>> +	struct gr_udc *dev;
->>>> +
->>>> +	list_del_init(&req->queue);
->>>> +
->>>> +	if (likely(req->req.status == -EINPROGRESS))
->>>> +		req->req.status = status;
->>>> +	else
->>>> +		status = req->req.status;
->>>> +
->>>> +	dev = ep->dev;
->>>> +	usb_gadget_unmap_request(&dev->gadget, &req->req, ep->is_in);
->>>> +	gr_free_dma_desc_chain(dev, req);
->>>> +
->>>> +	if (ep->is_in) /* For OUT, actual gets updated by the work handler */
->>>> +		req->req.actual = req->req.length;
->>>> +
->>>> +	if (!status) {
->>>> +		if (ep->is_in)
->>>> +			gr_dbgprint_request("SENT", ep, req);
->>>> +		else
->>>> +			gr_dbgprint_request("RECV", ep, req);
->>>> +	}
->>>> +
->>>> +	/* Prevent changes to ep->queue during callback */
->>>> +	ep->callback = 1;
->>>> +	if (req == dev->ep0reqo && !status) {
->>>> +		if (req->setup)
->>>> +			gr_ep0_setup(dev, req);
->>>> +		else
->>>> +			dev_err(dev->dev,
->>>> +				"Unexpected non setup packet on ep0in\n");
->>>> +	} else if (req->req.complete) {
->>>> +		unsigned long flags;
->>>> +
->>>> +		/* Complete should be called with irqs disabled */
->>>> +		local_irq_save(flags);
->>>
->>> I guess it'd be better if you called this with spin_lock_irqsave()
->>> called before, then you can remove local_irq_save from here.
->>
->> That would increase the amount of time interrupts are disabled quite a
->> lot, so I would prefer not to.
->
-> that's what every other UDC driver is doing. I don't think you need to
-> worry about that. Can you run some benchmarks with both constructs just
-> so I can have peace of mind ?
+On Sun, Oct 27, 2013 at 07:27:27PM -0600, David Ahern wrote:
+> Often when debugging performance problems in a virtualized
+> environment you need to correlate what is happening in the guest
+> with what is happening in the host. To correlate events you need a
+> common time basis (or the ability to directly correlate the two).
+> 
+> The attached patch paravirtualizes perf_clock, pulling the
+> timestamps in VMs from the host using an MSR read if the option is
+> available (exposed via KVM feature flag). I realize this is not the
+> correct end code but it illustrates what I would like to see -- host
+> and guests using the same perf_clock so timestamps directly
+> correlate.
+> 
+> Any suggestions on how to do this and without impacting performance.
+> I noticed the MSR path seems to take about twice as long as the
+> current implementation (which I believe results in rdtsc in the VM
+> for x86 with stable TSC).
+> 
+Yoshihiro YUNOMAE (copied) has a tool that merges guest's and host's
+traces using tsc timestamp. His commit 489223edf29b adds a trace point
+that reports current guest's tsc offset to support that.
 
-Hi!
+> David
+> 
 
-My benchmark shows 20%+ performance loss both for mass storage running
-on this driver and for concurrent ethernet traffic and cpu bound tasks
-running with this change. In addition the code becomes messier as some
-spin locks disables interrupts and some do not depending on wich paths
-might lead to a call to complete. So I'll stick to not disabling
-interrupts until disabled interrupts are actually needed.
+> 
+> diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
+> index 94dc8ca434e0..5a023ddf085e 100644
+> --- a/arch/x86/include/uapi/asm/kvm_para.h
+> +++ b/arch/x86/include/uapi/asm/kvm_para.h
+> @@ -24,6 +24,7 @@
+>  #define KVM_FEATURE_STEAL_TIME		5
+>  #define KVM_FEATURE_PV_EOI		6
+>  #define KVM_FEATURE_PV_UNHALT		7
+> +#define KVM_FEATURE_PV_PERF_CLOCK	8
+>  
+>  /* The last 8 bits are used to indicate how to interpret the flags field
+>   * in pvclock structure. If no bits are set, all flags are ignored.
+> @@ -40,6 +41,7 @@
+>  #define MSR_KVM_ASYNC_PF_EN 0x4b564d02
+>  #define MSR_KVM_STEAL_TIME  0x4b564d03
+>  #define MSR_KVM_PV_EOI_EN      0x4b564d04
+> +#define MSR_KVM_PV_PERF_CLOCK      0x4b564d05
+>  
+>  struct kvm_steal_time {
+>  	__u64 steal;
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 9d8449158cf9..fb7824a64823 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -25,6 +25,7 @@
+>  #include <linux/cpu.h>
+>  #include <linux/bitops.h>
+>  #include <linux/device.h>
+> +#include <linux/kvm_para.h>
+>  
+>  #include <asm/apic.h>
+>  #include <asm/stacktrace.h>
+> @@ -34,6 +35,7 @@
+>  #include <asm/timer.h>
+>  #include <asm/desc.h>
+>  #include <asm/ldt.h>
+> +#include <asm/kvm_para.h>
+>  
+>  #include "perf_event.h"
+>  
+> @@ -52,6 +54,38 @@ u64 __read_mostly hw_cache_extra_regs
+>  				[PERF_COUNT_HW_CACHE_OP_MAX]
+>  				[PERF_COUNT_HW_CACHE_RESULT_MAX];
+>  
+> +
+> +#ifdef CONFIG_PARAVIRT
+> +
+> +static int have_pv_perf_clock;
+> +
+> +static void __init perf_clock_init(void)
+> +{
+> +	if (kvm_para_available() &&
+> +		kvm_para_has_feature(KVM_FEATURE_PV_PERF_CLOCK)) {
+> +		have_pv_perf_clock = 1;
+> +	}
+> +}
+> +
+> +u64 perf_clock(void)
+> +{
+> +	if (have_pv_perf_clock)
+> +		return native_read_msr(MSR_KVM_PV_PERF_CLOCK);
+> +
+> +	/* otherwise return local_clock */
+> +	return local_clock();
+> +}
+> +
+> +#else
+> +u64 perf_clock(void)
+> +{
+> +	return local_clock();
+> +}
+> +
+> +static inline void __init perf_clock_init(void)
+> +{
+> +}
+> +#endif
+>  /*
+>   * Propagate event elapsed time into the generic event.
+>   * Can only be executed on the CPU where the event is active.
+> @@ -1496,6 +1530,8 @@ static int __init init_hw_perf_events(void)
+>  	struct x86_pmu_quirk *quirk;
+>  	int err;
+>  
+> +	perf_clock_init();
+> +
+>  	pr_info("Performance Events: ");
+>  
+>  	switch (boot_cpu_data.x86_vendor) {
+> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+> index b110fe6c03d4..5b258a18f9c0 100644
+> --- a/arch/x86/kvm/cpuid.c
+> +++ b/arch/x86/kvm/cpuid.c
+> @@ -414,7 +414,8 @@ static int do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+>  			     (1 << KVM_FEATURE_ASYNC_PF) |
+>  			     (1 << KVM_FEATURE_PV_EOI) |
+>  			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
+> -			     (1 << KVM_FEATURE_PV_UNHALT);
+> +			     (1 << KVM_FEATURE_PV_UNHALT) |
+> +			     (1 << KVM_FEATURE_PV_PERF_CLOCK);
+>  
+>  		if (sched_info_on())
+>  			entry->eax |= (1 << KVM_FEATURE_STEAL_TIME);
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index e5ca72a5cdb6..61ec1f1c7d38 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -2418,6 +2418,9 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
+>  	case MSR_KVM_PV_EOI_EN:
+>  		data = vcpu->arch.pv_eoi.msr_val;
+>  		break;
+> +	case MSR_KVM_PV_PERF_CLOCK:
+> +		data = perf_clock();
+> +		break;
+>  	case MSR_IA32_P5_MC_ADDR:
+>  	case MSR_IA32_P5_MC_TYPE:
+>  	case MSR_IA32_MCG_CAP:
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index c8ba627c1d60..c8a51954ea9e 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -865,4 +865,7 @@ _name##_show(struct device *dev,					\
+>  									\
+>  static struct device_attribute format_attr_##_name = __ATTR_RO(_name)
+>  
+> +#if defined(CONFIG_X86_64)
+> +u64 perf_clock(void);
+> +#endif
+>  #endif /* _LINUX_PERF_EVENT_H */
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index d49a9d29334c..b073975af05a 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -290,10 +290,18 @@ extern __weak const char *perf_pmu_name(void)
+>  	return "pmu";
+>  }
+>  
+> +#if defined(CONFIG_X86_64)
+> +__weak u64 perf_clock(void)
+> +{
+> +	return local_clock();
+> +}
+> +EXPORT_SYMBOL(perf_clock);
+> +#else
+>  static inline u64 perf_clock(void)
+>  {
+>  	return local_clock();
+>  }
+> +#endif
+>  
+>  static inline struct perf_cpu_context *
+>  __get_cpu_context(struct perf_event_context *ctx)
+> -- 
+> 1.7.12.4 (Apple Git-37)
+> 
 
->>>> +static irqreturn_t gr_irq(int irq, void *_dev)
->>>> +{
->>>> +	struct gr_udc *dev = _dev;
->>>> +
->>>> +	if (!dev->irq_enabled)
->>>> +		return IRQ_NONE;
->>>> +
->>>> +	schedule_work(&dev->work);
->>>
->>> why do you need this ? We have threaded IRQ handlers. Why a workqueue ?
->>
->> As mentioned above, to to be able to schedule work after pausing
->> endpoint handling during a completion callback call or during an
->> endpoint halt.
->
-> doesn't look like you need that work_struct at all. Handle your IRQ
-> directly and for the pieces you need to do after ClearHalt, re-factor
-> that to a separate function which you call conditionally on
-> ->set_halt().
 
-For some reason, the performance suffers massively when switching to
-using threaded interrupts instead of the current solution using the work
-queue. The times to complete large file transfers to the mass_storage
-gadget running on top of the udc are regularly around seven times longer
-using threaded interrupts complared to using the work queue
-solution. Unless you have any ideas here, I hope you can let the driver
-keep the work queue solution.
-
-Best regards,
-Andreas Larsson
+--
+			Gleb.
