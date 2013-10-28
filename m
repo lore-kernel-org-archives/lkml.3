@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757149Ab3J1RMb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 13:12:31 -0400
-Received: from smtprelay0235.hostedemail.com ([216.40.44.235]:60891 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756806Ab3J1RMY (ORCPT
+	id S932079Ab3J1RO0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 13:14:26 -0400
+Received: from services.gouders.net ([141.101.32.176]:32908 "EHLO
+	services.gouders.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756535Ab3J1ROY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 13:12:24 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2198:2199:2200:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:4321:5007:6119:7652:7903:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12295:12296:12438:12517:12519:12663:12740:13069:13095:13311:13357:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: veil34_313f944ff384d
-X-Filterd-Recvd-Size: 2549
-Message-ID: <1382980336.30941.40.camel@joe-AO722>
-Subject: Re: [PATCH] can: c_can: Speed up rx_poll function
-From: Joe Perches <joe@perches.com>
-To: Markus Pargmann <mpa@pengutronix.de>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Date: Mon, 28 Oct 2013 10:12:16 -0700
-In-Reply-To: <1382979582-10352-1-git-send-email-mpa@pengutronix.de>
-References: <1382979582-10352-1-git-send-email-mpa@pengutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Oct 2013 13:14:24 -0400
+From: Dirk Gouders <dirk@gouders.net>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Simon Wunderlich <sw@simonwunderlich.de>, linux-wireless@vger.kernel.org,
+        Mathias Kretschmer <mathias.kretschmer@fokus.fraunhofer.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3.12] cfg80211: fix ibss wext chandef creation
+In-Reply-To: <1382970069.17956.23.camel@jlt4.sipsolutions.net> (Johannes
+	Berg's message of "Mon, 28 Oct 2013 15:21:09 +0100")
+References: <1382472166-19563-1-git-send-email-sw@simonwunderlich.de>
+	<1382970069.17956.23.camel@jlt4.sipsolutions.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+Date: Mon, 28 Oct 2013 18:14:42 +0100
+Message-ID: <ghtxg12u7x.fsf@lena.gouders.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-10-28 at 17:59 +0100, Markus Pargmann wrote:
-> This patch speeds up the rx_poll function by reducing the number of
-> register reads.
+Johannes Berg <johannes@sipsolutions.net> writes:
 
-trivial notes:
+> On Tue, 2013-10-22 at 22:02 +0200, Simon Wunderlich wrote:
+>> The wext internal chandefs for ibss should be created using the
+>> cfg80211_chandef_create() functions. Otherwise the center_freq1 field
+>> will not be set and cfg80211_chandef_valid() will spit a warning and
+>> report the chandef as invalid when it should be used.
+>
+> I think
+>
+> commit f478f33a93f9353dcd1fe55445343d76b1c3f84a
+> Author: Bruno Randolf <br1@einfach.org>
+> Date:   Thu Sep 26 16:55:28 2013 +0100
+>
+>     cfg80211: fix warning when using WEXT for IBSS
+>
+>
+> already fixed this. Your patch doesn't apply, but feel free to send me a
+> new one (for -next) converting to the creation helpers.
 
-> diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
-[]
-> @@ -259,6 +259,12 @@ static u32 c_can_read_reg32(struct c_can_priv *priv, enum reg index)
-> +u16 c_can_read_reg16(struct c_can_priv *priv, enum reg index)
-> +{
-> +	u16 val = priv->read_reg(priv, index);
-> +	return val;
-> +}
+I tested the above commit and it also fixes the problems I noticed here.
 
-This function doesn't seem useful at all.
-It's not exported and it's not static.
+Best regards,
 
-Why not use an in-place priv->read_reg(priv, index)?
-
-> +
->  static void c_can_enable_all_interrupts(struct c_can_priv *priv,
->  						int enable)
->  {
-> @@ -798,17 +804,21 @@ static int c_can_do_rx_poll(struct net_device *dev, int quota)
->  	u32 num_rx_pkts = 0;
->  	unsigned int msg_obj, msg_ctrl_save;
->  	struct c_can_priv *priv = netdev_priv(dev);
-> -	u32 val = c_can_read_reg32(priv, C_CAN_INTPND1_REG);
-> +	unsigned long val = c_can_read_reg16(priv, C_CAN_INTPND1_REG);
-
-Probably better as a u16 as detailed below.
-
-> +	/*
-> +	 * It is faster to read only one 16bit register. This is only possible
-> +	 * for a maximum number of 16 objects.
-> +	 */
-> +	BUILD_BUG_ON_MSG(C_CAN_MSG_OBJ_RX_LAST > 16,
-> +			"Implementation does not support more message objects than 16");
-> +
-> +	while (quota > 0 && (val = c_can_read_reg16(priv, C_CAN_INTPND1_REG))) {
-> +		msg_obj = 0;
-> +		while ((msg_obj = find_next_bit(&val, 16, msg_obj)) < 16 &&
-
-Using ffs instead of find_next_bit would be more standard
-and probably faster too.
-
-
+Dirk
