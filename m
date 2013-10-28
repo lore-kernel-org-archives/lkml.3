@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab3J1XuR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 19:50:17 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:24510 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757709Ab3J1XuP (ORCPT
+	id S932165Ab3J1XyV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 19:54:21 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:36579 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753546Ab3J1XyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 19:50:15 -0400
-Message-ID: <1383004209.3779.54.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH 16/16] wl1251: Add sysfs file address for setting
- permanent mac address
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-CC: Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <freemangordon@abv.bg>,
-        <aaro.koskinen@iki.fi>, <pavel@ucw.cz>, <sre@ring0.de>,
-        <joni.lapilainen@gmail.com>
-Date: Mon, 28 Oct 2013 23:50:09 +0000
-In-Reply-To: <1382819655-30430-17-git-send-email-pali.rohar@gmail.com>
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
-	 <1382819655-30430-17-git-send-email-pali.rohar@gmail.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Mon, 28 Oct 2013 19:54:20 -0400
+Date: Mon, 28 Oct 2013 16:53:44 -0700
+From: Mark Brown <broonie@kernel.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Alex Courbot <acourbot@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Message-ID: <20131028235344.GB16686@sirena.org.uk>
+References: <20131025112224.6e5265e6@notabene.brown>
+ <526A0E71.100@nvidia.com>
+ <20131025183345.2b963e13@notabene.brown>
+ <526E3605.9080002@nvidia.com>
+ <20131028221004.3294c1ea@notabene.brown>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20252.005
-X-TM-AS-Result: No--9.559000-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eAbsdosE1cNLO4uF"
+Content-Disposition: inline
+In-Reply-To: <20131028221004.3294c1ea@notabene.brown>
+X-Cookie: Excellent day to have a rotten day.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 66.78.236.243
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Any news on Runtime Interpreted Power Sequences
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-10-26 at 22:34 +0200, Pali Rohár wrote:
-> Driver wl1251 generating mac address randomly at startup and there is no way to
-> set permanent mac address via SET_IEEE80211_PERM_ADDR. This patch export sysfs
-> file which can set permanent mac address by userspace helper program. Patch is
-> needed for devices which do not store mac address in internal wl1251 eeprom.
-[...]
 
-This belongs in struct wl12xx_platform_data or (better) Device Tree
-properties.  It definitely should not be settable once the device is
-registered.
+--eAbsdosE1cNLO4uF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Ben.
+On Mon, Oct 28, 2013 at 10:10:04PM +1100, NeilBrown wrote:
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+> I agree that this power-up sequence should be a property of the device.
+> However until the device has been powered up, Linux doesn't know about it.
+> Neither a board file or a devicetree can (as far as I can tell), tell the
+> MMC port that a particular card is attached.  Rather the host probes the card
+> to see what it is.
+> So there isn't any way for the device driver to get control at the
+> appropriate time to effect the proper sequencing.
 
+If it is a genuinely pluggable MMC slot then I'd expect the sequence to
+be implementing whatever is required for standard MMC enumeration to
+work.  If the device is a soldered down one with extra control (as is
+quite common) then there shouldn't be a problem describing it?
+
+--eAbsdosE1cNLO4uF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSbvj/AAoJELSic+t+oim9IS8P/3WjzQfhO5hssgCAj8rHvX6a
+VMA4o4CgegM3cBpxxbje77w+R4FlEdQ77eUvghBov5mRVAplJ6y8CRnG54Kt0Gvq
+Z+LH4h4VbbvO60jtNonPnSKOIk50MDvGS/qRKWKzK0BV3mMiioq8XW8i9ida/XCc
+SbWRJJqpovlGUVhG+9K2r+kBfcIEqy86nvzVp8BL5dX24ePr8knZfxaiTjh+9hwX
+9Fh+COVTWpwZADwnjBxYiDVvNk7H8hqVrdDZOpFIT/kGDO6HRHI60a06S6h0sHK/
+QHI0cZ7yvNCOOscc6q6rE8GMANUlU5ge7r+Xp9TpylRmkrsG63dEU/GyFOt25yR2
+M6FBhah79rxh8wYyE4EVzxmh3vbK5YVuuXcf0PzkU+7ibPfN59Oki0aN1Spj56Vi
+EKbJR4ohmIxpmaZ6fAsYk5WQV1M77tdFMSrscOirls+Lkx7YiwgLpx62P6TNZpeg
+bWzBXgdud0s/DT7OGNl3/nmgM+yZaCyObkai1dEhs03US90Ob78ed50jmcfXEEFe
+MVu7wA6pdsePWK5+bqKCUlN0KDUxViFyYzESTBSGazQBiwUDKLe6yQ3M/Upl0Arp
+0nsECibK9vW5v3dnU7AFKsTpd+ociagCMvDt1UkYzoze33P0r/nQb0dkfXR7emfL
+EdyuW8gSqmZK5he9A0WZ
+=nOdO
+-----END PGP SIGNATURE-----
+
+--eAbsdosE1cNLO4uF--
