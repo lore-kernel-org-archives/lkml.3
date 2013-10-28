@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755663Ab3J1GSy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 02:18:54 -0400
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:1087 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751767Ab3J1GSx (ORCPT
+	id S1755704Ab3J1GT3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 02:19:29 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:59261 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755502Ab3J1GT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 02:18:53 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: Peter Chen <peter.chen@freescale.com>
-To: <linus.walleij@linaro.org>, <shawn.guo@linaro.org>,
-        <s.hauer@pengutronix.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] pinctrl: imx: fix using pin->input_val wrongly
-Date: Mon, 28 Oct 2013 14:01:16 +0800
-Message-ID: <1382940076-11898-1-git-send-email-peter.chen@freescale.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 28 Oct 2013 02:19:28 -0400
+X-Spam-Score: -100.8
+Message-ID: <526E01B4.6040205@asianux.com>
+Date: Mon, 28 Oct 2013 14:18:28 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: "vgupta@synopsys.com" <vgupta@synopsys.com>, noamc@ezchip.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] arc: kernel: use exporting symbol instead of static inline
+ for arc_get_core_freq()
+References: <526DDAE5.9040803@asianux.com> <526E010F.90602@asianux.com>
+In-Reply-To: <526E010F.90602@asianux.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit: "pinctrl: imx: Use struct type for pins" relaced
-pin->input_reg by pin->input_val wrongly, fix it at this commit.
+Need export arc_get_core_freq() instead of let it static inline, or if
+other individual modules use it (e.g. use BASE_BAUD), it can not find
+core_freq variable.
 
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- drivers/pinctrl/pinctrl-imx.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ arch/arc/include/asm/clk.h |    9 +--------
+ arch/arc/kernel/clk.c      |    9 ++++++++-
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
-index d78dd81..4779b8e 100644
---- a/drivers/pinctrl/pinctrl-imx.c
-+++ b/drivers/pinctrl/pinctrl-imx.c
-@@ -245,11 +245,11 @@ static int imx_pmx_enable(struct pinctrl_dev *pctldev, unsigned selector,
- 			 * The input_reg[i] here is actually some IOMUXC general
- 			 * purpose register, not regular select input register.
- 			 */
--			val = readl(ipctl->base + pin->input_val);
-+			val = readl(ipctl->base + pin->input_reg);
- 			val &= ~mask;
- 			val |= select << shift;
--			writel(val, ipctl->base + pin->input_val);
--		} else if (pin->input_val) {
-+			writel(val, ipctl->base + pin->input_reg);
-+		} else if (pin->input_reg) {
- 			/*
- 			 * Regular select input register can never be at offset
- 			 * 0, and we only print register value for regular case.
+diff --git a/arch/arc/include/asm/clk.h b/arch/arc/include/asm/clk.h
+index bf9d29f..256321a 100644
+--- a/arch/arc/include/asm/clk.h
++++ b/arch/arc/include/asm/clk.h
+@@ -9,14 +9,7 @@
+ #ifndef _ASM_ARC_CLK_H
+ #define _ASM_ARC_CLK_H
+ 
+-/* Although we can't really hide core_freq, the accessor is still better way */
+-extern unsigned long core_freq;
+-
+-static inline unsigned long arc_get_core_freq(void)
+-{
+-	return core_freq;
+-}
+-
++extern unsigned long arc_get_core_freq(void);
+ extern int arc_set_core_freq(unsigned long);
+ 
+ #endif
+diff --git a/arch/arc/kernel/clk.c b/arch/arc/kernel/clk.c
+index 10c7b0b..798be4a 100644
+--- a/arch/arc/kernel/clk.c
++++ b/arch/arc/kernel/clk.c
+@@ -6,9 +6,16 @@
+  * published by the Free Software Foundation.
+  */
+ 
++#include <linux/module.h>
+ #include <asm/clk.h>
+ 
+-unsigned long core_freq = 80000000;
++static unsigned long core_freq = 80000000;
++
++unsigned long arc_get_core_freq(void)
++{
++	return core_freq;
++}
++EXPORT_SYMBOL(arc_get_core_freq);
+ 
+ /*
+  * As of now we default to device-tree provided clock
 -- 
-1.7.1
-
-
+1.7.7.6
