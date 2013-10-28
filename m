@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291Ab3J1Ote (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 10:49:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51186 "EHLO
+	id S932515Ab3J1O4u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:56:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51216 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932285Ab3J1Ot0 (ORCPT
+	with ESMTP id S932312Ab3J1Otc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:49:26 -0400
+	Mon, 28 Oct 2013 10:49:32 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Neal Cardwell <ncardwell@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 37/64] tcp: must unclone packets before mangling them
-Date: Mon, 28 Oct 2013 14:47:56 +0000
-Message-Id: <1382971703-17393-38-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 42/64] net: heap overflow in __audit_sockaddr()
+Date: Mon, 28 Oct 2013 14:48:01 +0000
+Message-Id: <1382971703-17393-43-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
 References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,95 +31,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit c52e2421f7368fd36cbe330d2cf41b10452e39a9 upstream.
+commit 1661bf364ae9c506bc8795fef70d1532931be1e8 upstream.
 
-TCP stack should make sure it owns skbs before mangling them.
+We need to cap ->msg_namelen or it leads to a buffer overflow when we
+to the memcpy() in __audit_sockaddr().  It requires CAP_AUDIT_CONTROL to
+exploit this bug.
 
-We had various crashes using bnx2x, and it turned out gso_size
-was cleared right before bnx2x driver was populating TC descriptor
-of the _previous_ packet send. TCP stack can sometime retransmit
-packets that are still in Qdisc.
+The call tree is:
+___sys_recvmsg()
+  move_addr_to_user()
+    audit_sockaddr()
+      __audit_sockaddr()
 
-Of course we could make bnx2x driver more robust (using
-ACCESS_ONCE(shinfo->gso_size) for example), but the bug is TCP stack.
-
-We have identified two points where skb_unclone() was needed.
-
-This patch adds a WARN_ON_ONCE() to warn us if we missed another
-fix of this kind.
-
-Kudos to Neal for finding the root cause of this bug. Its visible
-using small MSS.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
+Reported-by: Jüri Aedla <juri.aedla@gmail.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.5, using davem's port to 3.4:
-  - skb_unclone() function definition to include/linux/skbuff.h ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/skbuff.h | 10 ++++++++++
- net/ipv4/tcp_output.c  |  9 ++++++---
- 2 files changed, 16 insertions(+), 3 deletions(-)
+ net/compat.c |  2 ++
+ net/socket.c | 24 ++++++++++++++++++++----
+ 2 files changed, 22 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index e1c1e64..0ec4788 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -774,6 +774,16 @@ static inline int skb_cloned(const struct sk_buff *skb)
- 	       (atomic_read(&skb_shinfo(skb)->dataref) & SKB_DATAREF_MASK) != 1;
- }
+diff --git a/net/compat.c b/net/compat.c
+index 9c816e8..707f5ba 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -71,6 +71,8 @@ int get_compat_msghdr(struct msghdr *kmsg, struct compat_msghdr __user *umsg)
+ 	    __get_user(kmsg->msg_controllen, &umsg->msg_controllen) ||
+ 	    __get_user(kmsg->msg_flags, &umsg->msg_flags))
+ 		return -EFAULT;
++	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
++		return -EINVAL;
+ 	kmsg->msg_name = compat_ptr(tmp1);
+ 	kmsg->msg_iov = compat_ptr(tmp2);
+ 	kmsg->msg_control = compat_ptr(tmp3);
+diff --git a/net/socket.c b/net/socket.c
+index cd51a03..c9b6b90 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1898,6 +1898,16 @@ struct used_address {
+ 	unsigned int name_len;
+ };
  
-+static inline int skb_unclone(struct sk_buff *skb, gfp_t pri)
++static int copy_msghdr_from_user(struct msghdr *kmsg,
++				 struct msghdr __user *umsg)
 +{
-+	might_sleep_if(pri & __GFP_WAIT);
-+
-+	if (skb_cloned(skb))
-+		return pskb_expand_head(skb, 0, 0, pri);
-+
++	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
++		return -EFAULT;
++	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
++		return -EINVAL;
 +	return 0;
 +}
 +
- /**
-  *	skb_header_cloned - is the header a clone
-  *	@skb: buffer to check
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 4a1e840..d06b130 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -934,6 +934,9 @@ static void tcp_queue_skb(struct sock *sk, struct sk_buff *skb)
- static void tcp_set_skb_tso_segs(const struct sock *sk, struct sk_buff *skb,
- 				 unsigned int mss_now)
- {
-+	/* Make sure we own this skb before messing gso_size/gso_segs */
-+	WARN_ON_ONCE(skb_cloned(skb));
-+
- 	if (skb->len <= mss_now || !sk_can_gso(sk) ||
- 	    skb->ip_summed == CHECKSUM_NONE) {
- 		/* Avoid the costly divide in the normal
-@@ -1015,9 +1018,7 @@ int tcp_fragment(struct sock *sk, struct sk_buff *skb, u32 len,
- 	if (nsize < 0)
- 		nsize = 0;
+ static int ___sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
+ 			 struct msghdr *msg_sys, unsigned int flags,
+ 			 struct used_address *used_address)
+@@ -1916,8 +1926,11 @@ static int ___sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
+ 	if (MSG_CMSG_COMPAT & flags) {
+ 		if (get_compat_msghdr(msg_sys, msg_compat))
+ 			return -EFAULT;
+-	} else if (copy_from_user(msg_sys, msg, sizeof(struct msghdr)))
+-		return -EFAULT;
++	} else {
++		err = copy_msghdr_from_user(msg_sys, msg);
++		if (err)
++			return err;
++	}
  
--	if (skb_cloned(skb) &&
--	    skb_is_nonlinear(skb) &&
--	    pskb_expand_head(skb, 0, 0, GFP_ATOMIC))
-+	if (skb_unclone(skb, GFP_ATOMIC))
- 		return -ENOMEM;
+ 	if (msg_sys->msg_iovlen > UIO_FASTIOV) {
+ 		err = -EMSGSIZE;
+@@ -2125,8 +2138,11 @@ static int ___sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
+ 	if (MSG_CMSG_COMPAT & flags) {
+ 		if (get_compat_msghdr(msg_sys, msg_compat))
+ 			return -EFAULT;
+-	} else if (copy_from_user(msg_sys, msg, sizeof(struct msghdr)))
+-		return -EFAULT;
++	} else {
++		err = copy_msghdr_from_user(msg_sys, msg);
++		if (err)
++			return err;
++	}
  
- 	/* Get a new skb... force flag on. */
-@@ -2150,6 +2151,8 @@ int tcp_retransmit_skb(struct sock *sk, struct sk_buff *skb)
- 		int oldpcount = tcp_skb_pcount(skb);
- 
- 		if (unlikely(oldpcount > 1)) {
-+			if (skb_unclone(skb, GFP_ATOMIC))
-+				return -ENOMEM;
- 			tcp_init_tso_segs(sk, skb, cur_mss);
- 			tcp_adjust_pcount(sk, skb, oldpcount - tcp_skb_pcount(skb));
- 		}
+ 	if (msg_sys->msg_iovlen > UIO_FASTIOV) {
+ 		err = -EMSGSIZE;
 -- 
 1.8.3.2
 
