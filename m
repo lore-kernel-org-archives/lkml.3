@@ -1,136 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab3J1GzZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 02:55:25 -0400
-Received: from gate.crashing.org ([63.228.1.57]:38164 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751767Ab3J1GzW convert rfc822-to-8bit (ORCPT
+	id S1755603Ab3J1HI1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 03:08:27 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:58614 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752802Ab3J1HIZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 02:55:22 -0400
-Subject: Re: [RFC 9/9] of/irq: create interrupts-extended property
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <20131028031641.GA2782@kartoffel>
-Date: Mon, 28 Oct 2013 01:54:34 -0500
-Cc: Rob Herring <robherring2@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <36A77FB1-5EB3-4B2F-8E2B-5EDA4E097B7A@kernel.crashing.org>
-References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org> <1381869563-16083-10-git-send-email-grant.likely@linaro.org> <20131027134607.E1782C4039D@trevor.secretlab.ca> <CAL_JsqLN9eOWTo5pZV1m0i2GmxEMJWOcJvci_w=rCO7_h+X1Nw@mail.gmail.com> <20131028031641.GA2782@kartoffel>
-To: Mark Rutland <mark.rutland@arm.com>
-X-Mailer: Apple Mail (2.1283)
+	Mon, 28 Oct 2013 03:08:25 -0400
+X-AuditID: cbfee61b-b7fd56d000001fc6-d6-526e0d67edbe
+From: Chao Yu <chao2.yu@samsung.com>
+To: =?utf-8?B?J+ydtOywveunjCc=?= <cm224.lee@samsung.com>,
+        jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org,
+        =?utf-8?B?J+iwreWnnSc=?= <shu.tan@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+References: <000401ced092$28087a90$78196fb0$@samsung.com>
+ <003501ced384$31fb7530$95f25f90$@samsung.com>
+In-reply-to: <003501ced384$31fb7530$95f25f90$@samsung.com>
+Subject: RE: [f2fs-dev] [PATCH V2] f2fs: check all ones or zeros bitmap with
+ bitops for better mount performance
+Date: Mon, 28 Oct 2013 15:07:11 +0800
+Message-id: <000201ced3ac$799274c0$6cb75e40$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQJ6i6Dfb3BtsZq0jPxXbIKcIyyc4QJUIYVRmJ9lAJA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t9jAd103rwgg93vRCyu7Wtksri+6y+T
+	xaVF7hZ79p5ksbi8aw6bRevC88wObB67F3xm8ujbsorR4/MmuQDmKC6blNSczLLUIn27BK6M
+	lq6z7AUvNStmn3jF1MD4Vr6LkZNDQsBE4tatRjYIW0ziwr31QDYXh5DAIkaJw41zoZwfjBLT
+	pqxmB6liE1CRWN7xnwnEFhEIllgwZzEzSBGzwGxGiYWrd4AlhAQyJd6s2gZmcwpYSbQ0bGMF
+	sYUFiiT+tOxnBrFZBFQlVn19CraaV8BSYs3vJywQtqDEj8n3gGwOoKHqElOm5IKEmQW0JZ68
+	u8AKcamCxI6zrxkhbrCSuLNzCQtEjbjExiO3WCYwCs1CMmkWwqRZSCbNQtKxgJFlFaNoakFy
+	QXFSeq6RXnFibnFpXrpecn7uJkZwNDyT3sG4qsHiEKMAB6MSD++GtblBQqyJZcWVuYcYJTiY
+	lUR4+24BhXhTEiurUovy44tKc1KLDzFKc7AoifMebLUOFBJITyxJzU5NLUgtgskycXBKNTAu
+	SYwRSth3K2q6zZrzlmFd556ureavnKGbclb06MGsCe1CeonzsjJfC7NovZ6VZcFV/Fqkscmz
+	r9VhSdHCd+/mZ5s32my+VDVJ4imDpNgcxQ+6VgKm6/cY/ftewN9le7uBXXJl1NRH54uYonmL
+	eQtbGo8vZqk6EWbVLXDmmwLvmrWbdb4/5FZiKc5INNRiLipOBABkdyx+ggIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Lee,
 
-On Oct 27, 2013, at 10:16 PM, Mark Rutland wrote:
+> -----Original Message-----
+> From: 이창만 [mailto:cm224.lee@samsung.com]
+> Sent: Monday, October 28, 2013 10:20 AM
+> To: 'Chao Yu'; jaegeuk.kim@samsung.com
+> Cc: linux-fsdevel@vger.kernel.org; '谭姝'; linux-kernel@vger.kernel.org;
+> linux-f2fs-devel@lists.sourceforge.net
+> Subject: RE: [f2fs-dev] [PATCH V2] f2fs: check all ones or zeros bitmap with
+> bitops for better mount performance
+> 
+> To check whether bitmap are all zeros or all ones, I think memcmp is more
+> neat.
+> But I don't know exactly performance gap between memcmp and
+> find_next_bit.
 
-> On Sun, Oct 27, 2013 at 08:24:08PM +0000, Rob Herring wrote:
->> On Sun, Oct 27, 2013 at 8:46 AM, Grant Likely <grant.likely@linaro.org> wrote:
->>> On Tue, 15 Oct 2013 21:39:23 +0100, Grant Likely <grant.likely@linaro.org> wrote:
->>>> The standard interrupts property in device tree can only handle
->>>> interrupts coming from a single interrupt parent. If a device is wired
->>>> to multiple interrupt controllers, then it needs to be attached to a
->>>> node with an interrupt-map property to demux the interrupt specifiers
->>>> which is confusing. It would be a lot easier if there was a form of the
->>>> interrupts property that allows for a separate interrupt phandle for
->>>> each interrupt specifier.
->>>> 
->>>> This patch does exactly that by creating a new interrupts-extended
->>>> property which reuses the phandle+arguments pattern used by GPIOs and
->>>> other core bindings.
->>>> 
->>>> Signed-off-by: Grant Likely <grant.likely@linaro.org>
->>>> Cc: Rob Herring <rob.herring@calxeda.com>
->>> 
->>> Alright, I want to merge this one. I've got an Ack from Tony, general
->>> agreement from an in person converstaion from Ben (aside from wishing he
->>> could think of a better property name), and various rumblings of
->>> approval from anyone I talked to about it at ksummit. I'd like to have
->>> something more that that to put into the commit text. Please take a look
->>> and let me know if you agree/disagree with this binding.
-> 
-> The only comment I have is that I'm not keen on the name (it's a bit generic
-> and we might want to extend the interrupts binding in future), but I'm happy to
-> leave that as a matter of personal taste.
-> 
-> The best alternative I could come up with was parented-interrupts, but that
-> could be misinterpreted as describing the relationship backwards (i.e. this
-> device is the parent for those interrupts).
+With the result of my test, find_next_bit takes less time than memcmp.
+If we could use {test, set, clear}_bit_le intead of f2fs_{test, set, clear}_bit, the following patch
+could be used for better performance.
+This one is better than the V2 patch for performance with mixed bitmap in my test.
 
-I think we seem to all agree the name sucks, but can't come up with anything better.
-
->> I think it looks fine, but I'll throw out an alternative proposal.
->> Simply allow for interrupt-parent to be an array in equal size to
->> interrupts property. Then it is a minimal change to the existing
->> binding:
->> 
->> interrupt-parent = <&intc1>, <&intc2>;
->> interrupts = <5 0>, <6 0>;
+diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
+index 7f94d78..32153eb
+--- a/fs/f2fs/segment.h
++++ b/fs/f2fs/segment.h
+@@ -544,7 +544,8 @@ static inline void check_block_count(struct f2fs_sb_info *sbi,
+        struct f2fs_sm_info *sm_info = SM_I(sbi);
+        unsigned int end_segno = sm_info->segment_count - 1;
+        int valid_blocks = 0;
+-       int i;
++       int i, cur_pos = 0, next_pos;
++       bool is_valid;
+ 
+        /* check segment usage */
+        BUG_ON(GET_SIT_VBLOCKS(raw_sit) > sbi->blocks_per_seg);
+@@ -553,9 +554,21 @@ static inline void check_block_count(struct f2fs_sb_info *sbi,
+        BUG_ON(segno > end_segno);
+ 
+        /* check bitmap with valid block count */
+-       for (i = 0; i < sbi->blocks_per_seg; i++)
+-               if (f2fs_test_bit(i, raw_sit->valid_map))
+-                       valid_blocks++;
++       cur_pos = 0;
++       is_valid = test_bit_le(0, raw_sit->valid_map) ? true : false;
++       do {
++               if (is_valid) {
++                       next_pos = find_next_zero_bit_le(&raw_sit->valid_map,
++                                       sbi->blocks_per_seg,
++                                       cur_pos);
++                       valid_blocks += next_pos - cur_pos;
++               } else
++                       next_pos = find_next_bit_le(&raw_sit->valid_map,
++                                       sbi->blocks_per_seg,
++                                       cur_pos);
++               cur_pos = next_pos;
++               is_valid = !is_valid;
++       } while (cur_pos < sbi->blocks_per_seg);
+        BUG_ON(GET_SIT_VBLOCKS(raw_sit) != valid_blocks);
+ }
 > 
-> I'd prefer the interrupts-extended approach.
 > 
-> This might not matter, but if you have an existing driver with two interrupts,
-> and you attempt to describe the situation this way, e.g.
+> -----Original Message-----
+> From: Chao Yu [mailto:chao2.yu@samsung.com]
+> Sent: Thursday, October 24, 2013 5:21 PM
+> To: jaegeuk.kim@samsung.com
+> Cc: linux-fsdevel@vger.kernel.org; '谭姝'; linux-kernel@vger.kernel.org;
+> linux-f2fs-devel@lists.sourceforge.net
+> Subject: [f2fs-dev] [PATCH V2] f2fs: check all ones or zeros bitmap with bitops
+> for better mount performance
 > 
->  intc1: interrupt_controller1 {
->      compatible = "vendor,interrupt-controller";
->      #interrupt-cells = <1>;
->  };
+> Previously, check_block_count check valid_map with bit data type in common
+> scenario that sit has all ones or zeros bitmap, it makes low mount
+> performance.
+> So let's check the special bitmap with integer data type instead of the bit one.
 > 
->  intc2: interrupt_controller2 {
->      compatible = "vendor,another-interrupt-controller";
->      #interrupt-cells = <2>;
->  };
+> v2:
+>     use find_next_bit_le/find_next_zero_bit_le for better performance and
+> readable as Jaegeuk suggested.
 > 
->  dev {
->      compatible = "vendor,some-device";
->      interrupt-parent = <&intc1>, <&intc2>;
->      interrupts = <5>, <65 73>;
->  };
+> Suggested-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> Signed-off-by: Tan Shu <shu.tan@samsung.com>
+> Signed-off-by: Yu Chao <chao2.yu@samsung.com>
+> ---
+>  fs/f2fs/segment.h |   17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
 > 
-> The existing driver may read interrupts as two interrupts for intc1, and
-> believe it's been successful when it has not, and one of those interrupts might
-> never fire. That would be very bad for a timer for example.
+> diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h index 7f94d78..d25b6af
+> 100644
+> --- a/fs/f2fs/segment.h
+> +++ b/fs/f2fs/segment.h
+> @@ -552,6 +552,23 @@ static inline void check_block_count(struct
+> f2fs_sb_info *sbi,
+>  	/* check boundary of a given segment number */
+>  	BUG_ON(segno > end_segno);
 > 
-> Additionally it makes the interrupts list difficult for a human to read, as you
-> need to match it with an entry in another list (this problem exists with other
-> parallel properties like interrupt-names too, but we can't do much better
-> there).
+> +	/* check all ones or zeros valid_map */
+> +	if (GET_SIT_VBLOCKS(raw_sit) == 0) {
+> +		int pos = find_next_bit_le(&raw_sit->valid_map,
+> +					sbi->blocks_per_seg,
+> +					0);
+> +		if (pos != sbi->blocks_per_seg)
+> +			BUG();
+> +		return;
+> +	} else if (GET_SIT_VBLOCKS(raw_sit) == sbi->blocks_per_seg) {
+> +		int pos = find_next_zero_bit_le(&raw_sit->valid_map,
+> +					sbi->blocks_per_seg,
+> +					0);
+> +		if (pos != sbi->blocks_per_seg)
+> +			BUG();
+> +		return;
+> +	}
+> +
+>  	/* check bitmap with valid block count */
+>  	for (i = 0; i < sbi->blocks_per_seg; i++)
+>  		if (f2fs_test_bit(i, raw_sit->valid_map))
+> --
+> 1.7.9.5
 > 
-> It's also easy to make a typo (e.g. an extra cell in an interrupt) that will
-> parse as valid when you don't expect it to. At least with the phandle in the
-> list it's less likely to happen.
-
-I agreed, I'd assume that in Rob's suggestion the length of interrupt-parent & interrupts would have to match so you'd have:
-
- dev {
-     compatible = "vendor,some-device";
-     interrupt-parent = <&intc1>, <&intc2>, <&intc2>;
-     interrupts = <5>, <65 73>;
- };
-
 > 
->> 
->> Of course interrupts-extended is more inline with standard patterns
->> for bindings.
-> 
-> I think for this reason alone it should be preferable. Unless I'm mistaken it
-> would be identical to the clock bindings pattern with a uniformly named
-> phandle+args property and a parallel -names property. I don't think the gpio
-> style ${NAME}-interrupts would easily fit here.
-> 
-> Thanks,
-> Mark.
-
-- k
+> ------------------------------------------------------------------------------
+> October Webinars: Code for Performance
+> Free Intel webinars can help you accelerate application performance.
+> Explore tips for MPI, OpenMP, advanced profiling, and more. Get the most from
+> the latest Intel processors and coprocessors. See abstracts and register >
+> http://pubads.g.doubleclick.net/gampad/clk?id=60135991&iu=/4140/ostg.clktr
+> k
+> _______________________________________________
+> Linux-f2fs-devel mailing list
+> Linux-f2fs-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
 
