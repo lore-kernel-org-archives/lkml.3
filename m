@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757822Ab3J1XRh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 19:17:37 -0400
-Received: from gate.crashing.org ([63.228.1.57]:51939 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757793Ab3J1XRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 19:17:33 -0400
-Message-ID: <1383001793.5117.14.camel@pasglop>
-Subject: Re: [ksummit-attendees] [PATCH] commit: Add -f, --fixes <commit>
- option to add Fixes: line
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Josh Triplett <josh@joshtriplett.org>, git@vger.kernel.org,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        ksummit-attendees@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org, Junio C Hamano <gitster@pobox.com>
-Date: Tue, 29 Oct 2013 10:09:53 +1100
-In-Reply-To: <20131028085911.GA9411@lst.de>
-References: <20131024122255.GI9378@mwanda> <20131024122512.GB9534@mwanda>
-	 <20131026181709.GB10488@kroah.com> <20131027013402.GA7146@leaf>
-	 <xmqqa9hui2lp.fsf@gitster.dls.corp.google.com>
-	 <20131028071606.GA16878@leaf> <20131028085911.GA9411@lst.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1757861Ab3J1XUr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 19:20:47 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:51046 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757647Ab3J1XUp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 19:20:45 -0400
+Message-ID: <526EF149.8060304@gmail.com>
+Date: Mon, 28 Oct 2013 18:20:41 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Chris Ball <cjb@laptop.org>, Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 1/2] mmc: arasan: Add driver for Arasan SDHCI
+References: <1381864085-8806-1-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1381864085-8806-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-10-28 at 09:59 +0100, Christoph Hellwig wrote:
-> Btw, can we please take away this discussion from ksummit-attendees?  It's got
-> absolutely nothing to do with kernel summit and is getting fairly annoying.
+On 10/15/2013 02:08 PM, Soren Brinkmann wrote:
+> Add a driver for Arasan's SDHCI controller core.
+> 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+>  .../devicetree/bindings/mmc/arasan,sdhci.txt       |  23 +++
+>  MAINTAINERS                                        |   1 +
+>  drivers/mmc/host/Kconfig                           |  12 ++
+>  drivers/mmc/host/Makefile                          |   1 +
+>  drivers/mmc/host/sdhci-of-arasan.c                 | 224 +++++++++++++++++++++
+>  5 files changed, 261 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
+>  create mode 100644 drivers/mmc/host/sdhci-of-arasan.c
+> 
+> diff --git a/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt b/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
+> new file mode 100644
+> index 000000000000..20f0fc25e270
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
+> @@ -0,0 +1,23 @@
+> +Device Tree Bindings for the Arasan SDCHI Controller
+> +
+> +  The bindings follow the mmc[1] and the clock bindings[2]. Only deviations are
+> +  documented here.
+> +
+> +  [1] Documentation/devicetree/bindings/mmc/mmc.txt
+> +  [2] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +
+> +Required Properties:
+> +  - compatible: Compatibility string. Must be 'arasan,sdhci'
 
-Ack. Additionally, iirc, we had decided that
+This string is a bit non-specific. Vendor IP typically has configurable
+options, different revs of IP with fixes/differences, and the
+possibility of integration wierdness or bugs. So it is better to be as
+specific as possible in case the kernel needs to know exactly what
+version of h/w this is.
 
- - We don't cross post multiple lists
-
- - We drop the annoying subject tags
-
-As is, all I see is some attempt at doing an lkml dup, which is
-pointless
-
-Ben.
-
+Rob
 
