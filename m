@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab3J1NpU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 09:45:20 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:34002 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756604Ab3J1NpS (ORCPT
+	id S1756674Ab3J1Npo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 09:45:44 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:44540 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756291Ab3J1Npn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 09:45:18 -0400
-Message-ID: <1382967905.17956.8.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH 16/16] wl1251: Add sysfs file address for setting
- permanent mac address
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
-        joni.lapilainen@gmail.com
-Date: Mon, 28 Oct 2013 14:45:05 +0100
-In-Reply-To: <1382819655-30430-17-git-send-email-pali.rohar@gmail.com> (sfid-20131026_224040_591629_24EA42A4)
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
-	 <1382819655-30430-17-git-send-email-pali.rohar@gmail.com>
-	 (sfid-20131026_224040_591629_24EA42A4)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Mon, 28 Oct 2013 09:45:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <cc16130b4e23207971139eff313a4ec71f51c187.1382962788.git.rashika.kheria@gmail.com>
+References: <20131019110539.GA25167@gmail.com>
+	<cc16130b4e23207971139eff313a4ec71f51c187.1382962788.git.rashika.kheria@gmail.com>
+Date: Mon, 28 Oct 2013 21:45:42 +0800
+Message-ID: <CAL1ERfPD7zhmuO6ZuwUcJzVshJ3vqQKAman_x27rTPaur4eEAw@mail.gmail.com>
+Subject: Re: [PATCH v6 1/3] Staging: zram: Fix access of NULL pointer
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: opw-kernel@googlegroups.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchand@redhat.com>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-10-26 at 22:34 +0200, Pali Rohár wrote:
-> Driver wl1251 generating mac address randomly at startup and there is no way to
-> set permanent mac address via SET_IEEE80211_PERM_ADDR. This patch export sysfs
-> file which can set permanent mac address by userspace helper program. Patch is
-> needed for devices which do not store mac address in internal wl1251 eeprom.
+On Mon, Oct 28, 2013 at 8:21 PM, Rashika Kheria
+<rashika.kheria@gmail.com> wrote:
+> This patch fixes the bug in reset_store caused by accessing NULL pointer.
+> Hence, It introduces a check for bdev. It also removes unnecessary check
+> of bdev for fsync_bdev().
+>
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> ---
+>
+> This revision fixes the following issues of the previous revision-
+> Seperating patches into Bug fix and Smatch fix
+>
+>  drivers/staging/zram/zram_drv.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index 2c4ed52..d640a8f 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -648,6 +648,9 @@ static ssize_t reset_store(struct device *dev,
+>         zram = dev_to_zram(dev);
+>         bdev = bdget_disk(zram->disk, 0);
+>
+> +       if (!bdev)
+> +               return -EBUSY;
+> +
 
-This doesn't really seem like a good idea since you can also just use
-'ip' or whatever to set the MAC address.
+I am not sure how does it happen. Would you please make it clear to me?
 
-johannes
+Thanks
 
+>         /* Do not reset an active device! */
+>         if (bdev->bd_holders)
+>                 return -EBUSY;
+> @@ -660,8 +663,7 @@ static ssize_t reset_store(struct device *dev,
+>                 return -EINVAL;
+>
+>         /* Make sure all pending I/O is finished */
+> -       if (bdev)
+> -               fsync_bdev(bdev);
+> +       fsync_bdev(bdev);
+>
+>         zram_reset_device(zram, true);
+>         return len;
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
