@@ -1,438 +1,346 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757498Ab3J1TQH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 15:16:07 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45253 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756244Ab3J1TOK (ORCPT
+	id S1757566Ab3J1TRK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 15:17:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58508 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755559Ab3J1TRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 15:14:10 -0400
-Message-Id: <1392ea90487793f9cbbdfb7f8d148f45122a52c2.1382985169.git.joshc@codeaurora.org>
-In-Reply-To: <cover.1382985169.git.joshc@codeaurora.org>
-References: <cover.1382985169.git.joshc@codeaurora.org>
-From: Josh Cartwright <joshc@codeaurora.org>
-Date: Mon, 28 Oct 2013 13:12:35 -0500
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, rtc-linux@googlegroups.com,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>
-Subject: [PATCH v3 10/10] rtc: pm8xxx: add support for pm8941
+	Mon, 28 Oct 2013 15:17:06 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Zhouyi Zhou <zhouzhouyi@gmail.com>,
+        Zhouyi Zhou <yizhouzhou@ict.ac.cn>, David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 4/4] perf tools: Fixup mmap event consumption
+Date: Mon, 28 Oct 2013 16:16:41 -0300
+Message-Id: <1382987801-21896-5-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1382987801-21896-1-git-send-email-acme@infradead.org>
+References: <1382987801-21896-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adapt the existing pm8xxx driver to work with the RTC available on
-Qualcomm's 8941 PMIC.  In order to do this, rework the register access
-functions to use a regmap provided by the parent driver.  Account for
-slight differences in the RTC address space by parameterizing addresses
-and providing a chip-specific initialization function.
+From: Zhouyi Zhou <zhouzhouyi@gmail.com>
 
-Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+The tail position of the event buffer should only be modified after
+actually use that event.
+
+If not the event buffer could be invalid before use, and segment fault
+occurs when invoking perf top -G.
+
+Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+Link: http://lkml.kernel.org/r/1382600613-32177-1-git-send-email-zhouzhouyi@gmail.com
+[ Simplified the logic using exit gotos and renamed write_tail method to mmap_consume ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/rtc/Kconfig      |   1 -
- drivers/rtc/rtc-pm8xxx.c | 229 +++++++++++++++++++++++++++++------------------
- 2 files changed, 143 insertions(+), 87 deletions(-)
+ tools/perf/builtin-kvm.c                  |  7 +++++++
+ tools/perf/builtin-top.c                  | 10 ++++++----
+ tools/perf/builtin-trace.c                |  8 +++++---
+ tools/perf/tests/code-reading.c           |  1 +
+ tools/perf/tests/keep-tracking.c          |  1 +
+ tools/perf/tests/mmap-basic.c             |  1 +
+ tools/perf/tests/open-syscall-tp-fields.c |  4 +++-
+ tools/perf/tests/perf-record.c            |  2 ++
+ tools/perf/tests/perf-time-to-tsc.c       |  4 +++-
+ tools/perf/tests/sw-clock.c               |  4 +++-
+ tools/perf/tests/task-exit.c              |  6 +++---
+ tools/perf/util/evlist.c                  | 13 ++++++++++---
+ tools/perf/util/evlist.h                  |  2 ++
+ tools/perf/util/python.c                  |  2 ++
+ 14 files changed, 49 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 9654aa3..19b89ee 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -1177,7 +1177,6 @@ config RTC_DRV_LPC32XX
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 935d52216c89..fbc2888d6495 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -888,11 +888,18 @@ static s64 perf_kvm__mmap_read_idx(struct perf_kvm_stat *kvm, int idx,
+ 	while ((event = perf_evlist__mmap_read(kvm->evlist, idx)) != NULL) {
+ 		err = perf_evlist__parse_sample(kvm->evlist, event, &sample);
+ 		if (err) {
++			perf_evlist__mmap_consume(kvm->evlist, idx);
+ 			pr_err("Failed to parse sample\n");
+ 			return -1;
+ 		}
  
- config RTC_DRV_PM8XXX
- 	tristate "Qualcomm PMIC8XXX RTC"
--	depends on MFD_PM8XXX
- 	help
- 	  If you say yes here you get support for the
- 	  Qualcomm PMIC8XXX RTC.
-diff --git a/drivers/rtc/rtc-pm8xxx.c b/drivers/rtc/rtc-pm8xxx.c
-index 03f8f75..a9044d4 100644
---- a/drivers/rtc/rtc-pm8xxx.c
-+++ b/drivers/rtc/rtc-pm8xxx.c
-@@ -1,4 +1,5 @@
- /* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 and
-@@ -13,35 +14,33 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/rtc.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
- #include <linux/pm.h>
-+#include <linux/regmap.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
+ 		err = perf_session_queue_event(kvm->session, event, &sample, 0);
++		/*
++		 * FIXME: Here we can't consume the event, as perf_session_queue_event will
++		 *        point to it, and it'll get possibly overwritten by the kernel.
++		 */
++		perf_evlist__mmap_consume(kvm->evlist, idx);
++
+ 		if (err) {
+ 			pr_err("Failed to enqueue sample: %d\n", err);
+ 			return -1;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 0df298a0e946..5a11f13e56f9 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -810,7 +810,7 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
+ 		ret = perf_evlist__parse_sample(top->evlist, event, &sample);
+ 		if (ret) {
+ 			pr_err("Can't parse sample, err = %d\n", ret);
+-			continue;
++			goto next_event;
+ 		}
  
- #include <linux/mfd/pm8xxx/core.h>
- #include <linux/mfd/pm8xxx/rtc.h>
+ 		evsel = perf_evlist__id2evsel(session->evlist, sample.id);
+@@ -825,13 +825,13 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
+ 		case PERF_RECORD_MISC_USER:
+ 			++top->us_samples;
+ 			if (top->hide_user_symbols)
+-				continue;
++				goto next_event;
+ 			machine = &session->machines.host;
+ 			break;
+ 		case PERF_RECORD_MISC_KERNEL:
+ 			++top->kernel_samples;
+ 			if (top->hide_kernel_symbols)
+-				continue;
++				goto next_event;
+ 			machine = &session->machines.host;
+ 			break;
+ 		case PERF_RECORD_MISC_GUEST_KERNEL:
+@@ -847,7 +847,7 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
+ 			 */
+ 			/* Fall thru */
+ 		default:
+-			continue;
++			goto next_event;
+ 		}
  
--
--/* RTC Register offsets from RTC CTRL REG */
--#define PM8XXX_ALARM_CTRL_OFFSET	0x01
--#define PM8XXX_RTC_WRITE_OFFSET		0x02
--#define PM8XXX_RTC_READ_OFFSET		0x06
--#define PM8XXX_ALARM_RW_OFFSET		0x0A
--
- /* RTC_CTRL register bit fields */
- #define PM8xxx_RTC_ENABLE		BIT(7)
- #define PM8xxx_RTC_ALARM_ENABLE		BIT(1)
- #define PM8xxx_RTC_ALARM_CLEAR		BIT(0)
  
- #define NUM_8_BIT_RTC_REGS		0x4
--
- /**
-  * struct pm8xxx_rtc -  rtc driver internal structure
-  * @rtc:		rtc device for this driver.
-  * @rtc_alarm_irq:	rtc alarm irq number.
-- * @rtc_base:		address of rtc control register.
-+ * @rtc_control_reg:	address of control register.
-  * @rtc_read_base:	base address of read registers.
-  * @rtc_write_base:	base address of write registers.
-  * @alarm_rw_base:	base address of alarm registers.
-+ * @alarm_ctrl1:	address of alarm ctrl1 register.
-+ * @alarm_ctrl2:	address of alarm ctrl2 register (only used on pm8941).
-+ * @alarm_clear:	RTC-specific callback to clear alarm interrupt.
-  * @ctrl_reg:		rtc control register.
-  * @rtc_dev:		device structure.
-  * @ctrl_reg_lock:	spinlock protecting access to ctrl_reg.
-@@ -49,51 +48,34 @@
- struct pm8xxx_rtc {
- 	struct rtc_device *rtc;
- 	int rtc_alarm_irq;
--	int rtc_base;
-+	int rtc_control_reg;
- 	int rtc_read_base;
- 	int rtc_write_base;
- 	int alarm_rw_base;
--	u8  ctrl_reg;
-+	int alarm_ctrl1;
-+	int alarm_ctrl2;
-+	int (*alarm_clear)(struct pm8xxx_rtc *);
-+	u8 ctrl_reg;
- 	struct device *rtc_dev;
- 	spinlock_t ctrl_reg_lock;
-+	struct regmap *regmap;
- };
- 
- /*
-  * The RTC registers need to be read/written one byte at a time. This is a
-  * hardware limitation.
-  */
--static int pm8xxx_read_wrapper(struct pm8xxx_rtc *rtc_dd, u8 *rtc_val,
--		int base, int count)
-+static inline int pm8xxx_read_wrapper(struct pm8xxx_rtc *rtc_dd, u8 *rtc_val,
-+				      int base, int count)
- {
--	int i, rc;
--	struct device *parent = rtc_dd->rtc_dev->parent;
--
--	for (i = 0; i < count; i++) {
--		rc = pm8xxx_readb(parent, base + i, &rtc_val[i]);
--		if (rc < 0) {
--			dev_err(rtc_dd->rtc_dev, "PMIC read failed\n");
--			return rc;
--		}
--	}
--
--	return 0;
-+	return regmap_bulk_read(rtc_dd->regmap, base, rtc_val, count);
+@@ -859,6 +859,8 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
+ 			machine__process_event(machine, event);
+ 		} else
+ 			++session->stats.nr_unknown_events;
++next_event:
++		perf_evlist__mmap_consume(top->evlist, idx);
+ 	}
  }
  
--static int pm8xxx_write_wrapper(struct pm8xxx_rtc *rtc_dd, u8 *rtc_val,
--		int base, int count)
-+static inline int pm8xxx_write_wrapper(struct pm8xxx_rtc *rtc_dd,
-+				       const u8 *rtc_val,
-+				       int base, int count)
- {
--	int i, rc;
--	struct device *parent = rtc_dd->rtc_dev->parent;
--
--	for (i = 0; i < count; i++) {
--		rc = pm8xxx_writeb(parent, base + i, rtc_val[i]);
--		if (rc < 0) {
--			dev_err(rtc_dd->rtc_dev, "PMIC write failed\n");
--			return rc;
--		}
--	}
--
--	return 0;
-+	return regmap_bulk_write(rtc_dd->regmap, base, rtc_val, count);
- }
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 71aa3e35406b..99c8d9ad6729 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -987,7 +987,7 @@ again:
+ 			err = perf_evlist__parse_sample(evlist, event, &sample);
+ 			if (err) {
+ 				fprintf(trace->output, "Can't parse sample, err = %d, skipping...\n", err);
+-				continue;
++				goto next_event;
+ 			}
  
- /*
-@@ -125,8 +107,8 @@ static int pm8xxx_rtc_set_time(struct device *dev, struct rtc_time *tm)
- 	if (ctrl_reg & PM8xxx_RTC_ALARM_ENABLE) {
- 		alarm_enabled = 1;
- 		ctrl_reg &= ~PM8xxx_RTC_ALARM_ENABLE;
--		rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base,
--				1);
-+		rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg,
-+					  rtc_dd->rtc_control_reg, 1);
- 		if (rc < 0) {
- 			dev_err(dev, "Write to RTC control register "
- 								"failed\n");
-@@ -161,8 +143,8 @@ static int pm8xxx_rtc_set_time(struct device *dev, struct rtc_time *tm)
+ 			if (trace->base_time == 0)
+@@ -1001,18 +1001,20 @@ again:
+ 			evsel = perf_evlist__id2evsel(evlist, sample.id);
+ 			if (evsel == NULL) {
+ 				fprintf(trace->output, "Unknown tp ID %" PRIu64 ", skipping...\n", sample.id);
+-				continue;
++				goto next_event;
+ 			}
  
- 	if (alarm_enabled) {
- 		ctrl_reg |= PM8xxx_RTC_ALARM_ENABLE;
--		rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base,
--									1);
-+		rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg,
-+					  rtc_dd->rtc_control_reg, 1);
- 		if (rc < 0) {
- 			dev_err(dev, "Write to RTC control register "
- 								"failed\n");
-@@ -255,7 +237,8 @@ static int pm8xxx_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
- 	ctrl_reg = alarm->enabled ? (ctrl_reg | PM8xxx_RTC_ALARM_ENABLE) :
- 					(ctrl_reg & ~PM8xxx_RTC_ALARM_ENABLE);
+ 			if (sample.raw_data == NULL) {
+ 				fprintf(trace->output, "%s sample with no payload for tid: %d, cpu %d, raw_size=%d, skipping...\n",
+ 				       perf_evsel__name(evsel), sample.tid,
+ 				       sample.cpu, sample.raw_size);
+-				continue;
++				goto next_event;
+ 			}
  
--	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
-+	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg,
-+				  rtc_dd->rtc_control_reg, 1);
- 	if (rc < 0) {
- 		dev_err(dev, "Write to RTC control register failed\n");
- 		goto rtc_rw_fail;
-@@ -316,7 +299,8 @@ static int pm8xxx_rtc_alarm_irq_enable(struct device *dev, unsigned int enable)
- 	ctrl_reg = (enable) ? (ctrl_reg | PM8xxx_RTC_ALARM_ENABLE) :
- 				(ctrl_reg & ~PM8xxx_RTC_ALARM_ENABLE);
+ 			handler = evsel->handler.func;
+ 			handler(trace, evsel, &sample);
++next_event:
++			perf_evlist__mmap_consume(evlist, i);
  
--	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
-+	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg,
-+				  rtc_dd->rtc_control_reg, 1);
- 	if (rc < 0) {
- 		dev_err(dev, "Write to RTC control register failed\n");
- 		goto rtc_rw_fail;
-@@ -351,7 +335,8 @@ static irqreturn_t pm8xxx_alarm_trigger(int irq, void *dev_id)
- 	ctrl_reg = rtc_dd->ctrl_reg;
- 	ctrl_reg &= ~PM8xxx_RTC_ALARM_ENABLE;
- 
--	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
-+	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg,
-+				  rtc_dd->rtc_control_reg, 1);
- 	if (rc < 0) {
- 		spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
- 		dev_err(rtc_dd->rtc_dev, "Write to RTC control register "
-@@ -363,37 +348,105 @@ static irqreturn_t pm8xxx_alarm_trigger(int irq, void *dev_id)
- 	spin_unlock_irqrestore(&rtc_dd->ctrl_reg_lock, irq_flags);
- 
- 	/* Clear RTC alarm register */
--	rc = pm8xxx_read_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base +
--						PM8XXX_ALARM_CTRL_OFFSET, 1);
-+	rc = rtc_dd->alarm_clear(rtc_dd);
-+	if (rc < 0)
-+		dev_err(rtc_dd->rtc_dev, "failed to clear RTC alarm\n");
-+
-+rtc_alarm_handled:
-+	return IRQ_HANDLED;
-+}
-+
-+static int pm8941_alarm_clear(struct pm8xxx_rtc *rtc_dd)
-+{
-+	u8 ctrl = PM8xxx_RTC_ALARM_CLEAR;
-+	return pm8xxx_write_wrapper(rtc_dd, &ctrl, rtc_dd->alarm_ctrl2, 1);
-+}
-+
-+static int pm8941_chip_init(struct platform_device *pdev,
-+			    struct pm8xxx_rtc *rtc)
-+{
-+	u32 addr[2];
-+	int err;
-+
-+	err = of_property_read_u32_array(pdev->dev.of_node,
-+					 "reg", addr, 2);
-+	if (err || addr[0] > 0xFFFF || addr[1] > 0xFFFF) {
-+		dev_err(&pdev->dev, "RTC IO resources absent or invalid\n");
-+		return err;
-+	}
-+
-+	rtc->alarm_clear = pm8941_alarm_clear;
-+
-+	rtc->rtc_control_reg = addr[0] + 0x46;
-+	rtc->rtc_write_base  = addr[0] + 0x40;
-+	rtc->rtc_read_base   = addr[0] + 0x48;
-+	rtc->alarm_rw_base   = addr[1] + 0x40;
-+	rtc->alarm_ctrl1     = addr[1] + 0x46;
-+	rtc->alarm_ctrl2     = addr[1] + 0x48;
-+	return 0;
-+}
-+
-+static int pm8xxx_alarm_clear(struct pm8xxx_rtc *rtc_dd)
-+{
-+	u8 ctrl_reg;
-+	int rc;
-+
-+	rc = pm8xxx_read_wrapper(rtc_dd, &ctrl_reg, rtc_dd->alarm_ctrl1, 1);
- 	if (rc < 0) {
- 		dev_err(rtc_dd->rtc_dev, "RTC Alarm control register read "
- 								"failed\n");
--		goto rtc_alarm_handled;
-+		return rc;
+ 			if (done)
+ 				goto out_unmap_evlist;
+diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
+index 6fb781d5586c..e3fedfa2906e 100644
+--- a/tools/perf/tests/code-reading.c
++++ b/tools/perf/tests/code-reading.c
+@@ -290,6 +290,7 @@ static int process_events(struct machine *machine, struct perf_evlist *evlist,
+ 	for (i = 0; i < evlist->nr_mmaps; i++) {
+ 		while ((event = perf_evlist__mmap_read(evlist, i)) != NULL) {
+ 			ret = process_event(machine, evlist, event, state);
++			perf_evlist__mmap_consume(evlist, i);
+ 			if (ret < 0)
+ 				return ret;
+ 		}
+diff --git a/tools/perf/tests/keep-tracking.c b/tools/perf/tests/keep-tracking.c
+index d444ea2c47d9..376c35608534 100644
+--- a/tools/perf/tests/keep-tracking.c
++++ b/tools/perf/tests/keep-tracking.c
+@@ -36,6 +36,7 @@ static int find_comm(struct perf_evlist *evlist, const char *comm)
+ 			    (pid_t)event->comm.tid == getpid() &&
+ 			    strcmp(event->comm.comm, comm) == 0)
+ 				found += 1;
++			perf_evlist__mmap_consume(evlist, i);
+ 		}
+ 	}
+ 	return found;
+diff --git a/tools/perf/tests/mmap-basic.c b/tools/perf/tests/mmap-basic.c
+index c4185b9aeb80..a7232c204eb9 100644
+--- a/tools/perf/tests/mmap-basic.c
++++ b/tools/perf/tests/mmap-basic.c
+@@ -122,6 +122,7 @@ int test__basic_mmap(void)
+ 			goto out_munmap;
+ 		}
+ 		nr_events[evsel->idx]++;
++		perf_evlist__mmap_consume(evlist, 0);
  	}
  
- 	ctrl_reg &= ~PM8xxx_RTC_ALARM_CLEAR;
--	rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base +
--						PM8XXX_ALARM_CTRL_OFFSET, 1);
--	if (rc < 0)
--		dev_err(rtc_dd->rtc_dev, "Write to RTC Alarm control register"
--								" failed\n");
-+	return pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->alarm_ctrl1, 1);
-+}
+ 	err = 0;
+diff --git a/tools/perf/tests/open-syscall-tp-fields.c b/tools/perf/tests/open-syscall-tp-fields.c
+index fc5b9fca8b47..524b221b829b 100644
+--- a/tools/perf/tests/open-syscall-tp-fields.c
++++ b/tools/perf/tests/open-syscall-tp-fields.c
+@@ -77,8 +77,10 @@ int test__syscall_open_tp_fields(void)
  
--rtc_alarm_handled:
--	return IRQ_HANDLED;
-+static int pm8xxx_chip_init(struct platform_device *pdev,
-+			    struct pm8xxx_rtc *rtc)
-+{
-+	const struct pm8xxx_rtc_platform_data *pdata =
-+				dev_get_platdata(&pdev->dev);
-+	struct resource *res;
+ 				++nr_events;
+ 
+-				if (type != PERF_RECORD_SAMPLE)
++				if (type != PERF_RECORD_SAMPLE) {
++					perf_evlist__mmap_consume(evlist, i);
+ 					continue;
++				}
+ 
+ 				err = perf_evsel__parse_sample(evsel, event, &sample);
+ 				if (err) {
+diff --git a/tools/perf/tests/perf-record.c b/tools/perf/tests/perf-record.c
+index b8a7056519ac..7923b06ffc91 100644
+--- a/tools/perf/tests/perf-record.c
++++ b/tools/perf/tests/perf-record.c
+@@ -263,6 +263,8 @@ int test__PERF_RECORD(void)
+ 						 type);
+ 					++errs;
+ 				}
 +
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "Platform data not initialized.\n");
-+		return -ENXIO;
-+	}
-+
-+	if (pdata->rtc_write_enable)
-+		pm8xxx_rtc_ops.set_time = pm8xxx_rtc_set_time;
-+
-+	res = platform_get_resource_byname(pdev, IORESOURCE_IO,
-+					   "pmic_rtc_base");
-+	if (!res) {
-+		dev_err(&pdev->dev, "RTC IO resource absent\n");
-+		return -ENXIO;
-+	}
-+
-+	rtc->rtc_control_reg = res->start;
-+	rtc->rtc_write_base  = res->start + 0x02;
-+	rtc->rtc_read_base   = res->start + 0x06;
-+	rtc->alarm_rw_base   = res->start + 0x0A;
-+	rtc->alarm_ctrl1     = res->start + 0x01;
-+
-+	rtc->alarm_clear = pm8xxx_alarm_clear;
-+	return 0;
- }
++				perf_evlist__mmap_consume(evlist, i);
+ 			}
+ 		}
  
-+static const struct of_device_id pm8xxx_rtc_idtable[] = {
-+	{ .compatible = "qcom,pm8941-rtc", pm8941_chip_init },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, pm8xxx_rtc_idtable);
-+
- static int pm8xxx_rtc_probe(struct platform_device *pdev)
- {
--	int rc;
--	u8 ctrl_reg;
--	bool rtc_write_enable = false;
-+	int (*chip_init)(struct platform_device *pdev, struct pm8xxx_rtc *rtc);
-+	const struct device_node *node = pdev->dev.of_node;
- 	struct pm8xxx_rtc *rtc_dd;
--	struct resource *rtc_resource;
--	const struct pm8xxx_rtc_platform_data *pdata =
--						dev_get_platdata(&pdev->dev);
--
--	if (pdata != NULL)
--		rtc_write_enable = pdata->rtc_write_enable;
-+	u8 ctrl_reg;
-+	int rc;
+diff --git a/tools/perf/tests/perf-time-to-tsc.c b/tools/perf/tests/perf-time-to-tsc.c
+index 0ab61b1f408e..4ca1b938f6a6 100644
+--- a/tools/perf/tests/perf-time-to-tsc.c
++++ b/tools/perf/tests/perf-time-to-tsc.c
+@@ -122,7 +122,7 @@ int test__perf_time_to_tsc(void)
+ 			if (event->header.type != PERF_RECORD_COMM ||
+ 			    (pid_t)event->comm.pid != getpid() ||
+ 			    (pid_t)event->comm.tid != getpid())
+-				continue;
++				goto next_event;
  
- 	rtc_dd = devm_kzalloc(&pdev->dev, sizeof(*rtc_dd), GFP_KERNEL);
- 	if (rtc_dd == NULL) {
-@@ -401,33 +454,40 @@ static int pm8xxx_rtc_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
--	/* Initialise spinlock to protect RTC control register */
--	spin_lock_init(&rtc_dd->ctrl_reg_lock);
-+	chip_init = pm8xxx_chip_init;
-+	if (node) {
-+		const
-+		struct of_device_id *id = of_match_node(pm8xxx_rtc_idtable,
-+							pdev->dev.of_node);
-+		if (id && id->data)
-+			chip_init = id->data;
-+	}
- 
--	rtc_dd->rtc_alarm_irq = platform_get_irq(pdev, 0);
--	if (rtc_dd->rtc_alarm_irq < 0) {
--		dev_err(&pdev->dev, "Alarm IRQ resource absent!\n");
-+	rc = chip_init(pdev, rtc_dd);
-+	if (rc) {
-+		dev_err(&pdev->dev, "Failed to initialize chip.\n");
- 		return -ENXIO;
- 	}
- 
--	rtc_resource = platform_get_resource_byname(pdev, IORESOURCE_IO,
--							"pmic_rtc_base");
--	if (!(rtc_resource && rtc_resource->start)) {
--		dev_err(&pdev->dev, "RTC IO resource absent!\n");
-+	rtc_dd->regmap = dev_get_regmap(pdev->dev.parent, NULL);
-+	if (!rtc_dd->regmap) {
-+		dev_err(&pdev->dev, "Unable to get regmap.\n");
- 		return -ENXIO;
- 	}
- 
--	rtc_dd->rtc_base = rtc_resource->start;
-+	/* Initialise spinlock to protect RTC control register */
-+	spin_lock_init(&rtc_dd->ctrl_reg_lock);
- 
--	/* Setup RTC register addresses */
--	rtc_dd->rtc_write_base = rtc_dd->rtc_base + PM8XXX_RTC_WRITE_OFFSET;
--	rtc_dd->rtc_read_base = rtc_dd->rtc_base + PM8XXX_RTC_READ_OFFSET;
--	rtc_dd->alarm_rw_base = rtc_dd->rtc_base + PM8XXX_ALARM_RW_OFFSET;
-+	rtc_dd->rtc_alarm_irq = platform_get_irq(pdev, 0);
-+	if (rtc_dd->rtc_alarm_irq < 0) {
-+		dev_err(&pdev->dev, "Alarm IRQ resource absent!\n");
-+		return -ENXIO;
-+	}
- 
- 	rtc_dd->rtc_dev = &pdev->dev;
- 
- 	/* Check if the RTC is on, else turn it on */
--	rc = pm8xxx_read_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
-+	rc = pm8xxx_read_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_control_reg, 1);
- 	if (rc < 0) {
- 		dev_err(&pdev->dev, "RTC control register read failed!\n");
- 		return rc;
-@@ -435,8 +495,8 @@ static int pm8xxx_rtc_probe(struct platform_device *pdev)
- 
- 	if (!(ctrl_reg & PM8xxx_RTC_ENABLE)) {
- 		ctrl_reg |= PM8xxx_RTC_ENABLE;
--		rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base,
--									1);
-+		rc = pm8xxx_write_wrapper(rtc_dd, &ctrl_reg,
-+					  rtc_dd->rtc_control_reg, 1);
- 		if (rc < 0) {
- 			dev_err(&pdev->dev, "Write to RTC control register "
- 								"failed\n");
-@@ -444,10 +504,6 @@ static int pm8xxx_rtc_probe(struct platform_device *pdev)
+ 			if (strcmp(event->comm.comm, comm1) == 0) {
+ 				CHECK__(perf_evsel__parse_sample(evsel, event,
+@@ -134,6 +134,8 @@ int test__perf_time_to_tsc(void)
+ 								 &sample));
+ 				comm2_time = sample.time;
+ 			}
++next_event:
++			perf_evlist__mmap_consume(evlist, i);
  		}
  	}
  
--	rtc_dd->ctrl_reg = ctrl_reg;
--	if (rtc_write_enable == true)
--		pm8xxx_rtc_ops.set_time = pm8xxx_rtc_set_time;
--
- 	platform_set_drvdata(pdev, rtc_dd);
+diff --git a/tools/perf/tests/sw-clock.c b/tools/perf/tests/sw-clock.c
+index 2e41e2d32ccc..6e2b44ec0749 100644
+--- a/tools/perf/tests/sw-clock.c
++++ b/tools/perf/tests/sw-clock.c
+@@ -78,7 +78,7 @@ static int __test__sw_clock_freq(enum perf_sw_ids clock_id)
+ 		struct perf_sample sample;
  
- 	/* Register the RTC device */
-@@ -516,6 +572,7 @@ static struct platform_driver pm8xxx_rtc_driver = {
- 		.name	= PM8XXX_RTC_DEV_NAME,
- 		.owner	= THIS_MODULE,
- 		.pm	= &pm8xxx_rtc_pm_ops,
-+		.of_match_table	= pm8xxx_rtc_idtable,
- 	},
- };
+ 		if (event->header.type != PERF_RECORD_SAMPLE)
+-			continue;
++			goto next_event;
+ 
+ 		err = perf_evlist__parse_sample(evlist, event, &sample);
+ 		if (err < 0) {
+@@ -88,6 +88,8 @@ static int __test__sw_clock_freq(enum perf_sw_ids clock_id)
+ 
+ 		total_periods += sample.period;
+ 		nr_samples++;
++next_event:
++		perf_evlist__mmap_consume(evlist, 0);
+ 	}
+ 
+ 	if ((u64) nr_samples == total_periods) {
+diff --git a/tools/perf/tests/task-exit.c b/tools/perf/tests/task-exit.c
+index 28fe5894b061..a3e64876e940 100644
+--- a/tools/perf/tests/task-exit.c
++++ b/tools/perf/tests/task-exit.c
+@@ -96,10 +96,10 @@ int test__task_exit(void)
+ 
+ retry:
+ 	while ((event = perf_evlist__mmap_read(evlist, 0)) != NULL) {
+-		if (event->header.type != PERF_RECORD_EXIT)
+-			continue;
++		if (event->header.type == PERF_RECORD_EXIT)
++			nr_exit++;
+ 
+-		nr_exit++;
++		perf_evlist__mmap_consume(evlist, 0);
+ 	}
+ 
+ 	if (!exited || !nr_exit) {
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index f9f77bee0b1b..e584cd30b0f2 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -545,12 +545,19 @@ union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
+ 
+ 	md->prev = old;
+ 
+-	if (!evlist->overwrite)
+-		perf_mmap__write_tail(md, old);
+-
+ 	return event;
+ }
+ 
++void perf_evlist__mmap_consume(struct perf_evlist *evlist, int idx)
++{
++	if (!evlist->overwrite) {
++		struct perf_mmap *md = &evlist->mmap[idx];
++		unsigned int old = md->prev;
++
++		perf_mmap__write_tail(md, old);
++	}
++}
++
+ static void __perf_evlist__munmap(struct perf_evlist *evlist, int idx)
+ {
+ 	if (evlist->mmap[idx].base != NULL) {
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 880d7139d2fb..206d09339306 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -89,6 +89,8 @@ struct perf_sample_id *perf_evlist__id2sid(struct perf_evlist *evlist, u64 id);
+ 
+ union perf_event *perf_evlist__mmap_read(struct perf_evlist *self, int idx);
+ 
++void perf_evlist__mmap_consume(struct perf_evlist *evlist, int idx);
++
+ int perf_evlist__open(struct perf_evlist *evlist);
+ void perf_evlist__close(struct perf_evlist *evlist);
+ 
+diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+index 71b5412bbbb9..2ac4bc92bb1f 100644
+--- a/tools/perf/util/python.c
++++ b/tools/perf/util/python.c
+@@ -822,6 +822,8 @@ static PyObject *pyrf_evlist__read_on_cpu(struct pyrf_evlist *pevlist,
+ 		PyObject *pyevent = pyrf_event__new(event);
+ 		struct pyrf_event *pevent = (struct pyrf_event *)pyevent;
+ 
++		perf_evlist__mmap_consume(evlist, cpu);
++
+ 		if (pyevent == NULL)
+ 			return PyErr_NoMemory();
  
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.1.4
 
