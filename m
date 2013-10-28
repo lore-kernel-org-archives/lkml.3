@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab3J1O74 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 10:59:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51174 "EHLO
+	id S932263Ab3J1OtV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:49:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51112 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932273Ab3J1OtY (ORCPT
+	with ESMTP id S932164Ab3J1OtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:49:24 -0400
+	Mon, 28 Oct 2013 10:49:06 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Oliver Neukum <oneukum@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 35/64] rt2800: fix wrong TX power compensation
-Date: Mon, 28 Oct 2013 14:47:54 +0000
-Message-Id: <1382971703-17393-36-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 24/64] USB: quirks.c: add one device that cannot deal with suspension
+Date: Mon, 28 Oct 2013 14:47:43 +0000
+Message-Id: <1382971703-17393-25-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
 References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
@@ -28,47 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit 6e956da2027c767859128b9bfef085cf2a8e233b upstream.
+commit 4294bca7b423d1a5aa24307e3d112a04075e3763 upstream.
 
-We should not do temperature compensation on devices without
-EXTERNAL_TX_ALC bit set (called DynamicTxAgcControl on vendor driver).
-Such devices can have totally bogus TSSI parameters on the EEPROM,
-but still threaded by us as valid and result doing wrong TX power
-calculations.
+The device is not responsive when resumed, unless it is reset.
 
-This fix inability to connect to AP on slightly longer distance on
-some Ralink chips/devices.
-
-Reported-and-tested-by: Fabien ADAM <id2ndr@crocobox.org>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[ luis: backported to 3.5:
-  - use rt2x00_eeprom_read() instead of rt2800_eeprom_read() ]
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rt2x00/rt2800lib.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/core/quirks.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2800lib.c b/drivers/net/wireless/rt2x00/rt2800lib.c
-index 1c60904..b81f2b6 100644
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -2181,6 +2181,13 @@ static int rt2800_get_gain_calibration_delta(struct rt2x00_dev *rt2x00dev)
- 	int i;
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index d67ff42..daaf9fa 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -155,6 +155,9 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	/* Broadcom BCM92035DGROM BT dongle */
+ 	{ USB_DEVICE(0x0a5c, 0x2021), .driver_info = USB_QUIRK_RESET_RESUME },
  
- 	/*
-+	 * First check if temperature compensation is supported.
-+	 */
-+	rt2x00_eeprom_read(rt2x00dev, EEPROM_NIC_CONF1, &eeprom);
-+	if (!rt2x00_get_field16(eeprom, EEPROM_NIC_CONF1_EXTERNAL_TX_ALC))
-+		return 0;
++	/* MAYA44USB sound device */
++	{ USB_DEVICE(0x0a92, 0x0091), .driver_info = USB_QUIRK_RESET_RESUME },
 +
-+	/*
- 	 * Read TSSI boundaries for temperature compensation from
- 	 * the EEPROM.
- 	 *
+ 	/* Action Semiconductor flash disk */
+ 	{ USB_DEVICE(0x10d6, 0x2200), .driver_info =
+ 			USB_QUIRK_STRING_FETCH_255 },
 -- 
 1.8.3.2
 
