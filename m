@@ -1,54 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab3J1OXJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 10:23:09 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:49229 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756367Ab3J1OXI convert rfc822-to-8bit (ORCPT
+	id S1756732Ab3J1OXb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:23:31 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43615 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756545Ab3J1OXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:23:08 -0400
-MIME-Version: 1.0
-Message-ID: <72e26ba4-7b4f-4b64-b58c-0042cbe89202@default>
-Date: Mon, 28 Oct 2013 07:22:55 -0700 (PDT)
-From: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-To: David Miller <davem@davemloft.net>, ben@decadent.org.uk
-Cc: linux-kernel@vger.kernel.org, rds-devel@oss.oracle.com,
-        netdev@vger.kernel.org
-Subject: RE: [PATCH 7/8] rds: Pass pointers to virt_to_page(), not integers
-References: <1382910437.2994.43.camel@deadeye.wl.decadent.org.uk>
- <1382910856.2994.51.camel@deadeye.wl.decadent.org.uk>
- <20131028.002654.404759341390215962.davem@davemloft.net>
-In-Reply-To: <20131028.002654.404759341390215962.davem@davemloft.net>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.8  (707110) [OL
- 12.0.6680.5000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 28 Oct 2013 10:23:30 -0400
+Date: Tue, 29 Oct 2013 01:23:17 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: linux-next: build failure after merge of the final tree (fbdev tree
+ related)
+Message-Id: <20131029012317.b9ba8173dee5bac1a5bd2404@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__29_Oct_2013_01_23_17_+1100_DShg+nNpREjrw96n"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------Original Message-----
-From: David Miller [mailto:davem@davemloft.net] 
-Sent: Sunday, October 27, 2013 11:27 PM
-To: ben@decadent.org.uk
-Cc: Venkat Venkatsubra; linux-kernel@vger.kernel.org; rds-devel@oss.oracle.com; netdev@vger.kernel.org
-Subject: Re: [PATCH 7/8] rds: Pass pointers to virt_to_page(), not integers
+--Signature=_Tue__29_Oct_2013_01_23_17_+1100_DShg+nNpREjrw96n
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Ben Hutchings <ben@decadent.org.uk>
-Date: Sun, 27 Oct 2013 21:54:16 +0000
+Hi all,
 
-> Most architectures define virt_to_page() as a macro that casts its 
-> argument such that an argument of type unsigned long will be accepted 
-> without complaint.  However, the proper type is void *, and passing 
-> unsigned long results in a warning on MIPS.
-> 
-> Compile-tested only.
-> 
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+After merging the final tree, today's linux-next build (powerpc
+ppc44x_defconfig) failed like this:
 
-This looks fine:
+drivers/video/xilinxfb.c: In function 'xilinxfb_of_probe':
+drivers/video/xilinxfb.c:431:30: error: 'op' undeclared (first use in this =
+function)
 
-Acked-by: David S. Miller <davem@davemloft.net>
-Acked-by: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+Caused by commit 353846fb8bb7 ("video: xilinxfb: Use standard variable
+name convention") from the fbdev tree.
+
+I have applied the following fix patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 29 Oct 2013 01:18:22 +1100
+Subject: [PATCH] video: xilinxfb: Fix for "Use standard variable name conve=
+ntion"
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/video/xilinxfb.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
+index 9eedf9673b7f..6ff1a91e9dfd 100644
+--- a/drivers/video/xilinxfb.c
++++ b/drivers/video/xilinxfb.c
+@@ -428,11 +428,11 @@ static int xilinxfb_of_probe(struct platform_device *=
+pdev)
+ #ifdef CONFIG_PPC_DCR
+ 	else {
+ 		int start;
+-		start =3D dcr_resource_start(op->dev.of_node, 0);
+-		drvdata->dcr_len =3D dcr_resource_len(op->dev.of_node, 0);
+-		drvdata->dcr_host =3D dcr_map(op->dev.of_node, start, drvdata->dcr_len);
++		start =3D dcr_resource_start(pdev->dev.of_node, 0);
++		drvdata->dcr_len =3D dcr_resource_len(pdev->dev.of_node, 0);
++		drvdata->dcr_host =3D dcr_map(pdev->dev.of_node, start, drvdata->dcr_len=
+);
+ 		if (!DCR_MAP_OK(drvdata->dcr_host)) {
+-			dev_err(&op->dev, "invalid DCR address\n");
++			dev_err(&pdev->dev, "invalid DCR address\n");
+ 			return -ENODEV;
+ 		}
+ 	}
+--=20
+1.8.4.rc3
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__29_Oct_2013_01_23_17_+1100_DShg+nNpREjrw96n
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSbnNbAAoJEMDTa8Ir7ZwVnooP/1LS+f9SxGMr6WGR2JJtFZ8E
+jojjonFKb6Fs8lLRUuEOeBDbPEW/SmRu0dkNhsPHU1vGIKUtKfI+dVL9Y9ZBF45k
+IQwmMATMOK9Z7R78s2cXW0rB7+8lrCtWRSNdWXJDSj0hrDnrrzwNCRTtwla/9tWZ
+N7vg94dG7lDLNaBgZqjiEuH0k1BTcLk++PNi4c0X2zdEx5242do3Uk1Bx97P19ej
+Gbud4ZsK/pQhyBJcdTJLNZOIPWR6Owg30wf/xECw73lbe6hmjxa2DTLlhRXriUgR
+1wgBt7yRnGVymZwM8l6GFYcOTyU3SUATbE0uIR5rGs/Pwf8dFavgMUQJlkv7IF6/
+5XSBpD7XPKGpNyqMNHt2epQn+WFB0jY8taV1Aa9Vlh2vVY0xtfHGQ9hsR9lvf/rt
+w4tXAjO79kfUbvIZrm4ue92vkWhAcQwtml+sPeYqR6C8CElfU6+EUFlSQ14X7WeW
+DIbNyC488mbwOcPIH0Sw1q2kC4mssScMuiqGqlsOjQ/w7EZSYCXvPwTUbSV7mQvL
+5T1sKr7257CPDse95eYD1QgfPANFI2k76N28/TaG+onwbqcMRZZb7XiI32Xy7+d0
+C4kz9SjfTJWoSKwTIjIadhE6b0k1g/cvlwtORdwdir10yQCkLXA9rdjw6UroiseR
+FVx0ce0MWTfXhYWsjPA9
+=h1yv
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__29_Oct_2013_01_23_17_+1100_DShg+nNpREjrw96n--
