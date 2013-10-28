@@ -1,154 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab3J1Hdc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 03:33:32 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:29705 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754091Ab3J1Hdb (ORCPT
+	id S1755745Ab3J1Hex (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 03:34:53 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:49677 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755686Ab3J1Hev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 03:33:31 -0400
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-To: Alex Williamson <alex.williamson@redhat.com>,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@redhat.com>, <linux-kernel@vger.kernel.org>
-Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Subject: [PATCH 1/1] drivers/vga: check decodes for vgaarb lock/unlock
-Date: Mon, 28 Oct 2013 15:33:51 +0800
-Message-Id: <1382945631-3942-1-git-send-email-zhen-hual@hp.com>
-X-Mailer: git-send-email 1.8.4.rc3
+	Mon, 28 Oct 2013 03:34:51 -0400
+Date: Mon, 28 Oct 2013 08:34:46 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>, Mark Salter <msalter@redhat.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the c6x tree
+Message-ID: <20131028073446.GB6629@ulmo.nvidia.com>
+References: <1382632289-18523-1-git-send-email-treding@nvidia.com>
+ <1382706224-8859-1-git-send-email-treding@nvidia.com>
+ <20131026131938.GT16735@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="s2ZSL+KKDSLx8OML"
+Content-Disposition: inline
+In-Reply-To: <20131026131938.GT16735@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a bug that X windows system may use an invalid decodes iostat
-on the VGA Arbiter device when lock and unlock. this may cause system
-crash. So we must validate the value of iostat.
 
-Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
----
- drivers/gpu/vga/vgaarb.c | 55 ++++++++++++++++++++++++++++++++----------------
- 1 file changed, 37 insertions(+), 18 deletions(-)
+--s2ZSL+KKDSLx8OML
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
-index af02597..4772367 100644
---- a/drivers/gpu/vga/vgaarb.c
-+++ b/drivers/gpu/vga/vgaarb.c
-@@ -906,8 +906,9 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 	struct vga_arb_private *priv = file->private_data;
- 	struct vga_arb_user_card *uc = NULL;
- 	struct pci_dev *pdev;
-+	struct vga_device *vgadev = NULL;
- 
--	unsigned int io_state;
-+	unsigned int io_state = 0;
- 
- 	char *kbuf, *curr_pos;
- 	size_t remaining = count;
-@@ -927,6 +928,19 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 	curr_pos = kbuf;
- 	kbuf[count] = '\0';	/* Just to make sure... */
- 
-+	pdev = priv->target;
-+	if (priv->target == NULL) {
-+		pr_debug("No device found");
-+		ret_val = -ENODEV;
-+		goto done;
-+	}
-+	vgadev = vgadev_find(pdev);
-+	if (vgadev == NULL) {
-+		pr_debug("Could not find vga device for %s", pci_name(pdev));
-+		ret_val = -ENODEV;
-+		goto done;
-+	}
-+
- 	if (strncmp(curr_pos, "lock ", 5) == 0) {
- 		curr_pos += 5;
- 		remaining -= 5;
-@@ -937,14 +951,15 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 			ret_val = -EPROTO;
- 			goto done;
- 		}
--		if (io_state == VGA_RSRC_NONE) {
-+		if ((vgadev->owns & io_state) != io_state) {
-+			pr_debug("iostate (%x and %x ) do not match",
-+				io_state, vgadev->owns);
-+
- 			ret_val = -EPROTO;
- 			goto done;
- 		}
--
--		pdev = priv->target;
--		if (priv->target == NULL) {
--			ret_val = -ENODEV;
-+		if (io_state == VGA_RSRC_NONE) {
-+			ret_val = -EPROTO;
- 			goto done;
- 		}
- 
-@@ -969,14 +984,21 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 
- 		pr_debug("client 0x%p called 'unlock'\n", priv);
- 
--		if (strncmp(curr_pos, "all", 3) == 0)
-+		if (strncmp(curr_pos, "all", 3) == 0) {
- 			io_state = VGA_RSRC_LEGACY_IO | VGA_RSRC_LEGACY_MEM;
--		else {
-+		} else {
- 			if (!vga_str_to_iostate
- 			    (curr_pos, remaining, &io_state)) {
- 				ret_val = -EPROTO;
- 				goto done;
- 			}
-+			if ((vgadev->owns & io_state) != io_state) {
-+				pr_debug("iostate (%x and %x ) do not match",
-+					io_state, vgadev->owns);
-+
-+				ret_val = -EPROTO;
-+				goto done;
-+			}
- 			/* TODO: Add this?
- 			   if (io_state == VGA_RSRC_NONE) {
- 			   ret_val = -EPROTO;
-@@ -985,11 +1007,6 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 			  */
- 		}
- 
--		pdev = priv->target;
--		if (priv->target == NULL) {
--			ret_val = -ENODEV;
--			goto done;
--		}
- 		for (i = 0; i < MAX_USER_CARDS; i++) {
- 			if (priv->cards[i].pdev == pdev)
- 				uc = &priv->cards[i];
-@@ -1029,6 +1046,13 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 			ret_val = -EPROTO;
- 			goto done;
- 		}
-+		if ((vgadev->owns & io_state) != io_state) {
-+			pr_debug("iostate (%x and %x ) do not match",
-+				io_state, vgadev->owns);
-+
-+			ret_val = -EPROTO;
-+			goto done;
-+		}
- 		/* TODO: Add this?
- 		   if (io_state == VGA_RSRC_NONE) {
- 		   ret_val = -EPROTO;
-@@ -1036,11 +1060,6 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 		   }
- 		 */
- 
--		pdev = priv->target;
--		if (priv->target == NULL) {
--			ret_val = -ENODEV;
--			goto done;
--		}
- 
- 		if (vga_tryget(pdev, io_state)) {
- 			/* Update the client's locks lists... */
--- 
-1.8.4.rc3
+On Sat, Oct 26, 2013 at 02:19:38PM +0100, Russell King - ARM Linux wrote:
+> On Fri, Oct 25, 2013 at 03:03:39PM +0200, Thierry Reding wrote:
+> > diff --cc arch/arm/Kconfig
+> > index c06647d,7db8abe0..b6a708e
+> > --- a/arch/arm/Kconfig
+> > +++ b/arch/arm/Kconfig
+> > @@@ -5,7 -5,7 +5,8 @@@ config AR
+> >   	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
+> >   	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
+> >   	select ARCH_HAVE_CUSTOM_GPIO_H
+> >  +	select ARCH_USE_CMPXCHG_LOCKREF
+> > + 	select ARCH_MIGHT_HAVE_PC_PARPORT
+> >   	select ARCH_WANT_IPC_PARSE_VERSION
+>=20
+> Thanks.  Generally we want these things to be arranged alphabetically to
+> reduce the longer term chances of hitting merge conflicts, but in this
+> case it wouldn't make any difference.
 
+I was aiming for alphabetical order... guess I need to revisit my ABCs.
+
+Thierry
+
+--s2ZSL+KKDSLx8OML
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSbhOWAAoJEN0jrNd/PrOh+7kQALb+ksrdhjNtYs56DmDp50qO
+4ZL7e4SN0WrLJMxu8HE1mLY8+kBByz7IccJkRsnZ9WyfjysdT/3zPw1F7zUJta4f
+YQv7tqLwl+O72Le56pWEymN1eQmtBin7srJmx6TsdjTHyFs42ZN0RxLf9H+yfcOc
+wCa1XKYC2D4/6Skcm1WKThM05Jbe5lda8dvAzvRploS6jBziJtb7frcZUmSnt2qf
+qBHlNRgXOHKvKZi89wD1NWT+Rqbbi6czDLnQb/ThowGZa6iMKi/Ms7Rd0b0lGew3
+4F+hKhrI0iRCwdwbaJ2UeAVKie/TcK0vOtQt+NQbkABlHHQwgdvrC/U5N3Uol08J
+FMFiAQ2oCYFbrlZ/UtLjnxLfN+yYaspoefxDnKfj2+tMhV3lmPgoBrG6IP/Zu7eM
+qqVhRLtGgtITPumlWH1guxEQ5rBKjRAGipaHY1P3Gxn275hatsMxYVPZ/LqyWy/h
+5ferH+nllpDRun24cSf+xhAuEF0Zjet8iHmnND0HsrHKEWP2zDStdLDeqGPiDZ7z
+Tv9o2chiA6DlOATOoGztOGrtuSszUbCWt6qIOu8dc0hmoVgf3fnW861fUbatWUmT
+O3qFzhhUnAbDH4m3mDiy9ExMEez114MMusPicEKD0T9J6+nDj7Dn8/7ATZ+tPWet
+rB2Dt3FXR3GBSLmfHmz8
+=Mtng
+-----END PGP SIGNATURE-----
+
+--s2ZSL+KKDSLx8OML--
