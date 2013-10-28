@@ -1,99 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756441Ab3J1Mim (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 08:38:42 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:45633 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755683Ab3J1Mik (ORCPT
+	id S1756291Ab3J1Mm0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 08:42:26 -0400
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:45950 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755382Ab3J1MmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 08:38:40 -0400
-In-Reply-To: <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com>
-References: <12083.1382486094@ale.ozlabs.ibm.com>	<20131023141948.GB3566@localhost.localdomain>
-	<20131025173749.GG19466@laptop.lan> <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com>
-Subject: Re: perf events ring buffer memory barrier on powerpc
-X-KeepSent: B9096CCA:68AAFFFB-42257C12:0044F107;
- type=4; name=$KeepSent
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>,
-        Peter Zijlstra <peterz@infradead.org>
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-Message-ID: <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com>
-From: Victor Kaplansky <VICTORK@il.ibm.com>
-Date: Mon, 28 Oct 2013 14:38:29 +0200
-X-MIMETrack: Serialize by Router on D06ML319/06/M/IBM(Release 8.5.3FP5|July 31, 2013) at
- 28/10/2013 14:38:22
+	Mon, 28 Oct 2013 08:42:24 -0400
+Date: Mon, 28 Oct 2013 09:42:18 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [GIT PULL] perf fixes
+Message-ID: <20131028124218.GD16948@ghostprotocols.net>
+References: <20131026122414.GA25026@gmail.com>
+ <20131028082848.GA276@x4>
+ <20131028090236.GA274@x4>
+ <20131028093430.GB274@x4>
+ <20131028123411.GB16948@ghostprotocols.net>
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102812-0542-0000-0000-000006E1AC65
+Content-Type: multipart/mixed; boundary="oyUTqETQ0mS9luUI"
+Content-Disposition: inline
+In-Reply-To: <20131028123411.GB16948@ghostprotocols.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Frederic Weisbecker <fweisbec@gmail.com>
->
-> 2013/10/25 Peter Zijlstra <peterz@infradead.org>:
-> > On Wed, Oct 23, 2013 at 03:19:51PM +0100, Frederic Weisbecker wrote:
-> > I would argue for
-> >
-> >   READ ->data_tail                      READ ->data_head
-> >   smp_rmb()     (A)                     smp_rmb()       (C)
-> >   WRITE $data                           READ $data
-> >   smp_wmb()     (B)                     smp_mb()        (D)
-> >   STORE ->data_head                     WRITE ->data_tail
-> >
-> > Where A pairs with D, and B pairs with C.
-> >
-> > I don't think A needs to be a full barrier because we won't in fact
-> > write data until we see the store from userspace. So we simply don't
-> > issue the data WRITE until we observe it.
-> >
-> > OTOH, D needs to be a full barrier since it separates the data READ
-from
-> > the tail WRITE.
-> >
-> > For B a WMB is sufficient since it separates two WRITEs, and for C an
-> > RMB is sufficient since it separates two READs.
->
-> Hmm, I need to defer on you for that, I'm not yet comfortable with
-> picking specific barrier flavours when both write and read are
-> involved in a same side :)
 
-I think you have a point :) IMO, memory barrier (A) is superfluous.
-At producer side we need to ensure that "WRITE $data" is not committed to
-memory
-before "READ ->data_tail" had seen a new value and if the old one indicated
-that
-there is no enough space for a new entry. All this is already guaranteed by
-control flow dependancy on single CPU - writes will not be committed to the
-memory
-if read value of "data_tail" doesn't specify enough free space in the ring
-buffer.
+--oyUTqETQ0mS9luUI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Likewise, on consumer side, we can make use of natural data dependency and
-memory ordering guarantee for single CPU and try to replace "smp_mb" by
-a more light-weight "smp_rmb":
+Em Mon, Oct 28, 2013 at 09:34:11AM -0300, Arnaldo Carvalho de Melo escreveu:
+> And then, when reverting it, Stephane forgot to match the number number
+> of expected entries to be matched/assigned from 8 to 5, can you try with
+> the following patch instead?
 
-READ ->data_tail                      READ ->data_head
-// ...                                smp_rmb()       (C)
-WRITE $data                           READ $data
-smp_wmb()     (B)                     smp_rmb()       (D)
-						  READ $header_size
-STORE ->data_head                     WRITE ->data_tail = $old_data_tail +
-$header_size
+Does the wording on this commit log sounds about right to you?
 
-We ensure that all $data is read before "data_tail" is written by doing
-"READ $header_size" after
-all other data is read and we rely on natural data dependancy between
-"data_tail" write
-and "header_size" read.
+- Arnaldo
 
--- Victor
+--oyUTqETQ0mS9luUI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="a.patch"
 
+commit 2fd869f08aec5a8e4cbf01bc3fa345c4e53342d7
+Author: Arnaldo Carvalho de Melo <acme@redhat.com>
+Date:   Mon Oct 28 09:38:12 2013 -0300
+
+    perf tools: Fix up /proc/PID/maps parsing
+    
+    When introducing support for MMAP2 we considered more parts of each map
+    representation in /proc/PID/maps, and when disabling it we forgot to
+    reduce the number of expected parsed/assigned entries in the sscanf
+    call, fix it to expect the right number of desired fields, 5.
+    
+    Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+    Based-on-a-patch-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+    Cc: Adrian Hunter <adrian.hunter@intel.com>
+    Cc: David Ahern <dsahern@gmail.com>
+    Cc: Frederic Weisbecker <fweisbec@gmail.com>
+    Cc: Jiri Olsa <jolsa@redhat.com>
+    Cc: Mike Galbraith <efault@gmx.de>
+    Cc: Paul Mackerras <paulus@samba.org>
+    Cc: Peter Zijlstra <peterz@infradead.org>
+    Cc: Stephane Eranian <eranian@google.com>
+    Link: http://lkml.kernel.org/n/tip-vrbo1wik997ahjzl1chm3bdm@git.kernel.org
+    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 63df031fc9c7..49096ea58a15 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -213,7 +213,7 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 		       &event->mmap.pgoff,
+ 		       execname);
+ 
+-		if (n != 8)
++		if (n != 5)
+ 			continue;
+ 
+ 		if (prot[2] != 'x')
+
+--oyUTqETQ0mS9luUI--
