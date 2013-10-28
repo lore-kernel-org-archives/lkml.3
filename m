@@ -1,34 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab3J1HyI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 03:54:08 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34046 "EHLO
+	id S1755115Ab3J1H5r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 03:57:47 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37798 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442Ab3J1HyG (ORCPT
+	with ESMTP id S1751664Ab3J1H5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 03:54:06 -0400
-Date: Mon, 28 Oct 2013 08:54:01 +0100
+	Mon, 28 Oct 2013 03:57:46 -0400
+Date: Mon, 28 Oct 2013 08:57:35 +0100
 From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Peter Chen <peter.chen@freescale.com>
-Cc: linus.walleij@linaro.org, shawn.guo@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] pinctrl: imx: fix using pin->input_val wrongly
-Message-ID: <20131028075401.GH30088@pengutronix.de>
-Mail-Followup-To: Peter Chen <peter.chen@freescale.com>,
-	linus.walleij@linaro.org, shawn.guo@linaro.org,
-	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1382940076-11898-1-git-send-email-peter.chen@freescale.com>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: gregkh@linuxfoundation.org, airlied@redhat.com, daniel.vetter@ffwll.ch,
+        p.zabel@pengutronix.de, yongjun_wei@trendmicro.com.cn,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: drm/imx: fix return value check in
+ imx_drm_init()
+Message-ID: <20131028075735.GI30088@pengutronix.de>
+References: <CAPgLHd8m+fq1WDdxkoVPRRDGBDD8ExVz8Nj9Z6W+DjQehp1YZA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382940076-11898-1-git-send-email-peter.chen@freescale.com>
+In-Reply-To: <CAPgLHd8m+fq1WDdxkoVPRRDGBDD8ExVz8Nj9Z6W+DjQehp1YZA@mail.gmail.com>
 X-Sent-From: Pengutronix Hildesheim
 X-URL: http://www.pengutronix.de/
 X-IRC: #ptxdist @freenode
 X-Accept-Language: de,en
 X-Accept-Content-Type: text/plain
-X-Uptime: 08:53:33 up 64 days, 17:24, 41 users,  load average: 0.03, 0.05,
- 0.10
+X-Uptime: 08:57:20 up 64 days, 17:28, 44 users,  load average: 0.17, 0.09,
+ 0.11
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
 X-SA-Exim-Mail-From: sha@pengutronix.de
@@ -38,42 +37,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 02:01:16PM +0800, Peter Chen wrote:
-> The commit: "pinctrl: imx: Use struct type for pins" relaced
-> pin->input_reg by pin->input_val wrongly, fix it at this commit.
+On Fri, Oct 25, 2013 at 05:07:18PM +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 > 
-> Signed-off-by: Peter Chen <peter.chen@freescale.com>
-
-Oops.
+> In case of error, the function platform_device_register_simple() returns
+> ERR_PTR() and never returns NULL. The NULL test in the return value check
+> should be replaced with IS_ERR().
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
 Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
 
+Sascha
+
 > ---
->  drivers/pinctrl/pinctrl-imx.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
+>  drivers/staging/imx-drm/imx-drm-core.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
-> index d78dd81..4779b8e 100644
-> --- a/drivers/pinctrl/pinctrl-imx.c
-> +++ b/drivers/pinctrl/pinctrl-imx.c
-> @@ -245,11 +245,11 @@ static int imx_pmx_enable(struct pinctrl_dev *pctldev, unsigned selector,
->  			 * The input_reg[i] here is actually some IOMUXC general
->  			 * purpose register, not regular select input register.
->  			 */
-> -			val = readl(ipctl->base + pin->input_val);
-> +			val = readl(ipctl->base + pin->input_reg);
->  			val &= ~mask;
->  			val |= select << shift;
-> -			writel(val, ipctl->base + pin->input_val);
-> -		} else if (pin->input_val) {
-> +			writel(val, ipctl->base + pin->input_reg);
-> +		} else if (pin->input_reg) {
->  			/*
->  			 * Regular select input register can never be at offset
->  			 * 0, and we only print register value for regular case.
-> -- 
-> 1.7.1
-> 
+> diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
+> index a2e52a0..835a1b1 100644
+> --- a/drivers/staging/imx-drm/imx-drm-core.c
+> +++ b/drivers/staging/imx-drm/imx-drm-core.c
+> @@ -837,8 +837,8 @@ static int __init imx_drm_init(void)
+>  	INIT_LIST_HEAD(&imx_drm_device->encoder_list);
+>  
+>  	imx_drm_pdev = platform_device_register_simple("imx-drm", -1, NULL, 0);
+> -	if (!imx_drm_pdev) {
+> -		ret = -EINVAL;
+> +	if (IS_ERR(imx_drm_pdev)) {
+> +		ret = PTR_ERR(imx_drm_pdev);
+>  		goto err_pdev;
+>  	}
+>  
 > 
 > 
 
