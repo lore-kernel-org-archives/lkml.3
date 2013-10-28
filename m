@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932109Ab3J1NzS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 09:55:18 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:35519 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756004Ab3J1NzQ (ORCPT
+	id S932131Ab3J1Nzb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 09:55:31 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:34080 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932111Ab3J1Nz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 09:55:16 -0400
-Message-ID: <526E6CC0.9090801@synopsys.com>
-Date: Mon, 28 Oct 2013 19:25:12 +0530
-From: Vineet Gupta <vineetg76@gmail.com>
-Organization: Synopsys
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>,
-        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
-        "Mischa.Jonker@synopsys.com" <Mischa.Jonker@synopsys.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arc: kernel: kgdb: add default implementation for kgdb_roundup_cpus()
-References: <526898F1.7010609@asianux.com>
-In-Reply-To: <526898F1.7010609@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Oct 2013 09:55:29 -0400
+Message-ID: <1382968522.17956.11.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH 16/16] wl1251: Add sysfs file address for setting
+ permanent mac address
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Luciano Coelho <luca@coelho.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
+        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
+        joni.lapilainen@gmail.com
+Date: Mon, 28 Oct 2013 14:55:22 +0100
+In-Reply-To: <201310281449.58170@pali> (sfid-20131028_145001_437329_9A106CBF)
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
+	 <1382819655-30430-17-git-send-email-pali.rohar@gmail.com>
+	 <1382967905.17956.8.camel@jlt4.sipsolutions.net> <201310281449.58170@pali>
+	 (sfid-20131028_145001_437329_9A106CBF)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2013 09:21 AM, Chen Gang wrote:
-> arc supports kgdb, but need update -- add function kgdb_roundup_cpus(),
-> or can not pass compiling. At present, add the simple generic one just
-> like other architectures(e.g. tile, mips ...).
->
-> The related error (with allmodconfig):
->
->   kernel/built-in.o: In function `kgdb_cpu_enter':
->   kernel/debug/debug_core.c:580: undefined reference to `kgdb_roundup_cpus'
->
->
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+On Mon, 2013-10-28 at 14:49 +0100, Pali Rohár wrote:
+> On Monday 28 October 2013 14:45:05 Johannes Berg wrote:
+> > On Sat, 2013-10-26 at 22:34 +0200, Pali Rohár wrote:
+> > > Driver wl1251 generating mac address randomly at startup and
+> > > there is no way to set permanent mac address via
+> > > SET_IEEE80211_PERM_ADDR. This patch export sysfs file which
+> > > can set permanent mac address by userspace helper program.
+> > > Patch is needed for devices which do not store mac address
+> > > in internal wl1251 eeprom.
+> > 
+> > This doesn't really seem like a good idea since you can also
+> > just use 'ip' or whatever to set the MAC address.
+> > 
+> > johannes
+> 
+> AFAIK you cannot set permanent address (show by ethtool -P wlan0) 
+> via ip/ifconfig.
 
-Applied for 3.13.
+You probably can't, but that address also doesn't matter at all and
+isn't really used anywhere.
 
-Thx,
--Vineet
+johannes
+
+
