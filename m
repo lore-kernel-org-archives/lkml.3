@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754581Ab3J1IeL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 04:34:11 -0400
-Received: from alum-mailsec-scanner-7.mit.edu ([18.7.68.19]:49359 "EHLO
-	alum-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751647Ab3J1IeJ (ORCPT
+	id S1754847Ab3J1IfZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 04:35:25 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:4299 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998Ab3J1IfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 04:34:09 -0400
-X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Oct 2013 04:34:09 EDT
-X-AuditID: 12074413-b7fc76d000002aba-e1-526e1fd9856f
-Message-ID: <526E1FD6.7040404@alum.mit.edu>
-Date: Mon, 28 Oct 2013 09:27:02 +0100
-From: Michael Haggerty <mhagger@alum.mit.edu>
+	Mon, 28 Oct 2013 04:35:23 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 28 Oct 2013 01:30:28 -0700
+Message-ID: <526E2233.3020304@nvidia.com>
+Date: Mon, 28 Oct 2013 10:37:07 +0200
+From: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>, Junio C Hamano <gitster@pobox.com>
-CC: git@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg KH <greg@kroah.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        ksummit-attendees@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] commit: Add -f, --fixes <commit> option to add Fixes:
- line
-References: <20131024122255.GI9378@mwanda> <20131024122512.GB9534@mwanda> <20131026181709.GB10488@kroah.com> <20131027013402.GA7146@leaf> <xmqqa9hui2lp.fsf@gitster.dls.corp.google.com> <20131028071606.GA16878@leaf>
-In-Reply-To: <20131028071606.GA16878@leaf>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arto Merilainen <amerilainen@nvidia.com>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
+CC: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2 0/4] gpu: host1x: Add syncpoint base support
+References: <1381753315-21778-1-git-send-email-amerilainen@nvidia.com>
+In-Reply-To: <1381753315-21778-1-git-send-email-amerilainen@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAKsWRmVeSWpSXmKPExsUixO6iqHtTPi/IYEGrhcXrf9NZLLqudDNZ
-	NPReYbY4t2AGo8X/BfkWt37MZbJ49egSk8XlXXPYHDg8br229Xj7MMDj94/JjB4fn95i8bh4
-	Sdnj8ya5ALYobpukxJKy4Mz0PH27BO6MJ8ufshY0CVTMn/6NvYHxBk8XIyeHhICJxJXT59gg
-	bDGJC/fWA9lcHEIClxklpj6dxQ6SEBI4yySx/31dFyMHB6+AtsT0ZQEgJouAqsSrt+EgFWwC
-	uhKLepqZQGxRgRCJhauOg3XyCghKnJz5hAWkXETAV+JysyzIdGaBX4wS24/+AKsRFgiU6L0y
-	jwVi7TVGidNHmxlBEpwCWhI9xx6xgNjMAjoS7/oeMEPY8hLb385hnsAoMAvJjllIymYhKVvA
-	yLyKUS4xpzRXNzcxM6c4NVm3ODkxLy+1SNdcLzezRC81pXQTIyQGhHcw7jopd4hRgINRiYc3
-	YnVukBBrYllxZe4hRkkOJiVR3h65vCAhvqT8lMqMxOKM+KLSnNTiQ4wSHMxKIrx9t4DKeVMS
-	K6tSi/JhUtIcLErivGpL1P2EBNITS1KzU1MLUotgsjIcHEoSvAtAhgoWpaanVqRl5pQgpJk4
-	OEGGc0mJFKfmpaQWJZaWZMSD4jS+GBipICkeoL15IO28xQWJuUBRiNZTjLoc8758+MYoxJKX
-	n5cqJc47B6RIAKQoozQPbgUs4b1iFAf6WJh3O0gVDzBZwk16BbSECWjJHhawJSWJCCmpBkY5
-	jkmeip6HxZxfHbXOqiqcfaZNRu8X46KOW9FqOmnbTjjo/JO7uXKKTIjK88Nfvi89OvHfpdhc
-	1l3n9ZYt+CP4WYO1do/Zi7YH3XVrOX4kz7D60v3BVe5H6fTAhVdzXSaJThbIs7x4hPPFjB/T
-	Fz4yFKqbeiHsfELbnMU7C+xbVs623WW/dftMJZbijERDLeai4kQA02fTB1MDAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2013 08:16 AM, Josh Triplett wrote:
-> On Sun, Oct 27, 2013 at 06:52:18PM -0700, Junio C Hamano wrote:
->> There are unbound number of kinds of trailers people would want to
->> add, depending on their projects' needs.  We should not have to add
->> a specific support for a tailer like this one, before thinking
->> through to see if we can add generic support for adding arbitrary
->> trailers to avoid code and interface bloat.
->>
->> Think of the existing --signoff as a historical mistake.  Such a
->> generic "adding arbitrary trailers" support, when done properly,
->> should be able to express what "--signoff" does, and we should be
->> able to redo "--signoff" as a special case of that generic "adding
->> arbitrary trailers" support, and at that point, "Fixes:" trailer the
->> kernel project wants to use should fall out as a natural consequence.
+On 14.10.2013 15:21, Arto Merilainen wrote:
+> The host1x driver uses currently syncpoints statically from host1x point of
+> view. If we do a wait inside a job, it always has a constant value to wait.
+> host1x supports also doing relative syncpoint waits with respect to syncpoint
+> bases. This allows doing multiple operations inside a single submit and
+> waiting an operation to complete before moving to next one.
 > 
-> Well, the add_signoff_extra function I added makes it easy to add any
-> kind of trailing data you want to a commit; the question just becomes
-> what the UI looks like to drive that.
+> This set of patches adds support for syncpoint bases to host1x driver and
+> enables the support for gr2d client.
 > 
-> Would you be OK with a solution that pushes the specific supported
-> footer lines into git's configuration, and then supplies default
-> configuration for common cases such as Fixes?  The option could become
-> -f/--footer, and the configuration would specify how to parse various
-> arguments of -f and turn them into something.  For example:
+> I have tested the series using the host1x test application (available at [0],
+> function test_wait_base() in tests/tegra/host1x/tegra_host1x_test.c) on cardhu.
+> I would appreciate help in reviewing the series and testing the patches
+> on other boards.
 > 
-> [footer "Fixes"]
->     abbrev = f
->     arg = commit
->     format = %h ('%s')
+> Changes in v2:
+> - Reordered various code blocks to improve code consistency
+> - Functions host1x_syncpt_alloc() and host1x_syncpt_request() take now a single
+> bitfield argument instead of separate boolean arguments
+> - Added a separate ioctl call for querying the base associated with some
+> syncpoint
+> 
+> [0] https://gitorious.org/linux-host1x/libdrm-host1x
+> 
+> Arto Merilainen (4):
+>   gpu: host1x: Add 'flags' field to syncpt request
+>   gpu: host1x: Add syncpoint base support
+>   drm/tegra: Deliver syncpoint base to user space
+>   drm/tegra: Reserve base for gr2d
+> 
+>  drivers/gpu/host1x/dev.h                   |  2 ++
+>  drivers/gpu/host1x/drm/drm.c               | 25 +++++++++++++
+>  drivers/gpu/host1x/drm/gr2d.c              |  2 +-
+>  drivers/gpu/host1x/hw/channel_hw.c         | 19 ++++++++++
+>  drivers/gpu/host1x/hw/hw_host1x01_uclass.h |  6 ++++
+>  drivers/gpu/host1x/syncpt.c                | 58 +++++++++++++++++++++++++-----
+>  drivers/gpu/host1x/syncpt.h                | 10 +++++-
+>  include/uapi/drm/tegra_drm.h               | 26 +++++++++-----
+>  8 files changed, 128 insertions(+), 20 deletions(-)
+> 
 
-It could be even more decoupled, for example like this:
+The series,
 
-[footer "Fixes"]
-    type = pipe
-    cmd = awk '{ print $1 }' | git log --stdin --no-walk --abbrev=12
---pretty=format:\"Fixes: %h ('%s')\"
+Reviewed-by: Terje Bergstrom <tbergstrom@nvidia.com>
 
-Note that the command is written to be idempotent; that way git could
-re-pipe the old value(s) of the footer though the command if necessary.
- And it can handle multiple lines, since some callback scripts might
-want to see all of them at once.
-
-Michael
-
--- 
-Michael Haggerty
-mhagger@alum.mit.edu
-http://softwareswirl.blogspot.com/
+Terje
