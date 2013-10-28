@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab3J1I4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 04:56:09 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:48426 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751912Ab3J1I4H (ORCPT
+	id S1755885Ab3J1I4U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 04:56:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55553 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755842Ab3J1I4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 04:56:07 -0400
-X-Sasl-enc: RkWSx4Zb3DGMKiBxR1ke+CPiJtFc/z+Xb7CiFzr//dxC 1382950566
-Message-ID: <526E26A4.8000802@iki.fi>
-Date: Mon, 28 Oct 2013 10:56:04 +0200
-From: Pekka Enberg <penberg@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 28 Oct 2013 04:56:16 -0400
+Date: Mon, 28 Oct 2013 01:54:59 -0700
+From: tip-bot for Thomas Pfaff <tipbot@zytor.com>
+Message-ID: <tip-bbfe65c219c638e19f1da5adab1005b2d68ca810@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        bigeasy@linutronix.de, tglx@linutronix.de, meltedpianoman@gmail.com,
+        tpfaff@pcs.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, bigeasy@linutronix.de, tpfaff@pcs.com,
+        meltedpianoman@gmail.com
+In-Reply-To: <1381489240-29626-1-git-send-email-bigeasy@linutronix.de>
+References: <1381489240-29626-1-git-send-email-bigeasy@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/urgent] genirq:
+  Set the irq thread policy without checking CAP_SYS_NICE
+Git-Commit-ID: bbfe65c219c638e19f1da5adab1005b2d68ca810
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
-        anton@redhat.com, systemtap@sourceware.org,
-        Namhyung Kim <namhyung@kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        aravinda@linux.vnet.ibm.com
-Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
-References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora> <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com> <20131025125921.GA29424@linux.vnet.ibm.com> <20131026095023.GF14237@gmail.com>
-In-Reply-To: <20131026095023.GF14237@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 28 Oct 2013 01:55:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2013 12:50 PM, Ingo Molnar wrote:
-> I think in 99% of the usecases people will either use pre-built
-> markers that come with their distro, or will be intimately aware of
-> the markers because they are in the very app they are developing.
->
-> So I wouldn't worry about 'user has a weird binary' case too much.
->
-> I agree with Pekka that making them easily discoverable and visible
-> as a coherent whole is really important.
+Commit-ID:  bbfe65c219c638e19f1da5adab1005b2d68ca810
+Gitweb:     http://git.kernel.org/tip/bbfe65c219c638e19f1da5adab1005b2d68ca810
+Author:     Thomas Pfaff <tpfaff@pcs.com>
+AuthorDate: Fri, 11 Oct 2013 13:00:40 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 28 Oct 2013 09:50:42 +0100
 
-I wouldn't worry about the weird binary case either.
+genirq: Set the irq thread policy without checking CAP_SYS_NICE
 
-Even a build-time whitelist would help. Just put libc and libjvm
-there and you're already covering a lot of interesting cases.
-And if you then add a printout:
+In commit ee23871389 ("genirq: Set irq thread to RT priority on
+creation") we moved the assigment of the thread's priority from the
+thread's function into __setup_irq(). That function may run in user
+context for instance if the user opens an UART node and then driver
+calls requests in the ->open() callback. That user may not have
+CAP_SYS_NICE and so the irq thread won't run with the SCHED_OTHER
+policy.
 
-   Use 'perf list --scan' to find more tracepoints on your
-   system.
+This patch uses sched_setscheduler_nocheck() so we omit the CAP_SYS_NICE
+check which is otherwise required for the SCHED_OTHER policy.
 
-you're now effectively covering 100% of the cases.
+[bigeasy: Rewrite the changelog]
 
-The trick of making the UI not suck is not to force the user
-to think about the different mechanisms like SDT markers,
-uprobes, or ktap scripts but to make them as transparent
-as possible, provide useful defaults, and actively guide the
-user towards learning about more command line options
-for the complex cases.
+Signed-off-by: Thomas Pfaff <tpfaff@pcs.com>
+Cc: Ivo Sieben <meltedpianoman@gmail.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1381489240-29626-1-git-send-email-bigeasy@linutronix.de
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/irq/manage.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-                 Pekka
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 514bcfd..3e59f95 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -956,7 +956,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 			goto out_mput;
+ 		}
+ 
+-		sched_setscheduler(t, SCHED_FIFO, &param);
++		sched_setscheduler_nocheck(t, SCHED_FIFO, &param);
+ 
+ 		/*
+ 		 * We keep the reference to the task struct even if
