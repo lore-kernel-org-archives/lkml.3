@@ -1,108 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756960Ab3J1QxH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 12:53:07 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44127 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab3J1QxF (ORCPT
+	id S1757219Ab3J1QxV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 12:53:21 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43470 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756925Ab3J1QxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 12:53:05 -0400
-Date: Mon, 28 Oct 2013 12:52:39 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <dvrabel@cantab.net>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Santosh.Jodh@citrix.com, JBeulich@suse.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, mukesh.rathor@oracle.com,
-        xhejtman@ics.muni.cz, yuval.shaia@oracle.com
-Subject: Re: [Xen-devel] [PATCH v1] Set 1-1 P2M for PCI BARs and MCFG regions
- - if needed.
-Message-ID: <20131028165239.GG4353@phenom.dumpdata.com>
-References: <1382713401-4882-1-git-send-email-konrad.wilk@oracle.com>
- <526AF79A.3050002@cantab.net>
+	Mon, 28 Oct 2013 12:53:19 -0400
+Date: Mon, 28 Oct 2013 09:53:01 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Olof Johansson <olof@lixom.net>
+Message-ID: <20131028165301.GN13643@sirena.org.uk>
+References: <1382713426-2680-1-git-send-email-treding@nvidia.com>
+ <526AF150.1030004@infradead.org>
+ <20131028080109.GE6629@ulmo.nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="95CBLwa+io9O2zXc"
 Content-Disposition: inline
-In-Reply-To: <526AF79A.3050002@cantab.net>
+In-Reply-To: <20131028080109.GE6629@ulmo.nvidia.com>
+X-Cookie: You fill a much-needed gap.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-SA-Exim-Connect-IP: 66.78.236.243
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: linux-next: Tree for Oct 25
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 25, 2013 at 11:58:34PM +0100, David Vrabel wrote:
-> On 25/10/13 16:03, Konrad Rzeszutek Wilk wrote:
-> >
-> >  2). Assume that INVALID_P2M_ENTRY is considered 1-1. That would require
-> >     auditing of the code and also making sure that any xen_privcmd_mmap
-> >     calls use the m2p_add_override.
-> 
-> I'm not sure I understand the concern about the privcmd driver's
-> foreign mapping ioctls (MMAPBATCH_V2 and friends) as these all deal
-> with MFNs directly and don't use the p2m.
-> 
-> >     However there are some
-> >     valid cases in which we need to check for INVALID_P2M_ENTRY -
-> >     balloon driver - that might be relaxed.
-> 
-> Yes.  And this behaviour will be retained.   I think we only need to
-> do the INVALID_P2M_ENTRY => 1:1 when constructing PTEs so all other
-> callers will see INVALID_P2M_ENTRY as before.
-> 
-> 
-> >     However again the P2M code
-> >     and the ABI it places are not for the faint of the heart.
-> 
-> I have no fear.
 
-<sigh> I booted up the kernel on the machine that has the affected
-hardware and hit this:
+--95CBLwa+io9O2zXc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
- 806         if (unlikely(pfn >= MAX_P2M_PFN)) {                                     
- 807                 BUG_ON(mfn != INVALID_P2M_ENTRY);                               
- 808                 return true;                                                    
- 809         }                                                                       
- 810                     
+On Mon, Oct 28, 2013 at 09:01:24AM +0100, Thierry Reding wrote:
 
-in __set_phys_to_machine. This is of course b/c the region is way
-out of the 500GB limit we have for P2M. 
+> Perhaps something like the above scheme might be a good compromise. On
+> one hand, many people are using linux-next for their daily work, myself
+> included. That implies that if linux-next doesn't build, people either
+> use a previous one that does build (so we don't get as much testing of
+> new trees as we possibly could) or they fix the build errors themselves
+> which in turn may cause potentially many people to have to fix the same
+> issues. On the other hand, if patches to fix build issues are included
+> then people might just assume that there are no problems.
 
-My original idea of fiddling with P2M is insufficient for this
-particular bug (thought it would work for PCI devices under MAX_PAGES).
+This is one of the things that the per merge build tests really help
+with - they filter out the vast majority of errors by just not letting
+updates into -next (which applies some backpressure to get thing fixed
+in the original tree too).
 
-Anyhow, that means going down the P2M path as you suggested is the
-only way (well, besides the work-around). So you got any patches ready :-) ?
+> With such a scheme next-YYYYMMDD could serve as a metric of how good or
+> broken the various trees are, while next-YYYYMMDD-fixes would be a base
+> that people could use for daily work, with a set of known build fixes.
+> Perhaps it could even contain fixes for non-build issues, such as boot
+> failures, if we can come up with those quickly enough to make sense in a
+> linux-next context.
 
-> 
-> If the above suggestion does work out it will reduce the amount of
-> p2m code /and/ remove a Xen-specific PTE bit.  So I think it is
-> worth pursuing.
-> 
-> In the meantime, the following minimal patch is a likely workaround.
-> 
-> David
-> 
-> 8<-------------------------------
-> x86/mm: set _PAGE_IOMAP in io_remap_pfn_range().
-> 
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> ---
->  arch/x86/include/asm/pgtable.h |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-> index 3d19994..d59b22a 100644
-> --- a/arch/x86/include/asm/pgtable.h
-> +++ b/arch/x86/include/asm/pgtable.h
-> @@ -868,6 +868,9 @@ static inline pte_t pte_swp_clear_soft_dirty(pte_t pte)
->  	return pte_clear_flags(pte, _PAGE_SWP_SOFT_DIRTY);
->  }
-> 
-> +#define io_remap_pfn_range(vma, addr, pfn, size, prot) \
-> +  remap_pfn_range(vma, addr, pfn, size, (prot) | _PAGE_IOMAP)
-> +
->  #include <asm-generic/pgtable.h>
->  #endif	/* __ASSEMBLY__ */
-> 
-> -- 
-> 1.7.10.4
-> 
+> Any thought?
+
+This seems really tough to do given the rate of change of -next -
+there's about 24 hours to get fixes in there before you have to rebase
+forwards again.
+
+--95CBLwa+io9O2zXc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSbpZqAAoJELSic+t+oim9hIMP/2yETnhq8MolJhqmeM2eAl2u
+/bYN8Z2fHC5Ab3aggT/IKq7HddUv4aU+PGvNvIPaEKNqhOF9Oc8UrZv+rx5QEBAa
+yAChNOcK9ATjhCP/SzM0/F/HwdLzFFGKdAwskPPtnRzKZysUqdq56uzr4A0q4VKN
+M0ukcjB4cPoJ4/tyEXjMLa8dnFIA3RtaTl8efZmdMi0sZOUPy2Uogm8JBwL64rFS
+8mxAWOHxpvcu8YVAbL6HrXEE8jz4Jq3CHFywin/tnmjJPmfStGp4t96IsLQ8/+xw
+J2GAkcH+hBt5V7pe4P4e3Y/iUf70CnFQdKcyS+OJL33QlIiTnKJh2ipHKjDEj8Y7
+sxNKGsQn9Wdeut7k8opRvjc/DHnai+9hV4B+bJC+Fkd6A+M1JSDkZ3m/CXgoNTY5
+T2yhT+gnLZBEDzj5HHBcm3thu2BG7y7F7HcAOJboCn1X4VhQIKAw8UcjBSNYBFtE
+WwvbHpF/DTKIBG24jPAhhc4lAWyiZuu9BbgwiwtvCVIJ0duZBxLBwVDf4Dp+VOQp
+grHB4I9WG19k4lzIKofq0OqGiYpLcmZvN2J6qQw2aohUjGbgFCPhB/HpUS7gE5g6
+AqHQahyK4h8R6UTLyhvGEqmwtXjvL+VqWg+SW2joaAW0w2sdHo0qmhl7WNIz9IWI
+06B5U8RXChbwDWIQlwcl
+=xLA5
+-----END PGP SIGNATURE-----
+
+--95CBLwa+io9O2zXc--
