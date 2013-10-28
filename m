@@ -1,128 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab3J1FIL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 01:08:11 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:61442 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab3J1FIJ (ORCPT
+	id S1753011Ab3J1FIW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 01:08:22 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:33757 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab3J1FIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 01:08:09 -0400
-X-AuditID: cbfee68f-b7f836d000001b39-22-526df138e2cc
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 1/2] f2fs: clean up acl flow for better readability
-Date: Mon, 28 Oct 2013 14:07:25 +0900
-Message-id: <1382936846-4860-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t8zI12Lj7lBBhue81lc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXF7532mgm3CFc+2
-	rGNpYHzG38XIySEhYCKxoLmXDcIWk7hwbz2QzcUhJLCMUeLks8VsMEXvVhxkhkhMZ5ToW/uZ
-	BcJpZpJY1H6asYuRg4NNQFti834DkAYRAWaJBVPPM4LUMAtMYJT4v+g9C0hCWMBZ4uPOa0wg
-	NouAqsSs97cYQWxeATeJ4zc3sUNs05bY9nwiWLOEwGM2iYP/jjJCNAhIfJt8iAVkmYSArMSm
-	A8wQ9ZISB1fcYJnAKLiAkWEVo2hqQXJBcVJ6kbFecWJucWleul5yfu4mRkgQ9u9gvHvA+hBj
-	MtC4icxSosn5wCDOK4k3NDYzsjA1MTU2Mrc0I01YSZz3/sOkICGB9MSS1OzU1ILUovii0pzU
-	4kOMTBycUg2M1ayrvkw77vWSU/7h3Q4Fh8iiOTx7YnUnP0+yMGk2PRqkaquwLuyZ/rvrr4Ly
-	n0k/ZLqhnPfc7dXd9e5e2hpdsd++73jeHxzPPivg+qqL/CKT1grPcpAtXHg198XJNK5rBpFF
-	Pmv2ff7sYrO7ovO3NNffJRVs++YL3dPzfX7hruBJ1uqby/lElFiKMxINtZiLihMB8YkqflgC	AAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t9jQV2Lj7lBBu0N3BbXd/1lsri0yN1i
-	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvH
-	m5oZGOoaWlqYKynkJeam2iq5+AToumXmAG1TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesb
-	EgTXY2SABhLWMWbc3nmfqWCbcMWzLetYGhif8XcxcnJICJhIvFtxkBnCFpO4cG89WxcjF4eQ
-	wHRGib61n1kgnGYmiUXtpxm7GDk42AS0JTbvNwBpEBFgllgw9TwjSA2zwARGif+L3rOAJIQF
-	nCU+7rzGBGKzCKhKzHp/ixHE5hVwkzh+cxM7xDZtiW3PJzJOYORewMiwilE0tSC5oDgpPddI
-	rzgxt7g0L10vOT93EyM4xJ9J72Bc1WBxiFGAg1GJh3fD2twgIdbEsuLK3EOMEhzMSiK8fbeA
-	QrwpiZVVqUX58UWlOanFhxiTgbZPZJYSTc4Hxl9eSbyhsYmZkaWRmYWRibk5acJK4rwHW60D
-	hQTSE0tSs1NTC1KLYLYwcXBKNTDWijVdubZ87nO7FXJnU6q2vuhSZa3cx8i1Q/zNrpI9F8IF
-	J146LxdbO8nNxtw34F5QTGB1os/vN60/+besf7Thb/q3Ww4l693Ph4X+a18UG8iwvjzgzqK5
-	bhb7hEybMnNkuR9nzcn9Ondb67afBz5u9be/8v8ww/JNlgHqHkzKq56xevReEfNQYinOSDTU
-	Yi4qTgQAfAx4+7UCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	Mon, 28 Oct 2013 01:08:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131022210232.GB2884@redhat.com>
+References: <20131018155532.GD2277@redhat.com>
+	<1382271072-15664-1-git-send-email-zhiguohong@tencent.com>
+	<1382271072-15664-3-git-send-email-zhiguohong@tencent.com>
+	<20131022210232.GB2884@redhat.com>
+Date: Mon, 28 Oct 2013 13:08:18 +0800
+Message-ID: <CAA7+ByUH7BeEOcuZF-cs8BMZMBOG+S9MF7ZryTRymy7ZPUxOKA@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] blk-throttle: trim tokens generated for an idle tree
+From: Hong zhi guo <honkiko@gmail.com>
+To: Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>
+Cc: cgroups@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org, Hong Zhiguo <zhiguohong@tencent.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch cleans up a couple of acl codes.
+Hi, Vivek,
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/acl.c | 25 +++++++++++++------------
- fs/f2fs/acl.h |  6 +++---
- 2 files changed, 16 insertions(+), 15 deletions(-)
+I tested the PATCH v4 for some basic hierarchical setup as I did
+before. And I get the similar result.
 
-diff --git a/fs/f2fs/acl.c b/fs/f2fs/acl.c
-index b7826ec..f1a6975 100644
---- a/fs/f2fs/acl.c
-+++ b/fs/f2fs/acl.c
-@@ -262,8 +262,8 @@ static int f2fs_set_acl(struct inode *inode, int type, struct posix_acl *acl)
- 
- int f2fs_init_acl(struct inode *inode, struct inode *dir)
- {
--	struct posix_acl *acl = NULL;
- 	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
-+	struct posix_acl *acl = NULL;
- 	int error = 0;
- 
- 	if (!S_ISLNK(inode->i_mode)) {
-@@ -276,19 +276,19 @@ int f2fs_init_acl(struct inode *inode, struct inode *dir)
- 			inode->i_mode &= ~current_umask();
- 	}
- 
--	if (test_opt(sbi, POSIX_ACL) && acl) {
-+	if (!test_opt(sbi, POSIX_ACL) || !acl)
-+		goto cleanup;
- 
--		if (S_ISDIR(inode->i_mode)) {
--			error = f2fs_set_acl(inode, ACL_TYPE_DEFAULT, acl);
--			if (error)
--				goto cleanup;
--		}
--		error = posix_acl_create(&acl, GFP_KERNEL, &inode->i_mode);
--		if (error < 0)
--			return error;
--		if (error > 0)
--			error = f2fs_set_acl(inode, ACL_TYPE_ACCESS, acl);
-+	if (S_ISDIR(inode->i_mode)) {
-+		error = f2fs_set_acl(inode, ACL_TYPE_DEFAULT, acl);
-+		if (error)
-+			goto cleanup;
- 	}
-+	error = posix_acl_create(&acl, GFP_KERNEL, &inode->i_mode);
-+	if (error < 0)
-+		return error;
-+	if (error > 0)
-+		error = f2fs_set_acl(inode, ACL_TYPE_ACCESS, acl);
- cleanup:
- 	posix_acl_release(acl);
- 	return error;
-@@ -313,6 +313,7 @@ int f2fs_acl_chmod(struct inode *inode)
- 	error = posix_acl_chmod(&acl, GFP_KERNEL, mode);
- 	if (error)
- 		return error;
-+
- 	error = f2fs_set_acl(inode, ACL_TYPE_ACCESS, acl);
- 	posix_acl_release(acl);
- 	return error;
-diff --git a/fs/f2fs/acl.h b/fs/f2fs/acl.h
-index 80f4306..3839048 100644
---- a/fs/f2fs/acl.h
-+++ b/fs/f2fs/acl.h
-@@ -36,9 +36,9 @@ struct f2fs_acl_header {
- 
- #ifdef CONFIG_F2FS_FS_POSIX_ACL
- 
--extern struct posix_acl *f2fs_get_acl(struct inode *inode, int type);
--extern int f2fs_acl_chmod(struct inode *inode);
--extern int f2fs_init_acl(struct inode *inode, struct inode *dir);
-+extern struct posix_acl *f2fs_get_acl(struct inode *, int);
-+extern int f2fs_acl_chmod(struct inode *);
-+extern int f2fs_init_acl(struct inode *, struct inode *);
- #else
- #define f2fs_check_acl	NULL
- #define f2fs_get_acl	NULL
+Preparation
+============
+1) mount subsys blkio with "__DEVEL__sane_behavior"
+2) Create 3 levels of directories under the blkio mount point:
+    mkdir 1
+    mkdir 1/2
+    mkdir 1/2/3
+    mkdir 4
+3) start 4 bash sessions, write their PIDs into:
+    1/cgroup.procs
+    1/2/cgroup.procs
+    1/2/3/cgroup.procs
+    4/cgroup.procs
+4) prepare 4 10MB files on sdb(ext4 fs)
+
+Note: in below hierarchy graph:
+    "[50k]" means configured value for read_bps_device is 50kB/s
+    "(50k)" means bandwidth reported by dd is 50kB/s
+
+Test A: 1 process throttled by ancestor group
+=============================================
+Hierarchy set-up:
+    (echo "8:16 204800" > 1/blkio.throttle.read_bps_device)
+    |-- 1 [200k]
+    |    `-- 2 [-]
+    |         `-- 3 [-]
+    `-- 4 [-]
+
+dd within group 3:
+    (drop cache then: dd if=10M-file-3 of=/dev/null)
+Result:
+    206kB/s (I did same test without the token-bucket patch, The
+result is 205kB/s)
+
+dd within group 2:
+    (drop cache then: dd if=10M-file-2 of=/dev/null)
+Result:
+    206kB/s
+
+
+Test B: 4 processes in 3 levels of hierarchy
+=============================================
+Hierarchy set-up:
+    echo "8:16 204800" > 1/blkio.throttle.read_bps_device
+    echo "8:16 102400" > 1/2/blkio.throttle.read_bps_device
+    echo "8:16 51200"  > 1/2/3/blkio.throttle.read_bps_device
+    echo "8:16 51200"  > 4/blkio.throttle.read_bps_device
+    |-- 1 [200k]
+    |    `-- 2 [100k]
+    |         `-- 3 [50k]
+    `-- 4 [50k]
+
+start 4 dd processes from 4 bash sessions
+    (dd if=10M-file-x of=/dev/null)
+Result:
+    |-- 1 (104k)
+    |    `-- 2 (52.1k)
+    |         `-- 3 (51.3k)
+    `-- 4 (51.4k)
+
+
+On Wed, Oct 23, 2013 at 5:02 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> Hi Hong,
+>
+> This approach looks good in general. Only downside I can think of
+> updation of nr_requests throughout the hierarchy. So deeper the
+> hierarchy, higher the overhead.
+>
+> I am not sure if that's a concern or not. I will have a closer look
+> a the patches tomorrow and do some testing too.
+>
+> Thanks
+> Vivek
+
+
 -- 
-1.8.4.474.g128a96c
-
+best regards
+Hong Zhiguo
