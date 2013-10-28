@@ -1,102 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575Ab3J1Mpf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 08:45:35 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:53606 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755844Ab3J1Mpd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 08:45:33 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee690-b7f3d6d000001c4a-83-526e5c6cbd87
-Content-transfer-encoding: 8BIT
-Message-id: <1382964295.992.122.camel@kjgkr>
-Subject: Re: [f2fs-dev 5/5] f2fs: Handle inline data operations
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Huajun Li <huajun.li.lee@gmail.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Huajun Li <huajun.li@intel.com>,
-        Haicheng Li <haicheng.li@linux.intel.com>,
-        Weihong Xu <weihong.xu@intel.com>
-Date: Mon, 28 Oct 2013 21:44:55 +0900
-In-reply-to: <1382716919-23345-6-git-send-email-huajun.li.lee@gmail.com>
-References: <1382716919-23345-1-git-send-email-huajun.li.lee@gmail.com>
- <1382716919-23345-6-git-send-email-huajun.li.lee@gmail.com>
-Organization: Samsung
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t8zA92cmLwgg9V7WSxeHtK0OPOsg9Fi
-	y5YYi6/9d9gsLi1yt9iz9ySLxeVdc9gsNp38xerA4bFz1l12j8V7XjJ5zDsZ6LF7wWcmj74t
-	qxg9Pm+SC2CL4rJJSc3JLEst0rdL4Mp4N+Mjc8F59or+y5fYGxjvs3YxcnJICJhItK3oZ4Sw
-	xSQu3FvP1sXIxSEksIxRovvLGxaYogVH37JAJBYxSrw4+Y4ZJMErICjxY/I9oAQHB7OAvMSR
-	S9kgYWYBdYlJ8xYxQ9S/YpR4uXgbI0S9jsSxh6/YQWxhAXuJ5smv2UF62QS0JTbvNwAJCwko
-	SrzdfxfsOBGgOa9fzGUFmcMscItR4mHrEbCDWARUJTZfXAR2A6eAh8SDD4+glrUySqz+sQ5s
-	Gb+AqMThhduZIT5Qktjd3skOYf9kl5hylw9ikIDEt8mHwB6QEJCV2HQAqlxS4uCKGywTGCVm
-	IXlzFsKbs5C8uYCReRWjaGpBckFxUnqRiV5xYm5xaV66XnJ+7iZGSMRO2MF474D1IcZkoI0T
-	maVEk/OBEZ9XEm9obGZkYWpiamxkbmlGmrCSOK/ao6QgIYH0xJLU7NTUgtSi+KLSnNTiQ4xM
-	HJxSDYz9+q3Bpt0unW+XLzVu8gj+5i/T79B/TSMih08+ufepxvNv/6TvX45u6T0clxngozwl
-	SCpyRvYH/8WzJj1Yzy9yqnWdGLfKsrdhgmx2VeaWHrPvVWyLuR/s2xWQvbVLqIRT5Ezu+rc2
-	Jp9/rHT8d+2v0fqIHS+9AlMsPR5avssOOWHWKfBkixJLcUaioRZzUXEiAPF8NZfuAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJKsWRmVeSWpSXmKPExsVy+t9jAd3smLwgg4NfbCxeHtK0OPOsg9Fi
-	y5YYi6/9d9gsLi1yt9iz9ySLxeVdc9gsNp38xerA4bFz1l12j8V7XjJ5zDsZ6LF7wWcmj74t
-	qxg9Pm+SC2CLamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
-	0HXLzAG6RkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY8W7GR+aC8+wV
-	/ZcvsTcw3mftYuTkkBAwkVhw9C0LhC0mceHeerYuRi4OIYFFjBIvTr5jBknwCghK/Jh8D6iI
-	g4NZQF7iyKVskDCzgLrEpHmLmCHqXzFKvFy8jRGiXkfi2MNX7CC2sIC9RPPk1+wgvWwC2hKb
-	9xuAhIUEFCXe7r8LdoMI0JzXL+aygsxhFrjFKPGw9QjYQSwCqhKbLy4Cu4FTwEPiwYdHUMta
-	GSVW/1gHtoxfQFTi8MLtzBAfKEnsbu9kn8AoNAvJ3bMQ7p6F5O4FjMyrGEVTC5ILipPScw31
-	ihNzi0vz0vWS83M3MYITwjOpHYwrGywOMQpwMCrx8G5YmxskxJpYVlyZe4hRgoNZSYTXwz4v
-	SIg3JbGyKrUoP76oNCe1+BBjMtDlE5mlRJPzgckqryTe0NjEzMjSyMzCyMTcnDRhJXHeA63W
-	gUIC6YklqdmpqQWpRTBbmDg4pRoYT2Srum8ufF7X+mZ+rthl9y3uq02nNv3mashr5ExV+T93
-	re0EgZ0l5jPNP+1m1rLZUyPs7sF1ueJ8dMOmVf6h9/bdsjNJmHqkYC/r3ZfnDpWunTXnT7ng
-	gQOiW083i/9+fnTlxyrxaNd9vqlbRJZ153JNiDw1OfebBceyoKCoBSYT19w2WvY4UImlOCPR
-	UIu5qDgRAA9dILZMAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1756458Ab3J1Mtk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 08:49:40 -0400
+Received: from mga14.intel.com ([143.182.124.37]:13566 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755844Ab3J1Mti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 08:49:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,586,1378882800"; 
+   d="scan'208";a="418468363"
+Date: Mon, 28 Oct 2013 20:49:11 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [virtio-net] BUG: sleeping function called from invalid context
+ at kernel/mutex.c:616
+Message-ID: <20131028124911.GA13923@localhost>
+References: <20131020023418.GA6737@localhost>
+ <526638D4.1030403@redhat.com>
+ <20131023232033.GA7404@localhost>
+ <526DF9A4.70709@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <526DF9A4.70709@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-2013-10-26 (토), 00:01 +0800, Huajun Li:
-> From: Huajun Li <huajun.li@intel.com>
+On Mon, Oct 28, 2013 at 01:44:04PM +0800, Jason Wang wrote:
+> On 10/24/2013 07:20 AM, Fengguang Wu wrote:
+> > Yes it reduces the sleeping function bug:
+> >
+> > /kernel/x86_64-lkp-CONFIG_SCSI_DEBUG/7c4ed2767afb813493b0a8fb18d666cd44550963
+> >
+> > +------------------------------------------------------------------------------------+-----------+--------------+--------------+
+> > |                                                                                    | v3.12-rc3 | 3ab098df35f8 | 7c4ed2767afb |
+> > +------------------------------------------------------------------------------------+-----------+--------------+--------------+
+> > | good_boots                                                                         | 30        | 0            | 93           |
+> > | has_kernel_error_warning                                                           | 0         | 20           | 7            |
+> > | BUG:sleeping_function_called_from_invalid_context_at_kernel/mutex.c                | 0         | 20           |              |
+> > | INFO:rcu_sched_self-detected_stall_on_CPU(t=jiffies_g=c=q=)                        | 0         | 0            | 1            |
+> > | INFO:task_blocked_for_more_than_seconds                                            | 0         | 0            | 2            |
+> > | INFO:NMI_handler(arch_trigger_all_cpu_backtrace_handler)took_too_long_to_run:msecs | 0         | 0            | 1            |
+> > | Kernel_panic-not_syncing:hung_task:blocked_tasks                                   | 0         | 0            | 1            |
+> > | BUG:kernel_test_crashed                                                            | 0         | 0            | 3            |
+> > | BUG:kernel_test_hang                                                               | 0         | 0            | 1            |
+> > +------------------------------------------------------------------------------------+-----------+--------------+--------------+
+> >
+> > However I'll need to increase tests on v3.12-rc3 to make sure it's not
+> > the patch that added the other error messages.
+> >
+> > Thanks,
+> > Fengguang
 > 
+> Thanks, any more update on the result of v3.12-rc3 for this?
 
-[snip]
+Yes, it's confirmed that there are no new error types in 7c4ed2767afb
+comparing to v3.12-rc3, so your fix is fine.
 
->  
-> @@ -538,7 +553,7 @@ static int f2fs_write_data_page(struct page *page,
->  	loff_t i_size = i_size_read(inode);
->  	const pgoff_t end_index = ((unsigned long long) i_size)
->  							>> PAGE_CACHE_SHIFT;
-> -	unsigned offset;
-> +	unsigned offset = 0;
->  	bool need_balance_fs = false;
->  	int err = 0;
->  
-> @@ -572,7 +587,14 @@ write:
->  		err = do_write_data_page(page);
->  	} else {
->  		f2fs_lock_op(sbi);
-> -		err = do_write_data_page(page);
-> +		if (test_opt(sbi, INLINE_DATA) && (i_size <= MAX_INLINE_DATA)) {
-> +			err = f2fs_write_inline_data(inode, page, offset);
-> +			ClearPageDirty(page);
+/kernel/x86_64-lkp-CONFIG_SCSI_DEBUG/7c4ed2767afb813493b0a8fb18d666cd44550963
 
-Don't need to call ClearPageDirty(page).
++------------------------------------------------------------------------------------+-----------+--------------+--------------+
+|                                                                                    | v3.12-rc3 | 3ab098df35f8 | 7c4ed2767afb |
++------------------------------------------------------------------------------------+-----------+--------------+--------------+
+| good_boots                                                                         | 877       | 0            | 93           |
+| has_kernel_error_warning                                                           | 154       | 20           | 7            |
+| BUG:kernel_test_hang                                                               | 112       | 0            | 1            |
+| INFO:rcu_sched_self-detected_stall_on_CPU(t=jiffies_g=c=q=)                        | 1         | 0            | 1            |
+| INFO:task_blocked_for_more_than_seconds                                            | 18        | 0            | 2            |
+| INFO:NMI_handler(arch_trigger_all_cpu_backtrace_handler)took_too_long_to_run:msecs | 11        | 0            | 1            |
+| Kernel_panic-not_syncing:hung_task:blocked_tasks                                   | 11        | 0            | 1            |
+| BUG:kernel_test_crashed                                                            | 13        | 0            | 3            |
+| Out_of_memory:Kill_process                                                         | 9         |              |              |
+| BUG:kernel_early_hang_without_any_printk_output                                    | 1         |              |              |
+| page_allocation_failure:order:,mode                                                | 1         |              |              |
+| Kernel_panic-not_syncing:Out_of_memory_and_no_killable_processes                   | 2         |              |              |
+| BUG:sleeping_function_called_from_invalid_context_at_kernel/mutex.c                | 0         | 20           |              |
++------------------------------------------------------------------------------------+-----------+--------------+--------------+
 
-> +			f2fs_unlock_op(sbi);
-> +			goto out;
-> +		} else {
-> +			err = do_write_data_page(page);
-> +		}
->  		f2fs_unlock_op(sbi);
->  		need_balance_fs = true;
->  	
--- 
-Jaegeuk Kim
-Samsung
-
+Thanks,
+Fengguang
