@@ -1,138 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757631Ab3J1WQY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 18:16:24 -0400
-Received: from mga03.intel.com ([143.182.124.21]:54162 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757589Ab3J1WQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 18:16:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="313977092"
-Subject: [PATCH 2/2] mm: thp: give transparent hugepage code a separate copy_page
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, dave.jiang@intel.com, Mel Gorman <mgorman@suse.de>,
-        akpm@linux-foundation.org, dhillf@gmail.com,
-        Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Mon, 28 Oct 2013 15:16:20 -0700
-References: <20131028221618.4078637F@viggo.jf.intel.com>
-In-Reply-To: <20131028221618.4078637F@viggo.jf.intel.com>
-Message-Id: <20131028221620.042323B3@viggo.jf.intel.com>
+	id S1757671Ab3J1WQb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 18:16:31 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757642Ab3J1WQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 18:16:29 -0400
+Message-ID: <526EE234.2070709@nod.at>
+Date: Mon, 28 Oct 2013 23:16:20 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Paul Moore <paul@paul-moore.com>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        libseccomp-discuss@lists.sourceforge.net,
+        Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: ARM seccomp filters and EABI/OABI
+References: <CALCETrXyLBXmimjLepU=y1igmWpwcdWUNCqNjMHi_jyLw0pHMA@mail.gmail.com> <CAFLxGvwT+KDSTjJnd8HUhQivmpB3ZwjrXs1OxF8ctL7k6tN0Lw@mail.gmail.com> <4195093.ULJiSLViSo@sifl>
+In-Reply-To: <4195093.ULJiSLViSo@sifl>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am 28.10.2013 22:53, schrieb Paul Moore:
+> On Thursday, October 24, 2013 09:55:57 PM Richard Weinberger wrote:
+>> On Wed, Oct 23, 2013 at 11:02 PM, Andy Lutomirski <luto@amacapital.net> 
+> wrote:
+>>> I'm looking at the seccomp code, the ARM entry code, and the
+>>> syscall(2) manpage, and I'm a bit lost.  (The fact that I don't really
+>>> speak ARM assembly doesn't help.)  My basic question is: what happens
+>>> if an OABI syscall happens?
+>>>
+>>> AFAICS, the syscall arguments for EABI are r0..r5, although their
+>>> ordering is a bit odd*.  For OABI, r6 seems to play some role, but I'm
+>>> lost as to what it is.  The seccomp_bpf_load function won't load r6,
+>>> so there had better not be anything useful in there...  (Also, struct
+>>> seccomp_data will have issues with a seventh "argument".)
+>>>
+>>> But what happens to the syscall number?  For an EABI syscall, it's in
+>>> r7.  For an OABI syscall, it's in the swi instruction and gets copied
+>>> to r7 on entry.  If a debugger changes r7, presumably the syscall
+>>> number changes.
+>>>
+>>> Oddly, there are two different syscall tables.  The major differences
+>>> seem to be that some of the OABI entries have their argument order
+>>> changed.  But there's also a magic constant 0x900000 added to the
+>>> syscall number somewhere -- is it reflected in _sigsys._syscall?  Is
+>>> it reflected in ucontext's r7?
+>>>
+>>> I'm a bit surprised to see that both the EABI and OABI ABIs show up as
+>>> AUDIT_ARCH_ARM.
+>>>
+>>> Can any of you shed some light on this?  I don't have an ARM system I
+>>> can test on, but if one of you can point me at a decent QEMU image, I
+>>> can play around.
+>>
+>> Maybe this helps:
+>> http://people.debian.org/~aurel32/qemu/armel/
+> 
+> Thanks for the pointer, although those images look quite old, has anyone done 
+> a refresh?
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+You are free to run "apt-get upgrade" within the said images. :-)
 
-Right now, the migration code in migrate_page_copy() uses 
-copy_huge_page() for hugetlbfs and thp pages:
-
-       if (PageHuge(page) || PageTransHuge(page))
-                copy_huge_page(newpage, page);
-
-So, yay for code reuse.  But:
-
-void copy_huge_page(struct page *dst, struct page *src)
-{
-        struct hstate *h = page_hstate(src);
-
-and a non-hugetlbfs page has no page_hstate().  This
-works 99% of the time because page_hstate() determines
-the hstate from the page order alone.  Since the page
-order of a THP page matches the default hugetlbfs page
-order, it works.
-
-But, if you change the default huge page size on the
-boot command-line (say default_hugepagesz=1G), then
-we might not even *have* a 2MB hstate so page_hstate()
-returns null and copy_huge_page() oopses pretty fast
-since copy_huge_page() dereferences the hstate:
-
-void copy_huge_page(struct page *dst, struct page *src)
-{
-        struct hstate *h = page_hstate(src);
-        if (unlikely(pages_per_huge_page(h) > MAX_ORDER_NR_PAGES)) {
-...
-
-This patch creates a copy_high_order_page() which can
-be used on THP pages.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
-
- linux.git-davehans/include/linux/huge_mm.h |   16 ++++++++++++++++
- linux.git-davehans/mm/huge_memory.c        |   13 +++++++++++++
- linux.git-davehans/mm/migrate.c            |    4 +++-
- 3 files changed, 32 insertions(+), 1 deletion(-)
-
-diff -puN include/linux/huge_mm.h~copy-huge-separate-from-copy-transhuge include/linux/huge_mm.h
---- linux.git/include/linux/huge_mm.h~copy-huge-separate-from-copy-transhuge	2013-10-28 15:10:28.294220490 -0700
-+++ linux.git-davehans/include/linux/huge_mm.h	2013-10-28 15:10:28.301220803 -0700
-@@ -177,6 +177,10 @@ static inline struct page *compound_tran
- extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 				unsigned long addr, pmd_t pmd, pmd_t *pmdp);
- 
-+extern void copy_high_order_page(struct page *newpage,
-+				 struct page *oldpage,
-+				 int order);
-+
- #else /* CONFIG_TRANSPARENT_HUGEPAGE */
- #define HPAGE_PMD_SHIFT ({ BUILD_BUG(); 0; })
- #define HPAGE_PMD_MASK ({ BUILD_BUG(); 0; })
-@@ -227,6 +231,18 @@ static inline int do_huge_pmd_numa_page(
- 	return 0;
- }
- 
-+/*
-+ * The non-stub version of this code is probably usable
-+ * generically but its only user is thp at the moment,
-+ * so enforce that with a BUG()
-+ */
-+static inline  void copy_high_order_page(struct page *newpage,
-+					 struct page *oldpage,
-+					 int order)
-+{
-+	BUG();
-+}
-+
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- 
- #endif /* _LINUX_HUGE_MM_H */
-diff -puN mm/huge_memory.c~copy-huge-separate-from-copy-transhuge mm/huge_memory.c
---- linux.git/mm/huge_memory.c~copy-huge-separate-from-copy-transhuge	2013-10-28 15:10:28.296220580 -0700
-+++ linux.git-davehans/mm/huge_memory.c	2013-10-28 15:10:28.302220848 -0700
-@@ -2789,3 +2789,16 @@ void __vma_adjust_trans_huge(struct vm_a
- 			split_huge_page_address(next->vm_mm, nstart);
- 	}
- }
-+
-+void copy_high_order_page(struct page *newpage,
-+			  struct page *oldpage,
-+			  int order)
-+{
-+	int i;
-+
-+	might_sleep();
-+	for (i = 0; i < (1<<order); i++) {
-+		cond_resched();
-+		copy_highpage(newpage + i, oldpage + i);
-+	}
-+}
-diff -puN mm/migrate.c~copy-huge-separate-from-copy-transhuge mm/migrate.c
---- linux.git/mm/migrate.c~copy-huge-separate-from-copy-transhuge	2013-10-28 15:10:28.298220669 -0700
-+++ linux.git-davehans/mm/migrate.c	2013-10-28 15:10:28.303220893 -0700
-@@ -443,8 +443,10 @@ int migrate_huge_page_move_mapping(struc
-  */
- void migrate_page_copy(struct page *newpage, struct page *page)
- {
--	if (PageHuge(page) || PageTransHuge(page))
-+	if (PageHuge(page))
- 		copy_huge_page(newpage, page);
-+	else if(PageTransHuge(page))
-+		copy_high_order_page(newpage, page, HPAGE_PMD_ORDER);
- 	else
- 		copy_highpage(newpage, page);
- 
-_
+Thanks,
+//richard
