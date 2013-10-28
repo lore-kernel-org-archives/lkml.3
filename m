@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab3J1GQq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 02:16:46 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:14512 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab3J1GQp (ORCPT
+	id S1755559Ab3J1GRh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 02:17:37 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:46390 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857Ab3J1GRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 02:16:45 -0400
-X-Spam-Score: -100.8
-Message-ID: <526E010F.90602@asianux.com>
-Date: Mon, 28 Oct 2013 14:15:43 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 28 Oct 2013 02:17:35 -0400
+Date: Sun, 27 Oct 2013 23:17:31 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Jenny TC <jenny.tc@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/7] power_supply: Introduce PSE compliant algorithm
+Message-ID: <20131028061731.GA32066@teo>
+References: <1379959445-28207-1-git-send-email-jenny.tc@intel.com>
+ <1379959445-28207-8-git-send-email-jenny.tc@intel.com>
 MIME-Version: 1.0
-To: "vgupta@synopsys.com" <vgupta@synopsys.com>, noamc@ezchip.com
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arc: kernel: use exporting symbol instead of static inline
- for arc_get_core_freq()
-References: <526DDAE5.9040803@asianux.com>
-In-Reply-To: <526DDAE5.9040803@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1379959445-28207-8-git-send-email-jenny.tc@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2013 11:32 AM, Chen Gang wrote:
-> Need export arc_get_core_freq() instead of let it static inline, or if
-> other individual modules use it (e.g. use BASE_BAUD), it can not find
-> core_freq variable.
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/arc/include/asm/clk.h |    9 +--------
->  arch/arc/kernel/clk.c      |    9 ++++++++-
->  2 files changed, 9 insertions(+), 9 deletions(-)
-> 
-> diff --git a/arch/arc/include/asm/clk.h b/arch/arc/include/asm/clk.h
-> index bf9d29f..256321a 100644
-> --- a/arch/arc/include/asm/clk.h
-> +++ b/arch/arc/include/asm/clk.h
-> @@ -9,14 +9,7 @@
->  #ifndef _ASM_ARC_CLK_H
->  #define _ASM_ARC_CLK_H
->  
-> -/* Although we can't really hide core_freq, the accessor is still better way */
-> -extern unsigned long core_freq;
-> -
-> -static inline unsigned long arc_get_core_freq(void)
-> -{
-> -	return core_freq;
-> -}
-> -
-> +extern unsigned long arc_get_core_freq(void);
->  extern int arc_set_core_freq(unsigned long);
->  
->  #endif
-> diff --git a/arch/arc/kernel/clk.c b/arch/arc/kernel/clk.c
-> index 10c7b0b..9f4602f 100644
-> --- a/arch/arc/kernel/clk.c
-> +++ b/arch/arc/kernel/clk.c
-> @@ -6,9 +6,16 @@
->   * published by the Free Software Foundation.
->   */
->  
-> +#include <linux/module.h>
->  #include <asm/clk.h>
->  
-> -unsigned long core_freq = 80000000;
-> +static unsigned long core_freq = 80000000;
-> +
-> +unsigned long arc_get_core_freq(void)
-> +{
-> +	return core_freq;
-> +}
-> +EXPORT_SYMBOL_GPL(arc_get_core_freq);
->
+On Mon, Sep 23, 2013 at 11:34:05PM +0530, Jenny TC wrote:
+[...]
+> +#define BATTID_STR_LEN		8
+> +#define BATT_TEMP_NR_RNG	6
+> +/* Charging Profile */
+> +struct psy_ps_pse_mod_prof {
+> +	/* battery id */
+> +	char batt_id[BATTID_STR_LEN];
+> +	/* type of battery */
+> +	u16 battery_type;
+> +	u16 capacity;
+> +	u16 voltage_max;
+> +	/* charge termination current */
+> +	u16 chrg_term_mA;
+> +	/* Low battery level voltage */
+> +	u16 low_batt_mV;
+> +	/* upper and lower temperature limits on discharging */
+> +	u8 disch_tmp_ul;
+> +	u8 disch_tmp_ll;
+> +	/* number of temperature monitoring ranges */
+> +	u16 temp_mon_ranges;
+> +	struct psy_ps_temp_chg_table temp_mon_range[BATT_TEMP_NR_RNG];
+> +	/* Lowest temperature supported */
+> +	short int temp_low_lim;
+> +} __packed;
 
-Oh, sorry, need use EXPORT_SYMBOL instead of EXPORT_SYMBOL_GPL for it. I
-will send patch v2.
+These all seem like properties of a battery. Why the battery is not
+registered with the power_supply framework?
 
+What is PSE, by the way?
 
->  /*
->   * As of now we default to device-tree provided clock
-> 
-
-
--- 
-Chen Gang
+Anton
