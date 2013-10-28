@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932466Ab3J1Oz4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 10:55:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51227 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756293Ab3J1Otf (ORCPT
+	id S932481Ab3J1Oz7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:55:59 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:18966 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932324Ab3J1Ote (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:49:35 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jiri Benc <jbenc@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 44/64] ipv4: fix ineffective source address selection
-Date: Mon, 28 Oct 2013 14:48:03 +0000
-Message-Id: <1382971703-17393-45-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
-References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Mon, 28 Oct 2013 10:49:34 -0400
+Message-ID: <526E797A.9010509@atmel.com>
+Date: Mon, 28 Oct 2013 15:49:30 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Bo Shen <voice.shen@atmel.com>
+CC: <plagnioj@jcrosoft.com>, <linux-pwm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <alexandre.belloni@free-electrons.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+Subject: Re: [PATCH v5] PWM: atmel-pwm: add PWM controller driver
+References: <1380532240-18650-1-git-send-email-voice.shen@atmel.com> <20131008131727.GB12839@ulmo.nvidia.com> <52664FB6.4000004@atmel.com>
+In-Reply-To: <52664FB6.4000004@atmel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.24 -stable review patch.  If anyone has any objections, please let me know.
+On 22/10/2013 12:13, Bo Shen :
+> Hi All,
+>
+> On 10/8/2013 21:17, Thierry Reding wrote:
+>> On Mon, Sep 30, 2013 at 05:10:40PM +0800, Bo Shen wrote:
+>>> Add Atmel PWM controller driver based on PWM framework.
+>>>
+>>> This is the basic function implementation of Atmel PWM controller.
+>>> It can work with PWM based led and backlight.
+>>>
+>>> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+>>>
+>>> ---
+>>> Changes in v5:
+>>>     - call clk_disable directly, if so, it won't cause more than one channel
+>>>       enabled, the clock can not be disabled.
+>>>
+>>> Changes in v4:
+>>>     - check the return value of clk_prepare()
+>>>     - change channel register size as constant
+>>>
+>>> Changes in v3:
+>>>     - change compatible string from "atmel,sama5-pwm" to "atmel,sama5d3-pwm"
+>>>     - Add PWM led example in binding documentation
+>>>     - Using micro replace hard code
+>>>
+>>> Changes in v2:
+>>>     - Address the comments from Thierry Reding
+>>>
+>>>    .../devicetree/bindings/pwm/atmel-pwm.txt          |   41 +++
+>>>    drivers/pwm/Kconfig                                |    9 +
+>>>    drivers/pwm/Makefile                               |    1 +
+>>>    drivers/pwm/pwm-atmel.c                            |  344 ++++++++++++++++++++
+>>>    4 files changed, 395 insertions(+)
+>>>    create mode 100644 Documentation/devicetree/bindings/pwm/atmel-pwm.txt
+>>>    create mode 100644 drivers/pwm/pwm-atmel.c
+>>
+>> I haven't seen an Acked-by from the device tree bindings maintainers on
+>> this. I've Cc'ed them, so hopefully one of them has time to review.
+>
+> Any comments?
 
-------------------
+As a recommendation from the recent Kernel Summit stated, you will have 
+to separate the binding itself from the driver and associated code.
+Simply send the binding documentation to the DT maintainers but still 
+keep the two patches linked together in a series (but without putting DT 
+maintainers nor the DT mailing-list in CC of the non-documentation patches).
 
-From: Jiri Benc <jbenc@redhat.com>
+This way you may have more chances to get feedback.
 
-commit 0a7e22609067ff524fc7bbd45c6951dd08561667 upstream.
-
-When sending out multicast messages, the source address in inet->mc_addr is
-ignored and rewritten by an autoselected one. This is caused by a typo in
-commit 813b3b5db831 ("ipv4: Use caller's on-stack flowi as-is in output
-route lookups").
-
-Signed-off-by: Jiri Benc <jbenc@redhat.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/ipv4/route.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 98b30d0..8707417 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -2707,7 +2707,7 @@ static struct rtable *ip_route_output_slow(struct net *net, struct flowi4 *fl4)
- 							      RT_SCOPE_LINK);
- 			goto make_route;
- 		}
--		if (fl4->saddr) {
-+		if (!fl4->saddr) {
- 			if (ipv4_is_multicast(fl4->daddr))
- 				fl4->saddr = inet_select_addr(dev_out, 0,
- 							      fl4->flowi4_scope);
+Thanks, bye,
 -- 
-1.8.3.2
-
+Nicolas Ferre
