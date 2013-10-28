@@ -1,304 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483Ab3J1F0s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 01:26:48 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:43450 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab3J1F0q (ORCPT
+	id S1753974Ab3J1F2f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 01:28:35 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46333 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382Ab3J1F2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 01:26:46 -0400
-X-AuditID: 9c93017e-b7ca6ae000000e8a-0a-526df594ca4e
-From: Minchan Kim <minchan@kernel.org>
-To: Phillip Lougher <phillip@lougher.demon.co.uk>
-Cc: ch0.han@lge.com, gunho.lee@lge.com, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v2] squashfs: enhance parallel I/O
-Date: Mon, 28 Oct 2013 14:26:30 +0900
-Message-Id: <1382937990-15318-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1381452511-6193-1-git-send-email-minchan@kernel.org>
-References: <1381452511-6193-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 28 Oct 2013 01:28:34 -0400
+Date: Mon, 28 Oct 2013 16:28:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ben Widawsky <benjamin.widawsky@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>
+Subject: linux-next: manual merge of the drm tree with Linus' tree
+Message-Id: <20131028162826.19047f4f1686a375d8de0beb@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__28_Oct_2013_16_28_26_+1100_1YpAtSvv/X2I0w3p"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now squashfs have used for only one stream buffer for decompression
-so it hurts parallel read performance so this patch supports
-multiple decompressor to enhance performance parallel I/O.
+--Signature=_Mon__28_Oct_2013_16_28_26_+1100_1YpAtSvv/X2I0w3p
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Four 1G file dd read on KVM machine which has 2 CPU and 4G memory.
+Hi Dave,
 
-dd if=test/test1.dat of=/dev/null &
-dd if=test/test2.dat of=/dev/null &
-dd if=test/test3.dat of=/dev/null &
-dd if=test/test4.dat of=/dev/null &
+Today's linux-next merge of the drm tree got a conflict in
+drivers/gpu/drm/i915/i915_drv.c between commit 828c79087cec ("drm/i915:
+Disable GGTT PTEs on GEN6+ suspend") from Linus' tree and commit
+9d49c0ef4089 ("drm/i915: move more code to __i915_drm_thaw") from the drm
+tree.
 
-old : 1m39s -> new : 9s
+I fixed it up (the section of code added to i915_drm_thaw by the first
+patch looks as though it could not do anything, so I just used the latter
+patch) and can carry the fix as necessary (no action is required).
 
-* From v1
-  * Change comp_strm with decomp_strm - Phillip
-  * Change/add comments - Phillip
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- fs/squashfs/Kconfig              |   13 +++
- fs/squashfs/Makefile             |    9 +-
- fs/squashfs/decompressor_multi.c |  200 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 221 insertions(+), 1 deletion(-)
- create mode 100644 fs/squashfs/decompressor_multi.c
+--Signature=_Mon__28_Oct_2013_16_28_26_+1100_1YpAtSvv/X2I0w3p
+Content-Type: application/pgp-signature
 
-diff --git a/fs/squashfs/Kconfig b/fs/squashfs/Kconfig
-index c70111e..1c6d340 100644
---- a/fs/squashfs/Kconfig
-+++ b/fs/squashfs/Kconfig
-@@ -63,6 +63,19 @@ config SQUASHFS_LZO
- 
- 	  If unsure, say N.
- 
-+config SQUASHFS_MULTI_DECOMPRESSOR
-+	bool "Use multiple decompressors for handling parallel I/O"
-+	depends on SQUASHFS
-+	help
-+	  By default Squashfs uses a single decompressor but it gives
-+	  poor performance on parallel I/O workloads when using multiple CPU
-+	  machines due to waiting on decompressor availability.
-+
-+	  If you have a parallel I/O workload and your system has enough memory,
-+	  using this option may improve overall I/O performance.
-+
-+	  If unsure, say N.
-+
- config SQUASHFS_XZ
- 	bool "Include support for XZ compressed file systems"
- 	depends on SQUASHFS
-diff --git a/fs/squashfs/Makefile b/fs/squashfs/Makefile
-index c223c84..dfebc3b 100644
---- a/fs/squashfs/Makefile
-+++ b/fs/squashfs/Makefile
-@@ -4,8 +4,15 @@
- 
- obj-$(CONFIG_SQUASHFS) += squashfs.o
- squashfs-y += block.o cache.o dir.o export.o file.o fragment.o id.o inode.o
--squashfs-y += namei.o super.o symlink.o decompressor.o decompressor_single.o
-+squashfs-y += namei.o super.o symlink.o decompressor.o
-+
- squashfs-$(CONFIG_SQUASHFS_XATTR) += xattr.o xattr_id.o
- squashfs-$(CONFIG_SQUASHFS_LZO) += lzo_wrapper.o
- squashfs-$(CONFIG_SQUASHFS_XZ) += xz_wrapper.o
- squashfs-$(CONFIG_SQUASHFS_ZLIB) += zlib_wrapper.o
-+
-+ifdef CONFIG_SQUASHFS_MULTI_DECOMPRESSOR
-+	squashfs-y		+= decompressor_multi.o
-+else
-+	squashfs-y		+= decompressor_single.o
-+endif
-diff --git a/fs/squashfs/decompressor_multi.c b/fs/squashfs/decompressor_multi.c
-new file mode 100644
-index 0000000..462731d
---- /dev/null
-+++ b/fs/squashfs/decompressor_multi.c
-@@ -0,0 +1,200 @@
-+/*
-+ *  Copyright (c) 2013
-+ *  Minchan Kim <minchan@kernel.org>
-+ *
-+ *  This work is licensed under the terms of the GNU GPL, version 2. See
-+ *  the COPYING file in the top-level directory.
-+ */
-+#include <linux/types.h>
-+#include <linux/mutex.h>
-+#include <linux/slab.h>
-+#include <linux/buffer_head.h>
-+#include <linux/sched.h>
-+#include <linux/wait.h>
-+#include <linux/cpumask.h>
-+
-+#include "squashfs_fs.h"
-+#include "squashfs_fs_sb.h"
-+#include "decompressor.h"
-+#include "squashfs.h"
-+
-+/*
-+ * This file implements multi-threaded decompression in the
-+ * decompressor framework
-+ */
-+
-+
-+/*
-+ * The reason that multiply two is that a CPU can request new I/O
-+ * while it is waiting previous request.
-+ */
-+#define MAX_DECOMPRESSOR	(num_online_cpus() * 2)
-+
-+
-+int squashfs_max_decompressors(void)
-+{
-+	return MAX_DECOMPRESSOR;
-+}
-+
-+
-+struct squashfs_stream {
-+	void			*comp_opts;
-+	struct list_head	strm_list;
-+	struct mutex		mutex;
-+	int			avail_decomp;
-+	wait_queue_head_t	wait;
-+};
-+
-+
-+struct decomp_stream {
-+	void *stream;
-+	struct list_head list;
-+};
-+
-+
-+static void put_decomp_stream(struct decomp_stream *decomp_strm,
-+				struct squashfs_stream *stream)
-+{
-+	mutex_lock(&stream->mutex);
-+	list_add(&decomp_strm->list, &stream->strm_list);
-+	mutex_unlock(&stream->mutex);
-+	wake_up(&stream->wait);
-+}
-+
-+void *squashfs_decompressor_create(struct squashfs_sb_info *msblk,
-+				void *comp_opts)
-+{
-+	struct squashfs_stream *stream;
-+	struct decomp_stream *decomp_strm = NULL;
-+	int err = -ENOMEM;
-+
-+	stream = kzalloc(sizeof(*stream), GFP_KERNEL);
-+	if (!stream)
-+		goto out;
-+
-+	stream->comp_opts = comp_opts;
-+	mutex_init(&stream->mutex);
-+	INIT_LIST_HEAD(&stream->strm_list);
-+	init_waitqueue_head(&stream->wait);
-+
-+	/*
-+	 * We should have a decompressor at least as default
-+	 * so if we fail to allocate new decompressor dynamically,
-+	 * we could always fall back to default decompressor and
-+	 * file system works.
-+	 */
-+	decomp_strm = kmalloc(sizeof(*decomp_strm), GFP_KERNEL);
-+	if (!decomp_strm)
-+		goto out;
-+
-+	decomp_strm->stream = msblk->decompressor->init(msblk,
-+						stream->comp_opts);
-+	if (IS_ERR(decomp_strm->stream)) {
-+		err = PTR_ERR(decomp_strm->stream);
-+		goto out;
-+	}
-+
-+	list_add(&decomp_strm->list, &stream->strm_list);
-+	stream->avail_decomp = 1;
-+	return stream;
-+
-+out:
-+	kfree(decomp_strm);
-+	kfree(stream);
-+	return ERR_PTR(err);
-+}
-+
-+
-+void squashfs_decompressor_destroy(struct squashfs_sb_info *msblk)
-+{
-+	struct squashfs_stream *stream = msblk->stream;
-+	if (stream) {
-+		struct decomp_stream *decomp_strm;
-+
-+		while (!list_empty(&stream->strm_list)) {
-+			decomp_strm = list_entry(stream->strm_list.prev,
-+						struct decomp_stream, list);
-+			list_del(&decomp_strm->list);
-+			msblk->decompressor->free(decomp_strm->stream);
-+			kfree(decomp_strm);
-+			stream->avail_decomp--;
-+		}
-+	}
-+
-+	WARN_ON(stream->avail_decomp);
-+	kfree(stream->comp_opts);
-+	kfree(stream);
-+}
-+
-+
-+static struct decomp_stream *get_decomp_stream(struct squashfs_sb_info *msblk,
-+					struct squashfs_stream *stream)
-+{
-+	struct decomp_stream *decomp_strm;
-+
-+	while (1) {
-+		mutex_lock(&stream->mutex);
-+
-+		/* There is available decomp_stream */
-+		if (!list_empty(&stream->strm_list)) {
-+			decomp_strm = list_entry(stream->strm_list.prev,
-+				struct decomp_stream, list);
-+			list_del(&decomp_strm->list);
-+			mutex_unlock(&stream->mutex);
-+			break;
-+		}
-+
-+		/*
-+		 * If there is no available decomp and already full,
-+		 * let's wait for releasing decomp from other users.
-+		 */
-+		if (stream->avail_decomp >= MAX_DECOMPRESSOR)
-+			goto wait;
-+
-+		/* Let's allocate new decomp */
-+		decomp_strm = kmalloc(sizeof(*decomp_strm), GFP_KERNEL);
-+		if (!decomp_strm)
-+			goto wait;
-+
-+		decomp_strm->stream = msblk->decompressor->init(msblk,
-+						stream->comp_opts);
-+		if (IS_ERR(decomp_strm->stream)) {
-+			kfree(decomp_strm);
-+			goto wait;
-+		}
-+
-+		stream->avail_decomp++;
-+		WARN_ON(stream->avail_decomp > MAX_DECOMPRESSOR);
-+
-+		mutex_unlock(&stream->mutex);
-+		break;
-+wait:
-+		/*
-+		 * If system memory is tough, let's for other's
-+		 * releasing instead of hurting VM because it could
-+		 * make page cache thrashing.
-+		 */
-+		mutex_unlock(&stream->mutex);
-+		wait_event(stream->wait,
-+			!list_empty(&stream->strm_list));
-+	}
-+
-+	return decomp_strm;
-+}
-+
-+
-+int squashfs_decompress(struct squashfs_sb_info *msblk,
-+	void **buffer, struct buffer_head **bh, int b, int offset, int length,
-+	int srclength, int pages)
-+{
-+	int res;
-+	struct squashfs_stream *stream = msblk->stream;
-+	struct decomp_stream *decomp_stream = get_decomp_stream(msblk, stream);
-+	res = msblk->decompressor->decompress(msblk, decomp_stream->stream,
-+		buffer, bh, b, offset, length, srclength, pages);
-+	put_decomp_stream(decomp_stream, stream);
-+	if (res < 0)
-+		ERROR("%s decompression failed, data probably corrupt\n",
-+			msblk->decompressor->name);
-+	return res;
-+}
--- 
-1.7.9.5
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
+iQIcBAEBCAAGBQJSbfX/AAoJEMDTa8Ir7ZwVmOMP/2dmq/n6GzOzJo3cGRNpMLXx
+3MuEqU2RvQd+oIrQAccfeWoqI5Sqznxt0R/08d7W0MYTvGx4ZS748OG2p6ezk/dN
+Fm8/r2sm2HgcFcXYirROnpy23KLjyNgqZrmGpjwmjd984xdVD1cdMzuy0v+usMUY
+8VIdI59PBasiiqBCFFfPeQlcanX8DmFHinDQJ+eGd4R/2NK/wWG17U3pPDKDvS+1
+rDPXAiIicH72XkQYH1d/+7DcdOP9xeG/jYtEz7PWm3cqaWMti0tJAwfu7BhPCttz
+WGVt37fkwgchRfB7eMZCpZzAWl8b8RVPNBdhB+FxaGalT9rHCTVBu7yQpMEA6Zia
+aLLR9K6Pzl12HS/CkQDAYriHVIRLQjAmmT+BPuJzfCI7mBS11TLZD5lI8OcP+1gY
+hQJvFUfLkGzWocLLTtoOseeLZvKlxUkin8Jqyq1zi9W2/cyAjf9xHdJxe+ODHG4I
+v5Pvbq1IA/4pFpg9K3p81bKWSrEtucQI2CrlOC4pz835ELeYfXIO0h4UPgSWWpXb
+ivjNLZ8MNMkpBvmbGkl+/Nlg8+6zmFKgdTZAblThK2XP678qtVyWcA3KNTcJgUVE
+yIjLoBjzGcNq3u8psUmfxL72IgNg+mWnVRf9iY29IXQMcrGxFSKv91/0elPXoLY6
+/2dIWIXm661YNJxqZrRO
+=kgju
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__28_Oct_2013_16_28_26_+1100_1YpAtSvv/X2I0w3p--
