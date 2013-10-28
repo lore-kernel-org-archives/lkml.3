@@ -1,64 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab3J1JXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 05:23:23 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46113 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755548Ab3J1JXU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 05:23:20 -0400
-Date: Mon, 28 Oct 2013 10:22:59 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Victor Kaplansky <VICTORK@il.ibm.com>
-Cc: anton@samba.org, benh@kernel.crashing.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        michael@ellerman.id.au, Michael Neuling <mikey@neuling.org>
-Subject: Re: perf events ring buffer memory barrier on powerpc
-Message-ID: <20131028092259.GJ19466@laptop.lan>
-References: <12083.1382486094@ale.ozlabs.ibm.com>
- <20131023141948.GB3566@localhost.localdomain>
- <20131025173749.GG19466@laptop.lan>
- <OF1519E98D.692AF083-ON42257C11.002E693E-42257C11.00317D48@il.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <OF1519E98D.692AF083-ON42257C11.002E693E-42257C11.00317D48@il.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1755966Ab3J1JXV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 05:23:21 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:23107 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754376Ab3J1JXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 05:23:03 -0400
+X-Greylist: delayed 1406 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Oct 2013 05:23:03 EDT
+From: Jan Kiszka <jan.kiszka@siemens.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        Borislav Petkov <bp@suse.de>,
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org
+Subject: [PATCH v6 21/21] scripts/gdb: Add basic documentation
+Date: Mon, 28 Oct 2013 09:58:58 +0100
+Message-Id: <09fd0723f610c8bb33465c8a909f4269a35cdcf4.1382950737.git.jan.kiszka@siemens.com>
+X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
+In-Reply-To: <cover.1382950737.git.jan.kiszka@siemens.com>
+References: <cover.1382950737.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1382950737.git.jan.kiszka@siemens.com>
+References: <cover.1382950737.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 11:00:33AM +0200, Victor Kaplansky wrote:
-> Peter Zijlstra <peterz@infradead.org> wrote on 10/25/2013 07:37:49 PM:
-> 
-> > I would argue for:
-> >
-> >   READ ->data_tail         READ ->data_head
-> >     smp_rmb()   (A)          smp_rmb()   (C)
-> >   WRITE $data              READ $data
-> >     smp_wmb()   (B)          smp_mb()   (D)
-> >   STORE ->data_head        WRITE ->data_tail
-> >
-> > Where A pairs with D, and B pairs with C.
-> 
-> 1. I agree. My only concern is that architectures which do use atomic
-> operations
-> with memory barriers, will issue two consecutive barriers now, which is
-> sub-optimal.
+CC: Rob Landley <rob@landley.net>
+CC: linux-doc@vger.kernel.org
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ Documentation/gdb-kernel-debugging.txt | 159 +++++++++++++++++++++++++++++++++
+ 1 file changed, 159 insertions(+)
+ create mode 100644 Documentation/gdb-kernel-debugging.txt
 
-Yeah, although that would be fairly easy to optimize by the CPUs itself;
-not sure they actually do this though.
+diff --git a/Documentation/gdb-kernel-debugging.txt b/Documentation/gdb-kernel-debugging.txt
+new file mode 100644
+index 0000000..944f2d2
+--- /dev/null
++++ b/Documentation/gdb-kernel-debugging.txt
+@@ -0,0 +1,159 @@
++Debugging kernel and modules via gdb
++====================================
++
++The kernel debugger kgdb, hypervisors like QEMU or JTAG-based hardware
++interfaces allow to debug the Linux kernel and its modules during runtime
++using gdb. Gdb comes with a powerful scripting interface for python. The
++kernel provides a collection of helper scripts that can simplify typical
++kernel debugging steps. This is a short tutorial about how to enable and use
++them. It focuses on QEMU/KVM virtual machines as target, but the examples can
++be transferred to the other gdb stubs as well.
++
++
++Requirements
++------------
++
++ o gdb 7.2+ (recommended: 7.4+) with python support enabled (typically true
++   for distributions)
++
++
++Setup
++-----
++
++ o Create a virtual Linux machine for QEMU/KVM (see www.linux-kvm.org and
++   www.qemu.org for more details). For cross-development,
++   http://landley.net/aboriginal/bin keeps a pool of machine images and
++   toolchains that can be helpful to start from.
++
++ o Build the kernel with CONFIG_DEBUG_INFO and CONFIG_KALLSYMS enabled, but
++   leave CONFIG_DEBUG_INFO_REDUCED off.
++
++ o Install that kernel on the guest.
++
++   Alternatively, QEMU allows to boot the kernel directly using -kernel,
++   -append, -initrd command line switches. This is generally only useful if
++   you do not depend on modules. See QEMU documentation for more details on
++   this mode.
++
++ o Enable the gdb stub of QEMU/KVM, either
++    - at VM startup time by appending "-s" to the QEMU command line
++   or
++    - during runtime by issuing "gdbserver" from the QEMU monitor
++      console
++
++ o cd /path/to/linux-build
++
++ o Start gdb: gdb vmlinux
++
++   Note: Some distros may restrict auto-loading of gdb scripts to known safe
++   directories. In case gdb reports to refuse loading vmlinux-gdb.py, add
++
++    add-add-auto-load-safe-path /path/to/linux-build
++
++   to ~/.gdbinit. See gdb help for more details.
++
++ o Attach to the booted guest:
++    (gdb) target remote :1234
++
++
++Examples of using the Linux-provided gdb helpers
++------------------------------------------------
++
++ o Load module (and main kernel) symbols:
++    (gdb) lx-symbols
++    loading vmlinux
++    scanning for modules in /home/user/linux/build
++    loading @0xffffffffa0020000: /home/user/linux/build/net/netfilter/xt_tcpudp.ko
++    loading @0xffffffffa0016000: /home/user/linux/build/net/netfilter/xt_pkttype.ko
++    loading @0xffffffffa0002000: /home/user/linux/build/net/netfilter/xt_limit.ko
++    loading @0xffffffffa00ca000: /home/user/linux/build/net/packet/af_packet.ko
++    loading @0xffffffffa003c000: /home/user/linux/build/fs/fuse/fuse.ko
++    ...
++    loading @0xffffffffa0000000: /home/user/linux/build/drivers/ata/ata_generic.ko
++
++ o Set a breakpoint on some not yet loaded module function, e.g.:
++    (gdb) b btrfs_init_sysfs
++    Function "btrfs_init_sysfs" not defined.
++    Make breakpoint pending on future shared library load? (y or [n]) y
++    Breakpoint 1 (btrfs_init_sysfs) pending.
++
++ o Continue the target
++    (gdb) c
++
++ o Load the module on the target and watch the symbols being loaded as well as
++   the breakpoint hit:
++    loading @0xffffffffa0034000: /home/user/linux/build/lib/libcrc32c.ko
++    loading @0xffffffffa0050000: /home/user/linux/build/lib/lzo/lzo_compress.ko
++    loading @0xffffffffa006e000: /home/user/linux/build/lib/zlib_deflate/zlib_deflate.ko
++    loading @0xffffffffa01b1000: /home/user/linux/build/fs/btrfs/btrfs.ko
++
++    Breakpoint 1, btrfs_init_sysfs () at /home/user/linux/fs/btrfs/sysfs.c:36
++    36              btrfs_kset = kset_create_and_add("btrfs", NULL, fs_kobj);
++
++ o Dump the log buffer of the target kernel:
++    (gdb) lx-dmesg
++    [     0.000000] Initializing cgroup subsys cpuset
++    [     0.000000] Initializing cgroup subsys cpu
++    [     0.000000] Linux version 3.8.0-rc4-dbg+ (...
++    [     0.000000] Command line: root=/dev/sda2 resume=/dev/sda1 vga=0x314
++    [     0.000000] e820: BIOS-provided physical RAM map:
++    [     0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff] usable
++    [     0.000000] BIOS-e820: [mem 0x000000000009fc00-0x000000000009ffff] reserved
++    ....
++
++ o Examine fields of the current task struct:
++    (gdb) p $lx_current().pid
++    $1 = 4998
++    (gdb) p $lx_current().comm
++    $2 = "modprobe\000\000\000\000\000\000\000"
++
++ o Make use of the per-cpu function for the current or a specified CPU:
++    (gdb) p $lx_per_cpu("runqueues").nr_running
++    $3 = 1
++    (gdb) p $lx_per_cpu("runqueues", 2).nr_running
++    $4 = 0
++
++ o Dig into hrtimers using the container_of helper:
++    (gdb) set $next = $lx_per_cpu("hrtimer_bases").clock_base[0].active.next
++    (gdb) p *$container_of($next, "struct hrtimer", "node")
++    $5 = {
++      node = {
++        node = {
++          __rb_parent_color = 18446612133355256072,
++          rb_right = 0x0 <irq_stack_union>,
++          rb_left = 0x0 <irq_stack_union>
++        },
++        expires = {
++          tv64 = 1835268000000
++        }
++      },
++      _softexpires = {
++        tv64 = 1835268000000
++      },
++      function = 0xffffffff81078232 <tick_sched_timer>,
++      base = 0xffff88003fd0d6f0,
++      state = 1,
++      start_pid = 0,
++      start_site = 0xffffffff81055c1f <hrtimer_start_range_ns+20>,
++      start_comm = "swapper/2\000\000\000\000\000\000"
++    }
++
++
++List of commands and functions
++------------------------------
++
++The number of commands and convenience functions may evolve over the time,
++this is just a snapshot of the initial version:
++
++ (gdb) apropos lx
++ function lx_current -- Return current task
++ function lx_module -- Find module by name and return the module variable
++ function lx_per_cpu -- Return per-cpu variable
++ function lx_task_by_pid -- Find Linux task by PID and return the task_struct variable
++ function lx_thread_info -- Calculate Linux thread_info from task variable
++ lx-dmesg -- Print Linux kernel log buffer
++ lx-lsmod -- List currently loaded modules
++ lx-symbols -- (Re-)load symbols of Linux kernel and currently loaded modules
++
++Detailed help can be obtained via "help <command-name>" for commands and "help
++function <function-name>" for convenience functions.
+-- 
+1.8.1.1.298.ge7eed54
 
-But we don't really have much choice aside of introducing things like:
-
-smp_wmb__after_local_$op; and I'm fairly sure people won't like adding a
-ton of conditional barriers like that either.
-
-
-> 2. I think the comment in "include/linux/perf_event.h" describing
-> "data_head" and
-> "data_tail" for user space need an update as well. Current version -
-
-Oh, indeed. Thanks; I'll update that too!
