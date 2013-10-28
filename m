@@ -1,150 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab3J1U7X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 16:59:23 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:56373
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756885Ab3J1U7U (ORCPT
+	id S1755953Ab3J1VEk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 17:04:40 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:58684 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab3J1VEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 16:59:20 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h906i1155h192ch)
-Date: Mon, 28 Oct 2013 13:59:12 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] clk/zynq/clkc: Add 'fclk-enable' feature
-References: <1381425018-5653-1-git-send-email-soren.brinkmann@xilinx.com>
+	Mon, 28 Oct 2013 17:04:38 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>, linux@arm.linux.org.uk,
+        mturquette@linaro.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, jiada_wang@mentor.com, t.figa@samsung.com,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        myungjoo.ham@samsung.com, Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        g.liakhovetski@gmx.de
+Subject: Re: [PATCH v6 0/5] clk: clock deregistration support
+Date: Mon, 28 Oct 2013 22:05:02 +0100
+Message-ID: <13429728.zDYQ5qS5ur@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.10.7-gentoo-r1; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <52420664.2040604@gmail.com>
+References: <1377874402-2944-1-git-send-email-s.nawrocki@samsung.com> <52420664.2040604@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1381425018-5653-1-git-send-email-soren.brinkmann@xilinx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <b9033240-ec3e-4168-ab16-5f00844d6ad2@VA3EHSMHS028.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping?
+Hi Sylwester,
 
-On Thu, Oct 10, 2013 at 10:10:17AM -0700, Soren Brinkmann wrote:
-> In some use cases Zynq's FPGA clocks are used as static clock
-> generators for IP in the FPGA part of the SOC for which no Linux driver
-> exists and would control those clocks. To avoid automatic
-> gating of these clocks in such cases a new property - fclk-enable - is
-> added to the clock controller's DT description to accomodate such use
-> cases. It's value is a bitmask, where a set bit results in enabling
-> the corresponding FCLK through the clkc.
+On Tuesday 24 September 2013 23:38:44 Sylwester Nawrocki wrote:
+> On 08/30/2013 04:53 PM, Sylwester Nawrocki wrote:
+> > This patch series implements clock deregistration in the common clock
+> > framework. Comparing to v5 it only includes further corrections of NULL
+> > clock handling.
 > 
-> FPGA clocks are handled following the rules below:
+> [...]
 > 
-> If an FCLK is not enabled by bootloaders, that FCLK will be disabled in
-> Linux. Drivers can enable and control it through the CCF as usual.
+> >    clk: Provide not locked variant of of_clk_get_from_provider()
+> >    clkdev: Fix race condition in clock lookup from device tree
+> >    clk: Add common __clk_get(), __clk_put() implementations
+> >    clk: Assign module owner of a clock being registered
+> >    clk: Implement clk_unregister
 > 
-> If an FCLK is enabled by bootloaders AND the corresponding bit in the
-> 'fclk-enable' DT property is set, that FCLK will be enabled by the clkc,
-> resulting in an off by one reference count for that clock. Ensuring it
-> will always be running.
+> Hi Mike, Russell,
 > 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> Would you have any further comments/suggestions on this series ?
+> 
+> I have inspected all callers of clk_register() and all should be fine
+> with regards to dereferencing dev->driver. The first argument to this
+> function is either NULL or clk_register() is being called in drivers'
+> probe() callback, which ensures dev->driver won't change due to holding
+> dev->mutex.
+> 
+> The only issue I found might be at the omap3isp driver, which provides
+> clock to its sub-drivers and takes reference on the sub-driver modules.
+> When sub-driver calls clk_get() all modules would get locked in memory,
+> due to circular reference. One solution to that could be to pass NULL
+> struct device pointer, as in the below patch.
+> 
+> ---------8<------------------
+>  From ca5963041aad67e31324cb5d4d5e2cfce1706d4f Mon Sep 17 00:00:00 2001
+> From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Date: Thu, 19 Sep 2013 23:52:04 +0200
+> Subject: [PATCH] omap3isp: Pass NULL device pointer to clk_register()
+> 
+> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 > ---
-> v2:
->  - change default value for fclk-enable to '0'
-> ---
->  Documentation/devicetree/bindings/clock/zynq-7000.txt |  4 ++++
->  drivers/clk/zynq/clkc.c                               | 18 +++++++++++++++---
->  2 files changed, 19 insertions(+), 3 deletions(-)
+>   drivers/media/platform/omap3isp/isp.c |   15 ++++++++++-----
+>   drivers/media/platform/omap3isp/isp.h |    1 +
+>   2 files changed, 11 insertions(+), 5 deletions(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/clock/zynq-7000.txt b/Documentation/devicetree/bindings/clock/zynq-7000.txt
-> index d99af878f5d7..11fdd146ec83 100644
-> --- a/Documentation/devicetree/bindings/clock/zynq-7000.txt
-> +++ b/Documentation/devicetree/bindings/clock/zynq-7000.txt
-> @@ -22,6 +22,10 @@ Required properties:
->  Optional properties:
->   - clocks : as described in the clock bindings
->   - clock-names : as described in the clock bindings
-> + - fclk-enable : Bit mask to enable FCLKs in cases no proper CCF compatible
-> +		 driver is available. Bit [0..3] correspond to FCLK0..FCLK3. The
-> +		 corresponding FCLK will only be enabled if it is actually
-> +		 running at boot time. (default = 0xf)
->  
->  Clock inputs:
->  The following strings are optional parameters to the 'clock-names' property in
-> diff --git a/drivers/clk/zynq/clkc.c b/drivers/clk/zynq/clkc.c
-> index 10772aa72e4e..af3bd0aec538 100644
-> --- a/drivers/clk/zynq/clkc.c
-> +++ b/drivers/clk/zynq/clkc.c
-> @@ -102,9 +102,10 @@ static const char *swdt_ext_clk_input_names[] __initdata = {"swdt_ext_clk"};
->  
->  static void __init zynq_clk_register_fclk(enum zynq_clk fclk,
->  		const char *clk_name, void __iomem *fclk_ctrl_reg,
-> -		const char **parents)
-> +		const char **parents, int enable)
->  {
->  	struct clk *clk;
-> +	u32 enable_reg;
->  	char *mux_name;
->  	char *div0_name;
->  	char *div1_name;
-> @@ -147,6 +148,12 @@ static void __init zynq_clk_register_fclk(enum zynq_clk fclk,
->  	clks[fclk] = clk_register_gate(NULL, clk_name,
->  			div1_name, CLK_SET_RATE_PARENT, fclk_gate_reg,
->  			0, CLK_GATE_SET_TO_DISABLE, fclk_gate_lock);
-> +	enable_reg = readl(fclk_gate_reg) & 1;
-> +	if (enable & !enable_reg) {
-> +		if (clk_prepare_enable(clks[fclk]))
-> +			pr_warn("%s: FCLK%u enable failed\n", __func__,
-> +					fclk - fclk0);
-> +	}
->  	kfree(mux_name);
->  	kfree(div0_name);
->  	kfree(div1_name);
-> @@ -213,6 +220,7 @@ static void __init zynq_clk_setup(struct device_node *np)
->  	int ret;
->  	struct clk *clk;
->  	char *clk_name;
-> +	unsigned int fclk_enable = 0;
->  	const char *clk_output_name[clk_max];
->  	const char *cpu_parents[4];
->  	const char *periph_parents[4];
-> @@ -238,6 +246,8 @@ static void __init zynq_clk_setup(struct device_node *np)
->  	periph_parents[2] = clk_output_name[armpll];
->  	periph_parents[3] = clk_output_name[ddrpll];
->  
-> +	of_property_read_u32(np, "fclk-enable", &fclk_enable);
+> diff --git a/drivers/media/platform/omap3isp/isp.c
+> b/drivers/media/platform/omap3isp/isp.c
+> index df3a0ec..d7f3c98 100644
+> --- a/drivers/media/platform/omap3isp/isp.c
+> +++ b/drivers/media/platform/omap3isp/isp.c
+> @@ -290,9 +290,11 @@ static int isp_xclk_init(struct isp_device *isp)
+>   	struct clk_init_data init;
+>   	unsigned int i;
+> 
+> +	for (i = 0; i < ARRAY_SIZE(isp->xclks); ++i)
+> +		isp->xclks[i] = ERR_PTR(-EINVAL);
+
+I don't think you've compile-tested this :-)
+
 > +
->  	/* ps_clk */
->  	ret = of_property_read_u32(np, "ps-clk-frequency", &tmp);
->  	if (ret) {
-> @@ -340,10 +350,12 @@ static void __init zynq_clk_setup(struct device_node *np)
->  	clk_prepare_enable(clks[dci]);
->  
->  	/* Peripheral clocks */
-> -	for (i = fclk0; i <= fclk3; i++)
-> +	for (i = fclk0; i <= fclk3; i++) {
-> +		int enable = !!(fclk_enable & BIT(i - fclk0));
->  		zynq_clk_register_fclk(i, clk_output_name[i],
->  				SLCR_FPGA0_CLK_CTRL + 0x10 * (i - fclk0),
-> -				periph_parents);
-> +				periph_parents, enable);
-> +	}
->  
->  	zynq_clk_register_periph_clk(lqspi, 0, clk_output_name[lqspi], NULL,
->  			SLCR_LQSPI_CLK_CTRL, periph_parents, 0);
-> -- 
-> 1.8.4
+>   	for (i = 0; i < ARRAY_SIZE(isp->xclks); ++i) {
+>   		struct isp_xclk *xclk = &isp->xclks[i];
+> -		struct clk *clk;
 > 
+>   		xclk->isp = isp;
+>   		xclk->id = i == 0 ? ISP_XCLK_A : ISP_XCLK_B;
+> @@ -306,9 +308,9 @@ static int isp_xclk_init(struct isp_device *isp)
 > 
+>   		xclk->hw.init = &init;
+> 
+> -		clk = devm_clk_register(isp->dev, &xclk->hw);
+> -		if (IS_ERR(clk))
+> -			return PTR_ERR(clk);
+> +		xclk->clk = clk_register(NULL, &xclk->hw);
+> +		if (IS_ERR(xclk->clk))
+> +			return PTR_ERR(xclk->clk);
 
+This doesn't introduce any regression in the sense that it will trade a 
+problem for another one, so I'm fine with it in the short. Could you add a 
+small comment above the clk_register() call to explain why the first argument 
+is NULL ?
+
+> 
+>   		if (pdata->xclks[i].con_id == NULL &&
+>   		    pdata->xclks[i].dev_id == NULL)
+> @@ -320,7 +322,7 @@ static int isp_xclk_init(struct isp_device *isp)
+> 
+>   		xclk->lookup->con_id = pdata->xclks[i].con_id;
+>   		xclk->lookup->dev_id = pdata->xclks[i].dev_id;
+> -		xclk->lookup->clk = clk;
+> +		xclk->lookup->clk = xclk->clk;
+> 
+>   		clkdev_add(xclk->lookup);
+>   	}
+> @@ -335,6 +337,9 @@ static void isp_xclk_cleanup(struct isp_device *isp)
+>   	for (i = 0; i < ARRAY_SIZE(isp->xclks); ++i) {
+>   		struct isp_xclk *xclk = &isp->xclks[i];
+> 
+> +		if (!IS_ERR(xclk->clk))
+> +			clk_unregister(xclk->clk);
+> +
+>   		if (xclk->lookup)
+>   			clkdev_drop(xclk->lookup);
+>   	}
+> diff --git a/drivers/media/platform/omap3isp/isp.h
+> b/drivers/media/platform/omap3isp/isp.h
+> index cd3eff4..1498f2b 100644
+> --- a/drivers/media/platform/omap3isp/isp.h
+> +++ b/drivers/media/platform/omap3isp/isp.h
+> @@ -135,6 +135,7 @@ struct isp_xclk {
+>   	struct isp_device *isp;
+>   	struct clk_hw hw;
+>   	struct clk_lookup *lookup;
+> +	struct clk *clk;
+>   	enum isp_xclk_id id;
+> 
+>   	spinlock_t lock;	/* Protects enabled and divider */
+
+-- 
+Regards,
+
+Laurent Pinchart
 
