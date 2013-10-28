@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab3J1Pa1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 11:30:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59282 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756495Ab3J1PaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 11:30:25 -0400
-Message-ID: <1382974161.1542.18.camel@dcbw.foobar.com>
-Subject: Re: [PATCH 16/16] wl1251: Add sysfs file address for setting
- permanent mac address
-From: Dan Williams <dcbw@redhat.com>
-To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>, Luciano Coelho <luca@coelho.fi>,
+	id S932081Ab3J1Pda (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 11:33:30 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:53738 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756280Ab3J1Pd2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 11:33:28 -0400
+Date: Mon, 28 Oct 2013 08:33:20 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Dan Williams <dcbw@redhat.com>,
+        Pali =?ISO-8859-1?B?Um9o4XI=?= <pali.rohar@gmail.com>,
+        Luciano Coelho <luca@coelho.fi>,
         "John W. Linville" <linville@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>,
         linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, freemangordon@abv.bg,
         aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
         joni.lapilainen@gmail.com
-Date: Mon, 28 Oct 2013 10:29:21 -0500
-In-Reply-To: <201310281604.48542@pali>
+Subject: Re: [PATCH 16/16] wl1251: Add sysfs file address for setting
+ permanent mac address
+Message-ID: <20131028083320.63d3259f@nehalam.linuxnetplumber.net>
+In-Reply-To: <1382972215.17956.30.camel@jlt4.sipsolutions.net>
 References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
-	 <1382971562.1542.6.camel@dcbw.foobar.com>
-	 <1382972215.17956.30.camel@jlt4.sipsolutions.net> <201310281604.48542@pali>
-Content-Type: text/plain; charset="UTF-8"
+	<201310281449.58170@pali>
+	<1382968522.17956.11.camel@jlt4.sipsolutions.net>
+	<201310281500.24159@pali>
+	<1382971562.1542.6.camel@dcbw.foobar.com>
+	<1382972215.17956.30.camel@jlt4.sipsolutions.net>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-10-28 at 16:04 +0100, Pali Rohár wrote:
-> On Monday 28 October 2013 15:56:55 Johannes Berg wrote:
-> > On Mon, 2013-10-28 at 09:46 -0500, Dan Williams wrote:
-> > > If the device doesn't actually *have* a permanent MAC
-> > > address, then it shouldn't be returning one via ethtool,
-> > > and should return an error for ETHTOOL_GPERMADDR.
-> > 
-> > There's currently no provision for that, but I agree it would
-> > be better to do so.
-> > 
-> > johannes
-> 
-> So what to do with devices which has MAC address stored in some 
-> obscure place and there is userspace binary which can read it?
-> 
-> I think that there should be some way to tell kernel that *this* 
-> is the permanent address and it should use it.
-> 
-> This is reason why I proposed patch which adding sysfs entry for 
-> setting permanent address from userspace in wl1251 driver.
+On Mon, 28 Oct 2013 15:56:55 +0100
+Johannes Berg <johannes@sipsolutions.net> wrote:
 
-Ok, so the N900's MAC is stored in the "cal partition", which is a
-region of flash exposed to the OS as /dev/mtd1.  That also stores the
-regulatory domain.  Typically userspace binaries are used to pull out
-this and other data (see
-https://dev.openwrt.org/browser/packages/utils/calvaria/files/src/calvaria.c ) which is then used to initialize the device.
+> On Mon, 2013-10-28 at 09:46 -0500, Dan Williams wrote:
+> 
+> > If the device doesn't actually *have* a permanent MAC address, then it
+> > shouldn't be returning one via ethtool, and should return an error for
+> > ETHTOOL_GPERMADDR.
+> 
+> There's currently no provision for that, but I agree it would be better
+> to do so.
+> 
+> johannes
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Any idea what kernel driver is used to expose the CAL partition
-as /dev/mtd1?  If it's nothing special maybe a small EEPROM-style driver
-could be written to read the relevant areas (and since they don't ever
-change, don't need to worry about something else writing at the same
-time).
+The current netdevice API handle the case of a device without a permanent
+MAC address, slightly differently.
 
-Dan
+If device does not have a permanent address,
+then:
+  1. dev->addr_assign_type should not be NET_ADDR_PERM
+  2. when device is registered dev->perm_addr will not be set
+     and retain all zeros value
+  4. when ethtool gets address it will return all zeros which
+     is not a valid address.
+
+This case doesn't seem to be handled threo mac80211 API's
+
 
 
