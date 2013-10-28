@@ -1,112 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405Ab3J1TuD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 15:50:03 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57774 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754833Ab3J1TuA (ORCPT
+	id S1757429Ab3J1Tx1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 15:53:27 -0400
+Received: from smtprelay0236.hostedemail.com ([216.40.44.236]:45655 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754833Ab3J1TxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 15:50:00 -0400
-Date: Mon, 28 Oct 2013 12:49:36 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Message-ID: <20131028194936.GC18208@sirena.org.uk>
-References: <1382909086-10493-1-git-send-email-sre@debian.org>
- <1382909086-10493-4-git-send-email-sre@debian.org>
- <20131028163721.GJ13643@sirena.org.uk>
- <20131028175341.GA28136@earth.universe>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9Ek0hoCL9XbhcSqy"
-Content-Disposition: inline
-In-Reply-To: <20131028175341.GA28136@earth.universe>
-X-Cookie: You will have a long and boring life.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 66.78.236.243
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC 3/4] ASoC: Allow Aux Codecs to be specified using DT
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Mon, 28 Oct 2013 15:53:25 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:2:41:69:355:379:541:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1535:1593:1594:1606:1730:1747:1777:1792:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3355:3865:3867:3868:3870:3871:3872:4117:4321:4605:5007:6119:7652:7807:10004:10848:11026:11658:11914:12043:12291:12296:12438:12517:12519:12555:12683:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: loss92_83052eae45d
+X-Filterd-Recvd-Size: 6534
+Message-ID: <1382990001.8718.4.camel@joe-AO722>
+Subject: [PATCH net-next] netconsole: Convert to pr_<level>
+From: Joe Perches <joe@perches.com>
+To: netdev <netdev@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 28 Oct 2013 12:53:21 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use a more current logging style.
 
---9Ek0hoCL9XbhcSqy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Convert printks to pr_<level>.
 
-On Mon, Oct 28, 2013 at 06:53:42PM +0100, Sebastian Reichel wrote:
-> On Mon, Oct 28, 2013 at 09:37:21AM -0700, Mark Brown wrote:
+Consolidate multiple printks into a single printk to avoid
+any possible dmesg interleaving.  Add a default "event" msg
+in case the listed types are ever expanded.
 
-> > This doesn't apply against current git, please check and resend.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/netconsole.c | 57 +++++++++++++++++++++++-------------------------
+ 1 file changed, 27 insertions(+), 30 deletions(-)
 
-> Can you give me a git url to rebase against? I used current git
-> master from torvalds.
+diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
+index adeee61..a8ef4c4 100644
+--- a/drivers/net/netconsole.c
++++ b/drivers/net/netconsole.c
+@@ -34,6 +34,8 @@
+  *
+  ****************************************************************/
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/mm.h>
+ #include <linux/init.h>
+ #include <linux/module.h>
+@@ -319,8 +321,8 @@ static ssize_t store_enabled(struct netconsole_target *nt,
+ 	if (enabled < 0 || enabled > 1)
+ 		return -EINVAL;
+ 	if (enabled == nt->enabled) {
+-		printk(KERN_INFO "netconsole: network logging has already %s\n",
+-				nt->enabled ? "started" : "stopped");
++		pr_info("network logging has already %s\n",
++			nt->enabled ? "started" : "stopped");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -339,7 +341,7 @@ static ssize_t store_enabled(struct netconsole_target *nt,
+ 			return err;
+ 		}
+ 
+-		printk(KERN_INFO "netconsole: network logging started\n");
++		pr_info("network logging started\n");
+ 
+ 	} else {	/* 0 */
+ 		netpoll_cleanup(&nt->np);
+@@ -358,9 +360,8 @@ static ssize_t store_dev_name(struct netconsole_target *nt,
+ 	size_t len;
+ 
+ 	if (nt->enabled) {
+-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+-				"disable to update parameters\n",
+-				config_item_name(&nt->item));
++		pr_err("target (%s) is enabled, disable to update parameters\n",
++		       config_item_name(&nt->item));
+ 		return -EINVAL;
+ 	}
+ 
+@@ -381,9 +382,8 @@ static ssize_t store_local_port(struct netconsole_target *nt,
+ 	int rv;
+ 
+ 	if (nt->enabled) {
+-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+-				"disable to update parameters\n",
+-				config_item_name(&nt->item));
++		pr_err("target (%s) is enabled, disable to update parameters\n",
++		       config_item_name(&nt->item));
+ 		return -EINVAL;
+ 	}
+ 
+@@ -400,9 +400,8 @@ static ssize_t store_remote_port(struct netconsole_target *nt,
+ 	int rv;
+ 
+ 	if (nt->enabled) {
+-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+-				"disable to update parameters\n",
+-				config_item_name(&nt->item));
++		pr_err("target (%s) is enabled, disable to update parameters\n",
++		       config_item_name(&nt->item));
+ 		return -EINVAL;
+ 	}
+ 
+@@ -417,9 +416,8 @@ static ssize_t store_local_ip(struct netconsole_target *nt,
+ 			      size_t count)
+ {
+ 	if (nt->enabled) {
+-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+-				"disable to update parameters\n",
+-				config_item_name(&nt->item));
++		pr_err("target (%s) is enabled, disable to update parameters\n",
++		       config_item_name(&nt->item));
+ 		return -EINVAL;
+ 	}
+ 
+@@ -427,7 +425,7 @@ static ssize_t store_local_ip(struct netconsole_target *nt,
+ 		const char *end;
+ 		if (in6_pton(buf, count, nt->np.local_ip.in6.s6_addr, -1, &end) > 0) {
+ 			if (*end && *end != '\n') {
+-				printk(KERN_ERR "netconsole: invalid IPv6 address at: <%c>\n", *end);
++				pr_err("invalid IPv6 address at: <%c>\n", *end);
+ 				return -EINVAL;
+ 			}
+ 			nt->np.ipv6 = true;
+@@ -448,9 +446,8 @@ static ssize_t store_remote_ip(struct netconsole_target *nt,
+ 			       size_t count)
+ {
+ 	if (nt->enabled) {
+-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+-				"disable to update parameters\n",
+-				config_item_name(&nt->item));
++		pr_err("target (%s) is enabled, disable to update parameters\n",
++		       config_item_name(&nt->item));
+ 		return -EINVAL;
+ 	}
+ 
+@@ -458,7 +455,7 @@ static ssize_t store_remote_ip(struct netconsole_target *nt,
+ 		const char *end;
+ 		if (in6_pton(buf, count, nt->np.remote_ip.in6.s6_addr, -1, &end) > 0) {
+ 			if (*end && *end != '\n') {
+-				printk(KERN_ERR "netconsole: invalid IPv6 address at: <%c>\n", *end);
++				pr_err("invalid IPv6 address at: <%c>\n", *end);
+ 				return -EINVAL;
+ 			}
+ 			nt->np.ipv6 = true;
+@@ -481,9 +478,8 @@ static ssize_t store_remote_mac(struct netconsole_target *nt,
+ 	u8 remote_mac[ETH_ALEN];
+ 
+ 	if (nt->enabled) {
+-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+-				"disable to update parameters\n",
+-				config_item_name(&nt->item));
++		pr_err("target (%s) is enabled, disable to update parameters\n",
++		       config_item_name(&nt->item));
+ 		return -EINVAL;
+ 	}
+ 
+@@ -704,19 +700,20 @@ restart:
+ 	}
+ 	spin_unlock_irqrestore(&target_list_lock, flags);
+ 	if (stopped) {
+-		printk(KERN_INFO "netconsole: network logging stopped on "
+-		       "interface %s as it ", dev->name);
++		const char *msg = "had an event";
+ 		switch (event) {
+ 		case NETDEV_UNREGISTER:
+-			printk(KERN_CONT "unregistered\n");
++			msg = "unregistered";
+ 			break;
+ 		case NETDEV_RELEASE:
+-			printk(KERN_CONT "released slaves\n");
++			msg = "released slaves";
+ 			break;
+ 		case NETDEV_JOIN:
+-			printk(KERN_CONT "is joining a master device\n");
++			msg = "is joining a master device";
+ 			break;
+ 		}
++		pr_info("network logging stopped on interface %s as it %s\n",
++			dev->name, msg);
+ 	}
+ 
+ done:
+@@ -802,7 +799,7 @@ static int __init init_netconsole(void)
+ 		goto undonotifier;
+ 
+ 	register_console(&netconsole);
+-	printk(KERN_INFO "netconsole: network logging started\n");
++	pr_info("network logging started\n");
+ 
+ 	return err;
+ 
+@@ -810,7 +807,7 @@ undonotifier:
+ 	unregister_netdevice_notifier(&netconsole_netdev_notifier);
+ 
+ fail:
+-	printk(KERN_ERR "netconsole: cleaning up\n");
++	pr_err("cleaning up\n");
+ 
+ 	/*
+ 	 * Remove all targets and destroy them (only targets created
 
-=46rom MAINTAINERS:
 
-SOUND - SOC LAYER / DYNAMIC AUDIO POWER MANAGEMENT (ASoC)
-M:      Liam Girdwood <lgirdwood@gmail.com>
-M:      Mark Brown <broonie@kernel.org>
-T:      git git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git
-L:      alsa-devel@alsa-project.org (moderated for non-subscribers)
-W:      http://alsa-project.org/main/index.php/ASoC
-S:      Supported
-F:      Documentation/sound/alsa/soc/
-F:      sound/soc/
-F:      include/sound/soc*
-
-> > Please also consider your CC list more carefully, there's an awful lot
-> > of people on this...
-
-> I added exactly those recipients, that were returned by
-> ./scripts/get_maintainer.pl for the patchset.
-
-> The list of involved people is quite long, because the patchset
-> touches devicetree, documentation, boardcode, asoc and the specific
-> driver.
-
-You shouldn't be using the output of get_maintainers directly, you
-should understand why everyone it's including is in the list and if they
-really should be.  This is especially important if you are sending a
-series that covers many subsystems, or nested subsystems.
-
---9Ek0hoCL9XbhcSqy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSbr/NAAoJELSic+t+oim9uwEP/ArzjQNT/narEQzmn4Sum523
-FFFoQNp46ojemL5q/fM3jcXYBUqIZMlLlkCo77/oeZ+Yv5Fvay5nBtrqyss6madL
-dwrxWtim3Z1/4Hu17lRbOR6/jZmq/cF1U7ni93UPpGO+QcRYvgdCI5wnstdi8YlY
-kFyzlPDKW2XrjRfWQc9FdPsukSnjPN3TzGn6NBpz+WBgU4YzGGBNqea1tcDw6Tp3
-+AjlxMR7FuYLcHlVFFCGsDSDqgtlpmlpcXE89/LukpceIubWmPUmv6RPqlQqSWJC
-Wwkuc6ih5GJUHJybMc9IPQ1SxgYSySFUBFRvyCPPH+dHQjbyFz/4Zsx8QAVBZH7j
-sErdS+z+GYuLzZUdU6fytnUtPoFwwNtCgEaByAh8z5S6X8f/nEhXMxsiROLc1NXl
-f9Z1BikFWuqTzh/Pdg1CB0II25CuN3R3iG9pQ/oC0dWdinX6dQRoo1BDLd8D/856
-oXPzEjx2+NtW6cEIQPzU3FDO09BLhti6AvzH6sE6hssrddglMUJ+/bYCnxwi4/5M
-/kwR9MKV3nTnWhm5uE9r0Ihx7K7VoTqDYXzb+3meigYcjakfYgHJt9AjmXarwbIC
-IvXsZby+AAxASMyu6EmrQtkkmRlEaUiIGohsUREZDKyRoQd76xKvgQdqFloSlX1N
-hnpOlKPz548BztzXPNUl
-=LsZo
------END PGP SIGNATURE-----
-
---9Ek0hoCL9XbhcSqy--
