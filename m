@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab3J1TzU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 15:55:20 -0400
-Received: from zimbra3.corp.accelance.fr ([213.162.49.233]:57265 "EHLO
-	zimbra3.corp.accelance.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756096Ab3J1TzT (ORCPT
+	id S1757349Ab3J1UAH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 16:00:07 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:56801 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755810Ab3J1UAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 15:55:19 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Oct 2013 15:55:19 EDT
-Message-ID: <526EBECB.1010805@openwide.fr>
-Date: Mon, 28 Oct 2013 20:45:15 +0100
-From: Romain Naour <romain.naour@openwide.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Mon, 28 Oct 2013 16:00:04 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Kamil Debski <k.debski@samsung.com>
+Cc: "'Kishon Vijay Abraham I'" <kishon@ti.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm@vger.kernel.org,
+        kyungmin.park@samsung.com, Tomasz Figa <t.figa@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, gautam.vivek@samsung.com,
+        mat.krawczuk@gmail.com
+Subject: Re: [PATCH v2 1/5] phy: Add new Exynos USB PHY driver
+Date: Mon, 28 Oct 2013 21:00:01 +0100
+Message-ID: <1548448.GBuE52miBt@flatron>
+User-Agent: KMail/4.11.2 (Linux/3.11.6-gentoo; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <025b01ced3e4$ec685db0$c5391910$%debski@samsung.com>
+References: <1382710529-12082-1-git-send-email-k.debski@samsung.com> <526A90B9.3040501@ti.com> <025b01ced3e4$ec685db0$c5391910$%debski@samsung.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: trace-cmd: use pkg-config instead of python-config
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Kamil,
 
-trace-cmd use python-config to find out which headers
-and libraries should be used to link against the Python libraries.
-By default, python-config returns paths that are inappropriate for
-cross-compilation.
+On Monday 28 of October 2013 14:52:19 Kamil Debski wrote:
+> Hi Kishon,
+> 
+> Thank you for your review! I will answer your comments below.
+[snip]
+> > > +
+> > > +	switch (drv->cfg->cpu) {
+> > > +	case TYPE_EXYNOS4210:
+> > 
+> > > +	case TYPE_EXYNOS4212:
+> > Lets not add such cpu checks inside driver.
+> 
+> Some SoC have a special register, which switches the OTG lines between
+> device and host modes. I understand that it might not be the prettiest
+> code. I see this as a good compromise between having a single huge
+> driver for all Exynos SoCs and having a multiple drivers for each SoC
+> version. PHY IPs in these chips very are similar but have to be handled
+> differently. Any other ideas to solve this issue?
 
-Add PYTHON_VERS to build trace-cmd with python2 or python3
+Maybe adding a flag in drv->cfg called, for example, .has_mode_switch 
+could solve this problem without having to check the SoC type explicitly?
 
-Signed-off-by: Romain Naour <romain.naour@openwide.fr>
----
-  Makefile | 8 +++++---
-  1 file changed, 5 insertions(+), 3 deletions(-)
+[snip]
+> > > +#ifdef CONFIG_PHY_EXYNOS4210_USB
+> > 
+> > Do we really need this?
+> 
+> No we don't. The driver can always support all Exynos SoC versions.
+> These config options were added for flexibility.
+> 
+> > > +extern const struct uphy_config exynos4210_uphy_config; #endif
+> > > +
+> > > +#ifdef CONFIG_PHY_EXYNOS4212_USB
+> > 
+> > Same here.
+> > 
+> > > +extern const struct uphy_config exynos4212_uphy_config; #endif
+> > > +
+> > > +static const struct of_device_id exynos_uphy_of_match[] = { #ifdef
+> > > +CONFIG_PHY_EXYNOS4210_USB
+> > 
+> > #if not needed here.
+> 
+> If the #ifdef CONFIG_PHY_EXYNOS4210_USB is removed then yes. Otherwise
+> it is necessary - exynos4210_uphy_config may be undefined.
 
-diff --git a/Makefile b/Makefile
-index 83329ca..23b70d8 100644
---- a/Makefile
-+++ b/Makefile
-@@ -80,8 +80,10 @@ ifndef NO_PYTHON
-  PYTHON        := ctracecmd.so
-  PYTHON_GUI    := ctracecmd.so ctracecmdgui.so
+I believe this and other ifdefs below are needed, otherwise, with support
+for one of the SoCs disabled, the driver could still bind to its 
+compatible value.
 
-+PYTHON_VERS ?= python
-+
-  # Can build python?
--ifeq ($(shell sh -c "python-config --includes > /dev/null 2>&1 && echo 
-y"), y)
-+ifeq ($(shell sh -c "pkg-config --cflags $(PYTHON_VERS) > /dev/null 
-2>&1 && echo y"), y)
-      PYTHON_PLUGINS := plugin_python.so
-      BUILD_PYTHON := $(PYTHON) $(PYTHON_PLUGINS)
-      PYTHON_SO_INSTALL := ctracecmd.install
-@@ -546,8 +548,8 @@ clean:
-
-  ##### PYTHON STUFF #####
-
--PYTHON_INCLUDES = `python-config --includes`
--PYTHON_LDFLAGS = `python-config --ldflags` \
-+PYTHON_INCLUDES = `pkg-config --cflags $(PYTHON_VERS)`
-+PYTHON_LDFLAGS = `pkg-config --libs $(PYTHON_VERS)` \
-          $(shell python -c "import distutils.sysconfig; print 
-distutils.sysconfig.get_config_var('LINKFORSHARED')")
-  PYGTK_CFLAGS = `pkg-config --cflags pygtk-2.0`
-
---
-1.8.4
-
+Best regards,
+Tomasz
 
