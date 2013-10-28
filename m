@@ -1,109 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755795Ab3J1JCl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 05:02:41 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:50218 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754105Ab3J1JCj (ORCPT
+	id S1754680Ab3J1JIR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 05:08:17 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55828 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab3J1JIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 05:02:39 -0400
-Date: Mon, 28 Oct 2013 10:02:36 +0100
-From: ------------------------------ Markus Trippelsdorf 
-	<markus@trippelsdorf.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL] perf fixes
-Message-ID: <20131028090236.GA274@x4>
-References: <20131026122414.GA25026@gmail.com>
- <20131028082848.GA276@x4>
+	Mon, 28 Oct 2013 05:08:16 -0400
+Message-ID: <526E2973.6090905@pengutronix.de>
+Date: Mon, 28 Oct 2013 10:08:03 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131028082848.GA276@x4>
+To: Markus Pargmann <mpa@pengutronix.de>
+CC: Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH] can: c_can: Handle lost message before EOB
+References: <1382950480-12515-1-git-send-email-mpa@pengutronix.de>
+In-Reply-To: <1382950480-12515-1-git-send-email-mpa@pengutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="4dnXTfDLU5AKrpl31p0R3g43N5dRwOnSQ"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013.10.28 at 09:28 +0100, Markus Trippelsdorf wrote:
-> On 2013.10.26 at 14:24 +0200, Ingo Molnar wrote:
-> >  - Reversal of the new 'MMAP2' extended mmap record ABI, introduced 
-> >    in this merge window. (Patches were proposed to fix it but it was
-> >    all a bit late and we felt it's safer to just delay the ABI one
-> >    more kernel release and do it right.)
-> 
-> commit 3090ffb5a2515990182f3f55b0688a7817325488
-> Author: Stephane Eranian <eranian@google.com>
-> Date:   Thu Oct 17 19:32:15 2013 +0200
-> 
->     perf: Disable PERF_RECORD_MMAP2 support
-> 
-> The commit above breaks "perf top" on my system, because it causes only
-> [kernel] symbols to show up in the list. When I revert the commit I get
-> the usual mixture of userspace and kernel symbols in the list.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--4dnXTfDLU5AKrpl31p0R3g43N5dRwOnSQ
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Forgot to mention that this happens on an otherwise idle machine. If I
-run CPU intensive apps they'll show up eventually.
+On 10/28/2013 09:54 AM, Markus Pargmann wrote:
+> If we handle end of block messages with higher priority than a lost
+> message, we can run into an endless interrupt loop.
+>=20
+> This is reproducable with a am335x processor and "cansequence -r" at
+> 1Mbit. As soon as we loose a packet we can't escape from a interrupt
+> loop.
+>=20
+> This patch handles lost packets before EOB packets.
+>=20
+> Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
 
-Example (current Linus tree):
+Thanks, applied to can.
 
-   PerfTop:     593 irqs/sec  kernel:80.6%  exact:  0.0% [4000Hz cycles],  (all, 4 CPUs)
-----------------------------------------------------------------------------------------------
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-    57.75%  [kernel]          [k] amd_e400_idle
-    28.66%  [unknown]         [.] 0x0000000000450bc8
-     1.51%  [kernel]          [k] kallsyms_expand_symbol.const
-     1.22%  [kernel]          [k] cpu_startup_entry
-     1.13%  [kernel]          [k] number.isra.1
-     0.77%  [kernel]          [k] clear_page_c
-     0.74%  [kernel]          [k] memcpy
-     0.46%  [kernel]          [k] task_waking_fair
-     0.45%  [kernel]          [k] _raw_spin_lock_irqsave
-     0.42%  [kernel]          [k] _raw_spin_unlock_irqrestore
-     0.39%  [kernel]          [k] format_decode
-     0.34%  [kernel]          [k] do_sys_poll
-     0.31%  [kernel]          [k] current_kernel_time
-     0.30%  [kernel]          [k] vsnprintf
-     0.29%  [kernel]          [k] native_apic_mem_write
-     0.28%  [kernel]          [k] select_task_rq_fair
-     0.26%  [kernel]          [k] swiotlb_free_coherent
-     0.26%  [kernel]          [k] irq_entries_start
-     0.2n%  [kernel]          [k] strnlen
 
-With the commit above reverted:
+--4dnXTfDLU5AKrpl31p0R3g43N5dRwOnSQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-   PerfTop:     907 irqs/sec  kernel:73.3%  exact:  0.0% [4000Hz cycles],  (all, 4 CPUs)
------------------------------------------------------------------------------------------------
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
 
-    30.89%  [kernel]                    [k] amd_e400_idle
-     6.88%  [unknown]                   [.] 0x00007f346f2ef3a6
-     5.22%  libc-2.18.90.so             [.] strcmp
-     3.65%  libc-2.18.90.so             [.] strstr
-     2.65%  libbfd-2.24.51.20131018.so  [.] d_print_comp.part.8
-     2.61%  perf                        [.] symbols__insert
-     2.18%  [kernel]                    [k] cpu_startup_entry
-     1.82%  perf                        [.] symbol_filter
-     1.73%  perf                        [.] rb_next
-     1.58%  libc-2.18.90.so             [.] critical_factorization
-     1.34%  libelf-0.156.so             [.] gelf_getsym
-     1.28%  libQtGui.so.4.8.5           [.] qt_alphargbblit_quint32(QRasterBuffer*, int, int, unsigned int, unsigned int const*, int, int, int, QClipData
-     1.25%  libc-2.18.90.so             [.] __libc_calloc
-     1.17%  libc-2.18.90.so             [.] _int_malloc
-     1.15%  libc-2.18.90.so             [.] strchr
-     0.97%  xmobar                      [.] 0x000000000000c922
-     0.97%  [kernel]                    [k] number.isra.1
-     0.96%  libpthread-2.18.90.so       [.] pthread_rwlock_rdlock
-     0.96%  libc-2.18.90.so             [.] memcpy@@GLIBC_2.14
-     0.94%  perf                        [.] dso__load_sym
-     0.93%  libc-2.18.90.so             [.] memchr
-     0.84%  libbfd-2.24.51.20131018.so  [.] d_name
-     0.75%  [kernel]                    [k] clear_page_c
-     0.73%  libpthread-2.18.90.so       [.] pthread_rwlock_unlock
-     0.66%  libc-2.18.90.so             [.] memset
+iEYEARECAAYFAlJuKXQACgkQjTAFq1RaXHM61wCeLbbGwIVvk5Z2oympmZZJQhAo
+E24AmwbRsez7TxFD2bT/EVEBNDTRJYkH
+=agCZ
+-----END PGP SIGNATURE-----
 
--- 
-Markus
+--4dnXTfDLU5AKrpl31p0R3g43N5dRwOnSQ--
