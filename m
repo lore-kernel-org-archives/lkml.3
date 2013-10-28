@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566Ab3J1MSM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 08:18:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49580 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756101Ab3J1MSJ (ORCPT
+	id S1756403Ab3J1MUF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 08:20:05 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:35293 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755942Ab3J1MUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 08:18:09 -0400
-Date: Mon, 28 Oct 2013 13:17:47 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH v3 3/4] perf,x86: add Intel RAPL PMU support
-Message-ID: <20131028121747.GL19466@laptop.lan>
-References: <1382533085-7166-1-git-send-email-eranian@google.com>
- <1382533085-7166-4-git-send-email-eranian@google.com>
- <20131025111422.GC1219@krava.redhat.com>
- <CABPqkBR0gEz7cauev0hk=oofO1m9RP=wP3NK3j0y7EiNE8j3tg@mail.gmail.com>
- <CABPqkBShxTc3wBkwWej6gaWJK3GmdtV71hNdozabnbwpesXx_A@mail.gmail.com>
+	Mon, 28 Oct 2013 08:20:03 -0400
+Date: Mon, 28 Oct 2013 13:19:58 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: Re: ktap inclusion in drivers/staging/?
+Message-ID: <20131028121958.GA8641@gmail.com>
+References: <20131024075813.GA26929@gmail.com>
+ <CAGdX0WFu=sxWUckkZiUQMTxo_tOFbxX-paqU2p_5YR8NaN6gSA@mail.gmail.com>
+ <20131025101511.GB3439@gmail.com>
+ <CAGdX0WGrGbb-eJvS4HHg9umk7X3-vrzyrJCuhAJrfGvOriKHSQ@mail.gmail.com>
+ <20131026085955.GD14237@gmail.com>
+ <526E54BA.4040507@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBShxTc3wBkwWej6gaWJK3GmdtV71hNdozabnbwpesXx_A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <526E54BA.4040507@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 11:33:50AM +0100, Stephane Eranian wrote:
-> If we have that, then it may not be necessary anymore
-> to express the raw count in the 1/2^32 J unit like we
-> are currently doing. This loses a bit of precision. We
-> could as well expose the actual raw count and export
-> the actual unit via sysfs. For instance, on SNB/IVB the
-> unit is 1/2^16, but on Haswell it is 1/2^14.
 
-2^-32 can losslessly express both 2^-16 and 2^-14.
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-Notably: 2^18/2^32 = 2^(18-32) = 2^-14.
+> (2013/10/26 17:59), Ingo Molnar wrote:
+> > 
+> > * Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
+> > 
+> >> Thanks. An addition question I want to discuss in here is the ktap 
+> >> code structure layout in first patch series, this don't need to 
+> >> dig out any ktap design detail, so we can make agreement on this 
+> >> point, and ease for me to prepare patch series.
+> >>
+> >> Do I need to prepare patchset target on staging tree or "real" 
+> >> part of kernel? [...]
+> > 
+> > I'd suggest adding it to the core, i.e. kernel/tracing/ and 
+> > kernel/trace/trace_events_filter.c in particular which includes the 
+> > current filter script interpreter.
+> 
+> It means we'll need to put Lua compiler in the kernel...
 
-So no, 2^-32 does not loose precision.
+How big is a reasonable implementation right now?
 
-The only side effect of always using 2^-32 is that we can only maximally
-represent 2^32 (from 64-32), whereas when using 2^-14 we could maximally
-represent 2^50.
+> Would you mean the bytecode should be decodable? or loaded with 
+> source code in the kernel?
 
-That said; 2^32 Joule ~ 4.2 GJ which is a rather large quantity of
-energy; one I would hope is out there when measuring package energy
-costs over any reasonable amount of time.
+Loaded with the source code into the kernel - like OpenGL shader 
+source code is loaded. (except that there's no bin-only exception.)
 
-So the only reason to switch away from using the 32.32 fixed point would
-be if someone can make a reasonable argument for why 4.2 GJ is not
-sufficient and they need 1 PJ (yes, peta-joule, as in we need a private
-nuclear reactor to power this CPU).
+These are small scripts most of whom are (much) smaller than a 
+single page.
 
+Thanks,
 
+	Ingo
