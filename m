@@ -1,97 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757246Ab3J1R34 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 13:29:56 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:52632 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756643Ab3J1R3x convert rfc822-to-8bit (ORCPT
+	id S1757329Ab3J1Raa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 13:30:30 -0400
+Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.101]:7278
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757284Ab3J1RaV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 13:29:53 -0400
+	Mon, 28 Oct 2013 13:30:21 -0400
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-In-Reply-To: <20131027201218.GA4414@earth.universe>
-References: <1382890469-25286-1-git-send-email-sre@debian.org>
-	<1382890469-25286-3-git-send-email-sre@debian.org>
-	<1382891056.102746625@f315.i.mail.ru>
-	<20131027201218.GA4414@earth.universe>
-Date: Mon, 28 Oct 2013 19:29:52 +0200
-Message-ID: <CANOLnONKcC1i19ypb4rh2Rff3WsVhhuUhNvZvYwDV2-ZNtjVxQ@mail.gmail.com>
-Subject: Re: [PATCH 2/4] wl1251: move power GPIO handling into the driver
-From: Grazvydas Ignotas <notasas@gmail.com>
-To: Alexander Shiyan <shc_work@mail.ru>, Luciano Coelho <luca@coelho.fi>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Bill Pemberton <wfp5p@virginia.edu>, Felipe Balbi <balbi@ti.com>,
-        Rob Landley <rob@landley.net>, netdev@vger.kernel.org,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Brown <broonie@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Apply For Your loan?
+To: Recipients <0102322@LoanService274.onmicrosoft.com>
+From: Loan Service <0102322@LoanService274.onmicrosoft.com>
+Date: Mon, 28 Oct 2013 22:59:27 +0530
+Reply-To: <mrabdulmaalik@hotmail.com>
+Message-ID: <6672770f-e567-4d66-aae1-4d27013a5b1e@SIXPR04MB128.apcprd04.prod.outlook.com>
+X-Originating-IP: [115.245.209.230]
+X-ClientProxiedBy: HKNPR04CA008.apcprd04.prod.outlook.com (10.242.116.38) To
+ SIXPR04MB128.apcprd04.prod.outlook.com (10.242.63.154)
+X-Forefront-PRVS: 0013079544
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(199002)(189002)(74502001)(56776001)(31686002)(81542001)(81342001)(69226001)(54316002)(76482001)(558084003)(74316001)(23756003)(56816003)(47446002)(77096001)(53256004)(79102001)(76176001)(74876001)(74662001)(76786001)(76796001)(76576001)(59766001)(77982001)(74366001)(66066001)(83072001)(63696002)(33646001)(50466002)(47776003)(80022001)(43066001)(74706001)(46102001)(325944007)(4396001)(65816001)(19580405001)(83322001)(19580395003)(81816001)(42186004)(54356001)(81686001)(49866001)(47736001)(47976001)(50986001)(51856001)(80976001)(85306002)(84722001);DIR:OUT;SFP:1501;SCL:5;SRVR:SIXPR04MB128;H:[115.245.209.230];CLIP:115.245.209.230;FPR:;RD:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: LoanService274.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 10:12 PM, Sebastian Reichel <sre@debian.org> wrote:
-> On Sun, Oct 27, 2013 at 08:24:16PM +0400, Alexander Shiyan wrote:
->> > Move the power GPIO handling from the board code into
->> > the driver. This is a dependency for device tree support.
->> >
->> > Signed-off-by: Sebastian Reichel <sre@debian.org>
->> > ---
->> >  arch/arm/mach-omap2/board-omap3pandora.c     |  2 ++
->> >  arch/arm/mach-omap2/board-rx51-peripherals.c | 11 ++--------
->> >  drivers/net/wireless/ti/wl1251/sdio.c        | 21 +++++++++++++-----
->> >  drivers/net/wireless/ti/wl1251/spi.c         | 33 ++++++++++++++++++----------
->> >  drivers/net/wireless/ti/wl1251/wl1251.h      |  2 +-
->> >  include/linux/wl12xx.h                       |  2 +-
->> >  6 files changed, 43 insertions(+), 28 deletions(-)
->> ...
->> > diff --git a/include/linux/wl12xx.h b/include/linux/wl12xx.h
->> > index b516b4f..a9c723b 100644
->> > --- a/include/linux/wl12xx.h
->> > +++ b/include/linux/wl12xx.h
->> > @@ -49,7 +49,7 @@ enum {
->> >  };
->> >
->> >  struct wl1251_platform_data {
->> > -   void (*set_power)(bool enable);
->> > +   int power_gpio;
->> >     /* SDIO only: IRQ number if WLAN_IRQ line is used, 0 for SDIO IRQs */
->> >     int irq;
->> >     bool use_eeprom;
->> > --
->>
->> What a reason for not using regulator API here with GPIO-based
->> regulator?
->
-> I think this pin is not used as power supply, but like an enable pin
-> for low power states. Of course the regulator API could still be
-> (mis?)used for this, but I think it would be the first linux device
-> driver doing this.
->
-> Note: I don't have wl1251 documentation.
-
-When wl12xx family of chips is connected through SDIO, we already have
-that pin set up as a regulator controlled with the help of mmc
-subsystem. When time comes to communicate with the chip, mmc subsystem
-sees this as yet another SD card and looks for associated regulator
-for it, and the board file has that set up as a fixed regulator
-controlling that pin (see pandora_vmmc3 in
-arch/arm/mach-omap2/board-omap3pandora.c). To prevent poweroff after
-first SDIO communications are over, pm_runtime calls are used in
-drivers/net/wireless/ti/wl1251/sdio.c .
-
-I don't know if something similar can be done done in SPI case, but
-I'm sure this is not the first your-so-called regulator misuse.
-
-Gražvydas
+ Do You need  Business Loan or Personal if Yes? contact us with this details:Name,Amount,Country,Loan Durations,Phone Number to this email address:mrabdulmaalik@hotmail.com
