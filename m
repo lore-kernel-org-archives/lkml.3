@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab3J1Ddz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 23:33:55 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:12820 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab3J1Ddy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 23:33:54 -0400
-X-Spam-Score: -100.8
-Message-ID: <526DDAE5.9040803@asianux.com>
-Date: Mon, 28 Oct 2013 11:32:53 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755559Ab3J1Dfk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 23:35:40 -0400
+Received: from ozlabs.org ([203.10.76.45]:47516 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755472Ab3J1Dfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 23:35:37 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chen Gang <gang.chen@asianux.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH] kernel/kallsyms.c: only show legal kernel symbol
+In-Reply-To: <CACVXFVN7PiU1dorkeamtC9-Wg_TVQE8xFiJtad-C8q4_=Rc1Ow@mail.gmail.com>
+References: <1382498320-26594-1-git-send-email-tom.leiming@gmail.com> <87eh7bfoq9.fsf@rustcorp.com.au> <20131024084559.GD16735@n2100.arm.linux.org.uk> <87mwlyclng.fsf@rustcorp.com.au> <CACVXFVO86u0h0V-1_DCkO5HNyUp2i_UsjPrVWDb-ZBtmwVk28A@mail.gmail.com> <87y55h7vcd.fsf@rustcorp.com.au> <CACVXFVPXEUX9JQ2NZvL8=J34zbw2fn202QW2SQtpKjdQ+tv=vg@mail.gmail.com> <87sivp7eai.fsf@rustcorp.com.au> <CACVXFVN7PiU1dorkeamtC9-Wg_TVQE8xFiJtad-C8q4_=Rc1Ow@mail.gmail.com>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 28 Oct 2013 13:44:30 +1030
+Message-ID: <874n82gk89.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: "vgupta@synopsys.com" <vgupta@synopsys.com>, noamc@ezchip.com
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arc: kernel: use exporting symbol instead of static inline
- for arc_get_core_freq()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need export arc_get_core_freq() instead of let it static inline, or if
-other individual modules use it (e.g. use BASE_BAUD), it can not find
-core_freq variable.
+Ming Lei <tom.leiming@gmail.com> writes:
+> On Fri, Oct 25, 2013 at 7:58 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>>>
+>>> Basically these symbols are only used to generate code, and in
+>>> kernel mode, CPU won't run into the corresponding addresses
+>>> because the generate code is copied to other address during booting,
+>>> so I understand they won't appear in backtraces.
+>>
+>> An oops occurs when something went *wrong*.  We look up all kinds of
+>> stuff.  Are you so sure that *none* of the callers will ever see these
+>> strange symbols and produce a confusing result?
+>
+> Suppose that might happen, kernel should be smart enough to know
+> that the address is not inside kernel address space and won't produce
+> confusing result, right?
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- arch/arc/include/asm/clk.h |    9 +--------
- arch/arc/kernel/clk.c      |    9 ++++++++-
- 2 files changed, 9 insertions(+), 9 deletions(-)
+I don't know...  It would be your job, as the person making the change,
+to find all the users of kallsyms and prove that.
 
-diff --git a/arch/arc/include/asm/clk.h b/arch/arc/include/asm/clk.h
-index bf9d29f..256321a 100644
---- a/arch/arc/include/asm/clk.h
-+++ b/arch/arc/include/asm/clk.h
-@@ -9,14 +9,7 @@
- #ifndef _ASM_ARC_CLK_H
- #define _ASM_ARC_CLK_H
- 
--/* Although we can't really hide core_freq, the accessor is still better way */
--extern unsigned long core_freq;
--
--static inline unsigned long arc_get_core_freq(void)
--{
--	return core_freq;
--}
--
-+extern unsigned long arc_get_core_freq(void);
- extern int arc_set_core_freq(unsigned long);
- 
- #endif
-diff --git a/arch/arc/kernel/clk.c b/arch/arc/kernel/clk.c
-index 10c7b0b..9f4602f 100644
---- a/arch/arc/kernel/clk.c
-+++ b/arch/arc/kernel/clk.c
-@@ -6,9 +6,16 @@
-  * published by the Free Software Foundation.
-  */
- 
-+#include <linux/module.h>
- #include <asm/clk.h>
- 
--unsigned long core_freq = 80000000;
-+static unsigned long core_freq = 80000000;
-+
-+unsigned long arc_get_core_freq(void)
-+{
-+	return core_freq;
-+}
-+EXPORT_SYMBOL_GPL(arc_get_core_freq);
- 
- /*
-  * As of now we default to device-tree provided clock
--- 
-1.7.7.6
+This is why it is easier not to include incorrect values in the kernel's
+kallsyms in the first place.
+
+Hope that helps,
+Rusty.
