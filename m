@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab3J1HQO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 03:16:14 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:43764 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752802Ab3J1HQN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 03:16:13 -0400
-X-Originating-IP: 77.221.165.98
-Date: Mon, 28 Oct 2013 07:16:06 +0000
-From: Josh Triplett <josh@joshtriplett.org>
-To: Junio C Hamano <gitster@pobox.com>
-Cc: git@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg KH <greg@kroah.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        ksummit-attendees@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] commit: Add -f, --fixes <commit> option to add Fixes:
- line
-Message-ID: <20131028071606.GA16878@leaf>
-References: <20131024122255.GI9378@mwanda>
- <20131024122512.GB9534@mwanda>
- <20131026181709.GB10488@kroah.com>
- <20131027013402.GA7146@leaf>
- <xmqqa9hui2lp.fsf@gitster.dls.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755589Ab3J1HXa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 03:23:30 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:37427 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912Ab3J1HX3 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
+	Mon, 28 Oct 2013 03:23:29 -0400
+Message-Id: <526E1EFA02000078000FD1E7@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Mon, 28 Oct 2013 07:23:22 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Ingo Molnar" <mingo@kernel.org>
+Cc: "Peter Zijlstra" <a.p.zijlstra@chello.nl>, <mingo@elte.hu>,
+        <tglx@linutronix.de>, "Andrew Morton" <akpm@linux-foundation.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        <arjan@linux.intel.com>, <linux@roeck-us.net>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH 1/2] x86: unify copy_from_user() size checking
+References: <5265056D02000078000FC4F3@nat28.tlf.novell.com>
+ <20131026103109.GC14949@gmail.com>
+In-Reply-To: <20131026103109.GC14949@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <xmqqa9hui2lp.fsf@gitster.dls.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 06:52:18PM -0700, Junio C Hamano wrote:
-> There are unbound number of kinds of trailers people would want to
-> add, depending on their projects' needs.  We should not have to add
-> a specific support for a tailer like this one, before thinking
-> through to see if we can add generic support for adding arbitrary
-> trailers to avoid code and interface bloat.
+>>> On 26.10.13 at 12:31, Ingo Molnar <mingo@kernel.org> wrote:
+> * Jan Beulich <JBeulich@suse.com> wrote:
+>> I'd like to point out though that with __compiletime_object_size()
+>> being restricted to gcc before 4.6, the whole construct is going to
+>> become more and more pointless going forward. I would question
+>> however that commit 2fb0815c9ee6b9ac50e15dd8360ec76d9fa46a2 ("gcc4:
+>> disable __compiletime_object_size for GCC 4.6+") was really necessary,
+>> and instead this should have been dealt with as is done here from the
+>> beginning.
 > 
-> Think of the existing --signoff as a historical mistake.  Such a
-> generic "adding arbitrary trailers" support, when done properly,
-> should be able to express what "--signoff" does, and we should be
-> able to redo "--signoff" as a special case of that generic "adding
-> arbitrary trailers" support, and at that point, "Fixes:" trailer the
-> kernel project wants to use should fall out as a natural consequence.
+> Can we now revert 2fb0815c9ee6?
 
-Well, the add_signoff_extra function I added makes it easy to add any
-kind of trailing data you want to a commit; the question just becomes
-what the UI looks like to drive that.
+Afaict yes, but I certainly didn't test with all possible gcc versions.
+So minimally everyone involved in getting that change in would be
+good to be in agreement.
 
-Would you be OK with a solution that pushes the specific supported
-footer lines into git's configuration, and then supplies default
-configuration for common cases such as Fixes?  The option could become
--f/--footer, and the configuration would specify how to parse various
-arguments of -f and turn them into something.  For example:
+Jan
 
-[footer "Fixes"]
-    abbrev = f
-    arg = commit
-    format = %h ('%s')
-
-git commit -f Cc:stable@vger.kernel.org -f f:bad-commit ...
-
-The Cc line there would go unparsed since there's no specific support
-for it, while the 'f:bad-commit' would get expanded by the configuration
-above to parse bad-commit as a committish and format it using the
-specified pretty format.
-
-Look reasonable?  I could start out by adding support for footer lines
-that take commits as arguments and format them using arbitrary pretty
-strings, and leave room for future expansion to support footers that
-reference idents (given some way to expand idents from some shorter
-form, otherwise there's no point).
-
-- Josh Triplett
