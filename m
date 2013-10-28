@@ -1,71 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757671Ab3J1WQb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 18:16:31 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757642Ab3J1WQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 18:16:29 -0400
-Message-ID: <526EE234.2070709@nod.at>
-Date: Mon, 28 Oct 2013 23:16:20 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1757713Ab3J1WRq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 18:17:46 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:45661 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756244Ab3J1WRo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 18:17:44 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: =?ISO-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] clk/zynq/clkc: Add 'fclk-enable' feature
+Date: Mon, 28 Oct 2013 23:17:42 +0100
+Message-ID: <2028580.HhySWWnU2A@flatron>
+User-Agent: KMail/4.11.2 (Linux/3.11.6-gentoo; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <b7840a0d-ac49-4c2d-beaa-9f79748c70d0@CH1EHSMHS006.ehs.local>
+References: <1381425018-5653-1-git-send-email-soren.brinkmann@xilinx.com> <1592656.1ojHcSlzVh@flatron> <b7840a0d-ac49-4c2d-beaa-9f79748c70d0@CH1EHSMHS006.ehs.local>
 MIME-Version: 1.0
-To: Paul Moore <paul@paul-moore.com>
-CC: Andy Lutomirski <luto@amacapital.net>,
-        libseccomp-discuss@lists.sourceforge.net,
-        Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: ARM seccomp filters and EABI/OABI
-References: <CALCETrXyLBXmimjLepU=y1igmWpwcdWUNCqNjMHi_jyLw0pHMA@mail.gmail.com> <CAFLxGvwT+KDSTjJnd8HUhQivmpB3ZwjrXs1OxF8ctL7k6tN0Lw@mail.gmail.com> <4195093.ULJiSLViSo@sifl>
-In-Reply-To: <4195093.ULJiSLViSo@sifl>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 28.10.2013 22:53, schrieb Paul Moore:
-> On Thursday, October 24, 2013 09:55:57 PM Richard Weinberger wrote:
->> On Wed, Oct 23, 2013 at 11:02 PM, Andy Lutomirski <luto@amacapital.net> 
-> wrote:
->>> I'm looking at the seccomp code, the ARM entry code, and the
->>> syscall(2) manpage, and I'm a bit lost.  (The fact that I don't really
->>> speak ARM assembly doesn't help.)  My basic question is: what happens
->>> if an OABI syscall happens?
->>>
->>> AFAICS, the syscall arguments for EABI are r0..r5, although their
->>> ordering is a bit odd*.  For OABI, r6 seems to play some role, but I'm
->>> lost as to what it is.  The seccomp_bpf_load function won't load r6,
->>> so there had better not be anything useful in there...  (Also, struct
->>> seccomp_data will have issues with a seventh "argument".)
->>>
->>> But what happens to the syscall number?  For an EABI syscall, it's in
->>> r7.  For an OABI syscall, it's in the swi instruction and gets copied
->>> to r7 on entry.  If a debugger changes r7, presumably the syscall
->>> number changes.
->>>
->>> Oddly, there are two different syscall tables.  The major differences
->>> seem to be that some of the OABI entries have their argument order
->>> changed.  But there's also a magic constant 0x900000 added to the
->>> syscall number somewhere -- is it reflected in _sigsys._syscall?  Is
->>> it reflected in ucontext's r7?
->>>
->>> I'm a bit surprised to see that both the EABI and OABI ABIs show up as
->>> AUDIT_ARCH_ARM.
->>>
->>> Can any of you shed some light on this?  I don't have an ARM system I
->>> can test on, but if one of you can point me at a decent QEMU image, I
->>> can play around.
->>
->> Maybe this helps:
->> http://people.debian.org/~aurel32/qemu/armel/
+On Monday 28 of October 2013 14:43:35 Sören Brinkmann wrote:
+> On Mon, Oct 28, 2013 at 10:13:28PM +0100, Tomasz Figa wrote:
+> > Hi Soren,
+> > 
+> > On Thursday 10 of October 2013 10:10:17 Soren Brinkmann wrote:
+> > > In some use cases Zynq's FPGA clocks are used as static clock
+> > > generators for IP in the FPGA part of the SOC for which no Linux
+> > > driver
+> > > exists and would control those clocks. To avoid automatic
+> > > gating of these clocks in such cases a new property - fclk-enable -
+> > > is
+> > > added to the clock controller's DT description to accomodate such
+> > > use
+> > > cases. It's value is a bitmask, where a set bit results in enabling
+> > > the corresponding FCLK through the clkc.
+> > > 
+> > > FPGA clocks are handled following the rules below:
+> > > 
+> > > If an FCLK is not enabled by bootloaders, that FCLK will be disabled
+> > > in
+> > > Linux. Drivers can enable and control it through the CCF as usual.
+> > > 
+> > > If an FCLK is enabled by bootloaders AND the corresponding bit in
+> > > the
+> > > 'fclk-enable' DT property is set, that FCLK will be enabled by the
+> > > clkc, resulting in an off by one reference count for that clock.
+> > > Ensuring it will always be running.
+> > > 
+> > > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > > ---
+> > > 
+> > > v2:
+> > >  - change default value for fclk-enable to '0'
+> > > 
+> > > ---
+> > > 
+> > >  Documentation/devicetree/bindings/clock/zynq-7000.txt |  4 ++++
+> > >  drivers/clk/zynq/clkc.c                               | 18
+> > > 
+> > > +++++++++++++++--- 2 files changed, 19 insertions(+), 3 deletions(-)
+> > > 
+> > > diff --git a/Documentation/devicetree/bindings/clock/zynq-7000.txt
+> > > b/Documentation/devicetree/bindings/clock/zynq-7000.txt index
+> > > d99af878f5d7..11fdd146ec83 100644
+> > > --- a/Documentation/devicetree/bindings/clock/zynq-7000.txt
+> > > +++ b/Documentation/devicetree/bindings/clock/zynq-7000.txt
+> > > 
+> > > @@ -22,6 +22,10 @@ Required properties:
+> > >  Optional properties:
+> > >   - clocks : as described in the clock bindings
+> > >   - clock-names : as described in the clock bindings
+> > > 
+> > > + - fclk-enable : Bit mask to enable FCLKs in cases no proper CCF
+> > 
+> > Since it's a vendor specific property, it should include vendor
+> > prefix.
 > 
-> Thanks for the pointer, although those images look quite old, has anyone done 
-> a refresh?
+> The whole driver is vendor specific. Should there really be another
+> prefix for that property?
 
-You are free to run "apt-get upgrade" within the said images. :-)
+Yes. If a property is introduced just for use by this particular driver 
+then it must be prepended by a vendor prefix. That's a general rule.
 
-Thanks,
-//richard
+> > Also CCF is a Linux-specific implementation detail, which DT bindings
+> > should not be involved into. If you really need to implement this
+> > using
+> > this way, then at least property description should say something like
+> > this:
+> > 
+> > xlnx,fclk-enable : Bit mask of bits of fclk enable register that must
+> > be statically enabled at boot-up time.
+> 
+> Fair enough. I'll change the description
+> 
+> > However, I wonder why you can't simply define an FPGA block using a
+> > single node, which would be a consumer to all the fclk clocks you
+> > need to enable and then make a driver for it that would simply enable
+> > all clocks specified in clocks property.
+> 
+> Well, then we'd have a dummy driver that wouldn't fit into any subsystem
+> and wouldn't do anything but enabling clocks. Seems much easier to
+> handle it in this driver. Especially, since I hope that this is just a
+> workaround and that the majority of use cases involves drivers for
+> their soft-IP that simply uses the CCF.
+
+Hmm, I'm not really convinced, but well, let's say that I'm fine with your 
+proposed solution, unless someone else complains.
+
+Best regards,
+Tomasz
+
