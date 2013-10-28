@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab3J1Cl6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 22:41:58 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:53312 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab3J1Cl4 (ORCPT
+	id S1755509Ab3J1CnL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 22:43:11 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:38598 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754833Ab3J1CnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 22:41:56 -0400
-Message-ID: <526DCEEC.1090308@linux.vnet.ibm.com>
-Date: Mon, 28 Oct 2013 10:41:48 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Sun, 27 Oct 2013 22:43:10 -0400
+Date: Mon, 28 Oct 2013 10:43:01 +0800
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Wei Yang <weiyang@linux.vnet.ibm.com>, cl@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] percpu: little optimization on calculating
+ pcpu_unit_size
+Message-ID: <20131028024301.GB15642@weiyang.vnet.ibm.com>
+Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
+References: <1382345893-6644-1-git-send-email-weiyang@linux.vnet.ibm.com>
+ <1382345893-6644-3-git-send-email-weiyang@linux.vnet.ibm.com>
+ <20131027123634.GL14934@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: remove extra put_online_cpus() inside sched_setaffinity()
-References: <52673C57.1050607@linux.vnet.ibm.com> <20131025114857.GB6374@gmail.com>
-In-Reply-To: <20131025114857.GB6374@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131027123634.GL14934@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102802-3864-0000-0000-00000AC7035D
+x-cbid: 13102802-5140-0000-0000-0000040F3A52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Ingo
+On Sun, Oct 27, 2013 at 08:36:34AM -0400, Tejun Heo wrote:
+>On Mon, Oct 21, 2013 at 04:58:13PM +0800, Wei Yang wrote:
+>> pcpu_unit_size exactly equals to ai->unit_size.
+>> 
+>> This patch assign this value instead of calculating from pcpu_unit_pages. Also
+>> it reorder them to make it looks more friendly to audience.
+>
+>Ditto.  I'd rather not change unless this is clearly better.
 
-On 10/25/2013 07:48 PM, Ingo Molnar wrote:
-[snip]
->> ---
->>  kernel/sched/core.c |    1 -
->>  1 file changed, 1 deletion(-)
->>
->> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->> index c06b8d3..7c61f31 100644
->> --- a/kernel/sched/core.c
->> +++ b/kernel/sched/core.c
->> @@ -3716,7 +3716,6 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
->>         p = find_process_by_pid(pid);
->>         if (!p) {
->>                 rcu_read_unlock();
->> -               put_online_cpus();
->>                 return -ESRCH;
->>         }
-> 
-> The patch is whitespace damaged.
+This one change an assignement to a shift, which in my mind is a little
+faster.
 
-Forgive me for the silly mistake... the line may be cursed... will
-recheck and send out the right format, thanks for the notify :)
+Well, this is just executed once during the boot time, not a big deal.
 
-Regards,
-Michael Wang
+>
+>Thanks.
+>
+>-- 
+>tejun
 
-> 
-> Thanks,
-> 
-> 	Ingo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+-- 
+Richard Yang
+Help you, Help me
 
