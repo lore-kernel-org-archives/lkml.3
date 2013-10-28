@@ -1,83 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab3J1RYF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 13:24:05 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:33791 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756983Ab3J1RYC (ORCPT
+	id S1757246Ab3J1R34 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 13:29:56 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:52632 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756643Ab3J1R3x convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 13:24:02 -0400
+	Mon, 28 Oct 2013 13:29:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <20131027212407.GA17439@kroah.com>
-References: <525BD08C.2080101@t-online.de> <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com>
- <CA+55aFy7TpvkVuPEOJ7Qqirwap1gXoD1_MrYLhgPAYuVpN8u=w@mail.gmail.com>
- <alpine.DEB.2.02.1310251221310.5266@ionos.tec.linutronix.de>
- <CA+55aFxw1Hm4QVeEigkByP5RppSL30oHnLoR16C=henf-a=uFQ@mail.gmail.com>
- <CA+55aFyb72qoZ1Tjpb+=q-6+GmwoOXjfntY_zZnf300gg3d1Hg@mail.gmail.com>
- <CA+55aFxuVpDo3LvmG9j-Hu7sENLTcsB6_CY2TA4mE-k+CuTeGg@mail.gmail.com>
- <CA+55aFz9ewd7VhCKDxJUzY4PGH7E3N-xMr=pDGQxf1PyNd1W1w@mail.gmail.com> <20131027212407.GA17439@kroah.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 28 Oct 2013 11:23:41 -0600
-Message-ID: <CAErSpo5NmBDqRA3URAQPmw4iC3xvpDdd9JFROuftLJE1YsbPhA@mail.gmail.com>
-Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request
- during shutdown
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Veaceslav Falico <vfalico@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20131027201218.GA4414@earth.universe>
+References: <1382890469-25286-1-git-send-email-sre@debian.org>
+	<1382890469-25286-3-git-send-email-sre@debian.org>
+	<1382891056.102746625@f315.i.mail.ru>
+	<20131027201218.GA4414@earth.universe>
+Date: Mon, 28 Oct 2013 19:29:52 +0200
+Message-ID: <CANOLnONKcC1i19ypb4rh2Rff3WsVhhuUhNvZvYwDV2-ZNtjVxQ@mail.gmail.com>
+Subject: Re: [PATCH 2/4] wl1251: move power GPIO handling into the driver
+From: Grazvydas Ignotas <notasas@gmail.com>
+To: Alexander Shiyan <shc_work@mail.ru>, Luciano Coelho <luca@coelho.fi>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Bill Pemberton <wfp5p@virginia.edu>, Felipe Balbi <balbi@ti.com>,
+        Rob Landley <rob@landley.net>, netdev@vger.kernel.org,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Brown <broonie@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Veaceslav]
-
-On Sun, Oct 27, 2013 at 3:24 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Sun, Oct 27, 2013 at 09:13:29PM +0000, Linus Torvalds wrote:
->> .. and one more case of freeing a delayed work object (likely a kobject again):
+On Sun, Oct 27, 2013 at 10:12 PM, Sebastian Reichel <sre@debian.org> wrote:
+> On Sun, Oct 27, 2013 at 08:24:16PM +0400, Alexander Shiyan wrote:
+>> > Move the power GPIO handling from the board code into
+>> > the driver. This is a dependency for device tree support.
+>> >
+>> > Signed-off-by: Sebastian Reichel <sre@debian.org>
+>> > ---
+>> >  arch/arm/mach-omap2/board-omap3pandora.c     |  2 ++
+>> >  arch/arm/mach-omap2/board-rx51-peripherals.c | 11 ++--------
+>> >  drivers/net/wireless/ti/wl1251/sdio.c        | 21 +++++++++++++-----
+>> >  drivers/net/wireless/ti/wl1251/spi.c         | 33 ++++++++++++++++++----------
+>> >  drivers/net/wireless/ti/wl1251/wl1251.h      |  2 +-
+>> >  include/linux/wl12xx.h                       |  2 +-
+>> >  6 files changed, 43 insertions(+), 28 deletions(-)
+>> ...
+>> > diff --git a/include/linux/wl12xx.h b/include/linux/wl12xx.h
+>> > index b516b4f..a9c723b 100644
+>> > --- a/include/linux/wl12xx.h
+>> > +++ b/include/linux/wl12xx.h
+>> > @@ -49,7 +49,7 @@ enum {
+>> >  };
+>> >
+>> >  struct wl1251_platform_data {
+>> > -   void (*set_power)(bool enable);
+>> > +   int power_gpio;
+>> >     /* SDIO only: IRQ number if WLAN_IRQ line is used, 0 for SDIO IRQs */
+>> >     int irq;
+>> >     bool use_eeprom;
+>> > --
 >>
->> This time it looks like it's in the PCI layer, freeing the msi irq information.
->>
->> It looks like that code simply does
->>
->>     kobject_del(&entry->kobj);
->>     kobject_put(&entry->kobj);
->>     list_del(&entry->list);
->>     kfree(entry);
->>
->> and the problem is that the "entry->kobj" may have *other* references
->> to it, thanks to people accessing it through /sys, so despite doing a
->> kojbect_del/kobject_put(), it's not at all ok to then do a "kfree()"
->> on it. The embedded kobj might still be in use.
->>
->> Afaik, that code should do the kfree() on the kobject in the _release_
->> method, not synchronously like that.
->>
->> We already have a msi_kobj_release(), I'm wondering why that doesn't
->> do the kfree().
->>
->> Bjorn? Yinghai? Greg, comments about that msi kobj usage?
+>> What a reason for not using regulator API here with GPIO-based
+>> regulator?
 >
-> Ick, it really should be doing a kfree() in the release only.  Bjorn has
-> had a bunch of changes in this area recently, perhaps they are in
-> linux-next waiting for 3.13, and I've talked to him about getting rid of
-> all of the kobjects for msi files, as I don't think it's needed at all.
+> I think this pin is not used as power supply, but like an enable pin
+> for low power states. Of course the regulator API could still be
+> (mis?)used for this, but I think it would be the first linux device
+> driver doing this.
+>
+> Note: I don't have wl1251 documentation.
 
-IIRC, you said you might take a look at converting this to attributes
-on the train back home, so I haven't looked into it myself :)
+When wl12xx family of chips is connected through SDIO, we already have
+that pin set up as a regulator controlled with the help of mmc
+subsystem. When time comes to communicate with the chip, mmc subsystem
+sees this as yet another SD card and looks for associated regulator
+for it, and the board file has that set up as a fixed regulator
+controlling that pin (see pandora_vmmc3 in
+arch/arm/mach-omap2/board-omap3pandora.c). To prevent poweroff after
+first SDIO communications are over, pm_runtime calls are used in
+drivers/net/wireless/ti/wl1251/sdio.c .
 
-> Bjorn, don't you have a fix for this problem already done somewhere?
+I don't know if something similar can be done done in SPI case, but
+I'm sure this is not the first your-so-called regulator misuse.
 
-Yep, this is clearly wrong, and Veaceslav has a patch that moves the
-kfree() to the release function.  I've been waiting for a consolidated
-repost of all his MSI-related fixes, but maybe he's been waiting for
-*me*.
-
-Bjorn
+Gražvydas
