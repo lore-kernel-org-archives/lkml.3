@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab3J1OVT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 10:21:19 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:34271 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756536Ab3J1OVS (ORCPT
+	id S1756758Ab3J1OVp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:21:45 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:42153 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756536Ab3J1OVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:21:18 -0400
-Message-ID: <1382970069.17956.23.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH 3.12] cfg80211: fix ibss wext chandef creation
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Simon Wunderlich <sw@simonwunderlich.de>
-Cc: linux-wireless@vger.kernel.org,
-        Mathias Kretschmer <mathias.kretschmer@fokus.fraunhofer.de>,
-        Dirk Gouders <dirk@gouders.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 28 Oct 2013 15:21:09 +0100
-In-Reply-To: <1382472166-19563-1-git-send-email-sw@simonwunderlich.de> (sfid-20131022_221235_343937_76CC3A81)
-References: <1382472166-19563-1-git-send-email-sw@simonwunderlich.de>
-	 (sfid-20131022_221235_343937_76CC3A81)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2 
-Mime-Version: 1.0
+	Mon, 28 Oct 2013 10:21:43 -0400
+X-Sasl-enc: 4ixMC0LfZSUT/yJ741IGU/4w4cRG7shmjBuZ3J8Olhu4 1382970094
+Message-ID: <526E72EC.9060400@iki.fi>
+Date: Mon, 28 Oct 2013 16:21:32 +0200
+From: Pekka Enberg <penberg@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
+        anton@redhat.com, systemtap@sourceware.org,
+        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com
+Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
+References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora> <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com> <526E4940.8000608@hitachi.com> <526E5BA5.7050103@iki.fi> <20131028141152.GA1040@linux.vnet.ibm.com>
+In-Reply-To: <20131028141152.GA1040@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-22 at 22:02 +0200, Simon Wunderlich wrote:
-> The wext internal chandefs for ibss should be created using the
-> cfg80211_chandef_create() functions. Otherwise the center_freq1 field
-> will not be set and cfg80211_chandef_valid() will spit a warning and
-> report the chandef as invalid when it should be used.
+On 10/28/2013 04:11 PM, Srikar Dronamraju wrote:
+>
+> But what if a system has both 32 bit libc and 64 bit libc?
+> Wont we could end up with 2 libc:setjmp?
+> Should we give some more intelligence into perf to choose the 64 bit
+> libc over 32 bit one?
 
-I think
+You can just trace both of them by default, no?
 
-commit f478f33a93f9353dcd1fe55445343d76b1c3f84a
-Author: Bruno Randolf <br1@einfach.org>
-Date:   Thu Sep 26 16:55:28 2013 +0100
-
-    cfg80211: fix warning when using WEXT for IBSS
-
-
-already fixed this. Your patch doesn't apply, but feel free to send me a
-new one (for -next) converting to the creation helpers.
-
-johannes
-
+                         Pekka
