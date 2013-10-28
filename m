@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272Ab3J1KD5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 06:03:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6137 "EHLO mx1.redhat.com"
+	id S1756300Ab3J1KEI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 06:04:08 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55576 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756249Ab3J1KD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 06:03:56 -0400
-Date: Mon, 28 Oct 2013 11:06:06 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] percpu_ida: Sanity check initialization parameters
-Message-ID: <20131028100605.GE5744@dhcp-26-207.brq.redhat.com>
-References: <cover.1382950629.git.agordeev@redhat.com>
+	id S1756281Ab3J1KEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 06:04:05 -0400
+Date: Mon, 28 Oct 2013 11:04:02 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.fedoraproject.org, kexec@lists.infradead.org
+Subject: Re: [patch 3/6] Cleanup efi_enter_virtual_mode function
+Message-ID: <20131028100402.GC4314@pd.tnic>
+References: <20131027034713.481920209@dhcp-16-126.nay.redhat.com>
+ <20131027035923.081819853@dhcp-16-126.nay.redhat.com>
+ <20131028093206.GB4314@pd.tnic>
+ <20131028094049.GC25527@dhcp-16-126.nay.redhat.com>
+ <20131028095117.GD25527@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <cover.1382950629.git.agordeev@redhat.com>
+In-Reply-To: <20131028095117.GD25527@dhcp-16-126.nay.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- lib/percpu_ida.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+On Mon, Oct 28, 2013 at 05:51:17PM +0800, Dave Young wrote:
+> It does have a warning, but it applied successfully, no idea though: 
+> patches/02-efi-enter-virtual-mode-cleanup.patch
+> Applying: Cleanup efi_enter_virtual_mode function
+> /home/dave/git/efi/.git/rebase-apply/patch:42: space before tab in indent.
+>  	efi_memory_desc_t *md, *prev_md = NULL;
+> warning: 1 line adds whitespace errors.
 
-diff --git a/lib/percpu_ida.c b/lib/percpu_ida.c
-index 4adc3e5..1fc89f9 100644
---- a/lib/percpu_ida.c
-+++ b/lib/percpu_ida.c
-@@ -298,6 +298,11 @@ int __percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags,
- {
- 	unsigned i, cpu, order;
- 
-+	if (batch_size > max_size)
-+		return -ERANGE;
-+	if (!batch_size)
-+		return -EINVAL;
-+
- 	memset(pool, 0, sizeof(*pool));
- 
- 	init_waitqueue_head(&pool->wait);
--- 
-1.7.7.6
+Hmm, ok, can you upload the patches somewhere so that I can pull them?
 
+Thanks.
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
