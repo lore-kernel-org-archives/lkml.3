@@ -1,99 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756521Ab3J1MwN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 08:52:13 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49447 "EHLO
+	id S1756530Ab3J1Myg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 08:54:36 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49511 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755037Ab3J1MwM (ORCPT
+	by vger.kernel.org with ESMTP id S1755989Ab3J1Myf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 08:52:12 -0400
-Date: Mon, 28 Oct 2013 12:48:51 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Simon Baatz <gmbnomis@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ming Lei <tom.leiming@gmail.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Will Deacon <Will.Deacon@arm.com>,
+	Mon, 28 Oct 2013 08:54:35 -0400
+Date: Mon, 28 Oct 2013 12:53:54 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vince Weaver <vincent.weaver@maine.edu>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: ARM/kirkwood: v3.12-rc6: kernel BUG at mm/util.c:390!
-Message-ID: <20131028124851.GD5354@mbp>
-References: <20131024200730.GB17447@blackmetal.musicnaut.iki.fi>
- <20131026143617.GA14034@mudshark.cambridge.arm.com>
- <20131027195115.208f40f3@tom-ThinkPad-T410>
- <20131027125036.GJ17447@blackmetal.musicnaut.iki.fi>
- <CACVXFVP2B3=82m_+DfA_oAEW86c=oxQ52G+yj5ncTU1DzP26Bw@mail.gmail.com>
- <20131027135344.GD16735@n2100.arm.linux.org.uk>
- <20131027141817.GA13436@schnuecks.de>
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: perf: PERF_EVENT_IOC_PERIOD on ARM vs everywhere else
+Message-ID: <20131028125354.GB20814@mudshark.cambridge.arm.com>
+References: <alpine.DEB.2.10.1310272233120.12721@vincent-weaver-1.um.maine.edu>
+ <20131028085700.GB20218@mudshark.cambridge.arm.com>
+ <20131028100049.GK19466@laptop.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131027141817.GA13436@schnuecks.de>
+In-Reply-To: <20131028100049.GK19466@laptop.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 02:18:17PM +0000, Simon Baatz wrote:
-> On Sun, Oct 27, 2013 at 01:53:44PM +0000, Russell King - ARM Linux wrote:
-> > On Sun, Oct 27, 2013 at 09:16:53PM +0800, Ming Lei wrote:
-> > > On Sun, Oct 27, 2013 at 8:50 PM, Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
-> > > >
-> > So...
+On Mon, Oct 28, 2013 at 10:00:49AM +0000, Peter Zijlstra wrote:
+> On Mon, Oct 28, 2013 at 08:57:00AM +0000, Will Deacon wrote:
+> > > Should other architectures be updated to?  I just wanted to find out the 
+> > > rationale for this before I update the manpage to reflect the difference 
+> > > in behaviors between architectures.
 > > 
-> > flush_kernel_dcache_page() is expected to take a struct page pointer.
-> > This struct page pointer is part of the kernel's array of struct pages
-> > which identifies every single physical page under the control of the
-> > kernel.
-> > 
-> > Arguably, it should not crash if passed a page which has been allocated
-> > to the slab cache; as this is not a page cache page,
-> > flush_kernel_dcache_page() should merely ignore the call to it and
-> > simply return on these.  So this makes total sense:
+> > I don't want to be the `oddball' architecture (at least, not more than I am
+> > already :), but I do find it tricky to follow the required semantics of perf
+> > as opposed to `it happens to work this way', especially when so much of it
+> > is buried in the various arch backends. So if somebody using the thing on
+> > ARM has (what looks to me like) a valid issue, then I usually try and fix
+> > it.
 > 
-> In this respect, flush_kernel_dcache_page() is following
-> flush_dcache_page(). For example in crypto/scatterwalk.c:
-> 
-> static void scatterwalk_pagedone(struct scatter_walk *walk, int out,
->                                  unsigned int more)
-> {
->         if (out) {
->                 struct page *page;
-> 
->                 page = sg_page(walk->sg) + ((walk->offset - 1) >>
-> PAGE_SHIFT);
->                 if (!PageSlab(page))
->                         flush_dcache_page(page);
->         }
-> ... 
-> 
-> 
-> or in drivers/ata/libata-sff.c:
-> 
-> ...
->         if (!do_write && !PageSlab(page))
->                 flush_dcache_page(page);
-> ...
-> 
-> 
-> (Probably, both cases should have used
-> flush_kernel_dcache_page() in the first place). If we say that this
-> check belongs in flush_kernel_dcache_page() we should also put it
-> into flush_dcache_page(), no?
+> Hurmph.. at least raise the issue for the other archs.
 
-According to cachetlb.txt, flush_dcache_page() is only called on page
-cache pages, so this excludes the PageSlab() check.
+Yeah, sorry about that. I thought Stephane might take it forward (since he
+was on the perfmon thread I linked to) and I did CC you on the patch.
 
-For flush_kernel_dcache_page() it says "when the kernel modifies and
-user page" and my reading is that this applies to either page cache
-or anonymous pages but not slab pages, so I would add such check to the
-caller.
+While we're at it, there was another patch that I CC'd others on since it
+might be wanted by other architectures too: cb2d8b342aa0 ("ARM: 7698/1:
+perf: fix group validation when using enable_on_exec"). Basically, the
+patch ensures that events that are set to enable on exec are included in
+group validation, despite being in the OFF state at validation time.
 
--- 
-Catalin
+Any thoughts on that?
+
+Will
