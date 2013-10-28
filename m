@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351Ab3J1Rcz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 13:32:55 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:64859 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757333Ab3J1Rcx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 13:32:53 -0400
+	id S1757378Ab3J1RdZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 13:33:25 -0400
+Received: from mout.gmx.net ([212.227.17.21]:53529 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757353Ab3J1RdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 13:33:23 -0400
+From: =?UTF-8?q?Michael=20Dr=C3=BCing?= <michael@drueing.de>
+To: davem@davemloft.net
+Cc: andrew.hendry@gmail.com, linux-x25@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Michael=20Dr=C3=BCing?= <michael@drueing.de>
+Subject: [PATCH] net: x25: Fix dead URLs in Kconfig
+Date: Mon, 28 Oct 2013 18:33:12 +0100
+Message-Id: <1382981592-7449-1-git-send-email-michael@drueing.de>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-In-Reply-To: <526BF37E.8040801@intel.com>
-References: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com>
- <1381493941-4650-6-git-send-email-tianyu.lan@intel.com> <20131016235541.GD17866@google.com>
- <525F7F0F.5010306@intel.com> <CAErSpo7P+n5c2uUoodT=LOjE3UH3LBcjifbj8reXzAeWydsoLA@mail.gmail.com>
- <52612D1C.4070701@intel.com> <20131023223904.GA18454@google.com> <526BF37E.8040801@intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 28 Oct 2013 11:32:30 -0600
-Message-ID: <CAErSpo50_JQEhGOK6mcnaj36f6Fhgp3VcHKSmziC6JB_Ycu0Xg@mail.gmail.com>
-Subject: Re: [Resend PATCH 5/5] IA64/PCI/ACPI: Rework PCI root bridge ACPI
- resource conversion
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: Tony Luck <tony.luck@intel.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Yoknis, Mike" <mike.yoknis@hp.com>,
-        "Pearson, Greg" <greg.pearson@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:U79wRLShDuvgwHNZTlOZaqDAvzHc8n+zr/IChh0+p2gSWs7rMLj
+ rmT/KqRb1E2rJzkG6RL4B7X7kiKNkxd2Uce5+gVXf+pajLCo0m5yFex5iLycYNq8ueVUuqF
+ DMgftOk3Kvuphbomzp11U26ePba+Z82Zgxg1vR34dzUeGIxiB6K4KcBq+DJL5D3pXIc/X4S
+ 7sbCDa3tX3rmiAGqnkrwA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 26, 2013 at 10:53 AM, Lan Tianyu <tianyu.lan@intel.com> wrote:
-> On 10/24/2013 06:39 AM, Bjorn Helgaas wrote:
->> On Fri, Oct 18, 2013 at 08:44:12PM +0800, Lan Tianyu wrote:
->>>
->>> On 10/18/2013 04:33 AM, Bjorn Helgaas wrote:
+Update the URLs in the Kconfig file to the new pages at sangoma.com and cisco.com
 
->>>> I wonder if it would make sense to make
->>>> acpi_dev_resource_address_space() ignore addr.translation_offset for
->>>> IO resources.  Or maybe ignore it if the _TTP (type translation) bit
->>>> is set?
->>>
->>>
->>> I wonder why current code doesn't check _TTP? The code in the
->>> add_io_space() seems to think _TTP is always set, right?
->>
->> I think it's an oversight, and you should fix it.  I suggest that you
->> ignore the _TRA value when _TTP is set.  Obviously this only applies
->> to I/O port resources, since _TTP is only defined in the I/O Resource
->> Flag (Table 6-185 in ACPI 5.0 spec).
->
-> _TTP is also defined in the Memory Resource flag, Please have a look at
-> Table 6-184 in the ACPI 5.0 Spec.
+Signed-off-by: Michael Drüing <michael@drueing.de>
+---
+ net/x25/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Yes, you're right.  That would be for a host bridge that converts I/O
-on the primary (upstream) side of the bridge to memory on the PCI
-side.  I've never seen such a bridge, and I can't really imagine why
-anybody would do that.  But I guess you should be able to safely
-ignore _TRA when _TTP is set in either a MEM or IO descriptor, because
-the same reasoning should apply to both.
+diff --git a/net/x25/Kconfig b/net/x25/Kconfig
+index c959312c..e2fa133 100644
+--- a/net/x25/Kconfig
++++ b/net/x25/Kconfig
+@@ -16,8 +16,8 @@ config X25
+ 	  if you want that) and the lower level data link layer protocol LAPB
+ 	  (say Y to "LAPB Data Link Driver" below if you want that).
+ 
+-	  You can read more about X.25 at <http://www.sangoma.com/x25.htm> and
+-	  <http://www.cisco.com/univercd/cc/td/doc/product/software/ios11/cbook/cx25.htm>.
++	  You can read more about X.25 at <http://www.sangoma.com/tutorials/x25/> and
++	  <http://docwiki.cisco.com/wiki/X.25>.
+ 	  Information about X.25 for Linux is contained in the files
+ 	  <file:Documentation/networking/x25.txt> and
+ 	  <file:Documentation/networking/x25-iface.txt>.
+-- 
+1.8.3.1
 
-> I am not sure how to deal with _TTP unsetting io resource? _TTP unsetting
-> mean the resource is IO on the primary side and also IO on the secondary
-> side.
-
-If _TTP is not set, I guess you would apply _TRA.  That's what you
-already do for MEM descriptors, and think you should just do the same
-for IO descriptors.  I would guess that having _TTP = 0 and _TRA != 0
-is rare for IO descriptors, but I suppose it could happen.
-
-Bjorn
