@@ -1,57 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755756Ab3J1Jva (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 05:51:30 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:40971 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab3J1Jv3 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Mon, 28 Oct 2013 05:51:29 -0400
-Message-Id: <526E41AB02000078000FD2E4@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Mon, 28 Oct 2013 09:51:23 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Bjorn Helgaas" <bhelgaas@google.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "David Vrabel" <david.vrabel@citrix.com>, <Santosh.Jodh@citrix.com>,
-        <xhejtman@ics.muni.cz>, "xen-devel" <xen-devel@lists.xensource.com>,
-        <boris.ostrovsky@oracle.com>, <mukesh.rathor@oracle.com>,
-        <yuval.shaia@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [v1 1/2] xen/p2m: Create identity mappings for PFNs
- beyound E820 and PCI BARs
-References: <1382713401-4882-1-git-send-email-konrad.wilk@oracle.com>
- <1382713401-4882-2-git-send-email-konrad.wilk@oracle.com>
- <CAErSpo5_DspGSffEHOqq_G0U27OdvYbiFK3QcxiZVFeRpoMaPw@mail.gmail.com>
-In-Reply-To: <CAErSpo5_DspGSffEHOqq_G0U27OdvYbiFK3QcxiZVFeRpoMaPw@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1755879Ab3J1JwL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 05:52:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41447 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754376Ab3J1JwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 05:52:09 -0400
+Date: Mon, 28 Oct 2013 17:51:17 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.fedoraproject.org, kexec@lists.infradead.org
+Subject: Re: [patch 3/6] Cleanup efi_enter_virtual_mode function
+Message-ID: <20131028095117.GD25527@dhcp-16-126.nay.redhat.com>
+References: <20131027034713.481920209@dhcp-16-126.nay.redhat.com>
+ <20131027035923.081819853@dhcp-16-126.nay.redhat.com>
+ <20131028093206.GB4314@pd.tnic>
+ <20131028094049.GC25527@dhcp-16-126.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20131028094049.GC25527@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 26.10.13 at 00:08, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Fri, Oct 25, 2013 at 9:03 AM, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
->> +               unsigned long pfn, start, end, ok_pfns;
->> +               char bus_addr[64];
->> +               char *fmt;
->> +
->> +               if (!pci_resource_len(pci_dev, i))
->> +                       continue;
->> +
->> +               if (pci_resource_flags(pci_dev, i) == IORESOURCE_IO)
+On 10/28/13 at 05:40pm, Dave Young wrote:
+> On 10/28/13 at 10:32am, Borislav Petkov wrote:
+> > On Sun, Oct 27, 2013 at 11:47:16AM +0800, dyoung@redhat.com wrote:
+> > > Add two small functions:
+> > > efi_merge_regions and efi_map_regions, efi_enter_virtual_mode
+> > > calls them instead of embedding two long for loop.
+> > > 
+> > > Signed-off-by: Dave Young <dyoung@redhat.com>
+> > > ---
+> > >  arch/x86/platform/efi/efi.c |   83 +++++++++++++++++++++++++++-----------------
+> > >  1 file changed, 52 insertions(+), 31 deletions(-)
+> > > 
+> > > --- efi.orig/arch/x86/platform/efi/efi.c
+> > > +++ efi/arch/x86/platform/efi/efi.c
+> > > @@ -789,35 +789,13 @@ void __init old_map_region(efi_memory_de
+> > >  		pr_err("ioremap of 0x%llX failed!\n",
+> > >  		       (unsigned long long)md->phys_addr);
+> > >  }
+> > > -/*
+> > > - * This function will switch the EFI runtime services to virtual mode.
+> > > - * Essentially, look through the EFI memmap and map every region that
+> > > - * has the runtime attribute bit set in its memory descriptor and update
+> > > - * that memory descriptor with the virtual address obtained from ioremap().
+> > > - * This enables the runtime services to be called without having to
+> > > - * thunk back into physical mode for every invocation.
+> > > - */
+> > > -void __init efi_enter_virtual_mode(void)
+> > > -{
+> > > -	efi_memory_desc_t *md, *prev_md = NULL;
+> > > -	void *p, *new_memmap = NULL;
+> > > -	unsigned long size;
+> > > -	efi_status_t status;
+> > > -	u64 end, systab;
+> > > -	int count = 0;
+> > >  
+> > > -	efi.systab = NULL;
+> > > -
+> > > -	/*
+> > > -	 * We don't do virtual mode, since we don't do runtime services, on
+> > > -	 * non-native EFI
+> > > -	 */
+> > > -	if (!efi_is_native()) {
+> > > -		efi_unmap_memmap();
+> > > -		return;
+> > > -	}
+> > > +/* Merge contiguous regions of the same type and attribute */
+> > > +static void efi_merge_regions(void)
+> > > +{
+> > > +	void *p;
+> > > + 	efi_memory_desc_t *md, *prev_md = NULL;
+> > >  
+> > > -	/* Merge contiguous regions of the same type and attribute */
+> > >  	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+> > >  		u64 prev_size;
+> > >  		md = p;
+> > > @@ -844,6 +822,19 @@ void __init efi_enter_virtual_mode(void)
+> > >  		prev_md = md;
+> > >  
+> > >  	}
+> > > +}
+> > > +
+> > > +/*
+> > > + * Map efi memory ranges for runtime serivce
+> > > + * Return the new memmap with updated virtual addrresses.
+> > > + */
+> > > +void efi_map_regions(void **new_memmap, int *count)
+> > > +{
+> > > +	efi_memory_desc_t *md, *prev_md = NULL;
+> > 
+> > Applying: Cleanup efi_enter_virtual_mode function
+> > /home/boris/kernel/linux-2.6/.git/rebase-apply/patch:42: space before tab in indent.
+> >         efi_memory_desc_t *md, *prev_md = NULL;
+> > error: patch failed: arch/x86/platform/efi/efi.c:862
+> > error: arch/x86/platform/efi/efi.c: patch does not apply
+> > Patch failed at 0001 Cleanup efi_enter_virtual_mode function
+> > 
+> > And I know git can be a bit pickier than patch but it doesn't apply with patch
+> > either:
+> > 
+> > $ patch -p1 --dry-run -i .git/rebase-apply/patch
+> > checking file arch/x86/platform/efi/efi.c
+> > Hunk #3 FAILED at 853.
+> > 1 out of 3 hunks FAILED
+> > 
+> > For some reason, this patch doesn't apply and the .rej looks funny.
 > 
-> You probably want:
-> 
->     if (pci_resource_flags(pci_dev, i) & IORESOURCE_IO)
-> 
-> here.  And I don't understand what you're doing below, but my
-> impression is you only care about MEM regions, not IO regions, so it
-> seems like you might want to skip IO completely.
+> It's stange, but I did use git to generate patch, I use quilt instead.
+> Will have a try with git.
 
-Yes indeed.
-
-Jan
-
+It does have a warning, but it applied successfully, no idea though: 
+patches/02-efi-enter-virtual-mode-cleanup.patch
+Applying: Cleanup efi_enter_virtual_mode function
+/home/dave/git/efi/.git/rebase-apply/patch:42: space before tab in indent.
+ 	efi_memory_desc_t *md, *prev_md = NULL;
+warning: 1 line adds whitespace errors.
