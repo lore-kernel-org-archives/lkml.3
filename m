@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932176Ab3J1QfR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 12:35:17 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:40209 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932138Ab3J1QfN (ORCPT
+	id S932200Ab3J1Qfv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 12:35:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51465 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932138Ab3J1Qfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 12:35:13 -0400
-Date: Mon, 28 Oct 2013 12:35:09 -0400
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        bhelgaas@google.com
-Subject: Re: Subject: [PATCHSET driver-core-next] sysfs: separate out kernfs,
- part #1
-Message-ID: <20131028163509.GG13548@mtj.dyndns.org>
-References: <1382629780-10006-1-git-send-email-tj@kernel.org>
- <20131028130654.GD13548@mtj.dyndns.org>
+	Mon, 28 Oct 2013 12:35:50 -0400
+Date: Mon, 28 Oct 2013 09:35:49 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sysfs: return correct error code on unimplemented mmap()
+Message-ID: <20131028163549.GC4797@kroah.com>
+References: <1382977710-1966-1-git-send-email-vladimir_zapolskiy@mentor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131028130654.GD13548@mtj.dyndns.org>
+In-Reply-To: <1382977710-1966-1-git-send-email-vladimir_zapolskiy@mentor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 09:06:54AM -0400, Tejun Heo wrote:
-> Hello, guys.
+On Mon, Oct 28, 2013 at 06:28:30PM +0200, Vladimir Zapolskiy wrote:
+> Both POSIX.1-2008 and Linux Programmer's Manual have a dedicated return
+> error code for a case, when a file doesn't support mmap(), it's ENODEV.
 > 
-> Just posted updated patches incorporating Pavel's suggestions.  Only
-> the patches which need to be updated are reposted.  The whole series
-> can be found in the following branch.  It's based on top of today's
-> driver-core-next 6fffcfa7c0fc ("devres: restore zeroing behavior of
-> devres_alloc()").
+> This change replaces overloaded EINVAL with ENODEV in a situation
+> described above for sysfs binary files.
 > 
->   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-separate-out-kernfs
+> Signed-off-by: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Updated again to reflect bug report from Fengguang.  The git tree has
-been updated accordingly.  Please give me a holler if someone wants
-the whole series to be reposted.
+Is this a problem in linux-next or 3.12-rc7 and older kernels?  What
+userspace tool is breaking here?
 
-Thanks.
+thanks,
 
--- 
-tejun
+greg k-h
