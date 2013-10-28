@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756997Ab3J1Otl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 10:49:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51238 "EHLO
+	id S932440Ab3J1OzN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:55:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51232 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756978Ab3J1Oti (ORCPT
+	with ESMTP id S1756969Ab3J1Oth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:49:38 -0400
+	Mon, 28 Oct 2013 10:49:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Marcelo Ricardo Leitner <mleitner@redhat.com>,
-        Jiri Pirko <jiri@resnulli.us>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 46/64] ipv6: restrict neighbor entry creation to output flow
-Date: Mon, 28 Oct 2013 14:48:05 +0000
-Message-Id: <1382971703-17393-47-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 45/64] can: dev: fix nlmsg size calculation in can_get_size()
+Date: Mon, 28 Oct 2013 14:48:04 +0000
+Message-Id: <1382971703-17393-46-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
 References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
@@ -29,96 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcelo Ricardo Leitner <mleitner@redhat.com>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-This patch is based on 3.2.y branch, the one used by reporter. Please let me
-know if it should be different. Thanks.
+commit fe119a05f8ca481623a8d02efcc984332e612528 upstream.
 
-The patch which introduced the regression was applied on stables:
-3.0.64 3.4.31 3.7.8 3.2.39
+This patch fixes the calculation of the nlmsg size, by adding the missing
+nla_total_size().
 
-The patch which introduced the regression was for stable trees only.
-
----8<---
-
-Commit 0d6a77079c475033cb622c07c5a880b392ef664e "ipv6: do not create
-neighbor entries for local delivery" introduced a regression on
-which routes to local delivery would not work anymore. Like this:
-
-    $ ip -6 route add local 2001::/64 dev lo
-    $ ping6 -c1 2001::9
-    PING 2001::9(2001::9) 56 data bytes
-    ping: sendmsg: Invalid argument
-
-As this is a local delivery, that commit would not allow the creation of a
-neighbor entry and thus the packet cannot be sent.
-
-But as TPROXY scenario actually needs to avoid the neighbor entry creation only
-for input flow, this patch now limits previous patch to input flow, keeping
-output as before that patch.
-
-Reported-by: Debabrata Banerjee <dbavatar@gmail.com>
-Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-CC: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv6/route.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/net/can/dev.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index 8253206..9659bd9 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -818,7 +818,7 @@ static struct rt6_info *rt6_alloc_clone(struct rt6_info *ort,
+diff --git a/drivers/net/can/dev.c b/drivers/net/can/dev.c
+index 4972609..ffda218 100644
+--- a/drivers/net/can/dev.c
++++ b/drivers/net/can/dev.c
+@@ -665,14 +665,14 @@ static size_t can_get_size(const struct net_device *dev)
+ 	size_t size;
+ 
+ 	size = nla_total_size(sizeof(u32));   /* IFLA_CAN_STATE */
+-	size += sizeof(struct can_ctrlmode);  /* IFLA_CAN_CTRLMODE */
++	size += nla_total_size(sizeof(struct can_ctrlmode));  /* IFLA_CAN_CTRLMODE */
+ 	size += nla_total_size(sizeof(u32));  /* IFLA_CAN_RESTART_MS */
+-	size += sizeof(struct can_bittiming); /* IFLA_CAN_BITTIMING */
+-	size += sizeof(struct can_clock);     /* IFLA_CAN_CLOCK */
++	size += nla_total_size(sizeof(struct can_bittiming)); /* IFLA_CAN_BITTIMING */
++	size += nla_total_size(sizeof(struct can_clock));     /* IFLA_CAN_CLOCK */
+ 	if (priv->do_get_berr_counter)        /* IFLA_CAN_BERR_COUNTER */
+-		size += sizeof(struct can_berr_counter);
++		size += nla_total_size(sizeof(struct can_berr_counter));
+ 	if (priv->bittiming_const)	      /* IFLA_CAN_BITTIMING_CONST */
+-		size += sizeof(struct can_bittiming_const);
++		size += nla_total_size(sizeof(struct can_bittiming_const));
+ 
+ 	return size;
  }
- 
- static struct rt6_info *ip6_pol_route(struct net *net, struct fib6_table *table, int oif,
--				      struct flowi6 *fl6, int flags)
-+				      struct flowi6 *fl6, int flags, bool input)
- {
- 	struct fib6_node *fn;
- 	struct rt6_info *rt, *nrt;
-@@ -826,8 +826,11 @@ static struct rt6_info *ip6_pol_route(struct net *net, struct fib6_table *table,
- 	int attempts = 3;
- 	int err;
- 	int reachable = net->ipv6.devconf_all->forwarding ? 0 : RT6_LOOKUP_F_REACHABLE;
-+	int local = RTF_NONEXTHOP;
- 
- 	strict |= flags & RT6_LOOKUP_F_IFACE;
-+	if (input)
-+		local |= RTF_LOCAL;
- 
- relookup:
- 	read_lock_bh(&table->tb6_lock);
-@@ -847,7 +850,7 @@ restart:
- 	read_unlock_bh(&table->tb6_lock);
- 
- 	if (!dst_get_neighbour_noref_raw(&rt->dst) &&
--	    !(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_LOCAL)))
-+	    !(rt->rt6i_flags & local))
- 		nrt = rt6_alloc_cow(rt, &fl6->daddr, &fl6->saddr);
- 	else if (!(rt->dst.flags & DST_HOST))
- 		nrt = rt6_alloc_clone(rt, &fl6->daddr);
-@@ -891,7 +894,7 @@ out2:
- static struct rt6_info *ip6_pol_route_input(struct net *net, struct fib6_table *table,
- 					    struct flowi6 *fl6, int flags)
- {
--	return ip6_pol_route(net, table, fl6->flowi6_iif, fl6, flags);
-+	return ip6_pol_route(net, table, fl6->flowi6_iif, fl6, flags, true);
- }
- 
- static struct dst_entry *ip6_route_input_lookup(struct net *net,
-@@ -924,7 +927,7 @@ void ip6_route_input(struct sk_buff *skb)
- static struct rt6_info *ip6_pol_route_output(struct net *net, struct fib6_table *table,
- 					     struct flowi6 *fl6, int flags)
- {
--	return ip6_pol_route(net, table, fl6->flowi6_oif, fl6, flags);
-+	return ip6_pol_route(net, table, fl6->flowi6_oif, fl6, flags, false);
- }
- 
- struct dst_entry * ip6_route_output(struct net *net, const struct sock *sk,
 -- 
 1.8.3.2
 
