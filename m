@@ -1,101 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab3J1BI4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 21:08:56 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54181 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754139Ab3J1BIz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 21:08:55 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH] ACPI / processor: Do not request ACPI cpufreq module directly
-Date: Mon, 28 Oct 2013 02:21 +0100
-Message-ID: <2252332.6pcuA4s7xa@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+	id S1755341Ab3J1BTP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 21:19:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755174Ab3J1BTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Oct 2013 21:19:14 -0400
+Date: Mon, 28 Oct 2013 09:18:24 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.fedoraproject.org, kexec@lists.infradead.org
+Subject: Re: [patch 2/6] x86 efi: reserve boot service fix
+Message-ID: <20131028011824.GD4397@dhcp-16-126.nay.redhat.com>
+References: <20131027034713.481920209@dhcp-16-126.nay.redhat.com>
+ <20131027035922.924386710@dhcp-16-126.nay.redhat.com>
+ <20131027105009.GA21868@pd.tnic>
+ <20131027203058.GE1982@console-pimps.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131027203058.GE1982@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On 10/27/13 at 08:30pm, Matt Fleming wrote:
+> On Sun, 27 Oct, at 11:50:09AM, Borislav Petkov wrote:
+> > On Sun, Oct 27, 2013 at 11:47:15AM +0800, dyoung@redhat.com wrote:
+> > > Current code check boot service region with kernel text region by: 
+> > > start+size >= __pa_symbol(_text)
+> > > The end of the above region should be start + size - 1 instead.
+> > > 
+> > > I see this problem in ovmf + Fedora 19 grub boot:
+> > > text start: 1000000 md start: 800000 md size: 800000
+> > > 
+> > > Signed-off-by: Dave Young <dyoung@redhat.com>
+> > 
+> > Acked-by: Borislav Petkov <bp@suse.de>
+> > 
+> > Btw, Matt, this being a bugfix and all, shouldn't it be tagged for
+> > stable?
+> 
+> Well that depends. Dave, am I correct in thinking that you only noticed
+> this bug when writing kexec support? I'm inclined not to bother with a
+> stable tag if no one has ever noticed any fallout from this bug until
+> now.
 
-Function acpi_processor_load_module() used by the ACPI processor
-driver can only really work if the acpi-cpufreq module is available
-when acpi_processor_start() is executed which usually is not the case
-for systems loading the processor driver module from an initramfs.
-
-Moreover, that used to be a hackish workaround for module autoloading
-issues, but udev loads acpi-cpufreq just fine nowadays, so that
-function isn't really necessary any more.  For this reason, drop
-acpi_processor_load_module() entirely.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/processor_driver.c  |    1 -
- drivers/acpi/processor_perflib.c |   22 ----------------------
- include/acpi/processor.h         |    1 -
- 3 files changed, 24 deletions(-)
-
-Index: linux-pm/drivers/acpi/processor_driver.c
-===================================================================
---- linux-pm.orig/drivers/acpi/processor_driver.c
-+++ linux-pm/drivers/acpi/processor_driver.c
-@@ -171,7 +171,6 @@ static int __acpi_processor_start(struct
- 
- #ifdef CONFIG_CPU_FREQ
- 	acpi_processor_ppc_has_changed(pr, 0);
--	acpi_processor_load_module(pr);
- #endif
- 	acpi_processor_get_throttling_info(pr);
- 
-Index: linux-pm/drivers/acpi/processor_perflib.c
-===================================================================
---- linux-pm.orig/drivers/acpi/processor_perflib.c
-+++ linux-pm/drivers/acpi/processor_perflib.c
-@@ -235,28 +235,6 @@ void acpi_processor_ppc_exit(void)
- 	acpi_processor_ppc_status &= ~PPC_REGISTERED;
- }
- 
--/*
-- * Do a quick check if the systems looks like it should use ACPI
-- * cpufreq. We look at a _PCT method being available, but don't
-- * do a whole lot of sanity checks.
-- */
--void acpi_processor_load_module(struct acpi_processor *pr)
--{
--	static int requested;
--	acpi_status status = 0;
--	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
--
--	if (!arch_has_acpi_pdc() || requested)
--		return;
--	status = acpi_evaluate_object(pr->handle, "_PCT", NULL, &buffer);
--	if (!ACPI_FAILURE(status)) {
--		printk(KERN_INFO PREFIX "Requesting acpi_cpufreq\n");
--		request_module_nowait("acpi_cpufreq");
--		requested = 1;
--	}
--	kfree(buffer.pointer);
--}
--
- static int acpi_processor_get_performance_control(struct acpi_processor *pr)
- {
- 	int result = 0;
-Index: linux-pm/include/acpi/processor.h
-===================================================================
---- linux-pm.orig/include/acpi/processor.h
-+++ linux-pm/include/acpi/processor.h
-@@ -225,7 +225,6 @@ struct acpi_processor_errata {
- 	} piix4;
- };
- 
--extern void acpi_processor_load_module(struct acpi_processor *pr);
- extern int acpi_processor_preregister_performance(struct
- 						  acpi_processor_performance
- 						  __percpu *performance);
-
+There should be some people see below message with non-kexec kernel:
+"Could not reserve boot range ..."
+But it's hard for them to notice the bad functionality because it's only
+one mem range which might be not the boot range what SetVirtualAddressMap need
