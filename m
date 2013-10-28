@@ -1,115 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab3J1KBR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 06:01:17 -0400
-Received: from david.siemens.de ([192.35.17.14]:29078 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755849Ab3J1KBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 06:01:13 -0400
-From: Jan Kiszka <jan.kiszka@Siemens.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Fenghua Yu <fenghua.yu@intel.com>, Kay Sievers <kay@vrfy.org>,
-        linux-doc@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Rob Landley <rob@landley.net>, sparclinux@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>
-Subject: [PATCH v6 00/21] Add gdb python scripts as kernel debugging helpers
-Date: Mon, 28 Oct 2013 09:58:37 +0100
-Message-Id: <cover.1382950737.git.jan.kiszka@siemens.com>
-X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
+	id S1756032Ab3J1KA5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 06:00:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46770 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755993Ab3J1KA4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 06:00:56 -0400
+Date: Mon, 28 Oct 2013 11:00:49 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Vince Weaver <vincent.weaver@maine.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: perf: PERF_EVENT_IOC_PERIOD on ARM vs everywhere else
+Message-ID: <20131028100049.GK19466@laptop.lan>
+References: <alpine.DEB.2.10.1310272233120.12721@vincent-weaver-1.um.maine.edu>
+ <20131028085700.GB20218@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131028085700.GB20218@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's been a while since my last update of these patches. This one is
-mostly about cleaning up and making some details more convenient:
- - proper registration of module data segments to access module
-   variables - this obsoletes lx_modvar again
- - stable breakpoint target on do_init_module in order to track module
-   loading more reliably from the debugger
- - internal refactoring with the aim to "pythonize" the scripts (credits
-   for all valuable suggestions belong to Tatiana, many thanks, for
-   improper implementations to me)
+On Mon, Oct 28, 2013 at 08:57:00AM +0000, Will Deacon wrote:
+> > Should other architectures be updated to?  I just wanted to find out the 
+> > rationale for this before I update the manpage to reflect the difference 
+> > in behaviors between architectures.
+> 
+> I don't want to be the `oddball' architecture (at least, not more than I am
+> already :), but I do find it tricky to follow the required semantics of perf
+> as opposed to `it happens to work this way', especially when so much of it
+> is buried in the various arch backends. So if somebody using the thing on
+> ARM has (what looks to me like) a valid issue, then I usually try and fix
+> it.
 
-See http://lkml.indiana.edu/hypermail/linux/kernel/1210.0/01598.html for
-the original description and
-
-    git://git.kiszka.org/linux.git queues/gdb-scripts
-
-for the latest version.
-
-Jan
-
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Fenghua Yu <fenghua.yu@intel.com>
-CC: Kay Sievers <kay@vrfy.org>
-CC: linux-doc@vger.kernel.org
-CC: linux-ia64@vger.kernel.org
-CC: linux-kbuild@vger.kernel.org
-CC: Michal Marek <mmarek@suse.cz>
-CC: Rob Landley <rob@landley.net>
-CC: sparclinux@vger.kernel.org
-CC: Tony Luck <tony.luck@intel.com>
-
-Jan Kiszka (21):
-  scripts/gdb: Add infrastructure
-  scripts/gdb: Add cache for type objects
-  scripts/gdb: Add container_of helper and convenience function
-  scripts/gdb: Add module iteration class
-  scripts/gdb: Add lx-symbols command
-  module: Do not inline do_init_module
-  scripts/gdb: Add automatic symbol reloading on module insertion
-  scripts/gdb: Add internal helper and convenience function to look up a
-    module
-  scripts/gdb: Add get_target_endianness helper
-  scripts/gdb: Add read_u16/32/64 helpers
-  scripts/gdb: Add lx-dmesg command
-  scripts/gdb: Add task iteration class
-  scripts/gdb: Add helper and convenience function to look up tasks
-  scripts/gdb: Add is_target_arch helper
-  scripts/gdb: Add internal helper and convenience function to retrieve
-    thread_info
-  scripts/gdb: Add get_gdbserver_type helper
-  scripts/gdb: Add internal helper and convenience function for per-cpu
-    lookup
-  scripts/gdb: Add lx_current convenience function
-  scripts/gdb: Add class to iterate over CPU masks
-  scripts/gdb: Add lx-lsmod command
-  scripts/gdb: Add basic documentation
-
- Documentation/gdb-kernel-debugging.txt | 159 +++++++++++++++++++++++++++++++
- Makefile                               |   5 +-
- kernel/module.c                        |   9 +-
- scripts/Makefile                       |   3 +-
- scripts/gdb/Makefile                   |  11 +++
- scripts/gdb/linux/Makefile             |   9 ++
- scripts/gdb/linux/__init__.py          |   0
- scripts/gdb/linux/cpus.py              | 139 +++++++++++++++++++++++++++
- scripts/gdb/linux/dmesg.py             |  64 +++++++++++++
- scripts/gdb/linux/modules.py           | 111 ++++++++++++++++++++++
- scripts/gdb/linux/symbols.py           | 166 +++++++++++++++++++++++++++++++++
- scripts/gdb/linux/tasks.py             | 108 +++++++++++++++++++++
- scripts/gdb/linux/utils.py             | 156 +++++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py             |  30 ++++++
- 14 files changed, 966 insertions(+), 4 deletions(-)
- create mode 100644 Documentation/gdb-kernel-debugging.txt
- create mode 100644 scripts/gdb/Makefile
- create mode 100644 scripts/gdb/linux/Makefile
- create mode 100644 scripts/gdb/linux/__init__.py
- create mode 100644 scripts/gdb/linux/cpus.py
- create mode 100644 scripts/gdb/linux/dmesg.py
- create mode 100644 scripts/gdb/linux/modules.py
- create mode 100644 scripts/gdb/linux/symbols.py
- create mode 100644 scripts/gdb/linux/tasks.py
- create mode 100644 scripts/gdb/linux/utils.py
- create mode 100644 scripts/gdb/vmlinux-gdb.py
-
--- 
-1.8.1.1.298.ge7eed54
-
+Hurmph.. at least raise the issue for the other archs.
