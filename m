@@ -1,376 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756405Ab3J1MGi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 08:06:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43430 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755545Ab3J1MGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 08:06:36 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, tigran@aivazian.fsnet.co.uk,
-        x86@kernel.org, hmh@hmh.eng.br, andi@firstfloor.org
-Subject: [PATCH] x86, microcode, Fix long microcode load time when firmware file is missing [v2]
-Date: Mon, 28 Oct 2013 08:06:08 -0400
-Message-Id: <1382961968-20067-1-git-send-email-prarit@redhat.com>
+	id S1756176Ab3J1MMu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 08:12:50 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:38036 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754133Ab3J1MMt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 08:12:49 -0400
+Message-ID: <526E54BA.4040507@hitachi.com>
+Date: Mon, 28 Oct 2013 21:12:42 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZQ==?= =?UTF-8?B?aXNiZWNrZXI=?= 
+	<fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: Re: ktap inclusion in drivers/staging/?
+References: <20131024075813.GA26929@gmail.com> <CAGdX0WFu=sxWUckkZiUQMTxo_tOFbxX-paqU2p_5YR8NaN6gSA@mail.gmail.com> <20131025101511.GB3439@gmail.com> <CAGdX0WGrGbb-eJvS4HHg9umk7X3-vrzyrJCuhAJrfGvOriKHSQ@mail.gmail.com> <20131026085955.GD14237@gmail.com>
+In-Reply-To: <20131026085955.GD14237@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If no firmware is found on the system that matches the processor, the
-microcode module can take hours to load.  For example on recent kernels
-when loading the microcode module on an Intel system:
+(2013/10/26 17:59), Ingo Molnar wrote:
+> 
+> * Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
+> 
+>> Thanks. An addition question I want to discuss in here is the ktap 
+>> code structure layout in first patch series, this don't need to 
+>> dig out any ktap design detail, so we can make agreement on this 
+>> point, and ease for me to prepare patch series.
+>>
+>> Do I need to prepare patchset target on staging tree or "real" 
+>> part of kernel? [...]
+> 
+> I'd suggest adding it to the core, i.e. kernel/tracing/ and 
+> kernel/trace/trace_events_filter.c in particular which includes the 
+> current filter script interpreter.
 
-[  239.532116] microcode: CPU0 sig=0x306e4, pf=0x1, revision=0x413
-[  299.693447] microcode: CPU1 sig=0x306e4, pf=0x1, revision=0x413
-[  359.821972] microcode: CPU2 sig=0x306e4, pf=0x1, revision=0x413
-[  419.960263] microcode: CPU3 sig=0x306e4, pf=0x1, revision=0x413
-[  480.090024] microcode: CPU4 sig=0x306e4, pf=0x1, revision=0x413
-...
-[ 2825.151364] microcode: CPU43 sig=0x306e4, pf=0x1, revision=0x413
-[ 2885.280863] microcode: CPU44 sig=0x306e4, pf=0x1, revision=0x413
-[ 2945.410719] microcode: CPU45 sig=0x306e4, pf=0x1, revision=0x413
-[ 3005.540541] microcode: CPU46 sig=0x306e4, pf=0x1, revision=0x413
-[ 3065.670405] microcode: CPU47 sig=0x306e4, pf=0x1, revision=0x413
-...
-etc.
+It means we'll need to put Lua compiler in the kernel...
+I just recommend to put the ktap *on* the ftrace or perf. Not directly
+integrate it. Bytecode interpreter is good, limited fomula parser is also
+good, but IMHO, integrating complete lua compiler into the kernel looks
+crazy.
+I think it is just enough to include lua compiler as a tool in the kernel.
 
-Similarly there is a 60 second "hang" when loading the AMD module, which
-isn't as bad as the Intel situation.  This is because the AMD microcode
-loader only attempts to look for the firmware on the boot_cpu and, if
-found, loads the microcode on each cpu.  This patch does the same for the
-Intel microcode, and it obviously peeds up the module load if there is no
-microcode update available.
+> (Please also make sure that the Lua copyright notices get carried 
+> over properly.)
+> 
+>> [...] If target on driver/staging/ktap, then kernel code and 
+>> userspace code still need to locate at same directory, that many 
+>> people may don't like it.
+>>
+>> Target on "real" part kernel? - include/trace/ktap (header file 
+>> common used by interpreter and userspace compiler) - 
+>> kernel/trace/ktap (interpreter code, ktapvm, pure kernel module) - 
+>> tools/perf/ktap?(userspace compiler code)
+>>   As I also agree integrating ktap and perf together, two 
+>>   subsystem can share many codes, so it's better putting ktap 
+>>   userspace into perf directory.
+> 
+> Once there's a more split-out submission it will be easier to see 
+> what belongs where. I agree with Pekka that for the user the UI 
+> should be integrated and obvious.
 
-After making this change, the old microcode loading code and the new
-loading code can be cleaned up and unified in the core code.
+But, what about perf script ? :)
+ktap is for online scripting and perf-script is for offline scripting,
+so both are worth to have, I think.
 
-This patch was tested on several systems (both AMD and Intel) with the
-microcode in place and without, as well as on several different OSes.
+> I'd also like there to be a natural 'extract the script' 
+> functionality from an installed tap script. This gives more 
+> flexibiliy and improves security as well: no hidden, binary-only 
+> crap, every script installed on a running system should be 
+> extractable in source form, should be reviewable and modifiable.
+> 
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: tigran@aivazian.fsnet.co.uk
-Cc: x86@kernel.org
-Cc: hmh@hmh.eng.br
-Cc: andi@firstfloor.org
+Would you mean the bytecode should be decodable? or loaded with
+source code in the kernel?
 
-v2: Update for Andi's and Henrique's comments.
+Thank you,
 
----
- arch/x86/kernel/microcode_core.c  | 142 +++++++++++++++++---------------------
- arch/x86/kernel/microcode_intel.c |  33 +++++++--
- 2 files changed, 91 insertions(+), 84 deletions(-)
-
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-index 15c9876..608b1bd 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -180,30 +180,57 @@ static int apply_microcode_on_target(int cpu)
- 	return ret;
- }
- 
--#ifdef CONFIG_MICROCODE_OLD_INTERFACE
--static int do_microcode_update(const void __user *buf, size_t size)
-+/* fake device for request_firmware */
-+static struct platform_device	*microcode_pdev;
-+
-+static int do_microcode_update(bool user, const void __user *buf, size_t size)
- {
--	int error = 0;
--	int cpu;
-+	enum ucode_state ustate;
-+	int boot_cpu = boot_cpu_data.cpu_index;
-+	int cpu, ret;
-+
-+	get_online_cpus();
-+	mutex_lock(&microcode_mutex);
-+
-+	if (user)
-+		ustate = microcode_ops->request_microcode_user(boot_cpu,
-+							       buf, size);
-+	else
-+		ustate = microcode_ops->request_microcode_fw(boot_cpu,
-+							   &microcode_pdev->dev,
-+							     true);
-+	if (ustate == UCODE_ERROR) {
-+		pr_warn("Error firmware request failed\n");
-+		ret = -EINVAL;
-+		goto out;
-+	}
- 
- 	for_each_online_cpu(cpu) {
--		struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
--		enum ucode_state ustate;
--
--		if (!uci->valid)
--			continue;
--
--		ustate = microcode_ops->request_microcode_user(cpu, buf, size);
--		if (ustate == UCODE_ERROR) {
--			error = -1;
--			break;
--		} else if (ustate == UCODE_OK)
--			apply_microcode_on_target(cpu);
-+		ret = collect_cpu_info(cpu);
-+		if (ret) {
-+			pr_warn("Error collecting info on CPU %d\n", cpu);
-+			ret = -ENODEV;
-+			goto out;
-+		}
-+
-+		ret = apply_microcode_on_target(cpu);
-+		if (ret) {
-+			pr_warn("Error reloading microcode on CPU %d\n", cpu);
-+			ret = -EINVAL;
-+			goto out;
-+		}
- 	}
- 
--	return error;
-+	perf_check_microcode();
-+out:
-+	mutex_unlock(&microcode_mutex);
-+	put_online_cpus();
-+
-+	return ret;
- }
- 
-+#ifdef CONFIG_MICROCODE_OLD_INTERFACE
-+
- static int microcode_open(struct inode *inode, struct file *file)
- {
- 	return capable(CAP_SYS_RAWIO) ? nonseekable_open(inode, file) : -EPERM;
-@@ -219,18 +246,10 @@ static ssize_t microcode_write(struct file *file, const char __user *buf,
- 		return ret;
- 	}
- 
--	get_online_cpus();
--	mutex_lock(&microcode_mutex);
--
--	if (do_microcode_update(buf, len) == 0)
-+	ret = do_microcode_update(true, buf, len);
-+	if (!ret)
- 		ret = (ssize_t)len;
- 
--	if (ret > 0)
--		perf_check_microcode();
--
--	mutex_unlock(&microcode_mutex);
--	put_online_cpus();
--
- 	return ret;
- }
- 
-@@ -273,34 +292,12 @@ MODULE_ALIAS("devname:cpu/microcode");
- #define microcode_dev_exit()	do { } while (0)
- #endif
- 
--/* fake device for request_firmware */
--static struct platform_device	*microcode_pdev;
--
--static int reload_for_cpu(int cpu)
--{
--	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
--	enum ucode_state ustate;
--	int err = 0;
--
--	if (!uci->valid)
--		return err;
--
--	ustate = microcode_ops->request_microcode_fw(cpu, &microcode_pdev->dev, true);
--	if (ustate == UCODE_OK)
--		apply_microcode_on_target(cpu);
--	else
--		if (ustate == UCODE_ERROR)
--			err = -EINVAL;
--	return err;
--}
--
- static ssize_t reload_store(struct device *dev,
- 			    struct device_attribute *attr,
- 			    const char *buf, size_t size)
- {
- 	unsigned long val;
--	int cpu;
--	ssize_t ret = 0, tmp_ret;
-+	ssize_t ret;
- 
- 	ret = kstrtoul(buf, 0, &val);
- 	if (ret)
-@@ -309,22 +306,7 @@ static ssize_t reload_store(struct device *dev,
- 	if (val != 1)
- 		return size;
- 
--	get_online_cpus();
--	mutex_lock(&microcode_mutex);
--	for_each_online_cpu(cpu) {
--		tmp_ret = reload_for_cpu(cpu);
--		if (tmp_ret != 0)
--			pr_warn("Error reloading microcode on CPU %d\n", cpu);
--
--		/* save retval of the first encountered reload error */
--		if (!ret)
--			ret = tmp_ret;
--	}
--	if (!ret)
--		perf_check_microcode();
--	mutex_unlock(&microcode_mutex);
--	put_online_cpus();
--
-+	ret = do_microcode_update(false, NULL, 0);
- 	if (!ret)
- 		ret = size;
- 
-@@ -380,26 +362,32 @@ static enum ucode_state microcode_resume_cpu(int cpu)
- static enum ucode_state microcode_init_cpu(int cpu, bool refresh_fw)
- {
- 	enum ucode_state ustate;
--	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
--
--	if (uci && uci->valid)
--		return UCODE_OK;
--
--	if (collect_cpu_info(cpu))
--		return UCODE_ERROR;
-+	int ret;
- 
- 	/* --dimm. Trigger a delayed update? */
- 	if (system_state != SYSTEM_RUNNING)
- 		return UCODE_NFOUND;
- 
-+	ret = collect_cpu_info(cpu);
-+	if (ret) {
-+		pr_warn("Error collecting info on CPU %d\n", cpu);
-+		return UCODE_ERROR;
-+	}
-+
- 	ustate = microcode_ops->request_microcode_fw(cpu, &microcode_pdev->dev,
- 						     refresh_fw);
--
--	if (ustate == UCODE_OK) {
--		pr_debug("CPU%d updated upon init\n", cpu);
--		apply_microcode_on_target(cpu);
-+	if (ustate == UCODE_NFOUND) {
-+		pr_info("Processor microcode update not found\n");
-+		return ustate;
- 	}
- 
-+	if (ustate != UCODE_OK)
-+		pr_warn("Error microcode request failed on CPU %d\n", cpu);
-+
-+	ret = apply_microcode_on_target(cpu);
-+	if (ret)
-+		pr_warn("Error applying microcode on CPU %d\n", cpu);
-+
- 	return ustate;
- }
- 
-diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcode_intel.c
-index 5fb2ceb..f39b677 100644
---- a/arch/x86/kernel/microcode_intel.c
-+++ b/arch/x86/kernel/microcode_intel.c
-@@ -87,9 +87,12 @@ MODULE_DESCRIPTION("Microcode Update Driver");
- MODULE_AUTHOR("Tigran Aivazian <tigran@aivazian.fsnet.co.uk>");
- MODULE_LICENSE("GPL");
- 
-+static void *master_mc; /* global copy of the microcode */
-+
- static int collect_cpu_info(int cpu_num, struct cpu_signature *csig)
- {
- 	struct cpuinfo_x86 *c = &cpu_data(cpu_num);
-+	struct ucode_cpu_info *uci = ucode_cpu_info + cpu_num;
- 	unsigned int val[2];
- 
- 	memset(csig, 0, sizeof(*csig));
-@@ -102,9 +105,10 @@ static int collect_cpu_info(int cpu_num, struct cpu_signature *csig)
- 		csig->pf = 1 << ((val[1] >> 18) & 7);
- 	}
- 
-+	if (master_mc)
-+		uci->mc = master_mc;
-+
- 	csig->rev = c->microcode;
--	pr_info("CPU%d sig=0x%x, pf=0x%x, revision=0x%x\n",
--		cpu_num, csig->sig, csig->pf, csig->rev);
- 
- 	return 0;
- }
-@@ -124,6 +128,9 @@ static int get_matching_mc(struct microcode_intel *mc_intel, int cpu)
- 	cpf = cpu_sig.pf;
- 	crev = cpu_sig.rev;
- 
-+	pr_info("CPU%d sig=0x%x, pf=0x%x, revision=0x%x\n",
-+		cpu, csig, cpf, crev);
-+
- 	return get_matching_microcode(csig, cpf, mc_intel, crev);
- }
- 
-@@ -136,12 +143,12 @@ int apply_microcode(int cpu)
- 	struct cpuinfo_x86 *c = &cpu_data(cpu_num);
- 
- 	uci = ucode_cpu_info + cpu;
--	mc_intel = uci->mc;
-+	mc_intel = master_mc;
- 
- 	/* We should bind the task to the CPU */
- 	BUG_ON(cpu_num != cpu);
- 
--	if (mc_intel == NULL)
-+	if ((mc_intel == NULL) || (!uci->valid))
- 		return 0;
- 
- 	/*
-@@ -246,7 +253,8 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
- 	}
- 
- 	vfree(uci->mc);
--	uci->mc = (struct microcode_intel *)new_mc;
-+	master_mc = (struct microcode_intel *)new_mc;
-+	uci->mc = master_mc;
- 
- 	/*
- 	 * If early loading microcode is supported, save this mc into
-@@ -275,11 +283,14 @@ static enum ucode_state request_microcode_fw(int cpu, struct device *device,
- 	const struct firmware *firmware;
- 	enum ucode_state ret;
- 
-+	if (!refresh_fw || (c->cpu_index != boot_cpu_data.cpu_index))
-+		return UCODE_OK;
-+
- 	sprintf(name, "intel-ucode/%02x-%02x-%02x",
- 		c->x86, c->x86_model, c->x86_mask);
- 
- 	if (request_firmware(&firmware, name, device)) {
--		pr_debug("data file %s load failed\n", name);
-+		pr_warn("data file %s load failed\n", name);
- 		return UCODE_NFOUND;
- 	}
- 
-@@ -299,15 +310,23 @@ static int get_ucode_user(void *to, const void *from, size_t n)
- static enum ucode_state
- request_microcode_user(int cpu, const void __user *buf, size_t size)
- {
--	return generic_load_microcode(cpu, (void *)buf, size, &get_ucode_user);
-+	int boot_cpu = boot_cpu_data.cpu_index;
-+
-+	return generic_load_microcode(boot_cpu, (void *)buf, size,
-+				      &get_ucode_user);
- }
- 
- static void microcode_fini_cpu(int cpu)
- {
-+	struct cpuinfo_x86 *c = &cpu_data(cpu);
- 	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
- 
-+	if (c->cpu_index != boot_cpu_data.cpu_index)
-+		return;
-+
- 	vfree(uci->mc);
- 	uci->mc = NULL;
-+	master_mc = NULL;
- }
- 
- static struct microcode_ops microcode_intel_ops = {
 -- 
-1.8.3.1
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
