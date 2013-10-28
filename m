@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab3J1Iqp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 04:46:45 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41772 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998Ab3J1Iqn (ORCPT
+	id S1755784Ab3J1IrN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 04:47:13 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:58988 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755050Ab3J1IrL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 04:46:43 -0400
-Date: Mon, 28 Oct 2013 08:45:37 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Will Deacon <will.deacon@arm.com>,
-        Jean Pihet <jean.pihet@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: manual merge of the tip tree
-Message-ID: <20131028084537.GH16735@n2100.arm.linux.org.uk>
-References: <1382632289-18523-1-git-send-email-treding@nvidia.com> <1382706224-8859-1-git-send-email-treding@nvidia.com> <1382706224-8859-4-git-send-email-treding@nvidia.com> <20131025132553.GE9999@mudshark.cambridge.arm.com> <20131026084033.GA14237@gmail.com> <20131026140125.GA13424@mudshark.cambridge.arm.com> <20131027071237.GA448@gmail.com> <20131027100047.GY16735@n2100.arm.linux.org.uk> <20131028074716.GC6629@ulmo.nvidia.com>
+	Mon, 28 Oct 2013 04:47:11 -0400
+Date: Mon, 28 Oct 2013 09:47:07 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] locking fix
+Message-ID: <20131028084707.GA2981@gmail.com>
+References: <20131026121902.GA24890@gmail.com>
+ <CA+55aFwLwZ2SoqLdD9itnXrFJyS9szC+g4J01pLxHFgKYCvrog@mail.gmail.com>
+ <526D62D8.8050001@canonical.com>
+ <CA+55aFz3MLHcAFqF=WBwmHGQ+8+uU+Hd7avXt=P9L-ohv08bnw@mail.gmail.com>
+ <526D6B6D.2000605@canonical.com>
+ <CA+55aFz4Fd-dibRL0+VKxz3PhppasvqCU7E6ToW2AWfnsenP_w@mail.gmail.com>
+ <526D6FF9.9020003@canonical.com>
+ <CA+55aFyud32TExCVaL-k5dCPqrEBD9AZd-st6ooziwZCy9HZDg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131028074716.GC6629@ulmo.nvidia.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CA+55aFyud32TExCVaL-k5dCPqrEBD9AZd-st6ooziwZCy9HZDg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 08:47:22AM +0100, Thierry Reding wrote:
-> On Sun, Oct 27, 2013 at 10:00:48AM +0000, Russell King - ARM Linux wrote:
-> > On Sun, Oct 27, 2013 at 08:12:37AM +0100, Ingo Molnar wrote:
-> > > 
-> > > * Will Deacon <will.deacon@arm.com> wrote:
-> > > > In future, I'll push back on any perf changes outside of arch/ in my 
-> > > > tree, but that doesn't help us get out of the current situation: the 
-> > > > patches are currently sitting in rmk's tree for 3.13, so that won't meet 
-> > > > with -tip (outside of next) until Linus pulls them both. What can we do 
-> > > > about that?
-> > > 
-> > > Unless you guys want to do a revert I guess there's not much to do but to 
-> > > warn Linus in the ARM pull request that a conflict is coming up.
-> > 
-> > From Will's description, it sounded like this could be quite hairy to
-> > fix up, so I'd like to include the conflict resolution in the pull
-> > request so Linus has something to refer to if needed.  Could someone
-> > please forward me that?
-> 
-> Hi Russell,
-> 
-> I've attached the relevant parts of the resolution, although I'm not
-> sure if anybody's actually confirmed that it's correct.
 
-I'm not sure whether that can happen any time before -final - Will is
-(storm dependent) flying out to Linaro Connect today, and I've no idea
-who to turn to for this to be tested for ARM.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-I guess we have some time given that Linus has released -rc7 and his
-comments during the Kernel Summit/in the rc7 announcement.
+> On Sun, Oct 27, 2013 at 12:56 PM, Maarten Lankhorst
+> <maarten.lankhorst@canonical.com> wrote:
+> >
+> > And this is why ww_ctx == NULL is now passed as an inline 
+> > argument. :)
+> 
+> Well, more than that - the "optimization" has been done at the 
+> source code level, so that the behavior is no longer a matter 
+> about how well the compiler optimizes it any more.
+> 
+> I'm not complaining about the fix. I'm complaining about how the 
+> fix was claimed to be due to a compiler bug. The "documentation" 
+> for the fix (ie the commit message) was actively misleading.
+
+Agreed, there was quite a bit of back and forth and I genuinely got 
+confused and thought it's purely about a compiler bug (hence the 
+misleading pull request) - will watch out for that pattern better 
+next time around.
+
+Thanks,
+
+	Ingo
