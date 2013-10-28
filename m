@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756860Ab3J1PpY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 11:45:24 -0400
-Received: from mailout08.t-online.de ([194.25.134.20]:35610 "EHLO
-	mailout08.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756833Ab3J1PpW (ORCPT
+	id S1756887Ab3J1Ppr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 11:45:47 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:42470 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756698Ab3J1Ppp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 11:45:22 -0400
-Message-ID: <526E8685.3030200@t-online.de>
-Date: Mon, 28 Oct 2013 16:45:09 +0100
-From: Knut Petersen <Knut_Petersen@t-online.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 28 Oct 2013 11:45:45 -0400
+Date: Mon, 28 Oct 2013 10:45:41 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH trace-cmd 1/5] trace-cmd/listen: Remove use of
+ sighandler_t
+Message-ID: <20131028154541.GB18282@thinkpad-t410>
+Mail-Followup-To: Steven Rostedt <rostedt@goodmis.org>,
+	linux-kernel@vger.kernel.org
+References: <1382642074-15567-1-git-send-email-seth.forshee@canonical.com>
+ <1382642074-15567-2-git-send-email-seth.forshee@canonical.com>
+ <20131024203007.GB8006@thinkpad-t410>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_?= =?ISO-8859-1?Q?Weisbecker?= 
-	<fweisbec@gmail.com>,
-        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request during
- shutdown
-References: <525BD08C.2080101@t-online.de> <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com> <CA+55aFy7TpvkVuPEOJ7Qqirwap1gXoD1_MrYLhgPAYuVpN8u=w@mail.gmail.com> <alpine.DEB.2.02.1310251221310.5266@ionos.tec.linutronix.de> <CA+55aFxw1Hm4QVeEigkByP5RppSL30oHnLoR16C=henf-a=uFQ@mail.gmail.com> <20131026114303.GA24067@gmail.com> <526E79A2.9080303@t-online.de> <20131028150114.GA12905@gmail.com> <20131028151637.GA13251@gmail.com>
-In-Reply-To: <20131028151637.GA13251@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-ID: SUnKLiZXwhh+FxQ+Cu2AVPOPLwGsQ8Ay81sCe9EEF4NrmvauDqUA2csrRN6RMWgwX4
-X-TOI-MSGID: 207cfd85-36d1-4358-b1b1-74fb594a0999
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131024203007.GB8006@thinkpad-t410>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.10.2013 16:16, Ingo Molnar wrote:
-> * Ingo Molnar <mingo@kernel.org> wrote:
->
->>> I tried that patch, together with all the kobj debug options
->>> enabled. With that kernel configuration I was unable to
->>> reproduce the problem during 500 typical workload / reboot
->>> cycles. Without the debug options I was able to reproduce the
->>> last reported panic after 91 cycles. The debug options seem to
->>> change timing sufficiently to mask the bug ;-(
->> Could you send me the kernel config please?
-> I got your .config off-list, thanks Knut!
->
-> It has all DEBUG_OBJECT options enabled:
->
->   CONFIG_DEBUG_OBJECTS=y
->   # CONFIG_DEBUG_OBJECTS_SELFTEST is not set
->   CONFIG_DEBUG_OBJECTS_FREE=y
->   CONFIG_DEBUG_OBJECTS_TIMERS=y
->   CONFIG_DEBUG_OBJECTS_WORK=y
->   CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
->   CONFIG_DEBUG_OBJECTS_PERCPU_COUNTER=y
->   CONFIG_DEBUG_OBJECTS_ENABLE_DEFAULT=1
->
-> but it also has DEBUG_PAGEALLOC enabled:
->
->   CONFIG_DEBUG_PAGEALLOC=y
->
-> I'd suggest disabling that one - it kind of overlaps debugobjects
-> and it will definitely be a big slowdown.
+On Thu, Oct 24, 2013 at 03:30:07PM -0500, Seth Forshee wrote:
+> On Thu, Oct 24, 2013 at 02:14:30PM -0500, Seth Forshee wrote:
+> > sighandler_t is a GNU extension and may not be defined if
+> > _GNU_SOURCE is not set. To minimize the potential for build
+> > problems, change signal_setup() to declare its handle argument
+> > the same way struct sigaction declares the sa_handler member.
+> 
+> I just saw that you've already got a commit to define _GNU_SOURCE on
+> master. I was packaging v2.2.1 and didn't notice it, so you can ignore
+> this one.
 
-ACK
-> I'd also suggest turning off lockdep for now:
->
->   CONFIG_PROVE_LOCKING=y
->
-> because we know it does not trigger any useful warning. This too
-> should speed up things a bit.
+Turns out that fix doesn't work all the time. The following is also
+required.
 
-Well, for now that´s true. On one machine it emits the old warning about the
-videobuf_dvb_find_frontend() /  dvb_device_open() circular reference,
-but that´s definitely unrelated.
 
->
-> Whether this would make the crash reproducable again I don't know
-> :-/
+>From 20ec8510d0ca2ac789b1ca9cf7b0a6dc2d02f14c Mon Sep 17 00:00:00 2001
+From: Seth Forshee <seth.forshee@canonical.com>
+Date: Mon, 28 Oct 2013 08:15:59 -0500
+Subject: [PATCH] Makefile: Ensure _GNU_SOURCE really is always defined
 
-We´ll see ;-)
-> Thanks,
->
-> 	Ingo
->
+When CLFAGS is set with a command argument a normal variable
+assignment is not sufficient to ensure that _GNU_SOURCE will be
+defined. Since this really is critical for building, use an
+override directive when adding it to CFLAGS to ensure that it
+really does get defined in all cases.
+
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 1d613c4..a2ba385 100644
+--- a/Makefile
++++ b/Makefile
+@@ -223,7 +223,7 @@ CFLAGS ?= -g -Wall
+ LDFLAGS ?=
+ 
+ # Required CFLAGS
+-CFLAGS += -D_GNU_SOURCE
++override CFLAGS += -D_GNU_SOURCE
+ 
+ ifndef NO_PTRACE
+ ifneq ($(call try-cc,$(SOURCE_PTRACE),),y)
+-- 
+1.8.3.2
 
