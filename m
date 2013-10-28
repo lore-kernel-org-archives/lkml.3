@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588Ab3J1NUY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 09:20:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34246 "EHLO mx1.redhat.com"
+	id S1756613Ab3J1NW7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 09:22:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53775 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756367Ab3J1NUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 09:20:22 -0400
-Date: Mon, 28 Oct 2013 09:19:46 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, dave.hansen@linux.intel.com,
-        Stephane Eranian <eranian@google.com>, jmario@redhat.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH] perf, x86: Optimize intel_pmu_pebs_fixup_ip()
-Message-ID: <20131028131946.GG108330@redhat.com>
-References: <20131017163039.GR10651@twins.programming.kicks-ass.net>
- <CA+55aFx-1Xu2aSvAMi8SSUwq-J9Yo3oJGY8yUYWyAZmZmr8prQ@mail.gmail.com>
- <20131017220156.GB10651@twins.programming.kicks-ass.net>
- <CA+55aFyCCdwF78dM1=Km=0wqtoyosp-ChyoJuBb1DdBvmGe2vA@mail.gmail.com>
- <20131022211237.GH2490@laptop.programming.kicks-ass.net>
- <CA+55aFwfsyofuZtNyUGKPWdvqc=4gOW=HTFPxsiM-3GS1G8KKQ@mail.gmail.com>
- <20131023204838.GB19466@laptop.lan>
- <20131024105206.GM2490@laptop.programming.kicks-ass.net>
- <20131025163303.GD108330@redhat.com>
- <20131026103651.GA21294@gmail.com>
+	id S1756117Ab3J1NW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 09:22:57 -0400
+User-agent: mu4e 0.9.9.5; emacs 24.3.1
+From: Madper Xie <cxie@redhat.com>
+To: Tony Luck <tony.luck@gmail.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Anton Vorontsov <cbou@mail.ru>, Colin Cross <ccross@google.com>,
+        Kees Cook <kees@outflux.net>
+Cc: "linux-efi\@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Differentiating names by adding a timestamp.
+Date: Mon, 28 Oct 2013 21:22:25 +0800
+Message-ID: <87li1dv8by.fsf@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131026103651.GA21294@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 26, 2013 at 12:36:52PM +0200, Ingo Molnar wrote:
-> 
-> * Don Zickus <dzickus@redhat.com> wrote:
-> 
-> > On Thu, Oct 24, 2013 at 12:52:06PM +0200, Peter Zijlstra wrote:
-> > > On Wed, Oct 23, 2013 at 10:48:38PM +0200, Peter Zijlstra wrote:
-> > > > I'll also make sure to test we actually hit the fault path
-> > > > by concurrently running something like:
-> > > > 
-> > > >  while :; echo 1 > /proc/sys/vm/drop_caches ; done
-> > > > 
-> > > > while doing perf top or so.. 
-> > > 
-> > > So the below appears to work; I've ran:
-> > > 
-> > >   while :; do echo 1 > /proc/sys/vm/drop_caches; sleep 1; done &
-> > >   while :; do make O=defconfig-build/ clean; perf record -a -g fp -e cycles:pp make O=defconfig-build/ -s -j64; done
-> > > 
-> > > And verified that the if (in_nmi()) trace_printk() was visible in the
-> > > trace output verifying we indeed took the fault from the NMI code.
-> > > 
-> > > I've had this running for ~ 30 minutes or so and the machine is still
-> > > healthy.
-> > > 
-> > > Don, can you give this stuff a spin on your system?
-> > 
-> > Hi Peter,
-> > 
-> > I finally had a chance to run this on my machine.  From my 
-> > testing, it looks good.  Better performance numbers.  I think my 
-> > longest latency went from 300K cycles down to 150K cycles and very 
-> > few of those (most are under 100K cycles).
-> 
-> Btw., do we know where those ~100k-150k cycles are spent 
-> specifically? 100k cycles is still an awful lot of time to spend in 
-> NMI context ...
 
-I agree, there is still a bunch of latency in the nmi path.  I believe it
-is still in the pebs code.  I share the machine with a colleague right
-now, so I haven't been able to isolate it.
+pstore denominate dumped file as type-psname-id. it makes many file have
+the same name if there are many entries in backend have the same id.
+So adding a timestamp to file name.
 
-But going from a few hundred samples over a million cycles to about a
-couple dozen over 100K was a big step.  :-)
+Signed-off-by: Madper Xie <cxie@redhat.com>
+---
+ fs/pstore/inode.c | 26 ++++++++++++++++----------
+ 1 file changed, 16 insertions(+), 10 deletions(-)
 
-I still see perf throttling and people are complaining about it here so I
-still plan to keep investigating.  Just taking me a while.  Sorry about
-that.
-
-Cheers,
-Don
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 1282384..bf6ed3a 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -315,32 +315,38 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+ 
+ 	switch (type) {
+ 	case PSTORE_TYPE_DMESG:
+-		sprintf(name, "dmesg-%s-%lld%s", psname, id,
+-						compressed ? ".enc.z" : "");
++		sprintf(name, "dmesg-%s-%lld-%lld%s", psname, id,
++			timespec_to_ns(&time), compressed ? ".enc.z" : "");
+ 		break;
+ 	case PSTORE_TYPE_CONSOLE:
+-		sprintf(name, "console-%s", psname);
++		sprintf(name, "console-%s-%lld", psname, timespec_to_ns(&time));
+ 		break;
+ 	case PSTORE_TYPE_FTRACE:
+-		sprintf(name, "ftrace-%s", psname);
++		sprintf(name, "ftrace-%s-%lld", psname, timespec_to_ns(&time));
+ 		break;
+ 	case PSTORE_TYPE_MCE:
+-		sprintf(name, "mce-%s-%lld", psname, id);
++		sprintf(name, "mce-%s-%lld-%lld", psname, id,
++			timespec_to_ns(&time));
+ 		break;
+ 	case PSTORE_TYPE_PPC_RTAS:
+-		sprintf(name, "rtas-%s-%lld", psname, id);
++		sprintf(name, "rtas-%s-%lld-%lld", psname, id,
++			timespec_to_ns(&time));
+ 		break;
+ 	case PSTORE_TYPE_PPC_OF:
+-		sprintf(name, "powerpc-ofw-%s-%lld", psname, id);
++		sprintf(name, "powerpc-ofw-%s-%lld-%lld", psname, id,
++			timespec_to_ns(&time));
+ 		break;
+ 	case PSTORE_TYPE_PPC_COMMON:
+-		sprintf(name, "powerpc-common-%s-%lld", psname, id);
++		sprintf(name, "powerpc-common-%s-%lld-%lld", psname, id,
++			timespec_to_ns(&time));
+ 		break;
+ 	case PSTORE_TYPE_UNKNOWN:
+-		sprintf(name, "unknown-%s-%lld", psname, id);
++		sprintf(name, "unknown-%s-%lld-%lld", psname, id,
++			timespec_to_ns(&time));
+ 		break;
+ 	default:
+-		sprintf(name, "type%d-%s-%lld", type, psname, id);
++		sprintf(name, "type%d-%s-%lld-%lld", type, psname, id,
++			timespec_to_ns(&time));
+ 		break;
+ 	}
+ 
+-- 
+1.8.4.1
