@@ -1,117 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932327Ab3J1Rxx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 13:53:53 -0400
-Received: from ring0.de ([91.143.88.219]:36332 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932165Ab3J1Rxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 13:53:50 -0400
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
-	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
-	*      for more information.
-	*      [URIs: get_maintainer.pl]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Mon, 28 Oct 2013 18:53:42 +0100
-From: Sebastian Reichel <sre@debian.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Subject: Re: [RFC 3/4] ASoC: Allow Aux Codecs to be specified using DT
-Message-ID: <20131028175341.GA28136@earth.universe>
-Mail-Followup-To: Mark Brown <broonie@kernel.org>,
-	Peter Ujfalusi <peter.ujfalusi@ti.com>,
-	Rob Herring <rob.herring@calxeda.com>,
-	Pawel Moll <pawel.moll@arm.com>,
-	Mark Rutland <mark.rutland@arm.com>,
-	Stephen Warren <swarren@wwwdotorg.org>,
-	Ian Campbell <ijc+devicetree@hellion.org.uk>,
-	Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
-	Russell King <linux@arm.linux.org.uk>,
-	Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-	Liam Girdwood <lgirdwood@gmail.com>,
-	Jarkko Nikula <jarkko.nikula@bitmer.com>,
-	Grant Likely <grant.likely@linaro.org>,
-	Linus Walleij <linus.walleij@linaro.org>,
-	devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-	linux-omap@vger.kernel.org, alsa-devel@alsa-project.org
-References: <1382909086-10493-1-git-send-email-sre@debian.org>
- <1382909086-10493-4-git-send-email-sre@debian.org>
- <20131028163721.GJ13643@sirena.org.uk>
+	id S1757127Ab3J1R4R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 13:56:17 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:9972 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756796Ab3J1R4P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 13:56:15 -0400
+X-Greylist: delayed 4225 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Oct 2013 13:56:15 EDT
+Message-ID: <526E9429.20803@fb.com>
+Date: Mon, 28 Oct 2013 09:43:21 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="gKMricLos+KVdGMg"
-Content-Disposition: inline
-In-Reply-To: <20131028163721.GJ13643@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rodrigo Campos <rodrigo@sdfg.com.ar>
+CC: Namhyung Kim <namhyung@kernel.org>, <namhyung.kim@lge.com>,
+        <linux-kernel@vger.kernel.org>, <acme@ghostprotocols.net>,
+        <fweisbec@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: State of "perf: Add a new sort order: SORT_INCLUSIVE"
+References: <20131025150721.GA12534@sdfg.com.ar> <8761si9e1u.fsf@sejong.aot.lge.com> <20131028084244.GA7482@sdfg.com.ar> <877gcx92yd.fsf@sejong.aot.lge.com> <20131028092955.GB7482@sdfg.com.ar>
+In-Reply-To: <20131028092955.GB7482@sdfg.com.ar>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-10-28_01:2013-10-28,2013-10-28,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.0579074834569235 urlsuspect_oldscore=0.578432455720742
+ suspectscore=0 recipient_domain_to_sender_totalscore=99 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=41
+ recipient_domain_to_sender_domain_totalscore=1996008
+ rbsscore=0.0579074834569235 spamscore=0
+ recipient_to_sender_domain_totalscore=40 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
+ definitions=main-1310280120
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/28/13 2:29 AM, Rodrigo Campos wrote:
+> On Mon, Oct 28, 2013 at 06:09:30PM +0900, Namhyung Kim wrote:
+>> On Mon, 28 Oct 2013 08:42:44 +0000, Rodrigo Campos wrote:
+>>> On Mon, Oct 28, 2013 at 02:09:49PM +0900, Namhyung Kim wrote:
+>>>> Anyway, You can find the series and discussion on the link below:
+>>>>
+>>>>    https://lkml.org/lkml/2012/9/13/81
+>>>
+>>> I've read the cover letter for that series and probably because I don't know
+>>> about perf internals I have a question: How will "--culumate" interact with
+>>> "--sort=dso" for example ?
+>>>
+>>> I mean, is it possible for that to show more than 100% ? (if you add all the
+>>> 93.35% in your example in the cover letter, or something similar). Or
+>>> "--culumate --sort=dso" will just group together all entries that have a dso in
+>>> the call chain ?
+>>
+>> Hmm.. I think --cumulate option is only meaningful when sort order
+>> includes symbol.  Maybe I can add support for --sort=dso case as well
+>> but not sure it's worth.  Do you think it's really needed?
+>
+> I don't know if it is *needed*, but that was what I need :)
 
---gKMricLos+KVdGMg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I suspect that users will find creative ways of using these options to 
+solve real world problems and we shouldn't restrict usage any more than 
+we need to to protect against obvious bugs/crashes.
 
-On Mon, Oct 28, 2013 at 09:37:21AM -0700, Mark Brown wrote:
-> On Sun, Oct 27, 2013 at 10:24:45PM +0100, Sebastian Reichel wrote:
-> > This patch adds support for specifying auxiliary codecs and
-> > codec configuration via device tree phandles.
->=20
-> This doesn't apply against current git, please check and resend.
+Also, what's the reasoning for --cumulate not being an option under perf 
+record -g ..,<order>?
 
-Can you give me a git url to rebase against? I used current git
-master from torvalds.
+In order to integrate perf record -b and --cumulate, we'll have to sort 
+out the underlying infrastructure for processing callgraphs and branch 
+stacks. I think the main roadblock here is that one is statistical and 
+on many CPUs incomplete (only top N branches are reported).
 
-> Please also consider your CC list more carefully, there's an awful lot
-> of people on this...
+Given that there are clear use cases in production involving complex 
+callgraphs, I'm for getting this support in first and then reconciling 
+the differences with perf record -b later.
 
-I added exactly those recipients, that were returned by
-=2E/scripts/get_maintainer.pl for the patchset.
-
-The list of involved people is quite long, because the patchset
-touches devicetree, documentation, boardcode, asoc and the specific
-driver.
-
--- Sebastian
-
---gKMricLos+KVdGMg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSbqSlAAoJENju1/PIO/qaluYQAJv4mQoI/HEx6KKDzuESNbNk
-30kLQO8ZSUOJlyxTTqGqX47V/xqS8WSnDX9VpZuPUeKh2QUAxjCCokcGIAkq1hng
-Ff913f5hbATBPcXhzyjXDkPGBlu/GS/eI5b2d76BwEAAQYfwND7Kz4FHVSDS3Kt4
-36RsKMYCd3O+9Vb6WMW/0AjsNO7vXBLSRjCuXj3+1KyhcCoRzckEjtPyadh5kE4o
-m7rgrHfYN1ZX1zzzsVDKG2cyI0kKaEHXku5e+UL49dJOd/Yu458y8FAsAwWztmSL
-yLr8Dg5mHL7FxCAl677c83nbdCQHVuUcw+0xjxOatlDcCJo/R51vnD7NRpKFHFW0
-TT0EDPw/2hYR4GsDsmipALRTRSvho38nLmJYH7wLbLx/FXWQ1Nz6pvtajNMxr658
-98f68/L2Uq3hVl0ZCird6bbkwoeQ30ByGsdsiSxAs+WUc30eRN7K6C20ALucon7i
-iQileFKS0lPenfKyEIiR7v1me1Zdb0eo6K/wGWFKGPPy6hSIgCsCvlJ0KIHyUsbm
-k96g4Up6hgmmu03jLqjjAXqllOq8kGPSizAQqtm8svuWMDXVRxr3c8la1ukeq0/k
-aihPi+OCtLTSjcVtEaVvMHNpxzDvsIF4Bu8+fxuO//uhitFPFHHs/Si4TOlP9Ziq
-wKGwo4V/abcb3iSp5TpD
-=L4OE
------END PGP SIGNATURE-----
-
---gKMricLos+KVdGMg--
+  -Arun
