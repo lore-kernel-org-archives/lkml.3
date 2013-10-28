@@ -1,146 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045Ab3J1FYb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 01:24:31 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:64098 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab3J1FYa convert rfc822-to-8bit (ORCPT
+	id S1752483Ab3J1F0s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 01:26:48 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:43450 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab3J1F0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 01:24:30 -0400
-Date: Mon, 28 Oct 2013 13:23:48 +0800
-From: Ming Lei <tom.leiming@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chen Gang <gang.chen@asianux.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Michal Marek <mmarek@suse.cz>, Ming Lei <tom.leiming@gmail.com>
-Subject: Re: [RFC PATCH] kernel/kallsyms.c: only show legal kernel symbol
-Message-ID: <20131028132348.62f7e368@tom-ThinkPad-T410>
-In-Reply-To: <874n82gk89.fsf@rustcorp.com.au>
-References: <1382498320-26594-1-git-send-email-tom.leiming@gmail.com>
-	<87eh7bfoq9.fsf@rustcorp.com.au>
-	<20131024084559.GD16735@n2100.arm.linux.org.uk>
-	<87mwlyclng.fsf@rustcorp.com.au>
-	<CACVXFVO86u0h0V-1_DCkO5HNyUp2i_UsjPrVWDb-ZBtmwVk28A@mail.gmail.com>
-	<87y55h7vcd.fsf@rustcorp.com.au>
-	<CACVXFVPXEUX9JQ2NZvL8=J34zbw2fn202QW2SQtpKjdQ+tv=vg@mail.gmail.com>
-	<87sivp7eai.fsf@rustcorp.com.au>
-	<CACVXFVN7PiU1dorkeamtC9-Wg_TVQE8xFiJtad-C8q4_=Rc1Ow@mail.gmail.com>
-	<874n82gk89.fsf@rustcorp.com.au>
-Organization: Ming
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	Mon, 28 Oct 2013 01:26:46 -0400
+X-AuditID: 9c93017e-b7ca6ae000000e8a-0a-526df594ca4e
+From: Minchan Kim <minchan@kernel.org>
+To: Phillip Lougher <phillip@lougher.demon.co.uk>
+Cc: ch0.han@lge.com, gunho.lee@lge.com, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v2] squashfs: enhance parallel I/O
+Date: Mon, 28 Oct 2013 14:26:30 +0900
+Message-Id: <1382937990-15318-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1381452511-6193-1-git-send-email-minchan@kernel.org>
+References: <1381452511-6193-1-git-send-email-minchan@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Oct 2013 13:44:30 +1030
-Rusty Russell <rusty@rustcorp.com.au> wrote:
+Now squashfs have used for only one stream buffer for decompression
+so it hurts parallel read performance so this patch supports
+multiple decompressor to enhance performance parallel I/O.
 
-> Ming Lei <tom.leiming@gmail.com> writes:
-> 
-> I don't know...  It would be your job, as the person making the change,
-> to find all the users of kallsyms and prove that.
-> 
-> This is why it is easier not to include incorrect values in the kernel's
-> kallsyms in the first place.
+Four 1G file dd read on KVM machine which has 2 CPU and 4G memory.
 
-OK, thanks for your comment, and I figured out one way to do it in
-scripts/kallsyms.c, could you comment on below patch?
+dd if=test/test1.dat of=/dev/null &
+dd if=test/test2.dat of=/dev/null &
+dd if=test/test3.dat of=/dev/null &
+dd if=test/test4.dat of=/dev/null &
 
---
->From 4327534dedfa60d208ac3e23db7556c243e1c7dc Mon Sep 17 00:00:00 2001
-From: Ming Lei <tom.leiming@gmail.com>
-Date: Mon, 28 Oct 2013 13:04:49 +0800
-Subject: [PATCH] scripts/kallsyms: filter symbols not in kernel address space
+old : 1m39s -> new : 9s
 
-This patch uses CONFIG_PAGE_OFFSET to filter symbols which
-are not in kernel address space because these symbols are
-generally for generating code purpose and can't be run at
-kernel mode, so we needn't keep them in /proc/kallsyms.
+* From v1
+  * Change comp_strm with decomp_strm - Phillip
+  * Change/add comments - Phillip
 
-For example, on ARM there are some symbols which may be
-linked in relocatable code section, then perf can't parse
-symbols any more from /proc/kallsyms, this patch fixes the
-problem.
-
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michal Marek <mmarek@suse.cz>
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- scripts/kallsyms.c      |   12 +++++++++++-
- scripts/link-vmlinux.sh |    2 ++
- 2 files changed, 13 insertions(+), 1 deletion(-)
+ fs/squashfs/Kconfig              |   13 +++
+ fs/squashfs/Makefile             |    9 +-
+ fs/squashfs/decompressor_multi.c |  200 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 221 insertions(+), 1 deletion(-)
+ create mode 100644 fs/squashfs/decompressor_multi.c
 
-diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
-index 487ac6f..9a11f9f 100644
---- a/scripts/kallsyms.c
-+++ b/scripts/kallsyms.c
-@@ -55,6 +55,7 @@ static struct sym_entry *table;
- static unsigned int table_size, table_cnt;
- static int all_symbols = 0;
- static char symbol_prefix_char = '\0';
-+static unsigned long long kernel_start_addr = 0;
+diff --git a/fs/squashfs/Kconfig b/fs/squashfs/Kconfig
+index c70111e..1c6d340 100644
+--- a/fs/squashfs/Kconfig
++++ b/fs/squashfs/Kconfig
+@@ -63,6 +63,19 @@ config SQUASHFS_LZO
  
- int token_profit[0x10000];
+ 	  If unsure, say N.
  
-@@ -65,7 +66,10 @@ unsigned char best_table_len[256];
- 
- static void usage(void)
- {
--	fprintf(stderr, "Usage: kallsyms [--all-symbols] [--symbol-prefix=<prefix char>] < in.map > out.S\n");
-+	fprintf(stderr, "Usage: kallsyms [--all-symbols] "
-+			"[--symbol-prefix=<prefix char>] "
-+			"[--page-offset=<CONFIG_PAGE_OFFSET>] "
-+			"< in.map > out.S\n");
- 	exit(1);
- }
- 
-@@ -194,6 +198,9 @@ static int symbol_valid(struct sym_entry *s)
- 	int i;
- 	int offset = 1;
- 
-+	if (s->addr < kernel_start_addr)
-+		return 0;
++config SQUASHFS_MULTI_DECOMPRESSOR
++	bool "Use multiple decompressors for handling parallel I/O"
++	depends on SQUASHFS
++	help
++	  By default Squashfs uses a single decompressor but it gives
++	  poor performance on parallel I/O workloads when using multiple CPU
++	  machines due to waiting on decompressor availability.
 +
- 	/* skip prefix char */
- 	if (symbol_prefix_char && *(s->sym + 1) == symbol_prefix_char)
- 		offset++;
-@@ -646,6 +653,9 @@ int main(int argc, char **argv)
- 				if ((*p == '"' && *(p+2) == '"') || (*p == '\'' && *(p+2) == '\''))
- 					p++;
- 				symbol_prefix_char = *p;
-+			} else if (strncmp(argv[i], "--page-offset=", 14) == 0) {
-+				const char *p = &argv[i][14];
-+				kernel_start_addr = strtoull(p, NULL, 16);
- 			} else
- 				usage();
- 		}
-diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-index 0149949..32b10f5 100644
---- a/scripts/link-vmlinux.sh
-+++ b/scripts/link-vmlinux.sh
-@@ -82,6 +82,8 @@ kallsyms()
- 		kallsymopt="${kallsymopt} --all-symbols"
- 	fi
- 
-+	kallsymopt="${kallsymopt} --page-offset=$CONFIG_PAGE_OFFSET"
++	  If you have a parallel I/O workload and your system has enough memory,
++	  using this option may improve overall I/O performance.
 +
- 	local aflags="${KBUILD_AFLAGS} ${KBUILD_AFLAGS_KERNEL}               \
- 		      ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
++	  If unsure, say N.
++
+ config SQUASHFS_XZ
+ 	bool "Include support for XZ compressed file systems"
+ 	depends on SQUASHFS
+diff --git a/fs/squashfs/Makefile b/fs/squashfs/Makefile
+index c223c84..dfebc3b 100644
+--- a/fs/squashfs/Makefile
++++ b/fs/squashfs/Makefile
+@@ -4,8 +4,15 @@
  
+ obj-$(CONFIG_SQUASHFS) += squashfs.o
+ squashfs-y += block.o cache.o dir.o export.o file.o fragment.o id.o inode.o
+-squashfs-y += namei.o super.o symlink.o decompressor.o decompressor_single.o
++squashfs-y += namei.o super.o symlink.o decompressor.o
++
+ squashfs-$(CONFIG_SQUASHFS_XATTR) += xattr.o xattr_id.o
+ squashfs-$(CONFIG_SQUASHFS_LZO) += lzo_wrapper.o
+ squashfs-$(CONFIG_SQUASHFS_XZ) += xz_wrapper.o
+ squashfs-$(CONFIG_SQUASHFS_ZLIB) += zlib_wrapper.o
++
++ifdef CONFIG_SQUASHFS_MULTI_DECOMPRESSOR
++	squashfs-y		+= decompressor_multi.o
++else
++	squashfs-y		+= decompressor_single.o
++endif
+diff --git a/fs/squashfs/decompressor_multi.c b/fs/squashfs/decompressor_multi.c
+new file mode 100644
+index 0000000..462731d
+--- /dev/null
++++ b/fs/squashfs/decompressor_multi.c
+@@ -0,0 +1,200 @@
++/*
++ *  Copyright (c) 2013
++ *  Minchan Kim <minchan@kernel.org>
++ *
++ *  This work is licensed under the terms of the GNU GPL, version 2. See
++ *  the COPYING file in the top-level directory.
++ */
++#include <linux/types.h>
++#include <linux/mutex.h>
++#include <linux/slab.h>
++#include <linux/buffer_head.h>
++#include <linux/sched.h>
++#include <linux/wait.h>
++#include <linux/cpumask.h>
++
++#include "squashfs_fs.h"
++#include "squashfs_fs_sb.h"
++#include "decompressor.h"
++#include "squashfs.h"
++
++/*
++ * This file implements multi-threaded decompression in the
++ * decompressor framework
++ */
++
++
++/*
++ * The reason that multiply two is that a CPU can request new I/O
++ * while it is waiting previous request.
++ */
++#define MAX_DECOMPRESSOR	(num_online_cpus() * 2)
++
++
++int squashfs_max_decompressors(void)
++{
++	return MAX_DECOMPRESSOR;
++}
++
++
++struct squashfs_stream {
++	void			*comp_opts;
++	struct list_head	strm_list;
++	struct mutex		mutex;
++	int			avail_decomp;
++	wait_queue_head_t	wait;
++};
++
++
++struct decomp_stream {
++	void *stream;
++	struct list_head list;
++};
++
++
++static void put_decomp_stream(struct decomp_stream *decomp_strm,
++				struct squashfs_stream *stream)
++{
++	mutex_lock(&stream->mutex);
++	list_add(&decomp_strm->list, &stream->strm_list);
++	mutex_unlock(&stream->mutex);
++	wake_up(&stream->wait);
++}
++
++void *squashfs_decompressor_create(struct squashfs_sb_info *msblk,
++				void *comp_opts)
++{
++	struct squashfs_stream *stream;
++	struct decomp_stream *decomp_strm = NULL;
++	int err = -ENOMEM;
++
++	stream = kzalloc(sizeof(*stream), GFP_KERNEL);
++	if (!stream)
++		goto out;
++
++	stream->comp_opts = comp_opts;
++	mutex_init(&stream->mutex);
++	INIT_LIST_HEAD(&stream->strm_list);
++	init_waitqueue_head(&stream->wait);
++
++	/*
++	 * We should have a decompressor at least as default
++	 * so if we fail to allocate new decompressor dynamically,
++	 * we could always fall back to default decompressor and
++	 * file system works.
++	 */
++	decomp_strm = kmalloc(sizeof(*decomp_strm), GFP_KERNEL);
++	if (!decomp_strm)
++		goto out;
++
++	decomp_strm->stream = msblk->decompressor->init(msblk,
++						stream->comp_opts);
++	if (IS_ERR(decomp_strm->stream)) {
++		err = PTR_ERR(decomp_strm->stream);
++		goto out;
++	}
++
++	list_add(&decomp_strm->list, &stream->strm_list);
++	stream->avail_decomp = 1;
++	return stream;
++
++out:
++	kfree(decomp_strm);
++	kfree(stream);
++	return ERR_PTR(err);
++}
++
++
++void squashfs_decompressor_destroy(struct squashfs_sb_info *msblk)
++{
++	struct squashfs_stream *stream = msblk->stream;
++	if (stream) {
++		struct decomp_stream *decomp_strm;
++
++		while (!list_empty(&stream->strm_list)) {
++			decomp_strm = list_entry(stream->strm_list.prev,
++						struct decomp_stream, list);
++			list_del(&decomp_strm->list);
++			msblk->decompressor->free(decomp_strm->stream);
++			kfree(decomp_strm);
++			stream->avail_decomp--;
++		}
++	}
++
++	WARN_ON(stream->avail_decomp);
++	kfree(stream->comp_opts);
++	kfree(stream);
++}
++
++
++static struct decomp_stream *get_decomp_stream(struct squashfs_sb_info *msblk,
++					struct squashfs_stream *stream)
++{
++	struct decomp_stream *decomp_strm;
++
++	while (1) {
++		mutex_lock(&stream->mutex);
++
++		/* There is available decomp_stream */
++		if (!list_empty(&stream->strm_list)) {
++			decomp_strm = list_entry(stream->strm_list.prev,
++				struct decomp_stream, list);
++			list_del(&decomp_strm->list);
++			mutex_unlock(&stream->mutex);
++			break;
++		}
++
++		/*
++		 * If there is no available decomp and already full,
++		 * let's wait for releasing decomp from other users.
++		 */
++		if (stream->avail_decomp >= MAX_DECOMPRESSOR)
++			goto wait;
++
++		/* Let's allocate new decomp */
++		decomp_strm = kmalloc(sizeof(*decomp_strm), GFP_KERNEL);
++		if (!decomp_strm)
++			goto wait;
++
++		decomp_strm->stream = msblk->decompressor->init(msblk,
++						stream->comp_opts);
++		if (IS_ERR(decomp_strm->stream)) {
++			kfree(decomp_strm);
++			goto wait;
++		}
++
++		stream->avail_decomp++;
++		WARN_ON(stream->avail_decomp > MAX_DECOMPRESSOR);
++
++		mutex_unlock(&stream->mutex);
++		break;
++wait:
++		/*
++		 * If system memory is tough, let's for other's
++		 * releasing instead of hurting VM because it could
++		 * make page cache thrashing.
++		 */
++		mutex_unlock(&stream->mutex);
++		wait_event(stream->wait,
++			!list_empty(&stream->strm_list));
++	}
++
++	return decomp_strm;
++}
++
++
++int squashfs_decompress(struct squashfs_sb_info *msblk,
++	void **buffer, struct buffer_head **bh, int b, int offset, int length,
++	int srclength, int pages)
++{
++	int res;
++	struct squashfs_stream *stream = msblk->stream;
++	struct decomp_stream *decomp_stream = get_decomp_stream(msblk, stream);
++	res = msblk->decompressor->decompress(msblk, decomp_stream->stream,
++		buffer, bh, b, offset, length, srclength, pages);
++	put_decomp_stream(decomp_stream, stream);
++	if (res < 0)
++		ERROR("%s decompression failed, data probably corrupt\n",
++			msblk->decompressor->name);
++	return res;
++}
 -- 
 1.7.9.5
 
-
-
-
-Thanks,
--- 
-Ming Lei
