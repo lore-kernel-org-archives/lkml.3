@@ -1,125 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932906Ab3J1PM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 11:12:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15993 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932216Ab3J1PM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 11:12:56 -0400
-Date: Mon, 28 Oct 2013 11:12:24 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: WANG Chao <chaowang@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, kdump: crashkernel=X try to reserve below 896M
- first, then try below 4G, then MAXMEM
-Message-ID: <20131028151224.GB1659@redhat.com>
-References: <20131018123837.GB2277@redhat.com>
- <CAE9FiQWdMmSseDk6J=TOXT9ZahJUBf2BOU+VHJRXeeMofgH=EQ@mail.gmail.com>
- <20131021151643.GA20669@redhat.com>
- <CAE9FiQVfeUdugFRMt1DGjtqW2FAb2gfnGjXENHjoJ=JVAYbYgw@mail.gmail.com>
- <20131024140241.GA2322@redhat.com>
- <CAE9FiQUu0WwMgNpog4TKch+MT2i7_DsNvqZxbyQusS4AFxdhQQ@mail.gmail.com>
- <20131024191821.GE2322@redhat.com>
- <CAE9FiQU7+FRY=3ETdGZJJfcS0vjRht4ZT8MHTQ66kpjD2MmrcA@mail.gmail.com>
- <20131024192752.GG2322@redhat.com>
- <CAE9FiQUw6REg2TXnSXtNZK8XY9vnorvi8oDbUn_5WdNZ6yiRtQ@mail.gmail.com>
+	id S1756840Ab3J1PQm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 11:16:42 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:45409 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754442Ab3J1PQl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 11:16:41 -0400
+Date: Mon, 28 Oct 2013 16:16:37 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Knut Petersen <Knut_Petersen@t-online.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request
+ during shutdown
+Message-ID: <20131028151637.GA13251@gmail.com>
+References: <525BD08C.2080101@t-online.de>
+ <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com>
+ <CA+55aFy7TpvkVuPEOJ7Qqirwap1gXoD1_MrYLhgPAYuVpN8u=w@mail.gmail.com>
+ <alpine.DEB.2.02.1310251221310.5266@ionos.tec.linutronix.de>
+ <CA+55aFxw1Hm4QVeEigkByP5RppSL30oHnLoR16C=henf-a=uFQ@mail.gmail.com>
+ <20131026114303.GA24067@gmail.com>
+ <526E79A2.9080303@t-online.de>
+ <20131028150114.GA12905@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQUw6REg2TXnSXtNZK8XY9vnorvi8oDbUn_5WdNZ6yiRtQ@mail.gmail.com>
+In-Reply-To: <20131028150114.GA12905@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 10:48:29PM -0700, Yinghai Lu wrote:
-> On Thu, Oct 24, 2013 at 12:27 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Thu, Oct 24, 2013 at 12:24:57PM -0700, Yinghai Lu wrote:
-> >> On Thu, Oct 24, 2013 at 12:18 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> >> > On Thu, Oct 24, 2013 at 12:15:25PM -0700, Yinghai Lu wrote:
-> >> >
-> >> > Also keeping things simple by not trying to *impose* a new crashkernel=
-> >> > syntax on existing crashkernel=xM users.
-> >>
-> >> Existing user that have crashkernel=xM working with their old kernel
-> >> and old kexec-tools, they still could keep their old command line and
-> >> old kexec-tools
-> >> with new updated kernel.
-> >> We should not change semantics to surprise them.
-> >
-> > Old users will get reservation still below 896MB.
-> >
-> > It will go above 896MB only if memory could not be allocated below 896MB.
-> >
-> > In the past reservation will fail and kexec-tools will fail.
-> > Now reservation will succeed but kexec-tools will fail.
-> >
-> > So end result a user sees is that kexec-tools fails. So I don't see how
-> > we are breaking existing installations or user setups.
+
+* Ingo Molnar <mingo@kernel.org> wrote:
+
+> > I tried that patch, together with all the kobj debug options 
+> > enabled. With that kernel configuration I was unable to 
+> > reproduce the problem during 500 typical workload / reboot 
+> > cycles. Without the debug options I was able to reproduce the 
+> > last reported panic after 91 cycles. The debug options seem to 
+> > change timing sufficiently to mask the bug ;-(
 > 
-> case could be: if user add more memory and put more pcie cards, and
-> second kernel will need more ram and OOM there.
+> Could you send me the kernel config please?
 
-Now makedumpfile supports cyclic mode by default. So one does not have
-to necessarily linearly scale reserved memory based on physical memory
-present in the box.
+I got your .config off-list, thanks Knut!
 
-> so user could just increase crashkernel=512M to crashkernel=1G.
+It has all DEBUG_OBJECT options enabled:
 
-If user has new makedumpfile, OOM should not happen and one should not
-have to increase memory reservation.
+ CONFIG_DEBUG_OBJECTS=y
+ # CONFIG_DEBUG_OBJECTS_SELFTEST is not set
+ CONFIG_DEBUG_OBJECTS_FREE=y
+ CONFIG_DEBUG_OBJECTS_TIMERS=y
+ CONFIG_DEBUG_OBJECTS_WORK=y
+ CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
+ CONFIG_DEBUG_OBJECTS_PERCPU_COUNTER=y
+ CONFIG_DEBUG_OBJECTS_ENABLE_DEFAULT=1
 
-> 
-> without Cong's patch, kernel will fail to reserve, and user would dig
-> to change it
-> to crashkernel=1G,high, and update kexec-tools.
-> 
-> with Cong's patch, kernel will reserve other range like between 896
-> and 4G, old kexec-tools either
-> fail to load second kernel or hang in purgatory or early stage of
-> second kernel, or other unknown behavior.
+but it also has DEBUG_PAGEALLOC enabled:
 
-I understand your concern about memory being reserved high and kexec
-just hanging. Only thing I am arguing is that the number of cases where
-it will happen is small.
+ CONFIG_DEBUG_PAGEALLOC=y
 
-- First of all for all old existing kexec-tools memory will stil come
-  from 896MB.
-- Old kexec-tools enforced that purgatory is loaded below 2G. So if 
-  memory is reserved above 2G, kexec-tools will fail.
+I'd suggest disabling that one - it kind of overlaps debugobjects 
+and it will definitely be a big slowdown.
 
-So only problematic case seems to be that if user increased crashkernel=X
-value and memory got reserved between 896M and 2G. But this is not same
-as breaking old setups as old setups anyway never worked with this 
-configuration.
+I'd also suggest turning off lockdep for now:
 
-You argument that user will research and upgrade kexec-tools and use
-crashkernel=X,high, then it holds true for the case where memory is
-reserved between 896M and 2G.
+ CONFIG_PROVE_LOCKING=y
 
-I personally think that it is easier for a user to not change any
-kernel parameters with kernel and kexec-tools upgrade and still be
-able to work with large memory systems. So the benefit of extending
-the semantics of existing parameter seems to be outweighing the downside
-of side, IMHO.
+because we know it does not trigger any useful warning. This too 
+should speed up things a bit.
 
-> 
-> I would think first path is much clear and predicted.
-> 
-> If my memory is right, HPA did not like idea that we try below 896M,
-> and then under 4G and then above 4G.
+Whether this would make the crash reproducable again I don't know
+:-/
 
-hpa, I know you did not like the idea in the past. Is it still the case.
+Thanks,
 
-IMHO, I like the fact that existing users still be able to work with
-crashkernel=X and not forced to switch to crashkernel=x,high and also incur
-the penalty of reserving extra memory for software iotlb.
-
-Thanks
-Vivek
+	Ingo
