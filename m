@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab3J1InC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 04:43:02 -0400
-Received: from alerce.vps.bitfolk.com ([85.119.82.134]:40203 "EHLO
-	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab3J1Im7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 04:42:59 -0400
-Date: Mon, 28 Oct 2013 08:42:44 +0000
-From: Rodrigo Campos <rodrigo@sdfg.com.ar>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: namhyung.kim@lge.com, linux-kernel@vger.kernel.org,
-        acme@ghostprotocols.net, asharma@fb.com, fweisbec@gmail.com
-Subject: Re: State of "perf: Add a new sort order: SORT_INCLUSIVE"
-Message-ID: <20131028084244.GA7482@sdfg.com.ar>
-References: <20131025150721.GA12534@sdfg.com.ar>
- <8761si9e1u.fsf@sejong.aot.lge.com>
+	id S1755756Ab3J1Ior (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 04:44:47 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33272 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751848Ab3J1Iop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 04:44:45 -0400
+Date: Mon, 28 Oct 2013 09:44:41 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.fedoraproject.org, kexec@lists.infradead.org
+Subject: Re: [patch 2/6] x86 efi: reserve boot service fix
+Message-ID: <20131028084440.GA4314@pd.tnic>
+References: <20131027034713.481920209@dhcp-16-126.nay.redhat.com>
+ <20131027035922.924386710@dhcp-16-126.nay.redhat.com>
+ <20131027105009.GA21868@pd.tnic>
+ <20131027203058.GE1982@console-pimps.org>
+ <20131028011824.GD4397@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <8761si9e1u.fsf@sejong.aot.lge.com>
+In-Reply-To: <20131028011824.GD4397@dhcp-16-126.nay.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 02:09:49PM +0900, Namhyung Kim wrote:
-> Hi Rodrigo,
-> 
-> On Fri, 25 Oct 2013 16:07:21 +0100, Rodrigo Campos wrote:
-> >
-> > That will be useful for me and I was wondering if you are still working on that
-> > or if there is a newer version than v6:
-> >
-> > 	http://thread.gmane.org/gmane.linux.kernel.perf.user/882
-> >
-> >
-> > Maybe you have a newer version of it not sent to the list ? Or do you plan to
-> > work on it anytime soon ?
-> >
-> > If there is any branch to test, please let me know :)
-> 
-> Yes I have a patch series for that.  But it's not a new sort order but a
-> new command line option --culumate.  I don't think it should be a new
-> sort order since it affects only how it counts period value on each
-> sample not how samples are sorted/grouped.
-> 
-> It's about a year since I sent this series to list.  I'll work on it and
-> send it to the list soon.  But before that I have to re-read what's the
+On Mon, Oct 28, 2013 at 09:18:24AM +0800, Dave Young wrote:
+> There should be some people see below message with non-kexec kernel:
+> "Could not reserve boot range ..."
 
-Great, thanks a lot!
+I can find one other report like that: https://lkml.org/lkml/2013/7/16/309
 
-> Frederic's concern - IIRC it's about consolidating code in perf report
-> that does similar things on branch stack.
-> 
-> Frederic, can you remember what was the problem?
-> 
-> Anyway, You can find the series and discussion on the link below:
-> 
->   https://lkml.org/lkml/2012/9/13/81
+[    0.000000] efi: Could not reserve boot range [0x0000000000-0x0000000fff]
 
-I've read the cover letter for that series and probably because I don't know
-about perf internals I have a question: How will "--culumate" interact with
-"--sort=dso" for example ?
+for
 
-I mean, is it possible for that to show more than 100% ? (if you add all the
-93.35% in your example in the cover letter, or something similar). Or
-"--culumate --sort=dso" will just group together all entries that have a dso in
-the call chain ?
+efi: mem00: type=3, attr=0xf, range=[0x0000000000000000-0x0000000000001000) (0MB)
 
-Sorry if the question was too obvious if I knew about perf internals :S
+which is EFI_BOOT_SERVICES_CODE and
 
+efi: Could not reserve boot range [0x000005f000-0x000009ffff]
 
+for
 
+efi: mem06: type=3, attr=0xf, range=[0x000000000005f000-0x00000000000a0000) (0MB)
 
-Thanks a lot,
-Rodrigo
+which is of the same type.
+
+> But it's hard for them to notice the bad functionality because
+> it's only one mem range which might be not the boot range what
+> SetVirtualAddressMap need
+
+Right.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
