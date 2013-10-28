@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab3J1NqD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 09:46:03 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:60393 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756072Ab3J1NqA (ORCPT
+	id S1756706Ab3J1NqU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 09:46:20 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:34013 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756429Ab3J1NqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 09:46:00 -0400
-Message-ID: <526E6A92.6090301@synopsys.com>
-Date: Mon, 28 Oct 2013 19:15:54 +0530
-From: Vineet Gupta <vineetg76@gmail.com>
-Organization: Synopsys
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>, James Hogan <james.hogan@imgtec.com>
-CC: Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] arch: use ASM_NL instead of ';' for assembler new line
- character in the macro
-References: <526E3CE2.2070405@asianux.com>
-In-Reply-To: <526E3CE2.2070405@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Oct 2013 09:46:01 -0400
+Message-ID: <1382967954.17956.9.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH 15/16] wl1251: Add sysfs file tx_mgmt_frm_rate for
+ setting rate
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Luciano Coelho <luca@coelho.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
+        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
+        joni.lapilainen@gmail.com
+Date: Mon, 28 Oct 2013 14:45:54 +0100
+In-Reply-To: <1382819655-30430-16-git-send-email-pali.rohar@gmail.com> (sfid-20131026_224039_612331_A01681C8)
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
+	 <1382819655-30430-16-git-send-email-pali.rohar@gmail.com>
+	 (sfid-20131026_224039_612331_A01681C8)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2013 04:00 PM, Chen Gang wrote:
-> For some toolchains, they use another character as newline in a macro
-> (e.g. arc uses '`'), so for generic assembly code, need use ASM_NL (a
-> macro) instead of ';' for it.
-> 
-> Since "linux/export.h" are mainly used for exporting work, then our fix
-> more likely belongs to "linux/linkage.h", and we need add the related
-> checking in "linkage.h".
-> 
-> Also need notice 80 columns wrap, and '\t' for each line.
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/arc/include/asm/linkage.h    |    2 +
->  include/asm-generic/vmlinux.lds.h |  350 +++++++++++++++++++------------------
->  include/linux/linkage.h           |   19 +
+On Sat, 2013-10-26 at 22:34 +0200, Pali Rohár wrote:
+> This patch was extracted from Maemo 2.6.28 kernel
 
-Like Max said, please drop the linker script bits - they are OK - otherwise ARC
-kernel won't have been building at all.
+That's not a description or justification for the patch ....
 
-And you also need to fix kernel/modsign_certificate.S as part of same patchset as
-that is where the problem started in first place.
+but again, it seems like a bad idea to use sysfs.
 
--Vineet
+johannes
+
