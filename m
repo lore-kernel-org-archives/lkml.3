@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab3J1Q7h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 12:59:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55198 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932104Ab3J1Q7g (ORCPT
+	id S932209Ab3J1Q77 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 12:59:59 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:62311 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932151Ab3J1Q74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 12:59:36 -0400
-Message-ID: <526E97F4.3050104@kernel.dk>
-Date: Mon, 28 Oct 2013 10:59:32 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 28 Oct 2013 12:59:56 -0400
+Message-ID: <526E9808.4030607@gmail.com>
+Date: Mon, 28 Oct 2013 10:59:52 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>, linux-kernel@vger.kernel.org
-Subject: Re: blk-mq flush fix
-References: <20131026114612.GA8576@infradead.org> <20131026153124.GA22227@infradead.org> <20131027222914.GG22549@kernel.dk> <20131028084821.GA31270@infradead.org> <526E90D7.1070604@kernel.dk> <20131028164641.GA1046@infradead.org>
-In-Reply-To: <20131028164641.GA1046@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Pekka Enberg <penberg@iki.fi>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+CC: Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        "hegdevasant@linux.vnet.ibm.com" <hegdevasant@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, "anton@redhat.com" <anton@redhat.com>,
+        "systemtap@sourceware.org" <systemtap@sourceware.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "aravinda@linux.vnet.ibm.com" <aravinda@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
+References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora> <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com> <20131025125921.GA29424@linux.vnet.ibm.com> <F53BA283-A194-4057-8409-27FD3ECFDF2E@iki.fi> <526A8C2B.7000401@gmail.com> <526E24EA.2040701@iki.fi>
+In-Reply-To: <526E24EA.2040701@iki.fi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2013 10:46 AM, Christoph Hellwig wrote:
-> On Mon, Oct 28, 2013 at 10:29:11AM -0600, Jens Axboe wrote:
->> It's not that I think the existing patch is THAT bad, it fits in alright
->> with the reserved tagging and works regardless of whether a driver uses
->> reserved tags or not. And it does have the upside of not requiring
->> special checks or logic for this special non-tagged request that using
->> the preallocated would might need.
-> 
-> The problem with it is that it will pass a tag number to the low level
-> driver which it doesn't expect.  In case the tags are used 1:1 as
-> hardware tags that would lead to nasy bugs.
-> 
-> At vefy least we'd need to mess with ->tag for this special request.
+On 10/28/13 2:48 AM, Pekka Enberg wrote:
+> So I really hope this SDT effort and the ktap effort at least
+> make some effort in unifying all the nice functionality that's
+> simple to use and easy to discover. I really, really would
+> at the end of the day, just 'perf trace' like I 'perf stat' or
+> 'perf record'.
 
-Yes indeed. Actually the more I think about it, the better I like just
-using the normal tagging infrastructure and punting to a reserved tag
-for the flush. Just needs adding of the check whether it actually needs
-it or not.
+Agree. I see user's eyes glaze over with each command line option, and 
+we have added aliases to embed some of the details as well as having 
+sensible defaults.
 
--- 
-Jens Axboe
+I often use perf-list to lookup an exact event name, and I do not want 
+to see it taking many seconds to minutes to run (not everyone is running 
+on an SSD). I also run perf on many different OS versions with an NFS 
+home directory, and do not want to see a cache explosion (I have buildid 
+disabled for this reason).
+
+David
 
