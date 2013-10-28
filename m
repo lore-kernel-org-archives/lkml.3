@@ -1,209 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429Ab3J1Tx1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 15:53:27 -0400
-Received: from smtprelay0236.hostedemail.com ([216.40.44.236]:45655 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754833Ab3J1TxZ (ORCPT
+	id S1757468Ab3J1TyQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 15:54:16 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:47389 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756040Ab3J1TyO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 15:53:25 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:2:41:69:355:379:541:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1535:1593:1594:1606:1730:1747:1777:1792:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3355:3865:3867:3868:3870:3871:3872:4117:4321:4605:5007:6119:7652:7807:10004:10848:11026:11658:11914:12043:12291:12296:12438:12517:12519:12555:12683:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: loss92_83052eae45d
-X-Filterd-Recvd-Size: 6534
-Message-ID: <1382990001.8718.4.camel@joe-AO722>
-Subject: [PATCH net-next] netconsole: Convert to pr_<level>
-From: Joe Perches <joe@perches.com>
-To: netdev <netdev@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 28 Oct 2013 12:53:21 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Oct 2013 15:54:14 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <525D9FC1.2040204@gmail.com>
+Cc: linux@arm.linux.org.uk, Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, jiada_wang@mentor.com,
+        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
+        t.figa@samsung.com, g.liakhovetski@gmx.de,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, LMML <linux-media@vger.kernel.org>
+References: <1377874402-2944-1-git-send-email-s.nawrocki@samsung.com>
+ <52420664.2040604@gmail.com> <3160771.O1gFkR91vK@avalon>
+ <525D9FC1.2040204@gmail.com>
+Message-ID: <20131028195401.11662.11969@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH v6 0/5] clk: clock deregistration support
+Date: Mon, 28 Oct 2013 12:54:01 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a more current logging style.
+Quoting Sylwester Nawrocki (2013-10-15 13:04:17)
+> Hi,
+> 
+> (adding linux-media mailing list at Cc)
+> 
+> On 09/25/2013 11:47 AM, Laurent Pinchart wrote:
+> > On Tuesday 24 September 2013 23:38:44 Sylwester Nawrocki wrote:
+> [...]
+> >> The only issue I found might be at the omap3isp driver, which provides
+> >> clock to its sub-drivers and takes reference on the sub-driver modules.
+> >> When sub-driver calls clk_get() all modules would get locked in memory,
+> >> due to circular reference. One solution to that could be to pass NULL
+> >> struct device pointer, as in the below patch.
+> >
+> > Doesn't that introduce race conditions ? If the sub-drivers require the clock,
+> > they want to be sure that the clock won't disappear beyond their backs. I
+> > agree that the circular dependency needs to be solved somehow, but we probably
+> > need a more generic solution. The problem will become more widespread in the
+> > future with DT-based device instantiation in both V4L2 and KMS.
+> 
+> I'm wondering whether subsystems and drivers itself should be written so
+> they deal with such dependencies they are aware of.
+> 
+> There is similar situation in the regulator API, regulator_get() simply
+> takes a reference on a module providing the regulator object.
+> 
+> Before a "more generic solution" is available, what do you think about
+> keeping obtaining a reference on a clock provider module in clk_get() and
+> doing clk_get(), clk_prepare_enable(), ..., clk_unprepare_disable(),
+> clk_put() in sub-driver whenever a clock is actively used, to avoid
+> permanent circular reference ?
 
-Convert printks to pr_<level>.
+Laurent,
 
-Consolidate multiple printks into a single printk to avoid
-any possible dmesg interleaving.  Add a default "event" msg
-in case the listed types are ever expanded.
+Did you have any feedback on this proposal? I would like to merge these
+patches so that folks with clock driver modules can use them properly.
+We can fix up things in the core code as we figure them out.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/netconsole.c | 57 +++++++++++++++++++++++-------------------------
- 1 file changed, 27 insertions(+), 30 deletions(-)
+Regards,
+Mike
 
-diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-index adeee61..a8ef4c4 100644
---- a/drivers/net/netconsole.c
-+++ b/drivers/net/netconsole.c
-@@ -34,6 +34,8 @@
-  *
-  ****************************************************************/
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/mm.h>
- #include <linux/init.h>
- #include <linux/module.h>
-@@ -319,8 +321,8 @@ static ssize_t store_enabled(struct netconsole_target *nt,
- 	if (enabled < 0 || enabled > 1)
- 		return -EINVAL;
- 	if (enabled == nt->enabled) {
--		printk(KERN_INFO "netconsole: network logging has already %s\n",
--				nt->enabled ? "started" : "stopped");
-+		pr_info("network logging has already %s\n",
-+			nt->enabled ? "started" : "stopped");
- 		return -EINVAL;
- 	}
- 
-@@ -339,7 +341,7 @@ static ssize_t store_enabled(struct netconsole_target *nt,
- 			return err;
- 		}
- 
--		printk(KERN_INFO "netconsole: network logging started\n");
-+		pr_info("network logging started\n");
- 
- 	} else {	/* 0 */
- 		netpoll_cleanup(&nt->np);
-@@ -358,9 +360,8 @@ static ssize_t store_dev_name(struct netconsole_target *nt,
- 	size_t len;
- 
- 	if (nt->enabled) {
--		printk(KERN_ERR "netconsole: target (%s) is enabled, "
--				"disable to update parameters\n",
--				config_item_name(&nt->item));
-+		pr_err("target (%s) is enabled, disable to update parameters\n",
-+		       config_item_name(&nt->item));
- 		return -EINVAL;
- 	}
- 
-@@ -381,9 +382,8 @@ static ssize_t store_local_port(struct netconsole_target *nt,
- 	int rv;
- 
- 	if (nt->enabled) {
--		printk(KERN_ERR "netconsole: target (%s) is enabled, "
--				"disable to update parameters\n",
--				config_item_name(&nt->item));
-+		pr_err("target (%s) is enabled, disable to update parameters\n",
-+		       config_item_name(&nt->item));
- 		return -EINVAL;
- 	}
- 
-@@ -400,9 +400,8 @@ static ssize_t store_remote_port(struct netconsole_target *nt,
- 	int rv;
- 
- 	if (nt->enabled) {
--		printk(KERN_ERR "netconsole: target (%s) is enabled, "
--				"disable to update parameters\n",
--				config_item_name(&nt->item));
-+		pr_err("target (%s) is enabled, disable to update parameters\n",
-+		       config_item_name(&nt->item));
- 		return -EINVAL;
- 	}
- 
-@@ -417,9 +416,8 @@ static ssize_t store_local_ip(struct netconsole_target *nt,
- 			      size_t count)
- {
- 	if (nt->enabled) {
--		printk(KERN_ERR "netconsole: target (%s) is enabled, "
--				"disable to update parameters\n",
--				config_item_name(&nt->item));
-+		pr_err("target (%s) is enabled, disable to update parameters\n",
-+		       config_item_name(&nt->item));
- 		return -EINVAL;
- 	}
- 
-@@ -427,7 +425,7 @@ static ssize_t store_local_ip(struct netconsole_target *nt,
- 		const char *end;
- 		if (in6_pton(buf, count, nt->np.local_ip.in6.s6_addr, -1, &end) > 0) {
- 			if (*end && *end != '\n') {
--				printk(KERN_ERR "netconsole: invalid IPv6 address at: <%c>\n", *end);
-+				pr_err("invalid IPv6 address at: <%c>\n", *end);
- 				return -EINVAL;
- 			}
- 			nt->np.ipv6 = true;
-@@ -448,9 +446,8 @@ static ssize_t store_remote_ip(struct netconsole_target *nt,
- 			       size_t count)
- {
- 	if (nt->enabled) {
--		printk(KERN_ERR "netconsole: target (%s) is enabled, "
--				"disable to update parameters\n",
--				config_item_name(&nt->item));
-+		pr_err("target (%s) is enabled, disable to update parameters\n",
-+		       config_item_name(&nt->item));
- 		return -EINVAL;
- 	}
- 
-@@ -458,7 +455,7 @@ static ssize_t store_remote_ip(struct netconsole_target *nt,
- 		const char *end;
- 		if (in6_pton(buf, count, nt->np.remote_ip.in6.s6_addr, -1, &end) > 0) {
- 			if (*end && *end != '\n') {
--				printk(KERN_ERR "netconsole: invalid IPv6 address at: <%c>\n", *end);
-+				pr_err("invalid IPv6 address at: <%c>\n", *end);
- 				return -EINVAL;
- 			}
- 			nt->np.ipv6 = true;
-@@ -481,9 +478,8 @@ static ssize_t store_remote_mac(struct netconsole_target *nt,
- 	u8 remote_mac[ETH_ALEN];
- 
- 	if (nt->enabled) {
--		printk(KERN_ERR "netconsole: target (%s) is enabled, "
--				"disable to update parameters\n",
--				config_item_name(&nt->item));
-+		pr_err("target (%s) is enabled, disable to update parameters\n",
-+		       config_item_name(&nt->item));
- 		return -EINVAL;
- 	}
- 
-@@ -704,19 +700,20 @@ restart:
- 	}
- 	spin_unlock_irqrestore(&target_list_lock, flags);
- 	if (stopped) {
--		printk(KERN_INFO "netconsole: network logging stopped on "
--		       "interface %s as it ", dev->name);
-+		const char *msg = "had an event";
- 		switch (event) {
- 		case NETDEV_UNREGISTER:
--			printk(KERN_CONT "unregistered\n");
-+			msg = "unregistered";
- 			break;
- 		case NETDEV_RELEASE:
--			printk(KERN_CONT "released slaves\n");
-+			msg = "released slaves";
- 			break;
- 		case NETDEV_JOIN:
--			printk(KERN_CONT "is joining a master device\n");
-+			msg = "is joining a master device";
- 			break;
- 		}
-+		pr_info("network logging stopped on interface %s as it %s\n",
-+			dev->name, msg);
- 	}
- 
- done:
-@@ -802,7 +799,7 @@ static int __init init_netconsole(void)
- 		goto undonotifier;
- 
- 	register_console(&netconsole);
--	printk(KERN_INFO "netconsole: network logging started\n");
-+	pr_info("network logging started\n");
- 
- 	return err;
- 
-@@ -810,7 +807,7 @@ undonotifier:
- 	unregister_netdevice_notifier(&netconsole_netdev_notifier);
- 
- fail:
--	printk(KERN_ERR "netconsole: cleaning up\n");
-+	pr_err("cleaning up\n");
- 
- 	/*
- 	 * Remove all targets and destroy them (only targets created
-
-
+> 
+> --
+> Thanks,
+> Sylwester
+> 
+> >> ---------8<------------------
+> >>   From ca5963041aad67e31324cb5d4d5e2cfce1706d4f Mon Sep 17 00:00:00 2001
+> >> From: Sylwester Nawrocki<s.nawrocki@samsung.com>
+> >> Date: Thu, 19 Sep 2013 23:52:04 +0200
+> >> Subject: [PATCH] omap3isp: Pass NULL device pointer to clk_register()
+> >>
+> >> Signed-off-by: Sylwester Nawrocki<s.nawrocki@samsung.com>
+> >> ---
+> >>    drivers/media/platform/omap3isp/isp.c |   15 ++++++++++-----
+> >>    drivers/media/platform/omap3isp/isp.h |    1 +
+> >>    2 files changed, 11 insertions(+), 5 deletions(-)
+> >>
+> >> diff --git a/drivers/media/platform/omap3isp/isp.c
+> >> b/drivers/media/platform/omap3isp/isp.c
+> >> index df3a0ec..d7f3c98 100644
+> >> --- a/drivers/media/platform/omap3isp/isp.c
+> >> +++ b/drivers/media/platform/omap3isp/isp.c
+> >> @@ -290,9 +290,11 @@ static int isp_xclk_init(struct isp_device *isp)
+> >>      struct clk_init_data init;
+> >>      unsigned int i;
+> >>
+> >> +    for (i = 0; i<  ARRAY_SIZE(isp->xclks); ++i)
+> >> +            isp->xclks[i] = ERR_PTR(-EINVAL);
+> >> +
+> >>      for (i = 0; i<  ARRAY_SIZE(isp->xclks); ++i) {
+> >>              struct isp_xclk *xclk =&isp->xclks[i];
+> >> -            struct clk *clk;
+> >>
+> >>              xclk->isp = isp;
+> >>              xclk->id = i == 0 ? ISP_XCLK_A : ISP_XCLK_B;
+> >> @@ -306,9 +308,9 @@ static int isp_xclk_init(struct isp_device *isp)
+> >>
+> >>              xclk->hw.init =&init;
+> >>
+> >> -            clk = devm_clk_register(isp->dev,&xclk->hw);
+> >> -            if (IS_ERR(clk))
+> >> -                    return PTR_ERR(clk);
+> >> +            xclk->clk = clk_register(NULL,&xclk->hw);
+> >> +            if (IS_ERR(xclk->clk))
+> >> +                    return PTR_ERR(xclk->clk);
+> >>
+> >>              if (pdata->xclks[i].con_id == NULL&&
+> >>              pdata->xclks[i].dev_id == NULL)
+> >> @@ -320,7 +322,7 @@ static int isp_xclk_init(struct isp_device *isp)
+> >>
+> >>              xclk->lookup->con_id = pdata->xclks[i].con_id;
+> >>              xclk->lookup->dev_id = pdata->xclks[i].dev_id;
+> >> -            xclk->lookup->clk = clk;
+> >> +            xclk->lookup->clk = xclk->clk;
+> >>
+> >>              clkdev_add(xclk->lookup);
+> >>      }
+> >> @@ -335,6 +337,9 @@ static void isp_xclk_cleanup(struct isp_device *isp)
+> >>      for (i = 0; i<  ARRAY_SIZE(isp->xclks); ++i) {
+> >>              struct isp_xclk *xclk =&isp->xclks[i];
+> >>
+> >> +            if (!IS_ERR(xclk->clk))
+> >> +                    clk_unregister(xclk->clk);
+> >> +
+> >>              if (xclk->lookup)
+> >>                      clkdev_drop(xclk->lookup);
+> >>      }
+> >> diff --git a/drivers/media/platform/omap3isp/isp.h
+> >> b/drivers/media/platform/omap3isp/isp.h
+> >> index cd3eff4..1498f2b 100644
+> >> --- a/drivers/media/platform/omap3isp/isp.h
+> >> +++ b/drivers/media/platform/omap3isp/isp.h
+> >> @@ -135,6 +135,7 @@ struct isp_xclk {
+> >>      struct isp_device *isp;
+> >>      struct clk_hw hw;
+> >>      struct clk_lookup *lookup;
+> >> +    struct clk *clk;
+> >>      enum isp_xclk_id id;
+> >>
+> >>      spinlock_t lock;        /* Protects enabled and divider */
+> >> ---------8<------------------
