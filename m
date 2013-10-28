@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab3J1Iss (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 04:48:48 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:35431 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755835Ab3J1Isq (ORCPT
+	id S1755718Ab3J1Itk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 04:49:40 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:48999 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998Ab3J1Iti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 04:48:46 -0400
-X-Sasl-enc: 8R81TBLe+CmUSXVGOvBmTBot5bf4RWybADWKDLbPqsII 1382950124
-Message-ID: <526E24EA.2040701@iki.fi>
-Date: Mon, 28 Oct 2013 10:48:42 +0200
-From: Pekka Enberg <penberg@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 28 Oct 2013 04:49:38 -0400
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+In-Reply-To: <8761si9e1u.fsf@sejong.aot.lge.com>
+References: <20131025150721.GA12534@sdfg.com.ar>
+	<8761si9e1u.fsf@sejong.aot.lge.com>
+Date: Mon, 28 Oct 2013 09:49:37 +0100
+Message-ID: <CAFTL4hwn1r2JzfmXchXgXrNhM6q6F=M93WfviuWEbWSuBN6E_A@mail.gmail.com>
+Subject: Re: State of "perf: Add a new sort order: SORT_INCLUSIVE"
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Rodrigo Campos <rodrigo@sdfg.com.ar>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        "hegdevasant@linux.vnet.ibm.com" <hegdevasant@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, "anton@redhat.com" <anton@redhat.com>,
-        "systemtap@sourceware.org" <systemtap@sourceware.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "aravinda@linux.vnet.ibm.com" <aravinda@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
-References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora> <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com> <20131025125921.GA29424@linux.vnet.ibm.com> <F53BA283-A194-4057-8409-27FD3ECFDF2E@iki.fi> <526A8C2B.7000401@gmail.com>
-In-Reply-To: <526A8C2B.7000401@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Arnaldo Melo <acme@ghostprotocols.net>, Arun Sharma <asharma@fb.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
-
-On 10/25/2013 06:20 PM, David Ahern wrote:
-> On 10/25/13 8:20 AM, Pekka Enberg wrote:
->>> Technically feasible. But then we would have to parse each of the
->>> libraries and executables to list them. Right? I am not sure if such a
->>> delay is acceptable.
->>
->> You could do it at 'perf list' time or even build time and cache it. 
->> And add lazy discovery to 'perf record' and friends.
+2013/10/28 Namhyung Kim <namhyung@kernel.org>:
+> Hi Rodrigo,
 >
-> Instead searching all the known files or building a cache, how about 
-> just having an option like: perf list <DSO>. perf-record could still 
-> do the probe magic behind the scenes.
+> On Fri, 25 Oct 2013 16:07:21 +0100, Rodrigo Campos wrote:
+>> Hi Namhyung,
+>>
+>> Frederic Weisbecker and Arnaldo Carvalho de Melo told me on IRC that you were
+>> working to forward-port a patch that adds a new sort order to perf report,
+>> SORT_INCLUSIVE.
+>>
+>> That will be useful for me and I was wondering if you are still working on that
+>> or if there is a newer version than v6:
+>>
+>>       http://thread.gmane.org/gmane.linux.kernel.perf.user/882
+>>
+>>
+>> Maybe you have a newer version of it not sent to the list ? Or do you plan to
+>> work on it anytime soon ?
+>>
+>> If there is any branch to test, please let me know :)
+>
+> Yes I have a patch series for that.  But it's not a new sort order but a
+> new command line option --culumate.  I don't think it should be a new
+> sort order since it affects only how it counts period value on each
+> sample not how samples are sorted/grouped.
+>
+> It's about a year since I sent this series to list.  I'll work on it and
+> send it to the list soon.
 
-We probably should also support that. But I don't see why
-'perf list' could not tell me about SDT markers in libraries that
-are already installed on my system.
+Thanks a lot!
 
-The problem I have with all the command line magic is that
-while the tracing mechanisms are awesome, they're nearly
-impossible to discover even by a power user such as myself
-and you almost certainly forget the exact syntax over time.
-It's not as if you're tracing all the time.
+>  But before that I have to re-read what's the
+> Frederic's concern - IIRC it's about consolidating code in perf report
+> that does similar things on branch stack.
+>
+> Frederic, can you remember what was the problem?
+>
+> Anyway, You can find the series and discussion on the link below:
+>
+>   https://lkml.org/lkml/2012/9/13/81
 
-I wish people remembed how awesome and simple 'perf stat'
-and 'perf record' with 'perf report' were compared to oprofile
-when the first versions came out. I think much of the nice
-perf features are suffering because we're not paying enough
-attention how to make them accessible to users.
+Right so my concern was that it should be an extension of "perf report
+- b" rather than an ad-hoc. Cumulative callchains is basically what
+perf report -b does but with callchains. And since callchains are
+branches, this should be a perfect fit.
 
-The proposed SDT marker feature is a good example of that.
-I mean, how on earth would I know about the userspace
-probes unless I read LKML and know that such a feature
-exists? And why would I want to provide mappings for SDT
-markers and perf events if I want to trace 'libc:setjmp'?
+Also I don't remember if perf report -b adds branches to the hist with
+a period of 1 of with the period of the referring event. I remember
+there was an issue a long time ago there. May be it was fixed. Anyway
+IMO the period of 1 doesn't make sense, branches should be added with
+the period of the event.
 
-So I really hope this SDT effort and the ktap effort at least
-make some effort in unifying all the nice functionality that's
-simple to use and easy to discover. I really, really would
-at the end of the day, just 'perf trace' like I 'perf stat' or
-'perf record'.
-
-                 Pekka
+Thanks.
