@@ -1,109 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419Ab3J1SZH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 14:25:07 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42930 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756661Ab3J1SZE (ORCPT
+	id S1757442Ab3J1S22 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 14:28:28 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57523 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757426Ab3J1S2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 14:25:04 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kevin Hilman <khilman@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH] ARM: Support arch_irq_work_raise() via self IPIs
-Date: Mon, 28 Oct 2013 11:25:01 -0700
-Message-Id: <1382984701-2371-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.4.1.600.g3d092bf
-In-Reply-To: <526DBEAA.4030707@linaro.org>
-References: <526DBEAA.4030707@linaro.org>
+	Mon, 28 Oct 2013 14:28:25 -0400
+Date: Mon, 28 Oct 2013 19:28:18 +0100
+From: Markus Pargmann <mpa@pengutronix.de>
+To: Joe Perches <joe@perches.com>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH] can: c_can: Speed up rx_poll function
+Message-ID: <20131028182818.GB20839@pengutronix.de>
+References: <1382979582-10352-1-git-send-email-mpa@pengutronix.de>
+ <1382980336.30941.40.camel@joe-AO722>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1382980336.30941.40.camel@joe-AO722>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 18:57:07 up 65 days,  3:27, 32 users,  load average: 0.06, 0.07,
+ 0.09
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: mpa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will allow the scheduler tick to be restarted if we're in
-full NOHZ mode.
+On Mon, Oct 28, 2013 at 10:12:16AM -0700, Joe Perches wrote:
+> On Mon, 2013-10-28 at 17:59 +0100, Markus Pargmann wrote:
+> > This patch speeds up the rx_poll function by reducing the number of
+> > register reads.
+> 
+> trivial notes:
+> 
+> > diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
+> []
+> > @@ -259,6 +259,12 @@ static u32 c_can_read_reg32(struct c_can_priv *priv, enum reg index)
+> > +u16 c_can_read_reg16(struct c_can_priv *priv, enum reg index)
+> > +{
+> > +	u16 val = priv->read_reg(priv, index);
+> > +	return val;
+> > +}
+> 
+> This function doesn't seem useful at all.
+> It's not exported and it's not static.
 
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/include/asm/hardirq.h |  2 +-
- arch/arm/kernel/smp.c          | 18 ++++++++++++++++++
- 2 files changed, 19 insertions(+), 1 deletion(-)
+Oh right, should be static.
 
-diff --git a/arch/arm/include/asm/hardirq.h b/arch/arm/include/asm/hardirq.h
-index 2740c2a2..3d7351c 100644
---- a/arch/arm/include/asm/hardirq.h
-+++ b/arch/arm/include/asm/hardirq.h
-@@ -5,7 +5,7 @@
- #include <linux/threads.h>
- #include <asm/irq.h>
- 
--#define NR_IPI	6
-+#define NR_IPI	7
- 
- typedef struct {
- 	unsigned int __softirq_pending;
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 72024ea..bf9a0d6d 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -25,6 +25,7 @@
- #include <linux/clockchips.h>
- #include <linux/completion.h>
- #include <linux/cpufreq.h>
-+#include <linux/irq_work.h>
- 
- #include <linux/atomic.h>
- #include <asm/smp.h>
-@@ -66,6 +67,7 @@ enum ipi_msg_type {
- 	IPI_CALL_FUNC,
- 	IPI_CALL_FUNC_SINGLE,
- 	IPI_CPU_STOP,
-+	IPI_IRQ_WORK,
- };
- 
- static DECLARE_COMPLETION(cpu_running);
-@@ -448,6 +450,13 @@ void arch_send_call_function_single_ipi(int cpu)
- 	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
- }
- 
-+#ifdef CONFIG_IRQ_WORK
-+void arch_irq_work_raise(void)
-+{
-+	smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
-+}
-+#endif
-+
- static const char *ipi_types[NR_IPI] = {
- #define S(x,s)	[x] = s
- 	S(IPI_WAKEUP, "CPU wakeup interrupts"),
-@@ -456,6 +465,7 @@ static const char *ipi_types[NR_IPI] = {
- 	S(IPI_CALL_FUNC, "Function call interrupts"),
- 	S(IPI_CALL_FUNC_SINGLE, "Single function call interrupts"),
- 	S(IPI_CPU_STOP, "CPU stop interrupts"),
-+	S(IPI_IRQ_WORK, "IRQ work interrupts"),
- };
- 
- void show_ipi_list(struct seq_file *p, int prec)
-@@ -565,6 +575,14 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
- 		irq_exit();
- 		break;
- 
-+#ifdef CONFIG_IRQ_WORK
-+	case IPI_IRQ_WORK:
-+		irq_enter();
-+		irq_work_run();
-+		irq_exit();
-+		break;
-+#endif
-+
- 	default:
- 		printk(KERN_CRIT "CPU%u: Unknown IPI message 0x%x\n",
- 		       cpu, ipinr);
+> 
+> Why not use an in-place priv->read_reg(priv, index)?
+
+No reason for that. Especially with a u16 as mentioned below, it is
+clear enough that we have a 16bit value, so I will change it.
+
+> 
+> > +
+> >  static void c_can_enable_all_interrupts(struct c_can_priv *priv,
+> >  						int enable)
+> >  {
+> > @@ -798,17 +804,21 @@ static int c_can_do_rx_poll(struct net_device *dev, int quota)
+> >  	u32 num_rx_pkts = 0;
+> >  	unsigned int msg_obj, msg_ctrl_save;
+> >  	struct c_can_priv *priv = netdev_priv(dev);
+> > -	u32 val = c_can_read_reg32(priv, C_CAN_INTPND1_REG);
+> > +	unsigned long val = c_can_read_reg16(priv, C_CAN_INTPND1_REG);
+> 
+> Probably better as a u16 as detailed below.
+> 
+> > +	/*
+> > +	 * It is faster to read only one 16bit register. This is only possible
+> > +	 * for a maximum number of 16 objects.
+> > +	 */
+> > +	BUILD_BUG_ON_MSG(C_CAN_MSG_OBJ_RX_LAST > 16,
+> > +			"Implementation does not support more message objects than 16");
+> > +
+> > +	while (quota > 0 && (val = c_can_read_reg16(priv, C_CAN_INTPND1_REG))) {
+> > +		msg_obj = 0;
+> > +		while ((msg_obj = find_next_bit(&val, 16, msg_obj)) < 16 &&
+> 
+> Using ffs instead of find_next_bit would be more standard
+> and probably faster too.
+
+I wasn't aware of that. I will change it
+
+Thanks,
+
+Markus Pargmann
+
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
