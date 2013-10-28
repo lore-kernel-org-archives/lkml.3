@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025Ab3J1K0K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 06:26:10 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:55543 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754764Ab3J1K0I (ORCPT
+	id S1756040Ab3J1K1O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 06:27:14 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:46162 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752470Ab3J1K1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 06:26:08 -0400
-Date: Mon, 28 Oct 2013 11:26:04 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the tip tree
-Message-ID: <20131028102604.GA6127@gmail.com>
-References: <20131028202442.5033ddf42639863d5f1dcf67@canb.auug.org.au>
- <20131028101823.GA3512@ulmo.nvidia.com>
+	Mon, 28 Oct 2013 06:27:12 -0400
+Date: Mon, 28 Oct 2013 10:27:05 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Dave Young <dyoung@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.fedoraproject.org, kexec@lists.infradead.org
+Subject: Re: [patch 2/6] x86 efi: reserve boot service fix
+Message-ID: <20131028102705.GI1982@console-pimps.org>
+References: <20131027034713.481920209@dhcp-16-126.nay.redhat.com>
+ <20131027035922.924386710@dhcp-16-126.nay.redhat.com>
+ <20131027105009.GA21868@pd.tnic>
+ <20131027203058.GE1982@console-pimps.org>
+ <20131028011824.GD4397@dhcp-16-126.nay.redhat.com>
+ <20131028084440.GA4314@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131028101823.GA3512@ulmo.nvidia.com>
+In-Reply-To: <20131028084440.GA4314@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Thierry Reding <thierry.reding@gmail.com> wrote:
-
-> On Mon, Oct 28, 2013 at 08:24:42PM +1100, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > After merging the tip tree, today's linux-next build (powerpc
-> > ppc64_defconfig) failed like this:
-> > 
-> > In file included from /scratch/sfr/next/include/linux/mmzone.h:9:0,
-> >                  from /scratch/sfr/next/include/linux/gfp.h:4,
-> >                  from /scratch/sfr/next/include/linux/kmod.h:22,
-> >                  from /scratch/sfr/next/include/linux/module.h:13,
-> >                  from /scratch/sfr/next/block/blk-mq.c:2:
-> > /scratch/sfr/next/block/blk-mq.c: In function 'blk_mq_queue_enter':
-> > /scratch/sfr/next/include/linux/wait.h:772:2: error: expected ';' before '__ret'
-> >   __ret;        \
-> >   ^
-> > /scratch/sfr/next/block/blk-mq.c:108:8: note: in expansion of macro 'wait_event_interruptible_lock_irq'
-> >   ret = wait_event_interruptible_lock_irq(q->mq_freeze_wq,
-> >         ^
-> > /scratch/sfr/next/block/blk-mq.c:108:6: error: void value not ignored as it ought to be
-> >   ret = wait_event_interruptible_lock_irq(q->mq_freeze_wq,
-> >       ^
-> > 
-> > Caused by commit 35a2af94c7ce ("sched/wait: Make the __wait_event*()
-> > interface more friendly").
-> > 
-> > Since this was also in next-20131025, I applied the following merge fix
-> > commit for today, please fix this in the tip tree.
+On Mon, 28 Oct, at 09:44:41AM, Borislav Petkov wrote:
+> On Mon, Oct 28, 2013 at 09:18:24AM +0800, Dave Young wrote:
+> > There should be some people see below message with non-kexec kernel:
+> > "Could not reserve boot range ..."
 > 
-> FWIW I got confirmation on Oct 23 that this had been committed to the
-> tip tree. So I guess it just wasn't pushed yet.
+> I can find one other report like that: https://lkml.org/lkml/2013/7/16/309
+> 
+> [    0.000000] efi: Could not reserve boot range [0x0000000000-0x0000000fff]
+> 
+> for
+> 
+> efi: mem00: type=3, attr=0xf, range=[0x0000000000000000-0x0000000000001000) (0MB)
+> 
+> which is EFI_BOOT_SERVICES_CODE and
+> 
+> efi: Could not reserve boot range [0x000005f000-0x000009ffff]
+> 
+> for
+> 
+> efi: mem06: type=3, attr=0xf, range=[0x000000000005f000-0x00000000000a0000) (0MB)
+> 
+> which is of the same type.
+ 
+But that doesn't look like the issue that the user was complaining
+about. Rather, it's that the higher EFI regions are unable to be mapped
+because of the user's mem= kernel parameter setting.
 
-I merged the fix intoo the linux-next branch earlier today so it 
-should be resolved soon.
+However, even though this bug isn't the main focus of the above report,
+since people are hitting it (and since the fix is trivial), I agree it's
+worth tagging for stable.
 
-Thanks,
-
-	Ingo
+-- 
+Matt Fleming, Intel Open Source Technology Center
