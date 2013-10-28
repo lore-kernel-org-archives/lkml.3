@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147Ab3J1OtA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 10:49:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51089 "EHLO
+	id S932284Ab3J1Ot0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:49:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51154 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756968Ab3J1Os6 (ORCPT
+	with ESMTP id S932247Ab3J1OtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:48:58 -0400
+	Mon, 28 Oct 2013 10:49:19 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oliver Neukum <oneukum@suse.de>, Takashi Iwai <tiwai@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 19/64] xhci: Fix spurious wakeups after S5 on Haswell
-Date: Mon, 28 Oct 2013 14:47:38 +0000
-Message-Id: <1382971703-17393-20-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 32/64] powerpc: Restore registers on error exit from csum_partial_copy_generic()
+Date: Mon, 28 Oct 2013 14:47:51 +0000
+Message-Id: <1382971703-17393-33-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
 References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
@@ -28,122 +29,163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-commit 638298dc66ea36623dbc2757a24fc2c4ab41b016 upstream.
+commit 8f21bd0090052e740944f9397e2be5ac7957ded7 upstream.
 
-Haswell LynxPoint and LynxPoint-LP with the recent Intel BIOS show
-mysterious wakeups after shutdown occasionally.  After discussing with
-BIOS engineers, they explained that the new BIOS expects that the
-wakeup sources are cleared and set to D3 for all wakeup devices when
-the system is going to sleep or power off, but the current xhci driver
-doesn't do this properly (partly intentionally).
+The csum_partial_copy_generic() function saves the PowerPC non-volatile
+r14, r15, and r16 registers for the main checksum-and-copy loop.
+Unfortunately, it fails to restore them upon error exit from this loop,
+which results in silent corruption of these registers in the presumably
+rare event of an access exception within that loop.
 
-This patch introduces a new quirk, XHCI_SPURIOUS_WAKEUP, for
-fixing the spurious wakeups at S5 by calling xhci_reset() in the xhci
-shutdown ops as done in xhci_stop(), and setting the device to PCI D3
-at shutdown and remove ops.
+This commit therefore restores these register on error exit from the loop.
 
-The PCI D3 call is based on the initial fix patch by Oliver Neukum.
-
-[Note: Sarah changed the quirk name from XHCI_HSW_SPURIOUS_WAKEUP to
-XHCI_SPURIOUS_WAKEUP, since none of the other quirks have system names
-in them.  Sarah also fixed a collision with a quirk submitted around the
-same time, by changing the xhci->quirks bit from 17 to 18.]
-
-This patch should be backported to kernels as old as 3.0, that
-contain the commit 1c12443ab8eba71a658fae4572147e56d1f84f66 "xhci: Add
-Lynx Point to list of Intel switchable hosts."
-
-Cc: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[ luis: backported to 3.5:
+  - following bwh's port to 3.2 kernel, register name macros use
+    lower-case 'r' ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/xhci-pci.c | 17 +++++++++++++++++
- drivers/usb/host/xhci.c     |  7 +++++++
- drivers/usb/host/xhci.h     |  1 +
- 3 files changed, 25 insertions(+)
+ arch/powerpc/lib/checksum_64.S | 54 +++++++++++++++++++++++++++++++-----------
+ 1 file changed, 40 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index 8b218a4..085d018 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -34,6 +34,9 @@
- #define PCI_VENDOR_ID_ETRON		0x1b6f
- #define PCI_DEVICE_ID_ASROCK_P67	0x7023
+diff --git a/arch/powerpc/lib/checksum_64.S b/arch/powerpc/lib/checksum_64.S
+index afa2eba..3cdbc64 100644
+--- a/arch/powerpc/lib/checksum_64.S
++++ b/arch/powerpc/lib/checksum_64.S
+@@ -229,19 +229,35 @@ _GLOBAL(csum_partial)
+ 	blr
  
-+#define PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI	0x8c31
-+#define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_XHCI	0x9c31
+ 
+-	.macro source
++	.macro srcnr
+ 100:
+ 	.section __ex_table,"a"
+ 	.align 3
+-	.llong 100b,.Lsrc_error
++	.llong 100b,.Lsrc_error_nr
+ 	.previous
+ 	.endm
+ 
+-	.macro dest
++	.macro source
++150:
++	.section __ex_table,"a"
++	.align 3
++	.llong 150b,.Lsrc_error
++	.previous
++	.endm
 +
- static const char hcd_name[] = "xhci_hcd";
- 
- /* called after powerup, by probe or system-pm "wakeup" */
-@@ -115,6 +118,15 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
- 		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
- 		xhci->quirks |= XHCI_AVOID_BEI;
- 	}
-+	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
-+	    (pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_XHCI ||
-+	     pdev->device == PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_XHCI)) {
-+		/* Workaround for occasional spurious wakeups from S5 (or
-+		 * any other sleep) on Haswell machines with LPT and LPT-LP
-+		 * with the new Intel BIOS
-+		 */
-+		xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
-+	}
- 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
- 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
- 		xhci->quirks |= XHCI_RESET_ON_RESUME;
-@@ -221,6 +233,11 @@ static void xhci_pci_remove(struct pci_dev *dev)
- 		usb_put_hcd(xhci->shared_hcd);
- 	}
- 	usb_hcd_pci_remove(dev);
++	.macro dstnr
+ 200:
+ 	.section __ex_table,"a"
+ 	.align 3
+-	.llong 200b,.Ldest_error
++	.llong 200b,.Ldest_error_nr
++	.previous
++	.endm
 +
-+	/* Workaround for spurious wakeups at shutdown with HSW */
-+	if (xhci->quirks & XHCI_SPURIOUS_WAKEUP)
-+		pci_set_power_state(dev, PCI_D3hot);
-+
- 	kfree(xhci);
- }
++	.macro dest
++250:
++	.section __ex_table,"a"
++	.align 3
++	.llong 250b,.Ldest_error
+ 	.previous
+ 	.endm
  
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 10e10a6..8ef76d2 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -776,12 +776,19 @@ void xhci_shutdown(struct usb_hcd *hcd)
+@@ -277,11 +293,11 @@ _GLOBAL(csum_partial_copy_generic)
+ 	mtctr	r6
  
- 	spin_lock_irq(&xhci->lock);
- 	xhci_halt(xhci);
-+	/* Workaround for spurious wakeups at shutdown with HSW */
-+	if (xhci->quirks & XHCI_SPURIOUS_WAKEUP)
-+		xhci_reset(xhci);
- 	spin_unlock_irq(&xhci->lock);
+ 1:
+-source;	lhz	r6,0(r3)		/* align to doubleword */
++srcnr;	lhz	r6,0(r3)		/* align to doubleword */
+ 	subi	r5,r5,2
+ 	addi	r3,r3,2
+ 	adde	r0,r0,r6
+-dest;	sth	r6,0(r4)
++dstnr;	sth	r6,0(r4)
+ 	addi	r4,r4,2
+ 	bdnz	1b
  
- 	xhci_cleanup_msix(xhci);
+@@ -395,10 +411,10 @@ dest;	std	r16,56(r4)
  
- 	xhci_dbg(xhci, "xhci_shutdown completed - status = %x\n",
- 		    xhci_readl(xhci, &xhci->op_regs->status));
-+
-+	/* Yet another workaround for spurious wakeups at shutdown with HSW */
-+	if (xhci->quirks & XHCI_SPURIOUS_WAKEUP)
-+		pci_set_power_state(to_pci_dev(hcd->self.controller), PCI_D3hot);
- }
+ 	mtctr	r6
+ 3:
+-source;	ld	r6,0(r3)
++srcnr;	ld	r6,0(r3)
+ 	addi	r3,r3,8
+ 	adde	r0,r0,r6
+-dest;	std	r6,0(r4)
++dstnr;	std	r6,0(r4)
+ 	addi	r4,r4,8
+ 	bdnz	3b
  
- #ifdef CONFIG_PM
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index b15d034..a3d5b54 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1518,6 +1518,7 @@ struct xhci_hcd {
- #define XHCI_AVOID_BEI		(1 << 15)
- #define XHCI_PLAT		(1 << 16)
- #define XHCI_SLOW_SUSPEND	(1 << 17)
-+#define XHCI_SPURIOUS_WAKEUP	(1 << 18)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
+@@ -408,10 +424,10 @@ dest;	std	r6,0(r4)
+ 	srdi.	r6,r5,2
+ 	beq	.Lcopy_tail_halfword
+ 
+-source;	lwz	r6,0(r3)
++srcnr;	lwz	r6,0(r3)
+ 	addi	r3,r3,4
+ 	adde	r0,r0,r6
+-dest;	stw	r6,0(r4)
++dstnr;	stw	r6,0(r4)
+ 	addi	r4,r4,4
+ 	subi	r5,r5,4
+ 
+@@ -419,10 +435,10 @@ dest;	stw	r6,0(r4)
+ 	srdi.	r6,r5,1
+ 	beq	.Lcopy_tail_byte
+ 
+-source;	lhz	r6,0(r3)
++srcnr;	lhz	r6,0(r3)
+ 	addi	r3,r3,2
+ 	adde	r0,r0,r6
+-dest;	sth	r6,0(r4)
++dstnr;	sth	r6,0(r4)
+ 	addi	r4,r4,2
+ 	subi	r5,r5,2
+ 
+@@ -430,10 +446,10 @@ dest;	sth	r6,0(r4)
+ 	andi.	r6,r5,1
+ 	beq	.Lcopy_finish
+ 
+-source;	lbz	r6,0(r3)
++srcnr;	lbz	r6,0(r3)
+ 	sldi	r9,r6,8			/* Pad the byte out to 16 bits */
+ 	adde	r0,r0,r9
+-dest;	stb	r6,0(r4)
++dstnr;	stb	r6,0(r4)
+ 
+ .Lcopy_finish:
+ 	addze	r0,r0			/* add in final carry */
+@@ -443,6 +459,11 @@ dest;	stb	r6,0(r4)
+ 	blr
+ 
+ .Lsrc_error:
++	ld	r14,STK_REG(r14)(r1)
++	ld	r15,STK_REG(r15)(r1)
++	ld	r16,STK_REG(r16)(r1)
++	addi	r1,r1,STACKFRAMESIZE
++.Lsrc_error_nr:
+ 	cmpdi	0,r7,0
+ 	beqlr
+ 	li	r6,-EFAULT
+@@ -450,6 +471,11 @@ dest;	stb	r6,0(r4)
+ 	blr
+ 
+ .Ldest_error:
++	ld	r14,STK_REG(r14)(r1)
++	ld	r15,STK_REG(r15)(r1)
++	ld	r16,STK_REG(r16)(r1)
++	addi	r1,r1,STACKFRAMESIZE
++.Ldest_error_nr:
+ 	cmpdi	0,r8,0
+ 	beqlr
+ 	li	r6,-EFAULT
 -- 
 1.8.3.2
 
