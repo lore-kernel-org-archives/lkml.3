@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188Ab3J1FHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 01:07:41 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:34303 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab3J1FHj (ORCPT
+	id S1752523Ab3J1FIL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 01:08:11 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:61442 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab3J1FIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 01:07:39 -0400
-X-AuditID: cbfee691-b7f866d000001b8c-49-526df1135fd3
+	Mon, 28 Oct 2013 01:08:09 -0400
+X-AuditID: cbfee68f-b7f836d000001b39-22-526df138e2cc
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Changman Lee <cm224.lee@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Subject: [PATCH] f2fs: remove unnecessary segment bitmap updates
-Date: Mon, 28 Oct 2013 14:06:47 +0900
-Message-id: <1382936807-4778-1-git-send-email-jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH 1/2] f2fs: clean up acl flow for better readability
+Date: Mon, 28 Oct 2013 14:07:25 +0900
+Message-id: <1382936846-4860-1-git-send-email-jaegeuk.kim@samsung.com>
 X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t8zA13hj7lBBmdXylpc29fIZHF9118m
-	i0uL3C327D3JYnF51xw2B1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxvVLjewF
-	fQIV+04fZ2pg7OXtYuTkkBAwkXh68zsrhC0mceHeerYuRi4OIYFljBINy5+xwRR9Xv8DrEhI
-	YDqjxPO74hBFzUwSt+Z/Zexi5OBgE9CW2LzfAKRGRIBZYsHU84wgNcwCOxglOromgdUICzhI
-	HHucDlLDIqAq8f/RGbD5vAJuEv+/LWeB2KUtse35RLBeCYHnbBL/dq9nhmgQkPg2+RALyBwJ
-	AVmJTQeYIeolJQ6uuMEygVFwASPDKkbR1ILkguKk9CJTveLE3OLSvHS95PzcTYyQUJy4g/H+
-	AetDjMlA4yYyS4km5wNDOa8k3tDYzMjC1MTU2Mjc0ow0YSVx3vRHSUFCAumJJanZqakFqUXx
-	RaU5qcWHGJk4OKUaGNOjj+VPWOnz3VcuXvjLmmfSyxZ0z1SL/bH++iLeJbVS2q6qbnsfzsst
-	5nOTqWs1KvSqv/jt9h95i/ilOlefbtyTaWL/T3YLJ++6t7UJe6cKKJ7KjvGZ7fJHv+I3B3Ox
-	s+qEhtfSf2/WTnWxOfvmniTbxtx1F48dFzH35Dxe2PXk7yXO03FfPyixFGckGmoxFxUnAgA5
-	gxrcWwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t9jQV3hj7lBBje2SFhc29fIZHF9118m
-	i0uL3C327D3JYnF51xw2B1aP3Qs+M3n0bVnF6PF5k1wAc1QDo01GamJKapFCal5yfkpmXrqt
-	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
-	MI0Rur4hQXA9RgZoIGEdY8b1S43sBX0CFftOH2dqYOzl7WLk5JAQMJH4vP4HK4QtJnHh3no2
-	EFtIYDqjxPO74l2MXEB2M5PErflfGbsYOTjYBLQlNu83AKkREWCWWDD1PCNIDbPADkaJjq5J
-	YDXCAg4Sxx6ng9SwCKhK/H90Bmwmr4CbxP9vy1kgdmlLbHs+kXECI/cCRoZVjKKpBckFxUnp
-	uUZ6xYm5xaV56XrJ+bmbGMGB/kx6B+OqBotDjAIcjEo8vBvW5gYJsSaWFVfmHmKU4GBWEuHt
-	uwUU4k1JrKxKLcqPLyrNSS0+xJgMtH0is5Rocj4wCvNK4g2NTcyMLI3MLIxMzM1JE1YS5z3Y
-	ah0oJJCeWJKanZpakFoEs4WJg1OqgVHyv6/pHxGpqWqH5b81LpdjtJeV1boev1dL8eLpxffX
-	P1iwOJtD+gLPgd+f9z5ycFc6ofVXqbXkftob/uLM+VGC4XOmhn931/kx57qdoM2eQAa7AG7+
-	sA9tQZ4nJv9yKrlZwbXs8eyMtScvZxx+8X6dZs6pQ9W+3pYCeZuFg18Xz9zI4hedJqbEUpyR
-	aKjFXFScCABiQMZkuAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t8zI12Lj7lBBhue81lc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXF7532mgm3CFc+2
+	rGNpYHzG38XIySEhYCKxoLmXDcIWk7hwbz2QzcUhJLCMUeLks8VsMEXvVhxkhkhMZ5ToW/uZ
+	BcJpZpJY1H6asYuRg4NNQFti834DkAYRAWaJBVPPM4LUMAtMYJT4v+g9C0hCWMBZ4uPOa0wg
+	NouAqsSs97cYQWxeATeJ4zc3sUNs05bY9nwiWLOEwGM2iYP/jjJCNAhIfJt8iAVkmYSArMSm
+	A8wQ9ZISB1fcYJnAKLiAkWEVo2hqQXJBcVJ6kbFecWJucWleul5yfu4mRkgQ9u9gvHvA+hBj
+	MtC4icxSosn5wCDOK4k3NDYzsjA1MTU2Mrc0I01YSZz3/sOkICGB9MSS1OzU1ILUovii0pzU
+	4kOMTBycUg2M1ayrvkw77vWSU/7h3Q4Fh8iiOTx7YnUnP0+yMGk2PRqkaquwLuyZ/rvrr4Ly
+	n0k/ZLqhnPfc7dXd9e5e2hpdsd++73jeHxzPPivg+qqL/CKT1grPcpAtXHg198XJNK5rBpFF
+	Pmv2ff7sYrO7ovO3NNffJRVs++YL3dPzfX7hruBJ1uqby/lElFiKMxINtZiLihMB8YkqflgC	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t9jQV2Lj7lBBu0N3BbXd/1lsri0yN1i
+	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvH
+	m5oZGOoaWlqYKynkJeam2iq5+AToumXmAG1TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesb
+	EgTXY2SABhLWMWbc3nmfqWCbcMWzLetYGhif8XcxcnJICJhIvFtxkBnCFpO4cG89WxcjF4eQ
+	wHRGib61n1kgnGYmiUXtpxm7GDk42AS0JTbvNwBpEBFgllgw9TwjSA2zwARGif+L3rOAJIQF
+	nCU+7rzGBGKzCKhKzHp/ixHE5hVwkzh+cxM7xDZtiW3PJzJOYORewMiwilE0tSC5oDgpPddI
+	rzgxt7g0L10vOT93EyM4xJ9J72Bc1WBxiFGAg1GJh3fD2twgIdbEsuLK3EOMEhzMSiK8fbeA
+	QrwpiZVVqUX58UWlOanFhxiTgbZPZJYSTc4Hxl9eSbyhsYmZkaWRmYWRibk5acJK4rwHW60D
+	hQTSE0tSs1NTC1KLYLYwcXBKNTDWijVdubZ87nO7FXJnU6q2vuhSZa3cx8i1Q/zNrpI9F8IF
+	J146LxdbO8nNxtw34F5QTGB1os/vN60/+besf7Thb/q3Ww4l693Ph4X+a18UG8iwvjzgzqK5
+	bhb7hEybMnNkuR9nzcn9Ondb67afBz5u9be/8v8ww/JNlgHqHkzKq56xevReEfNQYinOSDTU
+	Yi4qTgQAfAx4+7UCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -47,69 +45,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Changman Lee <cm224.lee@samsung.com>
+This patch cleans up a couple of acl codes.
 
-From: Changman Lee <cm224.lee@samsung.com>
-
-Only one dirty type is set in __locate_dirty_segment and we can know
-dirty type of segment. So we don't need to check other dirty types.
-
-Signed-off-by: Changman Lee <cm224.lee@samsung.com>
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/segment.c | 31 ++++++++-----------------------
- 1 file changed, 8 insertions(+), 23 deletions(-)
+ fs/f2fs/acl.c | 25 +++++++++++++------------
+ fs/f2fs/acl.h |  6 +++---
+ 2 files changed, 16 insertions(+), 15 deletions(-)
 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index 487af61..8f92c18 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -58,20 +58,10 @@ static void __locate_dirty_segment(struct f2fs_sb_info *sbi, unsigned int segno,
+diff --git a/fs/f2fs/acl.c b/fs/f2fs/acl.c
+index b7826ec..f1a6975 100644
+--- a/fs/f2fs/acl.c
++++ b/fs/f2fs/acl.c
+@@ -262,8 +262,8 @@ static int f2fs_set_acl(struct inode *inode, int type, struct posix_acl *acl)
  
- 	if (dirty_type == DIRTY) {
- 		struct seg_entry *sentry = get_seg_entry(sbi, segno);
--		enum dirty_type t = DIRTY_HOT_DATA;
-+		enum dirty_type t = sentry->type;
+ int f2fs_init_acl(struct inode *inode, struct inode *dir)
+ {
+-	struct posix_acl *acl = NULL;
+ 	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
++	struct posix_acl *acl = NULL;
+ 	int error = 0;
  
--		dirty_type = sentry->type;
--
--		if (!test_and_set_bit(segno, dirty_i->dirty_segmap[dirty_type]))
--			dirty_i->nr_dirty[dirty_type]++;
--
--		/* Only one bitmap should be set */
--		for (; t <= DIRTY_COLD_NODE; t++) {
--			if (t == dirty_type)
--				continue;
--			if (test_and_clear_bit(segno, dirty_i->dirty_segmap[t]))
--				dirty_i->nr_dirty[t]--;
--		}
-+		if (!test_and_set_bit(segno, dirty_i->dirty_segmap[t]))
-+			dirty_i->nr_dirty[t]++;
+ 	if (!S_ISLNK(inode->i_mode)) {
+@@ -276,19 +276,19 @@ int f2fs_init_acl(struct inode *inode, struct inode *dir)
+ 			inode->i_mode &= ~current_umask();
  	}
- }
  
-@@ -84,16 +74,11 @@ static void __remove_dirty_segment(struct f2fs_sb_info *sbi, unsigned int segno,
- 		dirty_i->nr_dirty[dirty_type]--;
+-	if (test_opt(sbi, POSIX_ACL) && acl) {
++	if (!test_opt(sbi, POSIX_ACL) || !acl)
++		goto cleanup;
  
- 	if (dirty_type == DIRTY) {
--		enum dirty_type t = DIRTY_HOT_DATA;
--
--		/* clear its dirty bitmap */
--		for (; t <= DIRTY_COLD_NODE; t++) {
--			if (test_and_clear_bit(segno,
--						dirty_i->dirty_segmap[t])) {
--				dirty_i->nr_dirty[t]--;
--				break;
--			}
+-		if (S_ISDIR(inode->i_mode)) {
+-			error = f2fs_set_acl(inode, ACL_TYPE_DEFAULT, acl);
+-			if (error)
+-				goto cleanup;
 -		}
-+		struct seg_entry *sentry = get_seg_entry(sbi, segno);
-+		enum dirty_type t = sentry->type;
+-		error = posix_acl_create(&acl, GFP_KERNEL, &inode->i_mode);
+-		if (error < 0)
+-			return error;
+-		if (error > 0)
+-			error = f2fs_set_acl(inode, ACL_TYPE_ACCESS, acl);
++	if (S_ISDIR(inode->i_mode)) {
++		error = f2fs_set_acl(inode, ACL_TYPE_DEFAULT, acl);
++		if (error)
++			goto cleanup;
+ 	}
++	error = posix_acl_create(&acl, GFP_KERNEL, &inode->i_mode);
++	if (error < 0)
++		return error;
++	if (error > 0)
++		error = f2fs_set_acl(inode, ACL_TYPE_ACCESS, acl);
+ cleanup:
+ 	posix_acl_release(acl);
+ 	return error;
+@@ -313,6 +313,7 @@ int f2fs_acl_chmod(struct inode *inode)
+ 	error = posix_acl_chmod(&acl, GFP_KERNEL, mode);
+ 	if (error)
+ 		return error;
 +
-+		if (test_and_clear_bit(segno, dirty_i->dirty_segmap[t]))
-+			dirty_i->nr_dirty[t]--;
+ 	error = f2fs_set_acl(inode, ACL_TYPE_ACCESS, acl);
+ 	posix_acl_release(acl);
+ 	return error;
+diff --git a/fs/f2fs/acl.h b/fs/f2fs/acl.h
+index 80f4306..3839048 100644
+--- a/fs/f2fs/acl.h
++++ b/fs/f2fs/acl.h
+@@ -36,9 +36,9 @@ struct f2fs_acl_header {
  
- 		if (get_valid_blocks(sbi, segno, sbi->segs_per_sec) == 0)
- 			clear_bit(GET_SECNO(sbi, segno),
+ #ifdef CONFIG_F2FS_FS_POSIX_ACL
+ 
+-extern struct posix_acl *f2fs_get_acl(struct inode *inode, int type);
+-extern int f2fs_acl_chmod(struct inode *inode);
+-extern int f2fs_init_acl(struct inode *inode, struct inode *dir);
++extern struct posix_acl *f2fs_get_acl(struct inode *, int);
++extern int f2fs_acl_chmod(struct inode *);
++extern int f2fs_init_acl(struct inode *, struct inode *);
+ #else
+ #define f2fs_check_acl	NULL
+ #define f2fs_get_acl	NULL
 -- 
 1.8.4.474.g128a96c
 
