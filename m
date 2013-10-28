@@ -1,84 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756904Ab3J1Psp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 11:48:45 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:37106 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754442Ab3J1Pso (ORCPT
+	id S1756921Ab3J1Pt0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 11:49:26 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:33330 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756004Ab3J1PtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 11:48:44 -0400
-Date: Mon, 28 Oct 2013 11:48:37 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: Julien Grall <julien.grall@linaro.org>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org
-Subject: Re: [Xen-devel] [PATCH] xen/hvc-console: Make it work with HVM
- guests.
-Message-ID: <20131028154837.GC4353@phenom.dumpdata.com>
-References: <5245FD71.3080408@linaro.org>
- <20130930144513.GM3106@phenom.dumpdata.com>
- <5251CD98.70807@linaro.org>
- <20131023161518.GA28413@phenom.dumpdata.com>
- <526848C1.5030705@linaro.org>
- <20131024144921.GB29944@phenom.dumpdata.com>
- <52694B3F.5090008@linaro.org>
- <1382633034.22417.121.camel@hastur.hellion.org.uk>
- <20131025193812.GA6256@phenom.dumpdata.com>
- <1382776028.22417.174.camel@hastur.hellion.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382776028.22417.174.camel@hastur.hellion.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 28 Oct 2013 11:49:25 -0400
+From: Ming Lei <tom.leiming@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Ming Lei <tom.leiming@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH] scripts/kallsyms: filter symbols not in kernel address space
+Date: Mon, 28 Oct 2013 23:48:59 +0800
+Message-Id: <1382975339-25831-1-git-send-email-tom.leiming@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 26, 2013 at 09:27:08AM +0100, Ian Campbell wrote:
-> On Fri, 2013-10-25 at 15:38 -0400, Konrad Rzeszutek Wilk wrote:
-> > On Thu, Oct 24, 2013 at 05:43:54PM +0100, Ian Campbell wrote:
-> > > But stepping back how/why is this function called on x86 when not
-> > > running under Xen? Wouldn't the use have to be using console=hvc or
-> > > earlyprintk=xen or something -- which strikes me as user error... IOW
-> > > can we not just nuke the check
-> > 
-> > It shouldn't - ever. On x86 it is called from the early PV bootup code.
-> > 
-> > I occasionaly use it when developing/debugging and as such want it working
-> > in HVM even during early bootup.
-> 
-> Does earlyprintk=ttyS0,cough not Just Work for HVM guests? That would
-> avoid all of this stuff and assuming it works would be preferable IMHO.
+This patch uses CONFIG_PAGE_OFFSET to filter symbols which
+are not in kernel address space because these symbols are
+generally for generating code purpose and can't be run at
+kernel mode, so we needn't keep them in /proc/kallsyms.
 
-It works OK. But this is an alternative avenue of using 'xen_raw_printk'
-for both PV and HVM.
+For example, on ARM there are some symbols which are
+linked in relocatable code section, then perf can't parse
+symbols any more from /proc/kallsyms, and this patch fixes
+the problem.
 
-> 
-> Anyway, if not, then given that the xen_cpuid_base case is entirely x86
-> specific perhaps we can abstract this as something like:
-> 
-> 	if (xen_arch_raw_console(str))
-> 		return
-> 
-> 	dom0_write_console(...)
-> 
-> Then ARM:
-> 	#define xen_arch_raw_console 0
-> and x86
-> 	static inline int xen_arch_raw_console(str)
-> 	{
-> 		if (xen_domain())
-> 			return 0;
-> 
-> 		/* Do the outb thing */
-> 		return 1;
-> 	}
-> 
-> This would also avoid the need for #ifdef x86 in the main function which
-> Julien pointed out.
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: Michal Marek <mmarek@suse.cz>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+---
+ scripts/kallsyms.c      |   12 +++++++++++-
+ scripts/link-vmlinux.sh |    2 ++
+ 2 files changed, 13 insertions(+), 1 deletion(-)
 
-OK.
-> 
-> Ian.
-> 
+diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
+index 487ac6f..9a11f9f 100644
+--- a/scripts/kallsyms.c
++++ b/scripts/kallsyms.c
+@@ -55,6 +55,7 @@ static struct sym_entry *table;
+ static unsigned int table_size, table_cnt;
+ static int all_symbols = 0;
+ static char symbol_prefix_char = '\0';
++static unsigned long long kernel_start_addr = 0;
+ 
+ int token_profit[0x10000];
+ 
+@@ -65,7 +66,10 @@ unsigned char best_table_len[256];
+ 
+ static void usage(void)
+ {
+-	fprintf(stderr, "Usage: kallsyms [--all-symbols] [--symbol-prefix=<prefix char>] < in.map > out.S\n");
++	fprintf(stderr, "Usage: kallsyms [--all-symbols] "
++			"[--symbol-prefix=<prefix char>] "
++			"[--page-offset=<CONFIG_PAGE_OFFSET>] "
++			"< in.map > out.S\n");
+ 	exit(1);
+ }
+ 
+@@ -194,6 +198,9 @@ static int symbol_valid(struct sym_entry *s)
+ 	int i;
+ 	int offset = 1;
+ 
++	if (s->addr < kernel_start_addr)
++		return 0;
++
+ 	/* skip prefix char */
+ 	if (symbol_prefix_char && *(s->sym + 1) == symbol_prefix_char)
+ 		offset++;
+@@ -646,6 +653,9 @@ int main(int argc, char **argv)
+ 				if ((*p == '"' && *(p+2) == '"') || (*p == '\'' && *(p+2) == '\''))
+ 					p++;
+ 				symbol_prefix_char = *p;
++			} else if (strncmp(argv[i], "--page-offset=", 14) == 0) {
++				const char *p = &argv[i][14];
++				kernel_start_addr = strtoull(p, NULL, 16);
+ 			} else
+ 				usage();
+ 		}
+diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
+index 0149949..32b10f5 100644
+--- a/scripts/link-vmlinux.sh
++++ b/scripts/link-vmlinux.sh
+@@ -82,6 +82,8 @@ kallsyms()
+ 		kallsymopt="${kallsymopt} --all-symbols"
+ 	fi
+ 
++	kallsymopt="${kallsymopt} --page-offset=$CONFIG_PAGE_OFFSET"
++
+ 	local aflags="${KBUILD_AFLAGS} ${KBUILD_AFLAGS_KERNEL}               \
+ 		      ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
+ 
+-- 
+1.7.9.5
+
