@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab3J1I4U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 04:56:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55553 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755842Ab3J1I4Q (ORCPT
+	id S1755926Ab3J1I5s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 04:57:48 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43607 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750998Ab3J1I5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 04:56:16 -0400
-Date: Mon, 28 Oct 2013 01:54:59 -0700
-From: tip-bot for Thomas Pfaff <tipbot@zytor.com>
-Message-ID: <tip-bbfe65c219c638e19f1da5adab1005b2d68ca810@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        bigeasy@linutronix.de, tglx@linutronix.de, meltedpianoman@gmail.com,
-        tpfaff@pcs.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bigeasy@linutronix.de, tpfaff@pcs.com,
-        meltedpianoman@gmail.com
-In-Reply-To: <1381489240-29626-1-git-send-email-bigeasy@linutronix.de>
-References: <1381489240-29626-1-git-send-email-bigeasy@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/urgent] genirq:
-  Set the irq thread policy without checking CAP_SYS_NICE
-Git-Commit-ID: bbfe65c219c638e19f1da5adab1005b2d68ca810
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 28 Oct 2013 04:57:47 -0400
+Date: Mon, 28 Oct 2013 08:57:00 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: perf: PERF_EVENT_IOC_PERIOD on ARM vs everywhere else
+Message-ID: <20131028085700.GB20218@mudshark.cambridge.arm.com>
+References: <alpine.DEB.2.10.1310272233120.12721@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 28 Oct 2013 01:55:06 -0700 (PDT)
+In-Reply-To: <alpine.DEB.2.10.1310272233120.12721@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bbfe65c219c638e19f1da5adab1005b2d68ca810
-Gitweb:     http://git.kernel.org/tip/bbfe65c219c638e19f1da5adab1005b2d68ca810
-Author:     Thomas Pfaff <tpfaff@pcs.com>
-AuthorDate: Fri, 11 Oct 2013 13:00:40 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 28 Oct 2013 09:50:42 +0100
+On Mon, Oct 28, 2013 at 02:37:46AM +0000, Vince Weaver wrote:
+> Hello
 
-genirq: Set the irq thread policy without checking CAP_SYS_NICE
+Hi Vince,
 
-In commit ee23871389 ("genirq: Set irq thread to RT priority on
-creation") we moved the assigment of the thread's priority from the
-thread's function into __setup_irq(). That function may run in user
-context for instance if the user opens an UART node and then driver
-calls requests in the ->open() callback. That user may not have
-CAP_SYS_NICE and so the irq thread won't run with the SCHED_OTHER
-policy.
+> it was pointed out to me that in the 3.7 kernel (more specifically,
+> 3581fe0ef37ce12ac7a4f74831168352ae848edc ) a change was made in the
+> ARM architecture to change how PERF_EVENT_IOC_PERIOD is handled.
+> 
+> Unlike other architectures, post-3.7 ARM updates the period right away 
+> rather than waiting until the next overflow.
+> 
+> I can't find any discussion as to why this change was made.
 
-This patch uses sched_setscheduler_nocheck() so we omit the CAP_SYS_NICE
-check which is otherwise required for the SCHED_OTHER policy.
+This was in response to complaints from both internal users and people on
+public lists:
 
-[bigeasy: Rewrite the changelog]
+  http://www.mail-archive.com/perfmon2-devel@lists.sourceforge.net/msg02657.html
 
-Signed-off-by: Thomas Pfaff <tpfaff@pcs.com>
-Cc: Ivo Sieben <meltedpianoman@gmail.com>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1381489240-29626-1-git-send-email-bigeasy@linutronix.de
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/manage.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I believe the scenario was something like:
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 514bcfd..3e59f95 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -956,7 +956,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 			goto out_mput;
- 		}
- 
--		sched_setscheduler(t, SCHED_FIFO, &param);
-+		sched_setscheduler_nocheck(t, SCHED_FIFO, &param);
- 
- 		/*
- 		 * We keep the reference to the task struct even if
+ (1) An instruction counter is set up to overflow after 200 instructions,
+     with a SIGIO handler to print some information. It is initially
+     disabled.
+
+ (2) At some point, the counter is enabled for 1 overflow (IOC_REFRESH)
+
+ (3) The counter eventually overflows and the SIGIO handler is triggered.
+     At this pointer the counter is disabled.
+
+ (4) The signal handler changes the period to 200k instructions using
+     IOC_PERIOD and enables the counter for a further overflow.
+
+ (5) SIGIO is taken after 200 instructions, rather than 200k.
+
+> Should other architectures be updated to?  I just wanted to find out the 
+> rationale for this before I update the manpage to reflect the difference 
+> in behaviors between architectures.
+
+I don't want to be the `oddball' architecture (at least, not more than I am
+already :), but I do find it tricky to follow the required semantics of perf
+as opposed to `it happens to work this way', especially when so much of it
+is buried in the various arch backends. So if somebody using the thing on
+ARM has (what looks to me like) a valid issue, then I usually try and fix
+it.
+
+Cheers,
+
+Will
