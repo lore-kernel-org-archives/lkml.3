@@ -1,74 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757711Ab3J1XIS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 19:08:18 -0400
-Received: from [204.155.152.216] ([204.155.152.216]:45599 "EHLO shutemov.name"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757233Ab3J1XIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 19:08:17 -0400
-Date: Tue, 29 Oct 2013 00:11:26 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, dave.jiang@intel.com,
-        Mel Gorman <mgorman@suse.de>, akpm@linux-foundation.org,
-        dhillf@gmail.com
-Subject: Re: [PATCH 2/2] mm: thp: give transparent hugepage code a separate
- copy_page
-Message-ID: <20131028221126.GA29431@shutemov.name>
-References: <20131028221618.4078637F@viggo.jf.intel.com>
- <20131028221620.042323B3@viggo.jf.intel.com>
+	id S932173Ab3J1XIo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 19:08:44 -0400
+Received: from vps-1013890-1301.host4g.ru ([89.253.233.190]:57675 "EHLO
+	vps-1013890-1301.host4g.ru" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932076Ab3J1XIm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 19:08:42 -0400
+X-Greylist: delayed 1510 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Oct 2013 19:08:42 EDT
+Message-ID: <3B84F50C791840D8AC20E1D13AB4B909@yseoj>
+Reply-To: "baltikir" <eveginiya127@seb.dk>
+From: "baltikir" <sale@rudw.ru>
+To: <mail@ygi.msk.ru>, <linux-kernel@vger.kernel.org>, <armopol@gmail.com>,
+        <info@vertex-ukraine.com>, <trade@tvmed.tvcom.ru>
+Subject: =?windows-1251?Q?=C4=EE=E1=F0=EE=E3=EE_=C2=E0=EC_=E4=ED?=
+	=?windows-1251?Q?=FF?=
+Date: Mon, 28 Oct 2013 23:36:54 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131028221620.042323B3@viggo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="windows-1251";
+X-Priority: 3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9SN8od1008075
 
-On Mon, Oct 28, 2013 at 03:16:20PM -0700, Dave Hansen wrote:
-> 
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> Right now, the migration code in migrate_page_copy() uses 
-> copy_huge_page() for hugetlbfs and thp pages:
-> 
->        if (PageHuge(page) || PageTransHuge(page))
->                 copy_huge_page(newpage, page);
-> 
-> So, yay for code reuse.  But:
-> 
-> void copy_huge_page(struct page *dst, struct page *src)
-> {
->         struct hstate *h = page_hstate(src);
-> 
-> and a non-hugetlbfs page has no page_hstate().  This
-> works 99% of the time because page_hstate() determines
-> the hstate from the page order alone.  Since the page
-> order of a THP page matches the default hugetlbfs page
-> order, it works.
-> 
-> But, if you change the default huge page size on the
-> boot command-line (say default_hugepagesz=1G), then
-> we might not even *have* a 2MB hstate so page_hstate()
-> returns null and copy_huge_page() oopses pretty fast
-> since copy_huge_page() dereferences the hstate:
-> 
-> void copy_huge_page(struct page *dst, struct page *src)
-> {
->         struct hstate *h = page_hstate(src);
->         if (unlikely(pages_per_huge_page(h) > MAX_ORDER_NR_PAGES)) {
-> ...
-> 
-> This patch creates a copy_high_order_page() which can
-> be used on THP pages.
-
-We already have copy_user_huge_page() and copy_user_gigantic_page() in
-generic code (mm/memory.c). I think copy_gigantic_page() and
-copy_huge_page() should be moved there too.
-
-BTW, I think pages_per_huge_page in copy_user_huge_page() is redunand:
-compound_order(page) should be enough, right?
-
--- 
- Kirill A. Shutemov
+јдрес в интернете: http://etnatour.com.ua/bitrix/backup/prdwy.htm . ƒостаточна€ система осваиваемого материала - фокусировка на итог. ¬ы получите возможность говорить на английском исключительно следом после дебютного урока. —пецкурс дл€ дебютантов и углублЄнных. ѕодн€ть свою стоимость на поприще труда. ѕоставить свою жизнеде€тельность помногообразнее, вспыхнуть преинтересным делом.
+€фиЇ{.n«+ЙЈЯЃЙ≠Ж+%КЋ€±йЁґ•Кw€Ї{.n«+ЙЈ•К{±юGЂЭй€К{ayЇ ЗЏЩл,j≠Ґf£ҐЈhЪПпБк€Скзz_иЃ(≠йЪОКЁҐj"ЭъґmІ€€ЊЂюGЂЭй€ҐЄ?Щ®и≠Џ&£шІ~ПбґiOХжђzЈЪvЎ^ґmІ€€√€ґм€ҐЄ?ЦI•
