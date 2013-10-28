@@ -1,565 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756678Ab3J1OlZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 10:41:25 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:40408 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755395Ab3J1OlX (ORCPT
+	id S1756798Ab3J1Omm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:42:42 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59354 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756441Ab3J1Omk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:41:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <526A91B9.1060901@ti.com>
-References: <1382710529-12082-1-git-send-email-k.debski@samsung.com>
-	<1382710529-12082-3-git-send-email-k.debski@samsung.com>
-	<526A91B9.1060901@ti.com>
-Date: Mon, 28 Oct 2013 20:11:20 +0530
-Message-ID: <CAFp+6iF2agMNaNhg=6Xx79erV45V=TobH=+GdziFx8j70g8MDw@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/5] phy: Add WIP Exynos 5250 support to the Exynos
- USB PHY driver
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Kamil Debski <k.debski@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-arm@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Mateusz Krawczuk <mat.krawczuk@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 28 Oct 2013 10:42:40 -0400
+Message-ID: <1382971358.2161.7.camel@dabdike.int.hansenpartnership.com>
+Subject: [GIT PULL] SCSI fixes for 3.12-rc7
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Mon, 28 Oct 2013 07:42:38 -0700
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kishon,
+This is a set of four patches that revert functionality introduced in
+the merge window to sg.  The locking changes turned out to introduce
+this bug:
+
+    [  205.372901] [ BUG: lock held when returning to user space! ]
+[...]
+    [  205.373285]  #0:  (&sdp->o_sem){.+.+..}, at: [<ffffffff8161e650>]
+sg_open+0x3a0/0x4d0
+
+The fix is large, so at this late stage we'd like to revert the
+functionality and start again in the next merge window.
+
+The patch is available here:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
+
+The short changelog is:
+
+James Bottomley (4):
+      Revert "sg: use rwsem to solve race during exclusive open"
+      Revert "sg: no need sg_open_exclusive_lock"
+      Revert "sg: checking sdp->detached isn't protected when open"
+      Revert "sg: push file descriptor list locking down to per-device locking"
+
+And the diffstat:
+
+ drivers/scsi/sg.c | 176 +++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 95 insertions(+), 81 deletions(-)
+
+With full diff below.
+
+James
+
+---
+
+diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
+index 5cbc4bb..df5e961 100644
+--- a/drivers/scsi/sg.c
++++ b/drivers/scsi/sg.c
+@@ -105,8 +105,11 @@ static int scatter_elem_sz_prev = SG_SCATTER_SZ;
+ static int sg_add(struct device *, struct class_interface *);
+ static void sg_remove(struct device *, struct class_interface *);
+ 
++static DEFINE_SPINLOCK(sg_open_exclusive_lock);
++
+ static DEFINE_IDR(sg_index_idr);
+-static DEFINE_RWLOCK(sg_index_lock);
++static DEFINE_RWLOCK(sg_index_lock);	/* Also used to lock
++							   file descriptor list for device */
+ 
+ static struct class_interface sg_interface = {
+ 	.add_dev	= sg_add,
+@@ -143,7 +146,8 @@ typedef struct sg_request {	/* SG_MAX_QUEUE requests outstanding per file */
+ } Sg_request;
+ 
+ typedef struct sg_fd {		/* holds the state of a file descriptor */
+-	struct list_head sfd_siblings; /* protected by sfd_lock of device */
++	/* sfd_siblings is protected by sg_index_lock */
++	struct list_head sfd_siblings;
+ 	struct sg_device *parentdp;	/* owning device */
+ 	wait_queue_head_t read_wait;	/* queue read until command done */
+ 	rwlock_t rq_list_lock;	/* protect access to list in req_arr */
+@@ -166,12 +170,13 @@ typedef struct sg_fd {		/* holds the state of a file descriptor */
+ 
+ typedef struct sg_device { /* holds the state of each scsi generic device */
+ 	struct scsi_device *device;
++	wait_queue_head_t o_excl_wait;	/* queue open() when O_EXCL in use */
+ 	int sg_tablesize;	/* adapter's max scatter-gather table size */
+ 	u32 index;		/* device index number */
+-	spinlock_t sfd_lock;	/* protect file descriptor list for device */
++	/* sfds is protected by sg_index_lock */
+ 	struct list_head sfds;
+-	struct rw_semaphore o_sem;	/* exclude open should hold this rwsem */
+ 	volatile char detached;	/* 0->attached, 1->detached pending removal */
++	/* exclude protected by sg_open_exclusive_lock */
+ 	char exclude;		/* opened for exclusive access */
+ 	char sgdebug;		/* 0->off, 1->sense, 9->dump dev, 10-> all devs */
+ 	struct gendisk *disk;
+@@ -220,14 +225,35 @@ static int sg_allow_access(struct file *filp, unsigned char *cmd)
+ 	return blk_verify_command(cmd, filp->f_mode & FMODE_WRITE);
+ }
+ 
++static int get_exclude(Sg_device *sdp)
++{
++	unsigned long flags;
++	int ret;
++
++	spin_lock_irqsave(&sg_open_exclusive_lock, flags);
++	ret = sdp->exclude;
++	spin_unlock_irqrestore(&sg_open_exclusive_lock, flags);
++	return ret;
++}
++
++static int set_exclude(Sg_device *sdp, char val)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&sg_open_exclusive_lock, flags);
++	sdp->exclude = val;
++	spin_unlock_irqrestore(&sg_open_exclusive_lock, flags);
++	return val;
++}
++
+ static int sfds_list_empty(Sg_device *sdp)
+ {
+ 	unsigned long flags;
+ 	int ret;
+ 
+-	spin_lock_irqsave(&sdp->sfd_lock, flags);
++	read_lock_irqsave(&sg_index_lock, flags);
+ 	ret = list_empty(&sdp->sfds);
+-	spin_unlock_irqrestore(&sdp->sfd_lock, flags);
++	read_unlock_irqrestore(&sg_index_lock, flags);
+ 	return ret;
+ }
+ 
+@@ -239,6 +265,7 @@ sg_open(struct inode *inode, struct file *filp)
+ 	struct request_queue *q;
+ 	Sg_device *sdp;
+ 	Sg_fd *sfp;
++	int res;
+ 	int retval;
+ 
+ 	nonseekable_open(inode, filp);
+@@ -267,52 +294,54 @@ sg_open(struct inode *inode, struct file *filp)
+ 		goto error_out;
+ 	}
+ 
+-	if ((flags & O_EXCL) && (O_RDONLY == (flags & O_ACCMODE))) {
+-		retval = -EPERM; /* Can't lock it with read only access */
+-		goto error_out;
+-	}
+-	if (flags & O_NONBLOCK) {
+-		if (flags & O_EXCL) {
+-			if (!down_write_trylock(&sdp->o_sem)) {
+-				retval = -EBUSY;
+-				goto error_out;
+-			}
+-		} else {
+-			if (!down_read_trylock(&sdp->o_sem)) {
+-				retval = -EBUSY;
+-				goto error_out;
+-			}
++	if (flags & O_EXCL) {
++		if (O_RDONLY == (flags & O_ACCMODE)) {
++			retval = -EPERM; /* Can't lock it with read only access */
++			goto error_out;
++		}
++		if (!sfds_list_empty(sdp) && (flags & O_NONBLOCK)) {
++			retval = -EBUSY;
++			goto error_out;
++		}
++		res = wait_event_interruptible(sdp->o_excl_wait,
++					   ((!sfds_list_empty(sdp) || get_exclude(sdp)) ? 0 : set_exclude(sdp, 1)));
++		if (res) {
++			retval = res;	/* -ERESTARTSYS because signal hit process */
++			goto error_out;
++		}
++	} else if (get_exclude(sdp)) {	/* some other fd has an exclusive lock on dev */
++		if (flags & O_NONBLOCK) {
++			retval = -EBUSY;
++			goto error_out;
++		}
++		res = wait_event_interruptible(sdp->o_excl_wait, !get_exclude(sdp));
++		if (res) {
++			retval = res;	/* -ERESTARTSYS because signal hit process */
++			goto error_out;
+ 		}
+-	} else {
+-		if (flags & O_EXCL)
+-			down_write(&sdp->o_sem);
+-		else
+-			down_read(&sdp->o_sem);
+ 	}
+-	/* Since write lock is held, no need to check sfd_list */
+-	if (flags & O_EXCL)
+-		sdp->exclude = 1;	/* used by release lock */
+-
++	if (sdp->detached) {
++		retval = -ENODEV;
++		goto error_out;
++	}
+ 	if (sfds_list_empty(sdp)) {	/* no existing opens on this device */
+ 		sdp->sgdebug = 0;
+ 		q = sdp->device->request_queue;
+ 		sdp->sg_tablesize = queue_max_segments(q);
+ 	}
+-	sfp = sg_add_sfp(sdp, dev);
+-	if (!IS_ERR(sfp))
++	if ((sfp = sg_add_sfp(sdp, dev)))
+ 		filp->private_data = sfp;
+-		/* retval is already provably zero at this point because of the
+-		 * check after retval = scsi_autopm_get_device(sdp->device))
+-		 */
+ 	else {
+-		retval = PTR_ERR(sfp);
+-
+ 		if (flags & O_EXCL) {
+-			sdp->exclude = 0;	/* undo if error */
+-			up_write(&sdp->o_sem);
+-		} else
+-			up_read(&sdp->o_sem);
++			set_exclude(sdp, 0);	/* undo if error */
++			wake_up_interruptible(&sdp->o_excl_wait);
++		}
++		retval = -ENOMEM;
++		goto error_out;
++	}
++	retval = 0;
+ error_out:
++	if (retval) {
+ 		scsi_autopm_put_device(sdp->device);
+ sdp_put:
+ 		scsi_device_put(sdp->device);
+@@ -329,18 +358,13 @@ sg_release(struct inode *inode, struct file *filp)
+ {
+ 	Sg_device *sdp;
+ 	Sg_fd *sfp;
+-	int excl;
+ 
+ 	if ((!(sfp = (Sg_fd *) filp->private_data)) || (!(sdp = sfp->parentdp)))
+ 		return -ENXIO;
+ 	SCSI_LOG_TIMEOUT(3, printk("sg_release: %s\n", sdp->disk->disk_name));
+ 
+-	excl = sdp->exclude;
+-	sdp->exclude = 0;
+-	if (excl)
+-		up_write(&sdp->o_sem);
+-	else
+-		up_read(&sdp->o_sem);
++	set_exclude(sdp, 0);
++	wake_up_interruptible(&sdp->o_excl_wait);
+ 
+ 	scsi_autopm_put_device(sdp->device);
+ 	kref_put(&sfp->f_ref, sg_remove_sfp);
+@@ -1391,9 +1415,8 @@ static Sg_device *sg_alloc(struct gendisk *disk, struct scsi_device *scsidp)
+ 	disk->first_minor = k;
+ 	sdp->disk = disk;
+ 	sdp->device = scsidp;
+-	spin_lock_init(&sdp->sfd_lock);
+ 	INIT_LIST_HEAD(&sdp->sfds);
+-	init_rwsem(&sdp->o_sem);
++	init_waitqueue_head(&sdp->o_excl_wait);
+ 	sdp->sg_tablesize = queue_max_segments(q);
+ 	sdp->index = k;
+ 	kref_init(&sdp->d_ref);
+@@ -1526,13 +1549,11 @@ static void sg_remove(struct device *cl_dev, struct class_interface *cl_intf)
+ 
+ 	/* Need a write lock to set sdp->detached. */
+ 	write_lock_irqsave(&sg_index_lock, iflags);
+-	spin_lock(&sdp->sfd_lock);
+ 	sdp->detached = 1;
+ 	list_for_each_entry(sfp, &sdp->sfds, sfd_siblings) {
+ 		wake_up_interruptible(&sfp->read_wait);
+ 		kill_fasync(&sfp->async_qp, SIGPOLL, POLL_HUP);
+ 	}
+-	spin_unlock(&sdp->sfd_lock);
+ 	write_unlock_irqrestore(&sg_index_lock, iflags);
+ 
+ 	sysfs_remove_link(&scsidp->sdev_gendev.kobj, "generic");
+@@ -2043,7 +2064,7 @@ sg_add_sfp(Sg_device * sdp, int dev)
+ 
+ 	sfp = kzalloc(sizeof(*sfp), GFP_ATOMIC | __GFP_NOWARN);
+ 	if (!sfp)
+-		return ERR_PTR(-ENOMEM);
++		return NULL;
+ 
+ 	init_waitqueue_head(&sfp->read_wait);
+ 	rwlock_init(&sfp->rq_list_lock);
+@@ -2057,13 +2078,9 @@ sg_add_sfp(Sg_device * sdp, int dev)
+ 	sfp->cmd_q = SG_DEF_COMMAND_Q;
+ 	sfp->keep_orphan = SG_DEF_KEEP_ORPHAN;
+ 	sfp->parentdp = sdp;
+-	spin_lock_irqsave(&sdp->sfd_lock, iflags);
+-	if (sdp->detached) {
+-		spin_unlock_irqrestore(&sdp->sfd_lock, iflags);
+-		return ERR_PTR(-ENODEV);
+-	}
++	write_lock_irqsave(&sg_index_lock, iflags);
+ 	list_add_tail(&sfp->sfd_siblings, &sdp->sfds);
+-	spin_unlock_irqrestore(&sdp->sfd_lock, iflags);
++	write_unlock_irqrestore(&sg_index_lock, iflags);
+ 	SCSI_LOG_TIMEOUT(3, printk("sg_add_sfp: sfp=0x%p\n", sfp));
+ 	if (unlikely(sg_big_buff != def_reserved_size))
+ 		sg_big_buff = def_reserved_size;
+@@ -2113,9 +2130,10 @@ static void sg_remove_sfp(struct kref *kref)
+ 	struct sg_device *sdp = sfp->parentdp;
+ 	unsigned long iflags;
+ 
+-	spin_lock_irqsave(&sdp->sfd_lock, iflags);
++	write_lock_irqsave(&sg_index_lock, iflags);
+ 	list_del(&sfp->sfd_siblings);
+-	spin_unlock_irqrestore(&sdp->sfd_lock, iflags);
++	write_unlock_irqrestore(&sg_index_lock, iflags);
++	wake_up_interruptible(&sdp->o_excl_wait);
+ 
+ 	INIT_WORK(&sfp->ew.work, sg_remove_sfp_usercontext);
+ 	schedule_work(&sfp->ew.work);
+@@ -2502,7 +2520,7 @@ static int sg_proc_seq_show_devstrs(struct seq_file *s, void *v)
+ 	return 0;
+ }
+ 
+-/* must be called while holding sg_index_lock and sfd_lock */
++/* must be called while holding sg_index_lock */
+ static void sg_proc_debug_helper(struct seq_file *s, Sg_device * sdp)
+ {
+ 	int k, m, new_interface, blen, usg;
+@@ -2587,26 +2605,22 @@ static int sg_proc_seq_show_debug(struct seq_file *s, void *v)
+ 
+ 	read_lock_irqsave(&sg_index_lock, iflags);
+ 	sdp = it ? sg_lookup_dev(it->index) : NULL;
+-	if (sdp) {
+-		spin_lock(&sdp->sfd_lock);
+-		if (!list_empty(&sdp->sfds)) {
+-			struct scsi_device *scsidp = sdp->device;
++	if (sdp && !list_empty(&sdp->sfds)) {
++		struct scsi_device *scsidp = sdp->device;
+ 
+-			seq_printf(s, " >>> device=%s ", sdp->disk->disk_name);
+-			if (sdp->detached)
+-				seq_printf(s, "detached pending close ");
+-			else
+-				seq_printf
+-				    (s, "scsi%d chan=%d id=%d lun=%d   em=%d",
+-				     scsidp->host->host_no,
+-				     scsidp->channel, scsidp->id,
+-				     scsidp->lun,
+-				     scsidp->host->hostt->emulated);
+-			seq_printf(s, " sg_tablesize=%d excl=%d\n",
+-				   sdp->sg_tablesize, sdp->exclude);
+-			sg_proc_debug_helper(s, sdp);
+-		}
+-		spin_unlock(&sdp->sfd_lock);
++		seq_printf(s, " >>> device=%s ", sdp->disk->disk_name);
++		if (sdp->detached)
++			seq_printf(s, "detached pending close ");
++		else
++			seq_printf
++			    (s, "scsi%d chan=%d id=%d lun=%d   em=%d",
++			     scsidp->host->host_no,
++			     scsidp->channel, scsidp->id,
++			     scsidp->lun,
++			     scsidp->host->hostt->emulated);
++		seq_printf(s, " sg_tablesize=%d excl=%d\n",
++			   sdp->sg_tablesize, get_exclude(sdp));
++		sg_proc_debug_helper(s, sdp);
+ 	}
+ 	read_unlock_irqrestore(&sg_index_lock, iflags);
+ 	return 0;
 
 
-On Fri, Oct 25, 2013 at 9:13 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> Hi,
->
-> On Friday 25 October 2013 07:45 PM, Kamil Debski wrote:
->> Add support for Exynos 5250. This is work-in-progress commit. Not
->> for merging.
->>
->> Signed-off-by: Kamil Debski <k.debski@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->>  drivers/phy/Kconfig              |    7 +
->>  drivers/phy/Makefile             |    1 +
->>  drivers/phy/phy-exynos-usb.c     |   10 +
->>  drivers/phy/phy-exynos-usb.h     |    1 +
->>  drivers/phy/phy-exynos5250-usb.c |  411 ++++++++++++++++++++++++++++++++++++++
->>  5 files changed, 430 insertions(+)
->>  create mode 100644 drivers/phy/phy-exynos5250-usb.c
->>
->> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
->> index 2f7ac0a..0f598d0 100644
->> --- a/drivers/phy/Kconfig
->> +++ b/drivers/phy/Kconfig
->> @@ -36,4 +36,11 @@ config PHY_EXYNOS4212_USB
->>       help
->>         Enable USB PHY support for Exynos 4212
->>
->> +config PHY_EXYNOS5250_USB
->> +     bool "Support for Exynos 5250"
->> +     depends on PHY_EXYNOS_USB
->
-> This should be a separate driver. Not necessary to use PHY_EXYNOS_USB.
->> +     depends on SOC_EXYNOS5250
->> +     help
->> +       Enable USB PHY support for Exynos 5250
->> +
->>  endmenu
->> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
->> index ca3dc82..0dff0dd 100644
->> --- a/drivers/phy/Makefile
->> +++ b/drivers/phy/Makefile
->> @@ -6,3 +6,4 @@ obj-$(CONFIG_GENERIC_PHY)     += phy-core.o
->>  obj-$(CONFIG_PHY_EXYNOS_USB)         += phy-exynos-usb.o
->>  obj-$(CONFIG_PHY_EXYNOS4210_USB)     += phy-exynos4210-usb.o
->>  obj-$(CONFIG_PHY_EXYNOS4212_USB)     += phy-exynos4212-usb.o
->> +obj-$(CONFIG_PHY_EXYNOS5250_USB)     += phy-exynos5250-usb.o
->> diff --git a/drivers/phy/phy-exynos-usb.c b/drivers/phy/phy-exynos-usb.c
->> index d4a26df..172b774 100644
->> --- a/drivers/phy/phy-exynos-usb.c
->> +++ b/drivers/phy/phy-exynos-usb.c
->> @@ -212,6 +212,10 @@ extern const struct uphy_config exynos4210_uphy_config;
->>  extern const struct uphy_config exynos4212_uphy_config;
->>  #endif
->>
->> +#ifdef CONFIG_PHY_EXYNOS5250_USB
->> +extern const struct uphy_config exynos5250_uphy_config;
->> +#endif
->> +
->>  static const struct of_device_id exynos_uphy_of_match[] = {
->>  #ifdef CONFIG_PHY_EXYNOS4210_USB
->>       {
->> @@ -225,6 +229,12 @@ static const struct of_device_id exynos_uphy_of_match[] = {
->>               .data = &exynos4212_uphy_config,
->>       },
->>  #endif
->> +#ifdef CONFIG_PHY_EXYNOS5250_USB
->> +     {
->> +             .compatible = "samsung,exynos5250-usbphy",
->> +             .data = &exynos5250_uphy_config,
->> +     },
->> +#endif
->>       { },
->>  };
->>
->> diff --git a/drivers/phy/phy-exynos-usb.h b/drivers/phy/phy-exynos-usb.h
->> index f45cb3c..a9febfa 100644
->> --- a/drivers/phy/phy-exynos-usb.h
->> +++ b/drivers/phy/phy-exynos-usb.h
->> @@ -42,6 +42,7 @@ enum samsung_cpu_type {
->>       TYPE_S3C64XX,
->>       TYPE_EXYNOS4210,
->>       TYPE_EXYNOS4212,
->> +     TYPE_EXYNOS5250,
->
-> No cpu types here.
-
-One question here.
-In case we move to single driver for Exynos4 SoCs (4210, 4212 and 4412
-later) as well as S5PV210,
-there will be certain things changing from one SoC to another, how
-should we target that in case we
-don't have CPU types ?
-May be i am misinterpreting your suggestion ?
-
->>  };
->>
->>  enum uphy_state {
->> diff --git a/drivers/phy/phy-exynos5250-usb.c b/drivers/phy/phy-exynos5250-usb.c
->> new file mode 100644
->> index 0000000..156093b
->> --- /dev/null
->> +++ b/drivers/phy/phy-exynos5250-usb.c
->> @@ -0,0 +1,411 @@
->> +/*
->> + * Samsung S5P/EXYNOS SoC series USB PHY driver
->> + *
->> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
->> + * Author: Kamil Debski <k.debski@samsung.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +
->> +#include <linux/clk.h>
->> +#include <linux/delay.h>
->> +#include <linux/io.h>
->> +#include <linux/kernel.h>
->> +#include <linux/module.h>
->> +#include <linux/of.h>
->> +#include <linux/of_address.h>
->> +#include <linux/phy/phy.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/spinlock.h>
->> +#include "phy-exynos-usb.h"
->> +
->> +/* Exynos USB PHY registers */
->> +#define EXYNOS_5250_REFCLKSEL_CRYSTAL        0x0
->> +#define EXYNOS_5250_REFCLKSEL_XO     0x1
->> +#define EXYNOS_5250_REFCLKSEL_CLKCORE        0x2
->> +
->> +#define EXYNOS_5250_FSEL_9MHZ6               0x0
->> +#define EXYNOS_5250_FSEL_10MHZ               0x1
->> +#define EXYNOS_5250_FSEL_12MHZ               0x2
->> +#define EXYNOS_5250_FSEL_19MHZ2              0x3
->> +#define EXYNOS_5250_FSEL_20MHZ               0x4
->> +#define EXYNOS_5250_FSEL_24MHZ               0x5
->> +#define EXYNOS_5250_FSEL_50MHZ               0x7
->> +
->> +/* Normal host */
->> +#define EXYNOS_5250_HOSTPHYCTRL0                     0x0
->> +
->> +#define EXYNOS_5250_HOSTPHYCTRL0_PHYSWRSTALL         (0x1 << 31)
->> +#define EXYNOS_5250_HOSTPHYCTRL0_REFCLKSEL_SHIFT     19
->> +#define EXYNOS_5250_HOSTPHYCTRL0_REFCLKSEL_MASK      \
->> +             (0x3 << EXYNOS_5250_HOSTPHYCTRL0_REFCLKSEL_SHIFT)
->> +#define EXYNOS_5250_HOSTPHYCTRL0_FSEL_SHIFT          16
->> +#define EXYNOS_5250_HOSTPHYCTRL0_FSEL_MASK \
->> +             (0x7 << EXYNOS_5250_HOSTPHYCTRL0_FSEL_SHIFT)
->> +#define EXYNOS_5250_HOSTPHYCTRL0_TESTBURNIN          (0x1 << 11)
->> +#define EXYNOS_5250_HOSTPHYCTRL0_RETENABLE           (0x1 << 10)
->> +#define EXYNOS_5250_HOSTPHYCTRL0_COMMON_ON_N         (0x1 << 9)
->> +#define EXYNOS_5250_HOSTPHYCTRL0_VATESTENB_MASK              (0x3 << 7)
->> +#define EXYNOS_5250_HOSTPHYCTRL0_VATESTENB_DUAL              (0x0 << 7)
->> +#define EXYNOS_5250_HOSTPHYCTRL0_VATESTENB_ID0               (0x1 << 7)
->> +#define EXYNOS_5250_HOSTPHYCTRL0_VATESTENB_ANALOGTEST        (0x2 << 7)
->> +#define EXYNOS_5250_HOSTPHYCTRL0_SIDDQ                       (0x1 << 6)
->> +#define EXYNOS_5250_HOSTPHYCTRL0_FORCESLEEP          (0x1 << 5)
->> +#define EXYNOS_5250_HOSTPHYCTRL0_FORCESUSPEND                (0x1 << 4)
->> +#define EXYNOS_5250_HOSTPHYCTRL0_WORDINTERFACE               (0x1 << 3)
->> +#define EXYNOS_5250_HOSTPHYCTRL0_UTMISWRST           (0x1 << 2)
->> +#define EXYNOS_5250_HOSTPHYCTRL0_LINKSWRST           (0x1 << 1)
->> +#define EXYNOS_5250_HOSTPHYCTRL0_PHYSWRST            (0x1 << 0)
->> +
->> +/* HSIC0 & HSCI1 */
->> +#define EXYNOS_5250_HOSTPHYCTRL1                     0x10
->> +#define EXYNOS_5250_HOSTPHYCTRL2                     0x20
->> +
->> +#define EXYNOS_5250_HOSTPHYCTRLX_REFCLKSEL_MASK              (0x3 << 23)
->> +#define EXYNOS_5250_HOSTPHYCTRLX_REFCLKDIV_MASK              (0x7f << 16)
->> +#define EXYNOS_5250_HOSTPHYCTRLX_SIDDQ                       (0x1 << 6)
->> +#define EXYNOS_5250_HOSTPHYCTRLX_FORCESLEEP          (0x1 << 5)
->> +#define EXYNOS_5250_HOSTPHYCTRLX_FORCESUSPEND                (0x1 << 4)
->> +#define EXYNOS_5250_HOSTPHYCTRLX_WORDINTERFACE               (0x1 << 3)
->> +#define EXYNOS_5250_HOSTPHYCTRLX_UTMISWRST           (0x1 << 2)
->> +#define EXYNOS_5250_HOSTPHYCTRLX_PHYSWRST            (0x1 << 0)
->> +
->> +/* EHCI control */
->> +#define EXYNOS_5250_HOSTEHCICTRL                     0x30
->> +#define EXYNOS_5250_HOSTEHCICTRL_ENAINCRXALIGN               (0x1 << 29)
->> +#define EXYNOS_5250_HOSTEHCICTRL_ENAINCR4            (0x1 << 28)
->> +#define EXYNOS_5250_HOSTEHCICTRL_ENAINCR8            (0x1 << 27)
->> +#define EXYNOS_5250_HOSTEHCICTRL_ENAINCR16           (0x1 << 26)
->> +#define EXYNOS_5250_HOSTEHCICTRL_AUTOPPDONOVRCUREN   (0x1 << 25)
->> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_SHIFT     19
->> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_MASK      \
->> +             (0x3f << EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_SHIFT)
->> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL1_SHIFT     13
->> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL1_MASK      \
->> +             (0x3f << EXYNOS_5250_HOSTEHCICTRL_FLADJVAL1_SHIFT)
->> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL2_SHIFT     7
->> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_MASK      \
->> +             (0x3f << EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_SHIFT)
->> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVALHOST_SHIFT  1
->> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVALHOST_MASK \
->> +             (0x1 << EXYNOS_5250_HOSTEHCICTRL_FLADJVALHOST_SHIFT)
->> +#define EXYNOS_5250_HOSTEHCICTRL_SIMULATIONMODE              (0x1 << 0)
->> +
->> +/* OHCI control */
->> +#define EXYNOS_5250_HOSTOHCICTRL                        0x34
->> +#define EXYNOS_5250_HOSTOHCICTRL_FRAMELENVAL_SHIFT   1
->> +#define EXYNOS_5250_HOSTOHCICTRL_FRAMELENVAL_MASK \
->> +             (0x3ff << EXYNOS_5250_HOSTOHCICTRL_FRAMELENVAL_SHIFT)
->> +#define EXYNOS_5250_HOSTOHCICTRL_FRAMELENVALEN               (0x1 << 0)
->> +
->> +/* USBOTG */
->> +#define EXYNOS_5250_USBOTGSYS                                0x38
->> +#define EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET               (0x1 << 14)
->> +#define EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG               (0x1 << 13)
->> +#define EXYNOS_5250_USBOTGSYS_PHY_SW_RST             (0x1 << 12)
->> +#define EXYNOS_5250_USBOTGSYS_REFCLKSEL_SHIFT                9
->> +#define EXYNOS_5250_USBOTGSYS_REFCLKSEL_MASK \
->> +             (0x3 << EXYNOS_5250_USBOTGSYS_REFCLKSEL_SHIFT)
->> +#define EXYNOS_5250_USBOTGSYS_ID_PULLUP                      (0x1 << 8)
->> +#define EXYNOS_5250_USBOTGSYS_COMMON_ON                      (0x1 << 7)
->> +#define EXYNOS_5250_USBOTGSYS_FSEL_SHIFT             4
->> +#define EXYNOS_5250_USBOTGSYS_FSEL_MASK \
->> +             (0x3 << EXYNOS_5250_USBOTGSYS_FSEL_SHIFT)
->> +#define EXYNOS_5250_USBOTGSYS_FORCE_SLEEP            (0x1 << 3)
->> +#define EXYNOS_5250_USBOTGSYS_OTGDISABLE             (0x1 << 2)
->> +#define EXYNOS_5250_USBOTGSYS_SIDDQ_UOTG             (0x1 << 1)
->> +#define EXYNOS_5250_USBOTGSYS_FORCE_SUSPEND          (0x1 << 0)
->> +
->> +/* Isolation, configured in the power management unit */
->> +#define EXYNOS_5250_USB_ISOL_OTG_OFFSET              0x0
->> +#define EXYNOS_5250_USB_ISOL_OTG             (1 << 0)
->> +#define EXYNOS_5250_USB_ISOL_HOST_OFFSET     0x4
->> +#define EXYNOS_5250_USB_ISOL_HOST            (1 << 0)
->> +
->> +enum exynos4x12_phy_id {
->> +     EXYNOS5250_DEVICE,
->> +     EXYNOS5250_HOST,
->> +     EXYNOS5250_HSIC0,
->> +     EXYNOS5250_HSIC1,
->> +     EXYNOS5250_NUM_PHYS,
->> +};
->> +
->> +/* exynos5250_rate_to_clk() converts the supplied clock rate to the value that
->> + * can be written to the phy register. */
->
-> Follow coding guidelines ;-)
->> +static u32 exynos5250_rate_to_clk(unsigned long rate)
->> +{
->> +     unsigned int clksel;
->> +
->> +     /* EXYNOS_5250_FSEL_MASK */
->> +
->> +     switch (rate) {
->> +     case 9600 * KHZ:
->> +             clksel = EXYNOS_5250_FSEL_9MHZ6;
->> +             break;
->> +     case 10 * MHZ:
->> +             clksel = EXYNOS_5250_FSEL_10MHZ;
->> +             break;
->> +     case 12 * MHZ:
->> +             clksel = EXYNOS_5250_FSEL_12MHZ;
->> +             break;
->> +     case 19200 * KHZ:
->> +             clksel = EXYNOS_5250_FSEL_19MHZ2;
->> +             break;
->> +     case 20 * MHZ:
->> +             clksel = EXYNOS_5250_FSEL_20MHZ;
->> +             break;
->> +     case 24 * MHZ:
->> +             clksel = EXYNOS_5250_FSEL_24MHZ;
->> +             break;
->> +     case 50 * MHZ:
->> +             clksel = EXYNOS_5250_FSEL_50MHZ;
->> +             break;
->> +     default:
->> +             clksel = CLKSEL_ERROR;
->> +     }
->> +
->> +     return clksel;
->> +}
->> +
->> +static void exynos5250_isol(struct uphy_instance *inst, bool on)
->> +{
->> +     struct uphy_driver *drv = inst->drv;
->> +     u32 offset;
->> +     u32 mask;
->> +     u32 tmp;
->> +
->> +     if (!drv->reg_isol)
->> +             return;
->> +
->> +     switch (inst->cfg->id) {
->> +     case EXYNOS5250_DEVICE:
->> +             offset = EXYNOS_5250_USB_ISOL_OTG_OFFSET;
->> +             mask = EXYNOS_5250_USB_ISOL_OTG;
->> +             break;
->> +     case EXYNOS5250_HOST:
->> +             offset = EXYNOS_5250_USB_ISOL_HOST_OFFSET;
->> +             mask = EXYNOS_5250_USB_ISOL_HOST;
->> +             break;
->> +     default:
->> +             return;
->> +     };
->> +
->> +     tmp = readl(drv->reg_isol + offset);
->> +     if (on)
->> +             tmp &= ~mask;
->> +     else
->> +             tmp |= mask;
->> +     writel(tmp, drv->reg_isol + offset);
->> +}
->> +
->> +static void exynos5250_phy_pwr(struct uphy_instance *inst, bool on)
->> +{
->> +     struct uphy_driver *drv = inst->drv;
->> +     u32 ctrl0;
->> +     u32 otg;
->> +     u32 ehci;
->> +     u32 ohci;
->> +
->> +     switch (inst->cfg->id) {
->> +     case EXYNOS5250_DEVICE:
->> +             writel(0, drv->reg_mode);
->> +
->> +             /* OTG configuration */
->> +             otg = readl(drv->reg_phy + EXYNOS_5250_USBOTGSYS);
->> +             /* The clock */
->> +             otg &= ~EXYNOS_5250_USBOTGSYS_FSEL_MASK;
->> +             otg |= inst->clk << EXYNOS_5250_USBOTGSYS_FSEL_SHIFT;
->> +             /* Reset */
->> +             otg &= ~(EXYNOS_5250_USBOTGSYS_FORCE_SUSPEND |
->> +                     EXYNOS_5250_USBOTGSYS_FORCE_SLEEP |
->> +                     EXYNOS_5250_USBOTGSYS_SIDDQ_UOTG);
->> +             /* TODO: Clear 4 bits as the old driver does. */
->> +             otg |=  EXYNOS_5250_USBOTGSYS_PHY_SW_RST |
->> +                     EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET |
->> +                     EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG |
->> +                     EXYNOS_5250_USBOTGSYS_OTGDISABLE;
->> +             /* Ref clock */
->> +             otg &=  EXYNOS_5250_USBOTGSYS_REFCLKSEL_MASK;
->> +             otg |=  EXYNOS_5250_REFCLKSEL_CLKCORE <<
->> +                                     EXYNOS_5250_USBOTGSYS_REFCLKSEL_SHIFT;
->> +             writel(otg, drv->reg_phy + EXYNOS_5250_USBOTGSYS);
->> +             udelay(10);
->> +             otg &= ~(EXYNOS_5250_USBOTGSYS_PHY_SW_RST |
->> +                     EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG |
->> +                     EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET);
->> +
->> +
->> +             break;
->> +     case EXYNOS5250_HOST:
->> +             /* Host registers configuration */
->> +             ctrl0 = readl(drv->reg_phy + EXYNOS_5250_HOSTPHYCTRL0);
->> +             /* The clock */
->> +             ctrl0 &= ~EXYNOS_5250_HOSTPHYCTRL0_FSEL_MASK;
->> +             ctrl0 |= inst->clk << EXYNOS_5250_HOSTPHYCTRL0_FSEL_SHIFT;
->> +
->> +             /* Reset */
->> +             ctrl0 &= ~(     EXYNOS_5250_HOSTPHYCTRL0_PHYSWRST |
->> +                             EXYNOS_5250_HOSTPHYCTRL0_PHYSWRSTALL |
->> +                             EXYNOS_5250_HOSTPHYCTRL0_SIDDQ |
->> +                             EXYNOS_5250_HOSTPHYCTRL0_FORCESUSPEND |
->> +                             EXYNOS_5250_HOSTPHYCTRL0_FORCESLEEP);
->> +             ctrl0 |=        EXYNOS_5250_HOSTPHYCTRL0_LINKSWRST |
->> +                             EXYNOS_5250_HOSTPHYCTRL0_UTMISWRST |
->> +                             EXYNOS_5250_HOSTPHYCTRL0_COMMON_ON_N;
->> +             writel(ctrl0, drv->reg_phy + EXYNOS_5250_HOSTPHYCTRL0);
->> +             udelay(10);
->> +             ctrl0 &= ~(     EXYNOS_5250_HOSTPHYCTRL0_LINKSWRST |
->> +                             EXYNOS_5250_HOSTPHYCTRL0_UTMISWRST);
->> +             writel(ctrl0, drv->reg_phy + EXYNOS_5250_HOSTPHYCTRL0);
->> +
->> +             /* OTG configuration */
->> +             otg = readl(drv->reg_phy + EXYNOS_5250_USBOTGSYS);
->> +             /* The clock */
->> +             otg &= ~EXYNOS_5250_USBOTGSYS_FSEL_MASK;
->> +             otg |= inst->clk << EXYNOS_5250_USBOTGSYS_FSEL_SHIFT;
->> +             /* Reset */
->> +             otg &= ~(EXYNOS_5250_USBOTGSYS_FORCE_SUSPEND |
->> +                     EXYNOS_5250_USBOTGSYS_FORCE_SLEEP |
->> +                     EXYNOS_5250_USBOTGSYS_SIDDQ_UOTG);
->> +             /* TODO: Clear 4 bits as the old driver does. */
->> +             otg |=  EXYNOS_5250_USBOTGSYS_PHY_SW_RST |
->> +                     EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET |
->> +                     EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG |
->> +                     EXYNOS_5250_USBOTGSYS_OTGDISABLE;
->> +             /* Ref clock */
->> +             otg &=  EXYNOS_5250_USBOTGSYS_REFCLKSEL_MASK;
->> +             otg |=  EXYNOS_5250_REFCLKSEL_CLKCORE <<
->> +                                     EXYNOS_5250_USBOTGSYS_REFCLKSEL_SHIFT;
->> +             writel(otg, drv->reg_phy + EXYNOS_5250_USBOTGSYS);
->> +             udelay(10);
->> +             otg &= ~(EXYNOS_5250_USBOTGSYS_PHY_SW_RST |
->> +                     EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG |
->> +                     EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET);
->> +
->> +             /* Enable EHCI DMA burst */
->> +             ehci = readl(drv->reg_phy + EXYNOS_5250_HOSTEHCICTRL);
->> +             ehci |= EXYNOS_5250_HOSTEHCICTRL_ENAINCRXALIGN |
->> +                     EXYNOS_5250_HOSTEHCICTRL_ENAINCR4 |
->> +                     EXYNOS_5250_HOSTEHCICTRL_ENAINCR8 |
->> +                     EXYNOS_5250_HOSTEHCICTRL_ENAINCR16;
->> +             writel(ehci, drv->reg_phy + EXYNOS_5250_HOSTEHCICTRL);
->> +
->> +             /* OHCI settings */
->> +             ohci = readl(drv->reg_phy + EXYNOS_5250_HOSTOHCICTRL);
->> +             /* Let's do some undocumented magic (based on the old driver) */
->> +             ohci |= 0x1 << 3;
->> +             writel(ohci, drv->reg_phy + EXYNOS_5250_HOSTOHCICTRL);
->> +
->> +             break;
->> +     }
->> +}
->> +
->> +static int exynos5250_power_on(struct uphy_instance *inst)
->> +{
->> +     struct uphy_driver *drv = inst->drv;
->> +
->> +     if (inst->state == STATE_ON) {
->> +             dev_err(drv->dev, "usb phy \"%s\" already on",
->> +                                                     inst->cfg->label);
->> +             return -ENODEV;
->> +     }
->> +
->> +     inst->state = STATE_ON;
->> +     inst->ref_cnt++;
->> +     if (inst->ref_cnt > 1)
->> +             return 0;
->> +
->> +     exynos5250_phy_pwr(inst, 1);
->> +     exynos5250_isol(inst, 0);
->> +
->> +     /* Power on the device, as it is necessary for HSIC to work */
->> +     if (inst->cfg->id == EXYNOS5250_HSIC0) {
->> +             struct uphy_instance *device =
->> +                                     &drv->uphy_instances[EXYNOS5250_DEVICE];
->> +             device->ref_cnt++;
->> +             if (device->ref_cnt > 1)
->> +                     return 0;
->> +             exynos5250_phy_pwr(device, 1);
->> +             exynos5250_isol(device, 0);
->> +     }
->> +
->> +     return 0;
->> +}
->> +
->> +static int exynos5250_power_off(struct uphy_instance *inst)
->> +{
->> +     struct uphy_driver *drv = inst->drv;
->> +
->> +     if (inst->state == STATE_OFF) {
->> +             dev_err(drv->dev, "usb phy \"%s\" already off",
->> +                                                     inst->cfg->label);
->> +             return -EINVAL;
->> +     }
->> +
->> +     inst->state = STATE_OFF;
->> +     inst->ref_cnt--;
->> +
->> +     if (inst->ref_cnt > 0)
->> +             return 0;
->> +
->> +     exynos5250_isol(inst, 1);
->> +     exynos5250_phy_pwr(inst, 0);
->> +
->> +     if (inst->cfg->id == EXYNOS5250_HSIC0) {
->> +             struct uphy_instance *device =
->> +                                     &drv->uphy_instances[EXYNOS5250_DEVICE];
->> +             device->ref_cnt--;
->> +             if (device->ref_cnt > 0)
->> +                     return 0;
->> +             exynos5250_isol(device, 1);
->> +             exynos5250_phy_pwr(device, 0);
->> +     }
->> +
->> +     return 0;
->> +}
->> +
->> +
->> +static const struct common_phy exynos5250_phys[] = {
->> +     {
->> +             .label          = "device",
->> +             .type           = PHY_DEVICE,
->> +             .id             = EXYNOS5250_DEVICE,
->> +             .rate_to_clk    = exynos5250_rate_to_clk,
->> +             .power_on       = exynos5250_power_on,
->> +             .power_off      = exynos5250_power_off,
->> +     },
->> +     {
->> +             .label          = "host",
->> +             .type           = PHY_HOST,
->> +             .id             = EXYNOS5250_HOST,
->> +             .rate_to_clk    = exynos5250_rate_to_clk,
->> +             .power_on       = exynos5250_power_on,
->> +             .power_off      = exynos5250_power_off,
->> +     },
->> +     {
->> +             .label          = "hsic0",
->> +             .type           = PHY_HOST,
->> +             .id             = EXYNOS5250_HSIC0,
->> +             .rate_to_clk    = exynos5250_rate_to_clk,
->> +             .power_on       = exynos5250_power_on,
->> +             .power_off      = exynos5250_power_off,
->> +     },
->> +     {
->> +             .label          = "hsic1",
->> +             .type           = PHY_HOST,
->> +             .id             = EXYNOS5250_HSIC1,
->> +             .rate_to_clk    = exynos5250_rate_to_clk,
->> +             .power_on       = exynos5250_power_on,
->> +             .power_off      = exynos5250_power_off,
->> +     },
->> +     {},
->> +};
->
-> All this can be removed if you don't use exynos common PHY.
->
-> Thanks
-> Kishon
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
