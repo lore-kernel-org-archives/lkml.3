@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932155Ab3J1Rtt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 13:49:49 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:55814 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756848Ab3J1Rtr (ORCPT
+	id S932252Ab3J1RwK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 13:52:10 -0400
+Received: from mail-in-12.arcor-online.net ([151.189.21.52]:59996 "EHLO
+	mail-in-12.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932067Ab3J1RwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 13:49:47 -0400
-Date: Mon, 28 Oct 2013 13:49:27 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-Message-ID: <20131028174927.GC31048@hmsreliant.think-freely.org>
-References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
- <20131012172124.GA18241@gmail.com>
- <20131014202854.GH26880@hmsreliant.think-freely.org>
- <1381785560.2045.11.camel@edumazet-glaptop.roam.corp.google.com>
- <1381789127.2045.22.camel@edumazet-glaptop.roam.corp.google.com>
- <20131017003421.GA31470@hmsreliant.think-freely.org>
- <20131017084121.GC22705@gmail.com>
- <20131028160131.GA31048@hmsreliant.think-freely.org>
- <20131028162044.GA14350@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131028162044.GA14350@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+	Mon, 28 Oct 2013 13:52:06 -0400
+X-Greylist: Passed host: 88.66.243.220
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-15.arcor-online.net 22ACF1AB543
+X-Greylist: Passed host: 88.66.243.220
+X-Greylist: Passed host: 88.66.243.220
+X-Greylist: Passed host: 88.66.243.220
+X-Greylist: Passed host: 88.66.243.220
+X-Greylist: Passed host: 88.66.243.220
+Subject: [PATCH 1/3] HID: roccat: Added new device return value
+From: Stefan Achatz <erazor_de@users.sourceforge.net>
+Reply-To: erazor_de@users.sourceforge.net
+To: Stefan Achatz <erazor_de@users.sourceforge.net>,
+        Rob Landley <rob@landley.net>, Jiri Kosina <jkosina@suse.cz>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Oct 2013 18:52:03 +0100
+Message-ID: <1382982723.2453.9.camel@neuromancer.tessier-ashpool>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 05:20:45PM +0100, Ingo Molnar wrote:
-> 
-> * Neil Horman <nhorman@tuxdriver.com> wrote:
-> 
-> > Base:
-> >        0.093269042 seconds time elapsed                                          ( +-  2.24% )
-> > Prefetch (5x64):
-> >        0.079440009 seconds time elapsed                                          ( +-  2.29% )
-> > Parallel ALU:
-> >        0.087666677 seconds time elapsed                                          ( +-  4.01% )
-> > Prefetch + Parallel ALU:
-> >        0.080758702 seconds time elapsed                                          ( +-  2.34% )
-> > 
-> > So we can see here that we get about a 1% speedup between the base 
-> > and the both (Prefetch + Parallel ALU) case, with prefetch 
-> > accounting for most of that speedup.
-> 
-> Hm, there's still something strange about these results. So the 
-> range of the results is 790-930 nsecs. The noise of the measurements 
-> is 2%-4%, i.e. 20-40 nsecs.
-> 
-> The prefetch-only result itself is the fastest of all - 
-> statistically equivalent to the prefetch+parallel-ALU result, within 
-> the noise range.
-> 
-> So if prefetch is enabled, turning on parallel-ALU has no measurable 
-> effect - which is counter-intuitive. Do you have an 
-> theory/explanation for that?
-> 
-> Thanks,
- I mentioned it farther down, loosely theorizing that running with parallel
-alu's in conjunction with a prefetch, puts more pressure on the load/store unit
-causing stalls while both alu's wait for the L1 cache to fill.  Not sure if that
-makes sense, but I did note that in the both (prefetch+alu case) our data cache
-hit rate was somewhat degraded, so I was going to play with the prefetch stride
-to see if that fixed the situation.  Regardless I agree, the lack of improvement
-in the both case is definately counter-intuitive.
+Ryos uses a new return value for critical errors, others have been
+confirmed.
 
-Neil
+Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+---
+ drivers/hid/hid-roccat-common.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-> 
-> 	Ingo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+diff --git a/drivers/hid/hid-roccat-common.c b/drivers/hid/hid-roccat-common.c
+index 74f7040..e840899 100644
+--- a/drivers/hid/hid-roccat-common.c
++++ b/drivers/hid/hid-roccat-common.c
+@@ -65,10 +65,11 @@ int roccat_common2_send(struct usb_device *usb_dev, uint report_id,
+ EXPORT_SYMBOL_GPL(roccat_common2_send);
+ 
+ enum roccat_common2_control_states {
+-	ROCCAT_COMMON_CONTROL_STATUS_OVERLOAD = 0,
++	ROCCAT_COMMON_CONTROL_STATUS_CRITICAL = 0,
+ 	ROCCAT_COMMON_CONTROL_STATUS_OK = 1,
+ 	ROCCAT_COMMON_CONTROL_STATUS_INVALID = 2,
+-	ROCCAT_COMMON_CONTROL_STATUS_WAIT = 3,
++	ROCCAT_COMMON_CONTROL_STATUS_BUSY = 3,
++	ROCCAT_COMMON_CONTROL_STATUS_CRITICAL_NEW = 4,
+ };
+ 
+ static int roccat_common2_receive_control_status(struct usb_device *usb_dev)
+@@ -88,13 +89,12 @@ static int roccat_common2_receive_control_status(struct usb_device *usb_dev)
+ 		switch (control.value) {
+ 		case ROCCAT_COMMON_CONTROL_STATUS_OK:
+ 			return 0;
+-		case ROCCAT_COMMON_CONTROL_STATUS_WAIT:
++		case ROCCAT_COMMON_CONTROL_STATUS_BUSY:
+ 			msleep(500);
+ 			continue;
+ 		case ROCCAT_COMMON_CONTROL_STATUS_INVALID:
+-
+-		case ROCCAT_COMMON_CONTROL_STATUS_OVERLOAD:
+-			/* seems to be critical - replug necessary */
++		case ROCCAT_COMMON_CONTROL_STATUS_CRITICAL:
++		case ROCCAT_COMMON_CONTROL_STATUS_CRITICAL_NEW:
+ 			return -EINVAL;
+ 		default:
+ 			dev_err(&usb_dev->dev,
+-- 
+1.7.3.4
+
+
+
