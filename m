@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683Ab3J1JPa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 05:15:30 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:65454 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754764Ab3J1JP3 (ORCPT
+	id S1755780Ab3J1JRb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 05:17:31 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:34889 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753488Ab3J1JR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 05:15:29 -0400
-X-AuditID: 9c930197-b7b3eae00000122e-5f-526e2b2f26c0
-From: Namhyung Kim <namhyung@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 6/8] perf tools: Add new comm infrastructure
-References: <1381468543-25334-1-git-send-email-namhyung@kernel.org>
-	<1381468543-25334-7-git-send-email-namhyung@kernel.org>
-	<CAFTL4hz-4ASg8iba6A7_wyU8RaT9a7e9oRkobAbz5+qOt9i9RQ@mail.gmail.com>
-	<20131025130417.GB20423@ghostprotocols.net>
-	<526A8F54.2040601@gmail.com>
-	<CAFTL4hzX=0-_gK6E9V7oH3hrrCerVn_s8TVBsDspzLvpQEmtpw@mail.gmail.com>
-	<526AB61B.80505@gmail.com> <871u369cq0.fsf@sejong.aot.lge.com>
-	<CAFTL4hxbfJy9Tfw2j5ptW5k5AjCBYSuf5_+7U9ShWUQaDqOpdw@mail.gmail.com>
-Date: Mon, 28 Oct 2013 18:15:26 +0900
-In-Reply-To: <CAFTL4hxbfJy9Tfw2j5ptW5k5AjCBYSuf5_+7U9ShWUQaDqOpdw@mail.gmail.com>
-	(Frederic Weisbecker's message of "Mon, 28 Oct 2013 10:09:46 +0100")
-Message-ID: <8738nl92oh.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 28 Oct 2013 05:17:29 -0400
+From: Jan Kiszka <jan.kiszka@siemens.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        Borislav Petkov <bp@suse.de>,
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>
+Subject: [PATCH v6 09/21] scripts/gdb: Add get_target_endianness helper
+Date: Mon, 28 Oct 2013 09:58:46 +0100
+Message-Id: <dada7443499e77ea285011b53e1fb7699d9fe531.1382950737.git.jan.kiszka@siemens.com>
+X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
+In-Reply-To: <cover.1382950737.git.jan.kiszka@siemens.com>
+References: <cover.1382950737.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1382950737.git.jan.kiszka@siemens.com>
+References: <cover.1382950737.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic,
+Parse the target endianness from the output of "show endian" and cache
+the result to return it via the new helper get_target_endiannes. We will
+need it for reading integers from buffers that contain target memory.
 
-On Mon, 28 Oct 2013 10:09:46 +0100, Frederic Weisbecker wrote:
-> Ah cool! Could you please remind me the name of that branch so that I
-> can do some tests and work on top of it?
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ scripts/gdb/linux/utils.py | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
-    perf/callchain-v5
+diff --git a/scripts/gdb/linux/utils.py b/scripts/gdb/linux/utils.py
+index c9d705b..10a227b 100644
+--- a/scripts/gdb/linux/utils.py
++++ b/scripts/gdb/linux/utils.py
+@@ -67,3 +67,21 @@ Note that TYPE and ELEMENT have to be quoted as strings."""
+                             elementname.string())
+ 
+ ContainerOf()
++
++
++BIG_ENDIAN = 0
++LITTLE_ENDIAN = 1
++target_endianness = None
++
++
++def get_target_endianness():
++    global target_endianness
++    if target_endianness is None:
++        endian = gdb.execute("show endian", to_string=True)
++        if "little endian" in endian:
++            target_endianness = LITTLE_ENDIAN
++        elif "big endian" in endian:
++            target_endianness = BIG_ENDIAN
++        else:
++            raise gdb.GdgError("unknown endianness '{0}'".format(endian))
++    return target_endianness
+-- 
+1.8.1.1.298.ge7eed54
 
-Thanks,
-Namhyung
