@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757914Ab3J1Xlb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 19:41:31 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41813 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757812Ab3J1Xl3 (ORCPT
+	id S1757942Ab3J1Xq5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 19:46:57 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:59636 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757884Ab3J1Xqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 19:41:29 -0400
-Date: Mon, 28 Oct 2013 23:41:17 +0000
-From: Russell King - ARM Linux <rmk+kernel@arm.linux.org.uk>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Christoph Hellwig <hch@lst.de>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org,
-        ksummit-attendees@lists.linuxfoundation.org,
-        Junio C Hamano <gitster@pobox.com>, git@vger.kernel.org
-Subject: Re: [ksummit-attendees] [PATCH] commit: Add -f, --fixes <commit>
-	option to add Fixes: line
-Message-ID: <20131028234117.GM16735@n2100.arm.linux.org.uk>
-References: <20131024122255.GI9378@mwanda> <20131024122512.GB9534@mwanda> <20131026181709.GB10488@kroah.com> <20131027013402.GA7146@leaf> <xmqqa9hui2lp.fsf@gitster.dls.corp.google.com> <20131028071606.GA16878@leaf> <20131028085911.GA9411@lst.de> <1383001793.5117.14.camel@pasglop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383001793.5117.14.camel@pasglop>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 28 Oct 2013 19:46:54 -0400
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+To: linux-sh@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 13/19] pinctrl: sh-pfc: Enable the driver on all ARM platforms
+Date: Tue, 29 Oct 2013 00:47:01 +0100
+Message-Id: <1383004027-25036-14-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1383004027-25036-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+References: <1383004027-25036-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 10:09:53AM +1100, Benjamin Herrenschmidt wrote:
-> On Mon, 2013-10-28 at 09:59 +0100, Christoph Hellwig wrote:
-> > Btw, can we please take away this discussion from ksummit-attendees?  It's got
-> > absolutely nothing to do with kernel summit and is getting fairly annoying.
-> 
-> Ack. Additionally, iirc, we had decided that
-> 
->  - We don't cross post multiple lists
-> 
->  - We drop the annoying subject tags
-> 
-> As is, all I see is some attempt at doing an lkml dup, which is
-> pointless
+Renesas ARM platforms are transitioning from single-platform to
+multi-platform kernels using the new ARCH_SHMOBILE_MULTI. Make the
+driver available on all ARM platforms to enable it on both ARCH_SHMOBILE
+and ARCH_SHMOBILE_MULTI and increase build testing coverage.
 
-I agree too.  This whole thread seems to be about noise, and I too
-thought there was something about not cross-posting between this list
-and any other list.
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+---
+ drivers/pinctrl/Makefile       | 2 +-
+ drivers/pinctrl/sh-pfc/Kconfig | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+index 496d9bf..bef5a9f 100644
+--- a/drivers/pinctrl/Makefile
++++ b/drivers/pinctrl/Makefile
+@@ -56,7 +56,7 @@ obj-$(CONFIG_PINCTRL_ST) 	+= pinctrl-st.o
+ obj-$(CONFIG_PINCTRL_VF610)	+= pinctrl-vf610.o
+ 
+ obj-$(CONFIG_PLAT_ORION)        += mvebu/
+-obj-$(CONFIG_ARCH_SHMOBILE)	+= sh-pfc/
++obj-$(CONFIG_ARM)		+= sh-pfc/
+ obj-$(CONFIG_SUPERH)		+= sh-pfc/
+ obj-$(CONFIG_PLAT_SPEAR)	+= spear/
+ obj-$(CONFIG_ARCH_VT8500)	+= vt8500/
+diff --git a/drivers/pinctrl/sh-pfc/Kconfig b/drivers/pinctrl/sh-pfc/Kconfig
+index 636a882..1d6182e 100644
+--- a/drivers/pinctrl/sh-pfc/Kconfig
++++ b/drivers/pinctrl/sh-pfc/Kconfig
+@@ -2,7 +2,7 @@
+ # Renesas SH and SH Mobile PINCTRL drivers
+ #
+ 
+-if ARCH_SHMOBILE || SUPERH
++if ARM || SUPERH
+ 
+ config PINCTRL_SH_PFC
+ 	select GPIO_SH_PFC if ARCH_REQUIRE_GPIOLIB
+-- 
+1.8.1.5
 
