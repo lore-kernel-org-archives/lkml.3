@@ -1,123 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab3J1DRF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 23:17:05 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37072 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755463Ab3J1DRD (ORCPT
+	id S1755463Ab3J1Ddz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 23:33:55 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:12820 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754546Ab3J1Ddy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 23:17:03 -0400
-Date: Mon, 28 Oct 2013 03:16:42 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [RFC 9/9] of/irq: create interrupts-extended property
-Message-ID: <20131028031641.GA2782@kartoffel>
-References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
- <1381869563-16083-10-git-send-email-grant.likely@linaro.org>
- <20131027134607.E1782C4039D@trevor.secretlab.ca>
- <CAL_JsqLN9eOWTo5pZV1m0i2GmxEMJWOcJvci_w=rCO7_h+X1Nw@mail.gmail.com>
+	Sun, 27 Oct 2013 23:33:54 -0400
+X-Spam-Score: -100.8
+Message-ID: <526DDAE5.9040803@asianux.com>
+Date: Mon, 28 Oct 2013 11:32:53 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAL_JsqLN9eOWTo5pZV1m0i2GmxEMJWOcJvci_w=rCO7_h+X1Nw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "vgupta@synopsys.com" <vgupta@synopsys.com>, noamc@ezchip.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arc: kernel: use exporting symbol instead of static inline
+ for arc_get_core_freq()
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 08:24:08PM +0000, Rob Herring wrote:
-> On Sun, Oct 27, 2013 at 8:46 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> > On Tue, 15 Oct 2013 21:39:23 +0100, Grant Likely <grant.likely@linaro.org> wrote:
-> >> The standard interrupts property in device tree can only handle
-> >> interrupts coming from a single interrupt parent. If a device is wired
-> >> to multiple interrupt controllers, then it needs to be attached to a
-> >> node with an interrupt-map property to demux the interrupt specifiers
-> >> which is confusing. It would be a lot easier if there was a form of the
-> >> interrupts property that allows for a separate interrupt phandle for
-> >> each interrupt specifier.
-> >>
-> >> This patch does exactly that by creating a new interrupts-extended
-> >> property which reuses the phandle+arguments pattern used by GPIOs and
-> >> other core bindings.
-> >>
-> >> Signed-off-by: Grant Likely <grant.likely@linaro.org>
-> >> Cc: Rob Herring <rob.herring@calxeda.com>
-> >
-> > Alright, I want to merge this one. I've got an Ack from Tony, general
-> > agreement from an in person converstaion from Ben (aside from wishing he
-> > could think of a better property name), and various rumblings of
-> > approval from anyone I talked to about it at ksummit. I'd like to have
-> > something more that that to put into the commit text. Please take a look
-> > and let me know if you agree/disagree with this binding.
+Need export arc_get_core_freq() instead of let it static inline, or if
+other individual modules use it (e.g. use BASE_BAUD), it can not find
+core_freq variable.
 
-The only comment I have is that I'm not keen on the name (it's a bit generic
-and we might want to extend the interrupts binding in future), but I'm happy to
-leave that as a matter of personal taste.
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/arc/include/asm/clk.h |    9 +--------
+ arch/arc/kernel/clk.c      |    9 ++++++++-
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
-The best alternative I could come up with was parented-interrupts, but that
-could be misinterpreted as describing the relationship backwards (i.e. this
-device is the parent for those interrupts).
-
-> 
-> I think it looks fine, but I'll throw out an alternative proposal.
-> Simply allow for interrupt-parent to be an array in equal size to
-> interrupts property. Then it is a minimal change to the existing
-> binding:
-> 
-> interrupt-parent = <&intc1>, <&intc2>;
-> interrupts = <5 0>, <6 0>;
-
-I'd prefer the interrupts-extended approach.
-
-This might not matter, but if you have an existing driver with two interrupts,
-and you attempt to describe the situation this way, e.g.
-
-  intc1: interrupt_controller1 {
-      compatible = "vendor,interrupt-controller";
-      #interrupt-cells = <1>;
-  };
-
-  intc2: interrupt_controller2 {
-      compatible = "vendor,another-interrupt-controller";
-      #interrupt-cells = <2>;
-  };
-
-  dev {
-      compatible = "vendor,some-device";
-      interrupt-parent = <&intc1>, <&intc2>;
-      interrupts = <5>, <65 73>;
-  };
-
-The existing driver may read interrupts as two interrupts for intc1, and
-believe it's been successful when it has not, and one of those interrupts might
-never fire. That would be very bad for a timer for example.
-
-Additionally it makes the interrupts list difficult for a human to read, as you
-need to match it with an entry in another list (this problem exists with other
-parallel properties like interrupt-names too, but we can't do much better
-there).
-
-It's also easy to make a typo (e.g. an extra cell in an interrupt) that will
-parse as valid when you don't expect it to. At least with the phandle in the
-list it's less likely to happen.
-
-> 
-> Of course interrupts-extended is more inline with standard patterns
-> for bindings.
-
-I think for this reason alone it should be preferable. Unless I'm mistaken it
-would be identical to the clock bindings pattern with a uniformly named
-phandle+args property and a parallel -names property. I don't think the gpio
-style ${NAME}-interrupts would easily fit here.
-
-Thanks,
-Mark.
+diff --git a/arch/arc/include/asm/clk.h b/arch/arc/include/asm/clk.h
+index bf9d29f..256321a 100644
+--- a/arch/arc/include/asm/clk.h
++++ b/arch/arc/include/asm/clk.h
+@@ -9,14 +9,7 @@
+ #ifndef _ASM_ARC_CLK_H
+ #define _ASM_ARC_CLK_H
+ 
+-/* Although we can't really hide core_freq, the accessor is still better way */
+-extern unsigned long core_freq;
+-
+-static inline unsigned long arc_get_core_freq(void)
+-{
+-	return core_freq;
+-}
+-
++extern unsigned long arc_get_core_freq(void);
+ extern int arc_set_core_freq(unsigned long);
+ 
+ #endif
+diff --git a/arch/arc/kernel/clk.c b/arch/arc/kernel/clk.c
+index 10c7b0b..9f4602f 100644
+--- a/arch/arc/kernel/clk.c
++++ b/arch/arc/kernel/clk.c
+@@ -6,9 +6,16 @@
+  * published by the Free Software Foundation.
+  */
+ 
++#include <linux/module.h>
+ #include <asm/clk.h>
+ 
+-unsigned long core_freq = 80000000;
++static unsigned long core_freq = 80000000;
++
++unsigned long arc_get_core_freq(void)
++{
++	return core_freq;
++}
++EXPORT_SYMBOL_GPL(arc_get_core_freq);
+ 
+ /*
+  * As of now we default to device-tree provided clock
+-- 
+1.7.7.6
