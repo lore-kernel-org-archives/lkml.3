@@ -1,116 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180Ab3J1Q75 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 12:59:57 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34485 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932153Ab3J1Q74 (ORCPT
+	id S1757152Ab3J1RBY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 13:01:24 -0400
+Received: from mail-gg0-f178.google.com ([209.85.161.178]:33567 "EHLO
+	mail-gg0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756704Ab3J1RBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 12:59:56 -0400
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Cc: linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        Markus Pargmann <mpa@pengutronix.de>
-Subject: [PATCH] can: c_can: Speed up rx_poll function
-Date: Mon, 28 Oct 2013 17:59:42 +0100
-Message-Id: <1382979582-10352-1-git-send-email-mpa@pengutronix.de>
-X-Mailer: git-send-email 1.8.4.rc3
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 28 Oct 2013 13:01:23 -0400
+Date: Mon, 28 Oct 2013 14:01:11 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 6/8] perf tools: Add new comm infrastructure
+Message-ID: <20131028170111.GG16948@ghostprotocols.net>
+References: <526A8F54.2040601@gmail.com>
+ <CAFTL4hzX=0-_gK6E9V7oH3hrrCerVn_s8TVBsDspzLvpQEmtpw@mail.gmail.com>
+ <526AB61B.80505@gmail.com>
+ <871u369cq0.fsf@sejong.aot.lge.com>
+ <CAFTL4hxbfJy9Tfw2j5ptW5k5AjCBYSuf5_+7U9ShWUQaDqOpdw@mail.gmail.com>
+ <8738nl92oh.fsf@sejong.aot.lge.com>
+ <20131028101248.GA6491@localhost.localdomain>
+ <20131028124309.GE16948@ghostprotocols.net>
+ <20131028142912.GF16948@ghostprotocols.net>
+ <20131028160528.GA10452@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131028160528.GA10452@localhost.localdomain>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch speeds up the rx_poll function by reducing the number of
-register reads.
+Em Mon, Oct 28, 2013 at 05:05:30PM +0100, Frederic Weisbecker escreveu:
+> On Mon, Oct 28, 2013 at 11:29:12AM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Mon, Oct 28, 2013 at 09:43:09AM -0300, Arnaldo Carvalho de Melo escreveu:
+> > > Em Mon, Oct 28, 2013 at 11:12:50AM +0100, Frederic Weisbecker escreveu:
+> > > > On Mon, Oct 28, 2013 at 06:15:26PM +0900, Namhyung Kim wrote:
+> > > > > On Mon, 28 Oct 2013 10:09:46 +0100, Frederic Weisbecker wrote:
+> > > > > > Ah cool! Could you please remind me the name of that branch so that I
+> > > > > > can do some tests and work on top of it?
+> > 
+> > > > >   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+> > > > >     perf/callchain-v5
+> > 
+> > > > Hmm, I tried to rebase on top of tip:perf/core and git is getting confused I guess with
+> > > > which is applied and which is out of tree. There have been a lot of changes since
+> > > > then and thus quite some conflicts.
+> > > > 
+> > > > If you don't mind, I would love if you rebase against latest tip:perf/core as you
+> > > > know better than me what has been applied and what hasn't.
+> >  
+> > > I'll try to do it now.
+> > 
+> > Can you please try with:
+> > 
+> > 	git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git
+> > 	  perf/comm
+> > 
+> > And share your results? I fixed up everything wrt recent flux in my
+> > perf/core branch, did just basic testing here, but so far it looks ok
+> > (and fast!).
+> 
+> Ok I tried perf report, perf script and perf top and it looks good.
+> In fact it looks better than the tip tree. I fixes some bugs that I can
 
-Replace the 32bit register read by a 16bit register read. Currently
-the 32bit register read is implemented by using 2 16bit reads. This is
-inefficient as we only use the lower 16bit in rx_poll.
+tip.tip has the borked disabling of MMAP2 that may explain some of the
+problems you described here
 
-The for loops reads the pending interrupts in every iteration. This
-leads up to 16 reads of pending interrupts. The patch introduces a new
-outer loop to read the pending interrupts as long as 'quota' is above 0.
-This reduces the total number of reads.
+> see in tip:/perf/core:
+> 
+>      $ perf record perf bench sched messaging
+>      $ perf report --stdio -s comm
+>      write failure on standard output: Bad file descriptor
+> 
+> Not sure where that comes from, but it's fixed in your tree. May be that's
+> on the fixes before the comm patches in your tree.
+> 
+> Also it differentiate between pre-exec and post-fork events, which looks
+> more precise (and it fixes some comm mangling as well):
+> 
+> 
+> Before:
+> 
+>      # Overhead          Command
+>      # ........  ...............
+>      #
+>        100.00%  sched-me
 
-The third change is to replace the for-loop by a find_next_bit loop.
+I noticed the above, just on the --stdio tho, checking why this is so...
+Can you try without --stdio, even using --tui?
 
-Tested on AM335x. I removed all 'static' and 'inline' from c_can.c to
-see the timings for all functions. I used the function tracer with
-trace_stats.
+- Arnaldo
 
-125kbit:
-  Function                               Hit    Time            Avg             s^2
-  --------                               ---    ----            ---             ---
-  c_can_do_rx_poll                     63960    10168178 us     158.977 us      1493056 us
-With patch:
-  c_can_do_rx_poll                     63939    4268457 us     66.758 us       818790.9 us
-
-1Mbit:
-  Function                               Hit    Time            Avg             s^2
-  --------                               ---    ----            ---             ---
-  c_can_do_rx_poll                     69489    30049498 us     432.435 us      9271851 us
-With patch:
-  c_can_do_rx_poll                    103034    24220362 us     235.071 us      6016656 us
-
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
----
- drivers/net/can/c_can/c_can.c | 30 ++++++++++++++++++++----------
- 1 file changed, 20 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
-index a668cd4..31af033 100644
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -259,6 +259,12 @@ static u32 c_can_read_reg32(struct c_can_priv *priv, enum reg index)
- 	return val;
- }
- 
-+u16 c_can_read_reg16(struct c_can_priv *priv, enum reg index)
-+{
-+	u16 val = priv->read_reg(priv, index);
-+	return val;
-+}
-+
- static void c_can_enable_all_interrupts(struct c_can_priv *priv,
- 						int enable)
- {
-@@ -798,17 +804,21 @@ static int c_can_do_rx_poll(struct net_device *dev, int quota)
- 	u32 num_rx_pkts = 0;
- 	unsigned int msg_obj, msg_ctrl_save;
- 	struct c_can_priv *priv = netdev_priv(dev);
--	u32 val = c_can_read_reg32(priv, C_CAN_INTPND1_REG);
-+	unsigned long val = c_can_read_reg16(priv, C_CAN_INTPND1_REG);
-+
-+	/*
-+	 * It is faster to read only one 16bit register. This is only possible
-+	 * for a maximum number of 16 objects.
-+	 */
-+	BUILD_BUG_ON_MSG(C_CAN_MSG_OBJ_RX_LAST > 16,
-+			"Implementation does not support more message objects than 16");
-+
-+	while (quota > 0 && (val = c_can_read_reg16(priv, C_CAN_INTPND1_REG))) {
-+		msg_obj = 0;
-+		while ((msg_obj = find_next_bit(&val, 16, msg_obj)) < 16 &&
-+				quota > 0) {
-+			++msg_obj;
- 
--	for (msg_obj = C_CAN_MSG_OBJ_RX_FIRST;
--			msg_obj <= C_CAN_MSG_OBJ_RX_LAST && quota > 0;
--			val = c_can_read_reg32(priv, C_CAN_INTPND1_REG),
--			msg_obj++) {
--		/*
--		 * as interrupt pending register's bit n-1 corresponds to
--		 * message object n, we need to handle the same properly.
--		 */
--		if (val & (1 << (msg_obj - 1))) {
- 			c_can_object_get(dev, 0, msg_obj, IF_COMM_ALL &
- 					~IF_COMM_TXRQST);
- 			msg_ctrl_save = priv->read_reg(priv,
--- 
-1.8.4.rc3
-
+> 
+> After:
+> 
+>      # Overhead          Command
+>      # ........  ...............
+>      #
+>         99.89%  sched-messaging
+>         0.11%             perf
+> 
+> 
+> Thanks!
