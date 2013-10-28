@@ -1,104 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569Ab3J1WKk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 18:10:40 -0400
-Received: from psi.thgersdorf.net ([176.9.98.78]:55433 "EHLO mail.psioc.net"
+	id S1757546Ab3J1WQU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 18:16:20 -0400
+Received: from mga14.intel.com ([143.182.124.37]:10335 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753993Ab3J1WKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 18:10:38 -0400
-From: Thomas Rast <tr@thomasrast.ch>
-To: Johan Herland <johan@herland.net>
-Cc: Christian Couder <christian.couder@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Michael Haggerty <mhagger@alum.mit.edu>,
-        Git mailing list <git@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, Greg KH <greg@kroah.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        ksummit-attendees@lists.linuxfoundation.org,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] commit: Add -f, --fixes <commit> option to add Fixes: line
-References: <20131024122255.GI9378@mwanda> <20131024122512.GB9534@mwanda>
-	<20131026181709.GB10488@kroah.com> <20131027013402.GA7146@leaf>
-	<526CA7D4.1070904@alum.mit.edu> <20131027071407.GA11683@leaf>
-	<874n83m8xv.fsf@linux-k42r.v.cablecom.net>
-	<20131027092019.GB13149@leaf>
-	<CALKQrgc7a+p5eebJErcGdA3QDyvdHEaef36RhZocQp9LjDUeeg@mail.gmail.com>
-	<CAP8UFD3MZJKWUbdZqrSwoatpnx73MTpiwSkxPHYDagGjMSqJNw@mail.gmail.com>
-	<CALKQrgcgfimZRJL7WyS-brqEZnHJkJjK_0cqe6-7HWkuCW6Dzw@mail.gmail.com>
-Date: Mon, 28 Oct 2013 23:10:13 +0100
-In-Reply-To: <CALKQrgcgfimZRJL7WyS-brqEZnHJkJjK_0cqe6-7HWkuCW6Dzw@mail.gmail.com>
-	(Johan Herland's message of "Mon, 28 Oct 2013 03:46:15 +0100")
-Message-ID: <87txg1hwsa.fsf@linux-k42r.v.cablecom.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751992Ab3J1WQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 18:16:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="381361072"
+Subject: [PATCH 1/2] mm: hugetlbfs: Add some VM_BUG_ON()s to catch non-hugetlbfs pages
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, dave.jiang@intel.com, Mel Gorman <mgorman@suse.de>,
+        akpm@linux-foundation.org, dhillf@gmail.com,
+        Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Mon, 28 Oct 2013 15:16:18 -0700
+Message-Id: <20131028221618.4078637F@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johan Herland <johan@herland.net> writes:
 
-> But I still don't see exactly what this option should do (inside "git
-> commit") that would end up being useful across most/all projects, and
-> not just something that could more easily be implemented in the
-> *commit-msg hooks for relevant projects.
+Dave Jiang reported that he was seeing oopses when running
+NUMA systems and default_hugepagesz=1G.  I traced the issue down
+to migrate_page_copy() trying to use the same code for hugetlb
+pages and transparent hugepages.  It should not have been trying
+to pass thp pages in there.
 
-[Ok, admittedly I don't really know what to quote from your message,
-since I'm mostly responding to the overall concept.]
+So, add some VM_BUG_ON()s for the next hapless VM developer that
+tries the same thing.
 
-I like the idea of putting all that in hooks, but I have two
-observations:
+---
 
-* Signed-off-by: is already such a case (and was probably also added for
-  the kernel?) that _could_ have been dealt with using {prepare-,}commit-msg, 
-  but has its own support in various git tools.
+ linux.git-davehans/include/linux/hugetlb.h |    1 +
+ linux.git-davehans/mm/hugetlb.c            |    1 +
+ 2 files changed, 2 insertions(+)
 
-* In your list
-
->   Fixes:
->   Reported-by:
->   Suggested-by:
->   Improved-by:
->   Acked-by:
->   Reviewed-by:
->   Tested-by:
->   Signed-off-by:
-
-  and I might add
-
-    Cherry-picked-from:
-    Reverts:
-
-  if one were to phrase that as a footer/pseudoheader, observe that
-  there are only two kinds of these: footers that contain identities,
-  and footers that contain references to commits.
-
-So why not support these use-cases?  We could have something like
-footer.foo.* configuration, e.g.
-
-[footer "fixes"]
-        type = commit
-        suggest = true
-[footer "acked-by"]
-        type = identity
-
-where 'suggest' (please suggest a better name) means that git-commit
-will put a blank one in the commit message template for you to fill in.
-'commit' and 'identity' can have some elementary expansion and
-validation tied to them.  Some easy extensiblity (hooks?) might not
-hurt, but then as you point out, the existing hooks already cover that.
-
-Perhaps we could also have, for Gerrit (cf. [1]):
-
-[footer "change-id"]
-        type = uuid
-
-though admittedly I haven't investigated if it's okay to just put a
-random string there, or it needs to have a specific value.
-
-
-[1]  http://thread.gmane.org/gmane.comp.version-control.git/236429
-
--- 
-Thomas Rast
-tr@thomasrast.ch
+diff -puN include/linux/hugetlb.h~bug-not-hugetlbfs-in-copy_huge_page include/linux/hugetlb.h
+--- linux.git/include/linux/hugetlb.h~bug-not-hugetlbfs-in-copy_huge_page	2013-10-28 15:06:12.888828815 -0700
++++ linux.git-davehans/include/linux/hugetlb.h	2013-10-28 15:06:12.893829038 -0700
+@@ -355,6 +355,7 @@ static inline pte_t arch_make_huge_pte(p
+ 
+ static inline struct hstate *page_hstate(struct page *page)
+ {
++	VM_BUG_ON(!PageHuge(page));
+ 	return size_to_hstate(PAGE_SIZE << compound_order(page));
+ }
+ 
+diff -puN mm/hugetlb.c~bug-not-hugetlbfs-in-copy_huge_page mm/hugetlb.c
+--- linux.git/mm/hugetlb.c~bug-not-hugetlbfs-in-copy_huge_page	2013-10-28 15:06:12.890828904 -0700
++++ linux.git-davehans/mm/hugetlb.c	2013-10-28 15:06:12.894829082 -0700
+@@ -498,6 +498,7 @@ void copy_huge_page(struct page *dst, st
+ 	int i;
+ 	struct hstate *h = page_hstate(src);
+ 
++	VM_BUG_ON(!h);
+ 	if (unlikely(pages_per_huge_page(h) > MAX_ORDER_NR_PAGES)) {
+ 		copy_gigantic_page(dst, src);
+ 		return;
+_
