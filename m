@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab3J1Ua7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 16:30:59 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:49780 "EHLO
+	id S1756906Ab3J1UfU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 16:35:20 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:45344 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755810Ab3J1Ua5 (ORCPT
+	by vger.kernel.org with ESMTP id S1755323Ab3J1UfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 16:30:57 -0400
-Date: Mon, 28 Oct 2013 20:30:52 +0000
+	Mon, 28 Oct 2013 16:35:19 -0400
+Date: Mon, 28 Oct 2013 20:35:15 +0000
 From: Matt Fleming <matt@console-pimps.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] EFI changes
-Message-ID: <20131028203052.GO1982@console-pimps.org>
-References: <20131028123528.GM1982@console-pimps.org>
- <20131028134413.GA10163@gmail.com>
- <20131028155215.GN1982@console-pimps.org>
- <20131028155525.GA13987@gmail.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Tony Luck <tony.luck@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Christoph Hellwig <hch@infradead.org>,
+        Chen Gong <gong.chen@linux.intel.com>, X86-ML <x86@kernel.org>
+Subject: Re: [PATCH] Move cper.c from drivers/acpi/apei to
+ drivers/firmware/efi
+Message-ID: <20131028203515.GP1982@console-pimps.org>
+References: <20131027204648.GG1982@console-pimps.org>
+ <526eb2c117027ea234@agluck-desk.sc.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131028155525.GA13987@gmail.com>
+In-Reply-To: <526eb2c117027ea234@agluck-desk.sc.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Oct, at 04:55:25PM, Ingo Molnar wrote:
+On Mon, 28 Oct, at 11:53:53AM, Luck, Tony wrote:
+> cper.c contains code to decode and print "Common Platform Error Records".
+> Originally added under drivers/acpi/apei because the only user was in that
+> same directory - but now we have another consumer, and we shouldn't have
+> to force CONFIG_ACPI_APEI get access to this code.
 > 
-> * Matt Fleming <matt@console-pimps.org> wrote:
+> Since CPER is defined in the UEFI specification - the logical home for
+> this code is under drivers/firmware/efi/
 > 
-> > On Mon, 28 Oct, at 02:44:13PM, Ingo Molnar wrote:
-> > > and this breaks the ARM build:
-> > > 
-> > > In file included from /home/mingo/tip/init/main.c:44:
-> > > /home/mingo/tip/include/linux/efi.h:842:21: error: asm/efi.h: No such file or directory
-> > > /home/mingo/tip/init/main.c: In function 'start_kernel':
-> > > /home/mingo/tip/init/main.c:638: error: implicit declaration of function 'efi_enabled'
-> > > /home/mingo/tip/init/main.c:639: error: implicit declaration of function 'efi_late_init'
-> > > /home/mingo/tip/init/main.c:640: error: implicit declaration of function 'efi_free_boot_services'
-> > 
-> > Ah, that's my own fault because my 'next' branch doesn't include 
-> > the ARM EFI support. Where did you get the patches from? Are they 
-> > in linux-next?
+> Signed-off-by: Tony Luck <tony.luck@intel.com>
 > 
-> It's all in tip:x86/efi.
+> ---
 > 
-> > I'm inclined to drop the cleanup patch for now and do it later, 
-> > once things have settled because it's also causing conflicts for 
-> > Borislav's work.
-> 
-> Sure.
+> Matt: as discussed earlier on the mailing list ... just looking
+> for your "Acked-by" so this can go on top of the patch series in
+> the x86/mce branch of the tip tree that already makes a bunch of
+> changes to cper.c
 
-OK, I've pushed out the 'next' branch and retagged it as 'efi-next'
-(again), which hopefully should be finally free from build errors.
+You got it.
+
+Acked-by: Matt Fleming <matt.fleming@intel.com>
 
 -- 
 Matt Fleming, Intel Open Source Technology Center
