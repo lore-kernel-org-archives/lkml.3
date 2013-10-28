@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579Ab3J1MXy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 08:23:54 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:41334 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756403Ab3J1MXx (ORCPT
+	id S1756581Ab3J1MYv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 08:24:51 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:64578 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756313Ab3J1MYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 08:23:53 -0400
+	Mon, 28 Oct 2013 08:24:50 -0400
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: opw-kernel@googlegroups.com,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
         Nitin Gupta <ngupta@vflare.org>,
         Jerome Marchand <jmarchand@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v6 2/3] Staging: zram: Fix variable dereferenced before check
-Date: Mon, 28 Oct 2013 17:53:40 +0530
-Message-Id: <01cafd6f9a98d41c243ae507ae731edc5cca045a.1382962788.git.rashika.kheria@gmail.com>
+Subject: [PATCH v6 3/3] Staging: zram: Fix decrement of variable by calling bdput()
+Date: Mon, 28 Oct 2013 17:54:39 +0530
+Message-Id: <7d016b6c725b88e5f61e21daaacf6c2e205537e0.1382962788.git.rashika.kheria@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <20131019110539.GA25167@gmail.com>
 References: <20131019110539.GA25167@gmail.com>
@@ -25,40 +25,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following Smatch warning in zram_drv.c-
-drivers/staging/zram/zram_drv.c:899
-destroy_device() warn: variable dereferenced before check 'zram->disk' (see line 896)
+As suggested by Jerome Marchand "The code in reset_store get the block device
+(bdget_disk()) but it does not put it (bdput()) when it's done using it.
+The usage count is therefor incremented but never decremented."
+
+Hence, this patch introduces a call to bdput() to decrement the variable after usage.
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 ---
-
-This revision fixes the following issues of the previous revision-
-Seperating patches into Bug fix and Smatch fix 
-
- drivers/staging/zram/zram_drv.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/staging/zram/zram_drv.c |    1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index d640a8f..9027975 100644
+index 9027975..98dac15 100644
 --- a/drivers/staging/zram/zram_drv.c
 +++ b/drivers/staging/zram/zram_drv.c
-@@ -898,13 +898,10 @@ static void destroy_device(struct zram *zram)
- 	sysfs_remove_group(&disk_to_dev(zram->disk)->kobj,
- 			&zram_disk_attr_group);
+@@ -664,6 +664,7 @@ static ssize_t reset_store(struct device *dev,
  
--	if (zram->disk) {
--		del_gendisk(zram->disk);
--		put_disk(zram->disk);
--	}
-+	del_gendisk(zram->disk);
-+	put_disk(zram->disk);
+ 	/* Make sure all pending I/O is finished */
+ 	fsync_bdev(bdev);
++	bdput(bdev);
  
--	if (zram->queue)
--		blk_cleanup_queue(zram->queue);
-+	blk_cleanup_queue(zram->queue);
- }
- 
- static int __init zram_init(void)
+ 	zram_reset_device(zram, true);
+ 	return len;
 -- 
 1.7.9.5
 
