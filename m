@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab3J1ISd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 04:18:33 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:45148 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751979Ab3J1ISb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 04:18:31 -0400
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH] net, mc: fix the incorrect comments in two mc-related functions
-Date: Mon, 28 Oct 2013 16:15:50 +0800
-Message-Id: <1382948150-14349-1-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102808-5806-0000-0000-0000233BEFCA
+	id S1752698Ab3J1I1j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 04:27:39 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:61894 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751338Ab3J1I1i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 04:27:38 -0400
+Message-ID: <1382948855.32195.9.camel@x220.thuisdomein>
+Subject: Re: [PATCH] ACPI: remove unused ACPI_PROCFS Kconfig param
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: Lan Tianyu <lantianyu1986@gmail.com>, Len Brown <lenb@kernel.org>,
+        rjw@rjwysocki.net,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>
+Date: Mon, 28 Oct 2013 09:27:35 +0100
+In-Reply-To: <526E0293.4080702@free-electrons.com>
+References: <1382857012-2971-1-git-send-email-michael.opdenacker@free-electrons.com>
+	 <CAOLK0pxe0tsgo1+U8WT4-9cxTxS9MKaiGhLd2S-T-T7imPyd7A@mail.gmail.com>
+	 <526E0293.4080702@free-electrons.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Oct 2013 08:27:36.0242 (UTC) FILETIME=[8E6EB920:01CED3B7]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Mon, 2013-10-28 at 07:22 +0100, Michael Opdenacker wrote:
+> [...] CONFIG_ACPI_PROCFS is no longer used anywhere, neither in
+> Makefiles nor in the source code. ACPI_PROCFS isn't event used in
+> Kconfig files as an intermediate dependency.
+> 
+> What I deduce from that is that even if you set CONFIG_ACPI_PROCFS=y in
+> the kernel configuration, this will have no impact at all.
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- net/core/dev_addr_lists.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+About half a year ago I noticed that this Kconfig symbol is unused since
+v2.6.38 [0]. As, apparently, nothing has changed it is currently unused
+for over two and a half years.
 
-diff --git a/net/core/dev_addr_lists.c b/net/core/dev_addr_lists.c
-index 6cda4e2..ec40a84 100644
---- a/net/core/dev_addr_lists.c
-+++ b/net/core/dev_addr_lists.c
-@@ -752,7 +752,7 @@ int dev_mc_del_global(struct net_device *dev, const unsigned char *addr)
- EXPORT_SYMBOL(dev_mc_del_global);
- 
- /**
-- *	dev_mc_sync - Synchronize device's unicast list to another device
-+ *	dev_mc_sync - Synchronize device's multicast list to another device
-  *	@to: destination device
-  *	@from: source device
-  *
-@@ -780,7 +780,7 @@ int dev_mc_sync(struct net_device *to, struct net_device *from)
- EXPORT_SYMBOL(dev_mc_sync);
- 
- /**
-- *	dev_mc_sync_multiple - Synchronize device's unicast list to another
-+ *	dev_mc_sync_multiple - Synchronize device's multicast list to another
-  *	device, but allow for multiple calls to sync to multiple devices.
-  *	@to: destination device
-  *	@from: source device
--- 
-1.7.11.7
+I still don't really understand the purpose of this symbol. But whatever
+it is, it might as well be dropped. If it's ever needed again it could
+be re-added. Or, perhaps, an entirely different approach could be used
+to accomplish what that symbol is supposed to do.
+
+
+Paul Bolle
+
+[0] http://marc.info/?l=linux-acpi&m=136398635322975
 
