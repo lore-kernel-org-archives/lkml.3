@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932081Ab3J1Pda (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 11:33:30 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53738 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756280Ab3J1Pd2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 11:33:28 -0400
-Date: Mon, 28 Oct 2013 08:33:20 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Dan Williams <dcbw@redhat.com>,
-        Pali =?ISO-8859-1?B?Um9o4XI=?= <pali.rohar@gmail.com>,
-        Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
-        joni.lapilainen@gmail.com
-Subject: Re: [PATCH 16/16] wl1251: Add sysfs file address for setting
- permanent mac address
-Message-ID: <20131028083320.63d3259f@nehalam.linuxnetplumber.net>
-In-Reply-To: <1382972215.17956.30.camel@jlt4.sipsolutions.net>
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
-	<201310281449.58170@pali>
-	<1382968522.17956.11.camel@jlt4.sipsolutions.net>
-	<201310281500.24159@pali>
-	<1382971562.1542.6.camel@dcbw.foobar.com>
-	<1382972215.17956.30.camel@jlt4.sipsolutions.net>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756755Ab3J1Pkj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 11:40:39 -0400
+Received: from mail.eperm.de ([89.247.134.16]:58181 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755395Ab3J1Pki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 11:40:38 -0400
+From: Stephan Mueller <smueller@chronox.de>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: sandy harris <sandyinchina@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
+Date: Mon, 28 Oct 2013 16:40:13 +0100
+Message-ID: <2049321.gMV6JUDze7@tauon>
+User-Agent: KMail/4.11.2 (Linux/3.11.6-200.fc19.x86_64; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <2579337.FPgJGgHYdz@tauon>
+References: <2579337.FPgJGgHYdz@tauon>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Oct 2013 15:56:55 +0100
-Johannes Berg <johannes@sipsolutions.net> wrote:
+Am Freitag, 11. Oktober 2013, 20:38:51 schrieb Stephan Mueller:
 
-> On Mon, 2013-10-28 at 09:46 -0500, Dan Williams wrote:
-> 
-> > If the device doesn't actually *have* a permanent MAC address, then it
-> > shouldn't be returning one via ethtool, and should return an error for
-> > ETHTOOL_GPERMADDR.
-> 
-> There's currently no provision for that, but I agree it would be better
-> to do so.
-> 
-> johannes
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Hi Ted,
 
-The current netdevice API handle the case of a device without a permanent
-MAC address, slightly differently.
+>Hi,
+>
+>the CPU Jitter RNG [1] is a true random number generator that is
+>intended to work in user and kernel space equally well on a large
+>number of different CPUs. The heart of the RNG is about 30 lines of
+>code. The current implementation allows seamless hooking into the
+>kernel crypto API as well as the Linux /dev/random driver. With its
+>inherent non- blocking behavior, it could solve the problem of a
+>blocking /dev/random.
+>
+>Over the last months, new tests were executed. The list of tests now
+>cover all major operating systems and CPU types as well as microkernels
+>of NOVA, Fiasco.OC and Pistacio. More than 200 different systems are
+>tested. And for those, the tests show that the Jitter RNG produces
+>high- quality output. See [2] appendix F for details.
 
-If device does not have a permanent address,
-then:
-  1. dev->addr_assign_type should not be NET_ADDR_PERM
-  2. when device is registered dev->perm_addr will not be set
-     and retain all zeros value
-  4. when ethtool gets address it will return all zeros which
-     is not a valid address.
+Apart from adding more test results from more systems (now including 
+Windows), I added more updates:
 
-This case doesn't seem to be handled threo mac80211 API's
+- The structure of the Linux kernel code is updated such that the common 
+C code can go to straight to the lib/ directory or any other directory 
+that seems suitable for common code. If it is of help, I can create a 
+patch file to add the CPU Jitter RNG to the Linux kernel code instead of 
+manually copying into a kernel tree for testing it with random.c.
 
+- Based on Sandy Harris' discussion in 
+http://permalink.gmane.org/gmane.comp.encryption.general/16219, the 
+patch for random.c is updated that the initialization function of the 
+entropy pools init_std_data now contains a call to the CPU Jitter RNG to 
+mix in 256 bits of entropy when the entropy pool is filled.
 
+If it is accepted that the CPU Jitter RNG delivers entropy, the latter 
+update may now allow us to get rid of storing the seed file during 
+shutdown and restoring it during the next boot sequence.
+
+Please see the latest patch to random.c in the file patches/linux-3.11-
+random.patch delivered with [1].
+
+Ciao
+Stephan
+
+[1] http://www.chronox.de/jent/jitterentropy-20131028.tar.bz2
 
