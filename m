@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757581Ab3J1TRQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 15:17:16 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58551 "EHLO
+	id S1757597Ab3J1TRX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 15:17:23 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58558 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755559Ab3J1TRM (ORCPT
+	with ESMTP id S1755559Ab3J1TRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 15:17:12 -0400
+	Mon, 28 Oct 2013 15:17:19 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/4] perf hists: Add color overhead for stdio output buffer
-Date: Mon, 28 Oct 2013 16:16:38 -0300
-Message-Id: <1382987801-21896-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 3/4] perf top: Split -G and --call-graph
+Date: Mon, 28 Oct 2013 16:16:40 -0300
+Message-Id: <1382987801-21896-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1382987801-21896-1-git-send-email-acme@infradead.org>
 References: <1382987801-21896-1-git-send-email-acme@infradead.org>
@@ -31,107 +31,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Following commit tightened up the buffer size for output to strict width
-of used format columns:
+Splitting -G and --call-graph for record command, so we could use '-G'
+with no option.
 
-  99cf666 perf hists: Fix formatting of long symbol names
+The '-G' option now takes NO argument and enables the configured unwind
+method, which is currently the frame pointers method.
 
-This works fine until you hit color overhead output which places extra
-bytes into output buffer. We need to account for color overhead in the
-output buffer. Adding maximum color byte size to the output buffer size.
+It will be possible to configure unwind method via config file in
+upcoming patches.
+
+All current '-G' arguments is overtaken by --call-graph option.
+
+NOTE: The documentation for top --call-graph option
+      was wrongly copied from report command.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Tested-by: David Ahern <dsahern@gmail.com>
+Tested-by: Ingo Molnar <mingo@kernel.org>
+Reviewed-by: David Ahern <dsahern@gmail.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1382700293-1803-1-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1382797536-32303-3-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/stdio/hist.c |  9 ++++-----
- tools/perf/util/hist.h     | 13 +++++++++++++
- 2 files changed, 17 insertions(+), 5 deletions(-)
+ tools/perf/Documentation/perf-top.txt | 18 +++++-------------
+ tools/perf/builtin-top.c              | 23 +++++++++++++----------
+ 2 files changed, 18 insertions(+), 23 deletions(-)
 
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 194e2f42ff5d..6c152686e837 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -315,8 +315,7 @@ static inline void advance_hpp(struct perf_hpp *hpp, int inc)
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 58d6598a9686..6a118e71d003 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -140,20 +140,12 @@ Default is to monitor all CPUS.
+ --asm-raw::
+ 	Show raw instruction encoding of assembly instructions.
+ 
+--G [type,min,order]::
++-G::
++	Enables call-graph (stack chain/backtrace) recording.
++
+ --call-graph::
+-        Display call chains using type, min percent threshold and order.
+-	type can be either:
+-	- flat: single column, linear exposure of call chains.
+-	- graph: use a graph tree, displaying absolute overhead rates.
+-	- fractal: like graph, but displays relative rates. Each branch of
+-		 the tree is considered as a new profiled object.
+-
+-	order can be either:
+-	- callee: callee based call graph.
+-	- caller: inverted caller based call graph.
+-
+-	Default: fractal,0.5,callee.
++	Setup and enable call-graph (stack chain/backtrace) recording,
++	implies -G.
+ 
+ --ignore-callees=<regex>::
+         Ignore callees of the function(s) matching the given regex.
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 212214162bb2..0df298a0e946 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1016,16 +1016,16 @@ out_delete:
  }
  
- static int hist_entry__period_snprintf(struct perf_hpp *hpp,
--				       struct hist_entry *he,
--				       bool color)
-+				       struct hist_entry *he)
+ static int
+-parse_callchain_opt(const struct option *opt, const char *arg, int unset)
++callchain_opt(const struct option *opt, const char *arg, int unset)
  {
- 	const char *sep = symbol_conf.field_sep;
- 	struct perf_hpp_fmt *fmt;
-@@ -338,7 +337,7 @@ static int hist_entry__period_snprintf(struct perf_hpp *hpp,
- 		} else
- 			first = false;
- 
--		if (color && fmt->color)
-+		if (perf_hpp__use_color() && fmt->color)
- 			ret = fmt->color(fmt, hpp, he);
- 		else
- 			ret = fmt->entry(fmt, hpp, he);
-@@ -358,12 +357,11 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- 		.buf		= bf,
- 		.size		= size,
- 	};
--	bool color = !symbol_conf.field_sep;
- 
- 	if (size == 0 || size > bfsz)
- 		size = hpp.size = bfsz;
- 
--	ret = hist_entry__period_snprintf(&hpp, he, color);
-+	ret = hist_entry__period_snprintf(&hpp, he);
- 	hist_entry__sort_snprintf(he, bf + ret, size - ret, hists);
- 
- 	ret = fprintf(fp, "%s\n", bf);
-@@ -482,6 +480,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 
- print_entries:
- 	linesz = hists__sort_list_width(hists) + 3 + 1;
-+	linesz += perf_hpp__color_overhead();
- 	line = malloc(linesz);
- 	if (line == NULL) {
- 		ret = -1;
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 1329b6b6ffe6..ce8dc61ce2c3 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -5,6 +5,7 @@
- #include <pthread.h>
- #include "callchain.h"
- #include "header.h"
-+#include "color.h"
- 
- extern struct callchain_param callchain_param;
- 
-@@ -175,6 +176,18 @@ void perf_hpp__init(void);
- void perf_hpp__column_register(struct perf_hpp_fmt *format);
- void perf_hpp__column_enable(unsigned col);
- 
-+static inline size_t perf_hpp__use_color(void)
-+{
-+	return !symbol_conf.field_sep;
+-	/*
+-	 * --no-call-graph
+-	 */
+-	if (unset)
+-		return 0;
+-
+ 	symbol_conf.use_callchain = true;
++	return record_callchain_opt(opt, arg, unset);
 +}
-+
-+static inline size_t perf_hpp__color_overhead(void)
-+{
-+	return perf_hpp__use_color() ?
-+	       (COLOR_MAXLEN + sizeof(PERF_COLOR_RESET)) * PERF_HPP__MAX_INDEX
-+	       : 0;
-+}
-+
- struct perf_evlist;
  
- struct hist_browser_timer {
++static int
++parse_callchain_opt(const struct option *opt, const char *arg, int unset)
++{
++	symbol_conf.use_callchain = true;
+ 	return record_parse_callchain_opt(opt, arg, unset);
+ }
+ 
+@@ -1106,9 +1106,12 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, weight, local_weight"),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+-	OPT_CALLBACK_DEFAULT('G', "call-graph", &top.record_opts,
+-			     "mode[,dump_size]", record_callchain_help,
+-			     &parse_callchain_opt, "fp"),
++	OPT_CALLBACK_NOOPT('G', NULL, &top.record_opts,
++			   NULL, "enables call-graph recording",
++			   &callchain_opt),
++	OPT_CALLBACK(0, "call-graph", &top.record_opts,
++		     "mode[,dump_size]", record_callchain_help,
++		     &parse_callchain_opt),
+ 	OPT_CALLBACK(0, "ignore-callees", NULL, "regex",
+ 		   "ignore callees of these functions in call graphs",
+ 		   report_parse_ignore_callees_opt),
 -- 
 1.8.1.4
 
