@@ -1,47 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327Ab3J1E7X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 00:59:23 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:56462 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab3J1E7W (ORCPT
+	id S1752188Ab3J1FHl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 01:07:41 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:34303 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab3J1FHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 00:59:22 -0400
-Date: Mon, 28 Oct 2013 00:59:20 -0400 (EDT)
-Message-Id: <20131028.005920.1658700440523107416.davem@davemloft.net>
-To: ben@decadent.org.uk
-Cc: kevin.curtis@farsite.co.uk, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 2/8] farsync: Fix confusion about DMA address and
- buffer offset types
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1382935885.3524.38.camel@deadeye.wl.decadent.org.uk>
-References: <1382910704.2994.46.camel@deadeye.wl.decadent.org.uk>
-	<20131028.002627.2095063739326406659.davem@davemloft.net>
-	<1382935885.3524.38.camel@deadeye.wl.decadent.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sun, 27 Oct 2013 21:59:22 -0700 (PDT)
+	Mon, 28 Oct 2013 01:07:39 -0400
+X-AuditID: cbfee691-b7f866d000001b8c-49-526df1135fd3
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Changman Lee <cm224.lee@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
+        Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Subject: [PATCH] f2fs: remove unnecessary segment bitmap updates
+Date: Mon, 28 Oct 2013 14:06:47 +0900
+Message-id: <1382936807-4778-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t8zA13hj7lBBmdXylpc29fIZHF9118m
+	i0uL3C327D3JYnF51xw2B1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxvVLjewF
+	fQIV+04fZ2pg7OXtYuTkkBAwkXh68zsrhC0mceHeerYuRi4OIYFljBINy5+xwRR9Xv8DrEhI
+	YDqjxPO74hBFzUwSt+Z/Zexi5OBgE9CW2LzfAKRGRIBZYsHU84wgNcwCOxglOromgdUICzhI
+	HHucDlLDIqAq8f/RGbD5vAJuEv+/LWeB2KUtse35RLBeCYHnbBL/dq9nhmgQkPg2+RALyBwJ
+	AVmJTQeYIeolJQ6uuMEygVFwASPDKkbR1ILkguKk9CJTveLE3OLSvHS95PzcTYyQUJy4g/H+
+	AetDjMlA4yYyS4km5wNDOa8k3tDYzMjC1MTU2Mjc0ow0YSVx3vRHSUFCAumJJanZqakFqUXx
+	RaU5qcWHGJk4OKUaGNOjj+VPWOnz3VcuXvjLmmfSyxZ0z1SL/bH++iLeJbVS2q6qbnsfzsst
+	5nOTqWs1KvSqv/jt9h95i/ilOlefbtyTaWL/T3YLJ++6t7UJe6cKKJ7KjvGZ7fJHv+I3B3Ox
+	s+qEhtfSf2/WTnWxOfvmniTbxtx1F48dFzH35Dxe2PXk7yXO03FfPyixFGckGmoxFxUnAgA5
+	gxrcWwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t9jQV3hj7lBBje2SFhc29fIZHF9118m
+	i0uL3C327D3JYnF51xw2B1aP3Qs+M3n0bVnF6PF5k1wAc1QDo01GamJKapFCal5yfkpmXrqt
+	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
+	MI0Rur4hQXA9RgZoIGEdY8b1S43sBX0CFftOH2dqYOzl7WLk5JAQMJH4vP4HK4QtJnHh3no2
+	EFtIYDqjxPO74l2MXEB2M5PErflfGbsYOTjYBLQlNu83AKkREWCWWDD1PCNIDbPADkaJjq5J
+	YDXCAg4Sxx6ng9SwCKhK/H90Bmwmr4CbxP9vy1kgdmlLbHs+kXECI/cCRoZVjKKpBckFxUnp
+	uUZ6xYm5xaV56XrJ+bmbGMGB/kx6B+OqBotDjAIcjEo8vBvW5gYJsSaWFVfmHmKU4GBWEuHt
+	uwUU4k1JrKxKLcqPLyrNSS0+xJgMtH0is5Rocj4wCvNK4g2NTcyMLI3MLIxMzM1JE1YS5z3Y
+	ah0oJJCeWJKanZpakFoEs4WJg1OqgVHyv6/pHxGpqWqH5b81LpdjtJeV1boev1dL8eLpxffX
+	P1iwOJtD+gLPgd+f9z5ycFc6ofVXqbXkftob/uLM+VGC4XOmhn931/kx57qdoM2eQAa7AG7+
+	sA9tQZ4nJv9yKrlZwbXs8eyMtScvZxx+8X6dZs6pQ9W+3pYCeZuFg18Xz9zI4hedJqbEUpyR
+	aKjFXFScCABiQMZkuAIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <ben@decadent.org.uk>
-Date: Mon, 28 Oct 2013 04:51:25 +0000
+From: Changman Lee <cm224.lee@samsung.com>
 
-> On Mon, 2013-10-28 at 00:26 -0400, David Miller wrote:
->> From: Ben Hutchings <ben@decadent.org.uk>
->> Date: Sun, 27 Oct 2013 21:51:44 +0000
->> 
->> > -     dbg(DBG_TX, "In fst_tx_dma %p %p %d\n", skb, mem, len);
->> > +     dbg(DBG_TX, "In fst_tx_dma %x %x %d\n", (u32)skb, mem, len);
->> 
->> Please use %p for the skb pointer instead of casting it (which btw
->> will introduce a warning on 64-bit).
-> 
-> skb is the DMA address of the data in the sk_buff.  Yes, this is really
-> unusual naming.
+From: Changman Lee <cm224.lee@samsung.com>
 
-Hmmm, Ok then I guess. :-/
+Only one dirty type is set in __locate_dirty_segment and we can know
+dirty type of segment. So we don't need to check other dirty types.
+
+Signed-off-by: Changman Lee <cm224.lee@samsung.com>
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/segment.c | 31 ++++++++-----------------------
+ 1 file changed, 8 insertions(+), 23 deletions(-)
+
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 487af61..8f92c18 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -58,20 +58,10 @@ static void __locate_dirty_segment(struct f2fs_sb_info *sbi, unsigned int segno,
+ 
+ 	if (dirty_type == DIRTY) {
+ 		struct seg_entry *sentry = get_seg_entry(sbi, segno);
+-		enum dirty_type t = DIRTY_HOT_DATA;
++		enum dirty_type t = sentry->type;
+ 
+-		dirty_type = sentry->type;
+-
+-		if (!test_and_set_bit(segno, dirty_i->dirty_segmap[dirty_type]))
+-			dirty_i->nr_dirty[dirty_type]++;
+-
+-		/* Only one bitmap should be set */
+-		for (; t <= DIRTY_COLD_NODE; t++) {
+-			if (t == dirty_type)
+-				continue;
+-			if (test_and_clear_bit(segno, dirty_i->dirty_segmap[t]))
+-				dirty_i->nr_dirty[t]--;
+-		}
++		if (!test_and_set_bit(segno, dirty_i->dirty_segmap[t]))
++			dirty_i->nr_dirty[t]++;
+ 	}
+ }
+ 
+@@ -84,16 +74,11 @@ static void __remove_dirty_segment(struct f2fs_sb_info *sbi, unsigned int segno,
+ 		dirty_i->nr_dirty[dirty_type]--;
+ 
+ 	if (dirty_type == DIRTY) {
+-		enum dirty_type t = DIRTY_HOT_DATA;
+-
+-		/* clear its dirty bitmap */
+-		for (; t <= DIRTY_COLD_NODE; t++) {
+-			if (test_and_clear_bit(segno,
+-						dirty_i->dirty_segmap[t])) {
+-				dirty_i->nr_dirty[t]--;
+-				break;
+-			}
+-		}
++		struct seg_entry *sentry = get_seg_entry(sbi, segno);
++		enum dirty_type t = sentry->type;
++
++		if (test_and_clear_bit(segno, dirty_i->dirty_segmap[t]))
++			dirty_i->nr_dirty[t]--;
+ 
+ 		if (get_valid_blocks(sbi, segno, sbi->segs_per_sec) == 0)
+ 			clear_bit(GET_SECNO(sbi, segno),
+-- 
+1.8.4.474.g128a96c
+
