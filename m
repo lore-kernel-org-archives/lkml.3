@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab3J1GSN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 02:18:13 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:40548 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752443Ab3J1GSL (ORCPT
+	id S1755663Ab3J1GSy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 02:18:54 -0400
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:1087 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751767Ab3J1GSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 02:18:11 -0400
-Date: Sun, 27 Oct 2013 23:18:08 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: "Tc, Jenny" <jenny.tc@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Kim, Milo" <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Rupesh Kumar <rupesh.kumar@stericsson.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Rhyland Klein <rklein@nvidia.com>
-Subject: Re: [PATCH 1/7] power_supply: Add charger control properties
-Message-ID: <20131028061807.GA31266@teo>
-References: <1379959445-28207-1-git-send-email-jenny.tc@intel.com>
- <1379959445-28207-2-git-send-email-jenny.tc@intel.com>
- <20131027234535.GA23523@teo>
- <20ADAB092842284E95860F279283C5640AA99A32@BGSMSX104.gar.corp.intel.com>
+	Mon, 28 Oct 2013 02:18:53 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: Peter Chen <peter.chen@freescale.com>
+To: <linus.walleij@linaro.org>, <shawn.guo@linaro.org>,
+        <s.hauer@pengutronix.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] pinctrl: imx: fix using pin->input_val wrongly
+Date: Mon, 28 Oct 2013 14:01:16 +0800
+Message-ID: <1382940076-11898-1-git-send-email-peter.chen@freescale.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20ADAB092842284E95860F279283C5640AA99A32@BGSMSX104.gar.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 03:36:36AM +0000, Tc, Jenny wrote:
-> > But do we really want to control the chargers through the power_supply's user-visible
-> > interface? It makes the whole power supply thing so complicated that I'm already losing
-> > track of it. Right now I think I would prefer to move all the charger logic out of the psy
-> > class.
-> >
-> 
-> I think exposing properties make the logic generic, otherwise it may end up in having callback
-> functions.
->
-> Also there are some scenarios where the charging algorithm has to be in the
-> user space.
+The commit: "pinctrl: imx: Use struct type for pins" relaced
+pin->input_reg by pin->input_val wrongly, fix it at this commit.
 
-Which scenarios?
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+---
+ drivers/pinctrl/pinctrl-imx.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Plus, I am more questioning if the power supply framework is the right
-thing to control the *chargers*. Chargers are not the power supply to the
-system or any device (well, except for the batteries themselves).
+diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
+index d78dd81..4779b8e 100644
+--- a/drivers/pinctrl/pinctrl-imx.c
++++ b/drivers/pinctrl/pinctrl-imx.c
+@@ -245,11 +245,11 @@ static int imx_pmx_enable(struct pinctrl_dev *pctldev, unsigned selector,
+ 			 * The input_reg[i] here is actually some IOMUXC general
+ 			 * purpose register, not regular select input register.
+ 			 */
+-			val = readl(ipctl->base + pin->input_val);
++			val = readl(ipctl->base + pin->input_reg);
+ 			val &= ~mask;
+ 			val |= select << shift;
+-			writel(val, ipctl->base + pin->input_val);
+-		} else if (pin->input_val) {
++			writel(val, ipctl->base + pin->input_reg);
++		} else if (pin->input_reg) {
+ 			/*
+ 			 * Regular select input register can never be at offset
+ 			 * 0, and we only print register value for regular case.
+-- 
+1.7.1
 
-> Using the patch https://lkml.org/lkml/2013/7/25/204,
-> the power supply change notification can be broadcasted. We can add notifier events
-> for power_supply_register and thermal throttling. This way power_supply_charger.c can
-> be a separate driver and it can listen to psy notifications to take actions.
 
-If you ever need this particular notifier, I am OK with it (but I'll
-consider applying it only together with some its users).
-
-Basically, I am more against these three patches:
-
-[PATCH 3/7] power_supply: add throttle state
-[PATCH 2/7] power_supply: add charger cable properties
-[PATCH 1/7] power_supply: Add charger control properties (enable_charger part)
-
-These three add too much "charger" specifics to the power_supply stuff. I
-think they deserve their own subsystem/class/whatever.
-
-Also, the battid framework is written without any notion of device/driver
-separation, uses global variables, and I suspect it should not exist at
-all (psy_get_batt_prop function makes me think that you should just
-register the i2c/spi/w1 battery with the power_supply and not use the
-ad-hoc stuff).
-
-Anton
