@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423Ab3J1OyZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 10:54:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51255 "EHLO
+	id S932408Ab3J1OyX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:54:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51260 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757000Ab3J1Otn (ORCPT
+	with ESMTP id S1757002Ab3J1Otn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Oct 2013 10:49:43 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, James Chapman <jchapman@katalix.com>,
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 49/64] l2tp: must disable bh before calling l2tp_xmit_skb()
-Date: Mon, 28 Oct 2013 14:48:08 +0000
-Message-Id: <1382971703-17393-50-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 47/64] bridge: Correctly clamp MAX forward_delay when enabling STP
+Date: Mon, 28 Oct 2013 14:48:06 +0000
+Message-Id: <1382971703-17393-48-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
 References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,204 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-commit 455cc32bf128e114455d11ad919321ab89a2c312 upstream.
+commit 4b6c7879d84ad06a2ac5b964808ed599187a188d upstream.
 
-François Cachereul made a very nice bug report and suspected
-the bh_lock_sock() / bh_unlok_sock() pair used in l2tp_xmit_skb() from
-process context was not good.
+Commit be4f154d5ef0ca147ab6bcd38857a774133f5450
+	bridge: Clamp forward_delay when enabling STP
+had a typo when attempting to clamp maximum forward delay.
 
-This problem was added by commit 6af88da14ee284aaad6e4326da09a89191ab6165
-("l2tp: Fix locking in l2tp_core.c").
+It is possible to set bridge_forward_delay to be higher then
+permitted maximum when STP is off.  When turning STP on, the
+higher then allowed delay has to be clamed down to max value.
 
-l2tp_eth_dev_xmit() runs from BH context, so we must disable BH
-from other l2tp_xmit_skb() users.
-
-[  452.060011] BUG: soft lockup - CPU#1 stuck for 23s! [accel-pppd:6662]
-[  452.061757] Modules linked in: l2tp_ppp l2tp_netlink l2tp_core pppoe pppox
-ppp_generic slhc ipv6 ext3 mbcache jbd virtio_balloon xfs exportfs dm_mod
-virtio_blk ata_generic virtio_net floppy ata_piix libata virtio_pci virtio_ring virtio [last unloaded: scsi_wait_scan]
-[  452.064012] CPU 1
-[  452.080015] BUG: soft lockup - CPU#2 stuck for 23s! [accel-pppd:6643]
-[  452.080015] CPU 2
-[  452.080015]
-[  452.080015] Pid: 6643, comm: accel-pppd Not tainted 3.2.46.mini #1 Bochs Bochs
-[  452.080015] RIP: 0010:[<ffffffff81059f6c>]  [<ffffffff81059f6c>] do_raw_spin_lock+0x17/0x1f
-[  452.080015] RSP: 0018:ffff88007125fc18  EFLAGS: 00000293
-[  452.080015] RAX: 000000000000aba9 RBX: ffffffff811d0703 RCX: 0000000000000000
-[  452.080015] RDX: 00000000000000ab RSI: ffff8800711f6896 RDI: ffff8800745c8110
-[  452.080015] RBP: ffff88007125fc18 R08: 0000000000000020 R09: 0000000000000000
-[  452.080015] R10: 0000000000000000 R11: 0000000000000280 R12: 0000000000000286
-[  452.080015] R13: 0000000000000020 R14: 0000000000000240 R15: 0000000000000000
-[  452.080015] FS:  00007fdc0cc24700(0000) GS:ffff8800b6f00000(0000) knlGS:0000000000000000
-[  452.080015] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  452.080015] CR2: 00007fdb054899b8 CR3: 0000000074404000 CR4: 00000000000006a0
-[  452.080015] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  452.080015] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  452.080015] Process accel-pppd (pid: 6643, threadinfo ffff88007125e000, task ffff8800b27e6dd0)
-[  452.080015] Stack:
-[  452.080015]  ffff88007125fc28 ffffffff81256559 ffff88007125fc98 ffffffffa01b2bd1
-[  452.080015]  ffff88007125fc58 000000000000000c 00000000029490d0 0000009c71dbe25e
-[  452.080015]  000000000000005c 000000080000000e 0000000000000000 ffff880071170600
-[  452.080015] Call Trace:
-[  452.080015]  [<ffffffff81256559>] _raw_spin_lock+0xe/0x10
-[  452.080015]  [<ffffffffa01b2bd1>] l2tp_xmit_skb+0x189/0x4ac [l2tp_core]
-[  452.080015]  [<ffffffffa01c2d36>] pppol2tp_sendmsg+0x15e/0x19c [l2tp_ppp]
-[  452.080015]  [<ffffffff811c7872>] __sock_sendmsg_nosec+0x22/0x24
-[  452.080015]  [<ffffffff811c83bd>] sock_sendmsg+0xa1/0xb6
-[  452.080015]  [<ffffffff81254e88>] ? __schedule+0x5c1/0x616
-[  452.080015]  [<ffffffff8103c7c6>] ? __dequeue_signal+0xb7/0x10c
-[  452.080015]  [<ffffffff810bbd21>] ? fget_light+0x75/0x89
-[  452.080015]  [<ffffffff811c8444>] ? sockfd_lookup_light+0x20/0x56
-[  452.080015]  [<ffffffff811c9b34>] sys_sendto+0x10c/0x13b
-[  452.080015]  [<ffffffff8125cac2>] system_call_fastpath+0x16/0x1b
-[  452.080015] Code: 81 48 89 e5 72 0c 31 c0 48 81 ff 45 66 25 81 0f 92 c0 5d c3 55 b8 00 01 00 00 48 89 e5 f0 66 0f c1 07 0f b6 d4 38 d0 74 06 f3 90 <8a> 07 eb f6 5d c3 90 90 55 48 89 e5 9c 58 0f 1f 44 00 00 5d c3
-[  452.080015] Call Trace:
-[  452.080015]  [<ffffffff81256559>] _raw_spin_lock+0xe/0x10
-[  452.080015]  [<ffffffffa01b2bd1>] l2tp_xmit_skb+0x189/0x4ac [l2tp_core]
-[  452.080015]  [<ffffffffa01c2d36>] pppol2tp_sendmsg+0x15e/0x19c [l2tp_ppp]
-[  452.080015]  [<ffffffff811c7872>] __sock_sendmsg_nosec+0x22/0x24
-[  452.080015]  [<ffffffff811c83bd>] sock_sendmsg+0xa1/0xb6
-[  452.080015]  [<ffffffff81254e88>] ? __schedule+0x5c1/0x616
-[  452.080015]  [<ffffffff8103c7c6>] ? __dequeue_signal+0xb7/0x10c
-[  452.080015]  [<ffffffff810bbd21>] ? fget_light+0x75/0x89
-[  452.080015]  [<ffffffff811c8444>] ? sockfd_lookup_light+0x20/0x56
-[  452.080015]  [<ffffffff811c9b34>] sys_sendto+0x10c/0x13b
-[  452.080015]  [<ffffffff8125cac2>] system_call_fastpath+0x16/0x1b
-[  452.064012]
-[  452.064012] Pid: 6662, comm: accel-pppd Not tainted 3.2.46.mini #1 Bochs Bochs
-[  452.064012] RIP: 0010:[<ffffffff81059f6e>]  [<ffffffff81059f6e>] do_raw_spin_lock+0x19/0x1f
-[  452.064012] RSP: 0018:ffff8800b6e83ba0  EFLAGS: 00000297
-[  452.064012] RAX: 000000000000aaa9 RBX: ffff8800b6e83b40 RCX: 0000000000000002
-[  452.064012] RDX: 00000000000000aa RSI: 000000000000000a RDI: ffff8800745c8110
-[  452.064012] RBP: ffff8800b6e83ba0 R08: 000000000000c802 R09: 000000000000001c
-[  452.064012] R10: ffff880071096c4e R11: 0000000000000006 R12: ffff8800b6e83b18
-[  452.064012] R13: ffffffff8125d51e R14: ffff8800b6e83ba0 R15: ffff880072a589c0
-[  452.064012] FS:  00007fdc0b81e700(0000) GS:ffff8800b6e80000(0000) knlGS:0000000000000000
-[  452.064012] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  452.064012] CR2: 0000000000625208 CR3: 0000000074404000 CR4: 00000000000006a0
-[  452.064012] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  452.064012] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  452.064012] Process accel-pppd (pid: 6662, threadinfo ffff88007129a000, task ffff8800744f7410)
-[  452.064012] Stack:
-[  452.064012]  ffff8800b6e83bb0 ffffffff81256559 ffff8800b6e83bc0 ffffffff8121c64a
-[  452.064012]  ffff8800b6e83bf0 ffffffff8121ec7a ffff880072a589c0 ffff880071096c62
-[  452.064012]  0000000000000011 ffffffff81430024 ffff8800b6e83c80 ffffffff8121f276
-[  452.064012] Call Trace:
-[  452.064012]  <IRQ>
-[  452.064012]  [<ffffffff81256559>] _raw_spin_lock+0xe/0x10
-[  452.064012]  [<ffffffff8121c64a>] spin_lock+0x9/0xb
-[  452.064012]  [<ffffffff8121ec7a>] udp_queue_rcv_skb+0x186/0x269
-[  452.064012]  [<ffffffff8121f276>] __udp4_lib_rcv+0x297/0x4ae
-[  452.064012]  [<ffffffff8121c178>] ? raw_rcv+0xe9/0xf0
-[  452.064012]  [<ffffffff8121f4a7>] udp_rcv+0x1a/0x1c
-[  452.064012]  [<ffffffff811fe385>] ip_local_deliver_finish+0x12b/0x1a5
-[  452.064012]  [<ffffffff811fe54e>] ip_local_deliver+0x53/0x84
-[  452.064012]  [<ffffffff811fe1d0>] ip_rcv_finish+0x2bc/0x2f3
-[  452.064012]  [<ffffffff811fe78f>] ip_rcv+0x210/0x269
-[  452.064012]  [<ffffffff8101911e>] ? kvm_clock_get_cycles+0x9/0xb
-[  452.064012]  [<ffffffff811d88cd>] __netif_receive_skb+0x3a5/0x3f7
-[  452.064012]  [<ffffffff811d8eba>] netif_receive_skb+0x57/0x5e
-[  452.064012]  [<ffffffff811cf30f>] ? __netdev_alloc_skb+0x1f/0x3b
-[  452.064012]  [<ffffffffa0049126>] virtnet_poll+0x4ba/0x5a4 [virtio_net]
-[  452.064012]  [<ffffffff811d9417>] net_rx_action+0x73/0x184
-[  452.064012]  [<ffffffffa01b2cc2>] ? l2tp_xmit_skb+0x27a/0x4ac [l2tp_core]
-[  452.064012]  [<ffffffff810343b9>] __do_softirq+0xc3/0x1a8
-[  452.064012]  [<ffffffff81013b56>] ? ack_APIC_irq+0x10/0x12
-[  452.064012]  [<ffffffff81256559>] ? _raw_spin_lock+0xe/0x10
-[  452.064012]  [<ffffffff8125e0ac>] call_softirq+0x1c/0x26
-[  452.064012]  [<ffffffff81003587>] do_softirq+0x45/0x82
-[  452.064012]  [<ffffffff81034667>] irq_exit+0x42/0x9c
-[  452.064012]  [<ffffffff8125e146>] do_IRQ+0x8e/0xa5
-[  452.064012]  [<ffffffff8125676e>] common_interrupt+0x6e/0x6e
-[  452.064012]  <EOI>
-[  452.064012]  [<ffffffff810b82a1>] ? kfree+0x8a/0xa3
-[  452.064012]  [<ffffffffa01b2cc2>] ? l2tp_xmit_skb+0x27a/0x4ac [l2tp_core]
-[  452.064012]  [<ffffffffa01b2c25>] ? l2tp_xmit_skb+0x1dd/0x4ac [l2tp_core]
-[  452.064012]  [<ffffffffa01c2d36>] pppol2tp_sendmsg+0x15e/0x19c [l2tp_ppp]
-[  452.064012]  [<ffffffff811c7872>] __sock_sendmsg_nosec+0x22/0x24
-[  452.064012]  [<ffffffff811c83bd>] sock_sendmsg+0xa1/0xb6
-[  452.064012]  [<ffffffff81254e88>] ? __schedule+0x5c1/0x616
-[  452.064012]  [<ffffffff8103c7c6>] ? __dequeue_signal+0xb7/0x10c
-[  452.064012]  [<ffffffff810bbd21>] ? fget_light+0x75/0x89
-[  452.064012]  [<ffffffff811c8444>] ? sockfd_lookup_light+0x20/0x56
-[  452.064012]  [<ffffffff811c9b34>] sys_sendto+0x10c/0x13b
-[  452.064012]  [<ffffffff8125cac2>] system_call_fastpath+0x16/0x1b
-[  452.064012] Code: 89 e5 72 0c 31 c0 48 81 ff 45 66 25 81 0f 92 c0 5d c3 55 b8 00 01 00 00 48 89 e5 f0 66 0f c1 07 0f b6 d4 38 d0 74 06 f3 90 8a 07 <eb> f6 5d c3 90 90 55 48 89 e5 9c 58 0f 1f 44 00 00 5d c3 55 48
-[  452.064012] Call Trace:
-[  452.064012]  <IRQ>  [<ffffffff81256559>] _raw_spin_lock+0xe/0x10
-[  452.064012]  [<ffffffff8121c64a>] spin_lock+0x9/0xb
-[  452.064012]  [<ffffffff8121ec7a>] udp_queue_rcv_skb+0x186/0x269
-[  452.064012]  [<ffffffff8121f276>] __udp4_lib_rcv+0x297/0x4ae
-[  452.064012]  [<ffffffff8121c178>] ? raw_rcv+0xe9/0xf0
-[  452.064012]  [<ffffffff8121f4a7>] udp_rcv+0x1a/0x1c
-[  452.064012]  [<ffffffff811fe385>] ip_local_deliver_finish+0x12b/0x1a5
-[  452.064012]  [<ffffffff811fe54e>] ip_local_deliver+0x53/0x84
-[  452.064012]  [<ffffffff811fe1d0>] ip_rcv_finish+0x2bc/0x2f3
-[  452.064012]  [<ffffffff811fe78f>] ip_rcv+0x210/0x269
-[  452.064012]  [<ffffffff8101911e>] ? kvm_clock_get_cycles+0x9/0xb
-[  452.064012]  [<ffffffff811d88cd>] __netif_receive_skb+0x3a5/0x3f7
-[  452.064012]  [<ffffffff811d8eba>] netif_receive_skb+0x57/0x5e
-[  452.064012]  [<ffffffff811cf30f>] ? __netdev_alloc_skb+0x1f/0x3b
-[  452.064012]  [<ffffffffa0049126>] virtnet_poll+0x4ba/0x5a4 [virtio_net]
-[  452.064012]  [<ffffffff811d9417>] net_rx_action+0x73/0x184
-[  452.064012]  [<ffffffffa01b2cc2>] ? l2tp_xmit_skb+0x27a/0x4ac [l2tp_core]
-[  452.064012]  [<ffffffff810343b9>] __do_softirq+0xc3/0x1a8
-[  452.064012]  [<ffffffff81013b56>] ? ack_APIC_irq+0x10/0x12
-[  452.064012]  [<ffffffff81256559>] ? _raw_spin_lock+0xe/0x10
-[  452.064012]  [<ffffffff8125e0ac>] call_softirq+0x1c/0x26
-[  452.064012]  [<ffffffff81003587>] do_softirq+0x45/0x82
-[  452.064012]  [<ffffffff81034667>] irq_exit+0x42/0x9c
-[  452.064012]  [<ffffffff8125e146>] do_IRQ+0x8e/0xa5
-[  452.064012]  [<ffffffff8125676e>] common_interrupt+0x6e/0x6e
-[  452.064012]  <EOI>  [<ffffffff810b82a1>] ? kfree+0x8a/0xa3
-[  452.064012]  [<ffffffffa01b2cc2>] ? l2tp_xmit_skb+0x27a/0x4ac [l2tp_core]
-[  452.064012]  [<ffffffffa01b2c25>] ? l2tp_xmit_skb+0x1dd/0x4ac [l2tp_core]
-[  452.064012]  [<ffffffffa01c2d36>] pppol2tp_sendmsg+0x15e/0x19c [l2tp_ppp]
-[  452.064012]  [<ffffffff811c7872>] __sock_sendmsg_nosec+0x22/0x24
-[  452.064012]  [<ffffffff811c83bd>] sock_sendmsg+0xa1/0xb6
-[  452.064012]  [<ffffffff81254e88>] ? __schedule+0x5c1/0x616
-[  452.064012]  [<ffffffff8103c7c6>] ? __dequeue_signal+0xb7/0x10c
-[  452.064012]  [<ffffffff810bbd21>] ? fget_light+0x75/0x89
-[  452.064012]  [<ffffffff811c8444>] ? sockfd_lookup_light+0x20/0x56
-[  452.064012]  [<ffffffff811c9b34>] sys_sendto+0x10c/0x13b
-[  452.064012]  [<ffffffff8125cac2>] system_call_fastpath+0x16/0x1b
-
-Reported-by: François Cachereul <f.cachereul@alphalink.fr>
-Tested-by: François Cachereul <f.cachereul@alphalink.fr>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: James Chapman <jchapman@katalix.com>
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Reviewed-by: Veaceslav Falico <vfalico@redhat.com>
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/l2tp/l2tp_ppp.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ net/bridge/br_stp_if.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
-index 286fec4..624cf33 100644
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -352,7 +352,9 @@ static int pppol2tp_sendmsg(struct kiocb *iocb, struct socket *sock, struct msgh
- 		goto error_put_sess_tun;
- 	}
+diff --git a/net/bridge/br_stp_if.c b/net/bridge/br_stp_if.c
+index 7ba2ed5..5bb38cd 100644
+--- a/net/bridge/br_stp_if.c
++++ b/net/bridge/br_stp_if.c
+@@ -134,7 +134,7 @@ static void br_stp_start(struct net_bridge *br)
  
-+	local_bh_disable();
- 	l2tp_xmit_skb(session, skb, session->hdr_len);
-+	local_bh_enable();
+ 	if (br->bridge_forward_delay < BR_MIN_FORWARD_DELAY)
+ 		__br_set_forward_delay(br, BR_MIN_FORWARD_DELAY);
+-	else if (br->bridge_forward_delay < BR_MAX_FORWARD_DELAY)
++	else if (br->bridge_forward_delay > BR_MAX_FORWARD_DELAY)
+ 		__br_set_forward_delay(br, BR_MAX_FORWARD_DELAY);
  
- 	sock_put(ps->tunnel_sock);
- 	sock_put(sk);
-@@ -427,7 +429,9 @@ static int pppol2tp_xmit(struct ppp_channel *chan, struct sk_buff *skb)
- 	skb->data[0] = ppph[0];
- 	skb->data[1] = ppph[1];
- 
-+	local_bh_disable();
- 	l2tp_xmit_skb(session, skb, session->hdr_len);
-+	local_bh_enable();
- 
- 	sock_put(sk_tun);
- 	sock_put(sk);
+ 	if (r == 0) {
 -- 
 1.8.3.2
 
