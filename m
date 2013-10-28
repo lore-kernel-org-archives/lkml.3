@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674Ab3J1Npo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 09:45:44 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:44540 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756291Ab3J1Npn (ORCPT
+	id S1756691Ab3J1NqD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 09:46:03 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:60393 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756072Ab3J1NqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 09:45:43 -0400
+	Mon, 28 Oct 2013 09:46:00 -0400
+Message-ID: <526E6A92.6090301@synopsys.com>
+Date: Mon, 28 Oct 2013 19:15:54 +0530
+From: Vineet Gupta <vineetg76@gmail.com>
+Organization: Synopsys
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <cc16130b4e23207971139eff313a4ec71f51c187.1382962788.git.rashika.kheria@gmail.com>
-References: <20131019110539.GA25167@gmail.com>
-	<cc16130b4e23207971139eff313a4ec71f51c187.1382962788.git.rashika.kheria@gmail.com>
-Date: Mon, 28 Oct 2013 21:45:42 +0800
-Message-ID: <CAL1ERfPD7zhmuO6ZuwUcJzVshJ3vqQKAman_x27rTPaur4eEAw@mail.gmail.com>
-Subject: Re: [PATCH v6 1/3] Staging: zram: Fix access of NULL pointer
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: opw-kernel@googlegroups.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchand@redhat.com>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
+To: Chen Gang <gang.chen@asianux.com>, James Hogan <james.hogan@imgtec.com>
+CC: Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] arch: use ASM_NL instead of ';' for assembler new line
+ character in the macro
+References: <526E3CE2.2070405@asianux.com>
+In-Reply-To: <526E3CE2.2070405@asianux.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 8:21 PM, Rashika Kheria
-<rashika.kheria@gmail.com> wrote:
-> This patch fixes the bug in reset_store caused by accessing NULL pointer.
-> Hence, It introduces a check for bdev. It also removes unnecessary check
-> of bdev for fsync_bdev().
->
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+On 10/28/2013 04:00 PM, Chen Gang wrote:
+> For some toolchains, they use another character as newline in a macro
+> (e.g. arc uses '`'), so for generic assembly code, need use ASM_NL (a
+> macro) instead of ';' for it.
+> 
+> Since "linux/export.h" are mainly used for exporting work, then our fix
+> more likely belongs to "linux/linkage.h", and we need add the related
+> checking in "linkage.h".
+> 
+> Also need notice 80 columns wrap, and '\t' for each line.
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 > ---
->
-> This revision fixes the following issues of the previous revision-
-> Seperating patches into Bug fix and Smatch fix
->
->  drivers/staging/zram/zram_drv.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index 2c4ed52..d640a8f 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -648,6 +648,9 @@ static ssize_t reset_store(struct device *dev,
->         zram = dev_to_zram(dev);
->         bdev = bdget_disk(zram->disk, 0);
->
-> +       if (!bdev)
-> +               return -EBUSY;
-> +
+>  arch/arc/include/asm/linkage.h    |    2 +
+>  include/asm-generic/vmlinux.lds.h |  350 +++++++++++++++++++------------------
+>  include/linux/linkage.h           |   19 +
 
-I am not sure how does it happen. Would you please make it clear to me?
+Like Max said, please drop the linker script bits - they are OK - otherwise ARC
+kernel won't have been building at all.
 
-Thanks
+And you also need to fix kernel/modsign_certificate.S as part of same patchset as
+that is where the problem started in first place.
 
->         /* Do not reset an active device! */
->         if (bdev->bd_holders)
->                 return -EBUSY;
-> @@ -660,8 +663,7 @@ static ssize_t reset_store(struct device *dev,
->                 return -EINVAL;
->
->         /* Make sure all pending I/O is finished */
-> -       if (bdev)
-> -               fsync_bdev(bdev);
-> +       fsync_bdev(bdev);
->
->         zram_reset_device(zram, true);
->         return len;
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-Vineet
