@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757479Ab3J1TPu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 15:15:50 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45256 "EHLO
+	id S1757549Ab3J1TQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 15:16:14 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45236 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756252Ab3J1TOL (ORCPT
+	with ESMTP id S1756048Ab3J1TOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 15:14:11 -0400
-Message-Id: <149bbfe89e37376cc176c3aeb6c1fab9e4fd2b91.1382985169.git.joshc@codeaurora.org>
+	Mon, 28 Oct 2013 15:14:10 -0400
+Message-Id: <4acd03d0a436d44faab8c6b62b51c23851d98d8f.1382985169.git.joshc@codeaurora.org>
 In-Reply-To: <cover.1382985169.git.joshc@codeaurora.org>
 References: <cover.1382985169.git.joshc@codeaurora.org>
 From: Josh Cartwright <joshc@codeaurora.org>
@@ -17,980 +17,454 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-arm-msm@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
         Gilad Avidov <gavidov@codeaurora.org>,
         Michael Bohan <mbohan@codeaurora.org>
-Subject: [PATCH v3 02/10] spmi: Linux driver framework for SPMI
+Subject: [PATCH v3 05/10] spmi: pmic_arb: add support for interrupt handling
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kenneth Heitke <kheitke@codeaurora.org>
+The Qualcomm PMIC Arbiter, in addition to being a basic SPMI controller,
+also implements interrupt handling for slave devices.  Note, this is
+outside the scope of SPMI, as SPMI leaves interrupt handling completely
+unspecified.
 
-System Power Management Interface (SPMI) is a specification
-developed by the MIPI (Mobile Industry Process Interface) Alliance
-optimized for the real time control of Power Management ICs (PMIC).
+Extend the driver to provide a irq_chip implementation and chained irq
+handling which allows for these interrupts to be used.
 
-SPMI is a two-wire serial interface that supports up to 4 master
-devices and up to 16 logical slaves.
-
-The framework supports message APIs, multiple busses (1 controller
-per bus) and multiple clients/slave devices per controller.
-
-Signed-off-by: Kenneth Heitke <kheitke@codeaurora.org>
-Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
 Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
 ---
- drivers/Kconfig                 |   2 +
- drivers/Makefile                |   1 +
- drivers/spmi/Kconfig            |   9 +
- drivers/spmi/Makefile           |   4 +
- drivers/spmi/spmi.c             | 491 ++++++++++++++++++++++++++++++++++++++++
- include/dt-bindings/spmi/spmi.h |  18 ++
- include/linux/mod_devicetable.h |   8 +
- include/linux/spmi.h            | 342 ++++++++++++++++++++++++++++
- 8 files changed, 875 insertions(+)
- create mode 100644 drivers/spmi/Kconfig
- create mode 100644 drivers/spmi/Makefile
- create mode 100644 drivers/spmi/spmi.c
- create mode 100644 include/dt-bindings/spmi/spmi.h
- create mode 100644 include/linux/spmi.h
+ drivers/spmi/spmi-pmic-arb.c | 359 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 357 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index aa43b91..2b35420 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -52,6 +52,8 @@ source "drivers/i2c/Kconfig"
- 
- source "drivers/spi/Kconfig"
- 
-+source "drivers/spmi/Kconfig"
-+
- source "drivers/hsi/Kconfig"
- 
- source "drivers/pps/Kconfig"
-diff --git a/drivers/Makefile b/drivers/Makefile
-index ab93de8..5c250df 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -64,6 +64,7 @@ obj-$(CONFIG_ATA)		+= ata/
- obj-$(CONFIG_TARGET_CORE)	+= target/
- obj-$(CONFIG_MTD)		+= mtd/
- obj-$(CONFIG_SPI)		+= spi/
-+obj-$(CONFIG_SPMI)		+= spmi/
- obj-y				+= hsi/
- obj-y				+= net/
- obj-$(CONFIG_ATM)		+= atm/
-diff --git a/drivers/spmi/Kconfig b/drivers/spmi/Kconfig
-new file mode 100644
-index 0000000..a03835f
---- /dev/null
-+++ b/drivers/spmi/Kconfig
-@@ -0,0 +1,9 @@
-+#
-+# SPMI driver configuration
-+#
-+menuconfig SPMI
-+	bool "SPMI support"
-+	help
-+	  SPMI (System Power Management Interface) is a two-wire
-+	  serial interface between baseband and application processors
-+	  and Power Management Integrated Circuits (PMIC).
-diff --git a/drivers/spmi/Makefile b/drivers/spmi/Makefile
-new file mode 100644
-index 0000000..1de1acd
---- /dev/null
-+++ b/drivers/spmi/Makefile
-@@ -0,0 +1,4 @@
-+#
-+# Makefile for kernel SPMI framework.
-+#
-+obj-$(CONFIG_SPMI)	+= spmi.o
-diff --git a/drivers/spmi/spmi.c b/drivers/spmi/spmi.c
-new file mode 100644
-index 0000000..0780bd4
---- /dev/null
-+++ b/drivers/spmi/spmi.c
-@@ -0,0 +1,491 @@
-+/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/idr.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/platform_device.h>
-+#include <linux/spmi.h>
-+#include <linux/module.h>
-+#include <linux/pm_runtime.h>
-+
-+#include <dt-bindings/spmi/spmi.h>
-+
-+static DEFINE_MUTEX(ctrl_idr_lock);
-+static DEFINE_IDR(ctrl_idr);
-+
-+static void spmi_dev_release(struct device *dev)
-+{
-+	struct spmi_device *sdev = to_spmi_device(dev);
-+	kfree(sdev);
-+}
-+
-+static struct device_type spmi_dev_type = {
-+	.release	= spmi_dev_release,
-+};
-+
-+static void spmi_ctrl_release(struct device *dev)
-+{
-+	struct spmi_controller *ctrl = to_spmi_controller(dev);
-+	mutex_lock(&ctrl_idr_lock);
-+	idr_remove(&ctrl_idr, ctrl->nr);
-+	mutex_unlock(&ctrl_idr_lock);
-+	kfree(ctrl);
-+}
-+
-+static struct device_type spmi_ctrl_type = {
-+	.release	= spmi_ctrl_release,
-+};
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int spmi_pm_suspend(struct device *dev)
-+{
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	if (pm)
-+		return pm_generic_suspend(dev);
-+	else
-+		return 0;
-+}
-+
-+static int spmi_pm_resume(struct device *dev)
-+{
-+	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-+
-+	if (pm)
-+		return pm_generic_resume(dev);
-+	else
-+		return 0;
-+}
-+#else
-+#define spmi_pm_suspend		NULL
-+#define spmi_pm_resume		NULL
-+#endif
-+
-+static const struct dev_pm_ops spmi_pm_ops = {
-+	.suspend	= spmi_pm_suspend,
-+	.resume		= spmi_pm_resume,
-+	SET_RUNTIME_PM_OPS(
-+		pm_generic_suspend,
-+		pm_generic_resume,
-+		pm_generic_runtime_idle
-+	)
-+};
-+
-+static int spmi_device_match(struct device *dev, struct device_driver *drv)
-+{
-+	if (of_driver_match_device(dev, drv))
-+		return 1;
-+
-+	if (drv->name)
-+		return strncmp(dev_name(dev), drv->name,
-+			       SPMI_NAME_SIZE) == 0;
-+
-+	return 0;
-+}
-+
-+int spmi_device_add(struct spmi_device *sdev)
-+{
-+	struct spmi_controller *ctrl = sdev->ctrl;
-+	int err;
-+
-+	dev_set_name(&sdev->dev, "%d-%02x", ctrl->nr, sdev->usid);
-+
-+	err = device_add(&sdev->dev);
-+	if (err < 0) {
-+		dev_err(&sdev->dev, "Can't add %s, status %d\n",
-+			dev_name(&sdev->dev), err);
-+		goto err_device_add;
-+	}
-+
-+	dev_dbg(&sdev->dev, "device %s registered\n", dev_name(&sdev->dev));
-+
-+err_device_add:
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(spmi_device_add);
-+
-+void spmi_device_remove(struct spmi_device *sdev)
-+{
-+	device_unregister(&sdev->dev);
-+}
-+EXPORT_SYMBOL_GPL(spmi_device_remove);
-+
-+static inline int
-+spmi_cmd(struct spmi_controller *ctrl, u8 opcode, u8 sid)
-+{
-+	if (!ctrl || !ctrl->cmd || ctrl->dev.type != &spmi_ctrl_type)
-+		return -EINVAL;
-+
-+	return ctrl->cmd(ctrl, opcode, sid);
-+}
-+
-+static inline int spmi_read_cmd(struct spmi_controller *ctrl,
-+				u8 opcode, u8 sid, u16 addr, u8 bc, u8 *buf)
-+{
-+	if (!ctrl || !ctrl->read_cmd || ctrl->dev.type != &spmi_ctrl_type)
-+		return -EINVAL;
-+
-+	return ctrl->read_cmd(ctrl, opcode, sid, addr, bc, buf);
-+}
-+
-+static inline int spmi_write_cmd(struct spmi_controller *ctrl,
-+				 u8 opcode, u8 sid, u16 addr, u8 bc,
-+				 const u8 *buf)
-+{
-+	if (!ctrl || !ctrl->write_cmd || ctrl->dev.type != &spmi_ctrl_type)
-+		return -EINVAL;
-+
-+	return ctrl->write_cmd(ctrl, opcode, sid, addr, bc, buf);
-+}
-+
-+/*
-+ * register read/write: 5-bit address, 1 byte of data
-+ * extended register read/write: 8-bit address, up to 16 bytes of data
-+ * extended register read/write long: 16-bit address, up to 8 bytes of data
-+ */
-+
-+int spmi_register_read(struct spmi_device *sdev, u8 addr, u8 *buf)
-+{
-+	/* 5-bit register address */
-+	if (addr > 0x1F)
-+		return -EINVAL;
-+
-+	return spmi_read_cmd(sdev->ctrl, SPMI_CMD_READ, sdev->usid, addr, 0,
-+			     buf);
-+}
-+EXPORT_SYMBOL_GPL(spmi_register_read);
-+
-+int spmi_ext_register_read(struct spmi_device *sdev, u8 addr, u8 *buf,
-+			   size_t len)
-+{
-+	/* 8-bit register address, up to 16 bytes */
-+	if (len == 0 || len > 16)
-+		return -EINVAL;
-+
-+	return spmi_read_cmd(sdev->ctrl, SPMI_CMD_EXT_READ, sdev->usid, addr,
-+			     len - 1, buf);
-+}
-+EXPORT_SYMBOL_GPL(spmi_ext_register_read);
-+
-+int spmi_ext_register_readl(struct spmi_device *sdev, u16 addr, u8 *buf,
-+			    size_t len)
-+{
-+	/* 16-bit register address, up to 8 bytes */
-+	if (len == 0 || len > 8)
-+		return -EINVAL;
-+
-+	return spmi_read_cmd(sdev->ctrl, SPMI_CMD_EXT_READL, sdev->usid, addr,
-+			     len - 1, buf);
-+}
-+EXPORT_SYMBOL_GPL(spmi_ext_register_readl);
-+
-+int spmi_register_write(struct spmi_device *sdev, u8 addr, const u8 *buf)
-+{
-+	/* 5-bit register address */
-+	if (addr > 0x1F)
-+		return -EINVAL;
-+
-+	return spmi_write_cmd(sdev->ctrl, SPMI_CMD_WRITE, sdev->usid, addr, 0,
-+			      buf);
-+}
-+EXPORT_SYMBOL_GPL(spmi_register_write);
-+
-+int spmi_register_zero_write(struct spmi_device *sdev, u8 data)
-+{
-+	return spmi_write_cmd(sdev->ctrl, SPMI_CMD_ZERO_WRITE, sdev->usid, 0,
-+			      0, &data);
-+}
-+EXPORT_SYMBOL_GPL(spmi_register_zero_write);
-+
-+int spmi_ext_register_write(struct spmi_device *sdev, u8 addr, const u8 *buf,
-+			    size_t len)
-+{
-+	/* 8-bit register address, up to 16 bytes */
-+	if (len == 0 || len > 16)
-+		return -EINVAL;
-+
-+	return spmi_write_cmd(sdev->ctrl, SPMI_CMD_EXT_WRITE, sdev->usid, addr,
-+			      len - 1, buf);
-+}
-+EXPORT_SYMBOL_GPL(spmi_ext_register_write);
-+
-+int spmi_ext_register_writel(struct spmi_device *sdev, u16 addr, const u8 *buf,
-+			     size_t len)
-+{
-+	/* 4-bit Slave Identifier, 16-bit register address, up to 8 bytes */
-+	if (len == 0 || len > 8)
-+		return -EINVAL;
-+
-+	return spmi_write_cmd(sdev->ctrl, SPMI_CMD_EXT_WRITEL, sdev->usid,
-+			      addr, len - 1, buf);
-+}
-+EXPORT_SYMBOL_GPL(spmi_ext_register_writel);
-+
-+int spmi_command_reset(struct spmi_device *sdev)
-+{
-+	return spmi_cmd(sdev->ctrl, SPMI_CMD_RESET, sdev->usid);
-+}
-+EXPORT_SYMBOL_GPL(spmi_command_reset);
-+
-+int spmi_command_sleep(struct spmi_device *sdev)
-+{
-+	return spmi_cmd(sdev->ctrl, SPMI_CMD_SLEEP, sdev->usid);
-+}
-+EXPORT_SYMBOL_GPL(spmi_command_sleep);
-+
-+int spmi_command_wakeup(struct spmi_device *sdev)
-+{
-+	return spmi_cmd(sdev->ctrl, SPMI_CMD_WAKEUP, sdev->usid);
-+}
-+EXPORT_SYMBOL_GPL(spmi_command_wakeup);
-+
-+int spmi_command_shutdown(struct spmi_device *sdev)
-+{
-+	return spmi_cmd(sdev->ctrl, SPMI_CMD_SHUTDOWN, sdev->usid);
-+}
-+EXPORT_SYMBOL_GPL(spmi_command_shutdown);
-+
-+static int spmi_drv_probe(struct device *dev)
-+{
-+	const struct spmi_driver *sdrv = to_spmi_driver(dev->driver);
-+	int err = 0;
-+
-+	if (sdrv->probe)
-+		err = sdrv->probe(to_spmi_device(dev));
-+
-+	return err;
-+}
-+
-+static int spmi_drv_remove(struct device *dev)
-+{
-+	const struct spmi_driver *sdrv = to_spmi_driver(dev->driver);
-+	int err = 0;
-+
-+	if (sdrv->remove)
-+		err = sdrv->remove(to_spmi_device(dev));
-+
-+	return err;
-+}
-+
-+static void spmi_drv_shutdown(struct device *dev)
-+{
-+	const struct spmi_driver *sdrv = to_spmi_driver(dev->driver);
-+
-+	if (sdrv->shutdown)
-+		sdrv->shutdown(to_spmi_device(dev));
-+}
-+
-+static struct bus_type spmi_bus_type = {
-+	.name		= "spmi",
-+	.match		= spmi_device_match,
-+	.pm		= &spmi_pm_ops,
-+	.probe		= spmi_drv_probe,
-+	.remove		= spmi_drv_remove,
-+	.shutdown	= spmi_drv_shutdown,
-+};
-+
-+struct spmi_device *spmi_device_alloc(struct spmi_controller *ctrl)
-+{
-+	struct spmi_device *sdev;
-+
-+	sdev = kzalloc(sizeof(*sdev), GFP_KERNEL);
-+	if (!sdev)
-+		return NULL;
-+
-+	sdev->ctrl = ctrl;
-+	device_initialize(&sdev->dev);
-+	sdev->dev.parent = &ctrl->dev;
-+	sdev->dev.bus = &spmi_bus_type;
-+	sdev->dev.type = &spmi_dev_type;
-+	return sdev;
-+}
-+EXPORT_SYMBOL_GPL(spmi_device_alloc);
-+
-+struct spmi_controller *spmi_controller_alloc(struct device *parent,
-+					      size_t size)
-+{
-+	struct spmi_controller *ctrl;
-+	int id;
-+
-+	if (WARN_ON(!parent))
-+		return NULL;
-+
-+	ctrl = kzalloc(sizeof(*ctrl) + size, GFP_KERNEL);
-+	if (!ctrl)
-+		return NULL;
-+
-+	device_initialize(&ctrl->dev);
-+	ctrl->dev.type = &spmi_ctrl_type;
-+	ctrl->dev.bus = &spmi_bus_type;
-+	ctrl->dev.parent = parent;
-+	ctrl->dev.of_node = parent->of_node;
-+	spmi_controller_set_drvdata(ctrl, &ctrl[1]);
-+
-+	idr_preload(GFP_KERNEL);
-+	mutex_lock(&ctrl_idr_lock);
-+	id = idr_alloc(&ctrl_idr, ctrl, 0, 0, GFP_NOWAIT);
-+	mutex_unlock(&ctrl_idr_lock);
-+	idr_preload_end();
-+
-+	if (id < 0) {
-+		dev_err(parent,
-+			"unable to allocate SPMI controller identifier.\n");
-+		spmi_controller_put(ctrl);
-+		return NULL;
-+	}
-+
-+	ctrl->nr = id;
-+	dev_set_name(&ctrl->dev, "spmi-%d", id);
-+
-+	dev_dbg(&ctrl->dev, "allocated controller 0x%p id %d\n", ctrl, id);
-+	return ctrl;
-+}
-+EXPORT_SYMBOL_GPL(spmi_controller_alloc);
-+
-+static int of_spmi_register_devices(struct spmi_controller *ctrl)
-+{
-+	struct device_node *node;
-+	int err;
-+
-+	dev_dbg(&ctrl->dev, "of_spmi_register_devices\n");
-+
-+	if (!ctrl->dev.of_node)
-+		return -ENODEV;
-+
-+	dev_dbg(&ctrl->dev, "looping through children\n");
-+
-+	for_each_available_child_of_node(ctrl->dev.of_node, node) {
-+		struct spmi_device *sdev;
-+		u32 reg[2];
-+
-+		dev_dbg(&ctrl->dev, "adding child %s\n", node->full_name);
-+
-+		err = of_property_read_u32_array(node, "reg", reg, 2);
-+		if (err) {
-+			dev_err(&ctrl->dev,
-+				"node %s does not have 'reg' property\n",
-+				node->full_name);
-+			continue;
-+		}
-+
-+		if (reg[1] != SPMI_USID) {
-+			dev_err(&ctrl->dev,
-+				"node %s contains unsupported 'reg' entry\n",
-+				node->full_name);
-+			continue;
-+		}
-+
-+		if (reg[0] > 0xF) {
-+			dev_err(&ctrl->dev,
-+				"invalid usid on node %s\n",
-+				node->full_name);
-+			continue;
-+		}
-+
-+		dev_dbg(&ctrl->dev, "read usid %02x\n", reg[0]);
-+
-+		sdev = spmi_device_alloc(ctrl);
-+		if (!sdev)
-+			continue;
-+
-+		sdev->dev.of_node = node;
-+		sdev->usid = (u8) reg[0];
-+
-+		err = spmi_device_add(sdev);
-+		if (err) {
-+			dev_err(&sdev->dev,
-+				"failure adding device. status %d\n", err);
-+			spmi_device_put(sdev);
-+			continue;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+int spmi_controller_add(struct spmi_controller *ctrl)
-+{
-+	int ret;
-+
-+	/* Can't register until after driver model init */
-+	if (WARN_ON(!spmi_bus_type.p))
-+		return -EAGAIN;
-+
-+	ret = device_add(&ctrl->dev);
-+	if (ret)
-+		return ret;
-+
-+	if (IS_ENABLED(CONFIG_OF))
-+		of_spmi_register_devices(ctrl);
-+
-+	dev_dbg(&ctrl->dev, "spmi-%d registered: dev:%p\n",
-+		ctrl->nr, &ctrl->dev);
-+
-+	return 0;
-+};
-+EXPORT_SYMBOL_GPL(spmi_controller_add);
-+
-+/* Remove a device associated with a controller */
-+static int spmi_ctrl_remove_device(struct device *dev, void *data)
-+{
-+	struct spmi_device *spmidev = to_spmi_device(dev);
-+	if (dev->type == &spmi_dev_type)
-+		spmi_device_remove(spmidev);
-+	return 0;
-+}
-+
-+/**
-+ * spmi_controller_remove: Controller tear-down.
-+ * @ctrl: controller to be removed.
-+ *
-+ * Controller added with the above API is torn down using this API.
-+ */
-+int spmi_controller_remove(struct spmi_controller *ctrl)
-+{
-+	int dummy;
-+
-+	if (!ctrl)
-+		return -EINVAL;
-+
-+	dummy = device_for_each_child(&ctrl->dev, NULL,
-+				      spmi_ctrl_remove_device);
-+	device_unregister(&ctrl->dev);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(spmi_controller_remove);
-+
-+int spmi_driver_register(struct spmi_driver *drv)
-+{
-+	drv->driver.bus = &spmi_bus_type;
-+	return driver_register(&drv->driver);
-+}
-+EXPORT_SYMBOL_GPL(spmi_driver_register);
-+
-+static void __exit spmi_exit(void)
-+{
-+	bus_unregister(&spmi_bus_type);
-+}
-+module_exit(spmi_exit);
-+
-+static int __init spmi_init(void)
-+{
-+	return bus_register(&spmi_bus_type);
-+}
-+postcore_initcall(spmi_init);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("SPMI module");
-+MODULE_ALIAS("platform:spmi");
-diff --git a/include/dt-bindings/spmi/spmi.h b/include/dt-bindings/spmi/spmi.h
-new file mode 100644
-index 0000000..d11e1e5
---- /dev/null
-+++ b/include/dt-bindings/spmi/spmi.h
-@@ -0,0 +1,18 @@
-+/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+#ifndef __DT_BINDINGS_SPMI_H
-+#define __DT_BINDINGS_SPMI_H
-+
-+#define SPMI_USID	0
-+#define SPMI_GSID	1
-+
-+#endif
-diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
-index 45e9214..677e474 100644
---- a/include/linux/mod_devicetable.h
-+++ b/include/linux/mod_devicetable.h
-@@ -432,6 +432,14 @@ struct spi_device_id {
- 	kernel_ulong_t driver_data;	/* Data private to the driver */
+diff --git a/drivers/spmi/spmi-pmic-arb.c b/drivers/spmi/spmi-pmic-arb.c
+index 92e1416..6926a6b 100644
+--- a/drivers/spmi/spmi-pmic-arb.c
++++ b/drivers/spmi/spmi-pmic-arb.c
+@@ -13,6 +13,9 @@
+ #include <linux/err.h>
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
++#include <linux/irqchip/chained_irq.h>
++#include <linux/irqdomain.h>
++#include <linux/irq.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+@@ -108,12 +111,17 @@ struct spmi_pmic_arb_dev {
+ 	void __iomem		*base;
+ 	void __iomem		*intr;
+ 	void __iomem		*cnfg;
++	unsigned int		irq;
+ 	bool			allow_wakeup;
+ 	spinlock_t		lock;
+ 	u8			channel;
+ 	u8			min_apid;
+ 	u8			max_apid;
+ 	u32			mapping_table[SPMI_MAPPING_TABLE_LEN];
++	int			bus_nr;
++	struct irq_domain	*domain;
++	struct spmi_controller	*spmic;
++	u16			apid_to_ppid[256];
  };
  
-+#define SPMI_NAME_SIZE	32
-+#define SPMI_MODULE_PREFIX "spmi:"
-+
-+struct spmi_device_id {
-+	char name[SPMI_NAME_SIZE];
-+	kernel_ulong_t driver_data;	/* Data private to the driver */
+ static inline u32 pmic_arb_base_read(struct spmi_pmic_arb_dev *dev, u32 offset)
+@@ -315,18 +323,340 @@ static int pmic_arb_write_cmd(struct spmi_controller *ctrl,
+ 	return rc;
+ }
+ 
++enum qpnpint_regs {
++	QPNPINT_REG_RT_STS		= 0x10,
++	QPNPINT_REG_SET_TYPE		= 0x11,
++	QPNPINT_REG_POLARITY_HIGH	= 0x12,
++	QPNPINT_REG_POLARITY_LOW	= 0x13,
++	QPNPINT_REG_LATCHED_CLR		= 0x14,
++	QPNPINT_REG_EN_SET		= 0x15,
++	QPNPINT_REG_EN_CLR		= 0x16,
++	QPNPINT_REG_LATCHED_STS		= 0x18,
 +};
 +
- /* dmi */
- enum dmi_field {
- 	DMI_NONE,
-diff --git a/include/linux/spmi.h b/include/linux/spmi.h
-new file mode 100644
-index 0000000..29cf0c9
---- /dev/null
-+++ b/include/linux/spmi.h
-@@ -0,0 +1,342 @@
-+/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+#ifndef _LINUX_SPMI_H
-+#define _LINUX_SPMI_H
++struct spmi_pmic_arb_qpnpint_type {
++	u8 type; /* 1 -> edge */
++	u8 polarity_high;
++	u8 polarity_low;
++} __packed;
 +
-+#include <linux/types.h>
-+#include <linux/device.h>
-+#include <linux/mod_devicetable.h>
++/* Simplified accessor functions for irqchip callbacks */
++static void qpnpint_spmi_write(struct irq_data *d, u8 reg, void *buf,
++			       size_t len)
++{
++	struct spmi_pmic_arb_dev *pa = irq_data_get_irq_chip_data(d);
++	u8 sid = d->hwirq >> 24;
++	u8 per = d->hwirq >> 16;
 +
-+/* Maximum slave identifier */
-+#define SPMI_MAX_SLAVE_ID		16
++	if (pmic_arb_write_cmd(pa->spmic, SPMI_CMD_EXT_WRITEL, sid,
++			       (per << 8) + reg, len, buf))
++		dev_err_ratelimited(&pa->spmic->dev,
++				"failed irqchip transaction on %x\n",
++				    d->irq);
++}
 +
-+/* SPMI Commands */
-+#define SPMI_CMD_EXT_WRITE		0x00
-+#define SPMI_CMD_RESET			0x10
-+#define SPMI_CMD_SLEEP			0x11
-+#define SPMI_CMD_SHUTDOWN		0x12
-+#define SPMI_CMD_WAKEUP			0x13
-+#define SPMI_CMD_AUTHENTICATE		0x14
-+#define SPMI_CMD_MSTR_READ		0x15
-+#define SPMI_CMD_MSTR_WRITE		0x16
-+#define SPMI_CMD_TRANSFER_BUS_OWNERSHIP	0x1A
-+#define SPMI_CMD_DDB_MASTER_READ	0x1B
-+#define SPMI_CMD_DDB_SLAVE_READ		0x1C
-+#define SPMI_CMD_EXT_READ		0x20
-+#define SPMI_CMD_EXT_WRITEL		0x30
-+#define SPMI_CMD_EXT_READL		0x38
-+#define SPMI_CMD_WRITE			0x40
-+#define SPMI_CMD_READ			0x60
-+#define SPMI_CMD_ZERO_WRITE		0x80
++static void qpnpint_spmi_read(struct irq_data *d, u8 reg, void *buf, size_t len)
++{
++	struct spmi_pmic_arb_dev *pa = irq_data_get_irq_chip_data(d);
++	u8 sid = d->hwirq >> 24;
++	u8 per = d->hwirq >> 16;
 +
-+/**
-+ * Client/device handle (struct spmi_device):
-+ *  This is the client/device handle returned when a SPMI device
-+ *  is registered with a controller.
-+ *  Pointer to this structure is used by client-driver as a handle.
-+ *  @dev: Driver model representation of the device.
-+ *  @ctrl: SPMI controller managing the bus hosting this device.
-+ *  @usid: Unique Slave IDentifier.
-+ */
-+struct spmi_device {
-+	struct device		dev;
-+	struct spmi_controller	*ctrl;
-+	u8			usid;
++	if (pmic_arb_read_cmd(pa->spmic, SPMI_CMD_EXT_READL, sid,
++			      (per << 8) + reg, len, buf))
++		dev_err_ratelimited(&pa->spmic->dev,
++				"failed irqchip transaction on %x\n",
++				    d->irq);
++}
++
++static void periph_interrupt(struct spmi_pmic_arb_dev *pa, u8 apid)
++{
++	unsigned int irq;
++	u32 status;
++	int id;
++
++	status = readl_relaxed(pa->intr + SPMI_PIC_IRQ_STATUS(apid));
++	while (status) {
++		id = ffs(status) - 1;
++		status &= ~(1 << id);
++		irq = irq_find_mapping(pa->domain,
++				       pa->apid_to_ppid[apid] << 16
++				     | id << 8
++				     | apid);
++		generic_handle_irq(irq);
++	}
++}
++
++static void pmic_arb_chained_irq(unsigned int irq, struct irq_desc *desc)
++{
++	struct spmi_pmic_arb_dev *pa = irq_get_handler_data(irq);
++	struct irq_chip *chip = irq_get_chip(irq);
++	void __iomem *intr = pa->intr;
++	int first = pa->min_apid >> 5;
++	int last = pa->max_apid >> 5;
++	int i, id;
++	u8 ee = 0; /*pa->owner;*/
++	u32 status;
++
++	chained_irq_enter(chip, desc);
++
++	for (i = first; i <= last; ++i) {
++		status = readl_relaxed(intr + SPMI_PIC_OWNER_ACC_STATUS(ee, i));
++		while (status) {
++			id = ffs(status) - 1;
++			status &= ~(1 << id);
++			periph_interrupt(pa, id + i * 32);
++		}
++	}
++
++	chained_irq_exit(chip, desc);
++}
++
++static void qpnpint_irq_ack(struct irq_data *d)
++{
++	struct spmi_pmic_arb_dev *pa = irq_data_get_irq_chip_data(d);
++	u8 irq  = d->hwirq >> 8;
++	u8 apid = d->hwirq;
++	unsigned long flags;
++	u8 data;
++
++	dev_dbg(&pa->spmic->dev, "hwirq %lu irq: %d\n", d->hwirq, d->irq);
++
++	spin_lock_irqsave(&pa->lock, flags);
++	writel_relaxed(1 << irq, pa->intr + SPMI_PIC_IRQ_CLEAR(apid));
++	spin_unlock_irqrestore(&pa->lock, flags);
++
++	data = 1 << irq;
++	qpnpint_spmi_write(d, QPNPINT_REG_LATCHED_CLR, &data, 1);
++}
++
++static void qpnpint_irq_mask(struct irq_data *d)
++{
++	struct spmi_pmic_arb_dev *pa = irq_data_get_irq_chip_data(d);
++	u8 irq  = d->hwirq >> 8;
++	u8 apid = d->hwirq;
++	unsigned long flags;
++	u32 status;
++	u8 data;
++
++	dev_dbg(&pa->spmic->dev, "hwirq %lu irq: %d\n", d->hwirq, d->irq);
++
++	spin_lock_irqsave(&pa->lock, flags);
++	status = readl_relaxed(pa->intr + SPMI_PIC_ACC_ENABLE(apid));
++	if (status & SPMI_PIC_ACC_ENABLE_BIT) {
++		status = status & ~SPMI_PIC_ACC_ENABLE_BIT;
++		writel_relaxed(status, pa->intr + SPMI_PIC_ACC_ENABLE(apid));
++	}
++	spin_unlock_irqrestore(&pa->lock, flags);
++
++	data = 1 << irq;
++	qpnpint_spmi_write(d, QPNPINT_REG_EN_CLR, &data, 1);
++}
++
++static void qpnpint_irq_unmask(struct irq_data *d)
++{
++	struct spmi_pmic_arb_dev *pa = irq_data_get_irq_chip_data(d);
++	u8 irq  = d->hwirq >> 8;
++	u8 apid = d->hwirq;
++	unsigned long flags;
++	u32 status;
++	u8 data;
++
++	dev_dbg(&pa->spmic->dev, "hwirq %lu irq: %d, apid = %02x\n", d->hwirq,
++				  d->irq, apid);
++
++	spin_lock_irqsave(&pa->lock, flags);
++	status = readl_relaxed(pa->intr + SPMI_PIC_ACC_ENABLE(apid));
++	if (!(status & SPMI_PIC_ACC_ENABLE_BIT)) {
++		writel_relaxed(status | SPMI_PIC_ACC_ENABLE_BIT,
++				pa->intr + SPMI_PIC_ACC_ENABLE(apid));
++	}
++	spin_unlock_irqrestore(&pa->lock, flags);
++
++	data = 1 << irq;
++	qpnpint_spmi_write(d, QPNPINT_REG_EN_SET, &data, 1);
++}
++
++static void qpnpint_irq_enable(struct irq_data *d)
++{
++	struct spmi_pmic_arb_dev *pa = irq_data_get_irq_chip_data(d);
++	u8 irq  = d->hwirq >> 8;
++	u8 data;
++
++	dev_dbg(&pa->spmic->dev, "hwirq %lu irq: %d\n", d->hwirq, d->irq);
++
++	qpnpint_irq_unmask(d);
++
++	data = 1 << irq;
++	qpnpint_spmi_write(d, QPNPINT_REG_LATCHED_CLR, &data, 1);
++}
++
++static int qpnpint_irq_set_type(struct irq_data *d, unsigned int flow_type)
++{
++	struct spmi_pmic_arb_dev *pa = irq_data_get_irq_chip_data(d);
++	struct spmi_pmic_arb_qpnpint_type type;
++	u8 irq = d->hwirq >> 8;
++
++	dev_dbg(&pa->spmic->dev, "qpnpint_irq_set_type %p, %x\n", d, flow_type);
++
++	qpnpint_spmi_read(d, QPNPINT_REG_SET_TYPE, &type, 3);
++
++	if (flow_type & (IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING)) {
++		type.type |= 1 << irq;
++		if (flow_type & IRQF_TRIGGER_RISING)
++			type.polarity_high |= 1 << irq;
++		if (flow_type & IRQF_TRIGGER_FALLING)
++			type.polarity_low  |= 1 << irq;
++	} else {
++		if ((flow_type & (IRQF_TRIGGER_HIGH)) &&
++		    (flow_type & (IRQF_TRIGGER_LOW)))
++			return -EINVAL;
++
++		type.type &= ~(1 << irq); /* level trig */
++		if (flow_type & IRQF_TRIGGER_HIGH)
++			type.polarity_high |= 1 << irq;
++		else
++			type.polarity_low  |= 1 << irq;
++	}
++
++	qpnpint_spmi_write(d, QPNPINT_REG_SET_TYPE, &type, 3);
++	return 0;
++}
++
++static struct irq_chip pmic_arb_irqchip = {
++	.name		= "pmic_arb",
++	.irq_enable	= qpnpint_irq_enable,
++	.irq_ack	= qpnpint_irq_ack,
++	.irq_mask	= qpnpint_irq_mask,
++	.irq_unmask	= qpnpint_irq_unmask,
++	.irq_set_type	= qpnpint_irq_set_type,
++	.flags		= IRQCHIP_MASK_ON_SUSPEND
++			| IRQCHIP_SKIP_SET_WAKE,
 +};
-+#define to_spmi_device(d) container_of(d, struct spmi_device, dev)
 +
-+static inline void *spmi_device_get_drvdata(const struct spmi_device *sdev)
-+{
-+	return dev_get_drvdata(&sdev->dev);
-+}
-+
-+static inline void spmi_device_set_drvdata(struct spmi_device *sdev, void *data)
-+{
-+	dev_set_drvdata(&sdev->dev, data);
-+}
-+
-+/**
-+ * spmi_controller_alloc: Allocate a new SPMI controller
-+ * @ctrl: associated controller
-+ *
-+ * Caller is responsible for either calling spmi_device_add() to add the
-+ * newly allocated controller, or calling spmi_device_put() to discard it.
-+ */
-+struct spmi_device *spmi_device_alloc(struct spmi_controller *ctrl);
-+
-+static inline void spmi_device_put(struct spmi_device *sdev)
-+{
-+	if (sdev)
-+		put_device(&sdev->dev);
-+}
-+
-+/**
-+ * spmi_device_add: add a device previously constructed via spmi_device_alloc()
-+ * @sdev: spmi_device to be added
-+ */
-+int spmi_device_add(struct spmi_device *sdev);
-+
-+/**
-+ * spmi_device_remove: remove a device
-+ * @sdev: spmi_device to be removed
-+ */
-+void spmi_device_remove(struct spmi_device *sdev);
-+
-+/**
-+ * struct spmi_controller: interface to the SPMI master controller
-+ * @dev: Driver model representation of the device.
-+ * @nr: board-specific number identifier for this controller/bus
-+ * @cmd: sends a non-data command sequence on the SPMI bus.
-+ * @read_cmd: sends a register read command sequence on the SPMI bus.
-+ * @write_cmd: sends a register write command sequence on the SPMI bus.
-+ */
-+struct spmi_controller {
-+	struct device		dev;
-+	unsigned int		nr;
-+	int	(*cmd)(struct spmi_controller *ctrl, u8 opcode, u8 sid);
-+	int	(*read_cmd)(struct spmi_controller *ctrl, u8 opcode,
-+			    u8 sid, u16 addr, u8 bc, u8 *buf);
-+	int	(*write_cmd)(struct spmi_controller *ctrl, u8 opcode,
-+			     u8 sid, u16 addr, u8 bc, const u8 *buf);
++struct spmi_pmic_arb_irq_spec {
++	unsigned slave:4;
++	unsigned per:8;
++	unsigned irq:3;
 +};
-+#define to_spmi_controller(d) container_of(d, struct spmi_controller, dev)
 +
-+static inline
-+void *spmi_controller_get_drvdata(const struct spmi_controller *ctrl)
++static int search_mapping_table(struct spmi_pmic_arb_dev *pa,
++				struct spmi_pmic_arb_irq_spec *spec,
++				u8 *apid)
 +{
-+	return dev_get_drvdata(&ctrl->dev);
++	u16 ppid = spec->slave << 8 | spec->per;
++	u32 *mapping_table = pa->mapping_table;
++	int index = 0, i;
++	u32 data;
++
++	for (i = 0; i < SPMI_MAPPING_TABLE_TREE_DEPTH; ++i) {
++		data = mapping_table[index];
++
++		if (ppid & (1 << SPMI_MAPPING_BIT_INDEX(data))) {
++			if (SPMI_MAPPING_BIT_IS_1_FLAG(data)) {
++				index = SPMI_MAPPING_BIT_IS_1_RESULT(data);
++			} else {
++				*apid = SPMI_MAPPING_BIT_IS_1_RESULT(data);
++				return 0;
++			}
++		} else {
++			if (SPMI_MAPPING_BIT_IS_0_FLAG(data)) {
++				index = SPMI_MAPPING_BIT_IS_0_RESULT(data);
++			} else {
++				*apid = SPMI_MAPPING_BIT_IS_0_RESULT(data);
++				return 0;
++			}
++		}
++	}
++
++	return -ENODEV;
 +}
 +
-+static inline void spmi_controller_set_drvdata(struct spmi_controller *ctrl,
-+					       void *data)
++static int qpnpint_irq_domain_dt_translate(struct irq_domain *d,
++					   struct device_node *controller,
++					   const u32 *intspec,
++					   unsigned int intsize,
++					   unsigned long *out_hwirq,
++					   unsigned int *out_type)
 +{
-+	dev_set_drvdata(&ctrl->dev, data);
++	struct spmi_pmic_arb_dev *pa = d->host_data;
++	struct spmi_pmic_arb_irq_spec spec;
++	int err;
++	u8 apid;
++
++	dev_dbg(&pa->spmic->dev,
++		"intspec[0] 0x%1x intspec[1] 0x%02x intspec[2] 0x%02x\n",
++		intspec[0], intspec[1], intspec[2]);
++
++	if (d->of_node != controller)
++		return -EINVAL;
++	if (intsize != 4)
++		return -EINVAL;
++	if (intspec[0] > 0xF || intspec[1] > 0xFF || intspec[2] > 0x7)
++		return -EINVAL;
++
++	spec.slave = intspec[0];
++	spec.per   = intspec[1];
++	spec.irq   = intspec[2];
++
++	err = search_mapping_table(pa, &spec, &apid);
++	if (err)
++		return err;
++
++	pa->apid_to_ppid[apid] = spec.slave << 8 | spec.per;
++
++	/* Keep track of {max,min}_apid for bounding search during interrupt */
++	if (apid > pa->max_apid)
++		pa->max_apid = apid;
++	if (apid < pa->min_apid)
++		pa->min_apid = apid;
++
++	*out_hwirq = spec.slave << 24
++		   | spec.per   << 16
++		   | spec.irq   << 8
++		   | apid;
++	*out_type  = intspec[3] & IRQ_TYPE_SENSE_MASK;
++
++	dev_dbg(&pa->spmic->dev, "out_hwirq = %lu\n", *out_hwirq);
++
++	return 0;
 +}
 +
-+/**
-+ * spmi_controller_alloc: Allocate a new SPMI controller
-+ * @parent: parent device
-+ * @size: size of private data
-+ *
-+ * Caller is responsible for either calling spmi_controller_add() to add the
-+ * newly allocated controller, or calling spmi_controller_put() to discard it.
-+ */
-+struct spmi_controller *spmi_controller_alloc(struct device *parent,
-+					      size_t size);
-+
-+static inline void spmi_controller_put(struct spmi_controller *ctrl)
++static int qpnpint_irq_domain_map(struct irq_domain *d,
++				  unsigned int virq,
++				  irq_hw_number_t hwirq)
 +{
-+	if (ctrl)
-+		put_device(&ctrl->dev);
-+}
++	struct spmi_pmic_arb_dev *pa = d->host_data;
 +
-+/**
-+ * spmi_controller_add: Controller bring-up.
-+ * @ctrl: controller to be registered.
-+ *
-+ * Register a controller previously allocated via spmi_controller_alloc() with
-+ * the SPMI core
-+ */
-+int spmi_controller_add(struct spmi_controller *ctrl);
++	dev_dbg(&pa->spmic->dev, "virq = %u, hwirq = %lu\n", virq, hwirq);
 +
-+/**
-+ * spmi_controller_remove: Controller tear-down.
-+ *
-+ * Remove a SPMI controller.
-+ */
-+int spmi_controller_remove(struct spmi_controller *ctrl);
-+
-+/**
-+ * struct spmi_driver: Manage SPMI generic/slave device driver
-+ * @driver: SPMI device drivers should initialize name and owner field of
-+ *	    this structure
-+ * @probe: binds this driver to a SPMI device.
-+ * @remove: unbinds this driver from the SPMI device.
-+ * @shutdown: standard shutdown callback used during powerdown/halt.
-+ * @suspend: standard suspend callback used during system suspend
-+ * @resume: standard resume callback used during system resume
-+ */
-+struct spmi_driver {
-+	struct device_driver driver;
-+	int	(*probe)(struct spmi_device *sdev);
-+	int	(*remove)(struct spmi_device *sdev);
-+	void	(*shutdown)(struct spmi_device *sdev);
-+	int	(*suspend)(struct spmi_device *sdev, pm_message_t pmesg);
-+	int	(*resume)(struct spmi_device *sdev);
-+};
-+#define to_spmi_driver(d) container_of(d, struct spmi_driver, driver)
-+
-+/**
-+ * spmi_driver_register: Client driver registration with SPMI framework.
-+ * @sdrv: client driver to be associated with client-device.
-+ *
-+ * This API will register the client driver with the SPMI framework.
-+ * It is called from the driver's module-init function.
-+ */
-+int spmi_driver_register(struct spmi_driver *sdrv);
-+
-+/**
-+ * spmi_driver_unregister - reverse effect of spmi_driver_register
-+ * @sdrv: the driver to unregister
-+ * Context: can sleep
-+ */
-+static inline void spmi_driver_unregister(struct spmi_driver *sdrv)
-+{
-+	if (sdrv)
-+		driver_unregister(&sdrv->driver);
-+}
-+
-+#define module_spmi_driver(__spmi_driver) \
-+	module_driver(__spmi_driver, spmi_driver_register, \
-+			spmi_driver_unregister)
-+
-+/**
-+ * spmi_register_read() - register read
-+ * @sdev: SPMI device
-+ * @addr: slave register address (5-bit address).
-+ * @buf: buffer to be populated with data from the Slave.
-+ *
-+ * Reads 1 byte of data from a Slave device register.
-+ */
-+int spmi_register_read(struct spmi_device *sdev, u8 addr, u8 *buf);
-+
-+/**
-+ * spmi_ext_register_read() - extended register read
-+ * @sdev: SPMI device
-+ * @addr: slave register address (8-bit address).
-+ * @buf: buffer to be populated with data from the Slave.
-+ * @len: the request number of bytes to read (up to 16 bytes).
-+ *
-+ * Reads up to 16 bytes of data from the extended register space on a
-+ * Slave device.
-+ */
-+int spmi_ext_register_read(struct spmi_device *sdev, u8 addr, u8 *buf,
-+			   size_t len);
-+
-+/**
-+ * spmi_ext_register_readl() - extended register read long
-+ * @sdev: SPMI device
-+ * @addr: slave register address (16-bit address).
-+ * @buf: buffer to be populated with data from the Slave.
-+ * @len: the request number of bytes to read (up to 8 bytes).
-+ *
-+ * Reads up to 8 bytes of data from the extended register space on a
-+ * Slave device using 16-bit address.
-+ */
-+int spmi_ext_register_readl(struct spmi_device *sdev, u16 addr, u8 *buf,
-+			    size_t len);
-+
-+/**
-+ * spmi_register_write() - register write
-+ * @sdev: SPMI device
-+ * @addr: slave register address (5-bit address).
-+ * @buf: buffer containing the data to be transferred to the Slave.
-+ *
-+ * Writes 1 byte of data to a Slave device register.
-+ */
-+int spmi_register_write(struct spmi_device *sdev, u8 addr, const u8 *buf);
-+
-+/**
-+ * spmi_register_zero_write() - register zero write
-+ * @sdev: SPMI device
-+ * @data: the data to be written to register 0 (7-bits).
-+ *
-+ * Writes data to register 0 of the Slave device.
-+ */
-+int spmi_register_zero_write(struct spmi_device *sdev, u8 data);
-+
-+/**
-+ * spmi_ext_register_write() - extended register write
-+ * @sdev: SPMI device
-+ * @addr: slave register address (8-bit address).
-+ * @buf: buffer containing the data to be transferred to the Slave.
-+ * @len: the request number of bytes to read (up to 16 bytes).
-+ *
-+ * Writes up to 16 bytes of data to the extended register space of a
-+ * Slave device.
-+ */
-+int spmi_ext_register_write(struct spmi_device *sdev, u8 addr,
-+			    const u8 *buf, size_t len);
-+
-+/**
-+ * spmi_ext_register_writel() - extended register write long
-+ * @sdev: SPMI device
-+ * @addr: slave register address (16-bit address).
-+ * @buf: buffer containing the data to be transferred to the Slave.
-+ * @len: the request number of bytes to read (up to 8 bytes).
-+ *
-+ * Writes up to 8 bytes of data to the extended register space of a
-+ * Slave device using 16-bit address.
-+ */
-+int spmi_ext_register_writel(struct spmi_device *sdev, u16 addr,
-+			     const u8 *buf, size_t len);
-+
-+/**
-+ * spmi_command_reset() - sends RESET command to the specified slave
-+ * @sdev: SPMI device
-+ *
-+ * The Reset command initializes the Slave and forces all registers to
-+ * their reset values. The Slave shall enter the STARTUP state after
-+ * receiving a Reset command.
-+ *
-+ * Returns
-+ * -EINVAL for invalid slave identifier.
-+ * -EPERM if the SPMI transaction is denied due to permission issues.
-+ * -EIO if the SPMI transaction fails (parity errors, etc).
-+ * -ETIMEDOUT if the SPMI transaction times out.
-+ */
-+int spmi_command_reset(struct spmi_device *sdev);
-+
-+/**
-+ * spmi_command_sleep() - sends SLEEP command to the specified slave
-+ * @sdev: SPMI device
-+ *
-+ * The Sleep command causes the Slave to enter the user defined SLEEP state.
-+ *
-+ * Returns
-+ * -EINVAL for invalid slave identifier.
-+ * -EPERM if the SPMI transaction is denied due to permission issues.
-+ * -EIO if the SPMI transaction fails (parity errors, etc).
-+ * -ETIMEDOUT if the SPMI transaction times out.
-+ */
-+int spmi_command_sleep(struct spmi_device *sdev);
-+
-+/**
-+ * spmi_command_wakeup() - sends WAKEUP command to the specified slave
-+ * @sdev: SPMI device
-+ *
-+ * The Wakeup command causes the Slave to move from the SLEEP state to
-+ * the ACTIVE state.
-+ *
-+ * Returns
-+ * -EINVAL for invalid slave identifier.
-+ * -EPERM if the SPMI transaction is denied due to permission issues.
-+ * -EIO if the SPMI transaction fails (parity errors, etc).
-+ * -ETIMEDOUT if the SPMI transaction times out.
-+ */
-+int spmi_command_wakeup(struct spmi_device *sdev);
-+
-+/**
-+ * spmi_command_shutdown() - sends SHUTDOWN command to the specified slave
-+ * @sdev: SPMI device
-+ *
-+ * The Shutdown command causes the Slave to enter the SHUTDOWN state.
-+ *
-+ * Returns
-+ * -EINVAL for invalid slave identifier.
-+ * -EPERM if the SPMI transaction is denied due to permission issues.
-+ * -EIO if the SPMI transaction fails (parity errors, etc).
-+ * -ETIMEDOUT if the SPMI transaction times out.
-+ */
-+int spmi_command_shutdown(struct spmi_device *sdev);
-+
++	irq_set_chip_and_handler(virq, &pmic_arb_irqchip, handle_level_irq);
++	irq_set_chip_data(virq, d->host_data);
++#ifdef CONFIG_ARM
++	set_irq_flags(virq, IRQF_VALID);
++#else
++	irq_set_noprobe(virq);
 +#endif
++	return 0;
++}
++
++static const struct irq_domain_ops pmic_arb_irq_domain_ops = {
++	.map	= qpnpint_irq_domain_map,
++	.xlate	= qpnpint_irq_domain_dt_translate,
++};
++
+ static int spmi_pmic_arb_probe(struct platform_device *pdev)
+ {
+ 	struct spmi_pmic_arb_dev *pa;
+ 	struct spmi_controller *ctrl;
+ 	struct resource *res;
+-	int err, i;
++	int err = 0, i;
+ 
+ 	ctrl = spmi_controller_alloc(&pdev->dev, sizeof(*pa));
+ 	if (!ctrl)
+ 		return -ENOMEM;
+ 
+ 	pa = spmi_controller_get_drvdata(ctrl);
++	pa->spmic = ctrl;
+ 
+ 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "core");
+ 	pa->base = devm_ioremap_resource(&ctrl->dev, res);
+@@ -349,6 +679,12 @@ static int spmi_pmic_arb_probe(struct platform_device *pdev)
+ 		goto err_put_ctrl;
+ 	}
+ 
++	pa->irq = platform_get_irq(pdev, 0);
++	if (pa->irq < 0) {
++		err = pa->irq;
++		goto err_put_ctrl;
++	}
++
+ 	for (i = 0; i < ARRAY_SIZE(pa->mapping_table); ++i)
+ 		pa->mapping_table[i] = readl_relaxed(
+ 				pa->cnfg + SPMI_MAPPING_TABLE_REG(i));
+@@ -364,15 +700,30 @@ static int spmi_pmic_arb_probe(struct platform_device *pdev)
+ 	ctrl->read_cmd = pmic_arb_read_cmd;
+ 	ctrl->write_cmd = pmic_arb_write_cmd;
+ 
++	dev_dbg(&pdev->dev, "adding irq domain\n");
++	pa->domain = irq_domain_add_tree(pdev->dev.of_node,
++					 &pmic_arb_irq_domain_ops, pa);
++	if (!pa->domain) {
++		dev_err(&pdev->dev, "unable to create irq_domain\n");
++		goto err_put_ctrl;
++	}
++
++	irq_set_handler_data(pa->irq, pa);
++	irq_set_chained_handler(pa->irq, pmic_arb_chained_irq);
++
+ 	err = spmi_controller_add(ctrl);
+ 	if (err)
+-		goto err_put_ctrl;
++		goto err_domain_remove;
+ 
+ 	dev_dbg(&ctrl->dev, "PMIC Arb Version 0x%x\n",
+ 		pmic_arb_base_read(pa, PMIC_ARB_VERSION));
+ 
+ 	return 0;
+ 
++err_domain_remove:
++	irq_set_chained_handler(pa->irq, NULL);
++	irq_set_handler_data(pa->irq, NULL);
++	irq_domain_remove(pa->domain);
+ err_put_ctrl:
+ 	spmi_controller_put(ctrl);
+ 	return err;
+@@ -381,6 +732,10 @@ err_put_ctrl:
+ static int __exit spmi_pmic_arb_remove(struct platform_device *pdev)
+ {
+ 	struct spmi_controller *ctrl = platform_get_drvdata(pdev);
++	struct spmi_pmic_arb_dev *pa = spmi_controller_get_drvdata(ctrl);
++	irq_set_chained_handler(pa->irq, NULL);
++	irq_set_handler_data(pa->irq, NULL);
++	irq_domain_remove(pa->domain);
+ 	spmi_controller_remove(ctrl);
+ 	return 0;
+ }
 -- 
 Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
 hosted by The Linux Foundation
