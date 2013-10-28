@@ -1,53 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273Ab3J1RW6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 13:22:58 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:37469 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756704Ab3J1RW5 (ORCPT
+	id S1757310Ab3J1RYF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 13:24:05 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:33791 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756983Ab3J1RYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 13:22:57 -0400
-Message-ID: <526E9D67.9090504@mentor.com>
-Date: Mon, 28 Oct 2013 19:22:47 +0200
-From: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Mon, 28 Oct 2013 13:24:02 -0400
 MIME-Version: 1.0
+In-Reply-To: <20131027212407.GA17439@kroah.com>
+References: <525BD08C.2080101@t-online.de> <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com>
+ <CA+55aFy7TpvkVuPEOJ7Qqirwap1gXoD1_MrYLhgPAYuVpN8u=w@mail.gmail.com>
+ <alpine.DEB.2.02.1310251221310.5266@ionos.tec.linutronix.de>
+ <CA+55aFxw1Hm4QVeEigkByP5RppSL30oHnLoR16C=henf-a=uFQ@mail.gmail.com>
+ <CA+55aFyb72qoZ1Tjpb+=q-6+GmwoOXjfntY_zZnf300gg3d1Hg@mail.gmail.com>
+ <CA+55aFxuVpDo3LvmG9j-Hu7sENLTcsB6_CY2TA4mE-k+CuTeGg@mail.gmail.com>
+ <CA+55aFz9ewd7VhCKDxJUzY4PGH7E3N-xMr=pDGQxf1PyNd1W1w@mail.gmail.com> <20131027212407.GA17439@kroah.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 28 Oct 2013 11:23:41 -0600
+Message-ID: <CAErSpo5NmBDqRA3URAQPmw4iC3xvpDdd9JFROuftLJE1YsbPhA@mail.gmail.com>
+Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request
+ during shutdown
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sysfs: return correct error code on unimplemented mmap()
-References: <1382977710-1966-1-git-send-email-vladimir_zapolskiy@mentor.com> <20131028163549.GC4797@kroah.com>
-In-Reply-To: <20131028163549.GC4797@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [137.202.0.76]
-X-OriginalArrivalTime: 28 Oct 2013 17:22:56.0468 (UTC) FILETIME=[57944140:01CED402]
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Veaceslav Falico <vfalico@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/13 18:35, Greg Kroah-Hartman wrote:
-> On Mon, Oct 28, 2013 at 06:28:30PM +0200, Vladimir Zapolskiy wrote:
->> Both POSIX.1-2008 and Linux Programmer's Manual have a dedicated return
->> error code for a case, when a file doesn't support mmap(), it's ENODEV.
+[+cc Veaceslav]
+
+On Sun, Oct 27, 2013 at 3:24 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Sun, Oct 27, 2013 at 09:13:29PM +0000, Linus Torvalds wrote:
+>> .. and one more case of freeing a delayed work object (likely a kobject again):
 >>
->> This change replaces overloaded EINVAL with ENODEV in a situation
->> described above for sysfs binary files.
+>> This time it looks like it's in the PCI layer, freeing the msi irq information.
 >>
->> Signed-off-by: Vladimir Zapolskiy<vladimir_zapolskiy@mentor.com>
->> Cc: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+>> It looks like that code simply does
+>>
+>>     kobject_del(&entry->kobj);
+>>     kobject_put(&entry->kobj);
+>>     list_del(&entry->list);
+>>     kfree(entry);
+>>
+>> and the problem is that the "entry->kobj" may have *other* references
+>> to it, thanks to people accessing it through /sys, so despite doing a
+>> kojbect_del/kobject_put(), it's not at all ok to then do a "kfree()"
+>> on it. The embedded kobj might still be in use.
+>>
+>> Afaik, that code should do the kfree() on the kobject in the _release_
+>> method, not synchronously like that.
+>>
+>> We already have a msi_kobj_release(), I'm wondering why that doesn't
+>> do the kfree().
+>>
+>> Bjorn? Yinghai? Greg, comments about that msi kobj usage?
 >
-> Is this a problem in linux-next or 3.12-rc7 and older kernels?  What
-> userspace tool is breaking here?
+> Ick, it really should be doing a kfree() in the release only.  Bjorn has
+> had a bunch of changes in this area recently, perhaps they are in
+> linux-next waiting for 3.13, and I've talked to him about getting rid of
+> all of the kobjects for msi files, as I don't think it's needed at all.
 
-The patch itself is against 3.12-rc7, but the same problem can be found
-in older kernels as well.
+IIRC, you said you might take a look at converting this to attributes
+on the train back home, so I haven't looked into it myself :)
 
-I assume the bugfix is quite safe, because both EINVAL and ENODEV should
-be handled by user space tools, however for developers it might be
-beneficial to distinguish cases of completely not supported mmap() and
-supported but misused mmap() applied to a binary sysfs file. At the
-moment from the user space perspective there is no indication of
-unsupported mmap() over a file in sysfs.
+> Bjorn, don't you have a fix for this problem already done somewhere?
 
-With best wishes,
-Vladimir
+Yep, this is clearly wrong, and Veaceslav has a patch that moves the
+kfree() to the release function.  I've been waiting for a consolidated
+repost of all his MSI-related fixes, but maybe he's been waiting for
+*me*.
+
+Bjorn
