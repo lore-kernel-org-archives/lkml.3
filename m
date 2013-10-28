@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794Ab3J1Nw5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 09:52:57 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:11850 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756603Ab3J1Nwx (ORCPT
+	id S932074Ab3J1NxM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 09:53:12 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:43634 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756347Ab3J1NxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 09:52:53 -0400
-Date: Mon, 28 Oct 2013 14:52:50 +0100
+	Mon, 28 Oct 2013 09:53:06 -0400
+Date: Mon, 28 Oct 2013 14:53:03 +0100
 From: Kamil Debski <k.debski@samsung.com>
 Subject: RE: [PATCH 4/5] usb: ehci-s5p: Change to use phy provided by the
  generic phy framework
-In-reply-to: <003101ced1ea$85f7e010$91e7a030$%han@samsung.com>
-To: "'Jingoo Han'" <jg1.han@samsung.com>
+In-reply-to: <CAFp+6iExOPunF=ND7_17PZXA217K_4im4ZJvR=mW2Ym_gnA0GQ@mail.gmail.com>
+To: "'Vivek Gautam'" <gautamvivek1987@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm@vger.kernel.org,
+        "'Linux USB Mailing List'" <linux-usb@vger.kernel.org>,
+        devicetree@vger.kernel.org, linux-arm@vger.kernel.org,
         "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
-        Tomasz Figa <t.figa@samsung.com>,
+        "'kishon'" <kishon@ti.com>, Tomasz Figa <t.figa@samsung.com>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Vivek Gautam'" <gautam.vivek@samsung.com>,
-        "'Mateusz Krawczuk'" <mat.krawczuk@gmail.com>
-Message-id: <025e01ced3e4$fec0de60$fc429b20$%debski@samsung.com>
+        "'Vivek Gautam'" <gautam.vivek@samsung.com>, mat.krawczuk@gmail.com
+Message-id: <025f01ced3e5$0660ecf0$1322c6d0$%debski@samsung.com>
 MIME-version: 1.0
 X-Mailer: Microsoft Office Outlook 12.0
 Content-type: text/plain; charset=us-ascii
 Content-language: pl
 Content-transfer-encoding: 7bit
-Thread-index: Ac7RjQQeA+F8IuX1Sui/BMlCS4ypRQAXGYMwAH4Nc4A=
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-de-526e6c331c7c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJLMWRmVeSWpSXmKPExsVy+t/xy7rGOXlBBgd+WVnMP3KO1aLtykF2
-	i8sLL7FaXHjaw2ZxtukNu8W0nf9ZLS7vmsNmMeP8PiaLRctamS3WHrnLbnG2/zabxeE37awW
-	62e8ZnHg9dg56y67R9+WVYwex29sZ/L4vEkugCWKyyYlNSezLLVI3y6BK+P1OfWCK+wVZ37e
-	YG9gbGTrYuTkkBAwkbi45w4LhC0mceHeeqA4F4eQwFJGiXftm1khnAYmiSmftgI5HBxsApoS
-	q+55gDSICKhJNC8/wwJSwyxwjlli3ZR37BANmxkl7jX8ZgKp4hSwk1i08T47iC0skChxZOZq
-	ZhCbRUBVom/9X7AzeAUcJHbsXcQMYQtK/Jh8D+wkZgEtifU7jzNB2PISm9e8ZQY5QkJAXeLR
-	X10QU0TASuLHZn6IChGJuw3PWScwCs1CMmgWkkGzkAyahaRlASPLKkbR1NLkguKk9FxDveLE
-	3OLSvHS95PzcTYyQ6Pqyg3HxMatDjAIcjEo8vBvW5gYJsSaWFVfmHmKU4GBWEuGdGpcXJMSb
-	klhZlVqUH19UmpNafIiRiYNTqoFR4qfp7bX77hSmznkzJcXCKW27vCn/4kbWT9UHvq9w6tk8
-	bVP/9TTBuydXv8n5OcV+rUd8lruFzJct3Cs+deZasStse6F5OVjNTW7y039ZdaluhltZPq9j
-	L7465aSga8Hje02nW3YaPfzhHqzm843x4ZrCpukrpEw3p07/1avuG2bMknvF8d4NJZbijERD
-	Leai4kQAxO4SOIwCAAA=
+Thread-index: Ac7SL5EZvzozi34CS36WUBZRHNwj0gBtF2bA
+X-AuditID: cbfec7f5-b7ef66d00000795a-e7-526e6c4026a7
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsVy+t/xa7oOOXlBBstb9S3mHznHatF25SC7
+	xdvvW9gtLjztYbM42/SG3WLazv+sFpd3zWGzmHF+H5PFomWtzBZrj9xltzjbf5vN4vCbdlaL
+	9TNeszjweuycdZfdo2/LKkaP4ze2M3l83iQXwBLFZZOSmpNZllqkb5fAldE6ZQJTwQ3digc/
+	3rM1MC5T6GLk4JAQMJE4McOqi5ETyBSTuHBvPVsXIxeHkMBSRokNy6YxQzgNTBI7li1jBGlg
+	E9CUWHXPA6RBREBPYlrzPEaQGmaBQ8wSvy9NYYRoOMYosedfCwtIFadAsETD81dsILawQKLE
+	kZmrmUFsFgFVif6ufewgNq+Ag8TD3q9sELagxI/J98B6mQW0JNbvPM4EYctLbF7zlhnianWJ
+	R391IY4wkrh1DGIMs4CIxN2G56wTGIVmIZk0C8mkWUgmzULSsoCRZRWjaGppckFxUnqukV5x
+	Ym5xaV66XnJ+7iZGSHx93cG49JjVIUYBDkYlHt4Na3ODhFgTy4orcw8xSnAwK4nwTo3LCxLi
+	TUmsrEotyo8vKs1JLT7EyMTBKdXAeGZ9WM73sv2l7+S/pdo/+f406ue1yWZv83cadK2dapn7
+	Vn2nWe3PGNdHUwzCV1W4e6kunXQj/9u9lssdgjaOnfwmx/7dn7Re+l9ypP3KlTWnz/84dLQp
+	+OJDOU/x6+abdx+Vn8npEt6/6EtFw9O15afSL7zZ82t1wqn/dvk98no3byya+GdqZ6ASS3FG
+	oqEWc1FxIgDtyYwwjQIAAA==
 References: <1382710529-12082-1-git-send-email-k.debski@samsung.com>
  <1382710529-12082-5-git-send-email-k.debski@samsung.com>
- <003101ced1ea$85f7e010$91e7a030$%han@samsung.com>
+ <CAFp+6iExOPunF=ND7_17PZXA217K_4im4ZJvR=mW2Ym_gnA0GQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jingoo,
+Hi Vivek,
 
-> From: Jingoo Han [mailto:jg1.han@samsung.com]
-> Sent: Saturday, October 26, 2013 3:27 AM
+> From: Vivek Gautam [mailto:gautamvivek1987@gmail.com]
+> Sent: Saturday, October 26, 2013 11:41 AM
 > 
-> On Friday, October 25, 2013 11:15 PM, Kamil Debski wrote:
-> >
+> Hi Kamil,
+> 
+> 
+> On Fri, Oct 25, 2013 at 7:45 PM, Kamil Debski <k.debski@samsung.com>
+> wrote:
 > > Change the phy provider used from the old usb phy specific to a new
 > > one using the generic phy framework.
 > >
@@ -65,27 +66,160 @@ Hi Jingoo,
 > > ---
 > >  drivers/usb/host/ehci-s5p.c |   21 +++++++++++----------
 > >  1 file changed, 11 insertions(+), 10 deletions(-)
+> >
+> > diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-
+> s5p.c
+> > index 7cc26e6..76606ff 100644
+> > --- a/drivers/usb/host/ehci-s5p.c
+> > +++ b/drivers/usb/host/ehci-s5p.c
+> > @@ -19,6 +19,7 @@
+> >  #include <linux/module.h>
+> >  #include <linux/of.h>
+> >  #include <linux/of_gpio.h>
+> > +#include <linux/phy/phy.h>
+> >  #include <linux/platform_device.h>
+> >  #include <linux/platform_data/usb-ehci-s5p.h>
+> >  #include <linux/usb/phy.h>
+> > @@ -45,7 +46,7 @@ static struct hc_driver __read_mostly
+> > s5p_ehci_hc_driver;
+> >
+> >  struct s5p_ehci_hcd {
+> >         struct clk *clk;
+> > -       struct usb_phy *phy;
+> > +       struct phy *phy;
+> >         struct usb_otg *otg;
+> >         struct s5p_ehci_platdata *pdata;  }; @@ -77,10 +78,11 @@
+> > static int s5p_ehci_probe(struct platform_device *pdev)  {
+> >         struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
+> >         struct s5p_ehci_hcd *s5p_ehci;
+> > +       struct phy *phy;
 > 
-> Hi Kamil Debski,
-> It looks good. :-)
+> just a nit here:
+> Lets keep the pointer to 'phy' and 'phy_name' together ?
+> and move this above phy_name ?
 
-Thank you.
+Thanks for pointing this out.
  
-> However, could you re-basing against Greg's 'usb-next' branch?
-> Now, the file name of 'ehci-s5p.c' is renamed to 'ehci-exynos.c'.
-> Also, 'Generic PHY Framework' was already merged to Greg's 'usb-next'
-> branch.
+> >         struct usb_hcd *hcd;
+> >         struct ehci_hcd *ehci;
+> >         struct resource *res;
+> > -       struct usb_phy *phy;
+> > +       const char *phy_name;
+> >         int irq;
+> >         int err;
+> >
+> > @@ -103,14 +105,14 @@ static int s5p_ehci_probe(struct
+> platform_device *pdev)
+> >                 return -ENOMEM;
+> >         }
+> >         s5p_ehci = to_s5p_ehci(hcd);
+> > -
+> > +       phy_name = of_get_property(pdev->dev.of_node, "phy-names",
+> NULL);
+> > +       phy =  devm_phy_get(&pdev->dev, phy_name);
+> 
+> Below check for exynos5440 was supposed to skip any request phy.
+> So shouldn't we place above two assignments to the original place where
+> devm_usb_get_phy() was called ?
+> May be i am not getting you intention of changing the place.
 
-Thanks for pointing out this.
+Hm... You are right - if we want to leave this check and skip phy request
+for
+5450 then I should leave the order as it was. And if we want to use the new
+phy driver for 5450 then the check to skip phy requesting should be simply
+removed.
 
 > 
-> Thank you.
+> >         if (of_device_is_compatible(pdev->dev.of_node,
+> >                                         "samsung,exynos5440-ehci")) {
+> >                 s5p_ehci->pdata = &empty_platdata;
+> >                 goto skip_phy;
+> >         }
+> >
+> > -       phy = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
+> >         if (IS_ERR(phy)) {
+> >                 /* Fallback to pdata */
+> >                 if (!pdata) {
+> > @@ -122,7 +124,6 @@ static int s5p_ehci_probe(struct platform_device
+> *pdev)
+> >                 }
+> >         } else {
+> >                 s5p_ehci->phy = phy;
+> > -               s5p_ehci->otg = phy->otg;
+> >         }
+> >
+> >  skip_phy:
+> > @@ -166,7 +167,7 @@ skip_phy:
+> >                 s5p_ehci->otg->set_host(s5p_ehci->otg, &hcd->self);
 > 
-> Best regards,
-> Jingoo Han
+> Lets remove this line and similar calls to 'set_host()' in the driver,
+> since we don't have s5p_ehci->otg anymore after the same is removed
+> above.
+> Anyways this was helping the old phy-samsung-usb2 driver, and not
+> needed now.
+
+Ok, I will.
+
+> 
+> >
+> >         if (s5p_ehci->phy)
+> > -               usb_phy_init(s5p_ehci->phy);
+> > +               phy_power_on(s5p_ehci->phy);
+> >         else if (s5p_ehci->pdata->phy_init)
+> >                 s5p_ehci->pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
+> >
+> > @@ -188,7 +189,7 @@ skip_phy:
+> >
+> >  fail_add_hcd:
+> >         if (s5p_ehci->phy)
+> > -               usb_phy_shutdown(s5p_ehci->phy);
+> > +               phy_power_off(s5p_ehci->phy);
+> >         else if (s5p_ehci->pdata->phy_exit)
+> >                 s5p_ehci->pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
+> >  fail_io:
+> > @@ -209,7 +210,7 @@ static int s5p_ehci_remove(struct platform_device
+> *pdev)
+> >                 s5p_ehci->otg->set_host(s5p_ehci->otg, &hcd->self);
+> 
+> ditto
+> 
+> >
+> >         if (s5p_ehci->phy)
+> > -               usb_phy_shutdown(s5p_ehci->phy);
+> > +               phy_power_off(s5p_ehci->phy);
+> >         else if (s5p_ehci->pdata->phy_exit)
+> >                 s5p_ehci->pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
+> >
+> > @@ -244,7 +245,7 @@ static int s5p_ehci_suspend(struct device *dev)
+> >                 s5p_ehci->otg->set_host(s5p_ehci->otg, &hcd->self);
+> ditto
+> 
+> >
+> >         if (s5p_ehci->phy)
+> > -               usb_phy_shutdown(s5p_ehci->phy);
+> > +               phy_power_off(s5p_ehci->phy);
+> >         else if (s5p_ehci->pdata->phy_exit)
+> >                 s5p_ehci->pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
+> >
+> > @@ -265,7 +266,7 @@ static int s5p_ehci_resume(struct device *dev)
+> >                 s5p_ehci->otg->set_host(s5p_ehci->otg, &hcd->self);
+> ditto
+> 
+> >
+> >         if (s5p_ehci->phy)
+> > -               usb_phy_init(s5p_ehci->phy);
+> > +               phy_power_on(s5p_ehci->phy);
+> >         else if (s5p_ehci->pdata->phy_init)
+> >                 s5p_ehci->pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
+> >
+> [..] Rest looks good. :-)
+> 
+
+Thank you!
 
 Best wishes,
 -- 
 Kamil Debski
 Samsung R&D Institute Poland
+
 
