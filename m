@@ -1,51 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757653Ab3J1WiN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 18:38:13 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51284 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757525Ab3J1WiL (ORCPT
+	id S1757728Ab3J1Wip (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 18:38:45 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:41632 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757681Ab3J1Wik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 18:38:11 -0400
-Date: Mon, 28 Oct 2013 23:38:09 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        rostedt@goodmis.org, John Kacur <jkacur@redhat.com>
-Subject: [ANNOUNCE] 3.10.17-rt12
-Message-ID: <20131028223808.GA8631@linutronix.de>
+	Mon, 28 Oct 2013 18:38:40 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Kumar Gala <galak@codeaurora.org>, Sebastian Reichel <sre@debian.org>,
+        Mark Rutland <mark.rutland@arm.com>, linux-doc@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, Luciano Coelho <luca@coelho.fi>,
+        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Bill Pemberton <wfp5p@virginia.edu>, linux-omap@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Rob Landley <rob@landley.net>,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 4/4] wl1251: spi: add device tree support
+Date: Mon, 28 Oct 2013 23:38:36 +0100
+Message-ID: <4893578.SBstXOAcJY@flatron>
+User-Agent: KMail/4.11.2 (Linux/3.11.6-gentoo; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <FF34C626-4A49-43B1-B0AD-DC6146ABBB11@codeaurora.org>
+References: <1382890469-25286-1-git-send-email-sre@debian.org> <1382890469-25286-5-git-send-email-sre@debian.org> <FF34C626-4A49-43B1-B0AD-DC6146ABBB11@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT folks!
+On Monday 28 of October 2013 01:37:34 Kumar Gala wrote:
+> On Oct 27, 2013, at 11:14 AM, Sebastian Reichel wrote:
+> > Add device tree support for the spi variant of wl1251
+> > and document the binding.
+> > 
+> > Signed-off-by: Sebastian Reichel <sre@debian.org>
+> > ---
+> > .../devicetree/bindings/net/wireless/ti,wl1251.txt | 36
+> > ++++++++++++++++++++++ drivers/net/wireless/ti/wl1251/spi.c          
+> >     | 23 ++++++++++---- 2 files changed, 53 insertions(+), 6
+> > deletions(-)
+> > create mode 100644
+> > Documentation/devicetree/bindings/net/wireless/ti,wl1251.txt
+> > 
+> > diff --git
+> > a/Documentation/devicetree/bindings/net/wireless/ti,wl1251.txt
+> > b/Documentation/devicetree/bindings/net/wireless/ti,wl1251.txt new
+> > file mode 100644
+> > index 0000000..5f8a154
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/net/wireless/ti,wl1251.txt
+> > @@ -0,0 +1,36 @@
+> > +* Texas Instruments wl1251 controller
+> > +
+> > +The wl1251 chip can be connected via SPI or via SDIO. The linux
+> > +kernel currently only supports device tree for the SPI variant.
+> > +
+> 
+> From the binding I have no idea what this chip actually does, also we
+> don't normally reference linux kernel support in bindings specs (so
+> please remove it).
+> 
+> However, what would expect the SDIO binding to look like?  Or more
+> specifically, how would you distinguish the SPI vs SDIO
+> binding/connection?  I'm wondering if the compatible should be
+> something like "ti,wl1251-spi" and than the sdio can be
+> "ti,wl1251-sdio"
 
-I'm pleased to announce the v3.10.17-rt12 patch set.
+Well, you can easily distinguish an SDIO device from an SPI device by its 
+parent node, but...
 
-This is only a stable update (which fixed the livelock in sem_lock()).
+The binding for SDIO might require different set of properties (other than 
+ones inherited from generic SDIO or SPI bindings) than one for SPI. So 
+probably different compatible values might be justified.
 
-Known issues:
+Did we already have such case before? (maybe some I2C + SPI devices?)
 
-      - SLAB support not working
+> > +Required properties:
+> > +- compatible : Should be "ti,wl1251"
+> 
+> reg is not listed as a required prop.
 
-      - The cpsw network driver shows some issues.
+It is implied by SPI bindings, but it might be a good idea to have this 
+stated here as well.
 
-      - bcache is disabled.
+> 
+> > +- interrupts : Should contain interrupt line
+> > +- interrupt-parent : Should be the phandle for the interrupt
+> > +  controller that services interrupts for this device
+> > +- vio-supply : phandle to regulator providing VIO
+> > +- power-gpio : GPIO connected to chip's PMEN pin
+> 
+> should be vendor prefixed: ti,power-gpio
 
-      - an ancient race (since we got sleeping spinlocks) where the
-        TASK_TRACED state is temporary replaced while waiting on a rw
-        lock and the task can't be traced.
+Hmm, out of curiosity, is it a rule for this kind of properties? I can see 
+both cases with and without prefixes when grepping for "-gpios" in 
+Documentation/devicetree/bindings. We should really have such things 
+written down somewhere.
 
-The RT patch against 3.10.17 can be found here:
+> 
+> > +- For additional required properties on SPI, please consult
+> > +  Documentation/devicetree/bindings/spi/spi-bus.txt
+> > +
+> > +Optional properties:
+> > +- ti,use-eeprom : If found, configuration will be loaded from eeprom.
+> 
+> can you be a bit more specific on what cfg will be loaded.  Also, is
+> this property a boolean, if so how do I know which eeprom the cfg is
+> loaded from (is it one that is directly connected to the wl1251?
 
-   https://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patch-3.10.17-rt12.patch.xz
+Maybe one from ti,has-eeprom or ti,config-eeprom would be better name for 
+this property?
 
-The split quilt queue is available at:
+Best regards,
+Tomasz
 
-   https://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patches-3.10.17-rt12.tar.xz
-
-Sebastian
