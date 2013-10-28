@@ -1,84 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757333Ab3J1TOR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 15:14:17 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45222 "EHLO
+	id S1757177Ab3J1TOQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 15:14:16 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45216 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755988Ab3J1TOJ (ORCPT
+	with ESMTP id S1755893Ab3J1TOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Oct 2013 15:14:09 -0400
-Message-Id: <5a49bffc44c5f5bffe222560e489a712321ce971.1382985169.git.joshc@codeaurora.org>
+Message-Id: <7467ed718314cb98c9e40f135e9926cf14ed218b.1382985169.git.joshc@codeaurora.org>
 In-Reply-To: <cover.1382985169.git.joshc@codeaurora.org>
 References: <cover.1382985169.git.joshc@codeaurora.org>
 From: Josh Cartwright <joshc@codeaurora.org>
 Date: Mon, 28 Oct 2013 13:12:35 -0500
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-arm-msm@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
         Gilad Avidov <gavidov@codeaurora.org>,
         Michael Bohan <mbohan@codeaurora.org>
-Subject: [PATCH v3 08/10] mfd: pm8x41: add support for Qualcomm 8x41 PMICs
+Subject: [PATCH v3 04/10] spmi: Add MSM PMIC Arbiter SPMI controller
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Qualcomm 8941 and 8841 PMICs are components used with the Snapdragon
-800 series SoC family.  This driver exists largely as a glue mfd component,
-it exists to be an owner of an SPMI regmap for children devices
-described in device tree.
+From: Kenneth Heitke <kheitke@codeaurora.org>
 
+Qualcomm's PMIC Arbiter SPMI controller functions as a bus master and
+is used to communication with one or more PMIC (slave) devices on the
+SPMI bus.  The PMIC Arbiter is actually a hardware wrapper around the
+SPMI controller that provides concurrent and autonomous PMIC access
+to various entities that need to communicate with the PMIC.
+
+The SPMI controller hardware handles all of the SPMI bus activity (bus
+arbitration, sequence start condition, transmission of frames, etc).
+This software driver uses the PMIC Arbiter register interface to
+initiate command sequences on the SPMI bus.  The status register is
+read to determine when the command sequence has completed and whether
+or not it completed successfully.
+
+Signed-off-by: Kenneth Heitke <kheitke@codeaurora.org>
 Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
 ---
- drivers/mfd/Kconfig  | 10 ++++++++
- drivers/mfd/Makefile |  1 +
- drivers/mfd/pm8x41.c | 64 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 75 insertions(+)
- create mode 100644 drivers/mfd/pm8x41.c
+ drivers/spmi/Kconfig         |  15 ++
+ drivers/spmi/Makefile        |   2 +
+ drivers/spmi/spmi-pmic-arb.c | 403 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 420 insertions(+)
+ create mode 100644 drivers/spmi/spmi-pmic-arb.c
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 914c3d1..0a288cb 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -476,6 +476,16 @@ config MFD_PM8XXX_IRQ
- 	  This is required to use certain other PM 8xxx features, such as GPIO
- 	  and MPP.
- 
-+config MFD_PM8X41
-+	bool "Qualcomm PM8X41 PMIC"
-+	depends on ARCH_MSM
-+	select REGMAP_SPMI
-+	help
-+	  This enables basic support for the Qualcomm 8941 and 8841 PMICs.  These
-+	  PMICs are currently used with the Snapdragon 800 series of SoCs.  Note, that
-+	  this will only be useful paired with descriptions of the independent functions
-+	  as children nodes in the device tree.
+diff --git a/drivers/spmi/Kconfig b/drivers/spmi/Kconfig
+index a03835f..056891d 100644
+--- a/drivers/spmi/Kconfig
++++ b/drivers/spmi/Kconfig
+@@ -7,3 +7,18 @@ menuconfig SPMI
+ 	  SPMI (System Power Management Interface) is a two-wire
+ 	  serial interface between baseband and application processors
+ 	  and Power Management Integrated Circuits (PMIC).
 +
- config MFD_RDC321X
- 	tristate "RDC R-321x southbridge"
- 	select MFD_CORE
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 15b905c..ee4d338 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -149,6 +149,7 @@ obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
- obj-$(CONFIG_MFD_OMAP_USB_HOST)	+= omap-usb-host.o omap-usb-tll.o
- obj-$(CONFIG_MFD_PM8921_CORE) 	+= pm8921-core.o ssbi.o
- obj-$(CONFIG_MFD_PM8XXX_IRQ) 	+= pm8xxx-irq.o
-+obj-$(CONFIG_MFD_PM8X41)	+= pm8x41.o
- obj-$(CONFIG_TPS65911_COMPARATOR)	+= tps65911-comparator.o
- obj-$(CONFIG_MFD_TPS65090)	+= tps65090.o
- obj-$(CONFIG_MFD_AAT2870_CORE)	+= aat2870-core.o
-diff --git a/drivers/mfd/pm8x41.c b/drivers/mfd/pm8x41.c
++if SPMI
++
++config SPMI_MSM_PMIC_ARB
++	tristate "Qualcomm MSM SPMI Controller (PMIC Arbiter)"
++	depends on ARCH_MSM
++	help
++	  If you say yes to this option, support will be included for the
++	  built-in SPMI PMIC Arbiter interface on Qualcomm MSM family
++	  processors.
++
++	  This is required for communicating with Qualcomm PMICs and
++	  other devices that have the SPMI interface.
++
++endif
+diff --git a/drivers/spmi/Makefile b/drivers/spmi/Makefile
+index 1de1acd..fc75104 100644
+--- a/drivers/spmi/Makefile
++++ b/drivers/spmi/Makefile
+@@ -2,3 +2,5 @@
+ # Makefile for kernel SPMI framework.
+ #
+ obj-$(CONFIG_SPMI)	+= spmi.o
++
++obj-$(CONFIG_SPMI_MSM_PMIC_ARB)	+= spmi-pmic-arb.o
+diff --git a/drivers/spmi/spmi-pmic-arb.c b/drivers/spmi/spmi-pmic-arb.c
 new file mode 100644
-index 0000000..0a57221
+index 0000000..92e1416
 --- /dev/null
-+++ b/drivers/mfd/pm8x41.c
-@@ -0,0 +1,64 @@
-+/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
++++ b/drivers/spmi/spmi-pmic-arb.c
+@@ -0,0 +1,403 @@
++/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -89,59 +96,398 @@ index 0000000..0a57221
 + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 + * GNU General Public License for more details.
 + */
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
 +#include <linux/kernel.h>
 +#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/seq_file.h>
++#include <linux/slab.h>
 +#include <linux/spmi.h>
-+#include <linux/regmap.h>
-+#include <linux/of_platform.h>
 +
-+static const struct regmap_config pm8x41_regmap_config = {
-+	.reg_bits	= 16,
-+	.val_bits	= 8,
-+	.max_register	= 0xFFFF,
++/* PMIC Arbiter configuration registers */
++#define PMIC_ARB_VERSION		0x0000
++#define PMIC_ARB_INT_EN			0x0004
++
++/* PMIC Arbiter channel registers */
++#define PMIC_ARB_CMD(N)			(0x0800 + (0x80 * (N)))
++#define PMIC_ARB_CONFIG(N)		(0x0804 + (0x80 * (N)))
++#define PMIC_ARB_STATUS(N)		(0x0808 + (0x80 * (N)))
++#define PMIC_ARB_WDATA0(N)		(0x0810 + (0x80 * (N)))
++#define PMIC_ARB_WDATA1(N)		(0x0814 + (0x80 * (N)))
++#define PMIC_ARB_RDATA0(N)		(0x0818 + (0x80 * (N)))
++#define PMIC_ARB_RDATA1(N)		(0x081C + (0x80 * (N)))
++
++/* Interrupt Controller */
++#define SPMI_PIC_OWNER_ACC_STATUS(M, N)	(0x0000 + ((32 * (M)) + (4 * (N))))
++#define SPMI_PIC_ACC_ENABLE(N)		(0x0200 + (4 * (N)))
++#define SPMI_PIC_IRQ_STATUS(N)		(0x0600 + (4 * (N)))
++#define SPMI_PIC_IRQ_CLEAR(N)		(0x0A00 + (4 * (N)))
++
++/* Mapping Table */
++#define SPMI_MAPPING_TABLE_REG(N)	(0x0B00 + (4 * (N)))
++#define SPMI_MAPPING_BIT_INDEX(X)	(((X) >> 18) & 0xF)
++#define SPMI_MAPPING_BIT_IS_0_FLAG(X)	(((X) >> 17) & 0x1)
++#define SPMI_MAPPING_BIT_IS_0_RESULT(X)	(((X) >> 9) & 0xFF)
++#define SPMI_MAPPING_BIT_IS_1_FLAG(X)	(((X) >> 8) & 0x1)
++#define SPMI_MAPPING_BIT_IS_1_RESULT(X)	(((X) >> 0) & 0xFF)
++
++#define SPMI_MAPPING_TABLE_LEN		255
++#define SPMI_MAPPING_TABLE_TREE_DEPTH	16	/* Maximum of 16-bits */
++
++/* Ownership Table */
++#define SPMI_OWNERSHIP_TABLE_REG(N)	(0x0700 + (4 * (N)))
++#define SPMI_OWNERSHIP_PERIPH2OWNER(X)	((X) & 0x7)
++
++/* Channel Status fields */
++enum pmic_arb_chnl_status {
++	PMIC_ARB_STATUS_DONE	= (1 << 0),
++	PMIC_ARB_STATUS_FAILURE	= (1 << 1),
++	PMIC_ARB_STATUS_DENIED	= (1 << 2),
++	PMIC_ARB_STATUS_DROPPED	= (1 << 3),
 +};
 +
-+static int pm8x41_remove_child(struct device *dev, void *unused)
++/* Command register fields */
++#define PMIC_ARB_CMD_MAX_BYTE_COUNT	8
++
++/* Command Opcodes */
++enum pmic_arb_cmd_op_code {
++	PMIC_ARB_OP_EXT_WRITEL = 0,
++	PMIC_ARB_OP_EXT_READL = 1,
++	PMIC_ARB_OP_EXT_WRITE = 2,
++	PMIC_ARB_OP_RESET = 3,
++	PMIC_ARB_OP_SLEEP = 4,
++	PMIC_ARB_OP_SHUTDOWN = 5,
++	PMIC_ARB_OP_WAKEUP = 6,
++	PMIC_ARB_OP_AUTHENTICATE = 7,
++	PMIC_ARB_OP_MSTR_READ = 8,
++	PMIC_ARB_OP_MSTR_WRITE = 9,
++	PMIC_ARB_OP_EXT_READ = 13,
++	PMIC_ARB_OP_WRITE = 14,
++	PMIC_ARB_OP_READ = 15,
++	PMIC_ARB_OP_ZERO_WRITE = 16,
++};
++
++/* Maximum number of support PMIC peripherals */
++#define PMIC_ARB_MAX_PERIPHS		256
++#define PMIC_ARB_PERIPH_ID_VALID	(1 << 15)
++#define PMIC_ARB_TIMEOUT_US		100
++#define PMIC_ARB_MAX_TRANS_BYTES	(8)
++
++#define PMIC_ARB_APID_MASK		0xFF
++#define PMIC_ARB_PPID_MASK		0xFFF
++
++/* interrupt enable bit */
++#define SPMI_PIC_ACC_ENABLE_BIT		BIT(0)
++
++/**
++ * spmi_pmic_arb_dev - SPMI PMIC Arbiter object
++ *
++ * @base:		address of the PMIC Arbiter core registers
++ * @intr:		address of the SPMI interrupt control registers
++ * @cnfg:		address of the PMIC Arbiter configuration registers
++ * @mapping_table:	in-memory copy of PPID -> APID mapping table
++ */
++struct spmi_pmic_arb_dev {
++	void __iomem		*base;
++	void __iomem		*intr;
++	void __iomem		*cnfg;
++	bool			allow_wakeup;
++	spinlock_t		lock;
++	u8			channel;
++	u8			min_apid;
++	u8			max_apid;
++	u32			mapping_table[SPMI_MAPPING_TABLE_LEN];
++};
++
++static inline u32 pmic_arb_base_read(struct spmi_pmic_arb_dev *dev, u32 offset)
 +{
-+	platform_device_unregister(to_platform_device(dev));
-+	return 0;
++	return readl_relaxed(dev->base + offset);
 +}
 +
-+static int pm8x41_remove(struct spmi_device *sdev)
++static inline void pmic_arb_base_write(struct spmi_pmic_arb_dev *dev, u32 offset,
++				       u32 val)
 +{
-+	device_for_each_child(&sdev->dev, NULL, pm8x41_remove_child);
-+	return 0;
++	writel_relaxed(val, dev->base + offset);
 +}
 +
-+static int pm8x41_probe(struct spmi_device *sdev)
++/**
++ * pa_read_data: reads pmic-arb's register and copy 1..4 bytes to buf
++ * @bc byte count -1. range: 0..3
++ * @reg register's address
++ * @buf output parameter, length must be bc+1
++ */
++static void pa_read_data(struct spmi_pmic_arb_dev *dev, u8 *buf, u32 reg, u8 bc)
 +{
-+	struct regmap *regmap;
++	u32 data = pmic_arb_base_read(dev, reg);
++	memcpy(buf, &data, (bc & 3) + 1);
++}
 +
-+	regmap = devm_regmap_init_spmi(sdev, &pm8x41_regmap_config);
-+	if (IS_ERR(regmap)) {
-+		dev_dbg(&sdev->dev, "regmap creation failed.\n");
-+		return PTR_ERR(regmap);
++/**
++ * pa_write_data: write 1..4 bytes from buf to pmic-arb's register
++ * @bc byte-count -1. range: 0..3
++ * @reg register's address
++ * @buf buffer to write. length must be bc+1
++ */
++static void
++pa_write_data(struct spmi_pmic_arb_dev *dev, const u8 *buf, u32 reg, u8 bc)
++{
++	u32 data = 0;
++	memcpy(&data, buf, (bc & 3) + 1);
++	pmic_arb_base_write(dev, reg, data);
++}
++
++static int pmic_arb_wait_for_done(struct spmi_controller *ctrl)
++{
++	struct spmi_pmic_arb_dev *dev = spmi_controller_get_drvdata(ctrl);
++	u32 status = 0;
++	u32 timeout = PMIC_ARB_TIMEOUT_US;
++	u32 offset = PMIC_ARB_STATUS(dev->channel);
++
++	while (timeout--) {
++		status = pmic_arb_base_read(dev, offset);
++
++		if (status & PMIC_ARB_STATUS_DONE) {
++			if (status & PMIC_ARB_STATUS_DENIED) {
++				dev_err(&ctrl->dev,
++					"%s: transaction denied (0x%x)\n",
++					__func__, status);
++				return -EPERM;
++			}
++
++			if (status & PMIC_ARB_STATUS_FAILURE) {
++				dev_err(&ctrl->dev,
++					"%s: transaction failed (0x%x)\n",
++					__func__, status);
++				return -EIO;
++			}
++
++			if (status & PMIC_ARB_STATUS_DROPPED) {
++				dev_err(&ctrl->dev,
++					"%s: transaction dropped (0x%x)\n",
++					__func__, status);
++				return -EIO;
++			}
++
++			return 0;
++		}
++		udelay(1);
 +	}
 +
-+	return of_platform_populate(sdev->dev.of_node, NULL, NULL, &sdev->dev);
++	dev_err(&ctrl->dev,
++		"%s: timeout, status 0x%x\n",
++		__func__, status);
++	return -ETIMEDOUT;
 +}
 +
-+static struct of_device_id pm8x41_id_table[] = {
-+	{ "qcom,pm8841", },
-+	{ "qcom,pm8941", },
++/* Non-data command */
++static int pmic_arb_cmd(struct spmi_controller *ctrl, u8 opc, u8 sid)
++{
++	struct spmi_pmic_arb_dev *pmic_arb = spmi_controller_get_drvdata(ctrl);
++	unsigned long flags;
++	u32 cmd;
++	int rc;
++
++	dev_dbg(&ctrl->dev, "op:0x%x sid:%d\n", opc, sid);
++
++	/* Check for valid non-data command */
++	if (opc < SPMI_CMD_RESET || opc > SPMI_CMD_WAKEUP)
++		return -EINVAL;
++
++	cmd = ((opc | 0x40) << 27) | ((sid & 0xf) << 20);
++
++	spin_lock_irqsave(&pmic_arb->lock, flags);
++	pmic_arb_base_write(pmic_arb, PMIC_ARB_CMD(pmic_arb->channel), cmd);
++	rc = pmic_arb_wait_for_done(ctrl);
++	spin_unlock_irqrestore(&pmic_arb->lock, flags);
++
++	return rc;
++}
++
++static int pmic_arb_read_cmd(struct spmi_controller *ctrl,
++			     u8 opc, u8 sid, u16 addr, u8 bc, u8 *buf)
++{
++	struct spmi_pmic_arb_dev *pmic_arb = spmi_controller_get_drvdata(ctrl);
++	unsigned long flags;
++	u32 cmd;
++	int rc;
++
++	if (bc >= PMIC_ARB_MAX_TRANS_BYTES) {
++		dev_err(&ctrl->dev,
++			"pmic-arb supports 1..%d bytes per trans, but:%d requested",
++			PMIC_ARB_MAX_TRANS_BYTES, bc+1);
++		return  -EINVAL;
++	}
++	dev_dbg(&ctrl->dev,
++		"op:0x%x sid:%d bc:%d addr:0x%x\n", opc, sid, bc, addr);
++
++	/* Check the opcode */
++	if (opc >= 0x60 && opc <= 0x7F)
++		opc = PMIC_ARB_OP_READ;
++	else if (opc >= 0x20 && opc <= 0x2F)
++		opc = PMIC_ARB_OP_EXT_READ;
++	else if (opc >= 0x38 && opc <= 0x3F)
++		opc = PMIC_ARB_OP_EXT_READL;
++	else
++		return -EINVAL;
++
++	cmd = (opc << 27) | ((sid & 0xf) << 20) | (addr << 4) | (bc & 0x7);
++
++	spin_lock_irqsave(&pmic_arb->lock, flags);
++	pmic_arb_base_write(pmic_arb, PMIC_ARB_CMD(pmic_arb->channel), cmd);
++	rc = pmic_arb_wait_for_done(ctrl);
++	if (rc)
++		goto done;
++
++	/* Read from FIFO, note 'bc' is actually number of bytes minus 1 */
++	pa_read_data(pmic_arb, buf, PMIC_ARB_RDATA0(pmic_arb->channel)
++							, min_t(u8, bc, 3));
++
++	if (bc > 3)
++		pa_read_data(pmic_arb, buf + 4,
++				PMIC_ARB_RDATA1(pmic_arb->channel), bc - 4);
++
++done:
++	spin_unlock_irqrestore(&pmic_arb->lock, flags);
++	return rc;
++}
++
++static int pmic_arb_write_cmd(struct spmi_controller *ctrl,
++			      u8 opc, u8 sid, u16 addr, u8 bc, const u8 *buf)
++{
++	struct spmi_pmic_arb_dev *pmic_arb = spmi_controller_get_drvdata(ctrl);
++	unsigned long flags;
++	u32 cmd;
++	int rc;
++
++	if (bc >= PMIC_ARB_MAX_TRANS_BYTES) {
++		dev_err(&ctrl->dev,
++			"pmic-arb supports 1..%d bytes per trans, but:%d requested",
++			PMIC_ARB_MAX_TRANS_BYTES, bc+1);
++		return  -EINVAL;
++	}
++	dev_dbg(&ctrl->dev,
++		"op:0x%x sid:%d bc:%d addr:0x%x\n", opc, sid, bc, addr);
++
++	/* Check the opcode */
++	if (opc >= 0x40 && opc <= 0x5F)
++		opc = PMIC_ARB_OP_WRITE;
++	else if (opc >= 0x00 && opc <= 0x0F)
++		opc = PMIC_ARB_OP_EXT_WRITE;
++	else if (opc >= 0x30 && opc <= 0x37)
++		opc = PMIC_ARB_OP_EXT_WRITEL;
++	else if (opc >= 0x80 && opc <= 0xFF)
++		opc = PMIC_ARB_OP_ZERO_WRITE;
++	else
++		return -EINVAL;
++
++	cmd = (opc << 27) | ((sid & 0xf) << 20) | (addr << 4) | (bc & 0x7);
++
++	/* Write data to FIFOs */
++	spin_lock_irqsave(&pmic_arb->lock, flags);
++	pa_write_data(pmic_arb, buf, PMIC_ARB_WDATA0(pmic_arb->channel)
++							, min_t(u8, bc, 3));
++	if (bc > 3)
++		pa_write_data(pmic_arb, buf + 4,
++				PMIC_ARB_WDATA1(pmic_arb->channel), bc - 4);
++
++	/* Start the transaction */
++	pmic_arb_base_write(pmic_arb, PMIC_ARB_CMD(pmic_arb->channel), cmd);
++	rc = pmic_arb_wait_for_done(ctrl);
++	spin_unlock_irqrestore(&pmic_arb->lock, flags);
++
++	return rc;
++}
++
++static int spmi_pmic_arb_probe(struct platform_device *pdev)
++{
++	struct spmi_pmic_arb_dev *pa;
++	struct spmi_controller *ctrl;
++	struct resource *res;
++	int err, i;
++
++	ctrl = spmi_controller_alloc(&pdev->dev, sizeof(*pa));
++	if (!ctrl)
++		return -ENOMEM;
++
++	pa = spmi_controller_get_drvdata(ctrl);
++
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "core");
++	pa->base = devm_ioremap_resource(&ctrl->dev, res);
++	if (IS_ERR(pa->base)) {
++		err = PTR_ERR(pa->base);
++		goto err_put_ctrl;
++	}
++
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "intr");
++	pa->intr = devm_ioremap_resource(&ctrl->dev, res);
++	if (IS_ERR(pa->intr)) {
++		err = PTR_ERR(pa->intr);
++		goto err_put_ctrl;
++	}
++
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "cnfg");
++	pa->cnfg = devm_ioremap_resource(&ctrl->dev, res);
++	if (IS_ERR(pa->cnfg)) {
++		err = PTR_ERR(pa->cnfg);
++		goto err_put_ctrl;
++	}
++
++	for (i = 0; i < ARRAY_SIZE(pa->mapping_table); ++i)
++		pa->mapping_table[i] = readl_relaxed(
++				pa->cnfg + SPMI_MAPPING_TABLE_REG(i));
++
++	platform_set_drvdata(pdev, ctrl);
++	spin_lock_init(&pa->lock);
++
++	pa->channel = 0;
++	pa->max_apid = 0;
++	pa->min_apid = PMIC_ARB_MAX_PERIPHS - 1;
++
++	ctrl->cmd = pmic_arb_cmd;
++	ctrl->read_cmd = pmic_arb_read_cmd;
++	ctrl->write_cmd = pmic_arb_write_cmd;
++
++	err = spmi_controller_add(ctrl);
++	if (err)
++		goto err_put_ctrl;
++
++	dev_dbg(&ctrl->dev, "PMIC Arb Version 0x%x\n",
++		pmic_arb_base_read(pa, PMIC_ARB_VERSION));
++
++	return 0;
++
++err_put_ctrl:
++	spmi_controller_put(ctrl);
++	return err;
++}
++
++static int __exit spmi_pmic_arb_remove(struct platform_device *pdev)
++{
++	struct spmi_controller *ctrl = platform_get_drvdata(pdev);
++	spmi_controller_remove(ctrl);
++	return 0;
++}
++
++static struct of_device_id spmi_pmic_arb_match_table[] = {
++	{	.compatible = "qcom,spmi-pmic-arb", },
 +	{},
 +};
-+MODULE_DEVICE_TABLE(of, pm8x41_id_table);
++MODULE_DEVICE_TABLE(of, spmi_pmic_arb_match_table);
 +
-+static struct spmi_driver pm8x41_driver = {
-+	.probe	= pm8x41_probe,
-+	.remove	= pm8x41_remove,
-+	.driver	= {
-+		.name		= "qpnp,pm8x41",
-+		.of_match_table	= pm8x41_id_table,
++static struct platform_driver spmi_pmic_arb_driver = {
++	.probe		= spmi_pmic_arb_probe,
++	.remove		= __exit_p(spmi_pmic_arb_remove),
++	.driver		= {
++		.name	= "spmi_pmic_arb",
++		.owner	= THIS_MODULE,
++		.of_match_table = spmi_pmic_arb_match_table,
 +	},
 +};
-+module_spmi_driver(pm8x41_driver);
++module_platform_driver(spmi_pmic_arb_driver);
 -- 
 Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
 hosted by The Linux Foundation
