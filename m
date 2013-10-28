@@ -1,229 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab3J1GHU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 02:07:20 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:16083 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752233Ab3J1GHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 02:07:17 -0400
-X-IronPort-AV: E=Sophos;i="4.93,584,1378828800"; 
-   d="scan'208";a="8875719"
-Message-ID: <526DFDA8.7010806@cn.fujitsu.com>
-Date: Mon, 28 Oct 2013 14:01:12 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1755621Ab3J1GIQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 02:08:16 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:53859 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755563Ab3J1GIO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 02:08:14 -0400
+Message-ID: <526DBEAA.4030707@linaro.org>
+Date: Sun, 27 Oct 2013 18:32:26 -0700
+From: Kevin Hilman <khilman@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH RESEND] fb: reorder the lock sequence to fix a potential
- lockdep
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/28 14:05:31,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/28 14:05:36,
-	Serialize complete at 2013/10/28 14:05:36
-Content-Transfer-Encoding: 7bit
+To: Stephen Boyd <sboyd@codeaurora.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+CC: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
+        linux-arm-kernel@lists.infradead.org, rmk@arm.linux.org.uk,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:timers/core] ARM: Kconfig: allow full nohz CPU accounting
+References: <tip-31c1fc8187158cb80ccd57c19e024c55af901797@git.kernel.org> <20131016121416.GD12773@localhost.localdomain> <20131018163740.GA21983@codeaurora.org>
+In-Reply-To: <20131018163740.GA21983@codeaurora.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following commits:
-50e244cc79 fb: rework locking to fix lock ordering on takeover
-e93a9a8687 fb: Yet another band-aid for fixing lockdep mess
-054430e773 fbcon: fix locking harder
+Hi Stephen,
 
-reworked locking to fix related lock ordering on takeover, and introduced console_lock
-into fbmem, but it seems that the new lock sequence(fb_info->lock ---> console_lock)
-is against with the one in console_callback(console_lock ---> fb_info->lock), and leads to
-a potential deadlock as following:
-[  601.079000] ======================================================
-[  601.079000] [ INFO: possible circular locking dependency detected ]
-[  601.079000] 3.11.0 #189 Not tainted
-[  601.079000] -------------------------------------------------------
-[  601.079000] kworker/0:3/619 is trying to acquire lock:
-[  601.079000]  (&fb_info->lock){+.+.+.}, at: [<ffffffff81397566>] lock_fb_info+0x26/0x60
-[  601.079000]
-but task is already holding lock:
-[  601.079000]  (console_lock){+.+.+.}, at: [<ffffffff8141aae3>] console_callback+0x13/0x160
-[  601.079000]
-which lock already depends on the new lock.
+On 10/18/2013 09:37 AM, Stephen Boyd wrote:
+> On 10/16, Frederic Weisbecker wrote:
+>> On Thu, Oct 03, 2013 at 06:58:03AM -0700, tip-bot for Kevin Hilman wrote:
+>>> Commit-ID:  31c1fc8187158cb80ccd57c19e024c55af901797
+>>> Gitweb:     http://git.kernel.org/tip/31c1fc8187158cb80ccd57c19e024c55af901797
+>>> Author:     Kevin Hilman <khilman@linaro.org>
+>>> AuthorDate: Mon, 16 Sep 2013 15:28:22 -0700
+>>> Committer:  Frederic Weisbecker <fweisbec@gmail.com>
+>>> CommitDate: Mon, 30 Sep 2013 15:37:05 +0200
+>>>
+>>> ARM: Kconfig: allow full nohz CPU accounting
+>>>
+>>> With the 64-bit requirement removed from VIRT_CPU_ACCOUNTING_GEN,
+>>> allow ARM platforms to enable it.  Since VIRT_CPU_ACCOUNTING_GEN is a
+>>> dependency for full NO_HZ, this allows ARM platforms to enable full
+>>> NO_HZ as well.
+>>
+>> I realize that arm doesn't implement irq work raise. It hooks on the
+>> timer to execute pending irq work. You'll need to implement arch_irq_work_raise()
+>> and implement some sort of self IPI to trigger irq work. The full dynticks subsystem
+>> relies on that to work correctly. It often use that to re-evaluate and possibly restart
+>> the tick after scheduler, posix timer updates, etc...
+>>
+>> That notwithstanding that if you have no tick, tick based irq work can't
+>> work.
+>>
+> 
+> Something like this? The only problem is that this latches on to
+> the SMP support for IPIs. If CONFIG_SMP is disabled we won't get
+> arch_irq_work_raise() but perhaps that isn't so big of a deal? Or
+> we should think about exposing IPI support to UP systems on ARM.
 
-[  601.079000]
-the existing dependency chain (in reverse order) is:
-[  601.079000]
--> #1 (console_lock){+.+.+.}:
-[  601.079000]        [<ffffffff810dc971>] lock_acquire+0xa1/0x140
-[  601.079000]        [<ffffffff810c6267>] console_lock+0x77/0x80
-[  601.079000]        [<ffffffff81399448>] register_framebuffer+0x1d8/0x320
-[  601.079000]        [<ffffffff81cfb4c8>] efifb_probe+0x408/0x48f
-[  601.079000]        [<ffffffff8144a963>] platform_drv_probe+0x43/0x80
-[  601.079000]        [<ffffffff8144853b>] driver_probe_device+0x8b/0x390
-[  601.079000]        [<ffffffff814488eb>] __driver_attach+0xab/0xb0
-[  601.079000]        [<ffffffff814463bd>] bus_for_each_dev+0x5d/0xa0
-[  601.079000]        [<ffffffff81447e6e>] driver_attach+0x1e/0x20
-[  601.079000]        [<ffffffff81447a07>] bus_add_driver+0x117/0x290
-[  601.079000]        [<ffffffff81448fea>] driver_register+0x7a/0x170
-[  601.079000]        [<ffffffff8144a10a>] __platform_driver_register+0x4a/0x50
-[  601.079000]        [<ffffffff8144a12d>] platform_driver_probe+0x1d/0xb0
-[  601.079000]        [<ffffffff81cfb0a1>] efifb_init+0x273/0x292
-[  601.079000]        [<ffffffff81002132>] do_one_initcall+0x102/0x1c0
-[  601.079000]        [<ffffffff81cb80a6>] kernel_init_freeable+0x15d/0x1ef
-[  601.079000]        [<ffffffff8166d2de>] kernel_init+0xe/0xf0
-[  601.079000]        [<ffffffff816914ec>] ret_from_fork+0x7c/0xb0
-[  601.079000]
--> #0 (&fb_info->lock){+.+.+.}:
-[  601.079000]        [<ffffffff810dc1d8>] __lock_acquire+0x1e18/0x1f10
-[  601.079000]        [<ffffffff810dc971>] lock_acquire+0xa1/0x140
-[  601.079000]        [<ffffffff816835ca>] mutex_lock_nested+0x7a/0x3b0
-[  601.079000]        [<ffffffff81397566>] lock_fb_info+0x26/0x60
-[  601.079000]        [<ffffffff813a4aeb>] fbcon_blank+0x29b/0x2e0
-[  601.079000]        [<ffffffff81418658>] do_blank_screen+0x1d8/0x280
-[  601.079000]        [<ffffffff8141ab34>] console_callback+0x64/0x160
-[  601.079000]        [<ffffffff8108d855>] process_one_work+0x1f5/0x540
-[  601.079000]        [<ffffffff8108e04c>] worker_thread+0x11c/0x370
-[  601.079000]        [<ffffffff81095fbd>] kthread+0xed/0x100
-[  601.079000]        [<ffffffff816914ec>] ret_from_fork+0x7c/0xb0
-[  601.079000]
-other info that might help us debug this:
+Care to submit a proper patch for this to LAKML?  or if you prefer I can
+do it (keeping your authorship.)   We need this for proper full NOHZ
+support on ARM.  Thanks.
 
-[  601.079000]  Possible unsafe locking scenario:
-
-[  601.079000]        CPU0                    CPU1
-[  601.079000]        ----                    ----
-[  601.079000]   lock(console_lock);
-[  601.079000]                                lock(&fb_info->lock);
-[  601.079000]                                lock(console_lock);
-[  601.079000]   lock(&fb_info->lock);
-[  601.079000]
- *** DEADLOCK ***
-
-so we reorder the lock sequence the same as it in console_callback() to
-avoid this issue.
-Not very sure this change is suitable, any comments is welcome.
-
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- drivers/video/fbmem.c |   50 +++++++++++++++++++++++++++++++-----------------
- 1 files changed, 32 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-index dacaf74..010d191 100644
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -1108,14 +1108,16 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
- 	case FBIOPUT_VSCREENINFO:
- 		if (copy_from_user(&var, argp, sizeof(var)))
- 			return -EFAULT;
--		if (!lock_fb_info(info))
--			return -ENODEV;
- 		console_lock();
-+		if (!lock_fb_info(info)) {
-+			console_unlock();
-+			return -ENODEV;
-+		}
- 		info->flags |= FBINFO_MISC_USEREVENT;
- 		ret = fb_set_var(info, &var);
- 		info->flags &= ~FBINFO_MISC_USEREVENT;
--		console_unlock();
- 		unlock_fb_info(info);
-+		console_unlock();
- 		if (!ret && copy_to_user(argp, &var, sizeof(var)))
- 			ret = -EFAULT;
- 		break;
-@@ -1144,12 +1146,14 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
- 	case FBIOPAN_DISPLAY:
- 		if (copy_from_user(&var, argp, sizeof(var)))
- 			return -EFAULT;
--		if (!lock_fb_info(info))
--			return -ENODEV;
- 		console_lock();
-+		if (!lock_fb_info(info)) {
-+			console_unlock();
-+			return -ENODEV;
-+		}
- 		ret = fb_pan_display(info, &var);
--		console_unlock();
- 		unlock_fb_info(info);
-+		console_unlock();
- 		if (ret == 0 && copy_to_user(argp, &var, sizeof(var)))
- 			return -EFAULT;
- 		break;
-@@ -1184,23 +1188,27 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
- 			break;
- 		}
- 		event.data = &con2fb;
--		if (!lock_fb_info(info))
--			return -ENODEV;
- 		console_lock();
-+		if (!lock_fb_info(info)) {
-+			console_unlock();
-+			return -ENODEV;
-+		}
- 		event.info = info;
- 		ret = fb_notifier_call_chain(FB_EVENT_SET_CONSOLE_MAP, &event);
--		console_unlock();
- 		unlock_fb_info(info);
-+		console_unlock();
- 		break;
- 	case FBIOBLANK:
--		if (!lock_fb_info(info))
--			return -ENODEV;
- 		console_lock();
-+		if (!lock_fb_info(info)) {
-+			console_unlock();
-+			return -ENODEV;
-+		}
- 		info->flags |= FBINFO_MISC_USEREVENT;
- 		ret = fb_blank(info, arg);
- 		info->flags &= ~FBINFO_MISC_USEREVENT;
--		console_unlock();
- 		unlock_fb_info(info);
-+		console_unlock();
- 		break;
- 	default:
- 		if (!lock_fb_info(info))
-@@ -1660,12 +1668,15 @@ static int do_register_framebuffer(struct fb_info *fb_info)
- 	registered_fb[i] = fb_info;
- 
- 	event.info = fb_info;
--	if (!lock_fb_info(fb_info))
--		return -ENODEV;
- 	console_lock();
-+	if (!lock_fb_info(fb_info)) {
-+		console_unlock();
-+		return -ENODEV;
-+	}
-+
- 	fb_notifier_call_chain(FB_EVENT_FB_REGISTERED, &event);
--	console_unlock();
- 	unlock_fb_info(fb_info);
-+	console_unlock();
- 	return 0;
- }
- 
-@@ -1678,13 +1689,16 @@ static int do_unregister_framebuffer(struct fb_info *fb_info)
- 	if (i < 0 || i >= FB_MAX || registered_fb[i] != fb_info)
- 		return -EINVAL;
- 
--	if (!lock_fb_info(fb_info))
--		return -ENODEV;
- 	console_lock();
-+	if (!lock_fb_info(fb_info)) {
-+		console_unlock();
-+		return -ENODEV;
-+	}
-+
- 	event.info = fb_info;
- 	ret = fb_notifier_call_chain(FB_EVENT_FB_UNBIND, &event);
--	console_unlock();
- 	unlock_fb_info(fb_info);
-+	console_unlock();
- 
- 	if (ret)
- 		return -EINVAL;
--- 
-1.7.7
-
+Kevin
