@@ -1,134 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932124Ab3J1X0m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 19:26:42 -0400
-Received: from ring0.de ([91.143.88.219]:37532 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757623Ab3J1X0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 19:26:38 -0400
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Tue, 29 Oct 2013 00:26:26 +0100
-From: Sebastian Reichel <sre@ring0.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: Grazvydas Ignotas <notasas@gmail.com>, Alexander Shiyan <shc_work@mail.ru>,
-        Luciano Coelho <luca@coelho.fi>, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Bill Pemberton <wfp5p@virginia.edu>, Felipe Balbi <balbi@ti.com>,
-        Rob Landley <rob@landley.net>, netdev@vger.kernel.org,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/4] wl1251: move power GPIO handling into the driver
-Message-ID: <20131028232624.GA950@earth.universe>
-Mail-Followup-To: Mark Brown <broonie@kernel.org>,
-	Grazvydas Ignotas <notasas@gmail.com>,
-	Alexander Shiyan <shc_work@mail.ru>,
-	Luciano Coelho <luca@coelho.fi>,
-	Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-	Russell King <linux@arm.linux.org.uk>,
-	Pawel Moll <pawel.moll@arm.com>,
-	Ian Campbell <ijc+devicetree@hellion.org.uk>,
-	Tony Lindgren <tony@atomide.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
-	"John W. Linville" <linville@tuxdriver.com>,
-	Rob Herring <rob.herring@calxeda.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Sachin Kamat <sachin.kamat@linaro.org>,
-	Bill Pemberton <wfp5p@virginia.edu>, Felipe Balbi <balbi@ti.com>,
-	Rob Landley <rob@landley.net>, netdev@vger.kernel.org,
-	"linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-	"linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>
-References: <1382890469-25286-1-git-send-email-sre@debian.org>
- <1382890469-25286-3-git-send-email-sre@debian.org>
- <1382891056.102746625@f315.i.mail.ru>
- <20131027201218.GA4414@earth.universe>
- <CANOLnONKcC1i19ypb4rh2Rff3WsVhhuUhNvZvYwDV2-ZNtjVxQ@mail.gmail.com>
- <20131028192354.GA18208@sirena.org.uk>
+	id S1757819Ab3J1Xag (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 19:30:36 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:32883 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757685Ab3J1Xae (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 19:30:34 -0400
+Message-ID: <526EF397.4080802@gmail.com>
+Date: Mon, 28 Oct 2013 18:30:31 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
-Content-Disposition: inline
-In-Reply-To: <20131028192354.GA18208@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, Rob Herring <rob.herring@calxeda.com>
+Subject: Re: linux-next: build failure after merge of the dt-rh tree
+References: <20131028193814.6d9416904eb8fac2f441c8af@canb.auug.org.au>
+In-Reply-To: <20131028193814.6d9416904eb8fac2f441c8af@canb.auug.org.au>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/28/2013 03:38 AM, Stephen Rothwell wrote:
+> Hi Rob,
+> 
+> After merging the dt-rh tree, today's linux-next build (powerpc 
+> ppc64_defconfig) failed like this:
+> 
+> arch/powerpc/platforms/powernv/rng.c: In function
+> 'rng_init_per_cpu': arch/powerpc/platforms/powernv/rng.c:64:2:
+> error: implicit declaration of function 'of_get_ibm_chip_id'
+> [-Werror=implicit-function-declaration] chip_id =
+> of_get_ibm_chip_id(dn); ^ arch/powerpc/platforms/powernv/rng.c: In
+> function 'rng_create': arch/powerpc/platforms/powernv/rng.c:85:2:
+> error: implicit declaration of function 'of_iomap'
+> [-Werror=implicit-function-declaration] rng->regs= of_iomap(dn, 0);
+>   ^
+> arch/powerpc/platforms/powernv/rng.c:85:12: error: assignment makes pointer from integer without a cast [-Werror]
+>   rng->regs = of_iomap(dn, 0);
+>             ^
+> 
+> Caused by commit a4da0d50b2a0 ("powerpc: Implement
+> arch_get_random_long/int() for powernv") from the powerpc tree
+> interacting with commit b5b4bb3f6a11 ("of: only include prom.h on sparc")
+> from the dt-rh tree.
+> 
+> I added this merge fix patch (which will need to be sent to Linus when
+> these two trees get merged, or could be applied now to the powerpc tree):
 
---uAKRQypu60I7Lcqm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Applying to the powerpc tree now seems like the better path.
 
-Hi,
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 28 Oct 2013 19:34:41 +1100
+> Subject: [PATCH] powerpc: add include of prom.h to fix powernv/rng.c build
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-On Mon, Oct 28, 2013 at 12:23:54PM -0700, Mark Brown wrote:
-> On Mon, Oct 28, 2013 at 07:29:52PM +0200, Grazvydas Ignotas wrote:
->=20
-> > When wl12xx family of chips is connected through SDIO, we already have
-> > that pin set up as a regulator controlled with the help of mmc
-> > subsystem. When time comes to communicate with the chip, mmc subsystem
-> > sees this as yet another SD card and looks for associated regulator
-> > for it, and the board file has that set up as a fixed regulator
-> > controlling that pin (see pandora_vmmc3 in
-> > arch/arm/mach-omap2/board-omap3pandora.c). To prevent poweroff after
-> > first SDIO communications are over, pm_runtime calls are used in
-> > drivers/net/wireless/ti/wl1251/sdio.c .
->=20
-> Is this actually controlling VMMC though, or is it some other control?
-> If it's not controlling VMMC then it shouldn't say that it is.
->=20
-> > I don't know if something similar can be done done in SPI case, but
-> > I'm sure this is not the first your-so-called regulator misuse.
->=20
-> It's not the first but that doesn't make controlling something other
-> than a regulator through the regulator API any less broken.
+Acked-by: Rob Herring <rob.herring@calxeda.com>
 
-I gave it a second try to find out details for this pin:
+Rob
 
-1. The pin is named PMEN in the Nokia N900 schematics
-2. PMEN is described as "Power management enable - system shutdown"
-   in a crippled datasheet of the wl1253, which I found in the internet.
-
-I don't think this is supposed to be handled by the regulator API.
-
--- Sebastian
-
---uAKRQypu60I7Lcqm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSbvKgAAoJENju1/PIO/qa9/4P/3bgI8we1v7yHBUBlbrUZ/qn
-9aIlsdohRsCHxuW5eTOTIEV3zXuEczUy//fijue0OK0nMXg3OI2xk7YPyj5Lncuh
-IiV1dYLfy0vQN9iMersFJJDdeR21t07jn8x9Cq+X+lA8SJsMMLIVYqaX+PyTE8+U
-ERNEjWsOuTfAmOxZXysFJPWF/xJ1gN1TygZ9WfncDxD4dZlBd6PMmWYSWbvpa4nr
-yOSSCuThLpQfwTYad/PqLZlwKwdS/V0zG56Lf9jyAPv2Qx7JmrSl+KvIi8aGsD03
-NXnjTOv0P8EeVXy9NVwpoT50qyOVq0qE9PNkuVMqkwgk20MDrE5YpSgha8BYn9E4
-Ia8RLEUCY86h4/EuxuUhDbio80HlYpjcVC72/dPWO66ZJ8BvkP9vbwm7wR04R607
-vcPjlHgxCUJSVTMoszstNOrO+JBq4IO3w1VTrE3cMF0Ge17pvj+x5/mt1aYzIC3R
-z2s9XCjh0AiHI1DpBUi8iBwHNRYK2EnrJNW560C5FKf70PTUwvP+K83H/2tBUn79
-M762U1cxOkb8ikgoeSsmdPDf/H5tsRRbUW4/4IX8yf8VPKLAGz9u2G6XFt4JDAQO
-2g2yh6MeAOq6T8DPFv3DnUEmyXK9Hn00dMs3VowgdIhmCh/Vamn1HXY5f9bnVMD6
-u+xk0uvWdCm39RJFUJQD
-=uEvP
------END PGP SIGNATURE-----
-
---uAKRQypu60I7Lcqm--
