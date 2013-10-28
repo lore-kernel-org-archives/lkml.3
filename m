@@ -1,85 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756458Ab3J1Mtk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 08:49:40 -0400
-Received: from mga14.intel.com ([143.182.124.37]:13566 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755844Ab3J1Mti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 08:49:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,586,1378882800"; 
-   d="scan'208";a="418468363"
-Date: Mon, 28 Oct 2013 20:49:11 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [virtio-net] BUG: sleeping function called from invalid context
- at kernel/mutex.c:616
-Message-ID: <20131028124911.GA13923@localhost>
-References: <20131020023418.GA6737@localhost>
- <526638D4.1030403@redhat.com>
- <20131023232033.GA7404@localhost>
- <526DF9A4.70709@redhat.com>
+	id S1756521Ab3J1MwN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 08:52:13 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49447 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755037Ab3J1MwM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 08:52:12 -0400
+Date: Mon, 28 Oct 2013 12:48:51 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Simon Baatz <gmbnomis@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ming Lei <tom.leiming@gmail.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Tejun Heo <tj@kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: ARM/kirkwood: v3.12-rc6: kernel BUG at mm/util.c:390!
+Message-ID: <20131028124851.GD5354@mbp>
+References: <20131024200730.GB17447@blackmetal.musicnaut.iki.fi>
+ <20131026143617.GA14034@mudshark.cambridge.arm.com>
+ <20131027195115.208f40f3@tom-ThinkPad-T410>
+ <20131027125036.GJ17447@blackmetal.musicnaut.iki.fi>
+ <CACVXFVP2B3=82m_+DfA_oAEW86c=oxQ52G+yj5ncTU1DzP26Bw@mail.gmail.com>
+ <20131027135344.GD16735@n2100.arm.linux.org.uk>
+ <20131027141817.GA13436@schnuecks.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <526DF9A4.70709@redhat.com>
+In-Reply-To: <20131027141817.GA13436@schnuecks.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 01:44:04PM +0800, Jason Wang wrote:
-> On 10/24/2013 07:20 AM, Fengguang Wu wrote:
-> > Yes it reduces the sleeping function bug:
-> >
-> > /kernel/x86_64-lkp-CONFIG_SCSI_DEBUG/7c4ed2767afb813493b0a8fb18d666cd44550963
-> >
-> > +------------------------------------------------------------------------------------+-----------+--------------+--------------+
-> > |                                                                                    | v3.12-rc3 | 3ab098df35f8 | 7c4ed2767afb |
-> > +------------------------------------------------------------------------------------+-----------+--------------+--------------+
-> > | good_boots                                                                         | 30        | 0            | 93           |
-> > | has_kernel_error_warning                                                           | 0         | 20           | 7            |
-> > | BUG:sleeping_function_called_from_invalid_context_at_kernel/mutex.c                | 0         | 20           |              |
-> > | INFO:rcu_sched_self-detected_stall_on_CPU(t=jiffies_g=c=q=)                        | 0         | 0            | 1            |
-> > | INFO:task_blocked_for_more_than_seconds                                            | 0         | 0            | 2            |
-> > | INFO:NMI_handler(arch_trigger_all_cpu_backtrace_handler)took_too_long_to_run:msecs | 0         | 0            | 1            |
-> > | Kernel_panic-not_syncing:hung_task:blocked_tasks                                   | 0         | 0            | 1            |
-> > | BUG:kernel_test_crashed                                                            | 0         | 0            | 3            |
-> > | BUG:kernel_test_hang                                                               | 0         | 0            | 1            |
-> > +------------------------------------------------------------------------------------+-----------+--------------+--------------+
-> >
-> > However I'll need to increase tests on v3.12-rc3 to make sure it's not
-> > the patch that added the other error messages.
-> >
-> > Thanks,
-> > Fengguang
+On Sun, Oct 27, 2013 at 02:18:17PM +0000, Simon Baatz wrote:
+> On Sun, Oct 27, 2013 at 01:53:44PM +0000, Russell King - ARM Linux wrote:
+> > On Sun, Oct 27, 2013 at 09:16:53PM +0800, Ming Lei wrote:
+> > > On Sun, Oct 27, 2013 at 8:50 PM, Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
+> > > >
+> > So...
+> > 
+> > flush_kernel_dcache_page() is expected to take a struct page pointer.
+> > This struct page pointer is part of the kernel's array of struct pages
+> > which identifies every single physical page under the control of the
+> > kernel.
+> > 
+> > Arguably, it should not crash if passed a page which has been allocated
+> > to the slab cache; as this is not a page cache page,
+> > flush_kernel_dcache_page() should merely ignore the call to it and
+> > simply return on these.  So this makes total sense:
 > 
-> Thanks, any more update on the result of v3.12-rc3 for this?
+> In this respect, flush_kernel_dcache_page() is following
+> flush_dcache_page(). For example in crypto/scatterwalk.c:
+> 
+> static void scatterwalk_pagedone(struct scatter_walk *walk, int out,
+>                                  unsigned int more)
+> {
+>         if (out) {
+>                 struct page *page;
+> 
+>                 page = sg_page(walk->sg) + ((walk->offset - 1) >>
+> PAGE_SHIFT);
+>                 if (!PageSlab(page))
+>                         flush_dcache_page(page);
+>         }
+> ... 
+> 
+> 
+> or in drivers/ata/libata-sff.c:
+> 
+> ...
+>         if (!do_write && !PageSlab(page))
+>                 flush_dcache_page(page);
+> ...
+> 
+> 
+> (Probably, both cases should have used
+> flush_kernel_dcache_page() in the first place). If we say that this
+> check belongs in flush_kernel_dcache_page() we should also put it
+> into flush_dcache_page(), no?
 
-Yes, it's confirmed that there are no new error types in 7c4ed2767afb
-comparing to v3.12-rc3, so your fix is fine.
+According to cachetlb.txt, flush_dcache_page() is only called on page
+cache pages, so this excludes the PageSlab() check.
 
-/kernel/x86_64-lkp-CONFIG_SCSI_DEBUG/7c4ed2767afb813493b0a8fb18d666cd44550963
+For flush_kernel_dcache_page() it says "when the kernel modifies and
+user page" and my reading is that this applies to either page cache
+or anonymous pages but not slab pages, so I would add such check to the
+caller.
 
-+------------------------------------------------------------------------------------+-----------+--------------+--------------+
-|                                                                                    | v3.12-rc3 | 3ab098df35f8 | 7c4ed2767afb |
-+------------------------------------------------------------------------------------+-----------+--------------+--------------+
-| good_boots                                                                         | 877       | 0            | 93           |
-| has_kernel_error_warning                                                           | 154       | 20           | 7            |
-| BUG:kernel_test_hang                                                               | 112       | 0            | 1            |
-| INFO:rcu_sched_self-detected_stall_on_CPU(t=jiffies_g=c=q=)                        | 1         | 0            | 1            |
-| INFO:task_blocked_for_more_than_seconds                                            | 18        | 0            | 2            |
-| INFO:NMI_handler(arch_trigger_all_cpu_backtrace_handler)took_too_long_to_run:msecs | 11        | 0            | 1            |
-| Kernel_panic-not_syncing:hung_task:blocked_tasks                                   | 11        | 0            | 1            |
-| BUG:kernel_test_crashed                                                            | 13        | 0            | 3            |
-| Out_of_memory:Kill_process                                                         | 9         |              |              |
-| BUG:kernel_early_hang_without_any_printk_output                                    | 1         |              |              |
-| page_allocation_failure:order:,mode                                                | 1         |              |              |
-| Kernel_panic-not_syncing:Out_of_memory_and_no_killable_processes                   | 2         |              |              |
-| BUG:sleeping_function_called_from_invalid_context_at_kernel/mutex.c                | 0         | 20           |              |
-+------------------------------------------------------------------------------------+-----------+--------------+--------------+
-
-Thanks,
-Fengguang
+-- 
+Catalin
