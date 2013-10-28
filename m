@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab3J1VzR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 17:55:17 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57680 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756885Ab3J1VzO (ORCPT
+	id S932184Ab3J1Vzj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 17:55:39 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:38896 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932116Ab3J1Vzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 17:55:14 -0400
-Message-ID: <526EDB80.7080406@wwwdotorg.org>
-Date: Mon, 28 Oct 2013 15:47:44 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: Rob Herring <rob.herring@calxeda.com>, Mark Rutland <mark.rutland@arm.com>,
+	Mon, 28 Oct 2013 17:55:37 -0400
+Date: Mon, 28 Oct 2013 14:55:16 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Alex Courbot <acourbot@nvidia.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
         Pawel Moll <pawel.moll@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [RFC 9/9] of/irq: create interrupts-extended property
-References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org> <1381869563-16083-10-git-send-email-grant.likely@linaro.org> <20131027134607.E1782C4039D@trevor.secretlab.ca>
-In-Reply-To: <20131027134607.E1782C4039D@trevor.secretlab.ca>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Dave Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 1/5] ARM: add basic support for Trusted Foundations
+Message-ID: <20131028215516.GA10833@quad.lixom.net>
+References: <1381527938-22840-1-git-send-email-acourbot@nvidia.com>
+ <1381527938-22840-2-git-send-email-acourbot@nvidia.com>
+ <20131015110725.GZ25034@n2100.arm.linux.org.uk>
+ <525D7969.5060908@nvidia.com>
+ <CA+Ln22FdkcxOfq-yxVVQ7vTLWC3TYRBbAOZ=e3WmpSKkgk_DRg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+Ln22FdkcxOfq-yxVVQ7vTLWC3TYRBbAOZ=e3WmpSKkgk_DRg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2013 07:46 AM, Grant Likely wrote:
-> On Tue, 15 Oct 2013 21:39:23 +0100, Grant Likely <grant.likely@linaro.org> wrote:
->> The standard interrupts property in device tree can only handle
->> interrupts coming from a single interrupt parent. If a device is wired
->> to multiple interrupt controllers, then it needs to be attached to a
->> node with an interrupt-map property to demux the interrupt specifiers
->> which is confusing. It would be a lot easier if there was a form of the
->> interrupts property that allows for a separate interrupt phandle for
->> each interrupt specifier.
->>
->> This patch does exactly that by creating a new interrupts-extended
->> property which reuses the phandle+arguments pattern used by GPIOs and
->> other core bindings.
->>
->> Signed-off-by: Grant Likely <grant.likely@linaro.org>
->> Cc: Rob Herring <rob.herring@calxeda.com>
+On Mon, Oct 28, 2013 at 12:04:43PM +0100, Tomasz Figa wrote:
+> Hi,
 > 
-> Alright, I want to merge this one. I've got an Ack from Tony, general
-> agreement from an in person converstaion from Ben (aside from wishing he
-> could think of a better property name), and various rumblings of
-> approval from anyone I talked to about it at ksummit. I'd like to have
-> something more that that to put into the commit text. Please take a look
-> and let me know if you agree/disagree with this binding.
+> 2013/10/15 Alex Courbot <acourbot@nvidia.com>:
+> > On 10/15/2013 04:07 AM, Russell King - ARM Linux wrote:
+> >>
+> >> On Fri, Oct 11, 2013 at 02:45:34PM -0700, Alexandre Courbot wrote:
+> >>>
+> >>> Trusted Foundations is a TrustZone-based secure monitor for ARM that
+> >>> can be invoked using the same SMC-based API on all supported
+> >>> platforms. This patch adds initial basic support for Trusted
+> >>> Foundations using the ARM firmware API. Current features are limited
+> >>> to the ability to boot secondary processors.
+> >>>
+> >>> Note: The API followed by Trusted Foundations does *not* follow the SMC
+> >>> calling conventions. It has nothing to do with PSCI neither and is only
+> >>> relevant to devices that use Trusted Foundations (like most Tegra-based
+> >>> retail devices).
+> >>>
+> >>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> >>> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> >>> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> >>> ---
+> >>>   .../arm/firmware/tl,trusted-foundations.txt        | 20 ++++++
+> >>>   .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+> >>>   arch/arm/Kconfig                                   |  2 +
+> >>>   arch/arm/Makefile                                  |  1 +
+> >>>   arch/arm/firmware/Kconfig                          | 28 ++++++++
+> >>>   arch/arm/firmware/Makefile                         |  1 +
+> >>>   arch/arm/firmware/trusted_foundations.c            | 79
+> >>> ++++++++++++++++++++++
+> >>>   arch/arm/include/asm/trusted_foundations.h         | 68
+> >>> +++++++++++++++++++
+> >>>   8 files changed, 200 insertions(+)
+> >>>   create mode 100644
+> >>> Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
+> >>>   create mode 100644 arch/arm/firmware/Kconfig
+> >>>   create mode 100644 arch/arm/firmware/Makefile
+> >>>   create mode 100644 arch/arm/firmware/trusted_foundations.c
+> >>>   create mode 100644 arch/arm/include/asm/trusted_foundations.h
+> >>
+> >>
+> >> Is having this under arch/arm appropriate?  What happens if the API
+> >> gets re-used on ARM64 for example?  Would drivers/firmware be a better
+> >> cross-arch location for this?
+> >
+> >
+> > The reason why this has been put into arch/arm is that the firmware_ops
+> > feature this patch depends also resides there
+> > (arch/arm/include/asm/firmware.h).
+> >
+> > On the other hand it might also make sense to move firmware_ops out of ARM
+> > since I don't see anything ARM-specific with it. Tomasz, could we have your
+> > thoughts on this?
+> 
+> I don't see anything wrong in moving this out of arch/arm, feel free
+> to do so.
+> 
+> However I guess that some (or all) of the names will have to
+> be put into a more separate namespace, as the term "firmware" is a bit
+> too generic IMHO. Possibly something like platform_firmware could be
+> better.
+> 
+> What do you think?
 
-The new binding makes sense to me. So, the binding,
-Acked-by: Stephen Warren <swarren@nvidia.com>
+I think we can probably merge this under arch/arm now, and when we figure out
+what needs to be common with ARM64 we can move it out to a good location. It
+might be that mostly just a header file with ABI conventions needs to be
+shared, not actual implementation, for example.
 
-A couple of minor perhaps bikesheddy comments below.
 
->> diff --git a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-
->> +Nodes that describe devices which generate interrupts must contain an either an
->> +"interrupts" property or an "interrupts-extended" property. These properties
-
-"interrupts-ex" would be shorter, although I guess slightly harder to
-guess its purpose, unless you're familiar with "ex" in symbol names.
-
-...
->> +A device node may contain either "interrupts" or "interrupts-extended", but not
->> +both. If both properties are present, then the operating system should log an
->> +error
-
-That sounds rather like prescribing SW behaviour, which I thought DT
-bindings shouldn't do?
-
->> and use only the data in "interrupts".
-
-... so perhaps that's better phrased as:
-
-A device node may contain either "interrupts" or "interrupts-extended",
-but not both. If both properties are present, the data in "interrupts"
-takes precedence.
+-Olof
