@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab3J1Ktm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 06:49:42 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:63072 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755350Ab3J1Ktk (ORCPT
+	id S1755992Ab3J1KvH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 06:51:07 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:63678 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635Ab3J1KvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 06:49:40 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: RUC_SoftSec <rucsoftsec@gmail.com>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+	Mon, 28 Oct 2013 06:51:05 -0400
+Date: Mon, 28 Oct 2013 11:51:01 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Andreas Werner <wernerandy@gmx.de>
+Cc: Borislav Petkov <bp@alien8.de>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, dave@linux.vnet.ibm.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] acpi: check return value of acpi_os_map_memory
-Date: Mon, 28 Oct 2013 12:01:46 +0100
-Message-ID: <3198340.cKCt9ZmSgp@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1382940259-15183-1-git-send-email-rucsoftsec@gmail.com>
-References: <1382940259-15183-1-git-send-email-rucsoftsec@gmail.com>
+Subject: Re: [PATCH] X86: MM: Add PAT Type write-through in combination with
+ mtrr
+Message-ID: <20131028105101.GC6274@gmail.com>
+References: <20131027133401.GB24817@pd.tnic>
+ <20131027165159.GD1617@thinkpad.fritz.box>
+ <20131027173131.GC21868@pd.tnic>
+ <20131027175608.GA1340@thinkpad.fritz.box>
+ <20131027190148.GD21868@pd.tnic>
+ <20131028062946.GA1391@thinkpad.fritz.box>
+ <20131028101749.GA4389@gmail.com>
+ <20131028102938.GD4314@pd.tnic>
+ <20131028103132.GA6274@gmail.com>
+ <20131028104505.GB2278@thinkpad.fritz.box>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131028104505.GB2278@thinkpad.fritz.box>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 28, 2013 02:04:19 PM RUC_SoftSec wrote:
-> Function acpi_os_map_memory() may return a NULL pointer, it should be validated non-NULL before used.
-> This bug is found by a static tool developed by RUC_SoftSec, supported by China.X.Orion.
+
+* Andreas Werner <wernerandy@gmx.de> wrote:
+
+> On Mon, Oct 28, 2013 at 11:31:32AM +0100, Ingo Molnar wrote:
+> > 
+> > * Borislav Petkov <bp@alien8.de> wrote:
+> > 
+> > > On Mon, Oct 28, 2013 at 11:17:49AM +0100, Ingo Molnar wrote:
+> > >
+> > > > And regular write-back cacheable isn't sufficient because the 
+> > > > CPU could do things like prefetch your range automatically?
+> > > 
+> > > Yeah, he's doing a CLFLUSH anyway which basically makes it a 
+> > > write-through...
+> > 
+> > The CLFLUSH is done afterwards (making it a use-once thing), so WB 
+> > might still be faster and would avoid the PAT headache ...
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
+> What i do right now is:
+> 1. clflush the data range to read from my mmio device
+> 2. read the data.
+> On PCIe Tracer i see the pcie  bursts.
 > 
-> Signed-off-by: RUC_SoftSec <rucsoftsec@gmail.com>
-> ---
->  drivers/acpi/osl.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index e5f416c..bf8f93f 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -717,6 +717,8 @@ acpi_os_physical_table_override(struct acpi_table_header *existing_table,
->  
->  		table = acpi_os_map_memory(acpi_tables_addr + table_offset,
->  					   ACPI_HEADER_SIZE);
-> +		if (table == NULL)
+> If i mark the region WB and call clflush my system will crash without
+> any message, it just stop working.
 
-"if (!table)" perhaps?
+Yeah, I was wondering whether it's valid at all to mark IO memory as 
+cacheable - with the lack of MESI transactions and all that ...
 
-> +			return AE_OK;
+So it's apparently not valid and we've got to live with WT as the 
+'best' caching/bursting method for reads.
 
-And why is it a good idea to return success then?
+Thanks,
 
->  
->  		if (table_offset + table->length > all_tables_size) {
->  			acpi_os_unmap_memory(table, ACPI_HEADER_SIZE);
-> 
-
-Thanks!
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+	Ingo
