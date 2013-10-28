@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab3J1JSR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 05:18:17 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:35823 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755949Ab3J1JSP (ORCPT
+	id S1755998Ab3J1JTU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 05:19:20 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:15667 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755751Ab3J1JTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 05:18:15 -0400
-Message-ID: <526E2BD0.3080807@hitachi.com>
-Date: Mon, 28 Oct 2013 18:18:08 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-Cc: Steven Rostedt <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        x86@kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH 2/6] x86: allow to call text_poke_bp during boot
-References: <1382106445-31468-3-git-send-email-pmladek@suse.cz> <52629F08.2010609@hitachi.com> <20131019151658.583ac18e@gandalf.local.home> <20131019151919.2d4778d2@gandalf.local.home> <20131019213350.GH4118@linux.vnet.ibm.com> <20131019180239.1e318628@gandalf.local.home> <20131020154203.GN4118@linux.vnet.ibm.com>
-In-Reply-To: <20131020154203.GN4118@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Oct 2013 05:19:17 -0400
+X-Greylist: delayed 1181 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Oct 2013 05:19:16 EDT
+From: Jan Kiszka <jan.kiszka@siemens.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
+        Borislav Petkov <bp@suse.de>,
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: [PATCH v6 15/21] scripts/gdb: Add internal helper and convenience function to retrieve thread_info
+Date: Mon, 28 Oct 2013 09:58:52 +0100
+Message-Id: <8e65e1db9430686f890d9ba31aacbc763dfd2930.1382950737.git.jan.kiszka@siemens.com>
+X-Mailer: git-send-email 1.8.1.1.298.ge7eed54
+In-Reply-To: <cover.1382950737.git.jan.kiszka@siemens.com>
+References: <cover.1382950737.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1382950737.git.jan.kiszka@siemens.com>
+References: <cover.1382950737.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/21 0:42), Paul E. McKenney wrote:
-> On Sat, Oct 19, 2013 at 06:02:39PM -0400, Steven Rostedt wrote:
->> On Sat, 19 Oct 2013 14:33:50 -0700
->> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
->>
->>
->>>>> It's used to convert the calls to mcount to nops. But maybe a better
->>>>> thing to do is to check if we only have a single CPU:
->>>>>
->>>>> static void run_sync(void)
->>>>> {
->>>>> 	if (num_online_cpus() != 1)
->>>>
->>>> Hmm, to be more robust to handle our future "ideal" machines, perhaps
->>>> this should be:
->>>>
->>>> 	/* Ideally we would like to run on zero CPUS! */
->>>> 	if (num_online_cpus() < 2)
->>>
->>
->> Bah! And for such a simple computation, I got it wrong.
->>
->>
->> 	/* Ideally we would like to run on zero CPUS! */
->> 	if (num_online_cpus > 1)
->>
->> But I guess the question comes. If we are running on zero CPUS, should
->> we perform the "on_each_cpu(do_sync_core, NULL, 1);" or not? Same goes
->> with 5i-3 CPUS, or negative number CPUs. If we need to do on_each_cpu(),
->> then I guess the != 1 will suffice.
-> 
-> Makes sense to me!  Whoever adds the ability to run on zero, negative,
-> or complex numbers of CPUs can adjust on_each_cpu() accordingly.
+Add the internal helper get_thread_info that calculates the thread_info
+from a given task variable. Also export this service as a convenience
+function.
 
-Thanks for making it clear!
+Note: ia64 version is untested.
 
-Petr, could you update your patch according to this discussion?
-I think temporally enabling irq is not a good idea.
+CC: Tony Luck <tony.luck@intel.com>
+CC: Fenghua Yu <fenghua.yu@intel.com>
+CC: linux-ia64@vger.kernel.org
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ scripts/gdb/linux/tasks.py | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
-BTW, adding an assertion(BUG_ON(irq_disabled()) at the top of text_poke_bp)
-will be good for debugging.
-
-Thanks again!
-
+diff --git a/scripts/gdb/linux/tasks.py b/scripts/gdb/linux/tasks.py
+index 13bb97c..63cd6c5 100644
+--- a/scripts/gdb/linux/tasks.py
++++ b/scripts/gdb/linux/tasks.py
+@@ -71,3 +71,38 @@ return that task_struct variable which PID matches."""
+ 
+ 
+ LxTaskByPidFunc()
++
++
++thread_info_type = utils.CachedType("struct thread_info")
++
++ia64_task_size = None
++
++
++def get_thread_info(task):
++    global thread_info_type
++    thread_info_ptr_type = thread_info_type.get_type().pointer()
++    if utils.is_target_arch("ia64"):
++        global ia64_task_size
++        if ia64_task_size is None:
++            ia64_task_size = gdb.parse_and_eval("sizeof(struct task_struct)")
++        thread_info_addr = task.address + ia64_task_size
++        thread_info = thread_info_addr.cast(thread_info_ptr_type)
++    else:
++        thread_info = task['stack'].cast(thread_info_ptr_type)
++    return thread_info.dereference()
++
++
++class LxThreadInfoFunc (gdb.Function):
++    """Calculate Linux thread_info from task variable.
++
++$lx_thread_info(TASK): Given TASK, return the corresponding thread_info
++variable."""
++
++    def __init__(self):
++        super(LxThreadInfoFunc, self).__init__("lx_thread_info")
++
++    def invoke(self, task):
++        return get_thread_info(task)
++
++
++LxThreadInfoFunc()
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.8.1.1.298.ge7eed54
 
