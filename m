@@ -1,53 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab3J1BDn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Oct 2013 21:03:43 -0400
-Received: from email3.campuscruiser.com ([216.35.68.60]:46518 "EHLO
-	ccprodrelay4.campuscruiser.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754649Ab3J1BDm (ORCPT
+	id S1755249Ab3J1BI4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Oct 2013 21:08:56 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54181 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754139Ab3J1BIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Oct 2013 21:03:42 -0400
-X-Greylist: delayed 3158 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Oct 2013 21:03:42 EDT
-Date: Sun, 27 Oct 2013 20:07:24 -0400 (EDT)
-From: Andrew Martin <andrew.martin@ksc.keene.edu>
-Message-ID: <26442922.53071382918844202.JavaMail.root@ccprodapp13>
-Subject: Hello !
+	Sun, 27 Oct 2013 21:08:55 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH] ACPI / processor: Do not request ACPI cpufreq module directly
+Date: Mon, 28 Oct 2013 02:21 +0100
+Message-ID: <2252332.6pcuA4s7xa@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Mailer: CC Mailer IV 3.0
-X-TCC-Signature: 84e3e36388bb21345230c128e1ad8cd1
-To: unlisted-recipients:; (no To-header on input)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-i got your email from a marketing company in the US, and i decided to tell
-you about the business opportunity in the company where i work. I work
-with a multi national jewelry company in Texas USA. We are in need of raw
-materials in our company and i will like you to stand as the supplier of
-the raw material in India so we both can make extra profit from it.
+Function acpi_processor_load_module() used by the ACPI processor
+driver can only really work if the acpi-cpufreq module is available
+when acpi_processor_start() is executed which usually is not the case
+for systems loading the processor driver module from an initramfs.
 
-My Company always visit your country (India) to procure most of their raw
-materials since the past 2 years in huge quantity.They pay for the
-materials on Cash on Delivery (C.O.D.) basis upon verification of the
-materials.
+Moreover, that used to be a hackish workaround for module autoloading
+issues, but udev loads acpi-cpufreq just fine nowadays, so that
+function isn't really necessary any more.  For this reason, drop
+acpi_processor_load_module() entirely.
 
-I am looking for a reliable person/businessman that understands the Indian
-local language who will assist me in contacting the local dealer of this
-product in India. I have called the local dealer many times, but could not
-understand the local language or rather my accent, to enable me negotiate
-the terms of the supply with them.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/processor_driver.c  |    1 -
+ drivers/acpi/processor_perflib.c |   22 ----------------------
+ include/acpi/processor.h         |    1 -
+ 3 files changed, 24 deletions(-)
 
-This proposal is 100% risk free and will be another income generating
-business outside your Specialization.
-
-I will give you more details of this proposal the moment I hear from you.
-I await your urgent response, to my email (andrew.martins@outlook.com)
-
-Best Regards,
-Andrew Martin
-
+Index: linux-pm/drivers/acpi/processor_driver.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/processor_driver.c
++++ linux-pm/drivers/acpi/processor_driver.c
+@@ -171,7 +171,6 @@ static int __acpi_processor_start(struct
+ 
+ #ifdef CONFIG_CPU_FREQ
+ 	acpi_processor_ppc_has_changed(pr, 0);
+-	acpi_processor_load_module(pr);
+ #endif
+ 	acpi_processor_get_throttling_info(pr);
+ 
+Index: linux-pm/drivers/acpi/processor_perflib.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/processor_perflib.c
++++ linux-pm/drivers/acpi/processor_perflib.c
+@@ -235,28 +235,6 @@ void acpi_processor_ppc_exit(void)
+ 	acpi_processor_ppc_status &= ~PPC_REGISTERED;
+ }
+ 
+-/*
+- * Do a quick check if the systems looks like it should use ACPI
+- * cpufreq. We look at a _PCT method being available, but don't
+- * do a whole lot of sanity checks.
+- */
+-void acpi_processor_load_module(struct acpi_processor *pr)
+-{
+-	static int requested;
+-	acpi_status status = 0;
+-	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+-
+-	if (!arch_has_acpi_pdc() || requested)
+-		return;
+-	status = acpi_evaluate_object(pr->handle, "_PCT", NULL, &buffer);
+-	if (!ACPI_FAILURE(status)) {
+-		printk(KERN_INFO PREFIX "Requesting acpi_cpufreq\n");
+-		request_module_nowait("acpi_cpufreq");
+-		requested = 1;
+-	}
+-	kfree(buffer.pointer);
+-}
+-
+ static int acpi_processor_get_performance_control(struct acpi_processor *pr)
+ {
+ 	int result = 0;
+Index: linux-pm/include/acpi/processor.h
+===================================================================
+--- linux-pm.orig/include/acpi/processor.h
++++ linux-pm/include/acpi/processor.h
+@@ -225,7 +225,6 @@ struct acpi_processor_errata {
+ 	} piix4;
+ };
+ 
+-extern void acpi_processor_load_module(struct acpi_processor *pr);
+ extern int acpi_processor_preregister_performance(struct
+ 						  acpi_processor_performance
+ 						  __percpu *performance);
 
