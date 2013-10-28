@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab3J1PpJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 11:45:09 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:64554 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756103Ab3J1PpH (ORCPT
+	id S1756860Ab3J1PpY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 11:45:24 -0400
+Received: from mailout08.t-online.de ([194.25.134.20]:35610 "EHLO
+	mailout08.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756833Ab3J1PpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 11:45:07 -0400
+	Mon, 28 Oct 2013 11:45:22 -0400
+Message-ID: <526E8685.3030200@t-online.de>
+Date: Mon, 28 Oct 2013 16:45:09 +0100
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <20131028141310.GA4970@schnuecks.de>
-References: <20131024200730.GB17447@blackmetal.musicnaut.iki.fi>
-	<20131026143617.GA14034@mudshark.cambridge.arm.com>
-	<20131027195115.208f40f3@tom-ThinkPad-T410>
-	<20131028141310.GA4970@schnuecks.de>
-Date: Mon, 28 Oct 2013 23:45:06 +0800
-Message-ID: <CACVXFVMA61Wi6jZs_kf329fCj2oMXgbg9x0EhP5OpEEgPVw4kw@mail.gmail.com>
-Subject: Re: ARM/kirkwood: v3.12-rc6: kernel BUG at mm/util.c:390!
-From: Ming Lei <tom.leiming@gmail.com>
-To: Simon Baatz <gmbnomis@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ingo Molnar <mingo@kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_?= =?ISO-8859-1?Q?Weisbecker?= 
+	<fweisbec@gmail.com>,
+        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request during
+ shutdown
+References: <525BD08C.2080101@t-online.de> <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com> <CA+55aFy7TpvkVuPEOJ7Qqirwap1gXoD1_MrYLhgPAYuVpN8u=w@mail.gmail.com> <alpine.DEB.2.02.1310251221310.5266@ionos.tec.linutronix.de> <CA+55aFxw1Hm4QVeEigkByP5RppSL30oHnLoR16C=henf-a=uFQ@mail.gmail.com> <20131026114303.GA24067@gmail.com> <526E79A2.9080303@t-online.de> <20131028150114.GA12905@gmail.com> <20131028151637.GA13251@gmail.com>
+In-Reply-To: <20131028151637.GA13251@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-ID: SUnKLiZXwhh+FxQ+Cu2AVPOPLwGsQ8Ay81sCe9EEF4NrmvauDqUA2csrRN6RMWgwX4
+X-TOI-MSGID: 207cfd85-36d1-4358-b1b1-74fb594a0999
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 10:13 PM, Simon Baatz <gmbnomis@gmail.com> wrote:
-> On Sun, Oct 27, 2013 at 07:51:15PM +0800, Ming Lei wrote:
->> diff --git a/lib/scatterlist.c b/lib/scatterlist.c
->> index a685c8a..eea8806 100644
->> --- a/lib/scatterlist.c
->> +++ b/lib/scatterlist.c
->> @@ -577,7 +577,7 @@ void sg_miter_stop(struct sg_mapping_iter *miter)
->>               miter->__offset += miter->consumed;
->>               miter->__remaining -= miter->consumed;
->>
->> -             if (miter->__flags & SG_MITER_TO_SG)
->> +             if ((miter->__flags & SG_MITER_TO_SG) && !PageSlab(page))
+On 28.10.2013 16:16, Ingo Molnar wrote:
+> * Ingo Molnar <mingo@kernel.org> wrote:
 >
-> This is what I was going to propose, but I would have used
-> !PageSlab(miter->page) ;-)
+>>> I tried that patch, together with all the kobj debug options
+>>> enabled. With that kernel configuration I was unable to
+>>> reproduce the problem during 500 typical workload / reboot
+>>> cycles. Without the debug options I was able to reproduce the
+>>> last reported panic after 91 cycles. The debug options seem to
+>>> change timing sufficiently to mask the bug ;-(
+>> Could you send me the kernel config please?
+> I got your .config off-list, thanks Knut!
+>
+> It has all DEBUG_OBJECT options enabled:
+>
+>   CONFIG_DEBUG_OBJECTS=y
+>   # CONFIG_DEBUG_OBJECTS_SELFTEST is not set
+>   CONFIG_DEBUG_OBJECTS_FREE=y
+>   CONFIG_DEBUG_OBJECTS_TIMERS=y
+>   CONFIG_DEBUG_OBJECTS_WORK=y
+>   CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
+>   CONFIG_DEBUG_OBJECTS_PERCPU_COUNTER=y
+>   CONFIG_DEBUG_OBJECTS_ENABLE_DEFAULT=1
+>
+> but it also has DEBUG_PAGEALLOC enabled:
+>
+>   CONFIG_DEBUG_PAGEALLOC=y
+>
+> I'd suggest disabling that one - it kind of overlaps debugobjects
+> and it will definitely be a big slowdown.
 
-OK, I will send a formal one later, thank you for pointing out the above, :-)
+ACK
+> I'd also suggest turning off lockdep for now:
+>
+>   CONFIG_PROVE_LOCKING=y
+>
+> because we know it does not trigger any useful warning. This too
+> should speed up things a bit.
+
+Well, for now that´s true. On one machine it emits the old warning about the
+videobuf_dvb_find_frontend() /  dvb_device_open() circular reference,
+but that´s definitely unrelated.
 
 >
->>                       flush_kernel_dcache_page(miter->page);
+> Whether this would make the crash reproducable again I don't know
+> :-/
+
+We´ll see ;-)
+> Thanks,
 >
-> With this, a kernel with DEBUG_VM now boots on Kirkwood.
+> 	Ingo
+>
 
-
-
-Thanks,
--- 
-Ming Lei
