@@ -1,108 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756732Ab3J1OXb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 10:23:31 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:43615 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756545Ab3J1OXa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:23:30 -0400
-Date: Tue, 29 Oct 2013 01:23:17 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: linux-next: build failure after merge of the final tree (fbdev tree
- related)
-Message-Id: <20131029012317.b9ba8173dee5bac1a5bd2404@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__29_Oct_2013_01_23_17_+1100_DShg+nNpREjrw96n"
+	id S1756620Ab3J1O0o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:26:44 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:44401 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756495Ab3J1O0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 10:26:42 -0400
+Date: Mon, 28 Oct 2013 19:41:52 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Pekka Enberg <penberg@iki.fi>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
+        anton@redhat.com, systemtap@sourceware.org,
+        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com
+Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
+Message-ID: <20131028141152.GA1040@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20131023044511.1886.82571.stgit@hemant-fedora>
+ <20131023050502.1886.15779.stgit@hemant-fedora>
+ <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com>
+ <526E4940.8000608@hitachi.com>
+ <526E5BA5.7050103@iki.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <526E5BA5.7050103@iki.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102814-5806-0000-0000-0000233CB0F0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__29_Oct_2013_01_23_17_+1100_DShg+nNpREjrw96n
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Pekka Enberg <penberg@iki.fi> [2013-10-28 14:42:13]:
 
-Hi all,
+> >So, it still needs a concrete binary path to list or, we should
+> >support a syntax which specify actual binary, as like as below.
+> >
+> >  perf probe 'my_event=%libc:setjmp@/lib64/libc.so.6'
+> >
+> >And perf list may show the marker as in same syntax (for copy&paste).
+> >
+> ># perf list --sdt
+> >  %libc:setjmp@/lib64/libc.so.6
+> >  ...
+> >
+> >Note that we need '%' to separate namespace :(, since user can define
+> >any marker(provider) name in their binary...
+> 
+> Sure, you need to support that sort of 'fully qualified name' for
+> duplicate symbols but the default 'libc:setjmp' should still point
+> to system libc.
 
-After merging the final tree, today's linux-next build (powerpc
-ppc44x_defconfig) failed like this:
+But what if a system has both 32 bit libc and 64 bit libc?
+Wont we could end up with 2 libc:setjmp? 
+Should we give some more intelligence into perf to choose the 64 bit
+libc over 32 bit one?
 
-drivers/video/xilinxfb.c: In function 'xilinxfb_of_probe':
-drivers/video/xilinxfb.c:431:30: error: 'op' undeclared (first use in this =
-function)
+-- 
+Thanks and Regards
+Srikar Dronamraju
 
-Caused by commit 353846fb8bb7 ("video: xilinxfb: Use standard variable
-name convention") from the fbdev tree.
-
-I have applied the following fix patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 29 Oct 2013 01:18:22 +1100
-Subject: [PATCH] video: xilinxfb: Fix for "Use standard variable name conve=
-ntion"
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/video/xilinxfb.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
-index 9eedf9673b7f..6ff1a91e9dfd 100644
---- a/drivers/video/xilinxfb.c
-+++ b/drivers/video/xilinxfb.c
-@@ -428,11 +428,11 @@ static int xilinxfb_of_probe(struct platform_device *=
-pdev)
- #ifdef CONFIG_PPC_DCR
- 	else {
- 		int start;
--		start =3D dcr_resource_start(op->dev.of_node, 0);
--		drvdata->dcr_len =3D dcr_resource_len(op->dev.of_node, 0);
--		drvdata->dcr_host =3D dcr_map(op->dev.of_node, start, drvdata->dcr_len);
-+		start =3D dcr_resource_start(pdev->dev.of_node, 0);
-+		drvdata->dcr_len =3D dcr_resource_len(pdev->dev.of_node, 0);
-+		drvdata->dcr_host =3D dcr_map(pdev->dev.of_node, start, drvdata->dcr_len=
-);
- 		if (!DCR_MAP_OK(drvdata->dcr_host)) {
--			dev_err(&op->dev, "invalid DCR address\n");
-+			dev_err(&pdev->dev, "invalid DCR address\n");
- 			return -ENODEV;
- 		}
- 	}
---=20
-1.8.4.rc3
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__29_Oct_2013_01_23_17_+1100_DShg+nNpREjrw96n
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSbnNbAAoJEMDTa8Ir7ZwVnooP/1LS+f9SxGMr6WGR2JJtFZ8E
-jojjonFKb6Fs8lLRUuEOeBDbPEW/SmRu0dkNhsPHU1vGIKUtKfI+dVL9Y9ZBF45k
-IQwmMATMOK9Z7R78s2cXW0rB7+8lrCtWRSNdWXJDSj0hrDnrrzwNCRTtwla/9tWZ
-N7vg94dG7lDLNaBgZqjiEuH0k1BTcLk++PNi4c0X2zdEx5242do3Uk1Bx97P19ej
-Gbud4ZsK/pQhyBJcdTJLNZOIPWR6Owg30wf/xECw73lbe6hmjxa2DTLlhRXriUgR
-1wgBt7yRnGVymZwM8l6GFYcOTyU3SUATbE0uIR5rGs/Pwf8dFavgMUQJlkv7IF6/
-5XSBpD7XPKGpNyqMNHt2epQn+WFB0jY8taV1Aa9Vlh2vVY0xtfHGQ9hsR9lvf/rt
-w4tXAjO79kfUbvIZrm4ue92vkWhAcQwtml+sPeYqR6C8CElfU6+EUFlSQ14X7WeW
-DIbNyC488mbwOcPIH0Sw1q2kC4mssScMuiqGqlsOjQ/w7EZSYCXvPwTUbSV7mQvL
-5T1sKr7257CPDse95eYD1QgfPANFI2k76N28/TaG+onwbqcMRZZb7XiI32Xy7+d0
-C4kz9SjfTJWoSKwTIjIadhE6b0k1g/cvlwtORdwdir10yQCkLXA9rdjw6UroiseR
-FVx0ce0MWTfXhYWsjPA9
-=h1yv
------END PGP SIGNATURE-----
-
---Signature=_Tue__29_Oct_2013_01_23_17_+1100_DShg+nNpREjrw96n--
