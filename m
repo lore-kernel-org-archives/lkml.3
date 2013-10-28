@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab3J1Fv4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 01:51:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50396 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752112Ab3J1Fvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 01:51:55 -0400
-Date: Mon, 28 Oct 2013 13:51:11 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>, WANG Chao <chaowang@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Pekka Enberg <penberg@kernel.org>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, kdump: crashkernel=X try to reserve below 896M
- first, then try below 4G, then MAXMEM
-Message-ID: <20131028055111.GC20741@dhcp-16-126.nay.redhat.com>
-References: <CAE9FiQWdMmSseDk6J=TOXT9ZahJUBf2BOU+VHJRXeeMofgH=EQ@mail.gmail.com>
- <20131021151643.GA20669@redhat.com>
- <CAE9FiQVfeUdugFRMt1DGjtqW2FAb2gfnGjXENHjoJ=JVAYbYgw@mail.gmail.com>
- <20131024140241.GA2322@redhat.com>
- <CAE9FiQUu0WwMgNpog4TKch+MT2i7_DsNvqZxbyQusS4AFxdhQQ@mail.gmail.com>
- <20131024191821.GE2322@redhat.com>
- <CAE9FiQU7+FRY=3ETdGZJJfcS0vjRht4ZT8MHTQ66kpjD2MmrcA@mail.gmail.com>
- <20131024192752.GG2322@redhat.com>
- <CAE9FiQUw6REg2TXnSXtNZK8XY9vnorvi8oDbUn_5WdNZ6yiRtQ@mail.gmail.com>
- <20131028054950.GB20741@dhcp-16-126.nay.redhat.com>
+	id S1755545Ab3J1Fwg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 01:52:36 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:57948 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751657Ab3J1Fwf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 01:52:35 -0400
+X-AuditID: 9c93017d-b7c97ae000000e9f-35-526dfba16db4
+From: Namhyung Kim <namhyung@kernel.org>
+To: Patrick Palka <patrick@parcs.ath.cx>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH rebase] perf/ui/tui: don't force a refresh during progress update
+References: <1382565562-15108-1-git-send-email-patrick@parcs.ath.cx>
+	<1382747149-9716-1-git-send-email-patrick@parcs.ath.cx>
+Date: Mon, 28 Oct 2013 14:52:33 +0900
+In-Reply-To: <1382747149-9716-1-git-send-email-patrick@parcs.ath.cx> (Patrick
+	Palka's message of "Fri, 25 Oct 2013 20:25:49 -0400")
+Message-ID: <87wqky7xi6.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131028054950.GB20741@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/13 at 01:49pm, Dave Young wrote:
-> > without Cong's patch, kernel will fail to reserve, and user would dig
-> 
-> s/Chao/Cong ;)
+Hi Patrick,
 
-s/Cong/Chao in fact :(
+On Fri, 25 Oct 2013 20:25:49 -0400, Patrick Palka wrote:
+> Each call to tui_progress__update() would forcibly refresh the entire
+> screen.  This is somewhat inefficient and causes noticable flickering
+> during the startup of perf-report, especially on large/slow terminals.
+>
+> It looks like the force-refresh in tui_progress__update() serves no
+> purpose other than to clear the screen so that the progress bar of a
+> previous operation does not subsume that of a subsequent operation.
+> But we can do just that in a much more efficient manner by clearing only
+> the region that a previous progress bar may have occupied before
+> repainting the new progress bar.  Then the force-refresh could be
+> removed with no change in visuals.
+>
+> This patch disables the slow force-refresh in tui_progress__update() and
+> instead calls SLsmg_fill_region() on the entire area that the progress
+> bar may occupy before repainting it.  This change makes the startup of
+> perf-report much faster and appear much "smoother".
+>
+> It turns out that this was a big bottleneck in the startup speed of
+> perf-report -- with this patch, perf-report starts up ~2x faster (1.1s
+> vs 0.55s) on my machines.  (These numbers were measured by running
+> "time perf report" on an 8MB perf.data and pressing 'q' immediately.)
+
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+
+Thanks,
+Namhyung
