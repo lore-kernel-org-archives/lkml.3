@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649Ab3J1O7a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 10:59:30 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:37465 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932209Ab3J1O7Z (ORCPT
+	id S932655Ab3J1O74 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:59:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51174 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932273Ab3J1OtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:59:25 -0400
-Date: Mon, 28 Oct 2013 15:59:21 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Joseph Schuchart <joseph.schuchart@tu-dresden.de>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/2] perf/urgent fixes
-Message-ID: <20131028145921.GA11150@gmail.com>
-References: <1382971525-2078-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382971525-2078-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 28 Oct 2013 10:49:24 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 35/64] rt2800: fix wrong TX power compensation
+Date: Mon, 28 Oct 2013 14:47:54 +0000
+Message-Id: <1382971703-17393-36-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
+References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.5.7.24 -stable review patch.  If anyone has any objections, please let me know.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+------------------
 
-> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit e4f8eaad70ea186b8da290c99239dce721a34f88:
-> 
->   Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent (2013-10-20 10:51:35 +0200)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
-> 
-> for you to fetch changes up to 2fd869f08aec5a8e4cbf01bc3fa345c4e53342d7:
-> 
->   perf tools: Fix up /proc/PID/maps parsing (2013-10-28 09:38:12 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/urgent fixes:
-> 
-> . Fix up /proc/PID/maps parsing, where perfectly fine mmap entries
->   were being trown away when synthesizing PERF_RECORD_MMAP for
->   preexisting threads, prevenging symbol resolution to work
->   for those threads, broken in the MMAP2 removal. Reported and
->   pinpointed by Markus Trippelsdorf,
-> 
-> . Fix mem leak in the python 'perf script' backend, due to missing Py_DECREFs
->   on dict entries, fix from Joseph Schuchart.
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Arnaldo Carvalho de Melo (1):
->       perf tools: Fix up /proc/PID/maps parsing
-> 
-> Joseph Schuchart (1):
->       perf script python: Fix mem leak due to missing Py_DECREFs on dict entries
-> 
->  tools/perf/util/event.c                            |  2 +-
->  .../util/scripting-engines/trace-event-python.c    | 37 ++++++++++++++--------
->  2 files changed, 25 insertions(+), 14 deletions(-)
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-Pulled, thanks Arnaldo!
+commit 6e956da2027c767859128b9bfef085cf2a8e233b upstream.
 
-	Ingo
+We should not do temperature compensation on devices without
+EXTERNAL_TX_ALC bit set (called DynamicTxAgcControl on vendor driver).
+Such devices can have totally bogus TSSI parameters on the EEPROM,
+but still threaded by us as valid and result doing wrong TX power
+calculations.
+
+This fix inability to connect to AP on slightly longer distance on
+some Ralink chips/devices.
+
+Reported-and-tested-by: Fabien ADAM <id2ndr@crocobox.org>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[ luis: backported to 3.5:
+  - use rt2x00_eeprom_read() instead of rt2800_eeprom_read() ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/net/wireless/rt2x00/rt2800lib.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/net/wireless/rt2x00/rt2800lib.c b/drivers/net/wireless/rt2x00/rt2800lib.c
+index 1c60904..b81f2b6 100644
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -2181,6 +2181,13 @@ static int rt2800_get_gain_calibration_delta(struct rt2x00_dev *rt2x00dev)
+ 	int i;
+ 
+ 	/*
++	 * First check if temperature compensation is supported.
++	 */
++	rt2x00_eeprom_read(rt2x00dev, EEPROM_NIC_CONF1, &eeprom);
++	if (!rt2x00_get_field16(eeprom, EEPROM_NIC_CONF1_EXTERNAL_TX_ALC))
++		return 0;
++
++	/*
+ 	 * Read TSSI boundaries for temperature compensation from
+ 	 * the EEPROM.
+ 	 *
+-- 
+1.8.3.2
+
