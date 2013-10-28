@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756941Ab3J1Osq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 10:48:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51032 "EHLO
+	id S1756966Ab3J1Os6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 10:48:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51079 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756923Ab3J1Oso (ORCPT
+	with ESMTP id S1756291Ab3J1Osz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 10:48:44 -0400
+	Mon, 28 Oct 2013 10:48:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Henrik Rydberg <rydberg@euromail.se>, Guenter Roeck <linux@roeck-us.net>,
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 08/64] hwmon: (applesmc) Always read until end of data
-Date: Mon, 28 Oct 2013 14:47:27 +0000
-Message-Id: <1382971703-17393-9-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 17/64] xhci: Don't enable/disable RWE on bus suspend/resume.
+Date: Mon, 28 Oct 2013 14:47:36 +0000
+Message-Id: <1382971703-17393-18-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
 References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
@@ -27,75 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Henrik Rydberg <rydberg@euromail.se>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 25f2bd7f5add608c1d1405938f39c96927b275ca upstream.
+commit f217c980ca980e3a645b7485ea5eae9a747f4945 upstream.
 
-The crash reported and investigated in commit 5f4513 turned out to be
-caused by a change to the read interface on newer (2012) SMCs.
+The RWE bit of the USB 2.0 PORTPMSC register is supposed to enable
+remote wakeup for devices in the lower power link state L1.  It has
+nothing to do with the device suspend remote wakeup from L2.  The RWE
+bit is designed to be set once (when USB 2.0 LPM is enabled for the
+port) and cleared only when USB 2.0 LPM is disabled for the port.
 
-Tests by Chris show that simply reading the data valid line is enough
-for the problem to go away. Additional tests show that the newer SMCs
-no longer wait for the number of requested bytes, but start sending
-data right away.  Apparently the number of bytes to read is no longer
-specified as before, but instead found out by reading until end of
-data. Failure to read until end of data confuses the state machine,
-which eventually causes the crash.
+The xHCI bus suspend method was setting the RWE bit erroneously, and the
+bus resume method was clearing it.  The xHCI 1.0 specification with
+errata up to Aug 12, 2012 says in section 4.23.5.1.1.1 "Hardware
+Controlled LPM":
 
-As a remedy, assuming bit0 is the read valid line, make sure there is
-nothing more to read before leaving the read function.
+"While Hardware USB2 LPM is enabled, software shall not modify the
+HIRDBESL or RWE fields of the USB2 PORTPMSC register..."
 
-Tested to resolve the original problem, and runtested on MBA3,1,
-MBP4,1, MBP8,2, MBP10,1, MBP10,2. The patch seems to have no effect on
-machines before 2012.
+If we have previously enabled USB 2.0 LPM for a device, that means when
+the USB 2.0 bus is resumed, we violate the xHCI specification by
+clearing RWE.  It also means that after a bus resume, the host would
+think remote wakeup is disabled from L1 for ports with USB 2.0 Link PM
+enabled, which is not what we want.
 
-Tested-by: Chris Murphy <chris@cmurf.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+This patch should be backported to kernels as old as 3.2, that
+contain the commit 65580b4321eb36f16ae8b5987bfa1bb948fc5112 "xHCI: set
+USB2 hardware LPM".  That was the first kernel that supported USB 2.0
+Link PM.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 [ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hwmon/applesmc.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/usb/host/xhci-hub.c | 28 ----------------------------
+ 1 file changed, 28 deletions(-)
 
-diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-index 0882b25..dbaf7f4 100644
---- a/drivers/hwmon/applesmc.c
-+++ b/drivers/hwmon/applesmc.c
-@@ -212,6 +212,7 @@ static int send_argument(const char *key)
- 
- static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
- {
-+	u8 status, data = 0;
- 	int i;
- 
- 	if (send_command(cmd) || send_argument(key)) {
-@@ -219,6 +220,7 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
- 		return -EIO;
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index b83a7b8..1b592dc 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -1067,20 +1067,6 @@ int xhci_bus_suspend(struct usb_hcd *hcd)
+ 		t1 = xhci_port_state_to_neutral(t1);
+ 		if (t1 != t2)
+ 			xhci_writel(xhci, t2, port_array[port_index]);
+-
+-		if (hcd->speed != HCD_USB3) {
+-			/* enable remote wake up for USB 2.0 */
+-			__le32 __iomem *addr;
+-			u32 tmp;
+-
+-			/* Add one to the port status register address to get
+-			 * the port power control register address.
+-			 */
+-			addr = port_array[port_index] + 1;
+-			tmp = xhci_readl(xhci, addr);
+-			tmp |= PORT_RWE;
+-			xhci_writel(xhci, tmp, addr);
+-		}
+ 	}
+ 	hcd->state = HC_STATE_SUSPENDED;
+ 	bus_state->next_statechange = jiffies + msecs_to_jiffies(10);
+@@ -1159,20 +1145,6 @@ int xhci_bus_resume(struct usb_hcd *hcd)
+ 				xhci_ring_device(xhci, slot_id);
+ 		} else
+ 			xhci_writel(xhci, temp, port_array[port_index]);
+-
+-		if (hcd->speed != HCD_USB3) {
+-			/* disable remote wake up for USB 2.0 */
+-			__le32 __iomem *addr;
+-			u32 tmp;
+-
+-			/* Add one to the port status register address to get
+-			 * the port power control register address.
+-			 */
+-			addr = port_array[port_index] + 1;
+-			tmp = xhci_readl(xhci, addr);
+-			tmp &= ~PORT_RWE;
+-			xhci_writel(xhci, tmp, addr);
+-		}
  	}
  
-+	/* This has no effect on newer (2012) SMCs */
- 	outb(len, APPLESMC_DATA_PORT);
- 
- 	for (i = 0; i < len; i++) {
-@@ -229,6 +231,17 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
- 		buffer[i] = inb(APPLESMC_DATA_PORT);
- 	}
- 
-+	/* Read the data port until bit0 is cleared */
-+	for (i = 0; i < 16; i++) {
-+		udelay(APPLESMC_MIN_WAIT);
-+		status = inb(APPLESMC_CMD_PORT);
-+		if (!(status & 0x01))
-+			break;
-+		data = inb(APPLESMC_DATA_PORT);
-+	}
-+	if (i)
-+		pr_warn("flushed %d bytes, last value is: %d\n", i, data);
-+
- 	return 0;
- }
- 
+ 	(void) xhci_readl(xhci, &xhci->op_regs->command);
 -- 
 1.8.3.2
 
