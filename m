@@ -1,64 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab3J2JFB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 05:05:01 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:39393 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751983Ab3J2JE7 (ORCPT
+	id S1753412Ab3J2JKh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 05:10:37 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44659 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752748Ab3J2JKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 05:04:59 -0400
-Date: Tue, 29 Oct 2013 10:04:58 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: Watchdog patches - overview.
-Message-ID: <20131029090458.GN19704@spo001.leaseweb.com>
+	Tue, 29 Oct 2013 05:10:33 -0400
+Date: Tue, 29 Oct 2013 20:10:13 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: linux-next: build failure after merge of the final tree (gpio tree
+ related)
+Message-Id: <20131029201013.cc93b7f5eca956bf6ff04e68@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.1i
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__29_Oct_2013_20_10_13_+1100_A+n2vQ00.otZShiP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+--Signature=_Tue__29_Oct_2013_20_10_13_+1100_A+n2vQ00.otZShiP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Just to give you an update on where we are:
-1) following patches are linux-watchdog-next:
-watchdog: dw_wdt: convert to SIMPLE_DEV_PM_OPS
-watchdog: dw_wdt: use clk_prepare_enable and clk_disable_unprepare
-imx2_wdt: expose module alias for loading from device-tree
-watchdog: use dev_get_platdata()
-watchdog: dw_wdt: Add __user annotation
-watchdog: kempld_wdt: Add __user annotation
-watchdog: Add MOXA ART watchdog driver
-watchdog: add ralink watchdog driver
-documentation/devicetree: Move DT bindigns from gpio to watchdog
-watchdog: ts72xx_wdt: cleanup return codes in ioctl
-watchdog: Remove redundant of_match_ptr
-watchdog: sirf: add watchdog driver of CSR SiRFprimaII and SiRFatlasVI
-watchdog: sp805_wdt: Remove unnecessary amba_set_drvdata()
-watchdog: at91sam9_wdt: better watchdog support
-watchdog: at91sam9_wdt: update device tree doc
-ARM: at91/dt: add sam9 watchdog default options to SoCs
-ARM: at91/dt: add watchdog properties to kizbox board
-watchdog: pcwd_usb: Use allocated buffer for usb_control_msg
-watchdog: ts72xx_wdt: Propagate return value from timeout_to_regval
-watchdog: Get rid of MODULE_ALIAS_MISCDEV statements
-watchdog: dw: Enable OF support for DW watchdog timer
-watchdog: watchdog_core: Fix a trivial typo
+Hi all,
 
-2) patches that I am reviewing or are on my radar:
-w83627hf-patches
-Orion-patches
-f81865_gpio.c
-[PATCH V2 0/4] Add watchdog DT nodes and parse it to read PMU registers addresses (Exynos+s3c2410_wdt)
-[PATCH v4 4/4] ARM: bcm4760: Add restart hook
-[PATCH] Documentation/watchdog: Update node name in samsung-wdt example
+After merging the final tree, today's linux-next build (sparc32 defconfig)
+failed like this:
 
-So if something is still missing: please let it know.
+In file included from drivers/spi/spi.c:33:0:
+include/linux/of_gpio.h: In function 'of_get_named_gpio_flags':
+include/linux/of_gpio.h:93:3: error: implicit declaration of function 'desc=
+_to_gpio' [-Werror=3Dimplicit-function-declaration]
 
-Kind regards,
-Wim.
+Caused by commit af8b6375a829 ("gpiolib: port of_ functions to use
+gpiod") from the gpio tree.
 
+I have applied the following patch for today (it should go into the gpio
+tree if it is considered correct):
 
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 29 Oct 2013 20:05:12 +1100
+Subject: [PATCH] gpiolib: include gpio/consumer.h in of_gpio.h for
+ desc_to_gpio()
+
+Fixes this build error on sparc:
+
+In file included from drivers/spi/spi.c:33:0:
+include/linux/of_gpio.h: In function 'of_get_named_gpio_flags':
+include/linux/of_gpio.h:93:3: error: implicit declaration of function 'desc=
+_to_gpio' [-Werror=3Dimplicit-function-declaration]
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ include/linux/of_gpio.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/of_gpio.h b/include/linux/of_gpio.h
+index d71f2cc141ae..f14123a5a9df 100644
+--- a/include/linux/of_gpio.h
++++ b/include/linux/of_gpio.h
+@@ -19,9 +19,9 @@
+ #include <linux/errno.h>
+ #include <linux/gpio.h>
+ #include <linux/of.h>
++#include <linux/gpio/consumer.h>
+=20
+ struct device_node;
+-struct gpio_desc;
+=20
+ /*
+  * This is Linux-specific flags. By default controllers' and Linux' mapping
+--=20
+1.8.4.rc3
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__29_Oct_2013_20_10_13_+1100_A+n2vQ00.otZShiP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSb3t6AAoJEMDTa8Ir7ZwVk+EP/RjA6TBts6xcve05dI8XNBk5
+/3IrQk2KeClJTczJJJbJ5kNQ1/VYuW8Pk1rvqWFRAJ3CYH7wKGXAIwvQ+8y1nzag
+W6uZJE1uJNGbjRl/cugkVfPdmWG0R5UGMd36LXS3jjuyy+LkUo6GRXcnXDe6nab1
+1h0nZBT7NN3qtQ3YtFFdT+zkwozYTCIt3LR6BSbZj3S75tdpMECUPd/oQ84ALM+D
+vxUYfTIW4VOYq559p1U7UQlLsKoUGEyT0AjhdOQ5lJ7rk9yy0JMmuJ+krqWmBpiB
+0rAaEtCzawinv5vl1PtnoNAihLELberV/s4KmN97zDjBftu6EmCgy5kqP7NHsOsP
+5UhGYL0FFCTvIyxHoxmOJqBqeJVtrob0VoyquKoOEryIGIuNwL8hnMpCb7AlVGZc
+mEjFAbGrYijblvwoMhWlp6ded6nzNwbmFe4edb7YWpD8iVblznakeGSR8FU9JiJl
+IsLRfLnumT/onq1hFp5mSyasgO9jTh3XoNAL7iotlwyRoUh/ZNAfgYMM1JvusdOH
+bu5j7oDsWYmmht/luOECpAUGFcesOSYv2usBvp15w1yt4yTCcNR109PVIQzUs3F/
+ADRx3VhvPKna+zJZXsEPGE+qQAxORW+l4ZBPh9+sgEM62KY1onwuLwVuc78wE6hq
+YqnbQGjFw5wLVfOYw5lm
+=2vcx
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__29_Oct_2013_20_10_13_+1100_A+n2vQ00.otZShiP--
