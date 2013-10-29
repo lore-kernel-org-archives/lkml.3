@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab3J2SJP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:09:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59484 "EHLO
+	id S1755969Ab3J2SSj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:18:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59496 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166Ab3J2SJL (ORCPT
+	with ESMTP id S1754211Ab3J2SJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:09:11 -0400
+	Tue, 29 Oct 2013 14:09:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Richard Weinberger <richard@nod.at>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 37/81] net: sctp: fix ipv6 ipsec encryption bug in sctp_v6_xmit
-Date: Tue, 29 Oct 2013 11:03:58 -0700
-Message-Id: <1383069882-11437-38-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 80/81] writeback: fix negative bdi max pause
+Date: Tue, 29 Oct 2013 11:04:41 -0700
+Message-Id: <1383069882-11437-81-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,194 +33,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Fengguang Wu <fengguang.wu@intel.com>
 
-[ Upstream commit 95ee62083cb6453e056562d91f597552021e6ae7 ]
+commit e3b6c655b91e01a1dade056cfa358581b47a5351 upstream.
 
-Alan Chester reported an issue with IPv6 on SCTP that IPsec traffic is not
-being encrypted, whereas on IPv4 it is. Setting up an AH + ESP transport
-does not seem to have the desired effect:
+Toralf runs trinity on UML/i386.  After some time it hangs and the last
+message line is
 
-SCTP + IPv4:
+	BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:1521]
 
-  22:14:20.809645 IP (tos 0x2,ECT(0), ttl 64, id 0, offset 0, flags [DF], proto AH (51), length 116)
-    192.168.0.2 > 192.168.0.5: AH(spi=0x00000042,sumlen=16,seq=0x1): ESP(spi=0x00000044,seq=0x1), length 72
-  22:14:20.813270 IP (tos 0x2,ECT(0), ttl 64, id 0, offset 0, flags [DF], proto AH (51), length 340)
-    192.168.0.5 > 192.168.0.2: AH(spi=0x00000043,sumlen=16,seq=0x1):
+It's found that pages_dirtied becomes very large.  More than 1000000000
+pages in this case:
 
-SCTP + IPv6:
+	period = HZ * pages_dirtied / task_ratelimit;
+	BUG_ON(pages_dirtied > 2000000000);
+	BUG_ON(pages_dirtied > 1000000000);      <---------
 
-  22:31:19.215029 IP6 (class 0x02, hlim 64, next-header SCTP (132) payload length: 364)
-    fe80::222:15ff:fe87:7fc.3333 > fe80::92e6:baff:fe0d:5a54.36767: sctp
-    1) [INIT ACK] [init tag: 747759530] [rwnd: 62464] [OS: 10] [MIS: 10]
+UML debug printf shows that we got negative pause here:
 
-Moreover, Alan says:
+	ick: pause : -984
+	ick: pages_dirtied : 0
+	ick: task_ratelimit: 0
 
-  This problem was seen with both Racoon and Racoon2. Other people have seen
-  this with OpenSwan. When IPsec is configured to encrypt all upper layer
-  protocols the SCTP connection does not initialize. After using Wireshark to
-  follow packets, this is because the SCTP packet leaves Box A unencrypted and
-  Box B believes all upper layer protocols are to be encrypted so it drops
-  this packet, causing the SCTP connection to fail to initialize. When IPsec
-  is configured to encrypt just SCTP, the SCTP packets are observed unencrypted.
+	 pause:
+	+       if (pause < 0)  {
+	+               extern int printf(char *, ...);
+	+               printf("ick : pause : %li\n", pause);
+	+               printf("ick: pages_dirtied : %lu\n", pages_dirtied);
+	+               printf("ick: task_ratelimit: %lu\n", task_ratelimit);
+	+               BUG_ON(1);
+	+       }
+	        trace_balance_dirty_pages(bdi,
 
-In fact, using `socat sctp6-listen:3333 -` on one end and transferring "plaintext"
-string on the other end, results in cleartext on the wire where SCTP eventually
-does not report any errors, thus in the latter case that Alan reports, the
-non-paranoid user might think he's communicating over an encrypted transport on
-SCTP although he's not (tcpdump ... -X):
+Since pause is bounded by [min_pause, max_pause] where min_pause is also
+bounded by max_pause.  It's suspected and demonstrated that the
+max_pause calculation goes wrong:
 
-  ...
-  0x0030: 5d70 8e1a 0003 001a 177d eb6c 0000 0000  ]p.......}.l....
-  0x0040: 0000 0000 706c 6169 6e74 6578 740a 0000  ....plaintext...
+	ick: pause : -717
+	ick: min_pause : -177
+	ick: max_pause : -717
+	ick: pages_dirtied : 14
+	ick: task_ratelimit: 0
 
-Only in /proc/net/xfrm_stat we can see XfrmInTmplMismatch increasing on the
-receiver side. Initial follow-up analysis from Alan's bug report was done by
-Alexey Dobriyan. Also thanks to Vlad Yasevich for feedback on this.
+The problem lies in the two "long = unsigned long" assignments in
+bdi_max_pause() which might go negative if the highest bit is 1, and the
+min_t(long, ...) check failed to protect it falling under 0.  Fix all of
+them by using "unsigned long" throughout the function.
 
-SCTP has its own implementation of sctp_v6_xmit() not calling inet6_csk_xmit().
-This has the implication that it probably never really got updated along with
-changes in inet6_csk_xmit() and therefore does not seem to invoke xfrm handlers.
-
-SCTP's IPv4 xmit however, properly calls ip_queue_xmit() to do the work. Since
-a call to inet6_csk_xmit() would solve this problem, but result in unecessary
-route lookups, let us just use the cached flowi6 instead that we got through
-sctp_v6_get_dst(). Since all SCTP packets are being sent through sctp_packet_transmit(),
-we do the route lookup / flow caching in sctp_transport_route(), hold it in
-tp->dst and skb_dst_set() right after that. If we would alter fl6->daddr in
-sctp_v6_xmit() to np->opt->srcrt, we possibly could run into the same effect
-of not having xfrm layer pick it up, hence, use fl6_update_dst() in sctp_v6_get_dst()
-instead to get the correct source routed dst entry, which we assign to the skb.
-
-Also source address routing example from 625034113 ("sctp: fix sctp to work with
-ipv6 source address routing") still works with this patch! Nevertheless, in RFC5095
-it is actually 'recommended' to not use that anyway due to traffic amplification [1].
-So it seems we're not supposed to do that anyway in sctp_v6_xmit(). Moreover, if
-we overwrite the flow destination here, the lower IPv6 layer will be unable to
-put the correct destination address into IP header, as routing header is added in
-ipv6_push_nfrag_opts() but then probably with wrong final destination. Things aside,
-result of this patch is that we do not have any XfrmInTmplMismatch increase plus on
-the wire with this patch it now looks like:
-
-SCTP + IPv6:
-
-  08:17:47.074080 IP6 2620:52:0:102f:7a2b:cbff:fe27:1b0a > 2620:52:0:102f:213:72ff:fe32:7eba:
-    AH(spi=0x00005fb4,seq=0x1): ESP(spi=0x00005fb5,seq=0x1), length 72
-  08:17:47.074264 IP6 2620:52:0:102f:213:72ff:fe32:7eba > 2620:52:0:102f:7a2b:cbff:fe27:1b0a:
-    AH(spi=0x00003d54,seq=0x1): ESP(spi=0x00003d55,seq=0x1), length 296
-
-This fixes Kernel Bugzilla 24412. This security issue seems to be present since
-2.6.18 kernels. Lets just hope some big passive adversary in the wild didn't have
-its fun with that. lksctp-tools IPv6 regression test suite passes as well with
-this patch.
-
- [1] http://www.secdev.org/conf/IPv6_RH_security-csw07.pdf
-
-Reported-by: Alan Chester <alan.chester@tekelec.com>
-Reported-by: Alexey Dobriyan <adobriyan@gmail.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+Tested-by: Toralf Förster <toralf.foerster@gmx.de>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Cc: Richard Weinberger <richard@nod.at>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/sctp/ipv6.c | 42 +++++++++++++-----------------------------
- 1 file changed, 13 insertions(+), 29 deletions(-)
+ mm/page-writeback.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/net/sctp/ipv6.c b/net/sctp/ipv6.c
-index 391a245..d70cabb 100644
---- a/net/sctp/ipv6.c
-+++ b/net/sctp/ipv6.c
-@@ -210,45 +210,24 @@ out:
- 		in6_dev_put(idev);
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 0713bfb..906d540 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1100,11 +1100,11 @@ static unsigned long dirty_poll_interval(unsigned long dirty,
+ 	return 1;
  }
  
--/* Based on tcp_v6_xmit() in tcp_ipv6.c. */
- static int sctp_v6_xmit(struct sk_buff *skb, struct sctp_transport *transport)
+-static long bdi_max_pause(struct backing_dev_info *bdi,
+-			  unsigned long bdi_dirty)
++static unsigned long bdi_max_pause(struct backing_dev_info *bdi,
++				   unsigned long bdi_dirty)
  {
- 	struct sock *sk = skb->sk;
- 	struct ipv6_pinfo *np = inet6_sk(sk);
--	struct flowi6 fl6;
--
--	memset(&fl6, 0, sizeof(fl6));
--
--	fl6.flowi6_proto = sk->sk_protocol;
--
--	/* Fill in the dest address from the route entry passed with the skb
--	 * and the source address from the transport.
--	 */
--	fl6.daddr = transport->ipaddr.v6.sin6_addr;
--	fl6.saddr = transport->saddr.v6.sin6_addr;
--
--	fl6.flowlabel = np->flow_label;
--	IP6_ECN_flow_xmit(sk, fl6.flowlabel);
--	if (ipv6_addr_type(&fl6.saddr) & IPV6_ADDR_LINKLOCAL)
--		fl6.flowi6_oif = transport->saddr.v6.sin6_scope_id;
--	else
--		fl6.flowi6_oif = sk->sk_bound_dev_if;
--
--	if (np->opt && np->opt->srcrt) {
--		struct rt0_hdr *rt0 = (struct rt0_hdr *) np->opt->srcrt;
--		fl6.daddr = *rt0->addr;
--	}
-+	struct flowi6 *fl6 = &transport->fl.u.ip6;
+-	long bw = bdi->avg_write_bandwidth;
+-	long t;
++	unsigned long bw = bdi->avg_write_bandwidth;
++	unsigned long t;
  
- 	SCTP_DEBUG_PRINTK("%s: skb:%p, len:%d, src:%pI6 dst:%pI6\n",
- 			  __func__, skb, skb->len,
--			  &fl6.saddr, &fl6.daddr);
-+			  &fl6->saddr, &fl6->daddr);
+ 	/*
+ 	 * Limit pause time for small memory systems. If sleeping for too long
+@@ -1116,7 +1116,7 @@ static long bdi_max_pause(struct backing_dev_info *bdi,
+ 	t = bdi_dirty / (1 + bw / roundup_pow_of_two(1 + HZ / 8));
+ 	t++;
  
--	SCTP_INC_STATS(sock_net(sk), SCTP_MIB_OUTSCTPPACKS);
-+	IP6_ECN_flow_xmit(sk, fl6->flowlabel);
- 
- 	if (!(transport->param_flags & SPP_PMTUD_ENABLE))
- 		skb->local_df = 1;
- 
--	return ip6_xmit(sk, skb, &fl6, np->opt, np->tclass);
-+	SCTP_INC_STATS(sock_net(sk), SCTP_MIB_OUTSCTPPACKS);
-+
-+	return ip6_xmit(sk, skb, fl6, np->opt, np->tclass);
+-	return min_t(long, t, MAX_PAUSE);
++	return min_t(unsigned long, t, MAX_PAUSE);
  }
  
- /* Returns the dst cache entry for the given source and destination ip
-@@ -261,10 +240,12 @@ static void sctp_v6_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
- 	struct dst_entry *dst = NULL;
- 	struct flowi6 *fl6 = &fl->u.ip6;
- 	struct sctp_bind_addr *bp;
-+	struct ipv6_pinfo *np = inet6_sk(sk);
- 	struct sctp_sockaddr_entry *laddr;
- 	union sctp_addr *baddr = NULL;
- 	union sctp_addr *daddr = &t->ipaddr;
- 	union sctp_addr dst_saddr;
-+	struct in6_addr *final_p, final;
- 	__u8 matchlen = 0;
- 	__u8 bmatchlen;
- 	sctp_scope_t scope;
-@@ -287,7 +268,8 @@ static void sctp_v6_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
- 		SCTP_DEBUG_PRINTK("SRC=%pI6 - ", &fl6->saddr);
- 	}
- 
--	dst = ip6_dst_lookup_flow(sk, fl6, NULL, false);
-+	final_p = fl6_update_dst(fl6, np->opt, &final);
-+	dst = ip6_dst_lookup_flow(sk, fl6, final_p, false);
- 	if (!asoc || saddr)
- 		goto out;
- 
-@@ -339,10 +321,12 @@ static void sctp_v6_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
- 		}
- 	}
- 	rcu_read_unlock();
-+
- 	if (baddr) {
- 		fl6->saddr = baddr->v6.sin6_addr;
- 		fl6->fl6_sport = baddr->v6.sin6_port;
--		dst = ip6_dst_lookup_flow(sk, fl6, NULL, false);
-+		final_p = fl6_update_dst(fl6, np->opt, &final);
-+		dst = ip6_dst_lookup_flow(sk, fl6, final_p, false);
- 	}
- 
- out:
+ static long bdi_min_pause(struct backing_dev_info *bdi,
 -- 
 1.8.1.2
 
