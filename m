@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab3J2Ne2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 09:34:28 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:38662 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755918Ab3J2Ne0 (ORCPT
+	id S1756152Ab3J2Nfd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 09:35:33 -0400
+Received: from purkki.adurom.net ([80.68.90.206]:40748 "EHLO purkki.adurom.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754858Ab3J2Nfc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 09:34:26 -0400
+	Tue, 29 Oct 2013 09:35:32 -0400
+From: Kalle Valo <kvalo@adurom.com>
+To: Luca Coelho <luca@coelho.fi>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        Pali =?utf-8?Q?Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
+        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
+        joni.lapilainen@gmail.com, David Gnedt <david.gnedt@davizone.at>
+Subject: Re: [PATCH 03/16] wl1251: add sysfs interface for bluetooth coexistence mode configuration
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
+	<1382819655-30430-4-git-send-email-pali.rohar@gmail.com>
+	<1383003587.3779.49.camel@bwh-desktop.uk.level5networks.com>
+	<1383030565.21526.92.camel@porter.coelho.fi>
+Date: Tue, 29 Oct 2013 15:35:20 +0200
+In-Reply-To: <1383030565.21526.92.camel@porter.coelho.fi> (Luca Coelho's
+	message of "Tue, 29 Oct 2013 09:09:25 +0200")
+Message-ID: <878uxctd2f.fsf@purkki.adurom.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20131024124631.GA14517@mtj.dyndns.org>
-References: <20131024124631.GA14517@mtj.dyndns.org>
-Date: Tue, 29 Oct 2013 14:34:26 +0100
-Message-ID: <CACRpkdY2d88RxxgZ5=rPuQHrb3a7Q+trvBWsEMSaByhtWKf31Q@mail.gmail.com>
-Subject: Re: READ/WRITE definitions in drivers/spi/spi-omap-100k.c
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tejun Heo <tj@kernel.org>, Mark Brown <broonie@kernel.org>,
-        darkstar6262@gmail.com
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ext Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 24, 2013 at 2:46 PM, Tejun Heo <tj@kernel.org> wrote:
+Luca Coelho <luca@coelho.fi> writes:
 
-> Hey, guys.
+> On Mon, 2013-10-28 at 23:39 +0000, Ben Hutchings wrote:
+>> On Sat, 2013-10-26 at 22:34 +0200, Pali Rohár wrote:
+>> > From: David Gnedt <david.gnedt@davizone.at>
+>> > 
+>> > Port the bt_coex_mode sysfs interface from wl1251 driver version included
+>> > in the Maemo Fremantle kernel to allow bt-coexistence mode configuration.
+>> > This enables userspace applications to set one of the modes
+>> > WL1251_BT_COEX_OFF, WL1251_BT_COEX_ENABLE and WL1251_BT_COEX_MONOAUDIO.
+>> > The default mode is WL1251_BT_COEX_OFF.
+>> > It should be noted that this driver always enabled bt-coexistence before
+>> > and enabled bt-coexistence directly affects the receiving performance,
+>> > rendering it unusable in some low-signal situations. Especially monitor
+>> > mode is affected very badly with bt-coexistence enabled.
+>> [...]
+>> 
+>> This should be implemented consistently with other drivers:
+>> 
+>> drivers/net/wireless/ath/ath9k/htc_drv_init.c:module_param_named(btcoex_enable, ath9k_htc_btcoex_enable, int, 0444);
+>> drivers/net/wireless/ath/ath9k/init.c:module_param_named(btcoex_enable, ath9k_btcoex_enable, int, 0444);
+>> drivers/net/wireless/b43/main.c:module_param_named(btcoex, modparam_btcoex, int, 0444);
+>> drivers/net/wireless/ipw2x00/ipw2200.c:module_param(bt_coexist, int, 0444);
+>> drivers/net/wireless/iwlegacy/common.c:module_param(bt_coex_active, bool, S_IRUGO);
+>> drivers/net/wireless/iwlwifi/iwl-drv.c:module_param_named(bt_coex_active, iwlwifi_mod_params.bt_coex_active,
+>> drivers/net/wireless/ti/wlcore/sysfs.c:static DEVICE_ATTR(bt_coex_state, S_IRUGO | S_IWUSR,
+>> 
+>> Oh, hmm, I see a problem here.
 >
-> I was modifying includes in a core header file and got duplicate macro
-> definition warnings on READ / WRITE in drivers/spi/spi-omap-100k.c.
-> Apparently that driver defines READ / WRITE as macros and assigns the
-> opposite values to them from the usual READ / WRITE constants defined
-> in include/linux/fs.h.
->
-> I just skimmed through it and there doesn't seem to be any user of the
-> macros.  Can we *please* remove these?  Please note that READ / WRITE
-> defined in include/linux/fs.h is something which is widely used
-> throughout the kernel and there are multiple interfaces which take
-> those constants.  Re-defining them in the other way around in a driver
-> file can lead to subtle issues and just is a bad idea.  In general,
-> refraining from using generic symbols without any qualitification in
-> low level drivers would be nice.
+> With so many drivers doing the same thing, isn't it about time to add
+> this to nl80211?
 
-That seems like a good idea, but we better poke the people who wrote
-the code and the SPI maintainer :-)
+Yes, this really needs to be in nl80211. I even suggested this years ago
+but was turned down at the time. Can't remember the reason anymore.
 
-Yours,
-Linus Walleij
+-- 
+Kalle Valo
