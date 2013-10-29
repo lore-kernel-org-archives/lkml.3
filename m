@@ -1,349 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab3J2UYh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 16:24:37 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:50626 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645Ab3J2US0 (ORCPT
+	id S1753048Ab3J2U1B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 16:27:01 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:44218 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246Ab3J2U07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 16:18:26 -0400
-From: Kent Overstreet <kmo@daterainc.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, hch@infradead.org, tj@kernel.org,
-        nab@linux-iscsi.org, Kent Overstreet <kmo@daterainc.com>,
-        Neil Brown <neilb@suse.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: [PATCH 02/23] block: Consolidate duplicated bio_trim() implementations
-Date: Tue, 29 Oct 2013 13:17:55 -0700
-Message-Id: <1383077896-4132-3-git-send-email-kmo@daterainc.com>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1383077896-4132-1-git-send-email-kmo@daterainc.com>
-References: <1383077896-4132-1-git-send-email-kmo@daterainc.com>
+	Tue, 29 Oct 2013 16:26:59 -0400
+Date: Tue, 29 Oct 2013 16:26:44 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Message-ID: <20131029202644.GB32389@localhost.localdomain>
+References: <20131028182913.GD31048@hmsreliant.think-freely.org>
+ <20131029082542.GA24625@gmail.com>
+ <20131029112022.GA24477@neilslaptop.think-freely.org>
+ <20131029113031.GA16897@gmail.com>
+ <20131029114907.GE24477@neilslaptop.think-freely.org>
+ <20131029125233.GA17449@gmail.com>
+ <20131029130712.GA25078@neilslaptop.think-freely.org>
+ <20131029131149.GB20408@gmail.com>
+ <20131029141706.GC25078@neilslaptop.think-freely.org>
+ <20131029142716.GA28113@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131029142716.GA28113@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Someone cut and pasted md's md_trim_bio() into xen-blkfront.c. Come on,
-we should know better than this.
+On Tue, Oct 29, 2013 at 03:27:16PM +0100, Ingo Molnar wrote:
+> 
+> * Neil Horman <nhorman@tuxdriver.com> wrote:
+> 
+> > So, I apologize, you were right.  I was running the test.sh script 
+> > but perf was measuring itself. [...]
+> 
+> Ok, cool - one mystery less!
+> 
+> > Which overall looks alot more like I expect, save for the parallel 
+> > ALU cases. It seems here that the parallel ALU changes actually 
+> > hurt performance, which really seems counter-intuitive.  I don't 
+> > yet have any explination for that.  I do note that we seem to have 
+> > more stalls in the both case so perhaps the parallel chains call 
+> > for a more agressive prefetch.  Do you have any thoughts?
+> 
+> Note that with -ddd you 'overload' the PMU with more counters than 
+> can be run at once, which introduces extra noise. Since you are 
+> running the tests for 0.150 secs or so, the results are not very 
+> representative:
+> 
+>                734 dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +-  8.40% ) [13.94%]
+>         13,314,660 iTLB-loads                #  280.759 M/sec                    ( +-  0.05% ) [12.97%]
+> 
+> with such low runtimes those results are very hard to trust.
+> 
+> So -ddd is typically used to pick up the most interesting PMU events 
+> you want to see measured, and then use them like this:
+> 
+>    -e dTLB-load-misses -e iTLB-loads
+> 
+> etc. For such short runtimes make sure the last column displays 
+> close to 100%, so that the PMU results become trustable.
+> 
+> A nehalem+ PMU will allow 2-4 events to be measured in parallel, 
+> plus generics like 'cycles', 'instructions' can be added 'for free' 
+> because they get counted in a separate (fixed purpose) PMU register.
+> 
+> The last colum tells you what percentage of the runtime that 
+> particular event was actually active. 100% (or empty last column) 
+> means it was active all the time.
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Neil Brown <neilb@suse.de>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
----
- drivers/block/xen-blkfront.c | 53 +-------------------------------------------
- drivers/md/md.c              | 40 ---------------------------------
- drivers/md/md.h              |  1 -
- drivers/md/raid1.c           | 10 ++++-----
- drivers/md/raid10.c          | 18 +++++++--------
- fs/bio.c                     | 46 ++++++++++++++++++++++++++++++++++++++
- include/linux/bio.h          |  1 +
- 7 files changed, 61 insertions(+), 108 deletions(-)
+Hmm, 
 
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index a4660bb..8d53ed2 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -1336,57 +1336,6 @@ static int blkfront_probe(struct xenbus_device *dev,
- 	return 0;
- }
- 
--/*
-- * This is a clone of md_trim_bio, used to split a bio into smaller ones
-- */
--static void trim_bio(struct bio *bio, int offset, int size)
--{
--	/* 'bio' is a cloned bio which we need to trim to match
--	 * the given offset and size.
--	 * This requires adjusting bi_sector, bi_size, and bi_io_vec
--	 */
--	int i;
--	struct bio_vec *bvec;
--	int sofar = 0;
--
--	size <<= 9;
--	if (offset == 0 && size == bio->bi_size)
--		return;
--
--	bio->bi_sector += offset;
--	bio->bi_size = size;
--	offset <<= 9;
--	clear_bit(BIO_SEG_VALID, &bio->bi_flags);
--
--	while (bio->bi_idx < bio->bi_vcnt &&
--	       bio->bi_io_vec[bio->bi_idx].bv_len <= offset) {
--		/* remove this whole bio_vec */
--		offset -= bio->bi_io_vec[bio->bi_idx].bv_len;
--		bio->bi_idx++;
--	}
--	if (bio->bi_idx < bio->bi_vcnt) {
--		bio->bi_io_vec[bio->bi_idx].bv_offset += offset;
--		bio->bi_io_vec[bio->bi_idx].bv_len -= offset;
--	}
--	/* avoid any complications with bi_idx being non-zero*/
--	if (bio->bi_idx) {
--		memmove(bio->bi_io_vec, bio->bi_io_vec+bio->bi_idx,
--			(bio->bi_vcnt - bio->bi_idx) * sizeof(struct bio_vec));
--		bio->bi_vcnt -= bio->bi_idx;
--		bio->bi_idx = 0;
--	}
--	/* Make sure vcnt and last bv are not too big */
--	bio_for_each_segment(bvec, bio, i) {
--		if (sofar + bvec->bv_len > size)
--			bvec->bv_len = size - sofar;
--		if (bvec->bv_len == 0) {
--			bio->bi_vcnt = i;
--			break;
--		}
--		sofar += bvec->bv_len;
--	}
--}
--
- static void split_bio_end(struct bio *bio, int error)
- {
- 	struct split_bio *split_bio = bio->bi_private;
-@@ -1522,7 +1471,7 @@ static int blkif_recover(struct blkfront_info *info)
- 					   (unsigned int)(bio->bi_size >> 9) - offset);
- 				cloned_bio = bio_clone(bio, GFP_NOIO);
- 				BUG_ON(cloned_bio == NULL);
--				trim_bio(cloned_bio, offset, size);
-+				bio_trim(cloned_bio, offset, size);
- 				cloned_bio->bi_private = split_bio;
- 				cloned_bio->bi_end_io = split_bio_end;
- 				submit_bio(cloned_bio->bi_rw, cloned_bio);
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index adf4d7e..251dca6 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -183,46 +183,6 @@ struct bio *bio_clone_mddev(struct bio *bio, gfp_t gfp_mask,
- }
- EXPORT_SYMBOL_GPL(bio_clone_mddev);
- 
--void md_trim_bio(struct bio *bio, int offset, int size)
--{
--	/* 'bio' is a cloned bio which we need to trim to match
--	 * the given offset and size.
--	 * This requires adjusting bi_sector, bi_size, and bi_io_vec
--	 */
--	int i;
--	struct bio_vec *bvec;
--	int sofar = 0;
--
--	size <<= 9;
--	if (offset == 0 && size == bio->bi_size)
--		return;
--
--	clear_bit(BIO_SEG_VALID, &bio->bi_flags);
--
--	bio_advance(bio, offset << 9);
--
--	bio->bi_size = size;
--
--	/* avoid any complications with bi_idx being non-zero*/
--	if (bio->bi_idx) {
--		memmove(bio->bi_io_vec, bio->bi_io_vec+bio->bi_idx,
--			(bio->bi_vcnt - bio->bi_idx) * sizeof(struct bio_vec));
--		bio->bi_vcnt -= bio->bi_idx;
--		bio->bi_idx = 0;
--	}
--	/* Make sure vcnt and last bv are not too big */
--	bio_for_each_segment(bvec, bio, i) {
--		if (sofar + bvec->bv_len > size)
--			bvec->bv_len = size - sofar;
--		if (bvec->bv_len == 0) {
--			bio->bi_vcnt = i;
--			break;
--		}
--		sofar += bvec->bv_len;
--	}
--}
--EXPORT_SYMBOL_GPL(md_trim_bio);
--
- /*
-  * We have a system wide 'event count' that is incremented
-  * on any 'interesting' event, and readers of /proc/mdstat
-diff --git a/drivers/md/md.h b/drivers/md/md.h
-index 608050c..c96456c 100644
---- a/drivers/md/md.h
-+++ b/drivers/md/md.h
-@@ -617,7 +617,6 @@ extern struct bio *bio_clone_mddev(struct bio *bio, gfp_t gfp_mask,
- 				   struct mddev *mddev);
- extern struct bio *bio_alloc_mddev(gfp_t gfp_mask, int nr_iovecs,
- 				   struct mddev *mddev);
--extern void md_trim_bio(struct bio *bio, int offset, int size);
- 
- extern void md_unplug(struct blk_plug_cb *cb, bool from_schedule);
- static inline int mddev_check_plugged(struct mddev *mddev)
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index d60412c..fc817ff 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -1097,8 +1097,8 @@ read_again:
- 		r1_bio->read_disk = rdisk;
- 
- 		read_bio = bio_clone_mddev(bio, GFP_NOIO, mddev);
--		md_trim_bio(read_bio, r1_bio->sector - bio->bi_sector,
--			    max_sectors);
-+		bio_trim(read_bio, r1_bio->sector - bio->bi_sector,
-+			 max_sectors);
- 
- 		r1_bio->bios[rdisk] = read_bio;
- 
-@@ -1266,7 +1266,7 @@ read_again:
- 			continue;
- 
- 		mbio = bio_clone_mddev(bio, GFP_NOIO, mddev);
--		md_trim_bio(mbio, r1_bio->sector - bio->bi_sector, max_sectors);
-+		bio_trim(mbio, r1_bio->sector - bio->bi_sector, max_sectors);
- 
- 		if (first_clone) {
- 			/* do behind I/O ?
-@@ -2125,7 +2125,7 @@ static int narrow_write_error(struct r1bio *r1_bio, int i)
- 		wbio->bi_sector = r1_bio->sector;
- 		wbio->bi_size = r1_bio->sectors << 9;
- 
--		md_trim_bio(wbio, sector - r1_bio->sector, sectors);
-+		bio_trim(wbio, sector - r1_bio->sector, sectors);
- 		wbio->bi_sector += rdev->data_offset;
- 		wbio->bi_bdev = rdev->bdev;
- 		if (submit_bio_wait(WRITE, wbio) == 0)
-@@ -2240,7 +2240,7 @@ read_more:
- 		}
- 		r1_bio->read_disk = disk;
- 		bio = bio_clone_mddev(r1_bio->master_bio, GFP_NOIO, mddev);
--		md_trim_bio(bio, r1_bio->sector - bio->bi_sector, max_sectors);
-+		bio_trim(bio, r1_bio->sector - bio->bi_sector, max_sectors);
- 		r1_bio->bios[r1_bio->read_disk] = bio;
- 		rdev = conf->mirrors[disk].rdev;
- 		printk_ratelimited(KERN_ERR
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index df7b0a0..a582235 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1302,8 +1302,8 @@ read_again:
- 		slot = r10_bio->read_slot;
- 
- 		read_bio = bio_clone_mddev(bio, GFP_NOIO, mddev);
--		md_trim_bio(read_bio, r10_bio->sector - bio->bi_sector,
--			    max_sectors);
-+		bio_trim(read_bio, r10_bio->sector - bio->bi_sector,
-+			 max_sectors);
- 
- 		r10_bio->devs[slot].bio = read_bio;
- 		r10_bio->devs[slot].rdev = rdev;
-@@ -1510,8 +1510,8 @@ retry_write:
- 		if (r10_bio->devs[i].bio) {
- 			struct md_rdev *rdev = conf->mirrors[d].rdev;
- 			mbio = bio_clone_mddev(bio, GFP_NOIO, mddev);
--			md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
--				    max_sectors);
-+			bio_trim(mbio, r10_bio->sector - bio->bi_sector,
-+				 max_sectors);
- 			r10_bio->devs[i].bio = mbio;
- 
- 			mbio->bi_sector	= (r10_bio->devs[i].addr+
-@@ -1553,8 +1553,8 @@ retry_write:
- 				rdev = conf->mirrors[d].rdev;
- 			}
- 			mbio = bio_clone_mddev(bio, GFP_NOIO, mddev);
--			md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
--				    max_sectors);
-+			bio_trim(mbio, r10_bio->sector - bio->bi_sector,
-+				 max_sectors);
- 			r10_bio->devs[i].repl_bio = mbio;
- 
- 			mbio->bi_sector	= (r10_bio->devs[i].addr +
-@@ -2613,7 +2613,7 @@ static int narrow_write_error(struct r10bio *r10_bio, int i)
- 			sectors = sect_to_write;
- 		/* Write at 'sector' for 'sectors' */
- 		wbio = bio_clone_mddev(bio, GFP_NOIO, mddev);
--		md_trim_bio(wbio, sector - bio->bi_sector, sectors);
-+		bio_trim(wbio, sector - bio->bi_sector, sectors);
- 		wbio->bi_sector = (r10_bio->devs[i].addr+
- 				   choose_data_offset(r10_bio, rdev) +
- 				   (sector - r10_bio->sector));
-@@ -2686,9 +2686,7 @@ read_more:
- 		(unsigned long long)r10_bio->sector);
- 	bio = bio_clone_mddev(r10_bio->master_bio,
- 			      GFP_NOIO, mddev);
--	md_trim_bio(bio,
--		    r10_bio->sector - bio->bi_sector,
--		    max_sectors);
-+	bio_trim(bio, r10_bio->sector - bio->bi_sector, max_sectors);
- 	r10_bio->devs[slot].bio = bio;
- 	r10_bio->devs[slot].rdev = rdev;
- 	bio->bi_sector = r10_bio->devs[slot].addr
-diff --git a/fs/bio.c b/fs/bio.c
-index ea5035d..2bdb4e2 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -1805,6 +1805,52 @@ struct bio_pair *bio_split(struct bio *bi, int first_sectors)
- EXPORT_SYMBOL(bio_split);
- 
- /**
-+ * bio_trim - trim a bio
-+ * @bio:	bio to trim
-+ * @offset:	number of sectors to trim from the front of @bio
-+ * @size:	size we want to trim @bio to, in sectors
-+ */
-+void bio_trim(struct bio *bio, int offset, int size)
-+{
-+	/* 'bio' is a cloned bio which we need to trim to match
-+	 * the given offset and size.
-+	 * This requires adjusting bi_sector, bi_size, and bi_io_vec
-+	 */
-+	int i;
-+	struct bio_vec *bvec;
-+	int sofar = 0;
-+
-+	size <<= 9;
-+	if (offset == 0 && size == bio->bi_size)
-+		return;
-+
-+	clear_bit(BIO_SEG_VALID, &bio->bi_flags);
-+
-+	bio_advance(bio, offset << 9);
-+
-+	bio->bi_size = size;
-+
-+	/* avoid any complications with bi_idx being non-zero*/
-+	if (bio->bi_idx) {
-+		memmove(bio->bi_io_vec, bio->bi_io_vec+bio->bi_idx,
-+			(bio->bi_vcnt - bio->bi_idx) * sizeof(struct bio_vec));
-+		bio->bi_vcnt -= bio->bi_idx;
-+		bio->bi_idx = 0;
-+	}
-+	/* Make sure vcnt and last bv are not too big */
-+	bio_for_each_segment(bvec, bio, i) {
-+		if (sofar + bvec->bv_len > size)
-+			bvec->bv_len = size - sofar;
-+		if (bvec->bv_len == 0) {
-+			bio->bi_vcnt = i;
-+			break;
-+		}
-+		sofar += bvec->bv_len;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(bio_trim);
-+
-+/**
-  *      bio_sector_offset - Find hardware sector offset in bio
-  *      @bio:           bio to inspect
-  *      @index:         bio_vec index
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index ec48bac..162036a 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -218,6 +218,7 @@ struct bio_pair {
- };
- extern struct bio_pair *bio_split(struct bio *bi, int first_sectors);
- extern void bio_pair_release(struct bio_pair *dbio);
-+extern void bio_trim(struct bio *bio, int offset, int size);
- 
- extern struct bio_set *bioset_create(unsigned int, unsigned int);
- extern void bioset_free(struct bio_set *);
--- 
-1.8.4.rc3
+I ran this test:
+
+for i in `seq 0 1 3`
+do
+echo $i > /sys/module/csum_test/parameters/module_test_mode
+taskset -c 0 perf stat --repeat 20 -C 0 -e L1-dcache-load-misses -e L1-dcache-prefetches -e cycles -e instructions -ddd ./test.sh
+done
+
+And I updated the test module to run for a million iterations rather than 100000 to increase the sample size and got this:
+
+
+Base:
+ Performance counter stats for './test.sh' (20 runs):
+
+        47,305,064 L1-dcache-load-misses     #    2.09% of all L1-dcache hits    ( +-  0.04% ) [18.74%]
+                 0 L1-dcache-prefetches                                         [18.75%]
+    13,906,212,348 cycles                    #    0.000 GHz                      ( +-  0.05% ) [18.76%]
+     4,426,395,949 instructions              #    0.32  insns per cycle          ( +-  0.01% ) [18.77%]
+     2,261,551,278 L1-dcache-loads                                               ( +-  0.02% ) [18.76%]
+        47,287,226 L1-dcache-load-misses     #    2.09% of all L1-dcache hits    ( +-  0.04% ) [18.76%]
+       276,842,685 LLC-loads                                                     ( +-  0.01% ) [18.76%]
+        46,454,114 LLC-load-misses           #   16.78% of all LL-cache hits     ( +-  0.05% ) [18.76%]
+     1,048,894,486 L1-icache-loads                                               ( +-  0.07% ) [18.76%]
+           472,205 L1-icache-load-misses     #    0.05% of all L1-icache hits    ( +-  1.19% ) [18.76%]
+     2,260,639,613 dTLB-loads                                                    ( +-  0.01% ) [18.75%]
+               172 dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +- 35.14% ) [18.74%]
+     1,048,732,481 iTLB-loads                                                    ( +-  0.07% ) [18.74%]
+                19 iTLB-load-misses          #    0.00% of all iTLB cache hits   ( +- 39.75% ) [18.73%]
+                 0 L1-dcache-prefetches                                         [18.73%]
+                 0 L1-dcache-prefetch-misses                                    [18.73%]
+
+       5.370546698 seconds time elapsed                                          ( +-  0.05% )
+
+
+Prefetch:
+ Performance counter stats for './test.sh' (20 runs):
+
+       124,885,469 L1-dcache-load-misses     #    4.96% of all L1-dcache hits    ( +-  0.09% ) [18.74%]
+                 0 L1-dcache-prefetches                                         [18.75%]
+    11,434,328,889 cycles                    #    0.000 GHz                      ( +-  1.11% ) [18.77%]
+     4,601,831,553 instructions              #    0.40  insns per cycle          ( +-  0.01% ) [18.77%]
+     2,515,483,814 L1-dcache-loads                                               ( +-  0.01% ) [18.77%]
+       124,928,127 L1-dcache-load-misses     #    4.97% of all L1-dcache hits    ( +-  0.09% ) [18.76%]
+       323,355,145 LLC-loads                                                     ( +-  0.02% ) [18.76%]
+       123,008,548 LLC-load-misses           #   38.04% of all LL-cache hits     ( +-  0.10% ) [18.75%]
+     1,256,391,060 L1-icache-loads                                               ( +-  0.01% ) [18.75%]
+           374,691 L1-icache-load-misses     #    0.03% of all L1-icache hits    ( +-  1.41% ) [18.75%]
+     2,514,984,046 dTLB-loads                                                    ( +-  0.01% ) [18.75%]
+                67 dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +- 51.81% ) [18.74%]
+     1,256,333,548 iTLB-loads                                                    ( +-  0.01% ) [18.74%]
+                19 iTLB-load-misses          #    0.00% of all iTLB cache hits   ( +- 39.74% ) [18.74%]
+                 0 L1-dcache-prefetches                                         [18.73%]
+                 0 L1-dcache-prefetch-misses                                    [18.73%]
+
+       4.496839773 seconds time elapsed                                          ( +-  0.64% )
+
+
+Parallel ALU:
+ Performance counter stats for './test.sh' (20 runs):
+
+        49,489,518 L1-dcache-load-misses     #    2.19% of all L1-dcache hits    ( +-  0.09% ) [18.74%]
+                 0 L1-dcache-prefetches                                         [18.76%]
+    13,777,501,365 cycles                    #    0.000 GHz                      ( +-  1.73% ) [18.78%]
+     4,707,160,703 instructions              #    0.34  insns per cycle          ( +-  0.01% ) [18.78%]
+     2,261,693,074 L1-dcache-loads                                               ( +-  0.02% ) [18.78%]
+        49,468,878 L1-dcache-load-misses     #    2.19% of all L1-dcache hits    ( +-  0.09% ) [18.77%]
+       279,524,254 LLC-loads                                                     ( +-  0.01% ) [18.76%]
+        48,491,934 LLC-load-misses           #   17.35% of all LL-cache hits     ( +-  0.12% ) [18.75%]
+     1,057,877,680 L1-icache-loads                                               ( +-  0.02% ) [18.74%]
+           461,784 L1-icache-load-misses     #    0.04% of all L1-icache hits    ( +-  1.87% ) [18.74%]
+     2,260,978,836 dTLB-loads                                                    ( +-  0.02% ) [18.74%]
+                27 dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +- 89.96% ) [18.74%]
+     1,057,886,632 iTLB-loads                                                    ( +-  0.02% ) [18.74%]
+                 4 iTLB-load-misses          #    0.00% of all iTLB cache hits   ( +-100.00% ) [18.74%]
+                 0 L1-dcache-prefetches                                         [18.73%]
+                 0 L1-dcache-prefetch-misses                                    [18.73%]
+
+       5.500417234 seconds time elapsed                                          ( +-  1.60% )
+
+
+Both:
+ Performance counter stats for './test.sh' (20 runs):
+
+       116,621,570 L1-dcache-load-misses     #    4.68% of all L1-dcache hits    ( +-  0.04% ) [18.73%]
+                 0 L1-dcache-prefetches                                         [18.75%]
+    11,597,067,510 cycles                    #    0.000 GHz                      ( +-  1.73% ) [18.77%]
+     4,952,251,361 instructions              #    0.43  insns per cycle          ( +-  0.01% ) [18.77%]
+     2,493,003,710 L1-dcache-loads                                               ( +-  0.02% ) [18.77%]
+       116,640,333 L1-dcache-load-misses     #    4.68% of all L1-dcache hits    ( +-  0.04% ) [18.77%]
+       322,246,216 LLC-loads                                                     ( +-  0.03% ) [18.76%]
+       114,528,956 LLC-load-misses           #   35.54% of all LL-cache hits     ( +-  0.04% ) [18.76%]
+       999,371,469 L1-icache-loads                                               ( +-  0.02% ) [18.76%]
+           406,679 L1-icache-load-misses     #    0.04% of all L1-icache hits    ( +-  1.97% ) [18.75%]
+     2,492,708,710 dTLB-loads                                                    ( +-  0.01% ) [18.75%]
+               140 dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +- 38.46% ) [18.74%]
+       999,320,389 iTLB-loads                                                    ( +-  0.01% ) [18.74%]
+                19 iTLB-load-misses          #    0.00% of all iTLB cache hits   ( +- 39.90% ) [18.73%]
+                 0 L1-dcache-prefetches                                         [18.73%]
+                 0 L1-dcache-prefetch-misses                                    [18.72%]
+
+       4.634419247 seconds time elapsed                                          ( +-  1.60% )
+
+
+I note a few oddities here:
+
+1) We seem to be getting more counter results than I specified, not sure why
+2) The % active column is adding up to way more than 100 (which from my read of
+the man page makes sense, given that multiple counters might increment in
+response to a single instruction execution
+3) The run times are proportionally larger, but still indicate that Parallel ALU
+execution is hurting rather than helping, which is counter-intuitive.  I'm
+looking into it, but thought you might want to see these results in case
+something jumped out at you
+
+Regards
+Neil
 
