@@ -1,179 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758019Ab3J2PpX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 11:45:23 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:40986 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264Ab3J2PpV (ORCPT
+	id S1758165Ab3J2Pq3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 11:46:29 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:36157 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168Ab3J2PqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 11:45:21 -0400
-Date: Tue, 29 Oct 2013 08:45:19 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Guenter Roeck <groeck7@gmail.com>, Yang Wenyou <wenyou.yang@atmel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH] watchdog: at91sam9_wdt: various fixes
-Message-ID: <20131029154519.GB9266@roeck-us.net>
-References: <20131029075028.GF19704@spo001.leaseweb.com>
- <1383043053-3520-1-git-send-email-b.brezillon@overkiz.com>
+	Tue, 29 Oct 2013 11:46:25 -0400
+Message-ID: <526FD849.9050000@samsung.com>
+Date: Tue, 29 Oct 2013 08:46:17 -0700
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383043053-3520-1-git-send-email-b.brezillon@overkiz.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tomasz Figa <t.figa@samsung.com>
+CC: Mike Turquette <mturquette@linaro.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        mark.rutland@arm.com, swarren@wwwdotorg.org, linux-doc@vger.kernel.org,
+        viresh.kumar@linaro.org, Tomasz Figa <tomasz.figa@gmail.com>,
+        s.nawrocki@samsung.com, m.szyprowski@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux@arm.linux.org.uk,
+        Mateusz Krawczuk <m.krawczuk@partner.samsung.com>,
+        linux-pm@vger.kernel.org, kyungmin.park@samsung.com,
+        cpufreq@vger.kernel.org, thomas.abraham@linaro.org,
+        t.stanislaws@samsung.com, devicetree@vger.kernel.org,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
+        rob.herring@calxeda.com, rjw@sisk.pl, ben-linux@fluff.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        b.zolnierkie@samsung.com, rob@landley.net
+Subject: Re: [PATCH v5 0/3] ARM: S5PV210: move to common clk framework
+References: <1380027009-2239-1-git-send-email-m.krawczuk@partner.samsung.com> <5264425E.4040301@samsung.com> <20131021121605.11944.74007@quantum> <1823897.8rOixkM4PW@amdc1227>
+In-Reply-To: <1823897.8rOixkM4PW@amdc1227>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 11:37:33AM +0100, Boris BREZILLON wrote:
-> Fix the secs_to_ticks macro in case 0 is passed as an argument.
-> 
-> Rework the heartbeat calculation to increase the security margin of the
-> watchdog reset timer.
-> 
-> Use the min_heartbeat value instead of the calculated heartbeat value for
-> the first watchdog reset.
-> 
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+On 10/29/13 04:42, Tomasz Figa wrote:
+> Hi Kukjin, Mike,
+>
+> On Monday 21 of October 2013 05:16:05 Mike Turquette wrote:
+>> Quoting Kukjin Kim (2013-10-20 13:51:42)
+>>> On 10/20/13 01:03, Tomasz Figa wrote:
+>>>> Hi Mike, Kukjin, Rafael,
+>>>>
+>>>> On Tuesday 24 of September 2013 14:50:06 Mateusz Krawczuk wrote:
+>>>>> This patch series is the new s5pv210 clock implementation
+>>>>> (using common clk framework).
+>>>>>
+>>>>> This implementation is compatible with device tree definition and board
+>>>>> files.
+>>>>>
+>>>>> This patch series is based on linux-next and has been tested on goni and
+>>>>> aquila
+>>>>> boards using board file.
+>>>>>
+>>>>> Since v4:
+>>>>> Corrected mux flags for finpll.
+>>>>>
+>>>>> Since v3:
+>>>>>
+>>>>> Replace s5pv210_clk_register_finpll, by creating mux finpll
+>>>>> with xusbxti and xxti as parrents.
+>>>>>
+>>>>>
+>>>>> Mateusz Krawczuk (3):
+>>>>>     clk: samsung: Add clock driver for s5pc110/s5pv210
+>>>>>     Cpufreq: s5pv210 cpufreq fixes for CCF
+>>>>>     ARM: s5pv210: Migrate clock handling to Common Clock Framework
+>>>>>
+>>>>>    .../bindings/clock/samsung,s5pv210-clock.txt       |  75 +++
+>>>>>    arch/arm/mach-s5pv210/Kconfig                      |   9 +
+>>>>>    arch/arm/mach-s5pv210/Makefile                     |   4 +-
+>>>>>    arch/arm/mach-s5pv210/common.c                     |  17 +
+>>>>>    arch/arm/mach-s5pv210/common.h                     |  10 +
+>>>>>    arch/arm/mach-s5pv210/mach-goni.c                  |   2 +-
+>>>>>    arch/arm/mach-s5pv210/mach-smdkv210.c              |   2 +-
+>>>>>    arch/arm/plat-samsung/Kconfig                      |   2 +-
+>>>>>    drivers/clk/samsung/Makefile                       |   3 +
+>>>>>    drivers/clk/samsung/clk-s5pv210.c                  | 673
+>>>>> +++++++++++++++++++++ drivers/cpufreq/s5pv210-cpufreq.c
+>>>>>    |   6 +-
+>>>>>    include/dt-bindings/clock/samsung,s5pv210-clock.h  | 224 +++++++
+>>>>>    12 files changed, 1019 insertions(+), 8 deletions(-)
+>>>>>    create mode 100644
+>>>>> Documentation/devicetree/bindings/clock/samsung,s5pv210-clock.txt
+>>>>> create mode 100644 drivers/clk/samsung/clk-s5pv210.c
+>>>>>    create mode 100644 include/dt-bindings/clock/samsung,s5pv210-clock.h
+>>>>
+>>>> I believe this series is reasonable to be applied. Could we agree on
+>>>> the tree it would go through and get all tne required acks?
+>>>>
+>>>> Best regards,
+>>>> Tomasz
+>>>
+>>> I agree.
+>>>
+>>> Mike, how do you think the common clk stuff for s5pv210?
+>>
+>> Clock code looks good to me. Which tree do you want to take it through?
+>
+> Seems like we just missed another kernel release. It's a bit sad that it's
+> happening so often for Samsung patches...
+>
 
-Hi Boris,
+Tomasz, sorry about that, I couldn't end up the stuff before attending 
+ARM Kernel Summit, but in my opinion, this series would be merged for 
+upcoming merge window via clk tree if Mike is fine because there is no 
+conflicts with Samsung tree.
 
-can you possibly split the three changes into separate patches ?
-
-The first is a no-brainer. Gives my opinion of my code review capabilities
-a slight damper ;-).
-
-For the other two problems, it might make sense to describe
-the problems you are trying to solve.
-
-Couple of comments inline.
+Mike, how do you think? If you're OK, please pick this into your tree 
+with my ack.
 
 Thanks,
-Guenter
-
-
-> ---
->  drivers/watchdog/at91sam9_wdt.c |   35 ++++++++++++++++++++++++-----------
->  1 file changed, 24 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
-> index 9bd089e..f1b59f1 100644
-> --- a/drivers/watchdog/at91sam9_wdt.c
-> +++ b/drivers/watchdog/at91sam9_wdt.c
-> @@ -51,7 +51,7 @@
->  #define ticks_to_hz_rounddown(t)	((((t) + 1) * HZ) >> 8)
->  #define ticks_to_hz_roundup(t)		(((((t) + 1) * HZ) + 255) >> 8)
->  #define ticks_to_secs(t)		(((t) + 1) >> 8)
-> -#define secs_to_ticks(s)		(((s) << 8) - 1)
-> +#define secs_to_ticks(s)		(s ? (((s) << 8) - 1) : 0)
->  
-	(s)
-
->  #define WDT_MR_RESET	0x3FFF2FFF
->  
-> @@ -61,6 +61,11 @@
->  /* Watchdog max delta/value in secs */
->  #define WDT_COUNTER_MAX_SECS	ticks_to_secs(WDT_COUNTER_MAX_TICKS)
->  
-> +/* Watchdog heartbeat shift used for security margin:
-> + * we'll try to rshift the heartbeat value with this value to secure
-> + * the watchdog reset. */
-> +#define WDT_HEARTBEAT_SHIFT	2
-> +
->  /* Hardware timeout in seconds */
->  #define WDT_HW_TIMEOUT 2
->  
-> @@ -158,7 +163,9 @@ static int at91_wdt_init(struct platform_device *pdev, struct at91wdt *wdt)
->  	int err;
->  	u32 mask = wdt->mr_mask;
->  	unsigned long min_heartbeat = 1;
-> +	unsigned long max_heartbeat;
->  	struct device *dev = &pdev->dev;
-> +	int shift;
->  
->  	tmp = wdt_read(wdt, AT91_WDT_MR);
->  	if ((tmp & mask) != (wdt->mr & mask)) {
-> @@ -181,23 +188,27 @@ static int at91_wdt_init(struct platform_device *pdev, struct at91wdt *wdt)
->  	if (delta < value)
->  		min_heartbeat = ticks_to_hz_roundup(value - delta);
->  
-> -	wdt->heartbeat = ticks_to_hz_rounddown(value);
-> -	if (!wdt->heartbeat) {
-> +	max_heartbeat = ticks_to_hz_rounddown(value);
-> +	if (!max_heartbeat) {
->  		dev_err(dev,
->  			"heartbeat is too small for the system to handle it correctly\n");
->  		return -EINVAL;
->  	}
->  
-> -	if (wdt->heartbeat < min_heartbeat + 4) {
-> +	for (shift = WDT_HEARTBEAT_SHIFT; shift > 0; shift--) {
-> +		if ((max_heartbeat >> shift) < min_heartbeat)
-> +			continue;
-> +
-> +		wdt->heartbeat = max_heartbeat >> shift;
-> +		break;
-> +	}
-> +
-> +	if (!shift)
->  		wdt->heartbeat = min_heartbeat;
-
-Correct me if I am wrong, but it seems to me that
-
-	if ((max_heartbeat >> 2) >= min_heartbeat)
-		 wdt->heartbeat = max_heartbeat >> 2;
-	else if ((max_heartbeat >> 1) >= min_heartbeat)
-		wdt->heartbeat = max_heartbeat >> 1;
-	else
-		wdt->heartbeat = min_heartbeat;
-
-would accomplish the same and be easier to understand.
-
-However, given that, I wonder if it is really necessary to bail out above if
-max_heartbeat is 0. After all, you set heartbeat to min_heartbeat anyway
-in this case.
-
-> +
-> +	if (max_heartbeat < min_heartbeat + 4)
->  		dev_warn(dev,
->  			 "min heartbeat and max heartbeat might be too close for the system to handle it correctly\n");
-> -		if (wdt->heartbeat < 4)
-> -			dev_warn(dev,
-> -				 "heartbeat might be too small for the system to handle it correctly\n");
-> -	} else {
-> -		wdt->heartbeat -= 4;
-> -	}
->  
->  	if ((tmp & AT91_WDT_WDFIEN) && wdt->irq) {
->  		err = request_irq(wdt->irq, wdt_interrupt,
-> @@ -213,7 +224,9 @@ static int at91_wdt_init(struct platform_device *pdev, struct at91wdt *wdt)
->  			 tmp & wdt->mr_mask, wdt->mr & wdt->mr_mask);
->  
->  	setup_timer(&wdt->timer, at91_ping, (unsigned long)wdt);
-> -	mod_timer(&wdt->timer, jiffies + wdt->heartbeat);
-> +	/* Use min_heartbeat the first time because the watchdog timer might
-> +	 * be running for a long time when we reach this init function. */
-
-	/*
-	 * Multi-line comment style
-	 *
-	 * Not really sure I understand what this accomplishes. What problem
-	 * are you trying to solve here ?
-	 */
-
-> +	mod_timer(&wdt->timer, jiffies + min_heartbeat);
->  
->  	/* Try to set timeout from device tree first */
->  	if (watchdog_init_timeout(&wdt->wdd, 0, dev))
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Kukjin
