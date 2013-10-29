@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab3J2TSI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 15:18:08 -0400
-Received: from smtp-out-046.synserver.de ([212.40.185.46]:1051 "EHLO
-	smtp-out-046.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab3J2TSG (ORCPT
+	id S1751721Ab3J2TWv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 15:22:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59990 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab3J2TWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 15:18:06 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 13024
-Message-ID: <527009EB.3010704@metafoo.de>
-Date: Tue, 29 Oct 2013 20:18:03 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	Tue, 29 Oct 2013 15:22:49 -0400
+Message-ID: <52700AD2.6000703@canonical.com>
+Date: Tue, 29 Oct 2013 15:21:54 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Josh Cartwright <joshc@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: Re: [PATCH v3 02/10] spmi: Linux driver framework for SPMI
-References: <cover.1382985169.git.joshc@codeaurora.org> <149bbfe89e37376cc176c3aeb6c1fab9e4fd2b91.1382985169.git.joshc@codeaurora.org> <526FD278.8080102@metafoo.de> <20131029155616.GG20207@joshc.qualcomm.com> <526FE2B6.8050701@codeaurora.org>
-In-Reply-To: <526FE2B6.8050701@codeaurora.org>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: hpa@zytor.com, bernd.schubert@itwm.fraunhofer.de, JBottomley@Parallels.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kamal Mostafa <kamal.mostafa@canonical.com>,
+        linux-scsi@vger.kernel.org,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: Subject:  [v3.8][v3.11][Regression] [SCSI] sd: Update WRITE SAME
+ heuristics
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2013 05:30 PM, Stephen Boyd wrote:
-> On 10/29/13 08:56, Josh Cartwright wrote:
->>
->>>> +#define to_spmi_controller(d) container_of(d, struct spmi_controller, dev)
->>> Should be a inline function for better type safety.
->> Sounds good.  Will change the to_spmi_*() macros.
-> 
-> I was under the impression that container_of() already does type
-> checking. At least it will ensure that typeof(d) == typeof(dev) in the
-> above example which is about as good as it can get.
+Hi Martin,
 
-Well you'll get a warning, but the quality of the warning message is much
-better when an inline function is used.
+A bug was opened against the Ubuntu kernel[0].  After a kernel bisect,
+it was found that reverting the following commit resolved this bug:
 
-warning: initialization from incompatible pointer type
+commit 66c28f97120e8a621afd5aa7a31c4b85c547d33d
+Author: Martin K. Petersen <martin.petersen@oracle.com>
+Date:   Thu Jun 6 22:15:55 2013 -0400
 
-vs.
-
-warning: Passing argument 1 of to_smpi_controller() from incompatible
-pointer type. Expected struct device * got struct driver *
+    [SCSI] sd: Update WRITE SAME heuristics
 
 
-- Lars
+The regression was introduced as of v3.11-rc1, but it also made it's way
+into the stable trees.
+
+I see that you are the author of this patch, so I wanted to run this by
+you.  I was thinking of requesting a revert for v3.12, but I wanted to
+get your feedback first.
+
+
+Thanks,
+
+Joe
+
+[0] http://pad.lv/1237392
