@@ -1,191 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758516Ab3J2RWb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 13:22:31 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51426 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758286Ab3J2RW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 13:22:28 -0400
-Date: Tue, 29 Oct 2013 12:22:29 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Andreas Fenkart <afenkart@gmail.com>
-CC: Felipe Balbi <balbi@ti.com>, Chris Ball <cjb@laptop.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>, Balaji T K <balajitk@ti.com>,
-        Daniel Mack <zonque@gmail.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v3 2/4] mmc: omap_hsmmc: Enable SDIO IRQ.
-Message-ID: <20131029172229.GA12193@gimli>
-Reply-To: <balbi@ti.com>
-References: <1380971830-21492-1-git-send-email-afenkart@gmail.com>
- <1380971830-21492-3-git-send-email-afenkart@gmail.com>
- <20131008161131.GD13128@radagast>
- <CALtMJECWCqBy4UCtuSZ7WtXaizjmgdaxW7pn5uL0ymuXPn=61A@mail.gmail.com>
+	id S1758455Ab3J2R0E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 13:26:04 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:21446 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757888Ab3J2R0C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 13:26:02 -0400
+X-IronPort-AV: E=Sophos;i="4.93,594,1378857600"; 
+   d="scan'208";a="65923201"
+Date: Tue, 29 Oct 2013 17:24:50 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <Ian.Campbell@citrix.com>,
+        <will.deacon@arm.com>
+Subject: Re: [PATCH v9 01/18] arm: make SWIOTLB available
+In-Reply-To: <20131029142626.GQ16735@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.02.1310291716120.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com> <1382698313-13161-1-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1310251206450.26077@kaball.uk.xensource.com> <alpine.DEB.2.02.1310290441260.26077@kaball.uk.xensource.com>
+ <20131029142023.GE20487@phenom.dumpdata.com> <20131029142626.GQ16735@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pf9I7BMVVzbSWLtt"
-Content-Disposition: inline
-In-Reply-To: <CALtMJECWCqBy4UCtuSZ7WtXaizjmgdaxW7pn5uL0ymuXPn=61A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---pf9I7BMVVzbSWLtt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 29 Oct 2013, Russell King - ARM Linux wrote:
+> On Tue, Oct 29, 2013 at 10:20:23AM -0400, Konrad Rzeszutek Wilk wrote:
+> > On Tue, Oct 29, 2013 at 04:41:40AM +0000, Stefano Stabellini wrote:
+> > > ping?
+> > 
+> > You know you are pinging yourself, right ? :-)
+> 
+> And the patch was only Cc'd.  I'm starting to read stuff which isn't
+> flagged as having me in the To: line with less priority in recent times.
 
-Hi,
+good to know
 
-On Tue, Oct 29, 2013 at 04:06:58PM +0100, Andreas Fenkart wrote:
-> >> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsm=
-mc.c
-> >> index 94d6dc8..53beac4 100644
-> >> --- a/drivers/mmc/host/omap_hsmmc.c
-> >> +++ b/drivers/mmc/host/omap_hsmmc.c
-> >> @@ -130,6 +130,7 @@ static void apply_clk_hack(struct device *dev)
-> >>  #define TC_EN                        (1 << 1)
-> >>  #define BWR_EN                       (1 << 4)
-> >>  #define BRR_EN                       (1 << 5)
-> >> +#define CIRQ_EN                      (1 << 8)
-> >>  #define ERR_EN                       (1 << 15)
-> >>  #define CTO_EN                       (1 << 16)
-> >>  #define CCRC_EN                      (1 << 17)
-> >> @@ -210,6 +211,10 @@ struct omap_hsmmc_host {
-> >>       int                     reqs_blocked;
-> >>       int                     use_reg;
-> >>       int                     req_in_progress;
-> >> +     int                     flags;
-> >> +#define HSMMC_RUNTIME_SUSPENDED      (1 << 0)        /* Runtime suspe=
-nded */
-> >> +#define HSMMC_SDIO_IRQ_ENABLED       (1 << 1)        /* SDIO irq enab=
-led */
-> >> +
-> >>       struct omap_hsmmc_next  next_data;
-> >>       struct  omap_mmc_platform_data  *pdata;
-> >>  };
-> >> @@ -490,27 +495,40 @@ static void omap_hsmmc_stop_clock(struct omap_hs=
-mmc_host *host)
-> >>  static void omap_hsmmc_enable_irq(struct omap_hsmmc_host *host,
-> >>                                 struct mmc_command *cmd)
-> >>  {
-> >> -     unsigned int irq_mask;
-> >> +     u32 irq_mask =3D INT_EN_MASK;
-> >> +     unsigned long flags;
-> >>
-> >>       if (host->use_dma)
-> >> -             irq_mask =3D INT_EN_MASK & ~(BRR_EN | BWR_EN);
-> >> -     else
-> >> -             irq_mask =3D INT_EN_MASK;
-> >> +             irq_mask &=3D ~(BRR_EN | BWR_EN);
-> >
-> > is this a bugfix ? should it be sent as a separate patch ?
->=20
-> maybe the u32, but otherwise it's just shorter... shall I drop it.
 
-no, now I saw what you did ;-)
+> > > On Fri, 25 Oct 2013, Stefano Stabellini wrote:
+> > > > Russell,
+> > > > this is the only patch that needs an ack at the moment.
+> > > > As you commented on it before and I have already addressed your comments
+> > > > few versions ago, unless you have any complaints I am going to add it to
+> > > > linux-next and I am thinking of merging it during the next merge window.
+> > > > 
+> > > > On Fri, 25 Oct 2013, Stefano Stabellini wrote:
+> > > > > IOMMU_HELPER is needed because SWIOTLB calls iommu_is_span_boundary,
+> > > > > provided by lib/iommu_helper.c.
+> > > > > 
+> > > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > > > Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > > > > CC: will.deacon@arm.com
+> > > > > CC: linux@arm.linux.org.uk
+> > > > > 
+> > > > > 
+> > > > > Changes in v8:
+> > > > > - use __phys_to_pfn and __pfn_to_phys.
+> > > > > 
+> > > > > Changes in v7:
+> > > > > - dma_mark_clean: empty implementation;
+> > > > > - in dma_capable use coherent_dma_mask if dma_mask hasn't been
+> > > > >   allocated.
+> > > > > 
+> > > > > Changes in v6:
+> > > > > - check for dev->dma_mask being NULL in dma_capable.
+> > > > > 
+> > > > > Changes in v5:
+> > > > > - implement dma_mark_clean using dmac_flush_range.
+> > > > > 
+> > > > > Changes in v3:
+> > > > > - dma_capable: do not treat dma_mask as a limit;
+> > > > > - remove SWIOTLB dependency on NEED_SG_DMA_LENGTH.
+> > > > > ---
+> > > > >  arch/arm/Kconfig                   |    6 +++++
+> > > > >  arch/arm/include/asm/dma-mapping.h |   37 ++++++++++++++++++++++++++++++++++++
+> > > > >  2 files changed, 43 insertions(+), 0 deletions(-)
+> > > > > 
+> > > > > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > > > > index 1ad6fb6..b08374f 100644
+> > > > > --- a/arch/arm/Kconfig
+> > > > > +++ b/arch/arm/Kconfig
+> > > > > @@ -1872,6 +1872,12 @@ config CC_STACKPROTECTOR
+> > > > >  	  neutralized via a kernel panic.
+> > > > >  	  This feature requires gcc version 4.2 or above.
+> > > > >  
+> > > > > +config SWIOTLB
+> > > > > +	def_bool y
+> > > > > +
+> > > > > +config IOMMU_HELPER
+> > > > > +	def_bool SWIOTLB
+> > > > > +
+> > > > >  config XEN_DOM0
+> > > > >  	def_bool y
+> > > > >  	depends on XEN
+> > > > > diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+> > > > > index 5b579b9..01b5a3d 100644
+> > > > > --- a/arch/arm/include/asm/dma-mapping.h
+> > > > > +++ b/arch/arm/include/asm/dma-mapping.h
+> > > > > @@ -10,6 +10,7 @@
+> > > > >  
+> > > > >  #include <asm-generic/dma-coherent.h>
+> > > > >  #include <asm/memory.h>
+> > > > > +#include <asm/cacheflush.h>
+> 
+> Why does this need to be here?  Your'e not adding anything which
+> needs it.
 
-> >>
-> >>       /* Disable timeout for erases */
-> >>       if (cmd->opcode =3D=3D MMC_ERASE)
-> >>               irq_mask &=3D ~DTO_EN;
-> >>
-> >> +     spin_lock_irqsave(&host->irq_lock, flags);
-> >
-> > why do you need this new locking here ? register acesses are atomic,
-> > right ? If you really do need the locking, should it be a separate patch
-> > as well ?
->=20
-> because host->flags can be accessed from irq context as well
+Legacy of a previous iteration of the patch. I'll remove it.
 
-fair point :-)
 
-> >>  static void omap_hsmmc_disable_irq(struct omap_hsmmc_host *host)
-> >>  {
-> >> -     OMAP_HSMMC_WRITE(host->base, ISE, 0);
-> >> -     OMAP_HSMMC_WRITE(host->base, IE, 0);
-> >> +     u32 irq_mask =3D 0;
-> >> +     unsigned long flags;
-> >> +
-> >> +     spin_lock_irqsave(&host->irq_lock, flags);
-> >> +     /* no transfer running, need to signal cirq if */
-> >
-> > if... ?
-> >
-> >> +     if (host->flags & HSMMC_SDIO_IRQ_ENABLED)
-> >> +             irq_mask |=3D CIRQ_EN;
-> >> +     OMAP_HSMMC_WRITE(host->base, ISE, irq_mask);
-> >
-> > the whole fiddling with STAT and ISE registers look very bogus to me
-> > (even on current state before this patch). We shouldn't be clearing
-> > pending IRQ events here, right ? We could miss IRQs due to that.
->=20
-> sdio_claim_host excludes multiple users and  typical users are using sync=
-hronous
-> communication, issue a transfer, wait till it's done, then release the ho=
-st.
-> Hence when we come here, the content of ISE/STAT is a leftover from
-> the previous transfer.
-> Probably the intent here is to reset the registers in defined state,
-> maybe it wasn't needed
-> but it doesn't hurt either.
->=20
-> It's conservative... I don't like to change it, along the side of my
-> sdio irq patches.
-> If I did lots of such changes, surely I would create a regression.
->=20
-> On the other side If I was up to optimize the driver, then I would do thi=
-s.
+> > > > > +static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+> > > > > +{
+> > > > > +	unsigned int offset = paddr & ~PAGE_MASK;
+> > > > > +	return pfn_to_dma(dev, __phys_to_pfn(paddr)) + offset;
+> > > > > +}
+> > > > > +
+> > > > > +static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
+> > > > > +{
+> > > > > +	unsigned int offset = dev_addr & ~PAGE_MASK;
+> > > > > +	return __pfn_to_phys(dma_to_pfn(dev, dev_addr)) + offset;
+> > > > > +}
+> 
+> These look fine.
+> 
+> > > > > +static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
+> > > > > +{
+> > > > > +	u64 limit, mask;
+> > > > > +	
+> > > > > +	if (dev->dma_mask)
+> > > > > +		mask = *dev->dma_mask;
+> > > > > +	else 
+> > > > > +		mask = dev->coherent_dma_mask;
+> 
+> This looks like a hack.  Either we want to use the streaming mask or
+> the coherent mask as appropriate for the caller.  That should be a choice
+> the caller makes, not the implementation of this behind the callers back.
 
-sure, that was an unrelated comment, just exposing some possible problem
-with that approach :-)
+How should I choose?
+Admittedly this is a workaround because some drivers (including Calxeda
+xgmac) don't set the dma_mask when they should:
 
-> >> @@ -1067,8 +1085,12 @@ static irqreturn_t omap_hsmmc_irq(int irq, void=
- *dev_id)
-> >>       int status;
-> >>
-> >>       status =3D OMAP_HSMMC_READ(host->base, STAT);
-> >> -     while (status & INT_EN_MASK && host->req_in_progress) {
-> >> -             omap_hsmmc_do_irq(host, status);
-> >> +     while (status & (INT_EN_MASK | CIRQ_EN)) {
-> >
-> > why don't enable CIRQ_EN in INT_EN_MASK directly ?
->=20
-> INT_EN_MASK is also used when bootstrapping the card in
-> send_init_stream, but there
-> you don't want to enable sdio irqs. So I would have to mask it there,
-> so this is the smaller
-> change.
+http://marc.info/?l=linux-arm-kernel&m=138082570519601&w=2
 
-true, fair enough.
+I am happy to reduce this to:
 
---=20
-balbi
+if (dev->dma_mask)
+    mask = *dev->dma_mask;
 
---pf9I7BMVVzbSWLtt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+even though it means that xgmac & co won't be dma_capable.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSb+7VAAoJEIaOsuA1yqRE3WMP/20QG0jXuDVKwm6DYI+w61Zd
-x6SLspLlHAE8xzNEr5eWxk9BUKCEdRZi5EWhykP2sEZiHyDrFABqJ3dEPfyNwoHm
-pWVtbN0Yew4b45TC/sR4SgLfSkcq/EsPemDxyEIvtpP7ERdGVMhM1yK1IrW833Ez
-Qld7iXLFDQCwsm8Lj9rgTV0yuE6ohB5G7sSy0TGDHYe5ufmb8uLwAUVj6EpTyh22
-W+vXOm8kcDYyRZqJbKQIcN4aS7RzWq9eLLtbYBy6kq33sUg6Cq8EQ/r1T12dQEXp
-ZlwXmkb7O2Oo6B8IZNPPqM+mbLUaKRas3iyviOUJLtOGev80AVhKF4j5KCrJ6Yw2
-cTGFSfvRfgmx5cgUpICeVPR6+OHYcUH1SKmdA5oXc7UECrlv4t2ZYfZU9CFRfe7U
-sU3C/tL+J0aiOOifbdzr2slV/by2kPTe2rBMU8SsuajBq0D81JpHsVaw+AzeBZmw
-8VXs9WNfzQv06mQFUf96FR0e0xt/6hojWQBm/1I4AEgRCimOnSfUQOemBmoSBn1k
-IiKdRo3YdeEsHqYJHZWApUaFK2jKiyhN+TNV144kP4AeArV6fTCxqbCCD6UTZuS6
-5P5isKy7N5ZKMRmkqpg/jUoRn8fUU4mxF1HSQWGst/PDq3ELBA8jzPRE5Hv8jU+p
-t2z4bFHgLVkW5XmH1MVv
-=NMMz
------END PGP SIGNATURE-----
-
---pf9I7BMVVzbSWLtt--
+> > > > > +
+> > > > > +	if (mask == 0)
+> > > > > +		return 0;
+> > > > > +
+> > > > > +	limit = (mask + 1) & ~mask;
+> > > > > +	if (limit && size > limit)
+> > > > > +		return 0;
+> > > > > +
+> > > > > +	if ((addr | (addr + size - 1)) & ~mask)
+> > > > > +		return 0;
+> > > > > +
+> > > > > +	return 1;
+> > > > > +}
+> 
+> The remainder looks fine to me.
+> 
