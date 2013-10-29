@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab3J2NDe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 09:03:34 -0400
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:13690
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753183Ab3J2NDc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 09:03:32 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz98dIzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh2a8h839h8e2h8e3h947hd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18deh18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216hbe9i1155h)
-From: Chen Guangyu-B42378 <B42378@freescale.com>
-To: Timur Tabi <timur@tabi.org>
-CC: "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        Huang Shijie-B32955 <B32955@freescale.com>
-Subject: Re: [PATCH 2/3] ASoC: fsl_ssi: Add dual fifo mode support
-Thread-Topic: [PATCH 2/3] ASoC: fsl_ssi: Add dual fifo mode support
-Thread-Index: AQHO1KNwOHeCmTMBykCDurVsO/abRZoLn2+AgAADDB2AAAH/AIAAAMNl
-Date: Tue, 29 Oct 2013 13:03:26 +0000
-Message-ID: <uq0wlfsid450p3ufwptuuscw.1383051812670@email.android.com>
-References: <cover.1383047327.git.b42378@freescale.com>
- <02f8867363ed3038a0a70703856e4b642fef4339.1383047327.git.b42378@freescale.com>,<526FAD41.2000805@tabi.org>
- <flq2m8se8fxm4icha4yrpcbn.1383051217235@email.android.com>,<526FB17C.3090009@tabi.org>
-In-Reply-To: <526FB17C.3090009@tabi.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1755682Ab3J2NEY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 09:04:24 -0400
+Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:1650
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754668Ab3J2NEW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 09:04:22 -0400
+X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzbb2dI98dI9371I1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de097hz2fh95h839h947hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h19b6n1155h192ch)
+Date: Tue, 29 Oct 2013 14:04:06 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Kumar Gala <galak@codeaurora.org>
+CC: Tomasz Figa <tomasz.figa@gmail.com>,
+        =?ISO-8859-1?Q?S=F6ren_Brinkma?= =?ISO-8859-1?Q?nn?= 
+	<soren.brinkmann@xilinx.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] clk/zynq/clkc: Add 'fclk-enable' feature
+References: <1381425018-5653-1-git-send-email-soren.brinkmann@xilinx.com> <1592656.1ojHcSlzVh@flatron> <b7840a0d-ac49-4c2d-beaa-9f79748c70d0@CH1EHSMHS006.ehs.local> <2028580.HhySWWnU2A@flatron> <8864256B-F8F9-4474-9B5F-416C3BB96523@codeaurora.org>
+In-Reply-To: <8864256B-F8F9-4474-9B5F-416C3BB96523@codeaurora.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+Message-ID: <ceac2f8e-30b4-415e-b8f3-f2af1270be88@DB9EHSMHS020.ehs.local>
+X-OriginatorOrg: xilinx.com
 X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you, sir. And sorry for taking your time.
+On 10/29/2013 09:26 AM, Kumar Gala wrote:
+> 
+> On Oct 28, 2013, at 5:17 PM, Tomasz Figa wrote:
+> 
+>>>>> diff --git a/Documentation/devicetree/bindings/clock/zynq-7000.txt
+>>>>> b/Documentation/devicetree/bindings/clock/zynq-7000.txt index
+>>>>> d99af878f5d7..11fdd146ec83 100644
+>>>>> --- a/Documentation/devicetree/bindings/clock/zynq-7000.txt
+>>>>> +++ b/Documentation/devicetree/bindings/clock/zynq-7000.txt
+>>>>>
+>>>>> @@ -22,6 +22,10 @@ Required properties:
+>>>>> Optional properties:
+>>>>>  - clocks : as described in the clock bindings
+>>>>>  - clock-names : as described in the clock bindings
+>>>>>
+>>>>> + - fclk-enable : Bit mask to enable FCLKs in cases no proper CCF
+>>>>
+>>>> Since it's a vendor specific property, it should include vendor
+>>>> prefix.
+>>>
+>>> The whole driver is vendor specific. Should there really be another
+>>> prefix for that property?
+>>
+>> Yes. If a property is introduced just for use by this particular driver 
+>> then it must be prepended by a vendor prefix. That's a general rule.
+> 
+> Most all nodes are vendor specific by definition ;).
 
-Sent by Android device.
+Is this really generic rule? I haven't seen/heard any point regarding this on KS.
 
-Timur Tabi <timur@tabi.org> wrote:
+I don't think we should use prefix here. It is xilinx specific option
+but there shouldn't be any problem to use fclk-enable without any prefix.
+Because it means we have to also rename ps-clk-frequency.
 
+We are using xlnx prefix for properties which are autogenerated from design tools
+which is not even this case.
 
-Chen Guangyu-B42378 wrote:
-> Without dual fifo support,  handware underrun would occasionally
-> occur and then two audio channels would physically swap. This could
-> be easily reproduced in low bus frequency situation, while it would
-> be better if we enable dual fifo.
-
-Ok.
-
-ACK.
+Thanks,
+Michal
 
 
