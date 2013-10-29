@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758094Ab3J2PMK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 11:12:10 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:41352 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753742Ab3J2PMI (ORCPT
+	id S1758108Ab3J2PNy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 11:13:54 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35272 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab3J2PNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 11:12:08 -0400
-Date: Tue, 29 Oct 2013 11:11:29 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: David Vrabel <david.vrabel@citrix.com>, Santosh.Jodh@citrix.com,
-        Bjorn Helgaas <bhelgaas@google.com>, xhejtman@ics.muni.cz,
-        xen-devel <xen-devel@lists.xensource.com>, boris.ostrovsky@oracle.com,
-        mukesh.rathor@oracle.com, yuval.shaia@oracle.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [v1 1/2] xen/p2m: Create identity mappings for PFNs beyound E820
- and PCI BARs
-Message-ID: <20131029151129.GA20984@phenom.dumpdata.com>
-References: <1382713401-4882-1-git-send-email-konrad.wilk@oracle.com>
- <1382713401-4882-2-git-send-email-konrad.wilk@oracle.com>
- <CAErSpo5_DspGSffEHOqq_G0U27OdvYbiFK3QcxiZVFeRpoMaPw@mail.gmail.com>
- <20131028165837.GH4353@phenom.dumpdata.com>
- <526F7E9202000078000FD7A6@nat28.tlf.novell.com>
- <20131029144559.GI20487@phenom.dumpdata.com>
- <526FDA6102000078000FDAE2@nat28.tlf.novell.com>
+	Tue, 29 Oct 2013 11:13:53 -0400
+Date: Tue, 29 Oct 2013 10:12:38 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Gilad Avidov <gavidov@codeaurora.org>,
+        linux-kernel@vger.kernel.org, Michael Bohan <mbohan@codeaurora.org>,
+        Sagar Dharia <sdharia@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 06/10] spmi: document the PMIC arbiter SPMI bindings
+Message-ID: <20131029151238.GF20207@joshc.qualcomm.com>
+References: <cover.1382985169.git.joshc@codeaurora.org>
+ <043d714725f8b6df1873047164d2d0e78778138b.1382985169.git.joshc@codeaurora.org>
+ <1383055709.2837.17.camel@iivanov-dev.int.mm-sol.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <526FDA6102000078000FDAE2@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1383055709.2837.17.camel@iivanov-dev.int.mm-sol.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 02:55:13PM +0000, Jan Beulich wrote:
-> >>> On 29.10.13 at 15:45, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > On Tue, Oct 29, 2013 at 08:23:30AM +0000, Jan Beulich wrote:
-> >> >>> On 28.10.13 at 17:58, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> >> > On Fri, Oct 25, 2013 at 04:08:19PM -0600, Bjorn Helgaas wrote:
-> >> >> If you can look at PCI host bridge apertures instead of BARs, that
-> >> >> would solve both problems.  Reassigning those apertures is
-> >> >> theoretically possible but is not even a gleam in our eyes yet.
-> >> > 
-> >> > <nods> I think I have to have both (BARs and host bridge apertures) as when
-> >> > we do PCI passthrough to a guest - we might do it without a bridge.
-> >> 
-> >> Why? Aren't the host bridge ranges necessarily a superset of the
-> >> individual devices' BARs?
+On Tue, Oct 29, 2013 at 04:08:29PM +0200, Ivan T. Ivanov wrote:
+> On Mon, 2013-10-28 at 13:12 -0500, Josh Cartwright wrote: 
+> > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> > ---
+> >  .../bindings/spmi/qcom,spmi-pmic-arb.txt           | 42 ++++++++++++++++++++++
+> >  1 file changed, 42 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/spmi/qcom,spmi-pmic-arb.txt
 > > 
-> > Yes. But when you pass in a PCI device to a PV guest you don't pass in the
-> > bridge. Just the PCI device itself.
+> > diff --git a/Documentation/devicetree/bindings/spmi/qcom,spmi-pmic-arb.txt b/Documentation/devicetree/bindings/spmi/qcom,spmi-pmic-arb.txt
+> > new file mode 100644
+> > index 0000000..68949aa
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/spmi/qcom,spmi-pmic-arb.txt
+> > @@ -0,0 +1,42 @@
+> > +Qualcomm SPMI Controller (PMIC Arbiter)
+> > +
+> > +The SPMI PMIC Arbiter is found on the Snapdragon 800 Series.  It is an SPMI
+> > +controller with wrapping arbitration logic to allow for multiple on-chip
+> > +devices to control a single SPMI master.
+> > +
+> > +The PMIC Arbiter can also act as an interrupt controller, providing interrupts
+> > +to slave devices.
+> > +
+> > +See spmi.txt for the generic SPMI controller binding requirements for child
+> > +nodes.
+> > +
+> > +Required properties:
+> > +- compatible : should be "qcom,spmi-pmic-arb".
+> > +- reg-names  : should be "core", "intr", "cnfg"
+> > +- reg : offset and length of the PMIC Arbiter Core register map.
+> > +- reg : offset and length of the PMIC Arbiter Interrupt controller register map.
+> > +- reg : offset and length of the PMIC Arbiter Configuration register map.
+> > +- #address-cells : must be set to 1
 > 
-> Right you are. Which means that basing the whole logic on the
-> PCI device BARs is likely wrong anyway, not just because it
-> doesn't account for other MMIO ranges.
+> This doesn't seem to follow generic set of bindings for the SPMI
+> controllers. #address-cells : must be set to 2.
 
-Right, but that is OK. When you pass in a PCI device to a PV guest you
-only care about that specific device driver being able to access its BARs.
+Indeed, good catch.  I'll fix it up.
 
-> 
-> Jan
-> 
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
