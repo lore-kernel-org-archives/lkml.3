@@ -1,90 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232Ab3J2STb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:19:31 -0400
-Received: from smtprelay0237.hostedemail.com ([216.40.44.237]:46350 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752815Ab3J2ST3 (ORCPT
+	id S1756284Ab3J2STt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:19:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59462 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754051Ab3J2SJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:19:29 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:981:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3870:3871:3873:4225:4250:4321:4605:5007:6119:6120:7652:7901:7903:10004:10400:10848:11026:11232:11658:11914:12043:12291:12296:12438:12517:12519:12679:12683:12740:13069:13095:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: prose44_6fab7fb22f22a
-X-Filterd-Recvd-Size: 2415
-Message-ID: <1383070766.12439.13.camel@joe-AO722>
-Subject: Re: [PATCH 1/2] spi: add Intel Mid SSP driver
-From: Joe Perches <joe@perches.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: broonie@kernel.org, ning.li@intel.com, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org, Fei Yang <fei.yang@intel.com>
-Date: Tue, 29 Oct 2013 11:19:26 -0700
-In-Reply-To: <1383069950-27754-1-git-send-email-david.a.cohen@linux.intel.com>
-References: <1383069950-27754-1-git-send-email-david.a.cohen@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Oct 2013 14:09:02 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 58/81] esp_scsi: Fix tag state corruption when autosensing.
+Date: Tue, 29 Oct 2013 11:04:19 -0700
+Message-Id: <1383069882-11437-59-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
+References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-29 at 11:05 -0700, David Cohen wrote:
-> This patch adds driver for ssp spi interface on Intel Mid platform.
+3.8.13.12 -stable review patch.  If anyone has any objections, please let me know.
 
-A few simple notes:
+------------------
 
-Please consider using checkpatch.
+From: "David S. Miller" <davem@davemloft.net>
 
-> ---
->  drivers/spi/Kconfig                   |   12 +
->  drivers/spi/Makefile                  |    1 +
->  drivers/spi/spi-intel-mid-ssp.c       | 1506 +++++++++++++++++++++++++++++++++
->  include/linux/spi/intel_mid_ssp_spi.h |  330 ++++++++
+[ Upstream commit 21af8107f27878813d0364733c0b08813c2c192a ]
 
-Shouldn't this include file be in the drivers/spi directory?
+Meelis Roos reports a crash in esp_free_lun_tag() in the presense
+of a disk which has died.
 
-[]
+The issue is that when we issue an autosense command, we do so by
+hijacking the original command that caused the check-condition.
 
-> diff --git a/drivers/spi/spi-intel-mid-ssp.c b/drivers/spi/spi-intel-mid-ssp.c
-[]
-> +#ifdef DUMP_RX
-> +static void dump_trailer(const struct device *dev, char *buf, int len, int sz)
-> +{
+When we do so we clear out the ent->tag[] array when we issue it via
+find_and_prep_issuable_command().  This is so that the autosense
+command is forced to be issued non-tagged.
 
-You could save a couple of later #ifdefs by
-moving the #ifdef inside the function
+That is problematic, because it is the value of ent->tag[] which
+determines whether we issued the original scsi command as tagged
+vs. non-tagged (see esp_alloc_lun_tag()).
 
-static void dump_trailer(etc)
-{
-#ifdef DUMP_RX
-	...
-#endif
-}
+And that, in turn, is what trips up the sanity checks in
+esp_free_lun_tag().  That function needs the original ->tag[] values
+in order to free up the tag slot properly.
 
-> +static int map_dma_buffers(struct ssp_drv_context *sspc)
-> +{
-[]
-> +#ifdef DUMP_RX
-> +		dump_trailer(&sspc->pdev->dev, sspc->tx, sspc->len, 16);
-> +#endif
+Fix this by remembering the original command's tag values, and
+having esp_alloc_lun_tag() and esp_free_lun_tag() use them.
 
-> +static void int_transfer_complete(struct ssp_drv_context *sspc)
-> +{
-[]
-> +#ifdef DUMP_RX
-> +	dump_trailer(dev, sspc->rx, sspc->len, 16);
-> +#endif
+Reported-by: Meelis Roos <mroos@linux.ee>
+Tested-by: Meelis Roos <mroos@linux.ee>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/scsi/esp_scsi.c | 14 ++++++++------
+ drivers/scsi/esp_scsi.h |  1 +
+ 2 files changed, 9 insertions(+), 6 deletions(-)
 
-> +static int setup(struct spi_device *spi)
-> +{
-[]
-> +	if (!chip) {
-> +		chip = kzalloc(sizeof(struct chip_data), GFP_KERNEL);
-> +		if (!chip) {
-> +			dev_err(&spi->dev,
-> +			"failed setup: can't allocate chip data\n");
-
-OOM messages aren't necessary as a generic OOM message
-is already emitted along with a dump_stack();
-
+diff --git a/drivers/scsi/esp_scsi.c b/drivers/scsi/esp_scsi.c
+index 34552bf..55548dc 100644
+--- a/drivers/scsi/esp_scsi.c
++++ b/drivers/scsi/esp_scsi.c
+@@ -530,7 +530,7 @@ static int esp_need_to_nego_sync(struct esp_target_data *tp)
+ static int esp_alloc_lun_tag(struct esp_cmd_entry *ent,
+ 			     struct esp_lun_data *lp)
+ {
+-	if (!ent->tag[0]) {
++	if (!ent->orig_tag[0]) {
+ 		/* Non-tagged, slot already taken?  */
+ 		if (lp->non_tagged_cmd)
+ 			return -EBUSY;
+@@ -564,9 +564,9 @@ static int esp_alloc_lun_tag(struct esp_cmd_entry *ent,
+ 			return -EBUSY;
+ 	}
+ 
+-	BUG_ON(lp->tagged_cmds[ent->tag[1]]);
++	BUG_ON(lp->tagged_cmds[ent->orig_tag[1]]);
+ 
+-	lp->tagged_cmds[ent->tag[1]] = ent;
++	lp->tagged_cmds[ent->orig_tag[1]] = ent;
+ 	lp->num_tagged++;
+ 
+ 	return 0;
+@@ -575,9 +575,9 @@ static int esp_alloc_lun_tag(struct esp_cmd_entry *ent,
+ static void esp_free_lun_tag(struct esp_cmd_entry *ent,
+ 			     struct esp_lun_data *lp)
+ {
+-	if (ent->tag[0]) {
+-		BUG_ON(lp->tagged_cmds[ent->tag[1]] != ent);
+-		lp->tagged_cmds[ent->tag[1]] = NULL;
++	if (ent->orig_tag[0]) {
++		BUG_ON(lp->tagged_cmds[ent->orig_tag[1]] != ent);
++		lp->tagged_cmds[ent->orig_tag[1]] = NULL;
+ 		lp->num_tagged--;
+ 	} else {
+ 		BUG_ON(lp->non_tagged_cmd != ent);
+@@ -667,6 +667,8 @@ static struct esp_cmd_entry *find_and_prep_issuable_command(struct esp *esp)
+ 			ent->tag[0] = 0;
+ 			ent->tag[1] = 0;
+ 		}
++		ent->orig_tag[0] = ent->tag[0];
++		ent->orig_tag[1] = ent->tag[1];
+ 
+ 		if (esp_alloc_lun_tag(ent, lp) < 0)
+ 			continue;
+diff --git a/drivers/scsi/esp_scsi.h b/drivers/scsi/esp_scsi.h
+index 28e22ac..cd68805 100644
+--- a/drivers/scsi/esp_scsi.h
++++ b/drivers/scsi/esp_scsi.h
+@@ -271,6 +271,7 @@ struct esp_cmd_entry {
+ #define ESP_CMD_FLAG_AUTOSENSE	0x04 /* Doing automatic REQUEST_SENSE */
+ 
+ 	u8			tag[2];
++	u8			orig_tag[2];
+ 
+ 	u8			status;
+ 	u8			message;
+-- 
+1.8.1.2
 
