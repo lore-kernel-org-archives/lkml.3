@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab3J2SHV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:07:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59290 "EHLO
+	id S1753107Ab3J2SHT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:07:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59286 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285Ab3J2SFN (ORCPT
+	with ESMTP id S1752242Ab3J2SFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Oct 2013 14:05:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Henrik Rydberg <rydberg@euromail.se>, Guenter Roeck <linux@roeck-us.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 09/81] hwmon: (applesmc) Always read until end of data
-Date: Tue, 29 Oct 2013 11:03:30 -0700
-Message-Id: <1383069882-11437-10-git-send-email-kamal@canonical.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 19/81] compiler/gcc4: Add quirk for 'asm goto' miscompilation bug
+Date: Tue, 29 Oct 2013 11:03:40 -0700
+Message-Id: <1383069882-11437-20-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
@@ -27,74 +28,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Henrik Rydberg <rydberg@euromail.se>
+From: Ingo Molnar <mingo@kernel.org>
 
-commit 25f2bd7f5add608c1d1405938f39c96927b275ca upstream.
+commit 3f0116c3238a96bc18ad4b4acefe4e7be32fa861 upstream.
 
-The crash reported and investigated in commit 5f4513 turned out to be
-caused by a change to the read interface on newer (2012) SMCs.
+Fengguang Wu, Oleg Nesterov and Peter Zijlstra tracked down
+a kernel crash to a GCC bug: GCC miscompiles certain 'asm goto'
+constructs, as outlined here:
 
-Tests by Chris show that simply reading the data valid line is enough
-for the problem to go away. Additional tests show that the newer SMCs
-no longer wait for the number of requested bytes, but start sending
-data right away.  Apparently the number of bytes to read is no longer
-specified as before, but instead found out by reading until end of
-data. Failure to read until end of data confuses the state machine,
-which eventually causes the crash.
+  http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
 
-As a remedy, assuming bit0 is the read valid line, make sure there is
-nothing more to read before leaving the read function.
+Implement a workaround suggested by Jakub Jelinek.
 
-Tested to resolve the original problem, and runtested on MBA3,1,
-MBP4,1, MBP8,2, MBP10,1, MBP10,2. The patch seems to have no effect on
-machines before 2012.
-
-Tested-by: Chris Murphy <chris@cmurf.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Suggested-by: Jakub Jelinek <jakub@redhat.com>
+Reviewed-by: Richard Henderson <rth@twiddle.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[ kamal: backport to 3.8 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hwmon/applesmc.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ arch/arm/include/asm/jump_label.h     |  2 +-
+ arch/mips/include/asm/jump_label.h    |  2 +-
+ arch/powerpc/include/asm/jump_label.h |  2 +-
+ arch/s390/include/asm/jump_label.h    |  2 +-
+ arch/sparc/include/asm/jump_label.h   |  2 +-
+ arch/x86/include/asm/cpufeature.h     |  2 +-
+ arch/x86/include/asm/jump_label.h     |  2 +-
+ include/linux/compiler-gcc4.h         | 15 +++++++++++++++
+ 8 files changed, 22 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-index f75abcc..0f646a7 100644
---- a/drivers/hwmon/applesmc.c
-+++ b/drivers/hwmon/applesmc.c
-@@ -230,6 +230,7 @@ static int send_argument(const char *key)
+diff --git a/arch/arm/include/asm/jump_label.h b/arch/arm/include/asm/jump_label.h
+index bfc198c..863c892 100644
+--- a/arch/arm/include/asm/jump_label.h
++++ b/arch/arm/include/asm/jump_label.h
+@@ -16,7 +16,7 @@
  
- static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
+ static __always_inline bool arch_static_branch(struct static_key *key)
  {
-+	u8 status, data = 0;
- 	int i;
+-	asm goto("1:\n\t"
++	asm_volatile_goto("1:\n\t"
+ 		 JUMP_LABEL_NOP "\n\t"
+ 		 ".pushsection __jump_table,  \"aw\"\n\t"
+ 		 ".word 1b, %l[l_yes], %c0\n\t"
+diff --git a/arch/mips/include/asm/jump_label.h b/arch/mips/include/asm/jump_label.h
+index 4d6d77e..e194f95 100644
+--- a/arch/mips/include/asm/jump_label.h
++++ b/arch/mips/include/asm/jump_label.h
+@@ -22,7 +22,7 @@
  
- 	if (send_command(cmd) || send_argument(key)) {
-@@ -237,6 +238,7 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
- 		return -EIO;
- 	}
+ static __always_inline bool arch_static_branch(struct static_key *key)
+ {
+-	asm goto("1:\tnop\n\t"
++	asm_volatile_goto("1:\tnop\n\t"
+ 		"nop\n\t"
+ 		".pushsection __jump_table,  \"aw\"\n\t"
+ 		WORD_INSN " 1b, %l[l_yes], %0\n\t"
+diff --git a/arch/powerpc/include/asm/jump_label.h b/arch/powerpc/include/asm/jump_label.h
+index ae098c4..f016bb6 100644
+--- a/arch/powerpc/include/asm/jump_label.h
++++ b/arch/powerpc/include/asm/jump_label.h
+@@ -19,7 +19,7 @@
  
-+	/* This has no effect on newer (2012) SMCs */
- 	if (send_byte(len, APPLESMC_DATA_PORT)) {
- 		pr_warn("%.4s: read len fail\n", key);
- 		return -EIO;
-@@ -250,6 +252,17 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
- 		buffer[i] = inb(APPLESMC_DATA_PORT);
- 	}
+ static __always_inline bool arch_static_branch(struct static_key *key)
+ {
+-	asm goto("1:\n\t"
++	asm_volatile_goto("1:\n\t"
+ 		 "nop\n\t"
+ 		 ".pushsection __jump_table,  \"aw\"\n\t"
+ 		 JUMP_ENTRY_TYPE "1b, %l[l_yes], %c0\n\t"
+diff --git a/arch/s390/include/asm/jump_label.h b/arch/s390/include/asm/jump_label.h
+index 6c32190..346b1c8 100644
+--- a/arch/s390/include/asm/jump_label.h
++++ b/arch/s390/include/asm/jump_label.h
+@@ -15,7 +15,7 @@
  
-+	/* Read the data port until bit0 is cleared */
-+	for (i = 0; i < 16; i++) {
-+		udelay(APPLESMC_MIN_WAIT);
-+		status = inb(APPLESMC_CMD_PORT);
-+		if (!(status & 0x01))
-+			break;
-+		data = inb(APPLESMC_DATA_PORT);
-+	}
-+	if (i)
-+		pr_warn("flushed %d bytes, last value is: %d\n", i, data);
-+
- 	return 0;
- }
+ static __always_inline bool arch_static_branch(struct static_key *key)
+ {
+-	asm goto("0:	brcl 0,0\n"
++	asm_volatile_goto("0:	brcl 0,0\n"
+ 		".pushsection __jump_table, \"aw\"\n"
+ 		ASM_ALIGN "\n"
+ 		ASM_PTR " 0b, %l[label], %0\n"
+diff --git a/arch/sparc/include/asm/jump_label.h b/arch/sparc/include/asm/jump_label.h
+index 5080d16..ec2e2e2 100644
+--- a/arch/sparc/include/asm/jump_label.h
++++ b/arch/sparc/include/asm/jump_label.h
+@@ -9,7 +9,7 @@
  
+ static __always_inline bool arch_static_branch(struct static_key *key)
+ {
+-		asm goto("1:\n\t"
++		asm_volatile_goto("1:\n\t"
+ 			 "nop\n\t"
+ 			 "nop\n\t"
+ 			 ".pushsection __jump_table,  \"aw\"\n\t"
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 2d9075e..d3f0db1 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -346,7 +346,7 @@ extern const char * const x86_power_flags[32];
+ static __always_inline __pure bool __static_cpu_has(u16 bit)
+ {
+ #if __GNUC__ > 4 || __GNUC_MINOR__ >= 5
+-		asm goto("1: jmp %l[t_no]\n"
++		asm_volatile_goto("1: jmp %l[t_no]\n"
+ 			 "2:\n"
+ 			 ".section .altinstructions,\"a\"\n"
+ 			 " .long 1b - .\n"
+diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
+index 3a16c14..0297669 100644
+--- a/arch/x86/include/asm/jump_label.h
++++ b/arch/x86/include/asm/jump_label.h
+@@ -13,7 +13,7 @@
+ 
+ static __always_inline bool arch_static_branch(struct static_key *key)
+ {
+-	asm goto("1:"
++	asm_volatile_goto("1:"
+ 		STATIC_KEY_INITIAL_NOP
+ 		".pushsection __jump_table,  \"aw\" \n\t"
+ 		_ASM_ALIGN "\n\t"
+diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
+index c9785c2..e8f0bf9 100644
+--- a/include/linux/compiler-gcc4.h
++++ b/include/linux/compiler-gcc4.h
+@@ -67,6 +67,21 @@
+ #define __visible __attribute__((externally_visible))
+ #endif
+ 
++/*
++ * GCC 'asm goto' miscompiles certain code sequences:
++ *
++ *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
++ *
++ * Work it around via a compiler barrier quirk suggested by Jakub Jelinek.
++ * Fixed in GCC 4.8.2 and later versions.
++ *
++ * (asm goto is automatically volatile - the naming reflects this.)
++ */
++#if GCC_VERSION <= 40801
++# define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
++#else
++# define asm_volatile_goto(x...)	do { asm goto(x); } while (0)
++#endif
+ 
+ #ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
+ #if __GNUC_MINOR__ >= 4
 -- 
 1.8.1.2
 
