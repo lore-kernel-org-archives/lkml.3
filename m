@@ -1,188 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117Ab3J2KOv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 06:14:51 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:40937 "EHLO
+	id S1754198Ab3J2KQN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 06:16:13 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:41189 "EHLO
 	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab3J2KOs (ORCPT
+	with ESMTP id S1751339Ab3J2KQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 06:14:48 -0400
-Date: Tue, 29 Oct 2013 11:14:45 +0100
+	Tue, 29 Oct 2013 06:16:10 -0400
+Date: Tue, 29 Oct 2013 11:16:07 +0100
 From: Kamil Debski <k.debski@samsung.com>
-Subject: RE: [RFC PATCH 2/5] phy: Add WIP Exynos 5250 support to the Exynos USB
- PHY driver
-In-reply-to: <526F8609.5010106@ti.com>
-To: "'Kishon Vijay Abraham I'" <kishon@ti.com>,
-        "'Vivek Gautam'" <gautamvivek1987@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        "'Linux USB Mailing List'" <linux-usb@vger.kernel.org>,
+Subject: RE: [PATCH v2 1/5] phy: Add new Exynos USB PHY driver
+In-reply-to: <1548448.GBuE52miBt@flatron>
+To: "'Tomasz Figa'" <tomasz.figa@gmail.com>
+Cc: "'Kishon Vijay Abraham I'" <kishon@ti.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
         devicetree@vger.kernel.org, linux-arm@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
+        kyungmin.park@samsung.com, Tomasz Figa <t.figa@samsung.com>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Vivek Gautam'" <gautam.vivek@samsung.com>,
-        "'Mateusz Krawczuk'" <mat.krawczuk@gmail.com>
-Message-id: <030b01ced48f$b1e17e00$15a47a00$%debski@samsung.com>
+        Marek Szyprowski <m.szyprowski@samsung.com>, gautam.vivek@samsung.com,
+        mat.krawczuk@gmail.com
+Message-id: <030c01ced48f$e2d513f0$a87f3bd0$%debski@samsung.com>
 MIME-version: 1.0
 X-Mailer: Microsoft Office Outlook 12.0
 Content-type: text/plain; charset=us-ascii
 Content-language: pl
 Content-transfer-encoding: 7bit
-Thread-index: Ac7UjQIJFAnI9VUgQy6TcjjR9BwhuAAAHn2w
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-e6-526f8a97a0e8
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsVy+t/xq7rTu/KDDCYtYreYf+Qcq0XblYPs
-	Fm+/b2G3uPC0h83ibNMbdotpO/+zWlzeNYfNYsb5fUwWi5a1MlusPXKX3eJs/202i8Nv2lkt
-	1s94zeLA67Fz1l12j74tqxg9jt/YzuTxeZNcAEsUl01Kak5mWWqRvl0CV8bU+6vYCqaqVcx/
-	cYGtgfGDbBcjJ4eEgInEh7kHWSBsMYkL99azdTFycQgJLGWU+PtzPTOE08AkcathAmMXIwcH
-	m4CmxKp7HiANIgJREn/nXmUBqWEW2M8scXjlVCaQhJDAP0aJHS/CQWxOATWJ7Q92sYLYwgIx
-	Eo8XvGEEsVkEVCXenfgOtplXwEHi0a1P7BC2oMSPyffA4swCWhLrdx5ngrDlJTavecsMcoOE
-	gLrEo7+6EDcYSUzsOcMMUSIicbfhOesERqFZSCbNQjJpFpJJs5C0LGBkWcUomlqaXFCclJ5r
-	qFecmFtcmpeul5yfu4kREl9fdjAuPmZ1iFGAg1GJh9eCLT9IiDWxrLgy9xCjBAezkghvcyNQ
-	iDclsbIqtSg/vqg0J7X4ECMTB6dUA6Pt1B+CXPLPzLlKmqRPeIfyPwsu4nlcceN3Vpu/pFTn
-	3nsrMx/fDE8JeJj+78pkNl2XY9Jpbl/zjhe6JVif3XPoffYa8yqv6IhUhZqi1bd/vnp28Qhr
-	RFrXu3tmeRI7nim785iFn9XUZxWO/HSm3nbfmj3cs6ZuU3HUD9vbxHdy8eTr91hSriuxFGck
-	GmoxFxUnAgDZkZIQjQIAAA==
+Thread-index: Ac7UGE5ncd/G8kz3TyGaBdWyIGapVgAd2i2Q
+X-AuditID: cbfec7f5-b7ef66d00000795a-66-526f8ae92c54
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsVy+t/xy7ovu/KDDDbO57OYf+Qcq0XblYPs
+	Fhee9rBZnG16w24xbed/VovLu+awWcw4v4/JYtGyVmaLtUfusluc7b/NZnH4TTurxfoZr1ks
+	Vu36w+jA67Fz1l12j74tqxg9jt/YzuTxeZNcAEsUl01Kak5mWWqRvl0CV8bv2xPYC9YIVPx9
+	1sXWwHiGp4uRk0NCwETi6pfjrBC2mMSFe+vZuhi5OIQEljJKzLgwgQnCaWCS+LTiJ0sXIwcH
+	m4CmxKp7HiANIkDmsSfP2EFqmAWmMEs8+TWBGaJhC6PE1V2f2ECqOIGqpix7ywhiCwvYSfz4
+	9A7MZhFQlVh75Q/Yal4BB4kX6zoYIWxBiR+T77GA2MwCWhLrdx5ngrDlJTavecsMcoSEgLrE
+	o7+6IKaIgJFE2xQ/iAoRibsNz1knMArNQjJoFpJBs5AMmoWkZQEjyypG0dTS5ILipPRcI73i
+	xNzi0rx0veT83E2MkPj6uoNx6TGrQ4wCHIxKPLwWbPlBQqyJZcWVuYcYJTiYlUR4mxuBQrwp
+	iZVVqUX58UWlOanFhxiZODilGhiTv0+SULm+7Pz3e3mv2yZ02gREPN9p3bn8v+CF+QcmsST8
+	Ef9r1Kumeydm1gzr2x+4uc22H92995ki+6fcrycPXoufIG2w2u9Qz8HTk8pfviv/9+fBdc97
+	3wTvHzK5M3v5t4fbtQyv/zYpfr3tmeHyP+Vitg/ktj14Z2PVGDp7pfyRfyzb3mn/sFRiKc5I
+	NNRiLipOBAD54IfVjQIAAA==
 References: <1382710529-12082-1-git-send-email-k.debski@samsung.com>
- <1382710529-12082-3-git-send-email-k.debski@samsung.com>
- <526A91B9.1060901@ti.com>
- <CAFp+6iF2agMNaNhg=6Xx79erV45V=TobH=+GdziFx8j70g8MDw@mail.gmail.com>
- <526F8609.5010106@ti.com>
+ <526A90B9.3040501@ti.com> <025b01ced3e4$ec685db0$c5391910$%debski@samsung.com>
+ <1548448.GBuE52miBt@flatron>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-> From: Kishon Vijay Abraham I [mailto:kishon@ti.com]
-> Sent: Tuesday, October 29, 2013 10:55 AM
+> From: Tomasz Figa [mailto:tomasz.figa@gmail.com]
+> Sent: Monday, October 28, 2013 9:00 PM
 > 
-> Hi,
+> Hi Kamil,
 > 
-> On Monday 28 October 2013 08:11 PM, Vivek Gautam wrote:
+> On Monday 28 of October 2013 14:52:19 Kamil Debski wrote:
 > > Hi Kishon,
 > >
+> > Thank you for your review! I will answer your comments below.
+> [snip]
+> > > > +
+> > > > +	switch (drv->cfg->cpu) {
+> > > > +	case TYPE_EXYNOS4210:
+> > >
+> > > > +	case TYPE_EXYNOS4212:
+> > > Lets not add such cpu checks inside driver.
 > >
-> > On Fri, Oct 25, 2013 at 9:13 PM, Kishon Vijay Abraham I
-> <kishon@ti.com> wrote:
-> >> Hi,
-> >>
-> >> On Friday 25 October 2013 07:45 PM, Kamil Debski wrote:
-> >>> Add support for Exynos 5250. This is work-in-progress commit. Not
-> >>> for merging.
-> >>>
-> >>> Signed-off-by: Kamil Debski <k.debski@samsung.com>
-> >>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >>> ---
-> >>>  drivers/phy/Kconfig              |    7 +
-> >>>  drivers/phy/Makefile             |    1 +
-> >>>  drivers/phy/phy-exynos-usb.c     |   10 +
-> >>>  drivers/phy/phy-exynos-usb.h     |    1 +
-> >>>  drivers/phy/phy-exynos5250-usb.c |  411
-> >>> ++++++++++++++++++++++++++++++++++++++
-> >>>  5 files changed, 430 insertions(+)
-> >>>  create mode 100644 drivers/phy/phy-exynos5250-usb.c
-> >>>
-> >>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig index
-> >>> 2f7ac0a..0f598d0 100644
-> >>> --- a/drivers/phy/Kconfig
-> >>> +++ b/drivers/phy/Kconfig
-> >>> @@ -36,4 +36,11 @@ config PHY_EXYNOS4212_USB
-> >>>       help
-> >>>         Enable USB PHY support for Exynos 4212
-> >>>
-> >>> +config PHY_EXYNOS5250_USB
-> >>> +     bool "Support for Exynos 5250"
-> >>> +     depends on PHY_EXYNOS_USB
-> >>
-> >> This should be a separate driver. Not necessary to use
-> PHY_EXYNOS_USB.
-> >>> +     depends on SOC_EXYNOS5250
-> >>> +     help
-> >>> +       Enable USB PHY support for Exynos 5250
-> >>> +
-> >>>  endmenu
-> >>> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile index
-> >>> ca3dc82..0dff0dd 100644
-> >>> --- a/drivers/phy/Makefile
-> >>> +++ b/drivers/phy/Makefile
-> >>> @@ -6,3 +6,4 @@ obj-$(CONFIG_GENERIC_PHY)     += phy-core.o
-> >>>  obj-$(CONFIG_PHY_EXYNOS_USB)         += phy-exynos-usb.o
-> >>>  obj-$(CONFIG_PHY_EXYNOS4210_USB)     += phy-exynos4210-usb.o
-> >>>  obj-$(CONFIG_PHY_EXYNOS4212_USB)     += phy-exynos4212-usb.o
-> >>> +obj-$(CONFIG_PHY_EXYNOS5250_USB)     += phy-exynos5250-usb.o
-> >>> diff --git a/drivers/phy/phy-exynos-usb.c
-> >>> b/drivers/phy/phy-exynos-usb.c index d4a26df..172b774 100644
-> >>> --- a/drivers/phy/phy-exynos-usb.c
-> >>> +++ b/drivers/phy/phy-exynos-usb.c
-> >>> @@ -212,6 +212,10 @@ extern const struct uphy_config
-> >>> exynos4210_uphy_config;  extern const struct uphy_config
-> >>> exynos4212_uphy_config;  #endif
-> >>>
-> >>> +#ifdef CONFIG_PHY_EXYNOS5250_USB
-> >>> +extern const struct uphy_config exynos5250_uphy_config; #endif
-> >>> +
-> >>>  static const struct of_device_id exynos_uphy_of_match[] =
-> {  #ifdef
-> >>> CONFIG_PHY_EXYNOS4210_USB
-> >>>       {
-> >>> @@ -225,6 +229,12 @@ static const struct of_device_id
-> exynos_uphy_of_match[] = {
-> >>>               .data = &exynos4212_uphy_config,
-> >>>       },
-> >>>  #endif
-> >>> +#ifdef CONFIG_PHY_EXYNOS5250_USB
-> >>> +     {
-> >>> +             .compatible = "samsung,exynos5250-usbphy",
-> >>> +             .data = &exynos5250_uphy_config,
-> >>> +     },
-> >>> +#endif
-> >>>       { },
-> >>>  };
-> >>>
-> >>> diff --git a/drivers/phy/phy-exynos-usb.h
-> >>> b/drivers/phy/phy-exynos-usb.h index f45cb3c..a9febfa 100644
-> >>> --- a/drivers/phy/phy-exynos-usb.h
-> >>> +++ b/drivers/phy/phy-exynos-usb.h
-> >>> @@ -42,6 +42,7 @@ enum samsung_cpu_type {
-> >>>       TYPE_S3C64XX,
-> >>>       TYPE_EXYNOS4210,
-> >>>       TYPE_EXYNOS4212,
-> >>> +     TYPE_EXYNOS5250,
-> >>
-> >> No cpu types here.
+> > Some SoC have a special register, which switches the OTG lines
+> between
+> > device and host modes. I understand that it might not be the
+> prettiest
+> > code. I see this as a good compromise between having a single huge
+> > driver for all Exynos SoCs and having a multiple drivers for each SoC
+> > version. PHY IPs in these chips very are similar but have to be
+> > handled differently. Any other ideas to solve this issue?
+> 
+> Maybe adding a flag in drv->cfg called, for example, .has_mode_switch
+> could solve this problem without having to check the SoC type
+> explicitly?
+
+Sounds like a good idea.
+ 
+> [snip]
+> > > > +#ifdef CONFIG_PHY_EXYNOS4210_USB
+> > >
+> > > Do we really need this?
 > >
-> > One question here.
-> > In case we move to single driver for Exynos4 SoCs (4210, 4212 and
-> 4412
-> > later) as well as S5PV210,
-> > there will be certain things changing from one SoC to another, how
-> > should we target that in case we don't have CPU types ?
-> > May be i am misinterpreting your suggestion ?
+> > No we don't. The driver can always support all Exynos SoC versions.
+> > These config options were added for flexibility.
+> >
+> > > > +extern const struct uphy_config exynos4210_uphy_config; #endif
+> > > > +
+> > > > +#ifdef CONFIG_PHY_EXYNOS4212_USB
+> > >
+> > > Same here.
+> > >
+> > > > +extern const struct uphy_config exynos4212_uphy_config; #endif
+> > > > +
+> > > > +static const struct of_device_id exynos_uphy_of_match[] = {
+> > > > +#ifdef CONFIG_PHY_EXYNOS4210_USB
+> > >
+> > > #if not needed here.
+> >
+> > If the #ifdef CONFIG_PHY_EXYNOS4210_USB is removed then yes.
+> Otherwise
+> > it is necessary - exynos4210_uphy_config may be undefined.
 > 
-> We should be using the IP revision register or check for compatible
-> values.
+> I believe this and other ifdefs below are needed, otherwise, with
+> support for one of the SoCs disabled, the driver could still bind to
+> its compatible value.
 > 
-
-In case of this driver the compatible is checked. Maybe it is not as
-straight forward, but the choice is based on compatible value.
-Compatible is matched to an appropriate data entry in the of_device_id
-table. The data entry contains a cpu field which contains the information
-which PHY version we have. Maybe the "cpu" name is confusing and should be
-changed to something like "version" or "revision".
-
-For example:
-"samsung,exynos4212-usbphy" compatible is matched to exynos4212_uphy_config
-via data field of of_device_id, and the cpu field of exynos4212_uphy_config
-is equal to TYPE_EXYNOS4212.
-This way in the code all what is needed is to check the value of cpu field.
-It already got matched through the compatible.
-
-Still, Tomasz Figa's idea sound good - using a boolean flag
-"has_mode_switch".
 
 Best wishes,
 -- 
 Kamil Debski
 Samsung R&D Institute Poland
+
 
