@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab3J2N2h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 09:28:37 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:35942 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327Ab3J2N2f (ORCPT
+	id S1755439Ab3J2NcN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 09:32:13 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:64186 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752757Ab3J2NcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 09:28:35 -0400
+	Tue, 29 Oct 2013 09:32:10 -0400
+Date: Tue, 29 Oct 2013 14:32:05 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Johan Hovold <jhovold@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 1/9] backlight: atmel-pwm-bl: fix reported brightness
+Message-ID: <20131029133205.GD29615@localhost>
+References: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
+ <1382522143-32072-2-git-send-email-jhovold@gmail.com>
+ <20131025110836.GQ18477@ns203013.ovh.net>
 MIME-Version: 1.0
-In-Reply-To: <20131029011223.58b51e529acced32d6dae82a@canb.auug.org.au>
-References: <20131029011223.58b51e529acced32d6dae82a@canb.auug.org.au>
-Date: Tue, 29 Oct 2013 14:28:34 +0100
-Message-ID: <CACRpkdb_n+bDq3hMR++r2Xr_sWnDVek492XeHAMh5Jtd53-woA@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree (gpio
- tree related)
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131025110836.GQ18477@ns203013.ovh.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 3:12 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Fri, Oct 25, 2013 at 01:08:36PM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> On 11:55 Wed 23 Oct     , Johan Hovold wrote:
+> > The driver supports 16-bit brightness values, but the value returned
+> > from get_brightness was truncated to eight bits.
+> > 
+> > Cc: stable@vger.kernel.org
+> > Acked-by: Jingoo Han <jg1.han@samsung.com>
+> > Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> > ---
+> >  drivers/video/backlight/atmel-pwm-bl.c | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
+> > index 66885fb..8aac273 100644
+> > --- a/drivers/video/backlight/atmel-pwm-bl.c
+> > +++ b/drivers/video/backlight/atmel-pwm-bl.c
+> > @@ -70,7 +70,7 @@ static int atmel_pwm_bl_set_intensity(struct backlight_device *bd)
+> >  static int atmel_pwm_bl_get_intensity(struct backlight_device *bd)
+> >  {
+> >  	struct atmel_pwm_bl *pwmbl = bl_get_data(bd);
+> > -	u8 intensity;
+> > +	u32 intensity;
+> >  
+> >  	if (pwmbl->pdata->pwm_active_low) {
+> >  		intensity = pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY) -
+> > @@ -80,7 +80,7 @@ static int atmel_pwm_bl_get_intensity(struct backlight_device *bd)
+> >  			pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY);
+> >  	}
+> >  
+> > -	return intensity;
+> > +	return (u16)intensity;
+> no cast mask it
 
-> Caused by commit 79a9becda894 ("gpiolib: export descriptor-based GPIO
-> interface") from the gpio tree.
->
-> I have applied this fix up patch for today:
->
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 29 Oct 2013 01:06:23 +1100
-> Subject: [PATCH] gpiolib: provide a declaration of seq_file in gpio/driver.h
->
-> Fixes this build error:
->
-> In file included from include/asm-generic/gpio.h:13:0,
->                  from include/linux/gpio.h:51,
->                  from include/linux/of_gpio.h:20,
->                  from arch/powerpc/sysdev/ppc4xx_gpio.c:29:
-> include/linux/gpio/driver.h:85:14: error: 'struct seq_file' declared inside parameter list [-Werror]
-> include/linux/gpio/driver.h:85:14: error: its scope is only this definition or declaration, which is probably not what you want [-Werror]
->
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Yeah, perhaps that is better. I discussed this a bit with Jingoo Han in
+the thread of the original post. I'll respin.
 
-Patch applied to the GPIO tree, thanks for fixing up our mess!
+Thanks,
+Johan
 
-Yours,
-Linus Walleij
+> >  }
+> >  
+> >  static int atmel_pwm_bl_init_pwm(struct atmel_pwm_bl *pwmbl)
+> > -- 
+> > 1.8.4
+> > 
