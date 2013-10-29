@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab3J2Wcn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 18:32:43 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:61938 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752059Ab3J2Wcm (ORCPT
+	id S1751693Ab3J2Wgf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 18:36:35 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:35706 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086Ab3J2Wge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 18:32:42 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: levex@linux.com
-Cc: Len Brown <lenb@kernel.org>, Robert Hancock <hancockrwd@gmail.com>,
-        Aaron Lu <aaron.lu@intel.com>, ACPI List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] ACPI: Add Toshiba NB100 to Vista _OSI blacklist
-Date: Tue, 29 Oct 2013 23:44:50 +0100
-Message-ID: <2710175.xeuRHdVpyL@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <526FE7E8.80806@linux.com>
-References: <526FE7E8.80806@linux.com>
+	Tue, 29 Oct 2013 18:36:34 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Date: Tue, 29 Oct 2013 23:36:33 +0100
+Message-ID: <CA+MoWDqEv0vxU3erx9GCuJAzK73U+WiuMwY71t94WB6HH-264A@mail.gmail.com>
+Subject: Suspend / Resume broken on Toshiba R830 / R700
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Jiang Liu <jiang.liu@huawei.com>, Toshi Kani <toshi.kani@hp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 29, 2013 05:52:56 PM Levente Kurusa wrote:
-> This patch adds Toshiba NB100 to the Vista _OSI blacklist.
-> 
-> The _OSI(Windows 2006) method is bugged on the netbook resulting in messed up
-> PCI IRQ Routing information. This was observed on a netbook,
-> whose SATA controller mode was set to Compatibility mode.
-> The driver would then register itself to IRQ#16, but the device
-> was in fact issuing interrupts to IRQ#20.
-> No side-effects were found during testing, everything is
-> working as it did before.
-> 
-> See thread:
-> http://marc.info/?t=137862230200001&r=1&w=2
-> http://www.spinics.net/lists/linux-ide/msg46173.html
-> 
-> 
-> Signed-off-by: Levente Kurusa <levex@linux.com>
-> Reviewed-by: Robert Hancock <hancockrwd@gmail.com>
+Hi,
 
-That should be in linux-pm/linux-next already, isn't it there?
+I have one Toshiba R830 and one R700 and suspend / resume is broken on
+both. I've filled a bug report[1] on 03/02/2012, and it is still not
+fixed.
 
-Rafael
+It apparently suspend well and start resuming, but then something goes
+wrong, the screen keeps black and the CPU fan goes full speed.
 
+I suspect that this affects a considerable large number of devices.
+
+I'm looking for fixing it. Can anyone point me some directions?
+
+Thank you,
+
+Peter
+
+[1] https://bugzilla.redhat.com/show_bug.cgi?id=787299
+
+-- 
+Peter
