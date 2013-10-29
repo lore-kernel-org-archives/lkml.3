@@ -1,246 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab3J2QNr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 12:13:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19889 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758312Ab3J2QNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 12:13:44 -0400
-Subject: [PATCH 4/4] kvm: Create non-coherent DMA registeration
-To: kvm@vger.kernel.org, gleb@redhat.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: aik@ozlabs.ru, pbonzini@redhat.com, linux-kernel@vger.kernel.org
-Date: Tue, 29 Oct 2013 10:13:41 -0600
-Message-ID: <20131029161341.22578.20062.stgit@bling.home>
-In-Reply-To: <20131029160019.22578.16409.stgit@bling.home>
-References: <20131029160019.22578.16409.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1758354Ab3J2QOI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 12:14:08 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:40907 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758334Ab3J2QOF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 12:14:05 -0400
+Message-ID: <526FDECB.7020201@codeaurora.org>
+Date: Tue, 29 Oct 2013 09:14:03 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Zhang Mingjun <zhang.mingjun@linaro.org>, Mel Gorman <mgorman@suse.de>
+CC: Minchan Kim <minchan@kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, akpm@linux-foundation.org,
+        Haojian Zhuang <haojian.zhuang@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, troy.zhangmingjun@huawei.com
+Subject: Re: [PATCH] mm: cma: free cma page to buddy instead of being cpu
+ hot page
+References: <1382960569-6564-1-git-send-email-zhang.mingjun@linaro.org>	<20131029093322.GA2400@suse.de>	<CAGT3LergVJ1XXCrVD3XeRpRCXehn9gLb7BRHHyjyseKBz39pMg@mail.gmail.com>	<20131029122708.GD2400@suse.de> <CAGT3LerfYfgdkDd=LnuA8y7SUjOSTbw-HddbuzQ=O3yw-vtnnQ@mail.gmail.com>
+In-Reply-To: <CAGT3LerfYfgdkDd=LnuA8y7SUjOSTbw-HddbuzQ=O3yw-vtnnQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We currently use some ad-hoc arch variables tied to legacy KVM device
-assignment to manage emulation of instructions that depend on whether
-non-coherent DMA is present.  Create an interface for this, adapting
-legacy KVM device assignment and adding VFIO via the KVM-VFIO device.
-For now we assume that non-coherent DMA is possible any time we have a
-VFIO group.  Eventually an interface can be developed as part of the
-VFIO external user interface to query the coherency of a group.
+On 10/29/2013 8:02 AM, Zhang Mingjun wrote:
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- arch/x86/include/asm/kvm_host.h |    2 ++
- arch/x86/kvm/vmx.c              |    3 +--
- arch/x86/kvm/x86.c              |   21 +++++++++++++++++--
- include/linux/kvm_host.h        |   19 +++++++++++++++++
- virt/kvm/iommu.c                |    6 +++++
- virt/kvm/vfio.c                 |   44 +++++++++++++++++++++++++++++++++++++++
- 6 files changed, 91 insertions(+), 4 deletions(-)
+>     It would move the cost to the CMA paths so I would complain less. Bear
+>     in mind as well that forcing everything to go through free_one_page()
+>     means that every free goes through the zone lock. I doubt you have any
+>     machine large enough but it is possible for simultaneous CMA allocations
+>     to now contend on the zone lock that would have been previously fine.
+>     Hence, I'm interesting in knowing the underlying cause of the
+>     problem you
+>     are experiencing.
+>
+> my platform uses CMA but disabled CMA's migration func by del MIGRATE_CMA
+> in fallbacks[MIGRATE_MOVEABLE]. But I find CMA pages can still used by
+> pagecache or page fault page request from PCP list and cma allocation has to
+> migrate these page. So I want to free these cma pages to buddy directly
+> not PCP..
+>
+>      > of course, it will waste the memory outside of the alloc range
+>     but in the
+>      > pageblocks.
+>      >
+>
+>     I would hope/expect that the loss would only last for the duration of
+>     the allocation attempt and a small amount of memory.
+>
+>      > > when a range of pages have been isolated and migrated. Is there any
+>      > > measurable benefit to this patch?
+>      > >
+>      > after applying this patch, the video player on my platform works more
+>      > fluent,
+>
+>     fluent almost always refers to ones command of a spoken language. I do
+>     not see how a video player can be fluent in anything. What is measurably
+>     better?
+>
+>     For example, are allocations faster? If so, why? What cost from another
+>     path is removed as a result of this patch? If the cost is in the PCP
+>     flush then can it be checked if the PCP flush was unnecessary and called
+>     unconditionally even though all the pages were freed already? We had
+>     problems in the past where drain_all_pages() or similar were called
+>     unnecessarily causing long sync stalls related to IPIs. I'm wondering if
+>     we are seeing a similar problem here.
+>
+>     Maybe the problem is the complete opposite. Are allocations failing
+>     because there are PCP pages in the way? In that case, it real fix might
+>     be to insert a  if the allocation is failing due to per-cpu
+>     pages.
+>
+> problem is not the allocation failing, but the unexpected cma migration
+> slows
+> down the allocation.
+>
+>
+>      > and the driver of video decoder on my test platform using cma
+>     alloc/free
+>      > frequently.
+>      >
+>
+>     CMA allocations are almost never used outside of these contexts. While I
+>     appreciate that embedded use is important I'm reluctant to see an impact
+>     in fast paths unless there is a good reason for every other use case. I
+>     also am a bit unhappy to see CMA allocations making the zone->lock
+>     hotter than necessary even if no embedded use case it likely to
+>     experience the problem in the short-term.
+>
+>     --
+>     Mel Gorman
+>     SUSE Labs
+>
+>
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 1b6b5f9..50c1e9c1 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -558,6 +558,8 @@ struct kvm_arch {
- 	struct list_head assigned_dev_head;
- 	struct iommu_domain *iommu_domain;
- 	bool iommu_noncoherent;
-+#define __KVM_HAVE_ARCH_NONCOHERENT_DMA
-+	atomic_t noncoherent_dma_count;
- 	struct kvm_pic *vpic;
- 	struct kvm_ioapic *vioapic;
- 	struct kvm_pit *vpit;
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 5d0e3ab..f7fe08a 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -7410,8 +7410,7 @@ static u64 vmx_get_mt_mask(struct kvm_vcpu *vcpu, gfn_t gfn, bool is_mmio)
- 	 */
- 	if (is_mmio)
- 		ret = MTRR_TYPE_UNCACHABLE << VMX_EPT_MT_EPTE_SHIFT;
--	else if (vcpu->kvm->arch.iommu_domain &&
--		 vcpu->kvm->arch.iommu_noncoherent)
-+	else if (kvm_arch_has_noncoherent_dma(vcpu->kvm))
- 		ret = kvm_get_guest_memory_type(vcpu, gfn) <<
- 		      VMX_EPT_MT_EPTE_SHIFT;
- 	else
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index b1231b0..feec86d 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2715,8 +2715,7 @@ static void wbinvd_ipi(void *garbage)
- 
- static bool need_emulate_wbinvd(struct kvm_vcpu *vcpu)
- {
--	return vcpu->kvm->arch.iommu_domain &&
--	       vcpu->kvm->arch.iommu_noncoherent;
-+	return kvm_arch_has_noncoherent_dma(vcpu->kvm);
- }
- 
- void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
-@@ -7420,6 +7419,24 @@ bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu)
- 			kvm_x86_ops->interrupt_allowed(vcpu);
- }
- 
-+void kvm_arch_register_noncoherent_dma(struct kvm *kvm)
-+{
-+	atomic_inc(&kvm->arch.noncoherent_dma_count);
-+}
-+EXPORT_SYMBOL_GPL(kvm_arch_register_noncoherent_dma);
-+
-+void kvm_arch_unregister_noncoherent_dma(struct kvm *kvm)
-+{
-+	atomic_dec(&kvm->arch.noncoherent_dma_count);
-+}
-+EXPORT_SYMBOL_GPL(kvm_arch_unregister_noncoherent_dma);
-+
-+bool kvm_arch_has_noncoherent_dma(struct kvm *kvm)
-+{
-+	return atomic_read(&kvm->arch.noncoherent_dma_count);
-+}
-+EXPORT_SYMBOL_GPL(kvm_arch_has_noncoherent_dma);
-+
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_exit);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_inj_virq);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_page_fault);
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 46ce3d1..a225349 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -671,6 +671,25 @@ static inline void kvm_arch_free_vm(struct kvm *kvm)
- }
- #endif
- 
-+#ifdef __KVM_HAVE_ARCH_NONCOHERENT_DMA
-+void kvm_arch_register_noncoherent_dma(struct kvm *kvm);
-+void kvm_arch_unregister_noncoherent_dma(struct kvm *kvm);
-+bool kvm_arch_has_noncoherent_dma(struct kvm *kvm);
-+#else
-+static inline void kvm_arch_register_noncoherent_dma(struct kvm *kvm)
-+{
-+}
-+
-+static inline void kvm_arch_unregister_noncoherent_dma(struct kvm *kvm)
-+{
-+}
-+
-+static inline bool kvm_arch_has_noncoherent_dma(struct kvm *kvm)
-+{
-+	return false;
-+}
-+#endif
-+
- static inline wait_queue_head_t *kvm_arch_vcpu_wq(struct kvm_vcpu *vcpu)
- {
- #ifdef __KVM_HAVE_ARCH_WQP
-diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-index 9cde444..0a54456 100644
---- a/virt/kvm/iommu.c
-+++ b/virt/kvm/iommu.c
-@@ -140,6 +140,9 @@ static int kvm_iommu_map_memslots(struct kvm *kvm)
- 	struct kvm_memslots *slots;
- 	struct kvm_memory_slot *memslot;
- 
-+	if (kvm->arch.iommu_noncoherent)
-+		kvm_arch_register_noncoherent_dma(kvm);
-+
- 	idx = srcu_read_lock(&kvm->srcu);
- 	slots = kvm_memslots(kvm);
- 
-@@ -335,6 +338,9 @@ static int kvm_iommu_unmap_memslots(struct kvm *kvm)
- 
- 	srcu_read_unlock(&kvm->srcu, idx);
- 
-+	if (kvm->arch.iommu_noncoherent)
-+		kvm_arch_unregister_noncoherent_dma(kvm);
-+
- 	return 0;
- }
- 
-diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
-index fc2d112..2e336a7 100644
---- a/virt/kvm/vfio.c
-+++ b/virt/kvm/vfio.c
-@@ -27,6 +27,7 @@ struct kvm_vfio_group {
- struct kvm_vfio {
- 	struct list_head group_list;
- 	struct mutex lock;
-+	bool noncoherent;
- };
- 
- static struct vfio_group *kvm_vfio_group_get_external_user(struct file *filep)
-@@ -58,6 +59,43 @@ static void kvm_vfio_group_put_external_user(struct vfio_group *vfio_group)
- 	symbol_put(vfio_group_put_external_user);
- }
- 
-+/*
-+ * Groups can use the same or different IOMMU domains.  If the same then
-+ * adding a new group may change the coherency of groups we've previously
-+ * been told about.  We don't want to care about any of that so we retest
-+ * each group and bail as soon as we find one that's noncoherent.  This
-+ * means we only ever [un]register_noncoherent_dma once for the whole device.
-+ */
-+static void kvm_vfio_update_coherency(struct kvm_device *dev)
-+{
-+	struct kvm_vfio *kv = dev->private;
-+	bool noncoherent = false;
-+	struct kvm_vfio_group *kvg;
-+
-+	mutex_lock(&kv->lock);
-+
-+	list_for_each_entry(kvg, &kv->group_list, node) {
-+		/*
-+		 * TODO: We need an interface to check the coherency of
-+		 * the IOMMU domain this group is using.  For now, assume
-+		 * it's always noncoherent.
-+		 */
-+		noncoherent = true;
-+		break;
-+	}
-+
-+	if (noncoherent != kv->noncoherent) {
-+		kv->noncoherent = noncoherent;
-+
-+		if (kv->noncoherent)
-+			kvm_arch_register_noncoherent_dma(dev->kvm);
-+		else
-+			kvm_arch_unregister_noncoherent_dma(dev->kvm);
-+	}
-+
-+	mutex_unlock(&kv->lock);
-+}
-+
- static int kvm_vfio_set_group(struct kvm_device *dev, long attr, u64 arg)
- {
- 	struct kvm_vfio *kv = dev->private;
-@@ -105,6 +143,8 @@ static int kvm_vfio_set_group(struct kvm_device *dev, long attr, u64 arg)
- 
- 		mutex_unlock(&kv->lock);
- 
-+		kvm_vfio_update_coherency(dev);
-+
- 		return 0;
- 
- 	case KVM_DEV_VFIO_GROUP_DEL:
-@@ -140,6 +180,8 @@ static int kvm_vfio_set_group(struct kvm_device *dev, long attr, u64 arg)
- 
- 		kvm_vfio_group_put_external_user(vfio_group);
- 
-+		kvm_vfio_update_coherency(dev);
-+
- 		return ret;
- 	}
- 
-@@ -185,6 +227,8 @@ static void kvm_vfio_destroy(struct kvm_device *dev)
- 		kfree(kvg);
- 	}
- 
-+	kvm_vfio_update_coherency(dev);
-+
- 	kfree(kv);
- }
- 
+We've had a similar patch in our tree for a year and a half because of 
+CMA migration failures, not just for a speedup in allocation time. I 
+understand that CMA is not the fast case or the general use case but the 
+problem is that the cost of CMA failure is very high (complete failure 
+of the feature using CMA). Putting CMA on the PCP lists means they may 
+be picked up by users who temporarily make the movable pages unmovable 
+(page cache etc.) which prevents the allocation from succeeding. The 
+problem still exists even if the CMA pages are not on the PCP list but 
+the window gets slightly smaller.
 
+This really highlights one of the biggest issues with CMA today. Movable 
+pages make return -EBUSY for any number of reasons. For non-CMA pages 
+this is mostly fine, another movable page may be substituted for the 
+movable page that is busy. CMA is a restricted range though so any 
+failure in that range is very costly because CMA regions are generally 
+sized exactly for the use cases at hand which means there is very little 
+extra space for retries.
+
+To make CMA actually usable, we've had to go through and add in 
+hacks/quirks that prevent CMA from being allocated in any path which may 
+prevent migration. I've been mixed on if this is the right path or if 
+the definition of MIGRATE_CMA needs to be changed to be more restrictive 
+(can't prevent migration).
+
+Thanks,
+Laura
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
