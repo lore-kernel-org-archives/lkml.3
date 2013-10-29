@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab3J2G5A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 02:57:00 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:49239 "EHLO
+	id S1753258Ab3J2G5n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 02:57:43 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:45590 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752345Ab3J2Gxp (ORCPT
+	with ESMTP id S1752336Ab3J2Gxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Oct 2013 02:53:45 -0400
-X-AuditID: 9c93017e-b7ca6ae000000e8a-2a-526f5b77f987
+X-AuditID: 9c93017e-b7ca6ae000000e8a-29-526f5b76cbee
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Namhyung Kim <namhyung.kim@lge.com>,
@@ -19,9 +19,9 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>,
         Oleg Nesterov <oleg@redhat.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 05/13] tracing/kprobes: Staticize stack and memory fetch functions
-Date: Tue, 29 Oct 2013 15:53:33 +0900
-Message-Id: <1383029621-7384-6-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 04/13] tracing/kprobes: Add fetch{,_size} member into deref fetch method
+Date: Tue, 29 Oct 2013 15:53:32 +0900
+Message-Id: <1383029621-7384-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
 References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
@@ -30,87 +30,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Hyeoncheol Lee <cheol.lee@lge.com>
 
-Those fetch functions need to be implemented differently for kprobes
-and uprobes.  Since the deref fetch functions don't call those
-directly anymore, we can make them static and implement them
-separately.
+The deref fetch methods access a memory region but it assumes that
+it's a kernel memory since uprobes does not support them.
+
+Add ->fetch and ->fetch_size member in order to provide a proper
+access methods for supporting uprobes.
 
 Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Hyeoncheol Lee <cheol.lee@lge.com>
+[namhyung@kernel.org: Split original patch into pieces as requested]
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/trace/trace_kprobe.c | 8 ++++----
- kernel/trace/trace_probe.h  | 8 --------
- 2 files changed, 4 insertions(+), 12 deletions(-)
+ kernel/trace/trace_probe.c | 22 ++++++++++++++++++++--
+ 1 file changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 1eff166990c2..fdb6dec11592 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -758,7 +758,7 @@ static const struct file_operations kprobe_profile_ops = {
-  * kprobes-specific fetch functions
-  */
- #define DEFINE_FETCH_stack(type)					\
--__kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,	\
-+static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
- 					  void *offset, void *dest)	\
- {									\
- 	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
-@@ -770,7 +770,7 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
- #define fetch_stack_string_size	NULL
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index 41f654d24cd9..b7b8bda02d6e 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -97,6 +97,8 @@ DEFINE_BASIC_FETCH_FUNCS(retval)
+ struct deref_fetch_param {
+ 	struct fetch_param	orig;
+ 	long			offset;
++	fetch_func_t		fetch;
++	fetch_func_t		fetch_size;
+ };
  
- #define DEFINE_FETCH_memory(type)					\
--__kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,	\
-+static __kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,\
- 					  void *addr, void *dest)	\
- {									\
- 	type retval;							\
-@@ -784,7 +784,7 @@ DEFINE_BASIC_FETCH_FUNCS(memory)
-  * Fetch a null-terminated string. Caller MUST set *(u32 *)dest with max
-  * length and relative data location.
-  */
--__kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
-+static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
- 					       void *addr, void *dest)
- {
- 	long ret;
-@@ -821,7 +821,7 @@ __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
+ #define DEFINE_FETCH_deref(type)					\
+@@ -108,13 +110,26 @@ __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,	\
+ 	call_fetch(&dprm->orig, regs, &addr);				\
+ 	if (addr) {							\
+ 		addr += dprm->offset;					\
+-		fetch_memory_##type(regs, (void *)addr, dest);		\
++		dprm->fetch(regs, (void *)addr, dest);			\
+ 	} else								\
+ 		*(type *)dest = 0;					\
  }
+ DEFINE_BASIC_FETCH_FUNCS(deref)
+ DEFINE_FETCH_deref(string)
+-DEFINE_FETCH_deref(string_size)
++
++__kprobes void FETCH_FUNC_NAME(deref, string_size)(struct pt_regs *regs,
++						   void *data, void *dest)
++{
++	struct deref_fetch_param *dprm = data;
++	unsigned long addr;
++
++	call_fetch(&dprm->orig, regs, &addr);
++	if (addr && dprm->fetch_size) {
++		addr += dprm->offset;
++		dprm->fetch_size(regs, (void *)addr, dest);
++	} else
++		*(string_size *)dest = 0;
++}
  
- /* Return the length of string -- including null terminal byte */
--__kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
-+static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
- 						    void *addr, void *dest)
+ static __kprobes void update_deref_fetch_param(struct deref_fetch_param *data)
  {
- 	mm_segment_t old_fs;
-diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-index 8c62746e5419..9ac7bdf607cc 100644
---- a/kernel/trace/trace_probe.h
-+++ b/kernel/trace/trace_probe.h
-@@ -177,18 +177,10 @@ DECLARE_BASIC_FETCH_FUNCS(reg);
- #define fetch_reg_string		NULL
- #define fetch_reg_string_size		NULL
+@@ -394,6 +409,9 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 				return -ENOMEM;
  
--DECLARE_BASIC_FETCH_FUNCS(stack);
--#define fetch_stack_string		NULL
--#define fetch_stack_string_size		NULL
--
- DECLARE_BASIC_FETCH_FUNCS(retval);
- #define fetch_retval_string		NULL
- #define fetch_retval_string_size	NULL
- 
--DECLARE_BASIC_FETCH_FUNCS(memory);
--DECLARE_FETCH_FUNC(memory, string);
--DECLARE_FETCH_FUNC(memory, string_size);
--
- DECLARE_BASIC_FETCH_FUNCS(symbol);
- DECLARE_FETCH_FUNC(symbol, string);
- DECLARE_FETCH_FUNC(symbol, string_size);
+ 			dprm->offset = offset;
++			dprm->fetch = t->fetch[FETCH_MTD_memory];
++			dprm->fetch_size = get_fetch_size_function(t,
++							dprm->fetch, ttbl);
+ 			ret = parse_probe_arg(arg, t2, &dprm->orig, is_return,
+ 							is_kprobe);
+ 			if (ret)
 -- 
 1.7.11.7
 
