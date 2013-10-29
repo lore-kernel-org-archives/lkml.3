@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab3J2USr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 16:18:47 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:53095 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab3J2USc (ORCPT
+	id S1753435Ab3J2US7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 16:18:59 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:52060 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753289Ab3J2USq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 16:18:32 -0400
+	Tue, 29 Oct 2013 16:18:46 -0400
 From: Kent Overstreet <kmo@daterainc.com>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, hch@infradead.org, tj@kernel.org,
         nab@linux-iscsi.org, Kent Overstreet <kmo@daterainc.com>,
-        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com
-Subject: [PATCH 05/23] dm: Use bvec_iter for dm_bio_record()
-Date: Tue, 29 Oct 2013 13:17:58 -0700
-Message-Id: <1383077896-4132-6-git-send-email-kmo@daterainc.com>
+        Yehuda Sadeh <yehuda@inktank.com>, Alex Elder <elder@inktank.com>,
+        ceph-devel@vger.kernel.org
+Subject: [PATCH 16/23] rbd: Refactor bio cloning, don't clone biovecs
+Date: Tue, 29 Oct 2013 13:18:09 -0700
+Message-Id: <1383077896-4132-17-git-send-email-kmo@daterainc.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1383077896-4132-1-git-send-email-kmo@daterainc.com>
 References: <1383077896-4132-1-git-send-email-kmo@daterainc.com>
@@ -22,60 +23,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch doesn't itself have any functional changes, but immutable
-biovecs are going to add a bi_bvec_done member to bi_iter, which will
-need to be saved too here.
+Now that we've got drivers converted to the new immutable bvec
+primitives, bio splitting becomes much easier. In a few patches,
+bio_clone() will be changed to share the old bio's bvec instead of
+copying it, and bio_split() will do exactly what's being done here.
 
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Cc: Alasdair Kergon <agk@redhat.com>
-Cc: dm-devel@redhat.com
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Yehuda Sadeh <yehuda@inktank.com>
+Cc: Alex Elder <elder@inktank.com>
+Cc: ceph-devel@vger.kernel.org
 ---
- drivers/md/dm-bio-record.h | 12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
+ drivers/block/rbd.c | 64 ++---------------------------------------------------
+ 1 file changed, 2 insertions(+), 62 deletions(-)
 
-diff --git a/drivers/md/dm-bio-record.h b/drivers/md/dm-bio-record.h
-index 5ace48e..4f46e8e 100644
---- a/drivers/md/dm-bio-record.h
-+++ b/drivers/md/dm-bio-record.h
-@@ -28,11 +28,9 @@ struct dm_bio_vec_details {
- };
- 
- struct dm_bio_details {
--	sector_t bi_sector;
- 	struct block_device *bi_bdev;
--	unsigned int bi_size;
--	unsigned short bi_idx;
- 	unsigned long bi_flags;
-+	struct bvec_iter bi_iter;
- 	struct dm_bio_vec_details bi_io_vec[BIO_MAX_PAGES];
- };
- 
-@@ -40,11 +38,9 @@ static inline void dm_bio_record(struct dm_bio_details *bd, struct bio *bio)
+diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+index 3241d5e..f2381e3 100644
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -1173,73 +1173,13 @@ static struct bio *bio_clone_range(struct bio *bio_src,
+ 					unsigned int len,
+ 					gfp_t gfpmask)
  {
- 	unsigned i;
+-	struct bio_vec bv;
+-	struct bvec_iter iter;
+-	struct bvec_iter end_iter;
+-	unsigned int resid;
+-	unsigned int voff;
+-	unsigned short vcnt;
+ 	struct bio *bio;
  
--	bd->bi_sector = bio->bi_iter.bi_sector;
- 	bd->bi_bdev = bio->bi_bdev;
--	bd->bi_size = bio->bi_iter.bi_size;
--	bd->bi_idx = bio->bi_iter.bi_idx;
- 	bd->bi_flags = bio->bi_flags;
-+	bd->bi_iter = bio->bi_iter;
+-	/* Handle the easy case for the caller */
+-
+-	if (!offset && len == bio_src->bi_iter.bi_size)
+-		return bio_clone(bio_src, gfpmask);
+-
+-	if (WARN_ON_ONCE(!len))
+-		return NULL;
+-	if (WARN_ON_ONCE(len > bio_src->bi_iter.bi_size))
+-		return NULL;
+-	if (WARN_ON_ONCE(offset > bio_src->bi_iter.bi_size - len))
+-		return NULL;
+-
+-	/* Find first affected segment... */
+-
+-	resid = offset;
+-	bio_for_each_segment(bv, bio_src, iter) {
+-		if (resid < bv.bv_len)
+-			break;
+-		resid -= bv.bv_len;
+-	}
+-	voff = resid;
+-
+-	/* ...and the last affected segment */
+-
+-	resid += len;
+-	__bio_for_each_segment(bv, bio_src, end_iter, iter) {
+-		if (resid <= bv.bv_len)
+-			break;
+-		resid -= bv.bv_len;
+-	}
+-	vcnt = end_iter.bi_idx = iter.bi_idx + 1;
+-
+-	/* Build the clone */
+-
+-	bio = bio_alloc(gfpmask, (unsigned int) vcnt);
++	bio = bio_clone(bio_src, gfpmask);
+ 	if (!bio)
+ 		return NULL;	/* ENOMEM */
  
- 	for (i = 0; i < bio->bi_vcnt; i++) {
- 		bd->bi_io_vec[i].bv_len = bio->bi_io_vec[i].bv_len;
-@@ -56,11 +52,9 @@ static inline void dm_bio_restore(struct dm_bio_details *bd, struct bio *bio)
- {
- 	unsigned i;
+-	bio->bi_bdev = bio_src->bi_bdev;
+-	bio->bi_iter.bi_sector = bio_src->bi_iter.bi_sector +
+-		(offset >> SECTOR_SHIFT);
+-	bio->bi_rw = bio_src->bi_rw;
+-	bio->bi_flags |= 1 << BIO_CLONED;
+-
+-	/*
+-	 * Copy over our part of the bio_vec, then update the first
+-	 * and last (or only) entries.
+-	 */
+-	memcpy(&bio->bi_io_vec[0], &bio_src->bi_io_vec[iter.bi_idx],
+-			vcnt * sizeof (struct bio_vec));
+-	bio->bi_io_vec[0].bv_offset += voff;
+-	if (vcnt > 1) {
+-		bio->bi_io_vec[0].bv_len -= voff;
+-		bio->bi_io_vec[vcnt - 1].bv_len = resid;
+-	} else {
+-		bio->bi_io_vec[0].bv_len = len;
+-	}
+-
+-	bio->bi_vcnt = vcnt;
++	bio_advance(bio, offset);
+ 	bio->bi_iter.bi_size = len;
  
--	bio->bi_iter.bi_sector = bd->bi_sector;
- 	bio->bi_bdev = bd->bi_bdev;
--	bio->bi_iter.bi_size = bd->bi_size;
--	bio->bi_iter.bi_idx = bd->bi_idx;
- 	bio->bi_flags = bd->bi_flags;
-+	bio->bi_iter = bd->bi_iter;
- 
- 	for (i = 0; i < bio->bi_vcnt; i++) {
- 		bio->bi_io_vec[i].bv_len = bd->bi_io_vec[i].bv_len;
+ 	return bio;
 -- 
 1.8.4.rc3
 
