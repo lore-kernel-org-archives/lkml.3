@@ -1,204 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048Ab3J2U1B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 16:27:01 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:44218 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab3J2U07 (ORCPT
+	id S1753293Ab3J2U20 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 16:28:26 -0400
+Received: from smtprelay0062.hostedemail.com ([216.40.44.62]:34456 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752132Ab3J2U2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 16:26:59 -0400
-Date: Tue, 29 Oct 2013 16:26:44 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-Message-ID: <20131029202644.GB32389@localhost.localdomain>
-References: <20131028182913.GD31048@hmsreliant.think-freely.org>
- <20131029082542.GA24625@gmail.com>
- <20131029112022.GA24477@neilslaptop.think-freely.org>
- <20131029113031.GA16897@gmail.com>
- <20131029114907.GE24477@neilslaptop.think-freely.org>
- <20131029125233.GA17449@gmail.com>
- <20131029130712.GA25078@neilslaptop.think-freely.org>
- <20131029131149.GB20408@gmail.com>
- <20131029141706.GC25078@neilslaptop.think-freely.org>
- <20131029142716.GA28113@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131029142716.GA28113@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+	Tue, 29 Oct 2013 16:28:25 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:69:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3653:3865:3866:3867:3868:3871:4321:4605:5007:7652:9592:10004:10400:10848:11657:11658:11914:12043:12517:12519:12555:13069:13141:13161:13229:13230:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: feet05_493879b5c1118
+X-Filterd-Recvd-Size: 2613
+Message-ID: <1383078501.12439.30.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Improve "return is not a function" test
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@shadowen.org>
+Cc: David Cohen <david.a.cohen@linux.intel.com>, linux-kernel@vger.kernel.org
+Date: Tue, 29 Oct 2013 13:28:21 -0700
+In-Reply-To: <1383075490.12439.26.camel@joe-AO722>
+References: <1383069950-27754-1-git-send-email-david.a.cohen@linux.intel.com>
+	 <1383070766.12439.13.camel@joe-AO722> <526FFED4.4070902@linux.intel.com>
+	 <1383071755.12439.17.camel@joe-AO722> <52700D4C.10008@linux.intel.com>
+	 <1383075490.12439.26.camel@joe-AO722>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 03:27:16PM +0100, Ingo Molnar wrote:
-> 
-> * Neil Horman <nhorman@tuxdriver.com> wrote:
-> 
-> > So, I apologize, you were right.  I was running the test.sh script 
-> > but perf was measuring itself. [...]
-> 
-> Ok, cool - one mystery less!
-> 
-> > Which overall looks alot more like I expect, save for the parallel 
-> > ALU cases. It seems here that the parallel ALU changes actually 
-> > hurt performance, which really seems counter-intuitive.  I don't 
-> > yet have any explination for that.  I do note that we seem to have 
-> > more stalls in the both case so perhaps the parallel chains call 
-> > for a more agressive prefetch.  Do you have any thoughts?
-> 
-> Note that with -ddd you 'overload' the PMU with more counters than 
-> can be run at once, which introduces extra noise. Since you are 
-> running the tests for 0.150 secs or so, the results are not very 
-> representative:
-> 
->                734 dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +-  8.40% ) [13.94%]
->         13,314,660 iTLB-loads                #  280.759 M/sec                    ( +-  0.05% ) [12.97%]
-> 
-> with such low runtimes those results are very hard to trust.
-> 
-> So -ddd is typically used to pick up the most interesting PMU events 
-> you want to see measured, and then use them like this:
-> 
->    -e dTLB-load-misses -e iTLB-loads
-> 
-> etc. For such short runtimes make sure the last column displays 
-> close to 100%, so that the PMU results become trustable.
-> 
-> A nehalem+ PMU will allow 2-4 events to be measured in parallel, 
-> plus generics like 'cycles', 'instructions' can be added 'for free' 
-> because they get counted in a separate (fixed purpose) PMU register.
-> 
-> The last colum tells you what percentage of the runtime that 
-> particular event was actually active. 100% (or empty last column) 
-> means it was active all the time.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+Find a few more cases where parentheses are used around
+the value of a return statement.
 
-Hmm, 
+This also makes the test depend on perl v5.10 and higher.
 
-I ran this test:
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 18 ++++--------------
+ 1 file changed, 4 insertions(+), 14 deletions(-)
 
-for i in `seq 0 1 3`
-do
-echo $i > /sys/module/csum_test/parameters/module_test_mode
-taskset -c 0 perf stat --repeat 20 -C 0 -e L1-dcache-load-misses -e L1-dcache-prefetches -e cycles -e instructions -ddd ./test.sh
-done
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 23d55bf..957ba04 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3221,21 +3221,10 @@ sub process {
+ 		}
+ 
+ # Return is not a function.
+-		if (defined($stat) && $stat =~ /^.\s*return(\s*)(\(.*);/s) {
++		if (defined($stat) && $stat =~ /^.\s*return(\s*)\(/s) {
+ 			my $spacing = $1;
+-			my $value = $2;
+-
+-			# Flatten any parentheses
+-			$value =~ s/\(/ \(/g;
+-			$value =~ s/\)/\) /g;
+-			while ($value =~ s/\[[^\[\]]*\]/1/ ||
+-			       $value !~ /(?:$Ident|-?$Constant)\s*
+-					     $Compare\s*
+-					     (?:$Ident|-?$Constant)/x &&
+-			       $value =~ s/\([^\(\)]*\)/1/) {
+-			}
+-#print "value<$value>\n";
+-			if ($value =~ /^\s*(?:$Ident|-?$Constant)\s*$/) {
++			if ($^V && $^V ge 5.10.0 &&
++			    $stat =~ /^.\s*return\s*$balanced_parens\s*;\s*$/) {
+ 				ERROR("RETURN_PARENTHESES",
+ 				      "return is not a function, parentheses are not required\n" . $herecurr);
+ 
+@@ -3244,6 +3233,7 @@ sub process {
+ 				      "space required before the open parenthesis '('\n" . $herecurr);
+ 			}
+ 		}
++
+ # Return of what appears to be an errno should normally be -'ve
+ 		if ($line =~ /^.\s*return\s*(E[A-Z]*)\s*;/) {
+ 			my $name = $1;
 
-And I updated the test module to run for a million iterations rather than 100000 to increase the sample size and got this:
-
-
-Base:
- Performance counter stats for './test.sh' (20 runs):
-
-        47,305,064 L1-dcache-load-misses     #    2.09% of all L1-dcache hits    ( +-  0.04% ) [18.74%]
-                 0 L1-dcache-prefetches                                         [18.75%]
-    13,906,212,348 cycles                    #    0.000 GHz                      ( +-  0.05% ) [18.76%]
-     4,426,395,949 instructions              #    0.32  insns per cycle          ( +-  0.01% ) [18.77%]
-     2,261,551,278 L1-dcache-loads                                               ( +-  0.02% ) [18.76%]
-        47,287,226 L1-dcache-load-misses     #    2.09% of all L1-dcache hits    ( +-  0.04% ) [18.76%]
-       276,842,685 LLC-loads                                                     ( +-  0.01% ) [18.76%]
-        46,454,114 LLC-load-misses           #   16.78% of all LL-cache hits     ( +-  0.05% ) [18.76%]
-     1,048,894,486 L1-icache-loads                                               ( +-  0.07% ) [18.76%]
-           472,205 L1-icache-load-misses     #    0.05% of all L1-icache hits    ( +-  1.19% ) [18.76%]
-     2,260,639,613 dTLB-loads                                                    ( +-  0.01% ) [18.75%]
-               172 dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +- 35.14% ) [18.74%]
-     1,048,732,481 iTLB-loads                                                    ( +-  0.07% ) [18.74%]
-                19 iTLB-load-misses          #    0.00% of all iTLB cache hits   ( +- 39.75% ) [18.73%]
-                 0 L1-dcache-prefetches                                         [18.73%]
-                 0 L1-dcache-prefetch-misses                                    [18.73%]
-
-       5.370546698 seconds time elapsed                                          ( +-  0.05% )
-
-
-Prefetch:
- Performance counter stats for './test.sh' (20 runs):
-
-       124,885,469 L1-dcache-load-misses     #    4.96% of all L1-dcache hits    ( +-  0.09% ) [18.74%]
-                 0 L1-dcache-prefetches                                         [18.75%]
-    11,434,328,889 cycles                    #    0.000 GHz                      ( +-  1.11% ) [18.77%]
-     4,601,831,553 instructions              #    0.40  insns per cycle          ( +-  0.01% ) [18.77%]
-     2,515,483,814 L1-dcache-loads                                               ( +-  0.01% ) [18.77%]
-       124,928,127 L1-dcache-load-misses     #    4.97% of all L1-dcache hits    ( +-  0.09% ) [18.76%]
-       323,355,145 LLC-loads                                                     ( +-  0.02% ) [18.76%]
-       123,008,548 LLC-load-misses           #   38.04% of all LL-cache hits     ( +-  0.10% ) [18.75%]
-     1,256,391,060 L1-icache-loads                                               ( +-  0.01% ) [18.75%]
-           374,691 L1-icache-load-misses     #    0.03% of all L1-icache hits    ( +-  1.41% ) [18.75%]
-     2,514,984,046 dTLB-loads                                                    ( +-  0.01% ) [18.75%]
-                67 dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +- 51.81% ) [18.74%]
-     1,256,333,548 iTLB-loads                                                    ( +-  0.01% ) [18.74%]
-                19 iTLB-load-misses          #    0.00% of all iTLB cache hits   ( +- 39.74% ) [18.74%]
-                 0 L1-dcache-prefetches                                         [18.73%]
-                 0 L1-dcache-prefetch-misses                                    [18.73%]
-
-       4.496839773 seconds time elapsed                                          ( +-  0.64% )
-
-
-Parallel ALU:
- Performance counter stats for './test.sh' (20 runs):
-
-        49,489,518 L1-dcache-load-misses     #    2.19% of all L1-dcache hits    ( +-  0.09% ) [18.74%]
-                 0 L1-dcache-prefetches                                         [18.76%]
-    13,777,501,365 cycles                    #    0.000 GHz                      ( +-  1.73% ) [18.78%]
-     4,707,160,703 instructions              #    0.34  insns per cycle          ( +-  0.01% ) [18.78%]
-     2,261,693,074 L1-dcache-loads                                               ( +-  0.02% ) [18.78%]
-        49,468,878 L1-dcache-load-misses     #    2.19% of all L1-dcache hits    ( +-  0.09% ) [18.77%]
-       279,524,254 LLC-loads                                                     ( +-  0.01% ) [18.76%]
-        48,491,934 LLC-load-misses           #   17.35% of all LL-cache hits     ( +-  0.12% ) [18.75%]
-     1,057,877,680 L1-icache-loads                                               ( +-  0.02% ) [18.74%]
-           461,784 L1-icache-load-misses     #    0.04% of all L1-icache hits    ( +-  1.87% ) [18.74%]
-     2,260,978,836 dTLB-loads                                                    ( +-  0.02% ) [18.74%]
-                27 dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +- 89.96% ) [18.74%]
-     1,057,886,632 iTLB-loads                                                    ( +-  0.02% ) [18.74%]
-                 4 iTLB-load-misses          #    0.00% of all iTLB cache hits   ( +-100.00% ) [18.74%]
-                 0 L1-dcache-prefetches                                         [18.73%]
-                 0 L1-dcache-prefetch-misses                                    [18.73%]
-
-       5.500417234 seconds time elapsed                                          ( +-  1.60% )
-
-
-Both:
- Performance counter stats for './test.sh' (20 runs):
-
-       116,621,570 L1-dcache-load-misses     #    4.68% of all L1-dcache hits    ( +-  0.04% ) [18.73%]
-                 0 L1-dcache-prefetches                                         [18.75%]
-    11,597,067,510 cycles                    #    0.000 GHz                      ( +-  1.73% ) [18.77%]
-     4,952,251,361 instructions              #    0.43  insns per cycle          ( +-  0.01% ) [18.77%]
-     2,493,003,710 L1-dcache-loads                                               ( +-  0.02% ) [18.77%]
-       116,640,333 L1-dcache-load-misses     #    4.68% of all L1-dcache hits    ( +-  0.04% ) [18.77%]
-       322,246,216 LLC-loads                                                     ( +-  0.03% ) [18.76%]
-       114,528,956 LLC-load-misses           #   35.54% of all LL-cache hits     ( +-  0.04% ) [18.76%]
-       999,371,469 L1-icache-loads                                               ( +-  0.02% ) [18.76%]
-           406,679 L1-icache-load-misses     #    0.04% of all L1-icache hits    ( +-  1.97% ) [18.75%]
-     2,492,708,710 dTLB-loads                                                    ( +-  0.01% ) [18.75%]
-               140 dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +- 38.46% ) [18.74%]
-       999,320,389 iTLB-loads                                                    ( +-  0.01% ) [18.74%]
-                19 iTLB-load-misses          #    0.00% of all iTLB cache hits   ( +- 39.90% ) [18.73%]
-                 0 L1-dcache-prefetches                                         [18.73%]
-                 0 L1-dcache-prefetch-misses                                    [18.72%]
-
-       4.634419247 seconds time elapsed                                          ( +-  1.60% )
-
-
-I note a few oddities here:
-
-1) We seem to be getting more counter results than I specified, not sure why
-2) The % active column is adding up to way more than 100 (which from my read of
-the man page makes sense, given that multiple counters might increment in
-response to a single instruction execution
-3) The run times are proportionally larger, but still indicate that Parallel ALU
-execution is hurting rather than helping, which is counter-intuitive.  I'm
-looking into it, but thought you might want to see these results in case
-something jumped out at you
-
-Regards
-Neil
 
