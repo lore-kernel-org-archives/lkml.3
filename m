@@ -1,142 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370Ab3J2QIR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 12:08:17 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:43800 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753589Ab3J2QIP (ORCPT
+	id S1758237Ab3J2QJB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 12:09:01 -0400
+Received: from host217-34-137-81.in-addr.btopenworld.com ([217.34.137.81]:56196
+	"EHLO external.sentinel2" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754001Ab3J2QJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 12:08:15 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH 2/2] USB: storage: use sg_miter_* APIs to access scsi buffer
-Date: Wed, 30 Oct 2013 00:07:58 +0800
-Message-Id: <1383062878-28489-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 29 Oct 2013 12:09:00 -0400
+X-Greylist: delayed 543 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Oct 2013 12:09:00 EDT
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Tue, 29 Oct 2013 15:59:53 +0000
+From: Gordan Bobic <gordan@bobich.net>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jan Beulich <JBeulich@suse.com>, xen-devel <xen-devel@lists.xensource.com>,
+        <linux-kernel@vger.kernel.org>, <yuval.shaia@oracle.com>,
+        <xhejtman@ics.muni.cz>, David Vrabel <david.vrabel@citrix.com>,
+        <Santosh.Jodh@citrix.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        <boris.ostrovsky@oracle.com>
+Subject: Re: [Xen-devel] [v1 1/2] xen/p2m: Create identity mappings for PFNs
+ beyound E820 and PCI BARs
+In-Reply-To: <20131029151129.GA20984@phenom.dumpdata.com>
+References: "\"<1382713401-4882-1-git-send-email-konrad.wilk@oracle.com>	<1382713401-4882-2-git-send-email-konrad.wilk@oracle.com>	<CAErSpo5_DspGSffEHOqq_G0U27OdvYbiFK3QcxiZVFeRpoMaPw@mail.gmail.com>	<20131028165837.GH4353@phenom.dumpdata.com>	<526F7E9202000078000FD7A6@nat28.tlf.novell.com>"
+ <20131029144559.GI20487@phenom.dumpdata.com>"
+ <526FDA6102000078000FDAE2@nat28.tlf.novell.com>
+ <20131029151129.GA20984@phenom.dumpdata.com>
+Message-ID: <e59174616cf59e286cb950ce31c72928@mail.shatteredsilicon.net>
+User-Agent: Roundcube Webmail/0.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have sg_miter_* APIs for accessing scsi sg buffer, so
-use them to make code clean and bug free.
+ On Tue, 29 Oct 2013 11:11:29 -0400, Konrad Rzeszutek Wilk 
+ <konrad.wilk@oracle.com> wrote:
+> On Tue, Oct 29, 2013 at 02:55:13PM +0000, Jan Beulich wrote:
+>> >>> On 29.10.13 at 15:45, Konrad Rzeszutek Wilk 
+>> <konrad.wilk@oracle.com> wrote:
+>> > On Tue, Oct 29, 2013 at 08:23:30AM +0000, Jan Beulich wrote:
+>> >> >>> On 28.10.13 at 17:58, Konrad Rzeszutek Wilk 
+>> <konrad.wilk@oracle.com> wrote:
+>> >> > On Fri, Oct 25, 2013 at 04:08:19PM -0600, Bjorn Helgaas wrote:
+>> >> >> If you can look at PCI host bridge apertures instead of BARs, 
+>> that
+>> >> >> would solve both problems.  Reassigning those apertures is
+>> >> >> theoretically possible but is not even a gleam in our eyes 
+>> yet.
+>> >> >
+>> >> > <nods> I think I have to have both (BARs and host bridge 
+>> apertures) as when
+>> >> > we do PCI passthrough to a guest - we might do it without a 
+>> bridge.
+>> >>
+>> >> Why? Aren't the host bridge ranges necessarily a superset of the
+>> >> individual devices' BARs?
+>> >
+>> > Yes. But when you pass in a PCI device to a PV guest you don't 
+>> pass in the
+>> > bridge. Just the PCI device itself.
+>>
+>> Right you are. Which means that basing the whole logic on the
+>> PCI device BARs is likely wrong anyway, not just because it
+>> doesn't account for other MMIO ranges.
+>
+> Right, but that is OK. When you pass in a PCI device to a PV guest 
+> you
+> only care about that specific device driver being able to access its 
+> BARs.
 
-Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- drivers/usb/storage/protocol.c |   82 ++++++++++++++--------------------------
- 1 file changed, 28 insertions(+), 54 deletions(-)
+ Maybe I'm reading this wrong, but my understanding is that you cannot
+ pass PCI bridges to domU anyway (in HVM - I tried). Is that not the 
+ case?
+ I'm particularly interested in this for two reasons:
 
-diff --git a/drivers/usb/storage/protocol.c b/drivers/usb/storage/protocol.c
-index 5dfb4c3..01697e5 100644
---- a/drivers/usb/storage/protocol.c
-+++ b/drivers/usb/storage/protocol.c
-@@ -135,69 +135,43 @@ unsigned int usb_stor_access_xfer_buf(unsigned char *buffer,
- 	unsigned int buflen, struct scsi_cmnd *srb, struct scatterlist **sgptr,
- 	unsigned int *offset, enum xfer_buf_dir dir)
- {
--	unsigned int cnt;
-+	unsigned int cnt = 0;
- 	struct scatterlist *sg = *sgptr;
-+	struct sg_mapping_iter miter;
-+	unsigned int nents = scsi_sg_count(srb);
- 
--	/* We have to go through the list one entry
--	 * at a time.  Each s-g entry contains some number of pages, and
--	 * each page has to be kmap()'ed separately.  If the page is already
--	 * in kernel-addressable memory then kmap() will return its address.
--	 * If the page is not directly accessible -- such as a user buffer
--	 * located in high memory -- then kmap() will map it to a temporary
--	 * position in the kernel's virtual address space.
--	 */
--
--	if (!sg)
-+	if (sg)
-+		nents -= sg - scsi_sglist(srb);
-+	else
- 		sg = scsi_sglist(srb);
- 
--	/* This loop handles a single s-g list entry, which may
--	 * include multiple pages.  Find the initial page structure
--	 * and the starting offset within the page, and update
--	 * the *offset and **sgptr values for the next loop.
--	 */
--	cnt = 0;
--	while (cnt < buflen && sg) {
--		struct page *page = sg_page(sg) +
--				((sg->offset + *offset) >> PAGE_SHIFT);
--		unsigned int poff = (sg->offset + *offset) & (PAGE_SIZE-1);
--		unsigned int sglen = sg->length - *offset;
--
--		if (sglen > buflen - cnt) {
--
--			/* Transfer ends within this s-g entry */
--			sglen = buflen - cnt;
--			*offset += sglen;
--		} else {
-+	if (dir == FROM_XFER_BUF)
-+		sg_miter_start(&miter, sg, nents, SG_MITER_FROM_SG);
-+	else
-+		sg_miter_start(&miter, sg, nents, SG_MITER_TO_SG);
- 
--			/* Transfer continues to next s-g entry */
--			*offset = 0;
--			sg = sg_next(sg);
--		}
-+	if (!sg_miter_skip(&miter, *offset))
-+		return cnt;
-+
-+	while (sg_miter_next(&miter) && cnt < buflen) {
-+		unsigned int len = min(miter.length, buflen - cnt);
-+
-+		if (dir == FROM_XFER_BUF)
-+			memcpy(buffer + cnt, miter.addr, len);
-+		else
-+			memcpy(miter.addr, buffer + cnt, len);
- 
--		/* Transfer the data for all the pages in this
--			* s-g entry.  For each page: call kmap(), do the
--			* transfer, and call kunmap() immediately after. */
--		while (sglen > 0) {
--			unsigned int plen = min(sglen, (unsigned int)
--					PAGE_SIZE - poff);
--			unsigned char *ptr = kmap(page);
--
--			if (dir == TO_XFER_BUF)
--				memcpy(ptr + poff, buffer + cnt, plen);
--			else
--				memcpy(buffer + cnt, ptr + poff, plen);
--			kunmap(page);
--
--			/* Start at the beginning of the next page */
--			poff = 0;
--			++page;
--			cnt += plen;
--			sglen -= plen;
-+		if (*offset + len < miter.piter.sg->length) {
-+			*offset += len;
-+			*sgptr = miter.piter.sg;
-+		} else {
-+			*offset = 0;
-+			*sgptr = sg_next(miter.piter.sg);
- 		}
-+		cnt += len;
- 	}
--	*sgptr = sg;
-+	sg_miter_stop(&miter);
- 
--	/* Return the amount actually transferred */
- 	return cnt;
- }
- EXPORT_SYMBOL_GPL(usb_stor_access_xfer_buf);
--- 
-1.7.9.5
+ 1) Some GPUs (Nvidia?) use bus resets to reset the GPU
 
+ 2) Multi-GPU cards (e.g. GTX690/Grid K2) come with a PCIe bridge
+ of their own. I am successfully passing a modified GTX680 (as either
+ a Grid K2 or Quadro K5000) to a domU, but have completely failed to
+ get a modified GTX690 (Grid K2, exact same GPU as the GTX680) to work
+ with passthru. The only theory I have is that the extra PCIe bridge
+ is the problem (possibly a compound problem that only manigests when
+ there is a PLX (as per GTX690) PCIe bridge behind a NF200 PCIe bridge,
+ behind an Intel PCIe bridge.
+
+ Gordan
