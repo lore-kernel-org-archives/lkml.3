@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab3J2SJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:09:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59510 "EHLO
+	id S1754445Ab3J2SRp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:17:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59501 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754039Ab3J2SJT (ORCPT
+	with ESMTP id S1754244Ab3J2SJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:09:19 -0400
+	Tue, 29 Oct 2013 14:09:17 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Oliver Neukum <oneukum@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 40/81] bridge: Clamp forward_delay when enabling STP
-Date: Tue, 29 Oct 2013 11:04:01 -0700
-Message-Id: <1383069882-11437-41-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 78/81] usb-storage: add quirk for mandatory READ_CAPACITY_16
+Date: Tue, 29 Oct 2013 11:04:39 -0700
+Message-Id: <1383069882-11437-79-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
@@ -28,115 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Oliver Neukum <oneukum@suse.de>
 
-[ Upstream commit be4f154d5ef0ca147ab6bcd38857a774133f5450 ]
+commit 32c37fc30c52508711ea6a108cfd5855b8a07176 upstream.
 
-At some point limits were added to forward_delay.  However, the
-limits are only enforced when STP is enabled.  This created a
-scenario where you could have a value outside the allowed range
-while STP is disabled, which then stuck around even after STP
-is enabled.
+Some USB drive enclosures do not correctly report an
+overflow condition if they hold a drive with a capacity
+over 2TB and are confronted with a READ_CAPACITY_10.
+They answer with their capacity modulo 2TB.
+The generic layer cannot cope with that. It must be told
+to use READ_CAPACITY_16 from the beginning.
 
-This patch fixes this by clamping the value when we enable STP.
-
-I had to move the locking around a bit to ensure that there is
-no window where someone could insert a value outside the range
-while we're in the middle of enabling STP.
-
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-
-Cheers,
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/bridge/br_private.h |  1 +
- net/bridge/br_stp.c     | 21 +++++++++++++++------
- net/bridge/br_stp_if.c  | 12 ++++++++++--
- 3 files changed, 26 insertions(+), 8 deletions(-)
+ drivers/usb/storage/scsiglue.c     | 5 ++++-
+ drivers/usb/storage/unusual_devs.h | 7 +++++++
+ include/linux/usb_usual.h          | 4 +++-
+ 3 files changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
-index 711094a..e943215 100644
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -552,6 +552,7 @@ extern struct net_bridge_port *br_get_port(struct net_bridge *br,
- extern void br_init_port(struct net_bridge_port *p);
- extern void br_become_designated_port(struct net_bridge_port *p);
+diff --git a/drivers/usb/storage/scsiglue.c b/drivers/usb/storage/scsiglue.c
+index 92f35ab..8dd5d1b 100644
+--- a/drivers/usb/storage/scsiglue.c
++++ b/drivers/usb/storage/scsiglue.c
+@@ -211,8 +211,11 @@ static int slave_configure(struct scsi_device *sdev)
+ 		/*
+ 		 * Many devices do not respond properly to READ_CAPACITY_16.
+ 		 * Tell the SCSI layer to try READ_CAPACITY_10 first.
++		 * However some USB 3.0 drive enclosures return capacity
++		 * modulo 2TB. Those must use READ_CAPACITY_16
+ 		 */
+-		sdev->try_rc_10_first = 1;
++		if (!(us->fflags & US_FL_NEEDS_CAP16))
++			sdev->try_rc_10_first = 1;
  
-+extern void __br_set_forward_delay(struct net_bridge *br, unsigned long t);
- extern int br_set_forward_delay(struct net_bridge *br, unsigned long x);
- extern int br_set_hello_time(struct net_bridge *br, unsigned long x);
- extern int br_set_max_age(struct net_bridge *br, unsigned long x);
-diff --git a/net/bridge/br_stp.c b/net/bridge/br_stp.c
-index e26f712..26f4d73 100644
---- a/net/bridge/br_stp.c
-+++ b/net/bridge/br_stp.c
-@@ -537,18 +537,27 @@ int br_set_max_age(struct net_bridge *br, unsigned long val)
+ 		/* assume SPC3 or latter devices support sense size > 18 */
+ 		if (sdev->scsi_level > SCSI_SPC_2)
+diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
+index f828c76..df8c74b 100644
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1917,6 +1917,13 @@ UNUSUAL_DEV(  0x1652, 0x6600, 0x0201, 0x0201,
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_IGNORE_RESIDUE ),
  
- }
- 
-+void __br_set_forward_delay(struct net_bridge *br, unsigned long t)
-+{
-+	br->bridge_forward_delay = t;
-+	if (br_is_root_bridge(br))
-+		br->forward_delay = br->bridge_forward_delay;
-+}
++/* Reported by Oliver Neukum <oneukum@suse.com> */
++UNUSUAL_DEV(  0x174c, 0x55aa, 0x0100, 0x0100,
++		"ASMedia",
++		"AS2105",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_NEEDS_CAP16),
 +
- int br_set_forward_delay(struct net_bridge *br, unsigned long val)
- {
- 	unsigned long t = clock_t_to_jiffies(val);
-+	int err = -ERANGE;
+ /* Reported by Jesse Feddema <jdfeddema@gmail.com> */
+ UNUSUAL_DEV(  0x177f, 0x0400, 0x0000, 0x0000,
+ 		"Yarvik",
+diff --git a/include/linux/usb_usual.h b/include/linux/usb_usual.h
+index bf99cd0..6303568 100644
+--- a/include/linux/usb_usual.h
++++ b/include/linux/usb_usual.h
+@@ -66,7 +66,9 @@
+ 	US_FLAG(INITIAL_READ10,	0x00100000)			\
+ 		/* Initial READ(10) (and others) must be retried */	\
+ 	US_FLAG(WRITE_CACHE,	0x00200000)			\
+-		/* Write Cache status is not available */
++		/* Write Cache status is not available */	\
++	US_FLAG(NEEDS_CAP16,	0x00400000)
++		/* cannot handle READ_CAPACITY_10 */
  
-+	spin_lock_bh(&br->lock);
- 	if (br->stp_enabled != BR_NO_STP &&
- 	    (t < BR_MIN_FORWARD_DELAY || t > BR_MAX_FORWARD_DELAY))
--		return -ERANGE;
-+		goto unlock;
- 
--	spin_lock_bh(&br->lock);
--	br->bridge_forward_delay = t;
--	if (br_is_root_bridge(br))
--		br->forward_delay = br->bridge_forward_delay;
-+	__br_set_forward_delay(br, t);
-+	err = 0;
-+
-+unlock:
- 	spin_unlock_bh(&br->lock);
--	return 0;
-+	return err;
- }
-diff --git a/net/bridge/br_stp_if.c b/net/bridge/br_stp_if.c
-index 9d5a414..7ba2ed5 100644
---- a/net/bridge/br_stp_if.c
-+++ b/net/bridge/br_stp_if.c
-@@ -129,6 +129,14 @@ static void br_stp_start(struct net_bridge *br)
- 	char *envp[] = { NULL };
- 
- 	r = call_usermodehelper(BR_STP_PROG, argv, envp, UMH_WAIT_PROC);
-+
-+	spin_lock_bh(&br->lock);
-+
-+	if (br->bridge_forward_delay < BR_MIN_FORWARD_DELAY)
-+		__br_set_forward_delay(br, BR_MIN_FORWARD_DELAY);
-+	else if (br->bridge_forward_delay < BR_MAX_FORWARD_DELAY)
-+		__br_set_forward_delay(br, BR_MAX_FORWARD_DELAY);
-+
- 	if (r == 0) {
- 		br->stp_enabled = BR_USER_STP;
- 		br_debug(br, "userspace STP started\n");
-@@ -137,10 +145,10 @@ static void br_stp_start(struct net_bridge *br)
- 		br_debug(br, "using kernel STP\n");
- 
- 		/* To start timers on any ports left in blocking */
--		spin_lock_bh(&br->lock);
- 		br_port_state_selection(br);
--		spin_unlock_bh(&br->lock);
- 	}
-+
-+	spin_unlock_bh(&br->lock);
- }
- 
- static void br_stp_stop(struct net_bridge *br)
+ #define US_FLAG(name, value)	US_FL_##name = value ,
+ enum { US_DO_ALL_FLAGS };
 -- 
 1.8.1.2
 
