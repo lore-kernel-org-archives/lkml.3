@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583Ab3J2GSj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 02:18:39 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:58511 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974Ab3J2GSh (ORCPT
+	id S1751879Ab3J2GSx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 02:18:53 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:25861 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615Ab3J2GSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 02:18:37 -0400
-Date: Mon, 28 Oct 2013 23:18:35 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Andy Gross <agross@codeaurora.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
-        David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Subject: Re: [PATCH 2/2] dmaengine: msm_bam_dma: Add device tree binding
-Message-ID: <20131029061835.GE21983@codeaurora.org>
-References: <1382732643-8184-1-git-send-email-agross@codeaurora.org>
- <1382732643-8184-3-git-send-email-agross@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382732643-8184-3-git-send-email-agross@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 29 Oct 2013 02:18:51 -0400
+X-AuditID: cbfee61b-b7fd56d000001fc6-cc-526f5349f358
+From: Chao Yu <chao2.yu@samsung.com>
+To: ??? <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?gb2312?B?J8y35q0n?= <shu.tan@samsung.com>
+Subject: [f2fs-dev] [PATCH] f2fs: fix calculating incorrect free size when
+ update xattr in __f2fs_setxattr
+Date: Tue, 29 Oct 2013 14:17:05 +0800
+Message-id: <001e01ced46e$b9f538f0$2ddfaad0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=gb2312
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac7UblyR3d8bDuxKQACDYNRcP/qO2w==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsVy+t9jQV3P4Pwgg5UfdS2u7/rLZHFpkbvF
+	nr0nWSwu75rDZtG68DyzA6vH7gWfmTz6tqxi9Pi8SS6AOYrLJiU1J7MstUjfLoErY+VL8YIO
+	tortr08wNjA+YOli5OSQEDCRWDR7EjOELSZx4d56ti5GLg4hgemMEn3/GlggnB+MEl0NF1lB
+	qtgEVCSWd/xnArFFBBQlNrzfwA5iMwvMYJR43CfRxcjBISyQI/F1iQFImEVAVeLTn4uMIDav
+	gKXEwuOHWCFsQYkfk++xQLRqSPQv2sAGYctLbF7zFuogBYkdZ18zgowUEdCTuLI3D6JEXGLj
+	kVssExgFZiGZNAvJpFlIJs1C0rKAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnA4P5Pe
+	wbiqweIQowAHoxIPrwVbfpAQa2JZcWXuIUYJDmYlEd79m/OChHhTEiurUovy44tKc1KLDzFK
+	c7AoifMebLUOFBJITyxJzU5NLUgtgskycXBKNTByrJx77TPP8affH8genb6OQ5Nn4i+/Vo7A
+	tdlCCx/cL2d/97hj7cyKV48OO3w5+X23bNaOKtVPpYEP1izW2fHOXHS6EPu5JbYlIXLMvSdV
+	urPjvqzt81/5aN/V3Zsi3QQc9zddOxRVyv9DtDb6V+wVW/GHKduSpQp9jpwW9P21t+vny4sB
+	RWkvlFiKMxINtZiLihMBBL2LtGMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25, Andy Gross wrote:
-> diff --git a/Documentation/devicetree/bindings/dma/msm_bam_dma.txt b/Documentation/devicetree/bindings/dma/msm_bam_dma.txt
-> new file mode 100644
-> index 0000000..fe3ed8f
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/dma/msm_bam_dma.txt
-> @@ -0,0 +1,49 @@
-> +MSM BAM DMA controller
-> +
-> +Required properties:
-> +- compatible: Should be "qcom,bam"
-> +- reg: Address range for DMA registers
-> +- interrupts: single interrupt for this controller
-> +- #dma-cells: must be <3>
-> +- clocks: required clock
-> +- clock-names: name of clock
-> +
-> +Example:
-> +
-> +	dma0: dma@f9984000 = {
+During xattr updating, free size should be corrected to remainder free size
++ old entry size.
+It can avoid ENOSPC error when we update old entry with the same size new
+entry at fully filled xattr.
 
-I imagine it's fine to say 'bam0: dma@f9984000' here. The node
-name should stay dma though. This way we know that we're talking
-about the first bam. Or if there is a more specific name for the
-bam we could use that, like system-bam or sdhci-bam.
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/xattr.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> +		compatible = "qcom,bam";
-> +		reg = <0xf9984000 0x15000>;
-> +		interrupts = <0 94 0>;
-> +		clocks = <&bam_dma_ahb_cxc>;
-> +		clock-names = "bam_clk";
-> +		#dma-cells = <3>;
-> +	};
-> +
-> +Client:
-> +Required properties:
-> +- dmas: List of dma channel requests
-> +- dma-names: Names of aforementioned requested channels
-> +
-> +Clients must use the format described in the dma.txt file, using a four cell
-> +specifier for each channel.
-> +
-> +The four cells in order are:
-> +  1. A phandle pointing to the DMA controller
-> +  2. The channel number
-> +  3. The execution environment value for this channel.
-> +  4. Direction of the fixed unidirectional channel
-> +     0 - Memory to Device
-> +     1 - Device to Memory
-
-Should we add "2 - Device to Device" here? Is there anything more
-that needs to be done in the binding for device to device
-transfers.
-
+diff --git a/fs/f2fs/xattr.c b/fs/f2fs/xattr.c
+index f685138..35eb478 100644
+--- a/fs/f2fs/xattr.c
++++ b/fs/f2fs/xattr.c
+@@ -520,7 +520,7 @@ static int __f2fs_setxattr(struct inode *inode, int
+name_index,
+ 		 */
+ 		free = MIN_OFFSET(inode) - ((char *)last - (char
+*)base_addr);
+ 		if (found)
+-			free = free - ENTRY_SIZE(here);
++			free = free + ENTRY_SIZE(here);
+ 
+ 		if (free < newsize) {
+ 			error = -ENOSPC;
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.9.5
+
