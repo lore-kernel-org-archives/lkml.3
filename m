@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758508Ab3J2QYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 12:24:05 -0400
-Received: from mx1.ait.ac.at ([62.218.164.131]:40714 "EHLO mx1.ait.ac.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758255Ab3J2QYD convert rfc822-to-8bit (ORCPT
+	id S1758535Ab3J2QYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 12:24:13 -0400
+Received: from smtprelay0131.hostedemail.com ([216.40.44.131]:49527 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758512Ab3J2QYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 12:24:03 -0400
-X-Greylist: delayed 768 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Oct 2013 12:24:03 EDT
-From: Fiedler Roman <Roman.Fiedler@ait.ac.at>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Question regarding unexpected OOM kill on 3.8.0, swap stays
- untouched
-Thread-Topic: Question regarding unexpected OOM kill on 3.8.0, swap stays
- untouched
-Thread-Index: Ac7UwW4RCcE+41KXTUWfXnaFOAJAXw==
-Date: Tue, 29 Oct 2013 16:11:12 +0000
-Message-ID: <2ECE9D9EEF1F524185270138AE2326593BF8B0AA@S0MSMAIL112.arc.local>
-Accept-Language: en-US, de-AT
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.180.51]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-10-29_06:2013-10-29,2013-10-29,1970-01-01 signatures=0
+	Tue, 29 Oct 2013 12:24:10 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3871:3872:3874:4321:4605:5007:7652:7903:9121:10004:10400:10848:11026:11232:11233:11658:11914:12296:12517:12519:12555:12740:13069:13311:13357:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bomb22_7b2c5be350121
+X-Filterd-Recvd-Size: 2627
+Message-ID: <1383063845.2713.15.camel@joe-AO722>
+Subject: Re: [PATCH v2] can: c_can: Speed up rx_poll function
+From: Joe Perches <joe@perches.com>
+To: Markus Pargmann <mpa@pengutronix.de>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Date: Tue, 29 Oct 2013 09:24:05 -0700
+In-Reply-To: <20131029085853.GC20839@pengutronix.de>
+References: <1383035267-19604-1-git-send-email-mpa@pengutronix.de>
+	 <1383035688.2713.2.camel@joe-AO722> <20131029085853.GC20839@pengutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2013-10-29 at 09:58 +0100, Markus Pargmann wrote:
+> On Tue, Oct 29, 2013 at 01:34:48AM -0700, Joe Perches wrote:
+> > On Tue, 2013-10-29 at 09:27 +0100, Markus Pargmann wrote:
+> > > This patch speeds up the rx_poll function by reducing the number of
+> > > register reads.
+> > []
+> > > 125kbit:
+> > >   Function                               Hit    Time            Avg             s^2
+> > >   --------                               ---    ----            ---             ---
+> > >   c_can_do_rx_poll                     63960    10168178 us     158.977 us      1493056 us
+> > > With patch:
+> > >   c_can_do_rx_poll                     63939    4268457 us     66.758 us       818790.9 us
+> > > 
+> > > 1Mbit:
+> > >   Function                               Hit    Time            Avg             s^2
+> > >   --------                               ---    ----            ---             ---
+> > >   c_can_do_rx_poll                     69489    30049498 us     432.435 us      9271851 us
+> > > With patch:
+> > >   c_can_do_rx_poll                    103034    24220362 us     235.071 us      6016656 us
+[]
+> Yes I just measured the timings again:
+[]
+> ./perf_can_test.sh 125000 30
+[]
+>   c_can_do_rx_poll                     63941    3764057 us     58.867 us       776162.2 us 
 
-I've seen quite a few OOM kills, which all followed a common pattern of swap depletion first. But today I get a reproducible one without major swap use.
- 
-Here is vmstat output while kill occurred:
+Good, it's slightly faster still.
 
-# vmstat 3
-procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
-r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
-2  0   8924  10352  18376 162232    0    0  1668    24  627 8948 69 26  0  5
- 1  0   8924  11624  18848 161680    0    0  2476  1352  713 10533 68 26  0  7
- 0  1   8924   4028  15948  55080    0    0 33487    24  725 5429 44 30  0 26       < last before kill
- 1  0   8924 200392    616   5932   11    1 19433   465  331  752  2 11 72 15    < first after kill
- 0  0   8924 200332    616   6004    0    0     0     0   66   11  0  0 100  0
- 0  0   8924 200332    624   6004    0    0     0     4   65   11  0  0 98  2
+> ./perf_can_test.sh 1000000 30
+[]
+>   c_can_do_rx_poll                    207109    24322185 us     117.436 us      171469047 us 
+[]
+> It is interesting that the number of hits for c_can_do_rx_poll is twice as much
+> as it was with find_next_bit.
 
-Since swap should not be used so fast, that change in usage goes unnoticed, OOM seems to have happened while swap still available. According to e.g. [1], OOM kill should not happen then.
+How is this possible?  Any idea?
 
-dmesg output:
 
-[21745.390625] select 1 (init), adj 0, size 108, to kill
-[21745.390632] select 1215 (bash), adj 0, size 198, to kill
-[21745.390633] select 20178 (bash), adj 0, size 205, to kill
-[21745.390634] select 25644 (fakeroot), adj 0, size 370, to kill
-[21745.390636] select 25659 (rules), adj 0, size 550, to kill
-[21745.390637] select 602 (make), adj 0, size 658, to kill
-[21745.390638] select 2711 (bash), adj 0, size 799, to kill
-[21745.390639] select 2712 (ld), adj 0, size 48287, to kill
-[21745.390639] send sigkill to 2712 (ld), adj 0, size 48287   << the size is always quite similar, ranging 48000-52000, no matter how much swap is available.
-
-Is there a known bug in the 3.8 series or am I missing something relevant? Could it be, that kernel is running short on special pages, but why should simple compiling of linux-kernel deplete those? Could it be, that swapping is to slow to cope with speed of new pages and this also triggers OOM and the cited kernel.org documentation is wrong? Apart from that, the machine is quite strange, it has 256MB RAM and 2.5GB swap and is usually not used for that kind of task. Since virtual swapdisk should be fast, I did not bother to change the VM-parameters just for a single compile run.
-
-Roman
-
-[1] https://www.kernel.org/doc/gorman/html/understand/understand016.html
