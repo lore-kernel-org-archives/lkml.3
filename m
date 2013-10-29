@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758251Ab3J2QNW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 12:13:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47975 "EHLO mx1.redhat.com"
+	id S1758268Ab3J2QN2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 12:13:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23502 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758159Ab3J2QNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 12:13:20 -0400
-Subject: [PATCH 0/4] KVM-VFIO pseudo device for VFIO coherency
+	id S1758159Ab3J2QNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 12:13:25 -0400
+Subject: [PATCH 1/4] kvm: Destroy & free KVM devices on release
 To: kvm@vger.kernel.org, gleb@redhat.com
 From: Alex Williamson <alex.williamson@redhat.com>
 Cc: aik@ozlabs.ru, pbonzini@redhat.com, linux-kernel@vger.kernel.org
-Date: Tue, 29 Oct 2013 10:13:16 -0600
-Message-ID: <20131029160019.22578.16409.stgit@bling.home>
+Date: Tue, 29 Oct 2013 10:13:22 -0600
+Message-ID: <20131029161322.22578.18997.stgit@bling.home>
+In-Reply-To: <20131029160019.22578.16409.stgit@bling.home>
+References: <20131029160019.22578.16409.stgit@bling.home>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -20,55 +22,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series allows QEMU to create a VFIO device in KVM for registering
-VFIO groups.  The initial user of this interface is to toggle whether
-KVM emulates coherency instructions like WBINVD.  For this particular
-use case I've toyed with the idea of disabling NoSnoop at the device,
-but we already have an example where this fails as video cards often
-have backdoors to PCI config space and may re-enable NoSnoop support.
-Regardless of whether the driver should be doing this or not, we don't
-really want to rely on well behaved drivers for things as important as
-coherency.
+The KVM device interface allocates a struct kvm_device and calls
+kvm_device_ops.create on it from KVM VM ioctl KVM_CREATE_DEVICE.
+This returns a file descriptor to the user for them to set/get/check
+further attributes.  On closing the file descriptor, one would assume
+that kvm_device_ops.destroy is called and all traces of the device
+would go away.  One would be wrong, it actually does nothing more
+than release the struct kvm reference, waiting until the VM is
+destroyed before doing more.  This leaves devices that only want a
+single instance of themselves per VM in a tough spot.
 
-In this first step we assume that noncoherent DMA is possible any time
-a VFIO group is present.  I have follow-on patches which fix a bug in
-intel-iommu which that prevents us from always enabling SNP support in
-the IOMMU page tables and prevents us from tracking the hardware
-capabilities of the IOMMU domain for coherency.  Once that is fixed I
-can fill in the TODO which would allow us to only mark VFIO as
-noncoherent when necessary.
+To fix this, do full cleanup on release of the device file descriptor.
+It's also non-symmetric that one of the existing devices frees the
+struct kvm_device from it's .destroy function, while the other
+doesn't.  KVM-core allocates the structure and should therefore be
+responsible for freeing it.  Finally, add a missing kfree for the
+device creation error path.
 
-POWER support for VFIO would also like to make use of the VFIO pseudo
-device interface, but has some remaining work to architect an
-interface into it.
-
-I'd very much like to see this for v3.13.  Thanks,
-
-Alex
-
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
+ arch/powerpc/kvm/book3s_xics.c |    1 -
+ virt/kvm/kvm_main.c            |    5 +++++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
-Alex Williamson (4):
-      kvm: Destroy & free KVM devices on release
-      kvm: Add VFIO device
-      kvm/x86: Convert iommu_flags to iommu_noncoherent
-      kvm: Create non-coherent DMA registeration
+diff --git a/arch/powerpc/kvm/book3s_xics.c b/arch/powerpc/kvm/book3s_xics.c
+index a3a5cb8..9a82426 100644
+--- a/arch/powerpc/kvm/book3s_xics.c
++++ b/arch/powerpc/kvm/book3s_xics.c
+@@ -1220,7 +1220,6 @@ static void kvmppc_xics_free(struct kvm_device *dev)
+ 	for (i = 0; i <= xics->max_icsid; i++)
+ 		kfree(xics->ics[i]);
+ 	kfree(xics);
+-	kfree(dev);
+ }
+ 
+ static int kvmppc_xics_create(struct kvm_device *dev, u32 type)
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index a9dd682..fec8320 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -572,6 +572,7 @@ static void kvm_destroy_devices(struct kvm *kvm)
+ 
+ 		list_del(node);
+ 		dev->ops->destroy(dev);
++		kfree(dev);
+ 	}
+ }
+ 
+@@ -2231,6 +2232,9 @@ static int kvm_device_release(struct inode *inode, struct file *filp)
+ 	struct kvm_device *dev = filp->private_data;
+ 	struct kvm *kvm = dev->kvm;
+ 
++	list_del(&dev->vm_node);
++	dev->ops->destroy(dev);
++	kfree(dev);
+ 	kvm_put_kvm(kvm);
+ 	return 0;
+ }
+@@ -2294,6 +2298,7 @@ static int kvm_ioctl_create_device(struct kvm *kvm,
+ 	ret = anon_inode_getfd(ops->name, &kvm_device_fops, dev, O_RDWR | O_CLOEXEC);
+ 	if (ret < 0) {
+ 		ops->destroy(dev);
++		kfree(dev);
+ 		return ret;
+ 	}
+ 
 
-
- Documentation/virtual/kvm/devices/vfio.txt |   22 ++
- arch/ia64/include/asm/kvm_host.h           |    2 
- arch/powerpc/kvm/book3s_xics.c             |    1 
- arch/x86/include/asm/kvm_host.h            |    4 
- arch/x86/kvm/Kconfig                       |    1 
- arch/x86/kvm/Makefile                      |    2 
- arch/x86/kvm/vmx.c                         |    3 
- arch/x86/kvm/x86.c                         |   21 ++
- include/linux/kvm_host.h                   |   23 ++
- include/uapi/linux/kvm.h                   |    4 
- virt/kvm/Kconfig                           |    3 
- virt/kvm/iommu.c                           |   22 +-
- virt/kvm/kvm_main.c                        |   10 +
- virt/kvm/vfio.c                            |  263 ++++++++++++++++++++++++++++
- 14 files changed, 362 insertions(+), 19 deletions(-)
- create mode 100644 Documentation/virtual/kvm/devices/vfio.txt
- create mode 100644 virt/kvm/vfio.c
