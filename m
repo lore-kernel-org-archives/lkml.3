@@ -1,87 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758013Ab3J2CJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 22:09:14 -0400
-Received: from cloud.peff.net ([50.56.180.127]:57477 "HELO peff.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755879Ab3J2CJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 22:09:12 -0400
-Date: Mon, 28 Oct 2013 22:02:28 -0400
-From: Jeff King <peff@peff.net>
-To: Thomas Rast <tr@thomasrast.ch>
-Cc: Johan Herland <johan@herland.net>,
-        Christian Couder <christian.couder@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Michael Haggerty <mhagger@alum.mit.edu>,
-        Git mailing list <git@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, Greg KH <greg@kroah.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        ksummit-attendees@lists.linuxfoundation.org,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] commit: Add -f, --fixes <commit> option to add Fixes:
- line
-Message-ID: <20131029020227.GD11861@sigill.intra.peff.net>
-References: <20131026181709.GB10488@kroah.com>
- <20131027013402.GA7146@leaf>
- <526CA7D4.1070904@alum.mit.edu>
- <20131027071407.GA11683@leaf>
- <874n83m8xv.fsf@linux-k42r.v.cablecom.net>
- <20131027092019.GB13149@leaf>
- <CALKQrgc7a+p5eebJErcGdA3QDyvdHEaef36RhZocQp9LjDUeeg@mail.gmail.com>
- <CAP8UFD3MZJKWUbdZqrSwoatpnx73MTpiwSkxPHYDagGjMSqJNw@mail.gmail.com>
- <CALKQrgcgfimZRJL7WyS-brqEZnHJkJjK_0cqe6-7HWkuCW6Dzw@mail.gmail.com>
- <87txg1hwsa.fsf@linux-k42r.v.cablecom.net>
+	id S1757940Ab3J2CTB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 22:19:01 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:30605 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753496Ab3J2CTA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 22:19:00 -0400
+X-Spam-Score: -100.8
+Message-ID: <526F1ACE.7080409@asianux.com>
+Date: Tue, 29 Oct 2013 10:17:50 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <87txg1hwsa.fsf@linux-k42r.v.cablecom.net>
+To: Joern Rennecke <joern.rennecke@embecosm.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>
+CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
+        Francois Bedard <Francois.Bedard@synopsys.com>,
+        Max Filippov <jcmvbkbc@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v2] kernel/modsign_certificate.S: use real contents instead
+ of macro GLOBAL()
+References: <523FD9E7.3050303@asianux.com> <523FDBD7.4040602@asianux.com> <C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com> <523FE578.5060801@asianux.com> <52672DAC.1030307@asianux.com> <CAMqJFCou4SObPni5Lb_tX=0hQ__kF_9MLDC-6a1opptc9dxT-A@mail.gmail.com> <52673E41.6040606@asianux.com> <5267AF98.1010800@asianux.com> <5268B0B1.9050009@asianux.com>
+In-Reply-To: <5268B0B1.9050009@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 11:10:13PM +0100, Thomas Rast wrote:
+If a macro is only used within 2 times, and also its contents are
+within 2 lines, recommend to expand it to shrink code line.
 
-> * In your list
-> 
-> >   Fixes:
-> >   Reported-by:
-> >   Suggested-by:
-> >   Improved-by:
-> >   Acked-by:
-> >   Reviewed-by:
-> >   Tested-by:
-> >   Signed-off-by:
-> 
->   and I might add
-> 
->     Cherry-picked-from:
->     Reverts:
-> 
->   if one were to phrase that as a footer/pseudoheader, observe that
->   there are only two kinds of these: footers that contain identities,
->   and footers that contain references to commits.
+For our case, the macro is not portable either: some architectures'
+assembler may use another character to mark newline in a macro (e.g.
+'`' for arc), which will cause issue (e.g. arc with allmodconfig):
 
-I think people put other things in, too. For example, cross-referencing
-bug-tracker ids.
+    LD      init/built-in.o
+  kernel/built-in.o: In function `load_module_signing_keys':
+  kernel/modsign_pubkey.c:66: undefined reference to `modsign_certificate_list'
+  kernel/modsign_pubkey.c:71: undefined reference to `modsign_certificate_list_end'
+  kernel/modsign_pubkey.c:67: undefined reference to `modsign_certificate_list_end'
 
-In fact, if I saw "fixes: XXX", I would expect the latter to be a
-tracker id.  People do this a lot with GitHub issues, because GitHub
-will auto-close issue 123 if a commit with "fixes #123" is pushed to
-master. Because of the "#", no pseudo-header is needed, but I have also
-seen people use the footer style (I don't have any examples on-hand,
-though).
+If still want to use macro and let it portable enough, it will need
+additional line -- include additional header file (e.g "#include
+<linux/linkage.h>", although it also need be fixed).
 
-That being said, in your examples:
 
-> So why not support these use-cases?  We could have something like
-> footer.foo.* configuration, e.g.
-> 
-> [footer "fixes"]
->         type = commit
->         suggest = true
-> [footer "acked-by"]
->         type = identity
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ kernel/modsign_certificate.S |   10 ++++------
+ 1 files changed, 4 insertions(+), 6 deletions(-)
 
-you could easily have "type=text" to handle arbitrary text.
+diff --git a/kernel/modsign_certificate.S b/kernel/modsign_certificate.S
+index 4a9a86d..1967dcd 100644
+--- a/kernel/modsign_certificate.S
++++ b/kernel/modsign_certificate.S
+@@ -1,12 +1,10 @@
+ #include <linux/export.h>
+ 
+-#define GLOBAL(name)	\
+-	.globl VMLINUX_SYMBOL(name);	\
+-	VMLINUX_SYMBOL(name):
+-
+ 	.section ".init.data","aw"
+ 
+-GLOBAL(modsign_certificate_list)
++	.globl VMLINUX_SYMBOL(modsign_certificate_list)
++VMLINUX_SYMBOL(modsign_certificate_list):
+ 	.incbin "signing_key.x509"
+ 	.incbin "extra_certificates"
+-GLOBAL(modsign_certificate_list_end)
++	.globl VMLINUX_SYMBOL(modsign_certificate_list_end)
++VMLINUX_SYMBOL(modsign_certificate_list_end):
+-- 
+1.7.7.6
 
--Peff
+
