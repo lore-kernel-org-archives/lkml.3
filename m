@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106Ab3J2WIn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 18:08:43 -0400
-Received: from server19320154104.serverpool.info ([193.201.54.104]:36688 "EHLO
-	hauke-m.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993Ab3J2WIm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 18:08:42 -0400
-Message-ID: <527031E2.8030308@hauke-m.de>
-Date: Tue, 29 Oct 2013 23:08:34 +0100
-From: Hauke Mehrtens <hauke@hauke-m.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752399Ab3J2WJl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 18:09:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39230 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab3J2WJk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 18:09:40 -0400
+Date: Tue, 29 Oct 2013 15:09:39 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>
+Cc: ebiederm@xmission.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] sysfs: move assignment to be under lock in sysfs_remove_dir()
+Message-ID: <20131029220939.GA23060@kroah.com>
 MIME-Version: 1.0
-To: "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [ANN] backports stable releases based on kernel 3.10.17, 3.11.6 and
- 3.12-rc7 released
-References: <526D6A5E.5000100@hauke-m.de>
-In-Reply-To: <526D6A5E.5000100@hauke-m.de>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As promised, here are the backports releases based on recent stable
-kernel versions.
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Based on 3.10.17:
-https://www.kernel.org/pub/linux/kernel/projects/backports/stable/v3.10.17/backports-3.10.17-2.tar.bz2
+Linus noticed that the assignment of sd isn't protected by the lock in
+sysfs_remove_dir(), so move the assignment of the variable under the
+lock to be safe.
 
-Based on 3.11.6:
-https://www.kernel.org/pub/linux/kernel/projects/backports/stable/v3.11.6/backports-3.11.6-1.tar.bz2
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
 
-Based on 3.12-rc7:
-https://www.kernel.org/pub/linux/kernel/projects/backports/stable/v3.12-rc7/backports-3.12-rc7-1.tar.bz2
+Tejun, any objection to this patch?  You consolidated the locks back in
+2007 on this function, and nothing has changed there since then, so odds
+are it's not a problem, but nice to be safe, right?
 
+ fs/sysfs/dir.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-The source code can temporary be found here:
-https://github.com/hauke/backports
-
-More information can be found in our wiki:
-https://backports.wiki.kernel.org/index.php/Main_Page
-
-Hauke
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index eab59de4..2609f934 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -856,9 +856,10 @@ void sysfs_remove(struct sysfs_dirent *sd)
+  */
+ void sysfs_remove_dir(struct kobject *kobj)
+ {
+-	struct sysfs_dirent *sd = kobj->sd;
++	struct sysfs_dirent *sd;
+ 
+ 	spin_lock(&sysfs_assoc_lock);
++	sd = kobj->sd;
+ 	kobj->sd = NULL;
+ 	spin_unlock(&sysfs_assoc_lock);
+ 
