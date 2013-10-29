@@ -1,74 +1,344 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab3J2SDi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:03:38 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41872 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab3J2SDg (ORCPT
+	id S1751860Ab3J2SE5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:04:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59209 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab3J2SEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:03:36 -0400
-Date: Tue, 29 Oct 2013 18:01:05 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Ian.Campbell@citrix.com,
-        will.deacon@arm.com
-Subject: Re: [PATCH v9 01/18] arm: make SWIOTLB available
-Message-ID: <20131029180105.GR16735@n2100.arm.linux.org.uk>
-References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com> <1382698313-13161-1-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1310251206450.26077@kaball.uk.xensource.com> <alpine.DEB.2.02.1310290441260.26077@kaball.uk.xensource.com> <20131029142023.GE20487@phenom.dumpdata.com> <20131029142626.GQ16735@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1310291716120.26077@kaball.uk.xensource.com>
+	Tue, 29 Oct 2013 14:04:54 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Kamal Mostafa <kamal@canonical.com>
+Subject: [3.8.y.z extended stable] Linux 3.8.13.12 stable review
+Date: Tue, 29 Oct 2013 11:03:21 -0700
+Message-Id: <1383069882-11437-1-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Extended-Stable: 3.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1310291716120.26077@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 05:24:50PM +0000, Stefano Stabellini wrote:
-> On Tue, 29 Oct 2013, Russell King - ARM Linux wrote:
-> > This looks like a hack.  Either we want to use the streaming mask or
-> > the coherent mask as appropriate for the caller.  That should be a choice
-> > the caller makes, not the implementation of this behind the callers back.
-> 
-> How should I choose?
-> Admittedly this is a workaround because some drivers (including Calxeda
-> xgmac) don't set the dma_mask when they should:
-> 
-> http://marc.info/?l=linux-arm-kernel&m=138082570519601&w=2
-> 
-> I am happy to reduce this to:
-> 
-> if (dev->dma_mask)
->     mask = *dev->dma_mask;
-> 
-> even though it means that xgmac & co won't be dma_capable.
+This is the start of the review cycle for the Linux 3.8.13.12 stable kernel.
 
-Well, if xgmac (there's two in the kernel tree so I'm not sure which
-you're referring to) is using DMA of any kind, it really ought to be
-setting a DMA mask via the standard functions - in todays kernel,
-that is dma_set_mask() for the streaming mask and dma_set_coherent_mask()
-for the coherent mask.  The appropriate mask which the driver is aware
-of for the hardware should be set here.
+This version contains 81 new patches, summarized below.  The new patches are
+posted as replies to this message and also available in this git branch:
 
-In the case that a driver needs to call both, and the kernel has my
-patch set applied, dma_set_mask_and_coherent() can be used to set both
-at the same time.
+http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=linux-3.8.y-review;a=shortlog
 
-dma_set_mask() (and dma_set_mask_and_coherent) will fail if storage for
-the DMA mask has not been allocated previously - iow, if the dev->dma_mask
-pointer is NULL.  The allocation of this storage is the responsibility
-of the struct device creator, and the struct device creator should
-initialise the DMA masks to a sensible default for the type of bus.
+git://kernel.ubuntu.com/ubuntu/linux.git  linux-3.8.y-review
 
-I provide one last call in my patch set - a method that drivers can
-coerce the DMA mask to whatever they desire irrespective of whether
-the DMA mask allocation has been setup.  This is provided as a way to
-mark the drivers which are doing this and to ensure that drivers do
-this in a safe manner - we've had drivers setting it to static storage
-in module space if it isn't previously set, which is a problem if the
-module ever gets unloaded.
+The review period for version 3.8.13.12 will be open for the next three days.
+To report a problem, please reply to the relevant follow-up patch message.
 
-So... what I'm saying is please fix xgmac to use the DMA API properly
-rather than working around such problems. :)
+For more information about the Linux 3.8.y.z extended stable kernel version,
+see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable .
+
+ -Kamal
+
+--
+ Documentation/networking/ipvs-sysctl.txt    |   7 +
+ arch/arm/include/asm/jump_label.h           |   2 +-
+ arch/arm/include/asm/syscall.h              |   6 +
+ arch/mips/include/asm/jump_label.h          |   2 +-
+ arch/parisc/kernel/traps.c                  |   6 +-
+ arch/powerpc/include/asm/jump_label.h       |   2 +-
+ arch/powerpc/kvm/book3s_hv_rmhandlers.S     |   2 +-
+ arch/s390/include/asm/jump_label.h          |   2 +-
+ arch/sparc/include/asm/jump_label.h         |   2 +-
+ arch/sparc/kernel/entry.S                   |   2 +-
+ arch/sparc/kernel/ktlb.S                    |   3 +-
+ arch/sparc/kernel/syscalls.S                |   8 +-
+ arch/sparc/kernel/trampoline_64.S           |   2 -
+ arch/sparc/lib/ksyms.c                      |   9 --
+ arch/tile/include/asm/percpu.h              |  34 ++++-
+ arch/x86/include/asm/cpufeature.h           |   2 +-
+ arch/x86/include/asm/jump_label.h           |   2 +-
+ drivers/block/xen-blkfront.c                |  36 +++--
+ drivers/char/random.c                       |  11 +-
+ drivers/gpu/drm/i915/i915_reg.h             |   6 +
+ drivers/gpu/drm/i915/intel_display.c        |   8 +-
+ drivers/gpu/drm/i915/intel_pm.c             |   5 +
+ drivers/gpu/drm/radeon/evergreen.c          |   2 +-
+ drivers/gpu/drm/radeon/evergreend.h         |   4 +-
+ drivers/gpu/drm/radeon/r600d.h              |   2 +-
+ drivers/gpu/drm/radeon/radeon_test.c        |   4 +-
+ drivers/gpu/drm/radeon/sid.h                |   4 +-
+ drivers/hwmon/applesmc.c                    |  13 ++
+ drivers/i2c/busses/i2c-omap.c               |   3 +
+ drivers/md/dm-snap-persistent.c             |  18 ++-
+ drivers/net/bonding/bond_main.c             |  13 +-
+ drivers/net/can/flexcan.c                   |  20 +--
+ drivers/net/ethernet/realtek/r8169.c        |   1 +
+ drivers/net/ethernet/via/via-rhine.c        |   9 +-
+ drivers/net/ethernet/xilinx/ll_temac_main.c |   6 +
+ drivers/net/ppp/pptp.c                      |   2 +-
+ drivers/net/tun.c                           |  11 +-
+ drivers/net/usb/dm9601.c                    |   2 +-
+ drivers/net/xen-netback/netback.c           |  94 ++++++++----
+ drivers/scsi/esp_scsi.c                     |  14 +-
+ drivers/scsi/esp_scsi.h                     |   1 +
+ drivers/tty/serial/vt8500_serial.c          |   9 +-
+ drivers/usb/core/quirks.c                   |   6 +
+ drivers/usb/host/xhci-pci.c                 |  24 +++
+ drivers/usb/host/xhci.c                     |  14 +-
+ drivers/usb/host/xhci.h                     |   2 +
+ drivers/usb/serial/option.c                 | 225 +++++++++++++++++++++++++++-
+ drivers/usb/serial/ti_usb_3410_5052.c       |   1 +
+ drivers/usb/storage/scsiglue.c              |   5 +-
+ drivers/usb/storage/unusual_devs.h          |   7 +
+ fs/btrfs/inode.c                            |   2 +-
+ fs/buffer.c                                 |  14 +-
+ fs/cifs/cifsfs.c                            |   6 +-
+ fs/ext4/xattr.c                             |   2 +
+ fs/statfs.c                                 |   2 +-
+ include/linux/compiler-gcc.h                |   3 +
+ include/linux/compiler-gcc4.h               |  33 +++-
+ include/linux/random.h                      |   1 +
+ include/linux/timex.h                       |  14 ++
+ include/linux/usb_usual.h                   |   4 +-
+ include/net/ip.h                            |  12 +-
+ include/net/ip_vs.h                         |  12 ++
+ include/net/ipip.h                          |   3 +-
+ init/main.c                                 |   2 +
+ mm/huge_memory.c                            |  10 +-
+ mm/memcontrol.c                             |   2 +
+ mm/page-writeback.c                         |  10 +-
+ net/bridge/br_netlink.c                     |   2 +-
+ net/bridge/br_private.h                     |   8 +-
+ net/bridge/br_stp.c                         |  23 ++-
+ net/bridge/br_stp_if.c                      |  12 +-
+ net/caif/cfctrl.c                           |   3 +-
+ net/core/flow_dissector.c                   |   4 +-
+ net/core/netpoll.c                          |   9 +-
+ net/dccp/ipv6.c                             |   1 +
+ net/ipv4/igmp.c                             |   8 +-
+ net/ipv4/inetpeer.c                         |   4 +-
+ net/ipv4/ip_output.c                        |   8 +-
+ net/ipv4/ipmr.c                             |   2 +-
+ net/ipv4/raw.c                              |   2 +-
+ net/ipv4/tcp.c                              |   3 +-
+ net/ipv4/xfrm4_mode_tunnel.c                |   2 +-
+ net/ipv6/exthdrs.c                          |   6 -
+ net/ipv6/ip6_fib.c                          |   2 +-
+ net/ipv6/ip6_gre.c                          |   4 +-
+ net/ipv6/ip6_output.c                       |  53 +++----
+ net/ipv6/ip6_tunnel.c                       |   5 +-
+ net/ipv6/mcast.c                            |   4 +-
+ net/ipv6/sit.c                              |   1 +
+ net/netfilter/ipvs/ip_vs_core.c             |  12 +-
+ net/netfilter/ipvs/ip_vs_ctl.c              |   7 +
+ net/netfilter/ipvs/ip_vs_xmit.c             |   2 +-
+ net/sched/sch_htb.c                         |   2 +-
+ net/sctp/input.c                            |   3 +-
+ net/sctp/ipv6.c                             |  44 ++----
+ net/sctp/socket.c                           |   3 +
+ sound/pci/hda/patch_hdmi.c                  |  18 +--
+ sound/pci/hda/patch_realtek.c               |  10 ++
+ sound/usb/usx2y/us122l.c                    |   4 +-
+ sound/usb/usx2y/usbusx2yaudio.c             |  22 +--
+ sound/usb/usx2y/usx2yhwdeppcm.c             |   7 +-
+ 101 files changed, 782 insertions(+), 325 deletions(-)
+
+AKASHI Takahiro (1):
+      ARM: 7851/1: check for number of arguments in syscall_get/set_arguments()
+
+Alex Deucher (1):
+      drm/radeon: fix typo in CP DMA register headers
+
+Ansis Atteka (2):
+      ip: use ip_hdr() in __ip_make_skb() to retrieve IP header
+      ip: generate unique IP identificator if local fragmentation is allowed
+
+Anssi Hannula (1):
+      ALSA: hda - hdmi: Fix channel map switch not taking effect
+
+Chris Healy (1):
+      resubmit bridge: fix message_age_timer calculation
+
+Chris Metcalf (1):
+      tile: use a more conservative __my_cpu_offset in CONFIG_PREEMPT
+
+Chris Wilson (1):
+      drm/i915: Only apply DPMS to the encoder if enabled
+
+Dan Carpenter (1):
+      drm/radeon: forever loop on error in radeon_do_test_moves()
+
+Daniel Borkmann (4):
+      net: fib: fib6_add: fix potential NULL pointer dereference
+      net: sctp: fix smatch warning in sctp_send_asconf_del_ip
+      net: sctp: fix ipv6 ipsec encryption bug in sctp_v6_xmit
+      net: sctp: rfc4443: do not report ICMP redirects to user space
+
+Daniel Mack (1):
+      ALSA: snd-usb-usx2y: remove bogus frame checks
+
+Daniel Santos (2):
+      compiler-gcc4.h: Reorder macros based upon gcc ver
+      compiler-gcc.h: Add gcc-recommended GCC_VERSION macro
+
+Dave Jones (3):
+      ext4: fix memory leak in xattr
+      caif: Add missing braces to multiline if in cfctrl_linkup_request
+      tcp: Add missing braces to do_tcp_setsockopt
+
+David Henningsson (1):
+      ALSA: hda - Fix microphone for Sony VAIO Pro 13 (Haswell model)
+
+David S. Miller (2):
+      esp_scsi: Fix tag state corruption when autosensing.
+      sparc64: Fix off by one in trampoline TLB mapping installation loop.
+
+David Vrabel (1):
+      xen-netback: count number required slots for an skb more carefully
+
+Diego Elio Pettenò (1):
+      USB: serial: ti_usb_3410_5052: add Abbott strip port ID to combined table as well.
+
+Ding Zhi (1):
+      ip6_tunnels: raddr and laddr are inverted in nl msg
+
+Duan Jiong (1):
+      net:dccp: do not report ICMP redirects to user space
+
+Enrico Mioso (1):
+      usb: serial: option: blacklist Olivetti Olicard200
+
+Eric Dumazet (1):
+      net: flow_dissector: fix thoff for IPPROTO_AH
+
+Fangxiaozhi (Franko) (1):
+      USB: support new huawei devices in option.c
+
+Fengguang Wu (1):
+      writeback: fix negative bdi max pause
+
+Francisco Jerez (1):
+      drm/i915/hsw: Disable L3 caching of atomic memory operations.
+
+Greg Kroah-Hartman (1):
+      USB: serial: option: add support for Inovia SEW858 device
+
+Hannes Frederic Sowa (2):
+      ipv6: udp packets following an UFO enqueued packet need also be handled by UFO
+      ipv6: gre: correct calculation of max_headroom
+
+Helge Deller (1):
+      parisc: fix interruption handler to respect pagefault_disable()
+
+Henrik Rydberg (1):
+      hwmon: (applesmc) Always read until end of data
+
+Herbert Xu (1):
+      bridge: Clamp forward_delay when enabling STP
+
+Hong Zhiguo (2):
+      bridge: use br_port_get_rtnl within rtnl lock
+      bridge: fix NULL pointer deref of br_port_get_rcu
+
+Hugh Dickins (1):
+      mm: fix BUG in __split_huge_page_pmd
+
+Ingo Molnar (1):
+      compiler/gcc4: Add quirk for 'asm goto' miscompilation bug
+
+Jan Klos (1):
+      cifs: Fix inability to write files >2GB to SMB2/3 shares
+
+Jason Wang (1):
+      tuntap: correctly handle error in tun_set_iff()
+
+Jiri Pirko (1):
+      ipv6/exthdrs: accept tlv which includes only padding
+
+Johannes Weiner (1):
+      fs: buffer: move allocation failure loop into the allocator
+
+Josef Bacik (1):
+      Btrfs: use right root when checking for hash collision
+
+Julian Anastasov (1):
+      ipvs: add backup_only flag to avoid loops
+
+Kirill Tkhai (4):
+      sparc64: Fix ITLB handler of null page
+      sparc64: Remove RWSEM export leftovers
+      sparc64: Fix not SRA'ed %o5 in 32-bit traced syscall
+      sparc32: Fix exit flag passed from traced sys_sigreturn
+
+Linus Torvalds (1):
+      vfs: allow O_PATH file descriptors for fstatfs()
+
+Marc Kleine-Budde (2):
+      can: flexcan: fix flexcan_chip_start() on imx6
+      can: flexcan: flexcan_chip_start: fix regression, mark one MB for TX and abort pending TX
+
+Mikulas Patocka (1):
+      dm snapshot: fix data corruption
+
+Neil Horman (1):
+      bonding: Fix broken promiscuity reference counting issue
+
+Nicolas Dichtel (2):
+      sit: allow to use rtnl ops on fb tunnel
+      ip6tnl: allow to use rtnl ops on fb tunnel
+
+Nikolay Aleksandrov (1):
+      netpoll: fix NULL pointer dereference in netpoll_cleanup
+
+Oliver Neukum (4):
+      xhci: quirk for extra long delay for S4
+      USB: quirks.c: add one device that cannot deal with suspension
+      USB: quirks: add touchscreen that is dazzeled by remote wakeup
+      usb-storage: add quirk for mandatory READ_CAPACITY_16
+
+Paul Mackerras (1):
+      KVM: PPC: Book3S HV: Fix typo in saving DSCR
+
+Peter Korsgaard (1):
+      dm9601: fix IFF_ALLMULTI handling
+
+Ricardo Ribalda (1):
+      ll_temac: Reset dma descriptors indexes on ndo_open
+
+Roel Kluin (1):
+      serial: vt8500: add missing braces
+
+Roger Luethi (1):
+      via-rhine: fix VLAN priority field (PCP, IEEE 802.1p)
+
+Roger Pau Monne (1):
+      xen-blkfront: use a different scatterlist for each request
+
+Salam Noureddine (2):
+      ipv4 igmp: use in_dev_put in timer handlers instead of __in_dev_put
+      ipv6 mcast: use in6_dev_put in timer handlers instead of __in6_dev_put
+
+Takashi Iwai (3):
+      ALSA: hda - Add fixup for ASUS N56VZ
+      xhci: Fix spurious wakeups after S5 on Haswell
+      ALSA: us122l: Fix pcm_usb_stream mmapping regression
+
+Taras Kondratiuk (1):
+      i2c: omap: Clear ARDY bit twice
+
+Theodore Ts'o (2):
+      random: run random_int_secret_init() run after all late_initcalls
+      random: allow architectures to optionally define random_get_entropy()
+
+Tony Prisk (1):
+      serial: vt8500: Fix range-checking on vt8500_uart_ports
+
+Vimalkumar (1):
+      net_sched: htb: fix a typo in htb_change_class()
+
+françois romieu (1):
+      r8169: enforce RX_MULTI_EN for the 8168f.
+
+wojciech kapuscinski (1):
+      drm/radeon: fix hw contexts for SUMO2 asics
