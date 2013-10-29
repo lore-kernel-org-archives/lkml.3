@@ -1,106 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab3J2I2J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 04:28:09 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54786 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752596Ab3J2I2I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 04:28:08 -0400
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Cc: Joe Perches <joe@perches.com>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, Markus Pargmann <mpa@pengutronix.de>
-Subject: [PATCH v2] can: c_can: Speed up rx_poll function
-Date: Tue, 29 Oct 2013 09:27:47 +0100
-Message-Id: <1383035267-19604-1-git-send-email-mpa@pengutronix.de>
-X-Mailer: git-send-email 1.8.4.rc3
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1753829Ab3J2I2o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 04:28:44 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:38203 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807Ab3J2I2l convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:1>);
+	Tue, 29 Oct 2013 04:28:41 -0400
+Message-Id: <526F7FC402000078000FD7BA@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Tue, 29 Oct 2013 08:28:36 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "=?UTF-8?Q?Vladimir=20'=CF=86-coder/phcoder'=20Serbinenko?=" 
+	<phcoder@gmail.com>
+Cc: <ian.campbell@citrix.com>, <ross.philipson@citrix.com>,
+        <stefano.stabellini@eu.citrix.com>,
+        "The development of GNU GRUB" <grub-devel@gnu.org>,
+        <david.woodhouse@intel.com>, <richard.l.maliszewski@intel.com>,
+        <xen-devel@lists.xen.org>, <boris.ostrovsky@oracle.com>,
+        "Daniel Kiper" <daniel.kiper@oracle.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <seth.goldberg@oracle.com>, <pjones@redhat.com>,
+        <linux-kernel@vger.kernel.org>, <keir@xen.org>
+Subject: Re: EFI and multiboot2 devlopment work for Xen
+References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
+ <526599A8.9090501@gmail.com> <52663D54.2020800@gmail.com>
+ <20131028162603.GA4716@phenom.dumpdata.com> <526EA686.70008@gmail.com>
+In-Reply-To: <526EA686.70008@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch speeds up the rx_poll function by reducing the number of
-register reads.
+>>> On 28.10.13 at 19:01, Vladimir 'f-coder/phcoder' Serbinenko<phcoder@gmail.com> wrote:
+>>>> Will a multiboot2 tag with whole EFI memory map solve your problem?
+>>> I added such a tag in documentation and wrote a patch for it (attached).
+>>> Awaiting for someone to test it to commit
+>> 
+>> Great! I think from Xen perspective we first need to have Xen be able
+>> to understand multiboot2 - that is something Daniel had been working on.
+>> I will let Daniel talk more about it.
+>> 
+>> Seth, would you have any time to test the patch against Solaris to
+>> make sure it works?
+>> 
+> I've committed that patch. BTW do you want protected mode or long mode
+> entry point for x86_64 variant? Currently it's protected mode but I
+> planned to add long mode possibility but it wasn't a priority.
 
-Replace the 32bit register read by a 16bit register read. Currently
-the 32bit register read is implemented by using 2 16bit reads. This is
-inefficient as we only use the lower 16bit in rx_poll.
+32-bit protected mode is obviously the more consistent model
+with multiboot1. But since we'll want to avoid switching back to
+real mode when booted from UEFI, long mode would certainly
+be an option too (just that the code paths would need to
+diverge more).
 
-The for loop reads the pending interrupts in every iteration. This
-leads up to 16 reads of pending interrupts. The patch introduces a new
-outer loop to read the pending interrupts as long as 'quota' is above 0.
-This reduces the total number of reads.
-
-The third change is to replace the for-loop by a find_next_bit loop.
-
-Tested on AM335x. I removed all 'static' and 'inline' from c_can.c to
-see the timings for all functions. I used the function tracer with
-trace_stats.
-
-125kbit:
-  Function                               Hit    Time            Avg             s^2
-  --------                               ---    ----            ---             ---
-  c_can_do_rx_poll                     63960    10168178 us     158.977 us      1493056 us
-With patch:
-  c_can_do_rx_poll                     63939    4268457 us     66.758 us       818790.9 us
-
-1Mbit:
-  Function                               Hit    Time            Avg             s^2
-  --------                               ---    ----            ---             ---
-  c_can_do_rx_poll                     69489    30049498 us     432.435 us      9271851 us
-With patch:
-  c_can_do_rx_poll                    103034    24220362 us     235.071 us      6016656 us
-
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
----
-
-Notes:
-    Changes in v2:
-     - Small changes, find_next_bit -> ffs and other
-
- drivers/net/can/c_can/c_can.c | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
-index a668cd4..428681e 100644
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -798,17 +798,19 @@ static int c_can_do_rx_poll(struct net_device *dev, int quota)
- 	u32 num_rx_pkts = 0;
- 	unsigned int msg_obj, msg_ctrl_save;
- 	struct c_can_priv *priv = netdev_priv(dev);
--	u32 val = c_can_read_reg32(priv, C_CAN_INTPND1_REG);
-+	u16 val;
-+
-+	/*
-+	 * It is faster to read only one 16bit register. This is only possible
-+	 * for a maximum number of 16 objects.
-+	 */
-+	BUILD_BUG_ON_MSG(C_CAN_MSG_OBJ_RX_LAST > 16,
-+			"Implementation does not support more message objects than 16");
-+
-+	while (quota > 0 && (val = priv->read_reg(priv, C_CAN_INTPND1_REG))) {
-+		while ((msg_obj = ffs(val)) && quota > 0) {
-+			val &= ~BIT(msg_obj - 1);
- 
--	for (msg_obj = C_CAN_MSG_OBJ_RX_FIRST;
--			msg_obj <= C_CAN_MSG_OBJ_RX_LAST && quota > 0;
--			val = c_can_read_reg32(priv, C_CAN_INTPND1_REG),
--			msg_obj++) {
--		/*
--		 * as interrupt pending register's bit n-1 corresponds to
--		 * message object n, we need to handle the same properly.
--		 */
--		if (val & (1 << (msg_obj - 1))) {
- 			c_can_object_get(dev, 0, msg_obj, IF_COMM_ALL &
- 					~IF_COMM_TXRQST);
- 			msg_ctrl_save = priv->read_reg(priv,
--- 
-1.8.4.rc3
+Jan
 
