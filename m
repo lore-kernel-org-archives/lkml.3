@@ -1,70 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758162Ab3J2PaZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 11:30:25 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:36975 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168Ab3J2PaY convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Tue, 29 Oct 2013 11:30:24 -0400
-Message-Id: <526FE29B02000078000FDB27@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Tue, 29 Oct 2013 15:30:19 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "David Vrabel" <david.vrabel@citrix.com>, <Santosh.Jodh@citrix.com>,
-        "Bjorn Helgaas" <bhelgaas@google.com>, <xhejtman@ics.muni.cz>,
-        "xen-devel" <xen-devel@lists.xensource.com>,
-        <boris.ostrovsky@oracle.com>, <mukesh.rathor@oracle.com>,
-        <yuval.shaia@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [v1 1/2] xen/p2m: Create identity mappings for PFNs
- beyound E820 and PCI BARs
-References: <1382713401-4882-1-git-send-email-konrad.wilk@oracle.com>
- <1382713401-4882-2-git-send-email-konrad.wilk@oracle.com>
- <CAErSpo5_DspGSffEHOqq_G0U27OdvYbiFK3QcxiZVFeRpoMaPw@mail.gmail.com>
- <20131028165837.GH4353@phenom.dumpdata.com>
- <526F7E9202000078000FD7A6@nat28.tlf.novell.com>
- <20131029144559.GI20487@phenom.dumpdata.com>
- <526FDA6102000078000FDAE2@nat28.tlf.novell.com>
- <20131029151129.GA20984@phenom.dumpdata.com>
-In-Reply-To: <20131029151129.GA20984@phenom.dumpdata.com>
+	id S1758048Ab3J2PdD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 11:33:03 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:57927 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753930Ab3J2PdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 11:33:00 -0400
+Message-ID: <1383060707.2837.35.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [PATCH v3 09/10] mfd: pm8x41: document device tree bindings
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        devicetree@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>
+Date: Tue, 29 Oct 2013 17:31:47 +0200
+In-Reply-To: <20131029150546.GE20207@joshc.qualcomm.com>
+References: <cover.1382985169.git.joshc@codeaurora.org>
+	 <88997d3863f72f8553fcaf66cf67fbf3289df04f.1382985169.git.joshc@codeaurora.org>
+	 <1383056315.2837.22.camel@iivanov-dev.int.mm-sol.com>
+	 <20131029150546.GE20207@joshc.qualcomm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 29.10.13 at 16:11, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> On Tue, Oct 29, 2013 at 02:55:13PM +0000, Jan Beulich wrote:
->> >>> On 29.10.13 at 15:45, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
->> > On Tue, Oct 29, 2013 at 08:23:30AM +0000, Jan Beulich wrote:
->> >> >>> On 28.10.13 at 17:58, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
->> >> > On Fri, Oct 25, 2013 at 04:08:19PM -0600, Bjorn Helgaas wrote:
->> >> >> If you can look at PCI host bridge apertures instead of BARs, that
->> >> >> would solve both problems.  Reassigning those apertures is
->> >> >> theoretically possible but is not even a gleam in our eyes yet.
->> >> > 
->> >> > <nods> I think I have to have both (BARs and host bridge apertures) as when
->> >> > we do PCI passthrough to a guest - we might do it without a bridge.
->> >> 
->> >> Why? Aren't the host bridge ranges necessarily a superset of the
->> >> individual devices' BARs?
->> > 
->> > Yes. But when you pass in a PCI device to a PV guest you don't pass in the
->> > bridge. Just the PCI device itself.
->> 
->> Right you are. Which means that basing the whole logic on the
->> PCI device BARs is likely wrong anyway, not just because it
->> doesn't account for other MMIO ranges.
+
+Hi,
+
+On Tue, 2013-10-29 at 10:05 -0500, Josh Cartwright wrote: 
+> On Tue, Oct 29, 2013 at 04:18:35PM +0200, Ivan T. Ivanov wrote:
+> > On Mon, 2013-10-28 at 13:12 -0500, Josh Cartwright wrote: 
+> > > Document the bindings used to describe the Qualcomm 8x41 PMICs.
+> > > 
+> > > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> > > ---
+> > >  Documentation/devicetree/bindings/mfd/pm8x41.txt | 33 ++++++++++++++++++++++++
+> > >  1 file changed, 33 insertions(+)
+> > >  create mode 100644 Documentation/devicetree/bindings/mfd/pm8x41.txt
+> > > 
+> > > diff --git a/Documentation/devicetree/bindings/mfd/pm8x41.txt b/Documentation/devicetree/bindings/mfd/pm8x41.txt
+> > > new file mode 100644
+> > > index 0000000..6afd4ce
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/mfd/pm8x41.txt
+> > > @@ -0,0 +1,33 @@
+> > > +Qualcomm PM8841 and PM8941 PMIC multi-function devices
+> > > +
+> > > +The PM8x41 PMICs are used with the Qualcomm Snapdragon 800 series SoCs, and are
+> > > +interfaced to the chip via the SPMI (System Power Management Interface) bus.
+> > > +Support for  multiple independent functions are implemented by splitting the
+> > > +16-bit SPMI slave address space into 256 smaller fixed-size regions, 256 bytes
+> > > +each.  A function can consume one or more of these fixed-size register regions.
+> > > +
+> > > +Required properties:
+> > > +- compatible: Must be one of:
+> > > +     "qcom,pm8841"
+> > > +     "qcom,pm8941"
+> > > +- reg: Specifies the SPMI USID slave address for this device
+> > > +- #address-cells = <1>
+> > > +- #size-cells = <0>
+> > > +
+> > > +Each child node represents a function of the PM8x41.  Each child 'reg' entry
+> > > +describes an offset within the USID slave address where the region starts.
+> > > +
+> > > +Example:
+> > > +
+> > > +pm8941@0 {
+> > > +	compatible = "qcom,pm8941";
+> > > +	reg = <0x0>;
+> > > +
+> > > +	#address-cells = <1>;
+> > > +	#size-cells = <0>;
+> > > +
+> > > +	rtc {
+> > > +		compatible = "qcom,pm8941-rtc";
+> > > +		reg = <0x6000 0x6100>;
+> > 
+> > This doesn't look right. Probably #size-cells have to be <1>?
 > 
-> Right, but that is OK. When you pass in a PCI device to a PV guest you
-> only care about that specific device driver being able to access its BARs.
+> Some functions of the PMIC actually consume more than one fixed-size
+> region of the slave address space.  This example is showing one such
+> peripheral (consuming the region starting at 0x6000 and another at
+> 0x6100).
+> 
 
-Yes, but again - this is not the only possible way of allowing a
-guest access to MMIO. See the "iomem" config option.
+Ok. Thanks for clarification.
 
-Jan
+Regards,
+Ivan
+
+
 
