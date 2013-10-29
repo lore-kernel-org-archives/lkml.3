@@ -1,174 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758330Ab3J2Q1b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 12:27:31 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42011 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753930Ab3J2Q1a (ORCPT
+	id S1758585Ab3J2Q2T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 12:28:19 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:48530 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756783Ab3J2Q2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 12:27:30 -0400
-Date: Tue, 29 Oct 2013 11:26:15 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-msm@vger.kernel.org, Gilad Avidov <gavidov@codeaurora.org>,
-        linux-kernel@vger.kernel.org, Michael Bohan <mbohan@codeaurora.org>,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 02/10] spmi: Linux driver framework for SPMI
-Message-ID: <20131029162615.GH20207@joshc.qualcomm.com>
-References: <cover.1382985169.git.joshc@codeaurora.org>
- <149bbfe89e37376cc176c3aeb6c1fab9e4fd2b91.1382985169.git.joshc@codeaurora.org>
- <1383058923.2837.33.camel@iivanov-dev.int.mm-sol.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383058923.2837.33.camel@iivanov-dev.int.mm-sol.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 29 Oct 2013 12:28:12 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH v2 5/9] backlight: atmel-pwm-bl: clean up get_intensity
+Date: Tue, 29 Oct 2013 17:27:40 +0100
+Message-Id: <1383064064-4983-6-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1383064064-4983-1-git-send-email-jhovold@gmail.com>
+References: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
+ <1383064064-4983-1-git-send-email-jhovold@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 05:02:03PM +0200, Ivan T. Ivanov wrote:
-> On Mon, 2013-10-28 at 13:12 -0500, Josh Cartwright wrote: 
-> > From: Kenneth Heitke <kheitke@codeaurora.org>
-> > 
-> > System Power Management Interface (SPMI) is a specification
-> > developed by the MIPI (Mobile Industry Process Interface) Alliance
-> > optimized for the real time control of Power Management ICs (PMIC).
-> > 
-> > SPMI is a two-wire serial interface that supports up to 4 master
-> > devices and up to 16 logical slaves.
-> > 
-> > The framework supports message APIs, multiple busses (1 controller
-> > per bus) and multiple clients/slave devices per controller.
-> > 
-> > Signed-off-by: Kenneth Heitke <kheitke@codeaurora.org>
-> > Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
-> > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-[..]
-> > +static int spmi_drv_probe(struct device *dev)
-> > +{
-> > +	const struct spmi_driver *sdrv = to_spmi_driver(dev->driver);
-> > +	int err = 0;
-> > +
-> > +	if (sdrv->probe)
-> > +		err = sdrv->probe(to_spmi_device(dev));
-> > +
-> > +	return err;
-> > +}
-> > +
-> > +static int spmi_drv_remove(struct device *dev)
-> > +{
-> > +	const struct spmi_driver *sdrv = to_spmi_driver(dev->driver);
-> > +	int err = 0;
-> > +
-> > +	if (sdrv->remove)
-> > +		err = sdrv->remove(to_spmi_device(dev));
-> > +
-> > +	return err;
-> > +}
-> > +
-> > +static void spmi_drv_shutdown(struct device *dev)
-> > +{
-> > +	const struct spmi_driver *sdrv = to_spmi_driver(dev->driver);
-> > +
-> > +	if (sdrv->shutdown)
-> 
-> If driver for device is not loaded this will cause kernel NULL
-> pointer dereference.
+Clean up get_intensity to increase readability.
 
-Indeed.  I'll fix this.
+Acked-by: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ drivers/video/backlight/atmel-pwm-bl.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-> > +static int of_spmi_register_devices(struct spmi_controller *ctrl)
-> > +{
-> > +	struct device_node *node;
-> > +	int err;
-> > +
-> > +	dev_dbg(&ctrl->dev, "of_spmi_register_devices\n");
-> > +
-> > +	if (!ctrl->dev.of_node)
-> > +		return -ENODEV;
-> > +
-> > +	dev_dbg(&ctrl->dev, "looping through children\n");
-> > +
-> > +	for_each_available_child_of_node(ctrl->dev.of_node, node) {
-> > +		struct spmi_device *sdev;
-> > +		u32 reg[2];
-> > +
-> > +		dev_dbg(&ctrl->dev, "adding child %s\n", node->full_name);
-> > +
-> > +		err = of_property_read_u32_array(node, "reg", reg, 2);
-> > +		if (err) {
-> > +			dev_err(&ctrl->dev,
-> > +				"node %s does not have 'reg' property\n",
-> > +				node->full_name);
-> > +			continue;
-> 
-> Shouldn't this be a fatal error?
-
-Fatal in what way?  It is fatal in the sense that this particular child
-node is skipped, but other children can still be enumerated.  Are you
-suggesting that we bail completely when we hit a wrongly-described
-child?
-
-> > +		}
-> > +
-> > +		if (reg[1] != SPMI_USID) {
-> > +			dev_err(&ctrl->dev,
-> > +				"node %s contains unsupported 'reg' entry\n",
-> > +				node->full_name);
-> > +			continue;
-> > +		}
-> > +
-> > +		if (reg[0] > 0xF) {
-> > +			dev_err(&ctrl->dev,
-> > +				"invalid usid on node %s\n",
-> > +				node->full_name);
-> > +			continue;
-> > +		}
-> > +
-> > +		dev_dbg(&ctrl->dev, "read usid %02x\n", reg[0]);
-> > +
-> > +		sdev = spmi_device_alloc(ctrl);
-> > +		if (!sdev)
-> > +			continue;
-> > +
-> > +		sdev->dev.of_node = node;
-> > +		sdev->usid = (u8) reg[0];
-> > +
-> > +		err = spmi_device_add(sdev);
-> > +		if (err) {
-> > +			dev_err(&sdev->dev,
-> > +				"failure adding device. status %d\n", err);
-> > +			spmi_device_put(sdev);
-> > +			continue;
-> > +		}
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +int spmi_controller_add(struct spmi_controller *ctrl)
-> > +{
-> > +	int ret;
-> > +
-> > +	/* Can't register until after driver model init */
-> > +	if (WARN_ON(!spmi_bus_type.p))
-> > +		return -EAGAIN;
-> > +
-> > +	ret = device_add(&ctrl->dev);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	if (IS_ENABLED(CONFIG_OF))
-> > +		of_spmi_register_devices(ctrl);
-> 
-> Check for error code here?
-
-And do what with it?  Maybe instead, I should make
-of_spmi_register_devices() return void.
-
+diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
+index 01af5c2..abfaada 100644
+--- a/drivers/video/backlight/atmel-pwm-bl.c
++++ b/drivers/video/backlight/atmel-pwm-bl.c
+@@ -70,15 +70,14 @@ static int atmel_pwm_bl_set_intensity(struct backlight_device *bd)
+ static int atmel_pwm_bl_get_intensity(struct backlight_device *bd)
+ {
+ 	struct atmel_pwm_bl *pwmbl = bl_get_data(bd);
++	u32 cdty;
+ 	u32 intensity;
+ 
+-	if (pwmbl->pdata->pwm_active_low) {
+-		intensity = pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY) -
+-			pwmbl->pdata->pwm_duty_min;
+-	} else {
+-		intensity = pwmbl->pdata->pwm_duty_max -
+-			pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY);
+-	}
++	cdty = pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY);
++	if (pwmbl->pdata->pwm_active_low)
++		intensity = cdty - pwmbl->pdata->pwm_duty_min;
++	else
++		intensity = pwmbl->pdata->pwm_duty_max - cdty;
+ 
+ 	return intensity & 0xffff;
+ }
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.4.2
+
