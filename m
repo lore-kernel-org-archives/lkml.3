@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab3J2SOZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:14:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59581 "EHLO
+	id S1752972Ab3J2SOt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:14:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59562 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754715Ab3J2SJl (ORCPT
+	with ESMTP id S1754611Ab3J2SJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:09:41 -0400
+	Tue, 29 Oct 2013 14:09:36 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Healy <cphealy@gmail.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Hong Zhiguo <zhiguohong@tencent.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 39/81] resubmit bridge: fix message_age_timer calculation
-Date: Tue, 29 Oct 2013 11:04:00 -0700
-Message-Id: <1383069882-11437-40-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 42/81] bridge: fix NULL pointer deref of br_port_get_rcu
+Date: Tue, 29 Oct 2013 11:04:03 -0700
+Message-Id: <1383069882-11437-43-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
@@ -27,40 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Healy <cphealy@gmail.com>
+From: Hong Zhiguo <zhiguohong@tencent.com>
 
-[ Upstream commit 9a0620133ccce9dd35c00a96405c8d80938c2cc0 ]
+[ Upstream commit 716ec052d2280d511e10e90ad54a86f5b5d4dcc2 ]
 
-This changes the message_age_timer calculation to use the BPDU's max age as
-opposed to the local bridge's max age.  This is in accordance with section
-8.6.2.3.2 Step 2 of the 802.1D-1998 sprecification.
+The NULL deref happens when br_handle_frame is called between these
+2 lines of del_nbp:
+	dev->priv_flags &= ~IFF_BRIDGE_PORT;
+	/* --> br_handle_frame is called at this time */
+	netdev_rx_handler_unregister(dev);
 
-With the current implementation, when running with very large bridge
-diameters, convergance will not always occur even if a root bridge is
-configured to have a longer max age.
+In br_handle_frame the return of br_port_get_rcu(dev) is dereferenced
+without check but br_port_get_rcu(dev) returns NULL if:
+	!(dev->priv_flags & IFF_BRIDGE_PORT)
 
-Tested successfully on bridge diameters of ~200.
+Eric Dumazet pointed out the testing of IFF_BRIDGE_PORT is not necessary
+here since we're in rcu_read_lock and we have synchronize_net() in
+netdev_rx_handler_unregister. So remove the testing of IFF_BRIDGE_PORT
+and by the previous patch, make sure br_port_get_rcu is called in
+bridging code.
 
-Signed-off-by: Chris Healy <cphealy@gmail.com>
+Signed-off-by: Hong Zhiguo <zhiguohong@tencent.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/bridge/br_stp.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/bridge/br_private.h | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/net/bridge/br_stp.c b/net/bridge/br_stp.c
-index b01849a..e26f712 100644
---- a/net/bridge/br_stp.c
-+++ b/net/bridge/br_stp.c
-@@ -209,7 +209,7 @@ static void br_record_config_information(struct net_bridge_port *p,
- 	p->designated_age = jiffies - bpdu->message_age;
+diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
+index 688fc44..f56cd47 100644
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -162,10 +162,7 @@ struct net_bridge_port
  
- 	mod_timer(&p->message_age_timer, jiffies
--		  + (p->br->max_age - bpdu->message_age));
-+		  + (bpdu->max_age - bpdu->message_age));
+ static inline struct net_bridge_port *br_port_get_rcu(const struct net_device *dev)
+ {
+-	struct net_bridge_port *port =
+-			rcu_dereference_rtnl(dev->rx_handler_data);
+-
+-	return br_port_exists(dev) ? port : NULL;
++	return rcu_dereference(dev->rx_handler_data);
  }
  
- /* called under bridge lock */
+ static inline struct net_bridge_port *br_port_get_rtnl(const struct net_device *dev)
 -- 
 1.8.1.2
 
