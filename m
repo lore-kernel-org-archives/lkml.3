@@ -1,65 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab3J2SPy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:15:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59545 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754458Ab3J2SJa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:09:30 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ding Zhi <zhi.ding@6wind.com>, Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 43/81] ip6_tunnels: raddr and laddr are inverted in nl msg
-Date: Tue, 29 Oct 2013 11:04:04 -0700
-Message-Id: <1383069882-11437-44-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
-References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1756449Ab3J2SQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:16:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25505 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756399Ab3J2SQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 14:16:22 -0400
+Message-ID: <1383070572.1768.139.camel@deneb.redhat.com>
+Subject: Re: [PATCH] c6x: remove unused COMMON_CLKDEV Kconfig parameter
+From: Mark Salter <msalter@redhat.com>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: a-jacquiot@ti.com, linux-c6x-dev@linux-c6x.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 29 Oct 2013 14:16:12 -0400
+In-Reply-To: <1382877784-5020-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1382877784-5020-1-git-send-email-michael.opdenacker@free-electrons.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.12 -stable review patch.  If anyone has any objections, please let me know.
+On Sun, 2013-10-27 at 13:43 +0100, Michael Opdenacker wrote:
+> This removes the COMMON_CLKDEV kernel configuration
+> parameter defined in arch/c6x/Kconfig, but used nowhere
+> in the makefiles and source code.
+> 
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> ---
 
-------------------
+Thanks. I'll add this to the c6x tree.
 
-From: Ding Zhi <zhi.ding@6wind.com>
-
-[ Upstream commit 0d2ede929f61783aebfb9228e4d32a0546ee4d23 ]
-
-IFLA_IPTUN_LOCAL and IFLA_IPTUN_REMOTE were inverted.
-
-Introduced by c075b13098b3 (ip6tnl: advertise tunnel param via rtnl).
-
-Signed-off-by: Ding Zhi <zhi.ding@6wind.com>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/ipv6/ip6_tunnel.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
-index a14f28b..57458c8 100644
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -1660,9 +1660,9 @@ static int ip6_tnl_fill_info(struct sk_buff *skb, const struct net_device *dev)
- 
- 	if (nla_put_u32(skb, IFLA_IPTUN_LINK, parm->link) ||
- 	    nla_put(skb, IFLA_IPTUN_LOCAL, sizeof(struct in6_addr),
--		    &parm->raddr) ||
--	    nla_put(skb, IFLA_IPTUN_REMOTE, sizeof(struct in6_addr),
- 		    &parm->laddr) ||
-+	    nla_put(skb, IFLA_IPTUN_REMOTE, sizeof(struct in6_addr),
-+		    &parm->raddr) ||
- 	    nla_put_u8(skb, IFLA_IPTUN_TTL, parm->hop_limit) ||
- 	    nla_put_u8(skb, IFLA_IPTUN_ENCAP_LIMIT, parm->encap_limit) ||
- 	    nla_put_be32(skb, IFLA_IPTUN_FLOWINFO, parm->flowinfo) ||
--- 
-1.8.1.2
 
