@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757525Ab3J2AKx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 20:10:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60707 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756691Ab3J2AKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 20:10:51 -0400
-Date: Tue, 29 Oct 2013 11:10:37 +1100
-From: NeilBrown <neilb@suse.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: Alex Courbot <acourbot@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: Any news on Runtime Interpreted Power Sequences
-Message-ID: <20131029111037.6e59499d@notabene.brown>
-In-Reply-To: <20131028235344.GB16686@sirena.org.uk>
-References: <20131025112224.6e5265e6@notabene.brown>
-	<526A0E71.100@nvidia.com>
-	<20131025183345.2b963e13@notabene.brown>
-	<526E3605.9080002@nvidia.com>
-	<20131028221004.3294c1ea@notabene.brown>
-	<20131028235344.GB16686@sirena.org.uk>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/b3VR9kQfisD2E9rJ_6neAcX"; protocol="application/pgp-signature"
+	id S1756879Ab3J2AQJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 20:16:09 -0400
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:43586
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754007Ab3J2AQG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 20:16:06 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371Ic89bh1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hz8dhz1de098h8275bh1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h906i1155h192ch)
+Date: Mon, 28 Oct 2013 17:15:52 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Rob Herring <robherring2@gmail.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Chris Ball <cjb@laptop.org>, Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH 1/2] mmc: arasan: Add driver for Arasan SDHCI
+References: <1381864085-8806-1-git-send-email-soren.brinkmann@xilinx.com>
+ <526EF149.8060304@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <526EF149.8060304@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <ff1f2d38-4185-49f0-8b63-b3bd2b4f9a27@CO9EHSMHS024.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/b3VR9kQfisD2E9rJ_6neAcX
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Oct 28, 2013 at 06:20:41PM -0500, Rob Herring wrote:
+> On 10/15/2013 02:08 PM, Soren Brinkmann wrote:
+> > Add a driver for Arasan's SDHCI controller core.
+> > 
+> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > ---
+> >  .../devicetree/bindings/mmc/arasan,sdhci.txt       |  23 +++
+> >  MAINTAINERS                                        |   1 +
+> >  drivers/mmc/host/Kconfig                           |  12 ++
+> >  drivers/mmc/host/Makefile                          |   1 +
+> >  drivers/mmc/host/sdhci-of-arasan.c                 | 224 +++++++++++++++++++++
+> >  5 files changed, 261 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
+> >  create mode 100644 drivers/mmc/host/sdhci-of-arasan.c
+> > 
+> > diff --git a/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt b/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
+> > new file mode 100644
+> > index 000000000000..20f0fc25e270
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
+> > @@ -0,0 +1,23 @@
+> > +Device Tree Bindings for the Arasan SDCHI Controller
+> > +
+> > +  The bindings follow the mmc[1] and the clock bindings[2]. Only deviations are
+> > +  documented here.
+> > +
+> > +  [1] Documentation/devicetree/bindings/mmc/mmc.txt
+> > +  [2] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> > +
+> > +Required Properties:
+> > +  - compatible: Compatibility string. Must be 'arasan,sdhci'
+> 
+> This string is a bit non-specific. Vendor IP typically has configurable
+> options, different revs of IP with fixes/differences, and the
+> possibility of integration wierdness or bugs. So it is better to be as
+> specific as possible in case the kernel needs to know exactly what
+> version of h/w this is.
+Okay. The Zynq TRM specifies the version as '8.9A_apr02nd_2010', which seems
+a little overly specific to me. How does 'arasan,sdhci-8.9a' sound to
+you?
 
-On Mon, 28 Oct 2013 16:53:44 -0700 Mark Brown <broonie@kernel.org> wrote:
+	Thanks,
+	Sören
 
-> On Mon, Oct 28, 2013 at 10:10:04PM +1100, NeilBrown wrote:
->=20
-> > I agree that this power-up sequence should be a property of the device.
-> > However until the device has been powered up, Linux doesn't know about =
-it.
-> > Neither a board file or a devicetree can (as far as I can tell), tell t=
-he
-> > MMC port that a particular card is attached.  Rather the host probes th=
-e card
-> > to see what it is.
-> > So there isn't any way for the device driver to get control at the
-> > appropriate time to effect the proper sequencing.
->=20
-> If it is a genuinely pluggable MMC slot then I'd expect the sequence to
-> be implementing whatever is required for standard MMC enumeration to
-> work.  If the device is a soldered down one with extra control (as is
-> quite common) then there shouldn't be a problem describing it?
 
-Yes, the device is soldered down and has a reset line that needs to be puls=
-ed
-low at about the same time that the MMC port enables the regulator.
-
-How do you propose that I describe this?  Which driver should know about the
-reset GPIO, how to I tell it about the GPIO, and which function should do t=
-he
-pulsing?
-
-Thanks,
-NeilBrown
-
---Sig_/b3VR9kQfisD2E9rJ_6neAcX
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUm78/Tnsnt1WYoG5AQKXXQ/8DqthJiyg61Ukzd/1FwchfiarukJYfh7z
-VBGIem0lBRNGUblNIXRPSZmg0sQYsWiyhM8AT8QzZHfn2AV2Mt0nepjQt9RcxxpW
-6uNZmZQbRn09RGuU4gMQMJRkYaRhe/iyL0XeoTqAIKH3IgAShBqu/mfrQSG8xTp1
-wqh/4J1DXhxchNuMuyfaXQ7dI33OFkMCpNjrO34kU1I+kYgvBhNiXrg6ttYq5SRw
-CsuHmodHwKDBjG/tldpu+S3p2jRQD/QYDjoCbQzY35uPdKzqp7vy4bCw4y8NnBLb
-EmMnB4EpThvc9C3K1x3JXg0zErK6Pjibh+1sAm9YnsG8iFZQ26FhNHEIr5K9wSM8
-lezHtSP/7kgaYVoRW9Nw3HDLo4LCt5Iv/fwxfhO/jArNfYbEwMa3McYb6+sdtND0
-WDb4J7jld/H+0f3Tu5N958hzJyBosEJbmK0rzmSReop7duE9lV7W0rOFw9YUbZE6
-DYXbUhLi7ricOptrkef/1NwkLy3Vtzrvfz56ngz+OYAurMA7cHeo1y7tc+nP0N+R
-Br9WMsMyYwHNSaCZ8mSnyY1//dv7AI6eyosWKlFzai55tiKpjjpeW6FW/fv8GDnd
-hUvCbIoJMaYrxn/uSOyXyyAL575wlMn3ZsnLKelvJyYABIpseyu3wonSgyeC//Pc
-F78DGw0gEtg=
-=xA6D
------END PGP SIGNATURE-----
-
---Sig_/b3VR9kQfisD2E9rJ_6neAcX--
