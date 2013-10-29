@@ -1,130 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230Ab3J2HL1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 03:11:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30593 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502Ab3J2HLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 03:11:25 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: rusty@rustcorp.com.au, mst@redhat.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>, Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: [PATCH net] virtio-net: correctly handle cpu hotplug notifier during resuming
-Date: Tue, 29 Oct 2013 15:11:07 +0800
-Message-Id: <1383030667-14343-1-git-send-email-jasowang@redhat.com>
+	id S1752177Ab3J2HZK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 03:25:10 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:58509 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab3J2HZI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 03:25:08 -0400
+X-AuditID: 9c93017e-b7ca6ae000000e8a-f7-526f62d20887
+Date: Tue, 29 Oct 2013 16:25:11 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Zhang Mingjun <zhang.mingjun@linaro.org>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, akpm@linux-foundation.org,
+        Mel Gorman <mgorman@suse.de>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Mingjun Zhang <troy.zhangmingjun@linaro.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH] mm: cma: free cma page to buddy instead of being cpu hot
+ page
+Message-ID: <20131029072511.GA6030@bbox>
+References: <1382960569-6564-1-git-send-email-zhang.mingjun@linaro.org>
+ <20131029045430.GE17038@bbox>
+ <CAGT3LeqEzMKeq5PYz+Dv-rCBsTuUAtttyvYZu4UYWsAkUn8urQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGT3LeqEzMKeq5PYz+Dv-rCBsTuUAtttyvYZu4UYWsAkUn8urQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 3ab098df35f8b98b6553edc2e40234af512ba877 (virtio-net: don't respond to
-cpu hotplug notifier if we're not ready) tries to bypass the cpu hotplug
-notifier by checking the config_enable and does nothing is it was false. So it
-need to try to hold the config_lock mutex which may happen in atomic
-environment which leads the following warnings:
+On Tue, Oct 29, 2013 at 03:00:09PM +0800, Zhang Mingjun wrote:
+> On Tue, Oct 29, 2013 at 12:54 PM, Minchan Kim <minchan@kernel.org> wrote:
+> 
+> > Hello,
+> >
+> > On Mon, Oct 28, 2013 at 07:42:49PM +0800, zhang.mingjun@linaro.org wrote:
+> > > From: Mingjun Zhang <troy.zhangmingjun@linaro.org>
+> > >
+> > > free_contig_range frees cma pages one by one and MIGRATE_CMA pages will
+> > be
+> > > used as MIGRATE_MOVEABLE pages in the pcp list, it causes unnecessary
+> > > migration action when these pages reused by CMA.
+> >
+> > You are saying about the overhead but I'm not sure how much it is
+> > because it wouldn't be frequent. Although it's frequent, migration is
+> > already slow path and CMA migration is worse so I really wonder how much
+> > pain is and how much this patch improve.
+> >
+> > Having said that, it makes CMA allocation policy consistent which
+> > is that CMA migration type is last fallback to minimize number of migration
+> > and code peice you are adding is already low hit path so that I think
+> > it has no problem.
+> >
+> problem is when free_contig_range frees cma pages, page's migration type is
+> MIGRATE_CMA!
+> I don't know why free_contig_range free pages one by one, but in the end it
+> calls free_hot_cold_page,
+> so some of these MIGRATE_CMA pages will be used as MIGRATE_MOVEABLE, this
+> break the CMA
+> allocation policy and it's not the low hit path, it's really the hot path,
+> in fact each time free_contig_range calls
+> some of these CMA pages will stay on this pcp list.
+> when filesytem needs a pagecache or page fault exception which alloc one
+> page using alloc_pages(MOVABLE, 0)
+> it will get the page from this pcp list, breaking the CMA fallback rules,
+> that is CMA pages in pcp list using as
+> page cache or annoymous page very easily.
 
-[  622.944441] CPU0 attaching NULL sched-domain.
-[  622.944446] CPU1 attaching NULL sched-domain.
-[  622.944485] CPU0 attaching NULL sched-domain.
-[  622.950795] BUG: sleeping function called from invalid context at kernel/mutex.c:616
-[  622.950796] in_atomic(): 1, irqs_disabled(): 1, pid: 10, name: migration/1
-[  622.950796] no locks held by migration/1/10.
-[  622.950798] CPU: 1 PID: 10 Comm: migration/1 Not tainted 3.12.0-rc5-wl-01249-gb91e82d #317
-[  622.950799] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[  622.950802]  0000000000000000 ffff88001d42dba0 ffffffff81a32f22 ffff88001bfb9c70
-[  622.950803]  ffff88001d42dbb0 ffffffff810edb02 ffff88001d42dc38 ffffffff81a396ed
-[  622.950805]  0000000000000046 ffff88001d42dbe8 ffffffff810e861d 0000000000000000
-[  622.950805] Call Trace:
-[  622.950810]  [<ffffffff81a32f22>] dump_stack+0x54/0x74
-[  622.950815]  [<ffffffff810edb02>] __might_sleep+0x112/0x114
-[  622.950817]  [<ffffffff81a396ed>] mutex_lock_nested+0x3c/0x3c6
-[  622.950818]  [<ffffffff810e861d>] ? up+0x39/0x3e
-[  622.950821]  [<ffffffff8153ea7c>] ? acpi_os_signal_semaphore+0x21/0x2d
-[  622.950824]  [<ffffffff81565ed1>] ? acpi_ut_release_mutex+0x5e/0x62
-[  622.950828]  [<ffffffff816d04ec>] virtnet_cpu_callback+0x33/0x87
-[  622.950830]  [<ffffffff81a42576>] notifier_call_chain+0x3c/0x5e
-[  622.950832]  [<ffffffff810e86a8>] __raw_notifier_call_chain+0xe/0x10
-[  622.950835]  [<ffffffff810c5556>] __cpu_notify+0x20/0x37
-[  622.950836]  [<ffffffff810c5580>] cpu_notify+0x13/0x15
-[  622.950838]  [<ffffffff81a237cd>] take_cpu_down+0x27/0x3a
-[  622.950841]  [<ffffffff81136289>] stop_machine_cpu_stop+0x93/0xf1
-[  622.950842]  [<ffffffff81136167>] cpu_stopper_thread+0xa0/0x12f
-[  622.950844]  [<ffffffff811361f6>] ? cpu_stopper_thread+0x12f/0x12f
-[  622.950847]  [<ffffffff81119710>] ? lock_release_holdtime.part.7+0xa3/0xa8
-[  622.950848]  [<ffffffff81135e4b>] ? cpu_stop_should_run+0x3f/0x47
-[  622.950850]  [<ffffffff810ea9b0>] smpboot_thread_fn+0x1c5/0x1e3
-[  622.950852]  [<ffffffff810ea7eb>] ? lg_global_unlock+0x67/0x67
-[  622.950854]  [<ffffffff810e36b7>] kthread+0xd8/0xe0
-[  622.950857]  [<ffffffff81a3bfad>] ? wait_for_common+0x12f/0x164
-[  622.950859]  [<ffffffff810e35df>] ? kthread_create_on_node+0x124/0x124
-[  622.950861]  [<ffffffff81a45ffc>] ret_from_fork+0x7c/0xb0
-[  622.950862]  [<ffffffff810e35df>] ? kthread_create_on_node+0x124/0x124
-[  622.950876] smpboot: CPU 1 is now offline
-[  623.194556] SMP alternatives: lockdep: fixing up alternatives
-[  623.194559] smpboot: Booting Node 0 Processor 1 APIC 0x1
-...
 
-A correct fix is to unregister the hotcpu notifier during restore and register a
-new one in resume.
+It seems you misunderstood me. My English was poor?
+I already said that I agree with you.
+Your patch has no impact with hot path and makes CMA allocation policy
+consistent so that there is no objection.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Tested-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
-This patch is needed for 3.8 and above.
----
- drivers/net/virtio_net.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+> 
+> > >
+> > > Signed-off-by: Mingjun Zhang <troy.zhangmingjun@linaro.org>
+> > > ---
+> > >  mm/page_alloc.c |    3 ++-
+> > >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > >
+> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > index 0ee638f..84b9d84 100644
+> > > --- a/mm/page_alloc.c
+> > > +++ b/mm/page_alloc.c
+> > > @@ -1362,7 +1362,8 @@ void free_hot_cold_page(struct page *page, int
+> > cold)
+> > >        * excessively into the page allocator
+> > >        */
+> > >       if (migratetype >= MIGRATE_PCPTYPES) {
+> > > -             if (unlikely(is_migrate_isolate(migratetype))) {
+> > > +             if (unlikely(is_migrate_isolate(migratetype))
+> > > +                     || is_migrate_cma(migratetype))
+> >
+> > The concern is likely/unlikely usage is proper in this code peice.
+> > If we don't use memory isolation, the code path is used for only
+> > MIGRATE_RESERVE which is very rare allocation in normal workload.
+> >
+> > Even, in memory isolation environement, I'm not sure how many
+> > CMA/HOTPLUG is used compared to normal alloc/free.
+> > So, I think below is more proper?
+> >
+> > if (unlikely(migratetype >= MIGRATE_PCPTYPES)) {
+> >         if (is_migrate_isolate(migratetype) || is_migrate_cma(migratetype))
+> >
+> > if CMA is enabled and alloc/free frequently, it will more likely
+> migratetype >= MIGRATE_PCPTYPES
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 9fbdfcd..bbc9cb8 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1118,11 +1118,6 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
- {
- 	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
- 
--	mutex_lock(&vi->config_lock);
--
--	if (!vi->config_enable)
--		goto done;
--
- 	switch(action & ~CPU_TASKS_FROZEN) {
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
-@@ -1136,8 +1131,6 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
- 		break;
- 	}
- 
--done:
--	mutex_unlock(&vi->config_lock);
- 	return NOTIFY_OK;
- }
- 
-@@ -1699,6 +1692,8 @@ static int virtnet_freeze(struct virtio_device *vdev)
- 	struct virtnet_info *vi = vdev->priv;
- 	int i;
- 
-+	unregister_hotcpu_notifier(&vi->nb);
-+
- 	/* Prevent config work handler from accessing the device */
- 	mutex_lock(&vi->config_lock);
- 	vi->config_enable = false;
-@@ -1747,6 +1742,10 @@ static int virtnet_restore(struct virtio_device *vdev)
- 	virtnet_set_queues(vi, vi->curr_queue_pairs);
- 	rtnl_unlock();
- 
-+	err = register_hotcpu_notifier(&vi->nb);
-+	if (err)
-+		return err;
-+
- 	return 0;
- }
- #endif
+Until now, I didn't notice there is such workload. Do you have such real workload?
+If so, we should change it with following as?
+
+if (migratetype >= MIGRATE_PCPTYPES) {
+        if (is_migrate_cma(migratetype) || unlikely(is_migrate_isolate(migratetype)))
+
+Because assumption is you insist that there is lots of alloc/free for CMA.
+But since we have had unlikely on memory-hotplug check, it would be less than CMA.
+
+
+
+> 
+> I know it's an another topic but I'd like to disucss it in this time because
+> > we will forget such trivial thing later, again.
+> >
+> > }
+> >
+> > >                       free_one_page(zone, page, 0, migratetype);
+> > >                       goto out;
+> > >               }
+> > > --
+> > > 1.7.9.5
+> > >
+> > > --
+> > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > > see: http://www.linux-mm.org/ .
+> > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >
+> > --
+> > Kind regards,
+> > Minchan Kim
+> >
+
 -- 
-1.8.1.2
-
+Kind regards,
+Minchan Kim
