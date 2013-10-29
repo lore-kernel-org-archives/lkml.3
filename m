@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758327Ab3J2QnX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 12:43:23 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:52888 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758136Ab3J2QnV (ORCPT
+	id S1758387Ab3J2Qn3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 12:43:29 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:33954 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758339Ab3J2Qn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 12:43:21 -0400
+	Tue, 29 Oct 2013 12:43:26 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 1/2] tools/perf/build: Fix detection of non-core features
-Date: Tue, 29 Oct 2013 10:43:15 -0600
-Message-Id: <1383064996-20933-1-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 2/2] perf kvm: Disable live command if timerfd is not supported
+Date: Tue, 29 Oct 2013 10:43:16 -0600
+Message-Id: <1383064996-20933-2-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1383064996-20933-1-git-send-email-dsahern@gmail.com>
+References: <1383064996-20933-1-git-send-email-dsahern@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-feature_check needs to be invoked through call, and LDFLAGS may not be set
-so quotes are needed.
-
-Thanks to Jiri for spotting the quotes around LDFLAGS; that one was driving
-me nuts with the upcoming timerfd feature detection.
+If the OS does not have timerfd support (e.g., older OS'es like RHEL5)
+disable perf kvm stat live.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -32,50 +31,192 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/config/Makefile | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ tools/perf/builtin-kvm.c                        | 12 ++++++++++++
+ tools/perf/config/Makefile                      |  7 +++++++
+ tools/perf/config/feature-checks/Makefile       |  6 +++++-
+ tools/perf/config/feature-checks/test-all.c     |  5 +++++
+ tools/perf/config/feature-checks/test-timerfd.c | 18 ++++++++++++++++++
+ 5 files changed, 47 insertions(+), 1 deletion(-)
+ create mode 100644 tools/perf/config/feature-checks/test-timerfd.c
 
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index cb05f39d8a77..cd9f92078aba 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -20,7 +20,9 @@
+ #include "util/data.h"
+ 
+ #include <sys/prctl.h>
++#ifdef HAVE_TIMERFD_SUPPORT
+ #include <sys/timerfd.h>
++#endif
+ 
+ #include <termios.h>
+ #include <semaphore.h>
+@@ -337,6 +339,7 @@ static void init_kvm_event_record(struct perf_kvm_stat *kvm)
+ 		INIT_LIST_HEAD(&kvm->kvm_events_cache[i]);
+ }
+ 
++#ifdef HAVE_TIMERFD_SUPPORT
+ static void clear_events_cache_stats(struct list_head *kvm_events_cache)
+ {
+ 	struct list_head *head;
+@@ -358,6 +361,7 @@ static void clear_events_cache_stats(struct list_head *kvm_events_cache)
+ 		}
+ 	}
+ }
++#endif
+ 
+ static int kvm_events_hash_fn(u64 key)
+ {
+@@ -783,6 +787,7 @@ static void print_result(struct perf_kvm_stat *kvm)
+ 		pr_info("\nLost events: %" PRIu64 "\n\n", kvm->lost_events);
+ }
+ 
++#ifdef HAVE_TIMERFD_SUPPORT
+ static int process_lost_event(struct perf_tool *tool,
+ 			      union perf_event *event __maybe_unused,
+ 			      struct perf_sample *sample __maybe_unused,
+@@ -793,6 +798,7 @@ static int process_lost_event(struct perf_tool *tool,
+ 	kvm->lost_events++;
+ 	return 0;
+ }
++#endif
+ 
+ static bool skip_sample(struct perf_kvm_stat *kvm,
+ 			struct perf_sample *sample)
+@@ -872,6 +878,7 @@ static bool verify_vcpu(int vcpu)
+ 	return true;
+ }
+ 
++#ifdef HAVE_TIMERFD_SUPPORT
+ /* keeping the max events to a modest level to keep
+  * the processing of samples per mmap smooth.
+  */
+@@ -1213,6 +1220,7 @@ static int kvm_live_open_events(struct perf_kvm_stat *kvm)
+ out:
+ 	return rc;
+ }
++#endif
+ 
+ static int read_events(struct perf_kvm_stat *kvm)
+ {
+@@ -1379,6 +1387,7 @@ kvm_events_report(struct perf_kvm_stat *kvm, int argc, const char **argv)
+ 	return kvm_events_report_vcpu(kvm);
+ }
+ 
++#ifdef HAVE_TIMERFD_SUPPORT
+ static struct perf_evlist *kvm_live_event_list(void)
+ {
+ 	struct perf_evlist *evlist;
+@@ -1566,6 +1575,7 @@ out:
+ 
+ 	return err;
+ }
++#endif
+ 
+ static void print_kvm_stat_usage(void)
+ {
+@@ -1604,8 +1614,10 @@ static int kvm_cmd_stat(const char *file_name, int argc, const char **argv)
+ 	if (!strncmp(argv[1], "rep", 3))
+ 		return kvm_events_report(&kvm, argc - 1 , argv + 1);
+ 
++#ifdef HAVE_TIMERFD_SUPPORT
+ 	if (!strncmp(argv[1], "live", 4))
+ 		return kvm_events_live(&kvm, argc - 1 , argv + 1);
++#endif
+ 
+ perf_stat:
+ 	return cmd_stat(argc, argv, NULL);
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 543aa953bab1..c82772207e6e 100644
+index c82772207e6e..afe4945e3e84 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -96,7 +96,7 @@ endif
+@@ -395,6 +395,13 @@ else
+   endif
+ endif
  
- feature_check = $(eval $(feature_check_code))
- define feature_check_code
--  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) LDFLAGS=$(LDFLAGS) -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
-+  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) LDFLAGS="$(LDFLAGS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
- endef
++$(call feature_check,timerfd)
++ifeq ($(feature-timerfd), 1)
++  CFLAGS += -DHAVE_TIMERFD_SUPPORT
++else
++  msg := $(warning No timerfd support. Disables 'perf kvm stat live');
++endif
++
+ disable-python = $(eval $(disable-python_code))
+ define disable-python_code
+   CFLAGS += -DNO_LIBPYTHON
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 452b67cc4d7b..a4d4173c576e 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -25,7 +25,8 @@ FILES=					\
+ 	test-libunwind			\
+ 	test-on-exit			\
+ 	test-stackprotector-all		\
+-	test-stackprotector
++	test-stackprotector		\
++	test-timerfd
  
- feature_set = $(eval $(feature_set_code))
-@@ -233,7 +233,7 @@ CFLAGS += -I$(LIB_INCLUDE)
- CFLAGS += -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ CC := $(CC) -MD
  
- ifndef NO_BIONIC
--  $(feature_check,bionic)
-+  $(call feature_check,bionic)
-   ifeq ($(feature-bionic), 1)
-     BIONIC := 1
-     EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
-@@ -470,15 +470,15 @@ else
-     CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
-   else
-     ifneq ($(feature-libbfd), 1)
--      $(feature_check,liberty)
-+      $(call feature_check,liberty)
-       ifeq ($(feature-liberty), 1)
-         EXTLIBS += -lbfd -liberty
-       else
--        $(feature_check,liberty-z)
-+        $(call feature_check,liberty-z)
-         ifeq ($(feature-liberty-z), 1)
-           EXTLIBS += -lbfd -liberty -lz
-         else
--          $(feature_check,cplus-demangle)
-+          $(call feature_check,cplus-demangle)
-           ifeq ($(feature-cplus-demangle), 1)
-             EXTLIBS += -liberty
-             CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
+@@ -136,6 +137,9 @@ test-on-exit:
+ test-backtrace:
+ 	$(BUILD)
+ 
++test-timerfd:
++	$(BUILD)
++
+ -include *.d
+ 
+ ###############################
+diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
+index 50d431892a0c..59e7a705e146 100644
+--- a/tools/perf/config/feature-checks/test-all.c
++++ b/tools/perf/config/feature-checks/test-all.c
+@@ -81,6 +81,10 @@
+ # include "test-libnuma.c"
+ #undef main
+ 
++#define main main_test_timerfd
++# include "test-timerfd.c"
++#undef main
++
+ int main(int argc, char *argv[])
+ {
+ 	main_test_libpython();
+@@ -101,6 +105,7 @@ int main(int argc, char *argv[])
+ 	main_test_on_exit();
+ 	main_test_backtrace();
+ 	main_test_libnuma();
++	main_test_timerfd();
+ 
+ 	return 0;
+ }
+diff --git a/tools/perf/config/feature-checks/test-timerfd.c b/tools/perf/config/feature-checks/test-timerfd.c
+new file mode 100644
+index 000000000000..8c5c083b4d3c
+--- /dev/null
++++ b/tools/perf/config/feature-checks/test-timerfd.c
+@@ -0,0 +1,18 @@
++/*
++ * test for timerfd functions used by perf-kvm-stat-live
++ */
++#include <sys/timerfd.h>
++
++int main(void)
++{
++	struct itimerspec new_value;
++
++	int fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
++	if (fd < 0)
++		return 1;
++
++	if (timerfd_settime(fd, 0, &new_value, NULL) != 0)
++		return 1;
++
++	return 0;
++}
 -- 
 1.7.12.4 (Apple Git-37)
 
