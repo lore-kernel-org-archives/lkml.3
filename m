@@ -1,227 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab3J2Epy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 00:45:54 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:1786
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751359Ab3J2Epw (ORCPT
+	id S1751379Ab3J2Ey3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 00:54:29 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55140 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab3J2Ey2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 00:45:52 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zz98dI9371I936eI542I1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh2a8h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216hbe9i1155h)
-From: Bhushan Bharat-R65777 <R65777@freescale.com>
-To: Wood Scott-B07421 <B07421@freescale.com>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        Kim Phillips <kim.phillips@linaro.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
-        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: RE: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
- sysfs only
-Thread-Topic: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
- sysfs only
-Thread-Index: AQHOxkr73mEL+MoRyUKqi8VAB5hpg5oKfwQAgAADdYCAAAK8AIAAngOwgAABegCAAADz8IAADMgAgAAAF9CAAAFhAIAAAQNg
-Date: Tue, 29 Oct 2013 04:45:46 +0000
-Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D071D4FE5@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1381418830.7979.405.camel@snotra.buserror.net>
-	 <1381472840-3470-1-git-send-email-kim.phillips@linaro.org>
-	 <1381472840-3470-3-git-send-email-kim.phillips@linaro.org>
-	 <1382982462.4097.38.camel@ul30vt.home>
-	 <1382983205.3410.6.camel@snotra.buserror.net>
-	 <1382983792.3410.13.camel@snotra.buserror.net>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D071D4F0B@039-SN2MPN1-013.039d.mgd.msft.net>
-	 <1383018042.3410.69.camel@snotra.buserror.net>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D071D4F3A@039-SN2MPN1-013.039d.mgd.msft.net>
-	 <1383020990.3410.76.camel@snotra.buserror.net>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D071D4FA0@039-SN2MPN1-013.039d.mgd.msft.net>
- <1383021306.3410.80.camel@snotra.buserror.net>
-In-Reply-To: <1383021306.3410.80.camel@snotra.buserror.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.14.2]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 29 Oct 2013 00:54:28 -0400
+X-AuditID: 9c930179-b7c9bae000000e4c-ce-526f3f828b41
+Date: Tue, 29 Oct 2013 13:54:30 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: zhang.mingjun@linaro.org
+Cc: m.szyprowski@samsung.com, akpm@linux-foundation.org, mgorman@suse.de,
+        haojian.zhuang@linaro.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Mingjun Zhang <troy.zhangmingjun@linaro.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH] mm: cma: free cma page to buddy instead of being cpu hot
+ page
+Message-ID: <20131029045430.GE17038@bbox>
+References: <1382960569-6564-1-git-send-email-zhang.mingjun@linaro.org>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382960569-6564-1-git-send-email-zhang.mingjun@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9T4k1wm009519
 
+Hello,
 
-
-> -----Original Message-----
-> From: Wood Scott-B07421
-> Sent: Tuesday, October 29, 2013 10:05 AM
-> To: Bhushan Bharat-R65777
-> Cc: Wood Scott-B07421; Alex Williamson; Kim Phillips; Yoder Stuart-B08248;
-> christoffer.dall@linaro.org; linux-kernel@vger.kernel.org;
-> a.motakis@virtualopensystems.com; agraf@suse.de; Sethi Varun-B16395;
-> peter.maydell@linaro.org; santosh.shukla@linaro.org; kvm@vger.kernel.org;
-> gregkh@linuxfoundation.org
-> Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
-> sysfs only
+On Mon, Oct 28, 2013 at 07:42:49PM +0800, zhang.mingjun@linaro.org wrote:
+> From: Mingjun Zhang <troy.zhangmingjun@linaro.org>
 > 
-> On Mon, 2013-10-28 at 23:31 -0500, Bhushan Bharat-R65777 wrote:
-> >
-> > > -----Original Message-----
-> > > From: Wood Scott-B07421
-> > > Sent: Tuesday, October 29, 2013 10:00 AM
-> > > To: Bhushan Bharat-R65777
-> > > Cc: Wood Scott-B07421; Alex Williamson; Kim Phillips; Yoder
-> > > Stuart-B08248; christoffer.dall@linaro.org;
-> > > linux-kernel@vger.kernel.org; a.motakis@virtualopensystems.com;
-> > > agraf@suse.de; Sethi Varun-B16395; peter.maydell@linaro.org;
-> > > santosh.shukla@linaro.org; kvm@vger.kernel.org;
-> > > gregkh@linuxfoundation.org
-> > > Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit
-> > > binding via sysfs only
-> > >
-> > > On Mon, 2013-10-28 at 22:52 -0500, Bhushan Bharat-R65777 wrote:
-> > > >
-> > > > > -----Original Message-----
-> > > > > From: Wood Scott-B07421
-> > > > > Sent: Tuesday, October 29, 2013 9:11 AM
-> > > > > To: Bhushan Bharat-R65777
-> > > > > Cc: Wood Scott-B07421; Alex Williamson; Kim Phillips; Yoder
-> > > > > Stuart-B08248; christoffer.dall@linaro.org;
-> > > > > linux-kernel@vger.kernel.org; a.motakis@virtualopensystems.com;
-> > > > > agraf@suse.de; Sethi Varun-B16395; peter.maydell@linaro.org;
-> > > > > santosh.shukla@linaro.org; kvm@vger.kernel.org;
-> > > > > gregkh@linuxfoundation.org
-> > > > > Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit
-> > > > > binding via sysfs only
-> > > > >
-> > > > > On Mon, 2013-10-28 at 22:38 -0500, Bhushan Bharat-R65777 wrote:
-> > > > > >
-> > > > > > > -----Original Message-----
-> > > > > > > From: Wood Scott-B07421
-> > > > > > > Sent: Monday, October 28, 2013 11:40 PM
-> > > > > > > To: Alex Williamson
-> > > > > > > Cc: Kim Phillips; Bhushan Bharat-R65777; Wood Scott-B07421;
-> > > > > > > Yoder Stuart-B08248; christoffer.dall@linaro.org;
-> > > > > > > linux-kernel@vger.kernel.org;
-> > > > > > > a.motakis@virtualopensystems.com; agraf@suse.de; Sethi
-> > > > > > > Varun-B16395; peter.maydell@linaro.org;
-> > > > > > > santosh.shukla@linaro.org; kvm@vger.kernel.org;
-> > > > > > > gregkh@linuxfoundation.org
-> > > > > > > Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for
-> > > > > > > explicit binding via sysfs only
-> > > > > > >
-> > > > > > > On Mon, 2013-10-28 at 13:00 -0500, Scott Wood wrote:
-> > > > > > > > On Mon, 2013-10-28 at 11:47 -0600, Alex Williamson wrote:
-> > > > > > > > > On Fri, 2013-10-11 at 01:27 -0500, Kim Phillips wrote:
-> > > > > > > > > > Force the vfio-pci driver to only be bound explicitly
-> > > > > > > > > > via sysfs to avoid conflics with other drivers in the
-> > > > > > > > > > event of a
-> > > hotplug.
-> > > > > > > > >
-> > > > > > > > > We can't break userspace, so we can't disable the
-> > > > > > > > > current method of binding devices to vfio-pci.  We can
-> > > > > > > > > add a new method and perhaps deprecate the existing
-> > > > > > > > > mechanism to be removed at some point in the future.
-> > > > > > > > > Thanks,
-> > > > > > > >
-> > > > > > > > I thought the existing method involved using sysfs bind,
-> > > > > > > > and this was just eliminating a race.  How does the bind
-> > > > > > > > get triggered
-> > > currently?
-> > > > > > >
-> > > > > > > OK, so it seems it's relying on the write to new_id calling
-> > > driver_attach().
-> > > > > > > Sigh.  I guess we could make driver-sysfs-bind-only be
-> > > > > > > settable via sysfs, and have new-userspace set both that and
-> > > > > > > PCI_ANY_ID (or the specific ID if userspace
-> > > > > > > prefers) via new_id.  The platform bus patches could
-> > > > > > > continue as is, since there's no existing mechanism to break.
-> > > > > >
-> > > > > > What about changing the store_new_id() to bypass exact ids
-> > > > > > check if driver
-> > > > > have PCI_ANY_ID?
-> > > > >
-> > > > > I don't follow.
-> > > >
-> > > > store_new_id() function id defined as:
-> > > >
-> > > > static ssize_t store_new_id(struct device_driver *driver, const
-> > > > char *buf, size_t count) {
-> > > >         struct pci_driver *pdrv = to_pci_driver(driver);
-> > > >         const struct pci_device_id *ids = pdrv->id_table;
-> > > >
-> > > > <snip>
-> > > >         /* Only accept driver_data values that match an existing id_table
-> > > >            entry */
-> > > >         if (ids) {
-> > > >                 retval = -EINVAL;
-> > > >                 while (ids->vendor || ids->subvendor || ids->class_mask) {
-> > > >                         if (driver_data == ids->driver_data) {
-> > > >                                 retval = 0;
-> > > >                                 break;
-> > > >                         }
-> > > >                         ids++;
-> > > >                 }
-> > > >                 if (retval)     /* No match */
-> > > >                         return retval;
-> > > >         }
-> > > >
-> > > >         retval = pci_add_dynid(pdrv, vendor, device, subvendor, subdevice,
-> > > >                                class, class_mask, driver_data);
-> > > > <snip>
-> > > >
-> > > >
-> > > > So when ids == NULL it does not check of vendor etc and calls
-> > > > pci_add_dynid()
-> > > which in turn calls driver_attach().
-> > > >
-> > > > If we change the above loop to break if ids->vendor == PCI_ANY_ID
-> > > >&& ids- subvendor == PCI_ANY_ID then also we will call pci_add_dyids().
-> > >
-> > > What problem are you trying to solve?
-> >
-> > new_id interface to continue working as before.
-> 
-> In what specific way does this allow new_id to continue working as before?  Be
-> verbose.
+> free_contig_range frees cma pages one by one and MIGRATE_CMA pages will be
+> used as MIGRATE_MOVEABLE pages in the pcp list, it causes unnecessary
+> migration action when these pages reused by CMA.
 
+You are saying about the overhead but I'm not sure how much it is
+because it wouldn't be frequent. Although it's frequent, migration is
+already slow path and CMA migration is worse so I really wonder how much
+pain is and how much this patch improve.
 
-What I observed that this patch (kim's patch) new_id interface stops working. This is found to be because
-store_new_id() checks for pdrv->id_table which is no more NULL, so the below check fails
-
-        if (ids) {
-^^
-This is no more NULL, so enter inside the loop
-
-                retval = -EINVAL;
-                while (ids->vendor || ids->subvendor || ids->class_mask) {
-                        if (driver_data == ids->driver_data) {
-                                retval = 0;
-                                break;
-                        }
-                        ids++;
-                }
-                if (retval)   /* No match */
-                        return retval;
-^^^^^
-This is where it returns as -EINVAL
-        }
-
-I tried a quick test of what I am saying but it does not work directly (although passes from the above mentioned check), may be some more changes required :(
-
--Bharat
+Having said that, it makes CMA allocation policy consistent which
+is that CMA migration type is last fallback to minimize number of migration
+and code peice you are adding is already low hit path so that I think
+it has no problem.
 
 > 
-> -Scott
+> Signed-off-by: Mingjun Zhang <troy.zhangmingjun@linaro.org>
+> ---
+>  mm/page_alloc.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 0ee638f..84b9d84 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1362,7 +1362,8 @@ void free_hot_cold_page(struct page *page, int cold)
+>  	 * excessively into the page allocator
+>  	 */
+>  	if (migratetype >= MIGRATE_PCPTYPES) {
+> -		if (unlikely(is_migrate_isolate(migratetype))) {
+> +		if (unlikely(is_migrate_isolate(migratetype))
+> +			|| is_migrate_cma(migratetype))
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+The concern is likely/unlikely usage is proper in this code peice.
+If we don't use memory isolation, the code path is used for only
+MIGRATE_RESERVE which is very rare allocation in normal workload.
+
+Even, in memory isolation environement, I'm not sure how many
+CMA/HOTPLUG is used compared to normal alloc/free.
+So, I think below is more proper?
+
+if (unlikely(migratetype >= MIGRATE_PCPTYPES)) {
+        if (is_migrate_isolate(migratetype) || is_migrate_cma(migratetype))
+
+I know it's an another topic but I'd like to disucss it in this time because
+we will forget such trivial thing later, again.
+
+}
+
+>  			free_one_page(zone, page, 0, migratetype);
+>  			goto out;
+>  		}
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
