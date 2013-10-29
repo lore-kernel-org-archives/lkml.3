@@ -1,205 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab3J2I10 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 04:27:26 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:64740 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab3J2I1X (ORCPT
+	id S1753804Ab3J2I2J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 04:28:09 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54786 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752596Ab3J2I2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 04:27:23 -0400
-X-AuditID: 9c93017e-b7ca6ae000000e8a-c0-526f71693c39
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/6] perf timechart: add support for -P and -T in timechart recording
-References: <1382439412-23713-1-git-send-email-stfomichev@yandex-team.ru>
-	<1382439412-23713-6-git-send-email-stfomichev@yandex-team.ru>
-Date: Tue, 29 Oct 2013 17:27:21 +0900
-In-Reply-To: <1382439412-23713-6-git-send-email-stfomichev@yandex-team.ru>
-	(Stanislav Fomichev's message of "Tue, 22 Oct 2013 14:56:51 +0400")
-Message-ID: <87hac05vo6.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 29 Oct 2013 04:28:08 -0400
+From: Markus Pargmann <mpa@pengutronix.de>
+To: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Wolfgang Grandegger <wg@grandegger.com>
+Cc: Joe Perches <joe@perches.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, Markus Pargmann <mpa@pengutronix.de>
+Subject: [PATCH v2] can: c_can: Speed up rx_poll function
+Date: Tue, 29 Oct 2013 09:27:47 +0100
+Message-Id: <1383035267-19604-1-git-send-email-mpa@pengutronix.de>
+X-Mailer: git-send-email 1.8.4.rc3
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: mpa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Oct 2013 14:56:51 +0400, Stanislav Fomichev wrote:
-> If we don't want either power or task events we may use -T or -P
-> with the `perf timechart record` command to filter out events while
-> recording to keep perf.data small.
->
-> Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
-> ---
->  tools/perf/builtin-timechart.c | 98 +++++++++++++++++++++++++++++++-----------
->  1 file changed, 72 insertions(+), 26 deletions(-)
->
-> diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-> index 4d2ac96b75b1..54bdebea4c6b 100644
-> --- a/tools/perf/builtin-timechart.c
-> +++ b/tools/perf/builtin-timechart.c
-> @@ -1031,50 +1031,81 @@ out_delete:
->  
->  static int __cmd_record(int argc, const char **argv)
->  {
-> -#ifdef SUPPORT_OLD_POWER_EVENTS
-> -	const char * const record_old_args[] = {
-> +	unsigned int rec_argc, i, j;
-> +	const char **rec_argv;
-> +	const char **p;
-> +	unsigned int record_elems;
-> +
-> +	const char * const common_args[] = {
->  		"record", "-a", "-R", "-c", "1",
-> +	};
-> +	unsigned int common_args_no = ARRAY_SIZE(common_args);
+This patch speeds up the rx_poll function by reducing the number of
+register reads.
 
-It's preferred to use "nr" in the position of "no".  Or we can use
-'common_argc' instead.  Same goes to the below.
+Replace the 32bit register read by a 16bit register read. Currently
+the 32bit register read is implemented by using 2 16bit reads. This is
+inefficient as we only use the lower 16bit in rx_poll.
 
-> +
-> +	const char * const power_args[] = {
-> +		"-e", "power:cpu_frequency",
-> +		"-e", "power:cpu_idle",
-> +	};
-> +	unsigned int power_args_no = ARRAY_SIZE(power_args);
-> +
-> +	const char * const old_power_args[] = {
-> +#ifdef SUPPORT_OLD_POWER_EVENTS
->  		"-e", "power:power_start",
->  		"-e", "power:power_end",
->  		"-e", "power:power_frequency",
-> -		"-e", "sched:sched_wakeup",
-> -		"-e", "sched:sched_switch",
-> -	};
->  #endif
-> -	const char * const record_new_args[] = {
-> -		"record", "-a", "-R", "-c", "1",
-> -		"-e", "power:cpu_frequency",
-> -		"-e", "power:cpu_idle",
-> +	};
-> +	unsigned int old_power_args_no = ARRAY_SIZE(power_args);
+The for loop reads the pending interrupts in every iteration. This
+leads up to 16 reads of pending interrupts. The patch introduces a new
+outer loop to read the pending interrupts as long as 'quota' is above 0.
+This reduces the total number of reads.
 
-It should be ARRAY_SIZE(old_power_args).
+The third change is to replace the for-loop by a find_next_bit loop.
 
+Tested on AM335x. I removed all 'static' and 'inline' from c_can.c to
+see the timings for all functions. I used the function tracer with
+trace_stats.
 
-> +
-> +	const char * const tasks_args[] = {
->  		"-e", "sched:sched_wakeup",
->  		"-e", "sched:sched_switch",
->  	};
-> -	unsigned int rec_argc, i, j;
-> -	const char **rec_argv;
-> -	const char * const *record_args = record_new_args;
-> -	unsigned int record_elems = ARRAY_SIZE(record_new_args);
-> +	unsigned int tasks_args_no = ARRAY_SIZE(tasks_args);
->  
->  #ifdef SUPPORT_OLD_POWER_EVENTS
->  	if (!is_valid_tracepoint("power:cpu_idle") &&
->  	    is_valid_tracepoint("power:power_start")) {
->  		use_old_power_events = 1;
-> -		record_args = record_old_args;
-> -		record_elems = ARRAY_SIZE(record_old_args);
-> +		power_args_no = 0;
-> +	} else {
-> +		old_power_args_no = 0;
->  	}
->  #endif
->  
-> -	rec_argc = record_elems + argc - 1;
-> +	if (!proc_num)
-> +		tasks_args_no = 0;
-> +
-> +	if (no_power) {
-> +		power_args_no = 0;
-> +		old_power_args_no = 0;
-> +	}
-> +
-> +	record_elems = common_args_no + tasks_args_no +
-> +		power_args_no + old_power_args_no;
-> +
-> +	rec_argc = record_elems + argc;
->  	rec_argv = calloc(rec_argc + 1, sizeof(char *));
->  
->  	if (rec_argv == NULL)
->  		return -ENOMEM;
->  
-> -	for (i = 0; i < record_elems; i++)
-> -		rec_argv[i] = strdup(record_args[i]);
-> +	p = rec_argv;
-> +	for (i = 0; i < common_args_no; i++)
-> +		*p++ = strdup(common_args[i]);
-> +
-> +	for (i = 0; i < tasks_args_no; i++)
-> +		*p++ = strdup(tasks_args[i]);
-> +
-> +	for (i = 0; i < power_args_no; i++)
-> +		*p++ = strdup(power_args[i]);
->  
-> -	for (j = 1; j < (unsigned int)argc; j++, i++)
-> -		rec_argv[i] = argv[j];
-> +	for (i = 0; i < old_power_args_no; i++)
-> +		*p++ = strdup(old_power_args[i]);
->  
-> -	return cmd_record(i, rec_argv, NULL);
-> +	for (j = 1; j < (unsigned int)argc; j++)
-> +		*p++ = argv[j];
-> +
-> +	return cmd_record(rec_argc, rec_argv, NULL);
->  }
->  
->  static int
-> @@ -1108,7 +1139,7 @@ int cmd_timechart(int argc, const char **argv,
->  		  const char *prefix __maybe_unused)
->  {
->  	const char *output_name = "output.svg";
-> -	const struct option options[] = {
-> +	const struct option timechart_options[] = {
->  	OPT_STRING('i', "input", &input_name, "file", "input file name"),
->  	OPT_STRING('o', "output", &output_name, "file", "output file name"),
->  	OPT_INTEGER('w', "width", &svg_page_width, "page width"),
-> @@ -1130,15 +1161,30 @@ int cmd_timechart(int argc, const char **argv,
->  		NULL
->  	};
->  
-> -	argc = parse_options(argc, argv, options, timechart_usage,
-> +	const struct option record_options[] = {
-> +	OPT_CALLBACK_NOOPT('P', "power-only", NULL, NULL,
-> +		     "record power data only", parse_power),
-> +	OPT_CALLBACK_NOOPT('T', "tasks-only", NULL, NULL,
-> +		     "record processes data only", parse_tasks),
-> +	OPT_END()
-> +	};
-> +	const char * const record_usage[] = {
-> +		"perf timechart record [<options>]",
-> +		NULL
-> +	};
+125kbit:
+  Function                               Hit    Time            Avg             s^2
+  --------                               ---    ----            ---             ---
+  c_can_do_rx_poll                     63960    10168178 us     158.977 us      1493056 us
+With patch:
+  c_can_do_rx_poll                     63939    4268457 us     66.758 us       818790.9 us
 
-Do we really need to separate the option and usage for record?  AFAICS
-it does exactly same thing..
+1Mbit:
+  Function                               Hit    Time            Avg             s^2
+  --------                               ---    ----            ---             ---
+  c_can_do_rx_poll                     69489    30049498 us     432.435 us      9271851 us
+With patch:
+  c_can_do_rx_poll                    103034    24220362 us     235.071 us      6016656 us
 
-Thanks,
-Namhyung
+Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+---
 
+Notes:
+    Changes in v2:
+     - Small changes, find_next_bit -> ffs and other
 
-> +	argc = parse_options(argc, argv, timechart_options, timechart_usage,
->  			PARSE_OPT_STOP_AT_NON_OPTION);
->  
->  	symbol__init();
->  
-> -	if (argc && !strncmp(argv[0], "rec", 3))
-> +	if (argc && !strncmp(argv[0], "rec", 3)) {
-> +		argc = parse_options(argc, argv, record_options, record_usage,
-> +				     PARSE_OPT_STOP_AT_NON_OPTION);
-> +
->  		return __cmd_record(argc, argv);
-> -	else if (argc)
-> -		usage_with_options(timechart_usage, options);
-> +	} else if (argc) {
-> +		usage_with_options(timechart_usage, timechart_options);
-> +	}
->  
->  	setup_pager();
+ drivers/net/can/c_can/c_can.c | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
+index a668cd4..428681e 100644
+--- a/drivers/net/can/c_can/c_can.c
++++ b/drivers/net/can/c_can/c_can.c
+@@ -798,17 +798,19 @@ static int c_can_do_rx_poll(struct net_device *dev, int quota)
+ 	u32 num_rx_pkts = 0;
+ 	unsigned int msg_obj, msg_ctrl_save;
+ 	struct c_can_priv *priv = netdev_priv(dev);
+-	u32 val = c_can_read_reg32(priv, C_CAN_INTPND1_REG);
++	u16 val;
++
++	/*
++	 * It is faster to read only one 16bit register. This is only possible
++	 * for a maximum number of 16 objects.
++	 */
++	BUILD_BUG_ON_MSG(C_CAN_MSG_OBJ_RX_LAST > 16,
++			"Implementation does not support more message objects than 16");
++
++	while (quota > 0 && (val = priv->read_reg(priv, C_CAN_INTPND1_REG))) {
++		while ((msg_obj = ffs(val)) && quota > 0) {
++			val &= ~BIT(msg_obj - 1);
+ 
+-	for (msg_obj = C_CAN_MSG_OBJ_RX_FIRST;
+-			msg_obj <= C_CAN_MSG_OBJ_RX_LAST && quota > 0;
+-			val = c_can_read_reg32(priv, C_CAN_INTPND1_REG),
+-			msg_obj++) {
+-		/*
+-		 * as interrupt pending register's bit n-1 corresponds to
+-		 * message object n, we need to handle the same properly.
+-		 */
+-		if (val & (1 << (msg_obj - 1))) {
+ 			c_can_object_get(dev, 0, msg_obj, IF_COMM_ALL &
+ 					~IF_COMM_TXRQST);
+ 			msg_ctrl_save = priv->read_reg(priv,
+-- 
+1.8.4.rc3
+
