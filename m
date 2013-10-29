@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721Ab3J2TWv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 15:22:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59990 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab3J2TWt (ORCPT
+	id S1752055Ab3J2TYp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 15:24:45 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40530 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751379Ab3J2TYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 15:22:49 -0400
-Message-ID: <52700AD2.6000703@canonical.com>
-Date: Tue, 29 Oct 2013 15:21:54 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: hpa@zytor.com, bernd.schubert@itwm.fraunhofer.de, JBottomley@Parallels.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kamal Mostafa <kamal.mostafa@canonical.com>,
-        linux-scsi@vger.kernel.org,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: Subject:  [v3.8][v3.11][Regression] [SCSI] sd: Update WRITE SAME
- heuristics
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 29 Oct 2013 15:24:43 -0400
+Date: Tue, 29 Oct 2013 20:24:39 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        sachin.kamat@linaro.org, Vinod Koul <vinod.koul@intel.com>,
+        dmaengine@vger.kernel.org
+Subject: Re: [PATCH 2/2] dma: mv_xor: Use high_base mmio where appropriate
+Message-ID: <20131029202439.4740b297@skate>
+In-Reply-To: <CAPcyv4iRawGxPwcPhyKCHG+2orVNmPktObR7_TSXwN+6tZ=qog@mail.gmail.com>
+References: <1383000855-8377-1-git-send-email-ezequiel.garcia@free-electrons.com>
+	<1383000855-8377-2-git-send-email-ezequiel.garcia@free-electrons.com>
+	<CAPcyv4iQVoYCXz16T3N4MbdVJV7MoKKeL0wq9t9WF1Kf3gz3Bw@mail.gmail.com>
+	<20131029083407.GA2416@localhost>
+	<20131029103229.5e095a24@skate>
+	<CAPcyv4iRawGxPwcPhyKCHG+2orVNmPktObR7_TSXwN+6tZ=qog@mail.gmail.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Martin,
+Dear Dan Williams,
 
-A bug was opened against the Ubuntu kernel[0].  After a kernel bisect,
-it was found that reverting the following commit resolved this bug:
+On Tue, 29 Oct 2013 12:15:18 -0700, Dan Williams wrote:
 
-commit 66c28f97120e8a621afd5aa7a31c4b85c547d33d
-Author: Martin K. Petersen <martin.petersen@oracle.com>
-Date:   Thu Jun 6 22:15:55 2013 -0400
+> > I agree with Ezequiel, and I believe his patch is appropriate. The
+> > registers for the XOR engines are indeed split in two areas, so it
+> > makes sense to have this xor_base / xor_high_base split that reflects
+> > the register mapping passed from the Device Tree, and use this split in
+> > the macros used to access the registers.
+> >
+> 
+> Ah ok, so it's a bug if an implementation ever puts the second
+> resource window at a non 0x200 offset.
 
-    [SCSI] sd: Update WRITE SAME heuristics
+Exactly.
 
-
-The regression was introduced as of v3.11-rc1, but it also made it's way
-into the stable trees.
-
-I see that you are the author of this patch, so I wanted to run this by
-you.  I was thinking of requesting a revert for v3.12, but I wanted to
-get your feedback first.
-
-
-Thanks,
-
-Joe
-
-[0] http://pad.lv/1237392
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
