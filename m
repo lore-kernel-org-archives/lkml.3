@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757929Ab3J2OzT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 10:55:19 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:39492 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757500Ab3J2OzR convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Tue, 29 Oct 2013 10:55:17 -0400
-Message-Id: <526FDA6102000078000FDAE2@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Tue, 29 Oct 2013 14:55:13 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "David Vrabel" <david.vrabel@citrix.com>, <Santosh.Jodh@citrix.com>,
-        "Bjorn Helgaas" <bhelgaas@google.com>, <xhejtman@ics.muni.cz>,
-        "xen-devel" <xen-devel@lists.xensource.com>,
-        <boris.ostrovsky@oracle.com>, <mukesh.rathor@oracle.com>,
-        <yuval.shaia@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [v1 1/2] xen/p2m: Create identity mappings for PFNs
- beyound E820 and PCI BARs
-References: <1382713401-4882-1-git-send-email-konrad.wilk@oracle.com>
- <1382713401-4882-2-git-send-email-konrad.wilk@oracle.com>
- <CAErSpo5_DspGSffEHOqq_G0U27OdvYbiFK3QcxiZVFeRpoMaPw@mail.gmail.com>
- <20131028165837.GH4353@phenom.dumpdata.com>
- <526F7E9202000078000FD7A6@nat28.tlf.novell.com>
- <20131029144559.GI20487@phenom.dumpdata.com>
-In-Reply-To: <20131029144559.GI20487@phenom.dumpdata.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756188Ab3J2O55 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 10:57:57 -0400
+Received: from mout.gmx.net ([212.227.15.15]:52009 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751167Ab3J2O54 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 10:57:56 -0400
+MIME-Version: 1.0
+Message-ID: <trinity-f65147f9-012f-4e78-a5a6-3f969ff5b9bf-1383058674646@3capp-gmx-bs07>
+From: "John Twideldum" <twideldums_throwaway@gmx.at>
+To: linux-kernel@vger.kernel.org
+Subject: Aw: 3.12-rc5 and overwritten partition table - by powertop?
+Content-Type: text/plain; charset=UTF-8
+Date: Tue, 29 Oct 2013 15:57:54 +0100 (CET)
+Importance: normal
+Sensitivity: Normal
+In-Reply-To: <trinity-ee0bd2b5-ce28-4895-8c2a-2f60f40e49f4-1383046621263@3capp-gmx-bs07>
+References: <trinity-ee0bd2b5-ce28-4895-8c2a-2f60f40e49f4-1383046621263@3capp-gmx-bs07>
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-UI-Message-Type: mail
+X-Priority: 3
+X-Provags-ID: V03:K0:az+fpqeLy1Ae0GvA0x4lt2cU2JXjUDMxAvb/AF8e48v
+ iVLMdl8tlntgTanBpM/C5/g9V42NJp3X1stEib4yWizm4ZJEUC
+ /PEfQINox9yCvJQdbck5dXtnKM6PzCxQOwlEoOiaHQ+7g7I4OW
+ 6vSrxmDIo5f+u+MtPtlnJNjyr3PWHSgGcuFsb6cn3qY0Crkm/l
+ w11baNppoVcl3lrhRPAkc5thn/7W7W2KlnitJO4LdirRkAgnbZ
+ h9m9gPEfWONWthaRsLBA/+SK8Me/UxytMZIIIU3O+WrZIf6cn+ Hbw3TY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 29.10.13 at 15:45, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> On Tue, Oct 29, 2013 at 08:23:30AM +0000, Jan Beulich wrote:
->> >>> On 28.10.13 at 17:58, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
->> > On Fri, Oct 25, 2013 at 04:08:19PM -0600, Bjorn Helgaas wrote:
->> >> If you can look at PCI host bridge apertures instead of BARs, that
->> >> would solve both problems.  Reassigning those apertures is
->> >> theoretically possible but is not even a gleam in our eyes yet.
->> > 
->> > <nods> I think I have to have both (BARs and host bridge apertures) as when
->> > we do PCI passthrough to a guest - we might do it without a bridge.
->> 
->> Why? Aren't the host bridge ranges necessarily a superset of the
->> individual devices' BARs?
-> 
-> Yes. But when you pass in a PCI device to a PV guest you don't pass in the
-> bridge. Just the PCI device itself.
+replying to myself with more insights...
+ 
+>0000000 13.00000\nalsa:hw
+>0000020 C0D0\t99.00000\nal
+>0000040 sa:hwC0D3\t99.000
+>0000060 00\nbacklight:acp
+>.....
 
-Right you are. Which means that basing the whole logic on the
-PCI device BARs is likely wrong anyway, not just because it
-doesn't account for other MMIO ranges.
+The first ~170kb of /dev/sda got blown away with what seems to be a logging output
+by Powertop, when I was playing with the tuneables.
+(Luckily the first partition starts later :-))
 
-Jan
+Why is that I don't know, but maybe when turning on the SATA knobs
+something goes wrong. I'm afraid to try again, but I accept rather higher
+power use than data loss again :-/
 
+Sorry for the confusion...
+J
