@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751607Ab3J2TEN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 15:04:13 -0400
-Received: from fifo99.com ([67.223.236.141]:38062 "EHLO fifo99.com"
+	id S1751819Ab3J2TJF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 15:09:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29244 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750876Ab3J2TEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 15:04:11 -0400
-Date: Tue, 29 Oct 2013 12:03:58 -0700
-From: Daniel Walker <dwalker@fifo99.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/4] ARM: msm: Remove 7x00 support
-Message-ID: <20131029190358.GB13047@fifo99.com>
-References: <1382993006-27359-1-git-send-email-davidb@codeaurora.org>
- <1382993006-27359-3-git-send-email-davidb@codeaurora.org>
- <20131029132043.GA28165@fifo99.com>
- <CAOesGMhg8HN4Su9FXSeoAgmH6NVKXW+wmnreUvWH+1G6GWkkaA@mail.gmail.com>
- <20131029170817.GA13047@fifo99.com>
- <CAOesGMgKbreaqFTGvC=_T6-i7uejfXAPNU8LmMpgDMqeEwYxZQ@mail.gmail.com>
+	id S1751195Ab3J2TJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 15:09:02 -0400
+Date: Tue, 29 Oct 2013 20:10:16 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Dave Sullivan <dsulliva@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] hung_task debugging: Add tracepoint to report the
+	hang
+Message-ID: <20131029191016.GB27834@redhat.com>
+References: <20131019161807.GA7431@redhat.com> <20131019161828.GA7439@redhat.com> <20131020084837.GB16236@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOesGMgKbreaqFTGvC=_T6-i7uejfXAPNU8LmMpgDMqeEwYxZQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131020084837.GB16236@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 10:39:45AM -0700, Olof Johansson wrote:
-> On Tue, Oct 29, 2013 at 10:08 AM, Daniel Walker <dwalker@fifo99.com> wrote:
-> 
-> > Personally I think splitting mach- stuff isn't very useful or
-> > interesting.. There's just no technical reason for it, for example x86
-> > and x86_64 was a win from my perspective , there's a lot more reason to
-> > keep similar things together than to split things up.
-> 
-> There are definitely valid technical reasons for it; the old and new
-> platforms share no code, and the legacy platforms are unlikely to be
-> updated to modern infrastructure anytime soon. Other platforms are
-> managed in similar manners, such as OMAP, imx/mxs, etc.
+On 10/20, Ingo Molnar wrote:
+>
+> * Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > Currently check_hung_task() prints a warning if it detects the problem,
+> > but it is not convenient to watch the system logs if user-space wants to
+> > be notified about the hang.
+> >
+> > Add the new trace_sched_process_hang() into check_hung_task(), this way
+> > a user-space monitor can easily wait for the hang and potentially
+> > resolve a problem.
+>
+> I'm wondering, is the data of trace_console() in kernel/printk/printk.c
+> not sufficient?
 
-Are you speaking from a meta perspective , or you have specific example
-in msm code ?
+Probably yes... I do not think they disable CONFIG_PRINTK.
 
+But this is obviously much less convenient, they will need to parse the
+text. And the user-space watchdog will be woken up much more often than
+necessary. And they could probably simply read /var/log or interact with
+syslogd somehow, but they specially asked for something better and more
+robust.
 
-Daniel
+But of course, I understand that every tracepoint should be justified.
+So if you do not like this change I try to convince them to use
+trace_console().
+
+> If it's not enough then it might be better to add a higher level printk
+> tracepoint instead - that can catch hung_task messages and (much) more.
+
+Not sure I understand... I mean I do not understand why this is really
+better for them, except this will simplify the parsing a bit. Anyway
+I'd prefer to not send another doubtful patch ;)
+
+Thanks.
+
+Oleg.
+
