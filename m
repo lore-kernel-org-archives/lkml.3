@@ -1,197 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683Ab3J2SA2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:00:28 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:38914 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751337Ab3J2SA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:00:26 -0400
-Subject: Re: [PATCH v3 02/10] spmi: Linux driver framework for SPMI
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-msm@vger.kernel.org, Gilad Avidov <gavidov@codeaurora.org>,
-        linux-kernel@vger.kernel.org, Michael Bohan <mbohan@codeaurora.org>,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20131029162615.GH20207@joshc.qualcomm.com>
-References: <cover.1382985169.git.joshc@codeaurora.org>
-	 <149bbfe89e37376cc176c3aeb6c1fab9e4fd2b91.1382985169.git.joshc@codeaurora.org>
-	 <1383058923.2837.33.camel@iivanov-dev.int.mm-sol.com>
-	 <20131029162615.GH20207@joshc.qualcomm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 29 Oct 2013 20:00:23 +0200
-Message-ID: <1383069623.14905.7.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	id S1751971Ab3J2SBE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:01:04 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49356 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab3J2SBB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 14:01:01 -0400
+Message-ID: <526FF7DB.5040805@codeaurora.org>
+Date: Tue, 29 Oct 2013 11:00:59 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Kumar Gala <galak@codeaurora.org>
+CC: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Mark Rutland <Mark.Rutland@arm.com>
+Subject: Re: [PATCH 4/6] edac: Document Krait L1/L2 EDAC driver binding
+References: <1383006690-6754-1-git-send-email-sboyd@codeaurora.org> <1383006690-6754-5-git-send-email-sboyd@codeaurora.org> <90D2FDE5-C43F-4ACF-B287-4E0AD8617892@codeaurora.org>
+In-Reply-To: <90D2FDE5-C43F-4ACF-B287-4E0AD8617892@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/29/13 01:21, Kumar Gala wrote:
+> On Oct 28, 2013, at 7:31 PM, Stephen Boyd wrote:
+>
+>> The Krait L1/L2 error reporting device is made up of two
+>> interrupts, one per-CPU interrupt for the L1 caches and one
+>> interrupt for the L2 cache.
+>>
+>> Cc: <devicetree@vger.kernel.org>
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>> ---
+>> .../devicetree/bindings/arm/qcom,krait-cache-erp.txt     | 16 ++++++++++++++++
+>> 1 file changed, 16 insertions(+)
+>> create mode 100644 Documentation/devicetree/bindings/arm/qcom,krait-cache-erp.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/arm/qcom,krait-cache-erp.txt b/Documentation/devicetree/bindings/arm/qcom,krait-cache-erp.txt
+>> new file mode 100644
+>> index 0000000..01fe8a8
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/arm/qcom,krait-cache-erp.txt
+>> @@ -0,0 +1,16 @@
+>> +* Qualcomm Krait L1 / L2 cache error reporting
+>> +
+>> +Required properties:
+>> +- compatible: Should be "qcom,krait-cache-erp"
+>> +- interrupts: Should contain the L1/CPU error interrupt number and
+>> +  then the L2 cache error interrupt number
+>> +
+>> +Optional properties:
+>> +- interrupt-names: Should contain the interrupt names "l1_irq" and
+>> +  "l2_irq"
+>> +
+>> +Example:
+>> +	edac {
+>> +		compatible = "qcom,krait-cache-erp";
+>> +		interrupts = <1 9 0xf04>, <0 2 0x4>;
+>> +	};
+> Why wouldn't we have these as part of cache nodes in the dts?  (which begs the question why we don't have cache nodes?)
+>
 
-Hi,
+I can certainly add cache nodes and cpu nodes and then put the
+interrupts in those nodes. I was thinking along those same lines when I
+ported this driver but figured it would be good to get something out
+there. The only question I have is how am I supposed to hook that up
+into the linux device model? Will the edac driver bind to the device
+created for the cpus node and the cache node? I guess it will have to be
+a driver that binds to two devices.
 
-On Tue, 2013-10-29 at 11:26 -0500, Josh Cartwright wrote:
-> On Tue, Oct 29, 2013 at 05:02:03PM +0200, Ivan T. Ivanov wrote:
-> > On Mon, 2013-10-28 at 13:12 -0500, Josh Cartwright wrote: 
-> > > From: Kenneth Heitke <kheitke@codeaurora.org>
-> > > 
-> > > System Power Management Interface (SPMI) is a specification
-> > > developed by the MIPI (Mobile Industry Process Interface) Alliance
-> > > optimized for the real time control of Power Management ICs (PMIC).
-> > > 
-> > > SPMI is a two-wire serial interface that supports up to 4 master
-> > > devices and up to 16 logical slaves.
-> > > 
-> > > The framework supports message APIs, multiple busses (1 controller
-> > > per bus) and multiple clients/slave devices per controller.
-> > > 
-> > > Signed-off-by: Kenneth Heitke <kheitke@codeaurora.org>
-> > > Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
-> > > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> [..]
-> > > +static int spmi_drv_probe(struct device *dev)
-> > > +{
-> > > +	const struct spmi_driver *sdrv = to_spmi_driver(dev->driver);
-> > > +	int err = 0;
-> > > +
-> > > +	if (sdrv->probe)
-> > > +		err = sdrv->probe(to_spmi_device(dev));
-> > > +
-> > > +	return err;
-> > > +}
-> > > +
-> > > +static int spmi_drv_remove(struct device *dev)
-> > > +{
-> > > +	const struct spmi_driver *sdrv = to_spmi_driver(dev->driver);
-> > > +	int err = 0;
-> > > +
-> > > +	if (sdrv->remove)
-> > > +		err = sdrv->remove(to_spmi_device(dev));
-> > > +
-> > > +	return err;
-> > > +}
-> > > +
-> > > +static void spmi_drv_shutdown(struct device *dev)
-> > > +{
-> > > +	const struct spmi_driver *sdrv = to_spmi_driver(dev->driver);
-> > > +
-> > > +	if (sdrv->shutdown)
-> > 
-> > If driver for device is not loaded this will cause kernel NULL
-> > pointer dereference.
-> 
-> Indeed.  I'll fix this.
-> 
-> > > +static int of_spmi_register_devices(struct spmi_controller *ctrl)
-> > > +{
-> > > +	struct device_node *node;
-> > > +	int err;
-> > > +
-> > > +	dev_dbg(&ctrl->dev, "of_spmi_register_devices\n");
-> > > +
-> > > +	if (!ctrl->dev.of_node)
-> > > +		return -ENODEV;
-> > > +
-> > > +	dev_dbg(&ctrl->dev, "looping through children\n");
-> > > +
-> > > +	for_each_available_child_of_node(ctrl->dev.of_node, node) {
-> > > +		struct spmi_device *sdev;
-> > > +		u32 reg[2];
-> > > +
-> > > +		dev_dbg(&ctrl->dev, "adding child %s\n", node->full_name);
-> > > +
-> > > +		err = of_property_read_u32_array(node, "reg", reg, 2);
-> > > +		if (err) {
-> > > +			dev_err(&ctrl->dev,
-> > > +				"node %s does not have 'reg' property\n",
-> > > +				node->full_name);
-> > > +			continue;
-> > 
-> > Shouldn't this be a fatal error?
-> 
-> Fatal in what way?  It is fatal in the sense that this particular child
-> node is skipped, but other children can still be enumerated. 
+One could argue that we should put the cp15 based architected timers in
+the cpus node also but so far nobody has done that and I think there was
+some reasoning behind that, Mark?
 
-Oh, I have missed this.
-
->  Are you
-> suggesting that we bail completely when we hit a wrongly-described
-> child?
-
-Please ignore my comment.
-
-> 
-> > > +		}
-> > > +
-> > > +		if (reg[1] != SPMI_USID) {
-> > > +			dev_err(&ctrl->dev,
-> > > +				"node %s contains unsupported 'reg' entry\n",
-> > > +				node->full_name);
-> > > +			continue;
-> > > +		}
-> > > +
-> > > +		if (reg[0] > 0xF) {
-> > > +			dev_err(&ctrl->dev,
-> > > +				"invalid usid on node %s\n",
-> > > +				node->full_name);
-> > > +			continue;
-> > > +		}
-> > > +
-> > > +		dev_dbg(&ctrl->dev, "read usid %02x\n", reg[0]);
-> > > +
-> > > +		sdev = spmi_device_alloc(ctrl);
-> > > +		if (!sdev)
-> > > +			continue;
-> > > +
-> > > +		sdev->dev.of_node = node;
-> > > +		sdev->usid = (u8) reg[0];
-> > > +
-> > > +		err = spmi_device_add(sdev);
-> > > +		if (err) {
-> > > +			dev_err(&sdev->dev,
-> > > +				"failure adding device. status %d\n", err);
-> > > +			spmi_device_put(sdev);
-> > > +			continue;
-
-There is no need from this 'continue' here.
-
-> > > +		}
-> > > +	}
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +int spmi_controller_add(struct spmi_controller *ctrl)
-> > > +{
-> > > +	int ret;
-> > > +
-> > > +	/* Can't register until after driver model init */
-> > > +	if (WARN_ON(!spmi_bus_type.p))
-> > > +		return -EAGAIN;
-> > > +
-> > > +	ret = device_add(&ctrl->dev);
-> > > +	if (ret)
-> > > +		return ret;
-> > > +
-> > > +	if (IS_ENABLED(CONFIG_OF))
-> > > +		of_spmi_register_devices(ctrl);
-> > 
-> > Check for error code here?
-> 
-> And do what with it? 
-
-This was related to my previous comment, which is not valid.
-
->  Maybe instead, I should make
-> of_spmi_register_devices() return void.
-
-Sound reasonable to me and will be the same as i2c bus.
-
-Regards,
-Ivan
-
-> 
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
