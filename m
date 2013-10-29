@@ -1,93 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756985Ab3J2BTS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 21:19:18 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:33994 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754034Ab3J2BTR (ORCPT
+	id S1757212Ab3J2BUV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 21:20:21 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63008 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757040Ab3J2BUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 21:19:17 -0400
-Date: Tue, 29 Oct 2013 09:18:51 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: rucsoftsec@gmail.com, jslaby@suse.cz, airlied@redhat.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2]tty:vt: Add NULL check to return value of kzalloc()
-Message-ID: <20131029011851.GA2926@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	gregkh@linuxfoundation.org, rucsoftsec@gmail.com, jslaby@suse.cz,
-	airlied@redhat.com, akpm@linux-foundation.org,
-	linux-kernel@vger.kernel.org
+	Mon, 28 Oct 2013 21:20:19 -0400
+Date: Mon, 28 Oct 2013 18:19:43 -0700
+From: Mark Rutland <mark.rutland@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/6] ARM: Add Krait L2 accessor functions
+Message-ID: <20131029011942.GG4763@kartoffel>
+References: <1383006690-6754-1-git-send-email-sboyd@codeaurora.org>
+ <1383006690-6754-4-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+In-Reply-To: <1383006690-6754-4-git-send-email-sboyd@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In extreme situation kzalloc in con_init may
-return NULL, so we should check it to prevent
-OOPS!
+On Tue, Oct 29, 2013 at 12:31:27AM +0000, Stephen Boyd wrote:
+> Qualcomm's Krait CPUs have a handful of L2 cache controller
+> registers that live behind a cp15 based indirection register.
+> First you program the indirection register (l2cpselr) to point
+> the L2 'window' register (l2cpdr) at what you want to read/write.
+> Then you read/write the 'window' register to do what you want.
+> The l2cpselr register is not banked per-cpu so we must lock
+> around accesses to it to prevent other CPUs from re-pointing
+> l2cpdr underneath us.
+> 
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  arch/arm/common/Kconfig                   |  3 ++
+>  arch/arm/common/Makefile                  |  1 +
+>  arch/arm/common/krait-l2-accessors.c      | 52 +++++++++++++++++++++++++++++++
+>  arch/arm/include/asm/krait-l2-accessors.h | 20 ++++++++++++
+>  4 files changed, 76 insertions(+)
+>  create mode 100644 arch/arm/common/krait-l2-accessors.c
+>  create mode 100644 arch/arm/include/asm/krait-l2-accessors.h
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
-Reported-by: RUC_SoftSec <rucsoftsec@gmail.com>
----
- Changes:
- v1-v2:
- 1:fix warning and error reported by scripts/checkpatch.pl
+[...]
 
- drivers/tty/vt/vc_screen.c |  6 ++++--
- drivers/tty/vt/vt.c        | 12 ++++++++++++
- 2 files changed, 16 insertions(+), 2 deletions(-)
+> +void set_l2_indirect_reg(u32 addr, u32 val)
+> +{
+> +	unsigned long flags;
+> +
+> +	raw_spin_lock_irqsave(&krait_l2_lock, flags);
+> +
+> +	asm volatile ("mcr p15, 3, %0, c15, c0, 6" : : "r" (addr));
+> +	isb();
+> +	asm volatile ("mcr p15, 3, %0, c15, c0, 7" : : "r" (val));
+> +	isb();
+> +
+> +	raw_spin_unlock_irqrestore(&krait_l2_lock, flags);
+> +}
+> +EXPORT_SYMBOL(set_l2_indirect_reg);
 
-diff --git a/drivers/tty/vt/vc_screen.c b/drivers/tty/vt/vc_screen.c
-index d7799de..e0de4bc 100644
---- a/drivers/tty/vt/vc_screen.c
-+++ b/drivers/tty/vt/vc_screen.c
-@@ -662,7 +662,9 @@ int __init vcs_init(void)
- 
- 	device_create(vc_class, NULL, MKDEV(VCS_MAJOR, 0), NULL, "vcs");
- 	device_create(vc_class, NULL, MKDEV(VCS_MAJOR, 128), NULL, "vcsa");
--	for (i = 0; i < MIN_NR_CONSOLES; i++)
--		vcs_make_sysfs(i);
-+	for (i = 0; i < MIN_NR_CONSOLES; i++) {
-+		if (vc_cons[i].d)
-+			vcs_make_sysfs(i);
-+	}
- 	return 0;
- }
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 740202d..8f490e9 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -2885,6 +2885,8 @@ static int __init con_init(void)
- 
- 	for (currcons = 0; currcons < MIN_NR_CONSOLES; currcons++) {
- 		vc_cons[currcons].d = vc = kzalloc(sizeof(struct vc_data), GFP_NOWAIT);
-+		if (vc == NULL)
-+			break;
- 		INIT_WORK(&vc_cons[currcons].SAK_work, vc_SAK);
- 		tty_port_init(&vc->port);
- 		visual_init(vc, currcons, 1);
-@@ -2892,8 +2894,18 @@ static int __init con_init(void)
- 		vc_init(vc, vc->vc_rows, vc->vc_cols,
- 			currcons || !vc->vc_sw->con_save_screen);
- 	}
-+	if (currcons < MIN_NR_CONSOLES)
-+		pr_warn("Console: vt %d-%d initialization failed!\n",
-+			currcons, MIN_NR_CONSOLES - 1);
-+
- 	currcons = fg_console = 0;
- 	master_display_fg = vc = vc_cons[currcons].d;
-+
-+	if (vc == NULL) {
-+		pr_warn("Console: no avaiable vt!\n");
-+		console_unlock();
-+		return 0;
-+	}
- 	set_origin(vc);
- 	save_screen(vc);
- 	gotoxy(vc, vc->vc_x, vc->vc_y);
--- 
-1.7.12.4.dirty
+It might be worth commmenting inline as to what register each of these is
+accessing. Inevitably the commit message will become harder to find and
+associate with the code over time.
+
+Similarly for get_l2_indirect_reg.
+
+Thanks,
+Mark.
