@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab3J2N7h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 09:59:37 -0400
-Received: from nereida.gnuservers.com.ar ([207.192.69.134]:46753 "EHLO
-	nereida.gnuservers.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755876Ab3J2N7f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 09:59:35 -0400
-X-Greylist: delayed 531 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Oct 2013 09:59:35 EDT
-Date: Tue, 29 Oct 2013 14:50:36 +0100
-From: Maximiliano Curia <maxy@gnuservers.com.ar>
-To: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Margarita Manterola <margamanterola@gmail.com>,
-        Pavel Machek <pavel@ucw.cz>, Peter Hurley <peter@hurleysoftware.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, bug-readline@gnu.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: Large pastes into readline enabled programs causes breakage from
- v2.6.31 onwards
-Message-ID: <20131029135036.GA30992@gnuservers.com.ar>
-References: <CAP+fKSpvJqeh8JCHisByDBsGWPOWOcDN4qeVYJOn1tgg8HR0eg@mail.gmail.com>
- <CAP+fKSp5ze3-qWHY_D_e3AXxnFM-AB9FBfRLjy0yOFnOp6bp4w@mail.gmail.com>
- <201309030717.57866.a.miskiewicz@gmail.com>
- <201310241800.18490.a.miskiewicz@gmail.com>
+	id S1756320Ab3J2OAu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 10:00:50 -0400
+Received: from mail.eperm.de ([89.247.134.16]:58485 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755876Ab3J2OAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 10:00:49 -0400
+From: Stephan Mueller <smueller@chronox.de>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: sandy harris <sandyinchina@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
+Date: Tue, 29 Oct 2013 15:00:31 +0100
+Message-ID: <7861469.OAmn4h8An0@tauon>
+User-Agent: KMail/4.11.2 (Linux/3.11.6-200.fc19.x86_64; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <20131029132448.GB691@thunk.org>
+References: <2579337.FPgJGgHYdz@tauon> <3160817.9DcncHidey@tauon> <20131029132448.GB691@thunk.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="J/dobhs11T7y2rNN"
-Content-Disposition: inline
-In-Reply-To: <201310241800.18490.a.miskiewicz@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Dienstag, 29. Oktober 2013, 09:24:48 schrieb Theodore Ts'o:
 
---J/dobhs11T7y2rNN
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Theodore,
 
-=A1Hola Arkadiusz!
+>On Tue, Oct 29, 2013 at 09:42:30AM +0100, Stephan Mueller wrote:
+>> Based on this suggestion, I now added the tests in Appendix F.46.8
+>> where I disable the caches and the tests in Appendix F.46.9 where I
+>> disable the caches and interrupts.
+>
+>What you've added in F.46 is a good start, but as a suggestiom,
+>instead of disabling one thing at a time, try disabling *everything*
+>and then see what you get, and then enabling one thing at a time.  The
+>best thing is if you can get to the point where the amount of entropy
+>is close to zero.  Then as you add things back, there's a much better
 
-El 2013-10-24 a las 18:00 +0200, Arkadiusz Miskiewicz escribi=F3:
-> Was just going over bug-readline and lkml archives and found no continuat=
-ion
-> of this.
+I will try to do that.
 
-> There was a patch proposed but didn't get applied.
-> https://lkml.org/lkml/2013/8/17/31
-> Maybe it only needs proper patch submission?
+But please see the different lower boundary values in the different 
+subsections of F.46: none of them fall when I disable or change anything 
+in the base system (except the power management -- where I added 
+additional analyses). Some of the changes imply that the jitter 
+increases when I disable certain support.
 
-The latest patch is: https://lkml.org/lkml/2013/9/3/539
+Thus, expect that we will not see a significant drop in the jitter as 
+you fear or expect.
 
-And the latest reply is: https://lkml.org/lkml/2013/9/11/825
+Yet, I will try and report back.
 
-Where Peter Hurley suggests that the patch needs a complete and detailed
-analysis, but sadly I'm still not sure how to provide it. If anybody is up =
-for
-the task, by all means, go ahead.
+Though, does anybody has an idea how to flush/disable branch prediction 
+on x86 (short of using an ARM where I can disable the branch prediction 
+unit with CP15)? That is the last unit that I do not have a handle on.
 
-The patch seems to be applied in the ubuntu kernel without any known issues=
- so
-far.
 
-> Looking from bug-readline archives debugging it took huge amount of work =
-and
-> would be sad that all that ended up being wasted.
+>sense of where the unpredictability might be coming from, and whether
+>the unpredictability is coming from something which is fundamentally
+>arising from something which is chaotic or quantum effect, or just
+>because we don't have a good way of modelling the behavior of the
+>L1/L2 cache (for example) and that is spoofing your entropy estimator.
 
-True, but I somehow agree with Peter in that a known bug is better than
-applying a fix with unknown consequences, even though I think that
-this particular patch won't break anything.
+Please note: if the jitter really comes from the oscillator effect of 
+the RAM clock vs. the CPU clock (which I suspect), we will not be able 
+to alter the jitter software wise.
 
-Happy hacking,
---=20
-"If you have too many special cases, you are doing it wrong." -- Craig Zaro=
-uni
-Saludos /\/\ /\ >< `/
+The reason why I suspect that oscillating effect is the following: I 
+spoke with two different employees from the research departments of 
+major chip vendors. They mentioned that they see the very same jitter in 
+their measurements albeit they tried to get rid of it. So, when they 
+cannot get rid of that, I guess we will not be able to lower or even 
+eliminate the jitter significantly.
 
---J/dobhs11T7y2rNN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSb70rAAoJEMcZdpmymyMqCRkQALABZb+kwykkZh/XEMdAEE7M
-FpWZxAjPl1dlkPuDTLWsIFwmG2CRKUi2wh1zc3/FMoXhj31btjC8lJjXLTsuU4YL
-mYBJqvkrjyBx7afkI1wwkYQLMsRzUoJshS2+TkkW4dPkUOyn46KeL3lPGyxFA7M/
-uHcYtSZmypn8pR9Gl6c72x+ZrGPgZ8XVvJDmZ9P4VcUyXr/xLBnsY6N0NtzrKrwC
-3gj52mNniwmxOTNQrj/25UXIyh+Bc+WQGozhw3WeAQump8ffdtrPKIDr8yii5chm
-FzxVFXdR7uL4R1QLdOWuOJiPlm9sEKSppJ63Bg7/rSsPdh43r/LQeOQsoPuPYOuH
-YjcpiSzP1xaoURJWGt1CeIGViFHSkvOKuY06kOgh98K6PFHy+FCw+bu5ZoJz/jZI
-zEUs9lMaqdEhJnyzQiX2/WBy8Xi53L7CiRHdIFKZkoqoEOaZX5VnO4YxhPueSR42
-CWMKkkw4/uTIWOrhgfk1IUrqBPmivC8N805/bn+WzpS49mr9wMI/LRp2fSMC0c5z
-pkQFam5FXUfy3snNANv0DDFY/csL0/p/NQv/cSUR/3MXnKKXlVbiuqfaaEBvmeks
-PZ0yzM/AT8lP68wfxn31y4D54Z2maqonFoKFxUD7EJTEYBKpPWQRbd70R9z3Jfs3
-ovjmxkAElbL13c/k0cYK
-=FF8H
------END PGP SIGNATURE-----
-
---J/dobhs11T7y2rNN--
+Ciao
+Stephan
