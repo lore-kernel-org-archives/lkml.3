@@ -1,151 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab3J2IY6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 04:24:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42239 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188Ab3J2IWv (ORCPT
+	id S1753480Ab3J2IY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 04:24:56 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56434 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753202Ab3J2IWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 04:22:51 -0400
-Date: Tue, 29 Oct 2013 01:22:04 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-9754c4f9b23d5ce6756514acdf134ad61470734a@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1382700293-1803-1-git-send-email-jolsa@redhat.com>
-References: <1382700293-1803-1-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf hists:
-  Add color overhead for stdio output buffer
-Git-Commit-ID: 9754c4f9b23d5ce6756514acdf134ad61470734a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 29 Oct 2013 01:22:11 -0700 (PDT)
+	Tue, 29 Oct 2013 04:22:52 -0400
+From: Markus Pargmann <mpa@pengutronix.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
+        Markus Pargmann <mpa@pengutronix.de>
+Subject: [RESEND PATCH 1/2] w1-gpio: Detect of_gpio_error for first gpio
+Date: Tue, 29 Oct 2013 09:19:23 +0100
+Message-Id: <1383034764-22091-1-git-send-email-mpa@pengutronix.de>
+X-Mailer: git-send-email 1.8.4.rc3
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: mpa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9754c4f9b23d5ce6756514acdf134ad61470734a
-Gitweb:     http://git.kernel.org/tip/9754c4f9b23d5ce6756514acdf134ad61470734a
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Fri, 25 Oct 2013 13:24:53 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 28 Oct 2013 16:05:59 -0300
+The first DT gpio is necessary for this driver, but errors returned for
+of_get_gpio are ignored.
 
-perf hists: Add color overhead for stdio output buffer
+This patch adds a return value check for the first of_get_gpio.
 
-Following commit tightened up the buffer size for output to strict width
-of used format columns:
-
-  99cf666 perf hists: Fix formatting of long symbol names
-
-This works fine until you hit color overhead output which places extra
-bytes into output buffer. We need to account for color overhead in the
-output buffer. Adding maximum color byte size to the output buffer size.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1382700293-1803-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
 ---
- tools/perf/ui/stdio/hist.c |  9 ++++-----
- tools/perf/util/hist.h     | 13 +++++++++++++
- 2 files changed, 17 insertions(+), 5 deletions(-)
+ drivers/w1/masters/w1-gpio.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 194e2f4..6c15268 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -315,8 +315,7 @@ static inline void advance_hpp(struct perf_hpp *hpp, int inc)
- }
- 
- static int hist_entry__period_snprintf(struct perf_hpp *hpp,
--				       struct hist_entry *he,
--				       bool color)
-+				       struct hist_entry *he)
+diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
+index f54ece2..ae53e88 100644
+--- a/drivers/w1/masters/w1-gpio.c
++++ b/drivers/w1/masters/w1-gpio.c
+@@ -58,6 +58,7 @@ static int w1_gpio_probe_dt(struct platform_device *pdev)
  {
- 	const char *sep = symbol_conf.field_sep;
- 	struct perf_hpp_fmt *fmt;
-@@ -338,7 +337,7 @@ static int hist_entry__period_snprintf(struct perf_hpp *hpp,
- 		} else
- 			first = false;
+ 	struct w1_gpio_platform_data *pdata = pdev->dev.platform_data;
+ 	struct device_node *np = pdev->dev.of_node;
++	int gpio;
  
--		if (color && fmt->color)
-+		if (perf_hpp__use_color() && fmt->color)
- 			ret = fmt->color(fmt, hpp, he);
- 		else
- 			ret = fmt->entry(fmt, hpp, he);
-@@ -358,12 +357,11 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- 		.buf		= bf,
- 		.size		= size,
- 	};
--	bool color = !symbol_conf.field_sep;
+ 	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+ 	if (!pdata)
+@@ -66,7 +67,11 @@ static int w1_gpio_probe_dt(struct platform_device *pdev)
+ 	if (of_get_property(np, "linux,open-drain", NULL))
+ 		pdata->is_open_drain = 1;
  
- 	if (size == 0 || size > bfsz)
- 		size = hpp.size = bfsz;
- 
--	ret = hist_entry__period_snprintf(&hpp, he, color);
-+	ret = hist_entry__period_snprintf(&hpp, he);
- 	hist_entry__sort_snprintf(he, bf + ret, size - ret, hists);
- 
- 	ret = fprintf(fp, "%s\n", bf);
-@@ -482,6 +480,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 
- print_entries:
- 	linesz = hists__sort_list_width(hists) + 3 + 1;
-+	linesz += perf_hpp__color_overhead();
- 	line = malloc(linesz);
- 	if (line == NULL) {
- 		ret = -1;
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 1329b6b..ce8dc61 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -5,6 +5,7 @@
- #include <pthread.h>
- #include "callchain.h"
- #include "header.h"
-+#include "color.h"
- 
- extern struct callchain_param callchain_param;
- 
-@@ -175,6 +176,18 @@ void perf_hpp__init(void);
- void perf_hpp__column_register(struct perf_hpp_fmt *format);
- void perf_hpp__column_enable(unsigned col);
- 
-+static inline size_t perf_hpp__use_color(void)
-+{
-+	return !symbol_conf.field_sep;
-+}
+-	pdata->pin = of_get_gpio(np, 0);
++	gpio = of_get_gpio(np, 0);
++	if (gpio < 0)
++		return gpio;
++	pdata->pin = gpio;
 +
-+static inline size_t perf_hpp__color_overhead(void)
-+{
-+	return perf_hpp__use_color() ?
-+	       (COLOR_MAXLEN + sizeof(PERF_COLOR_RESET)) * PERF_HPP__MAX_INDEX
-+	       : 0;
-+}
-+
- struct perf_evlist;
+ 	pdata->ext_pullup_enable_pin = of_get_gpio(np, 1);
+ 	pdev->dev.platform_data = pdata;
  
- struct hist_browser_timer {
+-- 
+1.8.4.rc3
+
