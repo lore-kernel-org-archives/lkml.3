@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753023Ab3J2U7n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 16:59:43 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:18488 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752803Ab3J2U7l (ORCPT
+	id S1753204Ab3J2U76 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 16:59:58 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:54910 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752862Ab3J2U74 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 16:59:41 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+X8JPv7BO24rwlUb7Gmcc8
-Date: Tue, 29 Oct 2013 13:59:35 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Suman Anna <s-anna@ti.com>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Kumar Gala <galak@codeaurora.org>, Paul Walmsley <paul@pwsan.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCHv3 6/8] ARM: dts: OMAP4: Add hwspinlock node
-Message-ID: <20131029205935.GG15154@atomide.com>
-References: <1381439735-52888-1-git-send-email-s-anna@ti.com>
- <1381439735-52888-7-git-send-email-s-anna@ti.com>
- <20131011234125.GG29913@atomide.com>
+	Tue, 29 Oct 2013 16:59:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131011234125.GG29913@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAGG-pUTqVk5JkhWDU6-EicWzQT-rhiXBuXRm6uPmVSVifQ_FzQ@mail.gmail.com>
+References: <1381184340-11190-1-git-send-email-geyslan@gmail.com>
+	<1381185204.2081.221.camel@joe-AO722>
+	<CAGG-pURYyCV4waC8Z+5qAd1mAB2ZHhEkRaGspFuyEDrvj_dTdQ@mail.gmail.com>
+	<1381191145.2081.230.camel@joe-AO722>
+	<CAGG-pUQJCGcY=hAobBodH-dTLLohUpe6KJbuMvwWkhdt3RSk+A@mail.gmail.com>
+	<CAFkjPTmFOkw5n964zGuiON1oLSy1CsPQQ8TrGNho6L-+M5Z7SA@mail.gmail.com>
+	<CAGG-pUTHAnPOiX0n6FjbkhtFeiOY-704_rEvrhkzo4uv1rQ=hA@mail.gmail.com>
+	<CAGG-pUTfWiVznsKkQH0bBiHgbi+waHNw0zmoTMVk4pVJGPUN_A@mail.gmail.com>
+	<CAGG-pUQyB_4ivOvJWvq_5p-o-5vOC6srNVRk0GAvqqG-PVGMrQ@mail.gmail.com>
+	<CAFkjPTm_JhrWVzk0njqaUwpn5RxqYgRWYV2ZvPyrYoFKZHkgog@mail.gmail.com>
+	<CAGG-pURzs512=6zu2_vBz5vtJu3Dm8hsdV=qZuUa5GJng6Eceg@mail.gmail.com>
+	<CAGG-pUTqVk5JkhWDU6-EicWzQT-rhiXBuXRm6uPmVSVifQ_FzQ@mail.gmail.com>
+Date: Tue, 29 Oct 2013 18:59:55 -0200
+Message-ID: <CAGG-pUTQgToxUcQkPkE6T9LA2jWvx5DcPq=E_H0XhLJRsPckYQ@mail.gmail.com>
+Subject: Re: [PATCH] 9p: unsigned/signed wrap in p9/unix modes.
+From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
+To: Eric Van Hensbergen <ericvh@gmail.com>
+Cc: Joe Perches <joe@perches.com>, Ron Minnich <rminnich@sandia.gov>,
+        Latchesar Ionkov <lucho@ionkov.net>,
+        V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        kernel-br <kernel-br@googlegroups.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [131011 16:49]:
-> * Suman Anna <s-anna@ti.com> [131010 14:24]:
-> > Add the hwspinlock device tree node for OMAP4 family
-> > of SoCs.
-> 
-> Suman, can you please post the .dts changes separately from
-> the driver changes next time so driver maintainers don't
-> accidentally pick them up. That leads to unnecessary merge
-> conflicts with the .dts files.
+2013/10/28 Geyslan Gregório Bem <geyslan@gmail.com>:
+> 2013/10/28 Geyslan Gregório Bem <geyslan@gmail.com>
+>>
+>> 2013/10/27 Eric Van Hensbergen <ericvh@gmail.com>
+>>>
+>>> Looks like the right approach.  The one other optional thing I mentioned was support for passing NULL for rdev and not trying to parse the device info when rdev == NULL.  Its a very slight optimization in the grand scheme of things, but would seem to be cleaner for the folks calling the function who don't touch rdev after the fact...
+>>>
+>>>      -eric
+>>>
+>> Great. Let me do the changes this afternoon.
+>>
+>>
+> Hi Eric and all.
+>
+> You requested to avoid the parsing of device when rdev is NULL, all
+> right? But I'm afraid that that manner the res (return value) can be
+> returned wrong when the bit mode is a device. Well, I did some
+> changes. In this new approach, when rdev is NULL, the function only
+> doesn't make the device, but returns the res (umode_t) nicely.
+>
+> Tell me if this approach is correct. Do I have to modify something else?
+>
+> --
+> Regards,
+>
+> Geyslan G. Bem
+> hackingbits.com
 
-Actually I'll pick patches 6 - 8 of this series into
-omap-for-v3.13/dt branch as that fixes some boot time warnings
-we're seeing without them.
+Eric, I sent the new patch:
+[PATCH] 9p: code refactor in vfs_inode.c
 
+-- 
 Regards,
 
-Tony
+Geyslan G. Bem
+hackingbits.com
