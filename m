@@ -1,108 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab3J2JvS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 05:51:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24636 "EHLO mx1.redhat.com"
+	id S1753977Ab3J2Jvn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 05:51:43 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:60188 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751265Ab3J2JvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 05:51:17 -0400
-Date: Tue, 29 Oct 2013 11:50:43 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Andre Przywara <andre@andrep.de>, Joerg Roedel <joro@8bytes.org>,
-        X86 ML <x86@kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 4/6] kvm, emulator: Add initial three-byte insns support
-Message-ID: <20131029095043.GV15657@redhat.com>
-References: <1379861095-628-1-git-send-email-bp@alien8.de>
- <1379861095-628-5-git-send-email-bp@alien8.de>
+	id S1753901Ab3J2Jvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 05:51:41 -0400
+Date: Tue, 29 Oct 2013 02:51:35 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: rjw@rjwysocki.net, viresh.kumar@linaro.org, dipankar@in.ibm.com,
+        fweisbec@gmail.com, youquan.song@intel.com, riel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Tick: Introduce tick_nohz_check() to check nohz
+ enable status
+Message-ID: <20131029095135.GH4126@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1383036537-30362-1-git-send-email-tianyu.lan@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1379861095-628-5-git-send-email-bp@alien8.de>
+In-Reply-To: <1383036537-30362-1-git-send-email-tianyu.lan@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102909-7182-0000-0000-000008ED96DB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 22, 2013 at 04:44:53PM +0200, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
+On Tue, Oct 29, 2013 at 04:48:56PM +0800, Lan Tianyu wrote:
+> In some cases, nohz enable status needs to be checked. E.G, in RCU and cpufreq
+> ondemand governor. So add tick_nohz_check() to return tick_nohz_enabled value
+> And use tick_nohz_check() instead of referencing tick_nohz_enabled in the rcutree_plugin.h.
 > 
-> Add initial support for handling three-byte instructions in the
-> emulator.
-> 
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> ---
->  arch/x86/kvm/emulate.c | 30 ++++++++++++++++++++++++++++++
->  1 file changed, 30 insertions(+)
-> 
-> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-> index 67277bcb377a..72093d76c769 100644
-> --- a/arch/x86/kvm/emulate.c
-> +++ b/arch/x86/kvm/emulate.c
-> @@ -3880,6 +3880,25 @@ static const struct opcode twobyte_table[256] = {
->  	N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N
->  };
->  
-> +static const struct gprefix third_opcode_byte_0xf0 = {
-> +	N, N, N, N
-> +};
-> +
-> +static const struct gprefix third_opcode_byte_0xf1 = {
-> +	N, N, N, N
-> +};
-There are two three opcode tables, so third_opcode_byte is ambiguous.
-What about pfx_0f_38_f0 and pfx_0f_38_f1?
- 
-> +
-> +/*
-> + * Insns below are selected by the prefix which indexed by the third opcode
-> + * byte.
-> + */
-> +static const struct opcode opcode_map_0f_38[256] = {
-> +	/* 0x00 - 0x7f */
-> +	X16(N), X16(N), X16(N), X16(N), X16(N), X16(N), X16(N), X16(N),
-> +	/* 0x80 - 0xff */
-> +	X16(N), X16(N), X16(N), X16(N), X16(N), X16(N), X16(N), X16(N)
-> +};
-> +
->  #undef D
->  #undef N
->  #undef G
-> @@ -4200,6 +4219,13 @@ done_prefixes:
->  		ctxt->opcode_len = 2;
->  		ctxt->b = insn_fetch(u8, ctxt);
->  		opcode = twobyte_table[ctxt->b];
-> +
-> +		/* 0F_38 opcode map */
-> +		if (ctxt->b == 0x38) {
-> +			ctxt->opcode_len = 3;
-> +			ctxt->b = insn_fetch(u8, ctxt);
-> +			opcode = opcode_map_0f_38[ctxt->b];
-> +		}
->  	}
->  	ctxt->d = opcode.flags;
->  
-> @@ -4531,6 +4557,8 @@ special_insn:
->  
->  	if (ctxt->opcode_len == 2)
->  		goto twobyte_insn;
-> +	else if (ctxt->opcode_len == 3)
-> +		goto threebyte_insn;
->  
->  	switch (ctxt->b) {
->  	case 0x63:		/* movsxd */
-> @@ -4715,6 +4743,8 @@ twobyte_insn:
->  		goto cannot_emulate;
->  	}
->  
-> +threebyte_insn:
-> +
->  	if (rc != X86EMUL_CONTINUE)
->  		goto done;
->  
-> -- 
-> 1.8.4
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 
---
-			Gleb.
+NACK on the rcutree change unless you put the ACCESS_ONCE() in.
+
+Or is there some reason that ACCESS_ONCE() is not needed?  If so, what
+is that reason?
+
+							Thanx, Paul
+
+> ---
+>  include/linux/tick.h     | 2 ++
+>  kernel/rcutree_plugin.h  | 4 +---
+>  kernel/time/tick-sched.c | 8 +++++++-
+>  3 files changed, 10 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/tick.h b/include/linux/tick.h
+> index 5128d33..a9c5374 100644
+> --- a/include/linux/tick.h
+> +++ b/include/linux/tick.h
+> @@ -136,6 +136,7 @@ static inline int tick_nohz_tick_stopped(void)
+>  extern void tick_nohz_idle_enter(void);
+>  extern void tick_nohz_idle_exit(void);
+>  extern void tick_nohz_irq_exit(void);
+> +extern int tick_nohz_check(void);
+>  extern ktime_t tick_nohz_get_sleep_length(void);
+>  extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
+>  extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+> @@ -155,6 +156,7 @@ static inline ktime_t tick_nohz_get_sleep_length(void)
+> 
+>  	return len;
+>  }
+> +static inline int tick_nohz_check(void) { return 0; }
+>  static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) { return -1; }
+>  static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
+>  # endif /* !CONFIG_NO_HZ_COMMON */
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index 130c97b..af167ec 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -1627,8 +1627,6 @@ module_param(rcu_idle_gp_delay, int, 0644);
+>  static int rcu_idle_lazy_gp_delay = RCU_IDLE_LAZY_GP_DELAY;
+>  module_param(rcu_idle_lazy_gp_delay, int, 0644);
+> 
+> -extern int tick_nohz_enabled;
+> -
+>  /*
+>   * Try to advance callbacks for all flavors of RCU on the current CPU.
+>   * Afterwards, if there are any callbacks ready for immediate invocation,
+> @@ -1718,7 +1716,7 @@ static void rcu_prepare_for_idle(int cpu)
+>  	int tne;
+> 
+>  	/* Handle nohz enablement switches conservatively. */
+> -	tne = ACCESS_ONCE(tick_nohz_enabled);
+> +	tne = tick_nohz_check();
+>  	if (tne != rdtp->tick_nohz_enabled_snap) {
+>  		if (rcu_cpu_has_callbacks(cpu, NULL))
+>  			invoke_rcu_core(); /* force nohz to see update. */
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 3612fc7..d381a22 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -361,7 +361,13 @@ void __init tick_nohz_init(void)
+>  /*
+>   * NO HZ enabled ?
+>   */
+> -int tick_nohz_enabled __read_mostly  = 1;
+> +static int tick_nohz_enabled __read_mostly  = 1;
+> +
+> +int tick_nohz_check(void)
+> +{
+> +	return	tick_nohz_enabled;
+> +}
+> +EXPORT_SYMBOL_GPL(tick_nohz_check);
+> 
+>  /*
+>   * Enable / Disable tickless mode
+> -- 
+> 1.8.4.rc0.1.g8f6a3e5.dirty
+> 
+
