@@ -1,177 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab3J2Ecd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 00:32:33 -0400
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:52902
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752151Ab3J2Ecb (ORCPT
+	id S1754127Ab3J2EdZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 00:33:25 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:43603 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750971Ab3J2EdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 00:32:31 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zz98dI9371I936eI542I1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh2a8h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216hbe9i1155h)
-From: Bhushan Bharat-R65777 <R65777@freescale.com>
-To: Wood Scott-B07421 <B07421@freescale.com>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        Kim Phillips <kim.phillips@linaro.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
-        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: RE: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
- sysfs only
-Thread-Topic: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
- sysfs only
-Thread-Index: AQHOxkr73mEL+MoRyUKqi8VAB5hpg5oKfwQAgAADdYCAAAK8AIAAngOwgAABegCAAADz8IAADMgAgAAAF9A=
-Date: Tue, 29 Oct 2013 04:31:59 +0000
-Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D071D4FA0@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1381418830.7979.405.camel@snotra.buserror.net>
-	 <1381472840-3470-1-git-send-email-kim.phillips@linaro.org>
-	 <1381472840-3470-3-git-send-email-kim.phillips@linaro.org>
-	 <1382982462.4097.38.camel@ul30vt.home>
-	 <1382983205.3410.6.camel@snotra.buserror.net>
-	 <1382983792.3410.13.camel@snotra.buserror.net>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D071D4F0B@039-SN2MPN1-013.039d.mgd.msft.net>
-	 <1383018042.3410.69.camel@snotra.buserror.net>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D071D4F3A@039-SN2MPN1-013.039d.mgd.msft.net>
- <1383020990.3410.76.camel@snotra.buserror.net>
-In-Reply-To: <1383020990.3410.76.camel@snotra.buserror.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.14.2]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 29 Oct 2013 00:33:24 -0400
+X-Greylist: delayed 1352 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Oct 2013 00:33:23 EDT
+Message-ID: <526F353E.8040607@fb.com>
+Date: Mon, 28 Oct 2013 21:10:38 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Rodrigo Campos <rodrigo@sdfg.com.ar>, <namhyung.kim@lge.com>,
+        <linux-kernel@vger.kernel.org>, <acme@ghostprotocols.net>,
+        <fweisbec@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: State of "perf: Add a new sort order: SORT_INCLUSIVE"
+References: <20131025150721.GA12534@sdfg.com.ar> <8761si9e1u.fsf@sejong.aot.lge.com> <20131028084244.GA7482@sdfg.com.ar> <877gcx92yd.fsf@sejong.aot.lge.com> <20131028092955.GB7482@sdfg.com.ar> <526E9429.20803@fb.com> <87mwls7ouf.fsf@sejong.aot.lge.com>
+In-Reply-To: <87mwls7ouf.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-10-29_02:2013-10-28,2013-10-29,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.0579074834569235 urlsuspect_oldscore=0.578432455720742
+ suspectscore=0 recipient_domain_to_sender_totalscore=99 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=41
+ recipient_domain_to_sender_domain_totalscore=1996008
+ rbsscore=0.0579074834569235 spamscore=0
+ recipient_to_sender_domain_totalscore=40 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
+ definitions=main-1310280274
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9T4WdFC009473
 
+On 10/28/13 8:11 PM, Namhyung Kim wrote:
 
+Hey Namhyung:
 
-> -----Original Message-----
-> From: Wood Scott-B07421
-> Sent: Tuesday, October 29, 2013 10:00 AM
-> To: Bhushan Bharat-R65777
-> Cc: Wood Scott-B07421; Alex Williamson; Kim Phillips; Yoder Stuart-B08248;
-> christoffer.dall@linaro.org; linux-kernel@vger.kernel.org;
-> a.motakis@virtualopensystems.com; agraf@suse.de; Sethi Varun-B16395;
-> peter.maydell@linaro.org; santosh.shukla@linaro.org; kvm@vger.kernel.org;
-> gregkh@linuxfoundation.org
-> Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
-> sysfs only
-> 
-> On Mon, 2013-10-28 at 22:52 -0500, Bhushan Bharat-R65777 wrote:
-> >
-> > > -----Original Message-----
-> > > From: Wood Scott-B07421
-> > > Sent: Tuesday, October 29, 2013 9:11 AM
-> > > To: Bhushan Bharat-R65777
-> > > Cc: Wood Scott-B07421; Alex Williamson; Kim Phillips; Yoder
-> > > Stuart-B08248; christoffer.dall@linaro.org;
-> > > linux-kernel@vger.kernel.org; a.motakis@virtualopensystems.com;
-> > > agraf@suse.de; Sethi Varun-B16395; peter.maydell@linaro.org;
-> > > santosh.shukla@linaro.org; kvm@vger.kernel.org;
-> > > gregkh@linuxfoundation.org
-> > > Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit
-> > > binding via sysfs only
-> > >
-> > > On Mon, 2013-10-28 at 22:38 -0500, Bhushan Bharat-R65777 wrote:
-> > > >
-> > > > > -----Original Message-----
-> > > > > From: Wood Scott-B07421
-> > > > > Sent: Monday, October 28, 2013 11:40 PM
-> > > > > To: Alex Williamson
-> > > > > Cc: Kim Phillips; Bhushan Bharat-R65777; Wood Scott-B07421;
-> > > > > Yoder Stuart-B08248; christoffer.dall@linaro.org;
-> > > > > linux-kernel@vger.kernel.org; a.motakis@virtualopensystems.com;
-> > > > > agraf@suse.de; Sethi Varun-B16395; peter.maydell@linaro.org;
-> > > > > santosh.shukla@linaro.org; kvm@vger.kernel.org;
-> > > > > gregkh@linuxfoundation.org
-> > > > > Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit
-> > > > > binding via sysfs only
-> > > > >
-> > > > > On Mon, 2013-10-28 at 13:00 -0500, Scott Wood wrote:
-> > > > > > On Mon, 2013-10-28 at 11:47 -0600, Alex Williamson wrote:
-> > > > > > > On Fri, 2013-10-11 at 01:27 -0500, Kim Phillips wrote:
-> > > > > > > > Force the vfio-pci driver to only be bound explicitly via
-> > > > > > > > sysfs to avoid conflics with other drivers in the event of a
-> hotplug.
-> > > > > > >
-> > > > > > > We can't break userspace, so we can't disable the current
-> > > > > > > method of binding devices to vfio-pci.  We can add a new
-> > > > > > > method and perhaps deprecate the existing mechanism to be
-> > > > > > > removed at some point in the future.  Thanks,
-> > > > > >
-> > > > > > I thought the existing method involved using sysfs bind, and
-> > > > > > this was just eliminating a race.  How does the bind get triggered
-> currently?
-> > > > >
-> > > > > OK, so it seems it's relying on the write to new_id calling
-> driver_attach().
-> > > > > Sigh.  I guess we could make driver-sysfs-bind-only be settable
-> > > > > via sysfs, and have new-userspace set both that and PCI_ANY_ID
-> > > > > (or the specific ID if userspace
-> > > > > prefers) via new_id.  The platform bus patches could continue as
-> > > > > is, since there's no existing mechanism to break.
-> > > >
-> > > > What about changing the store_new_id() to bypass exact ids check
-> > > > if driver
-> > > have PCI_ANY_ID?
-> > >
-> > > I don't follow.
-> >
-> > store_new_id() function id defined as:
-> >
-> > static ssize_t store_new_id(struct device_driver *driver, const char
-> > *buf, size_t count) {
-> >         struct pci_driver *pdrv = to_pci_driver(driver);
-> >         const struct pci_device_id *ids = pdrv->id_table;
-> >
-> > <snip>
-> >         /* Only accept driver_data values that match an existing id_table
-> >            entry */
-> >         if (ids) {
-> >                 retval = -EINVAL;
-> >                 while (ids->vendor || ids->subvendor || ids->class_mask) {
-> >                         if (driver_data == ids->driver_data) {
-> >                                 retval = 0;
-> >                                 break;
-> >                         }
-> >                         ids++;
-> >                 }
-> >                 if (retval)     /* No match */
-> >                         return retval;
-> >         }
-> >
-> >         retval = pci_add_dynid(pdrv, vendor, device, subvendor, subdevice,
-> >                                class, class_mask, driver_data); <snip>
-> >
-> >
-> > So when ids == NULL it does not check of vendor etc and calls pci_add_dynid()
-> which in turn calls driver_attach().
-> >
-> > If we change the above loop to break if ids->vendor == PCI_ANY_ID && ids-
-> >subvendor == PCI_ANY_ID then also we will call pci_add_dyids().
-> 
-> What problem are you trying to solve?
+>>
+>> Also, what's the reasoning for --cumulate not being an option under
+>> perf record -g ..,<order>?
+>
+> Sorry, I cannot understand you.  The 'perf record' just saves sample
+> data (and callchains) from the ring-buffer.  All the processing happens
+> in 'perf report'.  I can't see what you expect from the 'perf record
+> --cumulate'.  Am I missing something?
 
-new_id interface to continue working as before.
+Yes - I meant to say perf report -g :)
 
--Bharat
+ > -g [type,min[,limit],order]
 
-> 
-> -Scott
-> 
+Specifically, along with callee, caller, we could have a third option. 
+Or we could have a new type (graph, fractal, cumulative).
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>> Given that there are clear use cases in production involving complex
+>> callgraphs, I'm for getting this support in first and then reconciling
+>> the differences with perf record -b later.
+>
+> I think what Frederic said is that the code de-duplication of 'perf
+> report' side.  The branch stack and --cumulate are different - branch
+> stack concentrates on the branch itself but --cumulate uses callchains
+> to find parents and give some credit to them as side information.
+
+Me too. I brought it up with Stephane at some point in the last year or 
+so and there wasn't an obvious way to de-duplicate because of these 
+differences.
+
+  -Arun
