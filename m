@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab3J2IeO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 04:34:14 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37508 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752829Ab3J2IeL (ORCPT
+	id S1753495Ab3J2Iee (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 04:34:34 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:60005 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594Ab3J2Ieb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 04:34:11 -0400
-Date: Tue, 29 Oct 2013 05:34:08 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        sachin.kamat@linaro.org, Vinod Koul <vinod.koul@intel.com>,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH 2/2] dma: mv_xor: Use high_base mmio where appropriate
-Message-ID: <20131029083407.GA2416@localhost>
-References: <1383000855-8377-1-git-send-email-ezequiel.garcia@free-electrons.com>
- <1383000855-8377-2-git-send-email-ezequiel.garcia@free-electrons.com>
- <CAPcyv4iQVoYCXz16T3N4MbdVJV7MoKKeL0wq9t9WF1Kf3gz3Bw@mail.gmail.com>
+	Tue, 29 Oct 2013 04:34:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPcyv4iQVoYCXz16T3N4MbdVJV7MoKKeL0wq9t9WF1Kf3gz3Bw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <526F6A4F.9040507@asianux.com>
+References: <526E3CE2.2070405@asianux.com>
+	<CAMo8BfK70vRc_DUTXhUZfTjA7zvYW3D4ApgDoMrwUZp5c+qk1g@mail.gmail.com>
+	<526F6A4F.9040507@asianux.com>
+Date: Tue, 29 Oct 2013 12:34:30 +0400
+Message-ID: <CAMo8BfK3FfQ+Gh=XMnaHZQqDayNN455DgMcbnKZBQTumC+_WmA@mail.gmail.com>
+Subject: Re: [PATCH] arch: use ASM_NL instead of ';' for assembler new line
+ character in the macro
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: "vgupta@synopsys.com" <vgupta@synopsys.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 04:47:20PM -0700, Dan Williams wrote:
-> [ adding dmaengine ]
-> 
-> On Mon, Oct 28, 2013 at 3:54 PM, Ezequiel Garcia
-> <ezequiel.garcia@free-electrons.com> wrote:
-> > Despite requesting two memory resources, called 'base' and 'high_base', the
-> > driver uses explicitly only the former. The latter is being used implicitly
-> > by addressing at offset +0x200, which in practice accesses high_base.
-> >
-> > Instead of relying in such trick, let's define the registers with the
-> > offset from high_base, and use high_base explicitly where appropriate.
-> >
-> > Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> > ---
-> >  drivers/dma/mv_xor.c |  3 ++-
-> >  drivers/dma/mv_xor.h | 25 +++++++++++++------------
-> >  2 files changed, 15 insertions(+), 13 deletions(-)
-> 
-> Since it's unused I'd prefer a patch that just deletes xor_high_base.
-> 
+On Tue, Oct 29, 2013 at 11:57 AM, Chen Gang <gang.chen@asianux.com> wrote:
+> On 10/28/2013 07:18 PM, Max Filippov wrote:
+>> Hi Chen,
+>>
+>> On Mon, Oct 28, 2013 at 2:30 PM, Chen Gang <gang.chen@asianux.com> wrote:
+>>> > For some toolchains, they use another character as newline in a macro
+>>> > (e.g. arc uses '`'), so for generic assembly code, need use ASM_NL (a
+>>> > macro) instead of ';' for it.
+>>> > Since "linux/export.h" are mainly used for exporting work, then our fix
+>>> > more likely belongs to "linux/linkage.h", and we need add the related
+>>> > checking in "linkage.h".
+>>> >
+>>> > Also need notice 80 columns wrap, and '\t' for each line.
+>>> >
+>>> >
+>>> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>> > ---
+>>> >  arch/arc/include/asm/linkage.h    |    2 +
+>>> >  include/asm-generic/vmlinux.lds.h |  350 +++++++++++++++++++------------------
+>> Actually vmlinux.lds.h is not an assembly code, but rather a linker script,
+>> later preprocessed by cpp.
+>>
+>
+> Consult: do xtensa also has its own ASM_NL?
 
-It's wrongly *unused*, the mmio high_base is actually being used
-implicitly by always addressing at an offset that addresses +200.
+It works well with common semicolon.
 
-Deleting high_base would actually make it worse, for that region
-will no longer be ioremaped. Maybe the commit message is not clear
-about it?
 -- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+Thanks.
+-- Max
