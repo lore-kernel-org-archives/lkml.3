@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758647Ab3J2QaB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 12:30:01 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:54425 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758279Ab3J2Q2O (ORCPT
+	id S1758264Ab3J2Qcr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 12:32:47 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:39480 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753981Ab3J2Qcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 12:28:14 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH v2 7/9] backlight: atmel-pwm-bl: use gpio_is_valid
-Date: Tue, 29 Oct 2013 17:27:42 +0100
-Message-Id: <1383064064-4983-8-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1383064064-4983-1-git-send-email-jhovold@gmail.com>
-References: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
- <1383064064-4983-1-git-send-email-jhovold@gmail.com>
+	Tue, 29 Oct 2013 12:32:46 -0400
+Date: Tue, 29 Oct 2013 17:32:44 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Watchdog patches - overview.
+Message-ID: <20131029163244.GC5261@spo001.leaseweb.com>
+References: <20131029090458.GN19704@spo001.leaseweb.com> <20131029161317.GC9266@roeck-us.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131029161317.GC9266@roeck-us.net>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use gpio_is_valid rather than open coding the more restrictive != -1
-test.
+Hi Guenter,
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- drivers/video/backlight/atmel-pwm-bl.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+> > Just to give you an update on where we are:
+> > 1) following patches are linux-watchdog-next:
+> > watchdog: dw_wdt: convert to SIMPLE_DEV_PM_OPS
+> > watchdog: dw_wdt: use clk_prepare_enable and clk_disable_unprepare
+> > imx2_wdt: expose module alias for loading from device-tree
+> > watchdog: use dev_get_platdata()
+> > watchdog: dw_wdt: Add __user annotation
+> > watchdog: kempld_wdt: Add __user annotation
+> > watchdog: Add MOXA ART watchdog driver
+> > watchdog: add ralink watchdog driver
+> > documentation/devicetree: Move DT bindigns from gpio to watchdog
+> > watchdog: ts72xx_wdt: cleanup return codes in ioctl
+> > watchdog: Remove redundant of_match_ptr
+> > watchdog: sirf: add watchdog driver of CSR SiRFprimaII and SiRFatlasVI
+> > watchdog: sp805_wdt: Remove unnecessary amba_set_drvdata()
+> > watchdog: at91sam9_wdt: better watchdog support
+> > watchdog: at91sam9_wdt: update device tree doc
+> > ARM: at91/dt: add sam9 watchdog default options to SoCs
+> > ARM: at91/dt: add watchdog properties to kizbox board
+> > watchdog: pcwd_usb: Use allocated buffer for usb_control_msg
+> > watchdog: ts72xx_wdt: Propagate return value from timeout_to_regval
+> > watchdog: Get rid of MODULE_ALIAS_MISCDEV statements
+> > watchdog: dw: Enable OF support for DW watchdog timer
+> > watchdog: watchdog_core: Fix a trivial typo
+> > 
+> > 2) patches that I am reviewing or are on my radar:
+> > w83627hf-patches
+> > Orion-patches
+> > f81865_gpio.c
+> > [PATCH V2 0/4] Add watchdog DT nodes and parse it to read PMU registers addresses (Exynos+s3c2410_wdt)
+> > [PATCH v4 4/4] ARM: bcm4760: Add restart hook
+> > [PATCH] Documentation/watchdog: Update node name in samsung-wdt example
+> > 
+> > So if something is still missing: please let it know.
+> > 
+> Hi Wim,
+> 
+> thanks a lot for getting this all done.
 
-diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
-index bfd6a96..c254209 100644
---- a/drivers/video/backlight/atmel-pwm-bl.c
-+++ b/drivers/video/backlight/atmel-pwm-bl.c
-@@ -48,7 +48,7 @@ static int atmel_pwm_bl_set_intensity(struct backlight_device *bd)
- 		pwm_duty = pwmbl->pdata->pwm_duty_min;
- 
- 	if (!intensity) {
--		if (pwmbl->gpio_on != -1) {
-+		if (gpio_is_valid(pwmbl->gpio_on)) {
- 			gpio_set_value(pwmbl->gpio_on,
- 					0 ^ pwmbl->pdata->on_active_low);
- 		}
-@@ -57,7 +57,7 @@ static int atmel_pwm_bl_set_intensity(struct backlight_device *bd)
- 	} else {
- 		pwm_channel_enable(&pwmbl->pwmc);
- 		pwm_channel_writel(&pwmbl->pwmc, PWM_CUPD, pwm_duty);
--		if (pwmbl->gpio_on != -1) {
-+		if (gpio_is_valid(pwmbl->gpio_on)) {
- 			gpio_set_value(pwmbl->gpio_on,
- 					1 ^ pwmbl->pdata->on_active_low);
- 		}
-@@ -146,7 +146,7 @@ static int atmel_pwm_bl_probe(struct platform_device *pdev)
- 	if (retval)
- 		return retval;
- 
--	if (pwmbl->gpio_on != -1) {
-+	if (gpio_is_valid(pwmbl->gpio_on)) {
- 		retval = devm_gpio_request(&pdev->dev, pwmbl->gpio_on,
- 					"gpio_atmel_pwm_bl");
- 		if (retval)
-@@ -196,7 +196,7 @@ static int atmel_pwm_bl_remove(struct platform_device *pdev)
- {
- 	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
- 
--	if (pwmbl->gpio_on != -1) {
-+	if (gpio_is_valid(pwmbl->gpio_on)) {
- 		gpio_set_value(pwmbl->gpio_on,
- 					0 ^ pwmbl->pdata->on_active_low);
- 	}
--- 
-1.8.4.2
+No problem :-). Thanks also for your reviews and testing. It makes my life easier.
+
+> There is also
+> 	http://patchwork.roeck-us.net/patch/503/
+> 	Move and rename HP watchdog timer driver
+> 
+> [ Not sure if that is a good idea. For hwmon, I noticed that out-of-directory
+>   hwmon drivers are not reviewed by hwmon maintainers, often resulting in bad
+>   or even broken code ]
+
+This patch will not go in. I agree with your statement: "If that is the case,
+wouldn't it make more sense to have separate drivers, one per functionality,
+plus an mfd driver to bind them all together ?". Especially because there is
+practically no code re-usage...
+
+> and
+> 	http://patchwork.roeck-us.net/patch/264/
+> 	watchdog: Sysfs interface for MEN A21 watchdog
+> 
+> [ It might make more sense to add common sysfs attributes to the
+>   watchdog code ]
+
+I still have this patch in a seprate folder. So yes that one is also still on my radar.
+But since I am not completely happy with some of the sysfs attribute-namings, and since
+some of the code would be in the sysfs core part, I put the patch aside till after I
+complete the sysfs code. (But I want to do the windond stuff first).
+
+Kind regards,
+Wim.
 
