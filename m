@@ -1,62 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561Ab3J2R7o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 13:59:44 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:49777 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab3J2R7m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 13:59:42 -0400
-Message-ID: <526FF78B.10708@linux.com>
-Date: Tue, 29 Oct 2013 18:59:39 +0100
-From: Levente Kurusa <levex@linux.com>
-Reply-To: levex@linux.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: John Schmidt <johnschmidt4@gmail.com>,
-        linux-raid <linux-raid@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mdadm.8.in
-References: <CACcY5Uxc2f6HOxLHt5DY5E71EvFbo0dNmtqUtH=FRwTitE=+zw@mail.gmail.com>
-In-Reply-To: <CACcY5Uxc2f6HOxLHt5DY5E71EvFbo0dNmtqUtH=FRwTitE=+zw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	id S1751683Ab3J2SA2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:00:28 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:38914 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751337Ab3J2SA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 14:00:26 -0400
+Subject: Re: [PATCH v3 02/10] spmi: Linux driver framework for SPMI
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-msm@vger.kernel.org, Gilad Avidov <gavidov@codeaurora.org>,
+        linux-kernel@vger.kernel.org, Michael Bohan <mbohan@codeaurora.org>,
+        Sagar Dharia <sdharia@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20131029162615.GH20207@joshc.qualcomm.com>
+References: <cover.1382985169.git.joshc@codeaurora.org>
+	 <149bbfe89e37376cc176c3aeb6c1fab9e4fd2b91.1382985169.git.joshc@codeaurora.org>
+	 <1383058923.2837.33.camel@iivanov-dev.int.mm-sol.com>
+	 <20131029162615.GH20207@joshc.qualcomm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 29 Oct 2013 20:00:23 +0200
+Message-ID: <1383069623.14905.7.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-10-29 18:16 keltezéssel, John Schmidt írta:
-> I found a small bug in the documentation of mdadm.  I fixed it in my
-> local git clone of git://neil.brown.name/mdadm  Here is the change:
-> 
-> git diff mdadm.8.in
-> diff --git a/mdadm.8.in b/mdadm.8.in
-> index 09aff81..006ae59 100644
-> --- a/mdadm.8.in
-> +++ b/mdadm.8.in
-> @@ -529,7 +529,7 @@ amount of available space is.
->  .BR \-c ", " \-\-chunk=
->  Specify chunk size of kibibytes.  The default when creating an
->  array is 512KB.  To ensure compatibility with earlier versions, the
-> -default when Building and array with no persistent metadata is 64KB.
-> +default when building an array with no persistent metadata is 64KB.
->  This is only meaningful for RAID0, RAID4, RAID5, RAID6, and RAID10.
-> 
->  RAID4, RAID5, RAID6, and RAID10 require the chunk size to be a power
-> 
-> Let me know if there are other things I need to do to get this patch submitted.
 
 Hi,
 
-I don't think this belongs to LKML.
-I am not familiar with linux-raid but I think that the following guidelines
-do apply there as well.
+On Tue, 2013-10-29 at 11:26 -0500, Josh Cartwright wrote:
+> On Tue, Oct 29, 2013 at 05:02:03PM +0200, Ivan T. Ivanov wrote:
+> > On Mon, 2013-10-28 at 13:12 -0500, Josh Cartwright wrote: 
+> > > From: Kenneth Heitke <kheitke@codeaurora.org>
+> > > 
+> > > System Power Management Interface (SPMI) is a specification
+> > > developed by the MIPI (Mobile Industry Process Interface) Alliance
+> > > optimized for the real time control of Power Management ICs (PMIC).
+> > > 
+> > > SPMI is a two-wire serial interface that supports up to 4 master
+> > > devices and up to 16 logical slaves.
+> > > 
+> > > The framework supports message APIs, multiple busses (1 controller
+> > > per bus) and multiple clients/slave devices per controller.
+> > > 
+> > > Signed-off-by: Kenneth Heitke <kheitke@codeaurora.org>
+> > > Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
+> > > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> [..]
+> > > +static int spmi_drv_probe(struct device *dev)
+> > > +{
+> > > +	const struct spmi_driver *sdrv = to_spmi_driver(dev->driver);
+> > > +	int err = 0;
+> > > +
+> > > +	if (sdrv->probe)
+> > > +		err = sdrv->probe(to_spmi_device(dev));
+> > > +
+> > > +	return err;
+> > > +}
+> > > +
+> > > +static int spmi_drv_remove(struct device *dev)
+> > > +{
+> > > +	const struct spmi_driver *sdrv = to_spmi_driver(dev->driver);
+> > > +	int err = 0;
+> > > +
+> > > +	if (sdrv->remove)
+> > > +		err = sdrv->remove(to_spmi_device(dev));
+> > > +
+> > > +	return err;
+> > > +}
+> > > +
+> > > +static void spmi_drv_shutdown(struct device *dev)
+> > > +{
+> > > +	const struct spmi_driver *sdrv = to_spmi_driver(dev->driver);
+> > > +
+> > > +	if (sdrv->shutdown)
+> > 
+> > If driver for device is not loaded this will cause kernel NULL
+> > pointer dereference.
+> 
+> Indeed.  I'll fix this.
+> 
+> > > +static int of_spmi_register_devices(struct spmi_controller *ctrl)
+> > > +{
+> > > +	struct device_node *node;
+> > > +	int err;
+> > > +
+> > > +	dev_dbg(&ctrl->dev, "of_spmi_register_devices\n");
+> > > +
+> > > +	if (!ctrl->dev.of_node)
+> > > +		return -ENODEV;
+> > > +
+> > > +	dev_dbg(&ctrl->dev, "looping through children\n");
+> > > +
+> > > +	for_each_available_child_of_node(ctrl->dev.of_node, node) {
+> > > +		struct spmi_device *sdev;
+> > > +		u32 reg[2];
+> > > +
+> > > +		dev_dbg(&ctrl->dev, "adding child %s\n", node->full_name);
+> > > +
+> > > +		err = of_property_read_u32_array(node, "reg", reg, 2);
+> > > +		if (err) {
+> > > +			dev_err(&ctrl->dev,
+> > > +				"node %s does not have 'reg' property\n",
+> > > +				node->full_name);
+> > > +			continue;
+> > 
+> > Shouldn't this be a fatal error?
+> 
+> Fatal in what way?  It is fatal in the sense that this particular child
+> node is skipped, but other children can still be enumerated. 
 
-https://www.kernel.org/doc/Documentation/SubmittingPatches
+Oh, I have missed this.
 
-Other than this, the patch is a legitimate one, I am sure it will be accepted.
+>  Are you
+> suggesting that we bail completely when we hit a wrongly-described
+> child?
 
+Please ignore my comment.
 
---
+> 
+> > > +		}
+> > > +
+> > > +		if (reg[1] != SPMI_USID) {
+> > > +			dev_err(&ctrl->dev,
+> > > +				"node %s contains unsupported 'reg' entry\n",
+> > > +				node->full_name);
+> > > +			continue;
+> > > +		}
+> > > +
+> > > +		if (reg[0] > 0xF) {
+> > > +			dev_err(&ctrl->dev,
+> > > +				"invalid usid on node %s\n",
+> > > +				node->full_name);
+> > > +			continue;
+> > > +		}
+> > > +
+> > > +		dev_dbg(&ctrl->dev, "read usid %02x\n", reg[0]);
+> > > +
+> > > +		sdev = spmi_device_alloc(ctrl);
+> > > +		if (!sdev)
+> > > +			continue;
+> > > +
+> > > +		sdev->dev.of_node = node;
+> > > +		sdev->usid = (u8) reg[0];
+> > > +
+> > > +		err = spmi_device_add(sdev);
+> > > +		if (err) {
+> > > +			dev_err(&sdev->dev,
+> > > +				"failure adding device. status %d\n", err);
+> > > +			spmi_device_put(sdev);
+> > > +			continue;
+
+There is no need from this 'continue' here.
+
+> > > +		}
+> > > +	}
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +int spmi_controller_add(struct spmi_controller *ctrl)
+> > > +{
+> > > +	int ret;
+> > > +
+> > > +	/* Can't register until after driver model init */
+> > > +	if (WARN_ON(!spmi_bus_type.p))
+> > > +		return -EAGAIN;
+> > > +
+> > > +	ret = device_add(&ctrl->dev);
+> > > +	if (ret)
+> > > +		return ret;
+> > > +
+> > > +	if (IS_ENABLED(CONFIG_OF))
+> > > +		of_spmi_register_devices(ctrl);
+> > 
+> > Check for error code here?
+> 
+> And do what with it? 
+
+This was related to my previous comment, which is not valid.
+
+>  Maybe instead, I should make
+> of_spmi_register_devices() return void.
+
+Sound reasonable to me and will be the same as i2c bus.
+
 Regards,
-Levente Kurusa
+Ivan
+
+> 
+
+
