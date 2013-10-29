@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230Ab3J2BIt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 21:08:49 -0400
+	id S932145Ab3J2BIs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 21:08:48 -0400
 Received: from mga09.intel.com ([134.134.136.24]:61520 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756709Ab3J2BIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751825Ab3J2BIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Oct 2013 21:08:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="400167040"
+   d="scan'208";a="400167039"
 From: David Cohen <david.a.cohen@linux.intel.com>
 To: balbi@ti.com, gregkh@linuxfoundation.org
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         David Cohen <david.a.cohen@linux.intel.com>
-Subject: [RFC/PATCH 1/2] usb: gadget: re-introduce gadget_is_dwc3()
-Date: Mon, 28 Oct 2013 18:12:59 -0700
-Message-Id: <1383009180-23236-2-git-send-email-david.a.cohen@linux.intel.com>
+Subject: [RFC/PATCH 0/2] patchset to workaround f_fs for DWC3
+Date: Mon, 28 Oct 2013 18:12:58 -0700
+Message-Id: <1383009180-23236-1-git-send-email-david.a.cohen@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1383009180-23236-1-git-send-email-david.a.cohen@linux.intel.com>
-References: <1383009180-23236-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gadget_is_dwc3() is necessary to check whether we are running on
-Desineware USB3 DRD controller.
+Hi,
 
-This macro was previously removed by commit
-ed9cbda63d45638b69ce62412e3a3c7b00644835 due to it wasn't needed
-anymore. We're adding it again as things have changed.
+These patches are a proposal to workaround f_fs when using DWC3 controller.
+Since DWC3 requires epout buffer size to be aligned to maxpacketsize, f_fs
+needs to pad buffer size to match the above case.
 
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+This change is necessary to make Android's adbd service to work with f_fs
+instead of out-of-tree android gadget. If this same situation is happening in
+other still untested places, a more generic solution may be required.
+
 ---
- drivers/usb/gadget/gadget_chips.h | 1 +
- 1 file changed, 1 insertion(+)
+David Cohen (2):
+  usb: gadget: re-introduce gadget_is_dwc3()
+  usb: ffs/dwc3: pad epout buffer size when not aligned to maxpacketsize
 
-diff --git a/drivers/usb/gadget/gadget_chips.h b/drivers/usb/gadget/gadget_chips.h
-index bcd04bc..3186a5e 100644
---- a/drivers/usb/gadget/gadget_chips.h
-+++ b/drivers/usb/gadget/gadget_chips.h
-@@ -28,6 +28,7 @@
-  * do that for you.
-  */
- #define gadget_is_at91(g)		(!strcmp("at91_udc", (g)->name))
-+#define gadget_is_dwc3(g)		(!strcmp("dwc3-gadget", (g)->name))
- #define gadget_is_goku(g)		(!strcmp("goku_udc", (g)->name))
- #define gadget_is_musbhdrc(g)		(!strcmp("musb-hdrc", (g)->name))
- #define gadget_is_net2280(g)		(!strcmp("net2280", (g)->name))
+ drivers/usb/gadget/f_fs.c         | 19 +++++++++++++++++++
+ drivers/usb/gadget/gadget_chips.h |  1 +
+ 2 files changed, 20 insertions(+)
+
 -- 
 1.8.4.rc3
 
