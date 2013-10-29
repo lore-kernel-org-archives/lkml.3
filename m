@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758294Ab3J2RIe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 13:08:34 -0400
-Received: from fifo99.com ([67.223.236.141]:48410 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752287Ab3J2RIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 13:08:32 -0400
-Date: Tue, 29 Oct 2013 10:08:17 -0700
-From: Daniel Walker <dwalker@fifo99.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/4] ARM: msm: Remove 7x00 support
-Message-ID: <20131029170817.GA13047@fifo99.com>
-References: <1382993006-27359-1-git-send-email-davidb@codeaurora.org>
- <1382993006-27359-3-git-send-email-davidb@codeaurora.org>
- <20131029132043.GA28165@fifo99.com>
- <CAOesGMhg8HN4Su9FXSeoAgmH6NVKXW+wmnreUvWH+1G6GWkkaA@mail.gmail.com>
-MIME-Version: 1.0
+	id S1758358Ab3J2RQt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 13:16:49 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45621 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754013Ab3J2RQq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 13:16:46 -0400
+Subject: Re: [PATCH v3 2/4] mmc: omap_hsmmc: Enable SDIO IRQ.
+Mime-Version: 1.0 (Apple Message framework v1283)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOesGMhg8HN4Su9FXSeoAgmH6NVKXW+wmnreUvWH+1G6GWkkaA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1380971830-21492-3-git-send-email-afenkart@gmail.com>
+Date: Tue, 29 Oct 2013 12:16:44 -0500
+Cc: Chris Ball <cjb@laptop.org>, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>,
+        Venkatraman S <svenkatr@ti.com>, Balaji T K <balajitk@ti.com>,
+        zonque@gmail.com, devicetree-discuss@lists.ozlabs.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mmc@vger.kernel.org, linux-omap@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <EA1946E5-E119-4D4D-B99F-E96878DEC049@codeaurora.org>
+References: <1380971830-21492-1-git-send-email-afenkart@gmail.com> <1380971830-21492-3-git-send-email-afenkart@gmail.com>
+To: Andreas Fenkart <afenkart@gmail.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 08:37:28AM -0700, Olof Johansson wrote:
-> Daniel,
+
+On Oct 5, 2013, at 6:17 AM, Andreas Fenkart wrote:
+
+> For now, only support SDIO interrupt if we are booted with
+> DT. This is because some platforms need special quirks. And
+> we don't want to add new legacy mux platform init code
+> callbacks any longer as we are moving to DT based booting
+> anyways.
 > 
-> I would be very happy to take more code for the older Qualcomm chipset
-> to enable full functionality for them, but it's been my impression
-> that far from all that is needed to make it a useful platform is in
-> the upstream kernel, and there's been no signs of more of it showing
-> up at least in the last two years.
+> Broken hardware, missing the swakueup line, should fallback
+> to polling, by setting 'ti,quirk-swakup-missing' in the
+> device tree. Otherwise pending SDIO IRQ are not detected
+> while in suspend. This affects am33xx processors.
+> 
+> Signed-off-by: Andreas Fenkart <afenkart@gmail.com>
+> 
+> diff --git a/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt b/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
+> index ed271fc..1136e6b 100644
+> --- a/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
+> +++ b/Documentation/devicetree/bindings/mmc/ti-omap-hsmmc.txt
+> @@ -20,6 +20,24 @@ ti,dual-volt: boolean, supports dual voltage cards
+> ti,non-removable: non-removable slot (like eMMC)
+> ti,needs-special-reset: Requires a special softreset sequence
+> ti,needs-special-hs-handling: HSMMC IP needs special setting for handling High Speed
+> +ti,quirk-swakup-missing: SOC missing the swakeup line, will not detect
+> +SDIO irq while in suspend. Fallback to polling. Affected chips are
+> +am335x,
+> +
+> +                            ------
+> +                            | PRCM |
+> +                             ------
+> +                              ^ |
+> +                      swakeup | | fclk
+> +                              | v
+> +      ------                -------               -----
+> +     | card | -- CIRQ -->  | hsmmc | -- IRQ -->  | CPU |
+> +      ------                -------               -----
+> +
+> +In suspend the fclk is off and the module is disfunctional. Even
+> +register reads will fail. A small logic in the host will request fclk
+> +restore, when an external event is detected. Once the clock is
+> +restored, the host detects the event normally.
+> 
+> Example:
+> 	mmc1: mmc@0x4809c000 {
 
-Some of the platform code he's removing is not compiled right now. I
-would have liked to make it compile, but I don't care that much (and
-they don't either) ..
+For the DT-Binding portion:
 
-> So we have a bit of a stalemate here -- the current Qualcomm team
-> wants to avoid having to deal too much with the legacy platforms --
-> they are technically quite different from the current platforms and
-> the divergence makes it hard to deal with supporting it all in a
-> modern way without risking regressions. I tend to agree with them.
+Acked-by: Kumar Gala <galak@codeaurora.org>
 
-Oh what a sob story .. They can't claim to maintain msm except for the
-parts they don't like that much, thats not how it works. If you
-have a technical reason why you think hard to maintain code is
-"hard to deal with", please put that forth .
+- k
 
-If they want they can start submitting their patches to me, and I can
-deal with their "hard to deal with" stuff..
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
-> Just like omap split between omap1 and omap2plus, I think it's a time
-> to create a mach-qcom instead, and move the modern (v7, most likely)
-> platforms there -- enable them with device tree, modern framework
-> infrastructure, etc. That way you can keep older platforms in mach-msm
-> without risk of regressions, and they have a clean base to start on
-> with their later platforms.
-
-Personally I think splitting mach- stuff isn't very useful or
-interesting.. There's just no technical reason for it, for example x86
-and x86_64 was a win from my perspective , there's a lot more reason to
-keep similar things together than to split things up.
-
-The whole risking regressions, do you have proof of why you think that's
-happening ? The inverse seems more likely..
-
-Daniel
