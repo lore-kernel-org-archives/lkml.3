@@ -1,56 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544Ab3J2SRy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:17:54 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:57757 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754634Ab3J2SRw (ORCPT
+	id S1755749Ab3J2SSW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:18:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59495 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754166Ab3J2SJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:17:52 -0400
-Date: Tue, 29 Oct 2013 19:17:46 +0100
-From: Johan Hovold <jhovold@gmail.com>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: peter@hurleysoftware.com, gregkh@linuxfoundation.org, jslaby@suse.cz,
-        linux-kernel@vger.kernel.org, jhovold@gmail.com
-Subject: Re: [PATCH] tty: Add C_MSPAR(tty)
-Message-ID: <20131029181746.GE29615@localhost>
-References: <1382527101-30473-1-git-send-email-andrew@lunn.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382527101-30473-1-git-send-email-andrew@lunn.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 29 Oct 2013 14:09:16 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: David Vrabel <david.vrabel@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 38/81] xen-netback: count number required slots for an skb more carefully
+Date: Tue, 29 Oct 2013 11:03:59 -0700
+Message-Id: <1383069882-11437-39-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
+References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 01:18:21PM +0200, Andrew Lunn wrote:
-> Add the missing C_MSPAR(tty) macro.
+3.8.13.12 -stable review patch.  If anyone has any objections, please let me know.
 
-Please rename the macro C_CMSPAR to be consistent with the other
-termios-flag macros (with C_BAUD being the exception that confirms the
-rule).
+------------------
 
-Thanks,
-Johan
+From: David Vrabel <david.vrabel@citrix.com>
 
-> Signed-off-by: Andrew Lunn <andrew@lunn.ch>
-> ---
->  include/linux/tty.h | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/include/linux/tty.h b/include/linux/tty.h
-> index 64f8646..630678d 100644
-> --- a/include/linux/tty.h
-> +++ b/include/linux/tty.h
-> @@ -137,6 +137,7 @@ struct tty_bufhead {
->  #define C_CLOCAL(tty)	_C_FLAG((tty), CLOCAL)
->  #define C_CIBAUD(tty)	_C_FLAG((tty), CIBAUD)
->  #define C_CRTSCTS(tty)	_C_FLAG((tty), CRTSCTS)
-> +#define C_MSPAR(tty)	_C_FLAG((tty), CMSPAR)
->  
->  #define L_ISIG(tty)	_L_FLAG((tty), ISIG)
->  #define L_ICANON(tty)	_L_FLAG((tty), ICANON)
-> -- 
-> 1.8.4.rc3
-> 
+[ Upstream commit 6e43fc04a6bc357d260583b8440882f28069207f ]
+
+When a VM is providing an iSCSI target and the LUN is used by the
+backend domain, the generated skbs for direct I/O writes to the disk
+have large, multi-page skb->data but no frags.
+
+With some lengths and starting offsets, xen_netbk_count_skb_slots()
+would be one short because the simple calculation of
+DIV_ROUND_UP(skb_headlen(), PAGE_SIZE) was not accounting for the
+decisions made by start_new_rx_buffer() which does not guarantee
+responses are fully packed.
+
+For example, a skb with length < 2 pages but which spans 3 pages would
+be counted as requiring 2 slots but would actually use 3 slots.
+
+skb->data:
+
+    |        1111|222222222222|3333        |
+
+Fully packed, this would need 2 slots:
+
+    |111122222222|22223333    |
+
+But because the 2nd page wholy fits into a slot it is not split across
+slots and goes into a slot of its own:
+
+    |1111        |222222222222|3333        |
+
+Miscounting the number of slots means netback may push more responses
+than the number of available requests.  This will cause the frontend
+to get very confused and report "Too many frags/slots".  The frontend
+never recovers and will eventually BUG.
+
+Fix this by counting the number of required slots more carefully.  In
+xen_netbk_count_skb_slots(), more closely follow the algorithm used by
+xen_netbk_gop_skb() by introducing xen_netbk_count_frag_slots() which
+is the dry-run equivalent of netbk_gop_frag_copy().
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/xen-netback/netback.c | 94 ++++++++++++++++++++++++++-------------
+ 1 file changed, 64 insertions(+), 30 deletions(-)
+
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 8099e9d..f427455 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -354,6 +354,49 @@ static bool start_new_rx_buffer(int offset, unsigned long size, int head)
+ 	return false;
+ }
+ 
++struct xenvif_count_slot_state {
++	unsigned long copy_off;
++	bool head;
++};
++
++unsigned int xenvif_count_frag_slots(struct xenvif *vif,
++				     unsigned long offset, unsigned long size,
++				     struct xenvif_count_slot_state *state)
++{
++	unsigned count = 0;
++
++	offset &= ~PAGE_MASK;
++
++	while (size > 0) {
++		unsigned long bytes;
++
++		bytes = PAGE_SIZE - offset;
++
++		if (bytes > size)
++			bytes = size;
++
++		if (start_new_rx_buffer(state->copy_off, bytes, state->head)) {
++			count++;
++			state->copy_off = 0;
++		}
++
++		if (state->copy_off + bytes > MAX_BUFFER_OFFSET)
++			bytes = MAX_BUFFER_OFFSET - state->copy_off;
++
++		state->copy_off += bytes;
++
++		offset += bytes;
++		size -= bytes;
++
++		if (offset == PAGE_SIZE)
++			offset = 0;
++
++		state->head = false;
++	}
++
++	return count;
++}
++
+ /*
+  * Figure out how many ring slots we're going to need to send @skb to
+  * the guest. This function is essentially a dry run of
+@@ -361,48 +404,39 @@ static bool start_new_rx_buffer(int offset, unsigned long size, int head)
+  */
+ unsigned int xen_netbk_count_skb_slots(struct xenvif *vif, struct sk_buff *skb)
+ {
++	struct xenvif_count_slot_state state;
+ 	unsigned int count;
+-	int i, copy_off;
++	unsigned char *data;
++	unsigned i;
+ 
+-	count = DIV_ROUND_UP(skb_headlen(skb), PAGE_SIZE);
++	state.head = true;
++	state.copy_off = 0;
+ 
+-	copy_off = skb_headlen(skb) % PAGE_SIZE;
++	/* Slot for the first (partial) page of data. */
++	count = 1;
+ 
++	/* Need a slot for the GSO prefix for GSO extra data? */
+ 	if (skb_shinfo(skb)->gso_size)
+ 		count++;
+ 
+-	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+-		unsigned long size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
+-		unsigned long offset = skb_shinfo(skb)->frags[i].page_offset;
+-		unsigned long bytes;
+-
+-		offset &= ~PAGE_MASK;
+-
+-		while (size > 0) {
+-			BUG_ON(offset >= PAGE_SIZE);
+-			BUG_ON(copy_off > MAX_BUFFER_OFFSET);
+-
+-			bytes = PAGE_SIZE - offset;
+-
+-			if (bytes > size)
+-				bytes = size;
++	data = skb->data;
++	while (data < skb_tail_pointer(skb)) {
++		unsigned long offset = offset_in_page(data);
++		unsigned long size = PAGE_SIZE - offset;
+ 
+-			if (start_new_rx_buffer(copy_off, bytes, 0)) {
+-				count++;
+-				copy_off = 0;
+-			}
++		if (data + size > skb_tail_pointer(skb))
++			size = skb_tail_pointer(skb) - data;
+ 
+-			if (copy_off + bytes > MAX_BUFFER_OFFSET)
+-				bytes = MAX_BUFFER_OFFSET - copy_off;
++		count += xenvif_count_frag_slots(vif, offset, size, &state);
+ 
+-			copy_off += bytes;
++		data += size;
++	}
+ 
+-			offset += bytes;
+-			size -= bytes;
++	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
++		unsigned long size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
++		unsigned long offset = skb_shinfo(skb)->frags[i].page_offset;
+ 
+-			if (offset == PAGE_SIZE)
+-				offset = 0;
+-		}
++		count += xenvif_count_frag_slots(vif, offset, size, &state);
+ 	}
+ 	return count;
+ }
+-- 
+1.8.1.2
+
