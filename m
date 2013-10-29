@@ -1,109 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab3J2ATK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 20:19:10 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62009 "EHLO
+	id S1756719Ab3J2AZy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 20:25:54 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62108 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756632Ab3J2ATI (ORCPT
+	by vger.kernel.org with ESMTP id S1751825Ab3J2AZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 20:19:08 -0400
-Date: Tue, 29 Oct 2013 00:18:59 +0000
+	Mon, 28 Oct 2013 20:25:52 -0400
+Date: Tue, 29 Oct 2013 00:25:44 +0000
 From: Mark Rutland <mark.rutland@arm.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tomasz Figa <t.figa@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Dave P Martin <Dave.Martin@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Olof Johansson <olof@lixom.net>, Kumar Gala <galak@codeaurora.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <Pawel.Moll@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
         "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v9 3/5] ARM: tegra: split setting of CPU reset handler
-Message-ID: <20131029001858.GE4763@kartoffel>
+        Dave P Martin <Dave.Martin@arm.com>
+Subject: Re: [PATCH v9 1/5] ARM: add basic support for Trusted Foundations
+Message-ID: <20131029002543.GF4763@kartoffel>
 References: <1382956118-12495-1-git-send-email-acourbot@nvidia.com>
- <1382956118-12495-4-git-send-email-acourbot@nvidia.com>
+ <D49A3E92-54FD-4275-82F5-DBB476086B03@codeaurora.org>
+ <20131028215649.GB10833@quad.lixom.net>
+ <2702565.PHk13m6fVo@flatron>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1382956118-12495-4-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <2702565.PHk13m6fVo@flatron>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 10:28:36AM +0000, Alexandre Courbot wrote:
-> Not all Tegra devices can set the CPU reset handler in the same way.
-> In particular, devices using a TrustZone secure monitor cannot set the
-> reset handler directly and need to do it through a firmware operation.
+On Mon, Oct 28, 2013 at 11:31:36PM +0000, Tomasz Figa wrote:
+> On Monday 28 of October 2013 14:56:49 Olof Johansson wrote:
+> > On Mon, Oct 28, 2013 at 05:57:04AM -0500, Kumar Gala wrote:
+> > > On Oct 28, 2013, at 5:28 AM, Alexandre Courbot wrote:
+> > > > Trusted Foundations is a TrustZone-based secure monitor for ARM that
+> > > > can be invoked using the same SMC-based API on all supported
+> > > > platforms. This patch adds initial basic support for Trusted
+> > > > Foundations using the ARM firmware API. Current features are limited
+> > > > to the ability to boot secondary processors.
+> > > > 
+> > > > Note: The API followed by Trusted Foundations does *not* follow the
+> > > > SMC
+> > > > calling conventions. It has nothing to do with PSCI neither and is
+> > > > only
+> > > > relevant to devices that use Trusted Foundations (like most
+> > > > Tegra-based
+> > > > retail devices).
+> > > > 
+> > > > Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> > > > Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> > > > Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> > > > ---
+> > > > .../arm/firmware/tl,trusted-foundations.txt        | 20 ++++++
+> > > > .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+> > > > arch/arm/Kconfig                                   |  2 +
+> > > > arch/arm/Makefile                                  |  1 +
+> > > > arch/arm/firmware/Kconfig                          | 28 ++++++++
+> > > > arch/arm/firmware/Makefile                         |  1 +
+> > > > arch/arm/firmware/trusted_foundations.c            | 79
+> > > > ++++++++++++++++++++++ arch/arm/include/asm/trusted_foundations.h  
+> > > >       | 67 ++++++++++++++++++ 8 files changed, 199 insertions(+)
+> > > > create mode 100644
+> > > > Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundatio
+> > > > ns.txt create mode 100644 arch/arm/firmware/Kconfig
+> > > > create mode 100644 arch/arm/firmware/Makefile
+> > > > create mode 100644 arch/arm/firmware/trusted_foundations.c
+> > > > create mode 100644 arch/arm/include/asm/trusted_foundations.h
+> > > > 
+> > > > diff --git
+> > > > a/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundat
+> > > > ions.txt
+> > > > b/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundat
+> > > > ions.txt new file mode 100644
+> > > > index 0000000..2ec75c9
+> > > > --- /dev/null
+> > > > +++
+> > > > b/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundat
+> > > > ions.txt @@ -0,0 +1,20 @@
+> > > > +Trusted Foundations
+> > > > +-------------------
+> > > > +
+> > > > +Boards that use the Trusted Foundations secure monitor can signal
+> > > > its
+> > > > +presence by declaring a node compatible with
+> > > > "tl,trusted-foundations"
+> > > > +under the /firmware/ node
+> > > > +
+> > > > +Required properties:
+> > > > +- compatible : "tl,trusted-foundations"
+> > > > +- version-major : major version number of Trusted Foundations
+> > > > firmware
+> > > > +- version-minor: minor version number of Trusted Foundations
+> > > > firmware
+> > > 
+> > > vendor prefix version.
+> > 
+> > Are you saying he should use tl,version-major tl,version-minor? For
+> > bindings that are already vendor-specific we haven't (on ARM) asked for
+> > vendor prefix on properties. It doesn't mean that we should keep going
+> > down that route though, so I'm just asking for clarification for my own
+> > edification. :)
 > 
-> This patch separates the act of setting the reset handler from its
-> preparation, so the former can be implemented in a different way.
-> 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> Reviewed-by: Stephen Warren <swarren@nvidia.com>
-> ---
->  arch/arm/mach-tegra/reset.c | 27 +++++++++++++++++----------
->  1 file changed, 17 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/arm/mach-tegra/reset.c b/arch/arm/mach-tegra/reset.c
-> index fd0bbf8..e282395 100644
-> --- a/arch/arm/mach-tegra/reset.c
-> +++ b/arch/arm/mach-tegra/reset.c
-> @@ -33,26 +33,18 @@
->  
->  static bool is_enabled;
->  
-> -static void __init tegra_cpu_reset_handler_enable(void)
-> +static void __init tegra_cpu_reset_handler_set(const u32 reset_address)
->  {
-> -	void __iomem *iram_base = IO_ADDRESS(TEGRA_IRAM_RESET_BASE);
->  	void __iomem *evp_cpu_reset =
->  		IO_ADDRESS(TEGRA_EXCEPTION_VECTORS_BASE + 0x100);
->  	void __iomem *sb_ctrl = IO_ADDRESS(TEGRA_SB_BASE);
->  	u32 reg;
->  
-> -	BUG_ON(is_enabled);
-> -	BUG_ON(tegra_cpu_reset_handler_size > TEGRA_IRAM_RESET_HANDLER_SIZE);
-> -
-> -	memcpy(iram_base, (void *)__tegra_cpu_reset_handler_start,
-> -			tegra_cpu_reset_handler_size);
-> -
->  	/*
->  	 * NOTE: This must be the one and only write to the EVP CPU reset
->  	 *       vector in the entire system.
->  	 */
-> -	writel(TEGRA_IRAM_RESET_BASE + tegra_cpu_reset_handler_offset,
-> -			evp_cpu_reset);
-> +	writel(reset_address, evp_cpu_reset);
->  	wmb();
->  	reg = readl(evp_cpu_reset);
->  
-> @@ -66,6 +58,21 @@ static void __init tegra_cpu_reset_handler_enable(void)
->  		writel(reg, sb_ctrl);
->  		wmb();
->  	}
-> +}
-> +
-> +static void __init tegra_cpu_reset_handler_enable(void)
-> +{
-> +	void __iomem *iram_base = IO_ADDRESS(TEGRA_IRAM_RESET_BASE);
-> +	const u32 reset_address = TEGRA_IRAM_RESET_BASE +
-> +						tegra_cpu_reset_handler_offset;
-> +
-> +	BUG_ON(is_enabled);
-> +	BUG_ON(tegra_cpu_reset_handler_size > TEGRA_IRAM_RESET_HANDLER_SIZE);
-> +
-> +	memcpy(iram_base, (void *)__tegra_cpu_reset_handler_start,
-> +			tegra_cpu_reset_handler_size);
+> This is a good question. We should decide what the right thing (TM) is and 
+> write it down. I, on the contrary, was convinced that it's the way Kumar 
+> says.
 
-A memcpy to iomem seems suspect. Should this be memcpy_toio, or is the __iomem
-annotation misleading?
+The impression I got was that properties should be prefixed when they're
+extremely vendor-specific and could clash with a more generic property. I'm not
+sure that firmware will ever have a generic binding given the variation even in
+the set of implemented functionality.
+
+I would imagine that there are many ways different firmwares might be
+versioned, and I can't see version-major or version-minor clashing with a
+generic property we might add later. However prefixing would not be harmful, so
+I'm not opposed to it if others want that.
+
+Another option would be to support a fallback compatible list (e.g.
+"tl,trusted-foundations-${MAJOR}-${MINOR}", "tl,trusted-foundations"), and get
+versioning information from there. Given that could be painful to handle I
+don't want to force it if not required.
 
 Thanks,
 Mark.
