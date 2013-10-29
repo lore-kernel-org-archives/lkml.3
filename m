@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756320Ab3J2OAu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 10:00:50 -0400
-Received: from mail.eperm.de ([89.247.134.16]:58485 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755876Ab3J2OAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 10:00:49 -0400
-From: Stephan Mueller <smueller@chronox.de>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: sandy harris <sandyinchina@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
-Date: Tue, 29 Oct 2013 15:00:31 +0100
-Message-ID: <7861469.OAmn4h8An0@tauon>
-User-Agent: KMail/4.11.2 (Linux/3.11.6-200.fc19.x86_64; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <20131029132448.GB691@thunk.org>
-References: <2579337.FPgJGgHYdz@tauon> <3160817.9DcncHidey@tauon> <20131029132448.GB691@thunk.org>
+	id S1755497Ab3J2OFo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 10:05:44 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:56300 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751951Ab3J2OFn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 10:05:43 -0400
+X-Sasl-enc: veKdtOXv6J6WKTYQIfqZb2wMmsXeD3NfHVlykzqbZtIe 1383055541
+Message-ID: <526FC0B2.6060206@iki.fi>
+Date: Tue, 29 Oct 2013 16:05:38 +0200
+From: Pekka Enberg <penberg@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Hemant Kumar <hkshaw@linux.vnet.ibm.com>
+CC: David Ahern <dsahern@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        "hegdevasant@linux.vnet.ibm.com" <hegdevasant@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, "anton@redhat.com" <anton@redhat.com>,
+        "systemtap@sourceware.org" <systemtap@sourceware.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "aravinda@linux.vnet.ibm.com" <aravinda@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
+References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora> <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com> <20131025125921.GA29424@linux.vnet.ibm.com> <F53BA283-A194-4057-8409-27FD3ECFDF2E@iki.fi> <526A8C2B.7000401@gmail.com> <526E24EA.2040701@iki.fi> <526E9808.4030607@gmail.com> <526EB0C3.2080304@iki.fi> <526F862E.9060203@linux.vnet.ibm.com>
+In-Reply-To: <526F862E.9060203@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 29. Oktober 2013, 09:24:48 schrieb Theodore Ts'o:
+On 10/29/2013 11:55 AM, Hemant Kumar wrote:
+> 1. Where this cache should be? Keeping it in tracing directory inside 
+> the debugfs
+> directory should seem more feasible. And, shall this cache be shareable?
 
-Hi Theodore,
+You can't share all of the cache because otherwise you'll expose details 
+on binaries that not everyone has access to.
 
->On Tue, Oct 29, 2013 at 09:42:30AM +0100, Stephan Mueller wrote:
->> Based on this suggestion, I now added the tests in Appendix F.46.8
->> where I disable the caches and the tests in Appendix F.46.9 where I
->> disable the caches and interrupts.
->
->What you've added in F.46 is a good start, but as a suggestiom,
->instead of disabling one thing at a time, try disabling *everything*
->and then see what you get, and then enabling one thing at a time.  The
->best thing is if you can get to the point where the amount of entropy
->is close to zero.  Then as you add things back, there's a much better
+It might make sense to split the cache into two parts: system markers 
+and user markers and share the former.
 
-I will try to do that.
+> 2. perf record is a performance intensive process, can we allow the 
+> delay due to
+> this searching process here?
 
-But please see the different lower boundary values in the different 
-subsections of F.46: none of them fall when I disable or change anything 
-in the base system (except the power management -- where I added 
-additional analyses). Some of the changes imply that the jitter 
-increases when I disable certain support.
+I think scanning is OK if the user specified a SDT markers but not 
+otherwise.
 
-Thus, expect that we will not see a significant drop in the jitter as 
-you fear or expect.
+Perhaps you can use a bloom filter to quickly check if the user passed a 
+SDT marker or not.
 
-Yet, I will try and report back.
-
-Though, does anybody has an idea how to flush/disable branch prediction 
-on x86 (short of using an ARM where I can disable the branch prediction 
-unit with CP15)? That is the last unit that I do not have a handle on.
-
-
->sense of where the unpredictability might be coming from, and whether
->the unpredictability is coming from something which is fundamentally
->arising from something which is chaotic or quantum effect, or just
->because we don't have a good way of modelling the behavior of the
->L1/L2 cache (for example) and that is spoofing your entropy estimator.
-
-Please note: if the jitter really comes from the oscillator effect of 
-the RAM clock vs. the CPU clock (which I suspect), we will not be able 
-to alter the jitter software wise.
-
-The reason why I suspect that oscillating effect is the following: I 
-spoke with two different employees from the research departments of 
-major chip vendors. They mentioned that they see the very same jitter in 
-their measurements albeit they tried to get rid of it. So, when they 
-cannot get rid of that, I guess we will not be able to lower or even 
-eliminate the jitter significantly.
-
-Ciao
-Stephan
+                         Pekka
