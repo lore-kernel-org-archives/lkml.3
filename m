@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755682Ab3J2NEY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 09:04:24 -0400
-Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:1650
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754668Ab3J2NEW (ORCPT
+	id S1755413Ab3J2NGl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 09:06:41 -0400
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:42151 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753200Ab3J2NGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 09:04:22 -0400
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzbb2dI98dI9371I1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de097hz2fh95h839h947hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h19b6n1155h192ch)
-Date: Tue, 29 Oct 2013 14:04:06 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 29 Oct 2013 09:06:39 -0400
+Date: Tue, 29 Oct 2013 10:06:32 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 6/8] perf tools: Add new comm infrastructure
+Message-ID: <20131029130632.GJ16948@ghostprotocols.net>
+References: <871u369cq0.fsf@sejong.aot.lge.com>
+ <CAFTL4hxbfJy9Tfw2j5ptW5k5AjCBYSuf5_+7U9ShWUQaDqOpdw@mail.gmail.com>
+ <8738nl92oh.fsf@sejong.aot.lge.com>
+ <20131028101248.GA6491@localhost.localdomain>
+ <20131028124309.GE16948@ghostprotocols.net>
+ <20131028142912.GF16948@ghostprotocols.net>
+ <20131028160528.GA10452@localhost.localdomain>
+ <20131028170111.GG16948@ghostprotocols.net>
+ <20131028174843.GH16948@ghostprotocols.net>
+ <20131029092031.GC17514@localhost.localdomain>
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: Tomasz Figa <tomasz.figa@gmail.com>,
-        =?ISO-8859-1?Q?S=F6ren_Brinkma?= =?ISO-8859-1?Q?nn?= 
-	<soren.brinkmann@xilinx.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] clk/zynq/clkc: Add 'fclk-enable' feature
-References: <1381425018-5653-1-git-send-email-soren.brinkmann@xilinx.com> <1592656.1ojHcSlzVh@flatron> <b7840a0d-ac49-4c2d-beaa-9f79748c70d0@CH1EHSMHS006.ehs.local> <2028580.HhySWWnU2A@flatron> <8864256B-F8F9-4474-9B5F-416C3BB96523@codeaurora.org>
-In-Reply-To: <8864256B-F8F9-4474-9B5F-416C3BB96523@codeaurora.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-Message-ID: <ceac2f8e-30b4-415e-b8f3-f2af1270be88@DB9EHSMHS020.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131029092031.GC17514@localhost.localdomain>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2013 09:26 AM, Kumar Gala wrote:
-> 
-> On Oct 28, 2013, at 5:17 PM, Tomasz Figa wrote:
-> 
->>>>> diff --git a/Documentation/devicetree/bindings/clock/zynq-7000.txt
->>>>> b/Documentation/devicetree/bindings/clock/zynq-7000.txt index
->>>>> d99af878f5d7..11fdd146ec83 100644
->>>>> --- a/Documentation/devicetree/bindings/clock/zynq-7000.txt
->>>>> +++ b/Documentation/devicetree/bindings/clock/zynq-7000.txt
->>>>>
->>>>> @@ -22,6 +22,10 @@ Required properties:
->>>>> Optional properties:
->>>>>  - clocks : as described in the clock bindings
->>>>>  - clock-names : as described in the clock bindings
->>>>>
->>>>> + - fclk-enable : Bit mask to enable FCLKs in cases no proper CCF
->>>>
->>>> Since it's a vendor specific property, it should include vendor
->>>> prefix.
->>>
->>> The whole driver is vendor specific. Should there really be another
->>> prefix for that property?
->>
->> Yes. If a property is introduced just for use by this particular driver 
->> then it must be prepended by a vendor prefix. That's a general rule.
-> 
-> Most all nodes are vendor specific by definition ;).
+Em Tue, Oct 29, 2013 at 10:20:33AM +0100, Frederic Weisbecker escreveu:
+> On Mon, Oct 28, 2013 at 02:48:43PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Mon, Oct 28, 2013 at 02:01:11PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > > Em Mon, Oct 28, 2013 at 05:05:30PM +0100, Frederic Weisbecker escreveu:
+> > > I noticed the above, just on the --stdio tho, checking why this is so...
+> > > Can you try without --stdio, even using --tui?
 
-Is this really generic rule? I haven't seen/heard any point regarding this on KS.
+> > Thanks for this report, if you try my perf/urgent now it should be
+> > fixed, was a problem fixed by Jiri Olsa that I thought affected only
+> > perf/core.
 
-I don't think we should use prefix here. It is xilinx specific option
-but there shouldn't be any problem to use fclk-enable without any prefix.
-Because it means we have to also rename ps-clk-frequency.
+> > I cherry picked it and it fixed the problem for me, can you check that?
 
-We are using xlnx prefix for properties which are autogenerated from design tools
-which is not even this case.
+> Yep, I checked your perf/urgent queue 8e50d384cc1d5afd2989cf0f7093756ed7164eb2 and it's
+> fixed there, although I can't find the particular patch fixing this, but it works :)
 
-Thanks,
-Michal
+This is the one, by Jiri:
 
+https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/commit/?h=perf/urgent&id=9754c4f9b23d5ce6756514acdf134ad61470734a
 
+- Arnaldo
