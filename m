@@ -1,90 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab3J2Ndb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 09:33:31 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36499 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754651Ab3J2Nd3 (ORCPT
+	id S1755857Ab3J2NeP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 09:34:15 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:43239 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753200Ab3J2NeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 09:33:29 -0400
-Date: Tue, 29 Oct 2013 08:34:00 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/PATCH 1/2] usb: gadget: re-introduce gadget_is_dwc3()
-Message-ID: <20131029133400.GG2776@gimli>
-Reply-To: <balbi@ti.com>
-References: <1383009180-23236-1-git-send-email-david.a.cohen@linux.intel.com>
- <1383009180-23236-2-git-send-email-david.a.cohen@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ik0NlRzMGhMnxrMX"
-Content-Disposition: inline
-In-Reply-To: <1383009180-23236-2-git-send-email-david.a.cohen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 29 Oct 2013 09:34:14 -0400
+From: "Du, Changbin" <changbin.du@gmail.com>
+To: jbaron@akamai.com, joe@perches.com
+Cc: linux-kernel@vger.kernel.org, "Du, Changbin" <changbin.du@gmail.com>
+Subject: [PATCH v3] dynamic_debug: add wildcard support to filter files/functions/modules
+Date: Tue, 29 Oct 2013 21:33:29 +0800
+Message-Id: <1383053609-2895-1-git-send-email-changbin.du@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <CABgQ-Ti0aaxqVGF0R-huQur=EGCTyXM0w-gyz9TenC=msucJqA@mail.gmail.com>
+References: <CABgQ-Ti0aaxqVGF0R-huQur=EGCTyXM0w-gyz9TenC=msucJqA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ik0NlRzMGhMnxrMX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: "Du, Changbin" <changbin.du@gmail.com>
 
-Hi,
+This patch add wildcard '*'(matches zero or more characters) and '?'
+(matches one character) support when qurying debug flags.
 
-On Mon, Oct 28, 2013 at 06:12:59PM -0700, David Cohen wrote:
-> gadget_is_dwc3() is necessary to check whether we are running on
-> Desineware USB3 DRD controller.
->=20
-> This macro was previously removed by commit
-> ed9cbda63d45638b69ce62412e3a3c7b00644835 due to it wasn't needed
-> anymore. We're adding it again as things have changed.
->=20
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> ---
->  drivers/usb/gadget/gadget_chips.h | 1 +
->  1 file changed, 1 insertion(+)
->=20
-> diff --git a/drivers/usb/gadget/gadget_chips.h b/drivers/usb/gadget/gadge=
-t_chips.h
-> index bcd04bc..3186a5e 100644
-> --- a/drivers/usb/gadget/gadget_chips.h
-> +++ b/drivers/usb/gadget/gadget_chips.h
-> @@ -28,6 +28,7 @@
->   * do that for you.
->   */
->  #define gadget_is_at91(g)		(!strcmp("at91_udc", (g)->name))
-> +#define gadget_is_dwc3(g)		(!strcmp("dwc3-gadget", (g)->name))
+Now we can open debug messages using keywords. eg:
+1. open debug logs in all usb drivers
+    echo "file drivers/usb/* +p" > <debugfs>/dynamic_debug/control
+2.  open debug logs for usb xhci code
+    echo "file *xhci* +p" > <debugfs>/dynamic_debug/control
 
-NAK, we want to get rid of all of them, in fact. gadget drivers
-shouldn't have to know which controller they're running on, they need to
-know about quirks and features the controller supports.
+Signed-off-by: Du, Changbin <changbin.du@gmail.com>
+---
+changes since v2:
+    remove the goto statements.
+    code style issue.
+---
+ lib/dynamic_debug.c | 49 ++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 44 insertions(+), 5 deletions(-)
 
---=20
-balbi
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index c37aeac..b166d19 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -127,6 +127,43 @@ static void vpr_info_dq(const struct ddebug_query *query, const char *msg)
+ 		 query->first_lineno, query->last_lineno);
+ }
+ 
++/* check if the string matches given pattern which includes wildcards */
++static bool match_pattern(const char *pattern, const char *string)
++{
++	const char *s = string,
++		   *p = pattern;
++	bool star = 0;
++
++	while (*s) {
++		switch (*p) {
++		case '?':
++			++s, ++p;
++			break;
++		case '*':
++			star = true;
++			string = s;
++			if (!*++p)
++				return true;
++			pattern = p;;
++			break;
++		default:
++			if (*s != *p) {
++				if (!star)
++					return false;
++				string++;
++				s = string;
++				p = pattern;
++				break;
++			}
++			++s, ++p;
++		}
++	}
++
++	if (*p == '*')
++		++p;
++	return !*p;
++}
++
+ /*
+  * Search the tables for _ddebug's which match the given `query' and
+  * apply the `flags' and `mask' to them.  Returns number of matching
+@@ -147,7 +184,7 @@ static int ddebug_change(const struct ddebug_query *query,
+ 	list_for_each_entry(dt, &ddebug_tables, link) {
+ 
+ 		/* match against the module name */
+-		if (query->module && strcmp(query->module, dt->mod_name))
++		if (query->module && !match_pattern(query->module, dt->mod_name))
+ 			continue;
+ 
+ 		for (i = 0; i < dt->num_ddebugs; i++) {
+@@ -155,14 +192,16 @@ static int ddebug_change(const struct ddebug_query *query,
+ 
+ 			/* match against the source filename */
+ 			if (query->filename &&
+-			    strcmp(query->filename, dp->filename) &&
+-			    strcmp(query->filename, kbasename(dp->filename)) &&
+-			    strcmp(query->filename, trim_prefix(dp->filename)))
++			    !match_pattern(query->filename, dp->filename) &&
++			    !match_pattern(query->filename,
++					   kbasename(dp->filename)) &&
++			    !match_pattern(query->filename,
++					   trim_prefix(dp->filename)))
+ 				continue;
+ 
+ 			/* match against the function */
+ 			if (query->function &&
+-			    strcmp(query->function, dp->function))
++			    !match_pattern(query->function, dp->function))
+ 				continue;
+ 
+ 			/* match against the format */
+-- 
+1.8.1.2
 
---ik0NlRzMGhMnxrMX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSb7lIAAoJEIaOsuA1yqREn+wP/1Fm1lotvqu0VzsHi3sev984
-CFfQFUn3CPzvsxFJHxwtWFXzX/Hg1cd6Kg2EDFACTzmUfL1q2eh7UVJGCIX4g5MT
-yfjCCQkBXWbQ9IZWs0gOg84sFsybBnHoIP/W+w/bamFngBLlFa53ObitY+9PyPlV
-OnPL/Zk86XN+N75r45Oo4fNZ+5UaGNc61TLny98pRnsGDATQCFJ2FQDX7xY7ewXu
-8TfvdTkH9ci5Uh3PDmcXXG1HsUGRvYvZCh23axpO7soCZhKnGV1U5LYzIyJaK4JT
-xrF5P+/6ajVC4I8sxT4DnSLfaw9xqom79wbpx/zDC6votmqGrG8EPVF2q7fhT/QS
-D0G8zswahMLlIfpCFYrGaLGnKYrfLx1hhSJHXdM275h0aftxO0p/SBGxNoZcZypP
-jW0e1bw9Dxl2/rzOazhTsnJQ8Zkta6I7HGeTcQ8UPU1GlG3P2OR/P8DThr3I8Fp6
-v7oEcldETlukszlHvxf4Y/8+unPezcLCsSWCIy7orVxcesQdbR8fB8I5BvBp/lKJ
-8yHb7NFIBAHuz234oM+AFIocsHS5LcyvG5G/pTGH/45U02lAQ2yssNffQ6jR8ga9
-V12PVmrNRQ9UqnUHm6ydHO+Ne4oRfB4CkpT01Gb+ZCx3ypfrkgOdYxpA4ZnHU401
-nbDEgXnG6/UWSKUA1OHj
-=9gh1
------END PGP SIGNATURE-----
-
---ik0NlRzMGhMnxrMX--
