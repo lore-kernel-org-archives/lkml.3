@@ -1,118 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935Ab3J2SG1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:06:27 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:45413 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524Ab3J2SGY (ORCPT
+	id S1752463Ab3J2SFT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:05:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59299 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612Ab3J2SFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:06:24 -0400
-Date: Tue, 29 Oct 2013 19:06:19 +0100
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: mmarek@suse.cz, akpm@linux-foundation.org, joe@perches.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/checkkconfig.py: find unused Kconfig parameters
-Message-ID: <20131029180619.GC3411@free.fr>
-References: <1382592209-10246-1-git-send-email-michael.opdenacker@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1382592209-10246-1-git-send-email-michael.opdenacker@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 29 Oct 2013 14:05:15 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 01/81] ipvs: add backup_only flag to avoid loops
+Date: Tue, 29 Oct 2013 11:03:22 -0700
+Message-Id: <1383069882-11437-2-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
+References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael, All,
+3.8.13.12 -stable review patch.  If anyone has any objections, please let me know.
 
-On 2013-10-24 07:23 +0200, Michael Opdenacker spake thusly:
-> This is the first version of a script to look for
-> Kconfig parameters which are still defined but no longer
-> used in the kernel source code.
-> 
-> The script may be extended in the future to perform
-> more checks. This explains why a rather generic name was chosen.
-> 
-> Several issues have already been reported and fixed
-> thanks to the use of this script. It is time to share it now!
+------------------
 
-I'm not much of a Python guy, so I'll gleefully rely on the previous
-comments to guide you in your endeavour.
+From: Julian Anastasov <ja@ssi.bg>
 
-/me is feeling poetical, tonight! ;-)
+commit 0c12582fbcdea0cbb0dfd224e1c5f9a8428ffa18 upstream.
 
-I however have a suggestion, see below.
+Dmitry Akindinov is reporting for a problem where SYNs are looping
+between the master and backup server when the backup server is used as
+real server in DR mode and has IPVS rules to function as director.
 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> ---
->  scripts/checkkconfig.py | 131 ++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 131 insertions(+)
->  create mode 100755 scripts/checkkconfig.py
-> 
-> diff --git a/scripts/checkkconfig.py b/scripts/checkkconfig.py
-> new file mode 100755
-> index 0000000..4155656
-> --- /dev/null
-> +++ b/scripts/checkkconfig.py
-> @@ -0,0 +1,131 @@
-[--SNIP--]
-> +def count_param(param):
-> +
-> +    global source_file, bad_params_in_file
-> +
-> +    if os.path.isdir('.git'):
-> +       # Use git grep when available
-> +       count = subprocess.check_output('git grep ' + param + '| grep -v defconfig | wc -l', shell=True)
-> +    else:
-> +       # Fallback to regular grep
-> +       count = subprocess.check_output('grep -R ' + param + ' . | grep -v defconfig | wc -l', shell=True)
-> +
-> +    num = int(count.strip())
-> +
-> +    if num == 1:
-> +       'WARNING: parameter ' + param + ' is used nowhere'
-> +
-> +       file=source_file[param]
-> +
-> +       if bad_params_in_file.has_key(file):
-> +          bad_params_in_file[file].append(param)
-> +       else:
-> +	  bad_params_in_file[file]=[param]
-> +
-> +
-> +########################################################
-> +# Main program
-> +########################################################
-[--SNIP--]
-> +for param in has_select.keys():
-> +
-> +    # Progress information... running the script can take hours!
+Even when the backup function is enabled we continue to forward
+traffic and schedule new connections when the current master is using
+the backup server as real server. While this is not a problem for NAT,
+for DR and TUN method the backup server can not determine if a request
+comes from client or from director.
 
-I guess all these grep spawning are what makes it slow.
+To avoid such loops add new sysctl flag backup_only. It can be needed
+for DR/TUN setups that do not need backup and director function at the
+same time. When the backup function is enabled we stop any forwarding
+and pass the traffic to the local stack (real server mode). The flag
+disables the director function when the backup function is enabled.
 
-I wonder if it would not be possible to invert the loop (in pseudo
-Python code):
+For setups that enable backup function for some virtual services and
+director function for other virtual services there should be another
+more complex solution to support DR/TUN mode, may be to assign
+per-virtual service syncid value, so that we can differentiate the
+requests.
 
-    for f in all_interesting_files:
-        read f in memory
-        for s in all_symbols:
-            if symbol is in f:
-                remove f from all_symbols
-                break the inner-most loop
+Reported-by: Dmitry Akindinov <dimak@stalker.com>
+Tested-by: German Myzovsky <lawyer@sipnet.ru>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Simon Horman <horms@verge.net.au>
+Cc: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ Documentation/networking/ipvs-sysctl.txt |  7 +++++++
+ include/net/ip_vs.h                      | 12 ++++++++++++
+ net/netfilter/ipvs/ip_vs_core.c          | 12 ++++++++----
+ net/netfilter/ipvs/ip_vs_ctl.c           |  7 +++++++
+ 4 files changed, 34 insertions(+), 4 deletions(-)
 
-This way:
-  - you scan the tree only once
-  - as soon as a symbol is matched, it is removed, thus decreasing
-    the amount of checks done in further loops.
-
-Regards,
-Yann E. MORIN.
-
+diff --git a/Documentation/networking/ipvs-sysctl.txt b/Documentation/networking/ipvs-sysctl.txt
+index f2a2488..9573d0c 100644
+--- a/Documentation/networking/ipvs-sysctl.txt
++++ b/Documentation/networking/ipvs-sysctl.txt
+@@ -15,6 +15,13 @@ amemthresh - INTEGER
+         enabled and the variable is automatically set to 2, otherwise
+         the strategy is disabled and the variable is  set  to 1.
+ 
++backup_only - BOOLEAN
++	0 - disabled (default)
++	not 0 - enabled
++
++	If set, disable the director function while the server is
++	in backup mode to avoid packet loops for DR/TUN methods.
++
+ conntrack - BOOLEAN
+ 	0 - disabled (default)
+ 	not 0 - enabled
+diff --git a/include/net/ip_vs.h b/include/net/ip_vs.h
+index 68c69d5..fce8e6b 100644
+--- a/include/net/ip_vs.h
++++ b/include/net/ip_vs.h
+@@ -976,6 +976,7 @@ struct netns_ipvs {
+ 	int			sysctl_sync_retries;
+ 	int			sysctl_nat_icmp_send;
+ 	int			sysctl_pmtu_disc;
++	int			sysctl_backup_only;
+ 
+ 	/* ip_vs_lblc */
+ 	int			sysctl_lblc_expiration;
+@@ -1067,6 +1068,12 @@ static inline int sysctl_pmtu_disc(struct netns_ipvs *ipvs)
+ 	return ipvs->sysctl_pmtu_disc;
+ }
+ 
++static inline int sysctl_backup_only(struct netns_ipvs *ipvs)
++{
++	return ipvs->sync_state & IP_VS_STATE_BACKUP &&
++	       ipvs->sysctl_backup_only;
++}
++
+ #else
+ 
+ static inline int sysctl_sync_threshold(struct netns_ipvs *ipvs)
+@@ -1114,6 +1121,11 @@ static inline int sysctl_pmtu_disc(struct netns_ipvs *ipvs)
+ 	return 1;
+ }
+ 
++static inline int sysctl_backup_only(struct netns_ipvs *ipvs)
++{
++	return 0;
++}
++
+ #endif
+ 
+ /*
+diff --git a/net/netfilter/ipvs/ip_vs_core.c b/net/netfilter/ipvs/ip_vs_core.c
+index a9e07fe..bbbb9a1 100644
+--- a/net/netfilter/ipvs/ip_vs_core.c
++++ b/net/netfilter/ipvs/ip_vs_core.c
+@@ -1604,7 +1604,8 @@ ip_vs_in(unsigned int hooknum, struct sk_buff *skb, int af)
+ 	}
+ 	/* ipvs enabled in this netns ? */
+ 	net = skb_net(skb);
+-	if (!net_ipvs(net)->enable)
++	ipvs = net_ipvs(net);
++	if (unlikely(sysctl_backup_only(ipvs) || !ipvs->enable))
+ 		return NF_ACCEPT;
+ 
+ 	ip_vs_fill_iph_skb(af, skb, &iph);
+@@ -1690,7 +1691,6 @@ ip_vs_in(unsigned int hooknum, struct sk_buff *skb, int af)
+ 	}
+ 
+ 	IP_VS_DBG_PKT(11, af, pp, skb, 0, "Incoming packet");
+-	ipvs = net_ipvs(net);
+ 	/* Check the server status */
+ 	if (cp->dest && !(cp->dest->flags & IP_VS_DEST_F_AVAILABLE)) {
+ 		/* the destination server is not available */
+@@ -1851,13 +1851,15 @@ ip_vs_forward_icmp(unsigned int hooknum, struct sk_buff *skb,
+ {
+ 	int r;
+ 	struct net *net;
++	struct netns_ipvs *ipvs;
+ 
+ 	if (ip_hdr(skb)->protocol != IPPROTO_ICMP)
+ 		return NF_ACCEPT;
+ 
+ 	/* ipvs enabled in this netns ? */
+ 	net = skb_net(skb);
+-	if (!net_ipvs(net)->enable)
++	ipvs = net_ipvs(net);
++	if (unlikely(sysctl_backup_only(ipvs) || !ipvs->enable))
+ 		return NF_ACCEPT;
+ 
+ 	return ip_vs_in_icmp(skb, &r, hooknum);
+@@ -1871,6 +1873,7 @@ ip_vs_forward_icmp_v6(unsigned int hooknum, struct sk_buff *skb,
+ {
+ 	int r;
+ 	struct net *net;
++	struct netns_ipvs *ipvs;
+ 	struct ip_vs_iphdr iphdr;
+ 
+ 	ip_vs_fill_iph_skb(AF_INET6, skb, &iphdr);
+@@ -1879,7 +1882,8 @@ ip_vs_forward_icmp_v6(unsigned int hooknum, struct sk_buff *skb,
+ 
+ 	/* ipvs enabled in this netns ? */
+ 	net = skb_net(skb);
+-	if (!net_ipvs(net)->enable)
++	ipvs = net_ipvs(net);
++	if (unlikely(sysctl_backup_only(ipvs) || !ipvs->enable))
+ 		return NF_ACCEPT;
+ 
+ 	return ip_vs_in_icmp_v6(skb, &r, hooknum, &iphdr);
+diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+index 5f929a7..79c557d2 100644
+--- a/net/netfilter/ipvs/ip_vs_ctl.c
++++ b/net/netfilter/ipvs/ip_vs_ctl.c
+@@ -1808,6 +1808,12 @@ static struct ctl_table vs_vars[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec,
+ 	},
++	{
++		.procname	= "backup_only",
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
+ #ifdef CONFIG_IP_VS_DEBUG
+ 	{
+ 		.procname	= "debug_level",
+@@ -3742,6 +3748,7 @@ static int __net_init ip_vs_control_net_init_sysctl(struct net *net)
+ 	tbl[idx++].data = &ipvs->sysctl_nat_icmp_send;
+ 	ipvs->sysctl_pmtu_disc = 1;
+ 	tbl[idx++].data = &ipvs->sysctl_pmtu_disc;
++	tbl[idx++].data = &ipvs->sysctl_backup_only;
+ 
+ 
+ 	ipvs->sysctl_hdr = register_net_sysctl(net, "net/ipv4/vs", tbl);
 -- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+1.8.1.2
+
