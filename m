@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab3J2IQy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 04:16:54 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:57450 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752043Ab3J2IQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 04:16:52 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Wim Van Sebroeck <wim@iguana.be>
-Subject: Re: [PATCH 0/3] watchdog: dw_wdt: common clock framework and devicetree support
-Date: Tue, 29 Oct 2013 09:16:42 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Jamie Iles <jamie@jamieiles.com>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-References: <201306262003.13256.heiko@sntech.de> <20131029073255.GA19569@spo001.leaseweb.com>
-In-Reply-To: <20131029073255.GA19569@spo001.leaseweb.com>
+	id S1753280Ab3J2IRH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 04:17:07 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:65483 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753041Ab3J2IRA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 04:17:00 -0400
+Date: Tue, 29 Oct 2013 09:16:56 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Matt Fleming <matt@console-pimps.org>, Tony Luck <tony.luck@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Christoph Hellwig <hch@infradead.org>,
+        Chen Gong <gong.chen@linux.intel.com>, X86-ML <x86@kernel.org>
+Subject: Re: [PATCH] Move cper.c from drivers/acpi/apei to
+ drivers/firmware/efi
+Message-ID: <20131029081656.GC16557@gmail.com>
+References: <20131027204648.GG1982@console-pimps.org>
+ <526eb2c117027ea234@agluck-desk.sc.intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201310290916.43425.heiko@sntech.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <526eb2c117027ea234@agluck-desk.sc.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wim,
 
-Am Dienstag, 29. Oktober 2013, 08:32:55 schrieb Wim Van Sebroeck:
-> > This small series changes the dw_wdt driver, so that it is usable on
-> > machines using the common clock framework (needs the clk to be prepared)
-> > and devicetree (needs a binding).
-> > 
-> > Heiko Stuebner (3):
-> >   watchdog: dw_wdt: convert to SIMPLE_DEV_PM_OPS
-> >   watchdog: dw_wdt: use clk_prepare_enable and clk_disable_unprepare
-> >   watchdog: dw_wdt: add a devicetree binding
-> >  
-> >  .../bindings/watchdog/snps-dw-apb-wdt.txt          |   18 ++++++++++++
-> >  drivers/watchdog/dw_wdt.c                          |   31
-> >  ++++++++++++-------- 2 files changed, 36 insertions(+), 13 deletions(-)
-> >  create mode 100644
-> >  Documentation/devicetree/bindings/watchdog/snps-dw-apb-wdt.txt
+* Luck, Tony <tony.luck@intel.com> wrote:
+
+> cper.c contains code to decode and print "Common Platform Error Records".
+> Originally added under drivers/acpi/apei because the only user was in that
+> same directory - but now we have another consumer, and we shouldn't have
+> to force CONFIG_ACPI_APEI get access to this code.
 > 
-> patches 1 and 2 have been added to linux-watchdog-next.
-> Patch 3 has been replaced with Dinh Nguyen's patch (watchdog: dw: Enable OF
-> support for DW watchdog timer).
+> Since CPER is defined in the UEFI specification - the logical home for
+> this code is under drivers/firmware/efi/
+> 
+> Signed-off-by: Tony Luck <tony.luck@intel.com>
 
-cool ... totally forgot about this series.
+Looks good to me!
 
-Shared IPs-blocks are a nice thing, making stuff not depend on individual lazy 
-developers [like me this time ;-) ]
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
-
-Heiko
+	Ingo
