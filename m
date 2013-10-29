@@ -1,85 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758232Ab3J2QS7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 12:18:59 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:54337 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753033Ab3J2QS6 (ORCPT
+	id S1758274Ab3J2QU3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 12:20:29 -0400
+Received: from smtprelay0084.hostedemail.com ([216.40.44.84]:41763 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753817Ab3J2QU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 12:18:58 -0400
-Date: Tue, 29 Oct 2013 09:18:16 -0700
-From: Mark Brown <broonie@kernel.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Alex Courbot <acourbot@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Message-ID: <20131029161816.GE16686@sirena.org.uk>
-References: <20131025112224.6e5265e6@notabene.brown>
- <526A0E71.100@nvidia.com>
- <20131025183345.2b963e13@notabene.brown>
- <526E3605.9080002@nvidia.com>
- <20131028221004.3294c1ea@notabene.brown>
- <20131028235344.GB16686@sirena.org.uk>
- <20131029111037.6e59499d@notabene.brown>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lteA1dqeVaWQ9QQl"
-Content-Disposition: inline
-In-Reply-To: <20131029111037.6e59499d@notabene.brown>
-X-Cookie: Excellent day to have a rotten day.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 66.78.236.243
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: Any news on Runtime Interpreted Power Sequences
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Tue, 29 Oct 2013 12:20:27 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:2919:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3871:3872:3873:4321:4384:4389:4395:5007:7652:10004:10400:10848:11026:11232:11658:11914:12296:12517:12519:12740:13019:13069:13071:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: ants46_5af3bc51da948
+X-Filterd-Recvd-Size: 2574
+Message-ID: <1383063623.2713.12.camel@joe-AO722>
+Subject: Re: [PATCH v3] dynamic_debug: add wildcard support to filter
+ files/functions/modules
+From: Joe Perches <joe@perches.com>
+To: "Du, Changbin" <changbin.du@gmail.com>
+Cc: jbaron@akamai.com, linux-kernel@vger.kernel.org
+Date: Tue, 29 Oct 2013 09:20:23 -0700
+In-Reply-To: <1383053609-2895-1-git-send-email-changbin.du@gmail.com>
+References: <CABgQ-Ti0aaxqVGF0R-huQur=EGCTyXM0w-gyz9TenC=msucJqA@mail.gmail.com>
+	 <1383053609-2895-1-git-send-email-changbin.du@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-10-29 at 21:33 +0800, Du, Changbin wrote:
+> This patch add wildcard '*'(matches zero or more characters) and '?'
+> (matches one character) support when qurying debug flags.
 
---lteA1dqeVaWQ9QQl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi again.  Some trivial notes and a possible logic error:
 
-On Tue, Oct 29, 2013 at 11:10:37AM +1100, NeilBrown wrote:
+> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+[]
+> @@ -127,6 +127,43 @@ static void vpr_info_dq(const struct ddebug_query *query, const char *msg)
+>  		 query->first_lineno, query->last_lineno);
+>  }
+>  
+> +/* check if the string matches given pattern which includes wildcards */
+> +static bool match_pattern(const char *pattern, const char *string)
+> +{
+> +	const char *s = string,
+> +		   *p = pattern;
 
-> Yes, the device is soldered down and has a reset line that needs to be pulsed
-> low at about the same time that the MMC port enables the regulator.
+This sort of alignment is pretty unusual.
+Most kernel uses just repeat the type like:
 
-> How do you propose that I describe this?  Which driver should know about the
-> reset GPIO, how to I tell it about the GPIO, and which function should do the
-> pulsing?
+	const char *s = string;
+	const char *p = pattern;
 
-I'd expect the driver for the device to know about this, obviously
-depending on what this actually does it might want to use this at
-runtime (for example, putting the device into reset to minimise power
-while it's idle).  We really need a generic way for devices such as this
-on enumerable buses to run before the current probe() in order to allow
-them to manage their power up sequences in embedded systems, this is
-*far* from a unique situation.
+> +	bool star = 0;
 
---lteA1dqeVaWQ9QQl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+	bool star = false;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+> +
+> +	while (*s) {
+> +		switch (*p) {
+> +		case '?':
+> +			++s, ++p;
+> +			break;
+> +		case '*':
+> +			star = true;
+> +			string = s;
+> +			if (!*++p)
+> +				return true;
+> +			pattern = p;;
 
-iQIcBAEBAgAGBQJSb9/EAAoJELSic+t+oim9oLMP/jg2V5UyqiBEWhktPY5+iE0U
-xi8EQMpT4HShmUPa9LbEw9dV5MkKe2R/amXXys64fO8YLHGib4hxO2bk5zWmzDME
-s9GwriQuQ5h7HEz+bjny+G4omDPYu0PwSZsX9u2i61XqbL+gMbIM+DjeeU4Lx9kC
-sZIDRIY4BU1uhdJFIDtg+eXHv429NKYduf7VwM2w84YJgHwyslC4UzgkyE+3UMv1
-suQRbXWU2x5UXed0A7p38FU2lIXbKD5+XkF1BuVc/7utz/1g5T2MmNz9v2bA+5eF
-u5T/iuZiowzRISd5Txr/1paAG4VaDQ1UFD+Ms9vEFWfuKPbBmAKrhDp+rH71ZD+U
-4zEgQ/9+v+foufW2orY/4Occ9axRniQGh2C8F6gJ2Yo+F+X5sfqL53R7WqKQlXiL
-kklMo1+drF0XG7o92Yxdq0gWyF7t/5CqD1NdCO48g2W36d2twyB7SCqhtuFCzp60
-khzc8WByCDGW9pn6pRKmxQ0ivM5ejQiXTFdow+3zT4v9pcsA8etL+SiVu+RAeLvg
-FWlTiILY3E/iVESfmL/jIC8+glfoLlh6Mrwro5cmTZ0kh9prH/FbCU6OMDDE8FLt
-aVaSTEcDoKNRx2IRhL0T5LxnG9Wl5DuRAiWI8r2TmthwmgmhvzJTDQYt694QKEMY
-6Cuwhl6ZIJoCd4tHWwr6
-=L3us
------END PGP SIGNATURE-----
+repeated ;
+Running your patches through checkpatch should find
+this sort of defect.
 
---lteA1dqeVaWQ9QQl--
+> +			break;
+> +		default:
+> +			if (*s != *p) {
+> +				if (!star)
+> +					return false;
+> +				string++;
+> +				s = string;
+> +				p = pattern;
+> +				break;
+> +			}
+> +			++s, ++p;
+
+Maybe nicer with an if/else, I think you're still
+missing a reset of "star = false;" and I also think
+it's better to use a break here too.
+
+		if (*s == *p) {
+			s++;
+			p++;
+			star = false;
+		} else {
+			if (!star)
+				return false;
+			string++;
+			s = string;
+			p = pattern;
+		}
+		break;
+
+
+
