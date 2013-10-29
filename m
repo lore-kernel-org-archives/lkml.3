@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab3J2F4E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 01:56:04 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:60633 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978Ab3J2F4B (ORCPT
+	id S1751700Ab3J2GBB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 02:01:01 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57542 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359Ab3J2GBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 01:56:01 -0400
-Date: Tue, 29 Oct 2013 14:55:58 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/12] clocksource: sh_tmu: Add clk_prepare/unprepare
- support
-Message-ID: <20131029055558.GD11580@verge.net.au>
-References: <1383000569-8916-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
- <1383000569-8916-4-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	Tue, 29 Oct 2013 02:01:00 -0400
+Date: Mon, 28 Oct 2013 23:00:58 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] ARM: Support arch_irq_work_raise() via self IPIs
+Message-ID: <20131029060058.GD21983@codeaurora.org>
+References: <526DBEAA.4030707@linaro.org>
+ <1382984701-2371-1-git-send-email-sboyd@codeaurora.org>
+ <878uxcq1m7.fsf@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383000569-8916-4-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <878uxcq1m7.fsf@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 11:49:20PM +0100, Laurent Pinchart wrote:
-> Prepare the clock at probe time, as there is no other appropriate place
-> in the driver where we're allowed to sleep.
+On 10/28, Kevin Hilman wrote:
+> Stephen Boyd <sboyd@codeaurora.org> writes:
 > 
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-> ---
->  drivers/clocksource/sh_tmu.c | 20 +++++++++++++++++---
->  1 file changed, 17 insertions(+), 3 deletions(-)
+> > This will allow the scheduler tick to be restarted if we're in
+> > full NOHZ mode.
+> >
+> > Cc: Kevin Hilman <khilman@linaro.org>
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> 
+> Minor nit, but I'd prefer a more verbose changelog (I forget things
+> quickly and like to rely on changelogs for my memory.)  Probably worth
+> adding something like: "By default, irq_work is tied to the tick
+> processing (update_process_times()) but in full NOHZ mode, no tick means
+> no IRQ work.  In order for IRQ work to be done in full NOHZ mode, a
+> self-IPI is used to process IRQ work."
+> 
+> Other than the changelog nit, patch looks good, feel free to add
+> 
+> Reviewed-by: Kevin Hilman <khilman@linaro.org>
+> 
+> If Russell is OK with this, it can go to his patch system.
+> 
 
-Thanks Laurent,
+Fair enough. This is what I came up with. I'll send it off to the
+patch tracker in about 12 hours if nobody else has anymore
+comments.
 
-I have queued this up in the clocksources branch of my renesas tree.
-I will send a pull request to Mike once v3.13-rc1 has hit the shelves.
-Mike, please let me know if you would prefer something earlier than that.
+----8<-----
+ARM: Support arch_irq_work_raise() via self IPIs                                
+
+By default, IRQ work is run from the tick interrupt (see
+irq_work_run() in update_process_times()). When we're in full
+NOHZ mode, restarting the tick requires the use of IRQ work and
+if the only place we run IRQ work is in the tick interrupt we
+have an unbreakable cycle. Implement arch_irq_work_raise() via
+self IPIs to break this cycle and get the tick started again.
+Note that we implement this via IPIs which are only available on
+SMP builds. This shouldn't be a problem because full NOHZ is only
+supported on SMP builds anyway.
+
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Reviewed-by: Kevin Hilman <khilman@linaro.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
