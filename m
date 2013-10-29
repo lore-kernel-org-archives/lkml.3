@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab3J2SIU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:08:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59381 "EHLO
+	id S1756382Ab3J2SW3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:22:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59391 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232Ab3J2SIQ (ORCPT
+	with ESMTP id S1753527Ab3J2SIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:08:16 -0400
+	Tue, 29 Oct 2013 14:08:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>,
+Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 73/81] dm snapshot: fix data corruption
-Date: Tue, 29 Oct 2013 11:04:34 -0700
-Message-Id: <1383069882-11437-74-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 70/81] ARM: 7851/1: check for number of arguments in syscall_get/set_arguments()
+Date: Tue, 29 Oct 2013 11:04:31 -0700
+Message-Id: <1383069882-11437-71-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
@@ -28,90 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 
-commit e9c6a182649f4259db704ae15a91ac820e63b0ca upstream.
+commit 3c1532df5c1b54b5f6246cdef94eeb73a39fe43a upstream.
 
-This patch fixes a particular type of data corruption that has been
-encountered when loading a snapshot's metadata from disk.
+In ftrace_syscall_enter(),
+    syscall_get_arguments(..., 0, n, ...)
+        if (i == 0) { <handle ORIG_r0> ...; n--;}
+        memcpy(..., n * sizeof(args[0]));
+If 'number of arguments(n)' is zero and 'argument index(i)' is also zero in
+syscall_get_arguments(), none of arguments should be copied by memcpy().
+Otherwise 'n--' can be a big positive number and unexpected amount of data
+will be copied. Tracing system calls which take no argument, say sync(void),
+may hit this case and eventually make the system corrupted.
+This patch fixes the issue both in syscall_get_arguments() and
+syscall_set_arguments().
 
-When we allocate a new chunk in persistent_prepare, we increment
-ps->next_free and we make sure that it doesn't point to a metadata area
-by further incrementing it if necessary.
-
-When we load metadata from disk on device activation, ps->next_free is
-positioned after the last used data chunk. However, if this last used
-data chunk is followed by a metadata area, ps->next_free is positioned
-erroneously to the metadata area. A newly-allocated chunk is placed at
-the same location as the metadata area, resulting in data or metadata
-corruption.
-
-This patch changes the code so that ps->next_free skips the metadata
-area when metadata are loaded in function read_exceptions.
-
-The patch also moves a piece of code from persistent_prepare_exception
-to a separate function skip_metadata to avoid code duplication.
-
-CVE-2013-4299
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/dm-snap-persistent.c | 18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+ arch/arm/include/asm/syscall.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/md/dm-snap-persistent.c b/drivers/md/dm-snap-persistent.c
-index 4caa8e6..2d2b1b7 100644
---- a/drivers/md/dm-snap-persistent.c
-+++ b/drivers/md/dm-snap-persistent.c
-@@ -269,6 +269,14 @@ static chunk_t area_location(struct pstore *ps, chunk_t area)
- 	return NUM_SNAPSHOT_HDR_CHUNKS + ((ps->exceptions_per_area + 1) * area);
- }
- 
-+static void skip_metadata(struct pstore *ps)
-+{
-+	uint32_t stride = ps->exceptions_per_area + 1;
-+	chunk_t next_free = ps->next_free;
-+	if (sector_div(next_free, stride) == NUM_SNAPSHOT_HDR_CHUNKS)
-+		ps->next_free++;
-+}
-+
- /*
-  * Read or write a metadata area.  Remembering to skip the first
-  * chunk which holds the header.
-@@ -502,6 +510,8 @@ static int read_exceptions(struct pstore *ps,
- 
- 	ps->current_area--;
- 
-+	skip_metadata(ps);
-+
- 	return 0;
- }
- 
-@@ -616,8 +626,6 @@ static int persistent_prepare_exception(struct dm_exception_store *store,
- 					struct dm_exception *e)
+diff --git a/arch/arm/include/asm/syscall.h b/arch/arm/include/asm/syscall.h
+index f1d96d4..73ddd72 100644
+--- a/arch/arm/include/asm/syscall.h
++++ b/arch/arm/include/asm/syscall.h
+@@ -57,6 +57,9 @@ static inline void syscall_get_arguments(struct task_struct *task,
+ 					 unsigned int i, unsigned int n,
+ 					 unsigned long *args)
  {
- 	struct pstore *ps = get_info(store);
--	uint32_t stride;
--	chunk_t next_free;
- 	sector_t size = get_dev_size(dm_snap_cow(store->snap)->bdev);
- 
- 	/* Is there enough room ? */
-@@ -630,10 +638,8 @@ static int persistent_prepare_exception(struct dm_exception_store *store,
- 	 * Move onto the next free pending, making sure to take
- 	 * into account the location of the metadata chunks.
- 	 */
--	stride = (ps->exceptions_per_area + 1);
--	next_free = ++ps->next_free;
--	if (sector_div(next_free, stride) == 1)
--		ps->next_free++;
-+	ps->next_free++;
-+	skip_metadata(ps);
- 
- 	atomic_inc(&ps->pending_count);
- 	return 0;
++	if (n == 0)
++		return;
++
+ 	if (i + n > SYSCALL_MAX_ARGS) {
+ 		unsigned long *args_bad = args + SYSCALL_MAX_ARGS - i;
+ 		unsigned int n_bad = n + i - SYSCALL_MAX_ARGS;
+@@ -81,6 +84,9 @@ static inline void syscall_set_arguments(struct task_struct *task,
+ 					 unsigned int i, unsigned int n,
+ 					 const unsigned long *args)
+ {
++	if (n == 0)
++		return;
++
+ 	if (i + n > SYSCALL_MAX_ARGS) {
+ 		pr_warning("%s called with max args %d, handling only %d\n",
+ 			   __func__, i + n, SYSCALL_MAX_ARGS);
 -- 
 1.8.1.2
 
