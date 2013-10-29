@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab3J2SID (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:08:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59349 "EHLO
+	id S1756867Ab3J2SY2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:24:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59285 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217Ab3J2SH7 (ORCPT
+	with ESMTP id S1752228Ab3J2SFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:07:59 -0400
+	Tue, 29 Oct 2013 14:05:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Klos <honza.klos@gmail.com>, Steve French <smfrench@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 64/81] cifs: Fix inability to write files >2GB to SMB2/3 shares
-Date: Tue, 29 Oct 2013 11:04:25 -0700
-Message-Id: <1383069882-11437-65-git-send-email-kamal@canonical.com>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 13/81] i2c: omap: Clear ARDY bit twice
+Date: Tue, 29 Oct 2013 11:03:34 -0700
+Message-Id: <1383069882-11437-14-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
@@ -27,54 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Klos <honza.klos@gmail.com>
+From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 
-commit 2f6c9479633780ba4a3484bba7eba5a721a5cf20 upstream.
+commit 4cdbf7d346e7461c3b93a26707c852e2c9db3753 upstream.
 
-When connecting to SMB2/3 shares, maximum file size is set to non-LFS maximum in superblock. This is due to cap_large_files bit being different for SMB1 and SMB2/3 (where it is just an internal flag that is not negotiated and the SMB1 one corresponds to multichannel capability, so maybe LFS works correctly if server sends 0x08 flag) while capabilities are checked always for the SMB1 bit in cifs_read_super().
+Initially commit cb527ede1bf6ff2008a025606f25344b8ed7b4ac
+"i2c-omap: Double clear of ARDY status in IRQ handler"
+added a workaround for undocumented errata ProDB0017052.
+But then commit 1d7afc95946487945cc7f5019b41255b72224b70
+"i2c: omap: ack IRQ in parts" refactored code and missed
+one of ARDY clearings. So current code violates errata.
+It causes often i2c bus timeouts on my Pandaboard.
 
-The patch fixes this by checking for the correct bit according to the protocol version.
+This patch adds a second clearing in place.
 
-Signed-off-by: Jan Klos <honza.klos@gmail.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
-[ kamal: backport to 3.8 (context) ]
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/cifs/cifsfs.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/i2c/busses/i2c-omap.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
-index b9db388..e946529 100644
---- a/fs/cifs/cifsfs.c
-+++ b/fs/cifs/cifsfs.c
-@@ -120,14 +120,16 @@ cifs_read_super(struct super_block *sb)
- {
- 	struct inode *inode;
- 	struct cifs_sb_info *cifs_sb;
-+	struct cifs_tcon *tcon;
- 	int rc = 0;
- 
- 	cifs_sb = CIFS_SB(sb);
-+	tcon = cifs_sb_master_tcon(cifs_sb);
- 
- 	if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_POSIXACL)
- 		sb->s_flags |= MS_POSIXACL;
- 
--	if (cifs_sb_master_tcon(cifs_sb)->ses->capabilities & CAP_LARGE_FILES)
-+	if (tcon->ses->capabilities & tcon->ses->server->vals->cap_large_files)
- 		sb->s_maxbytes = MAX_LFS_FILESIZE;
- 	else
- 		sb->s_maxbytes = MAX_NON_LFS;
-@@ -154,7 +156,7 @@ cifs_read_super(struct super_block *sb)
- 	}
- 
- 	/* do that *after* d_make_root() - we want NULL ->d_op for root here */
--	if (cifs_sb_master_tcon(cifs_sb)->nocase)
-+	if (tcon->nocase)
- 		sb->s_d_op = &cifs_ci_dentry_ops;
- 	else
- 		sb->s_d_op = &cifs_dentry_ops;
+diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
+index 4cc2f05..6fc54cd 100644
+--- a/drivers/i2c/busses/i2c-omap.c
++++ b/drivers/i2c/busses/i2c-omap.c
+@@ -941,6 +941,9 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
+ 		/*
+ 		 * ProDB0017052: Clear ARDY bit twice
+ 		 */
++		if (stat & OMAP_I2C_STAT_ARDY)
++			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_ARDY);
++
+ 		if (stat & (OMAP_I2C_STAT_ARDY | OMAP_I2C_STAT_NACK |
+ 					OMAP_I2C_STAT_AL)) {
+ 			omap_i2c_ack_stat(dev, (OMAP_I2C_STAT_RRDY |
 -- 
 1.8.1.2
 
