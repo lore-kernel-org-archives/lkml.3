@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab3J2KMS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 06:12:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31122 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751300Ab3J2KMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 06:12:16 -0400
-Date: Tue, 29 Oct 2013 12:11:56 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Andre Przywara <andre@andrep.de>, Joerg Roedel <joro@8bytes.org>,
-        X86 ML <x86@kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 4/6] kvm, emulator: Add initial three-byte insns support
-Message-ID: <20131029101156.GX15657@redhat.com>
-References: <1379861095-628-1-git-send-email-bp@alien8.de>
- <1379861095-628-5-git-send-email-bp@alien8.de>
- <20131029095043.GV15657@redhat.com>
- <20131029100457.GC10972@pd.tnic>
+	id S1753986Ab3J2KND (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 06:13:03 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:48786 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648Ab3J2KNB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 06:13:01 -0400
+Date: Tue, 29 Oct 2013 11:12:57 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu, tglx@linutronix.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, arjan@linux.intel.com,
+        linux@roeck-us.net, linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [PATCH 1/2] x86: unify copy_from_user() size checking
+Message-ID: <20131029101257.GA25953@gmail.com>
+References: <5265056D02000078000FC4F3@nat28.tlf.novell.com>
+ <20131026103109.GC14949@gmail.com>
+ <526F914A02000078000FD806@nat28.tlf.novell.com>
+ <20131029095408.GB25306@gmail.com>
+ <526F971F02000078000FD841@nat28.tlf.novell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131029100457.GC10972@pd.tnic>
+In-Reply-To: <526F971F02000078000FD841@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 11:04:57AM +0100, Borislav Petkov wrote:
-> On Tue, Oct 29, 2013 at 11:50:43AM +0200, Gleb Natapov wrote:
-> > There are two three opcode tables, so third_opcode_byte is ambiguous.
-> 
-> Actually there's also 0F_3A and there are also other prefixes besides f0
-> and f1. Oh, and those tables are not completely full so I can imagine
-> more stuff coming in later....
-> 
-> I know what you're thinking by now, btw :-)
-> 
-:)
 
-> > What about pfx_0f_38_f0 and pfx_0f_38_f1?
-> 
-> Yeah, those make it much more explicit.
-> 
-> I wanted to keep the "three_byte" in the name in there somewhere,
-> though, so that it is clear that we're dealing with three byte opcodes
-> instead of requiring the onlooking innocent person to know the opcodes.
-> 
-> How about:
-> 
-> three_byte_0f_38_f0
-> three_byte_0f_38_f1
-> three_byte_0f_3a_50
-> ...
-> 
-> Last one is an example only.
-> 
-Looks OK to me.
+* Jan Beulich <JBeulich@suse.com> wrote:
 
-> Btw, we might want to reconsider that whole tabular representation when
-> more stuff needs to be added...
+> >>> On 29.10.13 at 10:54, Ingo Molnar <mingo@kernel.org> wrote:
 > 
-Of course. When tables will start to show their limitation we can always
-change to something else.
+> > * Jan Beulich <JBeulich@suse.com> wrote:
+> > 
+> >> >>> On 26.10.13 at 12:31, Ingo Molnar <mingo@kernel.org> wrote:
+> >> > * Jan Beulich <JBeulich@suse.com> wrote:
+> >> >> I'd like to point out though that with __compiletime_object_size()
+> >> >> being restricted to gcc before 4.6, the whole construct is going to
+> >> >> become more and more pointless going forward. I would question
+> >> >> however that commit 2fb0815c9ee6b9ac50e15dd8360ec76d9fa46a2 ("gcc4:
+> >> >> disable __compiletime_object_size for GCC 4.6+") was really necessary,
+> >> >> and instead this should have been dealt with as is done here from the
+> >> >> beginning.
+> >> > 
+> >> > Can we now revert 2fb0815c9ee6?
+> >> 
+> >> Actually I'm afraid parisc would first need to follow the changes 
+> >> done on x86 here, or else they'd run into (compile time) issues 
+> >> (s390 and tile only emit warnings, i.e. would at worst suffer 
+> >> cosmetically unless subtrees putting -Werror in place are 
+> >> affected).
+> > 
+> > Given how trivial __compiletime_object_size() is, we could replicate 
+> > a (differently named) copy of that in x86 uaccess.h?
+> 
+> I would never have dared to suggest something like that...
+> 
+> But if you're fine with that, I can certainly do so. I'd then even 
+> wonder whether we shouldn't re-use the same name,
+> #undef-ing the one we got from compiler*.h - after all the
+> goal would be for compiler-gcc4.h to change in exactly that way.
 
---
-			Gleb.
+Yeah, I think that would work.
+
+> > This is something that would be pretty platform dependent 
+> > anyway.
+> 
+> Why do you think so? That's entirely a compiler construct.
+
+Yeah, what I mean is that the progress of kernel support here is 
+done on a per platform manner anyway, the 'generic' piece in 
+compiler.h and compiler-gcc4.h is tiny and more of a hindrance than 
+a useful generalization/sharing of code...
+
+Thanks,
+
+	Ingo
