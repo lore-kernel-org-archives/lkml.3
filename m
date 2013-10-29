@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270Ab3J2SJS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:09:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59480 "EHLO
+	id S1754444Ab3J2SJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:09:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59525 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754039Ab3J2SJL (ORCPT
+	with ESMTP id S1754351Ab3J2SJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:09:11 -0400
+	Tue, 29 Oct 2013 14:09:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Salam Noureddine <noureddine@aristanetworks.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Hugh Dickins <hughd@google.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 54/81] ipv6 mcast: use in6_dev_put in timer handlers instead of __in6_dev_put
-Date: Tue, 29 Oct 2013 11:04:15 -0700
-Message-Id: <1383069882-11437-55-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 81/81] mm: fix BUG in __split_huge_page_pmd
+Date: Tue, 29 Oct 2013 11:04:42 -0700
+Message-Id: <1383069882-11437-82-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
@@ -28,50 +31,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salam Noureddine <noureddine@aristanetworks.com>
+From: Hugh Dickins <hughd@google.com>
 
-[ Upstream commit 9260d3e1013701aa814d10c8fc6a9f92bd17d643 ]
+commit 750e8165f5e87b6a142be953640eabb13a9d350a upstream.
 
-It is possible for the timer handlers to run after the call to
-ipv6_mc_down so use in6_dev_put instead of __in6_dev_put in the
-handler function in order to do proper cleanup when the refcnt
-reaches 0. Otherwise, the refcnt can reach zero without the
-inet6_dev being destroyed and we end up leaking a reference to
-the net_device and see messages like the following,
+Occasionally we hit the BUG_ON(pmd_trans_huge(*pmd)) at the end of
+__split_huge_page_pmd(): seen when doing madvise(,,MADV_DONTNEED).
 
-unregister_netdevice: waiting for eth0 to become free. Usage count = 1
+It's invalid: we don't always have down_write of mmap_sem there: a racing
+do_huge_pmd_wp_page() might have copied-on-write to another huge page
+before our split_huge_page() got the anon_vma lock.
 
-Tested on linux-3.4.43.
+Forget the BUG_ON, just go back and try again if this happens.
 
-Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/mcast.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/huge_memory.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv6/mcast.c b/net/ipv6/mcast.c
-index 79fa628..ac1b533 100644
---- a/net/ipv6/mcast.c
-+++ b/net/ipv6/mcast.c
-@@ -2155,7 +2155,7 @@ static void mld_gq_timer_expire(unsigned long data)
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index e9308d3..a057a7d 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -2740,6 +2740,7 @@ void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long address,
  
- 	idev->mc_gq_running = 0;
- 	mld_send_report(idev, NULL);
--	__in6_dev_put(idev);
-+	in6_dev_put(idev);
+ 	mmun_start = haddr;
+ 	mmun_end   = haddr + HPAGE_PMD_SIZE;
++again:
+ 	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_trans_huge(*pmd))) {
+@@ -2762,7 +2763,14 @@ void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long address,
+ 	split_huge_page(page);
+ 
+ 	put_page(page);
+-	BUG_ON(pmd_trans_huge(*pmd));
++
++	/*
++	 * We don't always have down_write of mmap_sem here: a racing
++	 * do_huge_pmd_wp_page() might have copied-on-write to another
++	 * huge page before our split_huge_page() got the anon_vma lock.
++	 */
++	if (unlikely(pmd_trans_huge(*pmd)))
++		goto again;
  }
  
- static void mld_ifc_timer_expire(unsigned long data)
-@@ -2168,7 +2168,7 @@ static void mld_ifc_timer_expire(unsigned long data)
- 		if (idev->mc_ifc_count)
- 			mld_ifc_start_timer(idev, idev->mc_maxdelay);
- 	}
--	__in6_dev_put(idev);
-+	in6_dev_put(idev);
- }
- 
- static void mld_ifc_event(struct inet6_dev *idev)
+ void split_huge_page_pmd_mm(struct mm_struct *mm, unsigned long address,
 -- 
 1.8.1.2
 
