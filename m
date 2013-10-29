@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496Ab3J2Owm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 10:52:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15398 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751971Ab3J2Owl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 10:52:41 -0400
-Subject: Re: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
-From: Mark Wielaard <mjw@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Pekka Enberg <penberg@iki.fi>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
-        anton@redhat.com, systemtap@sourceware.org,
-        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com
-In-Reply-To: <526F2949.5000208@hitachi.com>
-References: <20131023044511.1886.82571.stgit@hemant-fedora>
-	 <20131023050502.1886.15779.stgit@hemant-fedora>
-	 <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com>
-	 <526E4940.8000608@hitachi.com> <526E5BA5.7050103@iki.fi>
-	 <20131028141152.GA1040@linux.vnet.ibm.com> <526E72EC.9060400@iki.fi>
-	 <20131028173152.GB1040@linux.vnet.ibm.com> <526EA366.4020204@iki.fi>
-	 <526F2949.5000208@hitachi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 29 Oct 2013 15:51:55 +0100
-Message-ID: <1383058315.6521.3158.camel@bordewijk.wildebeest.org>
+	id S1757929Ab3J2OzT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 10:55:19 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:39492 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757500Ab3J2OzR convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
+	Tue, 29 Oct 2013 10:55:17 -0400
+Message-Id: <526FDA6102000078000FDAE2@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Tue, 29 Oct 2013 14:55:13 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "David Vrabel" <david.vrabel@citrix.com>, <Santosh.Jodh@citrix.com>,
+        "Bjorn Helgaas" <bhelgaas@google.com>, <xhejtman@ics.muni.cz>,
+        "xen-devel" <xen-devel@lists.xensource.com>,
+        <boris.ostrovsky@oracle.com>, <mukesh.rathor@oracle.com>,
+        <yuval.shaia@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [v1 1/2] xen/p2m: Create identity mappings for PFNs
+ beyound E820 and PCI BARs
+References: <1382713401-4882-1-git-send-email-konrad.wilk@oracle.com>
+ <1382713401-4882-2-git-send-email-konrad.wilk@oracle.com>
+ <CAErSpo5_DspGSffEHOqq_G0U27OdvYbiFK3QcxiZVFeRpoMaPw@mail.gmail.com>
+ <20131028165837.GH4353@phenom.dumpdata.com>
+ <526F7E9202000078000FD7A6@nat28.tlf.novell.com>
+ <20131029144559.GI20487@phenom.dumpdata.com>
+In-Reply-To: <20131029144559.GI20487@phenom.dumpdata.com>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-29 at 12:19 +0900, Masami Hiramatsu wrote:
-> (2013/10/29 2:48), Pekka Enberg wrote:
-> > For the 32-bit and 64-bit libc case, why cannot 'perf list'
-> > by default print out something like:
-> > 
-> > $ perf list
-> > 
-> >    libc:setjmp [SDT marker group]
-> > 
-> > and provide a '--fully-qualified' command line option that:
-> > 
-> > $ perf list --fully-qualified
-> > 
-> > libc:setjmp => libc32:setjmp, libc64:setjmp      [SDT marker group]
-> > libc32:setjmp => libc:setjmp@/lib/libc.so.6      [SDT marker]
-> > libc64:setjmp => libc:setjmp@/lib64/libc.so.6  [SDT marker]
-> > 
-> > and then teach 'perf trace' to deal with SDT marker groups
-> > where you trace two events, not one?
+>>> On 29.10.13 at 15:45, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Tue, Oct 29, 2013 at 08:23:30AM +0000, Jan Beulich wrote:
+>> >>> On 28.10.13 at 17:58, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>> > On Fri, Oct 25, 2013 at 04:08:19PM -0600, Bjorn Helgaas wrote:
+>> >> If you can look at PCI host bridge apertures instead of BARs, that
+>> >> would solve both problems.  Reassigning those apertures is
+>> >> theoretically possible but is not even a gleam in our eyes yet.
+>> > 
+>> > <nods> I think I have to have both (BARs and host bridge apertures) as when
+>> > we do PCI passthrough to a guest - we might do it without a bridge.
+>> 
+>> Why? Aren't the host bridge ranges necessarily a superset of the
+>> individual devices' BARs?
 > 
-> Ah, that's a good idea. :)
-> And it also is needed for another probe event because
-> sometimes inlined functions have multiple instances.
-> I'd like to fold them as one event group.
+> Yes. But when you pass in a PCI device to a PV guest you don't pass in the
+> bridge. Just the PCI device itself.
 
-A nice user case to think about when designing this interface might be
-the java hotspot jvm (libjvm.so). It has SDT markers with the same name
-that might occur at multiple addresses depending on code path taken or
-compiler optimization. And there are multiple libjvm.so variants
-depending on whether the user uses the client or server VM. And users
-often have multiple major versions installed (both 1.6 and 1.7 are
-currently being shipped by some distros and can be installed in
-parallel).
+Right you are. Which means that basing the whole logic on the
+PCI device BARs is likely wrong anyway, not just because it
+doesn't account for other MMIO ranges.
 
-Normally a user that wants to monitor say the hotspot:gc__begin SDT
-probe wants to see that probe in whatever code path it happens and in
-whatever libjvm.so happens to be running (client or server and 1.6 or
-1.7 version). But might still want to be able to specify a specific
-variant.
-
-Cheers,
-
-Mark
+Jan
 
