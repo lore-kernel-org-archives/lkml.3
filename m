@@ -1,118 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab3J2Huv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 03:50:51 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:39336 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752561Ab3J2Hut (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 03:50:49 -0400
-X-Greylist: delayed 527 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Oct 2013 03:50:48 EDT
-Date: Tue, 29 Oct 2013 08:50:28 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Guenter Roeck <groeck7@gmail.com>, Yang Wenyou <wenyou.yang@atmel.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH v5 0/4] watchdog: at91sam9_wdt: handle already configured wdt
-Message-ID: <20131029075028.GF19704@spo001.leaseweb.com>
-References: <1380871455-7324-1-git-send-email-b.brezillon@overkiz.com>
-Mime-Version: 1.0
+	id S1752257Ab3J2Hy0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 03:54:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43461 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751182Ab3J2HyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 03:54:25 -0400
+Date: Tue, 29 Oct 2013 08:56:31 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Kent Overstreet <kmo@daterainc.com>, Oleg Nesterov <oleg@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] percpu_ida: Various tweaks
+Message-ID: <20131029075630.GA23958@dhcp-26-207.brq.redhat.com>
+References: <20131028100440.GA5744@dhcp-26-207.brq.redhat.com>
+ <1382995746.19256.756.camel@haakon3.risingtidesystems.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380871455-7324-1-git-send-email-b.brezillon@overkiz.com>
-User-Agent: Mutt/1.4.1i
+In-Reply-To: <1382995746.19256.756.camel@haakon3.risingtidesystems.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+On Mon, Oct 28, 2013 at 02:29:06PM -0700, Nicholas A. Bellinger wrote:
 
-> Hello,
-> 
-> This patch series is a porposal to enhance the sam9 watchdog timer support.
-> 
-> The at91sam9 watchdog timer can only be configured once, and the current
-> implementation tries to configure it in a static way:
-> - 2 seconds timeout
-> - wdt restart every 500ms
-> 
-> If the timer has already been configured with different values, it returns an
-> error and do not create any watchdog device.
-> 
-> This is not critical if the watchdog is disabled, but if it has been enabled
-> with different timeout values it will lead to a SoC reset.
-> 
-> This patch series tries to address this issue by adapting the heartbeat value
-> according the WDT timer config:
-> - it first tries to configure the timer as requested.
-> - if it fails it fallbacks to the current config, adapting its heartbeat timer
-> to the needs
-> 
-> This patch series also move to a dynamically allocated at91wdt device instead
-> of the static instance. I'm not sure this is the best solution, so please tell
-> me if you prefer to keep static instance of watchdog.
-> 
-> It adds a new at91 wdt type: software. This new type make use of the at91 wdt
-> interrupt to trigger a software reboot.
-> 
-> Finally it adds several properties to the device tree bindings.
-> 
-> Best Regards,
-> Boris
-> 
-> Changes since v4:
->  - fix coding style issues
->  - remove unneeded watchdog_active test
-> 
-> Changes since v3:
->  - fix a bug in heartbeat time computation
->  - fix a bug in at91_wdt_set_timeout when new timeout is bigger than the old
->    one
->  - rename at91_wdt_ping into at91_wdt_start
->  - remove unneeded ping callback assignment
-> 
-> Changes since v2:
->  - fix documentation
->  - rework the heartbeat computation to get a more flexible behaviour
->  - fix xx_to_yy macros
->  - modify warning and error messages
->  - remove unneeded parenthesis in arithmetic operations
->  - use devm functions to map io memory
->  - remove unneeded devm_kfree calls
-> 
-> Change since v1:
->  - fix typo in documentaion
->  - fix irq dt definition for sama5d3 SoC
-> 
-> 
-> Boris BREZILLON (4):
->   watchdog: at91sam9_wdt: better watchdog support
->   watchdog: at91sam9_wdt: update device tree doc
->   ARM: at91/dt: add sam9 watchdog default options to SoCs
->   ARM: at91/dt: add watchdog properties to kizbox board
-> 
->  .../devicetree/bindings/watchdog/atmel-wdt.txt     |   30 +-
->  arch/arm/boot/dts/at91sam9260.dtsi                 |    5 +
->  arch/arm/boot/dts/at91sam9263.dtsi                 |    5 +
->  arch/arm/boot/dts/at91sam9g45.dtsi                 |    5 +
->  arch/arm/boot/dts/at91sam9n12.dtsi                 |    5 +
->  arch/arm/boot/dts/at91sam9x5.dtsi                  |    5 +
->  arch/arm/boot/dts/kizbox.dts                       |    6 +
->  arch/arm/boot/dts/sama5d3.dtsi                     |    5 +
->  drivers/watchdog/at91sam9_wdt.c                    |  309 ++++++++++++++------
->  9 files changed, 287 insertions(+), 88 deletions(-)
+Hi Nicholas,
 
-These 4 patches have been added to linux-watchdog-next.
+> So this series is atop Shaohua's conversion blk-mq patch to use
+> percpu_ida, right..?
 
-Kind regards,
-Wim.
+Yep.
 
+> I'll wait for Kent's feedback on these, and end-up dropping the
+> blk-mq-tag part from Patch #5 for the moment..
+
+Yeah, looking forward to try AHCI with percpu_ida.
+
+> --nab
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
