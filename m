@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757996Ab3J2Cvv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 22:51:51 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:57522 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab3J2Cvu (ORCPT
+	id S1758010Ab3J2C6N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 22:58:13 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:61179 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757424Ab3J2C6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 22:51:50 -0400
-Message-ID: <526F22C2.2070403@hitachi.com>
-Date: Tue, 29 Oct 2013 11:51:46 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 28 Oct 2013 22:58:11 -0400
+Message-ID: <526F2440.9030607@gmail.com>
+Date: Mon, 28 Oct 2013 20:58:08 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Pekka Enberg <penberg@iki.fi>, Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
-        anton@redhat.com, systemtap@sourceware.org,
-        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com
-Subject: Re: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
-References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora> <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com> <526E4940.8000608@hitachi.com> <526E5BA5.7050103@iki.fi> <20131028141152.GA1040@linux.vnet.ibm.com> <526E72EC.9060400@iki.fi> <20131028173152.GB1040@linux.vnet.ibm.com>
-In-Reply-To: <20131028173152.GB1040@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>, Gleb Natapov <gleb@redhat.com>
+CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>, yoshihiro.yunomae.ez@hitachi.com
+Subject: Re: RFC: paravirtualizing perf_clock
+References: <526DBD7F.1010807@gmail.com> <20131028131556.GN19466@laptop.lan>
+In-Reply-To: <20131028131556.GN19466@laptop.lan>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/29 2:31), Srikar Dronamraju wrote:
->>>
->>> But what if a system has both 32 bit libc and 64 bit libc?
->>> Wont we could end up with 2 libc:setjmp?
->>> Should we give some more intelligence into perf to choose the 64 bit
->>> libc over 32 bit one?
->>
->> You can just trace both of them by default, no?
->>
-> 
-> There has to be a one to one association with the event name and its
-> mapping.  Every event name will finally map to a unique inode and an
-> offset.
-> 
-> One option would be for perf to look at these markers and have a
-> different event name for similar markers in different executables. 
+On 10/28/13 7:15 AM, Peter Zijlstra wrote:
+>> Any suggestions on how to do this and without impacting performance. I
+>> noticed the MSR path seems to take about twice as long as the current
+>> implementation (which I believe results in rdtsc in the VM for x86 with
+>> stable TSC).
+>
+> So assuming all the TSCs are in fact stable; you could implement this by
+> syncing up the guest TSC to the host TSC on guest boot. I don't think
+> anything _should_ rely on the absolute TSC value.
+>
+> Of course you then also need to make sure the host and guest tsc
+> multipliers (cyc2ns) are identical, you can play games with
+> cyc2ns_offset if you're brave.
+>
 
-Or, another idea is introducing hidden event group which
-automatically merges those similar markers and shows
-as one event alias name. :)
+This and the method Gleb mentioned both are going to be complex and 
+fragile -- based assumptions on how the perf_clock timestamps are 
+generated. For example, 489223e assumes you have the tracepoint enabled 
+at VM start with some means of capturing the data (e.g., a perf-session 
+active). In both cases the end result requires piecing together and 
+re-generating the VM's timestamp on the events. For perf this means 
+either modifying the tool to take parameters and an algorithm on how to 
+modify the timestamp or a homegrown tool to regenerate the file with 
+updated timestamps.
 
-Thank you,
+To back out a bit, my end goal is to be able to create and merge 
+perf-events from any context on a KVM-based host -- guest userspace, 
+guest kernel space, host userspace and host kernel space (userspace 
+events with a perf-clock timestamp is another topic ;-)). Having the 
+events generated with the proper timestamp is the simpler approach than 
+trying to collect various tidbits of data, massage timestamps (and 
+hoping the clock source hasn't changed) and then merge events.
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+And then for the cherry on top a design that works across architectures 
+(e.g., x86 now, but arm later).
 
-
+David
