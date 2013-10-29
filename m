@@ -1,38 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab3J2T11 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 15:27:27 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:43898 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751265Ab3J2T1Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 15:27:25 -0400
-Date: Tue, 29 Oct 2013 12:27:20 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/7] kernel: use lockless list for
- smp_call_function_single
-Message-ID: <20131029192720.GA24089@infradead.org>
-References: <20131024151921.537751910@bombadil.infradead.org>
- <20131024152314.204817634@bombadil.infradead.org>
- <20131029192536.GB9568@quack.suse.cz>
+	id S1752683Ab3J2T2S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 15:28:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:55059 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751971Ab3J2T2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 15:28:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,595,1378882800"; 
+   d="scan'208";a="424756017"
+Message-ID: <52700D4C.10008@linux.intel.com>
+Date: Tue, 29 Oct 2013 12:32:28 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131029192536.GB9568@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Joe Perches <joe@perches.com>
+CC: broonie@kernel.org, ning.li@intel.com, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org, Fei Yang <fei.yang@intel.com>
+Subject: Re: [PATCH 1/2] spi: add Intel Mid SSP driver
+References: <1383069950-27754-1-git-send-email-david.a.cohen@linux.intel.com>  <1383070766.12439.13.camel@joe-AO722> <526FFED4.4070902@linux.intel.com> <1383071755.12439.17.camel@joe-AO722>
+In-Reply-To: <1383071755.12439.17.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 08:25:36PM +0100, Jan Kara wrote:
->   I'm wondering: Who's still using the normal list_head? I was grepping for
-> a while and I couldn't find any user. Otherwise the patch looks good to me.
+On 10/29/2013 11:35 AM, Joe Perches wrote:
+> On Tue, 2013-10-29 at 11:30 -0700, David Cohen wrote:
+>> Hi Joe,
+>>
+>> On 10/29/2013 11:19 AM, Joe Perches wrote:
+>>> On Tue, 2013-10-29 at 11:05 -0700, David Cohen wrote:
+>>>> This patch adds driver for ssp spi interface on Intel Mid platform.
+>>>
+>>> A few simple notes:
+>>>
+>>> Please consider using checkpatch.
+>>
+>> I did and got no warnings. But haven't used --strict option.
+>
+> Interesting.  I thought there was a return (foo);
+> statement that should have been marked, but I didn't
+> actually run checkpatch.
 
-The block/blk-softirq.c code is abusing it in a fairly ugly way.
+It seems odd checkpatch didn't catch it. I'll investigate.
 
+>
+> static inline u32 is_rx_fifo_empty(struct ssp_drv_context *sspc)
+> +{
+> +       return ((read_SSSR(sspc->ioaddr) & SSSR_RNE) == 0);
+> +}
+>
+> This could be bool too
+
+u32 seems unusual, but I'd prefer 'int' if it's fine for you.
+
+Br, David
