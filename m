@@ -1,132 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758045Ab3J2Day (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 23:30:54 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:41177 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758032Ab3J2Dat (ORCPT
+	id S1758064Ab3J2DeO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 23:34:14 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:42768 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757559Ab3J2DeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 23:30:49 -0400
+	Mon, 28 Oct 2013 23:34:13 -0400
+Message-ID: <526F2BEC.3040207@linux.vnet.ibm.com>
+Date: Tue, 29 Oct 2013 09:00:52 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20131016202123.GA17866@google.com>
-References: <CAMxnaaUim-MCDpaTiLmBqN3wfxjn9V6XE_n4SMfuO=vqeT6rVA@mail.gmail.com>
- <CAErSpo4KU9VAC=SnKuYH3EPz8NuozixAhUQBKv+=Y=76wywdTg@mail.gmail.com>
- <20131015024452.GA31951@srcf.ucam.org> <20131016202123.GA17866@google.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 28 Oct 2013 21:30:28 -0600
-Message-ID: <CAErSpo6g5vR0NMs18YZBz+6RGZd0zNeDu_=1Pk4c5a+OqHfS1g@mail.gmail.com>
-Subject: Re: [3.11.4] Thunderbolt/PCI unplug oops in pci_pme_list_scan
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Andreas Noever <andreas.noever@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Vincent Guittot <vincent.guittot@linaro.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Mike Galbraith <bitbucket@online.de>, Paul Turner <pjt@google.com>,
+        Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 1/3] sched: Fix nohz_kick_needed to consider the nr_busy
+ of the parent domain's group
+References: <20131021114002.13291.31478.stgit@drishya> <20131021114442.13291.99344.stgit@drishya> <20131022221138.GJ2490@laptop.programming.kicks-ass.net> <52679BD6.6090507@linux.vnet.ibm.com> <CAKfTPtAUFdmc7PasebNksYztMwRrWsGWPgN6JJJurddu+UP-hQ@mail.gmail.com> <5268D54A.9060604@linux.vnet.ibm.com> <20131028135043.GP19466@laptop.lan>
+In-Reply-To: <20131028135043.GP19466@laptop.lan>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102903-1618-0000-0000-000004E13A9B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 16, 2013 at 2:21 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Tue, Oct 15, 2013 at 03:44:52AM +0100, Matthew Garrett wrote:
->> On Mon, Oct 14, 2013 at 05:50:38PM -0600, Bjorn Helgaas wrote:
->> > [+cc Rafael, Mika, Kirill, linux-pci]
->> >
->> > On Mon, Oct 14, 2013 at 4:47 PM, Andreas Noever
->> > <andreas.noever@gmail.com> wrote:
->> > > When I unplug the Thunderbolt ethernet adapter on my MacBookPro Linux
->> > > crashes a few seconds later. Using
->> > > echo 1 > /sys/bus/pci/devices/0000:08:00.0/remove
->> > > to remove a bridge two levels above the device triggers the fault immediately:
->> >
->> > There have been significant changes in acpiphp related to Thunderbolt
->> > since v3.11.
+Hi Peter,
+
+On 10/28/2013 07:20 PM, Peter Zijlstra wrote:
+> On Thu, Oct 24, 2013 at 01:37:38PM +0530, Preeti U Murthy wrote:
+>>  kernel/sched/core.c  |    5 +++++
+>>  kernel/sched/fair.c  |   38 ++++++++++++++++++++------------------
+>>  kernel/sched/sched.h |    1 +
+>>  3 files changed, 26 insertions(+), 18 deletions(-)
 >>
->> Apple don't expose Thunderbolt via ACPI, so it appears as native PCIe.
->> I'd be surprised if acpiphp makes a difference here.
->
-> Yeah, you're right; I wasn't paying attention.
->
-> We save a pci_dev pointer in the pci_pme_list, which of course has a
-> longer lifetime than the pci_dev itself, but we don't acquire a reference
-> on it, so I suspect the pci_dev got released before we got around to
-> doing the pci_pme_list_scan().
->
-> Andreas, can you try the patch below?  It's against v3.12-rc2, but it
-> should apply to v3.11, too.
->
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index ad7fc72..8b0a2f3 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -1580,6 +1580,7 @@ static void pci_pme_list_scan(struct work_struct *work)
->                                 pci_pme_wakeup(pme_dev->dev, NULL);
->                         } else {
->                                 list_del(&pme_dev->list);
-> +                               pci_dev_put(pme_dev->dev);
->                                 kfree(pme_dev);
->                         }
->                 }
-> @@ -1640,7 +1641,7 @@ void pci_pme_active(struct pci_dev *dev, bool enable)
->                                           GFP_KERNEL);
->                         if (!pme_dev)
->                                 goto out;
-> -                       pme_dev->dev = dev;
-> +                       pme_dev->dev = pci_dev_get(dev);
->                         mutex_lock(&pci_pme_list_mutex);
->                         list_add(&pme_dev->list, &pci_pme_list);
->                         if (list_is_singular(&pci_pme_list))
-> @@ -1652,6 +1653,7 @@ void pci_pme_active(struct pci_dev *dev, bool enable)
->                         list_for_each_entry(pme_dev, &pci_pme_list, list) {
->                                 if (pme_dev->dev == dev) {
->                                         list_del(&pme_dev->list);
-> +                                       pci_dev_put(pme_dev->dev);
->                                         kfree(pme_dev);
->                                         break;
->                                 }
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index c06b8d3..c540392 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -5271,6 +5271,7 @@ DEFINE_PER_CPU(struct sched_domain *, sd_llc);
+>>  DEFINE_PER_CPU(int, sd_llc_size);
+>>  DEFINE_PER_CPU(int, sd_llc_id);
+>>  DEFINE_PER_CPU(struct sched_domain *, sd_numa);
+>> +DEFINE_PER_CPU(struct sched_domain *, sd_busy);
+>>  
+>>  static void update_top_cache_domain(int cpu)
+>>  {
+>> @@ -5290,6 +5291,10 @@ static void update_top_cache_domain(int cpu)
+>>  
+>>  	sd = lowest_flag_domain(cpu, SD_NUMA);
+>>  	rcu_assign_pointer(per_cpu(sd_numa, cpu), sd);
+>> +
+>> +	sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES);
+>> +	if (sd)
+>> +		rcu_assign_pointer(per_cpu(sd_busy, cpu), sd->parent);
+>>  }
+>>  
+>>  /*
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index e9c9549..f66cfd9 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -6515,16 +6515,16 @@ static inline void nohz_balance_exit_idle(int cpu)
+>>  static inline void set_cpu_sd_state_busy(void)
+>>  {
+>>  	struct sched_domain *sd;
+>> +	int cpu = smp_processor_id();
+>>  
+>>  	rcu_read_lock();
+>> +	sd = rcu_dereference(per_cpu(sd_busy, cpu));
+>>  
+>>  	if (!sd || !sd->nohz_idle)
+>>  		goto unlock;
+>>  	sd->nohz_idle = 0;
+>>  
+>> +	atomic_inc(&sd->groups->sgp->nr_busy_cpus);
+>>  unlock:
+>>  	rcu_read_unlock();
+>>  }
+>> @@ -6532,16 +6532,16 @@ unlock:
+>>  void set_cpu_sd_state_idle(void)
+>>  {
+>>  	struct sched_domain *sd;
+>> +	int cpu = smp_processor_id();
+>>  
+>>  	rcu_read_lock();
+>> +	sd = rcu_dereference(per_cpu(sd_busy, cpu));
+>>  
+>>  	if (!sd || sd->nohz_idle)
+>>  		goto unlock;
+>>  	sd->nohz_idle = 1;
+>>  
+>> +	atomic_dec(&sd->groups->sgp->nr_busy_cpus);
+>>  unlock:
+>>  	rcu_read_unlock();
+>>  }
+> 
+> Oh nice, that gets rid of the multiple atomics, and it nicely splits
+> this nohz logic into per topology groups -- now if only we could split
+> the rest too :-)
 
-The patch above covered up the problem, but is incorrect.  The topology is:
+I am sorry, I don't get you here. By the 'rest', do you refer to
+nohz_kick_needed() as below? Or am I missing something?
 
-  08:00.0 PCI bridge to [bus 09-0a] Thunderbolt Upstream Port
-  09:00.0 PCI bridge to [bus 0a]    Thunderbolt Downstream Port
-  0a:00.0 tg3 NIC
+> 
+>> @@ -6748,6 +6748,8 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+>>  {
+>>  	unsigned long now = jiffies;
+>>  	struct sched_domain *sd;
+>> +	struct sched_group_power *sgp;
+>> +	int nr_busy;
+>>  
+>>  	if (unlikely(idle_cpu(cpu)))
+>>  		return 0;
+>> @@ -6773,22 +6775,22 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+>>  		goto need_kick;
+>>  
+>>  	rcu_read_lock();
+>> +	sd = rcu_dereference(per_cpu(sd_busy, cpu));
+>>  
+>> +	if (sd) {
+>> +		sgp = sd->groups->sgp;
+>> +		nr_busy = atomic_read(&sgp->nr_busy_cpus);
+>>  
+>> +		if (nr_busy > 1)
+>>  			goto need_kick_unlock;
+>>  	}
+> 
+> OK, so far so good.
+> 
+>> +
+>> +	sd = highest_flag_domain(cpu, SD_ASYM_PACKING);
+>> +
+>> +	if (sd && (cpumask_first_and(nohz.idle_cpus_mask,
+>> +				  sched_domain_span(sd)) < cpu))
+>> +		goto need_kick_unlock;
+>> +
+>>  	rcu_read_unlock();
+>>  	return 0;
+> 
+> This again is a bit sad; most archs will not have SD_ASYM_PACKING set at
+> all; this means that they all will do a complete (and pointless) sched
+> domain tree walk here.
 
-and the sequence leading to the crash is (edited for brevity):
+There will not be a 'complete' sched domain tree walk right? The
+iteration will break at the first level of the sched domain for those
+archs which do not have SD_ASYM_PACKING set at all.
 
-  remove_store(08:00.0)
-    pci_stop_and_remove_bus_device(08:00.0)     # Upstream Port
-      pci_stop_bus_device(08:00.0)
-        pci_stop_bus_device(09:00.0)            # Downstream Port
-          pci_stop_bus_device(0a:00.0)          # tg3 device
-            pci_stop_dev(0a:00.0)
-              pci_pme_active(0a:00.0, false)    # remove from pci_pme_list
-              device_del(0a:00.0)
-                device_release_driver
-                  tg3_remove_one
-                    unregister_netdev
-                      dev->netdev_ops->ndo_stop # tg3_close
-                      tg3_close
-                        pci_wake_from_d3
-                          pci_pme_active(dev, true)     # add to pci_pme_list
-      pci_remove_bus_device(08:00.0)
-        pci_remove_bus_device(09:00.0)
-          pci_remove_bus_device(0a:00.0)
-            pci_destroy_dev(0a:00.0)
-              put_device(0a:00.0)               # drop last tg3
-pci_dev reference
-              ...
-              pci_release_dev                   # pci_dev release function
-                kfree(0a:00.0)
-  ...
-  pci_pme_list_scan
-    0a:00.0 still on list => use-after-free
+But it is true that doing a sched domain tree walk regularly is a bad
+idea, might as well update the domain with SD_ASYM_PACKING flag set once
+and query this domain when required.
 
-The patch above avoids the crash by acquiring a reference when adding
-to pci_pme_list, so when pci_destroy_dev() drops the reference, it's
-not the *last* reference, so the pci_dev is not released.
+I will send out the patch with sd_asym domain introduced rather than the
+above.
 
-The problem is that the reference acquired when we add to pci_pme_list
-will *never* be dropped, so we leaked the pci_dev.
+Thanks
 
-Bjorn
+Regards
+Preeti U Murthy
+
+> 
+> It would be much better to also introduce sd_asym and do the analogous
+> thing to the new sd_busy.
+> 
+
