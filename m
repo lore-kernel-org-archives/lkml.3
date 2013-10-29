@@ -1,146 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab3J2LYG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 07:24:06 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:58589 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab3J2LYE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 07:24:04 -0400
+	id S1754534Ab3J2L2c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 07:28:32 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55694 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751237Ab3J2L2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 07:28:30 -0400
+Date: Tue, 29 Oct 2013 12:28:24 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Andre Przywara <andre@andrep.de>, Joerg Roedel <joro@8bytes.org>,
+        X86 ML <x86@kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 0/6] kvm: Emulate MOVBE, v3
+Message-ID: <20131029112824.GD10972@pd.tnic>
+References: <1379861095-628-1-git-send-email-bp@alien8.de>
+ <20131029095300.GW15657@redhat.com>
+ <20131029103003.GA10977@pd.tnic>
+ <20131029103524.GZ15657@redhat.com>
 MIME-Version: 1.0
-Date: Tue, 29 Oct 2013 19:24:02 +0800
-Message-ID: <CAGdX0WFXXhV9sb8Uxjfpizz3xLDBMoUrWBsjubOW6S2pN7Q_kw@mail.gmail.com>
-Subject: [ANNOUNCE] ktap 0.3 released
-From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-To: ktap@freelists.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131029103524.GZ15657@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear,
+On Tue, Oct 29, 2013 at 12:35:24PM +0200, Gleb Natapov wrote:
+> If everything still applies patch 4 resend should be fine.
 
-I'm pleased to announce that ktap released v0.3, the archive is available at:
+Which tree should they still apply to?
 
-        https://github.com/ktap/ktap/archive/v0.3.tar.gz
+> Yeah, kvm forum was not at the same building as LinuxCon :(
 
+Yep, I know. We did go to the kvm forum to use the wifi there because
+the wifi at the conf was awful, as it is always the case at such
+high-count events :)
 
-= what's ktap?
+-- 
+Regards/Gruss,
+    Boris.
 
-   A New Script-based Dynamic Tracing Tool For Linux
-
-   ktap have different design principles from Linux mainstream dynamic
-   tracing language in that it's based on bytecode, so it doesn't
-   depend upon GCC, doesn't require compiling kernel module for each
-   script, safe to use in production environment, fulfilling the embedded
-   ecosystem's tracing needs.
-
-   ktap is released as GPL license.
-
-   More information can be found at ktap/doc directory.
-
-   Website: www.ktap.org
-
-= Highlight features
-
-   - support tracepoints, k(ret)probe, u(ret)probe, timer, function
-     tracing, etc.
-   - support x86, x86-64, powerpc, arm, and preempt-rt kernel.
-   - support kernel 3.1 and later versions, include Linux mainline.
-
-= Highlight changes from v0.2
-
-   * New website for ktap: www.ktap.org
-
-   * Tutorial: http://www.ktap.org/doc/tutorial.html
-
-   * Wiki: https://github.com/ktap/ktap/wiki
-
-   * simple new tracing block syntax
-         trace EVENTDEF { action }
-         trace_end { action }
-
-   * New event tracing keywords: argevent, argname, arg1..arg9
-         trace "syscalls:*" function () {
-             print(argevent)
-         }
-
-   * New timer block syntax
-         tick-N { action }
-         profile-N { action }
-
-   * Basic aggregation support
-         It's similar with systemtap, use "<<<" operator
-         support aggregate function: count, sum, avg, max, min
-
-   * Introduce new "+=" operator
-
-   * Introduce sort_paris for table sort iteration
-
-   * New sample scripts
-         helloworld.kp
-         syscalls/sctop.kp
-         profiling/stack_profile.kp
-         io/traceio.kp
-         mem/kmalloc-top.kp
-         syscalls/errinfo.kp
-         schedule/schedtimes.kp
-         game/tetris.kp
-
-   * ansi library for sending ANSI escape sequences
-
-   * statistics of ktapvm
-   * Big cleanups and lots of bugfix
-
-= Source code
-
-   Please get latest code from:
-   https://github.com/ktap/ktap.git
-
-= Building & Running
-
-   [root@jovi]# git clone https://github.com/ktap/ktap.git
-
-   [root@jovi]# cd ktap
-   [root@jovi]# make    #generate ktapvm kernel module and ktap binary
-
-   [root@jovi]# insmod ./ktapvm.ko
-   [root@jovi]# ./ktap helloworld.kp
-
-= Samples scripts
-
-   There have many samples scripts in README and ktap/scripts/.
-
-   #ls scripts/
-   ansi   game           interrupt  mem        schedule  tracepoints
-   basic  helloworld.kp  io         profiling  syscalls  userspace
-
-   Totally 29 sample scripts.
-
-= Documentation
-
-   Documentation is in ktap/doc/, also can read from website:
-   http://www.ktap.org/doc/tutorial.html
-
-= Mailing list
-
-   ktap@freelists.org
-   You can subscribe ktap mailing list at link:
-   http://www.freelists.org/list/ktap
-
-= Feedback
-
-   ktap is still under active development, so any feedback, bug
-   reports, patches, feature requests, as always, is welcome.
-
-= Contributors for this release
-
-   Thanks all contributors for this release.
-
-   Alen Skondro, Brandon Philips, Greg Kroah-Hartman, Jovi Zhangwei,
-   Qingping Hou, Stanislav Fomichev, Tadaki SAKAI, Yegor Yefremov,
-   Yicheng Qin.
-
-
-Jovi
+Sent from a fat crate under my desk. Formatting is fine.
+--
