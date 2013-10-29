@@ -1,74 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab3J2NHK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 09:07:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55977 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab3J2NHI (ORCPT
+	id S1755776Ab3J2NH1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 09:07:27 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:37789 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab3J2NHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 09:07:08 -0400
-Date: Tue, 29 Oct 2013 14:07:00 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Huacai Chen <chenhc@lemote.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] genirq: Avoid NULL OOPS in irq handling
-In-Reply-To: <1380334284-12690-1-git-send-email-chenhc@lemote.com>
-Message-ID: <alpine.DEB.2.02.1310291402490.8257@ionos.tec.linutronix.de>
-References: <1380334284-12690-1-git-send-email-chenhc@lemote.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 29 Oct 2013 09:07:21 -0400
+Date: Tue, 29 Oct 2013 09:07:12 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Message-ID: <20131029130712.GA25078@neilslaptop.think-freely.org>
+References: <20131017084121.GC22705@gmail.com>
+ <20131028160131.GA31048@hmsreliant.think-freely.org>
+ <20131028162438.GB14350@gmail.com>
+ <20131028174630.GB31048@hmsreliant.think-freely.org>
+ <20131028182913.GD31048@hmsreliant.think-freely.org>
+ <20131029082542.GA24625@gmail.com>
+ <20131029112022.GA24477@neilslaptop.think-freely.org>
+ <20131029113031.GA16897@gmail.com>
+ <20131029114907.GE24477@neilslaptop.think-freely.org>
+ <20131029125233.GA17449@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131029125233.GA17449@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Sep 2013, Huacai Chen wrote:
-
-> Some devices (e.g. serial port) setup irq handler at dev open and free
-> it at dev close. So, sometimes there is no irqaction for a specific
-> irq. But some buggy devices may send irqs at any time. This patch avoid
-> the NULL OOPS when irqaction isn't registered.
-
-All callers except the real per cpu interrupts are checking whether
-there is a valid action before calling. And serial ports are not
-routed to real per cpu interrupts. Can you provide more detailed
-information about the problem you are trying to solve please?
-
-Thanks,
-
-	tglx
-
-> Signed-off-by: Huacai Chen <chenhc@lemote.com>
-> ---
->  kernel/irq/handle.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
+On Tue, Oct 29, 2013 at 01:52:33PM +0100, Ingo Molnar wrote:
 > 
-> diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
-> index 131ca17..1c78e69 100644
-> --- a/kernel/irq/handle.c
-> +++ b/kernel/irq/handle.c
-> @@ -135,6 +135,9 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
->  	irqreturn_t retval = IRQ_NONE;
->  	unsigned int flags = 0, irq = desc->irq_data.irq;
->  
-> +	if (!action)
-> +		goto out;
-> +
->  	do {
->  		irqreturn_t res;
->  
-> @@ -174,6 +177,7 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
->  
->  	add_interrupt_randomness(irq, flags);
->  
-> +out:
->  	if (!noirqdebug)
->  		note_interrupt(irq, desc, retval);
->  	return retval;
-> -- 
-> 1.7.7.3
+> * Neil Horman <nhorman@tuxdriver.com> wrote:
 > 
+> > On Tue, Oct 29, 2013 at 12:30:31PM +0100, Ingo Molnar wrote:
+> > > 
+> > > * Neil Horman <nhorman@tuxdriver.com> wrote:
+> > > 
+> > > > Sure it was this:
+> > > > for i in `seq 0 1 3`
+> > > > do
+> > > > echo $i > /sys/module/csum_test/parameters/module_test_mode
+> > > > taskset -c 0 perf stat --repeat 20 -C 0 -ddd perf bench sched messaging -- /root/test.sh
+> > > > done >> counters.txt 2>&1
+> > > > 
+> > > > where test.sh is:
+> > > > #!/bin/sh
+> > > > echo 1 > /sys/module/csum_test/parameters/test_fire
+> > > 
+> > > What does '-- /root/test.sh' do?
+> > > 
+> > > Unless I'm missing something, the line above will run:
+> > > 
+> > >   perf bench sched messaging -- /root/test.sh
+> > > 
+> > > which should be equivalent to:
+> > > 
+> > >   perf bench sched messaging
+> > > 
+> > > i.e. /root/test.sh won't be run.
+> > 
+> > According to the perf man page, I'm supposed to be able to use -- 
+> > to separate perf command line parameters from the command I want 
+> > to run.  And it definately executed test.sh, I added an echo to 
+> > stdout in there as a test run and observed them get captured in 
+> > counters.txt
+> 
+> Well, '--' can be used to delineate the command portion for cases 
+> where it's ambiguous.
+> 
+> Here's it's unambiguous though. This:
+> 
+>   perf stat --repeat 20 -C 0 -ddd perf bench sched messaging -- /root/test.sh
+> 
+> stops parsing a valid option after the -ddd option, so in theory it 
+> should execute 'perf bench sched messaging -- /root/test.sh' where 
+> '-- /root/test.sh' is simply a parameter to 'perf bench' and is thus 
+> ignored.
+> 
+> The message output you provided seems to suggest that to be the 
+> case:
+> 
+>  Performance counter stats for 'perf bench sched messaging -- bash -c echo 1 > /sys/module/csum_test/parameters/test_fire' (20 runs):
+> 
+> See how the command executed by perf stat was 'perf bench ...'.
+> 
+> Did you want to run:
+> 
+>   perf stat --repeat 20 -C 0 -ddd /root/test.sh
+> 
+I'm sure it worked properly on my system here, I specificially checked it, but
+I'll gladly run it again.  You have to give me an hour as I have a meeting to
+run to, but I'll have results shortly.
+Neil
+
+> ?
+> 
+> Thanks,
+> 
+> 	Ingo
 > 
