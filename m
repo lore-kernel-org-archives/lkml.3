@@ -1,122 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab3J2M1T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 08:27:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54756 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752620Ab3J2M1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 08:27:18 -0400
-Date: Tue, 29 Oct 2013 12:27:08 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Zhang Mingjun <zhang.mingjun@linaro.org>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, akpm@linux-foundation.org,
-        Haojian Zhuang <haojian.zhuang@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, troy.zhangmingjun@huawei.com
-Subject: Re: [PATCH] mm: cma: free cma page to buddy instead of being cpu hot
- page
-Message-ID: <20131029122708.GD2400@suse.de>
-References: <1382960569-6564-1-git-send-email-zhang.mingjun@linaro.org>
- <20131029093322.GA2400@suse.de>
- <CAGT3LergVJ1XXCrVD3XeRpRCXehn9gLb7BRHHyjyseKBz39pMg@mail.gmail.com>
+	id S1754773Ab3J2Md0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 08:33:26 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:5105
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752620Ab3J2MdY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 08:33:24 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(zz154dIzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
+From: Nicolin Chen <b42378@freescale.com>
+To: <timur@tabi.org>, <shawn.guo@linaro.org>, <broonie@kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <dmaengine@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <alsa-devel@alsa-project.org>, <rob.herring@calxeda.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>, <pawel.moll@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <s.hauer@pengutronix.de>,
+        <b32955@freescale.com>
+Subject: [PATCH 0/3] Add dual-fifo mode support of i.MX ssi
+Date: Tue, 29 Oct 2013 20:33:14 +0800
+Message-ID: <cover.1383047327.git.b42378@freescale.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <CAGT3LergVJ1XXCrVD3XeRpRCXehn9gLb7BRHHyjyseKBz39pMg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 07:49:30PM +0800, Zhang Mingjun wrote:
-> On Tue, Oct 29, 2013 at 5:33 PM, Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > On Mon, Oct 28, 2013 at 07:42:49PM +0800, zhang.mingjun@linaro.org wrote:
-> > > From: Mingjun Zhang <troy.zhangmingjun@linaro.org>
-> > >
-> > > free_contig_range frees cma pages one by one and MIGRATE_CMA pages will
-> > be
-> > > used as MIGRATE_MOVEABLE pages in the pcp list, it causes unnecessary
-> > > migration action when these pages reused by CMA.
-> > >
-> > > Signed-off-by: Mingjun Zhang <troy.zhangmingjun@linaro.org>
-> > > ---
-> > >  mm/page_alloc.c |    3 ++-
-> > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > >
-> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > > index 0ee638f..84b9d84 100644
-> > > --- a/mm/page_alloc.c
-> > > +++ b/mm/page_alloc.c
-> > > @@ -1362,7 +1362,8 @@ void free_hot_cold_page(struct page *page, int
-> > cold)
-> > >        * excessively into the page allocator
-> > >        */
-> > >       if (migratetype >= MIGRATE_PCPTYPES) {
-> > > -             if (unlikely(is_migrate_isolate(migratetype))) {
-> > > +             if (unlikely(is_migrate_isolate(migratetype))
-> > > +                     || is_migrate_cma(migratetype))
-> > >                       free_one_page(zone, page, 0, migratetype);
-> > >                       goto out;
-> >
-> > This slightly impacts the page allocator free path for a marginal gain
-> > on CMA which are relatively rare allocations. There is no obvious
-> > benefit to this patch as I expect CMA allocations to flush the PCP lists
-> >
-> how about keeping the migrate type of CMA page block as MIGRATE_ISOLATED
-> after
-> the alloc_contig_range , and undo_isolate_page_range at the end of
-> free_contig_range?
+Changelog
+v1:
+ * SSI can reduce hardware overrun/underrun possibility when using dual
+ * fifo mode. To support this mode, we need to first update sdma sciprt
+ * list, and then enable dual fifo BIT in SSI driver, and last update DT
+ * bindings of i.MX series.
+ *
+ * ! This series of patches has a direct dependency between them. When
+ * ! applying them, we need to apply in one single branch. Otherwise,
+ * ! it would break currect branches.
 
-It would move the cost to the CMA paths so I would complain less. Bear
-in mind as well that forcing everything to go through free_one_page()
-means that every free goes through the zone lock. I doubt you have any
-machine large enough but it is possible for simultaneous CMA allocations
-to now contend on the zone lock that would have been previously fine.
-Hence, I'm interesting in knowing the underlying cause of the problem you
-are experiencing.
+Nicolin Chen (3):
+  dma: imx-sdma: Add ssi dual fifo script support
+  ASoC: fsl_ssi: Add dual fifo mode support
+  ARM: dts: imx: use dual-fifo sdma script for ssi
 
-> of course, it will waste the memory outside of the alloc range but in the
-> pageblocks.
-> 
-
-I would hope/expect that the loss would only last for the duration of
-the allocation attempt and a small amount of memory.
-
-> > when a range of pages have been isolated and migrated. Is there any
-> > measurable benefit to this patch?
-> >
-> after applying this patch, the video player on my platform works more
-> fluent,
-
-fluent almost always refers to ones command of a spoken language. I do
-not see how a video player can be fluent in anything. What is measurably
-better?
-
-For example, are allocations faster? If so, why? What cost from another
-path is removed as a result of this patch? If the cost is in the PCP
-flush then can it be checked if the PCP flush was unnecessary and called
-unconditionally even though all the pages were freed already? We had
-problems in the past where drain_all_pages() or similar were called
-unnecessarily causing long sync stalls related to IPIs. I'm wondering if
-we are seeing a similar problem here.
-
-Maybe the problem is the complete opposite. Are allocations failing
-because there are PCP pages in the way? In that case, it real fix might
-be to insert a PCP flush if the allocation is failing due to per-cpu
-pages.
-
-> and the driver of video decoder on my test platform using cma alloc/free
-> frequently.
-> 
-
-CMA allocations are almost never used outside of these contexts. While I
-appreciate that embedded use is important I'm reluctant to see an impact
-in fast paths unless there is a good reason for every other use case. I
-also am a bit unhappy to see CMA allocations making the zone->lock
-hotter than necessary even if no embedded use case it likely to
-experience the problem in the short-term.
+ .../devicetree/bindings/dma/fsl-imx-sdma.txt       |  1 +
+ arch/arm/boot/dts/imx51.dtsi                       |  4 ++--
+ arch/arm/boot/dts/imx53.dtsi                       |  4 ++--
+ arch/arm/boot/dts/imx6qdl.dtsi                     | 12 +++++------
+ arch/arm/boot/dts/imx6sl.dtsi                      | 12 +++++------
+ drivers/dma/imx-sdma.c                             |  6 +++++-
+ include/linux/platform_data/dma-imx-sdma.h         |  2 ++
+ include/linux/platform_data/dma-imx.h              |  1 +
+ sound/soc/fsl/fsl_ssi.c                            | 24 +++++++++++++++++++++-
+ 9 files changed, 48 insertions(+), 18 deletions(-)
 
 -- 
-Mel Gorman
-SUSE Labs
+1.8.4
+
+
