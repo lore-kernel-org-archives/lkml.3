@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752378Ab3J2Xy3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 19:54:29 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:54097 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab3J2Xy1 (ORCPT
+	id S1752658Ab3J2Xys (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 19:54:48 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:39191 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986Ab3J2Xyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 19:54:27 -0400
+	Tue, 29 Oct 2013 19:54:46 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Sebastian Reichel <sre@ring0.de>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, mturquette@linaro.org,
+        linux@arm.linux.org.uk, jiada_wang@mentor.com,
+        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH v7 1/5] omap3isp: Modify clocks registration to avoid circular references
+Date: Wed, 30 Oct 2013 00:55:06 +0100
+Message-ID: <15201376.PVPE5NrGdO@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.10.7-gentoo-r1; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20131029232837.GB2266@earth.universe>
+References: <1383076268-8984-1-git-send-email-s.nawrocki@samsung.com> <16467881.81yEf9zq68@avalon> <20131029232837.GB2266@earth.universe>
 MIME-Version: 1.0
-In-Reply-To: <2743817.FMScy6kurY@vostro.rjw.lan>
-References: <1383075705.22833.18.camel@x220.thuisdomein>
-	<52702170.7080003@intel.com>
-	<CA+5PVA7tvmqsF4=n84jnB3YOM50pq8wkQN9S8EL06FnGD-DoYA@mail.gmail.com>
-	<2743817.FMScy6kurY@vostro.rjw.lan>
-Date: Tue, 29 Oct 2013 19:54:26 -0400
-X-Google-Sender-Auth: LPxUJr33eo0M8_6SKOgXoeV25Ig
-Message-ID: <CA+5PVA6dUmPgtxmyF3FXNYqP5E7=0GfXHR-AVybNsSN2AU4W2Q@mail.gmail.com>
-Subject: Re: Revert 9745cdb36da83aeec198650b410ca06304cf792 ("select: use
- freezable blocking call")?
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Paul Bolle <pebolle@tiscali.nl>, Colin Cross <ccross@android.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Tejun Heo <tj@kernel.org>,
-        linux-fsdevel@vger.kernel.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; boundary="nextPart24267327.NWieDcb5ZA"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 7:59 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Tuesday, October 29, 2013 07:39:23 PM Josh Boyer wrote:
->> On Tue, Oct 29, 2013 at 4:58 PM, Rafael J. Wysocki
->> <rafael.j.wysocki@intel.com> wrote:
->> > On 10/29/2013 8:41 PM, Paul Bolle wrote:
->> >>
->> >> 0) Summary: ever since I tried running (release candidates of) v3.11 on
->> >> the two working i686s I still have lying around I ran into issues on
->> >> resuming from suspend. Reverting 9745cdb36da83aeec198650b410ca06304cf792
->> >> ("select: use freezable blocking call") resolves those issues.
->> >>
->> >> 1) Resuming from suspend on i686 on (release candidates of) v3.11 and
->> >> later triggers issues like:
->> >>      traps: systemd[1] general protection ip:b738e490 sp:bf882fc0 error:0
->> >> in libc-2.16.so[b731c000+1b0000]
->> >>
->> >> and
->> >>      traps: rtkit-daemon[552] general protection ip:804d6e5 sp:b6cb32f0
->> >> error:0 in rtkit-daemon[8048000+d000]
->> >>
->> >> Once I hit the systemd error I can only get out of the mess that the
->> >> system is at that point by power cycling it.
->> >>
->> >> 2) I bisected that issue to commit
->> >> 9745cdb36da83aeec198650b410ca06304cf792 ("select: use freezable blocking
->> >> call"). The, rather impressive, bisect log is pasted at the end of this
->> >> message. It took 23 builds to pinpoint this issue in the v3.10..v3.11
->> >> range! Sadly, I have no clue why that commit triggers this issue.
->> >>
->> >> 3) Reverting that commit on top of v3.12-rc7 gets me a system that
->> >> resumes without issues. (That revert needed one trivial context change.
->> >> Note that I haven't actually tried v3.12-rc7 plain. But v3.12-rc6 and
->> >> earlier also had this issue, so I'm sure the revert did the trick for
->> >> v3.12-rc7.)
->> >>
->> >> 4) Should this commit be reverted? Or is there a better fix?
->> >
->> >
->> > In short, yes, it should.
->> >
->> > I've already queued up a revert of something very similar and I'm going to
->> > revert this one too.
->>
->> To be clear, that's queued for 3.12 which is releasing really soon
->> now.  Is that correct?
->
-> Yes, it is.  I'm going to send a pull request with that tomorrow if all goes
-> well.
 
-Excellent.  Thanks for confirming.
+--nextPart24267327.NWieDcb5ZA
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-josh
+Hi Sebastian,
+
+On Wednesday 30 October 2013 00:28:39 Sebastian Reichel wrote:
+> On Tue, Oct 29, 2013 at 11:28:37PM +0100, Laurent Pinchart wrote:
+> > On Tuesday 29 October 2013 20:51:04 Sylwester Nawrocki wrote:
+> > > The clock core code is going to be modified so clk_get() takes
+> > > reference on the clock provider module. Until the potential circular
+> > > reference issue is properly addressed, we pass NULL as as the first
+> > > argument to clk_register(), in order to disallow sub-devices taking
+> > > a reference on the ISP module back trough clk_get(). This should
+> > > prevent locking the modules in memory.
+> > > 
+> > > Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > > Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> > > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > 
+> > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > 
+> > Do you plan to push this to mainline as part of this patch series ? I
+> > don't have pending patches for the omap3isp that would conflict with this
+> > patch, so that would be fine with me.
+> 
+> I plan to add support for DT to omap3isp + ADP1653 shortly. I have
+> not yet started to work on this, but expect to send some first RFC
+> patches in November.
+
+That's very nice to hear ! And thanks for the heads up, I would have started 
+working on it shortly.
+
+-- 
+Regards,
+
+Laurent Pinchart
+
+--nextPart24267327.NWieDcb5ZA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQEcBAABAgAGBQJScErfAAoJEIkPb2GL7hl1IekH/0CY1YWUNcUAQpUr0aeJoBOl
+1zcvSIjk2nF0jgf+ayjndSr16epbblODJh5aFcYz+VCweP/aA+xArg5p6tmDO4f9
+Ijk76QN6GjdsiEMvRYnARqysDJEFPvepurpQDrN3YNFmH56tsFytCzBGSzA4qIQy
+4+ouLUFz6q8lOkSZ39F51NYOOw8XyX66y2XfV99psUEnUlaOyizyxocDmmRxUg2s
+9gq6I7TFNTgipo9zbGKxCCwGbxacUPnc2cEg7SuGQuHitwkPSL9yTbNoScKDwoeb
+tTUtPKN9JZzeGmbtvHPPt8GILQsejskvW3Iaj5lp8Tvr8hoOqd8AaesTfha6P6U=
+=dhkA
+-----END PGP SIGNATURE-----
+
+--nextPart24267327.NWieDcb5ZA--
+
