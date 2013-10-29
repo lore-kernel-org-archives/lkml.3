@@ -1,91 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246Ab3J2Xuy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 19:50:54 -0400
-Received: from mout.gmx.net ([212.227.17.20]:53439 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752059Ab3J2Xuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 19:50:52 -0400
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: [PATCH] tpm/tpm_i2c_stm_st33: Check return code of get_burstcount (fix CID: 986658)
-Date: Wed, 30 Oct 2013 00:54:20 +0100
-Message-Id: <1383090860-15901-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-X-Provags-ID: V03:K0:iBUnQNmCpQiL4ACz7Q3Rx6M8UEu/X+Lku+6s8BZ7aXsLX2oEAMp
- /7LVV4bzoaNYOwk9mu43JWlpw02b4rINpzt8vH2Oks8FrZmpFvtlbmNTI4PXecBGdytUYBV
- OrhneKT4RRXaMipL2hvjbF9EdHep97bOXYbri+MB6Glfee4nXWMyuR/rs2Fe3QNrARrELej
- CwRmsmVl7+dvqX53RXTvA==
+	id S1752378Ab3J2Xy3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 19:54:29 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:54097 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab3J2Xy1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 19:54:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <2743817.FMScy6kurY@vostro.rjw.lan>
+References: <1383075705.22833.18.camel@x220.thuisdomein>
+	<52702170.7080003@intel.com>
+	<CA+5PVA7tvmqsF4=n84jnB3YOM50pq8wkQN9S8EL06FnGD-DoYA@mail.gmail.com>
+	<2743817.FMScy6kurY@vostro.rjw.lan>
+Date: Tue, 29 Oct 2013 19:54:26 -0400
+X-Google-Sender-Auth: LPxUJr33eo0M8_6SKOgXoeV25Ig
+Message-ID: <CA+5PVA6dUmPgtxmyF3FXNYqP5E7=0GfXHR-AVybNsSN2AU4W2Q@mail.gmail.com>
+Subject: Re: Revert 9745cdb36da83aeec198650b410ca06304cf792 ("select: use
+ freezable blocking call")?
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Paul Bolle <pebolle@tiscali.nl>, Colin Cross <ccross@android.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Tejun Heo <tj@kernel.org>,
+        linux-fsdevel@vger.kernel.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Coverity complains about
-"Improper use of negative value
-The negative value may be unexpected by later operations, causing
-incorrect computations.
-In tpm_stm_i2c_send: Negative value can be returned from function is not
-being checked before being used improperly (CWE-394)"
+On Tue, Oct 29, 2013 at 7:59 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Tuesday, October 29, 2013 07:39:23 PM Josh Boyer wrote:
+>> On Tue, Oct 29, 2013 at 4:58 PM, Rafael J. Wysocki
+>> <rafael.j.wysocki@intel.com> wrote:
+>> > On 10/29/2013 8:41 PM, Paul Bolle wrote:
+>> >>
+>> >> 0) Summary: ever since I tried running (release candidates of) v3.11 on
+>> >> the two working i686s I still have lying around I ran into issues on
+>> >> resuming from suspend. Reverting 9745cdb36da83aeec198650b410ca06304cf792
+>> >> ("select: use freezable blocking call") resolves those issues.
+>> >>
+>> >> 1) Resuming from suspend on i686 on (release candidates of) v3.11 and
+>> >> later triggers issues like:
+>> >>      traps: systemd[1] general protection ip:b738e490 sp:bf882fc0 error:0
+>> >> in libc-2.16.so[b731c000+1b0000]
+>> >>
+>> >> and
+>> >>      traps: rtkit-daemon[552] general protection ip:804d6e5 sp:b6cb32f0
+>> >> error:0 in rtkit-daemon[8048000+d000]
+>> >>
+>> >> Once I hit the systemd error I can only get out of the mess that the
+>> >> system is at that point by power cycling it.
+>> >>
+>> >> 2) I bisected that issue to commit
+>> >> 9745cdb36da83aeec198650b410ca06304cf792 ("select: use freezable blocking
+>> >> call"). The, rather impressive, bisect log is pasted at the end of this
+>> >> message. It took 23 builds to pinpoint this issue in the v3.10..v3.11
+>> >> range! Sadly, I have no clue why that commit triggers this issue.
+>> >>
+>> >> 3) Reverting that commit on top of v3.12-rc7 gets me a system that
+>> >> resumes without issues. (That revert needed one trivial context change.
+>> >> Note that I haven't actually tried v3.12-rc7 plain. But v3.12-rc6 and
+>> >> earlier also had this issue, so I'm sure the revert did the trick for
+>> >> v3.12-rc7.)
+>> >>
+>> >> 4) Should this commit be reverted? Or is there a better fix?
+>> >
+>> >
+>> > In short, yes, it should.
+>> >
+>> > I've already queued up a revert of something very similar and I'm going to
+>> > revert this one too.
+>>
+>> To be clear, that's queued for 3.12 which is releasing really soon
+>> now.  Is that correct?
+>
+> Yes, it is.  I'm going to send a pull request with that tomorrow if all goes
+> well.
 
-The 'get_burstcount' function can in some circumstances 'return -EBUSY' which
-in tpm_stm_i2c_send is stored in an 'u32 burstcnt'
-thus converting the signed value into an unsigned value, resulting
-in 'burstcnt' being huge.
-Changing the type to u32 only does not solve the problem as the signed
-value is converted to an unsigned in I2C_WRITE_DATA, resulting in the
-same effect.
+Excellent.  Thanks for confirming.
 
-Thus
--> Change type of burstcnt to u32 (the return type of get_burstcount)
--> Add a check for the return value of 'get_burstcount' and propagate a
-potential error.
-
-This makes also sense in the 'I2C_READ_DATA' case, where the there is no
-signed/unsigned conversion.
-
-CID: 986658
-Cc: stable@vger.kernel.org
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/char/tpm/tpm_i2c_stm_st33.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
-index a0d6ceb5..cf68403 100644
---- a/drivers/char/tpm/tpm_i2c_stm_st33.c
-+++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-@@ -410,6 +410,8 @@ static int recv_data(struct tpm_chip *chip, u8 *buf, size_t count)
- 			     &chip->vendor.read_queue)
- 	       == 0) {
- 		burstcnt = get_burstcount(chip);
-+		if (burstcnt < 0)
-+			return burstcnt;
- 		len = min_t(int, burstcnt, count - size);
- 		I2C_READ_DATA(client, TPM_DATA_FIFO, buf + size, len);
- 		size += len;
-@@ -451,7 +453,8 @@ static irqreturn_t tpm_ioserirq_handler(int irq, void *dev_id)
- static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
- 			    size_t len)
- {
--	u32 status, burstcnt = 0, i, size;
-+	u32 status, i, size;
-+	int burstcnt = 0;
- 	int ret;
- 	u8 data;
- 	struct i2c_client *client;
-@@ -482,6 +485,8 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
- 
- 	for (i = 0; i < len - 1;) {
- 		burstcnt = get_burstcount(chip);
-+		if (burstcnt < 0)
-+			return burstcnt;
- 		size = min_t(int, len - i - 1, burstcnt);
- 		ret = I2C_WRITE_DATA(client, TPM_DATA_FIFO, buf, size);
- 		if (ret < 0)
--- 
-1.7.8.6
-
+josh
