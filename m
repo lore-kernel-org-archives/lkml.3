@@ -1,91 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788Ab3J2STP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:19:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59471 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754093Ab3J2SJG (ORCPT
+	id S1756232Ab3J2STb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:19:31 -0400
+Received: from smtprelay0237.hostedemail.com ([216.40.44.237]:46350 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752815Ab3J2ST3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:09:06 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Neil Horman <nhorman@tuxdriver.com>, Daniel Borkmann <dborkman@redhat.com>,
-        Michio Honda <micchie@sfc.wide.ad.jp>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 32/81] net: sctp: fix smatch warning in sctp_send_asconf_del_ip
-Date: Tue, 29 Oct 2013 11:03:53 -0700
-Message-Id: <1383069882-11437-33-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
-References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 29 Oct 2013 14:19:29 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:981:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3870:3871:3873:4225:4250:4321:4605:5007:6119:6120:7652:7901:7903:10004:10400:10848:11026:11232:11658:11914:12043:12291:12296:12438:12517:12519:12679:12683:12740:13069:13095:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: prose44_6fab7fb22f22a
+X-Filterd-Recvd-Size: 2415
+Message-ID: <1383070766.12439.13.camel@joe-AO722>
+Subject: Re: [PATCH 1/2] spi: add Intel Mid SSP driver
+From: Joe Perches <joe@perches.com>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: broonie@kernel.org, ning.li@intel.com, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org, Fei Yang <fei.yang@intel.com>
+Date: Tue, 29 Oct 2013 11:19:26 -0700
+In-Reply-To: <1383069950-27754-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1383069950-27754-1-git-send-email-david.a.cohen@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.12 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2013-10-29 at 11:05 -0700, David Cohen wrote:
+> This patch adds driver for ssp spi interface on Intel Mid platform.
 
-------------------
+A few simple notes:
 
-From: Daniel Borkmann <dborkman@redhat.com>
+Please consider using checkpatch.
 
-[ Upstream commit 88362ad8f9a6cea787420b57cc27ccacef000dbe ]
+> ---
+>  drivers/spi/Kconfig                   |   12 +
+>  drivers/spi/Makefile                  |    1 +
+>  drivers/spi/spi-intel-mid-ssp.c       | 1506 +++++++++++++++++++++++++++++++++
+>  include/linux/spi/intel_mid_ssp_spi.h |  330 ++++++++
 
-This was originally reported in [1] and posted by Neil Horman [2], he said:
+Shouldn't this include file be in the drivers/spi directory?
 
-  Fix up a missed null pointer check in the asconf code. If we don't find
-  a local address, but we pass in an address length of more than 1, we may
-  dereference a NULL laddr pointer. Currently this can't happen, as the only
-  users of the function pass in the value 1 as the addrcnt parameter, but
-  its not hot path, and it doesn't hurt to check for NULL should that ever
-  be the case.
+[]
 
-The callpath from sctp_asconf_mgmt() looks okay. But this could be triggered
-from sctp_setsockopt_bindx() call with SCTP_BINDX_REM_ADDR and addrcnt > 1
-while passing all possible addresses from the bind list to SCTP_BINDX_REM_ADDR
-so that we do *not* find a single address in the association's bind address
-list that is not in the packed array of addresses. If this happens when we
-have an established association with ASCONF-capable peers, then we could get
-a NULL pointer dereference as we only check for laddr == NULL && addrcnt == 1
-and call later sctp_make_asconf_update_ip() with NULL laddr.
+> diff --git a/drivers/spi/spi-intel-mid-ssp.c b/drivers/spi/spi-intel-mid-ssp.c
+[]
+> +#ifdef DUMP_RX
+> +static void dump_trailer(const struct device *dev, char *buf, int len, int sz)
+> +{
 
-BUT: this actually won't happen as sctp_bindx_rem() will catch such a case
-and return with an error earlier. As this is incredably unintuitive and error
-prone, add a check to catch at least future bugs here. As Neil says, its not
-hot path. Introduced by 8a07eb0a5 ("sctp: Add ASCONF operation on the
-single-homed host").
+You could save a couple of later #ifdefs by
+moving the #ifdef inside the function
 
- [1] http://www.spinics.net/lists/linux-sctp/msg02132.html
- [2] http://www.spinics.net/lists/linux-sctp/msg02133.html
+static void dump_trailer(etc)
+{
+#ifdef DUMP_RX
+	...
+#endif
+}
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Michio Honda <micchie@sfc.wide.ad.jp>
-Acked-By: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/sctp/socket.c | 3 +++
- 1 file changed, 3 insertions(+)
+> +static int map_dma_buffers(struct ssp_drv_context *sspc)
+> +{
+[]
+> +#ifdef DUMP_RX
+> +		dump_trailer(&sspc->pdev->dev, sspc->tx, sspc->len, 16);
+> +#endif
 
-diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-index ea5c61a..89714ee 100644
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -820,6 +820,9 @@ static int sctp_send_asconf_del_ip(struct sock		*sk,
- 			goto skip_mkasconf;
- 		}
- 
-+		if (laddr == NULL)
-+			return -EINVAL;
-+
- 		/* We do not need RCU protection throughout this loop
- 		 * because this is done under a socket lock from the
- 		 * setsockopt call.
--- 
-1.8.1.2
+> +static void int_transfer_complete(struct ssp_drv_context *sspc)
+> +{
+[]
+> +#ifdef DUMP_RX
+> +	dump_trailer(dev, sspc->rx, sspc->len, 16);
+> +#endif
+
+> +static int setup(struct spi_device *spi)
+> +{
+[]
+> +	if (!chip) {
+> +		chip = kzalloc(sizeof(struct chip_data), GFP_KERNEL);
+> +		if (!chip) {
+> +			dev_err(&spi->dev,
+> +			"failed setup: can't allocate chip data\n");
+
+OOM messages aren't necessary as a generic OOM message
+is already emitted along with a dump_stack();
+
 
