@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176Ab3J2Tdk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 15:33:40 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:55089 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576Ab3J2Tdi (ORCPT
+	id S1752014Ab3J2TiP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 15:38:15 -0400
+Received: from smtprelay0092.hostedemail.com ([216.40.44.92]:35075 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751246Ab3J2TiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 15:33:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <52700C24.9050001@linux.vnet.ibm.com>
-References: <1383059634-55512-1-git-send-email-tim.gardner@canonical.com>
-	<CA+55aFwUdXp4412F5LdmCRrGZCYiFpiPk7oksGi30CzP6i5O+w@mail.gmail.com>
-	<52700C24.9050001@linux.vnet.ibm.com>
-Date: Tue, 29 Oct 2013 12:33:37 -0700
-X-Google-Sender-Auth: bW5tK7ouzeNdEiuE4lx8jSaQ_hU
-Message-ID: <CA+55aFzqumDX8hRyC4avbpA2g_RRb28ZPYk=_-4atGJ=67Zu1A@mail.gmail.com>
-Subject: Re: [PATCH 3.12-rc7] KVM: Fix modprobe failure for kvm_intel/kvm_amd
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Gleb Natapov <gleb@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, KVM list <kvm@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 29 Oct 2013 15:38:14 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2691:2828:2919:3138:3139:3140:3141:3142:3353:3622:3867:3868:3872:3873:3874:4321:4605:5007:6119:6120:7652:7901:7903:9036:9108:10004:10400:10848:11026:11232:11658:11914:12043:12517:12519:12663:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: beam56_479813d677631
+X-Filterd-Recvd-Size: 2358
+Message-ID: <1383075490.12439.26.camel@joe-AO722>
+Subject: Re: [PATCH 1/2] spi: add Intel Mid SSP driver
+From: Joe Perches <joe@perches.com>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: broonie@kernel.org, ning.li@intel.com, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org, Fei Yang <fei.yang@intel.com>
+Date: Tue, 29 Oct 2013 12:38:10 -0700
+In-Reply-To: <52700D4C.10008@linux.intel.com>
+References: <1383069950-27754-1-git-send-email-david.a.cohen@linux.intel.com>
+	 <1383070766.12439.13.camel@joe-AO722> <526FFED4.4070902@linux.intel.com>
+	 <1383071755.12439.17.camel@joe-AO722> <52700D4C.10008@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 12:27 PM, Raghavendra K T
-<raghavendra.kt@linux.vnet.ibm.com> wrote:
->
-> Could one solution be cascading actual error
-> that is lost in fs/debugfs/inode.c:__create_file(), so that we could
-> take correct action in case of failure of debugfs_create_dir()?
->
-> (ugly side is we increase total number of params for __create_file to
-> 6). or I hope there could be some better solution.
+On Tue, 2013-10-29 at 12:32 -0700, David Cohen wrote:
+> On 10/29/2013 11:35 AM, Joe Perches wrote:
+> > On Tue, 2013-10-29 at 11:30 -0700, David Cohen wrote:
+> >> On 10/29/2013 11:19 AM, Joe Perches wrote:
+> >>> On Tue, 2013-10-29 at 11:05 -0700, David Cohen wrote:
+> >>>> This patch adds driver for ssp spi interface on Intel Mid platform.
+> >>> A few simple notes:
+> >>> Please consider using checkpatch.
+> >> I did and got no warnings. But haven't used --strict option.
+> > Interesting.  I thought there was a return (foo);
+> > statement that should have been marked, but I didn't
+> > actually run checkpatch.
+> 
+> It seems odd checkpatch didn't catch it. I'll investigate.
 
-The solution to this would be to simply return an error-pointer. See
-<linux/err.h>. That's what we do for most complex subsystems that
-return a pointer to a struct: rather than returning "NULL" as an
-error, return the actual error number encoded in the pointer itself.
+No need.  I believe I know why.
+checkpatch doesn't use "$balanced_parens" checks for return
+tests.  I'm not sure it's worth fixing right now, but it
+could be tested as:
 
-But that would require every user of debugfs_create_dir() to be
-updated to check errors using IS_ERR() instead of checking against
-NULL, and there's quite a few of them.
+	if ($^V && $^V ge 5.10.0 &&
+	    $stat =~ /^.\s*return\s*$balanced_parens\s*;\s*$/)
 
-So I think just making the error be EEXIST is a simpler solution right now.
+> > static inline u32 is_rx_fifo_empty(struct ssp_drv_context *sspc)
+> > +{
+> > +       return ((read_SSSR(sspc->ioaddr) & SSSR_RNE) == 0);
+> > +}
+> > This could be bool too
+> u32 seems unusual, but I'd prefer 'int' if it's fine for you.
 
-              Linus
+Anything is_<foo> that returns what seems to be true/false
+I think could be bool.
+
+But, no worries, it's your code.  Do what you think best.
+
+
