@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142Ab3J2MVB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 08:21:01 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:9924 "EHLO
+	id S1755078Ab3J2MU5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 08:20:57 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:9913 "EHLO
 	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754987Ab3J2MUq (ORCPT
+	with ESMTP id S1754853Ab3J2MUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 08:20:46 -0400
+	Tue, 29 Oct 2013 08:20:39 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 29 Oct 2013 05:15:49 -0700
+	by hqnvupgp07.nvidia.com on Tue, 29 Oct 2013 05:20:08 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <lee.jones@linaro.org>, <sameo@linux.intel.com>, <mturquette@linaro.org>,
         <dwmw2@infradead.org>, <anton@enomsg.org>
@@ -17,9 +17,9 @@ CC: <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>,
         Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 4/4] power: reset: as3722: add power-off driver
-Date: Tue, 29 Oct 2013 17:50:05 +0530
-Message-ID: <1383049205-29620-5-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH 2/4] clk: as3722: add clock driver for ams AS3722
+Date: Tue, 29 Oct 2013 17:50:03 +0530
+Message-ID: <1383049205-29620-3-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1383049205-29620-1-git-send-email-ldewangan@nvidia.com>
 References: <1383049205-29620-1-git-send-email-ldewangan@nvidia.com>
@@ -29,53 +29,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ams AS3722 supports the power off functionality to turn off
-system.
-
-Add power off driver for ams AS3722.
+Device ams AS3722 supports one clock 32KHz output. Add clock driver
+to control the clock through clock framework.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- drivers/power/reset/Kconfig           |    6 ++
- drivers/power/reset/Makefile          |    1 +
- drivers/power/reset/as3722-poweroff.c |  101 +++++++++++++++++++++++++++++++++
- 3 files changed, 108 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/reset/as3722-poweroff.c
+ drivers/clk/Kconfig      |    8 ++
+ drivers/clk/Makefile     |    1 +
+ drivers/clk/clk-as3722.c |  166 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 175 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/clk/clk-as3722.c
 
-diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-index 9b3ea53..6d452a7 100644
---- a/drivers/power/reset/Kconfig
-+++ b/drivers/power/reset/Kconfig
-@@ -6,6 +6,12 @@ menuconfig POWER_RESET
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 5c51115..03257bf 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -78,6 +78,14 @@ config CLK_TWL6040
+ 	  McPDM. McPDM module is using the external bit clock on the McPDM bus
+ 	  as functional clock.
  
- 	  Say Y here to enable board reset and power off
- 
-+config POWER_RESET_AS3722
-+	bool "ams AS3722 power-off driver"
-+	depends on MFD_AS3722 && POWER_RESET
++config COMMON_CLK_AS3722
++	tristate "ams AS3722 clock32K driver"
++	depends on MFD_AS3722
 +	help
-+	  This driver supports turning off board via a ams AS3722 power-off.
++	---help---
++	  Supports the clocking subsystem of the ams AS3722 PMIC from ams.
++	  This device supports one 32KHz clock.
 +
- config POWER_RESET_GPIO
- 	bool "GPIO power-off driver"
- 	depends on OF_GPIO && POWER_RESET
-diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-index 3e6ed88..a5b4a77 100644
---- a/drivers/power/reset/Makefile
-+++ b/drivers/power/reset/Makefile
-@@ -1,3 +1,4 @@
-+obj-$(CONFIG_POWER_RESET_AS3722) += as3722-poweroff.o
- obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
- obj-$(CONFIG_POWER_RESET_MSM) += msm-poweroff.o
- obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
-diff --git a/drivers/power/reset/as3722-poweroff.c b/drivers/power/reset/as3722-poweroff.c
+ config COMMON_CLK_AXI_CLKGEN
+ 	tristate "AXI clkgen driver"
+ 	depends on ARCH_ZYNQ || MICROBLAZE
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index fe3121b..b94624d 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -39,6 +39,7 @@ obj-$(CONFIG_COMMON_CLK_KEYSTONE)	+= keystone/
+ obj-$(CONFIG_X86)		+= x86/
+ 
+ # Chip specific
++obj-$(CONFIG_COMMON_CLK_AS3722) += clk-as3722.o
+ obj-$(CONFIG_COMMON_CLK_AXI_CLKGEN) += clk-axi-clkgen.o
+ obj-$(CONFIG_COMMON_CLK_WM831X) += clk-wm831x.o
+ obj-$(CONFIG_COMMON_CLK_MAX77686) += clk-max77686.o
+diff --git a/drivers/clk/clk-as3722.c b/drivers/clk/clk-as3722.c
 new file mode 100644
-index 0000000..64e7c7f
+index 0000000..9358029
 --- /dev/null
-+++ b/drivers/power/reset/as3722-poweroff.c
-@@ -0,0 +1,101 @@
++++ b/drivers/clk/clk-as3722.c
+@@ -0,0 +1,166 @@
 +/*
-+ * Power off driver for ams AS3722 device.
++ * Clock driver for ams AS3722 device.
 + *
 + * Copyright (c) 2013, NVIDIA Corporation.
 + *
@@ -96,6 +99,9 @@ index 0000000..64e7c7f
 + * 02111-1307, USA
 + */
 +
++#include <linux/clk.h>
++#include <linux/clkdev.h>
++#include <linux/clk-provider.h>
 +#include <linux/mfd/as3722.h>
 +#include <linux/module.h>
 +#include <linux/of.h>
@@ -103,76 +109,138 @@ index 0000000..64e7c7f
 +#include <linux/platform_device.h>
 +#include <linux/slab.h>
 +
-+struct as3722_poweroff {
++struct as3722_clks {
 +	struct device *dev;
 +	struct as3722 *as3722;
++	struct clk_hw hw;
++	struct clk *clk;
++	struct clk_onecell_data clk_data;
 +};
 +
-+static struct as3722_poweroff *as3722_pm_poweroff;
-+
-+static void as3722_pm_power_off(void)
++static inline struct as3722_clks *to_as3722_clks(struct clk_hw *hw)
 +{
++	return container_of(hw, struct as3722_clks, hw);
++}
++
++static unsigned long as3722_clks_recalc_rate(struct clk_hw *hw,
++	unsigned long parent_rate)
++{
++	return 32768;
++}
++
++static int as3722_clks_prepare(struct clk_hw *hw)
++{
++	struct as3722_clks *as3722_clks = to_as3722_clks(hw);
 +	int ret;
 +
-+	if (!as3722_pm_poweroff) {
-+		pr_err("AS3722 poweroff is not initialised\n");
-+		return;
++	ret = as3722_update_bits(as3722_clks->as3722, AS3722_RTC_CONTROL_REG,
++			AS3722_RTC_CLK32K_OUT_EN, AS3722_RTC_CLK32K_OUT_EN);
++	if (ret < 0)
++		dev_err(as3722_clks->dev, "RTC_CONTROL_REG update failed, %d\n",
++			ret);
++
++	return ret;
++}
++
++static void as3722_clks_unprepare(struct clk_hw *hw)
++{
++	struct as3722_clks *as3722_clks = to_as3722_clks(hw);
++	int ret;
++
++	ret = as3722_update_bits(as3722_clks->as3722, AS3722_RTC_CONTROL_REG,
++			AS3722_RTC_CLK32K_OUT_EN, 0);
++	if (ret < 0)
++		dev_err(as3722_clks->dev, "RTC_CONTROL_REG update failed, %d\n",
++			ret);
++}
++
++static int as3722_clks_is_prepared(struct clk_hw *hw)
++{
++	struct as3722_clks *as3722_clks = to_as3722_clks(hw);
++	int ret;
++	u32 val;
++
++	ret = as3722_read(as3722_clks->as3722, AS3722_RTC_CONTROL_REG, &val);
++	if (ret < 0) {
++		dev_err(as3722_clks->dev, "RTC_CONTROL_REG read failed, %d\n",
++			ret);
++		return ret;
 +	}
 +
-+	ret = as3722_update_bits(as3722_pm_poweroff->as3722,
-+		AS3722_RESET_CONTROL_REG, AS3722_POWER_OFF, AS3722_POWER_OFF);
-+	if (ret < 0)
-+		dev_err(as3722_pm_poweroff->dev,
-+			"RESET_CONTROL_REG update failed, %d\n", ret);
++	return !!(val & AS3722_RTC_CLK32K_OUT_EN);
 +}
 +
-+static int as3722_poweroff_probe(struct platform_device *pdev)
-+{
-+	struct as3722_poweroff *as3722_poweroff;
-+	struct device_node *np = pdev->dev.parent->of_node;
-+
-+	if (!np)
-+		return -EINVAL;
-+
-+	if (!of_property_read_bool(np, "ams,system-power-controller"))
-+		return 0;
-+
-+	as3722_poweroff = devm_kzalloc(&pdev->dev, sizeof(*as3722_poweroff),
-+				GFP_KERNEL);
-+	if (!as3722_poweroff)
-+		return -ENOMEM;
-+
-+	as3722_poweroff->as3722 = dev_get_drvdata(pdev->dev.parent);
-+	as3722_poweroff->dev = &pdev->dev;
-+	as3722_pm_poweroff = as3722_poweroff;
-+	if (!pm_power_off)
-+		pm_power_off = as3722_pm_power_off;
-+
-+	return 0;
-+}
-+
-+static int as3722_poweroff_remove(struct platform_device *pdev)
-+{
-+	if (pm_power_off == as3722_pm_power_off)
-+		pm_power_off = NULL;
-+	as3722_pm_poweroff = NULL;
-+
-+	return 0;
-+}
-+
-+static struct platform_driver as3722_poweroff_driver = {
-+	.driver = {
-+		.name = "as3722-power-off",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = as3722_poweroff_probe,
-+	.remove = as3722_poweroff_remove,
++static struct clk_ops as3722_clks_ops = {
++	.prepare	= as3722_clks_prepare,
++	.unprepare	= as3722_clks_unprepare,
++	.is_prepared	= as3722_clks_is_prepared,
++	.recalc_rate	= as3722_clks_recalc_rate,
 +};
 +
-+module_platform_driver(as3722_poweroff_driver);
++static struct clk_init_data as3722_clks_hw_init = {
++	.name = "clk32k",
++	.ops = &as3722_clks_ops,
++	.flags = CLK_IS_ROOT | CLK_IGNORE_UNUSED,
++};
 +
-+MODULE_DESCRIPTION("Power off driver for ams AS3722 PMIC Device");
-+MODULE_ALIAS("platform:as3722-power-off");
++static int as3722_clks_probe(struct platform_device *pdev)
++{
++	struct as3722_clks *as3722_clks;
++	struct clk *clk;
++	int ret;
++
++	as3722_clks = devm_kzalloc(&pdev->dev, sizeof(*as3722_clks),
++				GFP_KERNEL);
++	if (!as3722_clks)
++		return -ENOMEM;
++
++	as3722_clks->clk_data.clks = devm_kzalloc(&pdev->dev,
++			sizeof(*as3722_clks->clk_data.clks), GFP_KERNEL);
++	if (!as3722_clks->clk_data.clks)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, as3722_clks);
++
++	as3722_clks->as3722 = dev_get_drvdata(pdev->dev.parent);
++	as3722_clks->dev = &pdev->dev;
++	as3722_clks->hw.init = &as3722_clks_hw_init;
++
++	clk = devm_clk_register(&pdev->dev, &as3722_clks->hw);
++	if (IS_ERR(clk)) {
++		ret = PTR_ERR(clk);
++		dev_err(&pdev->dev, "Fail to register clock %s, %d\n",
++			as3722_clks_hw_init.name, ret);
++		return ret;
++	}
++	as3722_clks->clk = clk;
++	as3722_clks->clk_data.clks[0] = clk;
++	as3722_clks->clk_data.clk_num = 1;
++	ret = of_clk_add_provider(pdev->dev.parent->of_node,
++			of_clk_src_simple_get, &as3722_clks->clk_data);
++	if (ret < 0)
++		dev_err(&pdev->dev, "Fail to add clock driver, %d\n", ret);
++	return ret;
++}
++
++static int as3722_clks_remove(struct platform_device *pdev)
++{
++	of_clk_del_provider(pdev->dev.parent->of_node);
++	return 0;
++}
++
++static struct platform_driver as3722_clks_driver = {
++	.driver = {
++		.name = "as3722-clk",
++		.owner = THIS_MODULE,
++	},
++	.probe = as3722_clks_probe,
++	.remove = as3722_clks_remove,
++};
++
++module_platform_driver(as3722_clks_driver);
++
++MODULE_DESCRIPTION("Clock driver for ams AS3722 PMIC Device");
++MODULE_ALIAS("platform:as3722-clk");
 +MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
 +MODULE_LICENSE("GPL v2");
 -- 
