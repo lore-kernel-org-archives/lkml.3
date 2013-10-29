@@ -1,47 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517Ab3J2Fze (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 01:55:34 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:49570 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab3J2Fzc (ORCPT
+	id S1751748Ab3J2Fzk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 01:55:40 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:60618 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676Ab3J2Fzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 01:55:32 -0400
-Message-ID: <526F4DCF.5010406@synopsys.com>
-Date: Tue, 29 Oct 2013 11:25:27 +0530
-From: Vineet Gupta <vineetg76@gmail.com>
-Organization: Synopsys
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 29 Oct 2013 01:55:37 -0400
+Date: Tue, 29 Oct 2013 14:55:35 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/12] clocksource: sh_cmt: Add clk_prepare/unprepare
+ support
+Message-ID: <20131029055534.GB11580@verge.net.au>
+References: <1383000569-8916-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+ <1383000569-8916-2-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>
-CC: James Hogan <james.hogan@imgtec.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: Re: [PATCH v2] arch: use ASM_NL instead of ';' for assembler new
- line character in the macro
-References: <526E3CE2.2070405@asianux.com> <526E6A92.6090301@synopsys.com> <526F09B8.9030202@asianux.com> <526F11C0.1030809@asianux.com> <526F149A.3000306@asianux.com>
-In-Reply-To: <526F149A.3000306@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383000569-8916-2-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2013 07:21 AM, Chen Gang wrote:
-> For some assemblers, they use another character as newline in a macro
-> (e.g. arc uses '`'), so for generic assembly code, need use ASM_NL (a
-> macro) instead of ';' for it.
+On Mon, Oct 28, 2013 at 11:49:18PM +0100, Laurent Pinchart wrote:
+> Prepare the clock at probe time, as there is no other appropriate place
+> in the driver where we're allowed to sleep.
 > 
-> Also need notice about code styles ('\t' for each line).
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+
+Thanks Laurent,
+
+I have queued this up in the clocksources branch of my renesas tree.
+I will send a pull request to Mike once v3.13-rc1 has hit the shelves.
+Mike, please let me know if you would prefer something earlier than that.
+
 > ---
->  arch/arc/include/asm/linkage.h |    2 ++
->  include/linux/linkage.h        |   19 ++++++++++++-------
-
-Acked-by: Vineet Gupta <vgupta@synopsys.com>
-
--Vineet
+>  drivers/clocksource/sh_cmt.c | 20 ++++++++++++++++----
+>  1 file changed, 16 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
+> index 0965e98..940341a 100644
+> --- a/drivers/clocksource/sh_cmt.c
+> +++ b/drivers/clocksource/sh_cmt.c
+> @@ -634,12 +634,18 @@ static int sh_cmt_clock_event_next(unsigned long delta,
+>  
+>  static void sh_cmt_clock_event_suspend(struct clock_event_device *ced)
+>  {
+> -	pm_genpd_syscore_poweroff(&ced_to_sh_cmt(ced)->pdev->dev);
+> +	struct sh_cmt_priv *p = ced_to_sh_cmt(ced);
+> +
+> +	pm_genpd_syscore_poweroff(&p->pdev->dev);
+> +	clk_unprepare(p->clk);
+>  }
+>  
+>  static void sh_cmt_clock_event_resume(struct clock_event_device *ced)
+>  {
+> -	pm_genpd_syscore_poweron(&ced_to_sh_cmt(ced)->pdev->dev);
+> +	struct sh_cmt_priv *p = ced_to_sh_cmt(ced);
+> +
+> +	clk_prepare(p->clk);
+> +	pm_genpd_syscore_poweron(&p->pdev->dev);
+>  }
+>  
+>  static void sh_cmt_register_clockevent(struct sh_cmt_priv *p,
+> @@ -737,6 +743,10 @@ static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
+>  		goto err2;
+>  	}
+>  
+> +	ret = clk_prepare(p->clk);
+> +	if (ret < 0)
+> +		goto err3;
+> +
+>  	if (res2 && (resource_size(res2) == 4)) {
+>  		/* assume both CMSTR and CMCSR to be 32-bit */
+>  		p->read_control = sh_cmt_read32;
+> @@ -773,19 +783,21 @@ static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
+>  			      cfg->clocksource_rating);
+>  	if (ret) {
+>  		dev_err(&p->pdev->dev, "registration failed\n");
+> -		goto err3;
+> +		goto err4;
+>  	}
+>  	p->cs_enabled = false;
+>  
+>  	ret = setup_irq(irq, &p->irqaction);
+>  	if (ret) {
+>  		dev_err(&p->pdev->dev, "failed to request irq %d\n", irq);
+> -		goto err3;
+> +		goto err4;
+>  	}
+>  
+>  	platform_set_drvdata(pdev, p);
+>  
+>  	return 0;
+> +err4:
+> +	clk_unprepare(p->clk);
+>  err3:
+>  	clk_put(p->clk);
+>  err2:
+> -- 
+> 1.8.1.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
