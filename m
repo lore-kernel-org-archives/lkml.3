@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab3J2SY6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:24:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59282 "EHLO
+	id S932091Ab3J2S0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:26:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59251 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182Ab3J2SFM (ORCPT
+	with ESMTP id S1752133Ab3J2SFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Oct 2013 14:05:12 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Francisco Jerez <currojerez@riseup.net>, Daniel Vetter <daniel@ffwll.ch>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Josef Bacik <jbacik@fusionio.com>, Chris Mason <chris.mason@fusionio.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 05/81] drm/i915/hsw: Disable L3 caching of atomic memory operations.
-Date: Tue, 29 Oct 2013 11:03:26 -0700
-Message-Id: <1383069882-11437-6-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 16/81] Btrfs: use right root when checking for hash collision
+Date: Tue, 29 Oct 2013 11:03:37 -0700
+Message-Id: <1383069882-11437-17-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
@@ -28,67 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Francisco Jerez <currojerez@riseup.net>
+From: Josef Bacik <jbacik@fusionio.com>
 
-commit f3fc4884ebe6ae649d3723be14b219230d3b7fd2 upstream.
+commit 4871c1588f92c6c13f4713a7009f25f217055807 upstream.
 
-Otherwise using any atomic memory operation will lock up the GPU due
-to a Haswell hardware bug.
+btrfs_rename was using the root of the old dir instead of the root of the new
+dir when checking for a hash collision, so if you tried to move a file into a
+subvol it would freak out because it would see the file you are trying to move
+in its current root.  This fixes the bug where this would fail
 
-v2: Use the _MASKED_BIT_ENABLE macro.  Drop drm parameter definition.
+btrfs subvol create test1
+btrfs subvol create test2
+mv test1 test2.
 
-Signed-off-by: Francisco Jerez <currojerez@riseup.net>
-Reviewed-by: Ben Widawsky <ben@bwidawsk.net>
-Cc: Daniel Vetter <daniel@ffwll.ch>
-[danvet: Fix checkpatch fail.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[ kamal: backport to 3.8 (context) ]
+Thanks to Chris Murphy for catching this,
+
+Reported-by: Chris Murphy <lists@colorremedies.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_reg.h | 6 ++++++
- drivers/gpu/drm/i915/intel_pm.c | 5 +++++
- 2 files changed, 11 insertions(+)
+ fs/btrfs/inode.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index 7924166..854f215 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -3485,6 +3485,9 @@
- #define GEN7_SQ_CHICKEN_MBCUNIT_CONFIG		0x9030
- #define  GEN7_SQ_CHICKEN_MBCUNIT_SQINTMOB	(1<<11)
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index 4b5398c..60e1296 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -7387,7 +7387,7 @@ static int btrfs_rename(struct inode *old_dir, struct dentry *old_dentry,
  
-+#define HSW_SCRATCH1				0xb038
-+#define  HSW_SCRATCH1_L3_DATA_ATOMICS_DISABLE	(1<<27)
-+
- #define HSW_FUSE_STRAP		0x42014
- #define  HSW_CDCLK_LIMIT	(1 << 24)
  
-@@ -4321,6 +4324,9 @@
- #define GEN7_ROW_CHICKEN2_GT2		0xf4f4
- #define   DOP_CLOCK_GATING_DISABLE	(1<<0)
+ 	/* check for collisions, even if the  name isn't there */
+-	ret = btrfs_check_dir_item_collision(root, new_dir->i_ino,
++	ret = btrfs_check_dir_item_collision(dest, new_dir->i_ino,
+ 			     new_dentry->d_name.name,
+ 			     new_dentry->d_name.len);
  
-+#define HSW_ROW_CHICKEN3		0xe49c
-+#define  HSW_ROW_CHICKEN3_L3_GLOBAL_ATOMICS_DISABLE    (1 << 6)
-+
- #define G4X_AUD_VID_DID			0x62020
- #define INTEL_AUDIO_DEVCL		0x808629FB
- #define INTEL_AUDIO_DEVBLC		0x80862801
-diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
-index b035d41..0d9a852 100644
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -3730,6 +3730,11 @@ static void haswell_init_clock_gating(struct drm_device *dev)
- 	I915_WRITE(GEN7_L3_CHICKEN_MODE_REGISTER,
- 			GEN7_WA_L3_CHICKEN_MODE);
- 
-+	/* L3 caching of data atomics doesn't work -- disable it. */
-+	I915_WRITE(HSW_SCRATCH1, HSW_SCRATCH1_L3_DATA_ATOMICS_DISABLE);
-+	I915_WRITE(HSW_ROW_CHICKEN3,
-+		   _MASKED_BIT_ENABLE(HSW_ROW_CHICKEN3_L3_GLOBAL_ATOMICS_DISABLE));
-+
- 	/* This is required by WaCatErrorRejectionIssue */
- 	I915_WRITE(GEN7_SQ_CHICKEN_MBCUNIT_CONFIG,
- 			I915_READ(GEN7_SQ_CHICKEN_MBCUNIT_CONFIG) |
 -- 
 1.8.1.2
 
