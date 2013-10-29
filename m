@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319Ab3J2Whu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 18:37:50 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41042 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752249Ab3J2Whs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 18:37:48 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: <linux-crypto@vger.kernel.org>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Joel Fernandes <joelf@ti.com>
-Subject: [PATCH] crypto: omap-aes: Fix CTR mode counter length
-Date: Tue, 29 Oct 2013 17:37:38 -0500
-Message-ID: <1383086258-22186-1-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.8.1.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752440Ab3J2WiO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 18:38:14 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:38743 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab3J2Whl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 18:37:41 -0400
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+To: linux-sh@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 13/19] pinctrl: sh-pfc: Enable the driver on all ARM platforms
+Date: Tue, 29 Oct 2013 23:37:48 +0100
+Message-Id: <1383086274-11049-14-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1383086274-11049-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+References: <1383086274-11049-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NIST vectors for CTR mode in testmgr.h assume the entire IV as the counter. To
-get correct results that match the output of these vectors, we need to set the
-counter length correctly.
+Renesas ARM platforms are transitioning from single-platform to
+multi-platform kernels using the new ARCH_SHMOBILE_MULTI. Make the
+driver available on all ARM platforms to enable it on both ARCH_SHMOBILE
+and ARCH_SHMOBILE_MULTI and increase build testing coverage.
 
-Signed-off-by: Joel Fernandes <joelf@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 ---
- drivers/crypto/omap-aes.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pinctrl/Makefile       | 2 +-
+ drivers/pinctrl/sh-pfc/Kconfig | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/crypto/omap-aes.c b/drivers/crypto/omap-aes.c
-index ce791c2..19055a1 100644
---- a/drivers/crypto/omap-aes.c
-+++ b/drivers/crypto/omap-aes.c
-@@ -275,7 +275,7 @@ static int omap_aes_write_ctrl(struct omap_aes_dev *dd)
- 	if (dd->flags & FLAGS_CBC)
- 		val |= AES_REG_CTRL_CBC;
- 	if (dd->flags & FLAGS_CTR) {
--		val |= AES_REG_CTRL_CTR | AES_REG_CTRL_CTR_WIDTH_32;
-+		val |= AES_REG_CTRL_CTR | AES_REG_CTRL_CTR_WIDTH_128;
- 		mask = AES_REG_CTRL_CTR | AES_REG_CTRL_CTR_WIDTH_MASK;
- 	}
- 	if (dd->flags & FLAGS_ENCRYPT)
+diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+index 496d9bf..bef5a9f 100644
+--- a/drivers/pinctrl/Makefile
++++ b/drivers/pinctrl/Makefile
+@@ -56,7 +56,7 @@ obj-$(CONFIG_PINCTRL_ST) 	+= pinctrl-st.o
+ obj-$(CONFIG_PINCTRL_VF610)	+= pinctrl-vf610.o
+ 
+ obj-$(CONFIG_PLAT_ORION)        += mvebu/
+-obj-$(CONFIG_ARCH_SHMOBILE)	+= sh-pfc/
++obj-$(CONFIG_ARM)		+= sh-pfc/
+ obj-$(CONFIG_SUPERH)		+= sh-pfc/
+ obj-$(CONFIG_PLAT_SPEAR)	+= spear/
+ obj-$(CONFIG_ARCH_VT8500)	+= vt8500/
+diff --git a/drivers/pinctrl/sh-pfc/Kconfig b/drivers/pinctrl/sh-pfc/Kconfig
+index 636a882..1d6182e 100644
+--- a/drivers/pinctrl/sh-pfc/Kconfig
++++ b/drivers/pinctrl/sh-pfc/Kconfig
+@@ -2,7 +2,7 @@
+ # Renesas SH and SH Mobile PINCTRL drivers
+ #
+ 
+-if ARCH_SHMOBILE || SUPERH
++if ARM || SUPERH
+ 
+ config PINCTRL_SH_PFC
+ 	select GPIO_SH_PFC if ARCH_REQUIRE_GPIOLIB
 -- 
-1.8.1.2
+1.8.1.5
 
