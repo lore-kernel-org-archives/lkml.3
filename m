@@ -1,123 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857Ab3J2NeP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 09:34:15 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:43239 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab3J2NeO (ORCPT
+	id S1756042Ab3J2Ne2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 09:34:28 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:38662 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755918Ab3J2Ne0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 09:34:14 -0400
-From: "Du, Changbin" <changbin.du@gmail.com>
-To: jbaron@akamai.com, joe@perches.com
-Cc: linux-kernel@vger.kernel.org, "Du, Changbin" <changbin.du@gmail.com>
-Subject: [PATCH v3] dynamic_debug: add wildcard support to filter files/functions/modules
-Date: Tue, 29 Oct 2013 21:33:29 +0800
-Message-Id: <1383053609-2895-1-git-send-email-changbin.du@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <CABgQ-Ti0aaxqVGF0R-huQur=EGCTyXM0w-gyz9TenC=msucJqA@mail.gmail.com>
-References: <CABgQ-Ti0aaxqVGF0R-huQur=EGCTyXM0w-gyz9TenC=msucJqA@mail.gmail.com>
+	Tue, 29 Oct 2013 09:34:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <20131024124631.GA14517@mtj.dyndns.org>
+References: <20131024124631.GA14517@mtj.dyndns.org>
+Date: Tue, 29 Oct 2013 14:34:26 +0100
+Message-ID: <CACRpkdY2d88RxxgZ5=rPuQHrb3a7Q+trvBWsEMSaByhtWKf31Q@mail.gmail.com>
+Subject: Re: READ/WRITE definitions in drivers/spi/spi-omap-100k.c
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tejun Heo <tj@kernel.org>, Mark Brown <broonie@kernel.org>,
+        darkstar6262@gmail.com
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ext Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Du, Changbin" <changbin.du@gmail.com>
+On Thu, Oct 24, 2013 at 2:46 PM, Tejun Heo <tj@kernel.org> wrote:
 
-This patch add wildcard '*'(matches zero or more characters) and '?'
-(matches one character) support when qurying debug flags.
+> Hey, guys.
+>
+> I was modifying includes in a core header file and got duplicate macro
+> definition warnings on READ / WRITE in drivers/spi/spi-omap-100k.c.
+> Apparently that driver defines READ / WRITE as macros and assigns the
+> opposite values to them from the usual READ / WRITE constants defined
+> in include/linux/fs.h.
+>
+> I just skimmed through it and there doesn't seem to be any user of the
+> macros.  Can we *please* remove these?  Please note that READ / WRITE
+> defined in include/linux/fs.h is something which is widely used
+> throughout the kernel and there are multiple interfaces which take
+> those constants.  Re-defining them in the other way around in a driver
+> file can lead to subtle issues and just is a bad idea.  In general,
+> refraining from using generic symbols without any qualitification in
+> low level drivers would be nice.
 
-Now we can open debug messages using keywords. eg:
-1. open debug logs in all usb drivers
-    echo "file drivers/usb/* +p" > <debugfs>/dynamic_debug/control
-2.  open debug logs for usb xhci code
-    echo "file *xhci* +p" > <debugfs>/dynamic_debug/control
+That seems like a good idea, but we better poke the people who wrote
+the code and the SPI maintainer :-)
 
-Signed-off-by: Du, Changbin <changbin.du@gmail.com>
----
-changes since v2:
-    remove the goto statements.
-    code style issue.
----
- lib/dynamic_debug.c | 49 ++++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 44 insertions(+), 5 deletions(-)
-
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index c37aeac..b166d19 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -127,6 +127,43 @@ static void vpr_info_dq(const struct ddebug_query *query, const char *msg)
- 		 query->first_lineno, query->last_lineno);
- }
- 
-+/* check if the string matches given pattern which includes wildcards */
-+static bool match_pattern(const char *pattern, const char *string)
-+{
-+	const char *s = string,
-+		   *p = pattern;
-+	bool star = 0;
-+
-+	while (*s) {
-+		switch (*p) {
-+		case '?':
-+			++s, ++p;
-+			break;
-+		case '*':
-+			star = true;
-+			string = s;
-+			if (!*++p)
-+				return true;
-+			pattern = p;;
-+			break;
-+		default:
-+			if (*s != *p) {
-+				if (!star)
-+					return false;
-+				string++;
-+				s = string;
-+				p = pattern;
-+				break;
-+			}
-+			++s, ++p;
-+		}
-+	}
-+
-+	if (*p == '*')
-+		++p;
-+	return !*p;
-+}
-+
- /*
-  * Search the tables for _ddebug's which match the given `query' and
-  * apply the `flags' and `mask' to them.  Returns number of matching
-@@ -147,7 +184,7 @@ static int ddebug_change(const struct ddebug_query *query,
- 	list_for_each_entry(dt, &ddebug_tables, link) {
- 
- 		/* match against the module name */
--		if (query->module && strcmp(query->module, dt->mod_name))
-+		if (query->module && !match_pattern(query->module, dt->mod_name))
- 			continue;
- 
- 		for (i = 0; i < dt->num_ddebugs; i++) {
-@@ -155,14 +192,16 @@ static int ddebug_change(const struct ddebug_query *query,
- 
- 			/* match against the source filename */
- 			if (query->filename &&
--			    strcmp(query->filename, dp->filename) &&
--			    strcmp(query->filename, kbasename(dp->filename)) &&
--			    strcmp(query->filename, trim_prefix(dp->filename)))
-+			    !match_pattern(query->filename, dp->filename) &&
-+			    !match_pattern(query->filename,
-+					   kbasename(dp->filename)) &&
-+			    !match_pattern(query->filename,
-+					   trim_prefix(dp->filename)))
- 				continue;
- 
- 			/* match against the function */
- 			if (query->function &&
--			    strcmp(query->function, dp->function))
-+			    !match_pattern(query->function, dp->function))
- 				continue;
- 
- 			/* match against the format */
--- 
-1.8.1.2
-
+Yours,
+Linus Walleij
