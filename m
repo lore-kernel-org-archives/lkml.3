@@ -1,37 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab3J2NLn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 09:11:43 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:53486 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978Ab3J2NLl (ORCPT
+	id S1756002Ab3J2NLz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 09:11:55 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:40076 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755927Ab3J2NLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 09:11:41 -0400
+	Tue, 29 Oct 2013 09:11:53 -0400
+Date: Tue, 29 Oct 2013 14:11:49 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Message-ID: <20131029131149.GB20408@gmail.com>
+References: <20131028160131.GA31048@hmsreliant.think-freely.org>
+ <20131028162438.GB14350@gmail.com>
+ <20131028174630.GB31048@hmsreliant.think-freely.org>
+ <20131028182913.GD31048@hmsreliant.think-freely.org>
+ <20131029082542.GA24625@gmail.com>
+ <20131029112022.GA24477@neilslaptop.think-freely.org>
+ <20131029113031.GA16897@gmail.com>
+ <20131029114907.GE24477@neilslaptop.think-freely.org>
+ <20131029125233.GA17449@gmail.com>
+ <20131029130712.GA25078@neilslaptop.think-freely.org>
 MIME-Version: 1.0
-In-Reply-To: <20131029201622.c8cb7bea9b360a98a2c66f74@canb.auug.org.au>
-References: <20131029201622.c8cb7bea9b360a98a2c66f74@canb.auug.org.au>
-Date: Tue, 29 Oct 2013 14:11:40 +0100
-Message-ID: <CACRpkdY_xywUJ4CzCjDndZpcembaMfgcVxXi_Xti9F=_LemdEg@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131029130712.GA25078@neilslaptop.think-freely.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 10:16 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-> drivers/built-in.o: In function `mmc_gpio_request_cd':
-> clkdev.c:(.text+0x75c3c): undefined reference to `devm_gpio_request_one'
->
-> CONFIG_GPIO_DEVRES is not defined for this build.  I am not sure what
-> made the above error show up, and I have left it broken for today.
+* Neil Horman <nhorman@tuxdriver.com> wrote:
 
-Hm and I thought I had put proper stubs in place for this.
-Oh well, better take a look again.
+> I'm sure it worked properly on my system here, I specificially 
+> checked it, but I'll gladly run it again.  You have to give me an 
+> hour as I have a meeting to run to, but I'll have results shortly.
 
-Yours,
-Linus Walleij
+So what I tried to react to was this observation of yours:
+
+> > > Heres my data for running the same test with taskset 
+> > > restricting execution to only cpu0.  I'm not quite sure whats 
+> > > going on here, but doing so resulted in a 10x slowdown of the 
+> > > runtime of each iteration which I can't explain. [...]
+
+A 10x slowdown would be consistent with not running your testcase 
+but 'perf bench sched messaging' by accident, or so.
+
+But I was really just guessing wildly here.
+
+Thanks,
+
+	Ingo
