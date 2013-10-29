@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab3J2BIs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 21:08:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61520 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751825Ab3J2BIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 21:08:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="400167039"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Cohen <david.a.cohen@linux.intel.com>
-Subject: [RFC/PATCH 0/2] patchset to workaround f_fs for DWC3
-Date: Mon, 28 Oct 2013 18:12:58 -0700
-Message-Id: <1383009180-23236-1-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.rc3
+	id S932273Ab3J2BJI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 21:09:08 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:30991 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932234Ab3J2BJC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 21:09:02 -0400
+X-Spam-Score: -100.8
+Message-ID: <526F0A71.4000504@asianux.com>
+Date: Tue, 29 Oct 2013 09:08:01 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Vineet Gupta <vineetg76@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>, noamc@ezchip.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arc: kernel: remove '__init' for first_lines_of_secondary()
+References: <52673186.4050806@asianux.com> <526E6C6B.9020507@synopsys.com>
+In-Reply-To: <526E6C6B.9020507@synopsys.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 10/28/2013 09:53 PM, Vineet Gupta wrote:
+> On 10/23/2013 07:46 AM, Chen Gang wrote:
+>> first_lines_of_secondary() is a '__init' function, but it may be called
+>> by __cpu_up() by _cpu_up() by cpu_up() which is a normal export symbol
+>> function. So recommend to remove '__init'.
+>>
+>> The related warning (with allmodconfig):
+>>
+>>     MODPOST vmlinux.o
+>>   WARNING: vmlinux.o(.text+0x315c): Section mismatch in reference from the function __cpu_up() to the function .init.text:first_lines_of_secondary()
+>>   The function __cpu_up() references
+>>   the function __init first_lines_of_secondary().
+>>   This is often because __cpu_up lacks a __init
+>>   annotation or the annotation of first_lines_of_secondary is wrong.
+>>
+>>
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> 
+> Applied for 3.13. But I'm planning to squash all the __init section annotation
+> fixes into one patch. OK with you ?
+> 
 
-These patches are a proposal to workaround f_fs when using DWC3 controller.
-Since DWC3 requires epout buffer size to be aligned to maxpacketsize, f_fs
-needs to pad buffer size to match the above case.
+It is OK to me. They are all related with each other, although toolchain
+reports several warnings (originally, I made them based on warning items).
 
-This change is necessary to make Android's adbd service to work with f_fs
-instead of out-of-tree android gadget. If this same situation is happening in
-other still untested places, a more generic solution may be required.
 
----
-David Cohen (2):
-  usb: gadget: re-introduce gadget_is_dwc3()
-  usb: ffs/dwc3: pad epout buffer size when not aligned to maxpacketsize
-
- drivers/usb/gadget/f_fs.c         | 19 +++++++++++++++++++
- drivers/usb/gadget/gadget_chips.h |  1 +
- 2 files changed, 20 insertions(+)
-
+Thanks.
 -- 
-1.8.4.rc3
-
+Chen Gang
