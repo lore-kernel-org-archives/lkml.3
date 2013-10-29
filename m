@@ -1,74 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754416Ab3J2KYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 06:24:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50173 "EHLO mx2.suse.de"
+	id S1754171Ab3J2KZk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 06:25:40 -0400
+Received: from ring0.de ([91.143.88.219]:39506 "EHLO smtp.ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752024Ab3J2KYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 06:24:24 -0400
-Date: Tue, 29 Oct 2013 10:24:19 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Tom Weber <l_linux-kernel@mail2news.4t2.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Automatic NUMA balancing patches for tip-urgent/stable
-Message-ID: <20131029102419.GC2400@suse.de>
-References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
- <20131024122646.GB2402@suse.de>
- <20131026121148.GC24439@gmail.com>
- <20131029094208.GB2400@suse.de>
- <20131029094856.GA25306@gmail.com>
+	id S1751237Ab3J2KZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 06:25:37 -0400
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Tue, 29 Oct 2013 11:25:28 +0100
+From: Sebastian Reichel <sre@debian.org>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: linux-input@vger.kernel.org,
+        "=?iso-8859-1?Q?=22'Beno=EEt_Cousson'=22?=" <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCHv2 1/3] Input: twl4030-keypad - add device tree support
+Message-ID: <20131029102527.GA10530@earth.universe>
+Mail-Followup-To: Kumar Gala <galak@codeaurora.org>,
+	linux-input@vger.kernel.org,
+	=?iso-8859-1?Q?=22'Beno=EEt_Cousson'=22?= <bcousson@baylibre.com>,
+	Tony Lindgren <tony@atomide.com>,
+	Rob Herring <rob.herring@calxeda.com>,
+	Pawel Moll <pawel.moll@arm.com>,
+	Mark Rutland <mark.rutland@arm.com>,
+	Stephen Warren <swarren@wwwdotorg.org>,
+	Ian Campbell <ijc+devicetree@hellion.org.uk>,
+	Rob Landley <rob@landley.net>,
+	Russell King <linux@arm.linux.org.uk>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+	linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
+References: <1382446042-27099-1-git-send-email-sre@debian.org>
+ <1382446042-27099-2-git-send-email-sre@debian.org>
+ <5137C017-2515-427C-865F-B938CC24B210@codeaurora.org>
+ <20131029010608.GA5353@earth.universe>
+ <14DEC9DA-8C77-4F73-AF3A-6C0D20C6C1AB@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
 Content-Disposition: inline
-In-Reply-To: <20131029094856.GA25306@gmail.com>
+In-Reply-To: <14DEC9DA-8C77-4F73-AF3A-6C0D20C6C1AB@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 10:48:56AM +0100, Ingo Molnar wrote:
-> 
-> * Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > > Would be nice if you gave me all the specific SHA1 tags of 
-> > > sched/core that are required for the fix. We can certainly use a 
-> > > range to make it all safer to apply.
-> > 
-> > Of course. The range of the relevant commits in tip/sched/core is
-> > ca4be374c5c0ab3d8b84fb2861d663216281e6ac..778ec5247bb79815af12434980164334fb94cc9e
-> > 
-> > 904f64a376e663cd459fb7aec4f12e14c39c24b6 mm: numa: Document automatic NUMA balancing sysctls
-> > 1d649bccc8c1370e402b85e1d345ad24f3f0d1b5 sched, numa: Comment fixlets
-> > f961cab8d55d55d6abc0df08ce2abec8ab56f2c8 mm: numa: Do not account for a hinting fault if we raced
-> > 6f2a15fc1df62af3ba3be327877b7e53cb16e878 mm: Wait for THP migrations to complete during NUMA hinting faults
-> > 4ee547f994c633f2607d222e2c6385b6fe5f07d8 mm: Prevent parallel splits during THP migration
-> > dd83227f0d93fb37d7621a24e8465b13b437faa6 mm: numa: Sanitize task_numa_fault() callsites
-> > efeeacf7b94babff85da7e468fc5450fdfab0900 mm: Close races between THP migration and PMD numa clearing
-> > 778ec5247bb79815af12434980164334fb94cc9e mm: Account for a THP NUMA hinting update as one PTE update
-> 
-> These commits don't exist in -tip :-/
-> 
 
-Bah, I have tip as a remote tree but looked at my local copy of the
-commits in the incorrect branch. Lets try this again
+--k1lZvvs/B4yU6o8G
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-37bf06375c90a42fe07b9bebdb07bc316ae5a0ce..afcae2655b0ab67e65f161b1bb214efcfa1db415
+On Tue, Oct 29, 2013 at 03:33:31AM -0500, Kumar Gala wrote:
+> On Oct 28, 2013, at 8:06 PM, Sebastian Reichel wrote:
+> > On Mon, Oct 28, 2013 at 01:42:47AM -0500, Kumar Gala wrote:
+> >>> +This binding is based on the matrix-keymap binding with the following
+> >>> +changes:
+> >>=20
+> >> Maybe be a bit more specific and say 'based on the input/matrix-keymap=
+=2Etxt binding'..
+> >=20
+> > OK.
+> >=20
+> >>> + * keypad,num-rows and keypad,num-columns are required.
+> >>=20
+> >> Is linux,keymap required from matrix-keymap.txt?
+> >=20
+> > Yes, matrix-keymap.txt contains descriptions for the following:
+> >=20
+> > required:
+> > - linux,keymap
+>=20
+> So you don't say that linux,keymap is required for twl4030-keypad
+> (wasn't clear if you assumed that or not).
 
-10fc05d0e551146ad6feb0ab8902d28a2d3c5624 mm: numa: Document automatic NUMA balancing sysctls
-c69307d533d7aa7cc8894dbbb8a274599f8630d7 sched/numa: Fix comments
-0c3a775e1e0b069bf765f8355b723ce0d18dcc6c mm: numa: Do not account for a hinting fault if we raced
-ff9042b11a71c81238c70af168cd36b98a6d5a3c mm: Wait for THP migrations to complete during NUMA hinting faults
-b8916634b77bffb233d8f2f45703c80343457cc1 mm: Prevent parallel splits during THP migration
-8191acbd30c73e45c24ad16c372e0b42cc7ac8f8 mm: numa: Sanitize task_numa_fault() callsites
-a54a407fbf7735fd8f7841375574f5d9b0375f93 mm: Close races between THP migration and PMD numa clearing
-afcae2655b0ab67e65f161b1bb214efcfa1db415 mm: Account for a THP NUMA hinting update as one PTE update
+It's already required by matrix-keypad, so I assumed the requirement
+is inherited by twl4030-keypad. The other matrix-keymap based
+bindings assume the same.
 
--- 
-Mel Gorman
-SUSE Labs
+keypad,num-rows and keypad,num-columns are only stated explicitly,
+because they are optional in matrix-keymap, but required by
+twl4030-keympad.
+
+> > optional:
+> > - keypad,num-rows
+> > - keypad,num-columns
+> >=20
+> >>> +Optional Properties specific to linux:
+> >>> +- linux,keypad-no-autorepeat: do no enable autorepeat feature.
+> >>=20
+> >> Does it make sense to update the matrix-keymap.txt binding to add
+> >> 'linux,keypad-no-autorepeat' there?
+> >=20
+> > At least according to devicetree documentation there are
+> > keymap-matrix.txt based drivers, which do not support
+> > "linux,keypad-no-autorepeat".
+>=20
+> Which is why it could be optional in keymap-matrix.txt.  I dont
+> know anything about keymap/keypad's just asking the question?
+>=20
+> It seems as if linux,keypad-no-autorepeat is intended to mean the
+> same thing (if relevant to the device) across all drivers.  Is
+> that correct?  If so it seems like moving it to be specified in a
+> generic input binding makes sense, just not sure if
+> keymap-matrix.txt is that place or not.
+
+Yes, when supported it means the same. I can add it to
+keymap-matrix.txt.
+
+-- Sebastian
+
+--k1lZvvs/B4yU6o8G
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSb40XAAoJENju1/PIO/qahGoP/1DAToS7oOCrQFVKlQ52Wk7f
+BV2abfnWS1wxzv4VL+PdWTF2uidtanqzyD5zAG1L9eOQct43gWZncpp0Pf2xsuZS
+6NXQMov1g+qzO754EoShcC/Hefhu3zspxMFkckpdAG9R8Y0cQFqwscnnCBMLjCD9
+YwxnCqCLA/k261FmjLmV3D/aS6IOnC9Htx1VVu0/BhUYJTt2d0jNxeUzV59XTz48
+3p8Ib5ZxvtcV/nZgwH+UAPO5C8NuRurd3AabRLZz8W+2WlOnkEbDeUWmJyowIzNF
+PoJYHgosqOHO/Zfbzaodl2F4ZjB9mQgPsWLqoA6c/mmPnbT80Tj1PHzBr9YoTqn9
+zy6uVDf+kFU5HdJqatoOl4GQVWf+E2I5rxYc9FymXnejtQXpRkQ8+fs1mvZJ95zC
+Ffbhl9Gh2ccPdXjEjntyvcGNgB8vr2rTAOLwzoJKZHOv7vKPA+Rcl5yXd7PK4eUy
+y3J8NFlL5kwuWpfl1W+dwjl9DLE7x52WVAzUqZe7+XOYNoTTucZKsrT/ux1FI3+X
+XE7ml3v5clvcuZAroSUVnfZRXsJvG5H7x9GGuJ9POu4M8DHr4l2Az3KLSWg5vr8h
+aemiJ1mndAn8DPZJWx7woAWB5+Wm8JeVcN6/qfOAx1VOhMt+7uP+UFdZR4QQRj+S
+ZEwcMTUhSYox1W5NA06T
+=aZwS
+-----END PGP SIGNATURE-----
+
+--k1lZvvs/B4yU6o8G--
