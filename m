@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656Ab3J2OIY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 10:08:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45895 "EHLO
+	id S1757763Ab3J2OIj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 10:08:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45907 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071Ab3J2OIT (ORCPT
+	with ESMTP id S1755317Ab3J2OIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 10:08:19 -0400
-Date: Tue, 29 Oct 2013 07:07:49 -0700
-From: tip-bot for Ben Segall <tipbot@zytor.com>
-Message-ID: <tip-f9f9ffc237dd924f048204e8799da74f9ecf40cf@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, bsegall@google.com, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, bsegall@google.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20131016181632.22647.84174.stgit@sword-of-the-dawn.mtv.corp.google.com>
-References: <20131016181632.22647.84174.stgit@sword-of-the-dawn.mtv.corp.google.com>
+	Tue, 29 Oct 2013 10:08:35 -0400
+Date: Tue, 29 Oct 2013 07:07:58 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-vw9lg588x1ic248whybjon0c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, dzickus@redhat.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Avoid throttle_cfs_rq()
-  racing with period_timer stopping
-Git-Commit-ID: f9f9ffc237dd924f048204e8799da74f9ecf40cf
+Subject: [tip:perf/core] perf: Remove useless atomic_t
+Git-Commit-ID: d9494cb4299da66541a3f3ab82c552889bee0606
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,76 +25,99 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 29 Oct 2013 07:07:55 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 29 Oct 2013 07:08:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f9f9ffc237dd924f048204e8799da74f9ecf40cf
-Gitweb:     http://git.kernel.org/tip/f9f9ffc237dd924f048204e8799da74f9ecf40cf
-Author:     Ben Segall <bsegall@google.com>
-AuthorDate: Wed, 16 Oct 2013 11:16:32 -0700
+Commit-ID:  d9494cb4299da66541a3f3ab82c552889bee0606
+Gitweb:     http://git.kernel.org/tip/d9494cb4299da66541a3f3ab82c552889bee0606
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Thu, 17 Oct 2013 15:36:19 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 29 Oct 2013 12:02:32 +0100
+CommitDate: Tue, 29 Oct 2013 12:02:49 +0100
 
-sched: Avoid throttle_cfs_rq() racing with period_timer stopping
+perf: Remove useless atomic_t
 
-throttle_cfs_rq() doesn't check to make sure that period_timer is running,
-and while update_curr/assign_cfs_runtime does, a concurrently running
-period_timer on another cpu could cancel itself between this cpu's
-update_curr and throttle_cfs_rq(). If there are no other cfs_rqs running
-in the tg to restart the timer, this causes the cfs_rq to be stranded
-forever.
+There's nothing atomic about atomic_set vs atomic_read; so remove the
+atomic_t usage.
 
-Fix this by calling __start_cfs_bandwidth() in throttle if the timer is
-inactive.
+Also, make running_sample_length static as it really is (and should
+be) local to this translation unit.
 
-(Also add some sched_debug lines for cfs_bandwidth.)
-
-Tested: make a run/sleep task in a cgroup, loop switching the cgroup
-between 1ms/100ms quota and unlimited, checking for timer_active=0 and
-throttled=1 as a failure. With the throttle_cfs_rq() change commented out
-this fails, with the full patch it passes.
-
-Signed-off-by: Ben Segall <bsegall@google.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: pjt@google.com
-Link: http://lkml.kernel.org/r/20131016181632.22647.84174.stgit@sword-of-the-dawn.mtv.corp.google.com
+Cc: eranian@google.com
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: jmario@redhat.com
+Cc: acme@infradead.org
+Cc: dave.hansen@linux.intel.com
+Link: http://lkml.kernel.org/n/tip-vw9lg588x1ic248whybjon0c@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/debug.c | 8 ++++++++
- kernel/sched/fair.c  | 2 ++
- 2 files changed, 10 insertions(+)
+ kernel/events/core.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index e6ba5e3..5c34d18 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -229,6 +229,14 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
- 			atomic_read(&cfs_rq->tg->runnable_avg));
- #endif
- #endif
-+#ifdef CONFIG_CFS_BANDWIDTH
-+	SEQ_printf(m, "  .%-30s: %d\n", "tg->cfs_bandwidth.timer_active",
-+			cfs_rq->tg->cfs_bandwidth.timer_active);
-+	SEQ_printf(m, "  .%-30s: %d\n", "throttled",
-+			cfs_rq->throttled);
-+	SEQ_printf(m, "  .%-30s: %d\n", "throttle_count",
-+			cfs_rq->throttle_count);
-+#endif
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 5bd7fe4..028dad9 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -175,8 +175,8 @@ int sysctl_perf_event_sample_rate __read_mostly	= DEFAULT_MAX_SAMPLE_RATE;
+ static int max_samples_per_tick __read_mostly	= DIV_ROUND_UP(DEFAULT_MAX_SAMPLE_RATE, HZ);
+ static int perf_sample_period_ns __read_mostly	= DEFAULT_SAMPLE_PERIOD_NS;
  
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 0923ab2..41c02b6 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3112,6 +3112,8 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
- 	cfs_rq->throttled_clock = rq_clock(rq);
- 	raw_spin_lock(&cfs_b->lock);
- 	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
-+	if (!cfs_b->timer_active)
-+		__start_cfs_bandwidth(cfs_b);
- 	raw_spin_unlock(&cfs_b->lock);
+-static atomic_t perf_sample_allowed_ns __read_mostly =
+-	ATOMIC_INIT( DEFAULT_SAMPLE_PERIOD_NS * DEFAULT_CPU_TIME_MAX_PERCENT / 100);
++static int perf_sample_allowed_ns __read_mostly =
++	DEFAULT_SAMPLE_PERIOD_NS * DEFAULT_CPU_TIME_MAX_PERCENT / 100;
+ 
+ void update_perf_cpu_limits(void)
+ {
+@@ -184,7 +184,7 @@ void update_perf_cpu_limits(void)
+ 
+ 	tmp *= sysctl_perf_cpu_time_max_percent;
+ 	do_div(tmp, 100);
+-	atomic_set(&perf_sample_allowed_ns, tmp);
++	ACCESS_ONCE(perf_sample_allowed_ns) = tmp;
  }
  
+ static int perf_rotate_context(struct perf_cpu_context *cpuctx);
+@@ -228,14 +228,15 @@ int perf_cpu_time_max_percent_handler(struct ctl_table *table, int write,
+  * we detect that events are taking too long.
+  */
+ #define NR_ACCUMULATED_SAMPLES 128
+-DEFINE_PER_CPU(u64, running_sample_length);
++static DEFINE_PER_CPU(u64, running_sample_length);
+ 
+ void perf_sample_event_took(u64 sample_len_ns)
+ {
+ 	u64 avg_local_sample_len;
+ 	u64 local_samples_len;
++	u64 allowed_ns = ACCESS_ONCE(perf_sample_allowed_ns);
+ 
+-	if (atomic_read(&perf_sample_allowed_ns) == 0)
++	if (allowed_ns == 0)
+ 		return;
+ 
+ 	/* decay the counter by 1 average sample */
+@@ -251,7 +252,7 @@ void perf_sample_event_took(u64 sample_len_ns)
+ 	 */
+ 	avg_local_sample_len = local_samples_len/NR_ACCUMULATED_SAMPLES;
+ 
+-	if (avg_local_sample_len <= atomic_read(&perf_sample_allowed_ns))
++	if (avg_local_sample_len <= allowed_ns)
+ 		return;
+ 
+ 	if (max_samples_per_tick <= 1)
+@@ -262,10 +263,9 @@ void perf_sample_event_took(u64 sample_len_ns)
+ 	perf_sample_period_ns = NSEC_PER_SEC / sysctl_perf_event_sample_rate;
+ 
+ 	printk_ratelimited(KERN_WARNING
+-			"perf samples too long (%lld > %d), lowering "
++			"perf samples too long (%lld > %lld), lowering "
+ 			"kernel.perf_event_max_sample_rate to %d\n",
+-			avg_local_sample_len,
+-			atomic_read(&perf_sample_allowed_ns),
++			avg_local_sample_len, allowed_ns,
+ 			sysctl_perf_event_sample_rate);
+ 
+ 	update_perf_cpu_limits();
