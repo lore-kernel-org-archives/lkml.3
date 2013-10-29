@@ -1,29 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353Ab3J2FZo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 01:25:44 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58527 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719Ab3J2FZn (ORCPT
+	id S1751506Ab3J2FbO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 01:31:14 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:45612 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130Ab3J2FbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 01:25:43 -0400
-X-AuditID: 9c930197-b7b3eae00000122e-e0-526f46d66a90
+	Tue, 29 Oct 2013 01:31:13 -0400
+X-AuditID: 9c93016f-b7cb6ae000000e4c-d3-526f481ff7af
 From: Namhyung Kim <namhyung@kernel.org>
-To: Arun Sharma <asharma@fb.com>
-Cc: Rodrigo Campos <rodrigo@sdfg.com.ar>, <namhyung.kim@lge.com>,
-        <linux-kernel@vger.kernel.org>, <acme@ghostprotocols.net>,
-        <fweisbec@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: State of "perf: Add a new sort order: SORT_INCLUSIVE"
-References: <20131025150721.GA12534@sdfg.com.ar>
-	<8761si9e1u.fsf@sejong.aot.lge.com>
-	<20131028084244.GA7482@sdfg.com.ar>
-	<877gcx92yd.fsf@sejong.aot.lge.com>
-	<20131028092955.GB7482@sdfg.com.ar> <526E9429.20803@fb.com>
-	<87mwls7ouf.fsf@sejong.aot.lge.com> <526F353E.8040607@fb.com>
-Date: Tue, 29 Oct 2013 14:25:42 +0900
-In-Reply-To: <526F353E.8040607@fb.com> (Arun Sharma's message of "Mon, 28 Oct
-	2013 21:10:38 -0700")
-Message-ID: <87d2mo7ind.fsf@sejong.aot.lge.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Pekka Enberg <penberg@iki.fi>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
+        anton@redhat.com, systemtap@sourceware.org,
+        aravinda@linux.vnet.ibm.com
+Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
+References: <20131023044511.1886.82571.stgit@hemant-fedora>
+	<20131023050502.1886.15779.stgit@hemant-fedora>
+	<CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com>
+	<526E4940.8000608@hitachi.com> <526E5BA5.7050103@iki.fi>
+	<20131028141152.GA1040@linux.vnet.ibm.com> <526E72EC.9060400@iki.fi>
+	<20131028173152.GB1040@linux.vnet.ibm.com> <526EA366.4020204@iki.fi>
+	<526F2949.5000208@hitachi.com>
+Date: Tue, 29 Oct 2013 14:31:11 +0900
+In-Reply-To: <526F2949.5000208@hitachi.com> (Masami Hiramatsu's message of
+	"Tue, 29 Oct 2013 12:19:37 +0900")
+Message-ID: <877gcw7ie8.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -32,50 +38,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Oct 2013 21:10:38 -0700, Arun Sharma wrote:
-> On 10/28/13 8:11 PM, Namhyung Kim wrote:
->
-> Hey Namhyung:
->
->>>
->>> Also, what's the reasoning for --cumulate not being an option under
->>> perf record -g ..,<order>?
->>
->> Sorry, I cannot understand you.  The 'perf record' just saves sample
->> data (and callchains) from the ring-buffer.  All the processing happens
->> in 'perf report'.  I can't see what you expect from the 'perf record
->> --cumulate'.  Am I missing something?
->
-> Yes - I meant to say perf report -g :)
+Hi Masami,
 
-:)
-
+On Tue, 29 Oct 2013 12:19:37 +0900, Masami Hiramatsu wrote:
+> (2013/10/29 2:48), Pekka Enberg wrote:
+>> For the 32-bit and 64-bit libc case, why cannot 'perf list'
+>> by default print out something like:
+>> 
+>> $ perf list
+>> 
+>>    libc:setjmp [SDT marker group]
+>> 
+>> and provide a '--fully-qualified' command line option that:
+>> 
+>> $ perf list --fully-qualified
+>> 
+>> libc:setjmp => libc32:setjmp, libc64:setjmp      [SDT marker group]
+>> libc32:setjmp => libc:setjmp@/lib/libc.so.6      [SDT marker]
+>> libc64:setjmp => libc:setjmp@/lib64/libc.so.6  [SDT marker]
+>> 
+>> and then teach 'perf trace' to deal with SDT marker groups
+>> where you trace two events, not one?
 >
->> -g [type,min[,limit],order]
->
-> Specifically, along with callee, caller, we could have a third
-> option. Or we could have a new type (graph, fractal, cumulative).
+> Ah, that's a good idea. :)
+> And it also is needed for another probe event because
+> sometimes inlined functions have multiple instances.
+> I'd like to fold them as one event group.
 
-That's also fine by me.  But I added --cumulate since it's quite
-different from other callchain behaviors.
-
-If we go with -g option, I'd like add it as a new type.
-
->
->>> Given that there are clear use cases in production involving complex
->>> callgraphs, I'm for getting this support in first and then reconciling
->>> the differences with perf record -b later.
->>
->> I think what Frederic said is that the code de-duplication of 'perf
->> report' side.  The branch stack and --cumulate are different - branch
->> stack concentrates on the branch itself but --cumulate uses callchains
->> to find parents and give some credit to them as side information.
->
-> Me too. I brought it up with Stephane at some point in the last year
-> or so and there wasn't an obvious way to de-duplicate because of these
-> differences.
-
-Yeah, looking at the code, I can hardly find how I can do it. :-/
+Yes, I'd love to see it as well. :)
 
 Thanks,
 Namhyung
