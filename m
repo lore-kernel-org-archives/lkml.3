@@ -1,95 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab3J2IW6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 04:22:58 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:18409 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab3J2IWu (ORCPT
+	id S1753518Ab3J2IY6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 04:24:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42239 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188Ab3J2IWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 04:22:50 -0400
-X-AuditID: cbfee61a-b7f836d0000025d7-cd-526f7058cabc
-From: Fan Li <fanofcode.li@samsung.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: [f2fs-dev] [PATCH V2] f2fs: change the method of calculating the
- number summary blocks
-Date: Tue, 29 Oct 2013 16:21:47 +0800
-Message-id: <002701ced480$0ab1cd10$20156730$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac7Uf6DYi+t1N5jrSIqXE+R3Ogz+LA==
-Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t9jQd2Igvwgg3cNShbXd/1lsri0yN1i
-	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEdx2aSk5mSWpRbp2yVwZayee4i14CBfxZy9
-	DcwNjA+4uxg5OSQETCT+nTzGDmGLSVy4t56ti5GLQ0hgOqPEp7kzmSCcH4wSLcdfglWxCahL
-	bJnZzQRiiwhIS8z6NI8FxGYWyJSY83oyK4gtLJAoMWVNO1icRUBVYlbffWYQm1fAUmJewwEm
-	CFtQ4sfke1C9WhLrdx5ngrDlJTavecsMcZGCxI6zrxkhdulJLNozmxWiRlxi0oOH7BMYBWYh
-	GTULyahZSEbNQtKygJFlFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwKD+T2sG4ssHiEKMA
-	B6MSD+8D5vwgIdbEsuLK3EOMEhzMSiK8O4KBQrwpiZVVqUX58UWlOanFhxilOViUxHkPtFoH
-	CgmkJ5akZqemFqQWwWSZODilGhizG3b6HDzcNmvGzGOt4W2GBnpx0/crmrwXDblw6Etb6LX3
-	T+Nb+KTFtNy5DotFlMVl5HxKN/tRfHC9dyDr0ccfX0YsitGqdI2UatkqNeOEk1NFuNaZpZ8l
-	zlpn10o/b/Bd8UHtY4z959LJvKHLr+VdF73HK7TlNPdj1c4jt+75X+g+3cl9bboSS3FGoqEW
-	c1FxIgB6JNyaYQIAAA==
+	Tue, 29 Oct 2013 04:22:51 -0400
+Date: Tue, 29 Oct 2013 01:22:04 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-9754c4f9b23d5ce6756514acdf134ad61470734a@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1382700293-1803-1-git-send-email-jolsa@redhat.com>
+References: <1382700293-1803-1-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf hists:
+  Add color overhead for stdio output buffer
+Git-Commit-ID: 9754c4f9b23d5ce6756514acdf134ad61470734a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 29 Oct 2013 01:22:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-npages_for_summary_flush uses (SUMMARY_SIZE + 1) as the size of a
-f2fs_summary 
-while its actual size is  SUMMARY_SIZE. So the result sometimes is bigger
-than actual 
-number by one, which causes checkpoint can't be written into disk
-contiguously, 
-and sometimes summary blocks can't be compacted like they should.
-Besides, when writing summary blocks into pages, if remain space in a page
-isn't 
-big enough for one f2fs_summary, it will be left unused, current code seems
-not to 
-take it into account.
+Commit-ID:  9754c4f9b23d5ce6756514acdf134ad61470734a
+Gitweb:     http://git.kernel.org/tip/9754c4f9b23d5ce6756514acdf134ad61470734a
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Fri, 25 Oct 2013 13:24:53 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 28 Oct 2013 16:05:59 -0300
 
-Signed-off-by: Fan Li <fanofcode.li@samsung.com>
+perf hists: Add color overhead for stdio output buffer
+
+Following commit tightened up the buffer size for output to strict width
+of used format columns:
+
+  99cf666 perf hists: Fix formatting of long symbol names
+
+This works fine until you hit color overhead output which places extra
+bytes into output buffer. We need to account for color overhead in the
+output buffer. Adding maximum color byte size to the output buffer size.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1382700293-1803-1-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- fs/f2fs/segment.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ tools/perf/ui/stdio/hist.c |  9 ++++-----
+ tools/perf/util/hist.h     | 13 +++++++++++++
+ 2 files changed, 17 insertions(+), 5 deletions(-)
 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c index 487af61..e40cdc4
-100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -279,9 +279,8 @@ static void __add_sum_entry(struct f2fs_sb_info *sbi,
-int type,
-  */
- int npages_for_summary_flush(struct f2fs_sb_info *sbi)  {
--	int total_size_bytes = 0;
- 	int valid_sum_count = 0;
--	int i, sum_space;
-+	int i, sum_in_page;
- 
- 	for (i = CURSEG_HOT_DATA; i <= CURSEG_COLD_DATA; i++) {
- 		if (sbi->ckpt->alloc_type[i] == SSR)
-@@ -290,13 +289,12 @@ int npages_for_summary_flush(struct f2fs_sb_info *sbi)
- 			valid_sum_count += curseg_blkoff(sbi, i);
- 	}
- 
--	total_size_bytes = valid_sum_count * (SUMMARY_SIZE + 1)
--			+ sizeof(struct nat_journal) + 2
--			+ sizeof(struct sit_journal) + 2;
--	sum_space = PAGE_CACHE_SIZE - SUM_FOOTER_SIZE;
--	if (total_size_bytes < sum_space)
-+	sum_in_page = (PAGE_CACHE_SIZE - 2 * SUM_JOURNAL_SIZE -
-+			SUM_FOOTER_SIZE) / SUMMARY_SIZE;
-+	if (valid_sum_count <= sum_in_page)
- 		return 1;
--	else if (total_size_bytes < 2 * sum_space)
-+	else if ((valid_sum_count - sum_in_page) <=
-+		(PAGE_CACHE_SIZE - SUM_FOOTER_SIZE) / SUMMARY_SIZE)
- 		return 2;
- 	return 3;
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 194e2f4..6c15268 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -315,8 +315,7 @@ static inline void advance_hpp(struct perf_hpp *hpp, int inc)
  }
---
-1.7.9.5
-
-
+ 
+ static int hist_entry__period_snprintf(struct perf_hpp *hpp,
+-				       struct hist_entry *he,
+-				       bool color)
++				       struct hist_entry *he)
+ {
+ 	const char *sep = symbol_conf.field_sep;
+ 	struct perf_hpp_fmt *fmt;
+@@ -338,7 +337,7 @@ static int hist_entry__period_snprintf(struct perf_hpp *hpp,
+ 		} else
+ 			first = false;
+ 
+-		if (color && fmt->color)
++		if (perf_hpp__use_color() && fmt->color)
+ 			ret = fmt->color(fmt, hpp, he);
+ 		else
+ 			ret = fmt->entry(fmt, hpp, he);
+@@ -358,12 +357,11 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
+ 		.buf		= bf,
+ 		.size		= size,
+ 	};
+-	bool color = !symbol_conf.field_sep;
+ 
+ 	if (size == 0 || size > bfsz)
+ 		size = hpp.size = bfsz;
+ 
+-	ret = hist_entry__period_snprintf(&hpp, he, color);
++	ret = hist_entry__period_snprintf(&hpp, he);
+ 	hist_entry__sort_snprintf(he, bf + ret, size - ret, hists);
+ 
+ 	ret = fprintf(fp, "%s\n", bf);
+@@ -482,6 +480,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 
+ print_entries:
+ 	linesz = hists__sort_list_width(hists) + 3 + 1;
++	linesz += perf_hpp__color_overhead();
+ 	line = malloc(linesz);
+ 	if (line == NULL) {
+ 		ret = -1;
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 1329b6b..ce8dc61 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -5,6 +5,7 @@
+ #include <pthread.h>
+ #include "callchain.h"
+ #include "header.h"
++#include "color.h"
+ 
+ extern struct callchain_param callchain_param;
+ 
+@@ -175,6 +176,18 @@ void perf_hpp__init(void);
+ void perf_hpp__column_register(struct perf_hpp_fmt *format);
+ void perf_hpp__column_enable(unsigned col);
+ 
++static inline size_t perf_hpp__use_color(void)
++{
++	return !symbol_conf.field_sep;
++}
++
++static inline size_t perf_hpp__color_overhead(void)
++{
++	return perf_hpp__use_color() ?
++	       (COLOR_MAXLEN + sizeof(PERF_COLOR_RESET)) * PERF_HPP__MAX_INDEX
++	       : 0;
++}
++
+ struct perf_evlist;
+ 
+ struct hist_browser_timer {
