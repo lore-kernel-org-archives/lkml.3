@@ -1,206 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351Ab3J2Vqd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 17:46:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39060 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab3J2Vqc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 17:46:32 -0400
-Date: Tue, 29 Oct 2013 14:46:31 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Cc: Veaceslav Falico <vfalico@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: [RFC PATCH] PCI: export MSI mode using attributes, not kobjects
-Message-ID: <20131029214631.GA19354@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753391Ab3J2Vso (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 17:48:44 -0400
+Received: from mga02.intel.com ([134.134.136.20]:62273 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751583Ab3J2Vsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 17:48:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="400647232"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: [RFC/PATCH v2 0/3] add gadget quirk to adapt f_fs for DWC3
+Date: Tue, 29 Oct 2013 14:52:55 -0700
+Message-Id: <1383083578-16447-1-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Hi,
 
-The PCI MSI sysfs code is a mess with kobjects for things that don't
-really need to be kobjects.  This patch creates attributes dynamically
-for the MSI interrupts instead of using kobjects.
+These patches are a proposal to add gadget quirks in an immediate objective to
+adapt f_fs when using DWC3 controller. But the quirk solution is generic and
+can be used by other controllers to adapt gadget functions to their
+non-standard restrictions.
 
-Note, this does not delete the existing sysfs MSI code, but puts the
-attributes under a "msi_irqs_2" directory for testing / example.
+This change is necessary to make Android's adbd service to work on Intel
+Merrifield with f_fs instead of out-of-tree android gadget.
 
-Also note, this removes a directory from the current MSI interrupt sysfs
-code:
-
-old MSI kobjects:
-pci_device
-   └── msi_irqs
-       └── 40
-           └── mode
-
-new MSI attributes:
-pci_device
-   └── msi_irqs_2
-       └── 40
-
-As there was only one file "mode" with the kobject model, the interrupt
-number is now a file that returns the "mode" of the interrupt (msi vs.
-msix).
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
+David Cohen (3):
+  usb: gadget: add quirks field to struct usb_gadget
+  usb: ffs: check quirk to pad epout buf size when not aligned to
+    maxpacketsize
+  usb: dwc3: add quirk USB_GADGET_QUIRK_EP_OUT_ALIGNED_SIZE to gadget
+    driver
 
-Bjorn, I can make up a patch that rips out the existing kobject code
-here, but I figured this patch would make things easier to follow
-instead of having to dig through the removed logic at the same time.
+ drivers/usb/dwc3/gadget.c  |  1 +
+ drivers/usb/gadget/f_fs.c  | 17 +++++++++++++++++
+ include/linux/usb/gadget.h |  5 +++++
+ 3 files changed, 23 insertions(+)
 
-I'll clean up the error handling path for the create attribute logic as
-well, this was just a proof of concept that this could be done.
+-- 
+1.8.4.rc3
 
-Do you think that anyone cares about the current mode files in sysfs to
-move things in this manner?
-
- drivers/pci/msi.c   |   85 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/pci.h |    1 
- 2 files changed, 86 insertions(+)
-
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index d5f90d63..53848ab9 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -353,6 +353,9 @@ void write_msi_msg(unsigned int irq, struct msi_msg *msg)
- static void free_msi_irqs(struct pci_dev *dev)
- {
- 	struct msi_desc *entry, *tmp;
-+	struct attribute **msi_attrs;
-+	struct device_attribute *dev_attr;
-+	int count = 0;
- 
- 	list_for_each_entry(entry, &dev->msi_list, list) {
- 		int i, nvec;
-@@ -388,6 +391,22 @@ static void free_msi_irqs(struct pci_dev *dev)
- 		list_del(&entry->list);
- 		kfree(entry);
- 	}
-+
-+	if (dev->msi_irq_groups) {
-+		sysfs_remove_groups(&dev->dev.kobj, dev->msi_irq_groups);
-+		msi_attrs = dev->msi_irq_groups[0]->attrs;
-+		list_for_each_entry(entry, &dev->msi_list, list) {
-+			dev_attr = container_of(msi_attrs[count],
-+						struct device_attribute, attr);
-+			kfree(dev_attr->attr.name);
-+			kfree(dev_attr);
-+			++count;
-+		}
-+		kfree(msi_attrs);
-+		kfree(dev->msi_irq_groups[0]);
-+		kfree(dev->msi_irq_groups);
-+		dev->msi_irq_groups = NULL;
-+	}
- }
- 
- static struct msi_desc *alloc_msi_entry(struct pci_dev *dev)
-@@ -517,13 +536,79 @@ static struct kobj_type msi_irq_ktype = {
- 	.default_attrs = msi_irq_default_attrs,
- };
- 
-+static ssize_t msi_mode_show(struct device *dev, struct device_attribute *attr,
-+			     char *buf)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct msi_desc *entry;
-+	unsigned long irq;
-+	int retval;
-+
-+	retval = kstrtoul(attr->attr.name, 10, &irq);
-+	if (retval)
-+		return retval;
-+
-+	list_for_each_entry(entry, &pdev->msi_list, list) {
-+		if (entry->irq == irq) {
-+			return sprintf(buf, "%s\n",
-+				       entry->msi_attrib.is_msix ? "msix" : "msi");
-+		}
-+	}
-+	return -ENODEV;
-+}
-+
- static int populate_msi_sysfs(struct pci_dev *pdev)
- {
-+	struct attribute **msi_attrs;
-+	struct device_attribute *msi_dev_attr;
-+	struct attribute_group *msi_irq_group;
-+	const struct attribute_group **msi_irq_groups;
- 	struct msi_desc *entry;
- 	struct kobject *kobj;
- 	int ret;
-+	int num_msi = 0;
- 	int count = 0;
- 
-+	/* Determine how many msi entries we have */
-+	list_for_each_entry(entry, &pdev->msi_list, list) {
-+		++num_msi;
-+	}
-+	if (!num_msi)
-+		return 0;
-+
-+	/* Dynamically create the MSI attributes for the PCI device */
-+	msi_attrs = kzalloc(sizeof(void *) * (num_msi + 1), GFP_KERNEL);
-+	if (!msi_attrs)
-+		return -ENOMEM;
-+	list_for_each_entry(entry, &pdev->msi_list, list) {
-+		char *name = kmalloc(20, GFP_KERNEL);
-+		msi_dev_attr = kzalloc(sizeof(*msi_dev_attr), GFP_KERNEL);
-+		if (!msi_dev_attr)
-+			return -ENOMEM;
-+		sprintf(name, "%d", entry->irq);
-+		msi_dev_attr->attr.name = name;
-+		msi_dev_attr->attr.mode = S_IRUGO;
-+		msi_dev_attr->show = msi_mode_show;
-+		msi_attrs[count] = &msi_dev_attr->attr;
-+		++count;
-+	}
-+
-+	msi_irq_group = kzalloc(sizeof(*msi_irq_group), GFP_KERNEL);
-+	if (!msi_irq_group)
-+		return -ENOMEM;
-+	msi_irq_group->name = "msi_irqs_2";
-+	msi_irq_group->attrs = msi_attrs;
-+
-+	msi_irq_groups = kzalloc(sizeof(void *) * 2, GFP_KERNEL);
-+	if (!msi_irq_groups)
-+		return -ENOMEM;
-+	msi_irq_groups[0] = msi_irq_group;
-+
-+	ret = sysfs_create_groups(&pdev->dev.kobj, msi_irq_groups);
-+	if (ret)
-+		return ret;
-+	pdev->msi_irq_groups = msi_irq_groups;
-+
- 	pdev->msi_kset = kset_create_and_add("msi_irqs", NULL, &pdev->dev.kobj);
- 	if (!pdev->msi_kset)
- 		return -ENOMEM;
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index da172f95..9540110f 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -354,6 +354,7 @@ struct pci_dev {
- #ifdef CONFIG_PCI_MSI
- 	struct list_head msi_list;
- 	struct kset *msi_kset;
-+	const struct attribute_group **msi_irq_groups;
- #endif
- 	struct pci_vpd *vpd;
- #ifdef CONFIG_PCI_ATS
