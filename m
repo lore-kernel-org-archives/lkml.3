@@ -1,108 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027Ab3J2Dar (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 23:30:47 -0400
-Received: from mga01.intel.com ([192.55.52.88]:25959 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753687Ab3J2Dap convert rfc822-to-8bit (ORCPT
+	id S1758045Ab3J2Day (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 23:30:54 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:41177 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758032Ab3J2Dat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 23:30:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,590,1378882800"; 
-   d="scan'208";a="418859741"
-From: "Du, ChangbinX" <changbinx.du@intel.com>
-To: "oliver@neukum.org" <oliver@neukum.org>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] net/cdc_ncm: fix null pointer panic at usbnet_link_change
-Thread-Topic: [PATCH] net/cdc_ncm: fix null pointer panic at
- usbnet_link_change
-Thread-Index: Ac7UVwwoHCI1JQViRZOXA6OeEZ/T7w==
-Date: Tue, 29 Oct 2013 03:30:42 +0000
-Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A019F450F@SHSMSX103.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 28 Oct 2013 23:30:49 -0400
 MIME-Version: 1.0
+In-Reply-To: <20131016202123.GA17866@google.com>
+References: <CAMxnaaUim-MCDpaTiLmBqN3wfxjn9V6XE_n4SMfuO=vqeT6rVA@mail.gmail.com>
+ <CAErSpo4KU9VAC=SnKuYH3EPz8NuozixAhUQBKv+=Y=76wywdTg@mail.gmail.com>
+ <20131015024452.GA31951@srcf.ucam.org> <20131016202123.GA17866@google.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 28 Oct 2013 21:30:28 -0600
+Message-ID: <CAErSpo6g5vR0NMs18YZBz+6RGZd0zNeDu_=1Pk4c5a+OqHfS1g@mail.gmail.com>
+Subject: Re: [3.11.4] Thunderbolt/PCI unplug oops in pci_pme_list_scan
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Andreas Noever <andreas.noever@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Du, Changbin" <changbinx.du@intel.com>
+On Wed, Oct 16, 2013 at 2:21 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Tue, Oct 15, 2013 at 03:44:52AM +0100, Matthew Garrett wrote:
+>> On Mon, Oct 14, 2013 at 05:50:38PM -0600, Bjorn Helgaas wrote:
+>> > [+cc Rafael, Mika, Kirill, linux-pci]
+>> >
+>> > On Mon, Oct 14, 2013 at 4:47 PM, Andreas Noever
+>> > <andreas.noever@gmail.com> wrote:
+>> > > When I unplug the Thunderbolt ethernet adapter on my MacBookPro Linux
+>> > > crashes a few seconds later. Using
+>> > > echo 1 > /sys/bus/pci/devices/0000:08:00.0/remove
+>> > > to remove a bridge two levels above the device triggers the fault immediately:
+>> >
+>> > There have been significant changes in acpiphp related to Thunderbolt
+>> > since v3.11.
+>>
+>> Apple don't expose Thunderbolt via ACPI, so it appears as native PCIe.
+>> I'd be surprised if acpiphp makes a difference here.
+>
+> Yeah, you're right; I wasn't paying attention.
+>
+> We save a pci_dev pointer in the pci_pme_list, which of course has a
+> longer lifetime than the pci_dev itself, but we don't acquire a reference
+> on it, so I suspect the pci_dev got released before we got around to
+> doing the pci_pme_list_scan().
+>
+> Andreas, can you try the patch below?  It's against v3.12-rc2, but it
+> should apply to v3.11, too.
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index ad7fc72..8b0a2f3 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -1580,6 +1580,7 @@ static void pci_pme_list_scan(struct work_struct *work)
+>                                 pci_pme_wakeup(pme_dev->dev, NULL);
+>                         } else {
+>                                 list_del(&pme_dev->list);
+> +                               pci_dev_put(pme_dev->dev);
+>                                 kfree(pme_dev);
+>                         }
+>                 }
+> @@ -1640,7 +1641,7 @@ void pci_pme_active(struct pci_dev *dev, bool enable)
+>                                           GFP_KERNEL);
+>                         if (!pme_dev)
+>                                 goto out;
+> -                       pme_dev->dev = dev;
+> +                       pme_dev->dev = pci_dev_get(dev);
+>                         mutex_lock(&pci_pme_list_mutex);
+>                         list_add(&pme_dev->list, &pci_pme_list);
+>                         if (list_is_singular(&pci_pme_list))
+> @@ -1652,6 +1653,7 @@ void pci_pme_active(struct pci_dev *dev, bool enable)
+>                         list_for_each_entry(pme_dev, &pci_pme_list, list) {
+>                                 if (pme_dev->dev == dev) {
+>                                         list_del(&pme_dev->list);
+> +                                       pci_dev_put(pme_dev->dev);
+>                                         kfree(pme_dev);
+>                                         break;
+>                                 }
 
-In cdc_ncm_bind() function, it call cdc_ncm_bind_common() to setup usb.
-But cdc_ncm_bind_common() may meet error and cause usbnet_disconnect()
-be called which calls free_netdev(net). Thus usbnet structure(alloced
-with net_device structure) will be freed,too.
-So we cannot call usbnet_link_change() if cdc_ncm_bind_common() return
-error.
+The patch above covered up the problem, but is incorrect.  The topology is:
 
-BUG: unable to handle kernel NULL pointer dereference at 00000078
-EIP is at usbnet_link_change+0x1e/0x80
-Call Trace:
- [<c24bc69a>] cdc_ncm_bind+0x3a/0x50
- [<c24b8d32>] usbnet_probe+0x282/0x7d0
- [<c2167f2c>] ? sysfs_new_dirent+0x6c/0x100
- [<c2821253>] ? mutex_lock+0x13/0x40
- [<c24bb278>] cdc_ncm_probe+0x8/0x10
- [<c24e0ef7>] usb_probe_interface+0x187/0x2c0
- [<c23caa8a>] ? driver_sysfs_add+0x6a/0x90
- [<c23cb290>] ? __driver_attach+0x90/0x90
- [<c23caf14>] driver_probe_device+0x74/0x360
- [<c24e07b1>] ? usb_match_id+0x41/0x60
- [<c24e081e>] ? usb_device_match+0x4e/0x90
- [<c23cb290>] ? __driver_attach+0x90/0x90
- [<c23cb2c9>] __device_attach+0x39/0x50
- [<c23c93f4>] bus_for_each_drv+0x34/0x70
- [<c23cae2b>] device_attach+0x7b/0x90
- [<c23cb290>] ? __driver_attach+0x90/0x90
- [<c23ca38f>] bus_probe_device+0x6f/0x90
- [<c23c8a08>] device_add+0x558/0x630
- [<c24e4821>] ? usb_create_ep_devs+0x71/0xd0
- [<c24dd0db>] ? create_intf_ep_devs+0x4b/0x70
- [<c24df2bf>] usb_set_configuration+0x4bf/0x800
- [<c23cb290>] ? __driver_attach+0x90/0x90
- [<c24e809b>] generic_probe+0x2b/0x90
- [<c24e105c>] usb_probe_device+0x2c/0x70
- [<c23caf14>] driver_probe_device+0x74/0x360
+  08:00.0 PCI bridge to [bus 09-0a] Thunderbolt Upstream Port
+  09:00.0 PCI bridge to [bus 0a]    Thunderbolt Downstream Port
+  0a:00.0 tg3 NIC
 
-Signed-off-by: Du, Changbin <changbinx.du@intel.com>
----
- drivers/net/usb/cdc_ncm.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+and the sequence leading to the crash is (edited for brevity):
 
-diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
-index 43afde8..af37ecf 100644
---- a/drivers/net/usb/cdc_ncm.c
-+++ b/drivers/net/usb/cdc_ncm.c
-@@ -603,14 +603,15 @@ static int cdc_ncm_bind(struct usbnet *dev, struct usb_interface *intf)
- 
- 	/* NCM data altsetting is always 1 */
- 	ret = cdc_ncm_bind_common(dev, intf, 1);
--
--	/*
--	 * We should get an event when network connection is "connected" or
--	 * "disconnected". Set network connection in "disconnected" state
--	 * (carrier is OFF) during attach, so the IP network stack does not
--	 * start IPv6 negotiation and more.
--	 */
--	usbnet_link_change(dev, 0, 0);
-+	if (!ret) {
-+		/*
-+		 * We should get an event when network connection is "connected"
-+		 * or "disconnected". Set network connection in "disconnected"
-+		 * state (carrier is OFF) during attach, so the IP network stack
-+		 * does not start IPv6 negotiation and more.
-+		 */
-+		usbnet_link_change(dev, 0, 0);
-+	}
- 	return ret;
- }
- 
--- 
-1.8.3.2
+  remove_store(08:00.0)
+    pci_stop_and_remove_bus_device(08:00.0)     # Upstream Port
+      pci_stop_bus_device(08:00.0)
+        pci_stop_bus_device(09:00.0)            # Downstream Port
+          pci_stop_bus_device(0a:00.0)          # tg3 device
+            pci_stop_dev(0a:00.0)
+              pci_pme_active(0a:00.0, false)    # remove from pci_pme_list
+              device_del(0a:00.0)
+                device_release_driver
+                  tg3_remove_one
+                    unregister_netdev
+                      dev->netdev_ops->ndo_stop # tg3_close
+                      tg3_close
+                        pci_wake_from_d3
+                          pci_pme_active(dev, true)     # add to pci_pme_list
+      pci_remove_bus_device(08:00.0)
+        pci_remove_bus_device(09:00.0)
+          pci_remove_bus_device(0a:00.0)
+            pci_destroy_dev(0a:00.0)
+              put_device(0a:00.0)               # drop last tg3
+pci_dev reference
+              ...
+              pci_release_dev                   # pci_dev release function
+                kfree(0a:00.0)
+  ...
+  pci_pme_list_scan
+    0a:00.0 still on list => use-after-free
+
+The patch above avoids the crash by acquiring a reference when adding
+to pci_pme_list, so when pci_destroy_dev() drops the reference, it's
+not the *last* reference, so the pci_dev is not released.
+
+The problem is that the reference acquired when we add to pci_pme_list
+will *never* be dropped, so we leaked the pci_dev.
+
+Bjorn
