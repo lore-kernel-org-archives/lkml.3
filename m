@@ -1,84 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab3J2H53 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 03:57:29 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50985 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753038Ab3J2H51 (ORCPT
+	id S1753218Ab3J2H5y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 03:57:54 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:57308 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315Ab3J2H4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 03:57:27 -0400
-Date: Tue, 29 Oct 2013 18:57:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: linux-next: manual merge of the arm-soc tree with the  tree
-Message-Id: <20131029185714.f6a1eef0e6700b989bbdf5dc@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__29_Oct_2013_18_57_14_+1100_+KuC8KQGUKEsinI+"
+	Tue, 29 Oct 2013 03:56:42 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID r9T7uePP005134, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net 2/3] r8152: modify the tx flow
+Date: Tue, 29 Oct 2013 15:56:16 +0800
+Message-ID: <1383033377-1178-3-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1383033377-1178-1-git-send-email-hayeswang@realtek.com>
+References: <1383033377-1178-1-git-send-email-hayeswang@realtek.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.218]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__29_Oct_2013_18_57_14_+1100_+KuC8KQGUKEsinI+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Let rtl8152_start_xmit() to queue packet only, and tx_bottom() would
+send all of the packets. This simplify the code and make sure all the
+packet would be sent by the original order.
 
-Hi all,
+Support stopping and waking tx queue. The maximum tx queue length
+is 60.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/Kconfig between commit 85649711a895 ("ARM: gemini: delete
-<mach/gpio.h>") from the gpio tree and commit f3372c01816e ("ARM: gemini:
-convert to GENERIC_CLOCKEVENTS") from the arm-soc tree.
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 52 ++++++++++---------------------------------------
+ 1 file changed, 10 insertions(+), 42 deletions(-)
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index 5dbfe50..1647931 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -276,6 +276,8 @@ enum rtl_register_content {
+ 
+ #define INTR_LINK		0x0004
+ 
++#define TX_QLEN			60
++
+ #define RTL8152_REQT_READ	0xc0
+ #define RTL8152_REQT_WRITE	0x40
+ #define RTL8152_REQ_GET_REGS	0x05
+@@ -1173,6 +1175,9 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
+ 		remain = rx_buf_sz - (int)(tx_agg_align(tx_data) - agg->head);
+ 	}
+ 
++	if (netif_queue_stopped(tp->netdev))
++		netif_wake_queue(tp->netdev);
++
+ 	usb_fill_bulk_urb(agg->urb, tp->udev, usb_sndbulkpipe(tp->udev, 2),
+ 			  agg->head, (int)(tx_data - (u8 *)agg->head),
+ 			  (usb_complete_t)write_bulk_callback, agg);
+@@ -1388,53 +1393,16 @@ static netdev_tx_t rtl8152_start_xmit(struct sk_buff *skb,
+ 					    struct net_device *netdev)
+ {
+ 	struct r8152 *tp = netdev_priv(netdev);
+-	struct net_device_stats *stats = rtl8152_get_stats(netdev);
+-	unsigned long flags;
+-	struct tx_agg *agg = NULL;
+-	struct tx_desc *tx_desc;
+-	unsigned int len;
+-	u8 *tx_data;
+-	int res;
+ 
+ 	skb_tx_timestamp(skb);
+ 
+-	/* If tx_queue is not empty, it means at least one previous packt */
+-	/* is waiting for sending. Don't send current one before it.      */
+-	if (skb_queue_empty(&tp->tx_queue))
+-		agg = r8152_get_tx_agg(tp);
+-
+-	if (!agg) {
+-		skb_queue_tail(&tp->tx_queue, skb);
+-		return NETDEV_TX_OK;
+-	}
++	skb_queue_tail(&tp->tx_queue, skb);
+ 
+-	tx_desc = (struct tx_desc *)agg->head;
+-	tx_data = agg->head + sizeof(*tx_desc);
+-	agg->skb_num = agg->skb_len = 0;
++	if (skb_queue_len(&tp->tx_queue) > TX_QLEN)
++		netif_stop_queue(netdev);
+ 
+-	len = skb->len;
+-	r8152_tx_csum(tp, tx_desc, skb);
+-	memcpy(tx_data, skb->data, len);
+-	dev_kfree_skb_any(skb);
+-	agg->skb_num++;
+-	agg->skb_len += len;
+-	usb_fill_bulk_urb(agg->urb, tp->udev, usb_sndbulkpipe(tp->udev, 2),
+-			  agg->head, len + sizeof(*tx_desc),
+-			  (usb_complete_t)write_bulk_callback, agg);
+-	res = usb_submit_urb(agg->urb, GFP_ATOMIC);
+-	if (res) {
+-		/* Can we get/handle EPIPE here? */
+-		if (res == -ENODEV) {
+-			netif_device_detach(tp->netdev);
+-		} else {
+-			netif_warn(tp, tx_err, netdev,
+-				   "failed tx_urb %d\n", res);
+-			stats->tx_dropped++;
+-			spin_lock_irqsave(&tp->tx_lock, flags);
+-			list_add_tail(&agg->list, &tp->tx_free);
+-			spin_unlock_irqrestore(&tp->tx_lock, flags);
+-		}
+-	}
++	if (!list_empty(&tp->tx_free))
++		tasklet_schedule(&tp->tl);
+ 
+ 	return NETDEV_TX_OK;
+ }
+-- 
+1.8.3.1
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/Kconfig
-index 55be62c92b60,04163fece49f..000000000000
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@@ -391,8 -385,10 +390,9 @@@ config ARCH_CLPS711
-  config ARCH_GEMINI
-  	bool "Cortina Systems Gemini"
-  	select ARCH_REQUIRE_GPIOLIB
-- 	select ARCH_USES_GETTIMEOFFSET
-+ 	select CLKSRC_MMIO
-  	select CPU_FA526
-+ 	select GENERIC_CLOCKEVENTS
- -	select NEED_MACH_GPIO_H
-  	help
-  	  Support for the Cortina Systems Gemini family SoCs
- =20
-
---Signature=_Tue__29_Oct_2013_18_57_14_+1100_+KuC8KQGUKEsinI+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSb2peAAoJEMDTa8Ir7ZwVECsP/1jI8IAV3tqXnS7odzRtlbVa
-tph2rtv4SI9IQ3dwk4LCh0h4SQmzUwW+1PqQyJ2xQSk6lc/Big6cVfriIUK39Fa6
-nrbINZoA3VHdB2ONZZzfDuLaqvx7YEwgN1j5CZXg7bazyGr3THbyAD04w/J0gSeI
-RoddLBOl7ZDUUPnSHBl05e3RUgalEizIk5hV2Wo4giC0QPCkMPYn58tPX43tSJ+w
-swbA49caGkCPXiBnwa+yJywUNRZb7lZoPz9R3gBNOksdB2tuFgKiKaDITc/BAZwh
-JwgU6taQlxlx0x9hsBcWor0h4eFRDjVp48OimWOHgKdRPcOTDX9XgQZXKpptubY7
-W/Oha8Ix64HlAIBgxn1kUJe0VGQvVkyH1GtGZk+ZR//oculnGnqRtqczxAFGbfRF
-Ib9MJwYBNG13IS62koBFKxdErrgQMt+2RkVsFStEc6jkcVdna9RlHdC4AQAHUSiB
-wl+gQc0Mcl6dk4IqTw2egH2l32WBKC5S0I554FNuIf5qDUD5ocZ41zukJDZsfrrl
-CoqkhXBC2QCM0u70GLbZlEVFg+TTFd8dbrX27nB6V1dx6kCfI114QXdCoTraegzE
-npBbvTtQbvOXyDqLbwLHI1VC8+EiEnsve9sFWnj+nVQa7ovicOJ17GahqwU7l7t9
-+dEWilcqZKooV9IBYRtf
-=mq9d
------END PGP SIGNATURE-----
-
---Signature=_Tue__29_Oct_2013_18_57_14_+1100_+KuC8KQGUKEsinI+--
