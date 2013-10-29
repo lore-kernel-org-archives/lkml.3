@@ -1,30 +1,38 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab3JXLjy (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Thu, 24 Oct 2013 07:39:54 -0400
-Received: from mail-db3lp0079.outbound.protection.outlook.com ([213.199.154.79]:18409
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752760Ab3JXLjw convert rfc822-to-8bit (ORCPT
+	id S1753944Ab3J2J5S (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 29 Oct 2013 05:57:18 -0400
+Received: from outrelay02.libero.it ([212.52.84.102]:55498 "EHLO
+	outrelay02.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab3J2J5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Oct 2013 07:39:52 -0400
-X-Greylist: delayed 906 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Oct 2013 07:39:52 EDT
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 29 Oct 2013 05:57:17 -0400
+X-CTCH-Spam: Bulk
+X-CTCH-RefID: str=0001.0A0C0203.526F85B1.016B,ss=3,sh,re=0.000,fgs=0
+X-libjamoibt: 1587
+Message-ID: <416773665.131251383040545455.JavaMail.defaultUser@defaultHost>
+Date: Tue, 29 Oct 2013 10:55:45 +0100 (CET)
+From: jsoziei <jso@libero.it>
+Reply-To: hassanaisaac88888@hotmail.com
+Subject: Hello
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: We Offer loan at 3%. Send Name/Amount/Duration
-To: Recipients <feedback6@Contact839.onmicrosoft.com>
-From: <feedback6@Contact839.onmicrosoft.com>
-Date: Thu, 24 Oct 2013 16:54:22 +0530
-Reply-To: <firstkeystone@verimail.info>
-Message-ID: <0e7204de-60e2-4190-8a0e-b07da57a7917@AMSPR05MB067.eurprd05.prod.outlook.com>
-X-Originating-IP: [115.245.158.96]
-X-ClientProxiedBy: SIXPR02CA023.apcprd02.prod.outlook.com (10.141.119.18) To
- AMSPR05MB067.eurprd05.prod.outlook.com (10.242.89.145)
-X-Forefront-PRVS: 000947967F
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(14132001)(199002)(189002)(43066001)(74662001)(85306002)(33646001)(47446002)(74502001)(59766001)(621065002)(77982001)(76176001)(81342001)(74316001)(23756003)(81686001)(81816001)(31686002)(73894003)(83322001)(76482001)(50466002)(74876001)(74706001)(54316002)(69226001)(53256004)(81542001)(56776001)(65816001)(47976001)(76786001)(47776003)(4396001)(80022001)(50986001)(76796001)(54356001)(42186004)(80976001)(51856001)(76576001)(83072001)(66066001)(63696002)(46102001)(49866001)(47736001)(74366001)(79102001)(56816003)(77096001)(62346009)(84742001)(64872003)(2141003);DIR:OUT;SFP:;SCL:1;SRVR:AMSPR05MB067;H:[115.245.158.96];CLIP:115.245.158.96;FPR:;RD:InfoNoRecords;A:0;MX:1;LANG:;
-X-OriginatorOrg: Contact839.onmicrosoft.com
+Content-Type: text/plain;charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-SenderIP: 41.82.85.228
+X-libjamv: Rk6jP4ZiWSU=
+X-libjamsun: 4fdYjDaC20ICZnnXgSjqj/Yw6aRup4BF
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+Hello,
+How
+are you? hope fine, I Want to
+introduce my self to you before I go
+further, My Name is Hassana. I will like to have a good
+relationship with you, if you wouldn't mind, I will like to hear from
+you soon I
+have something very important I will like to tell you. Thanks and God
+bless you,
+Miss Hassana,
