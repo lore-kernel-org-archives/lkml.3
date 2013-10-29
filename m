@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab3J2IAi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 04:00:38 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54242 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab3J2IAg (ORCPT
+	id S1752528Ab3J2ID6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 04:03:58 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:56431 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab3J2IDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 04:00:36 -0400
-Date: Tue, 29 Oct 2013 19:00:21 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: linux-next: manual merge of the arm-soc tree with the pm tree
-Message-Id: <20131029190021.bb2dddcbd46e1ddfdfd5e441@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__29_Oct_2013_19_00_21_+1100_pRvMV6tG=ykd4dI9"
+	Tue, 29 Oct 2013 04:03:52 -0400
+X-AuditID: 9c93017e-b7ca6ae000000e8a-33-526f6be78906
+From: Namhyung Kim <namhyung@kernel.org>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] perf timechart: use proc_num to implement --power-only
+References: <1382439412-23713-1-git-send-email-stfomichev@yandex-team.ru>
+	<1382439412-23713-3-git-send-email-stfomichev@yandex-team.ru>
+Date: Tue, 29 Oct 2013 17:03:51 +0900
+In-Reply-To: <1382439412-23713-3-git-send-email-stfomichev@yandex-team.ru>
+	(Stanislav Fomichev's message of "Tue, 22 Oct 2013 14:56:48 +0400")
+Message-ID: <87txg05wrc.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__29_Oct_2013_19_00_21_+1100_pRvMV6tG=ykd4dI9
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 22 Oct 2013 14:56:48 +0400, Stanislav Fomichev wrote:
+> Don't use special flag to indicate power-only mode, use proc_num == 0.
+> -P now equals to -n 0
 
-Hi all,
+I don't see how it does same thing.  You mean it by skipping
+draw_process_bars() and draw_wakeups() on patch 1?  It'd be better
+changelog explains the details.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-omap2/opp.c between commit e4db1c7439b3 ("PM / OPP: rename
-header to linux/pm_opp.h") from the pm tree and commit 92d51856d740
-("ARM: OMAP3+: do not register non-dt OPP tables for device tree boot")
-from the arm-soc tree.
+>
+> Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+> ---
+>  tools/perf/builtin-timechart.c | 18 +++++++++++++-----
+>  1 file changed, 13 insertions(+), 5 deletions(-)
+>
+> diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+> index d965f26308ed..e6c041301aa4 100644
+> --- a/tools/perf/builtin-timechart.c
+> +++ b/tools/perf/builtin-timechart.c
+> @@ -50,8 +50,6 @@ static u64		turbo_frequency;
+>  
+>  static u64		first_time, last_time;
+>  
+> -static bool		power_only;
+> -
+>  
+>  struct per_pid;
+>  struct per_pidcomm;
+> @@ -912,7 +910,7 @@ static int determine_display_tasks(u64 threshold)
+>  		/* no exit marker, task kept running to the end */
+>  		if (p->end_time == 0)
+>  			p->end_time = last_time;
+> -		if (p->total_time >= threshold && !power_only)
+> +		if (p->total_time >= threshold)
+>  			p->display = 1;
+>  
+>  		c = p->all;
+> @@ -923,7 +921,7 @@ static int determine_display_tasks(u64 threshold)
+>  			if (c->start_time == 1)
+>  				c->start_time = first_time;
+>  
+> -			if (c->total_time >= threshold && !power_only) {
+> +			if (c->total_time >= threshold) {
+>  				c->display = 1;
+>  				count++;
+>  			}
+> @@ -1086,6 +1084,15 @@ parse_process(const struct option *opt __maybe_unused, const char *arg,
+>  	return 0;
+>  }
+>  
+> +static int
+> +parse_power(const struct option *opt __maybe_unused,
+> +	    const char *arg __maybe_unused,
+> +	    int unset __maybe_unused)
+> +{
+> +	proc_num = 0;
+> +	return 0;
+> +}
+> +
+>  int cmd_timechart(int argc, const char **argv,
+>  		  const char *prefix __maybe_unused)
+>  {
+> @@ -1094,7 +1101,8 @@ int cmd_timechart(int argc, const char **argv,
+>  	OPT_STRING('i', "input", &input_name, "file", "input file name"),
+>  	OPT_STRING('o', "output", &output_name, "file", "output file name"),
+>  	OPT_INTEGER('w', "width", &svg_page_width, "page width"),
+> -	OPT_BOOLEAN('P', "power-only", &power_only, "output power data only"),
+> +	OPT_CALLBACK_NOOPT('P', "power-only", NULL, NULL,
+> +		     "output power data only", parse_power),
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+And I'd like to keep it as BOOLEAN option - it's simpler and more
+straight-forward IMHO.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+How about adding
 
-diff --cc arch/arm/mach-omap2/opp.c
-index ec21e6eb03e1,82fd8c72f750..000000000000
---- a/arch/arm/mach-omap2/opp.c
-+++ b/arch/arm/mach-omap2/opp.c
-@@@ -17,7 -17,8 +17,8 @@@
-   * GNU General Public License for more details.
-   */
-  #include <linux/module.h>
-+ #include <linux/of.h>
- -#include <linux/opp.h>
- +#include <linux/pm_opp.h>
-  #include <linux/cpu.h>
- =20
-  #include "omap_device.h"
+	if (power_only)
+		proc_num = 0;
 
---Signature=_Tue__29_Oct_2013_19_00_21_+1100_pRvMV6tG=ykd4dI9
-Content-Type: application/pgp-signature
+after parsing the command line options?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+Thanks,
+Namhyung
 
-iQIcBAEBCAAGBQJSb2sZAAoJEMDTa8Ir7ZwV7g8P/3aBjCDILV7AX+Ssv4R5BNd2
-Fq7v4tLW1JU0PMwQTK7fLmdMRaD8nMWg630w+ysgqStg5RIBR35DKO76Dq2sdFfu
-/0j1UweHxRLRi087PP7jfy7ju2LG4EOzNjc17wx6CgOoUamjtO5S9U7JLOsi0ffl
-M6fKeTrD1SeFW+72GQ7+bcqvnNvG3Nq/jPvp8mpFYIZGrh53Bz1AHAIB4yLnadb3
-SNb8LJcmkWeYSKUN0UxU93jInsW4AbmJFS25NqE7m5Bh+P/wgMZPNNmUw9jkAnU5
-w2y2niKT+aPRPQwZM67yNbz0hk1SeI6NWWsm7hllEUueiwIai/GbzeNM+1LFBSnX
-p32S+axKRP517aGJWqdTxC9ovqUiImmin5wkMOpbIxPnSgaRimjA75B3HAz3N+8r
-STlVDqYPaKynLcOvwZgvdCsZwLsbEd1AKg4ZC8Z+jpwzNYOWKrQVuZe030Bomlh4
-6E7a3DwipTn4LpzxWCkhT3jB8vmst9Z9VCrefzDS1CUQuzYAdYehfXns4V/5GCqj
-l2hQhUscsBD6Zh8ng+rzLPGUmZus3ZOAo8Gflf3pAd5tJ7PbUsV4eTvbs1NhxkKU
-a/y9XB8f0D6wZBJbmpsfpx/iNEvjUrZNpA0Oi1UREUuE4gOQX6ba4Bgr7qCBN53L
-kRx4FD1aFwdFS3LEanSf
-=ep3y
------END PGP SIGNATURE-----
 
---Signature=_Tue__29_Oct_2013_19_00_21_+1100_pRvMV6tG=ykd4dI9--
+>  	OPT_CALLBACK('p', "process", NULL, "process",
+>  		      "process selector. Pass a pid or process name.",
+>  		       parse_process),
