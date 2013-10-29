@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab3J2ViE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 17:38:04 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:36704 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864Ab3J2ViB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 17:38:01 -0400
+	id S1753461Ab3J2Vic (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 17:38:32 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:50868 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752197Ab3J2Via (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 17:38:30 -0400
+Date: Tue, 29 Oct 2013 23:38:28 +0200 (EET)
+From: Meelis Roos <mroos@linux.ee>
+To: Hannes Frederic Sowa <hannes@stressinduktion.org>
+cc: Linux Kernel list <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        steffen.klassert@secunet.com
+Subject: Re: 3.12-rc7 regression - network panic from ipv6
+In-Reply-To: <20131029210758.GA18323@order.stressinduktion.org>
+Message-ID: <alpine.SOC.1.00.1310292338010.22172@math.ut.ee>
+References: <alpine.SOC.1.00.1310292221550.19416@math.ut.ee> <20131029210758.GA18323@order.stressinduktion.org>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-In-Reply-To: <20131030083431.59e5d397@notabene.brown>
-References: <CACcY5Uxc2f6HOxLHt5DY5E71EvFbo0dNmtqUtH=FRwTitE=+zw@mail.gmail.com>
- <20131030083431.59e5d397@notabene.brown>
-From: John Schmidt <johnschmidt4@gmail.com>
-Date: Tue, 29 Oct 2013 14:37:21 -0700
-Message-ID: <CACcY5UxRTf_R=pSX7+EWnJGO03n+9z6Kpr_DKnDwG1Cw5Zf2ig@mail.gmail.com>
-Subject: Re: [PATCH] mdadm.8.in
-To: NeilBrown <neilb@suse.de>
-Cc: linux-raid <linux-raid@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you!
+> > Some bad news - in a system where 3.12-rc6 and earlier worked fine, 
+> > 3.12-rc7 panics or hangs repeatedly with network traffic (torrent being 
+> > good test). First there is BUG from ipv6 code, followed by panic.
+> 
+> Could you do a bisect on this? There seems to be one commit for this
+> particular function _decode_session6:
+> 
+> commit bafd4bd4dcfa13145db7f951251eef3e10f8c278
+> Author: Steffen Klassert <steffen.klassert@secunet.com>
+> Date:   Mon Sep 9 10:38:38 2013 +0200
+> 
+>     xfrm: Decode sessions with output interface.
+>     
+>     The output interface matching does not work on forward
+>     policy lookups, the output interface of the flowi is
+>     always 0. Fix this by setting the output interface when
+>     we decode the session.
+> 
+> Maybe try to just revert this change locally and try again?
 
-On Tue, Oct 29, 2013 at 2:34 PM, NeilBrown <neilb@suse.de> wrote:
-> On Tue, 29 Oct 2013 10:16:18 -0700 John Schmidt <johnschmidt4@gmail.com>
-> wrote:
->
->> I found a small bug in the documentation of mdadm.  I fixed it in my
->> local git clone of git://neil.brown.name/mdadm  Here is the change:
->>
->> git diff mdadm.8.in
->> diff --git a/mdadm.8.in b/mdadm.8.in
->> index 09aff81..006ae59 100644
->> --- a/mdadm.8.in
->> +++ b/mdadm.8.in
->> @@ -529,7 +529,7 @@ amount of available space is.
->>  .BR \-c ", " \-\-chunk=
->>  Specify chunk size of kibibytes.  The default when creating an
->>  array is 512KB.  To ensure compatibility with earlier versions, the
->> -default when Building and array with no persistent metadata is 64KB.
->> +default when building an array with no persistent metadata is 64KB.
->>  This is only meaningful for RAID0, RAID4, RAID5, RAID6, and RAID10.
->>
->>  RAID4, RAID5, RAID6, and RAID10 require the chunk size to be a power
->>
->> Let me know if there are other things I need to do to get this patch submitted.
->>
->> Thank you,
->> John Schmidt
->> johnschmidt4@gmail.com
->
->
-> applied.  Thanks.
->
-> NeilBrown
+Yes, just reverting this patch on top of rc7 gets rid of the problem for 
+me.
+
+-- 
+Meelis Roos (mroos@linux.ee)
