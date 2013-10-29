@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751725Ab3J2XBK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 19:01:10 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:51234 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897Ab3J2XBI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 19:01:08 -0400
+	id S1751977Ab3J2XFA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 19:05:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36844 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750897Ab3J2XE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 19:04:59 -0400
+Date: Tue, 29 Oct 2013 19:04:30 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: axboe@kernel.dk, dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        hch@infradead.org, tj@kernel.org, Alasdair Kergon <agk@redhat.com>
+Subject: Re: [PATCH 17/23] dm: Refactor for new bio cloning/splitting
+Message-ID: <20131029230430.GA2989@redhat.com>
+References: <1383077896-4132-1-git-send-email-kmo@daterainc.com>
+ <1383077896-4132-18-git-send-email-kmo@daterainc.com>
 MIME-Version: 1.0
-In-Reply-To: <87zjpuygtd.fsf@devron.myhome.or.jp>
-References: <1381329627-11837-1-git-send-email-linkinjeon@gmail.com>
-	<87zjpuygtd.fsf@devron.myhome.or.jp>
-Date: Wed, 30 Oct 2013 08:01:07 +0900
-Message-ID: <CAKYAXd-P83JNoOZKEv2cfTSok9SbE1bwW34Z56EPe7WrTHSP0g@mail.gmail.com>
-Subject: Re: [PATCH 1/5] fat: add i_disksize to represent uninitialized size
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, a.sahrawat@samsung.com,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383077896-4132-18-git-send-email-kmo@daterainc.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/27, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
-Hi OGAWA.
->
-> Code seems to be much became simpler.
-Thanks :)
->
->> diff --git a/fs/fat/cache.c b/fs/fat/cache.c
->> index 91ad9e1..37572c2 100644
->> --- a/fs/fat/cache.c
->> +++ b/fs/fat/cache.c
->> @@ -329,10 +329,10 @@ int fat_bmap(struct inode *inode, sector_t sector,
->> sector_t *phys,
->>  			return 0;
->>
->>  		/*
->> -		 * ->mmu_private can access on only allocation path.
->> +		 * ->i_disksize can access on only allocation path.
->>  		 * (caller must hold ->i_mutex)
->>  		 */
->> -		last_block = (MSDOS_I(inode)->mmu_private + (blocksize - 1))
->> +		last_block = (MSDOS_I(inode)->i_disksize + (blocksize - 1))
->>  			>> blocksize_bits;
->>  		if (sector >= last_block)
->>  			return 0;
->
-> Hm, bmap() ioctl returns between ->mmu_private and i_disksize? I'm not
-> checking other FSes what does...
-I added this code after checking such behaviour from ext4.
+On Tue, Oct 29 2013 at  4:18pm -0400,
+Kent Overstreet <kmo@daterainc.com> wrote:
 
-Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+> We need to convert the dm code to the new bvec_iter primitives which
+> respect bi_bvec_done; they also allow us to drastically simplify dm's
+> bio splitting code.
+> 
+> Also kill bio_sector_offset(), dm was the only user and it doesn't make
+> much sense anymore.
+> 
+> Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Alasdair Kergon <agk@redhat.com>
+> Cc: dm-devel@redhat.com
+
+I reviewed this patch some weeks ago (along with the rest of the DM
+changes), I provided the dm-thin.c changes in this patch:
+http://www.redhat.com/archives/dm-devel/2013-October/msg00027.html
+
+Please add:
+
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
