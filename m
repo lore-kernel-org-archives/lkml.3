@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab3J2Utl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 16:49:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50070 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396Ab3J2Utj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 16:49:39 -0400
-Date: Tue, 29 Oct 2013 21:49:37 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: david@lang.hm, neilb@suse.de, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        axboe@kernel.dk, linux-mm@kvack.org
-Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
-Message-ID: <20131029204937.GG9568@quack.suse.cz>
-References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
- <20131025214952.3eb41201@notabene.brown>
- <alpine.DEB.2.02.1310250425270.22538@nftneq.ynat.uz>
- <154617470.12445.1382725583671.JavaMail.mail@webmail11>
+	id S1752912Ab3J2Uvf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 16:51:35 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:33206 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637Ab3J2Uvd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 16:51:33 -0400
+Message-ID: <52701FD3.8040407@codeaurora.org>
+Date: Tue, 29 Oct 2013 13:51:31 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <154617470.12445.1382725583671.JavaMail.mail@webmail11>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@alien8.de>
+CC: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/6] edac: Don't try to cancel workqueue when it's never
+ setup
+References: <1383006690-6754-1-git-send-email-sboyd@codeaurora.org> <1383006690-6754-2-git-send-email-sboyd@codeaurora.org> <20131029204827.GM10972@pd.tnic>
+In-Reply-To: <20131029204827.GM10972@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 25-10-13 18:26:23, Artem S. Tashkinov wrote:
-> Oct 25, 2013 05:26:45 PM, david wrote:
-> On Fri, 25 Oct 2013, NeilBrown wrote:
-> >
-> >>
-> >> What exactly is bothering you about this?  The amount of memory used or the
-> >> time until data is flushed?
-> >
-> >actually, I think the problem is more the impact of the huge write later on.
-> 
-> Exactly. And not being able to use applications which show you IO
-> performance like Midnight Commander. You might prefer to use "cp -a" but
-> I cannot imagine my life without being able to see the progress of a
-> copying operation. With the current dirty cache there's no way to
-> understand how you storage media actually behaves.
-  Large writes shouldn't stall your desktop, that's certain and we must fix
-that. I don't find the problem with copy progress indicators that
-pressing...
+On 10/29/13 13:48, Borislav Petkov wrote:
+> On Mon, Oct 28, 2013 at 05:31:25PM -0700, Stephen Boyd wrote:
+>> We only setup a workqueue for edac devices that use the polling
+>> method. We still try to cancel the workqueue if an edac_device
+>> uses the irq method though. This causes a warning from debug
+>> objects when we remove an edac device:
+>>
+>> WARNING: CPU: 0 PID: 56 at lib/debugobjects.c:260 debug_print_object+0x98/0xc0()
+>> ODEBUG: assert_init not available (active state 0) object type: timer_list hint: stub_timer+0x0/0x28
+>> Modules linked in: krait_edac(-)
+>> CPU: 0 PID: 56 Comm: rmmod Not tainted 3.12.0-rc2-00035-g15292a0 #69
+>> [<c02179b4>] (unwind_backtrace+0x0/0x144) from [<c0213e58>] (show_stack+0x20/0x24)
+>> [<c0213e58>] (show_stack+0x20/0x24) from [<c06f7fc4>] (dump_stack+0x74/0xb4)
+>> [<c06f7fc4>] (dump_stack+0x74/0xb4) from [<c0223c34>] (warn_slowpath_common+0x78/0x9c)
+>> [<c0223c34>] (warn_slowpath_common+0x78/0x9c) from [<c0223d14>] (warn_slowpath_fmt+0x40/0x48)
+>> [<c0223d14>] (warn_slowpath_fmt+0x40/0x48) from [<c04cf078>] (debug_print_object+0x98/0xc0)
+>> [<c04cf078>] (debug_print_object+0x98/0xc0) from [<c04cfb54>] (debug_object_assert_init+0xdc/0xec)
+>> [<c04cfb54>] (debug_object_assert_init+0xdc/0xec) from [<c02310c4>] (del_timer+0x24/0x7c)
+>> [<c02310c4>] (del_timer+0x24/0x7c) from [<c023fef8>] (try_to_grab_pending+0xc0/0x1b0)
+>> [<c023fef8>] (try_to_grab_pending+0xc0/0x1b0) from [<c0240014>] (cancel_delayed_work+0x2c/0xa0)
+>> [<c0240014>] (cancel_delayed_work+0x2c/0xa0) from [<c059fa14>] (edac_device_workq_teardown+0x1c/0x38)
+>> [<c059fa14>] (edac_device_workq_teardown+0x1c/0x38) from [<c059fae8>] (edac_device_del_device+0xb8/0xe4)
+>> [<c059fae8>] (edac_device_del_device+0xb8/0xe4) from [<bf000050>] (krait_edac_remove+0x50/0x70 [krait_edac])
+>> [<bf000050>] (krait_edac_remove+0x50/0x70 [krait_edac]) from [<c0511e34>] (platform_drv_remove+0x24/0x28)
+>> [<c0511e34>] (platform_drv_remove+0x24/0x28) from [<c050fffc>] (__device_release_driver+0x68/0xc0)
+>> [<c050fffc>] (__device_release_driver+0x68/0xc0) from [<c0510adc>] (driver_detach+0xc4/0xc8)
+>> [<c0510adc>] (driver_detach+0xc4/0xc8) from [<c050fd98>] (bus_remove_driver+0xac/0x114)
+>> [<c050fd98>] (bus_remove_driver+0xac/0x114) from [<c05111d8>] (driver_unregister+0x38/0x58)
+>> [<c05111d8>] (driver_unregister+0x38/0x58) from [<c0511fe8>] (platform_driver_unregister+0x1c/0x20)
+>> [<c0511fe8>] (platform_driver_unregister+0x1c/0x20) from [<bf0005c4>] (krait_edac_driver_exit+0x14/0x1c [krait_edac])
+>> [<bf0005c4>] (krait_edac_driver_exit+0x14/0x1c [krait_edac]) from [<c028b248>] (SyS_delete_module+0x178/0x2b4)
+>> [<c028b248>] (SyS_delete_module+0x178/0x2b4) from [<c020f760>] (ret_fast_syscall+0x0/0x48)
+>>
+>> Fix it by skipping the workqueue teardown for such devices.
+>>
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Acked-by: Borislav Petkov <bp@suse.de>
+>
+> Btw, you might want to remove the hex numbers in the trace above and
+> leave only the call stack to make it more readable.
+>
 
-> Hopefully this issue won't dissolve into obscurity and someone will
-> actually make up a plan (and a patch) how to make dirty write cache
-> behave in a sane manner considering the fact that there are devices with
-> very different write speeds and requirements. It'd be ever better, if I
-> could specify dirty cache as a mount option (though sane defaults or
-> semi-automatic values based on runtime estimates won't hurt).
-> 
-> Per device dirty cache seems like a nice idea, I, for one, would like to
-> disable it altogether or make it an absolute minimum for things like USB
-> flash drives - because I don't care about multithreaded performance or
-> delayed allocation on such devices - I'm interested in my data reaching
-> my USB stick ASAP - because it's how most people use them.
-  See my other emails in this thread. There are ways to tune the amount of
-dirty data allowed per device. Currently the result isn't very satisfactory
-but we should have something usable after the next merge window.
+Thanks. I'll do that in the next round.
 
-									Honza
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
