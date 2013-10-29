@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757927Ab3J2O3r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 10:29:47 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:33313 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756968Ab3J2O3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 10:29:45 -0400
-Date: Tue, 29 Oct 2013 10:26:44 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Greg Thelen <gthelen@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        handai.szj@taobao.com, Andrew Morton <akpm@linux-foundation.org>,
-        x86@kernel.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v2 2/3] percpu: fix this_cpu_sub() subtrahend casting for
- unsigneds
-Message-ID: <20131029142644.GB1548@cmpxchg.org>
-References: <1382895017-19067-1-git-send-email-gthelen@google.com>
- <1382895017-19067-3-git-send-email-gthelen@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382895017-19067-3-git-send-email-gthelen@google.com>
+	id S1758056Ab3J2OaZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 10:30:25 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:36004 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554Ab3J2OaX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 10:30:23 -0400
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-sh@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/2] clocksource: sh_mtu2: Release clock when sh_mtu2_register() fails
+Date: Tue, 29 Oct 2013 15:30:44 +0100
+Message-Id: <1383057045-22608-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1383000569-8916-3-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+References: <1383000569-8916-3-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 10:30:16AM -0700, Greg Thelen wrote:
-> this_cpu_sub() is implemented as negation and addition.
-> 
-> This patch casts the adjustment to the counter type before negation to
-> sign extend the adjustment.  This helps in cases where the counter
-> type is wider than an unsigned adjustment.  An alternative to this
-> patch is to declare such operations unsupported, but it seemed useful
-> to avoid surprises.
-> 
-> This patch specifically helps the following example:
->   unsigned int delta = 1
->   preempt_disable()
->   this_cpu_write(long_counter, 0)
->   this_cpu_sub(long_counter, delta)
->   preempt_enable()
-> 
-> Before this change long_counter on a 64 bit machine ends with value
-> 0xffffffff, rather than 0xffffffffffffffff.  This is because
-> this_cpu_sub(pcp, delta) boils down to this_cpu_add(pcp, -delta),
-> which is basically:
->   long_counter = 0 + 0xffffffff
-> 
-> Also apply the same cast to:
->   __this_cpu_sub()
->   __this_cpu_sub_return()
->   this_cpu_sub_return()
-> 
-> All percpu_test.ko passes, especially the following cases which
-> previously failed:
-> 
->   l -= ui_one;
->   __this_cpu_sub(long_counter, ui_one);
->   CHECK(l, long_counter, -1);
-> 
->   l -= ui_one;
->   this_cpu_sub(long_counter, ui_one);
->   CHECK(l, long_counter, -1);
->   CHECK(l, long_counter, 0xffffffffffffffff);
-> 
->   ul -= ui_one;
->   __this_cpu_sub(ulong_counter, ui_one);
->   CHECK(ul, ulong_counter, -1);
->   CHECK(ul, ulong_counter, 0xffffffffffffffff);
-> 
->   ul = this_cpu_sub_return(ulong_counter, ui_one);
->   CHECK(ul, ulong_counter, 2);
-> 
->   ul = __this_cpu_sub_return(ulong_counter, ui_one);
->   CHECK(ul, ulong_counter, 1);
-> 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-> Acked-by: Tejun Heo <tj@kernel.org>
+Fix the probe error path to release the clock resource when the
+sh_mtu2_register() call fails.
 
-FWIW:
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+---
+ drivers/clocksource/sh_mtu2.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+diff --git a/drivers/clocksource/sh_mtu2.c b/drivers/clocksource/sh_mtu2.c
+index 4aac9ee..e6cfb32 100644
+--- a/drivers/clocksource/sh_mtu2.c
++++ b/drivers/clocksource/sh_mtu2.c
+@@ -313,8 +313,15 @@ static int sh_mtu2_setup(struct sh_mtu2_priv *p, struct platform_device *pdev)
+ 		goto err1;
+ 	}
+ 
+-	return sh_mtu2_register(p, (char *)dev_name(&p->pdev->dev),
+-				cfg->clockevent_rating);
++	ret = sh_mtu2_register(p, (char *)dev_name(&p->pdev->dev),
++			       cfg->clockevent_rating);
++	if (ret < 0)
++		goto err2;
++
++	return 0;
++
++ err2:
++	clk_put(p->clk);
+  err1:
+ 	iounmap(p->mapbase);
+  err0:
+-- 
+1.8.1.5
+
