@@ -1,150 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab3J2HZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 03:25:10 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:58509 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab3J2HZI (ORCPT
+	id S1752168Ab3J2HdE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 03:33:04 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:39287 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751558Ab3J2HdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 03:25:08 -0400
-X-AuditID: 9c93017e-b7ca6ae000000e8a-f7-526f62d20887
-Date: Tue, 29 Oct 2013 16:25:11 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Zhang Mingjun <zhang.mingjun@linaro.org>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, akpm@linux-foundation.org,
-        Mel Gorman <mgorman@suse.de>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Mingjun Zhang <troy.zhangmingjun@linaro.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: cma: free cma page to buddy instead of being cpu hot
- page
-Message-ID: <20131029072511.GA6030@bbox>
-References: <1382960569-6564-1-git-send-email-zhang.mingjun@linaro.org>
- <20131029045430.GE17038@bbox>
- <CAGT3LeqEzMKeq5PYz+Dv-rCBsTuUAtttyvYZu4UYWsAkUn8urQ@mail.gmail.com>
-MIME-Version: 1.0
+	Tue, 29 Oct 2013 03:33:02 -0400
+Date: Tue, 29 Oct 2013 08:32:55 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Jamie Iles <jamie@jamieiles.com>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 0/3] watchdog: dw_wdt: common clock framework and devicetree support
+Message-ID: <20131029073255.GA19569@spo001.leaseweb.com>
+References: <201306262003.13256.heiko@sntech.de>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGT3LeqEzMKeq5PYz+Dv-rCBsTuUAtttyvYZu4UYWsAkUn8urQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <201306262003.13256.heiko@sntech.de>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 03:00:09PM +0800, Zhang Mingjun wrote:
-> On Tue, Oct 29, 2013 at 12:54 PM, Minchan Kim <minchan@kernel.org> wrote:
+Hi Heiko,
+
+> This small series changes the dw_wdt driver, so that it is usable on
+> machines using the common clock framework (needs the clk to be prepared)
+> and devicetree (needs a binding).
 > 
-> > Hello,
-> >
-> > On Mon, Oct 28, 2013 at 07:42:49PM +0800, zhang.mingjun@linaro.org wrote:
-> > > From: Mingjun Zhang <troy.zhangmingjun@linaro.org>
-> > >
-> > > free_contig_range frees cma pages one by one and MIGRATE_CMA pages will
-> > be
-> > > used as MIGRATE_MOVEABLE pages in the pcp list, it causes unnecessary
-> > > migration action when these pages reused by CMA.
-> >
-> > You are saying about the overhead but I'm not sure how much it is
-> > because it wouldn't be frequent. Although it's frequent, migration is
-> > already slow path and CMA migration is worse so I really wonder how much
-> > pain is and how much this patch improve.
-> >
-> > Having said that, it makes CMA allocation policy consistent which
-> > is that CMA migration type is last fallback to minimize number of migration
-> > and code peice you are adding is already low hit path so that I think
-> > it has no problem.
-> >
-> problem is when free_contig_range frees cma pages, page's migration type is
-> MIGRATE_CMA!
-> I don't know why free_contig_range free pages one by one, but in the end it
-> calls free_hot_cold_page,
-> so some of these MIGRATE_CMA pages will be used as MIGRATE_MOVEABLE, this
-> break the CMA
-> allocation policy and it's not the low hit path, it's really the hot path,
-> in fact each time free_contig_range calls
-> some of these CMA pages will stay on this pcp list.
-> when filesytem needs a pagecache or page fault exception which alloc one
-> page using alloc_pages(MOVABLE, 0)
-> it will get the page from this pcp list, breaking the CMA fallback rules,
-> that is CMA pages in pcp list using as
-> page cache or annoymous page very easily.
-
-
-It seems you misunderstood me. My English was poor?
-I already said that I agree with you.
-Your patch has no impact with hot path and makes CMA allocation policy
-consistent so that there is no objection.
-
+> Heiko Stuebner (3):
+>   watchdog: dw_wdt: convert to SIMPLE_DEV_PM_OPS
+>   watchdog: dw_wdt: use clk_prepare_enable and clk_disable_unprepare
+>   watchdog: dw_wdt: add a devicetree binding
 > 
-> > >
-> > > Signed-off-by: Mingjun Zhang <troy.zhangmingjun@linaro.org>
-> > > ---
-> > >  mm/page_alloc.c |    3 ++-
-> > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > >
-> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > > index 0ee638f..84b9d84 100644
-> > > --- a/mm/page_alloc.c
-> > > +++ b/mm/page_alloc.c
-> > > @@ -1362,7 +1362,8 @@ void free_hot_cold_page(struct page *page, int
-> > cold)
-> > >        * excessively into the page allocator
-> > >        */
-> > >       if (migratetype >= MIGRATE_PCPTYPES) {
-> > > -             if (unlikely(is_migrate_isolate(migratetype))) {
-> > > +             if (unlikely(is_migrate_isolate(migratetype))
-> > > +                     || is_migrate_cma(migratetype))
-> >
-> > The concern is likely/unlikely usage is proper in this code peice.
-> > If we don't use memory isolation, the code path is used for only
-> > MIGRATE_RESERVE which is very rare allocation in normal workload.
-> >
-> > Even, in memory isolation environement, I'm not sure how many
-> > CMA/HOTPLUG is used compared to normal alloc/free.
-> > So, I think below is more proper?
-> >
-> > if (unlikely(migratetype >= MIGRATE_PCPTYPES)) {
-> >         if (is_migrate_isolate(migratetype) || is_migrate_cma(migratetype))
-> >
-> > if CMA is enabled and alloc/free frequently, it will more likely
-> migratetype >= MIGRATE_PCPTYPES
+>  .../bindings/watchdog/snps-dw-apb-wdt.txt          |   18 ++++++++++++
+>  drivers/watchdog/dw_wdt.c                          |   31 ++++++++++++--------
+>  2 files changed, 36 insertions(+), 13 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/watchdog/snps-dw-apb-wdt.txt
 
-Until now, I didn't notice there is such workload. Do you have such real workload?
-If so, we should change it with following as?
+patches 1 and 2 have been added to linux-watchdog-next.
+Patch 3 has been replaced with Dinh Nguyen's patch (watchdog: dw: Enable OF support for DW watchdog timer).
 
-if (migratetype >= MIGRATE_PCPTYPES) {
-        if (is_migrate_cma(migratetype) || unlikely(is_migrate_isolate(migratetype)))
-
-Because assumption is you insist that there is lots of alloc/free for CMA.
-But since we have had unlikely on memory-hotplug check, it would be less than CMA.
-
-
-
-> 
-> I know it's an another topic but I'd like to disucss it in this time because
-> > we will forget such trivial thing later, again.
-> >
-> > }
-> >
-> > >                       free_one_page(zone, page, 0, migratetype);
-> > >                       goto out;
-> > >               }
-> > > --
-> > > 1.7.9.5
-> > >
-> > > --
-> > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > > see: http://www.linux-mm.org/ .
-> > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >
-> > --
-> > Kind regards,
-> > Minchan Kim
-> >
-
--- 
 Kind regards,
-Minchan Kim
+Wim.
+
