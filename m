@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758312Ab3J2QxC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 12:53:02 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:62830 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab3J2QxA (ORCPT
+	id S1758204Ab3J2REk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 13:04:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36533 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab3J2REj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 12:53:00 -0400
-Message-ID: <526FE7E8.80806@linux.com>
-Date: Tue, 29 Oct 2013 17:52:56 +0100
-From: Levente Kurusa <levex@linux.com>
-Reply-To: levex@linux.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 29 Oct 2013 13:04:39 -0400
+Date: Tue, 29 Oct 2013 10:04:37 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kevin McKinney <klmckinney1@gmail.com>
+Cc: Staging subsystem List <devel@driverdev.osuosl.org>,
+        linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH 02/11 V2] Staging: bcm: Remove typedef for _U_IP_ADDRESS
+ and call directly.
+Message-ID: <20131029170437.GA18702@kroah.com>
+References: <1383018708-29615-1-git-send-email-klmckinney1@gmail.com>
+ <1383018708-29615-3-git-send-email-klmckinney1@gmail.com>
+ <20131029160148.GA20656@kroah.com>
+ <20131029160322.GA21844@kroah.com>
+ <CAKPrQY9OTnJMEZ9=PhwXDbSxaKwt0t1A1HEFmCde-x-WDXDPoA@mail.gmail.com>
 MIME-Version: 1.0
-To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Robert Hancock <hancockrwd@gmail.com>
-CC: Aaron Lu <aaron.lu@intel.com>, ACPI List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH RESEND] ACPI: Add Toshiba NB100 to Vista _OSI blacklist
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKPrQY9OTnJMEZ9=PhwXDbSxaKwt0t1A1HEFmCde-x-WDXDPoA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds Toshiba NB100 to the Vista _OSI blacklist.
+On Tue, Oct 29, 2013 at 01:01:39PM -0400, Kevin McKinney wrote:
+> Sure, I will resend these patches.  I tried to be careful, and apply all other
+> patches before I re-did mine. I must have missed something. I will resend. In
+> the past I developed my patches against the linux-next branch.  Is this still
+> the right branch to use?
 
-The _OSI(Windows 2006) method is bugged on the netbook resulting in messed up
-PCI IRQ Routing information. This was observed on a netbook,
-whose SATA controller mode was set to Compatibility mode.
-The driver would then register itself to IRQ#16, but the device
-was in fact issuing interrupts to IRQ#20.
-No side-effects were found during testing, everything is
-working as it did before.
+Yes it is.
 
-See thread:
-http://marc.info/?t=137862230200001&r=1&w=2
-http://www.spinics.net/lists/linux-ide/msg46173.html
+thanks,
 
-
-Signed-off-by: Levente Kurusa <levex@linux.com>
-Reviewed-by: Robert Hancock <hancockrwd@gmail.com>
----
-diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
-index cb96296..34d4d1a 100644
---- a/drivers/acpi/blacklist.c
-+++ b/drivers/acpi/blacklist.c
-@@ -267,6 +267,14 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
- 		     DMI_MATCH(DMI_PRODUCT_NAME, "Satellite P305D"),
- 		},
- 	},
-+	{
-+	.callback = dmi_disable_osi_vista,
-+	.ident = "Toshiba NB100",
-+	.matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "NB100"),
-+		},
-+	},
-
- 	/*
- 	 * BIOS invocation of _OSI(Linux) is almost always a BIOS bug.
+greg k-h
