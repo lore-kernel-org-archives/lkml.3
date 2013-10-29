@@ -1,124 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab3J2H5y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 03:57:54 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:57308 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315Ab3J2H4m (ORCPT
+	id S1753270Ab3J2H6I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 03:58:08 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:6761 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab3J2H6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 03:56:42 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID r9T7uePP005134, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net 2/3] r8152: modify the tx flow
-Date: Tue, 29 Oct 2013 15:56:16 +0800
-Message-ID: <1383033377-1178-3-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1383033377-1178-1-git-send-email-hayeswang@realtek.com>
-References: <1383033377-1178-1-git-send-email-hayeswang@realtek.com>
+	Tue, 29 Oct 2013 03:58:06 -0400
+X-Spam-Score: -100.7
+Message-ID: <526F6A4F.9040507@asianux.com>
+Date: Tue, 29 Oct 2013 15:57:03 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.218]
+To: Max Filippov <jcmvbkbc@gmail.com>
+CC: "vgupta@synopsys.com" <vgupta@synopsys.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] arch: use ASM_NL instead of ';' for assembler new line
+ character in the macro
+References: <526E3CE2.2070405@asianux.com> <CAMo8BfK70vRc_DUTXhUZfTjA7zvYW3D4ApgDoMrwUZp5c+qk1g@mail.gmail.com>
+In-Reply-To: <CAMo8BfK70vRc_DUTXhUZfTjA7zvYW3D4ApgDoMrwUZp5c+qk1g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let rtl8152_start_xmit() to queue packet only, and tx_bottom() would
-send all of the packets. This simplify the code and make sure all the
-packet would be sent by the original order.
+On 10/28/2013 07:18 PM, Max Filippov wrote:
+> Hi Chen,
+> 
+> On Mon, Oct 28, 2013 at 2:30 PM, Chen Gang <gang.chen@asianux.com> wrote:
+>> > For some toolchains, they use another character as newline in a macro
+>> > (e.g. arc uses '`'), so for generic assembly code, need use ASM_NL (a
+>> > macro) instead of ';' for it.
+>> > Since "linux/export.h" are mainly used for exporting work, then our fix
+>> > more likely belongs to "linux/linkage.h", and we need add the related
+>> > checking in "linkage.h".
+>> >
+>> > Also need notice 80 columns wrap, and '\t' for each line.
+>> >
+>> >
+>> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> > ---
+>> >  arch/arc/include/asm/linkage.h    |    2 +
+>> >  include/asm-generic/vmlinux.lds.h |  350 +++++++++++++++++++------------------
+> Actually vmlinux.lds.h is not an assembly code, but rather a linker script,
+> later preprocessed by cpp.
+> 
 
-Support stopping and waking tx queue. The maximum tx queue length
-is 60.
+Consult: do xtensa also has its own ASM_NL?
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 52 ++++++++++---------------------------------------
- 1 file changed, 10 insertions(+), 42 deletions(-)
+:-)
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 5dbfe50..1647931 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -276,6 +276,8 @@ enum rtl_register_content {
- 
- #define INTR_LINK		0x0004
- 
-+#define TX_QLEN			60
-+
- #define RTL8152_REQT_READ	0xc0
- #define RTL8152_REQT_WRITE	0x40
- #define RTL8152_REQ_GET_REGS	0x05
-@@ -1173,6 +1175,9 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
- 		remain = rx_buf_sz - (int)(tx_agg_align(tx_data) - agg->head);
- 	}
- 
-+	if (netif_queue_stopped(tp->netdev))
-+		netif_wake_queue(tp->netdev);
-+
- 	usb_fill_bulk_urb(agg->urb, tp->udev, usb_sndbulkpipe(tp->udev, 2),
- 			  agg->head, (int)(tx_data - (u8 *)agg->head),
- 			  (usb_complete_t)write_bulk_callback, agg);
-@@ -1388,53 +1393,16 @@ static netdev_tx_t rtl8152_start_xmit(struct sk_buff *skb,
- 					    struct net_device *netdev)
- {
- 	struct r8152 *tp = netdev_priv(netdev);
--	struct net_device_stats *stats = rtl8152_get_stats(netdev);
--	unsigned long flags;
--	struct tx_agg *agg = NULL;
--	struct tx_desc *tx_desc;
--	unsigned int len;
--	u8 *tx_data;
--	int res;
- 
- 	skb_tx_timestamp(skb);
- 
--	/* If tx_queue is not empty, it means at least one previous packt */
--	/* is waiting for sending. Don't send current one before it.      */
--	if (skb_queue_empty(&tp->tx_queue))
--		agg = r8152_get_tx_agg(tp);
--
--	if (!agg) {
--		skb_queue_tail(&tp->tx_queue, skb);
--		return NETDEV_TX_OK;
--	}
-+	skb_queue_tail(&tp->tx_queue, skb);
- 
--	tx_desc = (struct tx_desc *)agg->head;
--	tx_data = agg->head + sizeof(*tx_desc);
--	agg->skb_num = agg->skb_len = 0;
-+	if (skb_queue_len(&tp->tx_queue) > TX_QLEN)
-+		netif_stop_queue(netdev);
- 
--	len = skb->len;
--	r8152_tx_csum(tp, tx_desc, skb);
--	memcpy(tx_data, skb->data, len);
--	dev_kfree_skb_any(skb);
--	agg->skb_num++;
--	agg->skb_len += len;
--	usb_fill_bulk_urb(agg->urb, tp->udev, usb_sndbulkpipe(tp->udev, 2),
--			  agg->head, len + sizeof(*tx_desc),
--			  (usb_complete_t)write_bulk_callback, agg);
--	res = usb_submit_urb(agg->urb, GFP_ATOMIC);
--	if (res) {
--		/* Can we get/handle EPIPE here? */
--		if (res == -ENODEV) {
--			netif_device_detach(tp->netdev);
--		} else {
--			netif_warn(tp, tx_err, netdev,
--				   "failed tx_urb %d\n", res);
--			stats->tx_dropped++;
--			spin_lock_irqsave(&tp->tx_lock, flags);
--			list_add_tail(&agg->list, &tp->tx_free);
--			spin_unlock_irqrestore(&tp->tx_lock, flags);
--		}
--	}
-+	if (!list_empty(&tp->tx_free))
-+		tasklet_schedule(&tp->tl);
- 
- 	return NETDEV_TX_OK;
- }
+Thanks.
 -- 
-1.8.3.1
-
+Chen Gang
