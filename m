@@ -1,51 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635Ab3J2WYJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 18:24:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39419 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab3J2WYH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 18:24:07 -0400
-Date: Tue, 29 Oct 2013 15:24:05 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Johan Hovold <jhovold@gmail.com>, peter@hurleysoftware.com, jslaby@suse.cz,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty: Add C_MSPAR(tty)
-Message-ID: <20131029222405.GA2780@kroah.com>
-References: <1382527101-30473-1-git-send-email-andrew@lunn.ch>
- <20131029181746.GE29615@localhost>
- <20131029221521.GP27015@lunn.ch>
+	id S1751830Ab3J2WZo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 18:25:44 -0400
+Received: from mail.eperm.de ([89.247.134.16]:47960 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751182Ab3J2WZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 18:25:43 -0400
+From: Stephan Mueller <smueller@chronox.de>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: sandy harris <sandyinchina@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
+Date: Tue, 29 Oct 2013 23:25:28 +0100
+Message-ID: <11529328.Jgjayj3SHB@tauon>
+User-Agent: KMail/4.11.2 (Linux/3.11.6-200.fc19.x86_64; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <7861469.OAmn4h8An0@tauon>
+References: <2579337.FPgJGgHYdz@tauon> <20131029132448.GB691@thunk.org> <7861469.OAmn4h8An0@tauon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131029221521.GP27015@lunn.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 11:15:21PM +0100, Andrew Lunn wrote:
-> On Tue, Oct 29, 2013 at 07:17:46PM +0100, Johan Hovold wrote:
-> > On Wed, Oct 23, 2013 at 01:18:21PM +0200, Andrew Lunn wrote:
-> > > Add the missing C_MSPAR(tty) macro.
-> > 
-> > Please rename the macro C_CMSPAR to be consistent with the other
-> > termios-flag macros (with C_BAUD being the exception that confirms the
-> > rule).
-> 
-> Hi Johan
-> 
-> O.K, i will rename it.
-> 
-> Should i add this to the MOXA patch series, or submit is separately?
-> I'm just thinking about dependencies. It will probably be easier to
-> take both through one tree.
+Am Dienstag, 29. Oktober 2013, 15:00:31 schrieb Stephan Mueller:
 
-I'll take both through the same tree, so might as well make it part of
-the same patch.
+Hi Ted,
 
-thanks,
+>Am Dienstag, 29. Oktober 2013, 09:24:48 schrieb Theodore Ts'o:
+>
+>Hi Theodore,
+>
+>>On Tue, Oct 29, 2013 at 09:42:30AM +0100, Stephan Mueller wrote:
+>>> Based on this suggestion, I now added the tests in Appendix F.46.8
+>>> where I disable the caches and the tests in Appendix F.46.9 where I
+>>> disable the caches and interrupts.
+>>
+>>What you've added in F.46 is a good start, but as a suggestiom,
+>>instead of disabling one thing at a time, try disabling *everything*
+>>and then see what you get, and then enabling one thing at a time.  The
+>>best thing is if you can get to the point where the amount of entropy
+>>is close to zero.  Then as you add things back, there's a much better
+>
+>I will try to do that.
+>
+>But please see the different lower boundary values in the different
+>subsections of F.46: none of them fall when I disable or change
+>anything in the base system (except the power management -- where I
+>added additional analyses). Some of the changes imply that the jitter
+>increases when I disable certain support.
+>
+>Thus, expect that we will not see a significant drop in the jitter as
+>you fear or expect.
+>
+>Yet, I will try and report back.
 
-greg k-h
+Please have a look at the updated documentation, appendix F.46.10 
+provided in [1].
+
+The interesting result is that some combinations of disabling CPU 
+support do reduce the CPU execution jitter. However, disabling all 
+support is not the lowest jitter measurement.
+
+Though, none of the tried combinations deteriorate the measurement so 
+much that the execution jitter would be insufficient for use in the RNG.
+
+[...]
+>>sense of where the unpredictability might be coming from, and whether
+>>the unpredictability is coming from something which is fundamentally
+>>arising from something which is chaotic or quantum effect, or just
+>>because we don't have a good way of modelling the behavior of the
+>>L1/L2 cache (for example) and that is spoofing your entropy estimator.
+>
+>Please note: if the jitter really comes from the oscillator effect of
+>the RAM clock vs. the CPU clock (which I suspect), we will not be able
+>to alter the jitter software wise.
+
+My current conclusion is that software can have some impact on the 
+execution jitter (as it is visible when executing different OSes on the 
+same hardware system as outlined in appendix F.45.
+
+But none of the software impacts can deteriorate the jitter to the level 
+that it is not usable any more for the RNG and still keep the claim that 
+each output bit would have one bit of entropy.
+
+[1] http://www.chronox.de/jent/doc/CPU-Jitter-NPTRNG.html
+
+Ciao
+Stephan
