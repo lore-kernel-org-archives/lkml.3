@@ -1,125 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab3J2K3w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 06:29:52 -0400
-Received: from mga09.intel.com ([134.134.136.24]:12337 "EHLO mga09.intel.com"
+	id S1754399Ab3J2KaK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 06:30:10 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53307 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751390Ab3J2K3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 06:29:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="426386118"
-Message-ID: <526F8E21.1030702@intel.com>
-Date: Tue, 29 Oct 2013 18:29:53 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+	id S1751390Ab3J2KaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 06:30:08 -0400
+Date: Tue, 29 Oct 2013 11:30:03 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Andre Przywara <andre@andrep.de>, Joerg Roedel <joro@8bytes.org>,
+        X86 ML <x86@kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 0/6] kvm: Emulate MOVBE, v3
+Message-ID: <20131029103003.GA10977@pd.tnic>
+References: <1379861095-628-1-git-send-email-bp@alien8.de>
+ <20131029095300.GW15657@redhat.com>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: rjw@rjwysocki.net, viresh.kumar@linaro.org, dipankar@in.ibm.com,
-        fweisbec@gmail.com, youquan.song@intel.com, riel@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Tick: Introduce tick_nohz_check() to check nohz enable
- status
-References: <1383036537-30362-1-git-send-email-tianyu.lan@intel.com> <20131029095135.GH4126@linux.vnet.ibm.com>
-In-Reply-To: <20131029095135.GH4126@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131029095300.GW15657@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2013 05:51 PM, Paul E. McKenney wrote:
-> On Tue, Oct 29, 2013 at 04:48:56PM +0800, Lan Tianyu wrote:
->> In some cases, nohz enable status needs to be checked. E.G, in RCU and cpufreq
->> ondemand governor. So add tick_nohz_check() to return tick_nohz_enabled value
->> And use tick_nohz_check() instead of referencing tick_nohz_enabled in the rcutree_plugin.h.
->>
->> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
->
-> NACK on the rcutree change unless you put the ACCESS_ONCE() in.
->
-> Or is there some reason that ACCESS_ONCE() is not needed?  If so, what
-> is that reason?
+On Tue, Oct 29, 2013 at 11:53:00AM +0200, Gleb Natapov wrote:
+> Except a small nitpick for patch 4 this looks good to me. No need to
+> wait for QEMU cpu parsing code to change to apply it.
 
-Hi Paul:
+Ok, want a resend or rather a pull request or only patch 4 resend?
 
-Thanks for review. When I change this code, I find the tick_nohz_enabled
-isn't changed dynamically. It's only changed during parsing kernel
-params when "nohz=off/on" is set. Except this, it will not be changed.
-So I ignored ACCESS_ONCE(). If necessary, I can add it back.
+Btw, we kinda missed each other in Edinburgh to exchange fingerprints
+for pull request :-\
 
->
-> 							Thanx, Paul
->
->> ---
->>   include/linux/tick.h     | 2 ++
->>   kernel/rcutree_plugin.h  | 4 +---
->>   kernel/time/tick-sched.c | 8 +++++++-
->>   3 files changed, 10 insertions(+), 4 deletions(-)
->>
->> diff --git a/include/linux/tick.h b/include/linux/tick.h
->> index 5128d33..a9c5374 100644
->> --- a/include/linux/tick.h
->> +++ b/include/linux/tick.h
->> @@ -136,6 +136,7 @@ static inline int tick_nohz_tick_stopped(void)
->>   extern void tick_nohz_idle_enter(void);
->>   extern void tick_nohz_idle_exit(void);
->>   extern void tick_nohz_irq_exit(void);
->> +extern int tick_nohz_check(void);
->>   extern ktime_t tick_nohz_get_sleep_length(void);
->>   extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
->>   extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
->> @@ -155,6 +156,7 @@ static inline ktime_t tick_nohz_get_sleep_length(void)
->>
->>   	return len;
->>   }
->> +static inline int tick_nohz_check(void) { return 0; }
->>   static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) { return -1; }
->>   static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
->>   # endif /* !CONFIG_NO_HZ_COMMON */
->> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
->> index 130c97b..af167ec 100644
->> --- a/kernel/rcutree_plugin.h
->> +++ b/kernel/rcutree_plugin.h
->> @@ -1627,8 +1627,6 @@ module_param(rcu_idle_gp_delay, int, 0644);
->>   static int rcu_idle_lazy_gp_delay = RCU_IDLE_LAZY_GP_DELAY;
->>   module_param(rcu_idle_lazy_gp_delay, int, 0644);
->>
->> -extern int tick_nohz_enabled;
->> -
->>   /*
->>    * Try to advance callbacks for all flavors of RCU on the current CPU.
->>    * Afterwards, if there are any callbacks ready for immediate invocation,
->> @@ -1718,7 +1716,7 @@ static void rcu_prepare_for_idle(int cpu)
->>   	int tne;
->>
->>   	/* Handle nohz enablement switches conservatively. */
->> -	tne = ACCESS_ONCE(tick_nohz_enabled);
->> +	tne = tick_nohz_check();
->>   	if (tne != rdtp->tick_nohz_enabled_snap) {
->>   		if (rcu_cpu_has_callbacks(cpu, NULL))
->>   			invoke_rcu_core(); /* force nohz to see update. */
->> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
->> index 3612fc7..d381a22 100644
->> --- a/kernel/time/tick-sched.c
->> +++ b/kernel/time/tick-sched.c
->> @@ -361,7 +361,13 @@ void __init tick_nohz_init(void)
->>   /*
->>    * NO HZ enabled ?
->>    */
->> -int tick_nohz_enabled __read_mostly  = 1;
->> +static int tick_nohz_enabled __read_mostly  = 1;
->> +
->> +int tick_nohz_check(void)
->> +{
->> +	return	tick_nohz_enabled;
->> +}
->> +EXPORT_SYMBOL_GPL(tick_nohz_check);
->>
->>   /*
->>    * Enable / Disable tickless mode
->> --
->> 1.8.4.rc0.1.g8f6a3e5.dirty
->>
->
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
