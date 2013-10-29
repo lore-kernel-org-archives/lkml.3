@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab3J2SKE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:10:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59616 "EHLO
+	id S1755558Ab3J2SKO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:10:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59646 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754971Ab3J2SJ5 (ORCPT
+	with ESMTP id S1755505Ab3J2SKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:09:57 -0400
+	Tue, 29 Oct 2013 14:10:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>,
+Cc: Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 24/81] tuntap: correctly handle error in tun_set_iff()
-Date: Tue, 29 Oct 2013 11:03:45 -0700
-Message-Id: <1383069882-11437-25-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 30/81] ipv6/exthdrs: accept tlv which includes only padding
+Date: Tue, 29 Oct 2013 11:03:51 -0700
+Message-Id: <1383069882-11437-31-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
@@ -29,64 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Jiri Pirko <jiri@resnulli.us>
 
-commit 662ca437e714caaab855b12415d6ffd815985bc0 upstream.
+[ Upstream commit 8112b1fe071be01a28a774ed55909e6f4b29712d ]
 
-Commit c8d68e6be1c3b242f1c598595830890b65cea64a
-(tuntap: multiqueue support) only call free_netdev() on error in
-tun_set_iff(). This causes several issues:
+In rfc4942 and rfc2460 I cannot find anything which would implicate to
+drop packets which have only padding in tlv.
 
-- memory of tun security were leaked
-- use after free since the flow gc timer was not deleted and the tfile
-  were not detached
+Current behaviour breaks TAHI Test v6LC.1.2.6.
 
-This patch solves the above issues.
+Problem was intruduced in:
+9b905fe6843 "ipv6/exthdrs: strict Pad1 and PadN check"
 
-Reported-by: Wannes Rombouts <wannes.rombouts@epitech.eu>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[ kamal: 3.8-stable for CVE-2013-4343 ]
-Cc: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/tun.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ net/ipv6/exthdrs.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 441c987..66b4613 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1686,11 +1686,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		INIT_LIST_HEAD(&tun->disabled);
- 		err = tun_attach(tun, file);
- 		if (err < 0)
--			goto err_free_dev;
-+			goto err_free_flow;
+diff --git a/net/ipv6/exthdrs.c b/net/ipv6/exthdrs.c
+index 07a7d65..8d67900 100644
+--- a/net/ipv6/exthdrs.c
++++ b/net/ipv6/exthdrs.c
+@@ -162,12 +162,6 @@ static bool ip6_parse_tlv(const struct tlvtype_proc *procs, struct sk_buff *skb)
+ 		off += optlen;
+ 		len -= optlen;
+ 	}
+-	/* This case will not be caught by above check since its padding
+-	 * length is smaller than 7:
+-	 * 1 byte NH + 1 byte Length + 6 bytes Padding
+-	 */
+-	if ((padlen == 6) && ((off - skb_network_header_len(skb)) == 8))
+-		goto bad;
  
- 		err = register_netdevice(tun->dev);
- 		if (err < 0)
--			goto err_free_dev;
-+			goto err_detach;
- 
- 		if (device_create_file(&tun->dev->dev, &dev_attr_tun_flags) ||
- 		    device_create_file(&tun->dev->dev, &dev_attr_owner) ||
-@@ -1734,7 +1734,12 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 	strcpy(ifr->ifr_name, tun->dev->name);
- 	return 0;
- 
-- err_free_dev:
-+err_detach:
-+	tun_detach_all(dev);
-+err_free_flow:
-+	tun_flow_uninit(tun);
-+	security_tun_dev_free_security(tun->security);
-+err_free_dev:
- 	free_netdev(dev);
- 	return err;
- }
+ 	if (len == 0)
+ 		return true;
 -- 
 1.8.1.2
 
