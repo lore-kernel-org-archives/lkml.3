@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab3J2SKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:10:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59641 "EHLO
+	id S1755626Ab3J2SKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:10:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59656 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754971Ab3J2SKF (ORCPT
+	with ESMTP id S1755505Ab3J2SKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:10:05 -0400
+	Tue, 29 Oct 2013 14:10:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Jones <davej@fedoraproject.org>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 21/81] ext4: fix memory leak in xattr
-Date: Tue, 29 Oct 2013 11:03:42 -0700
-Message-Id: <1383069882-11437-22-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 23/81] parisc: fix interruption handler to respect pagefault_disable()
+Date: Tue, 29 Oct 2013 11:03:44 -0700
+Message-Id: <1383069882-11437-24-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
@@ -27,43 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Jones <davej@redhat.com>
+From: Helge Deller <deller@gmx.de>
 
-commit 6e4ea8e33b2057b85d75175dd89b93f5e26de3bc upstream.
+commit 59b33f148cc08fb33cbe823fca1e34f7f023765e upstream.
 
-If we take the 2nd retry path in ext4_expand_extra_isize_ea, we
-potentionally return from the function without having freed these
-allocations.  If we don't do the return, we over-write the previous
-allocation pointers, so we leak either way.
+Running an "echo t > /proc/sysrq-trigger" crashes the parisc kernel.  The
+problem is, that in print_worker_info() we try to read the workqueue info via
+the probe_kernel_read() functions which use pagefault_disable() to avoid
+crashes like this:
+    probe_kernel_read(&pwq, &worker->current_pwq, sizeof(pwq));
+    probe_kernel_read(&wq, &pwq->wq, sizeof(wq));
+    probe_kernel_read(name, wq->name, sizeof(name) - 1);
 
-Spotted with Coverity.
+The problem here is, that the first probe_kernel_read(&pwq) might return zero
+in pwq and as such the following probe_kernel_reads() try to access contents of
+the page zero which is read protected and generate a kernel segfault.
 
-[ Fixed by tytso to set is and bs to NULL after freeing these
-  pointers, in case in the retry loop we later end up triggering an
-  error causing a jump to cleanup, at which point we could have a double
-  free bug. -- Ted ]
+With this patch we fix the interruption handler to call parisc_terminate()
+directly only if pagefault_disable() was not called (in which case
+preempt_count()==0).  Otherwise we hand over to the pagefault handler which
+will try to look up the faulting address in the fixup tables.
 
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: John David Anglin  <dave.anglin@bell.net>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/xattr.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/parisc/kernel/traps.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-index b93846b..f88c442 100644
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -1356,6 +1356,8 @@ retry:
- 				    s_min_extra_isize) {
- 					tried_min_extra_isize++;
- 					new_extra_isize = s_min_extra_isize;
-+					kfree(is); is = NULL;
-+					kfree(bs); bs = NULL;
- 					goto retry;
- 				}
- 				error = -1;
+diff --git a/arch/parisc/kernel/traps.c b/arch/parisc/kernel/traps.c
+index 45ba99f..71d7d72 100644
+--- a/arch/parisc/kernel/traps.c
++++ b/arch/parisc/kernel/traps.c
+@@ -810,14 +810,14 @@ void notrace handle_interruption(int code, struct pt_regs *regs)
+ 	else {
+ 
+ 	    /*
+-	     * The kernel should never fault on its own address space.
++	     * The kernel should never fault on its own address space,
++	     * unless pagefault_disable() was called before.
+ 	     */
+ 
+-	    if (fault_space == 0) 
++	    if (fault_space == 0 && !in_atomic())
+ 	    {
+ 		pdc_chassis_send_status(PDC_CHASSIS_DIRECT_PANIC);
+ 		parisc_terminate("Kernel Fault", regs, code, fault_address);
+-	
+ 	    }
+ 	}
+ 
 -- 
 1.8.1.2
 
