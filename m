@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab3J2Gxu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 02:53:50 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:56610 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825Ab3J2Gxo (ORCPT
+	id S1752627Ab3J2Gx5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 02:53:57 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:55525 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab3J2Gxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 02:53:44 -0400
-X-AuditID: 9c93017e-b7ca6ae000000e8a-26-526f5b76a465
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 02/13] tracing/probes: Fix basic print type functions
-Date: Tue, 29 Oct 2013 15:53:30 +0900
-Message-Id: <1383029621-7384-3-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
-References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 29 Oct 2013 02:53:53 -0400
+X-AuditID: cbfee68e-b7f416d0000020d6-ec-526f5b804c3e
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH 1/2] f2fs: introduce CONFIG_F2FS_CHECK_FS for BUG_ON control
+Date: Tue, 29 Oct 2013 15:53:11 +0900
+Message-id: <1383029592-17477-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zA92G6PwggyOdEhbXd/1lsri0yN1i
+	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEdx2aSk5mSWpRbp2yVwZZy/to+t4Adrxe8N
+	M5gaGB+zdDFyckgImEh8uTYVyhaTuHBvPVsXIxeHkMAyRonP128zwxSt+/eMBSIxnVGi8VsX
+	lNPMJDH31m/GLkYODjYBbYnN+w1AGkQEmCUWTD3PCFLDLDCBUeL/ovdgK4QFfCS+dF1kBbFZ
+	BFQlPv6dxQTSyyvgLnH5rg7EMm2Jbc8ngvVKCNxnk5i28RE7RL2AxLfJh1hA6iUEZCU2HYA6
+	TlLi4IobLBMYBRcwMqxiFE0tSC4oTkovMtIrTswtLs1L10vOz93ECAnBvh2MNw9YH2JMBho3
+	kVlKNDkfGMJ5JfGGxmZGFqYmpsZG5pZmpAkrifMuepgUJCSQnliSmp2aWpBaFF9UmpNafIiR
+	iYNTqoFRX3jZw+4le1zLJ8h2WKVyTpix8/UztmVzfFa5mwkrpRZc8v+e9fSr96tzQmHrLjgs
+	Dvxm/cx0mtPEuQ/bm550KRiavYo6FV8SGibZUrPUuuLBPbutZ+bx/H8/8/veQzcYT7asj7wc
+	KcK4QcJE/ZuO13urCl2ZQL/ug0er/zy8PsV9wpGsb4tclFiKMxINtZiLihMBa87X3VcCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jQd2G6Pwgg/NLRSyu7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
+	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
+	JAiux8gADSSsY8w4f20fW8EP1orfG2YwNTA+Zuli5OSQEDCRWPfvGZQtJnHh3nq2LkYuDiGB
+	6YwSjd+6WCCcZiaJubd+M3YxcnCwCWhLbN5vANIgIsAssWDqeUaQGmaBCYwS/xe9B5skLOAj
+	8aXrIiuIzSKgKvHx7ywmkF5eAXeJy3d1IJZpS2x7PpFxAiP3AkaGVYyiqQXJBcVJ6blGesWJ
+	ucWleel6yfm5mxjBAf5MegfjqgaLQ4wCHIxKPLwWbPlBQqyJZcWVuYcYJTiYlUR4dwQDhXhT
+	EiurUovy44tKc1KLDzEmAy2fyCwlmpwPjL68knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmk
+	J5akZqemFqQWwWxh4uCUamAU/2+i0yYRueI3p/uGmKWsPOdD27KzVXwnmRj8l7SdGpm3yNnJ
+	uaWHdaZ0+tOsDuNJX85mVR/e5y/XurBz9c+vCpP+a1zYWjvn2CXzbNZf8dXq6jXa3tIzSzzN
+	VqXZLBPe+3zDv9Xxe3dJBOqkBpldWx+f/Cc6VdZsCsfGJd8ucItsEePIZFFiKc5INNRiLipO
+	BAA1RqKItAIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+This config will support an option to remove so many BUG_ONs that degrade
+the performance potentially.
 
-The print format of s32 type was "ld" and it's casted to "long".  So
-it turned out to print 4294967295 for "-1" on 64-bit systems.  Not
-sure whether it worked well on 32-bit systems.
-
-Anyway, it'd be better if we have exact format and type cast for each
-types on both of 32- and 64-bit systems.  In fact, the only difference
-is on s64/u64 types.
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- kernel/trace/trace_probe.c | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ fs/f2fs/Kconfig | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index 412e959709b4..b571e4de0769 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -49,14 +49,19 @@ static __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
- }									\
- static const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
+diff --git a/fs/f2fs/Kconfig b/fs/f2fs/Kconfig
+index e06e099..214fe10 100644
+--- a/fs/f2fs/Kconfig
++++ b/fs/f2fs/Kconfig
+@@ -63,3 +63,11 @@ config F2FS_FS_SECURITY
+ 	  the extended attribute support in advance.
  
--DEFINE_BASIC_PRINT_TYPE_FUNC(u8, "%x", unsigned int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%lx", unsigned long)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u8 , "%x", unsigned char)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned short)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%x", unsigned int)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s8,  "%d", signed char)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", short)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%d", int)
-+#if BITS_PER_LONG == 32
- DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%llx", unsigned long long)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s8, "%d", int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", int)
--DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%ld", long)
- DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%lld", long long)
-+#else /* BITS_PER_LONG == 64 */
-+DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%lx", unsigned long)
-+DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%ld", long)
-+#endif
- 
- static inline void *get_rloc_data(u32 *dl)
- {
+ 	  If you are not using a security module, say N.
++
++config F2FS_CHECK_FS
++	bool "F2FS consistency checking feature"
++	depends on F2FS_FS
++	help
++	  Enables BUG_ONs which check the file system consistency in runtime.
++
++	  If you want to improve the performance, say N.
 -- 
-1.7.11.7
+1.8.4.474.g128a96c
 
