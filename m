@@ -1,75 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457Ab3J2KZu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 06:25:50 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:41199 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754302Ab3J2KZr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 06:25:47 -0400
-Date: Tue, 29 Oct 2013 11:25:43 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 0/4] perf tools: Fix -g option handling
-Message-ID: <20131029102543.GA26154@gmail.com>
-References: <20131026120336.GA24439@gmail.com>
- <1382797536-32303-1-git-send-email-jolsa@redhat.com>
- <20131026143231.GB1069@krava.brq.redhat.com>
- <20131027065605.GA28433@gmail.com>
- <20131029102137.GC1093@krava.brq.redhat.com>
+	id S1754196Ab3J2K3w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 06:29:52 -0400
+Received: from mga09.intel.com ([134.134.136.24]:12337 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751390Ab3J2K3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 06:29:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="426386118"
+Message-ID: <526F8E21.1030702@intel.com>
+Date: Tue, 29 Oct 2013 18:29:53 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131029102137.GC1093@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: paulmck@linux.vnet.ibm.com
+CC: rjw@rjwysocki.net, viresh.kumar@linaro.org, dipankar@in.ibm.com,
+        fweisbec@gmail.com, youquan.song@intel.com, riel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Tick: Introduce tick_nohz_check() to check nohz enable
+ status
+References: <1383036537-30362-1-git-send-email-tianyu.lan@intel.com> <20131029095135.GH4126@linux.vnet.ibm.com>
+In-Reply-To: <20131029095135.GH4126@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/29/2013 05:51 PM, Paul E. McKenney wrote:
+> On Tue, Oct 29, 2013 at 04:48:56PM +0800, Lan Tianyu wrote:
+>> In some cases, nohz enable status needs to be checked. E.G, in RCU and cpufreq
+>> ondemand governor. So add tick_nohz_check() to return tick_nohz_enabled value
+>> And use tick_nohz_check() instead of referencing tick_nohz_enabled in the rcutree_plugin.h.
+>>
+>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+>
+> NACK on the rcutree change unless you put the ACCESS_ONCE() in.
+>
+> Or is there some reason that ACCESS_ONCE() is not needed?  If so, what
+> is that reason?
 
-* Jiri Olsa <jolsa@redhat.com> wrote:
+Hi Paul:
 
-> On Sun, Oct 27, 2013 at 07:56:05AM +0100, Ingo Molnar wrote:
-> > 
-> > * Jiri Olsa <jolsa@redhat.com> wrote:
-> > 
-> > > On Sat, Oct 26, 2013 at 04:25:32PM +0200, Jiri Olsa wrote:
-> > > > hi,
-> > > > changing the '-g/-G' options for record/top commands
-> > > > to take NO argument and enable unwind method based
-> > > > on .perfconfig setup (using FP by default).
-> > > > 
-> > > > The current -g option parsing moves into the
-> > > > '--call-graph' option.
-> > > 
-> > > forgot to mention branch:
-> > > 
-> > >   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-> > >   perf/cc
-> > 
-> > I tested it - works perfectly now for me:
-> > 
-> > Acked-and-tested-by: Ingo Molnar <mingo@kernel.org>
-> > 
-> > You might want to give --call-graph a single letter option name as well, 
-> > -g, -G, -c, -C are all taken already, but both -l and -L are still 
-> > available - maybe use -L for it?
-> 
-> ok, I'll addd the -L
-> I'll send it with fixies for other comments
+Thanks for review. When I change this code, I find the tick_nohz_enabled
+isn't changed dynamically. It's only changed during parsing kernel
+params when "nohz=off/on" is set. Except this, it will not be changed.
+So I ignored ACCESS_ONCE(). If necessary, I can add it back.
 
-Please do it against tip:perf/core aac898548d04 or later (I just 
-pushed it out, it might take a few minutes to propagate), the most 
-important parts are in perf/urgent already (which is merged into 
-aac898548d04), we can do the rest for v3.13 as delta fixlets.
+>
+> 							Thanx, Paul
+>
+>> ---
+>>   include/linux/tick.h     | 2 ++
+>>   kernel/rcutree_plugin.h  | 4 +---
+>>   kernel/time/tick-sched.c | 8 +++++++-
+>>   3 files changed, 10 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/include/linux/tick.h b/include/linux/tick.h
+>> index 5128d33..a9c5374 100644
+>> --- a/include/linux/tick.h
+>> +++ b/include/linux/tick.h
+>> @@ -136,6 +136,7 @@ static inline int tick_nohz_tick_stopped(void)
+>>   extern void tick_nohz_idle_enter(void);
+>>   extern void tick_nohz_idle_exit(void);
+>>   extern void tick_nohz_irq_exit(void);
+>> +extern int tick_nohz_check(void);
+>>   extern ktime_t tick_nohz_get_sleep_length(void);
+>>   extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
+>>   extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+>> @@ -155,6 +156,7 @@ static inline ktime_t tick_nohz_get_sleep_length(void)
+>>
+>>   	return len;
+>>   }
+>> +static inline int tick_nohz_check(void) { return 0; }
+>>   static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) { return -1; }
+>>   static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
+>>   # endif /* !CONFIG_NO_HZ_COMMON */
+>> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+>> index 130c97b..af167ec 100644
+>> --- a/kernel/rcutree_plugin.h
+>> +++ b/kernel/rcutree_plugin.h
+>> @@ -1627,8 +1627,6 @@ module_param(rcu_idle_gp_delay, int, 0644);
+>>   static int rcu_idle_lazy_gp_delay = RCU_IDLE_LAZY_GP_DELAY;
+>>   module_param(rcu_idle_lazy_gp_delay, int, 0644);
+>>
+>> -extern int tick_nohz_enabled;
+>> -
+>>   /*
+>>    * Try to advance callbacks for all flavors of RCU on the current CPU.
+>>    * Afterwards, if there are any callbacks ready for immediate invocation,
+>> @@ -1718,7 +1716,7 @@ static void rcu_prepare_for_idle(int cpu)
+>>   	int tne;
+>>
+>>   	/* Handle nohz enablement switches conservatively. */
+>> -	tne = ACCESS_ONCE(tick_nohz_enabled);
+>> +	tne = tick_nohz_check();
+>>   	if (tne != rdtp->tick_nohz_enabled_snap) {
+>>   		if (rcu_cpu_has_callbacks(cpu, NULL))
+>>   			invoke_rcu_core(); /* force nohz to see update. */
+>> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+>> index 3612fc7..d381a22 100644
+>> --- a/kernel/time/tick-sched.c
+>> +++ b/kernel/time/tick-sched.c
+>> @@ -361,7 +361,13 @@ void __init tick_nohz_init(void)
+>>   /*
+>>    * NO HZ enabled ?
+>>    */
+>> -int tick_nohz_enabled __read_mostly  = 1;
+>> +static int tick_nohz_enabled __read_mostly  = 1;
+>> +
+>> +int tick_nohz_check(void)
+>> +{
+>> +	return	tick_nohz_enabled;
+>> +}
+>> +EXPORT_SYMBOL_GPL(tick_nohz_check);
+>>
+>>   /*
+>>    * Enable / Disable tickless mode
+>> --
+>> 1.8.4.rc0.1.g8f6a3e5.dirty
+>>
+>
 
-Thanks,
-
-	Ingo
