@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab3J2US7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 16:18:59 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:52060 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289Ab3J2USq (ORCPT
+	id S1753403Ab3J2US6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 16:18:58 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:62229 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068Ab3J2USs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 16:18:46 -0400
+	Tue, 29 Oct 2013 16:18:48 -0400
 From: Kent Overstreet <kmo@daterainc.com>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, hch@infradead.org, tj@kernel.org,
         nab@linux-iscsi.org, Kent Overstreet <kmo@daterainc.com>,
-        Yehuda Sadeh <yehuda@inktank.com>, Alex Elder <elder@inktank.com>,
-        ceph-devel@vger.kernel.org
-Subject: [PATCH 16/23] rbd: Refactor bio cloning, don't clone biovecs
-Date: Tue, 29 Oct 2013 13:18:09 -0700
-Message-Id: <1383077896-4132-17-git-send-email-kmo@daterainc.com>
+        Neil Brown <neilb@suse.de>
+Subject: [PATCH 18/23] block: Remove bi_idx hacks
+Date: Tue, 29 Oct 2013 13:18:11 -0700
+Message-Id: <1383077896-4132-19-git-send-email-kmo@daterainc.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1383077896-4132-1-git-send-email-kmo@daterainc.com>
 References: <1383077896-4132-1-git-send-email-kmo@daterainc.com>
@@ -23,100 +22,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we've got drivers converted to the new immutable bvec
-primitives, bio splitting becomes much easier. In a few patches,
-bio_clone() will be changed to share the old bio's bvec instead of
-copying it, and bio_split() will do exactly what's being done here.
+Now that drivers have been converted to the new bvec_iter primitives,
+there's no need to trim the bvec before we submit it; and we can't trim
+it once we start sharing bvecs.
+
+It used to be that passing a partially completed bio (i.e. one with
+nonzero bi_idx) to generic_make_request() was a dangerous thing -
+various drivers would choke on such things. But with immutable biovecs
+and our new bio splitting that shares the biovecs, submitting partially
+completed bios has to work (and should work, now that all the drivers
+have been completed to the new primitives)
 
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Yehuda Sadeh <yehuda@inktank.com>
-Cc: Alex Elder <elder@inktank.com>
-Cc: ceph-devel@vger.kernel.org
+Cc: Neil Brown <neilb@suse.de>
 ---
- drivers/block/rbd.c | 64 ++---------------------------------------------------
- 1 file changed, 2 insertions(+), 62 deletions(-)
+ drivers/md/bcache/io.c | 47 ++---------------------------------------------
+ fs/bio.c               | 23 -----------------------
+ 2 files changed, 2 insertions(+), 68 deletions(-)
 
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index 3241d5e..f2381e3 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -1173,73 +1173,13 @@ static struct bio *bio_clone_range(struct bio *bio_src,
- 					unsigned int len,
- 					gfp_t gfpmask)
- {
--	struct bio_vec bv;
--	struct bvec_iter iter;
--	struct bvec_iter end_iter;
--	unsigned int resid;
--	unsigned int voff;
--	unsigned short vcnt;
- 	struct bio *bio;
+diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
+index 6e04f3b..0f0ab65 100644
+--- a/drivers/md/bcache/io.c
++++ b/drivers/md/bcache/io.c
+@@ -11,49 +11,6 @@
  
--	/* Handle the easy case for the caller */
--
--	if (!offset && len == bio_src->bi_iter.bi_size)
--		return bio_clone(bio_src, gfpmask);
--
--	if (WARN_ON_ONCE(!len))
--		return NULL;
--	if (WARN_ON_ONCE(len > bio_src->bi_iter.bi_size))
--		return NULL;
--	if (WARN_ON_ONCE(offset > bio_src->bi_iter.bi_size - len))
--		return NULL;
--
--	/* Find first affected segment... */
--
--	resid = offset;
--	bio_for_each_segment(bv, bio_src, iter) {
--		if (resid < bv.bv_len)
--			break;
--		resid -= bv.bv_len;
--	}
--	voff = resid;
--
--	/* ...and the last affected segment */
--
--	resid += len;
--	__bio_for_each_segment(bv, bio_src, end_iter, iter) {
--		if (resid <= bv.bv_len)
--			break;
--		resid -= bv.bv_len;
--	}
--	vcnt = end_iter.bi_idx = iter.bi_idx + 1;
--
--	/* Build the clone */
--
--	bio = bio_alloc(gfpmask, (unsigned int) vcnt);
-+	bio = bio_clone(bio_src, gfpmask);
- 	if (!bio)
- 		return NULL;	/* ENOMEM */
+ #include <linux/blkdev.h>
  
--	bio->bi_bdev = bio_src->bi_bdev;
--	bio->bi_iter.bi_sector = bio_src->bi_iter.bi_sector +
--		(offset >> SECTOR_SHIFT);
--	bio->bi_rw = bio_src->bi_rw;
--	bio->bi_flags |= 1 << BIO_CLONED;
+-static void bch_bi_idx_hack_endio(struct bio *bio, int error)
+-{
+-	struct bio *p = bio->bi_private;
+-
+-	bio_endio(p, error);
+-	bio_put(bio);
+-}
+-
+-static void bch_generic_make_request_hack(struct bio *bio)
+-{
+-	if (bio->bi_iter.bi_idx) {
+-		struct bio_vec bv;
+-		struct bvec_iter iter;
+-		unsigned segs = bio_segments(bio);
+-		struct bio *clone = bio_alloc(GFP_NOIO, segs);
+-
+-		bio_for_each_segment(bv, bio, iter)
+-			clone->bi_io_vec[clone->bi_vcnt++] = bv;
+-
+-		clone->bi_iter.bi_sector = bio->bi_iter.bi_sector;
+-		clone->bi_bdev		= bio->bi_bdev;
+-		clone->bi_rw		= bio->bi_rw;
+-		clone->bi_vcnt		= segs;
+-		clone->bi_iter.bi_size	= bio->bi_iter.bi_size;
+-
+-		clone->bi_private	= bio;
+-		clone->bi_end_io	= bch_bi_idx_hack_endio;
+-
+-		bio = clone;
+-	}
 -
 -	/*
--	 * Copy over our part of the bio_vec, then update the first
--	 * and last (or only) entries.
+-	 * Hack, since drivers that clone bios clone up to bi_max_vecs, but our
+-	 * bios might have had more than that (before we split them per device
+-	 * limitations).
+-	 *
+-	 * To be taken out once immutable bvec stuff is in.
 -	 */
--	memcpy(&bio->bi_io_vec[0], &bio_src->bi_io_vec[iter.bi_idx],
--			vcnt * sizeof (struct bio_vec));
--	bio->bi_io_vec[0].bv_offset += voff;
--	if (vcnt > 1) {
--		bio->bi_io_vec[0].bv_len -= voff;
--		bio->bi_io_vec[vcnt - 1].bv_len = resid;
--	} else {
--		bio->bi_io_vec[0].bv_len = len;
--	}
+-	bio->bi_max_vecs = bio->bi_vcnt;
 -
--	bio->bi_vcnt = vcnt;
-+	bio_advance(bio, offset);
- 	bio->bi_iter.bi_size = len;
+-	generic_make_request(bio);
+-}
+-
+ /**
+  * bch_bio_split - split a bio
+  * @bio:	bio to split
+@@ -222,12 +179,12 @@ void bch_generic_make_request(struct bio *bio, struct bio_split_pool *p)
+ 		n->bi_private	= &s->cl;
  
- 	return bio;
+ 		closure_get(&s->cl);
+-		bch_generic_make_request_hack(n);
++		generic_make_request(n);
+ 	} while (n != bio);
+ 
+ 	continue_at(&s->cl, bch_bio_submit_split_done, NULL);
+ submit:
+-	bch_generic_make_request_hack(bio);
++	generic_make_request(bio);
+ }
+ 
+ /* Bios with headers */
+diff --git a/fs/bio.c b/fs/bio.c
+index 54f44a1..8bbba9a 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -1790,11 +1790,7 @@ void bio_trim(struct bio *bio, int offset, int size)
+ {
+ 	/* 'bio' is a cloned bio which we need to trim to match
+ 	 * the given offset and size.
+-	 * This requires adjusting bi_sector, bi_size, and bi_io_vec
+ 	 */
+-	int i;
+-	struct bio_vec *bvec;
+-	int sofar = 0;
+ 
+ 	size <<= 9;
+ 	if (offset == 0 && size == bio->bi_iter.bi_size)
+@@ -1805,25 +1801,6 @@ void bio_trim(struct bio *bio, int offset, int size)
+ 	bio_advance(bio, offset << 9);
+ 
+ 	bio->bi_iter.bi_size = size;
+-
+-	/* avoid any complications with bi_idx being non-zero*/
+-	if (bio->bi_iter.bi_idx) {
+-		memmove(bio->bi_io_vec, bio->bi_io_vec+bio->bi_iter.bi_idx,
+-			(bio->bi_vcnt - bio->bi_iter.bi_idx) *
+-			sizeof(struct bio_vec));
+-		bio->bi_vcnt -= bio->bi_iter.bi_idx;
+-		bio->bi_iter.bi_idx = 0;
+-	}
+-	/* Make sure vcnt and last bv are not too big */
+-	bio_for_each_segment_all(bvec, bio, i) {
+-		if (sofar + bvec->bv_len > size)
+-			bvec->bv_len = size - sofar;
+-		if (bvec->bv_len == 0) {
+-			bio->bi_vcnt = i;
+-			break;
+-		}
+-		sofar += bvec->bv_len;
+-	}
+ }
+ EXPORT_SYMBOL_GPL(bio_trim);
+ 
 -- 
 1.8.4.rc3
 
