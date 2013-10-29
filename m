@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab3J2SXt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:23:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59359 "EHLO
+	id S1753300Ab3J2SID (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:08:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59349 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217Ab3J2SIE (ORCPT
+	with ESMTP id S1753217Ab3J2SH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:08:04 -0400
+	Tue, 29 Oct 2013 14:07:59 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Roel Kluin <roel.kluin@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Jan Klos <honza.klos@gmail.com>, Steve French <smfrench@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 76/81] serial: vt8500: add missing braces
-Date: Tue, 29 Oct 2013 11:04:37 -0700
-Message-Id: <1383069882-11437-77-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 64/81] cifs: Fix inability to write files >2GB to SMB2/3 shares
+Date: Tue, 29 Oct 2013 11:04:25 -0700
+Message-Id: <1383069882-11437-65-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
@@ -28,45 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roel Kluin <roel.kluin@gmail.com>
+From: Jan Klos <honza.klos@gmail.com>
 
-commit d969de8d83401683420638c8107dcfedb2146f37 upstream.
+commit 2f6c9479633780ba4a3484bba7eba5a721a5cf20 upstream.
 
-Due to missing braces on an if statement, in presence of a device_node a
-port was always assigned -1, regardless of any alias entries in the
-device tree. Conversely, if device_node was NULL, an unitialized port
-ended up being used.
+When connecting to SMB2/3 shares, maximum file size is set to non-LFS maximum in superblock. This is due to cap_large_files bit being different for SMB1 and SMB2/3 (where it is just an internal flag that is not negotiated and the SMB1 one corresponds to multichannel capability, so maybe LFS works correctly if server sends 0x08 flag) while capabilities are checked always for the SMB1 bit in cifs_read_super().
 
-This patch adds the missing braces, fixing the issues.
+The patch fixes this by checking for the correct bit according to the protocol version.
 
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
-Acked-by: Tony Prisk <linux@prisktech.co.nz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Jan Klos <honza.klos@gmail.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/tty/serial/vt8500_serial.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/cifs/cifsfs.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/serial/vt8500_serial.c b/drivers/tty/serial/vt8500_serial.c
-index 90b837f..7e713cf 100644
---- a/drivers/tty/serial/vt8500_serial.c
-+++ b/drivers/tty/serial/vt8500_serial.c
-@@ -567,12 +567,13 @@ static int vt8500_serial_probe(struct platform_device *pdev)
- 	if (!mmres || !irqres)
- 		return -ENODEV;
+diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
+index b9db388..e946529 100644
+--- a/fs/cifs/cifsfs.c
++++ b/fs/cifs/cifsfs.c
+@@ -120,14 +120,16 @@ cifs_read_super(struct super_block *sb)
+ {
+ 	struct inode *inode;
+ 	struct cifs_sb_info *cifs_sb;
++	struct cifs_tcon *tcon;
+ 	int rc = 0;
  
--	if (np)
-+	if (np) {
- 		port = of_alias_get_id(np, "serial");
- 		if (port >= VT8500_MAX_PORTS)
- 			port = -1;
--	else
-+	} else {
- 		port = -1;
-+	}
+ 	cifs_sb = CIFS_SB(sb);
++	tcon = cifs_sb_master_tcon(cifs_sb);
  
- 	if (port < 0) {
- 		/* calculate the port id */
+ 	if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_POSIXACL)
+ 		sb->s_flags |= MS_POSIXACL;
+ 
+-	if (cifs_sb_master_tcon(cifs_sb)->ses->capabilities & CAP_LARGE_FILES)
++	if (tcon->ses->capabilities & tcon->ses->server->vals->cap_large_files)
+ 		sb->s_maxbytes = MAX_LFS_FILESIZE;
+ 	else
+ 		sb->s_maxbytes = MAX_NON_LFS;
+@@ -154,7 +156,7 @@ cifs_read_super(struct super_block *sb)
+ 	}
+ 
+ 	/* do that *after* d_make_root() - we want NULL ->d_op for root here */
+-	if (cifs_sb_master_tcon(cifs_sb)->nocase)
++	if (tcon->nocase)
+ 		sb->s_d_op = &cifs_ci_dentry_ops;
+ 	else
+ 		sb->s_d_op = &cifs_dentry_ops;
 -- 
 1.8.1.2
 
