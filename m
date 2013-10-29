@@ -1,410 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758005Ab3J2CoD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 22:44:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47697 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab3J2CoA (ORCPT
+	id S1758025Ab3J2Cq1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 22:46:27 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50289 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757884Ab3J2Cq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 22:44:00 -0400
-Date: Mon, 28 Oct 2013 19:43:57 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4] watchdog: w83627hf: Convert to watchdog infrastructure
-Message-ID: <20131029024357.GA27070@roeck-us.net>
-References: <1376773126-2717-1-git-send-email-linux@roeck-us.net>
- <1376773126-2717-2-git-send-email-linux@roeck-us.net>
- <20131028215755.GA13226@spo001.leaseweb.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131028215755.GA13226@spo001.leaseweb.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 28 Oct 2013 22:46:26 -0400
+Date: Tue, 29 Oct 2013 13:46:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dominique Martinet <dominique.martinet@cea.fr>,
+        Eric Van Hensbergen <ericvh@gmail.com>
+Subject: linux-next: manual merge of the vfs tree with the v9fs tree
+Message-Id: <20131029134608.3544a5cc3d17fd2bec78f2c1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.21; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__29_Oct_2013_13_46_08_+1100_KvRovJsPMGTHQ218"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Tue__29_Oct_2013_13_46_08_+1100_KvRovJsPMGTHQ218
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v4: Restore 'nowayout' module parameter
+Hi Al,
 
-The changes cause a trivial conflict with 'watchdog: w83627hf: Auto-detect
-IO address and supported chips'. Please let me know if I should re-send
-the entire series.
+Today's linux-next merge of the vfs tree got conflicts in
+fs/9p/vfs_file.c, fs/9p/vfs_inode_dotl.c and fs/9p/vfs_inode.c between
+commit 94876b5bb6a8 ("9P: introduction of a new cache=3Dmmap model") from
+the v9fs tree and commit 2b052ff59861 ("9p: make v9fs_cache_inode_
+{get,put,set}_cookie empty inlines for !9P_CACHEFS") from the vfs tree.
 
- drivers/watchdog/Kconfig        |    1 +
- drivers/watchdog/w83627hf_wdt.c |  218 +++++++++------------------------------
- 2 files changed, 50 insertions(+), 169 deletions(-)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index d1d53f3..dcaecd0 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -868,6 +868,7 @@ config VIA_WDT
- config W83627HF_WDT
- 	tristate "W83627HF/W83627DHG Watchdog Timer"
- 	depends on X86
-+	select WATCHDOG_CORE
- 	---help---
- 	  This is the driver for the hardware watchdog on the W83627HF chipset
- 	  as used in Advantech PC-9578 and Tyan S2721-533 motherboards
-diff --git a/drivers/watchdog/w83627hf_wdt.c b/drivers/watchdog/w83627hf_wdt.c
-index 92f1326..e204c2b 100644
---- a/drivers/watchdog/w83627hf_wdt.c
-+++ b/drivers/watchdog/w83627hf_wdt.c
-@@ -1,6 +1,9 @@
- /*
-  *	w83627hf/thf WDT driver
-  *
-+ *	(c) Copyright 2013 Guenter Roeck
-+ *		converted to watchdog infrastructure
-+ *
-  *	(c) Copyright 2007 Vlad Drukker <vlad@storewiz.com>
-  *		added support for W83627THF.
-  *
-@@ -31,31 +34,22 @@
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/types.h>
--#include <linux/miscdevice.h>
- #include <linux/watchdog.h>
--#include <linux/fs.h>
- #include <linux/ioport.h>
- #include <linux/notifier.h>
- #include <linux/reboot.h>
- #include <linux/init.h>
--#include <linux/spinlock.h>
- #include <linux/io.h>
--#include <linux/uaccess.h>
--
- 
- #define WATCHDOG_NAME "w83627hf/thf/hg/dhg WDT"
- #define WATCHDOG_TIMEOUT 60		/* 60 sec default timeout */
- 
--static unsigned long wdt_is_open;
--static char expect_close;
--static DEFINE_SPINLOCK(io_lock);
--
- /* You must set this - there is no sane way to probe for this board. */
- static int wdt_io = 0x2E;
- module_param(wdt_io, int, 0);
- MODULE_PARM_DESC(wdt_io, "w83627hf/thf WDT io port (default 0x2E)");
- 
--static int timeout = WATCHDOG_TIMEOUT;	/* in seconds */
-+static int timeout;			/* in seconds */
- module_param(timeout, int, 0);
- MODULE_PARM_DESC(timeout,
- 		"Watchdog timeout in seconds. 1 <= timeout <= 255, default="
-@@ -110,7 +104,7 @@ static void w83627hf_unselect_wd_register(void)
- /* tyan motherboards seem to set F5 to 0x4C ?
-  * So explicitly init to appropriate value. */
- 
--static void w83627hf_init(void)
-+static void w83627hf_init(struct watchdog_device *wdog)
- {
- 	unsigned char t;
- 
-@@ -120,8 +114,8 @@ static void w83627hf_init(void)
- 	t = inb_p(WDT_EFDR);      /* read CRF6 */
- 	if (t != 0) {
- 		pr_info("Watchdog already running. Resetting timeout to %d sec\n",
--			timeout);
--		outb_p(timeout, WDT_EFDR);    /* Write back to CRF6 */
-+			wdog->timeout);
-+		outb_p(wdog->timeout, WDT_EFDR);	/* Write back to CRF6 */
- 	}
- 
- 	outb_p(0xF5, WDT_EFER); /* Select CRF5 */
-@@ -141,10 +135,8 @@ static void w83627hf_init(void)
- 	w83627hf_unselect_wd_register();
- }
- 
--static void wdt_set_time(int timeout)
-+static int wdt_set_time(unsigned int timeout)
- {
--	spin_lock(&io_lock);
--
- 	w83627hf_select_wd_register();
- 
- 	outb_p(0xF6, WDT_EFER);    /* Select CRF6 */
-@@ -152,34 +144,30 @@ static void wdt_set_time(int timeout)
- 
- 	w83627hf_unselect_wd_register();
- 
--	spin_unlock(&io_lock);
-+	return 0;
- }
- 
--static int wdt_ping(void)
-+static int wdt_start(struct watchdog_device *wdog)
- {
--	wdt_set_time(timeout);
--	return 0;
-+	return wdt_set_time(wdog->timeout);
- }
- 
--static int wdt_disable(void)
-+static int wdt_stop(struct watchdog_device *wdog)
- {
--	wdt_set_time(0);
--	return 0;
-+	return wdt_set_time(0);
- }
- 
--static int wdt_set_heartbeat(int t)
-+static int wdt_set_timeout(struct watchdog_device *wdog, unsigned int timeout)
- {
--	if (t < 1 || t > 255)
--		return -EINVAL;
--	timeout = t;
-+	wdt_set_time(timeout);
-+	wdog->timeout = timeout;
-+
- 	return 0;
- }
- 
--static int wdt_get_time(void)
-+static unsigned int wdt_get_time(struct watchdog_device *wdog)
- {
--	int timeleft;
--
--	spin_lock(&io_lock);
-+	unsigned int timeleft;
- 
- 	w83627hf_select_wd_register();
- 
-@@ -188,124 +176,17 @@ static int wdt_get_time(void)
- 
- 	w83627hf_unselect_wd_register();
- 
--	spin_unlock(&io_lock);
--
- 	return timeleft;
- }
- 
--static ssize_t wdt_write(struct file *file, const char __user *buf,
--						size_t count, loff_t *ppos)
--{
--	if (count) {
--		if (!nowayout) {
--			size_t i;
--
--			expect_close = 0;
--
--			for (i = 0; i != count; i++) {
--				char c;
--				if (get_user(c, buf + i))
--					return -EFAULT;
--				if (c == 'V')
--					expect_close = 42;
--			}
--		}
--		wdt_ping();
--	}
--	return count;
--}
--
--static long wdt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
--{
--	void __user *argp = (void __user *)arg;
--	int __user *p = argp;
--	int timeval;
--	static const struct watchdog_info ident = {
--		.options = WDIOF_KEEPALIVEPING | WDIOF_SETTIMEOUT |
--							WDIOF_MAGICCLOSE,
--		.firmware_version = 1,
--		.identity = "W83627HF WDT",
--	};
--
--	switch (cmd) {
--	case WDIOC_GETSUPPORT:
--		if (copy_to_user(argp, &ident, sizeof(ident)))
--			return -EFAULT;
--		break;
--	case WDIOC_GETSTATUS:
--	case WDIOC_GETBOOTSTATUS:
--		return put_user(0, p);
--	case WDIOC_SETOPTIONS:
--	{
--		int options, retval = -EINVAL;
--
--		if (get_user(options, p))
--			return -EFAULT;
--		if (options & WDIOS_DISABLECARD) {
--			wdt_disable();
--			retval = 0;
--		}
--		if (options & WDIOS_ENABLECARD) {
--			wdt_ping();
--			retval = 0;
--		}
--		return retval;
--	}
--	case WDIOC_KEEPALIVE:
--		wdt_ping();
--		break;
--	case WDIOC_SETTIMEOUT:
--		if (get_user(timeval, p))
--			return -EFAULT;
--		if (wdt_set_heartbeat(timeval))
--			return -EINVAL;
--		wdt_ping();
--		/* Fall */
--	case WDIOC_GETTIMEOUT:
--		return put_user(timeout, p);
--	case WDIOC_GETTIMELEFT:
--		timeval = wdt_get_time();
--		return put_user(timeval, p);
--	default:
--		return -ENOTTY;
--	}
--	return 0;
--}
--
--static int wdt_open(struct inode *inode, struct file *file)
--{
--	if (test_and_set_bit(0, &wdt_is_open))
--		return -EBUSY;
--	/*
--	 *	Activate
--	 */
--
--	wdt_ping();
--	return nonseekable_open(inode, file);
--}
--
--static int wdt_close(struct inode *inode, struct file *file)
--{
--	if (expect_close == 42)
--		wdt_disable();
--	else {
--		pr_crit("Unexpected close, not stopping watchdog!\n");
--		wdt_ping();
--	}
--	expect_close = 0;
--	clear_bit(0, &wdt_is_open);
--	return 0;
--}
--
- /*
-  *	Notifier for system down
-  */
--
- static int wdt_notify_sys(struct notifier_block *this, unsigned long code,
- 	void *unused)
- {
- 	if (code == SYS_DOWN || code == SYS_HALT)
--		wdt_disable();	/* Turn the WDT off */
-+		wdt_set_time(0);	/* Turn the WDT off */
- 
- 	return NOTIFY_DONE;
- }
-@@ -314,19 +195,26 @@ static int wdt_notify_sys(struct notifier_block *this, unsigned long code,
-  *	Kernel Interfaces
-  */
- 
--static const struct file_operations wdt_fops = {
--	.owner		= THIS_MODULE,
--	.llseek		= no_llseek,
--	.write		= wdt_write,
--	.unlocked_ioctl	= wdt_ioctl,
--	.open		= wdt_open,
--	.release	= wdt_close,
-+static struct watchdog_info wdt_info = {
-+	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
-+	.identity = "W83627HF Watchdog",
-+};
-+
-+static struct watchdog_ops wdt_ops = {
-+	.owner = THIS_MODULE,
-+	.start = wdt_start,
-+	.stop = wdt_stop,
-+	.ping = wdt_start,
-+	.set_timeout = wdt_set_timeout,
-+	.get_timeleft = wdt_get_time,
- };
- 
--static struct miscdevice wdt_miscdev = {
--	.minor = WATCHDOG_MINOR,
--	.name = "watchdog",
--	.fops = &wdt_fops,
-+static struct watchdog_device wdt_dev = {
-+	.info = &wdt_info,
-+	.ops = &wdt_ops,
-+	.timeout = WATCHDOG_TIMEOUT,
-+	.min_timeout = 1,
-+	.max_timeout = 255,
- };
- 
- /*
-@@ -344,19 +232,15 @@ static int __init wdt_init(void)
- 
- 	pr_info("WDT driver for the Winbond(TM) W83627HF/THF/HG/DHG Super I/O chip initialising\n");
- 
--	if (wdt_set_heartbeat(timeout)) {
--		wdt_set_heartbeat(WATCHDOG_TIMEOUT);
--		pr_info("timeout value must be 1 <= timeout <= 255, using %d\n",
--			WATCHDOG_TIMEOUT);
--	}
--
- 	if (!request_region(wdt_io, 1, WATCHDOG_NAME)) {
- 		pr_err("I/O address 0x%04x already in use\n", wdt_io);
--		ret = -EIO;
--		goto out;
-+		return -EIO;
- 	}
- 
--	w83627hf_init();
-+	watchdog_init_timeout(&wdt_dev, timeout, NULL);
-+	watchdog_set_nowayout(&wdt_dev, nowayout);
-+
-+	w83627hf_init(&wdt_dev);
- 
- 	ret = register_reboot_notifier(&wdt_notifier);
- 	if (ret != 0) {
-@@ -364,28 +248,25 @@ static int __init wdt_init(void)
- 		goto unreg_regions;
- 	}
- 
--	ret = misc_register(&wdt_miscdev);
--	if (ret != 0) {
--		pr_err("cannot register miscdev on minor=%d (err=%d)\n",
--		       WATCHDOG_MINOR, ret);
-+	ret = watchdog_register_device(&wdt_dev);
-+	if (ret)
- 		goto unreg_reboot;
--	}
- 
- 	pr_info("initialized. timeout=%d sec (nowayout=%d)\n",
--		timeout, nowayout);
-+		wdt_dev.timeout, nowayout);
- 
--out:
- 	return ret;
-+
- unreg_reboot:
- 	unregister_reboot_notifier(&wdt_notifier);
- unreg_regions:
- 	release_region(wdt_io, 1);
--	goto out;
-+	return ret;
- }
- 
- static void __exit wdt_exit(void)
- {
--	misc_deregister(&wdt_miscdev);
-+	watchdog_unregister_device(&wdt_dev);
- 	unregister_reboot_notifier(&wdt_notifier);
- 	release_region(wdt_io, 1);
- }
-@@ -396,4 +277,3 @@ module_exit(wdt_exit);
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Pádraig  Brady <P@draigBrady.com>");
- MODULE_DESCRIPTION("w83627hf/thf WDT driver");
--MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
--- 
-1.7.9.7
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc fs/9p/vfs_file.c
+index d1ab081f6a4e,a0df3e73c2b1..000000000000
+--- a/fs/9p/vfs_file.c
++++ b/fs/9p/vfs_file.c
+@@@ -107,12 -105,8 +107,10 @@@ int v9fs_file_open(struct inode *inode
+  		v9inode->writeback_fid =3D (void *) fid;
+  	}
+  	mutex_unlock(&v9inode->v_mutex);
+- #ifdef CONFIG_9P_FSCACHE
+ -	if (v9ses->cache)
+ +	/* previous check would also set cookie with CACHE_LOOSE?
+ +	 * set_cookie does a check if v9inode->fscache anyway... */
+ +	if (v9ses->cache =3D=3D CACHE_FSCACHE)
+  		v9fs_cache_inode_set_cookie(inode, file);
+- #endif
+  	return 0;
+  out_error:
+  	p9_client_clunk(file->private_data);
+diff --cc fs/9p/vfs_inode.c
+index fd077485426b,4e65aa903345..000000000000
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@@ -911,10 -901,8 +907,8 @@@ v9fs_vfs_atomic_open(struct inode *dir
+  		goto error;
+ =20
+  	file->private_data =3D fid;
+- #ifdef CONFIG_9P_FSCACHE
+ -	if (v9ses->cache)
+ +	if (v9ses->cache =3D=3D CACHE_LOOSE || v9ses->cache =3D=3D CACHE_FSCACHE)
+  		v9fs_cache_inode_set_cookie(dentry->d_inode, file);
+- #endif
+ =20
+  	*opened |=3D FILE_CREATED;
+  out:
+diff --cc fs/9p/vfs_inode_dotl.c
+index e68ca293fc9d,4c10edec26a0..000000000000
+--- a/fs/9p/vfs_inode_dotl.c
++++ b/fs/9p/vfs_inode_dotl.c
+@@@ -356,10 -353,8 +354,8 @@@ v9fs_vfs_atomic_open_dotl(struct inode=20
+  	if (err)
+  		goto err_clunk_old_fid;
+  	file->private_data =3D ofid;
+- #ifdef CONFIG_9P_FSCACHE
+ -	if (v9ses->cache)
+ +	if (v9ses->cache =3D=3D CACHE_LOOSE || v9ses->cache =3D=3D CACHE_FSCACHE)
+  		v9fs_cache_inode_set_cookie(inode, file);
+- #endif
+  	*opened |=3D FILE_CREATED;
+  out:
+  	v9fs_put_acl(dacl, pacl);
+
+--Signature=_Tue__29_Oct_2013_13_46_08_+1100_KvRovJsPMGTHQ218
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSbyF5AAoJEMDTa8Ir7ZwVW2QP/ijIB6SHSnhIFrt+NHXk1Mq4
+PB7MN0ZMJlNgNYqqZzP6m/Rd5kJ/wec/yB1MIq60FzcEWcz/bpLRAVcBSvwDZIVl
+Pr4DkGba1bzxz0Hp8162z7Vq7gt5fcSzGghd/OWFJ2WmSm8pQkcRhqIGiO5wd8lD
+E/jm9foVaOdZNT9EJ6HNeHfeTmKFbinaP7FgRlzx9gh2jUUlHCEMNpKGJcZjf6i7
+jeRBgPlSgGefAx3FkV+/KpyyQjGQ7LYCmgZSCr5sbgB53RDHuJfUUwuTFxB+j2TM
+RZuh+4dmRcaMTcfm3N0dBMg511pdd5i4h1Y28ziKDA0nZRZAxoy+5nfE0dGqhZeI
+HMR7k+g90uZTVaTqfMYPsOrhLyKe3fJTnUZgY5zzwJH2uDzBivPm6FOTritW88Sg
+4ko9AhDtD+RDzNsuhPtOA44M9wNIPAmKQNjpOZnWpw4t0qbomc82ks0y5kX+pK9t
+a3or9y89Wx7a0bN7+GeNgGEdEkWIuRpcQiyYwaQ60P97j+0avHvrdwN04pgsljaz
+As/jJ4Ua1P/9lCsPiEiD5qNXjnf/nuhBphCSQSl6uHg/9p/xcMLIqZT/or90kH9m
+5tk+tnqF3lqDYeYZi+JNtPU6gnHSY+HBMU0wxfflhAq0xQFBLnkTDEcMKWVeSsGS
+o+YRiFt1iqJWUxnY4hEm
+=qk/O
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__29_Oct_2013_13_46_08_+1100_KvRovJsPMGTHQ218--
