@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab3J2JAF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 05:00:05 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29849 "EHLO mga14.intel.com"
+	id S1752738Ab3J2JAN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 05:00:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:14690 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752824Ab3J2JAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 05:00:01 -0400
+	id S1753193Ab3J2JAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 05:00:11 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="381557662"
+X-IronPort-AV: E=Sophos;i="4.93,591,1378882800"; 
+   d="scan'208";a="418964234"
 From: Lan Tianyu <tianyu.lan@intel.com>
-To: rjw@rjwysocki.net, viresh.kumar@linaro.org, dipankar@in.ibm.com,
-        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com, youquan.song@intel.com,
-        riel@redhat.com
-Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] Tick: Introduce tick_nohz_check() to check nohz enable status
-Date: Tue, 29 Oct 2013 16:48:56 +0800
-Message-Id: <1383036537-30362-1-git-send-email-tianyu.lan@intel.com>
+To: rjw@rjwysocki.net, viresh.kumar@linaro.org
+Cc: Lan Tianyu <tianyu.lan@intel.com>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] Cpufreq/gov: use tick_nohz_check() to check idle micro accouting support
+Date: Tue, 29 Oct 2013 16:48:57 +0800
+Message-Id: <1383036537-30362-2-git-send-email-tianyu.lan@intel.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1383036537-30362-1-git-send-email-tianyu.lan@intel.com>
+References: <1383036537-30362-1-git-send-email-tianyu.lan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some cases, nohz enable status needs to be checked. E.G, in RCU and cpufreq
-ondemand governor. So add tick_nohz_check() to return tick_nohz_enabled value
-And use tick_nohz_check() instead of referencing tick_nohz_enabled in the rcutree_plugin.h.
+Current, od_init() uses get_cpu_idle_time_us() to check whether
+idle micro accouting is supported. The get_cpu_idle_time_us()
+returns -1 only when tick nohz is disabled. This patch is to use
+tick_nohz_check() directly to check nohz enable status instead of
+get_cpu_idle_time_us(). This can avoid unnecessary getting and
+putting cpu.
 
 Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 ---
- include/linux/tick.h     | 2 ++
- kernel/rcutree_plugin.h  | 4 +---
- kernel/time/tick-sched.c | 8 +++++++-
- 3 files changed, 10 insertions(+), 4 deletions(-)
+ drivers/cpufreq/cpufreq_ondemand.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index 5128d33..a9c5374 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -136,6 +136,7 @@ static inline int tick_nohz_tick_stopped(void)
- extern void tick_nohz_idle_enter(void);
- extern void tick_nohz_idle_exit(void);
- extern void tick_nohz_irq_exit(void);
-+extern int tick_nohz_check(void);
- extern ktime_t tick_nohz_get_sleep_length(void);
- extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
- extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
-@@ -155,6 +156,7 @@ static inline ktime_t tick_nohz_get_sleep_length(void)
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index 32f26f6..79986a9 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -485,10 +485,7 @@ static int od_init(struct dbs_data *dbs_data)
+ 		return -ENOMEM;
+ 	}
  
- 	return len;
- }
-+static inline int tick_nohz_check(void) { return 0; }
- static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) { return -1; }
- static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
- # endif /* !CONFIG_NO_HZ_COMMON */
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 130c97b..af167ec 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1627,8 +1627,6 @@ module_param(rcu_idle_gp_delay, int, 0644);
- static int rcu_idle_lazy_gp_delay = RCU_IDLE_LAZY_GP_DELAY;
- module_param(rcu_idle_lazy_gp_delay, int, 0644);
- 
--extern int tick_nohz_enabled;
--
- /*
-  * Try to advance callbacks for all flavors of RCU on the current CPU.
-  * Afterwards, if there are any callbacks ready for immediate invocation,
-@@ -1718,7 +1716,7 @@ static void rcu_prepare_for_idle(int cpu)
- 	int tne;
- 
- 	/* Handle nohz enablement switches conservatively. */
--	tne = ACCESS_ONCE(tick_nohz_enabled);
-+	tne = tick_nohz_check();
- 	if (tne != rdtp->tick_nohz_enabled_snap) {
- 		if (rcu_cpu_has_callbacks(cpu, NULL))
- 			invoke_rcu_core(); /* force nohz to see update. */
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 3612fc7..d381a22 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -361,7 +361,13 @@ void __init tick_nohz_init(void)
- /*
-  * NO HZ enabled ?
-  */
--int tick_nohz_enabled __read_mostly  = 1;
-+static int tick_nohz_enabled __read_mostly  = 1;
-+
-+int tick_nohz_check(void)
-+{
-+	return	tick_nohz_enabled;
-+}
-+EXPORT_SYMBOL_GPL(tick_nohz_check);
- 
- /*
-  * Enable / Disable tickless mode
+-	cpu = get_cpu();
+-	idle_time = get_cpu_idle_time_us(cpu, NULL);
+-	put_cpu();
+-	if (idle_time != -1ULL) {
++	if (tick_nohz_check()) {
+ 		/* Idle micro accounting is supported. Use finer thresholds */
+ 		tuners->up_threshold = MICRO_FREQUENCY_UP_THRESHOLD;
+ 		/*
 -- 
 1.8.4.rc0.1.g8f6a3e5.dirty
 
