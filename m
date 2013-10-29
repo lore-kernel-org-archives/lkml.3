@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab3J2SIW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:08:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59377 "EHLO
+	id S1753802Ab3J2SIo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:08:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59410 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461Ab3J2SIO (ORCPT
+	with ESMTP id S1753743Ab3J2SIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:08:14 -0400
+	Tue, 29 Oct 2013 14:08:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tony Prisk <linux@prisktech.co.nz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 75/81] serial: vt8500: Fix range-checking on vt8500_uart_ports
-Date: Tue, 29 Oct 2013 11:04:36 -0700
-Message-Id: <1383069882-11437-76-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 60/81] sparc64: Remove RWSEM export leftovers
+Date: Tue, 29 Oct 2013 11:04:21 -0700
+Message-Id: <1383069882-11437-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
@@ -28,42 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Prisk <linux@prisktech.co.nz>
+From: Kirill Tkhai <tkhai@yandex.ru>
 
-commit 27dd2e04923341cff96aae164117c44da1072c32 upstream.
+[ Upstream commit 61d9b9355b0d427bd1e732bd54628ff9103e496f ]
 
-Fix two instances where the index to vt8500_uart_ports is tested
-against > VT8500_MAX_PORTS. Correct usage should be >= VT8500_MAX_PORTS.
+The functions
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+			__down_read
+			__down_read_trylock
+			__down_write
+			__down_write_trylock
+			__up_read
+			__up_write
+			__downgrade_write
+
+are implemented inline, so remove corresponding EXPORT_SYMBOLs
+(They lead to compile errors on RT kernel).
+
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: David Miller <davem@davemloft.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/tty/serial/vt8500_serial.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/sparc/lib/ksyms.c | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-diff --git a/drivers/tty/serial/vt8500_serial.c b/drivers/tty/serial/vt8500_serial.c
-index d5ed9f6..90b837f 100644
---- a/drivers/tty/serial/vt8500_serial.c
-+++ b/drivers/tty/serial/vt8500_serial.c
-@@ -569,7 +569,7 @@ static int vt8500_serial_probe(struct platform_device *pdev)
+diff --git a/arch/sparc/lib/ksyms.c b/arch/sparc/lib/ksyms.c
+index 0c4e35e..323335b 100644
+--- a/arch/sparc/lib/ksyms.c
++++ b/arch/sparc/lib/ksyms.c
+@@ -98,15 +98,6 @@ EXPORT_SYMBOL(___copy_from_user);
+ EXPORT_SYMBOL(___copy_in_user);
+ EXPORT_SYMBOL(__clear_user);
  
- 	if (np)
- 		port = of_alias_get_id(np, "serial");
--		if (port > VT8500_MAX_PORTS)
-+		if (port >= VT8500_MAX_PORTS)
- 			port = -1;
- 	else
- 		port = -1;
-@@ -580,7 +580,7 @@ static int vt8500_serial_probe(struct platform_device *pdev)
- 					sizeof(vt8500_ports_in_use));
- 	}
- 
--	if (port > VT8500_MAX_PORTS)
-+	if (port >= VT8500_MAX_PORTS)
- 		return -ENODEV;
- 
- 	/* reserve the port id */
+-/* RW semaphores */
+-EXPORT_SYMBOL(__down_read);
+-EXPORT_SYMBOL(__down_read_trylock);
+-EXPORT_SYMBOL(__down_write);
+-EXPORT_SYMBOL(__down_write_trylock);
+-EXPORT_SYMBOL(__up_read);
+-EXPORT_SYMBOL(__up_write);
+-EXPORT_SYMBOL(__downgrade_write);
+-
+ /* Atomic counter implementation. */
+ EXPORT_SYMBOL(atomic_add);
+ EXPORT_SYMBOL(atomic_add_ret);
 -- 
 1.8.1.2
 
