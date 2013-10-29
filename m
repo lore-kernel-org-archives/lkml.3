@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab3J2Npt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 09:45:49 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49194 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752757Ab3J2Nps (ORCPT
+	id S1755644Ab3J2NqO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 09:46:14 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:59125 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753337Ab3J2NqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 09:45:48 -0400
-Date: Tue, 29 Oct 2013 14:45:36 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Vince Weaver <vincent.weaver@maine.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: perf: PERF_EVENT_IOC_PERIOD on ARM vs everywhere else
-Message-ID: <20131029134536.GD16117@laptop.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1310272233120.12721@vincent-weaver-1.um.maine.edu>
- <20131028085700.GB20218@mudshark.cambridge.arm.com>
- <alpine.DEB.2.10.1310281002020.24060@vincent-weaver-1.um.maine.edu>
- <20131029042810.GD22291@mudshark.cambridge.arm.com>
+	Tue, 29 Oct 2013 09:46:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131029042810.GD22291@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAPgLHd8oLgehkC-4LdRgiASnZGfk0u3ueVQw8f4J6g+3zeT5tQ@mail.gmail.com>
+References: <CAPgLHd8oLgehkC-4LdRgiASnZGfk0u3ueVQw8f4J6g+3zeT5tQ@mail.gmail.com>
+Date: Tue, 29 Oct 2013 19:16:12 +0530
+X-Google-Sender-Auth: v5N6uL25_KiSE-CxVvW5YGzMnUg
+Message-ID: <CAOh2x==aeT-DU+PoqzGRoe+RaL0K+sVFmSLKTqC_20BQ0QmtTw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: spear: fix return value check in spear_setup_of_timer()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: Shiraz HASHIM <shiraz.hashim@st.com>,
+        Russell King <linux@arm.linux.org.uk>, yongjun_wei@trendmicro.com.cn,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        spear-devel <spear-devel@list.st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 04:28:10AM +0000, Will Deacon wrote:
-> On Mon, Oct 28, 2013 at 02:07:48PM +0000, Vince Weaver wrote:
-> > It's also a shame this change apprently didn't hit the linux-kernel list 
-> > as far as I can tell.  I do my best to try to note all of the perf 
-> > ABI-related changes there, but if things like this are going to start 
-> > getting merged in architecture trees then things get that much harder 
-> > to keep track of.
-> 
-> I can CC LKML on ARM perf patches if you think it will help, but all PMU
-> backend patches go via their respective arch trees afaict.
+On Tue, Oct 29, 2013 at 7:34 AM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>
+> In case of error, the function clk_get_sys() returns ERR_PTR()
+> and never returns NULL. The NULL test in the return value check
+> should be replaced with IS_ERR().
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  arch/arm/mach-spear/time.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/mach-spear/time.c b/arch/arm/mach-spear/time.c
+> index d449673..3263a34 100644
+> --- a/arch/arm/mach-spear/time.c
+> +++ b/arch/arm/mach-spear/time.c
+> @@ -222,7 +222,7 @@ void __init spear_setup_of_timer(void)
+>         }
+>
+>         gpt_clk = clk_get_sys("gpt0", NULL);
+> -       if (!gpt_clk) {
+> +       if (IS_ERR(gpt_clk)) {
+>                 pr_err("%s:couldn't get clk for gpt\n", __func__);
+>                 goto err_iomap;
+>         }
 
-Just those that change user visible semantics that are shared between
-archs I suppose :-)
-
-> > > I don't want to be the `oddball' architecture (at least, not more than I am
-> > > already :), but I do find it tricky to follow the required semantics of perf
-> > > as opposed to `it happens to work this way', especially when so much of it
-> > > is buried in the various arch backends. So if somebody using the thing on
-> > > ARM has (what looks to me like) a valid issue, then I usually try and fix
-> > > it.
-> > 
-> > But it was global behavior that was common on all architectures.
-> > 
-> > Now any cross-platform tool like PAPI is going to have to have a mess of 
-> > #ifdefs around every use of this ioctl, and it will only get worse if 
-> > other architectures decide to "fix" the problem too.
-> 
-> What would you like me to do to fix this for you? Moving more code out of
-> the backends and into the core will help maintain consistency between
-> architectures, but that's a huge job.
-
-We could start by making all archs do the same thing again; but yes
-ideally we'd move some of it into generic code. Not entirely sure how
-that will work out though, there's a reason its in per-arch code :/
-
-
-Vince, what would you prefer to do here?
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
