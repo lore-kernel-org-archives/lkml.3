@@ -1,91 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab3J2Msv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 08:48:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55415 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754878Ab3J2Msv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 08:48:51 -0400
-Date: Tue, 29 Oct 2013 12:48:44 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Tom Weber <l_linux-kernel@mail2news.4t2.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Automatic NUMA balancing patches for tip-urgent/stable
-Message-ID: <20131029124844.GE2400@suse.de>
-References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
- <20131024122646.GB2402@suse.de>
- <20131026121148.GC24439@gmail.com>
- <20131029094208.GB2400@suse.de>
- <20131029094856.GA25306@gmail.com>
- <20131029102419.GC2400@suse.de>
- <20131029104102.GB26154@gmail.com>
+	id S1755186Ab3J2Mwi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 08:52:38 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:54174 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752823Ab3J2Mwh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 08:52:37 -0400
+Date: Tue, 29 Oct 2013 13:52:33 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Message-ID: <20131029125233.GA17449@gmail.com>
+References: <20131017003421.GA31470@hmsreliant.think-freely.org>
+ <20131017084121.GC22705@gmail.com>
+ <20131028160131.GA31048@hmsreliant.think-freely.org>
+ <20131028162438.GB14350@gmail.com>
+ <20131028174630.GB31048@hmsreliant.think-freely.org>
+ <20131028182913.GD31048@hmsreliant.think-freely.org>
+ <20131029082542.GA24625@gmail.com>
+ <20131029112022.GA24477@neilslaptop.think-freely.org>
+ <20131029113031.GA16897@gmail.com>
+ <20131029114907.GE24477@neilslaptop.think-freely.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131029104102.GB26154@gmail.com>
+In-Reply-To: <20131029114907.GE24477@neilslaptop.think-freely.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 11:41:02AM +0100, Ingo Molnar wrote:
-> 
-> * Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > Bah, I have tip as a remote tree but looked at my local copy of 
-> > the commits in the incorrect branch. Lets try this again
+
+* Neil Horman <nhorman@tuxdriver.com> wrote:
+
+> On Tue, Oct 29, 2013 at 12:30:31PM +0100, Ingo Molnar wrote:
 > > 
-> > 37bf06375c90a42fe07b9bebdb07bc316ae5a0ce..afcae2655b0ab67e65f161b1bb214efcfa1db415
+> > * Neil Horman <nhorman@tuxdriver.com> wrote:
+> > 
+> > > Sure it was this:
+> > > for i in `seq 0 1 3`
+> > > do
+> > > echo $i > /sys/module/csum_test/parameters/module_test_mode
+> > > taskset -c 0 perf stat --repeat 20 -C 0 -ddd perf bench sched messaging -- /root/test.sh
+> > > done >> counters.txt 2>&1
+> > > 
+> > > where test.sh is:
+> > > #!/bin/sh
+> > > echo 1 > /sys/module/csum_test/parameters/test_fire
+> > 
+> > What does '-- /root/test.sh' do?
+> > 
+> > Unless I'm missing something, the line above will run:
+> > 
+> >   perf bench sched messaging -- /root/test.sh
+> > 
+> > which should be equivalent to:
+> > 
+> >   perf bench sched messaging
+> > 
+> > i.e. /root/test.sh won't be run.
 > 
-> Ok, these work a lot better and cherry-pick cleanly on top of -rc7.
-> 
-> > 10fc05d0e551146ad6feb0ab8902d28a2d3c5624 mm: numa: Document automatic NUMA balancing sysctls
-> 
-> We can certainly leave out this one - the rest still cherry-picks 
-> cleanly.
-> 
-> > c69307d533d7aa7cc8894dbbb8a274599f8630d7 sched/numa: Fix comments
-> 
-> I was able to leave out this one as well.
-> 
+> According to the perf man page, I'm supposed to be able to use -- 
+> to separate perf command line parameters from the command I want 
+> to run.  And it definately executed test.sh, I added an echo to 
+> stdout in there as a test run and observed them get captured in 
+> counters.txt
 
-Yes, both of those can be left out. They are outside the stable rules and
-including them to have comparable documentation in -stable is unnecessary.
+Well, '--' can be used to delineate the command portion for cases 
+where it's ambiguous.
 
-> > 0c3a775e1e0b069bf765f8355b723ce0d18dcc6c mm: numa: Do not account for a hinting fault if we raced
-> > ff9042b11a71c81238c70af168cd36b98a6d5a3c mm: Wait for THP migrations to complete during NUMA hinting faults
-> > b8916634b77bffb233d8f2f45703c80343457cc1 mm: Prevent parallel splits during THP migration
-> > 8191acbd30c73e45c24ad16c372e0b42cc7ac8f8 mm: numa: Sanitize task_numa_fault() callsites
-> > a54a407fbf7735fd8f7841375574f5d9b0375f93 mm: Close races between THP migration and PMD numa clearing
-> > afcae2655b0ab67e65f161b1bb214efcfa1db415 mm: Account for a THP NUMA hinting update as one PTE update
-> 
-> Ok, these seem essential and cherry-pick cleanly.
-> 
-> Would be nice to avoid the 'Sanitize task_numa_fault() callsites' 
-> change, but the remaining fixes rely on it and are well tested 
-> together.
-> 
+Here's it's unambiguous though. This:
 
-It would have been nice but yes, the combination of patches would not have
-been well tested.
+  perf stat --repeat 20 -C 0 -ddd perf bench sched messaging -- /root/test.sh
 
-> I've stuck these into tip:core/urgent with a -stable tag and will 
-> send them to Linus if he cuts an -rc8 (which seems unlikely at this 
-> point though).
-> 
-> If there's no -rc8 then please forward the above list of 6 commits 
-> to Greg so that it can be applied to -stable.
-> 
+stops parsing a valid option after the -ddd option, so in theory it 
+should execute 'perf bench sched messaging -- /root/test.sh' where 
+'-- /root/test.sh' is simply a parameter to 'perf bench' and is thus 
+ignored.
 
-Thanks, I'll make sure they get sent to stable when the relevant patches
-show up in a mainline tree of some description.
+The message output you provided seems to suggest that to be the 
+case:
 
--- 
-Mel Gorman
-SUSE Labs
+ Performance counter stats for 'perf bench sched messaging -- bash -c echo 1 > /sys/module/csum_test/parameters/test_fire' (20 runs):
+
+See how the command executed by perf stat was 'perf bench ...'.
+
+Did you want to run:
+
+  perf stat --repeat 20 -C 0 -ddd /root/test.sh
+
+?
+
+Thanks,
+
+	Ingo
