@@ -1,201 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756373Ab3J2ORU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 10:17:20 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:38764 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752346Ab3J2ORT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 10:17:19 -0400
-Date: Tue, 29 Oct 2013 10:17:06 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-Message-ID: <20131029141706.GC25078@neilslaptop.think-freely.org>
-References: <20131028162438.GB14350@gmail.com>
- <20131028174630.GB31048@hmsreliant.think-freely.org>
- <20131028182913.GD31048@hmsreliant.think-freely.org>
- <20131029082542.GA24625@gmail.com>
- <20131029112022.GA24477@neilslaptop.think-freely.org>
- <20131029113031.GA16897@gmail.com>
- <20131029114907.GE24477@neilslaptop.think-freely.org>
- <20131029125233.GA17449@gmail.com>
- <20131029130712.GA25078@neilslaptop.think-freely.org>
- <20131029131149.GB20408@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131029131149.GB20408@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+	id S1756628Ab3J2OTu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 10:19:50 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:51017 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752056Ab3J2OTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 10:19:49 -0400
+Message-ID: <1383056315.2837.22.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [PATCH v3 09/10] mfd: pm8x41: document device tree bindings
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        devicetree@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>
+Date: Tue, 29 Oct 2013 16:18:35 +0200
+In-Reply-To: <88997d3863f72f8553fcaf66cf67fbf3289df04f.1382985169.git.joshc@codeaurora.org>
+References: <cover.1382985169.git.joshc@codeaurora.org>
+	 <88997d3863f72f8553fcaf66cf67fbf3289df04f.1382985169.git.joshc@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 02:11:49PM +0100, Ingo Molnar wrote:
+
+Hi Josh,
+
+On Mon, 2013-10-28 at 13:12 -0500, Josh Cartwright wrote: 
+> Document the bindings used to describe the Qualcomm 8x41 PMICs.
 > 
-> * Neil Horman <nhorman@tuxdriver.com> wrote:
+> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> ---
+>  Documentation/devicetree/bindings/mfd/pm8x41.txt | 33 ++++++++++++++++++++++++
+>  1 file changed, 33 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/pm8x41.txt
 > 
-> > I'm sure it worked properly on my system here, I specificially 
-> > checked it, but I'll gladly run it again.  You have to give me an 
-> > hour as I have a meeting to run to, but I'll have results shortly.
-> 
-> So what I tried to react to was this observation of yours:
-> 
-> > > > Heres my data for running the same test with taskset 
-> > > > restricting execution to only cpu0.  I'm not quite sure whats 
-> > > > going on here, but doing so resulted in a 10x slowdown of the 
-> > > > runtime of each iteration which I can't explain. [...]
-> 
-> A 10x slowdown would be consistent with not running your testcase 
-> but 'perf bench sched messaging' by accident, or so.
-> 
-> But I was really just guessing wildly here.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+> diff --git a/Documentation/devicetree/bindings/mfd/pm8x41.txt b/Documentation/devicetree/bindings/mfd/pm8x41.txt
+> new file mode 100644
+> index 0000000..6afd4ce
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/pm8x41.txt
+> @@ -0,0 +1,33 @@
+> +Qualcomm PM8841 and PM8941 PMIC multi-function devices
+> +
+> +The PM8x41 PMICs are used with the Qualcomm Snapdragon 800 series SoCs, and are
+> +interfaced to the chip via the SPMI (System Power Management Interface) bus.
+> +Support for  multiple independent functions are implemented by splitting the
+> +16-bit SPMI slave address space into 256 smaller fixed-size regions, 256 bytes
+> +each.  A function can consume one or more of these fixed-size register regions.
+> +
+> +Required properties:
+> +- compatible: Must be one of:
+> +     "qcom,pm8841"
+> +     "qcom,pm8941"
+> +- reg: Specifies the SPMI USID slave address for this device
+> +- #address-cells = <1>
+> +- #size-cells = <0>
+> +
+> +Each child node represents a function of the PM8x41.  Each child 'reg' entry
+> +describes an offset within the USID slave address where the region starts.
+> +
+> +Example:
+> +
+> +pm8941@0 {
+> +	compatible = "qcom,pm8941";
+> +	reg = <0x0>;
+> +
+> +	#address-cells = <1>;
+> +	#size-cells = <0>;
+> +
+> +	rtc {
+> +		compatible = "qcom,pm8941-rtc";
+> +		reg = <0x6000 0x6100>;
+
+This doesn't look right. Probably #size-cells have to be <1>?
+
+Regards,
+Ivan
 
 
-So, I apologize, you were right.  I was running the test.sh script but perf was
-measuring itself.  Using this command line:
+> +	};
+> +}
 
-for i in `seq 0 1 3`
-do
-echo $i > /sys/modules/csum_test/parameters/module_test_mode; taskset -c 0 perf stat --repeat -C 0 -ddd /root/test.sh
-done >> counters.txt 2>&1
-
-with test.sh unchanged I get these results:
-
-
-Base:
- Performance counter stats for '/root/test.sh' (20 runs):
-
-         56.069737 task-clock                #    1.005 CPUs utilized            ( +-  0.13% ) [100.00%]
-                 5 context-switches          #    0.091 K/sec                    ( +-  5.11% ) [100.00%]
-                 0 cpu-migrations            #    0.000 K/sec                   [100.00%]
-               366 page-faults               #    0.007 M/sec                    ( +-  0.08% )
-       144,264,737 cycles                    #    2.573 GHz                      ( +-  0.23% ) [17.49%]
-         9,239,760 stalled-cycles-frontend   #    6.40% frontend cycles idle     ( +-  3.77% ) [19.19%]
-       110,635,829 stalled-cycles-backend    #   76.69% backend  cycles idle     ( +-  0.14% ) [19.68%]
-        54,291,496 instructions              #    0.38  insns per cycle        
-                                             #    2.04  stalled cycles per insn  ( +-  0.14% ) [18.30%]
-         5,844,933 branches                  #  104.244 M/sec                    ( +-  2.81% ) [16.58%]
-           301,523 branch-misses             #    5.16% of all branches          ( +-  0.12% ) [16.09%]
-        23,645,797 L1-dcache-loads           #  421.721 M/sec                    ( +-  0.05% ) [16.06%]
-           494,467 L1-dcache-load-misses     #    2.09% of all L1-dcache hits    ( +-  0.06% ) [16.06%]
-         2,907,250 LLC-loads                 #   51.851 M/sec                    ( +-  0.08% ) [16.06%]
-           486,329 LLC-load-misses           #   16.73% of all LL-cache hits     ( +-  0.11% ) [16.06%]
-        11,113,848 L1-icache-loads           #  198.215 M/sec                    ( +-  0.07% ) [16.06%]
-             5,378 L1-icache-load-misses     #    0.05% of all L1-icache hits    ( +-  1.34% ) [16.06%]
-        23,742,876 dTLB-loads                #  423.453 M/sec                    ( +-  0.06% ) [16.06%]
-                 0 dTLB-load-misses          #    0.00% of all dTLB cache hits  [16.06%]
-        11,108,538 iTLB-loads                #  198.120 M/sec                    ( +-  0.06% ) [16.06%]
-                 0 iTLB-load-misses          #    0.00% of all iTLB cache hits  [16.07%]
-                 0 L1-dcache-prefetches      #    0.000 K/sec                   [16.07%]
-                 0 L1-dcache-prefetch-misses #    0.000 K/sec                   [16.07%]
-
-       0.055817066 seconds time elapsed                                          ( +-  0.10% )
-
-Prefetch(5*64):
- Performance counter stats for '/root/test.sh' (20 runs):
-
-         47.423853 task-clock                #    1.005 CPUs utilized            ( +-  0.62% ) [100.00%]
-                 6 context-switches          #    0.116 K/sec                    ( +-  4.27% ) [100.00%]
-                 0 cpu-migrations            #    0.000 K/sec                   [100.00%]
-               368 page-faults               #    0.008 M/sec                    ( +-  0.07% )
-       120,423,860 cycles                    #    2.539 GHz                      ( +-  0.85% ) [14.23%]
-         8,555,632 stalled-cycles-frontend   #    7.10% frontend cycles idle     ( +-  0.56% ) [16.23%]
-        87,438,794 stalled-cycles-backend    #   72.61% backend  cycles idle     ( +-  1.13% ) [18.33%]
-        55,039,308 instructions              #    0.46  insns per cycle        
-                                             #    1.59  stalled cycles per insn  ( +-  0.05% ) [18.98%]
-         5,619,298 branches                  #  118.491 M/sec                    ( +-  2.32% ) [18.98%]
-           303,686 branch-misses             #    5.40% of all branches          ( +-  0.08% ) [18.98%]
-        26,577,868 L1-dcache-loads           #  560.432 M/sec                    ( +-  0.05% ) [18.98%]
-         1,323,630 L1-dcache-load-misses     #    4.98% of all L1-dcache hits    ( +-  0.14% ) [18.98%]
-         3,426,016 LLC-loads                 #   72.242 M/sec                    ( +-  0.05% ) [18.98%]
-         1,304,201 LLC-load-misses           #   38.07% of all LL-cache hits     ( +-  0.13% ) [18.98%]
-        13,190,316 L1-icache-loads           #  278.137 M/sec                    ( +-  0.21% ) [18.98%]
-            33,881 L1-icache-load-misses     #    0.26% of all L1-icache hits    ( +-  4.63% ) [17.93%]
-        25,366,685 dTLB-loads                #  534.893 M/sec                    ( +-  0.24% ) [15.93%]
-               734 dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +-  8.40% ) [13.94%]
-        13,314,660 iTLB-loads                #  280.759 M/sec                    ( +-  0.05% ) [12.97%]
-                 0 iTLB-load-misses          #    0.00% of all iTLB cache hits  [12.98%]
-                 0 L1-dcache-prefetches      #    0.000 K/sec                   [12.98%]
-                 0 L1-dcache-prefetch-misses #    0.000 K/sec                   [12.87%]
-
-       0.047194407 seconds time elapsed                                          ( +-  0.62% )
-
-Parallel ALU:
- Performance counter stats for '/root/test.sh' (20 runs):
-
-         57.395070 task-clock                #    1.004 CPUs utilized            ( +-  1.71% ) [100.00%]
-                 5 context-switches          #    0.092 K/sec                    ( +-  3.90% ) [100.00%]
-                 0 cpu-migrations            #    0.000 K/sec                   [100.00%]
-               367 page-faults               #    0.006 M/sec                    ( +-  0.10% )
-       143,232,396 cycles                    #    2.496 GHz                      ( +-  1.68% ) [16.73%]
-         7,299,843 stalled-cycles-frontend   #    5.10% frontend cycles idle     ( +-  2.69% ) [18.47%]
-       109,485,845 stalled-cycles-backend    #   76.44% backend  cycles idle     ( +-  2.01% ) [19.99%]
-        56,867,669 instructions              #    0.40  insns per cycle        
-                                             #    1.93  stalled cycles per insn  ( +-  0.22% ) [19.49%]
-         6,646,323 branches                  #  115.800 M/sec                    ( +-  2.15% ) [17.75%]
-           304,671 branch-misses             #    4.58% of all branches          ( +-  0.37% ) [16.23%]
-        23,612,428 L1-dcache-loads           #  411.402 M/sec                    ( +-  0.05% ) [15.95%]
-           518,988 L1-dcache-load-misses     #    2.20% of all L1-dcache hits    ( +-  0.11% ) [15.95%]
-         2,934,119 LLC-loads                 #   51.121 M/sec                    ( +-  0.06% ) [15.95%]
-           509,027 LLC-load-misses           #   17.35% of all LL-cache hits     ( +-  0.15% ) [15.95%]
-        11,103,819 L1-icache-loads           #  193.463 M/sec                    ( +-  0.08% ) [15.95%]
-             5,381 L1-icache-load-misses     #    0.05% of all L1-icache hits    ( +-  2.45% ) [15.95%]
-        23,727,164 dTLB-loads                #  413.401 M/sec                    ( +-  0.06% ) [15.95%]
-                 0 dTLB-load-misses          #    0.00% of all dTLB cache hits  [15.95%]
-        11,104,205 iTLB-loads                #  193.470 M/sec                    ( +-  0.06% ) [15.95%]
-                 0 iTLB-load-misses          #    0.00% of all iTLB cache hits  [15.95%]
-                 0 L1-dcache-prefetches      #    0.000 K/sec                   [15.95%]
-                 0 L1-dcache-prefetch-misses #    0.000 K/sec                   [15.96%]
-
-       0.057151644 seconds time elapsed                                          ( +-  1.69% )
-
-Both:
- Performance counter stats for '/root/test.sh' (20 runs):
-
-         48.377833 task-clock                #    1.005 CPUs utilized            ( +-  0.67% ) [100.00%]
-                 5 context-switches          #    0.113 K/sec                    ( +-  3.88% ) [100.00%]
-                 0 cpu-migrations            #    0.001 K/sec                    ( +-100.00% ) [100.00%]
-               367 page-faults               #    0.008 M/sec                    ( +-  0.08% )
-       122,529,490 cycles                    #    2.533 GHz                      ( +-  1.05% ) [14.24%]
-         8,796,729 stalled-cycles-frontend   #    7.18% frontend cycles idle     ( +-  0.56% ) [16.20%]
-        88,936,550 stalled-cycles-backend    #   72.58% backend  cycles idle     ( +-  1.48% ) [18.16%]
-        58,405,660 instructions              #    0.48  insns per cycle        
-                                             #    1.52  stalled cycles per insn  ( +-  0.07% ) [18.61%]
-         5,742,738 branches                  #  118.706 M/sec                    ( +-  1.54% ) [18.61%]
-           303,555 branch-misses             #    5.29% of all branches          ( +-  0.09% ) [18.61%]
-        26,321,789 L1-dcache-loads           #  544.088 M/sec                    ( +-  0.07% ) [18.61%]
-         1,236,101 L1-dcache-load-misses     #    4.70% of all L1-dcache hits    ( +-  0.08% ) [18.61%]
-         3,409,768 LLC-loads                 #   70.482 M/sec                    ( +-  0.05% ) [18.61%]
-         1,212,511 LLC-load-misses           #   35.56% of all LL-cache hits     ( +-  0.08% ) [18.61%]
-        10,579,372 L1-icache-loads           #  218.682 M/sec                    ( +-  0.05% ) [18.61%]
-            19,426 L1-icache-load-misses     #    0.18% of all L1-icache hits    ( +- 14.70% ) [18.61%]
-        25,329,963 dTLB-loads                #  523.586 M/sec                    ( +-  0.27% ) [17.29%]
-               802 dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +-  5.43% ) [15.33%]
-        10,635,524 iTLB-loads                #  219.843 M/sec                    ( +-  0.09% ) [13.38%]
-                 0 iTLB-load-misses          #    0.00% of all iTLB cache hits  [12.72%]
-                 0 L1-dcache-prefetches      #    0.000 K/sec                   [12.72%]
-                 0 L1-dcache-prefetch-misses #    0.000 K/sec                   [12.72%]
-
-       0.048140073 seconds time elapsed                                          ( +-  0.67% )
-
-
-Which overall looks alot more like I expect, save for the parallel ALU cases.
-It seems here that the parallel ALU changes actually hurt performance, which
-really seems counter-intuitive.  I don't yet have any explination for that.  I
-do note that we seem to have more stalls in the both case so perhaps the
-parallel chains call for a more agressive prefetch.  Do you have any thoughts?
-
-Regards
-Neil
 
