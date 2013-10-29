@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359Ab3J2XTs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 19:19:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39734 "EHLO
+	id S1752142Ab3J2XWv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 19:22:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39829 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693Ab3J2XTq (ORCPT
+	with ESMTP id S1751300Ab3J2XWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 19:19:46 -0400
-Date: Tue, 29 Oct 2013 16:19:45 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org
-Subject: Re: [char-misc-next 2/8] mei: hbm: validate client index is not
- exceeding allocated array size
-Message-ID: <20131029231945.GB30410@kroah.com>
-References: <1382382343-12066-1-git-send-email-tomas.winkler@intel.com>
- <1382382343-12066-3-git-send-email-tomas.winkler@intel.com>
+	Tue, 29 Oct 2013 19:22:50 -0400
+Date: Tue, 29 Oct 2013 16:22:49 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] misc: atmel_pwm: set initcall level to subsys
+Message-ID: <20131029232249.GA20476@kroah.com>
+References: <1382459560-26596-1-git-send-email-jhovold@gmail.com>
+ <1382459560-26596-3-git-send-email-jhovold@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382382343-12066-3-git-send-email-tomas.winkler@intel.com>
+In-Reply-To: <1382459560-26596-3-git-send-email-jhovold@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 21, 2013 at 10:05:37PM +0300, Tomas Winkler wrote:
-> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-> ---
->  drivers/misc/mei/hbm.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
+On Tue, Oct 22, 2013 at 06:32:40PM +0200, Johan Hovold wrote:
+> Even with the atmel_pwm driver and the atmel-pwm-bl backlight driver
+> supporting deferred probing, we still want to make sure that any
+> pwm-device is available when the backlight devices are probed to avoid
+> any unnecessary delays before enabling the backlight.
 > 
-> diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-> index 9b3a0fb..0f5e8ca 100644
-> --- a/drivers/misc/mei/hbm.c
-> +++ b/drivers/misc/mei/hbm.c
-> @@ -228,8 +228,6 @@ static int mei_hbm_prop_req(struct mei_device *dev)
->  	unsigned long client_num;
+> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> ---
+>  drivers/misc/atmel_pwm.c | 12 +++++++++++-
+>  1 file changed, 11 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/misc/atmel_pwm.c b/drivers/misc/atmel_pwm.c
+> index a6dc56e..0d0f599 100644
+> --- a/drivers/misc/atmel_pwm.c
+> +++ b/drivers/misc/atmel_pwm.c
+> @@ -395,7 +395,17 @@ static struct platform_driver atmel_pwm_driver = {
+>  	 */
+>  };
 >  
->  
-> -	client_num = dev->me_client_presentation_num;
-> -
->  	next_client_index = find_next_bit(dev->me_clients_map, MEI_CLIENTS_MAX,
->  					  dev->me_client_index);
->  
-> @@ -241,6 +239,10 @@ static int mei_hbm_prop_req(struct mei_device *dev)
->  		return 0;
->  	}
->  
-> +	client_num = dev->me_client_presentation_num;
-> +	if (WARN_ON(dev->me_clients_num <= client_num))
-> +		return -EIO;
+> -module_platform_driver_probe(atmel_pwm_driver, pwm_probe);
+> +static int __init pwm_init(void)
+> +{
+> +	return platform_driver_probe(&atmel_pwm_driver, pwm_probe);
+> +}
+> +subsys_initcall(pwm_init);
 
-How can this happen?  Why is spitting out a huge warning in the syslog
-going to help anything?  If a user can do this, then great, now you can
-DoS your syslog :(
+I really hate this type of patch, as it's papering over the real
+problem.  What happens when someone else moves their driver to this
+level?  Then you are back to the original problem.
 
-If a user can't do this, then why tell them, it's your driver's bug that
-you should just fix.
+This is what deferred probing was supposed to fix.  If it doesn't, then
+something else needs to be done, or fix the deferred probing mess...
+
+Sorry, I can't take this.
 
 greg k-h
