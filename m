@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758535Ab3J2QYN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 12:24:13 -0400
-Received: from smtprelay0131.hostedemail.com ([216.40.44.131]:49527 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758512Ab3J2QYK (ORCPT
+	id S1758544Ab3J2QY7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 12:24:59 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:38150 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904Ab3J2QY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 12:24:10 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3871:3872:3874:4321:4605:5007:7652:7903:9121:10004:10400:10848:11026:11232:11233:11658:11914:12296:12517:12519:12555:12740:13069:13311:13357:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bomb22_7b2c5be350121
-X-Filterd-Recvd-Size: 2627
-Message-ID: <1383063845.2713.15.camel@joe-AO722>
-Subject: Re: [PATCH v2] can: c_can: Speed up rx_poll function
-From: Joe Perches <joe@perches.com>
-To: Markus Pargmann <mpa@pengutronix.de>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Date: Tue, 29 Oct 2013 09:24:05 -0700
-In-Reply-To: <20131029085853.GC20839@pengutronix.de>
-References: <1383035267-19604-1-git-send-email-mpa@pengutronix.de>
-	 <1383035688.2713.2.camel@joe-AO722> <20131029085853.GC20839@pengutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Oct 2013 12:24:57 -0400
+Date: Tue, 29 Oct 2013 09:24:08 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Tejun Heo <tj@kernel.org>, darkstar6262@gmail.com,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ext Tony Lindgren <tony@atomide.com>
+Message-ID: <20131029162408.GG16686@sirena.org.uk>
+References: <20131024124631.GA14517@mtj.dyndns.org>
+ <CACRpkdY2d88RxxgZ5=rPuQHrb3a7Q+trvBWsEMSaByhtWKf31Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oOB74oR0WcNeq9Zb"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdY2d88RxxgZ5=rPuQHrb3a7Q+trvBWsEMSaByhtWKf31Q@mail.gmail.com>
+X-Cookie: Excellent day to have a rotten day.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 66.78.236.243
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: READ/WRITE definitions in drivers/spi/spi-omap-100k.c
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-29 at 09:58 +0100, Markus Pargmann wrote:
-> On Tue, Oct 29, 2013 at 01:34:48AM -0700, Joe Perches wrote:
-> > On Tue, 2013-10-29 at 09:27 +0100, Markus Pargmann wrote:
-> > > This patch speeds up the rx_poll function by reducing the number of
-> > > register reads.
-> > []
-> > > 125kbit:
-> > >   Function                               Hit    Time            Avg             s^2
-> > >   --------                               ---    ----            ---             ---
-> > >   c_can_do_rx_poll                     63960    10168178 us     158.977 us      1493056 us
-> > > With patch:
-> > >   c_can_do_rx_poll                     63939    4268457 us     66.758 us       818790.9 us
-> > > 
-> > > 1Mbit:
-> > >   Function                               Hit    Time            Avg             s^2
-> > >   --------                               ---    ----            ---             ---
-> > >   c_can_do_rx_poll                     69489    30049498 us     432.435 us      9271851 us
-> > > With patch:
-> > >   c_can_do_rx_poll                    103034    24220362 us     235.071 us      6016656 us
-[]
-> Yes I just measured the timings again:
-[]
-> ./perf_can_test.sh 125000 30
-[]
->   c_can_do_rx_poll                     63941    3764057 us     58.867 us       776162.2 us 
 
-Good, it's slightly faster still.
+--oOB74oR0WcNeq9Zb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> ./perf_can_test.sh 1000000 30
-[]
->   c_can_do_rx_poll                    207109    24322185 us     117.436 us      171469047 us 
-[]
-> It is interesting that the number of hits for c_can_do_rx_poll is twice as much
-> as it was with find_next_bit.
+On Tue, Oct 29, 2013 at 02:34:26PM +0100, Linus Walleij wrote:
 
-How is this possible?  Any idea?
+> That seems like a good idea, but we better poke the people who wrote
+> the code and the SPI maintainer :-)
 
+...or send a patch?
 
+--oOB74oR0WcNeq9Zb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSb+ElAAoJELSic+t+oim9cx4P/1E9oVFOMjOkpgF7bfBRTTz9
+seGAe0wQqkV99CuyIbDJkUNCL2x8TmZMgWWGdjpPYUNr/+45Z/tjQhQcgnuo/cR4
+hp+l/xL+X81pnbjY73g2RDrRemMpCN3ASN9/rHjYU5d0iUfwPqENobnHzyczJZrh
+vGF52L6F93yu3LrLi3GnzIZQvmdFVpPsz/SY8JYOGcPkqhz/m6mkju5Ksq24j4ba
+FpzSeC41dXV63YpEzJjRkMYXb7P2upvJHmKXiwONeehLpta7Cwa0hHb69ekFqvT6
+WZ4qkg7trO54C6MGVokFCOovHtPcXHpN5lisnngbH8kqYdhaeBDlgXtveTCA6hvh
+J2XT8cffr9ULljYJdPXzdMkppJZt4vOGk7NmcCCJC9XdVUcmlxedPTylNkXMNNPd
+As//dr4aPOMxhfRER3fGk3A29Xo7nIC8qbB3ou/K5DwmLJYO8rEbEJMky/iwkeQy
+LiBAXkE+UUYpR7OW7V193xJhszRlbh5ydBv4yHm8Pik2I/rPh6IGsoOUL2+j0xfM
+gbn0HroXOQW7e6TL0Oa8PHyFYD45ih1ko4lemmlkCYZ3PT5O6llIMqmY55HvYkWa
+S1sFrxEVAIJA2GPHVrgUd8drJHnT2VyvmE45WgKFjJmniuXVncZrXjk/GbKuupBj
+qBc1u+tWBmc1Ntq0KEWI
+=eh+L
+-----END PGP SIGNATURE-----
+
+--oOB74oR0WcNeq9Zb--
