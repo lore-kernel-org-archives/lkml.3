@@ -1,230 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610Ab3J2UUA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 16:20:00 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:63767 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317Ab3J2USu (ORCPT
+	id S1753664Ab3J2UUR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 16:20:17 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59446 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752856Ab3J2UUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 16:18:50 -0400
-From: Kent Overstreet <kmo@daterainc.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, hch@infradead.org, tj@kernel.org,
-        nab@linux-iscsi.org, Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH 19/23] block: Generic bio chaining
-Date: Tue, 29 Oct 2013 13:18:12 -0700
-Message-Id: <1383077896-4132-20-git-send-email-kmo@daterainc.com>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1383077896-4132-1-git-send-email-kmo@daterainc.com>
-References: <1383077896-4132-1-git-send-email-kmo@daterainc.com>
+	Tue, 29 Oct 2013 16:20:14 -0400
+Message-ID: <5270187D.3090004@codeaurora.org>
+Date: Tue, 29 Oct 2013 13:20:13 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Josh Cartwright <joshc@codeaurora.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        rtc-linux@googlegroups.com, Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>
+Subject: Re: [PATCH v3 10/10] rtc: pm8xxx: add support for pm8941
+References: <cover.1382985169.git.joshc@codeaurora.org> <1392ea90487793f9cbbdfb7f8d148f45122a52c2.1382985169.git.joshc@codeaurora.org> <20131029200927.GG21983@codeaurora.org> <20131029201545.GA2064@kroah.com>
+In-Reply-To: <20131029201545.GA2064@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a generic mechanism for chaining bio completions. This is
-going to be used for a bio_split() replacement, and it turns out to be
-very useful in a fair amount of driver code - a fair number of drivers
-were implementing this in their own roundabout ways, often painfully.
+On 10/29/13 13:15, Greg Kroah-Hartman wrote:
+> On Tue, Oct 29, 2013 at 01:09:27PM -0700, Stephen Boyd wrote:
+>> On 10/28, Josh Cartwright wrote:
+>>> diff --git a/drivers/rtc/rtc-pm8xxx.c b/drivers/rtc/rtc-pm8xxx.c
+>>> index 03f8f75..a9044d4 100644
+>>> --- a/drivers/rtc/rtc-pm8xxx.c
+>>> +++ b/drivers/rtc/rtc-pm8xxx.c
+>>> @@ -1,4 +1,5 @@
+>>>  /* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+>>> + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
+>>>   *
+>> Please rewrite this as '2010-2011,2013, The Linux Foundation'
+> Has the Linux Foundation really taken on all prior copyrights of this
+> codebase?  CAF wasn't around in 2010 as part of the LF, so be careful
+> here.
+>
 
-Note that this means it's no longer to call bio_endio() more than once
-on the same bio! This can cause problems for drivers that save/restore
-bi_end_io. Arguably they shouldn't be saving/restoring bi_end_io at all
-- in all but the simplest cases they'd be better off just cloning the
-bio, and immutable biovecs is making bio cloning cheaper. But for now,
-we add a bio_endio_nodec() for these cases.
+>From what I recall our lawyers told us to do this and there is some
+precedence for this upstream as well.
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Cc: Jens Axboe <axboe@kernel.dk>
----
- drivers/md/bcache/io.c       |  2 +-
- drivers/md/dm-cache-target.c |  6 ++++
- fs/bio-integrity.c           |  2 +-
- fs/bio.c                     | 73 ++++++++++++++++++++++++++++++++++++++++----
- include/linux/bio.h          |  2 ++
- include/linux/blk_types.h    |  2 ++
- 6 files changed, 79 insertions(+), 8 deletions(-)
+commit e1858b2a21cd84a855945a4747fb2db41b250c22
+Author: Richard Kuo <rkuo@codeaurora.org>
+Date:   Wed Sep 19 16:22:02 2012 -0500
 
-diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
-index 0f0ab65..522f957 100644
---- a/drivers/md/bcache/io.c
-+++ b/drivers/md/bcache/io.c
-@@ -133,7 +133,7 @@ static void bch_bio_submit_split_done(struct closure *cl)
- 
- 	s->bio->bi_end_io = s->bi_end_io;
- 	s->bio->bi_private = s->bi_private;
--	bio_endio(s->bio, 0);
-+	bio_endio_nodec(s->bio, 0);
- 
- 	closure_debug_destroy(&s->cl);
- 	mempool_free(s, s->p->bio_split_hook);
-diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
-index b71195f..1ccbfff 100644
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -666,6 +666,12 @@ static void writethrough_endio(struct bio *bio, int err)
- 	struct per_bio_data *pb = get_per_bio_data(bio, PB_DATA_SIZE_WT);
- 	bio->bi_end_io = pb->saved_bi_end_io;
- 
-+	/*
-+	 * Must bump bi_remaining to allow bio to complete with
-+	 * restored bi_end_io.
-+	 */
-+	atomic_inc(&bio->bi_remaining);
-+
- 	if (err) {
- 		bio_endio(bio, err);
- 		return;
-diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-index fed744b..9d547d2 100644
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -502,7 +502,7 @@ static void bio_integrity_verify_fn(struct work_struct *work)
- 
- 	/* Restore original bio completion handler */
- 	bio->bi_end_io = bip->bip_end_io;
--	bio_endio(bio, error);
-+	bio_endio_nodec(bio, error);
- }
- 
- /**
-diff --git a/fs/bio.c b/fs/bio.c
-index 8bbba9a..9e7ef5e 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -273,6 +273,7 @@ void bio_init(struct bio *bio)
- {
- 	memset(bio, 0, sizeof(*bio));
- 	bio->bi_flags = 1 << BIO_UPTODATE;
-+	atomic_set(&bio->bi_remaining, 1);
- 	atomic_set(&bio->bi_cnt, 1);
- }
- EXPORT_SYMBOL(bio_init);
-@@ -295,9 +296,34 @@ void bio_reset(struct bio *bio)
- 
- 	memset(bio, 0, BIO_RESET_BYTES);
- 	bio->bi_flags = flags|(1 << BIO_UPTODATE);
-+	atomic_set(&bio->bi_remaining, 1);
- }
- EXPORT_SYMBOL(bio_reset);
- 
-+static void bio_chain_endio(struct bio *bio, int error)
-+{
-+	bio_endio(bio->bi_private, error);
-+}
-+
-+/**
-+ * bio_chain - chain bio completions
-+ *
-+ * The caller won't have a bi_end_io called when @bio completes - instead,
-+ * @parent's bi_end_io won't be called until both @parent and @bio have
-+ * completed.
-+ *
-+ * The caller must not set bi_private or bi_end_io in @bio.
-+ */
-+void bio_chain(struct bio *bio, struct bio *parent)
-+{
-+	BUG_ON(bio->bi_private || bio->bi_end_io);
-+
-+	bio->bi_private = parent;
-+	bio->bi_end_io	= bio_chain_endio;
-+	atomic_inc(&parent->bi_remaining);
-+}
-+EXPORT_SYMBOL(bio_chain);
-+
- static void bio_alloc_rescue(struct work_struct *work)
- {
- 	struct bio_set *bs = container_of(work, struct bio_set, rescue_work);
-@@ -1687,16 +1713,51 @@ EXPORT_SYMBOL(bio_flush_dcache_pages);
-  **/
- void bio_endio(struct bio *bio, int error)
- {
--	if (error)
--		clear_bit(BIO_UPTODATE, &bio->bi_flags);
--	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
--		error = -EIO;
-+	while (bio) {
-+		BUG_ON(atomic_read(&bio->bi_remaining) <= 0);
-+
-+		if (error)
-+			clear_bit(BIO_UPTODATE, &bio->bi_flags);
-+		else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
-+			error = -EIO;
-+
-+		if (!atomic_dec_and_test(&bio->bi_remaining))
-+			return;
- 
--	if (bio->bi_end_io)
--		bio->bi_end_io(bio, error);
-+		/*
-+		 * Need to have a real endio function for chained bios,
-+		 * otherwise various corner cases will break (like stacking
-+		 * block devices that save/restore bi_end_io) - however, we want
-+		 * to avoid unbounded recursion and blowing the stack. Tail call
-+		 * optimization would handle this, but compiling with frame
-+		 * pointers also disables gcc's sibling call optimization.
-+		 */
-+		if (bio->bi_end_io == bio_chain_endio) {
-+			bio = bio->bi_private;
-+		} else {
-+			if (bio->bi_end_io)
-+				bio->bi_end_io(bio, error);
-+			bio = NULL;
-+		}
-+	}
- }
- EXPORT_SYMBOL(bio_endio);
- 
-+/**
-+ * bio_endio_nodec - end I/O on a bio, without decrementing bi_remaining
-+ * @bio:	bio
-+ * @error:	error, if any
-+ *
-+ * For code that has saved and restored bi_end_io; thing hard before using this
-+ * function, probably you should've cloned the entire bio.
-+ **/
-+void bio_endio_nodec(struct bio *bio, int error)
-+{
-+	atomic_inc(&bio->bi_remaining);
-+	bio_endio(bio, error);
-+}
-+EXPORT_SYMBOL(bio_endio_nodec);
-+
- void bio_pair_release(struct bio_pair *bp)
- {
- 	if (atomic_dec_and_test(&bp->cnt)) {
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 6aaeeb1..003f65d 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -355,6 +355,7 @@ static inline struct bio *bio_clone_kmalloc(struct bio *bio, gfp_t gfp_mask)
- }
- 
- extern void bio_endio(struct bio *, int);
-+extern void bio_endio_nodec(struct bio *, int);
- struct request_queue;
- extern int bio_phys_segments(struct request_queue *, struct bio *);
- 
-@@ -363,6 +364,7 @@ extern void bio_advance(struct bio *, unsigned);
- 
- extern void bio_init(struct bio *);
- extern void bio_reset(struct bio *);
-+void bio_chain(struct bio *, struct bio *);
- 
- extern int bio_add_page(struct bio *, struct page *, unsigned int,unsigned int);
- extern int bio_add_pc_page(struct request_queue *, struct bio *, struct page *,
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 72f1274..8fca6e3 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -64,6 +64,8 @@ struct bio {
- 	unsigned int		bi_seg_front_size;
- 	unsigned int		bi_seg_back_size;
- 
-+	atomic_t		bi_remaining;
-+
- 	bio_end_io_t		*bi_end_io;
- 
- 	void			*bi_private;
+    Hexagon: Copyright marking changes
+   
+    Code Aurora Forum (CAF) is becoming a part of Linux Foundation Labs.
+   
+    Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+
 -- 
-1.8.4.rc3
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
