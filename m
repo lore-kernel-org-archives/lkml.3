@@ -1,142 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424Ab3J2Hdv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 03:33:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49965 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752337Ab3J2Hds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 03:33:48 -0400
-Date: Tue, 29 Oct 2013 09:36:31 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH net] virtio-net: correctly handle cpu hotplug notifier
- during resuming
-Message-ID: <20131029073631.GA16894@redhat.com>
-References: <1383030667-14343-1-git-send-email-jasowang@redhat.com>
-MIME-Version: 1.0
+	id S1752644Ab3J2HgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 03:36:07 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:39288 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752151Ab3J2HgF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 03:36:05 -0400
+Date: Tue, 29 Oct 2013 08:36:03 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Niels de Vos <ndevos@redhat.com>
+Cc: devicetree@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH] imx2_wdt: expose module alias for loading from device-tree
+Message-ID: <20131029073603.GB19569@spo001.leaseweb.com>
+References: <1375083498-14822-1-git-send-email-ndevos@redhat.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383030667-14343-1-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1375083498-14822-1-git-send-email-ndevos@redhat.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 03:11:07PM +0800, Jason Wang wrote:
-> commit 3ab098df35f8b98b6553edc2e40234af512ba877 (virtio-net: don't respond to
-> cpu hotplug notifier if we're not ready) tries to bypass the cpu hotplug
-> notifier by checking the config_enable and does nothing is it was false. So it
-> need to try to hold the config_lock mutex which may happen in atomic
-> environment which leads the following warnings:
-> 
-> [  622.944441] CPU0 attaching NULL sched-domain.
-> [  622.944446] CPU1 attaching NULL sched-domain.
-> [  622.944485] CPU0 attaching NULL sched-domain.
-> [  622.950795] BUG: sleeping function called from invalid context at kernel/mutex.c:616
-> [  622.950796] in_atomic(): 1, irqs_disabled(): 1, pid: 10, name: migration/1
-> [  622.950796] no locks held by migration/1/10.
-> [  622.950798] CPU: 1 PID: 10 Comm: migration/1 Not tainted 3.12.0-rc5-wl-01249-gb91e82d #317
-> [  622.950799] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [  622.950802]  0000000000000000 ffff88001d42dba0 ffffffff81a32f22 ffff88001bfb9c70
-> [  622.950803]  ffff88001d42dbb0 ffffffff810edb02 ffff88001d42dc38 ffffffff81a396ed
-> [  622.950805]  0000000000000046 ffff88001d42dbe8 ffffffff810e861d 0000000000000000
-> [  622.950805] Call Trace:
-> [  622.950810]  [<ffffffff81a32f22>] dump_stack+0x54/0x74
-> [  622.950815]  [<ffffffff810edb02>] __might_sleep+0x112/0x114
-> [  622.950817]  [<ffffffff81a396ed>] mutex_lock_nested+0x3c/0x3c6
-> [  622.950818]  [<ffffffff810e861d>] ? up+0x39/0x3e
-> [  622.950821]  [<ffffffff8153ea7c>] ? acpi_os_signal_semaphore+0x21/0x2d
-> [  622.950824]  [<ffffffff81565ed1>] ? acpi_ut_release_mutex+0x5e/0x62
-> [  622.950828]  [<ffffffff816d04ec>] virtnet_cpu_callback+0x33/0x87
-> [  622.950830]  [<ffffffff81a42576>] notifier_call_chain+0x3c/0x5e
-> [  622.950832]  [<ffffffff810e86a8>] __raw_notifier_call_chain+0xe/0x10
-> [  622.950835]  [<ffffffff810c5556>] __cpu_notify+0x20/0x37
-> [  622.950836]  [<ffffffff810c5580>] cpu_notify+0x13/0x15
-> [  622.950838]  [<ffffffff81a237cd>] take_cpu_down+0x27/0x3a
-> [  622.950841]  [<ffffffff81136289>] stop_machine_cpu_stop+0x93/0xf1
-> [  622.950842]  [<ffffffff81136167>] cpu_stopper_thread+0xa0/0x12f
-> [  622.950844]  [<ffffffff811361f6>] ? cpu_stopper_thread+0x12f/0x12f
-> [  622.950847]  [<ffffffff81119710>] ? lock_release_holdtime.part.7+0xa3/0xa8
-> [  622.950848]  [<ffffffff81135e4b>] ? cpu_stop_should_run+0x3f/0x47
-> [  622.950850]  [<ffffffff810ea9b0>] smpboot_thread_fn+0x1c5/0x1e3
-> [  622.950852]  [<ffffffff810ea7eb>] ? lg_global_unlock+0x67/0x67
-> [  622.950854]  [<ffffffff810e36b7>] kthread+0xd8/0xe0
-> [  622.950857]  [<ffffffff81a3bfad>] ? wait_for_common+0x12f/0x164
-> [  622.950859]  [<ffffffff810e35df>] ? kthread_create_on_node+0x124/0x124
-> [  622.950861]  [<ffffffff81a45ffc>] ret_from_fork+0x7c/0xb0
-> [  622.950862]  [<ffffffff810e35df>] ? kthread_create_on_node+0x124/0x124
-> [  622.950876] smpboot: CPU 1 is now offline
-> [  623.194556] SMP alternatives: lockdep: fixing up alternatives
-> [  623.194559] smpboot: Booting Node 0 Processor 1 APIC 0x1
-> ...
-> 
-> A correct fix is to unregister the hotcpu notifier during restore and register a
-> new one in resume.
-> 
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Tested-by: Fengguang Wu <fengguang.wu@intel.com>
-> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+Hi Niels,
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-
-BTW there's a new Fixes: tag, you might want to use it
-in the future.
-
+> Enable auto loading by udev when imx2_wdt is compiled as a module.
+> 
+> Signed-off-by: Niels de Vos <ndevos@redhat.com>
+> Cc: Shawn Guo <shawn.guo@linaro.org>
 > ---
-> This patch is needed for 3.8 and above.
-> ---
->  drivers/net/virtio_net.c | 13 ++++++-------
->  1 file changed, 6 insertions(+), 7 deletions(-)
+>  drivers/watchdog/imx2_wdt.c | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 9fbdfcd..bbc9cb8 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -1118,11 +1118,6 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
->  {
->  	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
+> diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
+> index 693ac3f..17680aa 100644
+> --- a/drivers/watchdog/imx2_wdt.c
+> +++ b/drivers/watchdog/imx2_wdt.c
+> @@ -322,6 +322,7 @@ static const struct of_device_id imx2_wdt_dt_ids[] = {
+>  	{ .compatible = "fsl,imx21-wdt", },
+>  	{ /* sentinel */ }
+>  };
+> +MODULE_DEVICE_TABLE(of, imx2_wdt_dt_ids);
 >  
-> -	mutex_lock(&vi->config_lock);
-> -
-> -	if (!vi->config_enable)
-> -		goto done;
-> -
->  	switch(action & ~CPU_TASKS_FROZEN) {
->  	case CPU_ONLINE:
->  	case CPU_DOWN_FAILED:
-> @@ -1136,8 +1131,6 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
->  		break;
->  	}
->  
-> -done:
-> -	mutex_unlock(&vi->config_lock);
->  	return NOTIFY_OK;
->  }
->  
-> @@ -1699,6 +1692,8 @@ static int virtnet_freeze(struct virtio_device *vdev)
->  	struct virtnet_info *vi = vdev->priv;
->  	int i;
->  
-> +	unregister_hotcpu_notifier(&vi->nb);
-> +
->  	/* Prevent config work handler from accessing the device */
->  	mutex_lock(&vi->config_lock);
->  	vi->config_enable = false;
-> @@ -1747,6 +1742,10 @@ static int virtnet_restore(struct virtio_device *vdev)
->  	virtnet_set_queues(vi, vi->curr_queue_pairs);
->  	rtnl_unlock();
->  
-> +	err = register_hotcpu_notifier(&vi->nb);
-> +	if (err)
-> +		return err;
-> +
->  	return 0;
->  }
->  #endif
-> -- 
-> 1.8.1.2
+>  static struct platform_driver imx2_wdt_driver = {
+>  	.remove		= __exit_p(imx2_wdt_remove),
+
+This has been added to linux-watchdog-next.
+
+Kind regards,
+Wim.
+
