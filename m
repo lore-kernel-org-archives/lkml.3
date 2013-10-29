@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab3J2VZN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 17:25:13 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59914 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752829Ab3J2VZL (ORCPT
+	id S1752772Ab3J2V1M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 17:27:12 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:61783 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380Ab3J2V1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 17:25:11 -0400
-Message-ID: <527027B1.8070808@kernel.dk>
-Date: Tue, 29 Oct 2013 15:25:05 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/7] kernel: use lockless list for smp_call_function_single
-References: <20131024151921.537751910@bombadil.infradead.org> <20131024152314.204817634@bombadil.infradead.org> <20131029192536.GB9568@quack.suse.cz> <20131029192720.GA24089@infradead.org> <20131029211715.GA12814@quack.suse.cz>
-In-Reply-To: <20131029211715.GA12814@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Oct 2013 17:27:10 -0400
+From: Laurent Navet <laurent.navet@gmail.com>
+To: davem@davemloft.net
+Cc: jiri@resnulli.us, david.daney@cavium.com, wfp5p@virginia.edu,
+        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Laurent Navet <laurent.navet@gmail.com>
+Subject: [PATCH 1/2] octeon_mgmt: remove double validation of mac address
+Date: Tue, 29 Oct 2013 22:27:33 +0100
+Message-Id: <1383082053-12405-1-git-send-email-laurent.navet@gmail.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2013 03:17 PM, Jan Kara wrote:
-> On Tue 29-10-13 12:27:20, Christoph Hellwig wrote:
->> On Tue, Oct 29, 2013 at 08:25:36PM +0100, Jan Kara wrote:
->>>   I'm wondering: Who's still using the normal list_head? I was grepping for
->>> a while and I couldn't find any user. Otherwise the patch looks good to me.
->>
->> The block/blk-softirq.c code is abusing it in a fairly ugly way.
->   Ah, thanks for the pointer. Looking into the code, that could easily use
-> llist as well, couldn't it?
+Mac address validity is already checked in of_get_mac_address().
+No need to do it twice.
 
-Sure, it'd be easy enough to do.
+Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+---
+ drivers/net/ethernet/octeon/octeon_mgmt.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/net/ethernet/octeon/octeon_mgmt.c b/drivers/net/ethernet/octeon/octeon_mgmt.c
+index 622aa75..1b326cbc 100644
+--- a/drivers/net/ethernet/octeon/octeon_mgmt.c
++++ b/drivers/net/ethernet/octeon/octeon_mgmt.c
+@@ -1545,7 +1545,7 @@ static int octeon_mgmt_probe(struct platform_device *pdev)
+ 
+ 	mac = of_get_mac_address(pdev->dev.of_node);
+ 
+-	if (mac && is_valid_ether_addr(mac))
++	if (mac)
+ 		memcpy(netdev->dev_addr, mac, ETH_ALEN);
+ 	else
+ 		eth_hw_addr_random(netdev);
 -- 
-Jens Axboe
+1.8.4.rc3
 
