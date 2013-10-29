@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758364Ab3J2QgZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 12:36:25 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:39482 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758049Ab3J2QgW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 12:36:22 -0400
-Date: Tue, 29 Oct 2013 17:36:21 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Watchdog patches - overview.
-Message-ID: <20131029163621.GD5261@spo001.leaseweb.com>
-References: <20131029090458.GN19704@spo001.leaseweb.com> <20131029091139.GA20422@spo001.leaseweb.com> <20131029162143.GD9266@roeck-us.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1758222Ab3J2QjY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 12:39:24 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:16873
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751732Ab3J2QjW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 12:39:22 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dIc89bh1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h906i1155h192ch)
+Date: Tue, 29 Oct 2013 09:39:13 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jiri Slaby <jslaby@suse.cz>, Michal Simek <michal.simek@xilinx.com>,
+        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>
+Subject: Re: [PATCH 1/3] tty: xuartps: Fix "may be used uninitialized" build
+ warning
+References: <1382398861-21542-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1382398861-21542-2-git-send-email-soren.brinkmann@xilinx.com>
+ <20131029162252.GA21986@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20131029162143.GD9266@roeck-us.net>
-User-Agent: Mutt/1.4.1i
+In-Reply-To: <20131029162252.GA21986@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <49d5e652-87b6-4e4c-8812-398bd2076d76@VA3EHSMHS008.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
-
-> > > 2) patches that I am reviewing or are on my radar:
-> > > w83627hf-patches
-> > > Orion-patches
-> > > f81865_gpio.c
-> > > [PATCH V2 0/4] Add watchdog DT nodes and parse it to read PMU registers addresses (Exynos+s3c2410_wdt)
-> > > [PATCH v4 4/4] ARM: bcm4760: Add restart hook
-> > > [PATCH] Documentation/watchdog: Update node name in samsung-wdt example
+On Tue, Oct 29, 2013 at 09:22:52AM -0700, Greg Kroah-Hartman wrote:
+> On Mon, Oct 21, 2013 at 04:40:59PM -0700, Soren Brinkmann wrote:
+> > Initialize varibles for which a 'may be used uninitalized' warning is
+> > issued.
 > > 
-> > And also:
-> > [PATCH v3] Enhanced support for MPC8xx/8xxx watchdog
+> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > ---
+> > The warning is actually a false positive. The variables are passed to a
+> > function per reference. That function uses those variables to return
+> > values, which then are used by the caller. Is there a way to
+> > avoid the initialization and the build warning alltogether?
+> > ---
+> >  drivers/tty/serial/xilinx_uartps.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> I had not reviewed on this one, as I think that such enhancements
-> should really start with a conversion to the watchdog infrastructure.
-> That is just my personal opinion, of course.
+> Please properly credit the kbuild robot who found these issues the next
+> time...
 
-I think the enhancement might be worthwhile, but not in it's present form.
-I agree that it would be nice to have the conversion also, but it's two seperate things for the moment..
+Sorry for that. I'll do that next time.
 
-Kind regards,
-Wim.
+	Thanks,
+	Sören
+
 
