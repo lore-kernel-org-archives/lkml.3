@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308Ab3J2S0w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:26:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59234 "EHLO
+	id S1757261Ab3J2S0u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:26:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59243 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752061Ab3J2SFL (ORCPT
+	with ESMTP id S1752068Ab3J2SFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Oct 2013 14:05:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 02/81] random: run random_int_secret_init() run after all late_initcalls
-Date: Tue, 29 Oct 2013 11:03:23 -0700
-Message-Id: <1383069882-11437-3-git-send-email-kamal@canonical.com>
+Cc: fzu@wemgehoertderstaat.de, Daniel Mack <zonque@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 04/81] ALSA: snd-usb-usx2y: remove bogus frame checks
+Date: Tue, 29 Oct 2013 11:03:25 -0700
+Message-Id: <1383069882-11437-5-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
@@ -26,74 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Daniel Mack <zonque@gmail.com>
 
-commit 47d06e532e95b71c0db3839ebdef3fe8812fca2c upstream.
+commit a9d14bc0b188a822e42787d01e56c06fe9750162 upstream.
 
-The some platforms (e.g., ARM) initializes their clocks as
-late_initcalls for some unknown reason.  So make sure
-random_int_secret_init() is run after all of the late_initcalls are
-run.
+The frame check in i_usX2Y_urb_complete() and
+i_usX2Y_usbpcm_urb_complete() is bogus and produces false positives as
+described in this LAU thread:
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-[ kamal: backport to 3.8 (context) ]
+  http://linuxaudio.org/mailarchive/lau/2013/5/20/200177
+
+This patch removes the check code entirely.
+
+Cc: fzu@wemgehoertderstaat.de
+Reported-by: Dr Nicholas J Bailey <nicholas.bailey@glasgow.ac.uk>
+Suggested-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/char/random.c  | 3 +--
- include/linux/random.h | 1 +
- init/main.c            | 2 ++
- 3 files changed, 4 insertions(+), 2 deletions(-)
+ sound/usb/usx2y/usbusx2yaudio.c | 22 +++-------------------
+ sound/usb/usx2y/usx2yhwdeppcm.c |  7 +------
+ 2 files changed, 4 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index b7dc45c..5b0c1cd 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1462,12 +1462,11 @@ ctl_table random_table[] = {
+diff --git a/sound/usb/usx2y/usbusx2yaudio.c b/sound/usb/usx2y/usbusx2yaudio.c
+index 0ce90337..cd69a80 100644
+--- a/sound/usb/usx2y/usbusx2yaudio.c
++++ b/sound/usb/usx2y/usbusx2yaudio.c
+@@ -299,19 +299,6 @@ static void usX2Y_error_urb_status(struct usX2Ydev *usX2Y,
+ 	usX2Y_clients_stop(usX2Y);
+ }
  
- static u32 random_int_secret[MD5_MESSAGE_BYTES / 4] ____cacheline_aligned;
- 
--static int __init random_int_secret_init(void)
-+int random_int_secret_init(void)
+-static void usX2Y_error_sequence(struct usX2Ydev *usX2Y,
+-				 struct snd_usX2Y_substream *subs, struct urb *urb)
+-{
+-	snd_printk(KERN_ERR
+-"Sequence Error!(hcd_frame=%i ep=%i%s;wait=%i,frame=%i).\n"
+-"Most probably some urb of usb-frame %i is still missing.\n"
+-"Cause could be too long delays in usb-hcd interrupt handling.\n",
+-		   usb_get_current_frame_number(usX2Y->dev),
+-		   subs->endpoint, usb_pipein(urb->pipe) ? "in" : "out",
+-		   usX2Y->wait_iso_frame, urb->start_frame, usX2Y->wait_iso_frame);
+-	usX2Y_clients_stop(usX2Y);
+-}
+-
+ static void i_usX2Y_urb_complete(struct urb *urb)
  {
- 	get_random_bytes(random_int_secret, sizeof(random_int_secret));
- 	return 0;
- }
--late_initcall(random_int_secret_init);
+ 	struct snd_usX2Y_substream *subs = urb->context;
+@@ -328,12 +315,9 @@ static void i_usX2Y_urb_complete(struct urb *urb)
+ 		usX2Y_error_urb_status(usX2Y, subs, urb);
+ 		return;
+ 	}
+-	if (likely((urb->start_frame & 0xFFFF) == (usX2Y->wait_iso_frame & 0xFFFF)))
+-		subs->completed_urb = urb;
+-	else {
+-		usX2Y_error_sequence(usX2Y, subs, urb);
+-		return;
+-	}
++
++	subs->completed_urb = urb;
++
+ 	{
+ 		struct snd_usX2Y_substream *capsubs = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE],
+ 			*playbacksubs = usX2Y->subs[SNDRV_PCM_STREAM_PLAYBACK];
+diff --git a/sound/usb/usx2y/usx2yhwdeppcm.c b/sound/usb/usx2y/usx2yhwdeppcm.c
+index f2a1acd..814d0e8 100644
+--- a/sound/usb/usx2y/usx2yhwdeppcm.c
++++ b/sound/usb/usx2y/usx2yhwdeppcm.c
+@@ -244,13 +244,8 @@ static void i_usX2Y_usbpcm_urb_complete(struct urb *urb)
+ 		usX2Y_error_urb_status(usX2Y, subs, urb);
+ 		return;
+ 	}
+-	if (likely((urb->start_frame & 0xFFFF) == (usX2Y->wait_iso_frame & 0xFFFF)))
+-		subs->completed_urb = urb;
+-	else {
+-		usX2Y_error_sequence(usX2Y, subs, urb);
+-		return;
+-	}
  
- /*
-  * Get a random word for internal kernel use only. Similar to urandom but
-diff --git a/include/linux/random.h b/include/linux/random.h
-index d984608..6069225 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -17,6 +17,7 @@ extern void add_interrupt_randomness(int irq, int irq_flags);
- extern void get_random_bytes(void *buf, int nbytes);
- extern void get_random_bytes_arch(void *buf, int nbytes);
- void generate_random_uuid(unsigned char uuid_out[16]);
-+extern int random_int_secret_init(void);
- 
- #ifndef MODULE
- extern const struct file_operations random_fops, urandom_fops;
-diff --git a/init/main.c b/init/main.c
-index cee4b5c..c29292c 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -70,6 +70,7 @@
- #include <linux/perf_event.h>
- #include <linux/file.h>
- #include <linux/ptrace.h>
-+#include <linux/random.h>
- 
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -784,6 +785,7 @@ static void __init do_basic_setup(void)
- 	do_ctors();
- 	usermodehelper_enable();
- 	do_initcalls();
-+	random_int_secret_init();
- }
- 
- static void __init do_pre_smp_initcalls(void)
++	subs->completed_urb = urb;
+ 	capsubs = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE];
+ 	capsubs2 = usX2Y->subs[SNDRV_PCM_STREAM_CAPTURE + 2];
+ 	playbacksubs = usX2Y->subs[SNDRV_PCM_STREAM_PLAYBACK];
 -- 
 1.8.1.2
 
