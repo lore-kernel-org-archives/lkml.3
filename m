@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756978Ab3J2ArT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 20:47:19 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61749 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755893Ab3J2ArS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 20:47:18 -0400
-X-AuditID: 9c930179-b7c9bae000000e4c-8c-526f059312c7
-Date: Tue, 29 Oct 2013 09:47:18 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: opw-kernel@googlegroups.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchand@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 3/3] Staging: zram: Fix decrement of variable by
- calling bdput()
-Message-ID: <20131029004718.GD17038@bbox>
-References: <cc16130b4e23207971139eff313a4ec71f51c187.1382962788.git.rashika.kheria@gmail.com>
- <7d016b6c725b88e5f61e21daaacf6c2e205537e0.1382962788.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7d016b6c725b88e5f61e21daaacf6c2e205537e0.1382962788.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S1756691Ab3J2A4f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 20:56:35 -0400
+Received: from mout.gmx.net ([212.227.15.18]:65026 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751756Ab3J2A4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 20:56:33 -0400
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Ashley Lai <ashley@ashleylai.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Rajiv Andrade <mail@srajiv.net>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] tpm/tpm_ibmvtpm: fix unreachable code warning (smatch warning)
+Date: Tue, 29 Oct 2013 01:59:57 +0100
+Message-Id: <1383008397-28505-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+X-Provags-ID: V03:K0:2F/nl4dcP5nWwP/mfoh1KVNLJiWcMhpd+I0KH91Cmm9ZsGXNsaN
+ 33+ALp6jWzeCy27lpfQBWf5foclcT8EmOQqiDgyqgyEudZ8Pgwl9PhNi0kSLIpaw20n2Zb8
+ 2IneBbKxCVCSisn5C9EduYQaozGRR7VMqc5X4dSSeKSYTM0PKP/RSH8Bz5qLZxwL403wn/4
+ RUGMp+SbAYSZeBml3+WyQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 05:54:39PM +0530, Rashika Kheria wrote:
-> As suggested by Jerome Marchand "The code in reset_store get the block device
-> (bdget_disk()) but it does not put it (bdput()) when it's done using it.
-> The usage count is therefor incremented but never decremented."
-> 
-> Hence, this patch introduces a call to bdput() to decrement the variable after usage.
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+smatch complains:
+/data/data-old/linux-2.6/drivers/char/tpm/tpm_ibmvtpm.c:510
+ibmvtpm_crq_process() info: ignoring unreachable code.
 
-I think this patch is for stable, too.
-So, please read my previous reply.
+-> The return is not necessary here, remove it
 
-And please relocate this with [2/3] and do bdput in all of error cases
-in reset_store.
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/char/tpm/tpm_ibmvtpm.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-> ---
->  drivers/staging/zram/zram_drv.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index 9027975..98dac15 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -664,6 +664,7 @@ static ssize_t reset_store(struct device *dev,
->  
->  	/* Make sure all pending I/O is finished */
->  	fsync_bdev(bdev);
-> +	bdput(bdev);
->  
->  	zram_reset_device(zram, true);
->  	return len;
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
+index 2783a42..cab8d09 100644
+--- a/drivers/char/tpm/tpm_ibmvtpm.c
++++ b/drivers/char/tpm/tpm_ibmvtpm.c
+@@ -507,7 +507,6 @@ static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
+ 			dev_err(ibmvtpm->dev, "Unknown crq message type: %d\n", crq->msg);
+ 			return;
+ 		}
+-		return;
+ 	case IBMVTPM_VALID_CMD:
+ 		switch (crq->msg) {
+ 		case VTPM_GET_RTCE_BUFFER_SIZE_RES:
 -- 
-Kind regards,
-Minchan Kim
+1.7.8.6
+
