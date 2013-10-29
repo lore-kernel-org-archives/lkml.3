@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab3J2T2S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 15:28:18 -0400
-Received: from mga11.intel.com ([192.55.52.93]:55059 "EHLO mga11.intel.com"
+	id S1752069Ab3J2Tb4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 15:31:56 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15631 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751971Ab3J2T2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 15:28:17 -0400
+	id S1751949Ab3J2Tbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 15:31:55 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,595,1378882800"; 
-   d="scan'208";a="424756017"
-Message-ID: <52700D4C.10008@linux.intel.com>
-Date: Tue, 29 Oct 2013 12:32:28 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: broonie@kernel.org, ning.li@intel.com, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org, Fei Yang <fei.yang@intel.com>
-Subject: Re: [PATCH 1/2] spi: add Intel Mid SSP driver
-References: <1383069950-27754-1-git-send-email-david.a.cohen@linux.intel.com>  <1383070766.12439.13.camel@joe-AO722> <526FFED4.4070902@linux.intel.com> <1383071755.12439.17.camel@joe-AO722>
-In-Reply-To: <1383071755.12439.17.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="426649040"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Move drivers/acpi/apei/cper.c to drivers/firmware/efi/
+Date: Tue, 29 Oct 2013 12:31:53 -0700
+Message-Id: <52700d2920076a466d@agluck-desk.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2013 11:35 AM, Joe Perches wrote:
-> On Tue, 2013-10-29 at 11:30 -0700, David Cohen wrote:
->> Hi Joe,
->>
->> On 10/29/2013 11:19 AM, Joe Perches wrote:
->>> On Tue, 2013-10-29 at 11:05 -0700, David Cohen wrote:
->>>> This patch adds driver for ssp spi interface on Intel Mid platform.
->>>
->>> A few simple notes:
->>>
->>> Please consider using checkpatch.
->>
->> I did and got no warnings. But haven't used --strict option.
->
-> Interesting.  I thought there was a return (foo);
-> statement that should have been marked, but I didn't
-> actually run checkpatch.
+The following changes since commit 56507694de3453076d73e0e9813349586ee67e59:
 
-It seems odd checkpatch didn't catch it. I'll investigate.
+  EDAC, GHES: Update ghes error record info (2013-10-23 10:11:00 -0700)
 
->
-> static inline u32 is_rx_fifo_empty(struct ssp_drv_context *sspc)
-> +{
-> +       return ((read_SSSR(sspc->ioaddr) & SSSR_RNE) == 0);
-> +}
->
-> This could be bool too
+are available in the git repository at:
 
-u32 seems unusual, but I'd prefer 'int' if it's fine for you.
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-move-cper
 
-Br, David
+for you to fetch changes up to c57a801195153e111bcd712680a718cf101b6d1f:
+
+  Move cper.c from drivers/acpi/apei to drivers/firmware/efi (2013-10-29 09:23:38 -0700)
+
+----------------------------------------------------------------
+cper.c implements UEFI Appendix N "Common Platform Error Record"
+handling. Move it to drivers/firmware/efi/cper.c to reflect this
+heritage.
+
+----------------------------------------------------------------
+Tony Luck (1):
+      Move cper.c from drivers/acpi/apei to drivers/firmware/efi
+
+ drivers/acpi/Kconfig                       | 4 +++-
+ drivers/acpi/apei/Kconfig                  | 2 ++
+ drivers/acpi/apei/Makefile                 | 2 +-
+ drivers/firmware/efi/Kconfig               | 3 +++
+ drivers/firmware/efi/Makefile              | 1 +
+ drivers/{acpi/apei => firmware/efi}/cper.c | 0
+ 6 files changed, 10 insertions(+), 2 deletions(-)
+ rename drivers/{acpi/apei => firmware/efi}/cper.c (100%)
