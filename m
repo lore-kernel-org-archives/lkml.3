@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069Ab3J2Tb4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 15:31:56 -0400
-Received: from mga02.intel.com ([134.134.136.20]:15631 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751949Ab3J2Tbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 15:31:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="426649040"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Move drivers/acpi/apei/cper.c to drivers/firmware/efi/
-Date: Tue, 29 Oct 2013 12:31:53 -0700
-Message-Id: <52700d2920076a466d@agluck-desk.sc.intel.com>
+	id S1752176Ab3J2Tdk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 15:33:40 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:55089 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576Ab3J2Tdi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 15:33:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <52700C24.9050001@linux.vnet.ibm.com>
+References: <1383059634-55512-1-git-send-email-tim.gardner@canonical.com>
+	<CA+55aFwUdXp4412F5LdmCRrGZCYiFpiPk7oksGi30CzP6i5O+w@mail.gmail.com>
+	<52700C24.9050001@linux.vnet.ibm.com>
+Date: Tue, 29 Oct 2013 12:33:37 -0700
+X-Google-Sender-Auth: bW5tK7ouzeNdEiuE4lx8jSaQ_hU
+Message-ID: <CA+55aFzqumDX8hRyC4avbpA2g_RRb28ZPYk=_-4atGJ=67Zu1A@mail.gmail.com>
+Subject: Re: [PATCH 3.12-rc7] KVM: Fix modprobe failure for kvm_intel/kvm_amd
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Gleb Natapov <gleb@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, KVM list <kvm@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 56507694de3453076d73e0e9813349586ee67e59:
+On Tue, Oct 29, 2013 at 12:27 PM, Raghavendra K T
+<raghavendra.kt@linux.vnet.ibm.com> wrote:
+>
+> Could one solution be cascading actual error
+> that is lost in fs/debugfs/inode.c:__create_file(), so that we could
+> take correct action in case of failure of debugfs_create_dir()?
+>
+> (ugly side is we increase total number of params for __create_file to
+> 6). or I hope there could be some better solution.
 
-  EDAC, GHES: Update ghes error record info (2013-10-23 10:11:00 -0700)
+The solution to this would be to simply return an error-pointer. See
+<linux/err.h>. That's what we do for most complex subsystems that
+return a pointer to a struct: rather than returning "NULL" as an
+error, return the actual error number encoded in the pointer itself.
 
-are available in the git repository at:
+But that would require every user of debugfs_create_dir() to be
+updated to check errors using IS_ERR() instead of checking against
+NULL, and there's quite a few of them.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-move-cper
+So I think just making the error be EEXIST is a simpler solution right now.
 
-for you to fetch changes up to c57a801195153e111bcd712680a718cf101b6d1f:
-
-  Move cper.c from drivers/acpi/apei to drivers/firmware/efi (2013-10-29 09:23:38 -0700)
-
-----------------------------------------------------------------
-cper.c implements UEFI Appendix N "Common Platform Error Record"
-handling. Move it to drivers/firmware/efi/cper.c to reflect this
-heritage.
-
-----------------------------------------------------------------
-Tony Luck (1):
-      Move cper.c from drivers/acpi/apei to drivers/firmware/efi
-
- drivers/acpi/Kconfig                       | 4 +++-
- drivers/acpi/apei/Kconfig                  | 2 ++
- drivers/acpi/apei/Makefile                 | 2 +-
- drivers/firmware/efi/Kconfig               | 3 +++
- drivers/firmware/efi/Makefile              | 1 +
- drivers/{acpi/apei => firmware/efi}/cper.c | 0
- 6 files changed, 10 insertions(+), 2 deletions(-)
- rename drivers/{acpi/apei => firmware/efi}/cper.c (100%)
+              Linus
