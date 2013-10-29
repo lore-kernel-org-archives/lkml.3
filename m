@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab3J2SSj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:18:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59496 "EHLO
+	id S1755788Ab3J2STP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:19:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59471 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211Ab3J2SJP (ORCPT
+	with ESMTP id S1754093Ab3J2SJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:09:15 -0400
+	Tue, 29 Oct 2013 14:09:06 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Richard Weinberger <richard@nod.at>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Neil Horman <nhorman@tuxdriver.com>, Daniel Borkmann <dborkman@redhat.com>,
+        Michio Honda <micchie@sfc.wide.ad.jp>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 80/81] writeback: fix negative bdi max pause
-Date: Tue, 29 Oct 2013 11:04:41 -0700
-Message-Id: <1383069882-11437-81-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 32/81] net: sctp: fix smatch warning in sctp_send_asconf_del_ip
+Date: Tue, 29 Oct 2013 11:03:53 -0700
+Message-Id: <1383069882-11437-33-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,95 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fengguang Wu <fengguang.wu@intel.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit e3b6c655b91e01a1dade056cfa358581b47a5351 upstream.
+[ Upstream commit 88362ad8f9a6cea787420b57cc27ccacef000dbe ]
 
-Toralf runs trinity on UML/i386.  After some time it hangs and the last
-message line is
+This was originally reported in [1] and posted by Neil Horman [2], he said:
 
-	BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:1521]
+  Fix up a missed null pointer check in the asconf code. If we don't find
+  a local address, but we pass in an address length of more than 1, we may
+  dereference a NULL laddr pointer. Currently this can't happen, as the only
+  users of the function pass in the value 1 as the addrcnt parameter, but
+  its not hot path, and it doesn't hurt to check for NULL should that ever
+  be the case.
 
-It's found that pages_dirtied becomes very large.  More than 1000000000
-pages in this case:
+The callpath from sctp_asconf_mgmt() looks okay. But this could be triggered
+from sctp_setsockopt_bindx() call with SCTP_BINDX_REM_ADDR and addrcnt > 1
+while passing all possible addresses from the bind list to SCTP_BINDX_REM_ADDR
+so that we do *not* find a single address in the association's bind address
+list that is not in the packed array of addresses. If this happens when we
+have an established association with ASCONF-capable peers, then we could get
+a NULL pointer dereference as we only check for laddr == NULL && addrcnt == 1
+and call later sctp_make_asconf_update_ip() with NULL laddr.
 
-	period = HZ * pages_dirtied / task_ratelimit;
-	BUG_ON(pages_dirtied > 2000000000);
-	BUG_ON(pages_dirtied > 1000000000);      <---------
+BUT: this actually won't happen as sctp_bindx_rem() will catch such a case
+and return with an error earlier. As this is incredably unintuitive and error
+prone, add a check to catch at least future bugs here. As Neil says, its not
+hot path. Introduced by 8a07eb0a5 ("sctp: Add ASCONF operation on the
+single-homed host").
 
-UML debug printf shows that we got negative pause here:
+ [1] http://www.spinics.net/lists/linux-sctp/msg02132.html
+ [2] http://www.spinics.net/lists/linux-sctp/msg02133.html
 
-	ick: pause : -984
-	ick: pages_dirtied : 0
-	ick: task_ratelimit: 0
-
-	 pause:
-	+       if (pause < 0)  {
-	+               extern int printf(char *, ...);
-	+               printf("ick : pause : %li\n", pause);
-	+               printf("ick: pages_dirtied : %lu\n", pages_dirtied);
-	+               printf("ick: task_ratelimit: %lu\n", task_ratelimit);
-	+               BUG_ON(1);
-	+       }
-	        trace_balance_dirty_pages(bdi,
-
-Since pause is bounded by [min_pause, max_pause] where min_pause is also
-bounded by max_pause.  It's suspected and demonstrated that the
-max_pause calculation goes wrong:
-
-	ick: pause : -717
-	ick: min_pause : -177
-	ick: max_pause : -717
-	ick: pages_dirtied : 14
-	ick: task_ratelimit: 0
-
-The problem lies in the two "long = unsigned long" assignments in
-bdi_max_pause() which might go negative if the highest bit is 1, and the
-min_t(long, ...) check failed to protect it falling under 0.  Fix all of
-them by using "unsigned long" throughout the function.
-
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Tested-by: Toralf Förster <toralf.foerster@gmx.de>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Michio Honda <micchie@sfc.wide.ad.jp>
+Acked-By: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/page-writeback.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ net/sctp/socket.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 0713bfb..906d540 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1100,11 +1100,11 @@ static unsigned long dirty_poll_interval(unsigned long dirty,
- 	return 1;
- }
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index ea5c61a..89714ee 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -820,6 +820,9 @@ static int sctp_send_asconf_del_ip(struct sock		*sk,
+ 			goto skip_mkasconf;
+ 		}
  
--static long bdi_max_pause(struct backing_dev_info *bdi,
--			  unsigned long bdi_dirty)
-+static unsigned long bdi_max_pause(struct backing_dev_info *bdi,
-+				   unsigned long bdi_dirty)
- {
--	long bw = bdi->avg_write_bandwidth;
--	long t;
-+	unsigned long bw = bdi->avg_write_bandwidth;
-+	unsigned long t;
- 
- 	/*
- 	 * Limit pause time for small memory systems. If sleeping for too long
-@@ -1116,7 +1116,7 @@ static long bdi_max_pause(struct backing_dev_info *bdi,
- 	t = bdi_dirty / (1 + bw / roundup_pow_of_two(1 + HZ / 8));
- 	t++;
- 
--	return min_t(long, t, MAX_PAUSE);
-+	return min_t(unsigned long, t, MAX_PAUSE);
- }
- 
- static long bdi_min_pause(struct backing_dev_info *bdi,
++		if (laddr == NULL)
++			return -EINVAL;
++
+ 		/* We do not need RCU protection throughout this loop
+ 		 * because this is done under a socket lock from the
+ 		 * setsockopt call.
 -- 
 1.8.1.2
 
