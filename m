@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014Ab3J2TiP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 15:38:15 -0400
-Received: from smtprelay0092.hostedemail.com ([216.40.44.92]:35075 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751246Ab3J2TiO (ORCPT
+	id S1752303Ab3J2Tif (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 15:38:35 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:56057 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132Ab3J2Tie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 15:38:14 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2691:2828:2919:3138:3139:3140:3141:3142:3353:3622:3867:3868:3872:3873:3874:4321:4605:5007:6119:6120:7652:7901:7903:9036:9108:10004:10400:10848:11026:11232:11658:11914:12043:12517:12519:12663:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: beam56_479813d677631
-X-Filterd-Recvd-Size: 2358
-Message-ID: <1383075490.12439.26.camel@joe-AO722>
-Subject: Re: [PATCH 1/2] spi: add Intel Mid SSP driver
-From: Joe Perches <joe@perches.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: broonie@kernel.org, ning.li@intel.com, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org, Fei Yang <fei.yang@intel.com>
-Date: Tue, 29 Oct 2013 12:38:10 -0700
-In-Reply-To: <52700D4C.10008@linux.intel.com>
-References: <1383069950-27754-1-git-send-email-david.a.cohen@linux.intel.com>
-	 <1383070766.12439.13.camel@joe-AO722> <526FFED4.4070902@linux.intel.com>
-	 <1383071755.12439.17.camel@joe-AO722> <52700D4C.10008@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Oct 2013 15:38:34 -0400
+From: Paul Moore <paul@paul-moore.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        libseccomp-discuss@lists.sourceforge.net,
+        Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: ARM seccomp filters and EABI/OABI
+Date: Tue, 29 Oct 2013 15:38:30 -0400
+Message-ID: <1590011.bKaf2byiPL@sifl>
+User-Agent: KMail/4.11.2 (Linux/3.10.13-gentoo; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <526EE234.2070709@nod.at>
+References: <CALCETrXyLBXmimjLepU=y1igmWpwcdWUNCqNjMHi_jyLw0pHMA@mail.gmail.com> <4195093.ULJiSLViSo@sifl> <526EE234.2070709@nod.at>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-29 at 12:32 -0700, David Cohen wrote:
-> On 10/29/2013 11:35 AM, Joe Perches wrote:
-> > On Tue, 2013-10-29 at 11:30 -0700, David Cohen wrote:
-> >> On 10/29/2013 11:19 AM, Joe Perches wrote:
-> >>> On Tue, 2013-10-29 at 11:05 -0700, David Cohen wrote:
-> >>>> This patch adds driver for ssp spi interface on Intel Mid platform.
-> >>> A few simple notes:
-> >>> Please consider using checkpatch.
-> >> I did and got no warnings. But haven't used --strict option.
-> > Interesting.  I thought there was a return (foo);
-> > statement that should have been marked, but I didn't
-> > actually run checkpatch.
+On Monday, October 28, 2013 11:16:20 PM Richard Weinberger wrote:
+> Am 28.10.2013 22:53, schrieb Paul Moore:
+> > On Thursday, October 24, 2013 09:55:57 PM Richard Weinberger wrote:
+> >> On Wed, Oct 23, 2013 at 11:02 PM, Andy Lutomirski <luto@amacapital.net>
+> > 
+> > wrote:
+> >>> I'm looking at the seccomp code, the ARM entry code, and the
+> >>> syscall(2) manpage, and I'm a bit lost.  (The fact that I don't really
+> >>> speak ARM assembly doesn't help.)  My basic question is: what happens
+> >>> if an OABI syscall happens?
+> >>> 
+> >>> AFAICS, the syscall arguments for EABI are r0..r5, although their
+> >>> ordering is a bit odd*.  For OABI, r6 seems to play some role, but I'm
+> >>> lost as to what it is.  The seccomp_bpf_load function won't load r6,
+> >>> so there had better not be anything useful in there...  (Also, struct
+> >>> seccomp_data will have issues with a seventh "argument".)
+> >>> 
+> >>> But what happens to the syscall number?  For an EABI syscall, it's in
+> >>> r7.  For an OABI syscall, it's in the swi instruction and gets copied
+> >>> to r7 on entry.  If a debugger changes r7, presumably the syscall
+> >>> number changes.
+> >>> 
+> >>> Oddly, there are two different syscall tables.  The major differences
+> >>> seem to be that some of the OABI entries have their argument order
+> >>> changed.  But there's also a magic constant 0x900000 added to the
+> >>> syscall number somewhere -- is it reflected in _sigsys._syscall?  Is
+> >>> it reflected in ucontext's r7?
+> >>> 
+> >>> I'm a bit surprised to see that both the EABI and OABI ABIs show up as
+> >>> AUDIT_ARCH_ARM.
+> >>> 
+> >>> Can any of you shed some light on this?  I don't have an ARM system I
+> >>> can test on, but if one of you can point me at a decent QEMU image, I
+> >>> can play around.
+> >> 
+> >> Maybe this helps:
+> >> http://people.debian.org/~aurel32/qemu/armel/
+> > 
+> > Thanks for the pointer, although those images look quite old, has anyone
+> > done a refresh?
 > 
-> It seems odd checkpatch didn't catch it. I'll investigate.
+> You are free to run "apt-get upgrade" within the said images. :-)
 
-No need.  I believe I know why.
-checkpatch doesn't use "$balanced_parens" checks for return
-tests.  I'm not sure it's worth fixing right now, but it
-could be tested as:
+Okay, true ;)
 
-	if ($^V && $^V ge 5.10.0 &&
-	    $stat =~ /^.\s*return\s*$balanced_parens\s*;\s*$/)
-
-> > static inline u32 is_rx_fifo_empty(struct ssp_drv_context *sspc)
-> > +{
-> > +       return ((read_SSSR(sspc->ioaddr) & SSSR_RNE) == 0);
-> > +}
-> > This could be bool too
-> u32 seems unusual, but I'd prefer 'int' if it's fine for you.
-
-Anything is_<foo> that returns what seems to be true/false
-I think could be bool.
-
-But, no worries, it's your code.  Do what you think best.
-
+-- 
+paul moore
+www.paul-moore.com
 
