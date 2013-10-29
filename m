@@ -1,43 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399Ab3J2KaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 06:30:10 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53307 "EHLO mail.skyhub.de"
+	id S1754510Ab3J2Kaz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 06:30:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46825 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751390Ab3J2KaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 06:30:08 -0400
-Date: Tue, 29 Oct 2013 11:30:03 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Andre Przywara <andre@andrep.de>, Joerg Roedel <joro@8bytes.org>,
-        X86 ML <x86@kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 0/6] kvm: Emulate MOVBE, v3
-Message-ID: <20131029103003.GA10977@pd.tnic>
-References: <1379861095-628-1-git-send-email-bp@alien8.de>
- <20131029095300.GW15657@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131029095300.GW15657@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753616Ab3J2Kax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 06:30:53 -0400
+From: Veaceslav Falico <vfalico@redhat.com>
+To: linux-pci@vger.kernel.org
+Cc: torvalds@linux-foundation.org, tglx@linutronix.de, yinghai@kernel.org,
+        Knut_Petersen@t-online.de, mingo@kernel.org,
+        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, Veaceslav Falico <vfalico@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v3 3/3] msi: always unregister ->msi_kset within free_msi_irqs()
+Date: Tue, 29 Oct 2013 11:30:32 +0100
+Message-Id: <1383042632-7102-4-git-send-email-vfalico@redhat.com>
+In-Reply-To: <1383042632-7102-1-git-send-email-vfalico@redhat.com>
+References: <1383042632-7102-1-git-send-email-vfalico@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 11:53:00AM +0200, Gleb Natapov wrote:
-> Except a small nitpick for patch 4 this looks good to me. No need to
-> wait for QEMU cpu parsing code to change to apply it.
+Currently we create and populate ->msi_kset while allocating irqs in
+populate_msi_sysfs(), however if it fails and/or we want to free the
+entries - we don't always remove it, and we might have problems if we've
+failed to allocate irqs and try it again.
 
-Ok, want a resend or rather a pull request or only patch 4 resend?
+To fix that, move the unregister part to free_msi_irqs() and remove already
+existing ones. Also, verify if it was actually created - we don't always
+call free_msi_irqs() after populate_msi_sysfs().
 
-Btw, we kinda missed each other in Edinburgh to exchange fingerprints
-for pull request :-\
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Neil Horman <nhorman@tuxdriver.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-pci@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+---
+ drivers/pci/msi.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 0771508..dafda2b 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -391,6 +391,11 @@ static void free_msi_irqs(struct pci_dev *dev)
+ 			kfree(entry);
+ 		}
+ 	}
++
++	if (dev->msi_kset) {
++		kset_unregister(dev->msi_kset);
++		dev->msi_kset = NULL;
++	}
+ }
+ 
+ static struct msi_desc *alloc_msi_entry(struct pci_dev *dev)
+@@ -904,8 +909,6 @@ void pci_disable_msi(struct pci_dev *dev)
+ 
+ 	pci_msi_shutdown(dev);
+ 	free_msi_irqs(dev);
+-	kset_unregister(dev->msi_kset);
+-	dev->msi_kset = NULL;
+ }
+ EXPORT_SYMBOL(pci_disable_msi);
+ 
+@@ -1002,8 +1005,6 @@ void pci_disable_msix(struct pci_dev *dev)
+ 
+ 	pci_msix_shutdown(dev);
+ 	free_msi_irqs(dev);
+-	kset_unregister(dev->msi_kset);
+-	dev->msi_kset = NULL;
+ }
+ EXPORT_SYMBOL(pci_disable_msix);
+ 
 -- 
-Regards/Gruss,
-    Boris.
+1.8.4
 
-Sent from a fat crate under my desk. Formatting is fine.
---
