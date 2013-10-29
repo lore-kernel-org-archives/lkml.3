@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626Ab3J2I00 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 04:26:26 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:37026 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753578Ab3J2I0V convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 04:26:21 -0400
-Subject: Re: [PATCH v2 1/2] clk/zynq/clkc: Add 'fclk-enable' feature
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=US-ASCII
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <2028580.HhySWWnU2A@flatron>
-Date: Tue, 29 Oct 2013 03:26:20 -0500
-Cc: =?iso-8859-1?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org
-Content-Transfer-Encoding: 7BIT
-Message-Id: <8864256B-F8F9-4474-9B5F-416C3BB96523@codeaurora.org>
-References: <1381425018-5653-1-git-send-email-soren.brinkmann@xilinx.com> <1592656.1ojHcSlzVh@flatron> <b7840a0d-ac49-4c2d-beaa-9f79748c70d0@CH1EHSMHS006.ehs.local> <2028580.HhySWWnU2A@flatron>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-X-Mailer: Apple Mail (2.1283)
+	id S1753391Ab3J2I0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 04:26:45 -0400
+Received: from mx2.imag.fr ([129.88.30.17]:57436 "EHLO rominette.imag.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753648Ab3J2I0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 04:26:42 -0400
+From: Matthieu Moy <Matthieu.Moy@grenoble-inp.fr>
+To: Jeff King <peff@peff.net>
+Cc: Johan Herland <johan@herland.net>, Michael Haggerty <mhagger@alum.mit.edu>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Git mailing list <git@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, Greg KH <greg@kroah.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        ksummit-attendees@lists.linuxfoundation.org,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] commit: Add -f, --fixes <commit> option to add Fixes: line
+References: <20131024122255.GI9378@mwanda> <20131024122512.GB9534@mwanda>
+	<20131026181709.GB10488@kroah.com> <20131027013402.GA7146@leaf>
+	<526CA7D4.1070904@alum.mit.edu> <20131027071407.GA11683@leaf>
+	<526E283A.1070801@alum.mit.edu>
+	<CALKQrgfsk3fjyF77XL9+CPyJ_s-AfzkNAj4Eaj1LT-G0Ph=bfg@mail.gmail.com>
+	<20131029020824.GE11861@sigill.intra.peff.net>
+Date: Tue, 29 Oct 2013 09:26:14 +0100
+In-Reply-To: <20131029020824.GE11861@sigill.intra.peff.net> (Jeff King's
+	message of "Mon, 28 Oct 2013 22:08:24 -0400")
+Message-ID: <vpqfvrkeb4p.fsf@anie.imag.fr>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.2 (rominette.imag.fr [129.88.30.17]); Tue, 29 Oct 2013 09:26:15 +0100 (CET)
+X-IMAG-MailScanner-Information: Please contact MI2S MIM  for more information
+X-MailScanner-ID: r9T8QENj004279
+X-IMAG-MailScanner: Found to be clean
+X-IMAG-MailScanner-SpamCheck: 
+X-IMAG-MailScanner-From: matthieu.moy@grenoble-inp.fr
+MailScanner-NULL-Check: 1383639977.58656@6SqBwupxyjeGbuYGDVtwJQ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jeff King <peff@peff.net> writes:
 
-On Oct 28, 2013, at 5:17 PM, Tomasz Figa wrote:
+>  We could probably make this friendlier by reading from ~/.githooks
+> and defining some semantics for multiple hooks.
 
->>>> diff --git a/Documentation/devicetree/bindings/clock/zynq-7000.txt
->>>> b/Documentation/devicetree/bindings/clock/zynq-7000.txt index
->>>> d99af878f5d7..11fdd146ec83 100644
->>>> --- a/Documentation/devicetree/bindings/clock/zynq-7000.txt
->>>> +++ b/Documentation/devicetree/bindings/clock/zynq-7000.txt
->>>> 
->>>> @@ -22,6 +22,10 @@ Required properties:
->>>> Optional properties:
->>>>  - clocks : as described in the clock bindings
->>>>  - clock-names : as described in the clock bindings
->>>> 
->>>> + - fclk-enable : Bit mask to enable FCLKs in cases no proper CCF
->>> 
->>> Since it's a vendor specific property, it should include vendor
->>> prefix.
->> 
->> The whole driver is vendor specific. Should there really be another
->> prefix for that property?
-> 
-> Yes. If a property is introduced just for use by this particular driver 
-> then it must be prepended by a vendor prefix. That's a general rule.
+I'd be all for it, except I'd call this ~/.config/git/hooks/* (or
+$XDG_CONFIG_HOME if set).
 
-Most all nodes are vendor specific by definition ;).
+> E.g., fall back to ~/.githooks if the repo hook is not
+> executable, or possibly run them both
 
-- k
+I think running them both would be the best option. Otherwise, adding a
+(possibly trivial) hook to a repo would disable the user-wide one,
+that'd feel weird.
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+Matthieu Moy
+http://www-verimag.imag.fr/~moy/
