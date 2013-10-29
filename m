@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935Ab3J2TyQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 15:54:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60148 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975Ab3J2TyP (ORCPT
+	id S1753087Ab3J2Tyo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 15:54:44 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:35328 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998Ab3J2Tyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 15:54:15 -0400
-Message-ID: <5270123D.5030305@canonical.com>
-Date: Tue, 29 Oct 2013 15:53:33 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 29 Oct 2013 15:54:43 -0400
 MIME-Version: 1.0
-To: dgilbert@interlog.com, "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: hpa@zytor.com, bernd.schubert@itwm.fraunhofer.de, JBottomley@Parallels.com,
+In-Reply-To: <1383058315.6521.3158.camel@bordewijk.wildebeest.org>
+References: <20131023044511.1886.82571.stgit@hemant-fedora>
+	<20131023050502.1886.15779.stgit@hemant-fedora>
+	<CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com>
+	<526E4940.8000608@hitachi.com>
+	<526E5BA5.7050103@iki.fi>
+	<20131028141152.GA1040@linux.vnet.ibm.com>
+	<526E72EC.9060400@iki.fi>
+	<20131028173152.GB1040@linux.vnet.ibm.com>
+	<526EA366.4020204@iki.fi>
+	<526F2949.5000208@hitachi.com>
+	<1383058315.6521.3158.camel@bordewijk.wildebeest.org>
+Date: Tue, 29 Oct 2013 21:54:41 +0200
+X-Google-Sender-Auth: dSgneP1xwt5YE8X_VGMdnA6RlF0
+Message-ID: <CAOJsxLFX3zHT5tc9JgSteCqASEMJbCuhp9DhL_Afma=8ygTjWg@mail.gmail.com>
+Subject: Re: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
+From: Pekka Enberg <penberg@kernel.org>
+To: Mark Wielaard <mjw@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Kamal Mostafa <kamal.mostafa@canonical.com>,
-        linux-scsi@vger.kernel.org,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: Re: Subject:  [v3.8][v3.11][Regression] [SCSI] sd: Update WRITE SAME
- heuristics
-References: <52700AD2.6000703@canonical.com> <52700F86.4010007@interlog.com>
-In-Reply-To: <52700F86.4010007@interlog.com>
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
+        Anton Arapov <anton@redhat.com>, systemtap@sourceware.org,
+        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2013 03:41 PM, Douglas Gilbert wrote:
-> On 13-10-29 03:21 PM, Joseph Salisbury wrote:
->> Hi Martin,
->>
->> A bug was opened against the Ubuntu kernel[0].  After a kernel bisect,
->> it was found that reverting the following commit resolved this bug:
->>
->> commit 66c28f97120e8a621afd5aa7a31c4b85c547d33d
->> Author: Martin K. Petersen <martin.petersen@oracle.com>
->> Date:   Thu Jun 6 22:15:55 2013 -0400
->>
->>      [SCSI] sd: Update WRITE SAME heuristics
->>
->>
->> The regression was introduced as of v3.11-rc1, but it also made it's way
->> into the stable trees.
->>
->> I see that you are the author of this patch, so I wanted to run this by
->> you.  I was thinking of requesting a revert for v3.12, but I wanted to
->> get your feedback first.
->>
->>
->> Thanks,
->>
->> Joe
->>
->> [0] http://pad.lv/1237392
+On Tue, Oct 29, 2013 at 4:51 PM, Mark Wielaard <mjw@redhat.com> wrote:
+> A nice user case to think about when designing this interface might be
+> the java hotspot jvm (libjvm.so). It has SDT markers with the same name
+> that might occur at multiple addresses depending on code path taken or
+> compiler optimization. And there are multiple libjvm.so variants
+> depending on whether the user uses the client or server VM. And users
+> often have multiple major versions installed (both 1.6 and 1.7 are
+> currently being shipped by some distros and can be installed in
+> parallel).
 >
-> Tried the other approach?
->
-> From your bug report: "Areca Raid Controller2: F/W v1.46 ...(etc)..."
->
-> Then see:
->   http://www.areca.com.tw/support/main.htm
->
-> Doug Gilbert
->
->
->
-Thanks, Doug.  I'm going to give the patch[0] written by Bernd Schubert
-a try first.  If the issue still persists, I'll ask the bug reporter to
-upgrade the firmware.
+> Normally a user that wants to monitor say the hotspot:gc__begin SDT
+> probe wants to see that probe in whatever code path it happens and in
+> whatever libjvm.so happens to be running (client or server and 1.6 or
+> 1.7 version). But might still want to be able to specify a specific
+> variant.
 
-[0]
-http://git.kernel.org/cgit/linux/kernel/git/jejb/scsi.git/commit/?id=735e39e680256a13e7be3492acfb4d9721287a42
-
+Agreed, it's an excellent use case.
