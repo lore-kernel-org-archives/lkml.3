@@ -1,114 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab3J2HmV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 03:42:21 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:9422 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052Ab3J2HmS convert rfc822-to-8bit (ORCPT
+	id S1752609Ab3J2Hn6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 03:43:58 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:20109 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040Ab3J2Hn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 03:42:18 -0400
-X-AuditID: cbfee61b-b7fd56d000001fc6-21-526f66d970bd
-From: Fan Li <fanofcode.li@samsung.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-References: <21040538.71861382950468176.JavaMail.weblogic@epv6ml09>
- <1382956476.992.94.camel@kjgkr>
-In-reply-to: <1382956476.992.94.camel@kjgkr>
-Subject: RE: [f2fs-dev] [PATCH] f2fs: change the method of calculating the
- number summary blocks
-Date: Tue, 29 Oct 2013 15:41:27 +0800
-Message-id: <001401ced47a$61fe2fb0$25fa8f10$@samsung.com>
+	Tue, 29 Oct 2013 03:43:56 -0400
 MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee690-b7f3d6d000001c4a-e9-526f673b8ff6
 Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQGLGSCSKTOiuzbPk65RCytXtzsMdwEdJqSLmonTaIA=
-Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9jQd2baflBBnP/Gllc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlbH4zW3GggtiFX9f
-	HmZtYFws1MXIySEhYCIx5dwlZghbTOLCvfVsILaQwHRGiX1HeLsYuYDsH4wSdy9NBStiE1CX
-	2DKzmwnEFhGQlpj1aR4LiM0skCkx5/VkVojmVIn9B/oYQWxOAR2Jr0+mgg0VFkiS+H9lKzuI
-	zSKgKnGoYTlYnFfAUuL+mttQtqDEj8n3gGZyAM1Ul5gyJRdivLbEk3cXWCHuVJDYcfY1I8QJ
-	VhJ3Hm9ihKgRl5j04CH7BEahWUgmzUKYNAvJpFlIOhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L
-	10vOz93ECA76Z9I7GFc1WBxiFOBgVOLhtWDLDxJiTSwrrsw9xCjBwawkwrsjGCjEm5JYWZVa
-	lB9fVJqTWnyIUZqDRUmc92CrdaCQQHpiSWp2ampBahFMlomDU6qBMbJty53QlZlnljQVnPZe
-	srqqdZb2hQWfezgUG/ersf/NO1HMbB2QZcs/t3H31A0tfn+ty5cnT5Gv1/yg0PSm8KjANfkG
-	4T0flkytPa5QJi3QENmXdj09u10vaKvFUYtLCkpzMrUfMXFWft21S42hoZv5ecWVqpizUq1a
-	ki2bZCZWKBZslJqoxFKckWioxVxUnAgATYdrxHYCAAA=
+Message-id: <1383032597.14041.12.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH] f2fs:fix truncate_partial_nodes bug
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: "shifei10.ge" <shifei10.ge@samsung.com>
+Cc: "'??'" <shu.tan@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Date: Tue, 29 Oct 2013 16:43:17 +0900
+In-reply-to: <000101ced479$26555160$72fff420$%ge@samsung.com>
+References: <27929860.72301382948116848.JavaMail.weblogic@epml07>
+ <1382955704.992.91.camel@kjgkr>
+ <000101ced479$26555160$72fff420$%ge@samsung.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLIsWRmVeSWpSXmKPExsVy+t8zY13r9Pwgg22dvBaXFrlb7Nl7ksXi
+	8q45bBYPDj5jtmhdeJ7ZgdVj94LPTB59W1YxenzeJBfAHMVlk5Kak1mWWqRvl8CVsXwZV8EG
+	9opNf/uZGxiPsHYxcnJICJhInL3wkgXCFpO4cG89G4gtJLCMUeLO1jyYmofXzzN3MXIBxacz
+	Spx4/4oJJMErICjxY/I9oGYODmYBeYkjl7JBwswC6hKT5i2Cqn/FKHHjxHl2kBpeAV2JM3t5
+	QWqEBZwlduyeA9bKJqAtsXm/AcRaRYm3+++CnSYCFL5/7hgLyBhmgVZGiZnrToHdxiKgKvHq
+	yAqwIk4BW4lTF96xQzRPY5TY+DIdxOYXEJU4vHA7M8T9ShK72zvZQQZJCJxjl/iy8jUjxCAB
+	iW+TD4EdISEgK7HpAFS9pMTBFTdYJjBKzELy5SyEL2ch+XIBI/MqRtHUguSC4qT0IhO94sTc
+	4tK8dL3k/NxNjJCom7CD8d4B60OMyUAbJzJLiSbnA6M2ryTe0NjMyMLUxNTYyNzSjDRhJXFe
+	tUdJQUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYp8/R5b3Qfef+SpftgbrbdtRLSPVuOfk1
+	onmia80cE1XFE64i4jomDY8ePlb0cJ0m167/YHLvq/i4NDdX7cQTx8xbZKe2BZzXDTSKr3nl
+	3r9u3u0N929mfLNfFHhHsD7xn3gD38HPRpNPfDlbYCBYsXOyvxjPjyv2XDf2si6+oxZQbsr1
+	J3yZEktxRqKhFnNRcSIAyDMHSdACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jQV3r9Pwgg54ZnBaXFrlb7Nl7ksXi
+	8q45bBYPDj5jtmhdeJ7ZgdVj94LPTB59W1YxenzeJBfAHNXAaJORmpiSWqSQmpecn5KZl26r
+	5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtFJJoSwxpxQoFJBYXKykb4dpQmiIm64F
+	TGOErm9IEFyPkQEaSFjHmLF8GVfBBvaKTX/7mRsYj7B2MXJySAiYSDy8fp4ZwhaTuHBvPVsX
+	IxeHkMB0RokT718xgSR4BQQlfky+x9LFyMHBLCAvceRSNkiYWUBdYtK8RcwQ9a8YJW6cOM8O
+	UsMroCtxZi8vSI2wgLPEjt1zwFrZBLQlNu83AAkLCShKvN1/F+wEEaDw/XPHWEDGMAu0MkrM
+	XHeKDSTBIqAq8erICrAiTgFbiVMX3rFDNE9jlNj4Mh3E5hcQlTi8cDvU/UoSu9s72ScwCs1C
+	cvUshKtnIbl6ASPzKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgqH4mtYNxZYPFIUYBDkYl
+	Ht4HzPlBQqyJZcWVuYcYJTiYlUR4dwQDhXhTEiurUovy44tKc1KLDzEmAx0+kVlKNDkfmHDy
+	SuINjU3MjCyNzCyMTMzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoFx2l074VOdGgsl
+	WZb5T9rAeVXE65G/8LpYmR1lWc8zuUzf/ujmmTyzTWmeeaFz3Ivcp4rpS55kOFaquKjeCAr9
+	vVwx9ZyajurySSbytveNTA9XhfsXpoqKebs0s6oJau159N1c0ua21yrp6P26i29Ma85u539j
+	ud7h9YZpUWdkBRtW6oQU9SmxFGckGmoxFxUnAgAisAYCLgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi,
-> 
-> 2013-10-28 (월), 08:54 +0000, Fan Li:
-> > "There is a HTML error in the previous email, so I send this one.If you
-> already received this before, please ignore it.Sorry for the inconvenience"
-> >
-> > This patch change the method of calculating the number of summary blocks
-> in function  npages_for_summary_flush.
-> > npages_for_summary_flush uses (SUMMARY_SIZE + 1) as the size of a
-> f2fs_summary while the actual size is just SUMMARY_SIZE.
-> > As a result, occasionally the return value of npages_for_summary_flush will
-> be bigger than the actual number by one, and the checkpoint won't be
-> written contiguously  into disk.
-> > Besides, struct f2fs_summary can't be split to two pages, so it could take
-> more space than the sum of its size, the current version seems not to take it
-> into account.
-> >
-> 
-> Again. Please write a description not to exceed 80 columns.
-> 
+Hi,
 
-Sorry, didn't know. here's the short version:
-npages_for_summary_flush uses (SUMMARY_SIZE + 1) as the size of a f2fs_summary 
-while its actual size is  SUMMARY_SIZE. So the result sometimes is bigger than 
-actual number by one, which causes checkpoint can't be written into disk contiguously,
-and sometimes summary blocks can't be compacted like they should.
-Besides, when writing summary blocks into pages, if remain space in a page isn't 
-big enough for one f2fs_summary, it will be left unused, current code seems 
-not to take it into account.
+2013-10-29 (화), 15:32 +0800, shifei10.ge:
+> Hi,I think we don't need to put the invalid page that get_node_page returned.
+> So I add " idx = i--" based on your version.Following is the patch: 
+> 
+> ---
+>  fs/f2fs/node.c |   13 +++++++------
+>  1 file changed, 7 insertions(+), 6 deletions(-)
+> 
+> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> index 304d5ce..fd5f721 100644
+> --- a/fs/f2fs/node.c
+> +++ b/fs/f2fs/node.c
+> @@ -631,19 +631,19 @@ static int truncate_partial_nodes(struct dnode_of_data *dn,
+>  		return 0;
+>  
+>  	/* get indirect nodes in the path */
+> -	for (i = 0; i < depth - 1; i++) {
+> +	for (i = 0; i < idx + 1; i++) {
+>  		/* refernece count'll be increased */
+>  		pages[i] = get_node_page(sbi, nid[i]);
+>  		if (IS_ERR(pages[i])) {
+> -			depth = i + 1;
+>  			err = PTR_ERR(pages[i]);
+> +			idx = i--;
 
-Signed-off-by: Fan Li <fanofcode.li@samsung.com>
----
- fs/f2fs/segment.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+You meant (idx = i - 1)?
+If so, idx = i--; is wrong.
 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index 487af61..e40cdc4 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -279,9 +279,8 @@ static void __add_sum_entry(struct f2fs_sb_info *sbi, int type,
-  */
- int npages_for_summary_flush(struct f2fs_sb_info *sbi)
- {
--	int total_size_bytes = 0;
- 	int valid_sum_count = 0;
--	int i, sum_space;
-+	int i, sum_in_page;
- 
- 	for (i = CURSEG_HOT_DATA; i <= CURSEG_COLD_DATA; i++) {
- 		if (sbi->ckpt->alloc_type[i] == SSR)
-@@ -290,13 +289,12 @@ int npages_for_summary_flush(struct f2fs_sb_info *sbi)
- 			valid_sum_count += curseg_blkoff(sbi, i);
- 	}
- 
--	total_size_bytes = valid_sum_count * (SUMMARY_SIZE + 1)
--			+ sizeof(struct nat_journal) + 2
--			+ sizeof(struct sit_journal) + 2;
--	sum_space = PAGE_CACHE_SIZE - SUM_FOOTER_SIZE;
--	if (total_size_bytes < sum_space)
-+	sum_in_page = (PAGE_CACHE_SIZE - 2 * SUM_JOURNAL_SIZE -
-+			SUM_FOOTER_SIZE) / SUMMARY_SIZE;
-+	if (valid_sum_count <= sum_in_page)
- 		return 1;
--	else if (total_size_bytes < 2 * sum_space)
-+	else if ((valid_sum_count - sum_in_page) <=
-+		(PAGE_CACHE_SIZE - SUM_FOOTER_SIZE) / SUMMARY_SIZE)
- 		return 2;
- 	return 3;
- }
 -- 
-1.7.9.5
+Jaegeuk Kim
+Samsung
 
