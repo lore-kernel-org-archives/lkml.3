@@ -1,121 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792Ab3J2WmL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 18:42:11 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:47421 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125Ab3J2WmJ (ORCPT
+	id S1751466Ab3J2Wqi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 18:46:38 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:34079 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182Ab3J2Wqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 18:42:09 -0400
+	Tue, 29 Oct 2013 18:46:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <20131029221324.GC12814@quack.suse.cz>
-References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
-	<CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
-	<1814253454.3449.1382689853825.JavaMail.mail@webmail07>
-	<20131025091842.GA28681@thunk.org>
-	<20131025022937.12623dcd.akpm@linux-foundation.org>
-	<CA+55aFzq4-wsErRO56gW6gj3Q91QtvvaGQPdUV2JkSs-B1PCAQ@mail.gmail.com>
-	<20131029205756.GH9568@quack.suse.cz>
-	<CA+55aFyS1oTF2LKSgmm_TnnKm18CfVZEaue8-EnPQWOikAUWOA@mail.gmail.com>
-	<20131029221324.GC12814@quack.suse.cz>
-Date: Tue, 29 Oct 2013 15:42:08 -0700
-X-Google-Sender-Auth: Eci0rvjNkDc35AtshZfxGjRHvl8
-Message-ID: <CA+55aFw_jjB687nJKuVdjPM6BicF-+0da-wSYHLBqdx0ZfVrGw@mail.gmail.com>
-Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        "Artem S. Tashkinov" <t.artem@lycos.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Maxim Patlasov <mpatlasov@parallels.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20131023032406.12410.77485.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20131023032140.12410.43295.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20131023032406.12410.77485.stgit@bhelgaas-glaptop.roam.corp.google.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 29 Oct 2013 16:46:16 -0600
+Message-ID: <CAErSpo7vYV2CCFFVZiuVRDZ_bHVtL3ANuY=j2-JEVUA-PQm8NA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] frv/PCI: Remove pcibios_last_bus
+To: David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-am33-list@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 3:13 PM, Jan Kara <jack@suse.cz> wrote:
+On Tue, Oct 22, 2013 at 9:24 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> pcibios_last_bus was apparently copied from x86.  On FR-V, it is
+> statically initialized to -1 and never changed unless the user boots
+> with "pci=lastbus=<X>".  I doubt that option is used on FR-V, so this
+> patch removes all the code related to pcibios_last_bus.
 >
->   So I think we both realize this is only about what the default should be.
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 
-Yes. Most people will use the defaults, but there will always be
-people who tune things for particular loads.
+Applied to my pci/misc branch for v3.13.  Let me know if anybody objects.
 
-In fact, I think we have gone much too far in saying "all policy in
-user space", because the fact is, user space isn't very good at
-policy. Especially not at reacting to complex situations with
-different devices. From what I've seen, "policy in user space" has
-resulted in exactly two modes:
-
- - user space does something stupid and wrong (example: "nice -19 X"
-to work around some scheduler oddities)
-
- - user space does nothing at all, and the kernel people say "hey,
-user space _could_ set this value Xyz, so it's not our problem, and
-it's policy, so we shouldn't touch it".
-
-I think we in the kernel should say "our defaults should be what
-everybody sane can use, and they should work fine on average". With
-"policy in user space" being for crazy people that do really odd
-things and can really spare the time to tune for their particular
-issue.
-
-So the "policy in user space" should be about *overriding* kernel
-policy choices, not about the kernel never having them.
-
-And this kind of "you can have many different devices and they act
-quite differently" is a good example of something complicated that
-user space really doesn't have a great model for. And we actually have
-much better possible information in the kernel than user space ever is
-likely to have.
-
-> Also I'm not sure capping dirty limits at 200MB is the best spot. It may be
-> but I think we should experiment with numbers a bit to check whether we
-> didn't miss something.
-
-Sure. That said, the patch I suggested basically makes the numbers be
-at least roughly comparable across different architectures. So it's
-been at least somewhat tested, even if 16GB x86-32 machines are
-hopefully pretty rare (but I hear about people installing 32-bit on
-modern machines much too often).
-
->>  - temp-files may not be written out at all.
->>
->>    Quite frankly, if you have multi-hundred-megabyte temptiles, you've
->> got issues
->   Actually people do stuff like this e.g. when generating ISO images before
-> burning them.
-
-Yes, but then the temp-file is long-lived enough that it *will* hit
-the disk anyway. So it's only the "create temporary file and pretty
-much immediately delete it" case that changes behavior (ie compiler
-assembly files etc).
-
-If the temp-file is for something like burning an ISO image, the
-burning part is slow enough that the temp-file will hit the disk
-regardless of when we start writing it.
-
->   There is one more aspect:
-> - transforming random writes into mostly sequential writes
-
-Sure. And I think that if you have a big database, that's when you do
-end up tweaking the dirty limits.
-
-That said, I'd certainly like it even *more* if the limits really were
-per-BDI, and the global limit was in addition to the per-bdi ones.
-Because when you have a USB device that gets maybe 10MB/s on
-contiguous writes, and 100kB/s on random 4k writes, I think it would
-make more sense to make the "start writeout" limits be 1MB/2MB, not
-100MB/200MB. So my patch doesn't even take it far enough, it's just a
-"let's not be ridiculous". The per-BDI limits don't seem quite ready
-for prime time yet, though. Even the new "strict" limits seems to be
-more about "trusted filesystems" than about really sane writeback
-limits.
-
-Fengguang, comments?
-
-(And I added Maxim to the cc, since he's the author of the strict
-mode, and while it is currently limited to FUSE, he did mention USB
-storage in the commit message..).
-
-                  Linus
+> ---
+>  arch/frv/mb93090-mb00/pci-frv.h |    1 -
+>  arch/frv/mb93090-mb00/pci-vdk.c |   36 ------------------------------------
+>  2 files changed, 37 deletions(-)
+>
+> diff --git a/arch/frv/mb93090-mb00/pci-frv.h b/arch/frv/mb93090-mb00/pci-frv.h
+> index 76c4e73..a7e487fe 100644
+> --- a/arch/frv/mb93090-mb00/pci-frv.h
+> +++ b/arch/frv/mb93090-mb00/pci-frv.h
+> @@ -30,7 +30,6 @@ void pcibios_resource_survey(void);
+>
+>  /* pci-vdk.c */
+>
+> -extern int __nongpreldata pcibios_last_bus;
+>  extern struct pci_ops *__nongpreldata pci_root_ops;
+>
+>  /* pci-irq.c */
+> diff --git a/arch/frv/mb93090-mb00/pci-vdk.c b/arch/frv/mb93090-mb00/pci-vdk.c
+> index deb6784..efa5d65 100644
+> --- a/arch/frv/mb93090-mb00/pci-vdk.c
+> +++ b/arch/frv/mb93090-mb00/pci-vdk.c
+> @@ -25,7 +25,6 @@
+>
+>  unsigned int __nongpreldata pci_probe = 1;
+>
+> -int  __nongpreldata pcibios_last_bus = -1;
+>  struct pci_ops *__nongpreldata pci_root_ops;
+>
+>  /*
+> @@ -220,37 +219,6 @@ static struct pci_ops * __init pci_check_direct(void)
+>  }
+>
+>  /*
+> - * Discover remaining PCI buses in case there are peer host bridges.
+> - * We use the number of last PCI bus provided by the PCI BIOS.
+> - */
+> -static void __init pcibios_fixup_peer_bridges(void)
+> -{
+> -       struct pci_bus bus;
+> -       struct pci_dev dev;
+> -       int n;
+> -       u16 l;
+> -
+> -       if (pcibios_last_bus <= 0 || pcibios_last_bus >= 0xff)
+> -               return;
+> -       printk("PCI: Peer bridge fixup\n");
+> -       for (n=0; n <= pcibios_last_bus; n++) {
+> -               if (pci_find_bus(0, n))
+> -                       continue;
+> -               bus.number = n;
+> -               bus.ops = pci_root_ops;
+> -               dev.bus = &bus;
+> -               for(dev.devfn=0; dev.devfn<256; dev.devfn += 8)
+> -                       if (!pci_read_config_word(&dev, PCI_VENDOR_ID, &l) &&
+> -                           l != 0x0000 && l != 0xffff) {
+> -                               printk("Found device at %02x:%02x [%04x]\n", n, dev.devfn, l);
+> -                               printk("PCI: Discovered peer bus %02x\n", n);
+> -                               pci_scan_bus(n, pci_root_ops, NULL);
+> -                               break;
+> -                       }
+> -       }
+> -}
+> -
+> -/*
+>   * Exceptions for specific devices. Usually work-arounds for fatal design flaws.
+>   */
+>
+> @@ -418,7 +386,6 @@ int __init pcibios_init(void)
+>         pci_scan_root_bus(NULL, 0, pci_root_ops, NULL, &resources);
+>
+>         pcibios_irq_init();
+> -       pcibios_fixup_peer_bridges();
+>         pcibios_fixup_irqs();
+>         pcibios_resource_survey();
+>
+> @@ -432,9 +399,6 @@ char * __init pcibios_setup(char *str)
+>         if (!strcmp(str, "off")) {
+>                 pci_probe = 0;
+>                 return NULL;
+> -       } else if (!strncmp(str, "lastbus=", 8)) {
+> -               pcibios_last_bus = simple_strtol(str+8, NULL, 0);
+> -               return NULL;
+>         }
+>         return str;
+>  }
+>
