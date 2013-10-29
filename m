@@ -1,101 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502Ab3J2XiN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 19:38:13 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:49329 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab3J2XiL (ORCPT
+	id S1752656Ab3J2XjZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 19:39:25 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:60155 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986Ab3J2XjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 19:38:11 -0400
-Message-ID: <527046DE.6050009@gmail.com>
-Date: Wed, 30 Oct 2013 00:38:06 +0100
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Tue, 29 Oct 2013 19:39:23 -0400
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        mturquette@linaro.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, jiada_wang@mentor.com, t.figa@samsung.com,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        myungjoo.ham@samsung.com, Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        g.liakhovetski@gmx.de
-Subject: Re: [PATCH v6 0/5] clk: clock deregistration support
-References: <1377874402-2944-1-git-send-email-s.nawrocki@samsung.com> <52420664.2040604@gmail.com> <13429728.zDYQ5qS5ur@avalon>
-In-Reply-To: <13429728.zDYQ5qS5ur@avalon>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <52702170.7080003@intel.com>
+References: <1383075705.22833.18.camel@x220.thuisdomein>
+	<52702170.7080003@intel.com>
+Date: Tue, 29 Oct 2013 19:39:23 -0400
+X-Google-Sender-Auth: TwBxVlaOYLpKPAqVD4kQ347bxxQ
+Message-ID: <CA+5PVA7tvmqsF4=n84jnB3YOM50pq8wkQN9S8EL06FnGD-DoYA@mail.gmail.com>
+Subject: Re: Revert 9745cdb36da83aeec198650b410ca06304cf792 ("select: use
+ freezable blocking call")?
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Colin Cross <ccross@android.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Tejun Heo <tj@kernel.org>,
+        linux-fsdevel@vger.kernel.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
-
-On 10/28/2013 10:05 PM, Laurent Pinchart wrote:
-> On Tuesday 24 September 2013 23:38:44 Sylwester Nawrocki wrote:
->> On 08/30/2013 04:53 PM, Sylwester Nawrocki wrote:
->>> This patch series implements clock deregistration in the common clock
->>> framework. Comparing to v5 it only includes further corrections of NULL
->>> clock handling.
-[...]
->> ---------8<------------------
->>   From ca5963041aad67e31324cb5d4d5e2cfce1706d4f Mon Sep 17 00:00:00 2001
->> From: Sylwester Nawrocki<s.nawrocki@samsung.com>
->> Date: Thu, 19 Sep 2013 23:52:04 +0200
->> Subject: [PATCH] omap3isp: Pass NULL device pointer to clk_register()
+On Tue, Oct 29, 2013 at 4:58 PM, Rafael J. Wysocki
+<rafael.j.wysocki@intel.com> wrote:
+> On 10/29/2013 8:41 PM, Paul Bolle wrote:
 >>
->> Signed-off-by: Sylwester Nawrocki<s.nawrocki@samsung.com>
->> ---
->>    drivers/media/platform/omap3isp/isp.c |   15 ++++++++++-----
->>    drivers/media/platform/omap3isp/isp.h |    1 +
->>    2 files changed, 11 insertions(+), 5 deletions(-)
+>> 0) Summary: ever since I tried running (release candidates of) v3.11 on
+>> the two working i686s I still have lying around I ran into issues on
+>> resuming from suspend. Reverting 9745cdb36da83aeec198650b410ca06304cf792
+>> ("select: use freezable blocking call") resolves those issues.
 >>
->> diff --git a/drivers/media/platform/omap3isp/isp.c
->> b/drivers/media/platform/omap3isp/isp.c
->> index df3a0ec..d7f3c98 100644
->> --- a/drivers/media/platform/omap3isp/isp.c
->> +++ b/drivers/media/platform/omap3isp/isp.c
->> @@ -290,9 +290,11 @@ static int isp_xclk_init(struct isp_device *isp)
->>    	struct clk_init_data init;
->>    	unsigned int i;
+>> 1) Resuming from suspend on i686 on (release candidates of) v3.11 and
+>> later triggers issues like:
+>>      traps: systemd[1] general protection ip:b738e490 sp:bf882fc0 error:0
+>> in libc-2.16.so[b731c000+1b0000]
 >>
->> +	for (i = 0; i<  ARRAY_SIZE(isp->xclks); ++i)
->> +		isp->xclks[i] = ERR_PTR(-EINVAL);
+>> and
+>>      traps: rtkit-daemon[552] general protection ip:804d6e5 sp:b6cb32f0
+>> error:0 in rtkit-daemon[8048000+d000]
+>>
+>> Once I hit the systemd error I can only get out of the mess that the
+>> system is at that point by power cycling it.
+>>
+>> 2) I bisected that issue to commit
+>> 9745cdb36da83aeec198650b410ca06304cf792 ("select: use freezable blocking
+>> call"). The, rather impressive, bisect log is pasted at the end of this
+>> message. It took 23 builds to pinpoint this issue in the v3.10..v3.11
+>> range! Sadly, I have no clue why that commit triggers this issue.
+>>
+>> 3) Reverting that commit on top of v3.12-rc7 gets me a system that
+>> resumes without issues. (That revert needed one trivial context change.
+>> Note that I haven't actually tried v3.12-rc7 plain. But v3.12-rc6 and
+>> earlier also had this issue, so I'm sure the revert did the trick for
+>> v3.12-rc7.)
+>>
+>> 4) Should this commit be reverted? Or is there a better fix?
 >
-> I don't think you've compile-tested this :-)
-
-Thank you for the comments. Yeah, I messed up this, I thought this part
-got recompiled but it didn't. I've fixed this in the recently posted
-patch.
-
->> +
->>    	for (i = 0; i<  ARRAY_SIZE(isp->xclks); ++i) {
->>    		struct isp_xclk *xclk =&isp->xclks[i];
->> -		struct clk *clk;
->>
->>    		xclk->isp = isp;
->>    		xclk->id = i == 0 ? ISP_XCLK_A : ISP_XCLK_B;
->> @@ -306,9 +308,9 @@ static int isp_xclk_init(struct isp_device *isp)
->>
->>    		xclk->hw.init =&init;
->>
->> -		clk = devm_clk_register(isp->dev,&xclk->hw);
->> -		if (IS_ERR(clk))
->> -			return PTR_ERR(clk);
->> +		xclk->clk = clk_register(NULL,&xclk->hw);
->> +		if (IS_ERR(xclk->clk))
->> +			return PTR_ERR(xclk->clk);
 >
-> This doesn't introduce any regression in the sense that it will trade a
-> problem for another one, so I'm fine with it in the short. Could you add a
-> small comment above the clk_register() call to explain why the first argument
-> is NULL ?
+> In short, yes, it should.
+>
+> I've already queued up a revert of something very similar and I'm going to
+> revert this one too.
 
-I'm not entirely happy about doing something like that. Nevertheless I 
-didn't
-hear so far any better proposals and I guess it could be treated as a short
-term modification while we're working on proper handling of those circular
-references.
+To be clear, that's queued for 3.12 which is releasing really soon
+now.  Is that correct?
 
---
-Thanks,
-Sylwester
+josh
