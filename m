@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756837Ab3J2OIF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 10:08:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45876 "EHLO
+	id S1757019Ab3J2OIJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 10:08:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45881 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756527Ab3J2OH7 (ORCPT
+	with ESMTP id S1756860Ab3J2OIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 10:07:59 -0400
-Date: Tue, 29 Oct 2013 07:07:31 -0700
-From: tip-bot for Ben Segall <tipbot@zytor.com>
-Message-ID: <tip-927b54fccbf04207ec92f669dce6806848cbec7d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, bsegall@google.com, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, bsegall@google.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20131016181622.22647.16643.stgit@sword-of-the-dawn.mtv.corp.google.com>
-References: <20131016181622.22647.16643.stgit@sword-of-the-dawn.mtv.corp.google.com>
+	Tue, 29 Oct 2013 10:08:05 -0400
+Date: Tue, 29 Oct 2013 07:07:04 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-e8a923cc1fff6e627f906655ad52ee694ef2f6d7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, dzickus@redhat.com
+In-Reply-To: <20131017133350.GG3364@laptop.programming.kicks-ass.net>
+References: <20131017133350.GG3364@laptop.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix hrtimer_cancel()/rq->lock deadlock
-Git-Commit-ID: 927b54fccbf04207ec92f669dce6806848cbec7d
+Subject: [tip:perf/urgent] perf/x86: Fix NMI measurements
+Git-Commit-ID: e8a923cc1fff6e627f906655ad52ee694ef2f6d7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,70 +27,109 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 29 Oct 2013 07:07:37 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 29 Oct 2013 07:07:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  927b54fccbf04207ec92f669dce6806848cbec7d
-Gitweb:     http://git.kernel.org/tip/927b54fccbf04207ec92f669dce6806848cbec7d
-Author:     Ben Segall <bsegall@google.com>
-AuthorDate: Wed, 16 Oct 2013 11:16:22 -0700
+Commit-ID:  e8a923cc1fff6e627f906655ad52ee694ef2f6d7
+Gitweb:     http://git.kernel.org/tip/e8a923cc1fff6e627f906655ad52ee694ef2f6d7
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Thu, 17 Oct 2013 15:32:10 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 29 Oct 2013 12:02:21 +0100
+CommitDate: Tue, 29 Oct 2013 12:01:20 +0100
 
-sched: Fix hrtimer_cancel()/rq->lock deadlock
+perf/x86: Fix NMI measurements
 
-__start_cfs_bandwidth calls hrtimer_cancel while holding rq->lock,
-waiting for the hrtimer to finish. However, if sched_cfs_period_timer
-runs for another loop iteration, the hrtimer can attempt to take
-rq->lock, resulting in deadlock.
+OK, so what I'm actually seeing on my WSM is that sched/clock.c is
+'broken' for the purpose we're using it for.
 
-Fix this by ensuring that cfs_b->timer_active is cleared only if the
-_latest_ call to do_sched_cfs_period_timer is returning as idle. Then
-__start_cfs_bandwidth can just call hrtimer_try_to_cancel and wait for
-that to succeed or timer_active == 1.
+What triggered it is that my WSM-EP is broken :-(
 
-Signed-off-by: Ben Segall <bsegall@google.com>
+  [    0.001000] tsc: Fast TSC calibration using PIT
+  [    0.002000] tsc: Detected 2533.715 MHz processor
+  [    0.500180] TSC synchronization [CPU#0 -> CPU#6]:
+  [    0.505197] Measured 3 cycles TSC warp between CPUs, turning off TSC clock.
+  [    0.004000] tsc: Marking TSC unstable due to check_tsc_sync_source failed
+
+For some reason it consistently detects TSC skew, even though NHM+
+should have a single clock domain for 'reasonable' systems.
+
+This marks sched_clock_stable=0, which means that we do fancy stuff to
+try and get a 'sane' clock. Part of this fancy stuff relies on the tick,
+clearly that's gone when NOHZ=y. So for idle cpus time gets stuck, until
+it either wakes up or gets kicked by another cpu.
+
+While this is perfectly fine for the scheduler -- it only cares about
+actually running stuff, and when we're running stuff we're obviously not
+idle. This does somewhat break down for perf which can trigger events
+just fine on an otherwise idle cpu.
+
+So I've got NMIs get get 'measured' as taking ~1ms, which actually
+don't last nearly that long:
+
+          <idle>-0     [013] d.h.   886.311970: rcu_nmi_enter <-do_nmi
+  ...
+          <idle>-0     [013] d.h.   886.311997: perf_sample_event_took: HERE!!! : 1040990
+
+So ftrace (which uses sched_clock(), not the fancy bits) only sees
+~27us, but we measure ~1ms !!
+
+Now since all this measurement stuff lives in x86 code, we can actually
+fix it.
+
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: pjt@google.com
-Link: http://lkml.kernel.org/r/20131016181622.22647.16643.stgit@sword-of-the-dawn.mtv.corp.google.com
+Cc: mingo@kernel.org
+Cc: dave.hansen@linux.intel.com
+Cc: eranian@google.com
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: jmario@redhat.com
+Cc: acme@infradead.org
+Link: http://lkml.kernel.org/r/20131017133350.GG3364@laptop.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c | 6 +++---
+ arch/x86/kernel/nmi.c            | 4 ++--
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 897d977..f6308cb 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3225,6 +3225,13 @@ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
- 	if (idle)
- 		goto out_unlock;
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 9d84491..8a87a32 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1276,16 +1276,16 @@ void perf_events_lapic_init(void)
+ static int __kprobes
+ perf_event_nmi_handler(unsigned int cmd, struct pt_regs *regs)
+ {
+-	int ret;
+ 	u64 start_clock;
+ 	u64 finish_clock;
++	int ret;
  
-+	/*
-+	 * if we have relooped after returning idle once, we need to update our
-+	 * status as actually running, so that other cpus doing
-+	 * __start_cfs_bandwidth will stop trying to cancel us.
-+	 */
-+	cfs_b->timer_active = 1;
-+
- 	__refill_cfs_bandwidth_runtime(cfs_b);
+ 	if (!atomic_read(&active_events))
+ 		return NMI_DONE;
  
- 	if (!throttled) {
-@@ -3493,11 +3500,11 @@ void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
- 	 * (timer_active==0 becomes visible before the hrtimer call-back
- 	 * terminates).  In either case we ensure that it's re-programmed
- 	 */
--	while (unlikely(hrtimer_active(&cfs_b->period_timer))) {
-+	while (unlikely(hrtimer_active(&cfs_b->period_timer)) &&
-+	       hrtimer_try_to_cancel(&cfs_b->period_timer) < 0) {
-+		/* bounce the lock to allow do_sched_cfs_period_timer to run */
- 		raw_spin_unlock(&cfs_b->lock);
--		/* ensure cfs_b->lock is available while we wait */
--		hrtimer_cancel(&cfs_b->period_timer);
--
-+		cpu_relax();
- 		raw_spin_lock(&cfs_b->lock);
- 		/* if someone else restarted the timer then we're done */
- 		if (cfs_b->timer_active)
+-	start_clock = local_clock();
++	start_clock = sched_clock();
+ 	ret = x86_pmu.handle_irq(regs);
+-	finish_clock = local_clock();
++	finish_clock = sched_clock();
+ 
+ 	perf_sample_event_took(finish_clock - start_clock);
+ 
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index ba77ebc..6fcb49c 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -113,10 +113,10 @@ static int __kprobes nmi_handle(unsigned int type, struct pt_regs *regs, bool b2
+ 		u64 before, delta, whole_msecs;
+ 		int remainder_ns, decimal_msecs, thishandled;
+ 
+-		before = local_clock();
++		before = sched_clock();
+ 		thishandled = a->handler(type, regs);
+ 		handled += thishandled;
+-		delta = local_clock() - before;
++		delta = sched_clock() - before;
+ 		trace_nmi_handler(a->handler, (int)delta, thishandled);
+ 
+ 		if (delta < nmi_longest_ns)
