@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab3J2Kns (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 06:43:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43683 "EHLO
+	id S1754682Ab3J2Knq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 06:43:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43684 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab3J2Knn (ORCPT
+	with ESMTP id S1754333Ab3J2Kno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 06:43:43 -0400
-Date: Tue, 29 Oct 2013 03:42:58 -0700
+	Tue, 29 Oct 2013 06:43:44 -0400
+Date: Tue, 29 Oct 2013 03:43:07 -0700
 From: tip-bot for Mel Gorman <tipbot@zytor.com>
-Message-ID: <tip-3f926ab945b60a5824369d21add7710622a2eac0@git.kernel.org>
+Message-ID: <tip-0255d491848032f6c601b6410c3b8ebded3a37b1@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
         stable@kernel.org, aarcange@redhat.com, srikar@linux.vnet.ibm.com,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
         srikar@linux.vnet.ibm.com, stable@kernel.org, aarcange@redhat.com,
         mgorman@suse.de, tglx@linutronix.de
-In-Reply-To: <1381141781-10992-9-git-send-email-mgorman@suse.de>
-References: <1381141781-10992-9-git-send-email-mgorman@suse.de>
+In-Reply-To: <1381141781-10992-10-git-send-email-mgorman@suse.de>
+References: <1381141781-10992-10-git-send-email-mgorman@suse.de>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:core/urgent] mm:
-  Close races between THP migration and PMD numa clearing
-Git-Commit-ID: 3f926ab945b60a5824369d21add7710622a2eac0
+  Account for a THP NUMA hinting update as one PTE update
+Git-Commit-ID: 0255d491848032f6c601b6410c3b8ebded3a37b1
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,42 +32,24 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 29 Oct 2013 03:43:04 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 29 Oct 2013 03:43:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3f926ab945b60a5824369d21add7710622a2eac0
-Gitweb:     http://git.kernel.org/tip/3f926ab945b60a5824369d21add7710622a2eac0
+Commit-ID:  0255d491848032f6c601b6410c3b8ebded3a37b1
+Gitweb:     http://git.kernel.org/tip/0255d491848032f6c601b6410c3b8ebded3a37b1
 Author:     Mel Gorman <mgorman@suse.de>
-AuthorDate: Mon, 7 Oct 2013 11:28:46 +0100
+AuthorDate: Mon, 7 Oct 2013 11:28:47 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 29 Oct 2013 11:38:05 +0100
+CommitDate: Tue, 29 Oct 2013 11:38:17 +0100
 
-mm: Close races between THP migration and PMD numa clearing
+mm: Account for a THP NUMA hinting update as one PTE update
 
-THP migration uses the page lock to guard against parallel allocations
-but there are cases like this still open
-
-  Task A					Task B
-  ---------------------				---------------------
-  do_huge_pmd_numa_page				do_huge_pmd_numa_page
-  lock_page
-  mpol_misplaced == -1
-  unlock_page
-  goto clear_pmdnuma
-						lock_page
-						mpol_misplaced == 2
-						migrate_misplaced_transhuge
-  pmd = pmd_mknonnuma
-  set_pmd_at
-
-During hours of testing, one crashed with weird errors and while I have
-no direct evidence, I suspect something like the race above happened.
-This patch extends the page lock to being held until the pmd_numa is
-cleared to prevent migration starting in parallel while the pmd_numa is
-being cleared. It also flushes the old pmd entry and orders pagetable
-insertion before rmap insertion.
+A THP PMD update is accounted for as 512 pages updated in vmstat.  This is
+large difference when estimating the cost of automatic NUMA balancing and
+can be misleading when comparing results that had collapsed versus split
+THP. This patch addresses the accounting issue.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Reviewed-by: Rik van Riel <riel@redhat.com>
@@ -76,140 +58,22 @@ Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: <stable@kernel.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1381141781-10992-9-git-send-email-mgorman@suse.de
+Link: http://lkml.kernel.org/r/1381141781-10992-10-git-send-email-mgorman@suse.de
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- mm/huge_memory.c | 33 +++++++++++++++------------------
- mm/migrate.c     | 19 +++++++++++--------
- 2 files changed, 26 insertions(+), 26 deletions(-)
+ mm/mprotect.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 00ddfcd..cca80d9 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1304,24 +1304,25 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	target_nid = mpol_misplaced(page, vma, haddr);
- 	if (target_nid == -1) {
- 		/* If the page was locked, there are no parallel migrations */
--		if (page_locked) {
--			unlock_page(page);
-+		if (page_locked)
- 			goto clear_pmdnuma;
--		}
- 
--		/* Otherwise wait for potential migrations and retry fault */
-+		/*
-+		 * Otherwise wait for potential migrations and retry. We do
-+		 * relock and check_same as the page may no longer be mapped.
-+		 * As the fault is being retried, do not account for it.
-+		 */
- 		spin_unlock(&mm->page_table_lock);
- 		wait_on_page_locked(page);
-+		page_nid = -1;
- 		goto out;
- 	}
- 
- 	/* Page is misplaced, serialise migrations and parallel THP splits */
- 	get_page(page);
- 	spin_unlock(&mm->page_table_lock);
--	if (!page_locked) {
-+	if (!page_locked)
- 		lock_page(page);
--		page_locked = true;
--	}
- 	anon_vma = page_lock_anon_vma_read(page);
- 
- 	/* Confirm the PTE did not while locked */
-@@ -1329,32 +1330,28 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (unlikely(!pmd_same(pmd, *pmdp))) {
- 		unlock_page(page);
- 		put_page(page);
-+		page_nid = -1;
- 		goto out_unlock;
- 	}
- 
--	/* Migrate the THP to the requested node */
-+	/*
-+	 * Migrate the THP to the requested node, returns with page unlocked
-+	 * and pmd_numa cleared.
-+	 */
- 	spin_unlock(&mm->page_table_lock);
- 	migrated = migrate_misplaced_transhuge_page(mm, vma,
- 				pmdp, pmd, addr, page, target_nid);
- 	if (migrated)
- 		page_nid = target_nid;
--	else
--		goto check_same;
- 
- 	goto out;
--
--check_same:
--	spin_lock(&mm->page_table_lock);
--	if (unlikely(!pmd_same(pmd, *pmdp))) {
--		/* Someone else took our fault */
--		page_nid = -1;
--		goto out_unlock;
--	}
- clear_pmdnuma:
-+	BUG_ON(!PageLocked(page));
- 	pmd = pmd_mknonnuma(pmd);
- 	set_pmd_at(mm, haddr, pmdp, pmd);
- 	VM_BUG_ON(pmd_numa(*pmdp));
- 	update_mmu_cache_pmd(vma, addr, pmdp);
-+	unlock_page(page);
- out_unlock:
- 	spin_unlock(&mm->page_table_lock);
- 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 7a7325e..c046927 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1715,12 +1715,12 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- 		unlock_page(new_page);
- 		put_page(new_page);		/* Free it */
- 
--		unlock_page(page);
-+		/* Retake the callers reference and putback on LRU */
-+		get_page(page);
- 		putback_lru_page(page);
--
--		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
--		isolated = 0;
--		goto out;
-+		mod_zone_page_state(page_zone(page),
-+			 NR_ISOLATED_ANON + page_lru, -HPAGE_PMD_NR);
-+		goto out_fail;
- 	}
- 
- 	/*
-@@ -1737,9 +1737,9 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- 	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
- 	entry = pmd_mkhuge(entry);
- 
--	page_add_new_anon_rmap(new_page, vma, haddr);
--
-+	pmdp_clear_flush(vma, haddr, pmd);
- 	set_pmd_at(mm, haddr, pmd, entry);
-+	page_add_new_anon_rmap(new_page, vma, haddr);
- 	update_mmu_cache_pmd(vma, address, &entry);
- 	page_remove_rmap(page);
- 	/*
-@@ -1758,7 +1758,6 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- 	count_vm_events(PGMIGRATE_SUCCESS, HPAGE_PMD_NR);
- 	count_vm_numa_events(NUMA_PAGE_MIGRATE, HPAGE_PMD_NR);
- 
--out:
- 	mod_zone_page_state(page_zone(page),
- 			NR_ISOLATED_ANON + page_lru,
- 			-HPAGE_PMD_NR);
-@@ -1767,6 +1766,10 @@ out:
- out_fail:
- 	count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
- out_dropref:
-+	entry = pmd_mknonnuma(entry);
-+	set_pmd_at(mm, haddr, pmd, entry);
-+	update_mmu_cache_pmd(vma, address, &entry);
-+
- 	unlock_page(page);
- 	put_page(page);
- 	return 0;
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index a3af058..412ba2b 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -148,7 +148,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 				split_huge_page_pmd(vma, addr, pmd);
+ 			else if (change_huge_pmd(vma, pmd, addr, newprot,
+ 						 prot_numa)) {
+-				pages += HPAGE_PMD_NR;
++				pages++;
+ 				continue;
+ 			}
+ 			/* fall through */
