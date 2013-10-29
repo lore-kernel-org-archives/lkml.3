@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757019Ab3J2OIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 10:08:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45881 "EHLO
+	id S932067Ab3J2OIP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 10:08:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45884 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756860Ab3J2OIF (ORCPT
+	with ESMTP id S1756860Ab3J2OIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 10:08:05 -0400
-Date: Tue, 29 Oct 2013 07:07:04 -0700
+	Tue, 29 Oct 2013 10:08:10 -0400
+Date: Tue, 29 Oct 2013 07:06:55 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-e8a923cc1fff6e627f906655ad52ee694ef2f6d7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, dzickus@redhat.com
-In-Reply-To: <20131017133350.GG3364@laptop.programming.kicks-ass.net>
-References: <20131017133350.GG3364@laptop.programming.kicks-ass.net>
+Message-ID: <tip-bf378d341e4873ed928dc3c636252e6895a21f50@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, victork@il.ibm.com,
+        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com, tglx@linutronix.de,
+        mikey@neuling.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, mathieu.desnoyers@polymtl.ca,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, victork@il.ibm.com,
+        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com, tglx@linutronix.de,
+        mikey@neuling.org
+In-Reply-To: <20131025173749.GG19466@laptop.lan>
+References: <20131025173749.GG19466@laptop.lan>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/x86: Fix NMI measurements
-Git-Commit-ID: e8a923cc1fff6e627f906655ad52ee694ef2f6d7
+Subject: [tip:perf/urgent] perf: Fix perf ring buffer memory ordering
+Git-Commit-ID: bf378d341e4873ed928dc3c636252e6895a21f50
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,109 +31,119 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 29 Oct 2013 07:07:10 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 29 Oct 2013 07:07:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e8a923cc1fff6e627f906655ad52ee694ef2f6d7
-Gitweb:     http://git.kernel.org/tip/e8a923cc1fff6e627f906655ad52ee694ef2f6d7
+Commit-ID:  bf378d341e4873ed928dc3c636252e6895a21f50
+Gitweb:     http://git.kernel.org/tip/bf378d341e4873ed928dc3c636252e6895a21f50
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Thu, 17 Oct 2013 15:32:10 +0200
+AuthorDate: Mon, 28 Oct 2013 13:55:29 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 29 Oct 2013 12:01:20 +0100
+CommitDate: Tue, 29 Oct 2013 12:01:19 +0100
 
-perf/x86: Fix NMI measurements
+perf: Fix perf ring buffer memory ordering
 
-OK, so what I'm actually seeing on my WSM is that sched/clock.c is
-'broken' for the purpose we're using it for.
+The PPC64 people noticed a missing memory barrier and crufty old
+comments in the perf ring buffer code. So update all the comments and
+add the missing barrier.
 
-What triggered it is that my WSM-EP is broken :-(
+When the architecture implements local_t using atomic_long_t there
+will be double barriers issued; but short of introducing more
+conditional barrier primitives this is the best we can do.
 
-  [    0.001000] tsc: Fast TSC calibration using PIT
-  [    0.002000] tsc: Detected 2533.715 MHz processor
-  [    0.500180] TSC synchronization [CPU#0 -> CPU#6]:
-  [    0.505197] Measured 3 cycles TSC warp between CPUs, turning off TSC clock.
-  [    0.004000] tsc: Marking TSC unstable due to check_tsc_sync_source failed
-
-For some reason it consistently detects TSC skew, even though NHM+
-should have a single clock domain for 'reasonable' systems.
-
-This marks sched_clock_stable=0, which means that we do fancy stuff to
-try and get a 'sane' clock. Part of this fancy stuff relies on the tick,
-clearly that's gone when NOHZ=y. So for idle cpus time gets stuck, until
-it either wakes up or gets kicked by another cpu.
-
-While this is perfectly fine for the scheduler -- it only cares about
-actually running stuff, and when we're running stuff we're obviously not
-idle. This does somewhat break down for perf which can trigger events
-just fine on an otherwise idle cpu.
-
-So I've got NMIs get get 'measured' as taking ~1ms, which actually
-don't last nearly that long:
-
-          <idle>-0     [013] d.h.   886.311970: rcu_nmi_enter <-do_nmi
-  ...
-          <idle>-0     [013] d.h.   886.311997: perf_sample_event_took: HERE!!! : 1040990
-
-So ftrace (which uses sched_clock(), not the fancy bits) only sees
-~27us, but we measure ~1ms !!
-
-Now since all this measurement stuff lives in x86 code, we can actually
-fix it.
-
+Reported-by: Victor Kaplansky <victork@il.ibm.com>
+Tested-by: Victor Kaplansky <victork@il.ibm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@kernel.org
-Cc: dave.hansen@linux.intel.com
-Cc: eranian@google.com
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: jmario@redhat.com
-Cc: acme@infradead.org
-Link: http://lkml.kernel.org/r/20131017133350.GG3364@laptop.programming.kicks-ass.net
+Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: michael@ellerman.id.au
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Michael Neuling <mikey@neuling.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: anton@samba.org
+Cc: benh@kernel.crashing.org
+Link: http://lkml.kernel.org/r/20131025173749.GG19466@laptop.lan
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event.c | 6 +++---
- arch/x86/kernel/nmi.c            | 4 ++--
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ include/uapi/linux/perf_event.h | 12 +++++++-----
+ kernel/events/ring_buffer.c     | 31 +++++++++++++++++++++++++++----
+ 2 files changed, 34 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 9d84491..8a87a32 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1276,16 +1276,16 @@ void perf_events_lapic_init(void)
- static int __kprobes
- perf_event_nmi_handler(unsigned int cmd, struct pt_regs *regs)
- {
--	int ret;
- 	u64 start_clock;
- 	u64 finish_clock;
-+	int ret;
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 009a655..2fc1602 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -456,13 +456,15 @@ struct perf_event_mmap_page {
+ 	/*
+ 	 * Control data for the mmap() data buffer.
+ 	 *
+-	 * User-space reading the @data_head value should issue an rmb(), on
+-	 * SMP capable platforms, after reading this value -- see
+-	 * perf_event_wakeup().
++	 * User-space reading the @data_head value should issue an smp_rmb(),
++	 * after reading this value.
+ 	 *
+ 	 * When the mapping is PROT_WRITE the @data_tail value should be
+-	 * written by userspace to reflect the last read data. In this case
+-	 * the kernel will not over-write unread data.
++	 * written by userspace to reflect the last read data, after issueing
++	 * an smp_mb() to separate the data read from the ->data_tail store.
++	 * In this case the kernel will not over-write unread data.
++	 *
++	 * See perf_output_put_handle() for the data ordering.
+ 	 */
+ 	__u64   data_head;		/* head in the data section */
+ 	__u64	data_tail;		/* user-space written tail */
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index cd55144..9c2ddfb 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -87,10 +87,31 @@ again:
+ 		goto out;
  
- 	if (!atomic_read(&active_events))
- 		return NMI_DONE;
+ 	/*
+-	 * Publish the known good head. Rely on the full barrier implied
+-	 * by atomic_dec_and_test() order the rb->head read and this
+-	 * write.
++	 * Since the mmap() consumer (userspace) can run on a different CPU:
++	 *
++	 *   kernel				user
++	 *
++	 *   READ ->data_tail			READ ->data_head
++	 *   smp_mb()	(A)			smp_rmb()	(C)
++	 *   WRITE $data			READ $data
++	 *   smp_wmb()	(B)			smp_mb()	(D)
++	 *   STORE ->data_head			WRITE ->data_tail
++	 *
++	 * Where A pairs with D, and B pairs with C.
++	 *
++	 * I don't think A needs to be a full barrier because we won't in fact
++	 * write data until we see the store from userspace. So we simply don't
++	 * issue the data WRITE until we observe it. Be conservative for now.
++	 *
++	 * OTOH, D needs to be a full barrier since it separates the data READ
++	 * from the tail WRITE.
++	 *
++	 * For B a WMB is sufficient since it separates two WRITEs, and for C
++	 * an RMB is sufficient since it separates two READs.
++	 *
++	 * See perf_output_begin().
+ 	 */
++	smp_wmb();
+ 	rb->user_page->data_head = head;
  
--	start_clock = local_clock();
-+	start_clock = sched_clock();
- 	ret = x86_pmu.handle_irq(regs);
--	finish_clock = local_clock();
-+	finish_clock = sched_clock();
- 
- 	perf_sample_event_took(finish_clock - start_clock);
- 
-diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
-index ba77ebc..6fcb49c 100644
---- a/arch/x86/kernel/nmi.c
-+++ b/arch/x86/kernel/nmi.c
-@@ -113,10 +113,10 @@ static int __kprobes nmi_handle(unsigned int type, struct pt_regs *regs, bool b2
- 		u64 before, delta, whole_msecs;
- 		int remainder_ns, decimal_msecs, thishandled;
- 
--		before = local_clock();
-+		before = sched_clock();
- 		thishandled = a->handler(type, regs);
- 		handled += thishandled;
--		delta = local_clock() - before;
-+		delta = sched_clock() - before;
- 		trace_nmi_handler(a->handler, (int)delta, thishandled);
- 
- 		if (delta < nmi_longest_ns)
+ 	/*
+@@ -154,9 +175,11 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 		 * Userspace could choose to issue a mb() before updating the
+ 		 * tail pointer. So that all reads will be completed before the
+ 		 * write is issued.
++		 *
++		 * See perf_output_put_handle().
+ 		 */
+ 		tail = ACCESS_ONCE(rb->user_page->data_tail);
+-		smp_rmb();
++		smp_mb();
+ 		offset = head = local_read(&rb->head);
+ 		head += size;
+ 		if (unlikely(!perf_output_space(rb, tail, offset, head)))
