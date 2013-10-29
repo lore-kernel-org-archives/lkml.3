@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693Ab3J2Wgf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 18:36:35 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:35706 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086Ab3J2Wge (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 18:36:34 -0400
+	id S1752319Ab3J2Whu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 18:37:50 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41042 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752249Ab3J2Whs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 18:37:48 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: <linux-crypto@vger.kernel.org>
+CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Joel Fernandes <joelf@ti.com>
+Subject: [PATCH] crypto: omap-aes: Fix CTR mode counter length
+Date: Tue, 29 Oct 2013 17:37:38 -0500
+Message-ID: <1383086258-22186-1-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-Date: Tue, 29 Oct 2013 23:36:33 +0100
-Message-ID: <CA+MoWDqEv0vxU3erx9GCuJAzK73U+WiuMwY71t94WB6HH-264A@mail.gmail.com>
-Subject: Suspend / Resume broken on Toshiba R830 / R700
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Jiang Liu <jiang.liu@huawei.com>, Toshi Kani <toshi.kani@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+NIST vectors for CTR mode in testmgr.h assume the entire IV as the counter. To
+get correct results that match the output of these vectors, we need to set the
+counter length correctly.
 
-I have one Toshiba R830 and one R700 and suspend / resume is broken on
-both. I've filled a bug report[1] on 03/02/2012, and it is still not
-fixed.
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+ drivers/crypto/omap-aes.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-It apparently suspend well and start resuming, but then something goes
-wrong, the screen keeps black and the CPU fan goes full speed.
-
-I suspect that this affects a considerable large number of devices.
-
-I'm looking for fixing it. Can anyone point me some directions?
-
-Thank you,
-
-Peter
-
-[1] https://bugzilla.redhat.com/show_bug.cgi?id=787299
-
+diff --git a/drivers/crypto/omap-aes.c b/drivers/crypto/omap-aes.c
+index ce791c2..19055a1 100644
+--- a/drivers/crypto/omap-aes.c
++++ b/drivers/crypto/omap-aes.c
+@@ -275,7 +275,7 @@ static int omap_aes_write_ctrl(struct omap_aes_dev *dd)
+ 	if (dd->flags & FLAGS_CBC)
+ 		val |= AES_REG_CTRL_CBC;
+ 	if (dd->flags & FLAGS_CTR) {
+-		val |= AES_REG_CTRL_CTR | AES_REG_CTRL_CTR_WIDTH_32;
++		val |= AES_REG_CTRL_CTR | AES_REG_CTRL_CTR_WIDTH_128;
+ 		mask = AES_REG_CTRL_CTR | AES_REG_CTRL_CTR_WIDTH_MASK;
+ 	}
+ 	if (dd->flags & FLAGS_ENCRYPT)
 -- 
-Peter
+1.8.1.2
+
