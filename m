@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab3J2IRH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 04:17:07 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:65483 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041Ab3J2IRA (ORCPT
+	id S1753098Ab3J2ISt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 04:18:49 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:50456 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751932Ab3J2ISr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 04:17:00 -0400
-Date: Tue, 29 Oct 2013 09:16:56 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Matt Fleming <matt@console-pimps.org>, Tony Luck <tony.luck@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Christoph Hellwig <hch@infradead.org>,
-        Chen Gong <gong.chen@linux.intel.com>, X86-ML <x86@kernel.org>
-Subject: Re: [PATCH] Move cper.c from drivers/acpi/apei to
- drivers/firmware/efi
-Message-ID: <20131029081656.GC16557@gmail.com>
-References: <20131027204648.GG1982@console-pimps.org>
- <526eb2c117027ea234@agluck-desk.sc.intel.com>
+	Tue, 29 Oct 2013 04:18:47 -0400
+Date: Tue, 29 Oct 2013 08:18:43 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] EFI changes
+Message-ID: <20131029081843.GQ1982@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <526eb2c117027ea234@agluck-desk.sc.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I dropped the cleanup patch which was causing build issues for ARM.
 
-* Luck, Tony <tony.luck@intel.com> wrote:
+The following changes since commit c158c3bf59951bbb44bd7ccca9e6665dfd1617c5:
 
-> cper.c contains code to decode and print "Common Platform Error Records".
-> Originally added under drivers/acpi/apei because the only user was in that
-> same directory - but now we have another consumer, and we shouldn't have
-> to force CONFIG_ACPI_APEI get access to this code.
-> 
-> Since CPER is defined in the UEFI specification - the logical home for
-> this code is under drivers/firmware/efi/
-> 
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
+  boot, efi: Remove redundant memset() (2013-10-04 20:07:47 +0100)
 
-Looks good to me!
+are available in the git repository at:
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
 
-	Ingo
+for you to fetch changes up to 72548e836b0c4abbb652e791dee9c91203a9a4c6:
+
+  x86/efi: Add EFI framebuffer earlyprintk support (2013-10-28 18:09:58 +0000)
+
+----------------------------------------------------------------
+ * Add support for earlyprintk=efi which uses the EFI framebuffer. Very
+   useful for debugging boot issues.
+
+----------------------------------------------------------------
+Matt Fleming (1):
+      x86/efi: Add EFI framebuffer earlyprintk support
+
+ Documentation/kernel-parameters.txt  |   8 +-
+ arch/x86/Kconfig.debug               |  10 ++
+ arch/x86/include/asm/efi.h           |   2 +
+ arch/x86/kernel/early_printk.c       |   7 ++
+ arch/x86/platform/efi/Makefile       |   1 +
+ arch/x86/platform/efi/early_printk.c | 191 +++++++++++++++++++++++++++++++++++
+ 6 files changed, 216 insertions(+), 3 deletions(-)
+ create mode 100644 arch/x86/platform/efi/early_printk.c
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
