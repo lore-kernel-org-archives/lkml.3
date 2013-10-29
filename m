@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639Ab3J2NvI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 09:51:08 -0400
-Received: from 13.mo6.mail-out.ovh.net ([188.165.56.124]:58055 "EHLO
-	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752594Ab3J2NvG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 09:51:06 -0400
-Message-ID: <526FB752.7070708@overkiz.com>
-Date: Tue, 29 Oct 2013 14:25:38 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Wim Van Sebroeck <wim@iguana.be>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Guenter Roeck <groeck7@gmail.com>, Yang Wenyou <wenyou.yang@atmel.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH v5 0/4] watchdog: at91sam9_wdt: handle already configured
- wdt
-References: <1380871455-7324-1-git-send-email-b.brezillon@overkiz.com> <20131029075028.GF19704@spo001.leaseweb.com> <526F8E89.30005@overkiz.com> <20131029125848.GB5261@spo001.leaseweb.com>
-In-Reply-To: <20131029125848.GB5261@spo001.leaseweb.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755892Ab3J2NvY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 09:51:24 -0400
+Received: from know-smtprelay-omc-3.server.virginmedia.net ([80.0.253.67]:45726
+	"EHLO know-smtprelay-omc-3.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752807Ab3J2NvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 09:51:07 -0400
+X-Originating-IP: [81.99.114.138]
+X-Spam: 0
+X-Authority: v=2.0 cv=LIo+2+q9 c=1 sm=1 a=rTb9Q+mClrhkGV9Ah9iRIA==:17
+ a=jlPsK6Yxj2MA:10 a=IkcTkHD0fZMA:10 a=xqWC_Br6kY4A:10 a=xq3W2uTSAAAA:8
+ a=N1CowNylAAAA:8 a=7NqCWP14w4AA:10 a=BCVP3ovclpOJlZB9NAUA:9 a=QEXdDO2ut3YA:10
+ a=wTsYZljDQnEA:10 a=rTb9Q+mClrhkGV9Ah9iRIA==:117
+Message-ID: <1383058260.2598.57.camel@artifact>
+Subject: Re: [PATCH] staging: Merge Crystal HD driver with linuxtv.org
+From: Steven Newbury <steve@snewbury.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Naren Sankar <nsankar@broadcom.com>,
+        Jarod Wilson <jarod@wilsonet.com>, Scott Davilla <davilla@4pi.com>,
+        Manu Abraham <abraham.manu@gmail.com>
+Date: Tue, 29 Oct 2013 14:51:00 +0000
+In-Reply-To: <1383051272.2598.55.camel@artifact>
+References: <1382891243.2598.10.camel@artifact>
+	 <20131027155408.GA22705@kroah.com> <1382893938.2598.24.camel@artifact>
+	 <20131027162613.GA23822@kroah.com> <1382897718.2598.37.camel@artifact>
+	 <1383051272.2598.55.camel@artifact>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 13198924608119601336
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrgeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrgeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/10/2013 13:58, Wim Van Sebroeck wrote:
-> Hi Boris,
->
->> I'm sorry for the inconvenience, but I found some bugs in my patch series:
->>
->> 1) the secs_to_ticks returns an erronous value when 0 is passed as an
->> argument
->> 2) the calculated heartbeat is too small for some use cases
->>      (i.e. kexecing a new kernel might trigger a watchdog reset before
->> the new kernel
->>       is able to load the watchdog driver)
->> 3) when initializing the watchdog driver, the timer should be configured
->> with the min_heartbeat value
->>      instead of the standard heartbeat value, because we don't for how
->> long the timer has been running.
->>
->> I'll send a new patch fixing those issues.
->> I hope it won't bother you :-(.
-> No problem :-). Just sent me the fixes when they are ready.
+On Tue, 2013-10-29 at 12:54 +0000, Steven Newbury wrote:
+> Hi Greg,
+> I'm making good progress.  My plan is to break/clean up the patch
+> logically:
+> 
+> patch1: Clean up debug/error messages  DONE - (this has actually
+> resulted in some bug fixes)
+> 
+<- patch1b: Clean up typedefs (missed this in my list, but it's what I'm
+working on right now) WIP
 
-Already done : https://lkml.org/lkml/2013/10/29/207.
+> patch2: Remove commented out/unused code  TODO
+> 
+> patch3: Power management support  TODO
+> 
+> patch4: other misc fixes/changes (may be more than one patch) with
+> details in log message
+> 
+> patch5: Rename driver to crystalhd (instead of bcm70012) DONE
+> 
+> patch6: Restructure driver to prepare for BCM70015 support by splitting
+> out (BCM70012) hw specific parts.  DONE
+> 
+> patch7: Add BCM70015 support  MOSTLY DONE - some clean up needed
+> 
+> 
+> To me this makes more sense than trying to apply the patches as applied
+> to the linuxtv.org git repo since there's a lot of irrelevant code churn
+> and changes in commits which are undocumented in the log message along
+> with the fact they won't apply cleanly on top of the existing staging
+> driver anyway.
 
-Thanks.
 
-Best Regards,
-
-Boris
-
->
-> Kind regards,
-> Wim.
->
 
