@@ -1,62 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357Ab3J2HmE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 03:42:04 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:39310 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751604Ab3J2HmB (ORCPT
+	id S1752574Ab3J2HmV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 03:42:21 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:9422 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052Ab3J2HmS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 03:42:01 -0400
-X-Greylist: delayed 357 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Oct 2013 03:42:01 EDT
-Date: Tue, 29 Oct 2013 08:41:53 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Johannes Thumshirn <johannes.thumshirn@men.de>
-Cc: Rob Landley <rob@landley.net>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Guenter Roeck <linux@roeck-us.net>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH] documentation/devicetree: Move DT bindigns from gpio to watchdog
-Message-ID: <20131029074153.GE19569@spo001.leaseweb.com>
-References: <1377088929-23694-1-git-send-email-johannes.thumshirn@men.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377088929-23694-1-git-send-email-johannes.thumshirn@men.de>
-User-Agent: Mutt/1.4.1i
+	Tue, 29 Oct 2013 03:42:18 -0400
+X-AuditID: cbfee61b-b7fd56d000001fc6-21-526f66d970bd
+From: Fan Li <fanofcode.li@samsung.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+References: <21040538.71861382950468176.JavaMail.weblogic@epv6ml09>
+ <1382956476.992.94.camel@kjgkr>
+In-reply-to: <1382956476.992.94.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH] f2fs: change the method of calculating the
+ number summary blocks
+Date: Tue, 29 Oct 2013 15:41:27 +0800
+Message-id: <001401ced47a$61fe2fb0$25fa8f10$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQGLGSCSKTOiuzbPk65RCytXtzsMdwEdJqSLmonTaIA=
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9jQd2baflBBnP/Gllc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlbH4zW3GggtiFX9f
+	HmZtYFws1MXIySEhYCIx5dwlZghbTOLCvfVsILaQwHRGiX1HeLsYuYDsH4wSdy9NBStiE1CX
+	2DKzmwnEFhGQlpj1aR4LiM0skCkx5/VkVojmVIn9B/oYQWxOAR2Jr0+mgg0VFkiS+H9lKzuI
+	zSKgKnGoYTlYnFfAUuL+mttQtqDEj8n3gGZyAM1Ul5gyJRdivLbEk3cXWCHuVJDYcfY1I8QJ
+	VhJ3Hm9ihKgRl5j04CH7BEahWUgmzUKYNAvJpFlIOhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L
+	10vOz93ECA76Z9I7GFc1WBxiFOBgVOLhtWDLDxJiTSwrrsw9xCjBwawkwrsjGCjEm5JYWZVa
+	lB9fVJqTWnyIUZqDRUmc92CrdaCQQHpiSWp2ampBahFMlomDU6qBMbJty53QlZlnljQVnPZe
+	srqqdZb2hQWfezgUG/ersf/NO1HMbB2QZcs/t3H31A0tfn+ty5cnT5Gv1/yg0PSm8KjANfkG
+	4T0flkytPa5QJi3QENmXdj09u10vaKvFUYtLCkpzMrUfMXFWft21S42hoZv5ecWVqpizUq1a
+	ki2bZCZWKBZslJqoxFKckWioxVxUnAgATYdrxHYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johannes,
-
-> I accidently put the devicetree bindings for the MEN A21 watchdog driver in
-> Documentation/devicetree/bindings/gpio instead of
-> Documentation/devicetree/bindings/watchdog, this patch addresses this error.
+> Hi,
 > 
-> Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: Ian Campbell <ian.campbell@citrix.com>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: Wim Van Sebroeck <wim@iguana.be>
-> Cc: Guenter Roeck <linux@roeck-us.net>
-> ---
->  .../bindings/{gpio => watchdog}/men-a021-wdt.txt   |    0
->  1 file changed, 0 insertions(+), 0 deletions(-)
->  rename Documentation/devicetree/bindings/{gpio => watchdog}/men-a021-wdt.txt (100%)
+> 2013-10-28 (월), 08:54 +0000, Fan Li:
+> > "There is a HTML error in the previous email, so I send this one.If you
+> already received this before, please ignore it.Sorry for the inconvenience"
+> >
+> > This patch change the method of calculating the number of summary blocks
+> in function  npages_for_summary_flush.
+> > npages_for_summary_flush uses (SUMMARY_SIZE + 1) as the size of a
+> f2fs_summary while the actual size is just SUMMARY_SIZE.
+> > As a result, occasionally the return value of npages_for_summary_flush will
+> be bigger than the actual number by one, and the checkpoint won't be
+> written contiguously  into disk.
+> > Besides, struct f2fs_summary can't be split to two pages, so it could take
+> more space than the sum of its size, the current version seems not to take it
+> into account.
+> >
 > 
-> diff --git a/Documentation/devicetree/bindings/gpio/men-a021-wdt.txt b/Documentation/devicetree/bindings/watchdog/men-a021-wdt.txt
-> similarity index 100%
-> rename from Documentation/devicetree/bindings/gpio/men-a021-wdt.txt
-> rename to Documentation/devicetree/bindings/watchdog/men-a021-wdt.txt
+> Again. Please write a description not to exceed 80 columns.
+> 
 
-This patch has been added to linux-watchdog-next.
+Sorry, didn't know. here's the short version:
+npages_for_summary_flush uses (SUMMARY_SIZE + 1) as the size of a f2fs_summary 
+while its actual size is  SUMMARY_SIZE. So the result sometimes is bigger than 
+actual number by one, which causes checkpoint can't be written into disk contiguously,
+and sometimes summary blocks can't be compacted like they should.
+Besides, when writing summary blocks into pages, if remain space in a page isn't 
+big enough for one f2fs_summary, it will be left unused, current code seems 
+not to take it into account.
 
-Kind regards,
-Wim.
+Signed-off-by: Fan Li <fanofcode.li@samsung.com>
+---
+ fs/f2fs/segment.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 487af61..e40cdc4 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -279,9 +279,8 @@ static void __add_sum_entry(struct f2fs_sb_info *sbi, int type,
+  */
+ int npages_for_summary_flush(struct f2fs_sb_info *sbi)
+ {
+-	int total_size_bytes = 0;
+ 	int valid_sum_count = 0;
+-	int i, sum_space;
++	int i, sum_in_page;
+ 
+ 	for (i = CURSEG_HOT_DATA; i <= CURSEG_COLD_DATA; i++) {
+ 		if (sbi->ckpt->alloc_type[i] == SSR)
+@@ -290,13 +289,12 @@ int npages_for_summary_flush(struct f2fs_sb_info *sbi)
+ 			valid_sum_count += curseg_blkoff(sbi, i);
+ 	}
+ 
+-	total_size_bytes = valid_sum_count * (SUMMARY_SIZE + 1)
+-			+ sizeof(struct nat_journal) + 2
+-			+ sizeof(struct sit_journal) + 2;
+-	sum_space = PAGE_CACHE_SIZE - SUM_FOOTER_SIZE;
+-	if (total_size_bytes < sum_space)
++	sum_in_page = (PAGE_CACHE_SIZE - 2 * SUM_JOURNAL_SIZE -
++			SUM_FOOTER_SIZE) / SUMMARY_SIZE;
++	if (valid_sum_count <= sum_in_page)
+ 		return 1;
+-	else if (total_size_bytes < 2 * sum_space)
++	else if ((valid_sum_count - sum_in_page) <=
++		(PAGE_CACHE_SIZE - SUM_FOOTER_SIZE) / SUMMARY_SIZE)
+ 		return 2;
+ 	return 3;
+ }
+-- 
+1.7.9.5
 
