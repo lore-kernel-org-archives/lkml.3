@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758616Ab3J2RwZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 13:52:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36941 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab3J2RwY (ORCPT
+	id S932189Ab3J2RyC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 13:54:02 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:62994 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754174Ab3J2RyA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 13:52:24 -0400
-Date: Tue, 29 Oct 2013 10:52:22 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kevin McKinney <klmckinney1@gmail.com>
-Cc: Staging subsystem List <devel@driverdev.osuosl.org>,
-        linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH 02/11 V2] Staging: bcm: Remove typedef for _U_IP_ADDRESS
- and call directly.
-Message-ID: <20131029175222.GA4780@kroah.com>
-References: <1383018708-29615-1-git-send-email-klmckinney1@gmail.com>
- <1383018708-29615-3-git-send-email-klmckinney1@gmail.com>
- <20131029160148.GA20656@kroah.com>
- <20131029160322.GA21844@kroah.com>
- <CAKPrQY9OTnJMEZ9=PhwXDbSxaKwt0t1A1HEFmCde-x-WDXDPoA@mail.gmail.com>
- <20131029170437.GA18702@kroah.com>
- <CAKPrQY-EVT4YfYDo6tWuuER8+e1x_0nvyRoBZW2qRyF47zutcw@mail.gmail.com>
+	Tue, 29 Oct 2013 13:54:00 -0400
+Date: Tue, 29 Oct 2013 18:53:54 +0100
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, mmarek@suse.cz,
+        akpm@linux-foundation.org,
+        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+Subject: Re: [PATCH] scripts/kconfig/menu.c: warning: jump may be used
+ uninitialized in this function
+Message-ID: <20131029175354.GB3411@free.fr>
+References: <alpine.DEB.2.11.1310271822540.31521@trent.utfs.org>
+ <alpine.DEB.2.11.1310271859320.31521@trent.utfs.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKPrQY-EVT4YfYDo6tWuuER8+e1x_0nvyRoBZW2qRyF47zutcw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <alpine.DEB.2.11.1310271859320.31521@trent.utfs.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 01:10:07PM -0400, Kevin McKinney wrote:
-> On Tue, Oct 29, 2013 at 1:04 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> 
->     On Tue, Oct 29, 2013 at 01:01:39PM -0400, Kevin McKinney wrote:
->     > Sure, I will resend these patches. �I tried to be careful, and apply all
->     other
->     > patches before I re-did mine. I must have missed something. I will
->     resend. In
->     > the past I developed my patches against the linux-next branch. �Is this
->     still
->     > the right branch to use?
-> 
->     Yes it is.
-> 
-> 
-> Did someone already submit these patches? If so, I won't bother resending :)
+Christian, All,
 
-No they did not, yours just conflicts with patches others have done.
+On 2013-10-27 19:02 -0700, Christian Kujau spake thusly:
+> On Sun, 27 Oct 2013 at 18:28, Christian Kujau wrote:
+> > While doing "make oldconfig" on 3.12-rc7 with gcc-4.7.2 (Debian), the 
+> > following warning is printed:
+> > 
+> >   HOSTCC  scripts/kconfig/zconf.tab.o
+> > In file included from scripts/kconfig/zconf.tab.c:2537:0:
+> > /usr/local/src/linux-git/scripts/kconfig/menu.c: In function ‘get_symbol_str’:
+> > /usr/local/src/linux-git/scripts/kconfig/menu.c:586:18: warning: ‘jump’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+> > /usr/local/src/linux-git/scripts/kconfig/menu.c:547:19: note: ‘jump’ was declared here
+> 
+> Grrr, only after I sent this message I found this was reported in 
+> September already by Madhavan Srinivasan:  https://lkml.org/lkml/2013/9/19/24
+> 
+> Does anybody know the state of this fix?
 
-Also, don't send html email, the mailing lists reject it.
+The solution was to properly comment that this was a gcc issue, in that 
+this is a spurious error, does not appear in previous gcc versions, and
+has been fixed in later gcc versions.
 
-thanks,
+Setting 'jump' to NULL may hide reall issues in case the code is changed
+in the future, so it is not appropriate a fix. Hence why the previously-
+submitted patches were not applied.
 
-greg k-h
+I'll take this on me to properly fix this. Thanks for the heads up.
+
+Regards,
+Yann E. MORIN.
+
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
