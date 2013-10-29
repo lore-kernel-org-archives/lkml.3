@@ -1,82 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756852Ab3J2N0w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 09:26:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48918 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756783Ab3J2N0t (ORCPT
+	id S1755959Ab3J2N2h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 09:28:37 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:35942 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753327Ab3J2N2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 09:26:49 -0400
-Date: Tue, 29 Oct 2013 14:26:29 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Mike Galbraith <bitbucket@online.de>, Paul Turner <pjt@google.com>,
-        Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 1/3] sched: Fix nohz_kick_needed to consider the nr_busy
- of the parent domain's group
-Message-ID: <20131029132629.GC16117@laptop.programming.kicks-ass.net>
-References: <20131021114002.13291.31478.stgit@drishya>
- <20131021114442.13291.99344.stgit@drishya>
- <20131022221138.GJ2490@laptop.programming.kicks-ass.net>
- <52679BD6.6090507@linux.vnet.ibm.com>
- <CAKfTPtAUFdmc7PasebNksYztMwRrWsGWPgN6JJJurddu+UP-hQ@mail.gmail.com>
- <5268D54A.9060604@linux.vnet.ibm.com>
- <20131028135043.GP19466@laptop.lan>
- <526F2BEC.3040207@linux.vnet.ibm.com>
+	Tue, 29 Oct 2013 09:28:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <526F2BEC.3040207@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131029011223.58b51e529acced32d6dae82a@canb.auug.org.au>
+References: <20131029011223.58b51e529acced32d6dae82a@canb.auug.org.au>
+Date: Tue, 29 Oct 2013 14:28:34 +0100
+Message-ID: <CACRpkdb_n+bDq3hMR++r2Xr_sWnDVek492XeHAMh5Jtd53-woA@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree (gpio
+ tree related)
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 09:00:52AM +0530, Preeti U Murthy wrote:
-> > Oh nice, that gets rid of the multiple atomics, and it nicely splits
-> > this nohz logic into per topology groups -- now if only we could split
-> > the rest too :-)
-> 
-> I am sorry, I don't get you here. By the 'rest', do you refer to
-> nohz_kick_needed() as below? Or am I missing something?
+On Mon, Oct 28, 2013 at 3:12 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Nah, the rest of the NOHZ infrastructure. Currently its global state;
-there were some patches a few years ago that attempted to make that
-per-node state, but that work stalled due to people switching jobs.
+> Caused by commit 79a9becda894 ("gpiolib: export descriptor-based GPIO
+> interface") from the gpio tree.
+>
+> I have applied this fix up patch for today:
+>
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Tue, 29 Oct 2013 01:06:23 +1100
+> Subject: [PATCH] gpiolib: provide a declaration of seq_file in gpio/driver.h
+>
+> Fixes this build error:
+>
+> In file included from include/asm-generic/gpio.h:13:0,
+>                  from include/linux/gpio.h:51,
+>                  from include/linux/of_gpio.h:20,
+>                  from arch/powerpc/sysdev/ppc4xx_gpio.c:29:
+> include/linux/gpio/driver.h:85:14: error: 'struct seq_file' declared inside parameter list [-Werror]
+> include/linux/gpio/driver.h:85:14: error: its scope is only this definition or declaration, which is probably not what you want [-Werror]
+>
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
+Patch applied to the GPIO tree, thanks for fixing up our mess!
 
-> >> +	sd = highest_flag_domain(cpu, SD_ASYM_PACKING);
-> >> +
-> >> +	if (sd && (cpumask_first_and(nohz.idle_cpus_mask,
-> >> +				  sched_domain_span(sd)) < cpu))
-> >> +		goto need_kick_unlock;
-> >> +
-> >>  	rcu_read_unlock();
-> >>  	return 0;
-> > 
-> > This again is a bit sad; most archs will not have SD_ASYM_PACKING set at
-> > all; this means that they all will do a complete (and pointless) sched
-> > domain tree walk here.
-> 
-> There will not be a 'complete' sched domain tree walk right? The
-> iteration will break at the first level of the sched domain for those
-> archs which do not have SD_ASYM_PACKING set at all.
-
-Ah indeed; I think I got confused due to me modifying
-highest_flag_domain() earlier to assume a flag is carried from the
-lowest domain upwards.
-
-> But it is true that doing a sched domain tree walk regularly is a bad
-> idea, might as well update the domain with SD_ASYM_PACKING flag set once
-> and query this domain when required.
-> 
-> I will send out the patch with sd_asym domain introduced rather than the
-> above.
-
-Thanks
+Yours,
+Linus Walleij
