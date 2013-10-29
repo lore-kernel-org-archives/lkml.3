@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702Ab3J2SVk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:21:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59423 "EHLO
+	id S1753534Ab3J2SIU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:08:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59381 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753814Ab3J2SIr (ORCPT
+	with ESMTP id S1753232Ab3J2SIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:08:47 -0400
+	Tue, 29 Oct 2013 14:08:16 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 55/81] ll_temac: Reset dma descriptors indexes on ndo_open
-Date: Tue, 29 Oct 2013 11:04:16 -0700
-Message-Id: <1383069882-11437-56-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 73/81] dm snapshot: fix data corruption
+Date: Tue, 29 Oct 2013 11:04:34 -0700
+Message-Id: <1383069882-11437-74-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
@@ -28,45 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ricardo Ribalda <ricardo.ribalda@gmail.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-[ Upstream commit 7167cf0e8cd10287b7912b9ffcccd9616f382922 ]
+commit e9c6a182649f4259db704ae15a91ac820e63b0ca upstream.
 
-The dma descriptors indexes are only initialized on the probe function.
+This patch fixes a particular type of data corruption that has been
+encountered when loading a snapshot's metadata from disk.
 
-If a packet is on the buffer when temac_stop is called, the dma
-descriptors indexes can be left on a incorrect state where no other
-package can be sent.
+When we allocate a new chunk in persistent_prepare, we increment
+ps->next_free and we make sure that it doesn't point to a metadata area
+by further incrementing it if necessary.
 
-So an interface could be left in an usable state after ifdow/ifup.
+When we load metadata from disk on device activation, ps->next_free is
+positioned after the last used data chunk. However, if this last used
+data chunk is followed by a metadata area, ps->next_free is positioned
+erroneously to the metadata area. A newly-allocated chunk is placed at
+the same location as the metadata area, resulting in data or metadata
+corruption.
 
-This patch makes sure that the descriptors indexes are in a proper
-status when the device is open.
+This patch changes the code so that ps->next_free skips the metadata
+area when metadata are loaded in function read_exceptions.
 
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The patch also moves a piece of code from persistent_prepare_exception
+to a separate function skip_metadata to avoid code duplication.
+
+CVE-2013-4299
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/xilinx/ll_temac_main.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/md/dm-snap-persistent.c | 18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
-index aad909d..33c111d 100644
---- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-+++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-@@ -308,6 +308,12 @@ static int temac_dma_bd_init(struct net_device *ndev)
- 		       lp->rx_bd_p + (sizeof(*lp->rx_bd_v) * (RX_BD_NUM - 1)));
- 	lp->dma_out(lp, TX_CURDESC_PTR, lp->tx_bd_p);
+diff --git a/drivers/md/dm-snap-persistent.c b/drivers/md/dm-snap-persistent.c
+index 4caa8e6..2d2b1b7 100644
+--- a/drivers/md/dm-snap-persistent.c
++++ b/drivers/md/dm-snap-persistent.c
+@@ -269,6 +269,14 @@ static chunk_t area_location(struct pstore *ps, chunk_t area)
+ 	return NUM_SNAPSHOT_HDR_CHUNKS + ((ps->exceptions_per_area + 1) * area);
+ }
  
-+	/* Init descriptor indexes */
-+	lp->tx_bd_ci = 0;
-+	lp->tx_bd_next = 0;
-+	lp->tx_bd_tail = 0;
-+	lp->rx_bd_ci = 0;
++static void skip_metadata(struct pstore *ps)
++{
++	uint32_t stride = ps->exceptions_per_area + 1;
++	chunk_t next_free = ps->next_free;
++	if (sector_div(next_free, stride) == NUM_SNAPSHOT_HDR_CHUNKS)
++		ps->next_free++;
++}
++
+ /*
+  * Read or write a metadata area.  Remembering to skip the first
+  * chunk which holds the header.
+@@ -502,6 +510,8 @@ static int read_exceptions(struct pstore *ps,
+ 
+ 	ps->current_area--;
+ 
++	skip_metadata(ps);
 +
  	return 0;
+ }
  
- out:
+@@ -616,8 +626,6 @@ static int persistent_prepare_exception(struct dm_exception_store *store,
+ 					struct dm_exception *e)
+ {
+ 	struct pstore *ps = get_info(store);
+-	uint32_t stride;
+-	chunk_t next_free;
+ 	sector_t size = get_dev_size(dm_snap_cow(store->snap)->bdev);
+ 
+ 	/* Is there enough room ? */
+@@ -630,10 +638,8 @@ static int persistent_prepare_exception(struct dm_exception_store *store,
+ 	 * Move onto the next free pending, making sure to take
+ 	 * into account the location of the metadata chunks.
+ 	 */
+-	stride = (ps->exceptions_per_area + 1);
+-	next_free = ++ps->next_free;
+-	if (sector_div(next_free, stride) == 1)
+-		ps->next_free++;
++	ps->next_free++;
++	skip_metadata(ps);
+ 
+ 	atomic_inc(&ps->pending_count);
+ 	return 0;
 -- 
 1.8.1.2
 
