@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab3J2IZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 04:25:56 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:56160 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753538Ab3J2IZu (ORCPT
+	id S1753626Ab3J2I00 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 04:26:26 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:37026 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753578Ab3J2I0V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 04:25:50 -0400
-Date: Tue, 29 Oct 2013 09:25:48 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Kevin Hilman <khilman@linaro.org>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: Support arch_irq_work_raise() via self IPIs
-Message-ID: <20131029082546.GA17514@localhost.localdomain>
-References: <526DBEAA.4030707@linaro.org>
- <1382984701-2371-1-git-send-email-sboyd@codeaurora.org>
- <878uxcq1m7.fsf@linaro.org>
- <20131029060058.GD21983@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131029060058.GD21983@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 29 Oct 2013 04:26:21 -0400
+Subject: Re: [PATCH v2 1/2] clk/zynq/clkc: Add 'fclk-enable' feature
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=US-ASCII
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <2028580.HhySWWnU2A@flatron>
+Date: Tue, 29 Oct 2013 03:26:20 -0500
+Cc: =?iso-8859-1?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <8864256B-F8F9-4474-9B5F-416C3BB96523@codeaurora.org>
+References: <1381425018-5653-1-git-send-email-soren.brinkmann@xilinx.com> <1592656.1ojHcSlzVh@flatron> <b7840a0d-ac49-4c2d-beaa-9f79748c70d0@CH1EHSMHS006.ehs.local> <2028580.HhySWWnU2A@flatron>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 11:00:58PM -0700, Stephen Boyd wrote:
-> On 10/28, Kevin Hilman wrote:
-> > Stephen Boyd <sboyd@codeaurora.org> writes:
-> > 
-> > > This will allow the scheduler tick to be restarted if we're in
-> > > full NOHZ mode.
-> > >
-> > > Cc: Kevin Hilman <khilman@linaro.org>
-> > > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> > 
-> > Minor nit, but I'd prefer a more verbose changelog (I forget things
-> > quickly and like to rely on changelogs for my memory.)  Probably worth
-> > adding something like: "By default, irq_work is tied to the tick
-> > processing (update_process_times()) but in full NOHZ mode, no tick means
-> > no IRQ work.  In order for IRQ work to be done in full NOHZ mode, a
-> > self-IPI is used to process IRQ work."
-> > 
-> > Other than the changelog nit, patch looks good, feel free to add
-> > 
-> > Reviewed-by: Kevin Hilman <khilman@linaro.org>
-> > 
-> > If Russell is OK with this, it can go to his patch system.
-> > 
-> 
-> Fair enough. This is what I came up with. I'll send it off to the
-> patch tracker in about 12 hours if nobody else has anymore
-> comments.
-> 
-> ----8<-----
-> ARM: Support arch_irq_work_raise() via self IPIs                                
-> 
-> By default, IRQ work is run from the tick interrupt (see
-> irq_work_run() in update_process_times()). When we're in full
-> NOHZ mode, restarting the tick requires the use of IRQ work and
-> if the only place we run IRQ work is in the tick interrupt we
-> have an unbreakable cycle. Implement arch_irq_work_raise() via
-> self IPIs to break this cycle and get the tick started again.
-> Note that we implement this via IPIs which are only available on
-> SMP builds. This shouldn't be a problem because full NOHZ is only
-> supported on SMP builds anyway.
 
-Nice description!
+On Oct 28, 2013, at 5:17 PM, Tomasz Figa wrote:
 
-Thanks!
-
+>>>> diff --git a/Documentation/devicetree/bindings/clock/zynq-7000.txt
+>>>> b/Documentation/devicetree/bindings/clock/zynq-7000.txt index
+>>>> d99af878f5d7..11fdd146ec83 100644
+>>>> --- a/Documentation/devicetree/bindings/clock/zynq-7000.txt
+>>>> +++ b/Documentation/devicetree/bindings/clock/zynq-7000.txt
+>>>> 
+>>>> @@ -22,6 +22,10 @@ Required properties:
+>>>> Optional properties:
+>>>>  - clocks : as described in the clock bindings
+>>>>  - clock-names : as described in the clock bindings
+>>>> 
+>>>> + - fclk-enable : Bit mask to enable FCLKs in cases no proper CCF
+>>> 
+>>> Since it's a vendor specific property, it should include vendor
+>>> prefix.
+>> 
+>> The whole driver is vendor specific. Should there really be another
+>> prefix for that property?
 > 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> Reviewed-by: Kevin Hilman <khilman@linaro.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> -- 
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
+> Yes. If a property is introduced just for use by this particular driver 
+> then it must be prepended by a vendor prefix. That's a general rule.
+
+Most all nodes are vendor specific by definition ;).
+
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
