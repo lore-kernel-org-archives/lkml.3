@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab3J2LCV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 07:02:21 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:55222 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754455Ab3J2LCS (ORCPT
+	id S1754818Ab3J2LDJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 07:03:09 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:39055 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754230Ab3J2LCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 07:02:18 -0400
-Subject: [PATCH V7 6/7] POWER/cpuidle: Enable powernv cpuidle support.
+	Tue, 29 Oct 2013 07:02:09 -0400
+Subject: [PATCH V7 2/7] pseries/cpuidle: Use cpuidle_register() for
+ initialisation.
 To: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
 From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 Cc: daniel.lezcano@linaro.org, michael@ellerman.id.au, scottwood@freescale.com,
         srivatsa.bhat@linux.vnet.ibm.com, preeti@linux.vnet.ibm.com,
         linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com
-Date: Tue, 29 Oct 2013 16:31:56 +0530
-Message-ID: <20131029110154.31547.94129.stgit@deepthi.in.ibm.com>
+Date: Tue, 29 Oct 2013 16:31:29 +0530
+Message-ID: <20131029110127.31547.9773.stgit@deepthi.in.ibm.com>
 In-Reply-To: <20131029110052.31547.82682.stgit@deepthi.in.ibm.com>
 References: <20131029110052.31547.82682.stgit@deepthi.in.ibm.com>
 User-Agent: StGit/0.16
@@ -24,96 +25,175 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13102911-5816-0000-0000-00000AA10F06
+x-cbid: 13102911-8878-0000-0000-00000978D0AA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patch extends the current power backend
-idle driver to the powernv platform.
+This patch replaces the cpuidle driver and devices initialisation
+calls with a single generic cpuidle_register() call
+and also includes minor refactoring of the code around it.
 
 Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 ---
- drivers/cpuidle/cpuidle-ibm-power.c |   39 ++++++++++++++++++++++++++++++++---
- 1 file changed, 36 insertions(+), 3 deletions(-)
+ drivers/cpuidle/cpuidle-ibm-power.c |   80 +++++------------------------------
+ 1 file changed, 12 insertions(+), 68 deletions(-)
 
 diff --git a/drivers/cpuidle/cpuidle-ibm-power.c b/drivers/cpuidle/cpuidle-ibm-power.c
-index 5b92242..f790ea2 100644
+index a166e38..faf8cc1 100644
 --- a/drivers/cpuidle/cpuidle-ibm-power.c
 +++ b/drivers/cpuidle/cpuidle-ibm-power.c
-@@ -52,9 +52,10 @@ static int snooze_loop(struct cpuidle_device *dev,
- 			struct cpuidle_driver *drv,
+@@ -1,5 +1,5 @@
+ /*
+- *  processor_idle - idle state cpuidle driver.
++ *  cpuidle-ibm-power - idle state cpuidle driver.
+  *  Adapted from drivers/idle/intel_idle.c and
+  *  drivers/acpi/processor_idle.c
+  *
+@@ -28,7 +28,6 @@ struct cpuidle_driver pseries_idle_driver = {
+ #define MAX_IDLE_STATE_COUNT	2
+ 
+ static int max_idle_state = MAX_IDLE_STATE_COUNT - 1;
+-static struct cpuidle_device __percpu *pseries_cpuidle_devices;
+ static struct cpuidle_state *cpuidle_state_table;
+ 
+ static inline void idle_loop_prolog(unsigned long *in_purr)
+@@ -56,13 +55,12 @@ static int snooze_loop(struct cpuidle_device *dev,
  			int index)
  {
--	unsigned long in_purr;
-+	unsigned long in_purr = 0;
+ 	unsigned long in_purr;
+-	int cpu = dev->cpu;
  
--	idle_loop_prolog(&in_purr);
-+	if (firmware_has_feature(FW_FEATURE_SPLPAR))
-+		idle_loop_prolog(&in_purr);
+ 	idle_loop_prolog(&in_purr);
  	local_irq_enable();
  	set_thread_flag(TIF_POLLING_NRFLAG);
  
-@@ -68,7 +69,8 @@ static int snooze_loop(struct cpuidle_device *dev,
- 	clear_thread_flag(TIF_POLLING_NRFLAG);
- 	smp_mb();
- 
--	idle_loop_epilog(in_purr);
-+	if (firmware_has_feature(FW_FEATURE_SPLPAR))
-+		idle_loop_epilog(in_purr);
- 
- 	return index;
- }
-@@ -132,6 +134,15 @@ static int shared_cede_loop(struct cpuidle_device *dev,
- 	return index;
- }
- 
-+static int nap_loop(struct cpuidle_device *dev,
-+			struct cpuidle_driver *drv,
-+			int index)
-+{
-+	ppc64_runlatch_off();
-+	power7_idle();
-+	return index;
-+}
-+
- /*
-  * States for dedicated partition case.
-  */
-@@ -165,6 +176,23 @@ static struct cpuidle_state shared_states[] = {
- 		.enter = &shared_cede_loop },
- };
- 
-+static struct cpuidle_state powernv_states[] = {
-+	{ /* Snooze */
-+		.name = "snooze",
-+		.desc = "snooze",
-+		.flags = CPUIDLE_FLAG_TIME_VALID,
-+		.exit_latency = 0,
-+		.target_residency = 0,
-+		.enter = &snooze_loop },
-+	{ /* NAP */
-+		.name = "NAP",
-+		.desc = "NAP",
-+		.flags = CPUIDLE_FLAG_TIME_VALID,
-+		.exit_latency = 10,
-+		.target_residency = 100,
-+		.enter = &nap_loop },
-+};
-+
- void update_smt_snooze_delay(int cpu, int residency)
+-	while ((!need_resched()) && cpu_online(cpu)) {
++	while (!need_resched()) {
+ 		ppc64_runlatch_off();
+ 		HMT_low();
+ 		HMT_very_low();
+@@ -191,7 +189,7 @@ static int pseries_cpuidle_add_cpu_notifier(struct notifier_block *n,
  {
- 	struct cpuidle_driver *drv = cpuidle_get_driver();
-@@ -258,6 +286,11 @@ static int power_idle_probe(void)
- 			cpuidle_state_table = dedicated_states;
- 			max_idle_state = ARRAY_SIZE(dedicated_states);
- 		}
-+
-+	} else if (firmware_has_feature(FW_FEATURE_OPALv3)) {
-+		cpuidle_state_table = powernv_states;
-+		max_idle_state = ARRAY_SIZE(powernv_states);
-+
- 	} else
+ 	int hotcpu = (unsigned long)hcpu;
+ 	struct cpuidle_device *dev =
+-			per_cpu_ptr(pseries_cpuidle_devices, hotcpu);
++			per_cpu(cpuidle_devices, hotcpu);
+ 
+ 	if (dev && cpuidle_get_driver()) {
+ 		switch (action) {
+@@ -248,50 +246,6 @@ static int pseries_cpuidle_driver_init(void)
+ 	return 0;
+ }
+ 
+-/* pseries_idle_devices_uninit(void)
+- * unregister cpuidle devices and de-allocate memory
+- */
+-static void pseries_idle_devices_uninit(void)
+-{
+-	int i;
+-	struct cpuidle_device *dev;
+-
+-	for_each_possible_cpu(i) {
+-		dev = per_cpu_ptr(pseries_cpuidle_devices, i);
+-		cpuidle_unregister_device(dev);
+-	}
+-
+-	free_percpu(pseries_cpuidle_devices);
+-	return;
+-}
+-
+-/* pseries_idle_devices_init()
+- * allocate, initialize and register cpuidle device
+- */
+-static int pseries_idle_devices_init(void)
+-{
+-	int i;
+-	struct cpuidle_driver *drv = &pseries_idle_driver;
+-	struct cpuidle_device *dev;
+-
+-	pseries_cpuidle_devices = alloc_percpu(struct cpuidle_device);
+-	if (pseries_cpuidle_devices == NULL)
+-		return -ENOMEM;
+-
+-	for_each_possible_cpu(i) {
+-		dev = per_cpu_ptr(pseries_cpuidle_devices, i);
+-		dev->state_count = drv->state_count;
+-		dev->cpu = i;
+-		if (cpuidle_register_device(dev)) {
+-			printk(KERN_DEBUG \
+-				"cpuidle_register_device %d failed!\n", i);
+-			return -EIO;
+-		}
+-	}
+-
+-	return 0;
+-}
+-
+ /*
+  * pseries_idle_probe()
+  * Choose state table for shared versus dedicated partition
+@@ -299,9 +253,6 @@ static int pseries_idle_devices_init(void)
+ static int pseries_idle_probe(void)
+ {
+ 
+-	if (!firmware_has_feature(FW_FEATURE_SPLPAR))
+-		return -ENODEV;
+-
+ 	if (cpuidle_disable != IDLE_NO_OVERRIDE)
  		return -ENODEV;
+ 
+@@ -310,10 +261,13 @@ static int pseries_idle_probe(void)
+ 		return -EPERM;
+ 	}
+ 
+-	if (lppaca_shared_proc(get_lppaca()))
+-		cpuidle_state_table = shared_states;
+-	else
+-		cpuidle_state_table = dedicated_states;
++	if (firmware_has_feature(FW_FEATURE_SPLPAR)) {
++		if (lppaca_shared_proc(get_lppaca()))
++			cpuidle_state_table = shared_states;
++		else
++			cpuidle_state_table = dedicated_states;
++	} else
++		return -ENODEV;
+ 
+ 	return 0;
+ }
+@@ -327,22 +281,14 @@ static int __init pseries_processor_idle_init(void)
+ 		return retval;
+ 
+ 	pseries_cpuidle_driver_init();
+-	retval = cpuidle_register_driver(&pseries_idle_driver);
++	retval = cpuidle_register(&pseries_idle_driver, NULL);
+ 	if (retval) {
+ 		printk(KERN_DEBUG "Registration of pseries driver failed.\n");
+ 		return retval;
+ 	}
+ 
+-	retval = pseries_idle_devices_init();
+-	if (retval) {
+-		pseries_idle_devices_uninit();
+-		cpuidle_unregister_driver(&pseries_idle_driver);
+-		return retval;
+-	}
+-
+ 	register_cpu_notifier(&setup_hotplug_notifier);
+ 	printk(KERN_DEBUG "pseries_idle_driver registered\n");
+-
+ 	return 0;
+ }
+ 
+@@ -350,9 +296,7 @@ static void __exit pseries_processor_idle_exit(void)
+ {
+ 
+ 	unregister_cpu_notifier(&setup_hotplug_notifier);
+-	pseries_idle_devices_uninit();
+-	cpuidle_unregister_driver(&pseries_idle_driver);
+-
++	cpuidle_unregister(&pseries_idle_driver);
+ 	return;
+ }
  
 
