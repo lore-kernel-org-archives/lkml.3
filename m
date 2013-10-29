@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab3J2UP3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 16:15:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25780 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751952Ab3J2UP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 16:15:28 -0400
-Date: Tue, 29 Oct 2013 21:15:46 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Victor Kaplansky <VICTORK@il.ibm.com>, Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: perf events ring buffer memory barrier on powerpc
-Message-ID: <20131029201546.GA4932@redhat.com>
-References: <20131025173749.GG19466@laptop.lan> <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com> <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com> <20131028132634.GO19466@laptop.lan> <20131028163418.GD4126@linux.vnet.ibm.com> <20131028201735.GA15629@redhat.com> <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com> <20131029102131.GA16117@laptop.programming.kicks-ass.net> <20131029103057.GN2490@laptop.programming.kicks-ass.net> <20131029103526.GO2490@laptop.programming.kicks-ass.net>
+	id S1753010Ab3J2UPs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 16:15:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38374 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380Ab3J2UPq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 16:15:46 -0400
+Date: Tue, 29 Oct 2013 13:15:45 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Josh Cartwright <joshc@codeaurora.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        rtc-linux@googlegroups.com, Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>
+Subject: Re: [PATCH v3 10/10] rtc: pm8xxx: add support for pm8941
+Message-ID: <20131029201545.GA2064@kroah.com>
+References: <cover.1382985169.git.joshc@codeaurora.org>
+ <1392ea90487793f9cbbdfb7f8d148f45122a52c2.1382985169.git.joshc@codeaurora.org>
+ <20131029200927.GG21983@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131029103526.GO2490@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20131029200927.GG21983@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29, Peter Zijlstra wrote:
->
-> On Tue, Oct 29, 2013 at 11:30:57AM +0100, Peter Zijlstra wrote:
-> > @@ -154,9 +175,11 @@ int perf_output_begin(struct perf_output
-> >  		 * Userspace could choose to issue a mb() before updating the
-> >  		 * tail pointer. So that all reads will be completed before the
-> >  		 * write is issued.
-> > +		 *
-> > +		 * See perf_output_put_handle().
-> >  		 */
-> >  		tail = ACCESS_ONCE(rb->user_page->data_tail);
-> > -		smp_rmb();
-> > +		smp_mb();
-> >  		offset = head = local_read(&rb->head);
-> >  		head += size;
-> >  		if (unlikely(!perf_output_space(rb, tail, offset, head)))
->
-> That said; it would be very nice to be able to remove this barrier. This
-> is in every event write path :/
+On Tue, Oct 29, 2013 at 01:09:27PM -0700, Stephen Boyd wrote:
+> On 10/28, Josh Cartwright wrote:
+> > diff --git a/drivers/rtc/rtc-pm8xxx.c b/drivers/rtc/rtc-pm8xxx.c
+> > index 03f8f75..a9044d4 100644
+> > --- a/drivers/rtc/rtc-pm8xxx.c
+> > +++ b/drivers/rtc/rtc-pm8xxx.c
+> > @@ -1,4 +1,5 @@
+> >  /* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+> > + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
+> >   *
+> 
+> Please rewrite this as '2010-2011,2013, The Linux Foundation'
 
-Yes.. And I'm afraid very much that I simply confused you. Perhaps Victor
-is right and we do not need this mb(). So I am waiting for the end of
-this story too.
+Has the Linux Foundation really taken on all prior copyrights of this
+codebase?  CAF wasn't around in 2010 as part of the LF, so be careful
+here.
 
-And btw I do not understand why we need it (or smp_rmb) right after
-ACCESS_ONCE(data_tail).
-
-Oleg.
-
+greg k-h
