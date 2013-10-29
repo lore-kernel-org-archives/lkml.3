@@ -1,102 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758048Ab3J2PdD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 11:33:03 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:57927 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753930Ab3J2PdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 11:33:00 -0400
-Message-ID: <1383060707.2837.35.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [PATCH v3 09/10] mfd: pm8x41: document device tree bindings
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        devicetree@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>
-Date: Tue, 29 Oct 2013 17:31:47 +0200
-In-Reply-To: <20131029150546.GE20207@joshc.qualcomm.com>
-References: <cover.1382985169.git.joshc@codeaurora.org>
-	 <88997d3863f72f8553fcaf66cf67fbf3289df04f.1382985169.git.joshc@codeaurora.org>
-	 <1383056315.2837.22.camel@iivanov-dev.int.mm-sol.com>
-	 <20131029150546.GE20207@joshc.qualcomm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758185Ab3J2PdO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 11:33:14 -0400
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:54391 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757559Ab3J2PdK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 11:33:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <1383008787.14041.8.camel@kjgkr>
+References: <1382716919-23345-1-git-send-email-huajun.li.lee@gmail.com>
+	<1382716919-23345-5-git-send-email-huajun.li.lee@gmail.com>
+	<1382964198.992.121.camel@kjgkr>
+	<CA+v9cxZfy37vzC+s8rDtpM34JLh38BBMocoU74TYRc1gvFSZPw@mail.gmail.com>
+	<1383008787.14041.8.camel@kjgkr>
+Date: Tue, 29 Oct 2013 23:33:09 +0800
+Message-ID: <CA+v9cxYH-1MdaO+8UogXLok45siaDx4gz_0_3SieEgGAWdH0pw@mail.gmail.com>
+Subject: Re: [f2fs-dev 4/5] f2fs: Key functions to handle inline data
+From: Huajun Li <huajun.li.lee@gmail.com>
+To: "jaegeuk.kim" <jaegeuk.kim@samsung.com>
+Cc: linux-f2fs-devel <linux-f2fs-devel@lists.sourceforge.net>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Huajun Li <huajun.li@intel.com>,
+        Haicheng Li <haicheng.li@linux.intel.com>,
+        Weihong Xu <weihong.xu@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Yes, will think over these cases carefully, and send out new version. thanks.
 
-Hi,
-
-On Tue, 2013-10-29 at 10:05 -0500, Josh Cartwright wrote: 
-> On Tue, Oct 29, 2013 at 04:18:35PM +0200, Ivan T. Ivanov wrote:
-> > On Mon, 2013-10-28 at 13:12 -0500, Josh Cartwright wrote: 
-> > > Document the bindings used to describe the Qualcomm 8x41 PMICs.
-> > > 
-> > > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> > > ---
-> > >  Documentation/devicetree/bindings/mfd/pm8x41.txt | 33 ++++++++++++++++++++++++
-> > >  1 file changed, 33 insertions(+)
-> > >  create mode 100644 Documentation/devicetree/bindings/mfd/pm8x41.txt
-> > > 
-> > > diff --git a/Documentation/devicetree/bindings/mfd/pm8x41.txt b/Documentation/devicetree/bindings/mfd/pm8x41.txt
-> > > new file mode 100644
-> > > index 0000000..6afd4ce
-> > > --- /dev/null
-> > > +++ b/Documentation/devicetree/bindings/mfd/pm8x41.txt
-> > > @@ -0,0 +1,33 @@
-> > > +Qualcomm PM8841 and PM8941 PMIC multi-function devices
-> > > +
-> > > +The PM8x41 PMICs are used with the Qualcomm Snapdragon 800 series SoCs, and are
-> > > +interfaced to the chip via the SPMI (System Power Management Interface) bus.
-> > > +Support for  multiple independent functions are implemented by splitting the
-> > > +16-bit SPMI slave address space into 256 smaller fixed-size regions, 256 bytes
-> > > +each.  A function can consume one or more of these fixed-size register regions.
-> > > +
-> > > +Required properties:
-> > > +- compatible: Must be one of:
-> > > +     "qcom,pm8841"
-> > > +     "qcom,pm8941"
-> > > +- reg: Specifies the SPMI USID slave address for this device
-> > > +- #address-cells = <1>
-> > > +- #size-cells = <0>
-> > > +
-> > > +Each child node represents a function of the PM8x41.  Each child 'reg' entry
-> > > +describes an offset within the USID slave address where the region starts.
-> > > +
-> > > +Example:
-> > > +
-> > > +pm8941@0 {
-> > > +	compatible = "qcom,pm8941";
-> > > +	reg = <0x0>;
-> > > +
-> > > +	#address-cells = <1>;
-> > > +	#size-cells = <0>;
-> > > +
-> > > +	rtc {
-> > > +		compatible = "qcom,pm8941-rtc";
-> > > +		reg = <0x6000 0x6100>;
-> > 
-> > This doesn't look right. Probably #size-cells have to be <1>?
-> 
-> Some functions of the PMIC actually consume more than one fixed-size
-> region of the slave address space.  This example is showing one such
-> peripheral (consuming the region starting at 0x6000 and another at
-> 0x6100).
-> 
-
-Ok. Thanks for clarification.
-
-Regards,
-Ivan
-
-
-
+On Tue, Oct 29, 2013 at 9:06 AM, Jaegeuk Kim <jaegeuk.kim@samsung.com> wrote:
+> Hi,
+>
+> 2013-10-29 (화), 01:20 +0800, Huajun Li:
+>> On Mon, Oct 28, 2013 at 8:43 PM, Jaegeuk Kim <jaegeuk.kim@samsung.com> wrote:
+>> > Hi,
+>> >
+>> > 2013-10-26 (토), 00:01 +0800, Huajun Li:
+>> >> From: Huajun Li <huajun.li@intel.com>
+>> >>
+>> >> Functions to implement inline data read/write, and move inline data to
+>> >> normal data block when file size exceeds inline data limitation.
+>> >>
+>> >> Signed-off-by: Huajun Li <huajun.li@intel.com>
+>> >> Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+>> >> Signed-off-by: Weihong Xu <weihong.xu@intel.com>
+>> >> ---
+>> >>  fs/f2fs/Makefile |    2 +-
+>> >>  fs/f2fs/f2fs.h   |    7 +++
+>> >>  fs/f2fs/inline.c |  144 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>> >>  3 files changed, 152 insertions(+), 1 deletion(-)
+>> >>  create mode 100644 fs/f2fs/inline.c
+>> >>
+>> >
+>> > [snip]
+>> >
+>> >> +static int __f2fs_convert_inline_data(struct inode *inode, struct page *page)
+>> >> +{
+>> >> +     int err;
+>> >> +     struct page *ipage;
+>> >> +     struct dnode_of_data dn;
+>> >> +     void *src_addr, *dst_addr;
+>> >> +     struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+>> >> +
+>> >
+>> > Here..  f2fs_lock_op(sbi);
+>> >
+>> >> +     ipage = get_node_page(sbi, inode->i_ino);
+>> >> +     if (IS_ERR(ipage))
+>> >> +             return PTR_ERR(ipage);
+>> >> +
+>> >
+>> > Need to move f2fs_lock_op prior to get_node_page.
+>> >
+>> >> +     /* i_addr[0] is not used for inline data,
+>> >
+>> > Coding style.
+>> >          /*
+>> >           * ...
+>> >           */
+>> >
+>> >> +      * so reserving new block will not destroy inline data */
+>> >> +     err = f2fs_reserve_block(inode, &dn, 0);
+>> >> +     if (err) {
+>> >> +             f2fs_put_page(ipage, 1);
+>> >> +             f2fs_unlock_op(sbi);
+>> >> +             return err;
+>> >> +     }
+>> >
+>> > Need to move this too.
+>> >
+>> >> +
+>> >> +     src_addr = inline_data_addr(ipage);
+>> >> +     dst_addr = page_address(page);
+>> >> +     zero_user_segment(page, 0, PAGE_CACHE_SIZE);
+>> >
+>> > + space for readability.
+>> >
+>> >> +     /* Copy the whole inline data block */
+>> >> +     memcpy(dst_addr, src_addr, MAX_INLINE_DATA);
+>> >> +     zero_user_segment(ipage, INLINE_DATA_OFFSET,
+>> >> +                              INLINE_DATA_OFFSET + MAX_INLINE_DATA);
+>> >> +     clear_inode_flag(F2FS_I(inode), FI_INLINE_DATA);
+>> >> +     set_raw_inline(F2FS_I(inode),
+>> >> +                     (struct f2fs_inode *)page_address(ipage));
+>>
+>> Thanks for your comments, I will update them according to above comments.
+>>
+>> >
+>> >    --> sync_inode_page()?
+>> >
+>> IMO, we just handle file data, so do we still need call sync_inode_page() ?
+>
+> I think sync_inode_page() is more suitable, since we need to sync
+> between i_size, i_blocks and its i_flag, inline_data, at this moment.
+>
+>>
+>> >> +
+>> >> +     set_page_dirty(ipage);
+>
+> Need to consider skipping set_page_dirty(ipage).
+>
+>> >> +     f2fs_put_page(ipage, 1);
+>> >> +     set_page_dirty(page);
+>> >
+>> > Here... f2fs_unlock_op(sbi);
+>> >
+>> > Here, we need to consider data consistency.
+>> > Let's think about the below scenario.
+>> > 1. inline_data was written.
+>> > 2. sync_fs is done.
+>> > 3. additional data were written.
+>> >   : this triggers f2fs_convert_inline_data(), produces a page, and then
+>> > unsets the inline flag.
+>> > 4. checkpoint was done with updated inode page. Note that, checkpoint
+>> > doesn't guarantee any user data.
+>> > 5. sudden power-off is occurred.
+>> >   -> Once power-off-recovery is done, we loose the inline_data which was
+>> > written successfully at step #2.
+>> >
+>> > So, I think we need to do f2fs_sync_file() procedure at this moment.
+>> > Any idea?
+>> >
+>>
+>> Yes, need consider this case carefully, thanks for your reminder.
+>>
+>> Considering sudden power-off may happen before f2fs_sync_file() is
+>> called, so how about following solutions:
+>>      ...
+>>      /* Copy the whole inline data block */
+>>      memcpy(dst_addr, src_addr, MAX_INLINE_DATA);
+>>
+>>     do f2fs_sync_file() procedure ( Or  do write_data_page() procedure ? )
+>
+> Ya, but it may still have some conditions to do this or not.
+> One of them is checking whether previous inline data should be recovered
+> or not, for example.
+>
+>>
+>>      zero_user_segment(ipage, INLINE_DATA_OFFSET, INLINE_DATA_OFFSET +
+>> MAX_INLINE_DATA);
+>>      clear_inode_flag(F2FS_I(inode), FI_INLINE_DATA);
+>>      set_raw_inline(F2FS_I(inode), (struct f2fs_inode *)page_address(ipage));
+>>      ...
+>>
+>> >> +
+>> >> +     return 0;
+>> >> +}
+>> >> +
+>> >> +int f2fs_convert_inline_data(struct inode *inode,
+>> >> +                          struct page *p, unsigned flags)
+>> >> +{
+>> >> +     int err;
+>> >> +     struct page *page;
+>> >> +
+>> >> +     if (p && !p->index) {
+>> >> +             page = p;
+>> >> +     } else {
+>> >> +             page = grab_cache_page_write_begin(inode->i_mapping, 0, flags);
+>> >> +             if (IS_ERR(page))
+>> >> +                     return PTR_ERR(page);
+>> >> +     }
+>> >> +
+>> >> +     err = __f2fs_convert_inline_data(inode, page);
+>> >> +
+>> >> +     if (p && !p->index)
+>> >> +             f2fs_put_page(page, 1);
+>> >> +
+>> >> +     return err;
+>> >> +}
+>> >> +
+>> >> +int f2fs_write_inline_data(struct inode *inode,
+>> >> +                        struct page *page, unsigned size)
+>> >> +{
+>> >> +     void *src_addr, *dst_addr;
+>> >> +     struct page *ipage;
+>> >> +     struct dnode_of_data dn;
+>> >> +     int err;
+>> >> +
+>> >> +     set_new_dnode(&dn, inode, NULL, NULL, 0);
+>> >> +     err = get_dnode_of_data(&dn, 0, LOOKUP_NODE);
+>> >> +     if (err)
+>> >> +             return err;
+>> >> +     ipage = dn.inode_page;
+>> >> +
+>> >> +     src_addr = page_address(page);
+>> >> +     dst_addr = inline_data_addr(ipage);
+>> >> +
+>> >> +     zero_user_segment(ipage, INLINE_DATA_OFFSET,
+>> >> +                              INLINE_DATA_OFFSET + MAX_INLINE_DATA);
+>> >> +     memcpy(dst_addr, src_addr, size);
+>> >> +     if (!f2fs_has_inline_data(inode))
+>> >> +             set_inode_flag(F2FS_I(inode), FI_INLINE_DATA);
+>> >> +     set_raw_inline(F2FS_I(inode),
+>> >> +                     (struct f2fs_inode *)page_address(ipage));
+>> >> +     set_page_dirty(ipage);
+>> >> +
+>> >> +     if ((F2FS_I(inode)->i_xattr_nid && inode->i_blocks == 2) ||
+>> >> +             (!F2FS_I(inode)->i_xattr_nid && inode->i_blocks == 1)) {
+>> >> +             f2fs_put_dnode(&dn);
+>> >> +             return 0;
+>> >> +     }
+>> >> +
+>> >> +     /* Release the first data block if it is allocated */
+>> >> +     truncate_data_blocks_range(&dn, 1);
+>> >> +     f2fs_put_dnode(&dn);
+>> >> +
+>> >> +     return 0;
+>> >> +}
+>> >
+>> > --
+>> > Jaegeuk Kim
+>> > Samsung
+>> >
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+> --
+> Jaegeuk Kim
+> Samsung
+>
