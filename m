@@ -1,248 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078Ab3J2MU5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 08:20:57 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:9913 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754853Ab3J2MUj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 08:20:39 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 29 Oct 2013 05:20:08 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <lee.jones@linaro.org>, <sameo@linux.intel.com>, <mturquette@linaro.org>,
-        <dwmw2@infradead.org>, <anton@enomsg.org>
-CC: <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <rob.herring@calxeda.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 2/4] clk: as3722: add clock driver for ams AS3722
-Date: Tue, 29 Oct 2013 17:50:03 +0530
-Message-ID: <1383049205-29620-3-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1383049205-29620-1-git-send-email-ldewangan@nvidia.com>
-References: <1383049205-29620-1-git-send-email-ldewangan@nvidia.com>
+	id S1754893Ab3J2M1T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 08:27:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54756 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752620Ab3J2M1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 08:27:18 -0400
+Date: Tue, 29 Oct 2013 12:27:08 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Zhang Mingjun <zhang.mingjun@linaro.org>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, akpm@linux-foundation.org,
+        Haojian Zhuang <haojian.zhuang@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, troy.zhangmingjun@huawei.com
+Subject: Re: [PATCH] mm: cma: free cma page to buddy instead of being cpu hot
+ page
+Message-ID: <20131029122708.GD2400@suse.de>
+References: <1382960569-6564-1-git-send-email-zhang.mingjun@linaro.org>
+ <20131029093322.GA2400@suse.de>
+ <CAGT3LergVJ1XXCrVD3XeRpRCXehn9gLb7BRHHyjyseKBz39pMg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CAGT3LergVJ1XXCrVD3XeRpRCXehn9gLb7BRHHyjyseKBz39pMg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Device ams AS3722 supports one clock 32KHz output. Add clock driver
-to control the clock through clock framework.
+On Tue, Oct 29, 2013 at 07:49:30PM +0800, Zhang Mingjun wrote:
+> On Tue, Oct 29, 2013 at 5:33 PM, Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > On Mon, Oct 28, 2013 at 07:42:49PM +0800, zhang.mingjun@linaro.org wrote:
+> > > From: Mingjun Zhang <troy.zhangmingjun@linaro.org>
+> > >
+> > > free_contig_range frees cma pages one by one and MIGRATE_CMA pages will
+> > be
+> > > used as MIGRATE_MOVEABLE pages in the pcp list, it causes unnecessary
+> > > migration action when these pages reused by CMA.
+> > >
+> > > Signed-off-by: Mingjun Zhang <troy.zhangmingjun@linaro.org>
+> > > ---
+> > >  mm/page_alloc.c |    3 ++-
+> > >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > >
+> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > index 0ee638f..84b9d84 100644
+> > > --- a/mm/page_alloc.c
+> > > +++ b/mm/page_alloc.c
+> > > @@ -1362,7 +1362,8 @@ void free_hot_cold_page(struct page *page, int
+> > cold)
+> > >        * excessively into the page allocator
+> > >        */
+> > >       if (migratetype >= MIGRATE_PCPTYPES) {
+> > > -             if (unlikely(is_migrate_isolate(migratetype))) {
+> > > +             if (unlikely(is_migrate_isolate(migratetype))
+> > > +                     || is_migrate_cma(migratetype))
+> > >                       free_one_page(zone, page, 0, migratetype);
+> > >                       goto out;
+> >
+> > This slightly impacts the page allocator free path for a marginal gain
+> > on CMA which are relatively rare allocations. There is no obvious
+> > benefit to this patch as I expect CMA allocations to flush the PCP lists
+> >
+> how about keeping the migrate type of CMA page block as MIGRATE_ISOLATED
+> after
+> the alloc_contig_range , and undo_isolate_page_range at the end of
+> free_contig_range?
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/clk/Kconfig      |    8 ++
- drivers/clk/Makefile     |    1 +
- drivers/clk/clk-as3722.c |  166 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 175 insertions(+), 0 deletions(-)
- create mode 100644 drivers/clk/clk-as3722.c
+It would move the cost to the CMA paths so I would complain less. Bear
+in mind as well that forcing everything to go through free_one_page()
+means that every free goes through the zone lock. I doubt you have any
+machine large enough but it is possible for simultaneous CMA allocations
+to now contend on the zone lock that would have been previously fine.
+Hence, I'm interesting in knowing the underlying cause of the problem you
+are experiencing.
 
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 5c51115..03257bf 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -78,6 +78,14 @@ config CLK_TWL6040
- 	  McPDM. McPDM module is using the external bit clock on the McPDM bus
- 	  as functional clock.
- 
-+config COMMON_CLK_AS3722
-+	tristate "ams AS3722 clock32K driver"
-+	depends on MFD_AS3722
-+	help
-+	---help---
-+	  Supports the clocking subsystem of the ams AS3722 PMIC from ams.
-+	  This device supports one 32KHz clock.
-+
- config COMMON_CLK_AXI_CLKGEN
- 	tristate "AXI clkgen driver"
- 	depends on ARCH_ZYNQ || MICROBLAZE
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index fe3121b..b94624d 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -39,6 +39,7 @@ obj-$(CONFIG_COMMON_CLK_KEYSTONE)	+= keystone/
- obj-$(CONFIG_X86)		+= x86/
- 
- # Chip specific
-+obj-$(CONFIG_COMMON_CLK_AS3722) += clk-as3722.o
- obj-$(CONFIG_COMMON_CLK_AXI_CLKGEN) += clk-axi-clkgen.o
- obj-$(CONFIG_COMMON_CLK_WM831X) += clk-wm831x.o
- obj-$(CONFIG_COMMON_CLK_MAX77686) += clk-max77686.o
-diff --git a/drivers/clk/clk-as3722.c b/drivers/clk/clk-as3722.c
-new file mode 100644
-index 0000000..9358029
---- /dev/null
-+++ b/drivers/clk/clk-as3722.c
-@@ -0,0 +1,166 @@
-+/*
-+ * Clock driver for ams AS3722 device.
-+ *
-+ * Copyright (c) 2013, NVIDIA Corporation.
-+ *
-+ * Author: Laxman Dewangan <ldewangan@nvidia.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any kind,
-+ * whether express or implied; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-+ * 02111-1307, USA
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk-provider.h>
-+#include <linux/mfd/as3722.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+
-+struct as3722_clks {
-+	struct device *dev;
-+	struct as3722 *as3722;
-+	struct clk_hw hw;
-+	struct clk *clk;
-+	struct clk_onecell_data clk_data;
-+};
-+
-+static inline struct as3722_clks *to_as3722_clks(struct clk_hw *hw)
-+{
-+	return container_of(hw, struct as3722_clks, hw);
-+}
-+
-+static unsigned long as3722_clks_recalc_rate(struct clk_hw *hw,
-+	unsigned long parent_rate)
-+{
-+	return 32768;
-+}
-+
-+static int as3722_clks_prepare(struct clk_hw *hw)
-+{
-+	struct as3722_clks *as3722_clks = to_as3722_clks(hw);
-+	int ret;
-+
-+	ret = as3722_update_bits(as3722_clks->as3722, AS3722_RTC_CONTROL_REG,
-+			AS3722_RTC_CLK32K_OUT_EN, AS3722_RTC_CLK32K_OUT_EN);
-+	if (ret < 0)
-+		dev_err(as3722_clks->dev, "RTC_CONTROL_REG update failed, %d\n",
-+			ret);
-+
-+	return ret;
-+}
-+
-+static void as3722_clks_unprepare(struct clk_hw *hw)
-+{
-+	struct as3722_clks *as3722_clks = to_as3722_clks(hw);
-+	int ret;
-+
-+	ret = as3722_update_bits(as3722_clks->as3722, AS3722_RTC_CONTROL_REG,
-+			AS3722_RTC_CLK32K_OUT_EN, 0);
-+	if (ret < 0)
-+		dev_err(as3722_clks->dev, "RTC_CONTROL_REG update failed, %d\n",
-+			ret);
-+}
-+
-+static int as3722_clks_is_prepared(struct clk_hw *hw)
-+{
-+	struct as3722_clks *as3722_clks = to_as3722_clks(hw);
-+	int ret;
-+	u32 val;
-+
-+	ret = as3722_read(as3722_clks->as3722, AS3722_RTC_CONTROL_REG, &val);
-+	if (ret < 0) {
-+		dev_err(as3722_clks->dev, "RTC_CONTROL_REG read failed, %d\n",
-+			ret);
-+		return ret;
-+	}
-+
-+	return !!(val & AS3722_RTC_CLK32K_OUT_EN);
-+}
-+
-+static struct clk_ops as3722_clks_ops = {
-+	.prepare	= as3722_clks_prepare,
-+	.unprepare	= as3722_clks_unprepare,
-+	.is_prepared	= as3722_clks_is_prepared,
-+	.recalc_rate	= as3722_clks_recalc_rate,
-+};
-+
-+static struct clk_init_data as3722_clks_hw_init = {
-+	.name = "clk32k",
-+	.ops = &as3722_clks_ops,
-+	.flags = CLK_IS_ROOT | CLK_IGNORE_UNUSED,
-+};
-+
-+static int as3722_clks_probe(struct platform_device *pdev)
-+{
-+	struct as3722_clks *as3722_clks;
-+	struct clk *clk;
-+	int ret;
-+
-+	as3722_clks = devm_kzalloc(&pdev->dev, sizeof(*as3722_clks),
-+				GFP_KERNEL);
-+	if (!as3722_clks)
-+		return -ENOMEM;
-+
-+	as3722_clks->clk_data.clks = devm_kzalloc(&pdev->dev,
-+			sizeof(*as3722_clks->clk_data.clks), GFP_KERNEL);
-+	if (!as3722_clks->clk_data.clks)
-+		return -ENOMEM;
-+
-+	platform_set_drvdata(pdev, as3722_clks);
-+
-+	as3722_clks->as3722 = dev_get_drvdata(pdev->dev.parent);
-+	as3722_clks->dev = &pdev->dev;
-+	as3722_clks->hw.init = &as3722_clks_hw_init;
-+
-+	clk = devm_clk_register(&pdev->dev, &as3722_clks->hw);
-+	if (IS_ERR(clk)) {
-+		ret = PTR_ERR(clk);
-+		dev_err(&pdev->dev, "Fail to register clock %s, %d\n",
-+			as3722_clks_hw_init.name, ret);
-+		return ret;
-+	}
-+	as3722_clks->clk = clk;
-+	as3722_clks->clk_data.clks[0] = clk;
-+	as3722_clks->clk_data.clk_num = 1;
-+	ret = of_clk_add_provider(pdev->dev.parent->of_node,
-+			of_clk_src_simple_get, &as3722_clks->clk_data);
-+	if (ret < 0)
-+		dev_err(&pdev->dev, "Fail to add clock driver, %d\n", ret);
-+	return ret;
-+}
-+
-+static int as3722_clks_remove(struct platform_device *pdev)
-+{
-+	of_clk_del_provider(pdev->dev.parent->of_node);
-+	return 0;
-+}
-+
-+static struct platform_driver as3722_clks_driver = {
-+	.driver = {
-+		.name = "as3722-clk",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = as3722_clks_probe,
-+	.remove = as3722_clks_remove,
-+};
-+
-+module_platform_driver(as3722_clks_driver);
-+
-+MODULE_DESCRIPTION("Clock driver for ams AS3722 PMIC Device");
-+MODULE_ALIAS("platform:as3722-clk");
-+MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
-+MODULE_LICENSE("GPL v2");
+> of course, it will waste the memory outside of the alloc range but in the
+> pageblocks.
+> 
+
+I would hope/expect that the loss would only last for the duration of
+the allocation attempt and a small amount of memory.
+
+> > when a range of pages have been isolated and migrated. Is there any
+> > measurable benefit to this patch?
+> >
+> after applying this patch, the video player on my platform works more
+> fluent,
+
+fluent almost always refers to ones command of a spoken language. I do
+not see how a video player can be fluent in anything. What is measurably
+better?
+
+For example, are allocations faster? If so, why? What cost from another
+path is removed as a result of this patch? If the cost is in the PCP
+flush then can it be checked if the PCP flush was unnecessary and called
+unconditionally even though all the pages were freed already? We had
+problems in the past where drain_all_pages() or similar were called
+unnecessarily causing long sync stalls related to IPIs. I'm wondering if
+we are seeing a similar problem here.
+
+Maybe the problem is the complete opposite. Are allocations failing
+because there are PCP pages in the way? In that case, it real fix might
+be to insert a PCP flush if the allocation is failing due to per-cpu
+pages.
+
+> and the driver of video decoder on my test platform using cma alloc/free
+> frequently.
+> 
+
+CMA allocations are almost never used outside of these contexts. While I
+appreciate that embedded use is important I'm reluctant to see an impact
+in fast paths unless there is a good reason for every other use case. I
+also am a bit unhappy to see CMA allocations making the zone->lock
+hotter than necessary even if no embedded use case it likely to
+experience the problem in the short-term.
+
 -- 
-1.7.1.1
-
+Mel Gorman
+SUSE Labs
