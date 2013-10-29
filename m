@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151Ab3J2UJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 16:09:31 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:58606 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab3J2UJ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 16:09:29 -0400
-Date: Tue, 29 Oct 2013 13:09:27 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        rtc-linux@googlegroups.com, Sagar Dharia <sdharia@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>
-Subject: Re: [PATCH v3 10/10] rtc: pm8xxx: add support for pm8941
-Message-ID: <20131029200927.GG21983@codeaurora.org>
-References: <cover.1382985169.git.joshc@codeaurora.org>
- <1392ea90487793f9cbbdfb7f8d148f45122a52c2.1382985169.git.joshc@codeaurora.org>
+	id S1752515Ab3J2UKg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 16:10:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48676 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752310Ab3J2UKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 16:10:35 -0400
+Date: Tue, 29 Oct 2013 21:10:32 +0100
+From: Jan Kara <jack@suse.cz>
+To: John Twideldum <twideldums_throwaway@gmx.at>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 3.12-rc5 and overwritten partition table - by powertop?
+Message-ID: <20131029201032.GC9568@quack.suse.cz>
+References: <trinity-ee0bd2b5-ce28-4895-8c2a-2f60f40e49f4-1383046621263@3capp-gmx-bs07>
+ <trinity-f65147f9-012f-4e78-a5a6-3f969ff5b9bf-1383058674646@3capp-gmx-bs07>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1392ea90487793f9cbbdfb7f8d148f45122a52c2.1382985169.git.joshc@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <trinity-f65147f9-012f-4e78-a5a6-3f969ff5b9bf-1383058674646@3capp-gmx-bs07>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28, Josh Cartwright wrote:
-> diff --git a/drivers/rtc/rtc-pm8xxx.c b/drivers/rtc/rtc-pm8xxx.c
-> index 03f8f75..a9044d4 100644
-> --- a/drivers/rtc/rtc-pm8xxx.c
-> +++ b/drivers/rtc/rtc-pm8xxx.c
-> @@ -1,4 +1,5 @@
->  /* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-> + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
->   *
+On Tue 29-10-13 15:57:54, John Twideldum wrote:
+> replying to myself with more insights...
+>  
+> >0000000 13.00000\nalsa:hw
+> >0000020 C0D0\t99.00000\nal
+> >0000040 sa:hwC0D3\t99.000
+> >0000060 00\nbacklight:acp
+> >.....
+> 
+> The first ~170kb of /dev/sda got blown away with what seems to be a logging output
+> by Powertop, when I was playing with the tuneables.
+> (Luckily the first partition starts later :-))
+  So did you log the output to some file? I'm just trying to understand how
+it could get onto your disk in the first place...
 
-Please rewrite this as '2010-2011,2013, The Linux Foundation'
+> Why is that I don't know, but maybe when turning on the SATA knobs
+> something goes wrong. I'm afraid to try again, but I accept rather higher
+> power use than data loss again :-/
 
->   * This program is free software; you can redistribute it and/or modify
->   * it under the terms of the GNU General Public License version 2 and
-
+								Honza
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
