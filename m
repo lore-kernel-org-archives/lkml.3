@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635Ab3J2UlD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 16:41:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49893 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751615Ab3J2UlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 16:41:00 -0400
-Date: Tue, 29 Oct 2013 21:40:52 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
+	id S1752763Ab3J2Unt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 16:43:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38628 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040Ab3J2Uns (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 16:43:48 -0400
+Date: Tue, 29 Oct 2013 13:43:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Karl Kiniger <karl.kiniger@med.ge.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         "Artem S. Tashkinov" <t.artem@lycos.com>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Diego Calleja <diegocg@gmail.com>,
-        David Lang <david@lang.hm>, NeilBrown <neilb@suse.de>
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
-Message-ID: <20131029204052.GF9568@quack.suse.cz>
+Message-Id: <20131029134346.9e5873bae3630e9a69891773@linux-foundation.org>
+In-Reply-To: <20131029203050.GE9568@quack.suse.cz>
 References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
- <CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
- <1814253454.3449.1382689853825.JavaMail.mail@webmail07>
- <20131025091842.GA28681@thunk.org>
- <20131025230545.GB31280@localhost>
- <20131025233753.GD19823@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131025233753.GD19823@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	<CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
+	<1814253454.3449.1382689853825.JavaMail.mail@webmail07>
+	<CA+55aFxhJUrqdvw1To=9KLdxhYAOVwZLLeJT5yMRY5BT1weuHA@mail.gmail.com>
+	<20131025091555.GA30895@kipc2.localdomain>
+	<20131029203050.GE9568@quack.suse.cz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 25-10-13 19:37:53, Ted Tso wrote:
-> On Sat, Oct 26, 2013 at 12:05:45AM +0100, Fengguang Wu wrote:
-> > 
-> > Ted, when trying to follow up your email, I got a crazy idea and it'd
-> > be better throw it out rather than carrying it to bed. :)
-> > 
-> > We could do per-bdi dirty thresholds - which has been proposed 1-2
-> > times before by different people.
-> > 
-> > The per-bdi dirty thresholds could be auto set by the kernel this way: 
-> > start it with an initial value of 100MB. When reached, put all the
-> > 100MB dirty data to IO and get an estimation of the write bandwidth.
-> > From then on, set the bdi's dirty threshold to N * bdi_write_bandwidth,
-> > where N is the seconds of dirty data we'd like to cache in memory.
-> 
-> Sure, although I wonder if it would be worth it calcuate some kind of
-> rolling average of the write bandwidth while we are doing writeback,
-> so if it turns out we got unlucky with the contents of the first 100MB
-> of dirty data (it could be either highly random or highly sequential)
-> the we'll eventually correct to the right level.
-  We already do average measured throughput over a longer time window and
-have kind of rolling average algorithm doing some averaging.
+On Tue, 29 Oct 2013 21:30:50 +0100 Jan Kara <jack@suse.cz> wrote:
 
-> This means that VM would have to keep dirty page counters for each BDI
-> --- which I thought we weren't doing right now, which is why we have a
-> global vm.dirty_ratio/vm.dirty_background_ratio threshold.  (Or do I
-> have cause and effect reversed?  :-)
-  And we do currently keep the number of dirty & under writeback pages per
-BDI. We have global limits because mm wants to limit the total number of dirty
-pages (as those are harder to free). It doesn't care as much to which device
-these pages belong (although it probably should care a bit more because
-there are huge differences between how quickly can different devices get rid
-of dirty pages).
+> Andrew has queued up a patch series from Maxim Patlasov which removes this
+> caveat but currently we don't have a way admin can switch that from
+> userspace. But I'd like to have that tunable from userspace exactly for the
+> cases as you describe below.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+This?
+
+commit 5a53748568f79641eaf40e41081a2f4987f005c2
+Author:     Maxim Patlasov <mpatlasov@parallels.com>
+AuthorDate: Wed Sep 11 14:22:46 2013 -0700
+Commit:     Linus Torvalds <torvalds@linux-foundation.org>
+CommitDate: Wed Sep 11 15:58:04 2013 -0700
+
+    mm/page-writeback.c: add strictlimit feature
+
+That's already in mainline, for 3.12.
