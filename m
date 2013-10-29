@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab3J2JxS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 05:53:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4328 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751310Ab3J2JxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 05:53:15 -0400
-Date: Tue, 29 Oct 2013 11:53:00 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Andre Przywara <andre@andrep.de>, Joerg Roedel <joro@8bytes.org>,
-        X86 ML <x86@kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 0/6] kvm: Emulate MOVBE, v3
-Message-ID: <20131029095300.GW15657@redhat.com>
-References: <1379861095-628-1-git-send-email-bp@alien8.de>
+	id S1754178Ab3J2JyN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 05:54:13 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:50468 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754148Ab3J2JyM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 05:54:12 -0400
+Date: Tue, 29 Oct 2013 10:54:08 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu, tglx@linutronix.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, arjan@linux.intel.com,
+        linux@roeck-us.net, linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [PATCH 1/2] x86: unify copy_from_user() size checking
+Message-ID: <20131029095408.GB25306@gmail.com>
+References: <5265056D02000078000FC4F3@nat28.tlf.novell.com>
+ <20131026103109.GC14949@gmail.com>
+ <526F914A02000078000FD806@nat28.tlf.novell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1379861095-628-1-git-send-email-bp@alien8.de>
+In-Reply-To: <526F914A02000078000FD806@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 22, 2013 at 04:44:49PM +0200, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
-> 
-> Alriiight,
-> 
-> here's another version of the patchset, hopefully addressing all review
-> feedback from last time. 6/6 is the respective qemu patch to handle
-> emulated features query, etc.
-> 
-Except a small nitpick for patch 4 this looks good to me. No need to
-wait for QEMU cpu parsing code to change to apply it.
 
---
-			Gleb.
+* Jan Beulich <JBeulich@suse.com> wrote:
+
+> >>> On 26.10.13 at 12:31, Ingo Molnar <mingo@kernel.org> wrote:
+> > * Jan Beulich <JBeulich@suse.com> wrote:
+> >> I'd like to point out though that with __compiletime_object_size()
+> >> being restricted to gcc before 4.6, the whole construct is going to
+> >> become more and more pointless going forward. I would question
+> >> however that commit 2fb0815c9ee6b9ac50e15dd8360ec76d9fa46a2 ("gcc4:
+> >> disable __compiletime_object_size for GCC 4.6+") was really necessary,
+> >> and instead this should have been dealt with as is done here from the
+> >> beginning.
+> > 
+> > Can we now revert 2fb0815c9ee6?
+> 
+> Actually I'm afraid parisc would first need to follow the changes 
+> done on x86 here, or else they'd run into (compile time) issues 
+> (s390 and tile only emit warnings, i.e. would at worst suffer 
+> cosmetically unless subtrees putting -Werror in place are 
+> affected).
+
+Given how trivial __compiletime_object_size() is, we could replicate 
+a (differently named) copy of that in x86 uaccess.h?
+
+This is something that would be pretty platform dependent anyway.
+
+Thanks,
+
+	Ingo
