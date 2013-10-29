@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758585Ab3J2Q2T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 12:28:19 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:48530 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756783Ab3J2Q2M (ORCPT
+	id S1758612Ab3J2Q2W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 12:28:22 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:49503 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756925Ab3J2Q2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 12:28:12 -0400
+	Tue, 29 Oct 2013 12:28:13 -0400
 From: Johan Hovold <jhovold@gmail.com>
 To: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
 Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH v2 5/9] backlight: atmel-pwm-bl: clean up get_intensity
-Date: Tue, 29 Oct 2013 17:27:40 +0100
-Message-Id: <1383064064-4983-6-git-send-email-jhovold@gmail.com>
+        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
+        stable@vger.kernel.org
+Subject: [PATCH v2 2/9] backlight: atmel-pwm-bl: fix gpio polarity in remove
+Date: Tue, 29 Oct 2013 17:27:37 +0100
+Message-Id: <1383064064-4983-3-git-send-email-jhovold@gmail.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1383064064-4983-1-git-send-email-jhovold@gmail.com>
 References: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
@@ -25,40 +26,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clean up get_intensity to increase readability.
+Make sure to honour gpio polarity also at remove so that the backlight
+is actually disabled on boards with active-low enable pin.
 
+Cc: stable@vger.kernel.org
 Acked-by: Jingoo Han <jg1.han@samsung.com>
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 ---
- drivers/video/backlight/atmel-pwm-bl.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/video/backlight/atmel-pwm-bl.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
-index 01af5c2..abfaada 100644
+index 0971a8e..e21beb6 100644
 --- a/drivers/video/backlight/atmel-pwm-bl.c
 +++ b/drivers/video/backlight/atmel-pwm-bl.c
-@@ -70,15 +70,14 @@ static int atmel_pwm_bl_set_intensity(struct backlight_device *bd)
- static int atmel_pwm_bl_get_intensity(struct backlight_device *bd)
+@@ -205,8 +205,10 @@ static int atmel_pwm_bl_remove(struct platform_device *pdev)
  {
- 	struct atmel_pwm_bl *pwmbl = bl_get_data(bd);
-+	u32 cdty;
- 	u32 intensity;
+ 	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
  
--	if (pwmbl->pdata->pwm_active_low) {
--		intensity = pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY) -
--			pwmbl->pdata->pwm_duty_min;
--	} else {
--		intensity = pwmbl->pdata->pwm_duty_max -
--			pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY);
--	}
-+	cdty = pwm_channel_readl(&pwmbl->pwmc, PWM_CDTY);
-+	if (pwmbl->pdata->pwm_active_low)
-+		intensity = cdty - pwmbl->pdata->pwm_duty_min;
-+	else
-+		intensity = pwmbl->pdata->pwm_duty_max - cdty;
+-	if (pwmbl->gpio_on != -1)
+-		gpio_set_value(pwmbl->gpio_on, 0);
++	if (pwmbl->gpio_on != -1) {
++		gpio_set_value(pwmbl->gpio_on,
++					0 ^ pwmbl->pdata->on_active_low);
++	}
+ 	pwm_channel_disable(&pwmbl->pwmc);
+ 	pwm_channel_free(&pwmbl->pwmc);
  
- 	return intensity & 0xffff;
- }
 -- 
 1.8.4.2
 
