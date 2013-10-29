@@ -1,83 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940Ab3J2CTB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 22:19:01 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:30605 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab3J2CTA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 22:19:00 -0400
-X-Spam-Score: -100.8
-Message-ID: <526F1ACE.7080409@asianux.com>
-Date: Tue, 29 Oct 2013 10:17:50 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1757986Ab3J2Ccy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 22:32:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12232 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753496Ab3J2Ccx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 22:32:53 -0400
+Date: Tue, 29 Oct 2013 10:32:03 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.fedoraproject.org, kexec@lists.infradead.org
+Subject: Re: [patch 3/6] Cleanup efi_enter_virtual_mode function
+Message-ID: <20131029023203.GB5185@dhcp-16-126.nay.redhat.com>
+References: <20131027035923.081819853@dhcp-16-126.nay.redhat.com>
+ <20131028093206.GB4314@pd.tnic>
+ <20131028094049.GC25527@dhcp-16-126.nay.redhat.com>
+ <20131028095117.GD25527@dhcp-16-126.nay.redhat.com>
+ <20131028100402.GC4314@pd.tnic>
+ <20131028101011.GF25527@dhcp-16-126.nay.redhat.com>
+ <20131028112045.GH4314@pd.tnic>
+ <20131028112458.GD29133@dhcp-16-126.nay.redhat.com>
+ <20131028145801.GM4314@pd.tnic>
+ <20131028151048.GA14984@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-To: Joern Rennecke <joern.rennecke@embecosm.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>
-CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
-        Francois Bedard <Francois.Bedard@synopsys.com>,
-        Max Filippov <jcmvbkbc@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v2] kernel/modsign_certificate.S: use real contents instead
- of macro GLOBAL()
-References: <523FD9E7.3050303@asianux.com> <523FDBD7.4040602@asianux.com> <C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com> <523FE578.5060801@asianux.com> <52672DAC.1030307@asianux.com> <CAMqJFCou4SObPni5Lb_tX=0hQ__kF_9MLDC-6a1opptc9dxT-A@mail.gmail.com> <52673E41.6040606@asianux.com> <5267AF98.1010800@asianux.com> <5268B0B1.9050009@asianux.com>
-In-Reply-To: <5268B0B1.9050009@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131028151048.GA14984@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a macro is only used within 2 times, and also its contents are
-within 2 lines, recommend to expand it to shrink code line.
+> > 
+> > 3. Then I merged the 'efi' branch of
+> > git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git ontop.
+> 
+> I used the patches from mailbox directly.
+> Fixed an conflict and merge them one by one.
 
-For our case, the macro is not portable either: some architectures'
-assembler may use another character to mark newline in a macro (e.g.
-'`' for arc), which will cause issue (e.g. arc with allmodconfig):
+I remember I tried your efi branch, but the code is different
+from what you sent to list, thus I turned to use the mbox patches.
 
-    LD      init/built-in.o
-  kernel/built-in.o: In function `load_module_signing_keys':
-  kernel/modsign_pubkey.c:66: undefined reference to `modsign_certificate_list'
-  kernel/modsign_pubkey.c:71: undefined reference to `modsign_certificate_list_end'
-  kernel/modsign_pubkey.c:67: undefined reference to `modsign_certificate_list_end'
-
-If still want to use macro and let it portable enough, it will need
-additional line -- include additional header file (e.g "#include
-<linux/linkage.h>", although it also need be fixed).
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- kernel/modsign_certificate.S |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/modsign_certificate.S b/kernel/modsign_certificate.S
-index 4a9a86d..1967dcd 100644
---- a/kernel/modsign_certificate.S
-+++ b/kernel/modsign_certificate.S
-@@ -1,12 +1,10 @@
- #include <linux/export.h>
- 
--#define GLOBAL(name)	\
--	.globl VMLINUX_SYMBOL(name);	\
--	VMLINUX_SYMBOL(name):
--
- 	.section ".init.data","aw"
- 
--GLOBAL(modsign_certificate_list)
-+	.globl VMLINUX_SYMBOL(modsign_certificate_list)
-+VMLINUX_SYMBOL(modsign_certificate_list):
- 	.incbin "signing_key.x509"
- 	.incbin "extra_certificates"
--GLOBAL(modsign_certificate_list_end)
-+	.globl VMLINUX_SYMBOL(modsign_certificate_list_end)
-+VMLINUX_SYMBOL(modsign_certificate_list_end):
--- 
-1.7.7.6
-
-
+--
+Thanks
+Dave
