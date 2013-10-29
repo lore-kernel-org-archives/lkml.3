@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757990Ab3J2BfZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 21:35:25 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63269 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756852Ab3J2BfX (ORCPT
+	id S1758001Ab3J2Bgx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 21:36:53 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:36915 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756385Ab3J2Bgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 21:35:23 -0400
-Date: Mon, 28 Oct 2013 18:34:55 -0700
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 4/6] edac: Document Krait L1/L2 EDAC driver binding
-Message-ID: <20131029013454.GJ4763@kartoffel>
-References: <1383006690-6754-1-git-send-email-sboyd@codeaurora.org>
- <1383006690-6754-5-git-send-email-sboyd@codeaurora.org>
+	Mon, 28 Oct 2013 21:36:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1383006690-6754-5-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <trinity-2863d941-7421-4bbb-8c72-4bf491937d37-1382569828674@3capp-gmx-bs20>
+References: <1382463410-2018-1-git-send-email-peterhuewe@gmx.de>
+ <20131022205205.GA2374@obsidianresearch.com> <CAEQAOwoFpiVeDKTa6UgjiRoy9aKcUPHT7CYwa1eM1EUVm0gM=Q@mail.gmail.com>
+ <trinity-2863d941-7421-4bbb-8c72-4bf491937d37-1382569828674@3capp-gmx-bs20>
+From: Rajiv Andrade <mail@srajiv.net>
+Date: Mon, 28 Oct 2013 23:36:31 -0200
+Message-ID: <CAEQAOwqBwNnJcdwKv+oQADsJ5XoipkiB7ecSY9P7PRVT4invVg@mail.gmail.com>
+Subject: Re: Re: [tpmdd-devel] [PATCH] tpm: MAINTAINERS: Add myself as tpm maintainer
+To: Peter Huewe <PeterHuewe@gmx.de>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        tpmdd-devel@lists.sourceforge.net, adlai@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 12:31:28AM +0000, Stephen Boyd wrote:
-> The Krait L1/L2 error reporting device is made up of two
-> interrupts, one per-CPU interrupt for the L1 caches and one
-> interrupt for the L2 cache.
-> 
-> Cc: <devicetree@vger.kernel.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  .../devicetree/bindings/arm/qcom,krait-cache-erp.txt     | 16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/qcom,krait-cache-erp.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/qcom,krait-cache-erp.txt b/Documentation/devicetree/bindings/arm/qcom,krait-cache-erp.txt
-> new file mode 100644
-> index 0000000..01fe8a8
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/qcom,krait-cache-erp.txt
-> @@ -0,0 +1,16 @@
-> +* Qualcomm Krait L1 / L2 cache error reporting
-> +
-> +Required properties:
-> +- compatible: Should be "qcom,krait-cache-erp"
-> +- interrupts: Should contain the L1/CPU error interrupt number and
-> +  then the L2 cache error interrupt number
-> +
-> +Optional properties:
-> +- interrupt-names: Should contain the interrupt names "l1_irq" and
-> +  "l2_irq"
+Hey Peter,
 
-As with my comment on the parsing code, I'd prefer that if interrupt-names was
-present it defined the order of interrupts. Otherwise it's redundant and of no
-value.
+Yes, a cleanup there is way welcome. Please remove my name indeed, as
+it doesn't make sense at this point, the lists should suffice.
 
-Otherwise, the binding looks fine to me:
+I'll keep looking at the patches and try to review them for sure.
 
-Acked-by: Mark Rutland <mark.rutland@arm.com>
+Cheers and thanks again for stepping in.
 
-> +
-> +Example:
-> +	edac {
-> +		compatible = "qcom,krait-cache-erp";
-> +		interrupts = <1 9 0xf04>, <0 2 0x4>;
-> +	};
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+On Wed, Oct 23, 2013 at 9:10 PM, Peter Huewe <PeterHuewe@gmx.de> wrote:
+> Hi Rajiv,
+>> Long time, no see..
+> Good to see you again.
+>
+>> Peter, thank you a ton for stepping in.
+>> Since you're of course the owner (yes, we need such figure),
+>> let me know if my help is desirable or if you think there isn't
+>> additional bandwidth needed to maintain it.
+>
+> Thanks for the offer - I think I can handle the maintenance effort itself,
+> HOWEVER I  would really like to see you sticking around here as a reviewer,
+> due to your experience,
+> especially for the stuff I'm submitting.
+>
+> The more reviewers the merrier ;)
+>
+> Whether you want to be listed in MAINTAINERS or the subscription to tpmdd is enough is up to you.
+> Please tell me what you think, then I'd clean up the MAINTAINERS entry for the tpm subsystem ;)
+>
+> Thanks,
+> Peter
