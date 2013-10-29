@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758544Ab3J2QY7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 12:24:59 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38150 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753904Ab3J2QY5 (ORCPT
+	id S1758554Ab3J2QZR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 12:25:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36009 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758226Ab3J2QY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 12:24:57 -0400
-Date: Tue, 29 Oct 2013 09:24:08 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Tejun Heo <tj@kernel.org>, darkstar6262@gmail.com,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ext Tony Lindgren <tony@atomide.com>
-Message-ID: <20131029162408.GG16686@sirena.org.uk>
-References: <20131024124631.GA14517@mtj.dyndns.org>
- <CACRpkdY2d88RxxgZ5=rPuQHrb3a7Q+trvBWsEMSaByhtWKf31Q@mail.gmail.com>
+	Tue, 29 Oct 2013 12:24:58 -0400
+Date: Tue, 29 Oct 2013 09:24:57 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Michal Simek <michal.simek@xilinx.com>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 0/3] tty: xuartps: Fix build
+Message-ID: <20131029162457.GA22189@kroah.com>
+References: <1382398861-21542-1-git-send-email-soren.brinkmann@xilinx.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oOB74oR0WcNeq9Zb"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdY2d88RxxgZ5=rPuQHrb3a7Q+trvBWsEMSaByhtWKf31Q@mail.gmail.com>
-X-Cookie: Excellent day to have a rotten day.
+In-Reply-To: <1382398861-21542-1-git-send-email-soren.brinkmann@xilinx.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 66.78.236.243
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: READ/WRITE definitions in drivers/spi/spi-omap-100k.c
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 21, 2013 at 04:40:58PM -0700, Soren Brinkmann wrote:
+> This should fix the issues in the x86 build of the xuartps driver. The
+> issues are:
+>  - [tty:tty-next 72/75] drivers/tty/serial/xilinx_uartps.c:436:7: error:
+>    'PRE_RATE_CHANGE' undeclared
+>  - [tty:tty-next 73/75] drivers/tty/serial/xilinx_uartps.c:1227:21:
+>    error: 'xuartps_uart_driver' undeclared
+> 
+> Additionally I found some build warnings while fixing those issues.
+> 
+> There are some additional comments regarding patches 1 and 3 in their
+> respective email.
+> This series is based on the tty-next tree.
 
---oOB74oR0WcNeq9Zb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+No it isn't, it doesn't apply there at all.  Please respin these against
+the latest tty-next branch and resend them so that I can apply them.
 
-On Tue, Oct 29, 2013 at 02:34:26PM +0100, Linus Walleij wrote:
+thanks,
 
-> That seems like a good idea, but we better poke the people who wrote
-> the code and the SPI maintainer :-)
-
-...or send a patch?
-
---oOB74oR0WcNeq9Zb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSb+ElAAoJELSic+t+oim9cx4P/1E9oVFOMjOkpgF7bfBRTTz9
-seGAe0wQqkV99CuyIbDJkUNCL2x8TmZMgWWGdjpPYUNr/+45Z/tjQhQcgnuo/cR4
-hp+l/xL+X81pnbjY73g2RDrRemMpCN3ASN9/rHjYU5d0iUfwPqENobnHzyczJZrh
-vGF52L6F93yu3LrLi3GnzIZQvmdFVpPsz/SY8JYOGcPkqhz/m6mkju5Ksq24j4ba
-FpzSeC41dXV63YpEzJjRkMYXb7P2upvJHmKXiwONeehLpta7Cwa0hHb69ekFqvT6
-WZ4qkg7trO54C6MGVokFCOovHtPcXHpN5lisnngbH8kqYdhaeBDlgXtveTCA6hvh
-J2XT8cffr9ULljYJdPXzdMkppJZt4vOGk7NmcCCJC9XdVUcmlxedPTylNkXMNNPd
-As//dr4aPOMxhfRER3fGk3A29Xo7nIC8qbB3ou/K5DwmLJYO8rEbEJMky/iwkeQy
-LiBAXkE+UUYpR7OW7V193xJhszRlbh5ydBv4yHm8Pik2I/rPh6IGsoOUL2+j0xfM
-gbn0HroXOQW7e6TL0Oa8PHyFYD45ih1ko4lemmlkCYZ3PT5O6llIMqmY55HvYkWa
-S1sFrxEVAIJA2GPHVrgUd8drJHnT2VyvmE45WgKFjJmniuXVncZrXjk/GbKuupBj
-qBc1u+tWBmc1Ntq0KEWI
-=eh+L
------END PGP SIGNATURE-----
-
---oOB74oR0WcNeq9Zb--
+greg k-h
