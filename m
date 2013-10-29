@@ -1,135 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481Ab3J2KjU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 06:39:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43594 "EHLO mx1.redhat.com"
+	id S1754530Ab3J2Kjr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 06:39:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41391 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751761Ab3J2KjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 06:39:18 -0400
-From: Veaceslav Falico <vfalico@redhat.com>
-To: linux-pci@vger.kernel.org
-Cc: torvalds@linux-foundation.org, tglx@linutronix.de, yinghai@kernel.org,
-        Knut_Petersen@t-online.de, mingo@kernel.org,
-        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, Veaceslav Falico <vfalico@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v3 1/3] msi: free msi_desc entry only after we've released the kobject
-Date: Tue, 29 Oct 2013 11:30:30 +0100
-Message-Id: <1383042632-7102-2-git-send-email-vfalico@redhat.com>
-In-Reply-To: <1383042632-7102-1-git-send-email-vfalico@redhat.com>
-References: <1383042632-7102-1-git-send-email-vfalico@redhat.com>
+	id S1753523Ab3J2Kjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 06:39:44 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <526F09B8.9030202@asianux.com>
+References: <526F09B8.9030202@asianux.com> <526E3CE2.2070405@asianux.com> <526E6A92.6090301@synopsys.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: dhowells@redhat.com, Vineet Gupta <vineetg76@gmail.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: Re: [PATCH] arch: use ASM_NL instead of ';' for assembler new line character in the macro
+Date: Tue, 29 Oct 2013 10:39:29 +0000
+Message-ID: <24899.1383043169@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we first do kobject_put(&entry->kobj) and the kfree(entry),
-however kobject_put() doesn't guarantee us that it was the last reference
-and that the kobj isn't used currently by someone else, so after we
-kfree(entry) with the struct kobject - other users will begin using the
-freed memory, instead of the actual kobject.
+Chen Gang <gang.chen@asianux.com> wrote:
 
-Fix this by using the kobject->release callback, which is called last when
-the kobject is indeed not used and is cleaned up - it's msi_kobj_release(),
-which can do the kfree(entry) safely (kobject_put/cleanup doesn't use the
-kobj itself after ->release() was called, so we're safe).
+> > And you also need to fix kernel/modsign_certificate.S as part of same patchset as
+> > that is where the problem started in first place.
+> > 
+> 
+> Hmm... can that be another patch?
+> 
+> For "kernel/modsign_certificate.S", I recommend to expand the macro
+> which will shrink code line, either need not include additional header
+> file, I feel that will be simpler for both code reader and writers.
 
-In case we've failed to create the sysfs directories - just kfree()
-it - cause we don't have the kobjects attached.
+I recommend leaving that file alone.  That gets moved to a .S file in patches
+queued in the security tree.
 
-Also, remove the same functionality from populate_msi_sysfs(), cause on
-failure we anyway call free_msi_irqs(), which will take care of all the
-kobjects properly.
-
-And add the forgotten pci_dev_put(pdev) in case of failure to register the
-kobject in populate_msi_sysfs().
-
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: Neil Horman <nhorman@tuxdriver.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-pci@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
----
- drivers/pci/msi.c | 31 ++++++++++++-------------------
- 1 file changed, 12 insertions(+), 19 deletions(-)
-
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index d5f90d6..5d70f49 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -374,19 +374,22 @@ static void free_msi_irqs(struct pci_dev *dev)
- 				iounmap(entry->mask_base);
- 		}
- 
-+		list_del(&entry->list);
-+
- 		/*
- 		 * Its possible that we get into this path
- 		 * When populate_msi_sysfs fails, which means the entries
- 		 * were not registered with sysfs.  In that case don't
--		 * unregister them.
-+		 * unregister them, and just free. Otherwise the
-+		 * kobject->release will take care of freeing the entry via
-+		 * msi_kobj_release().
- 		 */
- 		if (entry->kobj.parent) {
- 			kobject_del(&entry->kobj);
- 			kobject_put(&entry->kobj);
-+		} else {
-+			kfree(entry);
- 		}
--
--		list_del(&entry->list);
--		kfree(entry);
- 	}
- }
- 
-@@ -509,6 +512,7 @@ static void msi_kobj_release(struct kobject *kobj)
- 	struct msi_desc *entry = to_msi_desc(kobj);
- 
- 	pci_dev_put(entry->dev);
-+	kfree(entry);
- }
- 
- static struct kobj_type msi_irq_ktype = {
-@@ -522,7 +526,6 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
- 	struct msi_desc *entry;
- 	struct kobject *kobj;
- 	int ret;
--	int count = 0;
- 
- 	pdev->msi_kset = kset_create_and_add("msi_irqs", NULL, &pdev->dev.kobj);
- 	if (!pdev->msi_kset)
-@@ -534,23 +537,13 @@ static int populate_msi_sysfs(struct pci_dev *pdev)
- 		pci_dev_get(pdev);
- 		ret = kobject_init_and_add(kobj, &msi_irq_ktype, NULL,
- 				     "%u", entry->irq);
--		if (ret)
--			goto out_unroll;
--
--		count++;
-+		if (ret) {
-+			pci_dev_put(pdev);
-+			return ret;
-+		}
- 	}
- 
- 	return 0;
--
--out_unroll:
--	list_for_each_entry(entry, &pdev->msi_list, list) {
--		if (!count)
--			break;
--		kobject_del(&entry->kobj);
--		kobject_put(&entry->kobj);
--		count--;
--	}
--	return ret;
- }
- 
- /**
--- 
-1.8.4
-
+David
