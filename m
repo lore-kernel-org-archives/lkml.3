@@ -1,107 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab3J2KmP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 06:42:15 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34313 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752331Ab3J2KmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 06:42:13 -0400
-Message-ID: <526F9101.4010108@ti.com>
-Date: Tue, 29 Oct 2013 12:42:09 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1754578Ab3J2KnM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 06:43:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43644 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753614Ab3J2KnK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 06:43:10 -0400
+Date: Tue, 29 Oct 2013 03:42:23 -0700
+From: tip-bot for Mel Gorman <tipbot@zytor.com>
+Message-ID: <tip-1dd49bfa3465756b3ce72214b58a33e4afb67aa3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
+        stable@kernel.org, aarcange@redhat.com, srikar@linux.vnet.ibm.com,
+        mgorman@suse.de, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, hannes@cmpxchg.org, riel@redhat.com,
+        srikar@linux.vnet.ibm.com, stable@kernel.org, aarcange@redhat.com,
+        mgorman@suse.de, tglx@linutronix.de
+In-Reply-To: <1381141781-10992-5-git-send-email-mgorman@suse.de>
+References: <1381141781-10992-5-git-send-email-mgorman@suse.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/urgent] mm: numa:
+  Do not account for a hinting fault if we raced
+Git-Commit-ID: 1dd49bfa3465756b3ce72214b58a33e4afb67aa3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@gmail.com>, <linux-fbdev@vger.kernel.org>
-CC: James Bates <james.h.bates@gmail.com>, <linux-kernel@vger.kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH v3] efifb: prevent null-deref when iterating dmi_list
-References: <1380732056-5387-1-git-send-email-dh.herrmann@gmail.com> <1380732219-5458-1-git-send-email-dh.herrmann@gmail.com>
-In-Reply-To: <1380732219-5458-1-git-send-email-dh.herrmann@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="GTSfuV7XD6OkkTKW5CmCMu43Jr7ULHeXb"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 29 Oct 2013 03:42:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---GTSfuV7XD6OkkTKW5CmCMu43Jr7ULHeXb
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  1dd49bfa3465756b3ce72214b58a33e4afb67aa3
+Gitweb:     http://git.kernel.org/tip/1dd49bfa3465756b3ce72214b58a33e4afb67aa3
+Author:     Mel Gorman <mgorman@suse.de>
+AuthorDate: Mon, 7 Oct 2013 11:28:42 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 29 Oct 2013 11:37:05 +0100
 
-On 02/10/13 19:43, David Herrmann wrote:
-> From: James Bates <james.h.bates@gmail.com>
->=20
-> The dmi_list array is initialized using gnu designated initializers, an=
-d
-> therefore may contain fewer explicitly defined entries as there are
-> elements in it. This is because the enum above with M_xyz constants
-> contains more items than the designated initializer. Those elements not=
+mm: numa: Do not account for a hinting fault if we raced
 
-> explicitly initialized are implicitly set to 0.
->=20
-> Now efifb_setup() loops through all these array elements, and performs
-> a strcmp on each item. For non explicitly initialized elements this wil=
-l
-> be a null pointer:
->=20
-> This patch swaps the check order in the if statement, thus checks first=
+If another task handled a hinting fault in parallel then do not double
+account for it.
 
-> whether dmi_list[i].base is null.
->=20
-> Signed-off-by: James Bates <james.h.bates@gmail.com>
-> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-> ---
-> v3: fixes the "Author" field and James' email address
->=20
->  drivers/video/efifb.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
-> index 7f9ff75..fcb9500 100644
-> --- a/drivers/video/efifb.c
-> +++ b/drivers/video/efifb.c
-> @@ -108,8 +108,8 @@ static int efifb_setup(char *options)
->  			if (!*this_opt) continue;
-> =20
->  			for (i =3D 0; i < M_UNKNOWN; i++) {
-> -				if (!strcmp(this_opt, efifb_dmi_list[i].optname) &&
-> -				    efifb_dmi_list[i].base !=3D 0) {
-> +				if (efifb_dmi_list[i].base !=3D 0 &&
-> +				    !strcmp(this_opt, efifb_dmi_list[i].optname)) {
->  					screen_info.lfb_base =3D efifb_dmi_list[i].base;
->  					screen_info.lfb_linelength =3D efifb_dmi_list[i].stride;
->  					screen_info.lfb_width =3D efifb_dmi_list[i].width;
->=20
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: <stable@kernel.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1381141781-10992-5-git-send-email-mgorman@suse.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ mm/huge_memory.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Thanks, queued for 3.13.
-
- Tomi
-
-
-
---GTSfuV7XD6OkkTKW5CmCMu43Jr7ULHeXb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJSb5EBAAoJEPo9qoy8lh714O4QAIUveRkHIhYsW75KfbBH/IDt
-XBjDDxenZXviVowNXetv4M+FoLj35FeCQruvuuDc9SCDmg+rNYyzvN6BM0E9QkAk
-YQjdQN6XU1PWIbqSkoiCKh9zTIWEQGP/FJwkS8mqH8O336wc6130F1s+F8QVDpDS
-oo9fN3Kazyg1LkHSK0W1iK5Jaf2x+NRYV1ZZA2O/6V4+QBPGvzishhgNxAmiUVbT
-qrNEiZnLYZEZRmCZimGownet/iHZez7wSvJOuTObzCihM9cRJSAPu/+UsfCntWej
-KgqR2knBxxMPYavpT0B9fh3wVPe3bV6JCmcdu7zWvnzkdJQ75xqirgnK14Vm5Scm
-xqPvL1MmJe58ESpzNGBqptCA1SYoFQxNLa8dlWruDmhbp2g+S2Wgw6U4u/Zhiyt9
-uuEac40aducq8vLmNP29TioAVSWdxOqoPWgzHIHKnBtOtuXjpIdOReOA8A/Sjvde
-6WsY23FdMK9F0KeQD/IXjEzQLabmXk7DWQKV1a7QTy3rtF4r4J9M6JeNjXV7ZAWO
-Z6IJuJyZlSZjn3SmTlwt06mHj1EyfOsc9O/+MoMUsqeHXJyPM0Uj5ZMO900Wfx3N
-eAkOmjaTStO6/fPOqF52oRbSCkZ4WAsr6zfVbbM3O+4mOzRk+9SQY+DV8inDYV8s
-kHp4Pw9sTBGtIZnoICG0
-=1Hni
------END PGP SIGNATURE-----
-
---GTSfuV7XD6OkkTKW5CmCMu43Jr7ULHeXb--
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 610e3df..33ee637 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1325,8 +1325,11 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ check_same:
+ 	spin_lock(&mm->page_table_lock);
+-	if (unlikely(!pmd_same(pmd, *pmdp)))
++	if (unlikely(!pmd_same(pmd, *pmdp))) {
++		/* Someone else took our fault */
++		current_nid = -1;
+ 		goto out_unlock;
++	}
+ clear_pmdnuma:
+ 	pmd = pmd_mknonnuma(pmd);
+ 	set_pmd_at(mm, haddr, pmdp, pmd);
