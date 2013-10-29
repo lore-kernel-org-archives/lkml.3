@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab3J2SIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:08:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59363 "EHLO
+	id S1753475Ab3J2SIP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:08:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59372 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232Ab3J2SIF (ORCPT
+	with ESMTP id S1753232Ab3J2SIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:08:05 -0400
+	Tue, 29 Oct 2013 14:08:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 72/81] ALSA: us122l: Fix pcm_usb_stream mmapping regression
-Date: Tue, 29 Oct 2013 11:04:33 -0700
-Message-Id: <1383069882-11437-73-git-send-email-kamal@canonical.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 61/81] sparc64: Fix off by one in trampoline TLB mapping installation loop.
+Date: Tue, 29 Oct 2013 11:04:22 -0700
+Message-Id: <1383069882-11437-62-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
@@ -26,42 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit ac536a848a1643e4b87e8fbd376a63091afc2ccc upstream.
+[ Upstream commit 63d499662aeec1864ec36d042aca8184ea6a938e ]
 
-The pcm_usb_stream plugin requires the mremap explicitly for the read
-buffer, as it expands itself once after reading the required size.
-But the commit [314e51b9: mm: kill vma flag VM_RESERVED and
-mm->reserved_vm counter] converted blindly to a combination of
-VM_DONTEXPAND | VM_DONTDUMP like other normal drivers, and this
-resulted in the failure of mremap().
-
-For fixing this regression, we need to remove VM_DONTEXPAND for the
-read-buffer mmap.
-
-Reported-and-tested-by: James Miller <jamesstewartmiller@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Kirill Tkhai <tkhai@yandex.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/usb/usx2y/us122l.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/sparc/kernel/trampoline_64.S | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/sound/usb/usx2y/us122l.c b/sound/usb/usx2y/us122l.c
-index d0323a6..999550b 100644
---- a/sound/usb/usx2y/us122l.c
-+++ b/sound/usb/usx2y/us122l.c
-@@ -262,7 +262,9 @@ static int usb_stream_hwdep_mmap(struct snd_hwdep *hw,
- 	}
+diff --git a/arch/sparc/kernel/trampoline_64.S b/arch/sparc/kernel/trampoline_64.S
+index da1b781..8fa84a3 100644
+--- a/arch/sparc/kernel/trampoline_64.S
++++ b/arch/sparc/kernel/trampoline_64.S
+@@ -131,7 +131,6 @@ startup_continue:
+ 	clr		%l5
+ 	sethi		%hi(num_kernel_image_mappings), %l6
+ 	lduw		[%l6 + %lo(num_kernel_image_mappings)], %l6
+-	add		%l6, 1, %l6
  
- 	area->vm_ops = &usb_stream_hwdep_vm_ops;
--	area->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
-+	area->vm_flags |= VM_DONTDUMP;
-+	if (!read)
-+		area->vm_flags |= VM_DONTEXPAND;
- 	area->vm_private_data = us122l;
- 	atomic_inc(&us122l->mmap_count);
- out:
+ 	mov		15, %l7
+ 	BRANCH_IF_ANY_CHEETAH(g1,g5,2f)
+@@ -224,7 +223,6 @@ niagara_lock_tlb:
+ 	clr		%l5
+ 	sethi		%hi(num_kernel_image_mappings), %l6
+ 	lduw		[%l6 + %lo(num_kernel_image_mappings)], %l6
+-	add		%l6, 1, %l6
+ 
+ 1:
+ 	mov		HV_FAST_MMU_MAP_PERM_ADDR, %o5
 -- 
 1.8.1.2
 
