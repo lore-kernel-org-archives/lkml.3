@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757988Ab3J2CAJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 22:00:09 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:64703 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756767Ab3J2CAI (ORCPT
+	id S1757998Ab3J2CEO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 22:04:14 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:62650 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756896Ab3J2CEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 22:00:08 -0400
+	Mon, 28 Oct 2013 22:04:13 -0400
 MIME-Version: 1.0
-Date: Tue, 29 Oct 2013 10:00:07 +0800
-Message-ID: <CAPgLHd_bHP-DMMbsFkc1RwmDK4dp+cZY8LRBFyDDuoEohJ-O_g@mail.gmail.com>
-Subject: [PATCH] befs: fix return value check in befs_iget()
+Date: Tue, 29 Oct 2013 10:04:11 +0800
+Message-ID: <CAPgLHd8oLgehkC-4LdRgiASnZGfk0u3ueVQw8f4J6g+3zeT5tQ@mail.gmail.com>
+Subject: [PATCH] ARM: spear: fix return value check in spear_setup_of_timer()
 From: Wei Yongjun <weiyj.lk@gmail.com>
-To: viro@zeniv.linux.org.uk, ebiederm@xmission.com, keescook@chromium.org,
-        serge.hallyn@canonical.com
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+To: viresh.linux@gmail.com, shiraz.hashim@st.com, linux@arm.linux.org.uk
+Cc: yongjun_wei@trendmicro.com.cn, linux-arm-kernel@lists.infradead.org,
+        spear-devel@list.st.com, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,28 +22,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-In case of error, the function iget_locked() returns NULL pointer
-not ERR_PTR(). The IS_ERR() test in the return value check should
-be replaced with NULL test.
+In case of error, the function clk_get_sys() returns ERR_PTR()
+and never returns NULL. The NULL test in the return value check
+should be replaced with IS_ERR().
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- fs/befs/linuxvfs.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mach-spear/time.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/befs/linuxvfs.c b/fs/befs/linuxvfs.c
-index e9c75e2..d714dda 100644
---- a/fs/befs/linuxvfs.c
-+++ b/fs/befs/linuxvfs.c
-@@ -319,8 +319,8 @@ static struct inode *befs_iget(struct super_block *sb, unsigned long ino)
- 	befs_debug(sb, "---> befs_read_inode() " "inode = %lu", ino);
+diff --git a/arch/arm/mach-spear/time.c b/arch/arm/mach-spear/time.c
+index d449673..3263a34 100644
+--- a/arch/arm/mach-spear/time.c
++++ b/arch/arm/mach-spear/time.c
+@@ -222,7 +222,7 @@ void __init spear_setup_of_timer(void)
+ 	}
  
- 	inode = iget_locked(sb, ino);
--	if (IS_ERR(inode))
--		return inode;
-+	if (!inode)
-+		return ERR_PTR(-ENOMEM);
- 	if (!(inode->i_state & I_NEW))
- 		return inode;
- 
+ 	gpt_clk = clk_get_sys("gpt0", NULL);
+-	if (!gpt_clk) {
++	if (IS_ERR(gpt_clk)) {
+ 		pr_err("%s:couldn't get clk for gpt\n", __func__);
+ 		goto err_iomap;
+ 	}
 
