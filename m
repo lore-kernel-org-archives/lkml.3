@@ -1,91 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758042Ab3J2DnX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 23:43:23 -0400
-Received: from [213.199.154.207] ([213.199.154.207]:22055 "EHLO
-	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752001Ab3J2DnV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 23:43:21 -0400
+	id S1758033Ab3J2DtJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 23:49:09 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:48659
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756892Ab3J2Ds7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Oct 2013 23:48:59 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -6
-X-BigFish: VS-6(zz98dI9371I936eI542I1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
-Message-ID: <1383018042.3410.69.camel@snotra.buserror.net>
-Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
- sysfs only
-From: Scott Wood <scottwood@freescale.com>
-To: Bhushan Bharat-R65777 <R65777@freescale.com>
-CC: Wood Scott-B07421 <B07421@freescale.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Kim Phillips <kim.phillips@linaro.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
+X-SpamScore: -2
+X-BigFish: VS-2(zz1432I168aJzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216hbe9i1155h)
+From: Xiubo Li-B47053 <B47053@freescale.com>
+To: Kumar Gala <galak@codeaurora.org>
+CC: Guo Shawn-R65073 <r65073@freescale.com>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "matt.porter@linaro.org" <matt.porter@linaro.org>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "t.figa@samsung.com" <t.figa@samsung.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
-        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Mon, 28 Oct 2013 22:40:42 -0500
-In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D071D4F0B@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1381418830.7979.405.camel@snotra.buserror.net>
-	 <1381472840-3470-1-git-send-email-kim.phillips@linaro.org>
-	 <1381472840-3470-3-git-send-email-kim.phillips@linaro.org>
-	 <1382982462.4097.38.camel@ul30vt.home>
-	 <1382983205.3410.6.camel@snotra.buserror.net>
-	 <1382983792.3410.13.camel@snotra.buserror.net>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D071D4F0B@039-SN2MPN1-013.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: RE: [RFC][PATCHv5 4/4] Documentation: Add device tree bindings for
+ Freescale FTM PWM.
+Thread-Topic: [RFC][PATCHv5 4/4] Documentation: Add device tree bindings for
+ Freescale FTM PWM.
+Thread-Index: AQHO08LfYi/1z3wBeU2R0CDTuhA9LZoJ8hSAgAD12nA=
+Date: Tue, 29 Oct 2013 03:48:47 +0000
+Message-ID: <1DD289F6464F0949A2FCA5AA6DC23F8286BD27@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1382951151-31517-1-git-send-email-Li.Xiubo@freescale.com>
+ <224C2E26-6C33-4DBB-BC06-A4BA470FDA39@codeaurora.org>
+In-Reply-To: <224C2E26-6C33-4DBB-BC06-A4BA470FDA39@codeaurora.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.78]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
 X-OriginatorOrg: freescale.com
 X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-10-28 at 22:38 -0500, Bhushan Bharat-R65777 wrote:
+> > This adds the Document for Freescale FTM PWM driver under
+> > Documentation/devicetree/bindings/pwm/.
+> >
+> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> > ---
+> > .../devicetree/bindings/pwm/pwm-fsl-ftm.txt        | 34
+> ++++++++++++++++++++++
+> > 1 file changed, 34 insertions(+)
+> > create mode 100644
+> > Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
+> >
+> > diff --git a/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
+> > b/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
+> > new file mode 100644
+> > index 0000000..175b762
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
+> > @@ -0,0 +1,34 @@
+> > +Freescale FTM PWM controller
 > 
-> > -----Original Message-----
-> > From: Wood Scott-B07421
-> > Sent: Monday, October 28, 2013 11:40 PM
-> > To: Alex Williamson
-> > Cc: Kim Phillips; Bhushan Bharat-R65777; Wood Scott-B07421; Yoder Stuart-B08248;
-> > christoffer.dall@linaro.org; linux-kernel@vger.kernel.org;
-> > a.motakis@virtualopensystems.com; agraf@suse.de; Sethi Varun-B16395;
-> > peter.maydell@linaro.org; santosh.shukla@linaro.org; kvm@vger.kernel.org;
-> > gregkh@linuxfoundation.org
-> > Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
-> > sysfs only
-> > 
-> > On Mon, 2013-10-28 at 13:00 -0500, Scott Wood wrote:
-> > > On Mon, 2013-10-28 at 11:47 -0600, Alex Williamson wrote:
-> > > > On Fri, 2013-10-11 at 01:27 -0500, Kim Phillips wrote:
-> > > > > Force the vfio-pci driver to only be bound explicitly via sysfs to
-> > > > > avoid conflics with other drivers in the event of a hotplug.
-> > > >
-> > > > We can't break userspace, so we can't disable the current method of
-> > > > binding devices to vfio-pci.  We can add a new method and perhaps
-> > > > deprecate the existing mechanism to be removed at some point in the
-> > > > future.  Thanks,
-> > >
-> > > I thought the existing method involved using sysfs bind, and this was
-> > > just eliminating a race.  How does the bind get triggered currently?
-> > 
-> > OK, so it seems it's relying on the write to new_id calling driver_attach().
-> > Sigh.  I guess we could make driver-sysfs-bind-only be settable via sysfs, and
-> > have new-userspace set both that and PCI_ANY_ID (or the specific ID if userspace
-> > prefers) via new_id.  The platform bus patches could continue as is, since
-> > there's no existing mechanism to break.
+> What does FTM stand for, and can we spell out PWM at least once early on.
 > 
-> What about changing the store_new_id() to bypass exact ids check if driver have PCI_ANY_ID?
 
-I don't follow.
+"FTM" is for short of "FlexTimer Module", I'll use the full name then.
 
--Scott
+> > +
+> > +Required properties:
+> > +- compatible: Should be "fsl,vf610-ftm-pwm"
+> > +- reg: Physical base address and length of the controller's registers
+> > +- #pwm-cells: Should be 3. See pwm.txt in this directory for a
+> > +description of
+> > +  the cells format.
+> > +- clock-names : Includes the following module clock source entries:
+> > +    "ftm0" (system clock),
+> > +    "ftm0_fix_sel" (fixed frequency clock),
+> > +    "ftm0_ext_sel" (external clock)
+> > +- clocks : Must contain a clock specifier for each entry in
+> > +clock-names,
+> > +  See ../clock/clock-bindings.txt for details of the property values.
+> > +- fsl,pwm-counter-clk: The FTM PWM counter clock source, should be
+> > +one of the
+> > +  entries in clock-names.
+> 
+> Why do we need this, why not just have only the clock-names/clocks
+> reference the clk that is actually used?
+> 
+
+As I have replied before, the FTM has two clock sources: the module clock and the counter clock.
+
+The counter clock source is selectable depends on different board and also the hardware design:
++++++
+* FTM source clock is selectable
+* Source clock can be the system clock, the fixed frequency clock, or an external
+clock
+* Fixed frequency clock is an additional clock input to allow the selection of an on
+chip clock source other than the system clock
+* Selecting external clock connects FTM clock to a chip level input pin therefore
+allowing to synchronize the FTM counter with an off chip clock source
+-----
+>From the above description we can see that the external clock source can allow to synchronize the
+FTM counter with an off chip clock source.
+
+As the chip spec permits the counter clock source be selectable, so the different board maybe has different
+implementation, if the driver do not support, this will be a bug.
+
+
+> > +- pinctrl-names: must contain a "default" entry.
+> > +- pinctrl-NNN: One property must exist for each entry in pinctrl-names.
+> > +  See ../pinctrl/pinctrl-bindings.txt for details of the property
+> values.
+> 
+> let's drop the .. when making directory references.
+> 
+
+Is absolute path " Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt " or just "pinctrl/pinctrl-bindings.txt " ?
+
+
+--
+Xiubo 
 
 
 
