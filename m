@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab3J2KVy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 06:21:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44475 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339Ab3J2KVx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 06:21:53 -0400
-Date: Tue, 29 Oct 2013 11:21:31 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Victor Kaplansky <VICTORK@il.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: perf events ring buffer memory barrier on powerpc
-Message-ID: <20131029102131.GA16117@laptop.programming.kicks-ass.net>
-References: <12083.1382486094@ale.ozlabs.ibm.com>
- <20131023141948.GB3566@localhost.localdomain>
- <20131025173749.GG19466@laptop.lan>
- <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com>
- <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com>
- <20131028132634.GO19466@laptop.lan>
- <20131028163418.GD4126@linux.vnet.ibm.com>
- <20131028201735.GA15629@redhat.com>
- <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com>
+	id S1754298Ab3J2KWJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 06:22:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53720 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751339Ab3J2KWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 06:22:08 -0400
+Date: Tue, 29 Oct 2013 11:21:38 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH 0/4] perf tools: Fix -g option handling
+Message-ID: <20131029102137.GC1093@krava.brq.redhat.com>
+References: <20131026120336.GA24439@gmail.com>
+ <1382797536-32303-1-git-send-email-jolsa@redhat.com>
+ <20131026143231.GB1069@krava.brq.redhat.com>
+ <20131027065605.GA28433@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131027065605.GA28433@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 10:58:58PM +0200, Victor Kaplansky wrote:
-> Oleg Nesterov <oleg@redhat.com> wrote on 10/28/2013 10:17:35 PM:
+On Sun, Oct 27, 2013 at 07:56:05AM +0100, Ingo Molnar wrote:
 > 
-> >       mb();   // XXXXXXXX: do we really need it? I think yes.
+> * Jiri Olsa <jolsa@redhat.com> wrote:
 > 
-> Oh, it is hard to argue with feelings. Also, it is easy to be on
-> conservative side and put the barrier here just in case.
+> > On Sat, Oct 26, 2013 at 04:25:32PM +0200, Jiri Olsa wrote:
+> > > hi,
+> > > changing the '-g/-G' options for record/top commands
+> > > to take NO argument and enable unwind method based
+> > > on .perfconfig setup (using FP by default).
+> > > 
+> > > The current -g option parsing moves into the
+> > > '--call-graph' option.
+> > 
+> > forgot to mention branch:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+> >   perf/cc
+> 
+> I tested it - works perfectly now for me:
+> 
+> Acked-and-tested-by: Ingo Molnar <mingo@kernel.org>
+> 
+> You might want to give --call-graph a single letter option name as well, 
+> -g, -G, -c, -C are all taken already, but both -l and -L are still 
+> available - maybe use -L for it?
 
-I'll make it a full mb for now and too am curious to see the end of this
-discussion explaining things ;-)
+ok, I'll addd the -L
+I'll send it with fixies for other comments
+
+thanks,
+jirka
