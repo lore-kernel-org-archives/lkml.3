@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092Ab3J2U6A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 16:58:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50470 "EHLO mx2.suse.de"
+	id S1752439Ab3J2U6a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 16:58:30 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35634 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751380Ab3J2U57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 16:57:59 -0400
-Date: Tue, 29 Oct 2013 21:57:56 +0100
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        "Artem S. Tashkinov" <t.artem@lycos.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        mgorman@suse.de
-Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
-Message-ID: <20131029205756.GH9568@quack.suse.cz>
-References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
- <CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
- <1814253454.3449.1382689853825.JavaMail.mail@webmail07>
- <20131025091842.GA28681@thunk.org>
- <20131025022937.12623dcd.akpm@linux-foundation.org>
- <CA+55aFzq4-wsErRO56gW6gj3Q91QtvvaGQPdUV2JkSs-B1PCAQ@mail.gmail.com>
+	id S1752122Ab3J2U62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 16:58:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,595,1378882800"; 
+   d="scan'208";a="419340628"
+Message-ID: <52702170.7080003@intel.com>
+Date: Tue, 29 Oct 2013 21:58:24 +0100
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Organization: Intel Technology Poland Sp. z o. o., KRS 101882, ul. Slowackiego
+ 173, 80-298 Gdansk
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzq4-wsErRO56gW6gj3Q91QtvvaGQPdUV2JkSs-B1PCAQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Bolle <pebolle@tiscali.nl>, Colin Cross <ccross@android.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+CC: Tejun Heo <tj@kernel.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Revert 9745cdb36da83aeec198650b410ca06304cf792 ("select: use
+ freezable blocking call")?
+References: <1383075705.22833.18.camel@x220.thuisdomein>
+In-Reply-To: <1383075705.22833.18.camel@x220.thuisdomein>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 25-10-13 10:32:16, Linus Torvalds wrote:
-> On Fri, Oct 25, 2013 at 10:29 AM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> >
-> > Apparently all this stuff isn't working as desired (and perhaps as designed)
-> > in this case.  Will take a look after a return to normalcy ;)
-> 
-> It definitely doesn't work. I can trivially reproduce problems by just
-> having a cheap (==slow) USB key with an ext3 filesystem, and going a
-> git clone to it. The end result is not pretty, and that's actually not
-> even a huge amount of data.
-  I'll try to reproduce this tomorrow so that I can have a look where
-exactly are we stuck. But in last few releases problems like this were
-caused by problems in reclaim which got fed up by seeing lots of dirty
-/ under writeback pages and ended up stuck waiting for IO to finish. Mel
-has been tweaking the logic here and there but maybe it haven't got fixed
-completely. Mel, do you know about any outstanding issues?
+On 10/29/2013 8:41 PM, Paul Bolle wrote:
+> 0) Summary: ever since I tried running (release candidates of) v3.11 on
+> the two working i686s I still have lying around I ran into issues on
+> resuming from suspend. Reverting 9745cdb36da83aeec198650b410ca06304cf792
+> ("select: use freezable blocking call") resolves those issues.
+>
+> 1) Resuming from suspend on i686 on (release candidates of) v3.11 and
+> later triggers issues like:
+>      traps: systemd[1] general protection ip:b738e490 sp:bf882fc0 error:0 in libc-2.16.so[b731c000+1b0000]
+>
+> and
+>      traps: rtkit-daemon[552] general protection ip:804d6e5 sp:b6cb32f0 error:0 in rtkit-daemon[8048000+d000]
+>
+> Once I hit the systemd error I can only get out of the mess that the
+> system is at that point by power cycling it.
+>
+> 2) I bisected that issue to commit
+> 9745cdb36da83aeec198650b410ca06304cf792 ("select: use freezable blocking
+> call"). The, rather impressive, bisect log is pasted at the end of this
+> message. It took 23 builds to pinpoint this issue in the v3.10..v3.11
+> range! Sadly, I have no clue why that commit triggers this issue.
+>
+> 3) Reverting that commit on top of v3.12-rc7 gets me a system that
+> resumes without issues. (That revert needed one trivial context change.
+> Note that I haven't actually tried v3.12-rc7 plain. But v3.12-rc6 and
+> earlier also had this issue, so I'm sure the revert did the trick for
+> v3.12-rc7.)
+>
+> 4) Should this commit be reverted? Or is there a better fix?
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+In short, yes, it should.
+
+I've already queued up a revert of something very similar and I'm going 
+to revert this one too.
+
+Thanks,
+Rafael
+
