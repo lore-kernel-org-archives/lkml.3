@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756996Ab3J2SZF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:25:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59263 "EHLO
+	id S1756968Ab3J2SZD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:25:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59268 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab3J2SFM (ORCPT
+	with ESMTP id S1752151Ab3J2SFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Oct 2013 14:05:12 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 15/81] random: allow architectures to optionally define random_get_entropy()
-Date: Tue, 29 Oct 2013 11:03:36 -0700
-Message-Id: <1383069882-11437-16-git-send-email-kamal@canonical.com>
+Cc: David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 20/81] ALSA: hda - Fix microphone for Sony VAIO Pro 13 (Haswell model)
+Date: Tue, 29 Oct 2013 11:03:41 -0700
+Message-Id: <1383069882-11437-21-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
@@ -26,91 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 61875f30daf60305712e25b209ef41ced2635bad upstream.
+commit 88cfcf86aa3ada84d97195bcad74f4dadb4ae23b upstream.
 
-Allow architectures which have a disabled get_cycles() function to
-provide a random_get_entropy() function which provides a fine-grained,
-rapidly changing counter that can be used by the /dev/random driver.
+The external mic showed up with a precense detect of "always present",
+essentially disabling the internal mic. Therefore turn off presence
+detection for this pin.
 
-For example, an architecture might have a rapidly changing register
-used to control random TLB cache eviction, or DRAM refresh that
-doesn't meet the requirements of get_cycles(), but which is good
-enough for the needs of the random driver.
+Note: The external mic seems not yet working, but an internal mic is
+certainly better than no mic at all.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+BugLink: https://bugs.launchpad.net/bugs/1227093
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/char/random.c |  8 ++++----
- include/linux/timex.h | 14 ++++++++++++++
- 2 files changed, 18 insertions(+), 4 deletions(-)
+ sound/pci/hda/patch_realtek.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 5b0c1cd..4334305 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -643,7 +643,7 @@ struct timer_rand_state {
-  */
- void add_device_randomness(const void *buf, unsigned int size)
- {
--	unsigned long time = get_cycles() ^ jiffies;
-+	unsigned long time = random_get_entropy() ^ jiffies;
- 
- 	mix_pool_bytes(&input_pool, buf, size, NULL);
- 	mix_pool_bytes(&input_pool, &time, sizeof(time), NULL);
-@@ -680,7 +680,7 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
- 		goto out;
- 
- 	sample.jiffies = jiffies;
--	sample.cycles = get_cycles();
-+	sample.cycles = random_get_entropy();
- 	sample.num = num;
- 	mix_pool_bytes(&input_pool, &sample, sizeof(sample), NULL);
- 
-@@ -747,7 +747,7 @@ void add_interrupt_randomness(int irq, int irq_flags)
- 	struct fast_pool	*fast_pool = &__get_cpu_var(irq_randomness);
- 	struct pt_regs		*regs = get_irq_regs();
- 	unsigned long		now = jiffies;
--	__u32			input[4], cycles = get_cycles();
-+	__u32			input[4], cycles = random_get_entropy();
- 
- 	input[0] = cycles ^ jiffies;
- 	input[1] = irq;
-@@ -1485,7 +1485,7 @@ unsigned int get_random_int(void)
- 
- 	hash = get_cpu_var(get_random_int_hash);
- 
--	hash[0] += current->pid + jiffies + get_cycles();
-+	hash[0] += current->pid + jiffies + random_get_entropy();
- 	md5_transform(hash, random_int_secret);
- 	ret = hash[0];
- 	put_cpu_var(get_random_int_hash);
-diff --git a/include/linux/timex.h b/include/linux/timex.h
-index 5ec87c6..205356f 100644
---- a/include/linux/timex.h
-+++ b/include/linux/timex.h
-@@ -64,6 +64,20 @@
- 
- #include <asm/timex.h>
- 
-+#ifndef random_get_entropy
-+/*
-+ * The random_get_entropy() function is used by the /dev/random driver
-+ * in order to extract entropy via the relative unpredictability of
-+ * when an interrupt takes places versus a high speed, fine-grained
-+ * timing source or cycle counter.  Since it will be occurred on every
-+ * single interrupt, it must have a very low cost/overhead.
-+ *
-+ * By default we use get_cycles() for this purpose, but individual
-+ * architectures may override this in their asm/timex.h header file.
-+ */
-+#define random_get_entropy()	get_cycles()
-+#endif
-+
- /*
-  * SHIFT_PLL is used as a dampening factor to define how much we
-  * adjust the frequency correction for a given offset in PLL mode.
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 86ee937..73d3c8f 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6082,6 +6082,7 @@ enum {
+ 	ALC269_FIXUP_MIC2_MUTE_LED,
+ 	ALC269_FIXUP_INV_DMIC,
+ 	ALC269_FIXUP_LENOVO_DOCK,
++	ALC286_FIXUP_SONY_MIC_NO_PRESENCE,
+ 	ALC269_FIXUP_PINCFG_NO_HP_TO_LINEOUT,
+ 	ALC271_FIXUP_AMIC_MIC2,
+ 	ALC271_FIXUP_HP_GATE_MIC_JACK,
+@@ -6233,6 +6234,13 @@ static const struct alc_fixup alc269_fixups[] = {
+ 		.type = ALC_FIXUP_FUNC,
+ 		.v.func = alc269_fixup_pincfg_no_hp_to_lineout,
+ 	},
++	[ALC286_FIXUP_SONY_MIC_NO_PRESENCE] = {
++		.type = HDA_FIXUP_PINS,
++		.v.pins = (const struct hda_pintbl[]) {
++			{ 0x18, 0x01a1913c }, /* use as headset mic, without its own jack detect */
++			{ }
++		},
++	},
+ 	[ALC271_FIXUP_AMIC_MIC2] = {
+ 		.type = ALC_FIXUP_PINS,
+ 		.v.pins = (const struct alc_pincfg[]) {
+@@ -6266,6 +6274,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x1043, 0x834a, "ASUS S101", ALC269_FIXUP_STEREO_DMIC),
+ 	SND_PCI_QUIRK(0x1043, 0x8398, "ASUS P1005", ALC269_FIXUP_STEREO_DMIC),
+ 	SND_PCI_QUIRK(0x1043, 0x83ce, "ASUS P1005", ALC269_FIXUP_STEREO_DMIC),
++	SND_PCI_QUIRK(0x104d, 0x90b6, "Sony VAIO Pro 13", ALC286_FIXUP_SONY_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x104d, 0x9073, "Sony VAIO", ALC275_FIXUP_SONY_VAIO_GPIO2),
+ 	SND_PCI_QUIRK(0x104d, 0x907b, "Sony VAIO", ALC275_FIXUP_SONY_HWEQ),
+ 	SND_PCI_QUIRK(0x104d, 0x9084, "Sony VAIO", ALC275_FIXUP_SONY_HWEQ),
 -- 
 1.8.1.2
 
