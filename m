@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab3J2N7B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 09:59:01 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:45787 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab3J2N67 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 09:58:59 -0400
-Date: Tue, 29 Oct 2013 14:58:56 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, fweisbec@gmail.com,
-        peterz@infradead.org, jolsa@redhat.com, namhyung@kernel.org,
-        xiaoguangrong@linux.vnet.ibm.com, runzhen@linux.vnet.ibm.com,
-        Runzhen Wang <icycoder@gmail.com>
-Subject: Re: [PATCH 14/16] perf kvm: reuse some code of
- perf_kvm__timerfd_create()
-Message-ID: <20131029135856.GA25191@gmail.com>
-References: <1369527896-3650-1-git-send-email-dsahern@gmail.com>
- <1369527896-3650-15-git-send-email-dsahern@gmail.com>
- <20130912130849.GA23826@gmail.com>
- <5231C2EF.8080200@gmail.com>
- <20130912134058.GF23826@gmail.com>
- <20131029132304.GA22052@gmail.com>
- <526FBDEF.8090109@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <526FBDEF.8090109@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755761Ab3J2N71 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 09:59:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6023 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755289Ab3J2N7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 09:59:24 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <526FA1B7.4090808@asianux.com>
+References: <526FA1B7.4090808@asianux.com> <526F09B8.9030202@asianux.com> <526E3CE2.2070405@asianux.com> <526E6A92.6090301@synopsys.com> <24899.1383043169@warthog.procyon.org.uk>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: dhowells@redhat.com, Vineet Gupta <vineetg76@gmail.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: Re: [PATCH] arch: use ASM_NL instead of ';' for assembler new line character in the macro
+Date: Tue, 29 Oct 2013 13:59:07 +0000
+Message-ID: <26752.1383055147@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Chen Gang <gang.chen@asianux.com> wrote:
 
-* David Ahern <dsahern@gmail.com> wrote:
-
-> >Btw., this build failure is still there today:
+> >> > For "kernel/modsign_certificate.S", I recommend to expand the macro
+> >> > which will shrink code line, either need not include additional header
+> >> > file, I feel that will be simpler for both code reader and writers.
+> > I recommend leaving that file alone.  That gets moved to a .S file in patches
+> > queued in the security tree.
 > 
-> Right, I put together a patch on Sept 14th and got distracted. 
-> I'll rebase to top of tree, update per the new feature tests and 
-> send it out today.
+> Excuse me, I am not quite familiar with our version merging, I guess
+> your meaning is "this file will be removed, and the related contents
+> will be in another .S file, so we need not fix it within this file".
+> 
+> If what I guess is correct, I support your recommendation (and if what I
+> guess is incorrect, please let me know, thanks). :-)
 
-Yeah, it would be fine against the new feature tests, I don't think 
-building on such an old distro is an outright regression.
+Sorry, I misread what you were saying.  The code has already been split out of
+the .c file of course (I'd forgotten that it had).  In the security tree next
+branch, the .S file gets renamed and slightly modified here:
 
-Thanks,
+	http://git.kernel.org/cgit/linux/kernel/git/jmorris/linux-security.git/commit/?h=next&id=b56e5a17b6b9acd16997960504b9940d0d7984e7
 
-	Ingo
+David
