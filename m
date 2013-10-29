@@ -1,171 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754330Ab3J2EfQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 00:35:16 -0400
-Received: from mail-db9lp0253.outbound.messaging.microsoft.com ([213.199.154.253]:37263
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751854Ab3J2EfO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 00:35:14 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -6
-X-BigFish: VS-6(zz98dI9371I936eI542I1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
-Message-ID: <1383021306.3410.80.camel@snotra.buserror.net>
-Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
- sysfs only
-From: Scott Wood <scottwood@freescale.com>
-To: Bhushan Bharat-R65777 <R65777@freescale.com>
-CC: Wood Scott-B07421 <B07421@freescale.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Kim Phillips <kim.phillips@linaro.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.motakis@virtualopensystems.com" <a.motakis@virtualopensystems.com>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Sethi Varun-B16395 <B16395@freescale.com>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
-        "santosh.shukla@linaro.org" <santosh.shukla@linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Mon, 28 Oct 2013 23:35:06 -0500
-In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D071D4FA0@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1381418830.7979.405.camel@snotra.buserror.net>
-	 <1381472840-3470-1-git-send-email-kim.phillips@linaro.org>
-	 <1381472840-3470-3-git-send-email-kim.phillips@linaro.org>
-	 <1382982462.4097.38.camel@ul30vt.home>
-	 <1382983205.3410.6.camel@snotra.buserror.net>
-	 <1382983792.3410.13.camel@snotra.buserror.net>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D071D4F0B@039-SN2MPN1-013.039d.mgd.msft.net>
-	 <1383018042.3410.69.camel@snotra.buserror.net>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D071D4F3A@039-SN2MPN1-013.039d.mgd.msft.net>
-	 <1383020990.3410.76.camel@snotra.buserror.net>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D071D4FA0@039-SN2MPN1-013.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1753872Ab3J2EnN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 00:43:13 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:17632 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752517Ab3J2Emu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 00:42:50 -0400
+X-IronPort-AV: E=Sophos;i="4.93,590,1378857600"; 
+   d="scan'208";a="68270201"
+Date: Tue, 29 Oct 2013 04:41:40 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <konrad.wilk@oracle.com>,
+        <Ian.Campbell@citrix.com>, <will.deacon@arm.com>,
+        <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v9 01/18] arm: make SWIOTLB available
+In-Reply-To: <alpine.DEB.2.02.1310251206450.26077@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1310290441260.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com> <1382698313-13161-1-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1310251206450.26077@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-10-28 at 23:31 -0500, Bhushan Bharat-R65777 wrote:
+ping?
+
+On Fri, 25 Oct 2013, Stefano Stabellini wrote:
+> Russell,
+> this is the only patch that needs an ack at the moment.
+> As you commented on it before and I have already addressed your comments
+> few versions ago, unless you have any complaints I am going to add it to
+> linux-next and I am thinking of merging it during the next merge window.
 > 
-> > -----Original Message-----
-> > From: Wood Scott-B07421
-> > Sent: Tuesday, October 29, 2013 10:00 AM
-> > To: Bhushan Bharat-R65777
-> > Cc: Wood Scott-B07421; Alex Williamson; Kim Phillips; Yoder Stuart-B08248;
-> > christoffer.dall@linaro.org; linux-kernel@vger.kernel.org;
-> > a.motakis@virtualopensystems.com; agraf@suse.de; Sethi Varun-B16395;
-> > peter.maydell@linaro.org; santosh.shukla@linaro.org; kvm@vger.kernel.org;
-> > gregkh@linuxfoundation.org
-> > Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit binding via
-> > sysfs only
+> On Fri, 25 Oct 2013, Stefano Stabellini wrote:
+> > IOMMU_HELPER is needed because SWIOTLB calls iommu_is_span_boundary,
+> > provided by lib/iommu_helper.c.
 > > 
-> > On Mon, 2013-10-28 at 22:52 -0500, Bhushan Bharat-R65777 wrote:
-> > >
-> > > > -----Original Message-----
-> > > > From: Wood Scott-B07421
-> > > > Sent: Tuesday, October 29, 2013 9:11 AM
-> > > > To: Bhushan Bharat-R65777
-> > > > Cc: Wood Scott-B07421; Alex Williamson; Kim Phillips; Yoder
-> > > > Stuart-B08248; christoffer.dall@linaro.org;
-> > > > linux-kernel@vger.kernel.org; a.motakis@virtualopensystems.com;
-> > > > agraf@suse.de; Sethi Varun-B16395; peter.maydell@linaro.org;
-> > > > santosh.shukla@linaro.org; kvm@vger.kernel.org;
-> > > > gregkh@linuxfoundation.org
-> > > > Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit
-> > > > binding via sysfs only
-> > > >
-> > > > On Mon, 2013-10-28 at 22:38 -0500, Bhushan Bharat-R65777 wrote:
-> > > > >
-> > > > > > -----Original Message-----
-> > > > > > From: Wood Scott-B07421
-> > > > > > Sent: Monday, October 28, 2013 11:40 PM
-> > > > > > To: Alex Williamson
-> > > > > > Cc: Kim Phillips; Bhushan Bharat-R65777; Wood Scott-B07421;
-> > > > > > Yoder Stuart-B08248; christoffer.dall@linaro.org;
-> > > > > > linux-kernel@vger.kernel.org; a.motakis@virtualopensystems.com;
-> > > > > > agraf@suse.de; Sethi Varun-B16395; peter.maydell@linaro.org;
-> > > > > > santosh.shukla@linaro.org; kvm@vger.kernel.org;
-> > > > > > gregkh@linuxfoundation.org
-> > > > > > Subject: Re: [PATCH 3/4] VFIO: pci: amend vfio-pci for explicit
-> > > > > > binding via sysfs only
-> > > > > >
-> > > > > > On Mon, 2013-10-28 at 13:00 -0500, Scott Wood wrote:
-> > > > > > > On Mon, 2013-10-28 at 11:47 -0600, Alex Williamson wrote:
-> > > > > > > > On Fri, 2013-10-11 at 01:27 -0500, Kim Phillips wrote:
-> > > > > > > > > Force the vfio-pci driver to only be bound explicitly via
-> > > > > > > > > sysfs to avoid conflics with other drivers in the event of a
-> > hotplug.
-> > > > > > > >
-> > > > > > > > We can't break userspace, so we can't disable the current
-> > > > > > > > method of binding devices to vfio-pci.  We can add a new
-> > > > > > > > method and perhaps deprecate the existing mechanism to be
-> > > > > > > > removed at some point in the future.  Thanks,
-> > > > > > >
-> > > > > > > I thought the existing method involved using sysfs bind, and
-> > > > > > > this was just eliminating a race.  How does the bind get triggered
-> > currently?
-> > > > > >
-> > > > > > OK, so it seems it's relying on the write to new_id calling
-> > driver_attach().
-> > > > > > Sigh.  I guess we could make driver-sysfs-bind-only be settable
-> > > > > > via sysfs, and have new-userspace set both that and PCI_ANY_ID
-> > > > > > (or the specific ID if userspace
-> > > > > > prefers) via new_id.  The platform bus patches could continue as
-> > > > > > is, since there's no existing mechanism to break.
-> > > > >
-> > > > > What about changing the store_new_id() to bypass exact ids check
-> > > > > if driver
-> > > > have PCI_ANY_ID?
-> > > >
-> > > > I don't follow.
-> > >
-> > > store_new_id() function id defined as:
-> > >
-> > > static ssize_t store_new_id(struct device_driver *driver, const char
-> > > *buf, size_t count) {
-> > >         struct pci_driver *pdrv = to_pci_driver(driver);
-> > >         const struct pci_device_id *ids = pdrv->id_table;
-> > >
-> > > <snip>
-> > >         /* Only accept driver_data values that match an existing id_table
-> > >            entry */
-> > >         if (ids) {
-> > >                 retval = -EINVAL;
-> > >                 while (ids->vendor || ids->subvendor || ids->class_mask) {
-> > >                         if (driver_data == ids->driver_data) {
-> > >                                 retval = 0;
-> > >                                 break;
-> > >                         }
-> > >                         ids++;
-> > >                 }
-> > >                 if (retval)     /* No match */
-> > >                         return retval;
-> > >         }
-> > >
-> > >         retval = pci_add_dynid(pdrv, vendor, device, subvendor, subdevice,
-> > >                                class, class_mask, driver_data); <snip>
-> > >
-> > >
-> > > So when ids == NULL it does not check of vendor etc and calls pci_add_dynid()
-> > which in turn calls driver_attach().
-> > >
-> > > If we change the above loop to break if ids->vendor == PCI_ANY_ID && ids-
-> > >subvendor == PCI_ANY_ID then also we will call pci_add_dyids().
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > CC: will.deacon@arm.com
+> > CC: linux@arm.linux.org.uk
 > > 
-> > What problem are you trying to solve?
+> > 
+> > Changes in v8:
+> > - use __phys_to_pfn and __pfn_to_phys.
+> > 
+> > Changes in v7:
+> > - dma_mark_clean: empty implementation;
+> > - in dma_capable use coherent_dma_mask if dma_mask hasn't been
+> >   allocated.
+> > 
+> > Changes in v6:
+> > - check for dev->dma_mask being NULL in dma_capable.
+> > 
+> > Changes in v5:
+> > - implement dma_mark_clean using dmac_flush_range.
+> > 
+> > Changes in v3:
+> > - dma_capable: do not treat dma_mask as a limit;
+> > - remove SWIOTLB dependency on NEED_SG_DMA_LENGTH.
+> > ---
+> >  arch/arm/Kconfig                   |    6 +++++
+> >  arch/arm/include/asm/dma-mapping.h |   37 ++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 43 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > index 1ad6fb6..b08374f 100644
+> > --- a/arch/arm/Kconfig
+> > +++ b/arch/arm/Kconfig
+> > @@ -1872,6 +1872,12 @@ config CC_STACKPROTECTOR
+> >  	  neutralized via a kernel panic.
+> >  	  This feature requires gcc version 4.2 or above.
+> >  
+> > +config SWIOTLB
+> > +	def_bool y
+> > +
+> > +config IOMMU_HELPER
+> > +	def_bool SWIOTLB
+> > +
+> >  config XEN_DOM0
+> >  	def_bool y
+> >  	depends on XEN
+> > diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+> > index 5b579b9..01b5a3d 100644
+> > --- a/arch/arm/include/asm/dma-mapping.h
+> > +++ b/arch/arm/include/asm/dma-mapping.h
+> > @@ -10,6 +10,7 @@
+> >  
+> >  #include <asm-generic/dma-coherent.h>
+> >  #include <asm/memory.h>
+> > +#include <asm/cacheflush.h>
+> >  
+> >  #define DMA_ERROR_CODE	(~0)
+> >  extern struct dma_map_ops arm_dma_ops;
+> > @@ -86,6 +87,42 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
+> >  }
+> >  #endif
+> >  
+> > +static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+> > +{
+> > +	unsigned int offset = paddr & ~PAGE_MASK;
+> > +	return pfn_to_dma(dev, __phys_to_pfn(paddr)) + offset;
+> > +}
+> > +
+> > +static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
+> > +{
+> > +	unsigned int offset = dev_addr & ~PAGE_MASK;
+> > +	return __pfn_to_phys(dma_to_pfn(dev, dev_addr)) + offset;
+> > +}
+> > +
+> > +static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
+> > +{
+> > +	u64 limit, mask;
+> > +	
+> > +	if (dev->dma_mask)
+> > +		mask = *dev->dma_mask;
+> > +	else 
+> > +		mask = dev->coherent_dma_mask;
+> > +
+> > +	if (mask == 0)
+> > +		return 0;
+> > +
+> > +	limit = (mask + 1) & ~mask;
+> > +	if (limit && size > limit)
+> > +		return 0;
+> > +
+> > +	if ((addr | (addr + size - 1)) & ~mask)
+> > +		return 0;
+> > +
+> > +	return 1;
+> > +}
+> > +
+> > +static inline void dma_mark_clean(void *addr, size_t size) { }
+> > +
+> >  /*
+> >   * DMA errors are defined by all-bits-set in the DMA address.
+> >   */
+> > -- 
+> > 1.7.2.5
+> > 
 > 
-> new_id interface to continue working as before.
-
-In what specific way does this allow new_id to continue working as
-before?  Be verbose.
-
--Scott
-
-
-
