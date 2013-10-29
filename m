@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303Ab3J2Tif (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 15:38:35 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:56057 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752132Ab3J2Tie (ORCPT
+	id S1752496Ab3J2Tlf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 15:41:35 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:49205 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345Ab3J2Tle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 15:38:34 -0400
-From: Paul Moore <paul@paul-moore.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        libseccomp-discuss@lists.sourceforge.net,
-        Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: ARM seccomp filters and EABI/OABI
-Date: Tue, 29 Oct 2013 15:38:30 -0400
-Message-ID: <1590011.bKaf2byiPL@sifl>
-User-Agent: KMail/4.11.2 (Linux/3.10.13-gentoo; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <526EE234.2070709@nod.at>
-References: <CALCETrXyLBXmimjLepU=y1igmWpwcdWUNCqNjMHi_jyLw0pHMA@mail.gmail.com> <4195093.ULJiSLViSo@sifl> <526EE234.2070709@nod.at>
+	Tue, 29 Oct 2013 15:41:34 -0400
+Message-ID: <52700F66.8080105@linux.vnet.ibm.com>
+Date: Wed, 30 Oct 2013 01:11:26 +0530
+From: Hemant Kumar <hkshaw@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Pekka Enberg <penberg@iki.fi>
+CC: David Ahern <dsahern@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        "hegdevasant@linux.vnet.ibm.com" <hegdevasant@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, "anton@redhat.com" <anton@redhat.com>,
+        "systemtap@sourceware.org" <systemtap@sourceware.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "aravinda@linux.vnet.ibm.com" <aravinda@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
+References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora> <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com> <20131025125921.GA29424@linux.vnet.ibm.com> <F53BA283-A194-4057-8409-27FD3ECFDF2E@iki.fi> <526A8C2B.7000401@gmail.com> <526E24EA.2040701@iki.fi> <526E9808.4030607@gmail.com> <526EB0C3.2080304@iki.fi> <526F862E.9060203@linux.vnet.ibm.com> <526FC0B2.6060206@iki.fi>
+In-Reply-To: <526FC0B2.6060206@iki.fi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13102919-9574-0000-0000-00000A57124A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 28, 2013 11:16:20 PM Richard Weinberger wrote:
-> Am 28.10.2013 22:53, schrieb Paul Moore:
-> > On Thursday, October 24, 2013 09:55:57 PM Richard Weinberger wrote:
-> >> On Wed, Oct 23, 2013 at 11:02 PM, Andy Lutomirski <luto@amacapital.net>
-> > 
-> > wrote:
-> >>> I'm looking at the seccomp code, the ARM entry code, and the
-> >>> syscall(2) manpage, and I'm a bit lost.  (The fact that I don't really
-> >>> speak ARM assembly doesn't help.)  My basic question is: what happens
-> >>> if an OABI syscall happens?
-> >>> 
-> >>> AFAICS, the syscall arguments for EABI are r0..r5, although their
-> >>> ordering is a bit odd*.  For OABI, r6 seems to play some role, but I'm
-> >>> lost as to what it is.  The seccomp_bpf_load function won't load r6,
-> >>> so there had better not be anything useful in there...  (Also, struct
-> >>> seccomp_data will have issues with a seventh "argument".)
-> >>> 
-> >>> But what happens to the syscall number?  For an EABI syscall, it's in
-> >>> r7.  For an OABI syscall, it's in the swi instruction and gets copied
-> >>> to r7 on entry.  If a debugger changes r7, presumably the syscall
-> >>> number changes.
-> >>> 
-> >>> Oddly, there are two different syscall tables.  The major differences
-> >>> seem to be that some of the OABI entries have their argument order
-> >>> changed.  But there's also a magic constant 0x900000 added to the
-> >>> syscall number somewhere -- is it reflected in _sigsys._syscall?  Is
-> >>> it reflected in ucontext's r7?
-> >>> 
-> >>> I'm a bit surprised to see that both the EABI and OABI ABIs show up as
-> >>> AUDIT_ARCH_ARM.
-> >>> 
-> >>> Can any of you shed some light on this?  I don't have an ARM system I
-> >>> can test on, but if one of you can point me at a decent QEMU image, I
-> >>> can play around.
-> >> 
-> >> Maybe this helps:
-> >> http://people.debian.org/~aurel32/qemu/armel/
-> > 
-> > Thanks for the pointer, although those images look quite old, has anyone
-> > done a refresh?
-> 
-> You are free to run "apt-get upgrade" within the said images. :-)
+On 10/29/2013 07:35 PM, Pekka Enberg wrote:
+> On 10/29/2013 11:55 AM, Hemant Kumar wrote:
+>> 1. Where this cache should be? Keeping it in tracing directory inside 
+>> the debugfs
+>> directory should seem more feasible. And, shall this cache be shareable?
+>
+> You can't share all of the cache because otherwise you'll expose 
+> details on binaries that not everyone has access to.
 
-Okay, true ;)
+Correct, that was one of the reason to be worried. And since, to a 
+normal user debugfs is not allowed to be entered, then we can keep that 
+inside debugfs/tracing subdirectory.
+
+>
+> It might make sense to split the cache into two parts: system markers 
+> and user markers and share the former.
+>
+
+Ok...
+
+>> 2. perf record is a performance intensive process, can we allow the 
+>> delay due to
+>> this searching process here?
+>
+> I think scanning is OK if the user specified a SDT markers but not 
+> otherwise.
+>
+> Perhaps you can use a bloom filter to quickly check if the user passed 
+> a SDT marker or not.
+>
+
+True, bloom filters may help in this case with a quick check.
 
 -- 
-paul moore
-www.paul-moore.com
+Thanks
+Hemant Kumar
 
