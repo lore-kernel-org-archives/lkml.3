@@ -1,84 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906Ab3J2DTm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 23:19:42 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:51717 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756666Ab3J2DTl (ORCPT
+	id S1758027Ab3J2Dar (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 23:30:47 -0400
+Received: from mga01.intel.com ([192.55.52.88]:25959 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753687Ab3J2Dap convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Oct 2013 23:19:41 -0400
-Message-ID: <526F2949.5000208@hitachi.com>
-Date: Tue, 29 Oct 2013 12:19:37 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 28 Oct 2013 23:30:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,590,1378882800"; 
+   d="scan'208";a="418859741"
+From: "Du, ChangbinX" <changbinx.du@intel.com>
+To: "oliver@neukum.org" <oliver@neukum.org>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] net/cdc_ncm: fix null pointer panic at usbnet_link_change
+Thread-Topic: [PATCH] net/cdc_ncm: fix null pointer panic at
+ usbnet_link_change
+Thread-Index: Ac7UVwwoHCI1JQViRZOXA6OeEZ/T7w==
+Date: Tue, 29 Oct 2013 03:30:42 +0000
+Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A019F450F@SHSMSX103.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@iki.fi>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
-        anton@redhat.com, systemtap@sourceware.org,
-        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com
-Subject: Re: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
-References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora> <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com> <526E4940.8000608@hitachi.com> <526E5BA5.7050103@iki.fi> <20131028141152.GA1040@linux.vnet.ibm.com> <526E72EC.9060400@iki.fi> <20131028173152.GB1040@linux.vnet.ibm.com> <526EA366.4020204@iki.fi>
-In-Reply-To: <526EA366.4020204@iki.fi>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/29 2:48), Pekka Enberg wrote:
-> On 10/28/13 7:31 PM, Srikar Dronamraju wrote:
->>>> But what if a system has both 32 bit libc and 64 bit libc?
->>>> Wont we could end up with 2 libc:setjmp?
->>>> Should we give some more intelligence into perf to choose the 64 bit
->>>> libc over 32 bit one?
->>> You can just trace both of them by default, no?
->>>
->> There has to be a one to one association with the event name and its
->> mapping.  Every event name will finally map to a unique inode and an
->> offset.
->>
->> One option would be for perf to look at these markers and have a
->> different event name for similar markers in different executables.
-> 
-> I think we are talking past each other here.
-> 
-> Yes, I understand that you need an fully qualified name
-> for a SDT marker but there's absolutely no reason to force
-> feed that to the user of 'perf trace'.
-> 
-> For the 32-bit and 64-bit libc case, why cannot 'perf list'
-> by default print out something like:
-> 
-> $ perf list
-> 
->    libc:setjmp [SDT marker group]
-> 
-> and provide a '--fully-qualified' command line option that:
-> 
-> $ perf list --fully-qualified
-> 
-> libc:setjmp => libc32:setjmp, libc64:setjmp      [SDT marker group]
-> libc32:setjmp => libc:setjmp@/lib/libc.so.6      [SDT marker]
-> libc64:setjmp => libc:setjmp@/lib64/libc.so.6  [SDT marker]
-> 
-> and then teach 'perf trace' to deal with SDT marker groups
-> where you trace two events, not one?
+From: "Du, Changbin" <changbinx.du@intel.com>
 
-Ah, that's a good idea. :)
-And it also is needed for another probe event because
-sometimes inlined functions have multiple instances.
-I'd like to fold them as one event group.
+In cdc_ncm_bind() function, it call cdc_ncm_bind_common() to setup usb.
+But cdc_ncm_bind_common() may meet error and cause usbnet_disconnect()
+be called which calls free_netdev(net). Thus usbnet structure(alloced
+with net_device structure) will be freed,too.
+So we cannot call usbnet_link_change() if cdc_ncm_bind_common() return
+error.
 
-Thank you!
+BUG: unable to handle kernel NULL pointer dereference at 00000078
+EIP is at usbnet_link_change+0x1e/0x80
+Call Trace:
+ [<c24bc69a>] cdc_ncm_bind+0x3a/0x50
+ [<c24b8d32>] usbnet_probe+0x282/0x7d0
+ [<c2167f2c>] ? sysfs_new_dirent+0x6c/0x100
+ [<c2821253>] ? mutex_lock+0x13/0x40
+ [<c24bb278>] cdc_ncm_probe+0x8/0x10
+ [<c24e0ef7>] usb_probe_interface+0x187/0x2c0
+ [<c23caa8a>] ? driver_sysfs_add+0x6a/0x90
+ [<c23cb290>] ? __driver_attach+0x90/0x90
+ [<c23caf14>] driver_probe_device+0x74/0x360
+ [<c24e07b1>] ? usb_match_id+0x41/0x60
+ [<c24e081e>] ? usb_device_match+0x4e/0x90
+ [<c23cb290>] ? __driver_attach+0x90/0x90
+ [<c23cb2c9>] __device_attach+0x39/0x50
+ [<c23c93f4>] bus_for_each_drv+0x34/0x70
+ [<c23cae2b>] device_attach+0x7b/0x90
+ [<c23cb290>] ? __driver_attach+0x90/0x90
+ [<c23ca38f>] bus_probe_device+0x6f/0x90
+ [<c23c8a08>] device_add+0x558/0x630
+ [<c24e4821>] ? usb_create_ep_devs+0x71/0xd0
+ [<c24dd0db>] ? create_intf_ep_devs+0x4b/0x70
+ [<c24df2bf>] usb_set_configuration+0x4bf/0x800
+ [<c23cb290>] ? __driver_attach+0x90/0x90
+ [<c24e809b>] generic_probe+0x2b/0x90
+ [<c24e105c>] usb_probe_device+0x2c/0x70
+ [<c23caf14>] driver_probe_device+0x74/0x360
+
+Signed-off-by: Du, Changbin <changbinx.du@intel.com>
+---
+ drivers/net/usb/cdc_ncm.c | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
+index 43afde8..af37ecf 100644
+--- a/drivers/net/usb/cdc_ncm.c
++++ b/drivers/net/usb/cdc_ncm.c
+@@ -603,14 +603,15 @@ static int cdc_ncm_bind(struct usbnet *dev, struct usb_interface *intf)
+ 
+ 	/* NCM data altsetting is always 1 */
+ 	ret = cdc_ncm_bind_common(dev, intf, 1);
+-
+-	/*
+-	 * We should get an event when network connection is "connected" or
+-	 * "disconnected". Set network connection in "disconnected" state
+-	 * (carrier is OFF) during attach, so the IP network stack does not
+-	 * start IPv6 negotiation and more.
+-	 */
+-	usbnet_link_change(dev, 0, 0);
++	if (!ret) {
++		/*
++		 * We should get an event when network connection is "connected"
++		 * or "disconnected". Set network connection in "disconnected"
++		 * state (carrier is OFF) during attach, so the IP network stack
++		 * does not start IPv6 negotiation and more.
++		 */
++		usbnet_link_change(dev, 0, 0);
++	}
+ 	return ret;
+ }
+ 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+1.8.3.2
