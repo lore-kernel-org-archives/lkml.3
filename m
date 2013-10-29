@@ -1,223 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab3J2Hdm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 03:33:42 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:17769 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803Ab3J2Hdk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 03:33:40 -0400
-X-AuditID: cbfee61b-b7fd56d000001fc6-3c-526f64c84e1d
-From: "shifei10.ge" <shifei10.ge@samsung.com>
-To: jaegeuk.kim@samsung.com
-Cc: "'??'" <shu.tan@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-References: <27929860.72301382948116848.JavaMail.weblogic@epml07>
- <1382955704.992.91.camel@kjgkr>
-In-reply-to: <1382955704.992.91.camel@kjgkr>
-Subject: RE: [f2fs-dev] [PATCH] f2fs:fix truncate_partial_nodes bug
-Date: Tue, 29 Oct 2013 15:32:34 +0800
-Message-id: <000101ced479$26555160$72fff420$%ge@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7Tx5YR8jAAd+oUQv+Ur1++5QETBgAric7w
-Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJLMWRmVeSWpSXmKPExsVy+t9jAd0TKflBBhPPCltc3/WXyeLSIneL
-	PXtPslhc3jWHzaJ14XlmB1aP3Qs+M3n0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxvzb/UwF
-	ewwrDt94yd7AuFeti5GTQ0LARGLBnb9MELaYxIV769m6GLk4hAQWMUo8+nOIEcL5zSjRdu0Y
-	C0gVm4CuxPojn8E6RASkJWZ9mscCUsQs0MooMXPdKTaQhJBAssT9x5vAijgFdCQ2vZ4IFhcW
-	cJbYsXsO2CAWAVWJ9bOeMYLYvAI2EtNWdzFD2IISPybfA6rhABqqLjFlSi5ImFlAW+LJuwus
-	IGEJoPCjv7oQJxhJ9P/Zzg5RIi4x6cFD9gmMQrOQDJqFMGgWkkGzkHQsYGRZxSiaWpBcUJyU
-	nmukV5yYW1yal66XnJ+7iREcAc+kdzCuarA4xCjAwajEw2vBlh8kxJpYVlyZe4hRgoNZSYR3
-	RzBQiDclsbIqtSg/vqg0J7X4EKM0B4uSOO/BVutAIYH0xJLU7NTUgtQimCwTB6dUA2PX19Yt
-	roKZDxed2MAr13s0PM1tdhyfo+ShSw/bPWff97sTyjhRIvdLuqXRjOrDWlp63jaiqg+O2/w5
-	nmuXtv6ZYOnp0kkbOfhmnJ5VLL7m4VTPjK2v7j6Zryz8qfjd9reXxG4yvWmSLWav6dz+2afw
-	GV/ZXql7xX/kQxcdSzqxc57tgQXi2leUWIozEg21mIuKEwHfA7IwfAIAAA==
+	id S1752424Ab3J2Hdv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 03:33:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49965 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752337Ab3J2Hds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 03:33:48 -0400
+Date: Tue, 29 Oct 2013 09:36:31 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH net] virtio-net: correctly handle cpu hotplug notifier
+ during resuming
+Message-ID: <20131029073631.GA16894@redhat.com>
+References: <1383030667-14343-1-git-send-email-jasowang@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383030667-14343-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,I think we don't need to put the invalid page that get_node_page returned.
-So I add " idx = i--" based on your version.Following is the patch: 
+On Tue, Oct 29, 2013 at 03:11:07PM +0800, Jason Wang wrote:
+> commit 3ab098df35f8b98b6553edc2e40234af512ba877 (virtio-net: don't respond to
+> cpu hotplug notifier if we're not ready) tries to bypass the cpu hotplug
+> notifier by checking the config_enable and does nothing is it was false. So it
+> need to try to hold the config_lock mutex which may happen in atomic
+> environment which leads the following warnings:
+> 
+> [  622.944441] CPU0 attaching NULL sched-domain.
+> [  622.944446] CPU1 attaching NULL sched-domain.
+> [  622.944485] CPU0 attaching NULL sched-domain.
+> [  622.950795] BUG: sleeping function called from invalid context at kernel/mutex.c:616
+> [  622.950796] in_atomic(): 1, irqs_disabled(): 1, pid: 10, name: migration/1
+> [  622.950796] no locks held by migration/1/10.
+> [  622.950798] CPU: 1 PID: 10 Comm: migration/1 Not tainted 3.12.0-rc5-wl-01249-gb91e82d #317
+> [  622.950799] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [  622.950802]  0000000000000000 ffff88001d42dba0 ffffffff81a32f22 ffff88001bfb9c70
+> [  622.950803]  ffff88001d42dbb0 ffffffff810edb02 ffff88001d42dc38 ffffffff81a396ed
+> [  622.950805]  0000000000000046 ffff88001d42dbe8 ffffffff810e861d 0000000000000000
+> [  622.950805] Call Trace:
+> [  622.950810]  [<ffffffff81a32f22>] dump_stack+0x54/0x74
+> [  622.950815]  [<ffffffff810edb02>] __might_sleep+0x112/0x114
+> [  622.950817]  [<ffffffff81a396ed>] mutex_lock_nested+0x3c/0x3c6
+> [  622.950818]  [<ffffffff810e861d>] ? up+0x39/0x3e
+> [  622.950821]  [<ffffffff8153ea7c>] ? acpi_os_signal_semaphore+0x21/0x2d
+> [  622.950824]  [<ffffffff81565ed1>] ? acpi_ut_release_mutex+0x5e/0x62
+> [  622.950828]  [<ffffffff816d04ec>] virtnet_cpu_callback+0x33/0x87
+> [  622.950830]  [<ffffffff81a42576>] notifier_call_chain+0x3c/0x5e
+> [  622.950832]  [<ffffffff810e86a8>] __raw_notifier_call_chain+0xe/0x10
+> [  622.950835]  [<ffffffff810c5556>] __cpu_notify+0x20/0x37
+> [  622.950836]  [<ffffffff810c5580>] cpu_notify+0x13/0x15
+> [  622.950838]  [<ffffffff81a237cd>] take_cpu_down+0x27/0x3a
+> [  622.950841]  [<ffffffff81136289>] stop_machine_cpu_stop+0x93/0xf1
+> [  622.950842]  [<ffffffff81136167>] cpu_stopper_thread+0xa0/0x12f
+> [  622.950844]  [<ffffffff811361f6>] ? cpu_stopper_thread+0x12f/0x12f
+> [  622.950847]  [<ffffffff81119710>] ? lock_release_holdtime.part.7+0xa3/0xa8
+> [  622.950848]  [<ffffffff81135e4b>] ? cpu_stop_should_run+0x3f/0x47
+> [  622.950850]  [<ffffffff810ea9b0>] smpboot_thread_fn+0x1c5/0x1e3
+> [  622.950852]  [<ffffffff810ea7eb>] ? lg_global_unlock+0x67/0x67
+> [  622.950854]  [<ffffffff810e36b7>] kthread+0xd8/0xe0
+> [  622.950857]  [<ffffffff81a3bfad>] ? wait_for_common+0x12f/0x164
+> [  622.950859]  [<ffffffff810e35df>] ? kthread_create_on_node+0x124/0x124
+> [  622.950861]  [<ffffffff81a45ffc>] ret_from_fork+0x7c/0xb0
+> [  622.950862]  [<ffffffff810e35df>] ? kthread_create_on_node+0x124/0x124
+> [  622.950876] smpboot: CPU 1 is now offline
+> [  623.194556] SMP alternatives: lockdep: fixing up alternatives
+> [  623.194559] smpboot: Booting Node 0 Processor 1 APIC 0x1
+> ...
+> 
+> A correct fix is to unregister the hotcpu notifier during restore and register a
+> new one in resume.
+> 
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+> Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
----
- fs/f2fs/node.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index 304d5ce..fd5f721 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -631,19 +631,19 @@ static int truncate_partial_nodes(struct dnode_of_data *dn,
- 		return 0;
- 
- 	/* get indirect nodes in the path */
--	for (i = 0; i < depth - 1; i++) {
-+	for (i = 0; i < idx + 1; i++) {
- 		/* refernece count'll be increased */
- 		pages[i] = get_node_page(sbi, nid[i]);
- 		if (IS_ERR(pages[i])) {
--			depth = i + 1;
- 			err = PTR_ERR(pages[i]);
-+			idx = i--;
- 			goto fail;
- 		}
- 		nid[i + 1] = get_nid(pages[i], offset[i + 1], false);
- 	}
- 
- 	/* free direct nodes linked to a partial indirect node */
--	for (i = offset[depth - 1]; i < NIDS_PER_BLOCK; i++) {
-+	for (i = offset[idx + 1]; i < NIDS_PER_BLOCK; i++) {
- 		child_nid = get_nid(pages[idx], i, false);
- 		if (!child_nid)
- 			continue;
-@@ -654,7 +654,7 @@ static int truncate_partial_nodes(struct dnode_of_data *dn,
- 		set_nid(pages[idx], i, 0, false);
- 	}
- 
--	if (offset[depth - 1] == 0) {
-+	if (offset[idx + 1] == 0) {
- 		dn->node_page = pages[idx];
- 		dn->nid = nid[idx];
- 		truncate_node(dn);
-@@ -662,9 +662,10 @@ static int truncate_partial_nodes(struct dnode_of_data *dn,
- 		f2fs_put_page(pages[idx], 1);
- 	}
- 	offset[idx]++;
--	offset[depth - 1] = 0;
-+	offset[idx + 1] = 0;
-+	idx--;
- fail:
--	for (i = depth - 3; i >= 0; i--)
-+	for (i = idx; i >= 0; i--)	
- 		f2fs_put_page(pages[i], 1);
- 
- 	trace_f2fs_truncate_partial_nodes(dn->inode, nid, depth, err);
--- 
-1.7.9.5
+BTW there's a new Fixes: tag, you might want to use it
+in the future.
 
-
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
-> Sent: Monday, October 28, 2013 6:22 PM
-> To: shifei10.ge@samsung.com
-> Cc: ??; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-
-> f2fs-devel@lists.sourceforge.net
-> Subject: Re: [f2fs-dev] [PATCH] f2fs:fix truncate_partial_nodes bug
-> 
-> Hi,
-> 
-> 2013-10-28 (월), 08:15 +0000, Shifei Ge:
-> > truncate_partial_nodes puts pages incorrectly in two cases.note that the
-> value for argc 'depth' can only be 2 or 3(see truncate_inode_blocks ---
-> >truncate_partial_nodes ).
-> > first case:err happened in the first 'for' loop
-> > 	assume depth is 2,when err happened,pages[0] is invalid,so this page
-> don't need to be put when func return,there is no problem.
-> > 	but when depth is 3 ,pages isn't put correctly when pages[0] is valid
-> and pages[1] is invalid.in this case,depth is set to 2(ref to statemnt depth =
-> i + 1) ,and then 'goto fail'.
-> > 	in label 'fail', for (i = depth - 3; i >= 0; i--) cann't meet the
-> condition because i=-1,so pages[0] cann't be put when func return.
-> > second case:err happened in the second 'for' loop
-> > 	now,we've got pages[0] with argc 'depth' is 2 ,or we've got pages[0]
-> and pages[1] with depth is 3.when err happend,we need 'goto fail' to put pages
-> we've got.
-> > 	when depth is 2,in label 'fail',for (i = depth - 3; i >= 0; i--) cann't
-> meet the condition because i=-1,so pages[0] cann't be put.
-> > 	when depth is 3,in label 'fail',for (i = depth - 3; i >= 0; i--) can
-> only put pages[0],pages[1] also cann't be put.
-> > notes 'depth' has been changed before first 'goto fail'(ref to statemnt
-> depth = i + 1),so pass this modified 'depth' to
-> trace_f2fs_truncate_partial_nodes is also incorrectly.
-> 
-> Please write a description not to exceed 80 columns.
-> It's very hard to understand.
-> 
-> >
-> > From 9de8efa31759ce86a032f5ad092d337b686ede06 Mon Sep 17 00:00:00 2001
-> > Signed-off-by: Shifei Ge <shifei10.ge@samsung.com>
-> > ---
-> >  fs/f2fs/node.c |    6 ++++--
-> >  1 file changed, 4 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c index 304d5ce..9986930
-> > 100644
-> > --- a/fs/f2fs/node.c
-> > +++ b/fs/f2fs/node.c
-> > @@ -625,6 +625,7 @@ static int truncate_partial_nodes(struct dnode_of_data
-> *dn,
-> >  	int err = 0;
-> >  	int i;
-> >  	int idx = depth - 2;
-> > +	int dep = depth;
-> 
-> I think we need to avoid using a local variable only for the use of
-> tracepoints below.
-> How about this?
-> 
 > ---
->  fs/f2fs/node.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
+> This patch is needed for 3.8 and above.
+> ---
+>  drivers/net/virtio_net.c | 13 ++++++-------
+>  1 file changed, 6 insertions(+), 7 deletions(-)
 > 
-> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c index 304d5ce..8578719 100644
-> --- a/fs/f2fs/node.c
-> +++ b/fs/f2fs/node.c
-> @@ -631,11 +631,10 @@ static int truncate_partial_nodes(struct dnode_of_data
-> *dn,
->  		return 0;
-> 
->  	/* get indirect nodes in the path */
-> -	for (i = 0; i < depth - 1; i++) {
-> +	for (i = 0; i < idx + 1; i++) {
->  		/* refernece count'll be increased */
->  		pages[i] = get_node_page(sbi, nid[i]);
->  		if (IS_ERR(pages[i])) {
-> -			depth = i + 1;
->  			err = PTR_ERR(pages[i]);
->  			goto fail;
->  		}
-> @@ -643,7 +642,7 @@ static int truncate_partial_nodes(struct dnode_of_data *dn,
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 9fbdfcd..bbc9cb8 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -1118,11 +1118,6 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
+>  {
+>  	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
+>  
+> -	mutex_lock(&vi->config_lock);
+> -
+> -	if (!vi->config_enable)
+> -		goto done;
+> -
+>  	switch(action & ~CPU_TASKS_FROZEN) {
+>  	case CPU_ONLINE:
+>  	case CPU_DOWN_FAILED:
+> @@ -1136,8 +1131,6 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
+>  		break;
 >  	}
-> 
->  	/* free direct nodes linked to a partial indirect node */
-> -	for (i = offset[depth - 1]; i < NIDS_PER_BLOCK; i++) {
-> +	for (i = offset[idx + 1]; i < NIDS_PER_BLOCK; i++) {
->  		child_nid = get_nid(pages[idx], i, false);
->  		if (!child_nid)
->  			continue;
-> @@ -654,7 +653,7 @@ static int truncate_partial_nodes(struct dnode_of_data *dn,
->  		set_nid(pages[idx], i, 0, false);
->  	}
-> 
-> -	if (offset[depth - 1] == 0) {
-> +	if (offset[idx + 1] == 0) {
->  		dn->node_page = pages[idx];
->  		dn->nid = nid[idx];
->  		truncate_node(dn);
-> @@ -662,9 +661,10 @@ static int truncate_partial_nodes(struct dnode_of_data
-> *dn,
->  		f2fs_put_page(pages[idx], 1);
->  	}
->  	offset[idx]++;
-> -	offset[depth - 1] = 0;
-> +	offset[idx + 1] = 0;
-> +	idx--;
->  fail:
-> -	for (i = depth - 3; i >= 0; i--)
-> +	for (i = idx; i >= 0; i--)
->  		f2fs_put_page(pages[i], 1);
-> 
->  	trace_f2fs_truncate_partial_nodes(dn->inode, nid, depth, err);
-> --
-> 1.8.4.474.g128a96c
-> 
-> 
-> 
-> 
-> --
-> Jaegeuk Kim
-> Samsung
-
+>  
+> -done:
+> -	mutex_unlock(&vi->config_lock);
+>  	return NOTIFY_OK;
+>  }
+>  
+> @@ -1699,6 +1692,8 @@ static int virtnet_freeze(struct virtio_device *vdev)
+>  	struct virtnet_info *vi = vdev->priv;
+>  	int i;
+>  
+> +	unregister_hotcpu_notifier(&vi->nb);
+> +
+>  	/* Prevent config work handler from accessing the device */
+>  	mutex_lock(&vi->config_lock);
+>  	vi->config_enable = false;
+> @@ -1747,6 +1742,10 @@ static int virtnet_restore(struct virtio_device *vdev)
+>  	virtnet_set_queues(vi, vi->curr_queue_pairs);
+>  	rtnl_unlock();
+>  
+> +	err = register_hotcpu_notifier(&vi->nb);
+> +	if (err)
+> +		return err;
+> +
+>  	return 0;
+>  }
+>  #endif
+> -- 
+> 1.8.1.2
