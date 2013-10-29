@@ -1,103 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab3J2V6m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 17:58:42 -0400
-Received: from mout.gmx.net ([212.227.17.20]:64274 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752135Ab3J2V6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 17:58:41 -0400
+	id S1753258Ab3J2V64 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 17:58:56 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:41913 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753156Ab3J2V6x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 17:58:53 -0400
+Date: Tue, 29 Oct 2013 15:58:48 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xen-devel <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>,
+        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH 2/3] PCI: Refactor MSI/MSIX mask restore code to fix
+ interrupt lost issue
+Message-ID: <20131029215848.GA15159@google.com>
+References: <525E3320.5080700@oracle.com>
 MIME-Version: 1.0
-Message-ID: <trinity-93870424-b236-4b3e-be8c-7af706430adc-1383083920353@3capp-gmx-bs31>
-From: "John Twideldum" <twideldums_throwaway@gmx.at>
-To: "Jan Kara" <jack@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 3.12-rc5 and overwritten partition table - by powertop?
-Content-Type: multipart/mixed;
- boundary=rehcsedm-bf5307ab-bd51-475a-8eca-c6d411264793
-Date: Tue, 29 Oct 2013 22:58:40 +0100 (CET)
-Importance: normal
-Sensitivity: Normal
-In-Reply-To: <20131029201032.GC9568@quack.suse.cz>
-References: <trinity-ee0bd2b5-ce28-4895-8c2a-2f60f40e49f4-1383046621263@3capp-gmx-bs07>
- <trinity-f65147f9-012f-4e78-a5a6-3f969ff5b9bf-1383058674646@3capp-gmx-bs07>,
- <20131029201032.GC9568@quack.suse.cz>
-X-UI-Message-Type: mail
-X-Priority: 3
-X-Provags-ID: V03:K0:/11kMkw+3jrJOps0WEIZmz3DpxaraDY7kyd3owT1FVR
- YiaBS0+Fb89zkF/I8GISTUwI6PXGnbH6UIXc5VnngacBCnIv7H
- hSdpdKQP0wxtiBIRrIxkqqJIwWgc7MMEG9PwMKJ+TP3ig7DVwB
- My0Mjc0+Ml+J7uKvGVnoLe+Oo0ONP0SyAZZZDSj0VZU1inq7LX
- tl7lVUbVxcmIDk1p6QzOxR9AK+OXYO5rVjx4Pg07iAv6Bw6Dnv
- +mRVnvuj4bW+UoVVhZ8t6iWTH/YEo3HTVgzfRB3vhxWkpQgaxa 4Yt+aY=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <525E3320.5080700@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---rehcsedm-bf5307ab-bd51-475a-8eca-c6d411264793
-Content-Type: text/plain; charset=UTF-8
+On Wed, Oct 16, 2013 at 02:33:04PM +0800, Zhenzhong Duan wrote:
+> Driver init call graph under baremetal:
+> driver_init->
+>     msix_capability_init->
+>         msix_program_entries->
+>             msix_mask_irq->
+>                 entry->masked = 1
+>     request_irq->
+>         __setup_irq->
+>             irq_startup->
+>                 unmask_msi_irq->
+>                     msix_mask_irq->
+>                         entry->masked = 0;
+> 
+> So entry->masked is always updated with newest value and its value could be used
+> to restore to mask register in device.
+> 
+> But in initial domain (aka priviliged guest), it's different.
+> Driver init call graph under initial domain:
+> driver_init->
+>     msix_capability_init->
+>         msix_program_entries->
+>             msix_mask_irq->
+>                 entry->masked = 1
+>     request_irq->
+>         __setup_irq->
+>             irq_startup->
+>                 __startup_pirq->
+>                     EVTCHNOP_bind_pirq hypercall    (trap into Xen)
+> [Xen:]
+> pirq_guest_bind->
+>     startup_msi_irq->
+>         unmask_msi_irq->
+>             msi_set_mask_bit->
+>                 entry->msi_attrib.masked = 0;
+> 
+> So entry->msi_attrib.masked in xen side always has newest value. entry->masked
+> in initial domain is untouched and is 1 after msix_capability_init.
 
->> The first ~170kb of /dev/sda got blown away with what seems to be a logging output
->> by Powertop, when I was playing with the tuneables.
->
->So did you log the output to some file? I'm just trying to understand how
->it could get onto your disk in the first place...
+If we run the following sequence:
 
-Attached a dump of the first 1Mb of the disk, HTH.
-It looks like a powertop log?
-(I have powertop 2.4)
+    pci_enable_msix()
+    request_irq()
 
-meanwhile, testdisk running in all variations recovered enough clues to
-guess the partitions correctly - the data is fine :-)
+don't we end up with the MSI IRQ unmasked if we're on bare metal but masked
+if we're on Xen?  It seems like we'd want it unmasked in both cases, so I
+expected your patch to do something to make it unmasked if we're on Xen.
+But I don't think it does, does it?
 
-J
+As far as I can tell, this patch only changes the pci_restore_state()
+path.  I think that part makes sense.
 
---rehcsedm-bf5307ab-bd51-475a-8eca-c6d411264793
-Content-Type: application/x-bzip2
-Content-Disposition: attachment; filename=backup_overwrite.dump.bz2
-Content-Transfer-Encoding: base64
+Bjorn
 
-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
-U4UJBvvH/jA=
---rehcsedm-bf5307ab-bd51-475a-8eca-c6d411264793--
+> Based on above, it's Xen's duty to restore entry->msi_attrib.masked to device,
+> but with current code, entry->masked is used and MSI-x interrupt is masked.
+> 
+> Before patch, restore call graph under initial domain:
+> pci_reset_function->
+>     pci_restore_state->
+>         __pci_restore_msix_state->
+>             arch_restore_msi_irqs->
+>                 xen_initdom_restore_msi_irqs->
+>                     PHYSDEVOP_restore_msi hypercall (first mask restore)
+>             msix_mask_irq(entry, entry->masked)     (second mask restore)
+> 
+> So msix_mask_irq call in initial domain call graph needs to be removed.
+> 
+> Based on this we can move the restore of the mask in default_restore_msi_irqs
+> which would avoid restoring the invalid mask under Xen. Furthermore this
+> simplifies the API by making everything related to restoring an MSI be in the
+> platform specific APIs instead of just parts of it.
+> 
+> After patch, restore call graph under initial domain:
+> pci_reset_function->
+>     pci_restore_state->
+>         __pci_restore_msix_state->
+>             arch_restore_msi_irqs->
+>                 xen_initdom_restore_msi_irqs->
+>                     PHYSDEVOP_restore_msi hypercall (first mask restore)
+> 
+> Logic for baremetal is not changed.
+> Before patch, restore call graph under baremetal:
+> pci_reset_function->
+>     pci_restore_state->
+>         __pci_restore_msix_state->
+>             arch_restore_msi_irqs->
+>                 default_restore_msi_irqs->
+>             msix_mask_irq(entry, entry->masked)     (first mask restore)
+> 
+> After patch, restore call graph under baremetal:
+> pci_reset_function->
+>     pci_restore_state->
+>         __pci_restore_msix_state->
+>             arch_restore_msi_irqs->
+>                 default_restore_msi_irqs->
+>                     msix_mask_irq(entry, entry->masked) (first mask restore)
+> 
+> The process for MSI code is similiar.
+> 
+> Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
+> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/pci/msi.c |   17 ++++++++++++++---
+>  1 files changed, 14 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+> index ecd4cdf..38237f4 100644
+> --- a/drivers/pci/msi.c
+> +++ b/drivers/pci/msi.c
+> @@ -236,6 +236,8 @@ void unmask_msi_irq(struct irq_data *data)
+>  
+>  void default_restore_msi_irqs(struct pci_dev *dev, int irq)
+>  {
+> +	int pos;
+> +	u16 control;
+>  	struct msi_desc *entry;
+>  
+>  	entry = NULL;
+> @@ -248,8 +250,19 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
+>  		entry = irq_get_msi_desc(irq);
+>  	}
+>  
+> -	if (entry)
+> +	if (entry) {
+>  		write_msi_msg(irq, &entry->msg);
+> +		if (dev->msix_enabled) {
+> +			msix_mask_irq(entry, entry->masked);
+> +			readl(entry->mask_base);
+> +		} else {
+> +			pos = entry->msi_attrib.pos;
+> +			pci_read_config_word(dev, pos + PCI_MSI_FLAGS,
+> +					     &control);
+> +			msi_mask_irq(entry, msi_capable_mask(control),
+> +				     entry->masked);
+> +		}
+> +	}
+>  }
+>  
+>  void __read_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
+> @@ -423,7 +436,6 @@ static void __pci_restore_msi_state(struct pci_dev *dev)
+>  	arch_restore_msi_irqs(dev, dev->irq);
+>  
+>  	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &control);
+> -	msi_mask_irq(entry, msi_capable_mask(control), entry->masked);
+>  	control &= ~PCI_MSI_FLAGS_QSIZE;
+>  	control |= (entry->msi_attrib.multiple << 4) | PCI_MSI_FLAGS_ENABLE;
+>  	pci_write_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, control);
+> @@ -447,7 +459,6 @@ static void __pci_restore_msix_state(struct pci_dev *dev)
+>  
+>  	list_for_each_entry(entry, &dev->msi_list, list) {
+>  		arch_restore_msi_irqs(dev, entry->irq);
+> -		msix_mask_irq(entry, entry->masked);
+>  	}
+>  
+>  	control &= ~PCI_MSIX_FLAGS_MASKALL;
+> -- 
+> 1.7.3
+> 
