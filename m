@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953Ab3J2Acz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Oct 2013 20:32:55 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:39799 "EHLO
+	id S1757934Ab3J2Acy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Oct 2013 20:32:54 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:39804 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756341Ab3J2Abe (ORCPT
+	with ESMTP id S1756455Ab3J2Abe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Oct 2013 20:31:34 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-edac@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH 3/6] ARM: Add Krait L2 accessor functions
-Date: Mon, 28 Oct 2013 17:31:27 -0700
-Message-Id: <1383006690-6754-4-git-send-email-sboyd@codeaurora.org>
+        linux-arm-kernel@lists.infradead.org, <devicetree@vger.kernel.org>
+Subject: [PATCH 4/6] edac: Document Krait L1/L2 EDAC driver binding
+Date: Mon, 28 Oct 2013 17:31:28 -0700
+Message-Id: <1383006690-6754-5-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.4.1.600.g3d092bf
 In-Reply-To: <1383006690-6754-1-git-send-email-sboyd@codeaurora.org>
 References: <1383006690-6754-1-git-send-email-sboyd@codeaurora.org>
@@ -22,136 +21,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Qualcomm's Krait CPUs have a handful of L2 cache controller
-registers that live behind a cp15 based indirection register.
-First you program the indirection register (l2cpselr) to point
-the L2 'window' register (l2cpdr) at what you want to read/write.
-Then you read/write the 'window' register to do what you want.
-The l2cpselr register is not banked per-cpu so we must lock
-around accesses to it to prevent other CPUs from re-pointing
-l2cpdr underneath us.
+The Krait L1/L2 error reporting device is made up of two
+interrupts, one per-CPU interrupt for the L1 caches and one
+interrupt for the L2 cache.
 
-Cc: Russell King <linux@arm.linux.org.uk>
+Cc: <devicetree@vger.kernel.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/common/Kconfig                   |  3 ++
- arch/arm/common/Makefile                  |  1 +
- arch/arm/common/krait-l2-accessors.c      | 52 +++++++++++++++++++++++++++++++
- arch/arm/include/asm/krait-l2-accessors.h | 20 ++++++++++++
- 4 files changed, 76 insertions(+)
- create mode 100644 arch/arm/common/krait-l2-accessors.c
- create mode 100644 arch/arm/include/asm/krait-l2-accessors.h
+ .../devicetree/bindings/arm/qcom,krait-cache-erp.txt     | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/qcom,krait-cache-erp.txt
 
-diff --git a/arch/arm/common/Kconfig b/arch/arm/common/Kconfig
-index c3a4e9c..9da52dc 100644
---- a/arch/arm/common/Kconfig
-+++ b/arch/arm/common/Kconfig
-@@ -9,6 +9,9 @@ config DMABOUNCE
- 	bool
- 	select ZONE_DMA
- 
-+config KRAIT_L2_ACCESSORS
-+	bool
-+
- config SHARP_LOCOMO
- 	bool
- 
-diff --git a/arch/arm/common/Makefile b/arch/arm/common/Makefile
-index 8c60f47..606131a 100644
---- a/arch/arm/common/Makefile
-+++ b/arch/arm/common/Makefile
-@@ -8,6 +8,7 @@ obj-$(CONFIG_ICST)		+= icst.o
- obj-$(CONFIG_SA1111)		+= sa1111.o
- obj-$(CONFIG_PCI_HOST_VIA82C505) += via82c505.o
- obj-$(CONFIG_DMABOUNCE)		+= dmabounce.o
-+obj-$(CONFIG_KRAIT_L2_ACCESSORS) += krait-l2-accessors.o
- obj-$(CONFIG_SHARP_LOCOMO)	+= locomo.o
- obj-$(CONFIG_SHARP_PARAM)	+= sharpsl_param.o
- obj-$(CONFIG_SHARP_SCOOP)	+= scoop.o
-diff --git a/arch/arm/common/krait-l2-accessors.c b/arch/arm/common/krait-l2-accessors.c
+diff --git a/Documentation/devicetree/bindings/arm/qcom,krait-cache-erp.txt b/Documentation/devicetree/bindings/arm/qcom,krait-cache-erp.txt
 new file mode 100644
-index 0000000..c579794
+index 0000000..01fe8a8
 --- /dev/null
-+++ b/arch/arm/common/krait-l2-accessors.c
-@@ -0,0 +1,52 @@
-+/*
-+ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
++++ b/Documentation/devicetree/bindings/arm/qcom,krait-cache-erp.txt
+@@ -0,0 +1,16 @@
++* Qualcomm Krait L1 / L2 cache error reporting
 +
-+#include <linux/spinlock.h>
-+#include <linux/export.h>
++Required properties:
++- compatible: Should be "qcom,krait-cache-erp"
++- interrupts: Should contain the L1/CPU error interrupt number and
++  then the L2 cache error interrupt number
 +
-+#include <asm/barrier.h>
-+#include <asm/krait-l2-accessors.h>
++Optional properties:
++- interrupt-names: Should contain the interrupt names "l1_irq" and
++  "l2_irq"
 +
-+static DEFINE_RAW_SPINLOCK(krait_l2_lock);
-+
-+void set_l2_indirect_reg(u32 addr, u32 val)
-+{
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&krait_l2_lock, flags);
-+
-+	asm volatile ("mcr p15, 3, %0, c15, c0, 6" : : "r" (addr));
-+	isb();
-+	asm volatile ("mcr p15, 3, %0, c15, c0, 7" : : "r" (val));
-+	isb();
-+
-+	raw_spin_unlock_irqrestore(&krait_l2_lock, flags);
-+}
-+EXPORT_SYMBOL(set_l2_indirect_reg);
-+
-+u32 get_l2_indirect_reg(u32 addr)
-+{
-+	u32 val;
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&krait_l2_lock, flags);
-+
-+	asm volatile ("mcr p15, 3, %0, c15, c0, 6" : : "r" (addr));
-+	isb();
-+	asm volatile ("mrc p15, 3, %0, c15, c0, 7" : "=r" (val));
-+
-+	raw_spin_unlock_irqrestore(&krait_l2_lock, flags);
-+
-+	return val;
-+}
-+EXPORT_SYMBOL(get_l2_indirect_reg);
-diff --git a/arch/arm/include/asm/krait-l2-accessors.h b/arch/arm/include/asm/krait-l2-accessors.h
-new file mode 100644
-index 0000000..d5305c4
---- /dev/null
-+++ b/arch/arm/include/asm/krait-l2-accessors.h
-@@ -0,0 +1,20 @@
-+/*
-+ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __ASMARM_KRAIT_L2_ACCESSORS_H
-+#define __ASMARM_KRAIT_L2_ACCESSORS_H
-+
-+extern void set_l2_indirect_reg(u32 addr, u32 val);
-+extern u32 get_l2_indirect_reg(u32 addr);
-+
-+#endif
++Example:
++	edac {
++		compatible = "qcom,krait-cache-erp";
++		interrupts = <1 9 0xf04>, <0 2 0x4>;
++	};
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
