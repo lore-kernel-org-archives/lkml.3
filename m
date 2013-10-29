@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067Ab3J2OIP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 10:08:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45884 "EHLO
+	id S1757656Ab3J2OIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 10:08:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45895 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756860Ab3J2OIK (ORCPT
+	with ESMTP id S932071Ab3J2OIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 10:08:10 -0400
-Date: Tue, 29 Oct 2013 07:06:55 -0700
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-bf378d341e4873ed928dc3c636252e6895a21f50@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, victork@il.ibm.com,
-        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com, tglx@linutronix.de,
-        mikey@neuling.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, mathieu.desnoyers@polymtl.ca,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, victork@il.ibm.com,
-        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com, tglx@linutronix.de,
-        mikey@neuling.org
-In-Reply-To: <20131025173749.GG19466@laptop.lan>
-References: <20131025173749.GG19466@laptop.lan>
+	Tue, 29 Oct 2013 10:08:19 -0400
+Date: Tue, 29 Oct 2013 07:07:49 -0700
+From: tip-bot for Ben Segall <tipbot@zytor.com>
+Message-ID: <tip-f9f9ffc237dd924f048204e8799da74f9ecf40cf@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, bsegall@google.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, bsegall@google.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20131016181632.22647.84174.stgit@sword-of-the-dawn.mtv.corp.google.com>
+References: <20131016181632.22647.84174.stgit@sword-of-the-dawn.mtv.corp.google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf: Fix perf ring buffer memory ordering
-Git-Commit-ID: bf378d341e4873ed928dc3c636252e6895a21f50
+Subject: [tip:sched/core] sched: Avoid throttle_cfs_rq()
+  racing with period_timer stopping
+Git-Commit-ID: f9f9ffc237dd924f048204e8799da74f9ecf40cf
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,119 +28,76 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 29 Oct 2013 07:07:02 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 29 Oct 2013 07:07:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bf378d341e4873ed928dc3c636252e6895a21f50
-Gitweb:     http://git.kernel.org/tip/bf378d341e4873ed928dc3c636252e6895a21f50
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Mon, 28 Oct 2013 13:55:29 +0100
+Commit-ID:  f9f9ffc237dd924f048204e8799da74f9ecf40cf
+Gitweb:     http://git.kernel.org/tip/f9f9ffc237dd924f048204e8799da74f9ecf40cf
+Author:     Ben Segall <bsegall@google.com>
+AuthorDate: Wed, 16 Oct 2013 11:16:32 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 29 Oct 2013 12:01:19 +0100
+CommitDate: Tue, 29 Oct 2013 12:02:32 +0100
 
-perf: Fix perf ring buffer memory ordering
+sched: Avoid throttle_cfs_rq() racing with period_timer stopping
 
-The PPC64 people noticed a missing memory barrier and crufty old
-comments in the perf ring buffer code. So update all the comments and
-add the missing barrier.
+throttle_cfs_rq() doesn't check to make sure that period_timer is running,
+and while update_curr/assign_cfs_runtime does, a concurrently running
+period_timer on another cpu could cancel itself between this cpu's
+update_curr and throttle_cfs_rq(). If there are no other cfs_rqs running
+in the tg to restart the timer, this causes the cfs_rq to be stranded
+forever.
 
-When the architecture implements local_t using atomic_long_t there
-will be double barriers issued; but short of introducing more
-conditional barrier primitives this is the best we can do.
+Fix this by calling __start_cfs_bandwidth() in throttle if the timer is
+inactive.
 
-Reported-by: Victor Kaplansky <victork@il.ibm.com>
-Tested-by: Victor Kaplansky <victork@il.ibm.com>
+(Also add some sched_debug lines for cfs_bandwidth.)
+
+Tested: make a run/sleep task in a cgroup, loop switching the cgroup
+between 1ms/100ms quota and unlimited, checking for timer_active=0 and
+throttled=1 as a failure. With the throttle_cfs_rq() change commented out
+this fails, with the full patch it passes.
+
+Signed-off-by: Ben Segall <bsegall@google.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: michael@ellerman.id.au
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Michael Neuling <mikey@neuling.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: anton@samba.org
-Cc: benh@kernel.crashing.org
-Link: http://lkml.kernel.org/r/20131025173749.GG19466@laptop.lan
+Cc: pjt@google.com
+Link: http://lkml.kernel.org/r/20131016181632.22647.84174.stgit@sword-of-the-dawn.mtv.corp.google.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/uapi/linux/perf_event.h | 12 +++++++-----
- kernel/events/ring_buffer.c     | 31 +++++++++++++++++++++++++++----
- 2 files changed, 34 insertions(+), 9 deletions(-)
+ kernel/sched/debug.c | 8 ++++++++
+ kernel/sched/fair.c  | 2 ++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 009a655..2fc1602 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -456,13 +456,15 @@ struct perf_event_mmap_page {
- 	/*
- 	 * Control data for the mmap() data buffer.
- 	 *
--	 * User-space reading the @data_head value should issue an rmb(), on
--	 * SMP capable platforms, after reading this value -- see
--	 * perf_event_wakeup().
-+	 * User-space reading the @data_head value should issue an smp_rmb(),
-+	 * after reading this value.
- 	 *
- 	 * When the mapping is PROT_WRITE the @data_tail value should be
--	 * written by userspace to reflect the last read data. In this case
--	 * the kernel will not over-write unread data.
-+	 * written by userspace to reflect the last read data, after issueing
-+	 * an smp_mb() to separate the data read from the ->data_tail store.
-+	 * In this case the kernel will not over-write unread data.
-+	 *
-+	 * See perf_output_put_handle() for the data ordering.
- 	 */
- 	__u64   data_head;		/* head in the data section */
- 	__u64	data_tail;		/* user-space written tail */
-diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index cd55144..9c2ddfb 100644
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -87,10 +87,31 @@ again:
- 		goto out;
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index e6ba5e3..5c34d18 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -229,6 +229,14 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ 			atomic_read(&cfs_rq->tg->runnable_avg));
+ #endif
+ #endif
++#ifdef CONFIG_CFS_BANDWIDTH
++	SEQ_printf(m, "  .%-30s: %d\n", "tg->cfs_bandwidth.timer_active",
++			cfs_rq->tg->cfs_bandwidth.timer_active);
++	SEQ_printf(m, "  .%-30s: %d\n", "throttled",
++			cfs_rq->throttled);
++	SEQ_printf(m, "  .%-30s: %d\n", "throttle_count",
++			cfs_rq->throttle_count);
++#endif
  
- 	/*
--	 * Publish the known good head. Rely on the full barrier implied
--	 * by atomic_dec_and_test() order the rb->head read and this
--	 * write.
-+	 * Since the mmap() consumer (userspace) can run on a different CPU:
-+	 *
-+	 *   kernel				user
-+	 *
-+	 *   READ ->data_tail			READ ->data_head
-+	 *   smp_mb()	(A)			smp_rmb()	(C)
-+	 *   WRITE $data			READ $data
-+	 *   smp_wmb()	(B)			smp_mb()	(D)
-+	 *   STORE ->data_head			WRITE ->data_tail
-+	 *
-+	 * Where A pairs with D, and B pairs with C.
-+	 *
-+	 * I don't think A needs to be a full barrier because we won't in fact
-+	 * write data until we see the store from userspace. So we simply don't
-+	 * issue the data WRITE until we observe it. Be conservative for now.
-+	 *
-+	 * OTOH, D needs to be a full barrier since it separates the data READ
-+	 * from the tail WRITE.
-+	 *
-+	 * For B a WMB is sufficient since it separates two WRITEs, and for C
-+	 * an RMB is sufficient since it separates two READs.
-+	 *
-+	 * See perf_output_begin().
- 	 */
-+	smp_wmb();
- 	rb->user_page->data_head = head;
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 0923ab2..41c02b6 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3112,6 +3112,8 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+ 	cfs_rq->throttled_clock = rq_clock(rq);
+ 	raw_spin_lock(&cfs_b->lock);
+ 	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
++	if (!cfs_b->timer_active)
++		__start_cfs_bandwidth(cfs_b);
+ 	raw_spin_unlock(&cfs_b->lock);
+ }
  
- 	/*
-@@ -154,9 +175,11 @@ int perf_output_begin(struct perf_output_handle *handle,
- 		 * Userspace could choose to issue a mb() before updating the
- 		 * tail pointer. So that all reads will be completed before the
- 		 * write is issued.
-+		 *
-+		 * See perf_output_put_handle().
- 		 */
- 		tail = ACCESS_ONCE(rb->user_page->data_tail);
--		smp_rmb();
-+		smp_mb();
- 		offset = head = local_read(&rb->head);
- 		head += size;
- 		if (unlikely(!perf_output_space(rb, tail, offset, head)))
