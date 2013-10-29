@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab3J2SIw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 14:08:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59429 "EHLO
+	id S1754024Ab3J2SI5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 14:08:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59450 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753756Ab3J2SIt (ORCPT
+	with ESMTP id S1753961Ab3J2SIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 14:08:49 -0400
+	Tue, 29 Oct 2013 14:08:55 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>,
+Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 59/81] sparc64: Fix ITLB handler of null page
-Date: Tue, 29 Oct 2013 11:04:20 -0700
-Message-Id: <1383069882-11437-60-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 56/81] sit: allow to use rtnl ops on fb tunnel
+Date: Tue, 29 Oct 2013 11:04:17 -0700
+Message-Id: <1383069882-11437-57-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383069882-11437-1-git-send-email-kamal@canonical.com>
 References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
@@ -27,44 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kirill Tkhai <tkhai@yandex.ru>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-[ Upstream commit 1c2696cdaad84580545a2e9c0879ff597880b1a9 ]
+[ Upstream commit 205983c43700ac3a81e7625273a3fa83cd2759b5 ]
 
-1)Use kvmap_itlb_longpath instead of kvmap_dtlb_longpath.
+rtnl ops where introduced by ba3e3f50a0e5 ("sit: advertise tunnel param via
+rtnl"), but I forget to assign rtnl ops to fb tunnels.
 
-2)Handle page #0 only, don't handle page #1: bleu -> blu
+Now that it is done, we must remove the explicit call to
+unregister_netdevice_queue(), because  the fallback tunnel is added to the queue
+in sit_destroy_tunnels() when checking rtnl_link_ops of all netdevices (this
+is valid since commit 5e6700b3bf98 ("sit: add support of x-netns")).
 
- (KERNBASE is 0x400000, so #1 does not exist too. But everything
-  is possible in the future. Fix to not to have problems later.)
-
-3)Remove unused kvmap_itlb_nonlinear.
-
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: David Miller <davem@davemloft.net>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/kernel/ktlb.S | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ net/ipv6/sit.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/sparc/kernel/ktlb.S b/arch/sparc/kernel/ktlb.S
-index 0746e5e..fde5a41 100644
---- a/arch/sparc/kernel/ktlb.S
-+++ b/arch/sparc/kernel/ktlb.S
-@@ -25,11 +25,10 @@ kvmap_itlb:
- 	 */
- kvmap_itlb_4v:
+diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+index cfba99b..b1c5654 100644
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -1517,6 +1517,7 @@ static int __net_init sit_init_net(struct net *net)
+ 		goto err_alloc_dev;
+ 	}
+ 	dev_net_set(sitn->fb_tunnel_dev, net);
++	sitn->fb_tunnel_dev->rtnl_link_ops = &sit_link_ops;
  
--kvmap_itlb_nonlinear:
- 	/* Catch kernel NULL pointer calls.  */
- 	sethi		%hi(PAGE_SIZE), %g5
- 	cmp		%g4, %g5
--	bleu,pn		%xcc, kvmap_dtlb_longpath
-+	blu,pn		%xcc, kvmap_itlb_longpath
- 	 nop
- 
- 	KERN_TSB_LOOKUP_TL1(%g4, %g6, %g5, %g1, %g2, %g3, kvmap_itlb_load)
+ 	err = ipip6_fb_tunnel_init(sitn->fb_tunnel_dev);
+ 	if (err)
 -- 
 1.8.1.2
 
