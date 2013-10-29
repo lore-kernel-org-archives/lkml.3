@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab3J2Gza (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 02:55:30 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:49239 "EHLO
+	id S1752862Ab3J2Gz2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 02:55:28 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:45590 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397Ab3J2Gxr (ORCPT
+	with ESMTP id S1752431Ab3J2Gxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 02:53:47 -0400
-X-AuditID: 9c93017e-b7ca6ae000000e8a-32-526f5b77137b
+	Tue, 29 Oct 2013 02:53:48 -0400
+X-AuditID: 9c93017e-b7ca6ae000000e8a-33-526f5b77adbb
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Namhyung Kim <namhyung.kim@lge.com>,
@@ -19,9 +19,9 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>,
         Oleg Nesterov <oleg@redhat.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 09/13] tracing/kprobes: Integrate duplicate set_print_fmt()
-Date: Tue, 29 Oct 2013 15:53:37 +0900
-Message-Id: <1383029621-7384-10-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a ring buffer
+Date: Tue, 29 Oct 2013 15:53:38 +0900
+Message-Id: <1383029621-7384-11-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
 References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
@@ -32,256 +32,192 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The set_print_fmt() functions are implemented almost same for
-[ku]probes.  Move it to a common place and get rid of the duplication.
+Fetching from user space should be done in a non-atomic context.  So
+use a per-cpu buffer and copy its content to the ring buffer
+atomically.  Note that we can migrate during accessing user memory
+thus use a per-cpu mutex to protect concurrent accesses.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+This is needed since we'll be able to fetch args from an user memory
+which can be swapped out.  Before that uprobes could fetch args from
+registers only which saved in a kernel space.
+
+While at it, use __get_data_size() and store_trace_args() to reduce
+code duplication.
+
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/trace/trace_kprobe.c | 63 +--------------------------------------------
- kernel/trace/trace_probe.c  | 62 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/trace/trace_probe.h  |  2 ++
- kernel/trace/trace_uprobe.c | 55 +--------------------------------------
- 4 files changed, 66 insertions(+), 116 deletions(-)
+ kernel/trace/trace_uprobe.c | 98 +++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 82 insertions(+), 16 deletions(-)
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 2a668516f0e4..3159b114f215 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -1133,67 +1133,6 @@ static int kretprobe_event_define_fields(struct ftrace_event_call *event_call)
- 	return 0;
- }
- 
--static int __set_print_fmt(struct trace_kprobe *tp, char *buf, int len)
--{
--	int i;
--	int pos = 0;
--
--	const char *fmt, *arg;
--
--	if (!trace_kprobe_is_return(tp)) {
--		fmt = "(%lx)";
--		arg = "REC->" FIELD_STRING_IP;
--	} else {
--		fmt = "(%lx <- %lx)";
--		arg = "REC->" FIELD_STRING_FUNC ", REC->" FIELD_STRING_RETIP;
--	}
--
--	/* When len=0, we just calculate the needed length */
--#define LEN_OR_ZERO (len ? len - pos : 0)
--
--	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
--
--	for (i = 0; i < tp->p.nr_args; i++) {
--		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
--				tp->p.args[i].name, tp->p.args[i].type->fmt);
--	}
--
--	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
--
--	for (i = 0; i < tp->p.nr_args; i++) {
--		if (strcmp(tp->p.args[i].type->name, "string") == 0)
--			pos += snprintf(buf + pos, LEN_OR_ZERO,
--					", __get_str(%s)",
--					tp->p.args[i].name);
--		else
--			pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
--					tp->p.args[i].name);
--	}
--
--#undef LEN_OR_ZERO
--
--	/* return the length of print_fmt */
--	return pos;
--}
--
--static int set_print_fmt(struct trace_kprobe *tp)
--{
--	int len;
--	char *print_fmt;
--
--	/* First: called with 0 length to calculate the needed length */
--	len = __set_print_fmt(tp, NULL, 0);
--	print_fmt = kmalloc(len + 1, GFP_KERNEL);
--	if (!print_fmt)
--		return -ENOMEM;
--
--	/* Second: actually write the @print_fmt */
--	__set_print_fmt(tp, print_fmt, len + 1);
--	tp->p.call.print_fmt = print_fmt;
--
--	return 0;
--}
--
- #ifdef CONFIG_PERF_EVENTS
- 
- /* Kprobe profile handler */
-@@ -1344,7 +1283,7 @@ static int register_kprobe_event(struct trace_kprobe *tp)
- 		call->event.funcs = &kprobe_funcs;
- 		call->class->define_fields = kprobe_event_define_fields;
- 	}
--	if (set_print_fmt(tp) < 0)
-+	if (set_print_fmt(&tp->p, trace_kprobe_is_return(tp)) < 0)
- 		return -ENOMEM;
- 	ret = register_ftrace_event(&call->event);
- 	if (!ret) {
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index b7b8bda02d6e..1ab83d4c7775 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -629,3 +629,65 @@ out:
- 
- 	return ret;
- }
-+
-+static int __set_print_fmt(struct trace_probe *tp, char *buf, int len,
-+			   bool is_return)
-+{
-+	int i;
-+	int pos = 0;
-+
-+	const char *fmt, *arg;
-+
-+	if (!is_return) {
-+		fmt = "(%lx)";
-+		arg = "REC->" FIELD_STRING_IP;
-+	} else {
-+		fmt = "(%lx <- %lx)";
-+		arg = "REC->" FIELD_STRING_FUNC ", REC->" FIELD_STRING_RETIP;
-+	}
-+
-+	/* When len=0, we just calculate the needed length */
-+#define LEN_OR_ZERO (len ? len - pos : 0)
-+
-+	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
-+
-+	for (i = 0; i < tp->nr_args; i++) {
-+		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
-+				tp->args[i].name, tp->args[i].type->fmt);
-+	}
-+
-+	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
-+
-+	for (i = 0; i < tp->nr_args; i++) {
-+		if (strcmp(tp->args[i].type->name, "string") == 0)
-+			pos += snprintf(buf + pos, LEN_OR_ZERO,
-+					", __get_str(%s)",
-+					tp->args[i].name);
-+		else
-+			pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
-+					tp->args[i].name);
-+	}
-+
-+#undef LEN_OR_ZERO
-+
-+	/* return the length of print_fmt */
-+	return pos;
-+}
-+
-+int set_print_fmt(struct trace_probe *tp, bool is_return)
-+{
-+	int len;
-+	char *print_fmt;
-+
-+	/* First: called with 0 length to calculate the needed length */
-+	len = __set_print_fmt(tp, NULL, 0, is_return);
-+	print_fmt = kmalloc(len + 1, GFP_KERNEL);
-+	if (!print_fmt)
-+		return -ENOMEM;
-+
-+	/* Second: actually write the @print_fmt */
-+	__set_print_fmt(tp, print_fmt, len + 1, is_return);
-+	tp->call.print_fmt = print_fmt;
-+
-+	return 0;
-+}
-diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-index 189a40baea98..325989f24dbf 100644
---- a/kernel/trace/trace_probe.h
-+++ b/kernel/trace/trace_probe.h
-@@ -350,3 +350,5 @@ store_trace_args(int ent_size, struct trace_probe *tp, struct pt_regs *regs,
- 				   data + tp->args[i].offset);
- 	}
- }
-+
-+extern int set_print_fmt(struct trace_probe *tp, bool is_return);
 diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index abb95529d851..9f2d12d2311d 100644
+index 9f2d12d2311d..c32f8f2ddc11 100644
 --- a/kernel/trace/trace_uprobe.c
 +++ b/kernel/trace/trace_uprobe.c
-@@ -681,59 +681,6 @@ static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
- 	return 0;
+@@ -530,21 +530,44 @@ static const struct file_operations uprobe_profile_ops = {
+ 	.release	= seq_release,
+ };
+ 
++static atomic_t uprobe_buffer_ref = ATOMIC_INIT(0);
++static void __percpu *uprobe_cpu_buffer;
++static DEFINE_PER_CPU(struct mutex, uprobe_cpu_mutex);
++
+ static void uprobe_trace_print(struct trace_uprobe *tu,
+ 				unsigned long func, struct pt_regs *regs)
+ {
+ 	struct uprobe_trace_entry_head *entry;
+ 	struct ring_buffer_event *event;
+ 	struct ring_buffer *buffer;
+-	void *data;
+-	int size, i;
++	struct mutex *mutex;
++	void *data, *arg_buf;
++	int size, dsize, esize;
++	int cpu;
+ 	struct ftrace_event_call *call = &tu->p.call;
+ 
+-	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
++	dsize = __get_data_size(&tu->p, regs);
++	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
++
++	if (WARN_ON_ONCE(!uprobe_cpu_buffer || tu->p.size + dsize > PAGE_SIZE))
++		return;
++
++	cpu = raw_smp_processor_id();
++	mutex = &per_cpu(uprobe_cpu_mutex, cpu);
++	arg_buf = per_cpu_ptr(uprobe_cpu_buffer, cpu);
++
++	/*
++	 * Use per-cpu buffers for fastest access, but we might migrate
++	 * so the mutex makes sure we have sole access to it.
++	 */
++	mutex_lock(mutex);
++	store_trace_args(esize, &tu->p, regs, arg_buf, dsize);
++
++	size = esize + tu->p.size + dsize;
+ 	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
+-						  size + tu->p.size, 0, 0);
++						  size, 0, 0);
+ 	if (!event)
+-		return;
++		goto out;
+ 
+ 	entry = ring_buffer_event_data(event);
+ 	if (is_ret_probe(tu)) {
+@@ -556,13 +579,13 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+ 		data = DATAOF_TRACE_ENTRY(entry, false);
+ 	}
+ 
+-	for (i = 0; i < tu->p.nr_args; i++) {
+-		call_fetch(&tu->p.args[i].fetch, regs,
+-			   data + tu->p.args[i].offset);
+-	}
++	memcpy(data, arg_buf, tu->p.size + dsize);
+ 
+ 	if (!filter_current_check_discard(buffer, call, entry, event))
+ 		trace_buffer_unlock_commit(buffer, event, 0, 0);
++
++out:
++	mutex_unlock(mutex);
  }
  
--#define LEN_OR_ZERO		(len ? len - pos : 0)
--static int __set_print_fmt(struct trace_uprobe *tu, char *buf, int len)
--{
--	const char *fmt, *arg;
--	int i;
--	int pos = 0;
--
--	if (is_ret_probe(tu)) {
--		fmt = "(%lx <- %lx)";
--		arg = "REC->" FIELD_STRING_FUNC ", REC->" FIELD_STRING_RETIP;
--	} else {
--		fmt = "(%lx)";
--		arg = "REC->" FIELD_STRING_IP;
--	}
--
--	/* When len=0, we just calculate the needed length */
--
--	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
--
--	for (i = 0; i < tu->p.nr_args; i++) {
--		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
--				tu->p.args[i].name, tu->p.args[i].type->fmt);
--	}
--
--	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
--
--	for (i = 0; i < tu->p.nr_args; i++) {
--		pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
--				tu->p.args[i].name);
--	}
--
--	return pos;	/* return the length of print_fmt */
--}
--#undef LEN_OR_ZERO
--
--static int set_print_fmt(struct trace_uprobe *tu)
--{
--	char *print_fmt;
--	int len;
--
--	/* First: called with 0 length to calculate the needed length */
--	len = __set_print_fmt(tu, NULL, 0);
--	print_fmt = kmalloc(len + 1, GFP_KERNEL);
--	if (!print_fmt)
--		return -ENOMEM;
--
--	/* Second: actually write the @print_fmt */
--	__set_print_fmt(tu, print_fmt, len + 1);
--	tu->p.call.print_fmt = print_fmt;
--
--	return 0;
--}
--
- #ifdef CONFIG_PERF_EVENTS
- static bool
- __uprobe_perf_filter(struct trace_uprobe_filter *filter, struct mm_struct *mm)
-@@ -965,7 +912,7 @@ static int register_uprobe_event(struct trace_uprobe *tu)
- 	call->event.funcs = &uprobe_funcs;
- 	call->class->define_fields = uprobe_event_define_fields;
+ /* uprobe handler */
+@@ -630,6 +653,19 @@ probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
+ 	if (trace_probe_is_enabled(&tu->p))
+ 		return -EINTR;
  
--	if (set_print_fmt(tu) < 0)
-+	if (set_print_fmt(&tu->p, is_ret_probe(tu)) < 0)
- 		return -ENOMEM;
++	if (atomic_inc_return(&uprobe_buffer_ref) == 1) {
++		int cpu;
++
++		uprobe_cpu_buffer = __alloc_percpu(PAGE_SIZE, PAGE_SIZE);
++		if (uprobe_cpu_buffer == NULL) {
++			atomic_dec(&uprobe_buffer_ref);
++			return -ENOMEM;
++		}
++
++		for_each_possible_cpu(cpu)
++			mutex_init(&per_cpu(uprobe_cpu_mutex, cpu));
++	}
++
+ 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
  
- 	ret = register_ftrace_event(&call->event);
+ 	tu->p.flags |= flag;
+@@ -646,6 +682,11 @@ static void probe_event_disable(struct trace_uprobe *tu, int flag)
+ 	if (!trace_probe_is_enabled(&tu->p))
+ 		return;
+ 
++	if (atomic_dec_and_test(&uprobe_buffer_ref)) {
++		free_percpu(uprobe_cpu_buffer);
++		uprobe_cpu_buffer = NULL;
++	}
++
+ 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+ 
+ 	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
+@@ -776,11 +817,33 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
+ 	struct ftrace_event_call *call = &tu->p.call;
+ 	struct uprobe_trace_entry_head *entry;
+ 	struct hlist_head *head;
+-	void *data;
+-	int size, rctx, i;
++	struct mutex *mutex;
++	void *data, *arg_buf;
++	int size, dsize, esize;
++	int cpu;
++	int rctx;
+ 
+-	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
+-	size = ALIGN(size + tu->p.size + sizeof(u32), sizeof(u64)) - sizeof(u32);
++	dsize = __get_data_size(&tu->p, regs);
++	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
++
++	if (WARN_ON_ONCE(!uprobe_cpu_buffer))
++		return;
++
++	size = esize + tu->p.size + dsize;
++	size = ALIGN(size + sizeof(u32), sizeof(u64)) - sizeof(u32);
++	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE, "profile buffer not large enough"))
++		return;
++
++	cpu = raw_smp_processor_id();
++	mutex = &per_cpu(uprobe_cpu_mutex, cpu);
++	arg_buf = per_cpu_ptr(uprobe_cpu_buffer, cpu);
++
++	/*
++	 * Use per-cpu buffers for fastest access, but we might migrate
++	 * so the mutex makes sure we have sole access to it.
++	 */
++	mutex_lock(mutex);
++	store_trace_args(esize, &tu->p, regs, arg_buf, dsize);
+ 
+ 	preempt_disable();
+ 	head = this_cpu_ptr(call->perf_events);
+@@ -800,15 +863,18 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
+ 		data = DATAOF_TRACE_ENTRY(entry, false);
+ 	}
+ 
+-	for (i = 0; i < tu->p.nr_args; i++) {
+-		struct probe_arg *parg = &tu->p.args[i];
++	memcpy(data, arg_buf, tu->p.size + dsize);
++
++	if (size - esize > tu->p.size + dsize) {
++		int len = tu->p.size + dsize;
+ 
+-		call_fetch(&parg->fetch, regs, data + parg->offset);
++		memset(data + len, 0, size - esize - len);
+ 	}
+ 
+ 	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
+  out:
+ 	preempt_enable();
++	mutex_unlock(mutex);
+ }
+ 
+ /* uprobe profile handler */
 -- 
 1.7.11.7
 
