@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab3J3TGX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 15:06:23 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:34857 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970Ab3J3TGV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 15:06:21 -0400
-Date: Wed, 30 Oct 2013 20:06:18 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/2] perf list: Add usage
-Message-ID: <20131030190618.GA5623@gmail.com>
-References: <1383149707-1008-1-git-send-email-dsahern@gmail.com>
- <1383149707-1008-2-git-send-email-dsahern@gmail.com>
+	id S1754337Ab3J3TGk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 15:06:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55780 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754273Ab3J3TGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 15:06:39 -0400
+Date: Wed, 30 Oct 2013 21:09:29 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: paulmck@linux.vnet.ibm.com, linux-kernel <linux-kernel@vger.kernel.org>
+Cc: kvm@vger.kernel.org, gleb@redhat.com, pbonzini@redhat.com
+Subject: [PATCH RFC] kvm: optimize out smp_mb using srcu_read_unlock
+Message-ID: <20131030190929.GA7153@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383149707-1008-2-git-send-email-dsahern@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I noticed that srcu_read_lock/unlock both have a memory barrier,
+so just by moving srcu_read_unlock earlier we can get rid of
+one call to smp_mb().
 
-* David Ahern <dsahern@gmail.com> wrote:
+Unsurprisingly, the gain is small but measureable using the unit test
+microbenchmark:
+before
+	vmcall 1407
+after
+	vmcall 1357
 
-> Currently perf list is not very helpful if you forget the syntax:
->   $ perf list -h
-> 
->   List of pre-defined events (to be used in -e):
-> 
-> After:
->   $ perf list -h
-> 
->    usage: perf list [hw|sw|cache|tracepoint|pmu|event_glob]
-> 
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Stephane Eranian <eranian@google.com>
-> ---
->  tools/perf/builtin-list.c | 11 +++++++++++
->  1 file changed, 11 insertions(+)
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
+--
 
-	Ingo
+I didn't stress test this yet, sending out for early review/flames.
+
+Paul, could you review this patch please?
+Documentation/memory-barriers.txt says that unlock has a weaker
+uni-directional barrier, but in practice srcu_read_unlock calls
+smp_mb().
+
+Is it OK to rely on this? If not, can I add
+smp_mb__after_srcu_read_unlock (making it an empty macro for now)
+so we can avoid an actual extra smp_mb()?
+
+Thanks.
+
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 8617c9d..a48fb36 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5949,8 +5949,10 @@ restore:
+ 
+ 	/* We should set ->mode before check ->requests,
+ 	 * see the comment in make_all_cpus_request.
++	 *
++	 * srcu_read_unlock below acts as a memory barrier.
+ 	 */
+-	smp_mb();
++	srcu_read_unlock(&vcpu->kvm->srcu, vcpu->srcu_idx);
+ 
+ 	local_irq_disable();
+ 
+@@ -5960,12 +5962,11 @@ restore:
+ 		smp_wmb();
+ 		local_irq_enable();
+ 		preempt_enable();
++		vcpu->srcu_idx = srcu_read_lock(&vcpu->kvm->srcu);
+ 		r = 1;
+ 		goto cancel_injection;
+ 	}
+ 
+-	srcu_read_unlock(&vcpu->kvm->srcu, vcpu->srcu_idx);
+-
+ 	if (req_immediate_exit)
+ 		smp_send_reschedule(vcpu->cpu);
+ 
+
+-- 
+MST
