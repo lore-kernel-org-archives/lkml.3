@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739Ab3J3Puy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 11:50:54 -0400
-Received: from fifo99.com ([67.223.236.141]:56867 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750724Ab3J3Puw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 11:50:52 -0400
-Date: Wed, 30 Oct 2013 08:50:32 -0700
-From: Daniel Walker <dwalker@fifo99.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/4] ARM: msm: Remove 8x50 support
-Message-ID: <20131030155032.GA5822@fifo99.com>
-References: <1382993006-27359-1-git-send-email-davidb@codeaurora.org>
- <1382993006-27359-5-git-send-email-davidb@codeaurora.org>
- <20131029211901.GB16284@fifo99.com>
- <201310301430.24115.arnd@arndb.de>
+	id S1752374Ab3J3Pvd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 11:51:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47510 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab3J3Pvb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 11:51:31 -0400
+Date: Wed, 30 Oct 2013 16:51:16 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Victor Kaplansky <VICTORK@il.ibm.com>
+Cc: paulmck@linux.vnet.ibm.com, Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Michael Neuling <mikey@neuling.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: perf events ring buffer memory barrier on powerpc
+Message-ID: <20131030155116.GO16117@laptop.programming.kicks-ass.net>
+References: <20131023141948.GB3566@localhost.localdomain>
+ <20131025173749.GG19466@laptop.lan>
+ <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com>
+ <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com>
+ <20131028132634.GO19466@laptop.lan>
+ <20131028163418.GD4126@linux.vnet.ibm.com>
+ <20131028201735.GA15629@redhat.com>
+ <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com>
+ <20131030092725.GL4126@linux.vnet.ibm.com>
+ <OFC6B7100E.31C6B190-ON42257C14.004841C6-42257C14.004A0EA6@il.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201310301430.24115.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <OFC6B7100E.31C6B190-ON42257C14.004841C6-42257C14.004A0EA6@il.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 02:30:23PM +0100, Arnd Bergmann wrote:
-> On Tuesday 29 October 2013, Daniel Walker wrote:
-> > Isn't this the Nexus one platform ? Same as the last one , why don't you
-> > just update it to use the device tree? This doesn't seem like it would
-> > be all that difficult. 
+On Wed, Oct 30, 2013 at 03:28:54PM +0200, Victor Kaplansky wrote:
+> one of the authors of Documentation/memory-barriers.txt is on cc: list ;-)
 > 
-> Please don't top-post.
-
-Seriously ? I was responding to the whole comment, don't be so pedantic
-..
+> Disclaimer: it is anyway impossible to prove lack of *any* problem.
+> 
+> Having said that, lets look into an example in
+> Documentation/circular-buffers.txt:
 
 > 
-> > On Mon, Oct 28, 2013 at 01:43:26PM -0700, David Brown wrote:
-> > > 
-> > > This code has not been converted to device tree, and is hindering
-> > > support for the multi-platform kernel on ARM.  If someone wishes to
-> > > continue support for this target, patches that provide devicetree and
-> > > multi-platform support can start by re-adding these files.
-> 
->     ^ Here is your answer.
-> 
-> 
-> While I'd definitely love to see support for the Nexus One upstream,
-> it is evident that nobody has been working on this for a long time.
+> We can see that authors of the document didn't put any memory barrier
 
-I have a device with this chip in it .. I would like that device not to
-disappear from Linux .. Doing this puts an un-do burden on users
-who would like to see this support go in, but if it's removed like this
-that will never happen. No one has an much information on these chips as
-Qualcomm .. It's not realistic that any user would be able to do a
-lot without their support.. By allowing them to remove code for these
-device it effectively ends and chance of them have more code support added..
-Yet the devices exist in mass amounts.
+Note that both documents have the same author list ;-)
 
-To be honest your not an MSM maintainer, are there are political issue
-related to this.. This isn't particularly technical because converting
-these relatively simple platform to the device tree shouldn't be all
-that difficult. To me Your involvement is puzzling .. Myself and my
-co-maintainers need to be the ones discussing this..
-
-G1 code is also getting removed in this series, and the code for this
-creates a usable device .. The problem here is that you really can't
-start randomly removing support for platforms that people have and want
-them to continue working. We have a process for that, and typically user
-objections weight heavily in that process (read, feature-removal-schedule.txt)
-
-Daniel
+Anyway, I didn't know about the circular thing, I suppose I should use
+CIRC_SPACE() thing :-)
