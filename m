@@ -1,95 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754439Ab3J3NWc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 09:22:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24552 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175Ab3J3NWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 09:22:30 -0400
-Message-ID: <52710805.10209@redhat.com>
-Date: Wed, 30 Oct 2013 09:22:13 -0400
-From: Doug Ledford <dledford@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1754467Ab3J3NWg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 09:22:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44734 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754445Ab3J3NWd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 09:22:33 -0400
+Date: Wed, 30 Oct 2013 06:24:32 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, stable@vger.kernel.org
+Subject: Re: [PATCH 1/2] misc: atmel_pwm: add deferred-probing support
+Message-ID: <20131030132432.GB30447@kroah.com>
+References: <1382459560-26596-1-git-send-email-jhovold@gmail.com>
+ <1382459560-26596-2-git-send-email-jhovold@gmail.com>
+ <20131030112551.GB29813@localhost>
 MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>,
-        Neil Horman <nhorman@tuxdriver.com>
-CC: Ingo Molnar <mingo@kernel.org>, Eric Dumazet <eric.dumazet@gmail.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-References: <201310300525.r9U5Pdqo014902@ib.usersys.redhat.com> <20131030110214.GA10220@localhost.localdomain> <AE90C24D6B3A694183C094C60CF0A2F6026B73C5@saturn3.aculab.com>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B73C5@saturn3.aculab.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131030112551.GB29813@localhost>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2013 08:18 AM, David Laight wrote:
->> /me wonders if rearranging the instructions into this order:
->> adcq 0*8(src), res1
->> adcq 1*8(src), res2
->> adcq 2*8(src), res1
->
-> Those have to be sequenced.
->
-> Using a 64bit lea to add 32bit quantities should avoid the
-> dependencies on the flags register.
-> However you'd need to get 3 of those active to beat a 64bit adc.
->
-> 	David
->
->
->
+On Wed, Oct 30, 2013 at 12:25:51PM +0100, Johan Hovold wrote:
+> On Tue, Oct 22, 2013 at 06:32:39PM +0200, Johan Hovold wrote:
+> > Two drivers (atmel-pwm-bl and leds-atmel-pwm) currently depend on the
+> > atmel_pwm driver to have bound to any pwm-device before their devices
+> > are probed.
+> > 
+> > Support deferred probing of such devices by making sure to return
+> > -EPROBE_DEFER from pwm_channel_alloc when no pwm-device has yet been
+> > bound.
+> > 
+> > Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> 
+> This patch, 5c6d6fd1 ("misc: atmel_pwm: add deferred-probing support"),
+> and 9d3fde86 ("backlight: atmel-pwm-bl: fix deferred probe from __init")
+> in linux-next should probably be considered for inclusion in stable.
+> 
+> Without them the atmel-pwm-bl driver may always fail to probe depending
+> on link order.
 
-Already done (well, something similar to what you mention above anyway), 
-doesn't help (although doesn't hurt either, even though it doubles the 
-number of adds needed to complete the same work).  This is the code I 
-tested:
+Ok, I'll watch this for when it hits Linus's tree, thanks for letting me
+know.
 
-#define ADDL_64                                         \
-         asm("xorq  %%r8,%%r8\n\t"                       \
-             "xorq  %%r9,%%r9\n\t"                       \
-             "xorq  %%r10,%%r10\n\t"                     \
-             "xorq  %%r11,%%r11\n\t"                     \
-             "movl  0*4(%[src]),%%r8d\n\t"               \
-             "movl  1*4(%[src]),%%r9d\n\t"               \
-             "movl  2*4(%[src]),%%r10d\n\t"              \
-             "movl  3*4(%[src]),%%r11d\n\t"              \
-             "addq  %%r8,%[res1]\n\t"                    \
-             "addq  %%r9,%[res2]\n\t"                    \
-             "addq  %%r10,%[res3]\n\t"                   \
-             "addq  %%r11,%[res4]\n\t"                   \
-             "movl  4*4(%[src]),%%r8d\n\t"               \
-             "movl  5*4(%[src]),%%r9d\n\t"               \
-             "movl  6*4(%[src]),%%r10d\n\t"              \
-             "movl  7*4(%[src]),%%r11d\n\t"              \
-             "addq  %%r8,%[res1]\n\t"                    \
-             "addq  %%r9,%[res2]\n\t"                    \
-             "addq  %%r10,%[res3]\n\t"                   \
-             "addq  %%r11,%[res4]\n\t"                   \
-             "movl  8*4(%[src]),%%r8d\n\t"               \
-             "movl  9*4(%[src]),%%r9d\n\t"               \
-             "movl  10*4(%[src]),%%r10d\n\t"             \
-             "movl  11*4(%[src]),%%r11d\n\t"             \
-             "addq  %%r8,%[res1]\n\t"                    \
-             "addq  %%r9,%[res2]\n\t"                    \
-             "addq  %%r10,%[res3]\n\t"                   \
-             "addq  %%r11,%[res4]\n\t"                   \
-             "movl  12*4(%[src]),%%r8d\n\t"              \
-             "movl  13*4(%[src]),%%r9d\n\t"              \
-             "movl  14*4(%[src]),%%r10d\n\t"             \
-             "movl  15*4(%[src]),%%r11d\n\t"             \
-             "addq  %%r8,%[res1]\n\t"                    \
-             "addq  %%r9,%[res2]\n\t"                    \
-             "addq  %%r10,%[res3]\n\t"                   \
-             "addq  %%r11,%[res4]"                       \
-             : [res1] "=r" (result1),                    \
-               [res2] "=r" (result2),                    \
-               [res3] "=r" (result3),                    \
-               [res4] "=r" (result4)                     \
-             : [src] "r" (buff),                         \
-               "[res1]" (result1), "[res2]" (result2),   \
-               "[res3]" (result3), "[res4]" (result4)    \
-             : "r8", "r9", "r10", "r11" )
-
+greg k-h
