@@ -1,79 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab3J3PP5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 11:15:57 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:36663 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753574Ab3J3PPy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 11:15:54 -0400
+	id S1753790Ab3J3PTK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 11:19:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55172 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751088Ab3J3PTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 11:19:08 -0400
+Date: Wed, 30 Oct 2013 15:19:04 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: kosaki.motohiro@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [PATCH] mm: get rid of unnecessary pageblock scanning in
+ setup_zone_migrate_reserve
+Message-ID: <20131030151904.GO2400@suse.de>
+References: <1382562092-15570-1-git-send-email-kosaki.motohiro@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20131030142017.GB30896@kroah.com>
-References: <1383132636-8952-1-git-send-email-bergwolf@gmail.com>
- <1383132636-8952-2-git-send-email-bergwolf@gmail.com> <20131030132101.GD30087@kroah.com>
- <CA+a=Yy6rL6CV3THZ4Mr4oHqVDiejr++r9Oa4kro4Y_CCbFEfEQ@mail.gmail.com> <20131030142017.GB30896@kroah.com>
-From: Peng Tao <bergwolf@gmail.com>
-Date: Wed, 30 Oct 2013 23:15:32 +0800
-Message-ID: <CA+a=Yy5+3tOYikUR161-QbG3+mCr6FH1P0-5QHp4TjoC=FWK8A@mail.gmail.com>
-Subject: Re: [PATCH 2/4] staging/lustre/obdclass: read jobid from proc
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1382562092-15570-1-git-send-email-kosaki.motohiro@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 10:20 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Wed, Oct 30, 2013 at 09:31:24PM +0800, Peng Tao wrote:
->> On Wed, Oct 30, 2013 at 9:21 PM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->> > On Wed, Oct 30, 2013 at 07:30:34PM +0800, Peng Tao wrote:
->> >> so that we can get rid of cfs_get_environ() that needs access_process_vm() that
->> >> is a core mm function and is not available on some architectures.
->> >>
->> >> Reviewed-by: Niu Yawei <yawei.niu@intel.com>
->> >> Signed-off-by: Peng Tao <bergwolf@gmail.com>
->> >> Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
->> >> ---
->> >>  drivers/staging/lustre/lustre/obdclass/class_obd.c |  119 +++++++++++++++++++-
->> >>  1 file changed, 115 insertions(+), 4 deletions(-)
->> >>
->> >> diff --git a/drivers/staging/lustre/lustre/obdclass/class_obd.c b/drivers/staging/lustre/lustre/obdclass/class_obd.c
->> >> index b1024a6..99ce863 100644
->> >> --- a/drivers/staging/lustre/lustre/obdclass/class_obd.c
->> >> +++ b/drivers/staging/lustre/lustre/obdclass/class_obd.c
->> >> @@ -96,8 +96,117 @@ EXPORT_SYMBOL(obd_dirty_transit_pages);
->> >>  char obd_jobid_var[JOBSTATS_JOBID_VAR_MAX_LEN + 1] = JOBSTATS_DISABLE;
->> >>  EXPORT_SYMBOL(obd_jobid_var);
->> >>
->> >> -/* Get jobid of current process by reading the environment variable
->> >> - * stored in between the "env_start" & "env_end" of task struct.
->> >> +static char *self_environ_file = "/proc/self/environ";
->> >
->> > Heh, no, that's not ok at all.
->> >
->> > This is a _huge_ sign that you are doing something wrong in your driver
->> > if you need something that isn't exported, or that you have to dig out
->> > of proc.
->> >
->> Lustre has a functionality that lets applications specify a global
->> jobid by setting the same environment variable across the cluster and
->> thus server can trace IO that is issued by different job. Currently it
->> is implemented by having a private version of cfs_access_process_vm
->> because access_process_vm is not exported. The patch intends to change
->> it to reading from proc. If we cannot dig it out from proc either, how
->> can we keep the functionality then? Please advise.
->
-> Kernel code should not care about environment variables.  Just because
-> you created a crazy requirement, does not mean it is a valid one, nor
-> that I have to be the one to tell you how to implement it.
->
-> I'm never going to take code that parses proc files, you all know better
-> than that.
-I see. I'll drop the patchset and keep the cfs_access_process_vm code
-until better option is found.
+On Wed, Oct 23, 2013 at 05:01:32PM -0400, kosaki.motohiro@gmail.com wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> 
+> Yasuaki Ithimatsu reported memory hot-add spent more than 5 _hours_
+> on 9TB memory machine and we found out setup_zone_migrate_reserve
+> spnet >90% time.
+> 
+> The problem is, setup_zone_migrate_reserve scan all pageblock
+> unconditionally, but it is only necessary number of reserved block
+> was reduced (i.e. memory hot remove).
+> Moreover, maximum MIGRATE_RESERVE per zone are currently 2. It mean,
+> number of reserved pageblock are almost always unchanged.
+> 
+> This patch adds zone->nr_migrate_reserve_block to maintain number
+> of MIGRATE_RESERVE pageblock and it reduce an overhead of
+> setup_zone_migrate_reserve dramatically.
+> 
 
-Thanks,
-Tao
+It seems regrettable to expand the size of struct zone just for this.
+You are right that the number of blocks does not exceed 2 because of a
+check made in setup_zone_migrate_reserve so it should be possible to
+special case this. I didn't test this or think about it particularly
+carefully and no doubt there is a nicer way but for illustration
+purposes see the patch below.
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index dd886fa..1aedddd 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3897,6 +3897,8 @@ static int pageblock_is_reserved(unsigned long start_pfn, unsigned long end_pfn)
+ 	return 0;
+ }
+ 
++#define MAX_MIGRATE_RESERVE_BLOCKS 2
++
+ /*
+  * Mark a number of pageblocks as MIGRATE_RESERVE. The number
+  * of blocks reserved is based on min_wmark_pages(zone). The memory within
+@@ -3910,6 +3912,7 @@ static void setup_zone_migrate_reserve(struct zone *zone)
+ 	struct page *page;
+ 	unsigned long block_migratetype;
+ 	int reserve;
++	int found = 0;
+ 
+ 	/*
+ 	 * Get the start pfn, end pfn and the number of blocks to reserve
+@@ -3926,11 +3929,11 @@ static void setup_zone_migrate_reserve(struct zone *zone)
+ 	/*
+ 	 * Reserve blocks are generally in place to help high-order atomic
+ 	 * allocations that are short-lived. A min_free_kbytes value that
+-	 * would result in more than 2 reserve blocks for atomic allocations
+-	 * is assumed to be in place to help anti-fragmentation for the
+-	 * future allocation of hugepages at runtime.
++	 * would result in more than MAX_MIGRATE_RESERVE_BLOCKS reserve blocks
++	 * for atomic allocations is assumed to be in place to help
++	 * anti-fragmentation for the future allocation of hugepages at runtime.
+ 	 */
+-	reserve = min(2, reserve);
++	reserve = min(MAX_MIGRATE_RESERVE_BLOCKS, reserve);
+ 
+ 	for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
+ 		if (!pfn_valid(pfn))
+@@ -3956,6 +3959,7 @@ static void setup_zone_migrate_reserve(struct zone *zone)
+ 			/* If this block is reserved, account for it */
+ 			if (block_migratetype == MIGRATE_RESERVE) {
+ 				reserve--;
++				found++;
+ 				continue;
+ 			}
+ 
+@@ -3970,6 +3974,10 @@ static void setup_zone_migrate_reserve(struct zone *zone)
+ 			}
+ 		}
+ 
++		/* If all possible reserve blocks have been found, we're done */
++		if (found >= MAX_MIGRATE_RESERVE_BLOCKS)
++			break;
++
+ 		/*
+ 		 * If the reserve is met and this is a previous reserved block,
+ 		 * take it back
+
