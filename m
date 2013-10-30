@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666Ab3J3V6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 17:58:21 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:33636 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753525Ab3J3V6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 17:58:19 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch 2/3] mm: memcg: lockdep annotation for memcg OOM lock
-Date: Wed, 30 Oct 2013 17:55:26 -0400
-Message-Id: <1383170127-32284-3-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1383170127-32284-1-git-send-email-hannes@cmpxchg.org>
-References: <1383170127-32284-1-git-send-email-hannes@cmpxchg.org>
+	id S1754217Ab3J3V6w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 17:58:52 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34314 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521Ab3J3V6u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 17:58:50 -0400
+Message-ID: <52718118.1020009@codeaurora.org>
+Date: Wed, 30 Oct 2013 14:58:48 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Kumar Gala <galak@codeaurora.org>
+CC: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 4/6] edac: Document Krait L1/L2 EDAC driver binding
+References: <1383164736-1849-1-git-send-email-sboyd@codeaurora.org> <1383164736-1849-5-git-send-email-sboyd@codeaurora.org> <872F86E8-85CE-472B-9546-CDCC96F6F08B@codeaurora.org> <52717EA5.6030208@codeaurora.org> <F38814D8-723E-4A41-839D-DEE351738017@codeaurora.org>
+In-Reply-To: <F38814D8-723E-4A41-839D-DEE351738017@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The memcg OOM lock is a mutex-type lock that is open-coded due to
-memcg's special needs.  Add annotations for lockdep coverage.
+On 10/30/13 14:56, Kumar Gala wrote:
+> On Oct 30, 2013, at 4:48 PM, Stephen Boyd wrote:
+>
+>> On 10/30/13 14:45, Kumar Gala wrote:
+>>> On Oct 30, 2013, at 3:25 PM, Stephen Boyd wrote:
+>>>> +l2-cache node containing the following properties:
+>>> Is the L1 interrupt not per core L1 cache (even if they are OR together at PIC)?
+>> Yes it is per CPU. That is what the 0xf part of the cpus interrupts
+>> property is showing.
+> Than why not have it in each cpu node?
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+Because that duplicates things unnecessarily? The cpus node can hold
+things that are common to all CPUs to avoid duplication. If it was a
+different PPI for each CPU then I would agree that we need to put it in
+each cpu node.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 13a9c80d5708..3e8cd0d9f716 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -54,6 +54,7 @@
- #include <linux/page_cgroup.h>
- #include <linux/cpu.h>
- #include <linux/oom.h>
-+#include <linux/lockdep.h>
- #include "internal.h"
- #include <net/sock.h>
- #include <net/ip.h>
-@@ -2046,6 +2047,12 @@ static int mem_cgroup_soft_reclaim(struct mem_cgroup *root_memcg,
- 	return total;
- }
- 
-+#ifdef CONFIG_LOCKDEP
-+static struct lockdep_map memcg_oom_lock_dep_map = {
-+	.name = "memcg_oom_lock",
-+};
-+#endif
-+
- static DEFINE_SPINLOCK(memcg_oom_lock);
- 
- /*
-@@ -2083,7 +2090,8 @@ static bool mem_cgroup_oom_trylock(struct mem_cgroup *memcg)
- 			}
- 			iter->oom_lock = false;
- 		}
--	}
-+	} else
-+		mutex_acquire(&memcg_oom_lock_dep_map, 0, 1, _RET_IP_);
- 
- 	spin_unlock(&memcg_oom_lock);
- 
-@@ -2095,6 +2103,7 @@ static void mem_cgroup_oom_unlock(struct mem_cgroup *memcg)
- 	struct mem_cgroup *iter;
- 
- 	spin_lock(&memcg_oom_lock);
-+	mutex_release(&memcg_oom_lock_dep_map, 1, _RET_IP_);
- 	for_each_mem_cgroup_tree(iter, memcg)
- 		iter->oom_lock = false;
- 	spin_unlock(&memcg_oom_lock);
 -- 
-1.8.4.2
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
