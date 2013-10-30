@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180Ab3J3Pjz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 11:39:55 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47225 "EHLO
+	id S1752249Ab3J3Pk0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 11:40:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47236 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab3J3Pjy (ORCPT
+	with ESMTP id S1751305Ab3J3PkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 11:39:54 -0400
-Date: Wed, 30 Oct 2013 16:39:31 +0100
+	Wed, 30 Oct 2013 11:40:24 -0400
+Date: Wed, 30 Oct 2013 16:40:15 +0100
 From: Peter Zijlstra <peterz@infradead.org>
-To: Victor Kaplansky <VICTORK@il.ibm.com>
-Cc: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: perf events ring buffer memory barrier on powerpc
-Message-ID: <20131030153931.GM16117@laptop.programming.kicks-ass.net>
-References: <20131025173749.GG19466@laptop.lan>
- <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com>
- <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com>
- <20131028132634.GO19466@laptop.lan>
- <20131028163418.GD4126@linux.vnet.ibm.com>
- <20131028201735.GA15629@redhat.com>
- <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com>
- <20131030092725.GL4126@linux.vnet.ibm.com>
- <20131030112526.GI16117@laptop.programming.kicks-ass.net>
- <OFF6C78E48.E477DB1E-ON42257C14.0050F9B3-42257C14.0051AC6D@il.ibm.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Chen Gang <gang.chen@asianux.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] include/linux/wait.h: add ';' for the statement which
+ missed it.
+Message-ID: <20131030154015.GN16117@laptop.programming.kicks-ass.net>
+References: <52708623.504@asianux.com>
+ <52712293.90808@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <OFF6C78E48.E477DB1E-ON42257C14.0050F9B3-42257C14.0051AC6D@il.ibm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52712293.90808@infradead.org>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 04:52:05PM +0200, Victor Kaplansky wrote:
-> Peter Zijlstra <peterz@infradead.org> wrote on 10/30/2013 01:25:26 PM:
+On Wed, Oct 30, 2013 at 08:15:31AM -0700, Randy Dunlap wrote:
+> On 10/29/13 21:08, Chen Gang wrote:
+> > Add ';' for the statement, or can not pass compiling. The related error
+> > (for powerpc allmodconfig):
+> > 
+> >     CC      block/blk-mq.o
+> >   block/blk-mq.c: In function ‘blk_mq_queue_enter’:
+> >   block/blk-mq.c:108:8: error: expected ‘;’ before ‘__ret’
+> >   block/blk-mq.c:108:6: error: void value not ignored as it ought to be
+> > 
+> > 
+> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
 > 
-> > Also, I'm not entirely sure on C, that too seems like a dependency, we
-> > simply cannot read the buffer @tail before we've read the tail itself,
-> > now can we? Similarly we cannot compare tail to head without having the
-> > head read completed.
+> Acked-by: Randy Dunlap <rdunlap@infradead.org>
 > 
-> No, this one we cannot omit, because our problem on consumer side is not
-> with @tail, which is written exclusively by consumer, but with @head.
+> I have that same patch on my machine but never posted it.
 
-Ah indeed, my argument was flawed in that @head is the important part.
-But we still do a comparison of @tail against @head before we do further
-reads.
-
-Although I suppose speculative reads are allowed -- they don't have the
-destructive behaviour speculative writes have -- and thus we could in
-fact get reorder issues.
-
-But since it is still a dependent load in that we do that @tail vs @head
-comparison before doing other loads, wouldn't a read_barrier_depends()
-be sufficient? Or do we still need a complete rmb?
-
-> BTW, it is why you also don't need ACCESS_ONCE() around @tail, but only
-> around
-> @head read.
-
-Agreed, the ACCESS_ONCE() around tail is superfluous since we're the one
-updating tail, so there's no problem with the value changing
-unexpectedly.
+tip already includes commit 92ec11809565cf6429c75204e99e0f583b5c9d7c
+from the 23th which should fix this.
