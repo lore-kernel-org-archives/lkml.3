@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826Ab3J3DEB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 23:04:01 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:45357 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167Ab3J3DD7 (ORCPT
+	id S1752959Ab3J3DFv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 23:05:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41072 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751605Ab3J3DFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 23:03:59 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID r9U33qxE026475, This message is accepted by code: ctloc85258
-From: hayeswang <hayeswang@realtek.com>
-To: "'David Miller'" <davem@davemloft.net>
-CC: <netdev@vger.kernel.org>, "'nic_swsd'" <nic_swsd@realtek.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-References: <1383033377-1178-1-git-send-email-hayeswang@realtek.com><1383033377-1178-3-git-send-email-hayeswang@realtek.com> <20131029.174936.13317032766742363.davem@davemloft.net>
-Subject: RE: [PATCH net 2/3] r8152: modify the tx flow
-Date: Wed, 30 Oct 2013 11:03:55 +0800
-Message-ID: <7F69554959F74FA58AE07F06B9FCF029@realtek.com.tw>
+	Tue, 29 Oct 2013 23:05:50 -0400
+Date: Tue, 29 Oct 2013 20:07:47 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
+Cc: Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] tpm/tpm_i2c_stm_st33: Check return code of
+ get_burstcount (fix CID: 986658)
+Message-ID: <20131030030747.GA12179@kroah.com>
+References: <1383090860-15901-1-git-send-email-peterhuewe@gmx.de>
+ <20131030000618.GA5241@kroah.com>
+ <201310300142.11716.PeterHuewe@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Ac7U8MatCeNPEQL3RtmiqmrVsdaIcQAJIIkg
-In-Reply-To: <20131029.174936.13317032766742363.davem@davemloft.net>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
-X-Originating-IP: [172.21.71.143]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201310300142.11716.PeterHuewe@gmx.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- David Miller [mailto:davem@davemloft.net] 
-> Sent: Wednesday, October 30, 2013 5:50 AM
-> To: Hayeswang
-> Cc: netdev@vger.kernel.org; nic_swsd; 
-> linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org
-> Subject: Re: [PATCH net 2/3] r8152: modify the tx flow
+On Wed, Oct 30, 2013 at 01:42:11AM +0100, Peter Hüwe wrote:
+> Hi Greg,
+> > > 
+> > > CID: 986658
+> > What is this field for?
 > 
-> From: Hayes Wang <hayeswang@realtek.com>
-> Date: Tue, 29 Oct 2013 15:56:16 +0800
-> 
-> > Support stopping and waking tx queue. The maximum tx queue length
-> > is 60.
-> 
-> What is so special about the number 60?  It seems arbitrary, and if
-> it isn't arbitrary you haven't described why this value was choosen.
+> That's the scan id in the coverity database.
+> If you think that's just noise I can leave it out.
 
-The value is arbitrary. I think it is better to stop tx when
-queuing many packets, otherwise all the available memory may
-be used for tx skb. The queue length could be any value or
-unlimited if the memory is enough. Should I remove it?
+It's noise as not everyone can see it or make anything out of it, so
+please don't include it.
 
-> I've asked you politely last time around to significantly improve
-> the quality of your commit messages, and you haven't done this at
-> all.
+thanks,
 
-I thought you indicated the last patch only and the others are clear enough.
-I would improve them.
-
-> I'm not applying any of these patches until your commit messages
-> properly describe your changes completely.
-> 
-
+greg k-h
