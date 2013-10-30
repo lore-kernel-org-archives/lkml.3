@@ -1,216 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab3J3UrX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 16:47:23 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:50545 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751962Ab3J3UrW (ORCPT
+	id S1753914Ab3J3Usm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 16:48:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48008 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797Ab3J3Usk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 16:47:22 -0400
-Date: Wed, 30 Oct 2013 21:47:19 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: will.deacon@arm.com, mingo@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] perf: arch_perf_out_copy_user default
-Message-ID: <20131030204718.GC2253@localhost.localdomain>
-References: <20131030143750.GT19466@laptop.lan>
- <20131030195013.GA2253@localhost.localdomain>
- <20131030201622.GR16117@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131030201622.GR16117@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 30 Oct 2013 16:48:40 -0400
+Date: Wed, 30 Oct 2013 13:48:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Joe Perches <joe@perches.com>, <linux-kernel@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, <linux-metag@vger.kernel.org>
+Subject: Re: [RFC PATCH -next] Fix printk_once build errors due to
+ __read_mostly
+Message-Id: <20131030134839.8bdf70cc68d1bf0beb1fb63a@linux-foundation.org>
+In-Reply-To: <1383128301-20231-1-git-send-email-james.hogan@imgtec.com>
+References: <1383128301-20231-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 09:16:22PM +0100, Peter Zijlstra wrote:
-> On Wed, Oct 30, 2013 at 08:50:28PM +0100, Frederic Weisbecker wrote:
-> > 
-> > Would it make sense to rather make copy_from_user_nmi() to use a return value
-> > pattern that is closer to those of the existing copy_from_user_*() ?
-> 
-> Yeah we can do that I suppose; copy_form_user_nmi() actually uses
-> __copy_from_user_inatomic() since about a week.
+On Wed, 30 Oct 2013 10:18:21 +0000 James Hogan <james.hogan@imgtec.com> wrote:
 
-Ah! Looks like we can even move copy_from_user_nmi() to asm-generic/uaccess.h then.
-Its fallback implementation after this patch is the same than the x86 one anyway.
+> Commit 3e39c1ab04ba (printk: mark printk_once test variable
+> __read_mostly) added __read_mostly to the __print_once bool in the
+> printk_once() macro, but __read_mostly is defined in <linux/cache.h>
+> which isn't included from <linux/printk.h>. This results in build errors
+> like this:
+> 
+> arch/metag/mm/l2cache.c: In function 'meta_l2c_setup':
+> arch/metag/mm/l2cache.c:56: error: '__read_mostly' undeclared
+> 
+> This is fixed by adding an include of <linux/cache.h> from
+> <linux/printk.h> since I don't think printk_once() users should need to
+> include <linux/cache.h> for it to work.
+> 
+> Note that this actually adds a recursive include, since <linux/cache.h>
+> includes <linux/kernel.h>, which includes <linux/printk.h>. The actual
+> dependencies are all in macros so it doesn't actually seem to result in
+> any build failures, but it's clearly less than ideal.
 
-Hmm but there is the range_not_ok()...
+Yitch.
 
-> 
-> Something like so I suppose.. please check, I'm in fail mode.
-> 
-> It looks like DEFINE_OUTPUT_COPY() functions already returned the bytes
-> not copied, and all its users appear to indeed expect that.
-> 
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: linux-metag@vger.kernel.org
 > ---
->  arch/x86/kernel/cpu/perf_event.c           |  4 ++--
->  arch/x86/kernel/cpu/perf_event_intel_ds.c  |  2 +-
->  arch/x86/kernel/cpu/perf_event_intel_lbr.c |  2 +-
->  arch/x86/lib/usercopy.c                    |  2 +-
->  arch/x86/oprofile/backtrace.c              |  4 ++--
->  kernel/events/internal.h                   | 35 ++++++++++++++++++++++--------
->  6 files changed, 33 insertions(+), 16 deletions(-)
+> This build failure was caught in today's linux-next.
 > 
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index 94bf3010bb39..0fa7dbe756e6 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -1998,7 +1998,7 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
->  		frame.return_address = 0;
->  
->  		bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
-> -		if (bytes != sizeof(frame))
-> +		if (bytes != 0)
->  			break;
->  
->  		if (!valid_user_frame(fp, sizeof(frame)))
-> @@ -2050,7 +2050,7 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
->  		frame.return_address = 0;
->  
->  		bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
-> -		if (bytes != sizeof(frame))
-> +		if (bytes != 0)
->  			break;
->  
->  		if (!valid_user_frame(fp, sizeof(frame)))
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> index c1760ff3c757..ae96cfa5eddd 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> @@ -789,7 +789,7 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
->  
->  		size = ip - to; /* Must fit our buffer, see above */
->  		bytes = copy_from_user_nmi(buf, (void __user *)to, size);
-> -		if (bytes != size)
-> +		if (bytes != 0)
->  			return 0;
->  
->  		kaddr = buf;
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> index 90ee6c1d0542..d82d155aca8c 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> @@ -491,7 +491,7 @@ static int branch_type(unsigned long from, unsigned long to, int abort)
->  
->  		/* may fail if text not present */
->  		bytes = copy_from_user_nmi(buf, (void __user *)from, size);
-> -		if (bytes != size)
-> +		if (bytes != 0)
->  			return X86_BR_NONE;
->  
->  		addr = buf;
-> diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
-> index 5465b8613944..ddf9ecb53cc3 100644
-> --- a/arch/x86/lib/usercopy.c
-> +++ b/arch/x86/lib/usercopy.c
-> @@ -31,6 +31,6 @@ copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
->  	ret = __copy_from_user_inatomic(to, from, n);
->  	pagefault_enable();
->  
-> -	return n - ret;
-> +	return ret;
->  }
->  EXPORT_SYMBOL_GPL(copy_from_user_nmi);
-> diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
-> index d6aa6e8315d1..5d04be5efb64 100644
-> --- a/arch/x86/oprofile/backtrace.c
-> +++ b/arch/x86/oprofile/backtrace.c
-> @@ -47,7 +47,7 @@ dump_user_backtrace_32(struct stack_frame_ia32 *head)
->  	unsigned long bytes;
->  
->  	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
-> -	if (bytes != sizeof(bufhead))
-> +	if (bytes != 0)
->  		return NULL;
->  
->  	fp = (struct stack_frame_ia32 *) compat_ptr(bufhead[0].next_frame);
-> @@ -93,7 +93,7 @@ static struct stack_frame *dump_user_backtrace(struct stack_frame *head)
->  	unsigned long bytes;
->  
->  	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
-> -	if (bytes != sizeof(bufhead))
-> +	if (bytes != 0)
->  		return NULL;
->  
->  	oprofile_add_trace(bufhead[0].return_address);
-> diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-> index ca6599723be5..569b218782ad 100644
-> --- a/kernel/events/internal.h
-> +++ b/kernel/events/internal.h
-> @@ -82,16 +82,16 @@ static inline unsigned long perf_data_size(struct ring_buffer *rb)
->  }
->  
->  #define DEFINE_OUTPUT_COPY(func_name, memcpy_func)			\
-> -static inline unsigned int						\
-> +static inline unsigned long						\
->  func_name(struct perf_output_handle *handle,				\
-> -	  const void *buf, unsigned int len)				\
-> +	  const void *buf, unsigned long len)				\
->  {									\
->  	unsigned long size, written;					\
->  									\
->  	do {								\
-> -		size = min_t(unsigned long, handle->size, len);		\
-> -									\
-> +		size    = min(handle->size, len);			\
->  		written = memcpy_func(handle->addr, buf, size);		\
-> +		written = size - written;				\
+> I'm not too keen on this due to the recursive include. Is it better to
+> just workaround the problem by including <linux/cache.h> from the .c
+> file that fails to build, or should the original patch be removed
+> instead?
 
-I assume copy_from_user_inatomic() shouldn't return negative value. I'm a bit
-confused by it's long return type but I haven't found a place where it returns
-anything else that the bytes copied. I only checked a very few archs though.
+Well, these patches make the kernel worse.  We should make it better,
+not worse.
 
->  									\
->  		len -= written;						\
->  		handle->addr += written;				\
-> @@ -110,20 +110,37 @@ func_name(struct perf_output_handle *handle,				\
->  	return len;							\
->  }
->  
-> -static inline int memcpy_common(void *dst, const void *src, size_t n)
-> +static inline unsigned long
-> +memcpy_common(void *dst, const void *src, unsigned long n)
->  {
->  	memcpy(dst, src, n);
-> -	return n;
-> +	return 0;
->  }
->  
->  DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
->  
-> -#define MEMCPY_SKIP(dst, src, n) (n)
-> +static inline unsigned long
-> +memcpy_skip(void *dst, const void *src, unsigned long n)
-> +{
-> +	return 0;
-> +}
->  
-> -DEFINE_OUTPUT_COPY(__output_skip, MEMCPY_SKIP)
-> +DEFINE_OUTPUT_COPY(__output_skip, memcpy_skip)
->  
->  #ifndef arch_perf_out_copy_user
-> -#define arch_perf_out_copy_user __copy_from_user_inatomic
-> +#define arch_perf_out_copy_user arch_perf_out_copy_user
-> +
-> +static inline unsigned long
-> +arch_perf_out_copy_user(void *dst, const void *src, unsigned long n)
-> +{
-> +	unsigned long ret;
-> +
-> +	pagefault_disable();
-> +	ret = __copy_from_user_inatomic(dst, src, n);
-> +	pagefault_enable();
-> +
-> +	return ret;
-> +}
->  #endif
+One approach would be to add a new printk_once.h, which includes
+printk.h and cache.h.
 
-Ok, that all looks good!
-
-Thanks!
-
->  
->  DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
+I can't immediately think of a nice solution so I guess for now I'll
+drop printk-mark-printk_once-test-variable-__read_mostly.patch.
