@@ -1,86 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114Ab3J3QAj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 12:00:39 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:52904 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab3J3QAi (ORCPT
+	id S1752312Ab3J3QFG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 12:05:06 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:60533 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab3J3QFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 12:00:38 -0400
-Message-ID: <52712D1C.9000802@mentor.com>
-Date: Wed, 30 Oct 2013 21:00:28 +0500
-From: Abbas Raza <abbas_raza@mentor.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 30 Oct 2013 12:05:04 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: mingo@redhat.com, peterz@infradead.org, Xie XiuQi <xiexiuqi@huawei.com>
-Subject: Re: [PATCH] kthread_bind: don't wait in kthread_bind for presmp initcalls
-References: <1380300451-396-1-git-send-email-abbas_raza@mentor.com>
-In-Reply-To: <1380300451-396-1-git-send-email-abbas_raza@mentor.com>
+In-Reply-To: <1383130745-32165-1-git-send-email-treding@nvidia.com>
+References: <1383130745-32165-1-git-send-email-treding@nvidia.com>
+Date: Wed, 30 Oct 2013 14:05:02 -0200
+Message-ID: <CA+gsUGSjJmqu9Ph0znE5XJJOJdeh-UT3z2Cjm7sEMB4F+ZtAvg@mail.gmail.com>
+Subject: Re: [PATCH] drm/sysfs: Do not drop device reference twice
+From: Paulo Zanoni <przanoni@gmail.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: David Airlie <airlied@linux.ie>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 30 Oct 2013 16:00:34.0393 (UTC) FILETIME=[2AB2F490:01CED589]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2013/10/30 Thierry Reding <thierry.reding@gmail.com>:
+> device_unregister() already drops its reference to the struct device, so
+> explicitly calling put_device() before device_unregister() can cause the
+> device to have been freed before it can be unregistered.
+>
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
 
-Any thoughts here please?
+I started investigating this problem yesterday and reached the same
+conclusion. The connector path can be easily reproduced on i915.ko:
+get a machine that has an eDP panel, physically disconnect the panel,
+boot the machine, "modprobe i915" and watch the segfault.
 
-Thanks .
-Abbas Raza
+Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Tested-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
 
-On 09/27/2013 09:47 PM, Abbas Raza wrote:
-> From: Abbas Raza <Abbas_Raza@mentor.com>
->
-> wait_task_inactive shouldn't be called in __kthread_bind for presmp
-> initcalls the same way it is done in !SMP case.
->
-> more info here:
-> http://permalink.gmane.org/gmane.linux.kernel.embedded/4046
->
-> This patch improves boot time for pre-smp initcalls as given below
->
-> boot time with this patch:
->
-> calling  spawn_ksoftirqd+0x0/0x30 @ 1
-> initcall spawn_ksoftirqd+0x0/0x30 returned 0 after 0 usecs
->
-> boot time without this patch:
->
-> calling  spawn_ksoftirqd+0x0/0x30 @ 1
-> initcall spawn_ksoftirqd+0x0/0x30 returned 0 after 19531 usecs
->
-> Signed-off-by: Abbas Raza <Abbas_Raza@mentor.com>
+I didn't really bisect, but I believe this is probably a regression
+from "drm/sysfs: sort out minor and connector device object
+lifetimes".
+
+And kudos to whoever invented CONFIG_DEBUG_KOBJECT :)
+
 > ---
->  kernel/kthread.c | 14 ++++++++++----
->  1 file changed, 10 insertions(+), 4 deletions(-)
+>  drivers/gpu/drm/drm_sysfs.c | 2 --
+>  1 file changed, 2 deletions(-)
 >
-> diff --git a/kernel/kthread.c b/kernel/kthread.c
-> index 760e86d..28b5c4b 100644
-> --- a/kernel/kthread.c
-> +++ b/kernel/kthread.c
-> @@ -290,11 +290,17 @@ EXPORT_SYMBOL(kthread_create_on_node);
->  
->  static void __kthread_bind(struct task_struct *p, unsigned int cpu, long state)
->  {
-> -	/* Must have done schedule() in kthread() before we set_task_cpu */
-> -	if (!wait_task_inactive(p, state)) {
-> -		WARN_ON(1);
-> -		return;
-> +	if (!((num_online_cpus() == 1) && !cpu)) {
-> +		/*
-> +		 * Must have done schedule() in kthread() before
-> +		 * we set_task_cpu
-> +		 */
-> +		if (!wait_task_inactive(p, state)) {
-> +			WARN_ON(1);
-> +			return;
-> +		}
->  	}
-> +
->  	/* It's safe because the task is inactive. */
->  	do_set_cpus_allowed(p, cpumask_of(cpu));
->  	p->flags |= PF_NO_SETAFFINITY;
+> diff --git a/drivers/gpu/drm/drm_sysfs.c b/drivers/gpu/drm/drm_sysfs.c
+> index dae42c7..db1c8f9 100644
+> --- a/drivers/gpu/drm/drm_sysfs.c
+> +++ b/drivers/gpu/drm/drm_sysfs.c
+> @@ -439,7 +439,6 @@ err_out_files:
+>                 device_remove_file(connector->kdev, &connector_attrs_opt1[i]);
+>         for (i = 0; i < attr_cnt; i++)
+>                 device_remove_file(connector->kdev, &connector_attrs[i]);
+> -       put_device(connector->kdev);
+>         device_unregister(connector->kdev);
+>
+>  out:
+> @@ -472,7 +471,6 @@ void drm_sysfs_connector_remove(struct drm_connector *connector)
+>         for (i = 0; i < ARRAY_SIZE(connector_attrs); i++)
+>                 device_remove_file(connector->kdev, &connector_attrs[i]);
+>         sysfs_remove_bin_file(&connector->kdev->kobj, &edid_attr);
+> -       put_device(connector->kdev);
+>         device_unregister(connector->kdev);
+>         connector->kdev = NULL;
+>  }
+> --
+> 1.8.4
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
 
+
+
+-- 
+Paulo Zanoni
