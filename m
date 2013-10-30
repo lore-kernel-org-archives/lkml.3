@@ -1,96 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab3J3Bm1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 21:42:27 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35612 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab3J3Bm0 (ORCPT
+	id S1753273Ab3J3Boy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 21:44:54 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:60751 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752894Ab3J3Box (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 21:42:26 -0400
-Message-ID: <527063FB.7070400@infradead.org>
-Date: Tue, 29 Oct 2013 18:42:19 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 29 Oct 2013 21:44:53 -0400
+X-Spam-Score: -100.8
+Message-ID: <52706456.5060802@asianux.com>
+Date: Wed, 30 Oct 2013 09:43:50 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: David Cohen <david.a.cohen@linux.intel.com>, broonie@kernel.org
-CC: ning.li@intel.com, linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        Fei Yang <fei.yang@intel.com>
-Subject: Re: [PATCH 1/2] spi: add Intel Mid SSP driver
-References: <1383069950-27754-1-git-send-email-david.a.cohen@linux.intel.com>
-In-Reply-To: <1383069950-27754-1-git-send-email-david.a.cohen@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Francois Bedard <Francois.Bedard@synopsys.com>
+CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
+        joern Rennecke <joern.rennecke@embecosm.com>
+Subject: Re: [Suggestion] arc: compiler: bug: about an arc compiler's bug
+ which is not in gcc main source code.
+References: <523FD9E7.3050303@asianux.com> <523FDBD7.4040602@asianux.com> <C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com> <523FE578.5060801@asianux.com> <52672DAC.1030307@asianux.com> <3B8191AEEF8AD9429F893BDAAB473CA258E064A4@US01WEMBX2.internal.synopsys.com> <52673E9B.6040800@asianux.com>
+In-Reply-To: <52673E9B.6040800@asianux.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/13 11:05, David Cohen wrote:
+On 10/23/2013 11:12 AM, Chen Gang wrote:
+> On 10/23/2013 10:51 AM, Francois Bedard wrote:
+>> Our sources are on github at https://github.com/foss-for-synopsys-dwc-arc-processors  and you can report problems by opening "Issues" with command lines and log outputs below against relevant toolchain component:
+>>
+>> For GCC:  https://github.com/foss-for-synopsys-dwc-arc-processors/gcc/issues?state=open
+>> For binutils: https://github.com/foss-for-synopsys-dwc-arc-processors/binutils/issues?page=1&state=open 
+>>
+>> Go ahead and officially file these and we'll take a look at them. 
+> 
 
-a few more comments:
+Hello Francois, I marked them at 2013-10-26 night (China time).
 
-> +static unsigned int ssp_get_clk_div(int speed)
-> +{
-> +	return max(100000000 / speed, 4) - 1;
+  for gcc (3 issues, but #28 duplicates with #26): 
 
-Divide uses library call?  I dunno...
-Bad if so.  Would need to use some function from
-#include <asm-generic/div64.h>
+    https://github.com/foss-for-synopsys-dwc-arc-processors/gcc/issues/26
+    https://github.com/foss-for-synopsys-dwc-arc-processors/gcc/issues/27
+    https://github.com/foss-for-synopsys-dwc-arc-processors/gcc/issues/28
 
-> +}
+  for binutils (1 issue):
 
-> +/**
-> + * setup() - Driver setup procedure
-> + * @spi:	Pointeur to the spi_device struct
-
-		Pointer
-
-> + */
-> +static int setup(struct spi_device *spi)
-> +{
-> +}
-> +/**
-> + * ssp_spi_probe() - Driver probe procedure
-> + * @pdev:	Pointer to the pci_dev struct
-> + * @ent:	Pointer to the pci_device_id struct
-> + */
-> +static int ssp_spi_probe(struct pci_dev *pdev,
-> +	const struct pci_device_id *ent)
-> +{
-> +	/* Set platform & configuration quirks */
-> +	if (sspc->quirks & QUIRKS_PLATFORM_MRST) {
-> +		/* Apply bit banging workarround on MRST */
-
-		                     workaround
-
-> +		sspc->quirks |= QUIRKS_BIT_BANGING;
-> +		/* MRST slave mode workarrounds */
-
-		                   workarounds
-
-> +		if (ssp_cfg_is_spi_slave(ssp_cfg))
-> +			sspc->quirks |= QUIRKS_USE_PM_QOS |
-> +					QUIRKS_SRAM_ADDITIONAL_CPY;
-> +	}
-> +	if (intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_TANGIER)
-> +		ssp_timing_wr = 1;
-> +
-> +	if (status < 0) {
-> +		dev_err(&pdev->dev, "can not get IRQ\n");
-
-		                     cannot
-
-> +		goto err_free_4;
-> +	}
-> +
-> +}
-
-> +MODULE_AUTHOR("Ken Mills");
-> +MODULE_DESCRIPTION("Bulverde SSP core SPI contoller");
-
-                                             controller
-
-> +MODULE_LICENSE("GPL");
+    https://github.com/foss-for-synopsys-dwc-arc-processors/binutils/issues/21
 
 
+Hello Joern, for current shrinking status:
+
+  for gcc issue #26, (#28 is its duplication):
+
+    issue command: arc-elf32-gcc -Os -fno-reorder-blocks -c systohc.i
+    source code:   systohc.i contents 41 lines (past it on website).
+    whether GNU:   only for arc, gnu no issue: gnu gcc-4.8/4.9 are OK.
+
+  for gcc issue #27:
+
+    issue command: arc-elf32-gcc -Os -c target_core_pr.i
+    status:        just shrinking code.
+                   will/should be finish within 2013-10-31.
+                   welcome any suggestions or completions.
+
+  for binutils issue #21:
+
+    it seems simple enough, if still need shrinking, please let me know.
+
+
+It seems no response, and I am a newbie about the website, need I do
+something more for them? (e.g. cc to some members, although I don't
+know how to cc).
+
+> I will/should go ahead, hope I can finish reporting them within this
+> week (2013-10-27)
+> 
+> Thanks.
+> 
+
+Thanks.
 -- 
-~Randy
+Chen Gang
