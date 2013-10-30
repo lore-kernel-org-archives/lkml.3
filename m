@@ -1,119 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872Ab3J3F3w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 01:29:52 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:41740 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750723Ab3J3F3u (ORCPT
+	id S1752113Ab3J3Fde (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 01:33:34 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:50203 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735Ab3J3Fdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 01:29:50 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Tejun Heo <tj@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <20131029220939.GA23060@kroah.com>
-	<8761sflhi1.fsf@tw-ebiederman.twitter.com>
-	<CA+55aFwaxAoezL6GAJzw=D+7E_Oxr2sqdxvM3sFgPiO-1eh5LQ@mail.gmail.com>
-Date: Tue, 29 Oct 2013 22:29:43 -0700
-In-Reply-To: <CA+55aFwaxAoezL6GAJzw=D+7E_Oxr2sqdxvM3sFgPiO-1eh5LQ@mail.gmail.com>
-	(Linus Torvalds's message of "Tue, 29 Oct 2013 18:25:53 -0700")
-Message-ID: <87sivj9vi0.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 30 Oct 2013 01:33:33 -0400
+Message-ID: <52709A23.9060204@linux.vnet.ibm.com>
+Date: Wed, 30 Oct 2013 11:03:23 +0530
+From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/3h0CTUfsPZTWIUI4o+UNkiYtJikIznPE=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Linus Torvalds <torvalds@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] sysfs: move assignment to be under lock in sysfs_remove_dir()
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Christian Kujau <lists@nerdbynature.de>
+CC: LKML <linux-kernel@vger.kernel.org>, mmarek@suse.cz,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH] scripts/kconfig/menu.c: warning: jump may be used uninitialized
+ in this function
+References: <alpine.DEB.2.11.1310271822540.31521@trent.utfs.org> <alpine.DEB.2.11.1310271859320.31521@trent.utfs.org> <20131029175354.GB3411@free.fr>
+In-Reply-To: <20131029175354.GB3411@free.fr>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13103005-9264-0000-0000-000004D34069
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
-
-> On Tue, Oct 29, 2013 at 5:39 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
+On Tuesday 29 October 2013 11:23 PM, Yann E. MORIN wrote:
+> Christian, All,
+> 
+> On 2013-10-27 19:02 -0700, Christian Kujau spake thusly:
+>> On Sun, 27 Oct 2013 at 18:28, Christian Kujau wrote:
+>>> While doing "make oldconfig" on 3.12-rc7 with gcc-4.7.2 (Debian), the 
+>>> following warning is printed:
+>>>
+>>>   HOSTCC  scripts/kconfig/zconf.tab.o
+>>> In file included from scripts/kconfig/zconf.tab.c:2537:0:
+>>> /usr/local/src/linux-git/scripts/kconfig/menu.c: In function ‘get_symbol_str’:
+>>> /usr/local/src/linux-git/scripts/kconfig/menu.c:586:18: warning: ‘jump’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>>> /usr/local/src/linux-git/scripts/kconfig/menu.c:547:19: note: ‘jump’ was declared here
 >>
->> I don't have a strong feeling either way but how would that matter?
->> There is only ever one sd associated with a kobj.
->
-> What does that matter? If you have multiple callers, they might try to
-> free that one sd twice, since they could both see a non-NULL case.
+>> Grrr, only after I sent this message I found this was reported in 
+>> September already by Madhavan Srinivasan:  https://lkml.org/lkml/2013/9/19/24
+>>
+>> Does anybody know the state of this fix?
+> 
+My bad, somehow this slipped from my todo list.
 
->> And we better be under the sysfs_mutex when the assignment and and
->> sysfs_remove_dir are called.
->
-> Not as far as I can tell. kobject_del() calls sysfs_remove_dir(), and
-> I'm not seeing why that would be under the mutex.  The only locking I
-> see is that sysfs_assoc_lock, which _isn't_ held for the reading of
-> kobj->sd.
->
-> Now, there may be other reasons for this all working (like the fact
-> that only one user ever calls kobject_del() on any particular object,
-> but it sure as hell isn't obvious. The fact that you seem to be
-> confused about this only proves my point.
+> The solution was to properly comment that this was a gcc issue, in that 
+> this is a spurious error, does not appear in previous gcc versions, and
+> has been fixed in later gcc versions.
+> 
+I also notice this with gcc 4.8.1 (20131002) build.
 
-I never actually looked deeply into it, and I was working from several
-year old memory and a quick skim of the patch when I asked the question.
-
-The protection we have previous to this patch is that syfs_remove_dir is
-only sane to call once.
-
-Which makes the code that does:
-	if (!dir_sd)
-        	return;
-in __sysfs_remove_dir very suspicious.   I expect we want a
-WARN_ON(!dir_sd);
-
-But the entire directory removal process and working on sysfs stopped
-being fun before I managed to get that cleaned up.  And unless I missed
-something go by Tejun is going to go generalize this thing before this
-bit gets cleaned up.  Sigh.
-
-> Besides, the "design pattern" of having a lock for the assignment, but
-> then reading the value without that lock seems to be all kinds of
-> f*cking stupid, wouldn't you agree? I'm really not seeing how that
-> could _ever_ be something you make excuses for in the first place.
-> Even if there is some external locking (which, as far as I can tell,
-> there is not), that would just raise the question as to what reason
-> that spinlock has to exist at all.
-
-I wasn't making excuses I was just trying to understand the reasoning
-for this little patch flying through my inbox.
-
-On an equally bizarre note.  I don't understand why we have a separate
-spinlock there.  Looks...  Sigh.  We use a different lock from
-everything as a premature optimization so that sysfs_remove_dir could be
-modified to just take a sysfs_dirent, and all of the kobject handling
-could be removed.
-
-Sigh. It was never in my way and while I was working on the code that
-there was a good locking reason for doing that silly thing.
-
-> The code doesn't make any sense with the locking the way it is now. It
-> might _work_, of course, but it sure as hell doesn't make sense.
-
-In net I agree.
-
-Eric
-
-
-
-
+> Setting 'jump' to NULL may hide reall issues in case the code is changed
+> in the future, so it is not appropriate a fix. Hence why the previously-
+> submitted patches were not applied.
+> 
+> I'll take this on me to properly fix this. Thanks for the heads up.
+> 
+> Regards,
+> Yann E. MORIN.
+> 
 
