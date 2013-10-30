@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab3J3J3l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 05:29:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18392 "EHLO mx1.redhat.com"
+	id S1753550Ab3J3Jam (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 05:30:42 -0400
+Received: from mail.lemote.com ([222.92.8.138]:58881 "EHLO mail.lemote.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751730Ab3J3J3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 05:29:39 -0400
-Date: Wed, 30 Oct 2013 11:28:48 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, konrad.wilk@oracle.com,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Subject: Re: [PATCH 6/7] x86, asmlinkage, xen, kvm: Make
- {xen,kvm}_lock_spinning global and visible
-Message-ID: <20131030092848.GD4651@redhat.com>
-References: <1382458079-24450-1-git-send-email-andi@firstfloor.org>
- <1382458079-24450-7-git-send-email-andi@firstfloor.org>
+	id S1751908Ab3J3Jal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 05:30:41 -0400
+X-Greylist: delayed 379 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Oct 2013 05:30:41 EDT
+Message-ID: <fd7ba5f27786bbd812c19dcd6c589eb2.squirrel@mail.lemote.com>
+In-Reply-To: <alpine.DEB.2.02.1310291402490.8257@ionos.tec.linutronix.de>
+References: <1380334284-12690-1-git-send-email-chenhc@lemote.com>
+    <alpine.DEB.2.02.1310291402490.8257@ionos.tec.linutronix.de>
+Date: Wed, 30 Oct 2013 17:24:17 +0800
+Subject: Re: [PATCH] genirq: Avoid NULL OOPS in irq handling
+From: =?gb2312?Q?=22=B3=C2=BB=AA=B2=C5=22?= <chenhc@lemote.com>
+To: "Thomas Gleixner" <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382458079-24450-7-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain;charset=gb2312
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 09:07:58AM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> These functions are called from inline assembler stubs, thus
-> need to be global and visible.
-> 
-> Cc: konrad.wilk@oracle.com
-> Cc: gleb@redhat.com
-> Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Acked-by: Gleb Natapov <gleb@redhat.com>
+I use a Loongson-3(MIPS-series CPU) machine, there is a serial port
+integrated in the CPU (but it iss buggy), and it use handle_percpu_irq()
+as the irq handler. Maybe I should move the checking into
+handle_percpu_irq()?
 
-> ---
->  arch/x86/kernel/kvm.c   | 2 +-
->  arch/x86/xen/spinlock.c | 2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index a0e2a8a..5d10bb5 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -673,7 +673,7 @@ static cpumask_t waiting_cpus;
->  /* Track spinlock on which a cpu is waiting */
->  static DEFINE_PER_CPU(struct kvm_lock_waiting, klock_waiting);
->  
-> -static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
-> +__visible void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
->  {
->  	struct kvm_lock_waiting *w;
->  	int cpu;
-> diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-> index be6b860..3ab9309 100644
-> --- a/arch/x86/xen/spinlock.c
-> +++ b/arch/x86/xen/spinlock.c
-> @@ -106,7 +106,7 @@ static DEFINE_PER_CPU(struct xen_lock_waiting, lock_waiting);
->  static cpumask_t waiting_cpus;
->  
->  static bool xen_pvspin = true;
-> -static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
-> +__visible void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
->  {
->  	int irq = __this_cpu_read(lock_kicker_irq);
->  	struct xen_lock_waiting *w = &__get_cpu_var(lock_waiting);
-> -- 
-> 1.8.3.1
+Huacai
 
---
-			Gleb.
+> On Sat, 28 Sep 2013, Huacai Chen wrote:
+>
+>> Some devices (e.g. serial port) setup irq handler at dev open and free
+>> it at dev close. So, sometimes there is no irqaction for a specific
+>> irq. But some buggy devices may send irqs at any time. This patch avoid
+>> the NULL OOPS when irqaction isn't registered.
+>
+> All callers except the real per cpu interrupts are checking whether
+> there is a valid action before calling. And serial ports are not
+> routed to real per cpu interrupts. Can you provide more detailed
+> information about the problem you are trying to solve please?
+>
+> Thanks,
+>
+> 	tglx
+>
+>> Signed-off-by: Huacai Chen <chenhc@lemote.com>
+>> ---
+>>  kernel/irq/handle.c |    4 ++++
+>>  1 files changed, 4 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
+>> index 131ca17..1c78e69 100644
+>> --- a/kernel/irq/handle.c
+>> +++ b/kernel/irq/handle.c
+>> @@ -135,6 +135,9 @@ handle_irq_event_percpu(struct irq_desc *desc,
+>> struct irqaction *action)
+>>  	irqreturn_t retval = IRQ_NONE;
+>>  	unsigned int flags = 0, irq = desc->irq_data.irq;
+>>
+>> +	if (!action)
+>> +		goto out;
+>> +
+>>  	do {
+>>  		irqreturn_t res;
+>>
+>> @@ -174,6 +177,7 @@ handle_irq_event_percpu(struct irq_desc *desc,
+>> struct irqaction *action)
+>>
+>>  	add_interrupt_randomness(irq, flags);
+>>
+>> +out:
+>>  	if (!noirqdebug)
+>>  		note_interrupt(irq, desc, retval);
+>>  	return retval;
+>> --
+>> 1.7.7.3
+>>
+>>
+>
+
+
