@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab3KALPo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 07:15:44 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:53909 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947Ab3KALPm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 07:15:42 -0400
-Date: Wed, 30 Oct 2013 23:16:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Victor Kaplansky <VICTORK@il.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: perf events ring buffer memory barrier on powerpc
-Message-ID: <20131031061602.GU4126@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131025173749.GG19466@laptop.lan>
- <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com>
- <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com>
- <20131028132634.GO19466@laptop.lan>
- <20131028163418.GD4126@linux.vnet.ibm.com>
- <20131028201735.GA15629@redhat.com>
- <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com>
- <20131030092725.GL4126@linux.vnet.ibm.com>
- <20131030112526.GI16117@laptop.programming.kicks-ass.net>
- <OFF6C78E48.E477DB1E-ON42257C14.0050F9B3-42257C14.0051AC6D@il.ibm.com>
+	id S1755439Ab3KAWL2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:11:28 -0400
+Received: from nm34.bullet.mail.ne1.yahoo.com ([98.138.229.27]:23210 "EHLO
+	nm34.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751830Ab3KAWLY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 18:11:24 -0400
+X-Yahoo-Newman-Property: ymail-4
+X-Yahoo-Newman-Id: 653133.12649.bm@omp1023.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=y7mail.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=XrDAbMGPeQw9I5EMjXcDRQoQ2xb0ZKSbf1E4/dUR7PakQtC4QF1cwGZoYdLNtV7++moLAgH5aXFvFXeoLCxyOgXQGYpd2bLh3S3qpI7kzYJEeEB9lO9mmH6dgT5Wm+9BvfKTTkVcGTIKqfLlX5KX2EIgUvdUwpQSmfDQhxQhxbw=;
+X-YMail-OSG: u3VXytoVM1noLLXQX7E59.dFXhH8etVs7iZjpKL46e3djD6
+ mNJCzJSjlnX6ESxLLqcAGTnv7TYspWKKrkYXAENIfkbx3qQOexUoP7.e0sLf
+ kJBQ-
+X-Rocket-MIMEInfo: 002.001,DQpEZWFyIEZyaWVuZCwNCiAgICAgICAgICAgICAgICAgICAgICAgICAgR3JlZXRpbmcgdG8geW91ISEhDQoNCkkga25vdyB0aGF0IHRoaXMgbWFpbCB3aWxsIGNvbWUgdG8geW91IGFzIGEgc3VycHJpc2UgYXMgd2UgbmV2ZXIgbWV0IGJlZm9yZS4gSSBhbSB0IE1yLiBLZWJhIEJhIGhlIENoaWVmIHJlcHJlc2VudGF0aXZlIG9mIHRoZSBBZnJpY2FuIERldmVsb3BtZW50IEJhbmsgZm9yIENlbnRyYWwgYW5kIFdlc3QgQWZyaWNhbiBEaXZpc2lvbiwgSSBIb3BlZCB0aGF0IHlvdSB3aWxsIG5vdCBleHBvc2Ugb3IBMAEBAQE-
+X-RocketYMMF: ibrahim_dabashi@y7mail.com
+X-Mailer: YahooMailClassic/362 YahooMailWebService/0.8.160.587
+Message-ID: <1383149605.67608.YahooMailBasic@web162906.mail.bf1.yahoo.com>
+Date: Wed, 30 Oct 2013 09:13:25 -0700 (PDT)
+From: Mr Keba Ba <dir.keba1@gmail.com>
+Reply-To: keba.ba1@laposte.net
+Subject: I GOT YOUR CONTACT... I WAIT OK!
+To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <OFF6C78E48.E477DB1E-ON42257C14.0050F9B3-42257C14.0051AC6D@il.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110111-0928-0000-0000-00000326B11D
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 04:52:05PM +0200, Victor Kaplansky wrote:
-> Peter Zijlstra <peterz@infradead.org> wrote on 10/30/2013 01:25:26 PM:
-> 
-> > Also, I'm not entirely sure on C, that too seems like a dependency, we
-> > simply cannot read the buffer @tail before we've read the tail itself,
-> > now can we? Similarly we cannot compare tail to head without having the
-> > head read completed.
-> 
-> No, this one we cannot omit, because our problem on consumer side is not
-> with @tail, which is written exclusively by consumer, but with @head.
-> 
-> BTW, it is why you also don't need ACCESS_ONCE() around @tail, but only
-> around
-> @head read.
 
-If you omit the ACCESS_ONCE() calls around @tail, the compiler is within
-its rights to combine adjacent operations and also to invent loads and
-stores, for example, in cases of register pressure.  It is also within
-its rights to do piece-at-a-time loads and stores, which might sound
-unlikely, but which can actually has happened when the compiler figures
-out exactly what is to be stored at compile time, especially on hardware
-that only allows small immediate values.
+Dear Friend,
+                          Greeting to you!!!
 
-So the ACCESS_ONCE() calls are not optional, the current contents of
-Documentation/circular-buffers.txt notwithstanding.
+I know that this mail will come to you as a surprise as we never met before. I am t Mr. Keba Ba he Chief representative of the African Development Bank for Central and West African Division, I Hoped that you will not expose or betray this trust and confident that I am about to repose on you for the mutual benefit of our both families and for the less privilege, I need your urgent assistance in transferring the sum of Two Million state dollars ($10,000.000) Immediately to your account. For comprehensive Detail, Go through the following website. (http://www.afdb.org/en/news-and-events/article/burkina-faso-receives-us-50-66-million-grant-for-drainage-of-ouagadougou-districts-12353/)
+        As I am talking to you right the contractor died last week in Mali, The $10m was credited in his contract CBI Bank account before the event, I am the head of the project that is going on right now, Please I would like you to keep this proposal as a top secret and delete it if you are not interested. Upon receipt of your reply, I will send you the application form you will fill and send to the bank for transfer of the fund into your bank account and also note that you will have 40% of the above mentioned amount if you agree to help me execute this business. And also 10% had been mapped out for you for the expense you will make in this transaction and 50% is for me.  I want us to complete the transaction within a week, very urgent nobody is aware if he has cash the money before his death, except me that knew and have all the information, I need your information’s so that I will send you the application form.
 
-							Thanx, Paul
+Now my questions are:-
+1. Can you handle this project? ……………
+2. Can I give you this trust? ………………
+
+Waiting for your urgent response so that we will proceed immediately, for confidentiality my contact info is on the bank website (www.afdb.org) What I need is confident and honest, I am very serious, I wait for your respond and call me as soon as possible.
+
+Best Regards, 
+Mr. Keba Ba
++226 64558872
 
