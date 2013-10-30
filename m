@@ -1,206 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab3J3Aut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 20:50:49 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:63572 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753259Ab3J3Aur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 20:50:47 -0400
-X-IronPort-AV: E=Sophos;i="4.93,597,1378857600"; 
-   d="scan'208";a="68690592"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next RFC 3/5] xen-netback: Remove old TX grant copy definitons
-Date: Wed, 30 Oct 2013 00:50:18 +0000
-Message-ID: <1383094220-14775-4-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1383094220-14775-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1383094220-14775-1-git-send-email-zoltan.kiss@citrix.com>
+	id S1753407Ab3J3Axr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 20:53:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:33172 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab3J3Axq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 20:53:46 -0400
+From: Michael Hudson-Doyle <michael.hudson@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Will Deacon <will.deacon@arm.com>, Jean Pihet <jean.pihet@linaro.org>
+Subject: perf confused by modules being loaded in between addresses in /proc/kallsyms
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/24.3.50.2 (x86_64-pc-linux-gnu)
+Date: Tue, 29 Oct 2013 17:53:39 -0700
+Message-ID: <87ob67y3xo.fsf@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These became obsolate with grant mapping.
+Hi,
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
- drivers/net/xen-netback/common.h  |   37 +---------------------------
- drivers/net/xen-netback/netback.c |   48 ++-----------------------------------
- 2 files changed, 3 insertions(+), 82 deletions(-)
+On arm, probably since "ARM: use linker magic for vectors and vector
+stubs" (although I haven't checked this), perf report tends to allocate
+all kernel time to the module loaded at the highest address.
 
-diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index 36a3fda..e82c82c 100644
---- a/drivers/net/xen-netback/common.h
-+++ b/drivers/net/xen-netback/common.h
-@@ -46,39 +46,9 @@
- #include <xen/xenbus.h>
- 
- typedef unsigned int pending_ring_idx_t;
--#define INVALID_PENDING_RING_IDX (~0U)
- 
--/* For the head field in pending_tx_info: it is used to indicate
-- * whether this tx info is the head of one or more coalesced requests.
-- *
-- * When head != INVALID_PENDING_RING_IDX, it means the start of a new
-- * tx requests queue and the end of previous queue.
-- *
-- * An example sequence of head fields (I = INVALID_PENDING_RING_IDX):
-- *
-- * ...|0 I I I|5 I|9 I I I|...
-- * -->|<-INUSE----------------
-- *
-- * After consuming the first slot(s) we have:
-- *
-- * ...|V V V V|5 I|9 I I I|...
-- * -----FREE->|<-INUSE--------
-- *
-- * where V stands for "valid pending ring index". Any number other
-- * than INVALID_PENDING_RING_IDX is OK. These entries are considered
-- * free and can contain any number other than
-- * INVALID_PENDING_RING_IDX. In practice we use 0.
-- *
-- * The in use non-INVALID_PENDING_RING_IDX (say 0, 5 and 9 in the
-- * above example) number is the index into pending_tx_info and
-- * mmap_pages arrays.
-- */
- struct pending_tx_info {
--	struct xen_netif_tx_request req; /* coalesced tx request */
--	pending_ring_idx_t head; /* head != INVALID_PENDING_RING_IDX
--				  * if it is head of one or more tx
--				  * reqs
--				  */
-+	struct xen_netif_tx_request req; /* tx request */
- 	/* callback data for released SKBs. The	callback is always
- 	 * xenvif_zerocopy_callback, ctx points to the next fragment, desc
- 	 * contains the pending_idx
-@@ -128,11 +98,6 @@ struct xenvif {
- 	struct pending_tx_info pending_tx_info[MAX_PENDING_REQS];
- 	grant_handle_t grant_tx_handle[MAX_PENDING_REQS];
- 
--	/* Coalescing tx requests before copying makes number of grant
--	 * copy ops greater or equal to number of slots required. In
--	 * worst case a tx request consumes 2 gnttab_copy.
--	 */
--	struct gnttab_copy tx_copy_ops[2*MAX_PENDING_REQS];
- 	struct gnttab_unmap_grant_ref tx_unmap_ops[MAX_PENDING_REQS];
- 	struct gnttab_map_grant_ref tx_map_ops[MAX_PENDING_REQS];
- 	/* passed to gnttab_[un]map_refs with pages under (un)mapping */
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index e544e9f..c91dd36 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -70,16 +70,6 @@ module_param(fatal_skb_slots, uint, 0444);
-  */
- #define XEN_NETBK_LEGACY_SLOTS_MAX XEN_NETIF_NR_SLOTS_MIN
- 
--/*
-- * If head != INVALID_PENDING_RING_IDX, it means this tx request is head of
-- * one or more merged tx requests, otherwise it is the continuation of
-- * previous tx request.
-- */
--static inline int pending_tx_is_head(struct xenvif *vif, RING_IDX idx)
--{
--	return vif->pending_tx_info[idx].head != INVALID_PENDING_RING_IDX;
--}
--
- static void xenvif_idx_release(struct xenvif *vif, u16 pending_idx,
- 			       u8 status);
- 
-@@ -856,19 +846,6 @@ static int xenvif_count_requests(struct xenvif *vif,
- 	return slots;
- }
- 
--static struct page *xenvif_alloc_page(struct xenvif *vif,
--				      u16 pending_idx)
--{
--	struct page *page;
--
--	page = alloc_page(GFP_ATOMIC|__GFP_COLD);
--	if (!page)
--		return NULL;
--	vif->mmap_pages[pending_idx] = page;
--
--	return page;
--}
--
- static inline void xenvif_tx_create_gop(struct xenvif *vif, u16 pending_idx,
- 	       struct xen_netif_tx_request *txp,
- 	       struct gnttab_map_grant_ref *gop)
-@@ -891,13 +868,9 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
- 	struct skb_shared_info *shinfo = skb_shinfo(skb);
- 	skb_frag_t *frags = shinfo->frags;
- 	u16 pending_idx = *((u16 *)skb->data);
--	u16 head_idx = 0;
--	int slot, start;
--	struct page *page;
--	pending_ring_idx_t index, start_idx = 0;
--	uint16_t dst_offset;
-+	int start;
-+	pending_ring_idx_t index;
- 	unsigned int nr_slots;
--	struct pending_tx_info *first = NULL;
- 
- 	/* At this point shinfo->nr_frags is in fact the number of
- 	 * slots, which can be as large as XEN_NETBK_LEGACY_SLOTS_MAX.
-@@ -918,18 +891,6 @@ static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
- 	BUG_ON(shinfo->nr_frags > MAX_SKB_FRAGS);
- 
- 	return gop;
--err:
--	/* Unwind, freeing all pages and sending error responses. */
--	while (shinfo->nr_frags-- > start) {
--		xenvif_idx_release(vif,
--				frag_get_pending_idx(&frags[shinfo->nr_frags]),
--				XEN_NETIF_RSP_ERROR);
--	}
--	/* The head too, if necessary. */
--	if (start)
--		xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_ERROR);
--
--	return NULL;
- }
- 
- static int xenvif_tx_check_gop(struct xenvif *vif,
-@@ -942,7 +903,6 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
- 	struct pending_tx_info *tx_info;
- 	int nr_frags = shinfo->nr_frags;
- 	int i, err, start;
--	u16 peek; /* peek into next tx request */
- 
- 	/* Check status of header. */
- 	err = gop->status;
-@@ -964,11 +924,9 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
- 
- 	for (i = start; i < nr_frags; i++) {
- 		int j, newerr;
--		pending_ring_idx_t head;
- 
- 		pending_idx = frag_get_pending_idx(&shinfo->frags[i]);
- 		tx_info = &vif->pending_tx_info[pending_idx];
--		head = tx_info->head;
- 
- 		/* Check error status: if okay then remember grant handle. */
- 			newerr = (++gop)->status;
-@@ -1396,7 +1354,6 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif)
- 		< MAX_PENDING_REQS)) {
- 		struct xen_netif_tx_request txreq;
- 		struct xen_netif_tx_request txfrags[XEN_NETBK_LEGACY_SLOTS_MAX];
--		struct page *page;
- 		struct xen_netif_extra_info extras[XEN_NETIF_EXTRA_TYPE_MAX-1];
- 		u16 pending_idx;
- 		RING_IDX idx;
-@@ -1759,7 +1716,6 @@ static void xenvif_idx_release(struct xenvif *vif, u16 pending_idx,
- {
- 	struct pending_tx_info *pending_tx_info;
- 	pending_ring_idx_t index;
--	u16 peek; /* peek into next tx request */
- 
- 		pending_tx_info = &vif->pending_tx_info[pending_idx];
- 		make_tx_response(vif, &pending_tx_info->req, status);
+This turns out to be because the "perf_event__synthesize_modules"
+generates a PERF_RECORD_MMAP for the last module thats runs from its
+start to the end of the address space.
+
+This in turn turns out be because the first symbol in /proc/kallsyms is
+now at 0:
+
+# head -n 2 /proc/kallsyms
+00000000 t __vectors_start
+c00081c0 T asm_do_IRQ
+
+/This/ means that the kallsyms entry in machine->kmaps[MAP__FUNCTION] is
+now the first entry rather than the last in the map, so the last module
+is the last in the map and so its "end" stays as ~0ULL.
+
+I'm told that there is no particularly good reason for __vectors_start
+to be in kallsyms at 0, but in any case this seems like a bug in the
+user space tool.  I notice that there is code to split the kallsyms
+symbols around symbols from modules (dso__split_kallsyms) but this
+doesn't seem to be called for record, only report.  Is the fix as simple
+as making sure this happens for record as well?  I don't feel qualified
+to answer that.
+
+Cheers,
+mwh
