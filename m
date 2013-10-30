@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356Ab3J3NxM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 09:53:12 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:57129 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752935Ab3J3NxJ (ORCPT
+	id S1754413Ab3J3Nyl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 09:54:41 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:38071 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532Ab3J3Nyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 09:53:09 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCHv2 1/3] Input: twl4030-keypad - add device tree support
-To: Pavel Machek <pavel@ucw.cz>, linux-input@vger.kernel.org,
-        "'Beno?t Cousson'" <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-In-Reply-To: <20131027114753.GB14901@amd.pavel.ucw.cz>
-References: <1382446042-27099-1-git-send-email-sre@debian.org> <1382446042-27099-2-git-send-email-sre@debian.org> <20131027111715.GA2437@xo-6d-61-c0.localdomain> <20131027114026.GB14091@earth.universe> <20131027114753.GB14901@amd.pavel.ucw.cz>
-Date: Wed, 30 Oct 2013 06:53:07 -0700
-Message-Id: <20131030135307.D8CE1C402A0@trevor.secretlab.ca>
+	Wed, 30 Oct 2013 09:54:39 -0400
+Message-ID: <52710FC8.8060309@linux.vnet.ibm.com>
+Date: Wed, 30 Oct 2013 19:25:20 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Gleb Natapov <gleb@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, KVM list <kvm@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 3.12-rc7] KVM: Fix modprobe failure for kvm_intel/kvm_amd
+References: <1383059634-55512-1-git-send-email-tim.gardner@canonical.com> <CA+55aFwUdXp4412F5LdmCRrGZCYiFpiPk7oksGi30CzP6i5O+w@mail.gmail.com> <52700C24.9050001@linux.vnet.ibm.com> <20131029200012.GA19769@kroah.com>
+In-Reply-To: <20131029200012.GA19769@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13103013-7014-0000-0000-000003D9B444
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 27 Oct 2013 12:47:53 +0100, Pavel Machek <pavel@ucw.cz> wrote:
-> > > > +#if IS_ENABLED(CONFIG_OF)
-> > > I'm probably missing something here, but why not #ifdef CONFIG_OF?
-> > 
-> > I have been told for other drivers, that IS_ENABLED() is
-> > the prefered way to check for configuration these days.
-> 
-> CONFIG_OF can not be module, using IS_ENABLED() on it is just wrong.
+On 10/30/2013 01:30 AM, Greg KH wrote:
+[...]
+>> debugfs_create_dir() currently returns NULL dentry on both
+>> EEXIST, ENOMEM ... cases.
+>>
+>> Could one solution be cascading actual error
+>> that is lost in fs/debugfs/inode.c:__create_file(), so that we could
+>> take correct action in case of failure of debugfs_create_dir()?
+>
+> What would you do here?  You shouldn't really care about debugfs files,
+> if there's an error, keep on going, no code path should really care,
+> right?
+>
+Thanks Greg.
 
-That makes no sense. There is absolutely nothing wrong with using
-IS_ENABLED() for CONFIG_OF.
+Yes you are right. we can't do anything useful after that error.
 
-g.
+If debugfs directories are not critical, may be we could
+continue from there.
+
