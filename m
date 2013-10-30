@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab3J3Wyc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 18:54:32 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:63402 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754749Ab3J3Wwg (ORCPT
+	id S1755139Ab3J3Wyz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 18:54:55 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:57410 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754553Ab3J3Ww2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 18:52:36 -0400
+	Wed, 30 Oct 2013 18:52:28 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, viresh.kumar@linaro.org
-Subject: [PATCH V2 Resend 10/16] cpufreq: ppc: use cpufreq_generic_get() routine
-Date: Thu, 31 Oct 2013 04:22:08 +0530
-Message-Id: <15f2831ad3604c70f37ceb60590c18e11a1ea84e.1383173230.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 Resend 07/16] cpufreq: imx6q: use cpufreq_generic_get() routine
+Date: Thu, 31 Oct 2013 04:22:05 +0530
+Message-Id: <7d719cd3e73f6acc0e27a9b8bd2efdf295350b96.1383173230.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1383173230.git.viresh.kumar@linaro.org>
 References: <cover.1383173230.git.viresh.kumar@linaro.org>
@@ -27,73 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 We have common infrastructure available with us for getting a CPUs clk rate.
 Lets use it for this driver.
 
-We don't need a variable to hold clock anymore in struct cpu_data.
-
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/ppc-corenet-cpufreq.c | 17 ++++-------------
- 1 file changed, 4 insertions(+), 13 deletions(-)
+ drivers/cpufreq/imx6q-cpufreq.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/cpufreq/ppc-corenet-cpufreq.c b/drivers/cpufreq/ppc-corenet-cpufreq.c
-index 3f7be46..051000f 100644
---- a/drivers/cpufreq/ppc-corenet-cpufreq.c
-+++ b/drivers/cpufreq/ppc-corenet-cpufreq.c
-@@ -24,12 +24,10 @@
+diff --git a/drivers/cpufreq/imx6q-cpufreq.c b/drivers/cpufreq/imx6q-cpufreq.c
+index 4b3f18e..eacd785 100644
+--- a/drivers/cpufreq/imx6q-cpufreq.c
++++ b/drivers/cpufreq/imx6q-cpufreq.c
+@@ -35,11 +35,6 @@ static struct device *cpu_dev;
+ static struct cpufreq_frequency_table *freq_table;
+ static unsigned int transition_latency;
  
- /**
-  * struct cpu_data - per CPU data struct
-- * @clk: the clk of CPU
-  * @parent: the parent node of cpu clock
-  * @table: frequency table
-  */
- struct cpu_data {
--	struct clk *clk;
- 	struct device_node *parent;
- 	struct cpufreq_frequency_table *table;
- };
-@@ -81,13 +79,6 @@ static inline const struct cpumask *cpu_core_mask(int cpu)
- }
- #endif
- 
--static unsigned int corenet_cpufreq_get_speed(unsigned int cpu)
+-static unsigned int imx6q_get_speed(unsigned int cpu)
 -{
--	struct cpu_data *data = per_cpu(cpu_data, cpu);
--
--	return clk_get_rate(data->clk) / 1000;
+-	return clk_get_rate(arm_clk) / 1000;
 -}
 -
- /* reduce the duplicated frequencies in frequency table */
- static void freq_table_redup(struct cpufreq_frequency_table *freq_table,
- 		int count)
-@@ -158,8 +149,8 @@ static int corenet_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 		goto err_np;
- 	}
+ static int imx6q_set_target(struct cpufreq_policy *policy, unsigned int index)
+ {
+ 	struct dev_pm_opp *opp;
+@@ -134,13 +129,14 @@ static int imx6q_set_target(struct cpufreq_policy *policy, unsigned int index)
  
--	data->clk = of_clk_get(np, 0);
--	if (IS_ERR(data->clk)) {
-+	policy->clk = of_clk_get(np, 0);
-+	if (IS_ERR(policy->clk)) {
- 		pr_err("%s: no clock information\n", __func__);
- 		goto err_nomem2;
- 	}
-@@ -255,7 +246,7 @@ static int corenet_cpufreq_target(struct cpufreq_policy *policy,
- 	struct cpu_data *data = per_cpu(cpu_data, policy->cpu);
- 
- 	parent = of_clk_get(data->parent, data->table[index].driver_data);
--	return clk_set_parent(data->clk, parent);
-+	return clk_set_parent(policy->clk, parent);
+ static int imx6q_cpufreq_init(struct cpufreq_policy *policy)
+ {
++	policy->clk = arm_clk;
+ 	return cpufreq_generic_init(policy, freq_table, transition_latency);
  }
  
- static struct cpufreq_driver ppc_corenet_cpufreq_driver = {
-@@ -265,7 +256,7 @@ static struct cpufreq_driver ppc_corenet_cpufreq_driver = {
- 	.exit		= __exit_p(corenet_cpufreq_cpu_exit),
- 	.verify		= cpufreq_generic_frequency_table_verify,
- 	.target_index	= corenet_cpufreq_target,
--	.get		= corenet_cpufreq_get_speed,
-+	.get		= cpufreq_generic_get,
- 	.attr		= cpufreq_generic_attr,
- };
- 
+ static struct cpufreq_driver imx6q_cpufreq_driver = {
+ 	.verify = cpufreq_generic_frequency_table_verify,
+ 	.target_index = imx6q_set_target,
+-	.get = imx6q_get_speed,
++	.get = cpufreq_generic_get,
+ 	.init = imx6q_cpufreq_init,
+ 	.exit = cpufreq_generic_exit,
+ 	.name = "imx6q-cpufreq",
 -- 
 1.7.12.rc2.18.g61b472e
 
