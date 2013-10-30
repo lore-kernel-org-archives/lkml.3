@@ -1,349 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab3J3SkS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 14:40:18 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:32957 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698Ab3J3SkO (ORCPT
+	id S1753859Ab3J3SoM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 14:44:12 -0400
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:10651 "EHLO
+	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752189Ab3J3SoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 14:40:14 -0400
-Message-ID: <1383158407.5434.15.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: [PATCH] ima: extend the measurement list to include the file
- signature
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-security-module <linux-security-module@vger.kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Roberto Sassu <roberto.sassu@polito.it>
-Date: Wed, 30 Oct 2013 14:40:07 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Wed, 30 Oct 2013 14:44:11 -0400
+Message-ID: <52715379.3020808@akamai.com>
+Date: Wed, 30 Oct 2013 14:44:09 -0400
+From: Jason Baron <jbaron@akamai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the akpm-current tree
+References: <20131030180042.7db60252a0779f89483ef51b@canb.auug.org.au>
+In-Reply-To: <20131030180042.7db60252a0779f89483ef51b@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13103018-8236-0000-0000-00000340D825
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch defines a new template called 'ima-sig', which includes
-the file signature in the template data, in addition to the file's
-digest and pathname.
+On 10/30/2013 03:00 AM, Stephen Rothwell wrote:
+> Hi Andrew,
+> 
+> After merging the akpm-current tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> In file included from include/linux/init.h:4:0,
+>                  from fs/eventpoll.c:14:
+> fs/eventpoll.c: In function 'eventpoll_init':
+> include/linux/compiler.h:321:20: error: call to '__compiletime_assert_2137' declared with attribute error: BUILD_BUG_ON failed: sizeof(void *) <= 8 && sizeof(struct epitem) > 128
+>     prefix ## suffix();    \
 
-A template is composed of a set of fields.  Associated with each
-field is an initialization and display function.  This patch defines
-a new template field called 'sig', the initialization function
-ima_eventsig_init(), and the display function ima_show_template_sig().
+Yes, my fault for not compiling on more arches - I've posted a fix for this today as:
 
-This patch modifies the .field_init() function definition to include
-the 'security.ima' extended attribute and length.
+Subject: [PATCH] epoll: remove the on_list check for 'struct epitem'
 
-Changelog:
-- remove unused code (Dmitry Kasatkin)
-- avoid calling ima_write_template_field_data() unnecesarily (Roberto Sassu)
-- rename DATA_FMT_SIG to DATA_FMT_HEX
+Thanks,
 
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
----
- security/integrity/ima/Kconfig            |  3 +++
- security/integrity/ima/ima.h              | 10 +++++---
- security/integrity/ima/ima_api.c          | 14 +++++++----
- security/integrity/ima/ima_init.c         |  2 +-
- security/integrity/ima/ima_main.c         |  3 ++-
- security/integrity/ima/ima_template.c     |  3 +++
- security/integrity/ima/ima_template_lib.c | 39 ++++++++++++++++++++++++++++---
- security/integrity/ima/ima_template_lib.h | 12 +++++++++-
- 8 files changed, 73 insertions(+), 13 deletions(-)
-
-diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-index 351a58e..81a2797 100644
---- a/security/integrity/ima/Kconfig
-+++ b/security/integrity/ima/Kconfig
-@@ -63,6 +63,8 @@ choice
- 		bool "ima"
- 	config IMA_NG_TEMPLATE
- 		bool "ima-ng (default)"
-+	config IMA_SIG_TEMPLATE
-+		bool "ima-sig"
- endchoice
- 
- config IMA_DEFAULT_TEMPLATE
-@@ -70,6 +72,7 @@ config IMA_DEFAULT_TEMPLATE
- 	depends on IMA
- 	default "ima" if IMA_TEMPLATE
- 	default "ima-ng" if IMA_NG_TEMPLATE
-+	default "ima-sig" if IMA_SIG_TEMPLATE
- 
- choice
- 	prompt "Default integrity hash algorithm"
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 72d013e..bf03c6a 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -59,7 +59,8 @@ struct ima_template_field {
- 	const char field_id[IMA_TEMPLATE_FIELD_ID_MAX_LEN];
- 	int (*field_init) (struct integrity_iint_cache *iint, struct file *file,
- 			   const unsigned char *filename,
--			   struct ima_field_data *field_data);
-+			   struct evm_ima_xattr_data *xattr_value,
-+			   int xattr_len, struct ima_field_data *field_data);
- 	void (*field_show) (struct seq_file *m, enum ima_show_type show,
- 			    struct ima_field_data *field_data);
- };
-@@ -134,12 +135,15 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
- 			    struct evm_ima_xattr_data **xattr_value,
- 			    int *xattr_len);
- void ima_store_measurement(struct integrity_iint_cache *iint, struct file *file,
--			   const unsigned char *filename);
-+			   const unsigned char *filename,
-+			   struct evm_ima_xattr_data *xattr_value,
-+			   int xattr_len);
- void ima_audit_measurement(struct integrity_iint_cache *iint,
- 			   const unsigned char *filename);
- int ima_alloc_init_template(struct integrity_iint_cache *iint,
- 			    struct file *file, const unsigned char *filename,
--			    struct ima_template_entry **entry);
-+			    struct evm_ima_xattr_data *xattr_value,
-+			    int xattr_len, struct ima_template_entry **entry);
- int ima_store_template(struct ima_template_entry *entry, int violation,
- 		       struct inode *inode, const unsigned char *filename);
- const char *ima_d_path(struct path *path, char **pathbuf);
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index 5fcc806..0e75408 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -26,7 +26,8 @@
-  */
- int ima_alloc_init_template(struct integrity_iint_cache *iint,
- 			    struct file *file, const unsigned char *filename,
--			    struct ima_template_entry **entry)
-+			    struct evm_ima_xattr_data *xattr_value,
-+			    int xattr_len, struct ima_template_entry **entry)
- {
- 	struct ima_template_desc *template_desc = ima_template_desc_current();
- 	int i, result = 0;
-@@ -41,6 +42,7 @@ int ima_alloc_init_template(struct integrity_iint_cache *iint,
- 		u32 len;
- 
- 		result = field->field_init(iint, file, filename,
-+					   xattr_value, xattr_len,
- 					   &((*entry)->template_data[i]));
- 		if (result != 0)
- 			goto out;
-@@ -123,7 +125,8 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
- 	/* can overflow, only indicator */
- 	atomic_long_inc(&ima_htable.violations);
- 
--	result = ima_alloc_init_template(NULL, file, filename, &entry);
-+	result = ima_alloc_init_template(NULL, file, filename,
-+					 NULL, 0, &entry);
- 	if (result < 0) {
- 		result = -ENOMEM;
- 		goto err_out;
-@@ -239,7 +242,9 @@ int ima_collect_measurement(struct integrity_iint_cache *iint,
-  * Must be called with iint->mutex held.
-  */
- void ima_store_measurement(struct integrity_iint_cache *iint,
--			   struct file *file, const unsigned char *filename)
-+			   struct file *file, const unsigned char *filename,
-+			   struct evm_ima_xattr_data *xattr_value,
-+			   int xattr_len)
- {
- 	const char *op = "add_template_measure";
- 	const char *audit_cause = "ENOMEM";
-@@ -251,7 +256,8 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
- 	if (iint->flags & IMA_MEASURED)
- 		return;
- 
--	result = ima_alloc_init_template(iint, file, filename, &entry);
-+	result = ima_alloc_init_template(iint, file, filename,
-+					 xattr_value, xattr_len, &entry);
- 	if (result < 0) {
- 		integrity_audit_msg(AUDIT_INTEGRITY_PCR, inode, filename,
- 				    op, audit_cause, result, 0);
-diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
-index f84aec5..15f34bd 100644
---- a/security/integrity/ima/ima_init.c
-+++ b/security/integrity/ima/ima_init.c
-@@ -69,7 +69,7 @@ static void __init ima_add_boot_aggregate(void)
- 	}
- 
- 	result = ima_alloc_init_template(iint, NULL, boot_aggregate_name,
--					 &entry);
-+					 NULL, 0, &entry);
- 	if (result < 0)
- 		return;
- 
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 14d4cb5..149ee11 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -225,7 +225,8 @@ static int process_measurement(struct file *file, const char *filename,
- 		pathname = (const char *)file->f_dentry->d_name.name;
- 
- 	if (action & IMA_MEASURE)
--		ima_store_measurement(iint, file, pathname);
-+		ima_store_measurement(iint, file, pathname,
-+				      xattr_value, xattr_len);
- 	if (action & IMA_APPRAISE_SUBMASK)
- 		rc = ima_appraise_measurement(_func, iint, file, pathname,
- 					      xattr_value, xattr_len);
-diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
-index 0002214..4e5da99 100644
---- a/security/integrity/ima/ima_template.c
-+++ b/security/integrity/ima/ima_template.c
-@@ -20,6 +20,7 @@
- static struct ima_template_desc defined_templates[] = {
- 	{.name = IMA_TEMPLATE_IMA_NAME, .fmt = IMA_TEMPLATE_IMA_FMT},
- 	{.name = "ima-ng",.fmt = "d-ng|n-ng"},
-+	{.name = "ima-sig",.fmt = "d-ng|n-ng|sig"},
- };
- 
- static struct ima_template_field supported_fields[] = {
-@@ -31,6 +32,8 @@ static struct ima_template_field supported_fields[] = {
- 	 .field_show = ima_show_template_digest_ng},
- 	{.field_id = "n-ng",.field_init = ima_eventname_ng_init,
- 	 .field_show = ima_show_template_string},
-+	{.field_id = "sig",.field_init = ima_eventsig_init,
-+	 .field_show = ima_show_template_sig},
- };
- 
- static struct ima_template_desc *ima_template;
-diff --git a/security/integrity/ima/ima_template_lib.c b/security/integrity/ima/ima_template_lib.c
-index 7d84144..0da8545 100644
---- a/security/integrity/ima/ima_template_lib.c
-+++ b/security/integrity/ima/ima_template_lib.c
-@@ -28,14 +28,15 @@ enum data_formats {
- 	DATA_FMT_DIGEST = 0,
- 	DATA_FMT_DIGEST_WITH_ALGO,
- 	DATA_FMT_EVENT_NAME,
--	DATA_FMT_STRING
-+	DATA_FMT_STRING,
-+	DATA_FMT_HEX
- };
- 
- static int ima_write_template_field_data(const void *data, const u32 datalen,
- 					 enum data_formats datafmt,
- 					 struct ima_field_data *field_data)
- {
--	u8 *buf, *buf_ptr;
-+	u8 *buf = NULL, *buf_ptr;
- 	u32 buflen;
- 
- 	switch (datafmt) {
-@@ -90,6 +91,9 @@ static void ima_show_template_data_ascii(struct seq_file *m,
- 		buf_ptr += 2;
- 		buflen -= buf_ptr - field_data->data;
- 	case DATA_FMT_DIGEST:
-+	case DATA_FMT_HEX:
-+		if (!buflen)
-+			break;
- 		ima_print_digest(m, buf_ptr, buflen);
- 		break;
- 	case DATA_FMT_STRING:
-@@ -147,6 +151,12 @@ void ima_show_template_string(struct seq_file *m, enum ima_show_type show,
- 	ima_show_template_field_data(m, show, DATA_FMT_STRING, field_data);
- }
- 
-+void ima_show_template_sig(struct seq_file *m, enum ima_show_type show,
-+			   struct ima_field_data *field_data)
-+{
-+	ima_show_template_field_data(m, show, DATA_FMT_HEX, field_data);
-+}
-+
- static int ima_eventdigest_init_common(u8 *digest, u32 digestsize, u8 hash_algo,
- 				       struct ima_field_data *field_data,
- 				       bool size_limit)
-@@ -190,6 +200,7 @@ static int ima_eventdigest_init_common(u8 *digest, u32 digestsize, u8 hash_algo,
-  */
- int ima_eventdigest_init(struct integrity_iint_cache *iint, struct file *file,
- 			 const unsigned char *filename,
-+			 struct evm_ima_xattr_data *xattr_value, int xattr_len,
- 			 struct ima_field_data *field_data)
- {
- 	struct {
-@@ -237,7 +248,8 @@ out:
-  */
- int ima_eventdigest_ng_init(struct integrity_iint_cache *iint,
- 			    struct file *file, const unsigned char *filename,
--			    struct ima_field_data *field_data)
-+			    struct evm_ima_xattr_data *xattr_value,
-+			    int xattr_len, struct ima_field_data *field_data)
- {
- 	u8 *cur_digest = NULL, hash_algo = HASH_ALGO__LAST;
- 	u32 cur_digestsize = 0;
-@@ -295,6 +307,7 @@ out:
-  */
- int ima_eventname_init(struct integrity_iint_cache *iint, struct file *file,
- 		       const unsigned char *filename,
-+		       struct evm_ima_xattr_data *xattr_value, int xattr_len,
- 		       struct ima_field_data *field_data)
- {
- 	return ima_eventname_init_common(iint, file, filename,
-@@ -306,8 +319,28 @@ int ima_eventname_init(struct integrity_iint_cache *iint, struct file *file,
-  */
- int ima_eventname_ng_init(struct integrity_iint_cache *iint, struct file *file,
- 			  const unsigned char *filename,
-+			  struct evm_ima_xattr_data *xattr_value, int xattr_len,
- 			  struct ima_field_data *field_data)
- {
- 	return ima_eventname_init_common(iint, file, filename,
- 					 field_data, false);
- }
-+
-+/*
-+ *  ima_eventsig_init - include the file signature as part of the template data
-+ */
-+int ima_eventsig_init(struct integrity_iint_cache *iint, struct file *file,
-+		      const unsigned char *filename,
-+		      struct evm_ima_xattr_data *xattr_value, int xattr_len,
-+		      struct ima_field_data *field_data)
-+{
-+	enum data_formats fmt = DATA_FMT_HEX;
-+
-+	if (!xattr_value)
-+		return 0;
-+
-+	if (xattr_value->type == EVM_IMA_XATTR_DIGSIG)
-+		return ima_write_template_field_data(xattr_value, xattr_len,
-+						     fmt, field_data);
-+	return 0;
-+}
-diff --git a/security/integrity/ima/ima_template_lib.h b/security/integrity/ima/ima_template_lib.h
-index 16c5e78..63f6b52 100644
---- a/security/integrity/ima/ima_template_lib.h
-+++ b/security/integrity/ima/ima_template_lib.h
-@@ -24,16 +24,26 @@ void ima_show_template_digest_ng(struct seq_file *m, enum ima_show_type show,
- 				 struct ima_field_data *field_data);
- void ima_show_template_string(struct seq_file *m, enum ima_show_type show,
- 			      struct ima_field_data *field_data);
-+void ima_show_template_sig(struct seq_file *m, enum ima_show_type show,
-+			   struct ima_field_data *field_data);
- int ima_eventdigest_init(struct integrity_iint_cache *iint, struct file *file,
- 			 const unsigned char *filename,
-+			 struct evm_ima_xattr_data *xattr_value, int xattr_len,
- 			 struct ima_field_data *field_data);
- int ima_eventname_init(struct integrity_iint_cache *iint, struct file *file,
- 		       const unsigned char *filename,
-+		       struct evm_ima_xattr_data *xattr_value, int xattr_len,
- 		       struct ima_field_data *field_data);
- int ima_eventdigest_ng_init(struct integrity_iint_cache *iint,
- 			    struct file *file, const unsigned char *filename,
--			    struct ima_field_data *field_data);
-+			    struct evm_ima_xattr_data *xattr_value,
-+			    int xattr_len, struct ima_field_data *field_data);
- int ima_eventname_ng_init(struct integrity_iint_cache *iint, struct file *file,
- 			  const unsigned char *filename,
-+			  struct evm_ima_xattr_data *xattr_value, int xattr_len,
- 			  struct ima_field_data *field_data);
-+int ima_eventsig_init(struct integrity_iint_cache *iint, struct file *file,
-+		      const unsigned char *filename,
-+		      struct evm_ima_xattr_data *xattr_value, int xattr_len,
-+		      struct ima_field_data *field_data);
- #endif /* __LINUX_IMA_TEMPLATE_LIB_H */
--- 
-1.8.1.4
-
-
-
+-Jason
