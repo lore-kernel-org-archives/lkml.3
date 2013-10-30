@@ -1,54 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab3J3WCj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 18:02:39 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34720 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab3J3WCh convert rfc822-to-8bit (ORCPT
+	id S1752955Ab3J3WFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 18:05:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48539 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab3J3WFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 18:02:37 -0400
-Subject: Re: [PATCH v2 4/6] edac: Document Krait L1/L2 EDAC driver binding
-Mime-Version: 1.0 (Apple Message framework v1283)
+	Wed, 30 Oct 2013 18:05:22 -0400
+Date: Wed, 30 Oct 2013 15:05:21 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: P J P <ppandit@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [Patch] Read CONFIG_RD_ variables for initramfs compression
+Message-Id: <20131030150521.ff3fd577a6e506e4278db48c@linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.03.1310301226260.12975@erqung.pbz>
+References: <alpine.LFD.2.03.1310152002200.7552@erqung.pbz>
+	<20131029151507.8f63dad8e7525e33431d9596@linux-foundation.org>
+	<alpine.LFD.2.03.1310301226260.12975@erqung.pbz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <52718118.1020009@codeaurora.org>
-Date: Wed, 30 Oct 2013 17:02:35 -0500
-Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org
-Content-Transfer-Encoding: 7BIT
-Message-Id: <D081E03B-01D6-497F-B8D0-E994219C8282@codeaurora.org>
-References: <1383164736-1849-1-git-send-email-sboyd@codeaurora.org> <1383164736-1849-5-git-send-email-sboyd@codeaurora.org> <872F86E8-85CE-472B-9546-CDCC96F6F08B@codeaurora.org> <52717EA5.6030208@codeaurora.org> <F38814D8-723E-4A41-839D-DEE351738017@codeaurora.org> <52718118.1020009@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-X-Mailer: Apple Mail (2.1283)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 30 Oct 2013 15:57:20 +0530 (IST) P J P <ppandit@redhat.com> wrote:
 
-On Oct 30, 2013, at 4:58 PM, Stephen Boyd wrote:
-
-> On 10/30/13 14:56, Kumar Gala wrote:
->> On Oct 30, 2013, at 4:48 PM, Stephen Boyd wrote:
->> 
->>> On 10/30/13 14:45, Kumar Gala wrote:
->>>> On Oct 30, 2013, at 3:25 PM, Stephen Boyd wrote:
->>>>> +l2-cache node containing the following properties:
->>>> Is the L1 interrupt not per core L1 cache (even if they are OR together at PIC)?
->>> Yes it is per CPU. That is what the 0xf part of the cpus interrupts
->>> property is showing.
->> Than why not have it in each cpu node?
+> +-- On Tue, 29 Oct 2013, Andrew Morton wrote --+
+> | On Tue, 15 Oct 2013 20:25:57 +0530 (IST) P J P <ppandit@redhat.com> wrote:
+> | This patch breaks my x86_64 allmodconfig build, because I don't have
+> | the lz4 executable installed:
+> | 
+> | /usr/src/25/scripts/gen_initramfs_list.sh: line 307: lz4: command not found
+> | make[1]: *** [usr/initramfs_data.cpio.lz4] Error 1
+> | 
+> | This obviously isn't acceptable!
 > 
-> Because that duplicates things unnecessarily? The cpus node can hold
-> things that are common to all CPUs to avoid duplication. If it was a
-> different PPI for each CPU then I would agree that we need to put it in
-> each cpu node.
+>   Oops! '$ make allmodconfig' seems to enables all compression algorithms; So 
+> the last one overrides the previous choices in usr/Makefile.
+> 
+> ===
+> ...
+> CONFIG_RD_GZIP=y
+> CONFIG_RD_BZIP2=y
+> CONFIG_RD_LZMA=y
+> CONFIG_RD_XZ=y
+> CONFIG_RD_LZO=y
+> CONFIG_RD_LZ4=y
+> ===
+> 
+> Please see an updated patch herein. I've patched 'gen_initramfs_list.sh' 
+> script to check if a selected compression command is accessible or not; And 
+> fall-back to the default gzip(1) format when it is not. usr/Makefile also 
+> defaults to '.gz' format when all are enabled.
 
-Ok, I'll accept that as the binding is specific to Krait (and I assume all SoCs w/Krait wire this up to a common interrupt)
+Below is the delta.
 
-- k
+Requiring that the executables exist in /bin is unpleasant.  Isn't
+there some convenient way of testing for the presence of an executable
+in $PATH?
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+The shell-builtin `which' seems to dtrt:
+
+akpm3:/usr/src/25> if which gzip > /dev/null ; then echo foo ; fi 
+foo
+akpm3:/usr/src/25> if which lz4 > /dev/null ; then echo foo ; fi    
+akpm3:/usr/src/25> 
+
+/bin/which should do the same thing.
+
+There's probably some kbuild-approved way of doing this, but I
+don't know what it is off-hand.
+
+
+
+From: P J P <ppandit@redhat.com>
+Subject: initramfs-read-config_rd_-variables-for-initramfs-compression-fix
+
+Oops!  '$ make allmodconfig' seems to enables all compression algorithms;
+So the last one overrides the previous choices in usr/Makefile.
+
+Please see an updated patch herein.  I've patched 'gen_initramfs_list.sh'
+script to check if a selected compression command is accessible or not;
+And fall-back to the default gzip(1) format when it is not.  usr/Makefile
+also defaults to '.gz' format when all are enabled.
+
+Signed-off-by: P J P <prasad@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ scripts/gen_initramfs_list.sh |   19 ++++++++++++-------
+ usr/Makefile                  |    6 +++---
+ 2 files changed, 15 insertions(+), 10 deletions(-)
+
+diff -puN scripts/gen_initramfs_list.sh~initramfs-read-config_rd_-variables-for-initramfs-compression-fix scripts/gen_initramfs_list.sh
+--- a/scripts/gen_initramfs_list.sh~initramfs-read-config_rd_-variables-for-initramfs-compression-fix
++++ a/scripts/gen_initramfs_list.sh
+@@ -240,13 +240,18 @@ case "$arg" in
+ 		output_file="$1"
+ 		cpio_list="$(mktemp ${TMPDIR:-/tmp}/cpiolist.XXXXXX)"
+ 		output=${cpio_list}
+-		echo "$output_file" | grep -q "\.gz$" && compr="gzip -n -9 -f"
+-		echo "$output_file" | grep -q "\.bz2$" && compr="bzip2 -9 -f"
+-		echo "$output_file" | grep -q "\.lzma$" && compr="lzma -9 -f"
+-		echo "$output_file" | grep -q "\.xz$" && \
+-				compr="xz --check=crc32 --lzma2=dict=1MiB"
+-		echo "$output_file" | grep -q "\.lzo$" && compr="lzop -9 -f"
+-		echo "$output_file" | grep -q "\.lz4$" && compr="lz4 -9 -f"
++		echo "$output_file" | grep -q "\.gz$" && [ -x "/bin/gzip" ] \
++                && compr="gzip -n -9 -f"
++		echo "$output_file" | grep -q "\.bz2$" && [ -x "/bin/bzip2" ] \
++                && compr="bzip2 -9 -f"
++		echo "$output_file" | grep -q "\.lzma$" && [ -x "/bin/lzma" ] \
++                && compr="lzma -9 -f"
++		echo "$output_file" | grep -q "\.xz$" && [ -x "/bin/xz" ] \
++                && compr="xz --check=crc32 --lzma2=dict=1MiB"
++		echo "$output_file" | grep -q "\.lzo$" && [ -x "/bin/lzop" ] \
++                && compr="lzop -9 -f"
++		echo "$output_file" | grep -q "\.lz4$" && [ -x "/bin/lz4" ] \
++                && compr="lz4 -9 -f"
+ 		echo "$output_file" | grep -q "\.cpio$" && compr="cat"
+ 		shift
+ 		;;
+diff -puN usr/Makefile~initramfs-read-config_rd_-variables-for-initramfs-compression-fix usr/Makefile
+--- a/usr/Makefile~initramfs-read-config_rd_-variables-for-initramfs-compression-fix
++++ a/usr/Makefile
+@@ -6,9 +6,6 @@ klibcdirs:;
+ PHONY += klibcdirs
+ 
+ 
+-# Gzip
+-suffix_$(CONFIG_RD_GZIP)   = .gz
+-
+ # Bzip2
+ suffix_$(CONFIG_RD_BZIP2)  = .bz2
+ 
+@@ -24,6 +21,9 @@ suffix_$(CONFIG_RD_LZO)    = .lzo
+ # Lz4
+ suffix_$(CONFIG_RD_LZ4)    = .lz4
+ 
++# Gzip
++suffix_$(CONFIG_RD_GZIP)   = .gz
++
+ AFLAGS_initramfs_data.o += -DINITRAMFS_IMAGE="usr/initramfs_data.cpio$(suffix_y)"
+ 
+ # Generate builtin.o based on initramfs_data.o
+_
 
