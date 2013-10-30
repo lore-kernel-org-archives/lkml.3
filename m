@@ -1,76 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab3J3BMc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 21:12:32 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:30918 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995Ab3J3BMb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 21:12:31 -0400
-X-Spam-Score: -100.8
-Message-ID: <52705CC0.8020909@asianux.com>
-Date: Wed, 30 Oct 2013 09:11:28 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752785Ab3J3BSZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 21:18:25 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:21414 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751292Ab3J3BSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 21:18:24 -0400
+X-IronPort-AV: E=Sophos;i="4.93,597,1378857600"; 
+   d="scan'208";a="68694906"
+Date: Wed, 30 Oct 2013 01:17:14 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <Ian.Campbell@citrix.com>,
+        <will.deacon@arm.com>
+Subject: Re: [PATCH v9 01/18] arm: make SWIOTLB available
+In-Reply-To: <20131029180105.GR16735@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.02.1310300112520.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com> <1382698313-13161-1-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1310251206450.26077@kaball.uk.xensource.com> <alpine.DEB.2.02.1310290441260.26077@kaball.uk.xensource.com>
+ <20131029142023.GE20487@phenom.dumpdata.com> <20131029142626.GQ16735@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1310291716120.26077@kaball.uk.xensource.com> <20131029180105.GR16735@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Joern Rennecke <joern.rennecke@embecosm.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>
-CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
-        Francois Bedard <Francois.Bedard@synopsys.com>,
-        Max Filippov <jcmvbkbc@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH-next v3] kernel/system_certificate.S: use real contents instead
- of macro GLOBAL()
-References: <523FD9E7.3050303@asianux.com> <523FDBD7.4040602@asianux.com> <C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com> <523FE578.5060801@asianux.com> <52672DAC.1030307@asianux.com> <CAMqJFCou4SObPni5Lb_tX=0hQ__kF_9MLDC-6a1opptc9dxT-A@mail.gmail.com> <52673E41.6040606@asianux.com> <5267AF98.1010800@asianux.com> <5268B0B1.9050009@asianux.com> <526F1ACE.7080409@asianux.com>
-In-Reply-To: <526F1ACE.7080409@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a macro is only used within 2 times, and also its contents are
-within 2 lines, recommend to expand it to shrink code line.
+On Tue, 29 Oct 2013, Russell King - ARM Linux wrote:
+> So... what I'm saying is please fix xgmac to use the DMA API properly
+> rather than working around such problems. :)
+ 
+OK.
+Would the appended patch fix your concerns?
 
-For our case, the macro is not portable either: some architectures'
-assembler may use another character to mark newline in a macro (e.g.
-'`' for arc), which will cause issue.
-
-If still want to use macro and let it portable enough, it will also
-need include additional header file (e.g "#include <linux/linkage.h>",
-although it also need be fixed).
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- kernel/system_certificates.S |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/system_certificates.S b/kernel/system_certificates.S
-index 552d47b..4aef390 100644
---- a/kernel/system_certificates.S
-+++ b/kernel/system_certificates.S
-@@ -1,12 +1,10 @@
- #include <linux/export.h>
- #include <linux/init.h>
+arm: make SWIOTLB available
+
+IOMMU_HELPER is needed because SWIOTLB calls iommu_is_span_boundary,
+provided by lib/iommu_helper.c.
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+Changes in v9:
+- remove uneeded include asm/cacheflush.h;
+- just return 0 if !dev->dma_mask in dma_capable.
+
+---
+ arch/arm/Kconfig                   |    6 ++++++
+ arch/arm/include/asm/dma-mapping.h |   33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 39 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 1ad6fb6..b08374f 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1872,6 +1872,12 @@ config CC_STACKPROTECTOR
+ 	  neutralized via a kernel panic.
+ 	  This feature requires gcc version 4.2 or above.
  
--#define GLOBAL(name)	\
--	.globl VMLINUX_SYMBOL(name);	\
--	VMLINUX_SYMBOL(name):
--
- 	__INITRODATA
++config SWIOTLB
++	def_bool y
++
++config IOMMU_HELPER
++	def_bool SWIOTLB
++
+ config XEN_DOM0
+ 	def_bool y
+ 	depends on XEN
+diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+index 5b579b9..1ad2c17 100644
+--- a/arch/arm/include/asm/dma-mapping.h
++++ b/arch/arm/include/asm/dma-mapping.h
+@@ -86,6 +86,39 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
+ }
+ #endif
  
--GLOBAL(system_certificate_list)
-+	.globl VMLINUX_SYMBOL(system_certificate_list)
-+VMLINUX_SYMBOL(system_certificate_list):
- 	.incbin "kernel/x509_certificate_list"
--GLOBAL(system_certificate_list_end)
-+	.globl VMLINUX_SYMBOL(system_certificate_list_end)
-+VMLINUX_SYMBOL(system_certificate_list_end):
++static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
++{
++	unsigned int offset = paddr & ~PAGE_MASK;
++	return pfn_to_dma(dev, __phys_to_pfn(paddr)) + offset;
++}
++
++static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
++{
++	unsigned int offset = dev_addr & ~PAGE_MASK;
++	return __pfn_to_phys(dma_to_pfn(dev, dev_addr)) + offset;
++}
++
++static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
++{
++	u64 limit, mask;
++
++	if (!dev->dma_mask)
++		return 0;
++
++	mask = *dev->dma_mask;
++
++	limit = (mask + 1) & ~mask;
++	if (limit && size > limit)
++		return 0;
++
++	if ((addr | (addr + size - 1)) & ~mask)
++		return 0;
++
++	return 1;
++}
++
++static inline void dma_mark_clean(void *addr, size_t size) { }
++
+ /*
+  * DMA errors are defined by all-bits-set in the DMA address.
+  */
 -- 
-1.7.7.6
+1.7.2.5
+
