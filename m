@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab3J3Wws (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 18:52:48 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:41485 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754856Ab3J3Wwp (ORCPT
+	id S1754892Ab3J3Wwq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 18:52:46 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:58720 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754854Ab3J3Wwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 18:52:45 -0400
+	Wed, 30 Oct 2013 18:52:42 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, viresh.kumar@linaro.org
-Subject: [PATCH V2 Resend 16/16] cpufreq: unicore2: use cpufreq_generic_get() routine
-Date: Thu, 31 Oct 2013 04:22:14 +0530
-Message-Id: <6878a643df82272c18233c5e0328007f88cec024.1383173230.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 Resend 14/16] cpufreq: tegra: remove target_cpu_speed[] array
+Date: Thu, 31 Oct 2013 04:22:12 +0530
+Message-Id: <bdb887025675d0c358c5107b537c7afd427c144f.1383173230.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1383173230.git.viresh.kumar@linaro.org>
 References: <cover.1383173230.git.viresh.kumar@linaro.org>
@@ -24,80 +24,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have common infrastructure available with us for getting a CPUs clk rate.
-Lets use it for this driver.
+Tegra's cpufreq driver was maintaining requested target frequencies in an array:
+target_cpu_speed. And then finally setting the highest requested freq in the
+core. This was probably done because both cores share clock line and logically
+we want to set both cores to the max frequency requested..
 
-We also do clk_get() once instead of doing it again and again in target & init.
+But this wasn't required to be done in individual CPUFreq drivers, its already
+taken care of by CPUFreq governors. They evaluate load for all CPUs and finally
+call target only for the frequency corresponding to max load.
 
+So, get rid of this stuff from Tegra's cpufreq driver.
+
+Acked-by: Stephen Warren <swarren@nvidia.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/unicore2-cpufreq.c | 21 ++++++++-------------
- 1 file changed, 8 insertions(+), 13 deletions(-)
+ drivers/cpufreq/tegra-cpufreq.c | 36 ++++++------------------------------
+ 1 file changed, 6 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/cpufreq/unicore2-cpufreq.c b/drivers/cpufreq/unicore2-cpufreq.c
-index 653ae29..951152f 100644
---- a/drivers/cpufreq/unicore2-cpufreq.c
-+++ b/drivers/cpufreq/unicore2-cpufreq.c
-@@ -11,6 +11,7 @@
-  * published by the Free Software Foundation.
-  */
+diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
+index f42df7e..7d36b54 100644
+--- a/drivers/cpufreq/tegra-cpufreq.c
++++ b/drivers/cpufreq/tegra-cpufreq.c
+@@ -47,7 +47,6 @@ static struct clk *pll_x_clk;
+ static struct clk *pll_p_clk;
+ static struct clk *emc_clk;
  
-+#include <linux/err.h>
- #include <linux/kernel.h>
- #include <linux/types.h>
- #include <linux/init.h>
-@@ -33,26 +34,16 @@ static int ucv2_verify_speed(struct cpufreq_policy *policy)
- 	return 0;
+-static unsigned long target_cpu_speed[NUM_CPUS];
+ static DEFINE_MUTEX(tegra_cpu_lock);
+ static bool is_suspended;
+ 
+@@ -103,9 +102,6 @@ static int tegra_update_cpu_speed(struct cpufreq_policy *policy,
+ {
+ 	int ret = 0;
+ 
+-	if (tegra_getspeed(0) == rate)
+-		return ret;
+-
+ 	/*
+ 	 * Vote on memory bus frequency based on cpu frequency
+ 	 * This sets the minimum frequency, display or avp may request higher
+@@ -125,35 +121,16 @@ static int tegra_update_cpu_speed(struct cpufreq_policy *policy,
+ 	return ret;
  }
  
--static unsigned int ucv2_getspeed(unsigned int cpu)
+-static unsigned long tegra_cpu_highest_speed(void)
 -{
--	struct clk *mclk = clk_get(NULL, "MAIN_CLK");
+-	unsigned long rate = 0;
+-	int i;
 -
--	if (cpu)
--		return 0;
--	return clk_get_rate(mclk)/1000;
+-	for_each_online_cpu(i)
+-		rate = max(rate, target_cpu_speed[i]);
+-	return rate;
 -}
 -
- static int ucv2_target(struct cpufreq_policy *policy,
- 			 unsigned int target_freq,
- 			 unsigned int relation)
+ static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
  {
--	unsigned int cur = ucv2_getspeed(0);
-+	unsigned int cur = policy->cur;
- 	struct cpufreq_freqs freqs;
--	struct clk *mclk = clk_get(NULL, "MAIN_CLK");
+-	unsigned int freq;
+-	int ret = 0;
++	int ret = -EBUSY;
  
- 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+ 	mutex_lock(&tegra_cpu_lock);
  
--	if (!clk_set_rate(mclk, target_freq * 1000)) {
-+	if (!clk_set_rate(policy->clk, target_freq * 1000)) {
- 		freqs.old = cur;
- 		freqs.new = target_freq;
- 	}
-@@ -66,9 +57,13 @@ static int __init ucv2_cpu_init(struct cpufreq_policy *policy)
- {
- 	if (policy->cpu != 0)
- 		return -EINVAL;
-+
- 	policy->min = policy->cpuinfo.min_freq = 250000;
- 	policy->max = policy->cpuinfo.max_freq = 1000000;
- 	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
-+	policy->clk = clk_get(NULL, "MAIN_CLK");
-+	if (IS_ERR(policy->clk))
-+		return PTR_ERR(policy->clk);
- 	return 0;
+-	if (is_suspended) {
+-		ret = -EBUSY;
+-		goto out;
+-	}
+-
+-	freq = freq_table[index].frequency;
+-
+-	target_cpu_speed[policy->cpu] = freq;
++	if (!is_suspended)
++		ret = tegra_update_cpu_speed(policy,
++				freq_table[index].frequency);
+ 
+-	ret = tegra_update_cpu_speed(policy, tegra_cpu_highest_speed());
+-
+-out:
+ 	mutex_unlock(&tegra_cpu_lock);
+ 	return ret;
  }
+@@ -167,7 +144,8 @@ static int tegra_pm_notify(struct notifier_block *nb, unsigned long event,
+ 		is_suspended = true;
+ 		pr_info("Tegra cpufreq suspend: setting frequency to %d kHz\n",
+ 			freq_table[0].frequency);
+-		tegra_update_cpu_speed(policy, freq_table[0].frequency);
++		if (tegra_getspeed(0) != freq_table[0].frequency)
++			tegra_update_cpu_speed(policy, freq_table[0].frequency);
+ 		cpufreq_cpu_put(policy);
+ 	} else if (event == PM_POST_SUSPEND) {
+ 		is_suspended = false;
+@@ -191,8 +169,6 @@ static int tegra_cpu_init(struct cpufreq_policy *policy)
+ 	clk_prepare_enable(emc_clk);
+ 	clk_prepare_enable(cpu_clk);
  
-@@ -76,7 +71,7 @@ static struct cpufreq_driver ucv2_driver = {
- 	.flags		= CPUFREQ_STICKY,
- 	.verify		= ucv2_verify_speed,
- 	.target		= ucv2_target,
--	.get		= ucv2_getspeed,
-+	.get		= cpufreq_generic_get,
- 	.init		= ucv2_cpu_init,
- 	.name		= "UniCore-II",
- };
+-	target_cpu_speed[policy->cpu] = tegra_getspeed(policy->cpu);
+-
+ 	/* FIXME: what's the actual transition time? */
+ 	ret = cpufreq_generic_init(policy, freq_table, 300 * 1000);
+ 	if (ret) {
 -- 
 1.7.12.rc2.18.g61b472e
 
