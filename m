@@ -1,188 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751805Ab3J3Fxt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 01:53:49 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:63348 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab3J3Fxs (ORCPT
+	id S1752010Ab3J3F7c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 01:59:32 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:58910 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724Ab3J3F7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 01:53:48 -0400
-X-AuditID: 9c93017d-b7cd3ae000007ab3-81-52709eea94df
-Date: Wed, 30 Oct 2013 14:53:54 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>
-Cc: pavel@ucw.cz, sre@debian.org, tomi.valkeinen@ti.com, pali.rohar@gmail.com,
-        pc+n900@asdf.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: OMAPFB: CMA allocation failures
-Message-ID: <20131030055354.GG17013@bbox>
-References: <737255712.30460.1383050855911.JavaMail.apache@mail83.abv.bg>
+	Wed, 30 Oct 2013 01:59:31 -0400
+Message-ID: <5270A03F.8020301@hitachi.com>
+Date: Wed, 30 Oct 2013 14:59:27 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <737255712.30460.1383050855911.JavaMail.apache@mail83.abv.bg>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>, yoshihiro.yunomae.ez@hitachi.com,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: Re: RFC: paravirtualizing perf_clock
+References: <526DBD7F.1010807@gmail.com> <20131028131556.GN19466@laptop.lan> <526F2440.9030607@gmail.com>
+In-Reply-To: <526F2440.9030607@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ивайло
-
-
-On Tue, Oct 29, 2013 at 02:47:35PM +0200, Ивайло Димитров wrote:
->  
-> Hi,
+(2013/10/29 11:58), David Ahern wrote:
+> On 10/28/13 7:15 AM, Peter Zijlstra wrote:
+>>> Any suggestions on how to do this and without impacting performance. I
+>>> noticed the MSR path seems to take about twice as long as the current
+>>> implementation (which I believe results in rdtsc in the VM for x86 with
+>>> stable TSC).
+>>
+>> So assuming all the TSCs are in fact stable; you could implement this by
+>> syncing up the guest TSC to the host TSC on guest boot. I don't think
+>> anything _should_ rely on the absolute TSC value.
+>>
+>> Of course you then also need to make sure the host and guest tsc
+>> multipliers (cyc2ns) are identical, you can play games with
+>> cyc2ns_offset if you're brave.
+>>
 > 
+> This and the method Gleb mentioned both are going to be complex and 
+> fragile -- based assumptions on how the perf_clock timestamps are 
+> generated. For example, 489223e assumes you have the tracepoint enabled 
+> at VM start with some means of capturing the data (e.g., a perf-session 
+> active). In both cases the end result requires piecing together and 
+> re-generating the VM's timestamp on the events. For perf this means 
+> either modifying the tool to take parameters and an algorithm on how to 
+> modify the timestamp or a homegrown tool to regenerate the file with 
+> updated timestamps.
 > 
->  >-------- Оригинално писмо --------
->  >От:  Minchan Kim 
->  >Относно: Re: OMAPFB: CMA allocation failures
->  >До: Ивайло Димитров 
->  >Изпратено на: Понеделник, 2013, Октомври 28 09:37:48 EET
->  >
->  >
->  >Hello,
->  >
->  >On Tue, Oct 15, 2013 at 09:49:51AM +0300, Ивайло Димитров wrote:
->  >>  Hi
->  >> 
->  >>  >-------- Оригинално писмо --------
->  >>  >От:  Tomi Valkeinen 
->  >>  >Относно: Re: OMAPFB: CMA allocation failures
->  >>  >До: Ивайло Димитров
->  >> 	
->  >>  >Изпратено на: Понеделник, 2013, Октомври 14 09:04:35 EEST
->  >>  >
->  >>  >
->  >>  >Hi,
->  >>  >
->  >>  >On 12/10/13 17:43, Ивайло Димитров wrote:
->  >>  >>  Hi Tomi,
->  >>  >> 
->  >>  >> patch http://lists.infradead.org/pipermail/linux-arm-kernel/2012-November/131269.html modifies
->  >>  >> omapfb driver to use DMA API to allocate framebuffer memory instead of preallocating VRAM.
->  >>  >> 
->  >>  >> With this patch I see a lot of:
->  >>  >> 
->  >>  >> Jan  1 06:33:27 Nokia-N900 kernel: [ 2054.879577] cma: dma_alloc_from_contiguous(cma c05f5844, count 192, align 8)
->  >>  >> Jan  1 06:33:27 Nokia-N900 kernel: [ 2054.914215] cma: dma_alloc_from_contiguous(): memory range at c07df000 is busy, retrying
->  >>  >> Jan  1 06:33:27 Nokia-N900 kernel: [ 2054.933502] cma: dma_alloc_from_contiguous(): memory range at c07e1000 is busy, retrying
->  >>  >> Jan  1 06:33:27 Nokia-N900 kernel: [ 2054.940032] cma: dma_alloc_from_contiguous(): memory range at c07e3000 is busy, retrying
->  >>  >> Jan  1 06:33:27 Nokia-N900 kernel: [ 2054.966644] cma: dma_alloc_from_contiguous(): memory range at c07e5000 is busy, retrying
->  >>  >> Jan  1 06:33:27 Nokia-N900 kernel: [ 2054.976867] cma: dma_alloc_from_contiguous(): memory range at c07e7000 is busy, retrying
->  >>  >> Jan  1 06:33:27 Nokia-N900 kernel: [ 2055.038055] cma: dma_alloc_from_contiguous(): memory range at c07e9000 is busy, retrying
->  >>  >> Jan  1 06:33:27 Nokia-N900 kernel: [ 2055.038116] cma: dma_alloc_from_contiguous(): returned   (null)
->  >>  >> Jan  1 06:33:27 Nokia-N900 kernel: [ 2055.038146] omapfb omapfb: failed to allocate framebuffer
->  >>  >> 
->  >>  >> errors while trying to play a video on N900 with Maemo 5 (Fremantle) on top of linux-3.12rc1.
->  >>  >> It is deffinitely the CMA that fails to allocate the memory most of the times, but I wonder
->  >>  >> how reliable CMA is to be used in omapfb. I even reserved 64MB for CMA, but that made no
->  >>  >> difference. If CMA is disabled, the memory allocation still fails as obviously it is highly
->  >>  >> unlikely there will be such a big chunk of continuous free memory on RAM limited device like
->  >>  >> N900. 
->  >>  >> 
->  >>  >> One obvious solution is to just revert the removal of VRAM memory allocator, but that would
->  >>  >> mean I'll have to maintain a separate tree with all the implications that brings.
->  >>  >> 
->  >>  >> What would you advise on how to deal with the issue?
->  >>  >
->  >>  >I've not seen such errors, and I'm no expert on CMA. But I guess the
->  >>  >contiguous memory area can get fragmented enough no matter how hard one
->  >>  >tries to avoid it. The old VRAM system had the same issue, although it
->  >>  >was quite difficult to hit it.
->  >> 
->  >> I am using my n900 as a daily/only device since the beginning of 2010, never seen such an 
->  >> issue with video playback. And as a maintainer of one of the community supported kernels for
->  >> n900 (kernel-power) I've never had such an issue reported. On stock kernel and derivatives of
->  >> course. It seems VRAM allocator is virtually impossible to fail, while with CMA OMAPFB fails on
->  >> the first video after boot-up.
->  >> 
->  >> When saying you've not seen such an issue - did you actually test video playback, on what
->  >> device and using which distro? Did you use DSP accelerated decoding?
->  >> 
->  >>  >64MB does sound quite a lot, though. I wonder what other drivers are
->  >>  >using CMA, and how do they manage to allocate so much memory and
->  >>  >fragment it so badly... With double buffering, N900 should only need
->  >>  >something like 3MB for the frame buffer.
->  >> 
->  >> Sure, 64 MB is a lot, but I just wanted to see if that would make any difference. And for 720p 
->  >> 3MB is not enough, something like 8MB is needed.
->  >> 
->  >>  >With a quick glance I didn't find any debugfs or such files to show
->  >>  >information about the CMA area. It'd be helpful to find out what's going
->  >>  >on there. Or maybe normal allocations are fragmenting the CMA area, but
->  >>  >for some reason they cannot be moved? Just guessing.
->  >> 
->  >> I was able to track down the failures to:
->  >> http://lxr.free-electrons.com/source/mm/migrate.c#L320
->  >
->  >That path is for anonymous page migration so the culprit I can think of
->  >is that you did get_user_pages on those anonymous pages for pin them.
->  >Right?
->  >
-> 
-> I grepped through the code and there are lots of places where get_user_pages is called, though
-> I suspect either SGX or DSP (or both) drivers to be the ones to blame. Both of them are active
-> and needed for HW accelerated video decoding.
-> 
->  >If so, it's no surpse that fails the migration and CMA doesn't work.
->  >
->  >-- 
->  >Kind regards,
->  >Minchan Kim
->  >
-> 
-> Well, if CMA is to be reliable, I would expect some logic to take care about get_user_pages
+> To back out a bit, my end goal is to be able to create and merge 
+> perf-events from any context on a KVM-based host -- guest userspace, 
+> guest kernel space, host userspace and host kernel space (userspace 
+> events with a perf-clock timestamp is another topic ;-)).
 
-First of all, CMA is never reliable.
+That is almost same as what we(Yoshihiro and I) are trying on integrated
+tracing, we are doing it on ftrace and trace-cmd (but perhaps, it eventually
+works on perf-ftrace).
 
-> causing MIGRATE_CMA pages to be effectively made non-migratable, either by migrating them out of
-> CMA area before they got pinned or by providing a mechanism to migrate them when needed. I am far 
-> from knowing the nuts and bolts of MM and CMA, but so far I failed to see any such logic. Without 
+> Having the 
+> events generated with the proper timestamp is the simpler approach than 
+> trying to collect various tidbits of data, massage timestamps (and 
+> hoping the clock source hasn't changed) and then merge events.
 
-If you read below links you attached, you could know why it doesn't accept.
-
-> it, CMA could be fine for allocating small buffers, but when we talk about framebuffer memory 
-> needed for 720p playback(for example) on a RAM limited embedded device, it is too fragile, IMO.
-
-True.
+Yeah, if possible, we'd like to use it too.
 
 > 
-> BTW quick googling shows I am not the first one to encounter similar problems [0], [1], I don't
-> see solution for. 
-> 
-> However, back to omapfb - my understanding is that the way it uses CMA (in its current form) is
-> prone to allocation failures way beyond acceptable. 
+> And then for the cherry on top a design that works across architectures 
+> (e.g., x86 now, but arm later).
 
-Basically, fragile subsystem shouldn't use CMA, otherwise, your platform should support process
-killing to unpin some pages, Yeah I know it's not 100% solution and very horrible but I know
-some insane people have done it.
+I think your proposal is good for the default implementation, it doesn't
+depends on the arch specific feature. However, since physical timer(clock)
+interfaces and virtualization interfaces strongly depends on the arch,
+I guess the optimized implementations will become different on each arch.
+For example, maybe we can export tsc-offset to the guest to adjust clock
+on x86, but not on ARM, or other devices. In that case, until implementing
+optimized one, we can use paravirt perf_clock.
 
-I just post an idea.
-http://marc.info/?l=linux-mm&m=138311160522311&w=2
-If anybody has a interest, maybe we will move that way.
-
-Thanks.
-
-> 
-> Tomi, what do you think about adding module parameters to allow pre-allocating framebuffer memory
-> from CMA during boot? Or re-implement VRAM allocator to use CMA? As a good side-effect 
-> OMAPFB_GET_VRAM_INFO will no longer return fake values.
-> 
-> Regards,
-> Ivo
-> 
-> [0] http://lwn.net/Articles/541423/
-> [1] https://lkml.org/lkml/2012/11/29/69
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Thank you,
 
 -- 
-Kind regards,
-Minchan Kim
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
