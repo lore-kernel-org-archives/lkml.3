@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab3J3HOl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 03:14:41 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:35382 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753492Ab3J3HOL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753512Ab3J3HOL (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 30 Oct 2013 03:14:11 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID r9U7E9I7031808, This message is accepted by code: ctloc85258
+Received: from rtits2.realtek.com ([60.250.210.242]:35379 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab3J3HOI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 03:14:08 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID r9U7E67r031787, This message is accepted by code: ctloc85258
 From: Hayes Wang <hayeswang@realtek.com>
 To: <netdev@vger.kernel.org>
 CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net v2 3/3] r8152: fix incorrect type in assignment
-Date: Wed, 30 Oct 2013 15:13:40 +0800
-Message-ID: <1383117220-893-4-git-send-email-hayeswang@realtek.com>
+Subject: [PATCH net v2 0/3] r8152 bug fixes
+Date: Wed, 30 Oct 2013 15:13:37 +0800
+Message-ID: <1383117220-893-1-git-send-email-hayeswang@realtek.com>
 X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1383117220-893-1-git-send-email-hayeswang@realtek.com>
+In-Reply-To: <1383033377-1178-1-git-send-email-hayeswang@realtek.com>
 References: <1383033377-1178-1-git-send-email-hayeswang@realtek.com>
- <1383117220-893-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [172.21.71.218]
@@ -26,58 +25,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The data from the hardware should be little endian. Correct the
-declaration.
+I have update the commit messages. I hope they are clear enough.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+I remove the stop/wake tx queue from the second patch first, until
+I find a way to determine which value is suitable for TX_QLEN.
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 763234d..a77bdb8 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -307,22 +307,22 @@ enum rtl8152_flags {
- #define MCU_TYPE_USB			0x0000
- 
- struct rx_desc {
--	u32 opts1;
-+	__le32 opts1;
- #define RX_LEN_MASK			0x7fff
--	u32 opts2;
--	u32 opts3;
--	u32 opts4;
--	u32 opts5;
--	u32 opts6;
-+	__le32 opts2;
-+	__le32 opts3;
-+	__le32 opts4;
-+	__le32 opts5;
-+	__le32 opts6;
- };
- 
- struct tx_desc {
--	u32 opts1;
-+	__le32 opts1;
- #define TX_FS			(1 << 31) /* First segment of a packet */
- #define TX_LS			(1 << 30) /* Final segment of a packet */
- #define TX_LEN_MASK		0x3ffff
- 
--	u32 opts2;
-+	__le32 opts2;
- #define UDP_CS			(1 << 31) /* Calculate UDP/IP checksum */
- #define TCP_CS			(1 << 30) /* Calculate TCP/IP checksum */
- #define IPV4_CS			(1 << 29) /* Calculate IPv4 checksum */
-@@ -876,7 +876,7 @@ static void write_bulk_callback(struct urb *urb)
- static void intr_callback(struct urb *urb)
- {
- 	struct r8152 *tp;
--	__u16 *d;
-+	__le16 *d;
- 	int status = urb->status;
- 	int res;
- 
+Hayes Wang (3):
+  r8152: fix tx/rx memory overflow
+  r8152: modify the tx flow
+  r8152: fix incorrect type in assignment
+
+ drivers/net/usb/r8152.c | 94 +++++++++++++++----------------------------------
+ 1 file changed, 29 insertions(+), 65 deletions(-)
+
 -- 
 1.8.3.1
 
