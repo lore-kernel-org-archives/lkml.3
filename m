@@ -1,239 +1,359 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412Ab3J3DY5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 23:24:57 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:22852 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752021Ab3J3DYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 23:24:55 -0400
-X-IronPort-AV: E=Sophos;i="4.93,597,1378828800"; 
-   d="scan'208";a="8895654"
-Message-ID: <52707A97.5080203@cn.fujitsu.com>
-Date: Wed, 30 Oct 2013 11:18:47 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1753138Ab3J3Da1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 23:30:27 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:49478 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402Ab3J3DaY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 23:30:24 -0400
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, guz.fnst@cn.fujitsu.com
-Subject: Re: [RFC PATCH RESEND] fb: reorder the lock sequence to fix a potential
- lockdep
-References: <526DFDA8.7010806@cn.fujitsu.com>
-In-Reply-To: <526DFDA8.7010806@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/30 11:23:04,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/30 11:23:08,
-	Serialize complete at 2013/10/30 11:23:08
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131024172734.GB2461@kartoffel>
+References: <1382545733-8865-1-git-send-email-badarkhe.manish@gmail.com>
+	<1382545733-8865-2-git-send-email-badarkhe.manish@gmail.com>
+	<20131023164548.GB6042@kartoffel>
+	<CAKDJKT4+ma+KdNX0uemZUQVKHp8giGUX8EgWkY40vYOR-KR0_A@mail.gmail.com>
+	<20131024172734.GB2461@kartoffel>
+Date: Wed, 30 Oct 2013 09:00:23 +0530
+Message-ID: <CAKDJKT63gvGQAiKBopFtzmOSDNyfQ-UXmUi6yXKbjK5Zvwy1aw@mail.gmail.com>
+Subject: Re: [PATCH V4 1/2] tps6507x-ts: Add DT support
+From: Manish Badarkhe <badarkhe.manish@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomi, Jean,
-How about this patch?
+Hi Mark,
 
-Thanks,
-Gu
+Apologize for my late reply.
 
 
-On 10/28/2013 02:01 PM, Gu Zheng wrote:
+On Thu, Oct 24, 2013 at 10:57 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+>
+> On Thu, Oct 24, 2013 at 06:05:53PM +0100, Manish Badarkhe wrote:
+> > Hi Mark,
+> >
+> > Thank you for your reply.
+> >
+> > On Wed, Oct 23, 2013 at 10:15 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+> >
+> >     On Wed, Oct 23, 2013 at 05:28:52PM +0100, Manish Badarkhe wrote:
+> >     > Add device tree based support for TI's tps6507x touchscreen.
+> >     >
+> >     > Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+> >     > ---
+> >     > Changes since V3:
+> >     >  - Rebased on top of Dmitry's changes
+> >     >  - Removed error handling for optional DT properties
+> >     >
+> >     > Changes since V2:
+> >     >  - Removed unnecessary code.
+> >     >  - Updated Documentation to provide proper names of
+> >     >    devicetree properties.
+> >     >
+> >     > Changes since V1:
+> >     >  - Updated documentation to specify tps6507x as multifunctional
+> >     >    device.
+> >     >  - return proper error value in absence of platform and DT
+> >     >    data for touchscreen.
+> >     >  - Updated commit message.
+> >     >
+> >     > :100755 100755 8fffa3c... e1b9cfd... M        Documentation/devicetree/
+> >     bindings/mfd/tps6507x.txt
+> >     > :100644 100644 db604e0... 0cf0eb1... M        drivers/input/touchscreen/
+> >     tps6507x-ts.c
+> >     >  Documentation/devicetree/bindings/mfd/tps6507x.txt |   24 ++++++-
+> >     >  drivers/input/touchscreen/tps6507x-ts.c            |   72
+> >     ++++++++++++--------
+> >     >  2 files changed, 67 insertions(+), 29 deletions(-)
+> >     >
+> >     > diff --git a/Documentation/devicetree/bindings/mfd/tps6507x.txt b/
+> >     Documentation/devicetree/bindings/mfd/tps6507x.txt
+> >     > index 8fffa3c..e1b9cfd 100755
+> >     > --- a/Documentation/devicetree/bindings/mfd/tps6507x.txt
+> >     > +++ b/Documentation/devicetree/bindings/mfd/tps6507x.txt
+> >     > @@ -1,4 +1,8 @@
+> >     > -TPS6507x Power Management Integrated Circuit
+> >     > +TPS6507x Multifunctional Device.
+> >     > +
+> >     > +Features provided by TPS6507x:
+> >     > +        1.Power Management Integrated Circuit.
+> >     > +        2.Touch-Screen.
+> >     >
+> >     >  Required properties:
+> >     >  - compatible: "ti,tps6507x"
+> >     > @@ -23,6 +27,9 @@ Required properties:
+> >     >         vindcdc1_2-supply: VDCDC1 and VDCDC2 input.
+> >     >         vindcdc3-supply  : VDCDC3 input.
+> >     >         vldo1_2-supply   : VLDO1 and VLDO2 input.
+> >     > +- tsc: This node specifies touch screen data.
+> >
+> >     This is a node, but is listed un "Required properties". That seems odd.
+> >
+> >     When is it required?
+> >
+> >     Why is the data under the tsc subnode? Why not directly under the main
+> >     node?
+> >
+> >
+> > Yes, It seems odd to add a subnode properties here. I gone through other
+> > documentation
+> > for MFD devices and observed that separate documentation file is present for
+> > sub node modules.
+>
+> I was trying to say that nodes != properties rather than that this should be
+> split into separate files.
+>
 
-> Following commits:
-> 50e244cc79 fb: rework locking to fix lock ordering on takeover
-> e93a9a8687 fb: Yet another band-aid for fixing lockdep mess
-> 054430e773 fbcon: fix locking harder
-> 
-> reworked locking to fix related lock ordering on takeover, and introduced console_lock
-> into fbmem, but it seems that the new lock sequence(fb_info->lock ---> console_lock)
-> is against with the one in console_callback(console_lock ---> fb_info->lock), and leads to
-> a potential deadlock as following:
-> [  601.079000] ======================================================
-> [  601.079000] [ INFO: possible circular locking dependency detected ]
-> [  601.079000] 3.11.0 #189 Not tainted
-> [  601.079000] -------------------------------------------------------
-> [  601.079000] kworker/0:3/619 is trying to acquire lock:
-> [  601.079000]  (&fb_info->lock){+.+.+.}, at: [<ffffffff81397566>] lock_fb_info+0x26/0x60
-> [  601.079000]
-> but task is already holding lock:
-> [  601.079000]  (console_lock){+.+.+.}, at: [<ffffffff8141aae3>] console_callback+0x13/0x160
-> [  601.079000]
-> which lock already depends on the new lock.
-> 
-> [  601.079000]
-> the existing dependency chain (in reverse order) is:
-> [  601.079000]
-> -> #1 (console_lock){+.+.+.}:
-> [  601.079000]        [<ffffffff810dc971>] lock_acquire+0xa1/0x140
-> [  601.079000]        [<ffffffff810c6267>] console_lock+0x77/0x80
-> [  601.079000]        [<ffffffff81399448>] register_framebuffer+0x1d8/0x320
-> [  601.079000]        [<ffffffff81cfb4c8>] efifb_probe+0x408/0x48f
-> [  601.079000]        [<ffffffff8144a963>] platform_drv_probe+0x43/0x80
-> [  601.079000]        [<ffffffff8144853b>] driver_probe_device+0x8b/0x390
-> [  601.079000]        [<ffffffff814488eb>] __driver_attach+0xab/0xb0
-> [  601.079000]        [<ffffffff814463bd>] bus_for_each_dev+0x5d/0xa0
-> [  601.079000]        [<ffffffff81447e6e>] driver_attach+0x1e/0x20
-> [  601.079000]        [<ffffffff81447a07>] bus_add_driver+0x117/0x290
-> [  601.079000]        [<ffffffff81448fea>] driver_register+0x7a/0x170
-> [  601.079000]        [<ffffffff8144a10a>] __platform_driver_register+0x4a/0x50
-> [  601.079000]        [<ffffffff8144a12d>] platform_driver_probe+0x1d/0xb0
-> [  601.079000]        [<ffffffff81cfb0a1>] efifb_init+0x273/0x292
-> [  601.079000]        [<ffffffff81002132>] do_one_initcall+0x102/0x1c0
-> [  601.079000]        [<ffffffff81cb80a6>] kernel_init_freeable+0x15d/0x1ef
-> [  601.079000]        [<ffffffff8166d2de>] kernel_init+0xe/0xf0
-> [  601.079000]        [<ffffffff816914ec>] ret_from_fork+0x7c/0xb0
-> [  601.079000]
-> -> #0 (&fb_info->lock){+.+.+.}:
-> [  601.079000]        [<ffffffff810dc1d8>] __lock_acquire+0x1e18/0x1f10
-> [  601.079000]        [<ffffffff810dc971>] lock_acquire+0xa1/0x140
-> [  601.079000]        [<ffffffff816835ca>] mutex_lock_nested+0x7a/0x3b0
-> [  601.079000]        [<ffffffff81397566>] lock_fb_info+0x26/0x60
-> [  601.079000]        [<ffffffff813a4aeb>] fbcon_blank+0x29b/0x2e0
-> [  601.079000]        [<ffffffff81418658>] do_blank_screen+0x1d8/0x280
-> [  601.079000]        [<ffffffff8141ab34>] console_callback+0x64/0x160
-> [  601.079000]        [<ffffffff8108d855>] process_one_work+0x1f5/0x540
-> [  601.079000]        [<ffffffff8108e04c>] worker_thread+0x11c/0x370
-> [  601.079000]        [<ffffffff81095fbd>] kthread+0xed/0x100
-> [  601.079000]        [<ffffffff816914ec>] ret_from_fork+0x7c/0xb0
-> [  601.079000]
-> other info that might help us debug this:
-> 
-> [  601.079000]  Possible unsafe locking scenario:
-> 
-> [  601.079000]        CPU0                    CPU1
-> [  601.079000]        ----                    ----
-> [  601.079000]   lock(console_lock);
-> [  601.079000]                                lock(&fb_info->lock);
-> [  601.079000]                                lock(console_lock);
-> [  601.079000]   lock(&fb_info->lock);
-> [  601.079000]
->  *** DEADLOCK ***
-> 
-> so we reorder the lock sequence the same as it in console_callback() to
-> avoid this issue.
-> Not very sure this change is suitable, any comments is welcome.
-> 
-> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> ---
->  drivers/video/fbmem.c |   50 +++++++++++++++++++++++++++++++-----------------
->  1 files changed, 32 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-> index dacaf74..010d191 100644
-> --- a/drivers/video/fbmem.c
-> +++ b/drivers/video/fbmem.c
-> @@ -1108,14 +1108,16 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
->  	case FBIOPUT_VSCREENINFO:
->  		if (copy_from_user(&var, argp, sizeof(var)))
->  			return -EFAULT;
-> -		if (!lock_fb_info(info))
-> -			return -ENODEV;
->  		console_lock();
-> +		if (!lock_fb_info(info)) {
-> +			console_unlock();
-> +			return -ENODEV;
-> +		}
->  		info->flags |= FBINFO_MISC_USEREVENT;
->  		ret = fb_set_var(info, &var);
->  		info->flags &= ~FBINFO_MISC_USEREVENT;
-> -		console_unlock();
->  		unlock_fb_info(info);
-> +		console_unlock();
->  		if (!ret && copy_to_user(argp, &var, sizeof(var)))
->  			ret = -EFAULT;
->  		break;
-> @@ -1144,12 +1146,14 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
->  	case FBIOPAN_DISPLAY:
->  		if (copy_from_user(&var, argp, sizeof(var)))
->  			return -EFAULT;
-> -		if (!lock_fb_info(info))
-> -			return -ENODEV;
->  		console_lock();
-> +		if (!lock_fb_info(info)) {
-> +			console_unlock();
-> +			return -ENODEV;
-> +		}
->  		ret = fb_pan_display(info, &var);
-> -		console_unlock();
->  		unlock_fb_info(info);
-> +		console_unlock();
->  		if (ret == 0 && copy_to_user(argp, &var, sizeof(var)))
->  			return -EFAULT;
->  		break;
-> @@ -1184,23 +1188,27 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
->  			break;
->  		}
->  		event.data = &con2fb;
-> -		if (!lock_fb_info(info))
-> -			return -ENODEV;
->  		console_lock();
-> +		if (!lock_fb_info(info)) {
-> +			console_unlock();
-> +			return -ENODEV;
-> +		}
->  		event.info = info;
->  		ret = fb_notifier_call_chain(FB_EVENT_SET_CONSOLE_MAP, &event);
-> -		console_unlock();
->  		unlock_fb_info(info);
-> +		console_unlock();
->  		break;
->  	case FBIOBLANK:
-> -		if (!lock_fb_info(info))
-> -			return -ENODEV;
->  		console_lock();
-> +		if (!lock_fb_info(info)) {
-> +			console_unlock();
-> +			return -ENODEV;
-> +		}
->  		info->flags |= FBINFO_MISC_USEREVENT;
->  		ret = fb_blank(info, arg);
->  		info->flags &= ~FBINFO_MISC_USEREVENT;
-> -		console_unlock();
->  		unlock_fb_info(info);
-> +		console_unlock();
->  		break;
->  	default:
->  		if (!lock_fb_info(info))
-> @@ -1660,12 +1668,15 @@ static int do_register_framebuffer(struct fb_info *fb_info)
->  	registered_fb[i] = fb_info;
->  
->  	event.info = fb_info;
-> -	if (!lock_fb_info(fb_info))
-> -		return -ENODEV;
->  	console_lock();
-> +	if (!lock_fb_info(fb_info)) {
-> +		console_unlock();
-> +		return -ENODEV;
-> +	}
-> +
->  	fb_notifier_call_chain(FB_EVENT_FB_REGISTERED, &event);
-> -	console_unlock();
->  	unlock_fb_info(fb_info);
-> +	console_unlock();
->  	return 0;
->  }
->  
-> @@ -1678,13 +1689,16 @@ static int do_unregister_framebuffer(struct fb_info *fb_info)
->  	if (i < 0 || i >= FB_MAX || registered_fb[i] != fb_info)
->  		return -EINVAL;
->  
-> -	if (!lock_fb_info(fb_info))
-> -		return -ENODEV;
->  	console_lock();
-> +	if (!lock_fb_info(fb_info)) {
-> +		console_unlock();
-> +		return -ENODEV;
-> +	}
-> +
->  	event.info = fb_info;
->  	ret = fb_notifier_call_chain(FB_EVENT_FB_UNBIND, &event);
-> -	console_unlock();
->  	unlock_fb_info(fb_info);
-> +	console_unlock();
->  
->  	if (ret)
->  		return -EINVAL;
+Ok, got it.I will modify documentation so that only properties comes
+under "required
+properties" section.
+
+>
+> >
+> > TPS6507x is multifunctional device and having touch screen submodule. As it is
+> > child node for
+> > TPS6507x multifunctional device, I have created child node as "tsc".
+> >
+> >
+> >
+> >     > +     ti,poll-period : Time at which touch input is getting sampled in
+> >     ms.
+> >
+> >     Is this for debounce? Other bindings have similar but differently named
+> >     properties.
+> >
+> >
+> > This is not debounce time. This time is required for input poll devices.
+> >
+> >
+> >     Why is this necessary? Can the driver not choose a sane value?
+> >
+> >
+> > poll-period is necessary to sample touch inputs. Driver will chose value
+> > default poll
+> > period if this value is not present. I was bit confused here, whether to add
+> > this property
+> > as optional or required. As with default period touch not achieve performance.
+> > Can I make this property optional?
+>
+> Please elaborate. Why will the default period be sub-optimal? What's the
+> tradeoff here?
+
+Currently, default period and period passed from Device tree both
+are same.I made an assumption here, if default period is less then
+touch get sampled faster and report it to upper layer.As I am not I
+will make this confirm with Texas instrument's engineers.
+
+>
+> >
+> >
+> >     > +     ti,min-pressure: Minimum pressure value to trigger touch.
+> >
+> >     What type are these? Single (u32) cells?
+> >
+> >     What units is ti,min-pressure in?
+> >
+> >
+> > No, its a u16 cell. It is measured in ohm. Again default value for min-pressure
+> > is available
+> > in driver code. Can I make this property optional?
+>
+> Why is it a u16, it's very uncommon to have u16 properties.
+>
+> What _physical_ units is this in, and what order of magnitude? e.g. Pascals,
+> millipascals.
+>
+
+I gone through data sheet but not able to find any units for this
+pressure field.
+As per data sheet, we read pressure values from two ADC result
+registers and these two registers are 8 bit long and hence provide
+totally 16 bit pressure value.
+
+>
+> >
+> >
+> >     >
+> >     >  Regulator Optional properties:
+> >     >  - defdcdc_default: It's property of DCDC2 and DCDC3 regulators.
+> >     > @@ -30,6 +37,14 @@ Regulator Optional properties:
+> >     >                       1: If defdcdc pin of DCDC2/DCDC3 is driven HIGH.
+> >     >    If this property is not defined, it defaults to 0 (not enabled).
+> >     >
+> >     > +Touchscreen Optional properties:
+> >     > +- ti,vendor : Touchscreen vendor id to populate
+> >     > +           in sysclass interface.
+> >     > +- ti,product: Touchscreen product id to populate
+> >     > +           in sysclass interface.
+> >     > +- ti,version: Touchscreen version id to populate
+> >     > +           in sysclass interface.
+> >
+> >     Are these integers, strings, or something else?
+> >
+> >
+> > These are unsigned short(u16) values.
+>
+> Why?
+>
+
+Not much sure why this field is u16. I just referred a platform
+data which  mentioned field as u16 and accordingly add a DT
+property. I am not seeing any harm to make this property u32.
+I will make this property as u32.
+
+>
+>
+>
+> >
+> >
+> >     What values make sense?
+> >
+> >
+> > These values are only to tell about chip details.
+>
+>
+> That does not describe the set of valid values.
+>
+> Is ti,vendor = <4> valid? What does this mean?
+>
+> Is there some standard for assignment of vendor IDs that this follows?
+>
+
+As, these are numeric values, not sure about standard assignment
+of these field. For DT properties, I used these field same as from
+platform data of touch screen driver.
+I will make sure about this Texas Instrument's engineers.
+
+> >
+> >
+> >     What's the sysclass interface? That sounds like a Linux detail. The
+> >     properties
+> >     might be fine but the description shouldn't need to refer to Linux
+> >     internals.
+> >
+> >
+> > Okay, I will update description for these properties.
+> >
+> >
+> >     > +
+> >     >  Example:
+> >     >
+> >     >       pmu: tps6507x@48 {
+> >     > @@ -88,4 +103,11 @@ Example:
+> >     >                       };
+> >     >               };
+> >     >
+> >     > +             tsc {
+> >     > +                     ti,poll-period = <30>;
+> >     > +                     ti,min-pressure = <0x30>;
+> >     > +                     ti,vendor = <0>;
+> >     > +                     ti,product = <65070>;
+> >     > +                     ti,version = <0x100>;
+> >     > +             };
+> >     >       };
+> >     > diff --git a/drivers/input/touchscreen/tps6507x-ts.c b/drivers/input/
+> >     touchscreen/tps6507x-ts.c
+> >     > index db604e0..0cf0eb1 100644
+> >     > --- a/drivers/input/touchscreen/tps6507x-ts.c
+> >     > +++ b/drivers/input/touchscreen/tps6507x-ts.c
+> >     > @@ -22,6 +22,8 @@
+> >     >  #include <linux/mfd/tps6507x.h>
+> >     >  #include <linux/input/tps6507x-ts.h>
+> >     >  #include <linux/delay.h>
+> >     > +#include <linux/of.h>
+> >     > +#include <linux/of_device.h>
+> >     >
+> >     >  #define TSC_DEFAULT_POLL_PERIOD 30 /* ms */
+> >     >  #define TPS_DEFAULT_MIN_PRESSURE 0x30
+> >     > @@ -206,33 +208,54 @@ done:
+> >     >       tps6507x_adc_standby(tsc);
+> >     >  }
+> >     >
+> >     > +static void tsc_init_data(struct tps6507x_ts *tsc,
+> >     > +             struct input_dev *input_dev)
+> >     > +{
+> >     > +     struct device_node *node = tsc->dev->of_node;
+> >     > +     const struct tps6507x_board *tps_board =
+> >     > +                     dev_get_platdata(tsc->dev);
+> >     > +     const struct touchscreen_init_data *init_data = NULL;
+> >     > +
+> >     > +     if (node)
+> >     > +             node = of_find_node_by_name(node, "tsc");
+> >
+> >     As of_find_node_by_name traverses the list of all nodes (not just
+> >     children),
+> >     this may match nodes other than what you expect.
+> >
+> >
+> > I think, It traverse nodes from parent node (i.e. tps6507x) and find child.
+> > Please correct me if I am wrong?
+>
+> No. As I said, it traverses the list of all nodes. Is there is no matching
+> child, it will go on and possibly match a node that is not a direct child (e.g.
+> a child of another node).
+>
+> Perhaps of_get_child_by_name is what you want.
+
+Got it, I will change this to  "of_get_child_by_name".
+
+>
+> >
+> >
+> >
+> >     > +     if (tps_board)
+> >     > +             /*
+> >     > +              * init_data points to array of touchscreen_init structure
+> >     > +              * coming from the board-evm file.
+> >     > +              */
+> >     > +             init_data = tps_board->tps6507x_ts_init_data;
+> >     > +
+> >     > +     if (node == NULL || init_data == NULL) {
+> >     > +             tsc->poll_dev->poll_interval = TSC_DEFAULT_POLL_PERIOD;
+> >     > +             tsc->min_pressure = TPS_DEFAULT_MIN_PRESSURE;
+> >     > +     } else if (init_data) {
+> >     > +             tsc->poll_dev->poll_interval = init_data->poll_period;
+> >     > +             tsc->min_pressure = init_data->min_pressure;
+> >     > +             input_dev->id.vendor = init_data->vendor;
+> >     > +             input_dev->id.product = init_data->product;
+> >     > +             input_dev->id.version = init_data->version;
+> >     > +     } else if (node) {
+> >     > +             of_property_read_u32(node, "ti,poll-period",
+> >     > +                             &tsc->poll_dev->poll_interval);
+> >     > +             of_property_read_u16(node, "ti,min-pressure",
+> >     > +                             &tsc->min_pressure);
+> >
+> >     You didn't mention these were 16-bit values in the binding.
+> >
+> >     As DTB is encoded big-endian, and you didn't use a /bits/ 16 declaration
+> >     (making the property a u32 cell), won't this read 0 in all cases you have a
+> >     value in the expected range (as in your example)?
+> >
+> >
+> > I will mention these values as 16bit. values in binding.
+>
+> Please explain _why_ they are 16-bit values. Even if they are 16-bit it may
+> make sense to have them as u32 values for general consistency and least
+> surprise.
+
+Similarly as above, I just referred a platform data which mentioned
+this field as u16 and accordingly add a DT property for same.
+I am not seeing any harm to make this property u32. I will make this
+property u32.
 
 
+Regards
+Manish Badarkhe
