@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab3J3AlE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 20:41:04 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:57050 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab3J3AlB (ORCPT
+	id S1753181Ab3J3AmB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 20:42:01 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:2829 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab3J3Al7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 20:41:01 -0400
+	Tue, 29 Oct 2013 20:41:59 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 29 Oct 2013 17:41:26 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Mark Zhang <markz@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] clk: tegra: use pll_ref as the pll_e parent
+Date: Wed, 30 Oct 2013 02:41:29 +0200
+Message-ID: <1383093707-10312-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <20131030003317.GD2527@localhost>
-References: <1383000855-8377-1-git-send-email-ezequiel.garcia@free-electrons.com>
-	<1383000855-8377-2-git-send-email-ezequiel.garcia@free-electrons.com>
-	<CAPcyv4iQVoYCXz16T3N4MbdVJV7MoKKeL0wq9t9WF1Kf3gz3Bw@mail.gmail.com>
-	<20131029083407.GA2416@localhost>
-	<20131029103229.5e095a24@skate>
-	<CAPcyv4iRawGxPwcPhyKCHG+2orVNmPktObR7_TSXwN+6tZ=qog@mail.gmail.com>
-	<20131030003317.GD2527@localhost>
-Date: Tue, 29 Oct 2013 17:40:59 -0700
-Message-ID: <CAPcyv4gMCSBeQbT6tCoJPLwXLe36iOCtL+HLhhzvA1=S_qBoYA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] dma: mv_xor: Use high_base mmio where appropriate
-From: Dan Williams <dan.j.williams@intel.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        sachin.kamat@linaro.org, Vinod Koul <vinod.koul@intel.com>,
-        dmaengine@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 5:33 PM, Ezequiel Garcia
-<ezequiel.garcia@free-electrons.com> wrote:
-> By the way, I didn't initially Cced dmaengine list because it's not
-> in the MAINTAINERS file.
->
-> How about we add it and avoid this happening to other developers?
+Use pll_ref instead of pll_re_vco as the pll_e parent on Tegra114 and
+Tegra124. Also add a pll_ref table entry for pll_e for Tegra114.
 
-It's there now, but we just created it so you happened to be one of
-the first ones through...
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ drivers/clk/tegra/clk-pll.c      |    7 ++++---
+ drivers/clk/tegra/clk-tegra114.c |    3 ++-
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/MAINTAINERS#n2728
+diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
+index 7d775a9..193457b 100644
+--- a/drivers/clk/tegra/clk-pll.c
++++ b/drivers/clk/tegra/clk-pll.c
+@@ -1712,11 +1712,12 @@ struct clk *tegra_clk_register_plle_tegra114(const char *name,
+ 	val_aux = pll_readl(pll_params->aux_reg, pll);
+ 
+ 	if (val & PLL_BASE_ENABLE) {
+-		if (!(val_aux & PLLE_AUX_PLLRE_SEL))
++		if ((val_aux & PLLE_AUX_PLLRE_SEL) || (val_aux & val_aux))
+ 			WARN(1, "pll_e enabled with unsupported parent %s\n",
+-			  (val & PLLE_AUX_PLLP_SEL) ? "pllp_out0" : "pll_ref");
++			  (val_aux & PLLE_AUX_PLLP_SEL) ? "pllp_out0" :
++					"pll_re_vco");
+ 	} else {
+-		val_aux |= PLLE_AUX_PLLRE_SEL;
++		val_aux &= ~(PLLE_AUX_PLLRE_SEL | PLLE_AUX_PLLP_SEL);
+ 		pll_writel(val, pll_params->aux_reg, pll);
+ 	}
+ 
+diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
+index e365b35..5cfcd3e 100644
+--- a/drivers/clk/tegra/clk-tegra114.c
++++ b/drivers/clk/tegra/clk-tegra114.c
+@@ -560,6 +560,7 @@ static struct tegra_clk_pll_freq_table pll_e_freq_table[] = {
+ 	/* PLLE special case: use cpcon field to store cml divider value */
+ 	{336000000, 100000000, 100, 21, 16, 11},
+ 	{312000000, 100000000, 200, 26, 24, 13},
++	{12000000, 100000000, 200,  1,  24, 13},
+ 	{0, 0, 0, 0, 0, 0},
+ };
+ 
+@@ -1178,7 +1179,7 @@ static void __init tegra114_pll_init(void __iomem *clk_base,
+ 	clks[TEGRA114_CLK_PLL_RE_OUT] = clk;
+ 
+ 	/* PLLE */
+-	clk = tegra_clk_register_plle_tegra114("pll_e_out0", "pll_re_vco",
++	clk = tegra_clk_register_plle_tegra114("pll_e_out0", "pll_ref",
+ 				      clk_base, 0, &pll_e_params, NULL);
+ 	clks[TEGRA114_CLK_PLL_E_OUT0] = clk;
+ }
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
 
---
-Dan
