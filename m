@@ -1,92 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab3J3Mtd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 08:49:33 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54632 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752494Ab3J3Mtc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 08:49:32 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-acpi@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Len Brown <lenb@kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / hotplug / PCI: Always rescan the slot for new devices
-Date: Wed, 30 Oct 2013 14:01:40 +0100
-Message-ID: <1406112.LRdFoqkugQ@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1383136836-15306-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1383136836-15306-1-git-send-email-mika.westerberg@linux.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1752499Ab3J3M6R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 08:58:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10496 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751408Ab3J3M6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 08:58:16 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <52705CC0.8020909@asianux.com>
+References: <52705CC0.8020909@asianux.com> <523FD9E7.3050303@asianux.com> <523FDBD7.4040602@asianux.com> <C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com> <523FE578.5060801@asianux.com> <52672DAC.1030307@asianux.com> <CAMqJFCou4SObPni5Lb_tX=0hQ__kF_9MLDC-6a1opptc9dxT-A@mail.gmail.com> <52673E41.6040606@asianux.com> <5267AF98.1010800@asianux.com> <5268B0B1.9050009@asianux.com> <526F1ACE.7080409@asianux.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: dhowells@redhat.com, Joern Rennecke <joern.rennecke@embecosm.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
+        Francois Bedard <Francois.Bedard@synopsys.com>,
+        Max Filippov <jcmvbkbc@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH-next v3] kernel/system_certificate.S: use real contents instead of macro GLOBAL()
+Date: Wed, 30 Oct 2013 12:57:45 +0000
+Message-ID: <30128.1383137865@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 30, 2013 02:40:36 PM Mika Westerberg wrote:
-> Commit 2dc4128 (ACPI / hotplug / PCI: Avoid doing too much for spurious
-> notifies) changed the enable_slot() to check return value of pci_scan_slot()
-> and if it is zero return early from the function. It means that there were
-> no new devices in this particular slot.
-> 
-> However, if a device appeared deeper in the hierarchy the code now ignores
-> it causing things like Thunderbolt chaining fail to recognize new devices.
-> 
-> The problem with Alex Williamson's machine was solved with commit
-> a47d8c8 (ACPI / hotplug / PCI: Avoid parent bus rescans on spurious device
-> checks) and hence we should be able to restore the original functionality
-> that we always rescan on bus check notification.
-> 
-> On a device check notification we still check what acpiphp_rescan_slot()
-> returns and on zero bail out early.
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Chen Gang <gang.chen@asianux.com> wrote:
 
-So, this is a revert of commit a47d8c8, correct?
+> If a macro is only used within 2 times, and also its contents are
+> within 2 lines, recommend to expand it to shrink code line.
+> 
+> For our case, the macro is not portable either: some architectures'
+> assembler may use another character to mark newline in a macro (e.g.
+> '`' for arc), which will cause issue.
+> 
+> If still want to use macro and let it portable enough, it will also
+> need include additional header file (e.g "#include <linux/linkage.h>",
+> although it also need be fixed).
 
-Rafael
+Fine by me.
 
-
-> ---
-> Alex,
-> 
-> Are you able to check if your machine still works and doesn't slow down
-> during boot after this patch is applied?
-> 
-> Thanks.
-> 
->  drivers/pci/hotplug/acpiphp_glue.c | 6 +-----
->  1 file changed, 1 insertion(+), 5 deletions(-)
-> 
-> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-> index be12fbf..1ea7523 100644
-> --- a/drivers/pci/hotplug/acpiphp_glue.c
-> +++ b/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -552,9 +552,8 @@ static void __ref enable_slot(struct acpiphp_slot *slot)
->  	struct acpiphp_func *func;
->  	int max, pass;
->  	LIST_HEAD(add_list);
-> -	int nr_found;
->  
-> -	nr_found = acpiphp_rescan_slot(slot);
-> +	acpiphp_rescan_slot(slot);
->  	max = acpiphp_max_busnr(bus);
->  	for (pass = 0; pass < 2; pass++) {
->  		list_for_each_entry(dev, &bus->devices, bus_list) {
-> @@ -574,9 +573,6 @@ static void __ref enable_slot(struct acpiphp_slot *slot)
->  		}
->  	}
->  	__pci_bus_assign_resources(bus, &add_list, NULL);
-> -	/* Nothing more to do here if there are no new devices on this bus. */
-> -	if (!nr_found && (slot->flags & SLOT_ENABLED))
-> -		return;
->  
->  	acpiphp_sanitize_bus(bus);
->  	acpiphp_set_hpp_values(bus);
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Applied.
