@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328Ab3J3Vqt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 17:46:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7374 "EHLO mx1.redhat.com"
+	id S1754753Ab3J3Vro (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 17:47:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19170 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751803Ab3J3Vqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 17:46:46 -0400
+	id S1754286Ab3J3Vqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 17:46:48 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
@@ -17,150 +17,90 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Pavel Emelyanov <xemul@parallels.com>, Rik van Riel <riel@redhat.com>,
         kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 07/11] memcg: redefine callback functions for page table walker
-Date: Wed, 30 Oct 2013 17:44:55 -0400
-Message-Id: <1383169499-25144-8-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 08/11] madvise: redefine callback functions for page table walker
+Date: Wed, 30 Oct 2013 17:44:56 -0400
+Message-Id: <1383169499-25144-9-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1383169499-25144-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1383169499-25144-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move code around pte loop in mem_cgroup_count_precharge_pte_range() into
-mem_cgroup_count_precharge_pte() connected to pte_entry().
-
-We don't change the callback mem_cgroup_move_charge_pte_range() for now,
-because we can't do the same replacement easily due to 'goto retry'.
-
-ChangeLog v2:
-- rebase onto mmots
+swapin_walk_pmd_entry() is defined as pmd_entry(), but it has no code
+about pmd handling (except pmd_none_or_trans_huge_or_clear_bad, but the
+same check are now done in core page table walk code).
+So let's move this function on pte_entry() as swapin_walk_pte_entry().
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- mm/memcontrol.c | 71 ++++++++++++++++++++++-----------------------------------
- 1 file changed, 27 insertions(+), 44 deletions(-)
+ mm/madvise.c | 43 +++++++++++++------------------------------
+ 1 file changed, 13 insertions(+), 30 deletions(-)
 
-diff --git v3.12-rc7-mmots-2013-10-29-16-24.orig/mm/memcontrol.c v3.12-rc7-mmots-2013-10-29-16-24/mm/memcontrol.c
-index e375bcb..60c9826 100644
---- v3.12-rc7-mmots-2013-10-29-16-24.orig/mm/memcontrol.c
-+++ v3.12-rc7-mmots-2013-10-29-16-24/mm/memcontrol.c
-@@ -6601,30 +6601,29 @@ static inline enum mc_target_type get_mctgt_type_thp(struct vm_area_struct *vma,
+diff --git v3.12-rc7-mmots-2013-10-29-16-24.orig/mm/madvise.c v3.12-rc7-mmots-2013-10-29-16-24/mm/madvise.c
+index 6970248..722fe1d 100644
+--- v3.12-rc7-mmots-2013-10-29-16-24.orig/mm/madvise.c
++++ v3.12-rc7-mmots-2013-10-29-16-24/mm/madvise.c
+@@ -109,38 +109,22 @@ static int madvise_vma_anon_name(struct vm_area_struct *vma,
  }
- #endif
  
--static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
-+static int mem_cgroup_count_precharge_pte(pte_t *pte,
- 					unsigned long addr, unsigned long end,
- 					struct mm_walk *walk)
+ #ifdef CONFIG_SWAP
+-static int swapin_walk_pmd_entry(pmd_t *pmd, unsigned long start,
++static int swapin_walk_pte_entry(pte_t *pte, unsigned long start,
+ 	unsigned long end, struct mm_walk *walk)
  {
+-	pte_t *orig_pte;
 -	struct vm_area_struct *vma = walk->private;
--	pte_t *pte;
-+	if (get_mctgt_type(walk->vma, addr, *pte, NULL))
-+		mc.precharge++;	/* increment precharge temporarily */
-+	return 0;
-+}
-+
-+static int mem_cgroup_count_precharge_pmd(pmd_t *pmd,
-+					unsigned long addr, unsigned long end,
-+					struct mm_walk *walk)
-+{
+-	unsigned long index;
++	swp_entry_t entry;
++	struct page *page;
 +	struct vm_area_struct *vma = walk->vma;
- 	spinlock_t *ptl;
  
- 	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
- 		if (get_mctgt_type_thp(vma, addr, *pmd, NULL) == MC_TARGET_PAGE)
- 			mc.precharge += HPAGE_PMD_NR;
- 		spin_unlock(ptl);
--		return 0;
-+		/* don't call mem_cgroup_count_precharge_pte() */
-+		walk->skip = 1;
- 	}
+-	if (pmd_none_or_trans_huge_or_clear_bad(pmd))
++	if (pte_present(*pte) || pte_none(*pte) || pte_file(*pte))
+ 		return 0;
 -
--	if (pmd_trans_unstable(pmd))
--		return 0;
--	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
--	for (; addr != end; pte++, addr += PAGE_SIZE)
--		if (get_mctgt_type(vma, addr, *pte, NULL))
--			mc.precharge++;	/* increment precharge temporarily */
--	pte_unmap_unlock(pte - 1, ptl);
--	cond_resched();
+-	for (index = start; index != end; index += PAGE_SIZE) {
+-		pte_t pte;
+-		swp_entry_t entry;
+-		struct page *page;
+-		spinlock_t *ptl;
 -
+-		orig_pte = pte_offset_map_lock(vma->vm_mm, pmd, start, &ptl);
+-		pte = *(orig_pte + ((index - start) / PAGE_SIZE));
+-		pte_unmap_unlock(orig_pte, ptl);
+-
+-		if (pte_present(pte) || pte_none(pte) || pte_file(pte))
+-			continue;
+-		entry = pte_to_swp_entry(pte);
+-		if (unlikely(non_swap_entry(entry)))
+-			continue;
+-
+-		page = read_swap_cache_async(entry, GFP_HIGHUSER_MOVABLE,
+-								vma, index);
+-		if (page)
+-			page_cache_release(page);
+-	}
+-
++	entry = pte_to_swp_entry(*pte);
++	if (unlikely(non_swap_entry(entry)))
++		return 0;
++	page = read_swap_cache_async(entry, GFP_HIGHUSER_MOVABLE,
++				     vma, start);
++	if (page)
++		page_cache_release(page);
  	return 0;
  }
  
-@@ -6633,18 +6632,14 @@ static unsigned long mem_cgroup_count_precharge(struct mm_struct *mm)
- 	unsigned long precharge;
- 	struct vm_area_struct *vma;
- 
-+	struct mm_walk mem_cgroup_count_precharge_walk = {
-+		.pmd_entry = mem_cgroup_count_precharge_pmd,
-+		.pte_entry = mem_cgroup_count_precharge_pte,
-+		.mm = mm,
-+	};
- 	down_read(&mm->mmap_sem);
--	for (vma = mm->mmap; vma; vma = vma->vm_next) {
--		struct mm_walk mem_cgroup_count_precharge_walk = {
--			.pmd_entry = mem_cgroup_count_precharge_pte_range,
--			.mm = mm,
--			.private = vma,
--		};
--		if (is_vm_hugetlb_page(vma))
--			continue;
--		walk_page_range(vma->vm_start, vma->vm_end,
--					&mem_cgroup_count_precharge_walk);
--	}
-+	for (vma = mm->mmap; vma; vma = vma->vm_next)
-+		walk_page_vma(vma, &mem_cgroup_count_precharge_walk);
- 	up_read(&mm->mmap_sem);
- 
- 	precharge = mc.precharge;
-@@ -6783,7 +6778,7 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
- 				struct mm_walk *walk)
+@@ -149,8 +133,7 @@ static void force_swapin_readahead(struct vm_area_struct *vma,
  {
- 	int ret = 0;
--	struct vm_area_struct *vma = walk->private;
-+	struct vm_area_struct *vma = walk->vma;
- 	pte_t *pte;
- 	spinlock_t *ptl;
- 	enum mc_target_type target_type;
-@@ -6884,6 +6879,10 @@ put:			/* get_mctgt_type() gets the page */
- static void mem_cgroup_move_charge(struct mm_struct *mm)
- {
- 	struct vm_area_struct *vma;
-+	struct mm_walk mem_cgroup_move_charge_walk = {
-+		.pmd_entry = mem_cgroup_move_charge_pte_range,
-+		.mm = mm,
-+	};
+ 	struct mm_walk walk = {
+ 		.mm = vma->vm_mm,
+-		.pmd_entry = swapin_walk_pmd_entry,
+-		.private = vma,
++		.pte_entry = swapin_walk_pte_entry,
+ 	};
  
- 	lru_add_drain_all();
- retry:
-@@ -6899,24 +6898,8 @@ static void mem_cgroup_move_charge(struct mm_struct *mm)
- 		cond_resched();
- 		goto retry;
- 	}
--	for (vma = mm->mmap; vma; vma = vma->vm_next) {
--		int ret;
--		struct mm_walk mem_cgroup_move_charge_walk = {
--			.pmd_entry = mem_cgroup_move_charge_pte_range,
--			.mm = mm,
--			.private = vma,
--		};
--		if (is_vm_hugetlb_page(vma))
--			continue;
--		ret = walk_page_range(vma->vm_start, vma->vm_end,
--						&mem_cgroup_move_charge_walk);
--		if (ret)
--			/*
--			 * means we have consumed all precharges and failed in
--			 * doing additional charge. Just abandon here.
--			 */
--			break;
--	}
-+	for (vma = mm->mmap; vma; vma = vma->vm_next)
-+		walk_page_vma(vma, &mem_cgroup_move_charge_walk);
- 	up_read(&mm->mmap_sem);
- }
- 
+ 	walk_page_range(start, end, &walk);
 -- 
 1.8.3.1
 
