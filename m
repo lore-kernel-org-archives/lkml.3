@@ -1,162 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590Ab3J3K1o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 06:27:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44351 "EHLO mx1.redhat.com"
+	id S1753715Ab3J3K2k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 06:28:40 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:33028 "EHLO thoth.sbs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751668Ab3J3K12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 06:27:28 -0400
-Date: Wed, 30 Oct 2013 15:57:20 +0530 (IST)
-From: P J P <ppandit@redhat.com>
-X-X-Sender: pjp@javelin.pnq.redhat.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [Patch] Read CONFIG_RD_ variables for initramfs compression
-In-Reply-To: <20131029151507.8f63dad8e7525e33431d9596@linux-foundation.org>
-Message-ID: <alpine.LFD.2.03.1310301226260.12975@erqung.pbz>
-References: <alpine.LFD.2.03.1310152002200.7552@erqung.pbz> <20131029151507.8f63dad8e7525e33431d9596@linux-foundation.org>
+	id S1751644Ab3J3K2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 06:28:38 -0400
+Message-ID: <5270DF35.1040708@siemens.com>
+Date: Wed, 30 Oct 2013 11:28:05 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="0-1133218421-1383128847=:17364"
+To: Andi Kleen <andi@firstfloor.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Tom Tromey <tromey@redhat.com>,
+        Ben Widawsky <ben@bwidawsk.net>, Borislav Petkov <bp@suse.de>,
+        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH v6 01/21] scripts/gdb: Add infrastructure
+References: <cover.1382950737.git.jan.kiszka@siemens.com> <74596df6935455908a146314b9b42ae2d79f6712.1382950737.git.jan.kiszka@siemens.com> <20131030053521.GU29695@two.firstfloor.org>
+In-Reply-To: <20131030053521.GU29695@two.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 2013-10-30 06:35, Andi Kleen wrote:
+>> The loading mechanism is based on gdb loading for <objfile>-gdb.py when
+>> opening <objfile>. Therefore, this places a corresponding link to the
+>> main helper script into the output directory that contains vmlinux.
+> 
+>> This feature depends on CONFIG_DEBUG_INFO.
+> 
+> Could you make this a separate config option? Having the links for
+> people who don't use gdb would be ugly.
+> 
 
---0-1133218421-1383128847=:17364
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Like this?
 
-  Hello Andrew,
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 06344d9..d66a8f8 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -143,6 +143,17 @@ config DEBUG_INFO_REDUCED
+ 	  DEBUG_INFO build and compile times are reduced too.
+ 	  Only works with newer gcc versions.
+ 
++config GDB_SCRIPTS
++	bool "Provide GDB scripts for kernel debugging"
++	select DEBUG_INFO
++	help
++	  This creates the required links to GDB helper scripts in the
++	  build directory. If you load vmlinux into gdb, the helper
++	  scripts will be automatically imported by gdb as well, and
++	  additional functions are available to analyze a Linux kernel
++	  instance. See Documentation/gdb-kernel-debugging.txt for further
++	  details.
++
+ config ENABLE_WARN_DEPRECATED
+ 	bool "Enable __deprecated logic"
+ 	default y
 
-+-- On Tue, 29 Oct 2013, Andrew Morton wrote --+
-| On Tue, 15 Oct 2013 20:25:57 +0530 (IST) P J P <ppandit@redhat.com> wrote:
-| This patch breaks my x86_64 allmodconfig build, because I don't have
-| the lz4 executable installed:
-| 
-| /usr/src/25/scripts/gen_initramfs_list.sh: line 307: lz4: command not found
-| make[1]: *** [usr/initramfs_data.cpio.lz4] Error 1
-| 
-| This obviously isn't acceptable!
+Will send an updated series soon, also adjusting the docs, just waiting
+for potential further comments.
 
-  Oops! '$ make allmodconfig' seems to enables all compression algorithms; So 
-the last one overrides the previous choices in usr/Makefile.
+Jan
 
-===
-...
-CONFIG_RD_GZIP=y
-CONFIG_RD_BZIP2=y
-CONFIG_RD_LZMA=y
-CONFIG_RD_XZ=y
-CONFIG_RD_LZO=y
-CONFIG_RD_LZ4=y
-===
-
-Please see an updated patch herein. I've patched 'gen_initramfs_list.sh' 
-script to check if a selected compression command is accessible or not; And 
-fall-back to the default gzip(1) format when it is not. usr/Makefile also 
-defaults to '.gz' format when all are enabled.
-
-I hope this works well; Sorry about the trouble though.
-
-Thank you!
---
-Prasad J Pandit / Red Hat Security Response Team
---0-1133218421-1383128847=:17364
-Content-Type: TEXT/PLAIN; charset=US-ASCII; name=0001-Read-CONFIG_RD_-variables-for-initramfs-compression.patch
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.LFD.2.03.1310301557200.17364@erqung.pbz>
-Content-Description: 
-Content-Disposition: attachment; filename=0001-Read-CONFIG_RD_-variables-for-initramfs-compression.patch
-
-RnJvbSBjOTAzNTQyYzE1ZWEzMDc4NWQyMDlhZDdkZDhmYTBkNDYxZTA4NGNi
-IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQ0KRnJvbTogUCBKIFAgPHByYXNh
-ZEByZWRoYXQuY29tPg0KRGF0ZTogV2VkLCAzMCBPY3QgMjAxMyAxNTozMjox
-NiArMDUzMA0KU3ViamVjdDogUmVhZCBDT05GSUdfUkRfIHZhcmlhYmxlcyBm
-b3IgaW5pdHJhbWZzIGNvbXByZXNzaW9uDQoNCldoZW4gZXhwZXJ0IGNvbmZp
-Z3VyYXRpb24gb3B0aW9uKENPTkZJR19FWFBFUlQpIGlzIGVuYWJsZWQsDQpt
-ZW51Y29uZmlnIG9mZmVycyBhIGNob2ljZSBvZiBjb21wcmVzc2lvbiBhbGdv
-cml0aG0gdG8gY29tcHJlc3MNCmluaXRpYWwgcmFtZnMgaW1hZ2U7IFRoaXMg
-Y2hvaWNlIGlzIHN0b3JlZCBpbnRvIENPTkZJR19SRF8qDQp2YXJpYWJsZXMu
-IEJ1dCB1c3IvTWFrZWZpbGUgdXNlcyBlYXJsaWVyIElOSVRSQU1GU19DT01Q
-UkVTU0lPTl8qDQptYWNyb3MgdG8gYnVpbGQgaW5pdGlhbCByYW1mcyBmaWxl
-LiBTaW5jZSBub25lIG9mIHRoZW0gaXMgZGVmaW5lZCwNCnJlc3VsdGluZyAn
-aW5pdHJhbWZzX2RhdGEuY3BpbycgZmlsZSByZW1haW5zIHVuLWNvbXByZXNz
-ZWQuDQoNClRoaXMgcGF0Y2ggdXBkYXRlcyB0aGUgTWFrZWZpbGUgdG8gdXNl
-IENPTkZJR19SRF8qIHZhcmlhYmxlcyBhbmQNCmFkZHMgc3VwcG9ydCBmb3Ig
-TFo0IGNvbXByZXNzaW9uIGFsZ29yaXRobS4gQWxzbyB1cGRhdGVzIHRoZQ0K
-J2dlbl9pbml0cmFtZnNfbGlzdC5zaCcgc2NyaXB0IHRvIGNoZWNrIHdoZXRo
-ZXIgYSBzZWxlY3RlZA0KY29tcHJlc3Npb24gY29tbWFuZCBpcyBhY2Nlc3Np
-YmxlIG9yIG5vdC4gQW5kIGZhbGwtYmFjayB0byBkZWZhdWx0DQpnemlwKDEp
-IGNvbXByZXNzaW9uIHdoZW4gaXQgaXMgbm90Lg0KDQpTaWduZWQtb2ZmLWJ5
-OiBQIEogUCA8cHJhc2FkQHJlZGhhdC5jb20+DQoNCmRpZmYgLS1naXQgYS9z
-Y3JpcHRzL2dlbl9pbml0cmFtZnNfbGlzdC5zaCBiL3NjcmlwdHMvZ2VuX2lu
-aXRyYW1mc19saXN0LnNoDQppbmRleCBiNDgyZjE2Li4yODg5YTgzIDEwMDY0
-NA0KLS0tIGEvc2NyaXB0cy9nZW5faW5pdHJhbWZzX2xpc3Quc2gNCisrKyBi
-L3NjcmlwdHMvZ2VuX2luaXRyYW1mc19saXN0LnNoDQpAQCAtMjQwLDEyICsy
-NDAsMTggQEAgY2FzZSAiJGFyZyIgaW4NCiAJCW91dHB1dF9maWxlPSIkMSIN
-CiAJCWNwaW9fbGlzdD0iJChta3RlbXAgJHtUTVBESVI6LS90bXB9L2NwaW9s
-aXN0LlhYWFhYWCkiDQogCQlvdXRwdXQ9JHtjcGlvX2xpc3R9DQotCQllY2hv
-ICIkb3V0cHV0X2ZpbGUiIHwgZ3JlcCAtcSAiXC5neiQiICYmIGNvbXByPSJn
-emlwIC1uIC05IC1mIg0KLQkJZWNobyAiJG91dHB1dF9maWxlIiB8IGdyZXAg
-LXEgIlwuYnoyJCIgJiYgY29tcHI9ImJ6aXAyIC05IC1mIg0KLQkJZWNobyAi
-JG91dHB1dF9maWxlIiB8IGdyZXAgLXEgIlwubHptYSQiICYmIGNvbXByPSJs
-em1hIC05IC1mIg0KLQkJZWNobyAiJG91dHB1dF9maWxlIiB8IGdyZXAgLXEg
-IlwueHokIiAmJiBcDQotCQkJCWNvbXByPSJ4eiAtLWNoZWNrPWNyYzMyIC0t
-bHptYTI9ZGljdD0xTWlCIg0KLQkJZWNobyAiJG91dHB1dF9maWxlIiB8IGdy
-ZXAgLXEgIlwubHpvJCIgJiYgY29tcHI9Imx6b3AgLTkgLWYiDQorCQllY2hv
-ICIkb3V0cHV0X2ZpbGUiIHwgZ3JlcCAtcSAiXC5neiQiICYmIFsgLXggIi9i
-aW4vZ3ppcCIgXSBcDQorICAgICAgICAgICAgICAgICYmIGNvbXByPSJnemlw
-IC1uIC05IC1mIg0KKwkJZWNobyAiJG91dHB1dF9maWxlIiB8IGdyZXAgLXEg
-IlwuYnoyJCIgJiYgWyAteCAiL2Jpbi9iemlwMiIgXSBcDQorICAgICAgICAg
-ICAgICAgICYmIGNvbXByPSJiemlwMiAtOSAtZiINCisJCWVjaG8gIiRvdXRw
-dXRfZmlsZSIgfCBncmVwIC1xICJcLmx6bWEkIiAmJiBbIC14ICIvYmluL2x6
-bWEiIF0gXA0KKyAgICAgICAgICAgICAgICAmJiBjb21wcj0ibHptYSAtOSAt
-ZiINCisJCWVjaG8gIiRvdXRwdXRfZmlsZSIgfCBncmVwIC1xICJcLnh6JCIg
-JiYgWyAteCAiL2Jpbi94eiIgXSBcDQorICAgICAgICAgICAgICAgICYmIGNv
-bXByPSJ4eiAtLWNoZWNrPWNyYzMyIC0tbHptYTI9ZGljdD0xTWlCIg0KKwkJ
-ZWNobyAiJG91dHB1dF9maWxlIiB8IGdyZXAgLXEgIlwubHpvJCIgJiYgWyAt
-eCAiL2Jpbi9sem9wIiBdIFwNCisgICAgICAgICAgICAgICAgJiYgY29tcHI9
-Imx6b3AgLTkgLWYiDQorCQllY2hvICIkb3V0cHV0X2ZpbGUiIHwgZ3JlcCAt
-cSAiXC5sejQkIiAmJiBbIC14ICIvYmluL2x6NCIgXSBcDQorICAgICAgICAg
-ICAgICAgICYmIGNvbXByPSJsejQgLTkgLWYiDQogCQllY2hvICIkb3V0cHV0
-X2ZpbGUiIHwgZ3JlcCAtcSAiXC5jcGlvJCIgJiYgY29tcHI9ImNhdCINCiAJ
-CXNoaWZ0DQogCQk7Ow0KZGlmZiAtLWdpdCBhL3Vzci9NYWtlZmlsZSBiL3Vz
-ci9NYWtlZmlsZQ0KaW5kZXggMDI5ZmZlNi4uZTc2N2YwMSAxMDA2NDQNCi0t
-LSBhL3Vzci9NYWtlZmlsZQ0KKysrIGIvdXNyL01ha2VmaWxlDQpAQCAtNiwy
-MCArNiwyMyBAQCBrbGliY2RpcnM6Ow0KIFBIT05ZICs9IGtsaWJjZGlycw0K
-IA0KIA0KLSMgR3ppcA0KLXN1ZmZpeF8kKENPTkZJR19JTklUUkFNRlNfQ09N
-UFJFU1NJT05fR1pJUCkgICA9IC5neg0KLQ0KICMgQnppcDINCi1zdWZmaXhf
-JChDT05GSUdfSU5JVFJBTUZTX0NPTVBSRVNTSU9OX0JaSVAyKSAgPSAuYnoy
-DQorc3VmZml4XyQoQ09ORklHX1JEX0JaSVAyKSAgPSAuYnoyDQogDQogIyBM
-em1hDQotc3VmZml4XyQoQ09ORklHX0lOSVRSQU1GU19DT01QUkVTU0lPTl9M
-Wk1BKSAgID0gLmx6bWENCitzdWZmaXhfJChDT05GSUdfUkRfTFpNQSkgICA9
-IC5sem1hDQogDQogIyBYWg0KLXN1ZmZpeF8kKENPTkZJR19JTklUUkFNRlNf
-Q09NUFJFU1NJT05fWFopICAgICA9IC54eg0KK3N1ZmZpeF8kKENPTkZJR19S
-RF9YWikgICAgID0gLnh6DQogDQogIyBMem8NCi1zdWZmaXhfJChDT05GSUdf
-SU5JVFJBTUZTX0NPTVBSRVNTSU9OX0xaTykgICA9IC5sem8NCitzdWZmaXhf
-JChDT05GSUdfUkRfTFpPKSAgICA9IC5sem8NCisNCisjIEx6NA0KK3N1ZmZp
-eF8kKENPTkZJR19SRF9MWjQpICAgID0gLmx6NA0KKw0KKyMgR3ppcA0KK3N1
-ZmZpeF8kKENPTkZJR19SRF9HWklQKSAgID0gLmd6DQogDQogQUZMQUdTX2lu
-aXRyYW1mc19kYXRhLm8gKz0gLURJTklUUkFNRlNfSU1BR0U9InVzci9pbml0
-cmFtZnNfZGF0YS5jcGlvJChzdWZmaXhfeSkiDQogDQpAQCAtNTMsNyArNTYs
-MTAgQEAgZW5kaWYNCiBxdWlldF9jbWRfaW5pdGZzID0gR0VOICAgICAkQA0K
-ICAgICAgIGNtZF9pbml0ZnMgPSAkKGluaXRyYW1mcykgLW8gJEAgJChyYW1m
-cy1hcmdzKSAkKHJhbWZzLWlucHV0KQ0KIA0KLXRhcmdldHMgOj0gaW5pdHJh
-bWZzX2RhdGEuY3Bpby5neiBpbml0cmFtZnNfZGF0YS5jcGlvLmJ6MiBpbml0
-cmFtZnNfZGF0YS5jcGlvLmx6bWEgaW5pdHJhbWZzX2RhdGEuY3Bpby54eiBp
-bml0cmFtZnNfZGF0YS5jcGlvLmx6byBpbml0cmFtZnNfZGF0YS5jcGlvDQor
-dGFyZ2V0cyA6PSBpbml0cmFtZnNfZGF0YS5jcGlvLmd6IGluaXRyYW1mc19k
-YXRhLmNwaW8uYnoyIFwNCisJaW5pdHJhbWZzX2RhdGEuY3Bpby5sem1hIGlu
-aXRyYW1mc19kYXRhLmNwaW8ueHogXA0KKwlpbml0cmFtZnNfZGF0YS5jcGlv
-Lmx6byBpbml0cmFtZnNfZGF0YS5jcGlvLmx6NCBcDQorCWluaXRyYW1mc19k
-YXRhLmNwaW8NCiAjIGRvIG5vdCB0cnkgdG8gdXBkYXRlIGZpbGVzIGluY2x1
-ZGVkIGluIGluaXRyYW1mcw0KICQoZGVwc19pbml0cmFtZnMpOiA7DQogDQpA
-QCAtNjYsNCArNzIsMyBAQCAkKGRlcHNfaW5pdHJhbWZzKToga2xpYmNkaXJz
-DQogJChvYmopL2luaXRyYW1mc19kYXRhLmNwaW8kKHN1ZmZpeF95KTogJChv
-YmopL2dlbl9pbml0X2NwaW8gJChkZXBzX2luaXRyYW1mcykga2xpYmNkaXJz
-DQogCSQoUSkkKGluaXRyYW1mcykgLWwgJChyYW1mcy1pbnB1dCkgPiAkKG9i
-aikvLmluaXRyYW1mc19kYXRhLmNwaW8uZA0KIAkkKGNhbGwgaWZfY2hhbmdl
-ZCxpbml0ZnMpDQotDQotLSANCjEuOC4zLjENCg0K
-
---0-1133218421-1383128847=:17364--
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
