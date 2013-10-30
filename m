@@ -1,235 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391Ab3J3Kfj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 06:35:39 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:34193 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272Ab3J3Kfh (ORCPT
+	id S1753302Ab3J3KgK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 06:36:10 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:36630 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab3J3KgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 06:35:37 -0400
-Message-ID: <1383129316.2414.4.camel@localhost.localdomain>
-Subject: [PATCH] ipmi: add ipmi tracepoints
-From: Hushan Jia <hushan.jia@gmail.com>
-To: Corey Minyard <minyard@acm.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, openipmi-developer@lists.sourceforge.net,
-        oliver.yang@emc.com, hushan.jia@emc.com
-Date: Wed, 30 Oct 2013 18:35:16 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1 
-Mime-Version: 1.0
+	Wed, 30 Oct 2013 06:36:08 -0400
+Message-ID: <5270E112.3020107@hitachi.com>
+Date: Wed, 30 Oct 2013 19:36:02 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>, Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch
+ methods (v6)
+References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hushan Jia <hushan.jia@emc.com>
+(2013/10/29 15:53), Namhyung Kim wrote:
+> Hello,
+> 
+> This patchset implements memory (address), stack[N], deference,
+> bitfield and retval (it needs uretprobe tho) fetch methods for
+> uprobes.  It's based on the previous work [1] done by Hyeoncheol Lee.
+> 
+> Now kprobes and uprobes have their own fetch_type_tables and, in turn,
+> memory and stack access methods.  Other fetch methods are shared.
+> 
+> For the dereference method, I added a new argument to fetch functions.
+> It's because for uprobes it needs to know whether the given address is
+> a file offset or a virtual address in an user process.  For instance,
+> in case of fetching from a memory directly (like @offset) it should
+> convert the address (offset) to a virtual address of the process, but
+> if it's a dereferencing, the given address already has the virtual
+> address.
+> 
+> To determine this in a fetch function, I passed a pointer to
+> trace_uprobe for direct fetch, and passed NULL for dereference.
+> 
+> The patch 1-2 are bug fixes and can be applied independently.
 
-Sometimes it's essential to tracing ipmi communications when doing platform related work,
-including the commands and messages between user spaces and the system interface.
-This patch add 5 tracepoints to ipmi driver, and remove old debugging output code:
+You'd better add [BUGFIX] and send those separately. ;)
+But anyway, I'm OK to pull those first two (and others too).
 
-ipmi_cmd_request
-ipmi_smi_msg_send
-ipmi_smi_msg_invalidcmd
-ipmi_smi_msg_recv
-ipmi_smi_msg_resend
 
-Signed-off-by: Hushan Jia <hushan.jia@emc.com>
-Signed-off-by: Oliver Yang <oliver.yang@emc.com>
-Cc: Corey Minyard <minyard@acm.org>
+> Please look at patch 10 that uses per-cpu buffer for accessing user
+> memory as suggested by Steven.  While I tried hard not to mess things
+> up there might be a chance I did something horrible.  It'd be great if
+> you guys take a look and give comments.
+> 
+> 
+>  * v6 changes:
+>   - add more Ack's from Masami
+>   - fix ref count of uprobe_cpu_buffer (thanks to Jovi)
+> 
+>  * v5 changes:
+>   - use user_stack_pointer() instead of GET_USP()
+>   - fix a bug in 'stack' fetch method of uprobes
+> 
+>  * v4 changes:
+>   - add Ack's from Masami
+>   - rearrange patches to make it easy for simple fixes to be applied
+>   - update documentation
+>   - use per-cpu buffer for storing args (thanks to Steve!)
+> 
+> 
+> [1] https://lkml.org/lkml/2012/11/14/84
+> 
+> A simple example:
+> 
+>   # cat foo.c
+>   int glob = -1;
+>   char str[] = "hello uprobe.";
+> 
+>   struct foo {
+>     unsigned int unused: 2;
+>     unsigned int foo: 20;
+>     unsigned int bar: 10;
+>   } foo = {
+>     .foo = 5,
+>   };
+> 
+>   int main(int argc, char *argv[])
+>   {
+>     long local = 0x1234;
+> 
+>     return 127;
+>   }
+> 
+>   # gcc -o foo -g foo.c
+> 
+>   # objdump -d foo | grep -A9 -F '<main>'
+>   00000000004004b0 <main>:
+>     4004b0:	55                   	push   %rbp
+>     4004b1:	48 89 e5             	mov    %rsp,%rbp
+>     4004b4:	89 7d ec             	mov    %edi,-0x14(%rbp)
+>     4004b7:	48 89 75 e0          	mov    %rsi,-0x20(%rbp)
+>     4004bb:	48 c7 45 f8 34 12 00 	movq   $0x1234,-0x8(%rbp)
+>     4004c2:	00 
+>     4004c3:	b8 7f 00 00 00       	mov    $0x7f,%eax
+>     4004c8:	5d                   	pop    %rbp
+>     4004c9:	c3                   	retq   
+> 
+>   # nm foo | grep -e glob$ -e str -e foo
+>   00000000006008bc D foo
+>   00000000006008a8 D glob
+>   00000000006008ac D str
+> 
+>   # perf probe -x /home/namhyung/tmp/foo -a 'foo=main+0x13 glob=@0x8a8:s32 \
+>   > str=@0x8ac:string bit=@0x8bc:b10@2/32 argc=%di local=-0x8(%bp)'
+>   Added new event:
+>     probe_foo:foo      (on 0x4c3 with glob=@0x8a8:s32 str=@0x8ac:string 
+>                                  bit=@0x8bc:b10@2/32 argc=%di local=-0x8(%bp))
+> 
+>   You can now use it in all perf tools, such as:
+> 
+>           perf record -e probe_foo:foo -aR sleep 1
+> 
+>   # perf record -e probe_foo:foo ./foo
+>   [ perf record: Woken up 1 times to write data ]
+>   [ perf record: Captured and wrote 0.001 MB perf.data (~33 samples) ]
+> 
+>   # perf script | grep -v ^#
+>                foo  2008 [002  2199.867154: probe_foo:foo (4004c3)
+>                    glob=-1 str="hello uprobe." bit=5 argc=1 local=1234
 
----
- drivers/char/ipmi/ipmi_msghandler.c |   44 +++++-------------
- include/trace/events/ipmi.h         |   86 +++++++++++++++++++++++++++++++++++
- 2 files changed, 97 insertions(+), 33 deletions(-)
- create mode 100644 include/trace/events/ipmi.h
+Nice ! :)
 
-diff --git a/drivers/char/ipmi/ipmi_msghandler.c b/drivers/char/ipmi/ipmi_msghandler.c
-index ec4e10f..d89dd78 100644
---- a/drivers/char/ipmi/ipmi_msghandler.c
-+++ b/drivers/char/ipmi/ipmi_msghandler.c
-@@ -431,6 +431,9 @@ struct ipmi_smi {
- };
- #define to_si_intf_from_dev(device) container_of(device, struct ipmi_smi, dev)
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/ipmi.h>
-+
- /**
-  * The driver model view of the IPMI messaging driver.
-  */
-@@ -1458,6 +1461,7 @@ static int i_ipmi_request(ipmi_user_t          user,
- 	unsigned long            flags;
- 	struct ipmi_smi_handlers *handlers;
- 
-+	trace_ipmi_cmd_request(intf, msg);
- 
- 	if (supplied_recv)
- 		recv_msg = supplied_recv;
-@@ -1806,14 +1810,7 @@ static int i_ipmi_request(ipmi_user_t          user,
- 		goto out_err;
- 	}
- 
--#ifdef DEBUG_MSGING
--	{
--		int m;
--		for (m = 0; m < smi_msg->data_size; m++)
--			printk(" %2.2x", smi_msg->data[m]);
--		printk("\n");
--	}
--#endif
-+	trace_ipmi_smi_msg_send(smi_msg);
- 
- 	handlers->sender(intf->send_info, smi_msg, priority);
- 	rcu_read_unlock();
-@@ -3132,15 +3129,8 @@ static int handle_ipmb_get_msg_cmd(ipmi_smi_t          intf,
- 		msg->data[10] = ipmb_checksum(&(msg->data[6]), 4);
- 		msg->data_size = 11;
- 
--#ifdef DEBUG_MSGING
--	{
--		int m;
--		printk("Invalid command:");
--		for (m = 0; m < msg->data_size; m++)
--			printk(" %2.2x", msg->data[m]);
--		printk("\n");
--	}
--#endif
-+		trace_ipmi_smi_msg_invalidcmd(msg);
-+
- 		rcu_read_lock();
- 		handlers = intf->handlers;
- 		if (handlers) {
-@@ -3647,13 +3637,8 @@ static int handle_one_recv_msg(ipmi_smi_t          intf,
- 	int requeue;
- 	int chan;
- 
--#ifdef DEBUG_MSGING
--	int m;
--	printk("Recv:");
--	for (m = 0; m < msg->rsp_size; m++)
--		printk(" %2.2x", msg->rsp[m]);
--	printk("\n");
--#endif
-+	trace_ipmi_smi_msg_recv(msg);
-+
- 	if (msg->rsp_size < 2) {
- 		/* Message is too small to be correct. */
- 		printk(KERN_WARNING PFX "BMC returned to small a message"
-@@ -3951,15 +3936,8 @@ smi_from_recv_msg(ipmi_smi_t intf, struct ipmi_recv_msg *recv_msg,
- 	smi_msg->data_size = recv_msg->msg.data_len;
- 	smi_msg->msgid = STORE_SEQ_IN_MSGID(seq, seqid);
- 
--#ifdef DEBUG_MSGING
--	{
--		int m;
--		printk("Resend: ");
--		for (m = 0; m < smi_msg->data_size; m++)
--			printk(" %2.2x", smi_msg->data[m]);
--		printk("\n");
--	}
--#endif
-+	trace_ipmi_smi_msg_resend(smi_msg);
-+
- 	return smi_msg;
- }
- 
-diff --git a/include/trace/events/ipmi.h b/include/trace/events/ipmi.h
-new file mode 100644
-index 0000000..07599b6
---- /dev/null
-+++ b/include/trace/events/ipmi.h
-@@ -0,0 +1,86 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM ipmi
-+
-+#if !defined(_TRACE_IPMI_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_IPMI_H
-+
-+#include <linux/tracepoint.h>
-+
-+TRACE_EVENT(ipmi_cmd_request,
-+
-+	TP_PROTO(ipmi_smi_t intf,
-+		struct kernel_ipmi_msg *msg),
-+
-+	TP_ARGS(intf, msg),
-+
-+	TP_STRUCT__entry(
-+		__string(   devname, intf->my_dev_name )
-+		__field(    unsigned char, netfn )
-+		__field(    unsigned char, cmd  )
-+		__field(    unsigned short, data_len    )
-+		__dynamic_array(    char, data, msg->data_len   )
-+	),
-+
-+	TP_fast_assign(
-+		__assign_str(devname, intf->my_dev_name);
-+		__entry->netfn          = msg->netfn;
-+		__entry->cmd            = msg->cmd;
-+		__entry->data_len       = msg->data_len;
-+		memcpy(__get_dynamic_array(data), msg->data, msg->data_len);
-+	),
-+
-+	TP_printk("dev=%s netfn=%02x cmd=%02x data[%d]=%s",
-+		__get_str(devname),
-+		__entry->netfn,
-+		__entry->cmd,
-+		__entry->data_len,
-+		__print_hex(__get_dynamic_array(data), __entry->data_len)
-+	 )
-+);
-+
-+DECLARE_EVENT_CLASS(ipmi_smi_msg_template,
-+
-+	TP_PROTO(struct ipmi_smi_msg *msg),
-+
-+	TP_ARGS(msg),
-+
-+	TP_STRUCT__entry(
-+		__field(    int, data_size   )
-+		__dynamic_array(    unsigned char, data, msg->data_size  )
-+	),
-+
-+	TP_fast_assign(
-+		__entry->data_size    = msg->data_size;
-+		memcpy(__get_dynamic_array(data), msg->data, msg->data_size);
-+	),
-+
-+	TP_printk("data[%d]=%s", __entry->data_size,
-+		__print_hex(__get_dynamic_array(data), __entry->data_size)
-+	)
-+);
-+
-+DEFINE_EVENT(ipmi_smi_msg_template, ipmi_smi_msg_send,
-+	TP_PROTO(struct ipmi_smi_msg *msg),
-+	TP_ARGS(msg)
-+);
-+
-+DEFINE_EVENT(ipmi_smi_msg_template, ipmi_smi_msg_invalidcmd,
-+	TP_PROTO(struct ipmi_smi_msg *msg),
-+	TP_ARGS(msg)
-+);
-+
-+DEFINE_EVENT(ipmi_smi_msg_template, ipmi_smi_msg_recv,
-+	TP_PROTO(struct ipmi_smi_msg *msg),
-+	TP_ARGS(msg)
-+);
-+
-+DEFINE_EVENT(ipmi_smi_msg_template, ipmi_smi_msg_resend,
-+	TP_PROTO(struct ipmi_smi_msg *msg),
-+	TP_ARGS(msg)
-+);
-+
-+#endif /* _TRACE_IPMI_H */
-+
-+/* This part must be out of the protection */
-+#include <trace/define_trace.h>
-+
+Thank you,
+
 -- 
-1.7.7
-
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
