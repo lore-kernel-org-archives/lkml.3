@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab3J3SWs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 14:22:48 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:39435 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865Ab3J3SWq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 14:22:46 -0400
-Date: Wed, 30 Oct 2013 19:22:41 +0100
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: New kconfig maintainer
-Message-ID: <20131030182241.GB3438@free.fr>
-References: <1383131264-19233-1-git-send-email-mmarek@suse.cz>
+	id S1752533Ab3J3S3L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 14:29:11 -0400
+Received: from imap.thunk.org ([74.207.234.97]:52569 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751300Ab3J3S3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 14:29:09 -0400
+Date: Wed, 30 Oct 2013 14:29:04 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Azat Khuzhin <a3at.mail@gmail.com>
+Cc: open list <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "open list:EXT4 FILE SYSTEM" <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH] ext4: drop unsed reclen variable from
+ ext4_add_dirent_to_inline()
+Message-ID: <20131030182904.GA31683@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Azat Khuzhin <a3at.mail@gmail.com>,
+	open list <linux-kernel@vger.kernel.org>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	"open list:EXT4 FILE SYSTEM" <linux-ext4@vger.kernel.org>
+References: <1379535450-31253-1-git-send-email-a3at.mail@gmail.com>
+ <20131030145523.GD3305@thunk.org>
+ <CAG5DWoi5DRCTos8-9aiLVEMf9SFc293nPj4bS0Sq6EdGsOqeYw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383131264-19233-1-git-send-email-mmarek@suse.cz>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAG5DWoi5DRCTos8-9aiLVEMf9SFc293nPj4bS0Sq6EdGsOqeYw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal, All,
-
-On 2013-10-30 12:07 +0100, Michal Marek spake thusly:
-> Yann has been the de facto maintainer of kconfig for some time. Update
-> the KCONFIG entry with his emails address and git tree.
+On Wed, Oct 30, 2013 at 09:02:35PM +0400, Azat Khuzhin wrote:
 > 
-> Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> Thank you!
+> But there is a typo in subject, s/unsed/unused/ could you fix or it,
+> or tell me, and I will resend it?
 
-Acked-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+I had already reworeded the commit description as follows:
 
-Thank you for the trust you've put in me with this patch! :-)
+    ext4: drop set but otherwise unused variable from ext4_add_dirent_to_inline()
+    
+    Signed-off-by: Azat Khuzhin <a3at.mail@gmail.com>
+    Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 
-Shall I take this in my tree, or will you add it to yours?
+Cheers,
 
-Regards,
-Yann E. MORIN.
-
-> ---
->  MAINTAINERS |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index e61c2e8..d083982 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -4723,9 +4723,10 @@ F:	Documentation/hwmon/k8temp
->  F:	drivers/hwmon/k8temp.c
->  
->  KCONFIG
-> -M:	Michal Marek <mmarek@suse.cz>
-> +M:	"Yann E. MORIN" <yann.morin.1998@free.fr>
->  L:	linux-kbuild@vger.kernel.org
-> -S:	Odd Fixes
-> +T:	git://gitorious.org/linux-kconfig/linux-kconfig
-> +S:	Maintained
->  F:	Documentation/kbuild/kconfig-language.txt
->  F:	scripts/kconfig/
->  
-> -- 
-> 1.7.3.1
-> 
-
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+						- Ted
