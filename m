@@ -1,102 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab3J3HTG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 03:19:06 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:39729 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216Ab3J3HTD convert rfc822-to-8bit (ORCPT
+	id S1751897Ab3J3HbL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 03:31:11 -0400
+Received: from mga14.intel.com ([143.182.124.37]:65264 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751287Ab3J3HbK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 03:19:03 -0400
-Subject: Re: [PATCH 4/6] edac: Document Krait L1/L2 EDAC driver binding
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20131030003805.GC3268@kartoffel>
-Date: Wed, 30 Oct 2013 02:19:00 -0500
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+	Wed, 30 Oct 2013 03:31:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,599,1378882800"; 
+   d="scan'208";a="419555665"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [char-misc-next 2/8] mei: hbm: validate client index is not
+ exceeding allocated array size
+Thread-Topic: [char-misc-next 2/8] mei: hbm: validate client index is not
+ exceeding allocated array size
+Thread-Index: AQHO1P1fK4LeAfMsSUaVHro4fls3UJoM14aw
+Date: Wed, 30 Oct 2013 07:31:06 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AEFB95D@HASMSX106.ger.corp.intel.com>
+References: <1382382343-12066-1-git-send-email-tomas.winkler@intel.com>
+ <1382382343-12066-3-git-send-email-tomas.winkler@intel.com>
+ <20131029231945.GB30410@kroah.com>
+In-Reply-To: <20131029231945.GB30410@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.12]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <302FC9DF-1149-4B71-AFC6-7DE05885F2CE@codeaurora.org>
-References: <1383006690-6754-1-git-send-email-sboyd@codeaurora.org> <1383006690-6754-5-git-send-email-sboyd@codeaurora.org> <90D2FDE5-C43F-4ACF-B287-4E0AD8617892@codeaurora.org> <526FF7DB.5040805@codeaurora.org> <20131030003805.GC3268@kartoffel>
-To: Mark Rutland <mark.rutland@arm.com>
-X-Mailer: Apple Mail (2.1283)
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Oct 29, 2013, at 7:38 PM, Mark Rutland wrote:
 
-> On Tue, Oct 29, 2013 at 06:00:59PM +0000, Stephen Boyd wrote:
->> On 10/29/13 01:21, Kumar Gala wrote:
->>> On Oct 28, 2013, at 7:31 PM, Stephen Boyd wrote:
->>> 
->>>> The Krait L1/L2 error reporting device is made up of two
->>>> interrupts, one per-CPU interrupt for the L1 caches and one
->>>> interrupt for the L2 cache.
->>>> 
->>>> Cc: <devicetree@vger.kernel.org>
->>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->>>> ---
->>>> .../devicetree/bindings/arm/qcom,krait-cache-erp.txt     | 16 ++++++++++++++++
->>>> 1 file changed, 16 insertions(+)
->>>> create mode 100644 Documentation/devicetree/bindings/arm/qcom,krait-cache-erp.txt
->>>> 
->>>> diff --git a/Documentation/devicetree/bindings/arm/qcom,krait-cache-erp.txt b/Documentation/devicetree/bindings/arm/qcom,krait-cache-erp.txt
->>>> new file mode 100644
->>>> index 0000000..01fe8a8
->>>> --- /dev/null
->>>> +++ b/Documentation/devicetree/bindings/arm/qcom,krait-cache-erp.txt
->>>> @@ -0,0 +1,16 @@
->>>> +* Qualcomm Krait L1 / L2 cache error reporting
->>>> +
->>>> +Required properties:
->>>> +- compatible: Should be "qcom,krait-cache-erp"
->>>> +- interrupts: Should contain the L1/CPU error interrupt number and
->>>> +  then the L2 cache error interrupt number
->>>> +
->>>> +Optional properties:
->>>> +- interrupt-names: Should contain the interrupt names "l1_irq" and
->>>> +  "l2_irq"
->>>> +
->>>> +Example:
->>>> +	edac {
->>>> +		compatible = "qcom,krait-cache-erp";
->>>> +		interrupts = <1 9 0xf04>, <0 2 0x4>;
->>>> +	};
->>> Why wouldn't we have these as part of cache nodes in the dts?  (which begs the question why we don't have cache nodes?)
->>> 
->> 
->> I can certainly add cache nodes and cpu nodes and then put the
->> interrupts in those nodes. I was thinking along those same lines when I
->> ported this driver but figured it would be good to get something out
->> there. The only question I have is how am I supposed to hook that up
->> into the linux device model? Will the edac driver bind to the device
->> created for the cpus node and the cache node? I guess it will have to be
->> a driver that binds to two devices.
->> 
->> One could argue that we should put the cp15 based architected timers in
->> the cpus node also but so far nobody has done that and I think there was
->> some reasoning behind that, Mark?
+> > ---
+> >  drivers/misc/mei/hbm.c | 6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
+> > index 9b3a0fb..0f5e8ca 100644
+> > --- a/drivers/misc/mei/hbm.c
+> > +++ b/drivers/misc/mei/hbm.c
+> > @@ -228,8 +228,6 @@ static int mei_hbm_prop_req(struct mei_device *dev)
+> >  	unsigned long client_num;
+> >
+> >
+> > -	client_num = dev->me_client_presentation_num;
+> > -
+> >  	next_client_index = find_next_bit(dev->me_clients_map,
+> MEI_CLIENTS_MAX,
+> >  					  dev->me_client_index);
+> >
+> > @@ -241,6 +239,10 @@ static int mei_hbm_prop_req(struct mei_device *dev)
+> >  		return 0;
+> >  	}
+> >
+> > +	client_num = dev->me_client_presentation_num;
+> > +	if (WARN_ON(dev->me_clients_num <= client_num))
+> > +		return -EIO;
 > 
-> The architected timer binding was created at a time I wasn't involved in kernel
-> development, and I'm not aware of any particular reasoning. I've heard that
-> there was a decision to not duplicate banked resources, which would explain not
-> having the timer under /cpus/cpu@N, but doesn't imply that having it under
-> /cpus is bad.
+> How can this happen?  Why is spitting out a huge warning in the syslog
+> going to help anything?  If a user can do this, then great, now you can
+> DoS your syslog :(
 > 
-> Do we have precedent for putting any devices other than CPUs in /cpus?
+> If a user can't do this, then why tell them, it's your driver's bug that
+> you should just fix.
 
-On PPC we had core cache's (depending on topology) that would be there, and thus why I raised the suggestion.
+This somehow should guard buffer overflow allocated of size dev->me_clients_num
+In theory this can happen only if something go wrong in hardware initialization or there is some other security hole that can change client_num.
 
-- k
+After this happen you probably won't be able to use the driver anyhow so I do not expect DoS on the syslog, but we can drop the WARN_ON
+but I would stick with the check
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+Thanks
+Tomas
+
+
 
