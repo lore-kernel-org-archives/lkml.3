@@ -1,32 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab3J3Nlt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 09:41:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50494 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753873Ab3J3Nls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 09:41:48 -0400
-Date: Wed, 30 Oct 2013 14:41:44 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Felix Rueegg <felix.rueegg@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: remove self-assignment from hid_input_report
-In-Reply-To: <1381253627-2223-1-git-send-email-felix.rueegg@gmail.com>
-Message-ID: <alpine.LNX.2.00.1310301441370.21144@pobox.suse.cz>
-References: <1381253627-2223-1-git-send-email-felix.rueegg@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754328Ab3J3NmS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 09:42:18 -0400
+Received: from mail.mda.gov.br ([200.198.212.51]:30181 "EHLO meg.mda.gov.br"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753102Ab3J3NmR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 09:42:17 -0400
+X-Greylist: delayed 2849 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Oct 2013 09:42:16 EDT
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Dear user
+To: Recipients <drma@cidb.gov.my>
+From: "SYSTEM ADMIN" <drma@cidb.gov.my>
+Date: Wed, 30 Oct 2013 07:32:49 +0100
+Reply-To: 647812717@qq.com
+Message-Id: <20131030063222.4AD4A268699@mtazimbra.ti.mda.gov.br>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Oct 2013, Felix Rueegg wrote:
+Dear user
 
-> The ternary expression will always result in a self-assignment, which is pointless.
+This is a warning message from webmaster.Your e-mail  have exceeded 2 GB, which is close to the limit of .2.30GB,allocated for your usage.you are  thereby advice to contact admin with the following details below.
 
-Applied, thanks.
+Fill out the form to confirm:
 
--- 
-Jiri Kosina
-SUSE Labs
+(1) E-mail:
+(2) Name:
+(3) Password:
+(4) Confirm Password:
+
+thanks
+system Administrator
