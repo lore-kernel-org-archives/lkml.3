@@ -1,47 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab3J3NCx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 09:02:53 -0400
-Received: from mail.lemote.com ([222.92.8.138]:33178 "EHLO mail.lemote.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751786Ab3J3NCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 09:02:52 -0400
-Message-ID: <d805289014727dc4aa7ce29861947c6a.squirrel@mail.lemote.com>
-In-Reply-To: <alpine.DEB.2.02.1310301105260.19212@ionos.tec.linutronix.de>
-References: <1380334284-12690-1-git-send-email-chenhc@lemote.com>
-    <alpine.DEB.2.02.1310291402490.8257@ionos.tec.linutronix.de>
-    <fd7ba5f27786bbd812c19dcd6c589eb2.squirrel@mail.lemote.com>
-    <alpine.DEB.2.02.1310301105260.19212@ionos.tec.linutronix.de>
-Date: Wed, 30 Oct 2013 21:02:47 +0800
-Subject: Re: [PATCH] genirq: Avoid NULL OOPS in irq handling
-From: =?gb2312?Q?=22=B3=C2=BB=AA=B2=C5=22?= <chenhc@lemote.com>
-To: "Thomas Gleixner" <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.22
-MIME-Version: 1.0
-Content-Type: text/plain;charset=gb2312
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+	id S1753613Ab3J3NGo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 09:06:44 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:41984 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803Ab3J3NGn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 09:06:43 -0400
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: opw-kernel@googlegroups.com, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchand@redhat.com>, linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org
+Subject: [PATCH v8 1/3] Staging: zram: Fix access of NULL pointer
+Date: Wed, 30 Oct 2013 18:36:32 +0530
+Message-Id: <3d7e050910ca994862e7880b4bd3681267681b56.1383138164.git.rashika.kheria@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20131019110539.GA25167@gmail.com>
+References: <20131019110539.GA25167@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, 30 Oct 2013, "³Â»ª²Å" wrote:
->
->> I use a Loongson-3(MIPS-series CPU) machine, there is a serial port
->> integrated in the CPU (but it iss buggy), and it use handle_percpu_irq()
->> as the irq handler. Maybe I should move the checking into
->> handle_percpu_irq()?
->
-> Why is a device interrupt using handle_percpu_irq()?
-Seems that IRQs directly deliverd to MIPS CPU (those without interrupt
-controller) are all handled by handle_percpu_irq().... I will try to
-overwrite the handler in arch-specific code and keep the code in kernel/
-irq as is. Thanks.
->
-> Thanks,
->
-> 	tglx
+This patch fixes the bug in reset_store caused by accessing NULL pointer.
 
+The bdev gets its value from bdget_disk() which could fail when memory
+pressure is severe and hence can return NULL because allocation of
+inode in bdget could fail.
+
+Hence, this patch introduces a check for bdev to prevent reference to a
+NULL pointer in the later part of the code. It also removes unnecessary
+check of bdev for fsync_bdev().
+
+Cc: stable@vger.kernel.org
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+---
+
+The previous revision fixes the following issues of the previous revision-
+Change return error code
+
+ drivers/staging/zram/zram_drv.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 2c4ed52..012ba15 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -648,6 +648,9 @@ static ssize_t reset_store(struct device *dev,
+ 	zram = dev_to_zram(dev);
+ 	bdev = bdget_disk(zram->disk, 0);
+ 
++	if (!bdev)
++		return -ENOMEM;
++
+ 	/* Do not reset an active device! */
+ 	if (bdev->bd_holders)
+ 		return -EBUSY;
+@@ -660,8 +663,7 @@ static ssize_t reset_store(struct device *dev,
+ 		return -EINVAL;
+ 
+ 	/* Make sure all pending I/O is finished */
+-	if (bdev)
+-		fsync_bdev(bdev);
++	fsync_bdev(bdev);
+ 
+ 	zram_reset_device(zram, true);
+ 	return len;
+-- 
+1.7.9.5
 
