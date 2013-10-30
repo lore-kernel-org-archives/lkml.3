@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab3J3Lvw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 07:51:52 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34979 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab3J3Lvu (ORCPT
+	id S1754155Ab3J3LwE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 07:52:04 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:53479 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754021Ab3J3LwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 07:51:50 -0400
-Date: Wed, 30 Oct 2013 12:51:48 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, sre@ring0.de, joni.lapilainen@gmail.com,
-        David Gnedt <david.gnedt@davizone.at>
-Subject: Re: [PATCH 11/16] wl1251: enable tx path in monitor mode if
- necessary for packet injection
-Message-ID: <20131030115148.GE8763@amd.pavel.ucw.cz>
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
- <1382819655-30430-12-git-send-email-pali.rohar@gmail.com>
+	Wed, 30 Oct 2013 07:52:01 -0400
+X-Sasl-enc: 6w5czCOTqzGEsURKKPu7m1LKJE0E2guTdDpimyG/rpM2 1383133920
+Message-ID: <5270F2DE.6040505@iki.fi>
+Date: Wed, 30 Oct 2013 13:51:58 +0200
+From: Pekka Enberg <penberg@iki.fi>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382819655-30430-12-git-send-email-pali.rohar@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+CC: Pekka Enberg <penberg@kernel.org>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
+        anton@redhat.com, systemtap@sourceware.org,
+        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com,
+        dsahern@gmail.com,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
+References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora> <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com> <y0mbo2cs2oa.fsf@fche.csb> <5270D9F7.3090105@hitachi.com>
+In-Reply-To: <5270D9F7.3090105@hitachi.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-> 
-> If necessary enable the tx path in monitor mode for packet injection using
-> the JOIN command with BSS_TYPE_STA_BSS and zero BSSID.
-> 
-> Signed-off-by: David Gnedt <david.gnedt@davizone.at>
-> ---
->  drivers/net/wireless/ti/wl1251/main.c   |    5 +++++
->  drivers/net/wireless/ti/wl1251/tx.c     |   17 +++++++++++++++++
->  drivers/net/wireless/ti/wl1251/wl1251.h |    1 +
->  3 files changed, 23 insertions(+)
-> 
-> diff --git a/drivers/net/wireless/ti/wl1251/main.c b/drivers/net/wireless/ti/wl1251/main.c
-> diff --git a/drivers/net/wireless/ti/wl1251/tx.c b/drivers/net/wireless/ti/wl1251/tx.c
-> index 3cc82fd..1de4ccb 100644
-> --- a/drivers/net/wireless/ti/wl1251/tx.c
-> +++ b/drivers/net/wireless/ti/wl1251/tx.c
-> @@ -28,6 +28,7 @@
->  #include "tx.h"
->  #include "ps.h"
->  #include "io.h"
-> +#include "event.h"
->  
->  static bool wl1251_tx_double_buffer_busy(struct wl1251 *wl, u32 data_out_count)
->  {
-> @@ -298,6 +299,22 @@ static int wl1251_tx_frame(struct wl1251 *wl, struct sk_buff *skb)
->  		}
->  	}
->  
-> +	/* Enable tx path in monitor mode for packet injection */
-> +	if ((wl->vif == NULL) && !wl->joined) {
-> +		ret = wl1251_cmd_join(wl, BSS_TYPE_STA_BSS, wl->channel,
-> +				      wl->beacon_int, wl->dtim_period);
-> +		if (ret < 0)
-> +			wl1251_warning("join failed");
-> +		else {
-> +			ret = wl1251_event_wait(wl, JOIN_EVENT_COMPLETE_ID,
-> +						100);
-> +			if (ret < 0)
-> +				wl1251_warning("join timeout");
-> +			else
-> +				wl->joined = true;
-> +		}
-> +	}
+On 10/30/13 12:05 PM, Masami Hiramatsu wrote:
+> To find all system libraries, we can use ldconfig.
+>
+> $ ldconfig --print-cache
+>
+> shows what dynamic libraries will be loaded. On my own laptop (running
+> ubuntu13.04) shows ~1000 libs.
 
-Create function enable_tx_for_packet_injection() and then just return
-so that you don't have to nest ifs?
+Good point. That definitely narrows down the scanned set.
 
-Thanks,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+                         Pekka
