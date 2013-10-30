@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab3J3Jni (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 05:43:38 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:46695 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752154Ab3J3Jng convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 05:43:36 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [RFC/PATCH v2 0/3] add gadget quirk to adapt f_fs for DWC3
-Date: Wed, 30 Oct 2013 09:41:03 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B73C1@saturn3.aculab.com>
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E030458E2061F@US01WEMBX2.internal.synopsys.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [RFC/PATCH v2 0/3] add gadget quirk to adapt f_fs for DWC3
-Thread-Index: AQHO1PDWRlemoVshIEmaro7KzmTD9JoMQWVggAC8GXA=
-References: <1383083578-16447-1-git-send-email-david.a.cohen@linux.intel.com> <A2CA0424C0A6F04399FB9E1CD98E030458E2061F@US01WEMBX2.internal.synopsys.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Paul Zimmerman" <Paul.Zimmerman@synopsys.com>,
-        "David Cohen" <david.a.cohen@linux.intel.com>, <balbi@ti.com>,
-        <gregkh@linuxfoundation.org>
-Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+	id S1753536Ab3J3JpV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 05:45:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28768 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752544Ab3J3JpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 05:45:18 -0400
+From: Madper Xie <cxie@redhat.com>
+To: tony.luck@intel.com, keescook@chromium.org, ccross@android.com,
+        anton@enomsg.org, seiji.aguchi@hds.com
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, bbboson@gmail.com,
+        Madper Xie <cxie@redhat.com>
+Subject: [PATCH 1/2] pstore: avoid incorrectly mark entry as duplicate
+Date: Wed, 30 Oct 2013 17:44:53 +0800
+Message-Id: <1383126294-28793-2-git-send-email-cxie@redhat.com>
+In-Reply-To: <1383126294-28793-1-git-send-email-cxie@redhat.com>
+References: <1383126294-28793-1-git-send-email-cxie@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Wouldn't it be simpler and safer to just do this unconditionally? Sure,
-> you need it for DWC3 because the controller refuses to do an OUT transfer
-> at all if the transfer size is less than maxpacketsize. But it's possible
-> that other controllers allow the transfer, and it works in most cases,
-> but if an error occurs and the host sends too much data, they could
-> overrun the buffer and crash your device.
-> 
-> For example, the DWC2 databook says "For OUT transfers, the Transfer
-> Size field in the endpoint's Transfer Size register must be a multiple
-> of the maximum packet size of the endpoint". But I don't think the
-> controller enforces that, it is up to the programmer to do the right
-> thing. So that controller probably needs this quirk also. There could be
-> more like that which we don't know about.
-> 
-> So unless the buffer allocation code is in a real fast path, I would
-> suggest to just do the aligned buffer allocation always.
+From: Madper Xie <bbboson@gmail.com>
 
-You wouldn't normally want to pad OUT transfers that way - if only
-because of the additional USB bandwidth use.
+pstore try to find duplicate entries by check both ID, type and psi.
+They are not really enough for efi backend. dumped vars always have
+the same type, psi and ID. like follows:
+dump-type0-9-1-1382511508-C-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
+dump-type0-9-1-1382515661-C-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
 
-Also, if the controller can't do (I assume bulk) OUT (and IN?)
-transfers for less than maxpacketsize it seriously restricts
-the type of devices that can be attached - none of the USB
-ethernet devices would work.
+The "duplicate" entries won't appear in pstorefs. And a complain will be
+print -- pstore: failed to load 76 record(s) from 'efi'
+So I add two more checks: timespec and count.
 
-	David
+Signed-off-by: Madper Xie <cxie@redhat.com>
+---
+ fs/pstore/inode.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 1282384..0ae994c 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -47,6 +47,7 @@ static LIST_HEAD(allpstore);
+ struct pstore_private {
+ 	struct list_head list;
+ 	struct pstore_info *psi;
++	struct timespec time;
+ 	enum pstore_type_id type;
+ 	u64	id;
+ 	int	count;
+@@ -290,7 +291,9 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+ 	list_for_each_entry(pos, &allpstore, list) {
+ 		if (pos->type == type &&
+ 		    pos->id == id &&
+-		    pos->psi == psi) {
++		    pos->psi == psi &&
++		    pos->count == count &&
++		    !timespec_compare(&pos->time, &time)) {
+ 			rc = -EEXIST;
+ 			break;
+ 		}
+@@ -312,6 +315,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+ 	private->id = id;
+ 	private->count = count;
+ 	private->psi = psi;
++	memcpy(&private->time, &time, sizeof(struct timespec));
+ 
+ 	switch (type) {
+ 	case PSTORE_TYPE_DMESG:
+-- 
+1.8.4.2
 
