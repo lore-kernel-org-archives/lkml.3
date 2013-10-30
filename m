@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab3J3QKq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 12:10:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51171 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751607Ab3J3QKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 12:10:45 -0400
-Message-ID: <52712F7D.3090309@redhat.com>
-Date: Wed, 30 Oct 2013 17:10:37 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
+	id S1752838Ab3J3QLV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 12:11:21 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:64382 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab3J3QLT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 12:11:19 -0400
+Date: Wed, 30 Oct 2013 09:11:17 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Wei Ni <wni@nvidia.com>, thierry.reding@gmail.com,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v3 2/4] hwmon: (lm90) use macro defines for the status bit
+Message-ID: <20131030161117.GB4526@roeck-us.net>
+References: <1373615287-18502-1-git-send-email-wni@nvidia.com>
+ <1373615287-18502-3-git-send-email-wni@nvidia.com>
+ <20130715185727.4ebde8c4@endymion.delvare>
+ <20130715173322.GA20484@roeck-us.net>
+ <20131030163326.4e7e0cfc@endymion.delvare>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, kvm@vger.kernel.org, aik@ozlabs.ru,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] kvm: Destroy & free KVM devices on release
-References: <20131029160019.22578.16409.stgit@bling.home>  <20131029161322.22578.18997.stgit@bling.home>  <20131030104029.GE4651@redhat.com> <1383143422.4097.170.camel@ul30vt.home>  <20131030153338.GI4651@redhat.com> <527128D7.9070603@redhat.com> <1383148594.4097.184.camel@ul30vt.home>
-In-Reply-To: <1383148594.4097.184.camel@ul30vt.home>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131030163326.4e7e0cfc@endymion.delvare>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 30/10/2013 16:56, Alex Williamson ha scritto:
-> On Wed, 2013-10-30 at 16:42 +0100, Paolo Bonzini wrote:
->> Il 30/10/2013 16:33, Gleb Natapov ha scritto:
->>>> Hmm, ok.  In that case I can drop this patch and I think the rest just
->>>> boils down to userspace use of the device.  I had been close()'ing the
->>>> kvm device fd when all QEMU vfio devices are detached, but I can just as
->>>> easily leave it open in case a new device is added later.  I'll send out
->>>> a new series after doing some more review and testing.  Do you have any
->>>> comments on the rest of the series?  Thanks,
->>>
->>> If I understand 4/4 correctly if there is VFIO device connected we
->>> assume non coherent domain. How hard it would be to do proper checking
->>> in this path series?
->>
->> Yes, that's my understanding as well.  Is the performance impact measurable?
+On Wed, Oct 30, 2013 at 04:33:26PM +0100, Jean Delvare wrote:
+> Hi Guenter,
 > 
-> I have additional patches to do this, the blocker is that intel-iommu
-> strips IOMMU_CACHE from the flags I provide if the IOMMU domain as a
-> whole (ie. all of the hardware units involved in the domain) do not all
-> support Snoop Control (SC).  Thus I can't rely on simply tracking the
-> hardware capabilities of the domain because some IOMMU PTEs will have
-> SNP set, others will not.  It depends on the state of the IOMMU domain
-> at the time of the mapping.  Therefore the only way to switch back to
-> coherent from non-coherent is to unmap and remap everything.  This is
-> what legacy KVM device assignment does, but I can't see how that's not
-> racy wrt inflight DMA.
+> On Mon, 15 Jul 2013 10:33:22 -0700, Guenter Roeck wrote:
+> > On Mon, Jul 15, 2013 at 06:57:27PM +0200, Jean Delvare wrote:
+> > > Unrelated to this patch, but Guenter, I am worried about the MAX6696
+> > > handling here. I realize that I am the one who accepted your code, but
+> > > now it looks wrong. Specifically:
+> > > * We check for (status2 & 0xfe) i.e. 7 alarm bits, but the code below
+> > >   only reports 2 alarms bits. So if any of the 5 other alarm bits in
+> > >   STATUS2 are, we may return true (chip is tripped) but not print the
+> > >   cause.
+> > > * At least bits 1 and 2 of STATUS 2 fit totally fine in the driver as
+> > >   it currently exists, so I can't think of any reason for not handling
+> > >   them. Why are we not? Ideally we should print a message for every
+> > >   alarm bit so that we never return "true" without printing a message.
+> > >   Even though OT2 limits aren't handled by the driver...
+> > > * If you think this piece of code shouldn't deal with OT/THERM limits
+> > >   because they do not trigger an SMBus alarm, this can be discussed,
+> > >   but all chips should be handled the same in this respect then.
+> > > * Why in the first place is max6696's data->alert_alarms set to 0x187c
+> > >   and not 0x1c7c? Including 1OPEN but not 2OPEN makes no sense.
+> > 
+> > I am about to leave for vacation, so this will have to wait for a couple of
+> > weeks. I'll look at it after I am back.
 > 
-> The patch approach I was taking is:
+> Are you back now? ;-)
 > 
-> 1) Enable KVM to handle the VM as non-coherent (which is trued, VFIO
-> never sets IOMMU_CACHE currently due to the above issues).
-> 
-> 2) Get QEMU to enable the KVM device, fixing the coherency issue.
-> 
-> 3) Fix Intel IOMMU to honor IOMMU_CACHE regardless of hw capabilities
-> (patch posted).
-> 
-> 4) Make VFIO always map w/ IOMMU_CACHE
-> 
-> 5) Create VFIO external user interface to query capabilities.
-> 
-> 6) Update KVM device to use it.
-> 
-> As to performance, for graphics I can't tell a difference whether
-> NoSnoop is prevented or KVM does WBINVD.  I'm hoping though that we can
-> consider the mode enabled by this patch as a temporary step in the
-> process and we'll eventually get to a state where we only emulate WBINVD
-> when necessary.  Correctness trumps performance in the current round.
-> Thanks,
+Yes, only I completely forgot about this :-). I'll add it to my task list.
 
-Thanks for the explanation.  Gleb, this looks fine to me.  WDYT?
-
-Paolo
-
+Guenter
