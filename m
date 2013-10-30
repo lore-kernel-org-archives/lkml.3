@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab3J3Um0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 16:42:26 -0400
-Received: from usindpps05.hds.com ([207.126.252.18]:35888 "EHLO
-	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab3J3UmX (ORCPT
+	id S1754859Ab3J3Uq0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 16:46:26 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:52578 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056Ab3J3UqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 16:42:23 -0400
-Message-ID: <52716E1B.7090205@hds.com>
-Date: Wed, 30 Oct 2013 16:37:47 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 30 Oct 2013 16:46:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Johan Hovold <jhovold@gmail.com>
+Subject: Re: [PATCH 2/2] misc: atmel_pwm: set initcall level to subsys
+Date: Wed, 30 Oct 2013 21:46:17 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org
+References: <1382459560-26596-1-git-send-email-jhovold@gmail.com> <20131029232249.GA20476@kroah.com> <20131030110705.GA29813@localhost>
+In-Reply-To: <20131030110705.GA29813@localhost>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, x86@kernel.org
-CC: hpa@zytor.com, rostedt@goodmis.org, mingo@elte.hu, bp@alien8.de,
-        tglx@linutronix.de, fdeslaur@gmail.com, raphael.beamonte@gmail.com,
-        dle-develop@lists.sourceforge.net, tomoki.sekiyama@hds.com
-Subject: [PATCH v4 3/4] Delete __trace_alloc_intr_gate()
-References: <52716D74.3070201@hds.com>
-In-Reply-To: <52716D74.3070201@hds.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-10-30_06:2013-10-30,2013-10-30,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1310300176
+Message-Id: <201310302146.18248.arnd@arndb.de>
+X-Provags-ID: V02:K0:QYC/kS2mCqCbOq3v+5McssUpVrH95+hEHkgLDo+eK0E
+ Z+oxVvf5OyeHkvyntgVVy3D3X5tmFLMVx6pnzzTTejveRazIdC
+ UOJzdL2F+J6NBRX1lwkvSn59CF6R/QawejiweAjBXqrluMZL9G
+ +E1VG+qMo2Zj5pSmnNWNHhZdRxerSoDXU1D3NdmxKuA+7lTyhy
+ 1oAHFVbovFy/QBIlF0jkp/bTjLU4bRe2CsGZPU9qRklh4zJcIp
+ GRduauKcxU4Gj8k+2vUQLnTODkR3Qti8r3pVYwPa9PlU9vbGZT
+ tCv51OjRRL7ZQ6s/SXiEorxpqGVvTU0Oz6WsZqjz5XTFMgd9XM
+ MuzkEat9nzFTe8mAnY/Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently irq vector handlers for tracing are registered in both set_intr_gate()
- and __trace_alloc_intr_gate() in alloc_intr_gate().
-But, we don't need to do that twice.
-So, let's delete __trace_alloc_intr_gate().
+On Wednesday 30 October 2013, Johan Hovold wrote:
+> > I really hate this type of patch, as it's papering over the real
+> > problem.  What happens when someone else moves their driver to this
+> > level?  Then you are back to the original problem.
+> 
+> Yes, it's crude, but it's currently the only way to express a preferred
+> probe order.
 
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
----
- arch/x86/include/asm/desc.h | 22 ----------------------
- 1 file changed, 22 deletions(-)
+Does the same problem occur with the generic PWM subsystem?
 
-diff --git a/arch/x86/include/asm/desc.h b/arch/x86/include/asm/desc.h
-index 3d73437..50d033a 100644
---- a/arch/x86/include/asm/desc.h
-+++ b/arch/x86/include/asm/desc.h
-@@ -392,32 +392,10 @@ static inline void alloc_system_vector(int vector)
- 	}
- }
- 
--#ifdef CONFIG_TRACING
--static inline void trace_set_intr_gate(unsigned int gate, void *addr)
--{
--	gate_desc s;
--
--	pack_gate(&s, GATE_INTERRUPT, (unsigned long)addr, 0, 0, __KERNEL_CS);
--	write_idt_entry(trace_idt_table, gate, &s);
--}
--
--static inline void __trace_alloc_intr_gate(unsigned int n, void *addr)
--{
--	trace_set_intr_gate(n, addr);
--}
--#else
--static inline void trace_set_intr_gate(unsigned int gate, void *addr)
--{
--}
--
--#define __trace_alloc_intr_gate(n, addr)
--#endif
--
- #define alloc_intr_gate(n, addr)				\
- 	do {							\
- 		alloc_system_vector(n);				\
- 		set_intr_gate(n, addr);				\
--		__trace_alloc_intr_gate(n, trace_##addr);	\
- 	} while (0)
- 
- /*
--- 
-1.8.3.1
+The atmel_pwm driver apparently is the last PWM driver that has
+not been converted to the generic subsystem yet. Doing that would
+also let us drop the atmel-pwm-bl driver in favor of the generic
+backlight.
 
-
+	Arnd
