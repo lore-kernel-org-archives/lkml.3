@@ -1,76 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895Ab3J3QP2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 12:15:28 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:62621 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab3J3QPQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 12:15:16 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/2] perf list: Add usage
-Date: Wed, 30 Oct 2013 10:15:07 -0600
-Message-Id: <1383149707-1008-2-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1383149707-1008-1-git-send-email-dsahern@gmail.com>
-References: <1383149707-1008-1-git-send-email-dsahern@gmail.com>
+	id S1752505Ab3J3QTF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 12:19:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29094 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751390Ab3J3QTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 12:19:03 -0400
+Date: Wed, 30 Oct 2013 18:18:32 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
+        aik@ozlabs.ru, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] kvm: Destroy & free KVM devices on release
+Message-ID: <20131030161832.GL4651@redhat.com>
+References: <20131029160019.22578.16409.stgit@bling.home>
+ <20131029161322.22578.18997.stgit@bling.home>
+ <20131030104029.GE4651@redhat.com>
+ <1383143422.4097.170.camel@ul30vt.home>
+ <20131030153338.GI4651@redhat.com>
+ <527128D7.9070603@redhat.com>
+ <1383148594.4097.184.camel@ul30vt.home>
+ <52712F7D.3090309@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52712F7D.3090309@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently perf list is not very helpful if you forget the syntax:
-  $ perf list -h
+On Wed, Oct 30, 2013 at 05:10:37PM +0100, Paolo Bonzini wrote:
+> Il 30/10/2013 16:56, Alex Williamson ha scritto:
+> > On Wed, 2013-10-30 at 16:42 +0100, Paolo Bonzini wrote:
+> >> Il 30/10/2013 16:33, Gleb Natapov ha scritto:
+> >>>> Hmm, ok.  In that case I can drop this patch and I think the rest just
+> >>>> boils down to userspace use of the device.  I had been close()'ing the
+> >>>> kvm device fd when all QEMU vfio devices are detached, but I can just as
+> >>>> easily leave it open in case a new device is added later.  I'll send out
+> >>>> a new series after doing some more review and testing.  Do you have any
+> >>>> comments on the rest of the series?  Thanks,
+> >>>
+> >>> If I understand 4/4 correctly if there is VFIO device connected we
+> >>> assume non coherent domain. How hard it would be to do proper checking
+> >>> in this path series?
+> >>
+> >> Yes, that's my understanding as well.  Is the performance impact measurable?
+> > 
+> > I have additional patches to do this, the blocker is that intel-iommu
+> > strips IOMMU_CACHE from the flags I provide if the IOMMU domain as a
+> > whole (ie. all of the hardware units involved in the domain) do not all
+> > support Snoop Control (SC).  Thus I can't rely on simply tracking the
+> > hardware capabilities of the domain because some IOMMU PTEs will have
+> > SNP set, others will not.  It depends on the state of the IOMMU domain
+> > at the time of the mapping.  Therefore the only way to switch back to
+> > coherent from non-coherent is to unmap and remap everything.  This is
+> > what legacy KVM device assignment does, but I can't see how that's not
+> > racy wrt inflight DMA.
+> > 
+> > The patch approach I was taking is:
+> > 
+> > 1) Enable KVM to handle the VM as non-coherent (which is trued, VFIO
+> > never sets IOMMU_CACHE currently due to the above issues).
+> > 
+> > 2) Get QEMU to enable the KVM device, fixing the coherency issue.
+> > 
+> > 3) Fix Intel IOMMU to honor IOMMU_CACHE regardless of hw capabilities
+> > (patch posted).
+> > 
+> > 4) Make VFIO always map w/ IOMMU_CACHE
+> > 
+> > 5) Create VFIO external user interface to query capabilities.
+> > 
+> > 6) Update KVM device to use it.
+> > 
+> > As to performance, for graphics I can't tell a difference whether
+> > NoSnoop is prevented or KVM does WBINVD.  I'm hoping though that we can
+> > consider the mode enabled by this patch as a temporary step in the
+> > process and we'll eventually get to a state where we only emulate WBINVD
+> > when necessary.  Correctness trumps performance in the current round.
+> > Thanks,
+> 
+> Thanks for the explanation.  Gleb, this looks fine to me.  WDYT?
+> 
+To me too. Alex please resend with first patch dropped
+(kvm_vfio_destroy() will have to free dev).
 
-  List of pre-defined events (to be used in -e):
 
-After:
-  $ perf list -h
-
-   usage: perf list [hw|sw|cache|tracepoint|pmu|event_glob]
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/builtin-list.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
-
-diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
-index 45000e7d4398..a5ad93206044 100644
---- a/tools/perf/builtin-list.c
-+++ b/tools/perf/builtin-list.c
-@@ -14,10 +14,21 @@
- #include "util/parse-events.h"
- #include "util/cache.h"
- #include "util/pmu.h"
-+#include "util/parse-options.h"
- 
- int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	int i;
-+	const struct option list_options[] = {
-+		OPT_END()
-+	};
-+	const char * const list_usage[] = {
-+		"perf list [hw|sw|cache|tracepoint|pmu|event_glob]",
-+		NULL
-+	};
-+
-+	argc = parse_options(argc, argv, list_options, list_usage,
-+			     PARSE_OPT_STOP_AT_NON_OPTION);
- 
- 	setup_pager();
- 
--- 
-1.8.3.4 (Apple Git-47)
-
+--
+			Gleb.
