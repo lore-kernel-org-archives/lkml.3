@@ -1,43 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab3J3IjR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 04:39:17 -0400
-Received: from out.ipsmtp4nec.opaltelecom.net ([62.24.202.76]:5806 "EHLO
-	out.ipsmtp4nec.opaltelecom.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752632Ab3J3IjO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 04:39:14 -0400
-X-Greylist: delayed 617 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Oct 2013 04:39:13 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjMJAPTBcFI+GIt+/2dsb2JhbABZgz89gyqCMboEJIEPdIIdMm8cAg0ZAoZoghUJjAqMVo8IkliBKYxtgQUCK4J4D4EzA6oTgyY8gTU
-X-IPAS-Result: AjMJAPTBcFI+GIt+/2dsb2JhbABZgz89gyqCMboEJIEPdIIdMm8cAg0ZAoZoghUJjAqMVo8IkliBKYxtgQUCK4J4D4EzA6oTgyY8gTU
-X-IronPort-AV: E=Sophos;i="4.93,599,1378854000"; 
-   d="scan'208";a="65771001"
-Message-ID: <29324597.1362431383121733558.JavaMail.defaultUser@defaultHost>
-Date: Wed, 30 Oct 2013 08:28:53 +0000 (GMT)
-From: "1jadh@tiscali.co.uk" <1jadh@tiscali.co.uk>
-Subject: =?UTF-8?Q?p=C5=99ekro=C4=8Den=C3=AD_kv=C3=B3ty_?=
- =?UTF-8?Q?po=C5=A1tovn=C3=AD_schr=C3=A1nky?=
+	id S1753381Ab3J3ImV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 04:42:21 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:47234 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752576Ab3J3ImS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 04:42:18 -0400
+X-Sasl-enc: 6JKlPHrPVtyRzbNmxZeWVtPHBvamvcQOS6QasnwETWB7 1383122536
+Message-ID: <5270C666.6090209@iki.fi>
+Date: Wed, 30 Oct 2013 10:42:14 +0200
+From: Pekka Enberg <penberg@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-To: unlisted-recipients:; (no To-header on input)
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Pekka Enberg <penberg@kernel.org>
+CC: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 13/15] slab: use struct page for slab management
+References: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com> <1381913052-23875-14-git-send-email-iamjoonsoo.kim@lge.com> <20131030082800.GA5753@lge.com>
+In-Reply-To: <20131030082800.GA5753@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vážení ID uživatele
+On 10/30/2013 10:28 AM, Joonsoo Kim wrote:
+> If you want an incremental patch against original patchset,
+> I can do it. Please let me know what you want.
 
-Příchozí zprávy byly umístěny do doby, než díky 
-naší nové aktualizace. Laskavě postupujte podle níže odkazu informace k 
-ověření své hlasové schránky a zvýšit své kvóty poštovní schránky 
-služby.
+Yes, please. Incremental is much easier to deal with if we want this to 
+end up in v3.13.
 
-Klikněte  http://emailuserupgrade010.webs.com/  dostat vaše schránka 
-aktualizována.
-
-Omlouváme se za způsobené nepříjemnosti.
-
-díky
-Mail 
-Client Support Team
+                     Pekka
