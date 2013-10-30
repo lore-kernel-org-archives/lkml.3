@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab3J3OrD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 10:47:03 -0400
-Received: from mail-gg0-f171.google.com ([209.85.161.171]:58182 "EHLO
-	mail-gg0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039Ab3J3OrB (ORCPT
+	id S1754633Ab3J3Ou7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 10:50:59 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:41671 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754291Ab3J3Ou6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 10:47:01 -0400
-X-Greylist: delayed 325 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Oct 2013 10:47:01 EDT
-Date: Wed, 30 Oct 2013 10:41:32 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        bhelgaas@google.com
-Subject: Re: Subject: [PATCHSET driver-core-next] sysfs: separate out kernfs,
- part #1
-Message-ID: <20131030144132.GD27632@htj.dyndns.org>
-References: <1382629780-10006-1-git-send-email-tj@kernel.org>
- <20131029222950.GA9612@kroah.com>
+	Wed, 30 Oct 2013 10:50:58 -0400
+Message-ID: <52711CC7.8080107@mentor.com>
+Date: Wed, 30 Oct 2013 16:50:47 +0200
+From: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131029222950.GA9612@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH rebased] sysfs: return correct error code on unimplemented
+ mmap()
+References: <20131029230524.GA14393@kroah.com> <1383134912-31152-1-git-send-email-vladimir_zapolskiy@mentor.com>
+In-Reply-To: <1383134912-31152-1-git-send-email-vladimir_zapolskiy@mentor.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [137.202.0.76]
+X-OriginalArrivalTime: 30 Oct 2013 14:50:57.0961 (UTC) FILETIME=[715A0190:01CED57F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Greg.
+Greg,
 
-On Tue, Oct 29, 2013 at 03:29:50PM -0700, Greg KH wrote:
-> I've applied the first 6 patches here, as they only did cleanup stuff.
-> As it's late in the development cycle (i.e. 3.12 is going to be out in
-> days), I'd prefer to wait on the rest until 3.13-rc1 is out so that it
-> gets lots of testing in linux-next.
-> 
-> So, I'll hold off on the rest of these until then, ok?
+On 10/30/13 14:08, Vladimir Zapolskiy wrote:
+> Both POSIX.1-2008 and Linux Programmer's Manual have a dedicated return
+> error code for a case, when a file doesn't support mmap(), it's ENODEV.
+>
+> This change replaces overloaded EINVAL with ENODEV in a situation
+> described above for sysfs binary files.
+>
+> Signed-off-by: Vladimir Zapolskiy<vladimir_zapolskiy@mentor.com>
+> Cc: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+> ---
+>   fs/sysfs/file.c |    1 -
+>   1 file changed, 1 deletion(-)
+>
+> diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+> index 0d7368d4..382db3c 100644
+> --- a/fs/sysfs/file.c
+> +++ b/fs/sysfs/file.c
+> @@ -477,7 +477,6 @@ static int sysfs_bin_mmap(struct file *file, struct vm_area_struct *vma)
+>   	if (!sysfs_get_active(of->sd))
+>   		goto out_unlock;
+>
+> -	rc = -EINVAL;
+>   	if (!battr->mmap)
+>   		goto out_put;
+>
 
-Yeah, sounds good to me.  kernfs isn't functional yet anyway and there
-will be more sweeping changes so it probably is the least painful if
-we do all the big changes in one cycle anyway.
+as you asked the patch is rebased on top of linux-next, if you encounter 
+any problems related to the change, please let me know.
 
-Thanks.
-
--- 
-tejun
+Thanks,
+Vladimir
