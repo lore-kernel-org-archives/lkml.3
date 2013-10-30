@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab3J3Um2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 16:42:28 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:54725 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754439Ab3J3UmX (ORCPT
+	id S1754749Ab3J3Um0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 16:42:26 -0400
+Received: from usindpps05.hds.com ([207.126.252.18]:35888 "EHLO
+	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754457Ab3J3UmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Oct 2013 16:42:23 -0400
-Message-ID: <52716D74.3070201@hds.com>
-Date: Wed, 30 Oct 2013 16:35:00 -0400
+Message-ID: <52716E1B.7090205@hds.com>
+Date: Wed, 30 Oct 2013 16:37:47 -0400
 From: Seiji Aguchi <seiji.aguchi@hds.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
@@ -16,7 +16,9 @@ To: linux-kernel@vger.kernel.org, x86@kernel.org
 CC: hpa@zytor.com, rostedt@goodmis.org, mingo@elte.hu, bp@alien8.de,
         tglx@linutronix.de, fdeslaur@gmail.com, raphael.beamonte@gmail.com,
         dle-develop@lists.sourceforge.net, tomoki.sekiyama@hds.com
-Subject: [PATCH v4 0/4] Introduce page fault tracepoints
+Subject: [PATCH v4 3/4] Delete __trace_alloc_intr_gate()
+References: <52716D74.3070201@hds.com>
+In-Reply-To: <52716D74.3070201@hds.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 X-Proofpoint-SPF-Result: pass
@@ -31,37 +33,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change from v3:
- - Separate modifications to make review easy.
- - Refactor implementations registering exception/irq_vector
-   handers. (Patch 1, 2, 3)
+Currently irq vector handlers for tracing are registered in both set_intr_gate()
+ and __trace_alloc_intr_gate() in alloc_intr_gate().
+But, we don't need to do that twice.
+So, let's delete __trace_alloc_intr_gate().
 
-This series introduce page fault tracepoints.
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+---
+ arch/x86/include/asm/desc.h | 22 ----------------------
+ 1 file changed, 22 deletions(-)
 
-Detailed descriptions are explained in each patch.
-Any comments are welcome.
-
-Seiji Aguchi (4):
-  Move set_intr_gate() into macro
-  Register exception handler to trace IDT
-  Delete __trace_alloc_intr_gate()
-  Add page fault tracepoints
-
- arch/x86/include/asm/desc.h             | 57 ++++++++++++++-------------------
- arch/x86/include/asm/hw_irq.h           |  3 ++
- arch/x86/include/asm/segment.h          |  3 ++
- arch/x86/include/asm/trace/exceptions.h | 52 ++++++++++++++++++++++++++++++
- arch/x86/include/asm/traps.h            | 20 ++++++++++++
- arch/x86/kernel/entry_32.S              | 10 ++++++
- arch/x86/kernel/entry_64.S              | 13 +++++++-
- arch/x86/kernel/head64.c                |  2 +-
- arch/x86/kernel/kvm.c                   |  2 +-
- arch/x86/kernel/traps.c                 | 28 ++++++++--------
- arch/x86/mm/Makefile                    |  2 ++
- arch/x86/mm/fault.c                     | 23 +++++++++++++
- 12 files changed, 165 insertions(+), 50 deletions(-)
- create mode 100644 arch/x86/include/asm/trace/exceptions.h
-
+diff --git a/arch/x86/include/asm/desc.h b/arch/x86/include/asm/desc.h
+index 3d73437..50d033a 100644
+--- a/arch/x86/include/asm/desc.h
++++ b/arch/x86/include/asm/desc.h
+@@ -392,32 +392,10 @@ static inline void alloc_system_vector(int vector)
+ 	}
+ }
+ 
+-#ifdef CONFIG_TRACING
+-static inline void trace_set_intr_gate(unsigned int gate, void *addr)
+-{
+-	gate_desc s;
+-
+-	pack_gate(&s, GATE_INTERRUPT, (unsigned long)addr, 0, 0, __KERNEL_CS);
+-	write_idt_entry(trace_idt_table, gate, &s);
+-}
+-
+-static inline void __trace_alloc_intr_gate(unsigned int n, void *addr)
+-{
+-	trace_set_intr_gate(n, addr);
+-}
+-#else
+-static inline void trace_set_intr_gate(unsigned int gate, void *addr)
+-{
+-}
+-
+-#define __trace_alloc_intr_gate(n, addr)
+-#endif
+-
+ #define alloc_intr_gate(n, addr)				\
+ 	do {							\
+ 		alloc_system_vector(n);				\
+ 		set_intr_gate(n, addr);				\
+-		__trace_alloc_intr_gate(n, trace_##addr);	\
+ 	} while (0)
+ 
+ /*
 -- 
 1.8.3.1
+
 
