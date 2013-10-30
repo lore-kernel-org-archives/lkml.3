@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab3J3TaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 15:30:04 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45111 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752259Ab3J3TaD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 15:30:03 -0400
-Date: Wed, 30 Oct 2013 19:29:27 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] perf: arch_perf_out_copy_user default
-Message-ID: <20131030192927.GB27625@mudshark.cambridge.arm.com>
-References: <20131030143750.GT19466@laptop.lan>
+	id S1754356Ab3J3TcJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 15:32:09 -0400
+Received: from mout.gmx.net ([212.227.17.20]:65352 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752059Ab3J3TcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 15:32:06 -0400
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Joe Perches <joe@perches.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Subject: Re: [PATCH 1/2] tpm/tpm_ppi: Do not compare strcmp(a,b) == -1
+Date: Wed, 30 Oct 2013 20:35:36 +0100
+User-Agent: KMail/1.13.7 (Linux/3.10.9; KDE/4.10.5; x86_64; ; )
+Cc: Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Xiaoyan Zhang <xiaoyan.zhang@intel.com>, Gang Wei <gang.wei@intel.com>,
+        stable@vger.kernel.org
+References: <1383093628-31580-1-git-send-email-peterhuewe@gmx.de> <1383095144.12439.41.camel@joe-AO722>
+In-Reply-To: <1383095144.12439.41.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131030143750.GT19466@laptop.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201310302035.36579.PeterHuewe@gmx.de>
+X-Provags-ID: V03:K0:WJy9TWjsBgl280anmr2KPr+8Nux6/XQCsf+tlOiV7c9brgQaGRI
+ X7TA2CXIiGE8WqHcbGBWnp3JQV//YeGupEjaJkcORiBRTH8r5G/ZHcHysH8xEQ65BU5PEgi
+ H5Oelo+hyUEUV4q55Rz/WynAnWLBReLsLCl5L8g0KMiMCBBYJaNmELsEcHSG7P5fyJUndyg
+ rh9J8n3EviY6055IzEVhw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 02:37:50PM +0000, Peter Zijlstra wrote:
-> Hi Frederic,
+Hi Joe, Jason
+> fyi: using
+> 	if (strcmp(foo, bar) < 0)
+> is canonical.
 
-Hi Peter,
+Yeah of course you're both right - 
+    if (strcmp(foo, bar) < 0) 
+is the correct version.
+Sorry about the rubbish patch.
 
-> I just spotted:
-> 
-> #ifndef arch_perf_out_copy_user
-> #define arch_perf_out_copy_user __copy_from_user_inatomic
-> #endif
-> 
-> vs:
-> 
-> arch/x86/include/asm/perf_event.h:#define arch_perf_out_copy_user copy_from_user_nmi
-> 
-> 
-> Now the problem is that copy_from_user_nmi() and
-> __copy_from_user_inatomic() have different return semantics.
-> 
-> Furthermore, the macro you use them in DEFINE_OUTPUT_COPY() assumes the
-> return value is the amount of memory copied; as also illustrated by
-> memcpy_common().
-> 
-> Trouble is, __copy_from_user_inatomic() returns the number of bytes
-> _NOT_ copied.
-> 
-> With this, my question to Will is, how did your ARM unwind support
-> patches ever work? AFAICT they end up using the
-> __copy_from_user_inatomic() thing.
 
-Yeah, that's weird, because they *do* appear to work! In fact, looking at
-the code in kernel/events/core.c, it looks like __output_copy_user is
-expected to return the number of bytes not copied, so providing the
-__copy_from_user_inatomic succeeds first time around, the DEFINE_OUTPUT_COPY
-macro will return len (dump_size) and the perf_output_skip will deal with
-the buffer pointers for us. The issue then is that dynamic size will be 0,
-and the unwind code in perf will never be called (except I know that it *is*
-being called).
+> lib/string.c:strcmp returns only -1,0,1
+> so that's what the arch versions should do too.
+> However, arch implementations do vary...
 
-I'll go dig further...
+Joe, You are right on this one as well.
 
-Will
+I did not pay attention to where cscope did send me 
+- it was arch/x86/boot/string.c which implements it as 
+
+        while (*s1 || *s2) {
+                delta = *s2 - *s1;
+                if (delta)
+                        return delta;
+                s1++;
+                s2++;
+        }
+
+Although I know that this is not used here, 
+it differs from the version in lib. (Maybe worth changing?)
+
+
+In anycase 
+    if (strcmp(foo, bar) < 0)
+is better than
+    if (strcmp(foo, bar) == -1)
+so I'll resend the patch.
+
+Thanks for reviewing!
+
+Peter
+
