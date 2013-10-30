@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731Ab3J3QV4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 12:21:56 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:31426 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab3J3QVy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 12:21:54 -0400
-Date: Wed, 30 Oct 2013 17:21:42 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Wei Ni <wni@nvidia.com>
-Cc: <linux@roeck-us.net>, <lm-sensors@lm-sensors.org>,
-        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v4 3/3] hwmon: (lm90) use enums for the indexes of temp8
- and temp11
-Message-ID: <20131030172142.49234b28@endymion.delvare>
-In-Reply-To: <1375856306-14415-4-git-send-email-wni@nvidia.com>
-References: <1375856306-14415-1-git-send-email-wni@nvidia.com>
-	<1375856306-14415-4-git-send-email-wni@nvidia.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752885Ab3J3QWZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 12:22:25 -0400
+Received: from mga03.intel.com ([143.182.124.21]:54574 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751305Ab3J3QWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 12:22:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,602,1378882800"; 
+   d="scan'208";a="419810602"
+Message-ID: <5271333F.9040500@linux.intel.com>
+Date: Wed, 30 Oct 2013 09:26:39 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC/PATCH v2 1/3] usb: gadget: add quirks field to struct usb_gadget
+References: <Pine.LNX.4.44L0.1310301033040.1312-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1310301033040.1312-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wei,
+>> diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
+>> index 942ef5e..7014ad9 100644
+>> --- a/include/linux/usb/gadget.h
+>> +++ b/include/linux/usb/gadget.h
+>> @@ -540,6 +540,11 @@ struct usb_gadget {
+>>   	struct device			dev;
+>>   	unsigned			out_epnum;
+>>   	unsigned			in_epnum;
+>> +
+>> +	u32				quirks;
+>> +/* epout requires buffer size to be aligned to MaxPacketSize */
+>> +#define USB_GADGET_QUIRK_EP_OUT_ALIGNED_SIZE		(1 << 0)
+>
+> If you decide to go through with this, it might be better to define a
+> series of single-bit flags instead of a single "quirks" field.  For
+> example:
+>
+> 	unsigned			quirk_ep_out_aligned_size:1;
+>
+> Yes, other people (including me!) have done it your way in the past,
+> but now this seems to make more sense.
 
-On Wed, 7 Aug 2013 14:18:26 +0800, Wei Ni wrote:
-> Using enums for the indexes and nrs of temp8 and temp11.
-> This make the code much more readable.
-> 
-> Signed-off-by: Wei Ni <wni@nvidia.com>
-> ---
->  drivers/hwmon/lm90.c |  154 +++++++++++++++++++++++++++++---------------------
->  1 file changed, 90 insertions(+), 64 deletions(-)
-> (...)
+It would be less error-prone. I'll change it.
 
-Looks much better except for one minor detail:
+Thanks,
 
-> +/*
-> + * TEMP11 register index
-> + */
-> +enum lm90_temp11_reg_index {
-> +	REMOTE_TEMP = 0,
-> +	REMOTE_LOW,
-> +	REMOTE_HIGH,
-> +	REMOTE_OFFSET,	/* except max6646, max6657/58/59,
-> +			 *  and max6695/96
-> +			 */
-
-This comment fits on a single line now.
-
-> +	LOCAL_TEMP,
-> +	REMOTE2_TEMP,	/* max6695/96 only */
-> +	REMOTE2_LOW,	/* max6695/96 only */
-> +	REMOTE2_HIGH,	/* max6695/96 only */
-> +	TEMP11_REG_NUM
-> +};
-
-Other than that, it's OK, and I think I'll apply it after all.
-
--- 
-Jean Delvare
+David
