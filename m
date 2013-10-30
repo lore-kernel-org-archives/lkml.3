@@ -1,116 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751225Ab3J3E7T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 00:59:19 -0400
-Received: from [213.199.154.251] ([213.199.154.251]:27714 "EHLO
-	db9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1750706Ab3J3E7Q (ORCPT
+	id S1751272Ab3J3FF4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 01:05:56 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:57724 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab3J3FFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 00:59:16 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 4
-X-BigFish: VS4(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kz70kz17326ah1de097h186068hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h1155h)
-Date: Wed, 30 Oct 2013 12:48:48 +0800
-From: Nicolin Chen <b42378@freescale.com>
-To: <timur@tabi.org>, <shawn.guo@linaro.org>, <broonie@kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alsa-devel@alsa-project.org>, <rob.herring@calxeda.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>, <pawel.moll@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <b32955@freescale.com>
-Subject: Re: [PATCH 1/3] dma: imx-sdma: Add ssi dual fifo script support
-Message-ID: <20131030044848.GE9605@MrMyself>
-References: <cover.1383047327.git.b42378@freescale.com>
- <9ed025d4e98f716ba80b27acaaa98f43ad3bd75a.1383047327.git.b42378@freescale.com>
- <20131029135142.GT30088@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20131029135142.GT30088@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Wed, 30 Oct 2013 01:05:54 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: stefano.stabellini@eu.citrix.com, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH] of: set dma_mask to point to coherent_dma_mask
+Date: Wed, 30 Oct 2013 00:05:22 -0500
+Message-Id: <1383109522-6879-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
+From: Rob Herring <rob.herring@calxeda.com>
 
-On Tue, Oct 29, 2013 at 02:51:43PM +0100, Sascha Hauer wrote:
-> Look at drivers/dma/imx-sdma.c:
-> 
-> > /**
-> >  * struct sdma_firmware_header - Layout of the firmware image
-> >  *
-> >  * @magic		"SDMA"
-> >  * @version_major	increased whenever layout of struct
-> >  * sdma_script_start_addrs
-> >  *			changes.
-> 
-> Can you image why this firmware has a version field? Right, it's because
-> it encodes the layout of struct sdma_script_start_addrs.
-> 
-> As the comment clearly states you have to *increase this field* when you
-> add scripts.
-> 
-> Obviously you missed that, as the firmware on lkml posted recently
-> shows:
-> 
-> > 00000000: 414d4453 00000001 00000001 0000001c SDMA............
->                      ^^^^^^^^
->                      Still '1'
-> 
-> > 00000010: 00000026 000000b4 0000067a 00000282 &.......z.......
-> > 00000020: ffffffff 00000000 ffffffff ffffffff ................
-> > 00000030: ffffffff ffffffff ffffffff ffffffff ................
-> > 00000040: ffffffff ffffffff 00001a6a ffffffff ........j.......
-> > 00000050: 000002eb 000018bb ffffffff 00000408 ................
-> > 00000060: ffffffff 000003c0 ffffffff ffffffff ................
-> > 00000070: ffffffff 000002ab ffffffff 0000037b ............{...
-> > 00000080: ffffffff ffffffff 0000044c 0000046e ........L...n...
-> > 00000090: ffffffff 00001800 ffffffff ffffffff ................
-> > 000000a0: 00000000 00001800 00001862 00001a16 ........b.......
->                               ^^^^^^^^^^^^^^^^^
->                               new script addresses introduced
-> 
-> 
-> > -#define SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V1	34
-> > +#define SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V1	37
-> 
-> And no, this is not a bug. It's your firmware header that is buggy.
-> 
+Platform devices created by DT code don't initialize dma_mask pointer to
+anything. Set it to coherent_dma_mask by default if the architecture
+code has not set it.
 
-I wasn't aware that the problem is far more complicated than I thought.
-And thank you for telling me all this.
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+---
+I think this is at least part of what is needed to fix dma_mask issue
+raised by Stefano [1]. Things should work AFAICT with just this, but
+I suppose the xgmac driver needs to set the mask as well (not relying
+on the default), but some pointing the dma_mask to a valid value is
+needed first.
 
-> What you need is:
-> 
-> #define SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V2      37
-> 
-> You (you as a company, not you as a person) knew that it was me who
-> created this firmware format. So it was absolutely unnecessary to create
-> an incompatible firmware instead of dropping me a short note.
-> 
-> Please add a version check to the driver as necessary and provide a proper
-> firmware.
-> 
+Rob
 
-Just currently it's not easy for me to create a new proper firmware,
-and I's been told that besides this version number, it also lacks a
-decent license info. So may I just refine this patch as you suggested
-to add a version check and add those new scripts first?
+[1] http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg528236.html
 
-Thank you,
-Nicolin Chen
+ drivers/of/platform.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-> Sascha
-> 
-> -- 
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-> 
-
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index f6dcde2..fce088e 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -215,6 +215,8 @@ static struct platform_device *of_platform_device_create_pdata(
+ 	dev->archdata.dma_mask = 0xffffffffUL;
+ #endif
+ 	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
++	if (!dev->dev.dma_mask)
++		dev->dev.dma_mask = &dev->dev.coherent_dma_mask;
+ 	dev->dev.bus = &platform_bus_type;
+ 	dev->dev.platform_data = platform_data;
+ 
+-- 
+1.8.1.2
 
