@@ -1,101 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907Ab3J3RQA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 13:16:00 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:53995 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125Ab3J3RP7 (ORCPT
+	id S1752780Ab3J3RQf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 13:16:35 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:21318 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040Ab3J3RQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 13:15:59 -0400
-In-Reply-To: <20131030153931.GM16117@laptop.programming.kicks-ass.net>
-References: <20131025173749.GG19466@laptop.lan> <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com> <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com> <20131028132634.GO19466@laptop.lan> <20131028163418.GD4126@linux.vnet.ibm.com> <20131028201735.GA15629@redhat.com> <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com> <20131030092725.GL4126@linux.vnet.ibm.com> <20131030112526.GI16117@laptop.programming.kicks-ass.net> <OFF6C78E48.E477DB1E-ON42257C14.0050F9B3-42257C14.0051AC6D@il.ibm.com> <20131030153931.GM16117@laptop.programming.kicks-ass.net>
-Subject: Re: perf events ring buffer memory barrier on powerpc
-X-KeepSent: CA1DB4AC:7D4F6EEE-42257C14:0056F77D;
- type=4; name=$KeepSent
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-Message-ID: <OFCA1DB4AC.7D4F6EEE-ON42257C14.0056F77D-42257C14.005EB5EA@il.ibm.com>
-From: Victor Kaplansky <VICTORK@il.ibm.com>
-Date: Wed, 30 Oct 2013 19:14:29 +0200
-X-MIMETrack: Serialize by Router on D06ML319/06/M/IBM(Release 8.5.3FP5|July 31, 2013) at
- 30/10/2013 19:14:21
+	Wed, 30 Oct 2013 13:16:33 -0400
+Date: Wed, 30 Oct 2013 20:12:51 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch v2] libertas: potential oops in debugfs
+Message-ID: <20131030171251.GA4130@longonot.mountain>
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13103017-3548-0000-0000-000006FF6B7E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131025144452.GA28451@ngolde.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> wrote on 10/30/2013 05:39:31 PM:
+If we do a zero size allocation then it will oops.  Also we can't be
+sure the user passes us a NUL terminated string so I've added a
+terminator.
 
-> Although I suppose speculative reads are allowed -- they don't have the
-> destructive behaviour speculative writes have -- and thus we could in
-> fact get reorder issues.
+This code can only be triggered by root.
 
-I agree.
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
->
-> But since it is still a dependent load in that we do that @tail vs @head
-> comparison before doing other loads, wouldn't a read_barrier_depends()
-> be sufficient? Or do we still need a complete rmb?
-
-We need a complete rmb() here IMO. I think there is a fundamental
-difference
-between load and stores in this aspect. Load are allowed to be hoisted by
-compiler or executed speculatively by HW. To prevent load "*(ubuf->data +
-tail)"
-to be hoisted beyond "ubuf->head" load you would need something like this:
-
-void
-ubuf_read(void)
-{
-        u64 head, tail;
-
-        tail = ubuf->tail;
-        head = ACCESS_ONCE(ubuf->head);
-
-        /*
-         * Ensure we read the buffer boundaries before the actual buffer
-         * data...
-         */
-
-        while (tail != head) {
-		    smp_read_barrier_depends();         /* for Alpha */
-                obj = *(ubuf->data + head - 128);
-                /* process obj */
-                tail += obj->size;
-                tail %= ubuf->size;
-        }
-
-        /*
-         * Ensure all data reads are complete before we issue the
-         * ubuf->tail update; once that update hits, kbuf_write() can
-         * observe and overwrite data.
-         */
-        smp_mb();               /* D, matches with A */
-
-        ubuf->tail = tail;
-}
-
-(note that "head" is part of address calculation of obj load now).
-
-But, even in this demo example some "smp_read_barrier_depends()" before
-"obj = *(ubuf->data + head - 100);" is required for architectures
-like Alpha. Though, on more sane architectures "smp_read_barrier_depends()"
-will be translated to nothing.
-
-
-Regards,
--- Victor
-
+diff --git a/drivers/net/wireless/libertas/debugfs.c b/drivers/net/wireless/libertas/debugfs.c
+index 668dd27..1917348 100644
+--- a/drivers/net/wireless/libertas/debugfs.c
++++ b/drivers/net/wireless/libertas/debugfs.c
+@@ -913,7 +913,10 @@ static ssize_t lbs_debugfs_write(struct file *f, const char __user *buf,
+ 	char *p2;
+ 	struct debug_data *d = f->private_data;
+ 
+-	pdata = kmalloc(cnt, GFP_KERNEL);
++	if (cnt == 0)
++		return 0;
++
++	pdata = kmalloc(cnt + 1, GFP_KERNEL);
+ 	if (pdata == NULL)
+ 		return 0;
+ 
+@@ -922,6 +925,7 @@ static ssize_t lbs_debugfs_write(struct file *f, const char __user *buf,
+ 		kfree(pdata);
+ 		return 0;
+ 	}
++	pdata[cnt] = '\0';
+ 
+ 	p0 = pdata;
+ 	for (i = 0; i < num_of_items; i++) {
