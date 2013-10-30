@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab3J3LCw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 07:02:52 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:56739 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753501Ab3J3LCu (ORCPT
+	id S1753302Ab3J3LHM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 07:07:12 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:62630 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751592Ab3J3LHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 07:02:50 -0400
-Date: Wed, 30 Oct 2013 04:02:44 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH 1/8] rcu: add a warn to rcu_preempt_note_context_switch()
-Message-ID: <20131030110244.GA19599@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
- <1375871104-10688-2-git-send-email-laijs@cn.fujitsu.com>
+	Wed, 30 Oct 2013 07:07:10 -0400
+Date: Wed, 30 Oct 2013 12:07:05 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Johan Hovold <jhovold@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] misc: atmel_pwm: set initcall level to subsys
+Message-ID: <20131030110705.GA29813@localhost>
+References: <1382459560-26596-1-git-send-email-jhovold@gmail.com>
+ <1382459560-26596-3-git-send-email-jhovold@gmail.com>
+ <20131029232249.GA20476@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375871104-10688-2-git-send-email-laijs@cn.fujitsu.com>
+In-Reply-To: <20131029232249.GA20476@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13103011-6688-0000-0000-000002FD4BB4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 06:24:57PM +0800, Lai Jiangshan wrote:
-> It is expected that _nesting == INT_MIN if _nesting < 0.
-> Add a warning to it if something unexpected happen.
+On Tue, Oct 29, 2013 at 04:22:49PM -0700, Greg KH wrote:
+> On Tue, Oct 22, 2013 at 06:32:40PM +0200, Johan Hovold wrote:
+> > Even with the atmel_pwm driver and the atmel-pwm-bl backlight driver
+> > supporting deferred probing, we still want to make sure that any
+> > pwm-device is available when the backlight devices are probed to avoid
+> > any unnecessary delays before enabling the backlight.
+> > 
+> > Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> > ---
+> >  drivers/misc/atmel_pwm.c | 12 +++++++++++-
+> >  1 file changed, 11 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/misc/atmel_pwm.c b/drivers/misc/atmel_pwm.c
+> > index a6dc56e..0d0f599 100644
+> > --- a/drivers/misc/atmel_pwm.c
+> > +++ b/drivers/misc/atmel_pwm.c
+> > @@ -395,7 +395,17 @@ static struct platform_driver atmel_pwm_driver = {
+> >  	 */
+> >  };
+> >  
+> > -module_platform_driver_probe(atmel_pwm_driver, pwm_probe);
+> > +static int __init pwm_init(void)
+> > +{
+> > +	return platform_driver_probe(&atmel_pwm_driver, pwm_probe);
+> > +}
+> > +subsys_initcall(pwm_init);
 > 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
->  kernel/rcutree_plugin.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index 63098a5..8fd947e 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -243,6 +243,7 @@ static void rcu_preempt_note_context_switch(int cpu)
->  				       : rnp->gpnum + 1);
->  		raw_spin_unlock_irqrestore(&rnp->lock, flags);
->  	} else if (t->rcu_read_lock_nesting < 0 &&
-> +		   !WARN_ON_ONCE(t->rcu_read_lock_nesting != INT_MIN) &&
+> I really hate this type of patch, as it's papering over the real
+> problem.  What happens when someone else moves their driver to this
+> level?  Then you are back to the original problem.
 
-Finally getting back to this...
+Yes, it's crude, but it's currently the only way to express a preferred
+probe order.
 
->From what I can see, this is safe right now because
-->rcu_read_lock_nesting is incremented only in case of an interrupt, NMI,
-or softirq interrupting the rcu_read_unlock() code path on the one hand,
-and because the functions called from rcu_read_unlock_special() currently
-disable interrupts before doing any rcu_read_lock()s.  With this in
-mind, it is currently impossible to have a context switch occur within
-an RCU read-side critical section that is invoked (either directly or
-indirectly) from the portion of __rcu_read_unlock() that has negative
-->rcu_read_lock_nesting.
+> This is what deferred probing was supposed to fix.  If it doesn't, then
+> something else needs to be done, or fix the deferred probing mess...
 
-But this could change should any part of the rt_mutex_unlock() code
-called from rcu_read_unlock_special() were to do rcu_read_lock() before
-disabling interrupts.  Is there any reason we should prohibit such a
-pattern in rt_mutex_unlock()?
+Deferred probing (the first patch) fixes the dependency problem, but may
+introduce delays. I can live with that.
 
-(For the record, I am currently OK prohibiting this pattern in
-rcu_report_exp_rnp(), which is also called from rcu_read_unlock_special()
--- it seems unlikely that someone would use RCU to protect RCU's
-expedited-grace-period data structures.)
+> Sorry, I can't take this.
 
-							Thanx, Paul
+Fair enough.
 
-
->  		   t->rcu_read_unlock_special) {
-> 
->  		/*
-> -- 
-> 1.7.4.4
-> 
-
+Thanks,
+Johan
