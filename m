@@ -1,104 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290Ab3J3Sou (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 14:44:50 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51713 "EHLO
+	id S1754383Ab3J3So4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 14:44:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51719 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752698Ab3J3Sos (ORCPT
+	with ESMTP id S1754331Ab3J3Sox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 14:44:48 -0400
-Date: Wed, 30 Oct 2013 19:44:42 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: will.deacon@arm.com, fweisbec@gmail.com
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] perf: Fix arch_perf_out_copy_user default implementation
-Message-ID: <20131030184442.GQ2490@laptop.programming.kicks-ass.net>
-References: <20131030143750.GT19466@laptop.lan>
+	Wed, 30 Oct 2013 14:44:53 -0400
+Message-ID: <527153A3.5020404@infradead.org>
+Date: Wed, 30 Oct 2013 11:44:51 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131030143750.GT19466@laptop.lan>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org
+Subject: Re: linux-next: Tree for Oct 30 (include/xen/swiotlb-xen.h)
+References: <20131030184511.c90aa7f40fec6b2e1652f394@canb.auug.org.au>
+In-Reply-To: <20131030184511.c90aa7f40fec6b2e1652f394@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: perf: Fix arch_perf_out_copy_user default implementation
+On 10/30/13 00:45, Stephen Rothwell wrote:
+> Hi all,
+> 
+> News:  I am now doing an arm multi_v7_defconfig build between each merge.
+> 
+> Changes since 20131029:
+> 
+> The arm defconfig build is fixed again.
+> 
+> The net-next tree gained a conflict against the net tree.
+> 
+> The xen-tip tree gained a conflict against the arm tree.
+> 
+> The akpm-current tree gained a conflict against the tip tree and a build
+> failure for which I reverted 3 commits.
+> 
+> Various build problems from yesterday have been resolved.
 
-I noticed that the arch_perf_output_copy_user default of
-__copy_from_user_inatomic has different return semantics that all other
-memcpy functions we use -- notably also copy_from_user_nmi() for x86.
+on x86_64:
 
-So provide a compatible default function.
+In file included from include/xen/swiotlb-xen.h:4:0,
+                 from drivers/xen/grant-table.c:52:
+include/linux/swiotlb.h:45:13: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/linux/swiotlb.h:45:13: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
+include/linux/swiotlb.h:49:28: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/linux/swiotlb.h:54:14: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/linux/swiotlb.h:68:15: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/linux/swiotlb.h:71:18: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/linux/swiotlb.h:75:14: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/linux/swiotlb.h:79:9: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/linux/swiotlb.h:83:44: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/linux/swiotlb.h:88:17: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/linux/swiotlb.h:92:26: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/linux/swiotlb.h:96:21: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/linux/swiotlb.h:100:29: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/linux/swiotlb.h:104:24: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+In file included from drivers/xen/grant-table.c:52:0:
+include/xen/swiotlb-xen.h:21:19: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/xen/swiotlb-xen.h:25:15: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/xen/swiotlb-xen.h:29:12: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/xen/swiotlb-xen.h:34:14: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/xen/swiotlb-xen.h:38:23: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/xen/swiotlb-xen.h:42:25: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/xen/swiotlb-xen.h:46:26: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+include/xen/swiotlb-xen.h:50:28: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
 
-Also change all the memcpy functions to use unsigned long.
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- kernel/events/internal.h | 31 ++++++++++++++++++++++++-------
- 1 file changed, 24 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index ca6599723be5..325e85776406 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -82,14 +82,14 @@ static inline unsigned long perf_data_size(struct ring_buffer *rb)
- }
- 
- #define DEFINE_OUTPUT_COPY(func_name, memcpy_func)			\
--static inline unsigned int						\
-+static inline unsigned long						\
- func_name(struct perf_output_handle *handle,				\
--	  const void *buf, unsigned int len)				\
-+	  const void *buf, unsigned long len)				\
- {									\
- 	unsigned long size, written;					\
- 									\
- 	do {								\
--		size = min_t(unsigned long, handle->size, len);		\
-+		size = min(handle->size, len);				\
- 									\
- 		written = memcpy_func(handle->addr, buf, size);		\
- 									\
-@@ -110,7 +110,8 @@ func_name(struct perf_output_handle *handle,				\
- 	return len;							\
- }
- 
--static inline int memcpy_common(void *dst, const void *src, size_t n)
-+static inline unsigned long
-+memcpy_common(void *dst, const void *src, unsigned long n)
- {
- 	memcpy(dst, src, n);
- 	return n;
-@@ -118,12 +119,28 @@ static inline int memcpy_common(void *dst, const void *src, size_t n)
- 
- DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
- 
--#define MEMCPY_SKIP(dst, src, n) (n)
-+static inline unsigned long
-+memcpy_skip(void *dst, const void *src, unsigned long n)
-+{
-+	return n;
-+}
- 
--DEFINE_OUTPUT_COPY(__output_skip, MEMCPY_SKIP)
-+DEFINE_OUTPUT_COPY(__output_skip, memcpy_skip)
- 
- #ifndef arch_perf_out_copy_user
--#define arch_perf_out_copy_user __copy_from_user_inatomic
-+#define arch_perf_out_copy_user arch_perf_out_copy_user
-+
-+static inline unsigned long
-+arch_perf_out_copy_user(void *dst, const void *src, unsigned long n)
-+{
-+	unsigned long ret;
-+
-+	pagefault_disable();
-+	ret = __copy_from_user_inatomic(dst, src, n);
-+	pagefault_enable();
-+
-+	return n - ret;
-+}
- #endif
- 
- DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
+-- 
+~Randy
