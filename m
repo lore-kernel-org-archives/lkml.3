@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499Ab3J3M6R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 08:58:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10496 "EHLO mx1.redhat.com"
+	id S1753737Ab3J3M6x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 08:58:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16174 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751408Ab3J3M6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 08:58:16 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <52705CC0.8020909@asianux.com>
-References: <52705CC0.8020909@asianux.com> <523FD9E7.3050303@asianux.com> <523FDBD7.4040602@asianux.com> <C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com> <523FE578.5060801@asianux.com> <52672DAC.1030307@asianux.com> <CAMqJFCou4SObPni5Lb_tX=0hQ__kF_9MLDC-6a1opptc9dxT-A@mail.gmail.com> <52673E41.6040606@asianux.com> <5267AF98.1010800@asianux.com> <5268B0B1.9050009@asianux.com> <526F1ACE.7080409@asianux.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: dhowells@redhat.com, Joern Rennecke <joern.rennecke@embecosm.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
-        Francois Bedard <Francois.Bedard@synopsys.com>,
-        Max Filippov <jcmvbkbc@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH-next v3] kernel/system_certificate.S: use real contents instead of macro GLOBAL()
-Date: Wed, 30 Oct 2013 12:57:45 +0000
-Message-ID: <30128.1383137865@warthog.procyon.org.uk>
+	id S1752927Ab3J3M6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 08:58:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,601,1378882800"; 
+   d="scan'208";a="419689772"
+Date: Wed, 30 Oct 2013 15:04:16 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-acpi@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Len Brown <lenb@kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI / hotplug / PCI: Always rescan the slot for new
+ devices
+Message-ID: <20131030130416.GF3521@intel.com>
+References: <1383136836-15306-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1406112.LRdFoqkugQ@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406112.LRdFoqkugQ@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chen Gang <gang.chen@asianux.com> wrote:
-
-> If a macro is only used within 2 times, and also its contents are
-> within 2 lines, recommend to expand it to shrink code line.
+On Wed, Oct 30, 2013 at 02:01:40PM +0100, Rafael J. Wysocki wrote:
+> On Wednesday, October 30, 2013 02:40:36 PM Mika Westerberg wrote:
+> > Commit 2dc4128 (ACPI / hotplug / PCI: Avoid doing too much for spurious
+> > notifies) changed the enable_slot() to check return value of pci_scan_slot()
+> > and if it is zero return early from the function. It means that there were
+> > no new devices in this particular slot.
+> > 
+> > However, if a device appeared deeper in the hierarchy the code now ignores
+> > it causing things like Thunderbolt chaining fail to recognize new devices.
+> > 
+> > The problem with Alex Williamson's machine was solved with commit
+> > a47d8c8 (ACPI / hotplug / PCI: Avoid parent bus rescans on spurious device
+> > checks) and hence we should be able to restore the original functionality
+> > that we always rescan on bus check notification.
+> > 
+> > On a device check notification we still check what acpiphp_rescan_slot()
+> > returns and on zero bail out early.
+> > 
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 > 
-> For our case, the macro is not portable either: some architectures'
-> assembler may use another character to mark newline in a macro (e.g.
-> '`' for arc), which will cause issue.
-> 
-> If still want to use macro and let it portable enough, it will also
-> need include additional header file (e.g "#include <linux/linkage.h>",
-> although it also need be fixed).
+> So, this is a revert of commit a47d8c8, correct?
 
-Fine by me.
+Correct.
 
-Applied.
+Plain revert didn't work because the code has changed after that commit.
