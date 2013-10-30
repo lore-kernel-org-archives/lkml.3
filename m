@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab3J3VcE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 17:32:04 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:34663 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab3J3VcC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 17:32:02 -0400
-Date: Wed, 30 Oct 2013 17:32:00 -0400 (EDT)
-Message-Id: <20131030.173200.2256841895208134119.davem@davemloft.net>
-To: xiyou.wangcong@gmail.com
-Cc: tdmackey@booleanhaiku.com, mchan@broadcom.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bnx2: Use dev_kfree_skb_any() in bnx2_tx_int()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAM_iQpV6ufX5-OOrNQtsXH0_9itjU-FriOoutyKfDEWdg-irQw@mail.gmail.com>
-References: <CAM_iQpXzJOxZ3MFNthKw5ye=WcxDWbiPaHuL=pHMz7D1R4nJ+w@mail.gmail.com>
-	<20131030.024003.1476890051483056287.davem@davemloft.net>
-	<CAM_iQpV6ufX5-OOrNQtsXH0_9itjU-FriOoutyKfDEWdg-irQw@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 30 Oct 2013 14:32:01 -0700 (PDT)
+	id S1752917Ab3J3VdU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 17:33:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11747 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751470Ab3J3VdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 17:33:19 -0400
+Date: Wed, 30 Oct 2013 21:32:55 +0000
+From: Alasdair G Kergon <agk@redhat.com>
+To: Greg KH <greg@kroah.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        =?iso-8859-1?B?RnLvv71k77+9cmlj?= Weisbecker <fweisbec@gmail.com>,
+        Knut Petersen <Knut_Petersen@t-online.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Alasdair G Kergon <agk@redhat.com>
+Subject: Re: [dm-devel] FW: Re: [BUG 3.12.rc4] Oops: unable to handle
+	kernel paging request during shutdown
+Message-ID: <20131030213255.GD24325@agk-dp.fab.redhat.com>
+Mail-Followup-To: Greg KH <greg@kroah.com>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Mike Snitzer <snitzer@redhat.com>,
+	=?iso-8859-1?B?RnLvv71k77+9cmlj?= Weisbecker <fweisbec@gmail.com>,
+	Knut Petersen <Knut_Petersen@t-online.de>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	"dm-devel@redhat.com" <dm-devel@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Paul McKenney <paulmck@linux.vnet.ibm.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Ingo Molnar <mingo@kernel.org>, Alasdair G Kergon <agk@redhat.com>
+References: <20131028140015.GA14612@agk-dp.fab.redhat.com> <alpine.LRH.2.02.1310301133180.4090@file01.intranet.prod.int.rdu2.redhat.com> <20131030171844.GA16462@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131030171844.GA16462@kroah.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cong Wang <xiyou.wangcong@gmail.com>
-Date: Wed, 30 Oct 2013 12:23:52 -0700
+On Wed, Oct 30, 2013 at 10:18:44AM -0700, Greg KH wrote:
+> The "module unload" issue is rare, thankfully, but yes, this type of
+> function will be showing up in 3.13-rc1 through the btrfs tree as it
+> needs that functionality, so feel free to use it to resolve this issue
+> if you need it.
+ 
+Excellent!  Though rare, yes, the number of bug reports was still
+noticeable so we'll definitely take a look at this now.
 
-> On Tue, Oct 29, 2013 at 11:40 PM, David Miller <davem@davemloft.net> wrote:
->> From: Cong Wang <xiyou.wangcong@gmail.com>
->> Date: Tue, 29 Oct 2013 20:50:08 -0700
->>
->>> Normally ->poll() is called in softirq context, while netpoll could
->>> be called in any context depending on its caller.
->>
->> It still makes amends to make the execution context still looks
->> "compatible" as far as locking et al. is concerned.
-> 
-> Adjusting netpoll code for IRQ context is much harder
-> than just calling dev_kfree_skb_any()...
-> 
-> What's more, we have similar change before:
-> 
-> commit ed79bab847d8e5a2986d8ff43c49c6fb8ee3265f
-> Author: Eric Dumazet <eric.dumazet@gmail.com>
-> Date:   Wed Oct 14 14:36:43 2009 +0000
-> 
->     virtio_net: use dev_kfree_skb_any() in free_old_xmit_skbs()
+Thanks,
+Alasdair
 
-Explain to me then why other ethernet drivers implemented identically,
-such as tg3, can use plain dev_kfree_skb() just fine?
