@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890Ab3J3PpQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 11:45:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36980 "EHLO mx1.redhat.com"
+	id S1752142Ab3J3Pqw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 11:46:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42747 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750790Ab3J3PpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 11:45:14 -0400
-Date: Wed, 30 Oct 2013 17:44:43 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
-        aik@ozlabs.ru, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] kvm: Destroy & free KVM devices on release
-Message-ID: <20131030154443.GJ4651@redhat.com>
-References: <20131029160019.22578.16409.stgit@bling.home>
- <20131029161322.22578.18997.stgit@bling.home>
- <20131030104029.GE4651@redhat.com>
- <1383143422.4097.170.camel@ul30vt.home>
- <20131030153338.GI4651@redhat.com>
- <527128D7.9070603@redhat.com>
+	id S1750735Ab3J3Pqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 11:46:51 -0400
+Message-ID: <527129D4.3010308@redhat.com>
+Date: Wed, 30 Oct 2013 16:46:28 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <527128D7.9070603@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Gleb Natapov <gleb@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 3.12-rc7] KVM: Fix modprobe failure for kvm_intel/kvm_amd
+References: <1383059634-55512-1-git-send-email-tim.gardner@canonical.com> <CA+55aFwUdXp4412F5LdmCRrGZCYiFpiPk7oksGi30CzP6i5O+w@mail.gmail.com> <52700C24.9050001@linux.vnet.ibm.com> <CA+55aFzqumDX8hRyC4avbpA2g_RRb28ZPYk=_-4atGJ=67Zu1A@mail.gmail.com> <52711121.9030606@linux.vnet.ibm.com> <20131030142359.GA32196@kroah.com> <5271284A.6000002@linux.vnet.ibm.com>
+In-Reply-To: <5271284A.6000002@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 04:42:15PM +0100, Paolo Bonzini wrote:
-> Il 30/10/2013 16:33, Gleb Natapov ha scritto:
-> > > Hmm, ok.  In that case I can drop this patch and I think the rest just
-> > > boils down to userspace use of the device.  I had been close()'ing the
-> > > kvm device fd when all QEMU vfio devices are detached, but I can just as
-> > > easily leave it open in case a new device is added later.  I'll send out
-> > > a new series after doing some more review and testing.  Do you have any
-> > > comments on the rest of the series?  Thanks,
-> >
-> > If I understand 4/4 correctly if there is VFIO device connected we
-> > assume non coherent domain. How hard it would be to do proper checking
-> > in this path series?
+Il 30/10/2013 16:39, Raghavendra K T ha scritto:
+>>
+>> Why even error out at all here?  You should never care about debugfs
+>> file creation return values, so why pass any error back up the stack?
 > 
-> Yes, that's my understanding as well.  Is the performance impact measurable?
+> We could change this to return 0, but we will still be left with
+> kvm_main.c: kvm_init_debug() function which creates the kvm  debugfs
+> directory. (I thought Paolo and Gleb's ack would be needed for
+> that change since it would be a bigger decision for me)
 > 
-We grant a guest permission to call wbinvd() needlessly.
+> So I just made the patch to fix only Linus's concern.
 
---
-			Gleb.
+Even if it is okay to exit and not create the files (and I think it's a
+bit surprising), I'd like at least a printk to signal what's happening.
+ But there should be no reason for debugfs directory creation to fail in
+the end, except for basic mistakes such as the one that Tim reported, so
+I think it's better to report the failure.
+
+> But sorry that I did not make that explicit. (infact module insertion
+> error was because of successful creation of kvm directory in above code
+> and then error coming from kvm_init_debug() in kvm_main.c).
+
+Yes, and I'm keeping the error reporting there too, while fixing the
+bogus EFAULT.
+
+Paolo
