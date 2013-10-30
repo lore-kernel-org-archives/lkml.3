@@ -1,133 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902Ab3J3W5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 18:57:31 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:45095 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366Ab3J3WwT (ORCPT
+	id S1755280Ab3J3W5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 18:57:44 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:58386 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754908Ab3J3W5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 18:52:19 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, viresh.kumar@linaro.org
-Subject: [PATCH V2 Resend 01/16] cpufreq: create cpufreq_generic_get() routine
-Date: Thu, 31 Oct 2013 04:21:59 +0530
-Message-Id: <1a672a5e0b0f6fa4e03646b5f124f68e13f079f2.1383173230.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1383173230.git.viresh.kumar@linaro.org>
-References: <cover.1383173230.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1383173230.git.viresh.kumar@linaro.org>
-References: <cover.1383173230.git.viresh.kumar@linaro.org>
+	Wed, 30 Oct 2013 18:57:43 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+References: <8761sexu2l.fsf@xmission.com> <20131030224444.GA9092@kroah.com>
+Date: Wed, 30 Oct 2013 15:57:37 -0700
+In-Reply-To: <20131030224444.GA9092@kroah.com> (Greg Kroah-Hartman's message
+	of "Wed, 30 Oct 2013 15:44:44 -0700")
+Message-ID: <87vc0etli6.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19j5cWxfVMdQZnL//Xu70sN1PWGXm2NZcA=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0296]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Spam-Relay-Country: 
+Subject: Re: WTF: driver-core-next contains recursive directory removal!
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CPUFreq drivers that use clock frameworks interface,i.e. clk_get_rate(), to get
-CPUs clk rate, has similar sort of code used for most of them.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
 
-This patch adds a generic ->get() which will do the same thing for them. All
-those drivers are required to now is to set .get to cpufreq_generic_get() and
-set their clk pointer in policy->clk during ->init().
+> I don't think there's an issue here, otherwise both Tejun and I would
+> have found some issues during testing, same for all of the other
+> linux-next users for the past few weeks.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq.c | 26 ++++++++++++++++++++------
- include/linux/cpufreq.h   |  3 +++
- 2 files changed, 23 insertions(+), 6 deletions(-)
+There issues were subtle and hard to detect especially without
+instrumenting the code during pci hotplug to look for them.  Memory
+leaks, use after free, and needing pci hotplug to reproduce them made
+the kinds of bugs I saw when I was working with it easy to go unnoticed
+in light testing.
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 02d534d..eb42edb 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -176,6 +176,20 @@ int cpufreq_generic_init(struct cpufreq_policy *policy,
- }
- EXPORT_SYMBOL_GPL(cpufreq_generic_init);
- 
-+unsigned int cpufreq_generic_get(unsigned int cpu)
-+{
-+	struct cpufreq_policy *policy = per_cpu(cpufreq_cpu_data, cpu);
-+
-+	if (!policy || IS_ERR(policy->clk)) {
-+		pr_err("%s: No %s associated to cpu: %d\n", __func__,
-+				policy ? "clk" : "policy", cpu);
-+		return 0;
-+	}
-+
-+	return clk_get_rate(policy->clk) / 1000;
-+}
-+EXPORT_SYMBOL_GPL(cpufreq_generic_get);
-+
- struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
- {
- 	struct cpufreq_policy *policy = NULL;
-@@ -1030,6 +1044,11 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 		goto err_set_policy_cpu;
- 	}
- 
-+	write_lock_irqsave(&cpufreq_driver_lock, flags);
-+	for_each_cpu(j, policy->cpus)
-+		per_cpu(cpufreq_cpu_data, j) = policy;
-+	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+
- 	if (cpufreq_driver->get) {
- 		policy->cur = cpufreq_driver->get(policy->cpu);
- 		if (!policy->cur) {
-@@ -1062,11 +1081,6 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 	}
- #endif
- 
--	write_lock_irqsave(&cpufreq_driver_lock, flags);
--	for_each_cpu(j, policy->cpus)
--		per_cpu(cpufreq_cpu_data, j) = policy;
--	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
--
- 	if (!frozen) {
- 		ret = cpufreq_add_dev_interface(policy, dev);
- 		if (ret)
-@@ -1087,12 +1101,12 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 	return 0;
- 
- err_out_unregister:
-+err_get_freq:
- 	write_lock_irqsave(&cpufreq_driver_lock, flags);
- 	for_each_cpu(j, policy->cpus)
- 		per_cpu(cpufreq_cpu_data, j) = NULL;
- 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
- 
--err_get_freq:
- 	if (cpufreq_driver->exit)
- 		cpufreq_driver->exit(policy);
- err_set_policy_cpu:
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 5bd6ab9..122d4cd 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -11,6 +11,7 @@
- #ifndef _LINUX_CPUFREQ_H
- #define _LINUX_CPUFREQ_H
- 
-+#include <linux/clk.h>
- #include <linux/cpumask.h>
- #include <linux/completion.h>
- #include <linux/kobject.h>
-@@ -66,6 +67,7 @@ struct cpufreq_policy {
- 	unsigned int		cpu;    /* cpu nr of CPU managing this policy */
- 	unsigned int		last_cpu; /* cpu nr of previous CPU that managed
- 					   * this policy */
-+	struct clk		*clk;
- 	struct cpufreq_cpuinfo	cpuinfo;/* see above */
- 
- 	unsigned int		min;    /* in kHz */
-@@ -447,6 +449,7 @@ void cpufreq_frequency_table_put_attr(unsigned int cpu);
- int cpufreq_table_validate_and_show(struct cpufreq_policy *policy,
- 				      struct cpufreq_frequency_table *table);
- 
-+unsigned int cpufreq_generic_get(unsigned int cpu);
- int cpufreq_generic_init(struct cpufreq_policy *policy,
- 		struct cpufreq_frequency_table *table,
- 		unsigned int transition_latency);
--- 
-1.7.12.rc2.18.g61b472e
+Beyond that the code has the deep issue that the code breaks normal
+filesystem expectations in a way that is certain to confuse filesystem
+people like Al Viro.
 
+And yes that code being at all recursive is one of the things that Viro
+objected to when you had him review sysfs before merging my cleanups
+long ago.
+
+Recursive removal is absolutely unnecessary, and it hides bugs, and
+makes the code unnecessarily complex for no good reason.
+
+Eric
