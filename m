@@ -1,46 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab3J3SoM (ORCPT <rfc822;w@1wt.eu>);
+	id S1754034Ab3J3SoQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 14:44:16 -0400
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:14666
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752189Ab3J3SoM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Oct 2013 14:44:12 -0400
-Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:10651 "EHLO
-	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752189Ab3J3SoL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 14:44:11 -0400
-Message-ID: <52715379.3020808@akamai.com>
-Date: Wed, 30 Oct 2013 14:44:09 -0400
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371Ic89bh1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h906i1155h192ch)
+Date: Wed, 30 Oct 2013 11:44:03 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>
+CC: Kumar Gala <galak@codeaurora.org>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] clk/zynq/clkc: Add 'fclk-enable' feature
+References: <1381425018-5653-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1592656.1ojHcSlzVh@flatron>
+ <b7840a0d-ac49-4c2d-beaa-9f79748c70d0@CH1EHSMHS006.ehs.local>
+ <2028580.HhySWWnU2A@flatron>
+ <8864256B-F8F9-4474-9B5F-416C3BB96523@codeaurora.org>
+ <ceac2f8e-30b4-415e-b8f3-f2af1270be88@DB9EHSMHS020.ehs.local>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-References: <20131030180042.7db60252a0779f89483ef51b@canb.auug.org.au>
-In-Reply-To: <20131030180042.7db60252a0779f89483ef51b@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <ceac2f8e-30b4-415e-b8f3-f2af1270be88@DB9EHSMHS020.ehs.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <229e9b6b-1229-4bc6-bbec-a4395a5b1885@CO9EHSMHS022.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2013 03:00 AM, Stephen Rothwell wrote:
-> Hi Andrew,
+On Tue, Oct 29, 2013 at 02:04:06PM +0100, Michal Simek wrote:
+> On 10/29/2013 09:26 AM, Kumar Gala wrote:
+> > 
+> > On Oct 28, 2013, at 5:17 PM, Tomasz Figa wrote:
+> > 
+> >>>>> diff --git a/Documentation/devicetree/bindings/clock/zynq-7000.txt
+> >>>>> b/Documentation/devicetree/bindings/clock/zynq-7000.txt index
+> >>>>> d99af878f5d7..11fdd146ec83 100644
+> >>>>> --- a/Documentation/devicetree/bindings/clock/zynq-7000.txt
+> >>>>> +++ b/Documentation/devicetree/bindings/clock/zynq-7000.txt
+> >>>>>
+> >>>>> @@ -22,6 +22,10 @@ Required properties:
+> >>>>> Optional properties:
+> >>>>>  - clocks : as described in the clock bindings
+> >>>>>  - clock-names : as described in the clock bindings
+> >>>>>
+> >>>>> + - fclk-enable : Bit mask to enable FCLKs in cases no proper CCF
+> >>>>
+> >>>> Since it's a vendor specific property, it should include vendor
+> >>>> prefix.
+> >>>
+> >>> The whole driver is vendor specific. Should there really be another
+> >>> prefix for that property?
+> >>
+> >> Yes. If a property is introduced just for use by this particular driver 
+> >> then it must be prepended by a vendor prefix. That's a general rule.
+> > 
+> > Most all nodes are vendor specific by definition ;).
 > 
-> After merging the akpm-current tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
+> Is this really generic rule? I haven't seen/heard any point regarding this on KS.
 > 
-> In file included from include/linux/init.h:4:0,
->                  from fs/eventpoll.c:14:
-> fs/eventpoll.c: In function 'eventpoll_init':
-> include/linux/compiler.h:321:20: error: call to '__compiletime_assert_2137' declared with attribute error: BUILD_BUG_ON failed: sizeof(void *) <= 8 && sizeof(struct epitem) > 128
->     prefix ## suffix();    \
+> I don't think we should use prefix here. It is xilinx specific option
+> but there shouldn't be any problem to use fclk-enable without any prefix.
+> Because it means we have to also rename ps-clk-frequency.
+> 
+> We are using xlnx prefix for properties which are autogenerated from design tools
+> which is not even this case.
 
-Yes, my fault for not compiling on more arches - I've posted a fix for this today as:
+So, what is the final call on this? Respin this and changing the prop name,
+or leaving it as is?
 
-Subject: [PATCH] epoll: remove the on_list check for 'struct epitem'
+	Thanks,
+	Sören
 
-Thanks,
 
--Jason
