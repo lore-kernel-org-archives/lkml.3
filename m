@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab3J3Jam (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 05:30:42 -0400
-Received: from mail.lemote.com ([222.92.8.138]:58881 "EHLO mail.lemote.com"
+	id S1753219Ab3J3JdE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 05:33:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5051 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751908Ab3J3Jal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 05:30:41 -0400
-X-Greylist: delayed 379 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Oct 2013 05:30:41 EDT
-Message-ID: <fd7ba5f27786bbd812c19dcd6c589eb2.squirrel@mail.lemote.com>
-In-Reply-To: <alpine.DEB.2.02.1310291402490.8257@ionos.tec.linutronix.de>
-References: <1380334284-12690-1-git-send-email-chenhc@lemote.com>
-    <alpine.DEB.2.02.1310291402490.8257@ionos.tec.linutronix.de>
-Date: Wed, 30 Oct 2013 17:24:17 +0800
-Subject: Re: [PATCH] genirq: Avoid NULL OOPS in irq handling
-From: =?gb2312?Q?=22=B3=C2=BB=AA=B2=C5=22?= <chenhc@lemote.com>
-To: "Thomas Gleixner" <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.22
+	id S1751332Ab3J3JdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 05:33:01 -0400
+Date: Wed, 30 Oct 2013 17:32:27 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org,
+        fwts-devel@lists.ubuntu.com
+Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
+Message-ID: <20131030093227.GA5791@dhcp-16-126.nay.redhat.com>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+ <20131008164551.GB16793@pd.tnic>
+ <20131008164831.GD16793@pd.tnic>
+ <20131029064720.GA16009@dhcp-16-126.nay.redhat.com>
+ <20131029094033.GA10972@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=gb2312
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131029094033.GA10972@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I use a Loongson-3(MIPS-series CPU) machine, there is a serial port
-integrated in the CPU (but it iss buggy), and it use handle_percpu_irq()
-as the irq handler. Maybe I should move the checking into
-handle_percpu_irq()?
+On 10/29/13 at 10:40am, Borislav Petkov wrote:
+> On Tue, Oct 29, 2013 at 02:47:20PM +0800, Dave Young wrote:
+> > Boris, could you update the comment? it says below: update that memory
+> > descriptor with the virtual address obtained from ioremap().
+> >
+> > Logiclly your patch should update it, then my patch update it again
+> > with the case of mapping to fixed address for kexec.
+> 
+> Thanks for catching this, I ended up doing the following:
+> 
+> /*
+>  * This function will switch the EFI runtime services to virtual mode.
+>  * Essentially, we look through the EFI memmap and map every region that
+>  * has the runtime attribute bit set in its memory descriptor into the
+>  * ->trampoline_pgd page table using a top-down VA allocation scheme.
+>  *
+>  * The old method which used to update that memory descriptor with the
+>  * virtual address obtained from ioremap() is still supported when the
+>  * kernel is booted with efi=old_map on its command line. Same old
+>  * method enabled the runtime services to be called without having to
+>  * thunk back into physical mode for every invocation.
+>  *
+>  * The new method does a pagetable switch in a preemption-safe manner
+>  * so that we're in a different address space when calling a runtime
+>  * function. For function arguments passing we do copy the PGDs of the
+>  * kernel page table into ->trampoline_pgd prior to each call.
+>  */
 
-Huacai
+Boris, thanks for update, it's very elaborate, I have still wonder if
+32 bit case should be mentioned as well.
 
-> On Sat, 28 Sep 2013, Huacai Chen wrote:
->
->> Some devices (e.g. serial port) setup irq handler at dev open and free
->> it at dev close. So, sometimes there is no irqaction for a specific
->> irq. But some buggy devices may send irqs at any time. This patch avoid
->> the NULL OOPS when irqaction isn't registered.
->
-> All callers except the real per cpu interrupts are checking whether
-> there is a valid action before calling. And serial ports are not
-> routed to real per cpu interrupts. Can you provide more detailed
-> information about the problem you are trying to solve please?
->
-> Thanks,
->
-> 	tglx
->
->> Signed-off-by: Huacai Chen <chenhc@lemote.com>
->> ---
->>  kernel/irq/handle.c |    4 ++++
->>  1 files changed, 4 insertions(+), 0 deletions(-)
->>
->> diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
->> index 131ca17..1c78e69 100644
->> --- a/kernel/irq/handle.c
->> +++ b/kernel/irq/handle.c
->> @@ -135,6 +135,9 @@ handle_irq_event_percpu(struct irq_desc *desc,
->> struct irqaction *action)
->>  	irqreturn_t retval = IRQ_NONE;
->>  	unsigned int flags = 0, irq = desc->irq_data.irq;
->>
->> +	if (!action)
->> +		goto out;
->> +
->>  	do {
->>  		irqreturn_t res;
->>
->> @@ -174,6 +177,7 @@ handle_irq_event_percpu(struct irq_desc *desc,
->> struct irqaction *action)
->>
->>  	add_interrupt_randomness(irq, flags);
->>
->> +out:
->>  	if (!noirqdebug)
->>  		note_interrupt(irq, desc, retval);
->>  	return retval;
->> --
->> 1.7.7.3
->>
->>
->
+Waiting for you next version of the patch series. I will redo my patches
+based on that.
 
-
+Thanks
+Dave
