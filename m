@@ -1,44 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab3J3Wzv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 18:55:51 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:57656 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754495Ab3J3Wzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 18:55:49 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 Resend 0/2] CPUFreq Cleanup Part IV
-Date: Thu, 31 Oct 2013 00:07:59 +0100
-Message-ID: <34590053.bi5BTSMqtz@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAKohpokMB+kEQmX-qHJF1NegnA0xvo6+A3HxbDjrpca3yuBEfA@mail.gmail.com>
-References: <cover.1383052613.git.viresh.kumar@linaro.org> <3389791.QB3z2L4pXG@vostro.rjw.lan> <CAKohpokMB+kEQmX-qHJF1NegnA0xvo6+A3HxbDjrpca3yuBEfA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755232Ab3J3W4U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 18:56:20 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:51928 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754292Ab3J3WwX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 18:52:23 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, viresh.kumar@linaro.org
+Subject: [PATCH V2 Resend 04/16] cpufreq: davinci: use cpufreq_generic_get() routine
+Date: Thu, 31 Oct 2013 04:22:02 +0530
+Message-Id: <fe9add257bf968c495f1f6ed57e9b4b30fac6b8c.1383173230.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1383173230.git.viresh.kumar@linaro.org>
+References: <cover.1383173230.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1383173230.git.viresh.kumar@linaro.org>
+References: <cover.1383173230.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 31, 2013 03:57:27 AM Viresh Kumar wrote:
-> On 31 October 2013 03:23, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > [2/2] doesn't apply for me cleanly on top of the big/little changes.
-> >
-> > Care to rebase on top of the new bleeding-edge I've just pushed?
-> 
-> Done.. Please find attached..
+We have common infrastructure available with us for getting a CPUs clk rate.
+Lets use it for this driver.
 
-Well, this is the last your patch from an attachment I'm ever going to
-apply.  Please don't bother to send any of these to me in the future.
+Cc: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/davinci-cpufreq.c | 14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
 
-Thanks!
-
+diff --git a/drivers/cpufreq/davinci-cpufreq.c b/drivers/cpufreq/davinci-cpufreq.c
+index 5e8a854..cd7fb6e 100644
+--- a/drivers/cpufreq/davinci-cpufreq.c
++++ b/drivers/cpufreq/davinci-cpufreq.c
+@@ -58,14 +58,6 @@ static int davinci_verify_speed(struct cpufreq_policy *policy)
+ 	return 0;
+ }
+ 
+-static unsigned int davinci_getspeed(unsigned int cpu)
+-{
+-	if (cpu)
+-		return 0;
+-
+-	return clk_get_rate(cpufreq.armclk) / 1000;
+-}
+-
+ static int davinci_target(struct cpufreq_policy *policy, unsigned int idx)
+ {
+ 	struct davinci_cpufreq_config *pdata = cpufreq.dev->platform_data;
+@@ -73,7 +65,7 @@ static int davinci_target(struct cpufreq_policy *policy, unsigned int idx)
+ 	unsigned int old_freq, new_freq;
+ 	int ret = 0;
+ 
+-	old_freq = davinci_getspeed(0);
++	old_freq = policy->cur;
+ 	new_freq = pdata->freq_table[idx].frequency;
+ 
+ 	/* if moving to higher frequency, up the voltage beforehand */
+@@ -116,6 +108,8 @@ static int davinci_cpu_init(struct cpufreq_policy *policy)
+ 			return result;
+ 	}
+ 
++	policy->clk = cpufreq.armclk;
++
+ 	/*
+ 	 * Time measurement across the target() function yields ~1500-1800us
+ 	 * time taken with no drivers on notification list.
+@@ -129,7 +123,7 @@ static struct cpufreq_driver davinci_driver = {
+ 	.flags		= CPUFREQ_STICKY,
+ 	.verify		= davinci_verify_speed,
+ 	.target_index	= davinci_target,
+-	.get		= davinci_getspeed,
++	.get		= cpufreq_generic_get,
+ 	.init		= davinci_cpu_init,
+ 	.exit		= cpufreq_generic_exit,
+ 	.name		= "davinci",
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.12.rc2.18.g61b472e
+
