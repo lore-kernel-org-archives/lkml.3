@@ -1,114 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab3J3Rgx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 13:36:53 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:1795 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752885Ab3J3Rgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 13:36:50 -0400
-X-IronPort-AV: E=Sophos;i="4.93,602,1378857600"; 
-   d="scan'208";a="66379331"
-Date: Wed, 30 Oct 2013 17:35:39 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Xen Devel <Xen-devel@lists.xensource.com>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: linux-next: manual merge of the xen-tip tree with the  tree
-In-Reply-To: <alpine.DEB.2.02.1310301733230.26077@kaball.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1310301734420.26077@kaball.uk.xensource.com>
-References: <20131030160956.dfa5c1900c2decb0018061b9@canb.auug.org.au> <alpine.DEB.2.02.1310301733230.26077@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753813Ab3J3RhY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 13:37:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46864 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754194Ab3J3RhX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 13:37:23 -0400
+Date: Wed, 30 Oct 2013 10:37:22 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
+        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
+        cascardo@linux.vnet.ibm.com, michael@ibmra.de,
+        Frank Haverkamp <haver@vnet.ibm.com>
+Subject: Re: [PATCH] Generic WorkQueue Engine (GenWQE) device driver (v4)
+Message-ID: <20131030173722.GD20147@kroah.com>
+References: <1383125578-26202-1-git-send-email-haver@linux.vnet.ibm.com>
+ <1383125578-26202-2-git-send-email-haver@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383125578-26202-2-git-send-email-haver@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Oct 2013, Stefano Stabellini wrote:
-> Looks fine thanks!
-> Just an heads up: I'll be updating the Xen code below soon so this
-> conflict might come up again.
+On Wed, Oct 30, 2013 at 10:32:58AM +0100, Frank Haverkamp wrote:
+> +/*
+> + * We like to be able to disable the health checking entirely in some
+> + * cases e.g. if a card is broken and needs to be analyzed. I
+> + * considered using debugfs/sysfs attributes, but I did not see a way
+> + * to prevent the thread from being started at driver load time other
+> + * than starting it later manually, what I did not like either
+> + * in this case (e.g. like the new SRIOV enablement).
+> + */
+> +static int genwqe_health_check_interval = 4;   /* <= 0: disabled */
+> +module_param(genwqe_health_check_interval, int, 0644);  /* read/writeable */
+> +MODULE_PARM_DESC(genwqe_health_check_interval,
+> +		 "check card health every N seconds (0 = disabled)");
 
-Just to be clear: I meant the dma_capable function.
-Sorry for top posting.
+Module paramaters are driver wide, not device specific.
 
+If a card is broken, it's broken, send it back.  No one will ever know
+to set this value, and then you just affected all other cards in the
+system for this same driver.
 
-> On Wed, 30 Oct 2013, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > Today's linux-next merge of the xen-tip tree got a conflict in
-> > arch/arm/include/asm/dma-mapping.h between commit 223016339ce7 ("ARM:
-> > 7805/1: mm: change max*pfn to include the physical offset of memory")
-> > from the arm tree and commit 06e6295bcece ("arm: make SWIOTLB available")
-> > from the xen-tip tree.
-> > 
-> > I fixed it up (see below) and can carry the fix as necessary (no action
-> > is required).
-> > 
-> > -- 
-> > Cheers,
-> > Stephen Rothwell                    sfr@canb.auug.org.au
-> > 
-> > diff --cc arch/arm/include/asm/dma-mapping.h
-> > index 863cd84eb1a2,f5945d4e4e9f..000000000000
-> > --- a/arch/arm/include/asm/dma-mapping.h
-> > +++ b/arch/arm/include/asm/dma-mapping.h
-> > @@@ -87,13 -98,42 +99,49 @@@ static inline dma_addr_t virt_to_dma(st
-> >   }
-> >   #endif
-> >   
-> >  +/* The ARM override for dma_max_pfn() */
-> >  +static inline unsigned long dma_max_pfn(struct device *dev)
-> >  +{
-> >  +	return PHYS_PFN_OFFSET + dma_to_pfn(dev, *dev->dma_mask);
-> >  +}
-> >  +#define dma_max_pfn(dev) dma_max_pfn(dev)
-> >  +
-> > + static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
-> > + {
-> > + 	unsigned int offset = paddr & ~PAGE_MASK;
-> > + 	return pfn_to_dma(dev, __phys_to_pfn(paddr)) + offset;
-> > + }
-> > + 
-> > + static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
-> > + {
-> > + 	unsigned int offset = dev_addr & ~PAGE_MASK;
-> > + 	return __pfn_to_phys(dma_to_pfn(dev, dev_addr)) + offset;
-> > + }
-> > + 
-> > + static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
-> > + {
-> > + 	u64 limit, mask;
-> > + 	
-> > + 	if (dev->dma_mask)
-> > + 		mask = *dev->dma_mask;
-> > + 	else 
-> > + 		mask = dev->coherent_dma_mask;
-> > + 
-> > + 	if (mask == 0)
-> > + 		return 0;
-> > + 
-> > + 	limit = (mask + 1) & ~mask;
-> > + 	if (limit && size > limit)
-> > + 		return 0;
-> > + 
-> > + 	if ((addr | (addr + size - 1)) & ~mask)
-> > + 		return 0;
-> > + 
-> > + 	return 1;
-> > + }
-> > + 
-> > + static inline void dma_mark_clean(void *addr, size_t size) { }
-> > + 
-> >   /*
-> >    * DMA errors are defined by all-bits-set in the DMA address.
-> >    */
-> > 
-> 
+Just delete this please.
+
+thanks,
+
+greg k-h
