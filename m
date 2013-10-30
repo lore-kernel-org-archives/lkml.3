@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab3J3DuK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 23:50:10 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:47736 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402Ab3J3DuJ (ORCPT
+	id S1750784Ab3J3EJI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 00:09:08 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:45217 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702Ab3J3EJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 23:50:09 -0400
+	Wed, 30 Oct 2013 00:09:07 -0400
+X-Spam-Score: -100.8
+Message-ID: <52708623.504@asianux.com>
+Date: Wed, 30 Oct 2013 12:08:03 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20131029.224227.1700872646112764527.davem@davemloft.net>
-References: <1383084998-22673-1-git-send-email-tdmackey@booleanhaiku.com>
-	<20131029.224227.1700872646112764527.davem@davemloft.net>
-Date: Tue, 29 Oct 2013 20:50:08 -0700
-Message-ID: <CAM_iQpXzJOxZ3MFNthKw5ye=WcxDWbiPaHuL=pHMz7D1R4nJ+w@mail.gmail.com>
-Subject: Re: [PATCH] bnx2: Use dev_kfree_skb_any() in bnx2_tx_int()
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: tdmackey@booleanhaiku.com, mchan@broadcom.com,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "mingo@redhat.com" <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] include/linux/wait.h: add ';' for the statement which missed
+ it.
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 7:42 PM, David Miller <davem@davemloft.net> wrote:
-> From: David Mackey <tdmackey@booleanhaiku.com>
-> Date: Tue, 29 Oct 2013 15:16:38 -0700
->
->> Using dev_kfree_skb_any() will resolve the below issue when a
->> netconsole message is transmitted in an irq.
->  ...
->> Signed-off-by: David Mackey <tdmackey@booleanhaiku.com>
->
-> This is absolutely not the correct fix.
->
-> The netpoll facility must invoke ->poll() in an environment which
-> is compatible, locking and interrupt/soft-interrupt wise, as that
-> in which it is normally called.
->
+Add ';' for the statement, or can not pass compiling. The related error
+(for powerpc allmodconfig):
 
-Normally ->poll() is called in softirq context, while netpoll could
-be called in any context depending on its caller.
+    CC      block/blk-mq.o
+  block/blk-mq.c: In function ‘blk_mq_queue_enter’:
+  block/blk-mq.c:108:8: error: expected ‘;’ before ‘__ret’
+  block/blk-mq.c:108:6: error: void value not ignored as it ought to be
 
-Also, netpoll disables IRQ for tx, which is another difference.
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ include/linux/wait.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 7f8caa5..fcc9680 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -768,7 +768,7 @@ do {									\
+ 	int __ret = 0;							\
+ 	if (!(condition))						\
+ 		__ret = __wait_event_interruptible_lock_irq(wq,		\
+-						condition, lock,)	\
++						condition, lock,);	\
+ 	__ret;								\
+ })
+ 
+-- 
+1.7.7.6
