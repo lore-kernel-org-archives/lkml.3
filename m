@@ -1,105 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab3J3OWC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 10:22:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45480 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab3J3OWA (ORCPT
+	id S1754617Ab3J3OXL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 10:23:11 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:40415 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754360Ab3J3OXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 10:22:00 -0400
-Date: Wed, 30 Oct 2013 07:23:59 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Gleb Natapov <gleb@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, KVM list <kvm@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 3.12-rc7] KVM: Fix modprobe failure for kvm_intel/kvm_amd
-Message-ID: <20131030142359.GA32196@kroah.com>
-References: <1383059634-55512-1-git-send-email-tim.gardner@canonical.com>
- <CA+55aFwUdXp4412F5LdmCRrGZCYiFpiPk7oksGi30CzP6i5O+w@mail.gmail.com>
- <52700C24.9050001@linux.vnet.ibm.com>
- <CA+55aFzqumDX8hRyC4avbpA2g_RRb28ZPYk=_-4atGJ=67Zu1A@mail.gmail.com>
- <52711121.9030606@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52711121.9030606@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 30 Oct 2013 10:23:09 -0400
+From: "Du, Changbin" <changbin.du@gmail.com>
+To: jbaron@akamai.com, joe@perches.com
+Cc: linux-kernel@vger.kernel.org, marcel@holtmann.org,
+        "Du, Changbin" <changbin.du@gmail.com>
+Subject: [PATCH v4 1/2] dynamic_debug: add wildcard support to filter files/functions/modules
+Date: Wed, 30 Oct 2013 22:21:40 +0800
+Message-Id: <1383142901-6186-1-git-send-email-changbin.du@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <CABgQ-TjqiALfieAz8+6nt6TVxy93dJRv1UzkGMRMVO1CgfwXNg@mail.gmail.com>
+References: <CABgQ-TjqiALfieAz8+6nt6TVxy93dJRv1UzkGMRMVO1CgfwXNg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 07:31:05PM +0530, Raghavendra K T wrote:
-> On 10/30/2013 01:03 AM, Linus Torvalds wrote:
-> > On Tue, Oct 29, 2013 at 12:27 PM, Raghavendra K T
-> > <raghavendra.kt@linux.vnet.ibm.com> wrote:
-> >>
-> >> Could one solution be cascading actual error
-> >> that is lost in fs/debugfs/inode.c:__create_file(), so that we could
-> >> take correct action in case of failure of debugfs_create_dir()?
-> >>
-> >> (ugly side is we increase total number of params for __create_file to
-> >> 6). or I hope there could be some better solution.
-> >
-> > The solution to this would be to simply return an error-pointer. See
-> > <linux/err.h>. That's what we do for most complex subsystems that
-> > return a pointer to a struct: rather than returning "NULL" as an
-> > error, return the actual error number encoded in the pointer itself.
-> 
-> Thank you Linus. Yes, this would have been ideal.
-> 
-> >
-> > But that would require every user of debugfs_create_dir() to be
-> > updated to check errors using IS_ERR() instead of checking against
-> > NULL, and there's quite a few of them.
-> >
-> > So I think just making the error be EEXIST is a simpler solution right now.
-> >
-> 
-> Agree.
-> I had below patch, and just before sending as formal mail I saw
-> Paolo's pull request which already took care of it.
-> ---8<---
-> 
-> 
+From: "Du, Changbin" <changbin.du@gmail.com>
 
-> >From ac5d9f038c273f27bea7a54aab6af79b57f56317 Mon Sep 17 00:00:00 2001
-> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> Date: Wed, 30 Oct 2013 18:59:46 +0530
-> Subject: [PATCH] Return EEXIST on debugfs_create_dir failure in kvm
-> 
-> As quoted by Linus,  EFAULT means "user passed in an invalid
-> virtual address pointer", which is why the error string is Bad address.
-> But when a debugfs directory creation fails, the above error is not valid.
-> 
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> ---
->  I understand that Tim's patch that renames directory to something like
->  kvm-pv would solve kvm-amd/kvm-intel modules insertion problem. 
->  This patch is to address error code  change complained by Linus.
-> 
->  arch/x86/kernel/kvm.c | 2 +-
->  virt/kvm/kvm_main.c   | 3 ++-
->  2 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index a0e2a8a..e475fdb 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -622,7 +622,7 @@ static int __init kvm_spinlock_debugfs(void)
->  
->  	d_kvm = kvm_init_debugfs();
->  	if (d_kvm == NULL)
-> -		return -ENOMEM;
-> +		return -EEXIST;
+This patch add wildcard '*'(matches zero or more characters) and '?'
+(matches one character) support when qurying debug flags.
 
-Why even error out at all here?  You should never care about debugfs
-file creation return values, so why pass any error back up the stack?
+Now we can open debug messages using keywords. eg:
+1. open debug logs in all usb drivers
+    echo "file drivers/usb/* +p" > <debugfs>/dynamic_debug/control
+2.  open debug logs for usb xhci code
+    echo "file *xhci* +p" > <debugfs>/dynamic_debug/control
 
-greg k-h
+Signed-off-by: Du, Changbin <changbin.du@gmail.com>
+---
+ lib/dynamic_debug.c | 54 ++++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 49 insertions(+), 5 deletions(-)
+
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index c37aeac..b953780 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -8,6 +8,7 @@
+  * By Greg Banks <gnb@melbourne.sgi.com>
+  * Copyright (c) 2008 Silicon Graphics Inc.  All Rights Reserved.
+  * Copyright (C) 2011 Bart Van Assche.  All Rights Reserved.
++ * Copyright (C) 2013 Du, Changbin <changbin.du@gmail.com>
+  */
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ":%s: " fmt, __func__
+@@ -127,6 +128,46 @@ static void vpr_info_dq(const struct ddebug_query *query, const char *msg)
+ 		 query->first_lineno, query->last_lineno);
+ }
+ 
++/* check if the string matches given pattern which includes wildcards */
++static bool match_pattern(const char *pattern, const char *string)
++{
++	const char *s = string;
++	const char *p = pattern;
++	bool star = false;
++
++	while (*s) {
++		switch (*p) {
++		case '?':
++			s++;
++			p++;
++			break;
++		case '*':
++			star = true;
++			string = s;
++			if (!*++p)
++				return true;
++			pattern = p;
++			break;
++		default:
++			if (*s == *p) {
++				s++;
++				p++;
++			} else {
++				if (!star)
++					return false;
++				string++;
++				s = string;
++				p = pattern;
++			}
++			break;
++		}
++	}
++
++	if (*p == '*')
++		++p;
++	return !*p;
++}
++
+ /*
+  * Search the tables for _ddebug's which match the given `query' and
+  * apply the `flags' and `mask' to them.  Returns number of matching
+@@ -147,7 +188,8 @@ static int ddebug_change(const struct ddebug_query *query,
+ 	list_for_each_entry(dt, &ddebug_tables, link) {
+ 
+ 		/* match against the module name */
+-		if (query->module && strcmp(query->module, dt->mod_name))
++		if (query->module &&
++		    !match_pattern(query->module, dt->mod_name))
+ 			continue;
+ 
+ 		for (i = 0; i < dt->num_ddebugs; i++) {
+@@ -155,14 +197,16 @@ static int ddebug_change(const struct ddebug_query *query,
+ 
+ 			/* match against the source filename */
+ 			if (query->filename &&
+-			    strcmp(query->filename, dp->filename) &&
+-			    strcmp(query->filename, kbasename(dp->filename)) &&
+-			    strcmp(query->filename, trim_prefix(dp->filename)))
++			    !match_pattern(query->filename, dp->filename) &&
++			    !match_pattern(query->filename,
++					   kbasename(dp->filename)) &&
++			    !match_pattern(query->filename,
++					   trim_prefix(dp->filename)))
+ 				continue;
+ 
+ 			/* match against the function */
+ 			if (query->function &&
+-			    strcmp(query->function, dp->function))
++			    !match_pattern(query->function, dp->function))
+ 				continue;
+ 
+ 			/* match against the format */
+-- 
+1.8.1.2
+
