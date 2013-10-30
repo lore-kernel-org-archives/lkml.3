@@ -1,63 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab3J3N5F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 09:57:05 -0400
-Received: from smtprelay0079.hostedemail.com ([216.40.44.79]:49466 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752640Ab3J3N5E (ORCPT
+	id S1754494Ab3J3N5r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 09:57:47 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:33659 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754248Ab3J3N5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 09:57:04 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3872:3874:4321:5007:7652:10004:10400:10482:10848:11232:11658:11914:12296:12517:12519:12555:12740:13069:13161:13229:13311:13357:19901:19997,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: rate96_3d2c4fd6f885d
-X-Filterd-Recvd-Size: 1977
-Message-ID: <1383141418.12439.76.camel@joe-AO722>
-Subject: Re: [PATCH net-next 1/5] lib: crc32: clean up spacing in test cases
-From: Joe Perches <joe@perches.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-sctp@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 30 Oct 2013 06:56:58 -0700
-In-Reply-To: <1383130252-1515-2-git-send-email-dborkman@redhat.com>
-References: <1383130252-1515-1-git-send-email-dborkman@redhat.com>
-	 <1383130252-1515-2-git-send-email-dborkman@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Oct 2013 09:57:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABgQ-TisBA4+re7veEyK+F_jfG-mmuXT-R+hdHd1duqsx0qYLQ@mail.gmail.com>
+References: <CABgQ-Ti0aaxqVGF0R-huQur=EGCTyXM0w-gyz9TenC=msucJqA@mail.gmail.com>
+	<1383053609-2895-1-git-send-email-changbin.du@gmail.com>
+	<1383063623.2713.12.camel@joe-AO722>
+	<CABgQ-TisBA4+re7veEyK+F_jfG-mmuXT-R+hdHd1duqsx0qYLQ@mail.gmail.com>
+Date: Wed, 30 Oct 2013 21:57:44 +0800
+Message-ID: <CABgQ-TjqiALfieAz8+6nt6TVxy93dJRv1UzkGMRMVO1CgfwXNg@mail.gmail.com>
+Subject: Re: [PATCH v3] dynamic_debug: add wildcard support to filter files/functions/modules
+From: Changbin Du <changbin.du@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Jason Baron <jbaron@akamai.com>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=089e013d1442b686a604e9f5b7e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-30 at 11:50 +0100, Daniel Borkmann wrote:
-> This is nothing more but a whitepace cleanup, as 80 chars is not a
-> hard but soft limit, and otherwise makes the test cases arrary really
-> look ugly. So fix it up.
+--089e013d1442b686a604e9f5b7e5
+Content-Type: text/plain; charset=UTF-8
 
-That does look nicer.
+2013/10/30 Changbin Du <changbin.du@gmail.com>:
+> 2013/10/30 Joe Perches <joe@perches.com>:
+>> On Tue, 2013-10-29 at 21:33 +0800, Du, Changbin wrote:
+>>> This patch add wildcard '*'(matches zero or more characters) and '?'
+>>> (matches one character) support when qurying debug flags.
+>>
+>> Hi again.  Some trivial notes and a possible logic error:
+>>
+>> Maybe nicer with an if/else, I think you're still
+>> missing a reset of "star = false;" and I also think
+>> it's better to use a break here too.
+>>
+>>                 if (*s == *p) {
+>>                         s++;
+>>                         p++;
+>>                         star = false;
+>>                 } else {
+>>                         if (!star)
+>>                                 return false;
+>>                         string++;
+>>                         s = string;
+>>                         p = pattern;
+>>                 }
+>>                 break;
+>
+> I have run loss of test before sending patch. all case passed. But I
+> will double check if need reset star flag. really thanks!
 
-Another option might be to take the repetitive
-6 leading 0's out of column 2 and the repetitive
-5 leading 0's out of column 3.
+Hi, Joe. I checked this. The "star = false;" can not have here.
+Attachment is a test program that I use it to test the algorithm. it will
+compare this non-recursion and old recursion if they are equal.
 
-> diff --git a/lib/crc32.c b/lib/crc32.c
-[]
-> @@ -795,206 +795,106 @@ static struct crc_test {
->  	u32 crc32c_le;	/* expected crc32c_le result */
->  } test[] =
->  {
-> -	{0x674bf11d, 0x00000038, 0x00000542, 0x0af6d466, 0xd8b6e4c1,
-> -	 0xf6e93d6c},
-> -	{0x35c672c6, 0x0000003a, 0x000001aa, 0xc6d3dfba, 0x28aaf3ad,
-> -	 0x0fe92aca},
-[etc...]
-> +	{0x674bf11d, 0x00000038, 0x00000542, 0x0af6d466, 0xd8b6e4c1, 0xf6e93d6c},
-> +	{0x35c672c6, 0x0000003a, 0x000001aa, 0xc6d3dfba, 0x28aaf3ad, 0x0fe92aca},
+Now I will send the v3 patch, please help to review. Thanks!
 
-these could be
+--089e013d1442b686a604e9f5b7e5
+Content-Type: text/x-csrc; charset=US-ASCII; name="wildcard_alg.c"
+Content-Disposition: attachment; filename="wildcard_alg.c"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hnemlg0l0
 
-+	{0x674bf11d, 0x38, 0x542, 0x0af6d466, 0xd8b6e4c1, 0xf6e93d6c},
-+	{0x35c672c6, 0x3a, 0x1aa, 0xc6d3dfba, 0x28aaf3ad, 0x0fe92aca},
-
-etc...
-
+I2luY2x1ZGUgPHN0ZGlvLmg+DQojaW5jbHVkZSA8c3RkbGliLmg+DQoNCiNkZWZpbmUgYm9vbCBp
+bnQNCiNkZWZpbmUgZmFsc2UgMA0KI2RlZmluZSB0cnVlICAxDQoNCnN0YXRpYyBpbnQgbWF0Y2hf
+cGF0dGVybjEoY2hhciAqcGF0LCBjaGFyICpzdHIpDQp7DQoJc3dpdGNoICgqcGF0KSB7DQoJY2Fz
+ZSAnXDAnOg0KCQlyZXR1cm4gISpzdHI7DQoJY2FzZSAnKic6DQoJCXJldHVybiAgbWF0Y2hfcGF0
+dGVybjEocGF0KzEsIHN0cikgfHwNCgkJICAgICAgICAoKnN0ciAmJiBtYXRjaF9wYXR0ZXJuMShw
+YXQsIHN0cisxKSk7DQoJY2FzZSAnPyc6DQoJCXJldHVybiAqc3RyICYmIG1hdGNoX3BhdHRlcm4x
+KHBhdCsxLCBzdHIrMSk7DQoJZGVmYXVsdDoNCgkJcmV0dXJuICpwYXQgPT0gKnN0ciAmJiBtYXRj
+aF9wYXR0ZXJuMShwYXQrMSwgc3RyKzEpOw0KCX0NCn0NCg0Kc3RhdGljIGJvb2wgbWF0Y2hfcGF0
+dGVybjIoY29uc3QgY2hhciAqcGF0dGVybiwgY29uc3QgY2hhciAqc3RyaW5nKQ0Kew0KCWNvbnN0
+IGNoYXIgKnM7DQoJY29uc3QgY2hhciAqcDsNCglib29sIHN0YXIgPSBmYWxzZTsNCg0KbG9vcDoN
+Cglmb3IgKHMgPSBzdHJpbmcsIHAgPSBwYXR0ZXJuOyAqczsgKytzLCArK3ApIHsNCgkJc3dpdGNo
+ICgqcCkgew0KCQljYXNlICc/JzoNCgkJCWJyZWFrOw0KCQljYXNlICcqJzoNCgkJCXN0YXIgPSB0
+cnVlOw0KCQkJc3RyaW5nID0gczsNCgkJCXBhdHRlcm4gPSBwOw0KCQkJaWYgKCEqKytwYXR0ZXJu
+KQ0KCQkJCXJldHVybiAxOw0KCQkJZ290byBsb29wOw0KCQlkZWZhdWx0Og0KCQkJaWYgKCpzICE9
+ICpwKQ0KCQkJCWdvdG8gc3Rhcl9jaGVjazsNCgkJCWJyZWFrOw0KCQl9DQoJfQ0KCWlmICgqcCA9
+PSAnKicpDQoJCSsrcDsNCglyZXR1cm4gKCEqcCk7DQoNCnN0YXJfY2hlY2s6DQoJaWYgKCFzdGFy
+KQ0KCQlyZXR1cm4gMDsNCglzdHJpbmcrKzsNCglnb3RvIGxvb3A7DQp9DQoNCnN0YXRpYyBib29s
+IG1hdGNoX3BhdHRlcm4zKGNvbnN0IGNoYXIgKnBhdHRlcm4sIGNvbnN0IGNoYXIgKnN0cmluZykN
+CnsNCgljb25zdCBjaGFyICpzID0gc3RyaW5nOw0KCWNvbnN0IGNoYXIgKnAgPSBwYXR0ZXJuOw0K
+CWJvb2wgc3RhciA9IGZhbHNlOw0KDQoJd2hpbGUgKCpzKSB7DQoJCXN3aXRjaCAoKnApIHsNCgkJ
+Y2FzZSAnPyc6DQoJCQlzKys7DQoJCQlwKys7DQoJCQlicmVhazsNCgkJY2FzZSAnKic6DQoJCQlz
+dGFyID0gdHJ1ZTsNCgkJCXN0cmluZyA9IHM7DQoJCQlpZiAoISorK3ApDQoJCQkJcmV0dXJuIHRy
+dWU7DQoJCQlwYXR0ZXJuID0gcDsNCgkJCWJyZWFrOw0KCQlkZWZhdWx0Og0KCQkJaWYgKCpzID09
+ICpwKSB7DQoJCQkJcysrOw0KCQkJCXArKzsNCgkJCX0gZWxzZSB7DQoJCQkJaWYgKCFzdGFyKQ0K
+CQkJCQlyZXR1cm4gZmFsc2U7DQoJCQkJc3RyaW5nKys7DQoJCQkJcyA9IHN0cmluZzsNCgkJCQlw
+ID0gcGF0dGVybjsNCgkJCX0NCgkJCWJyZWFrOw0KCQl9DQoJfQ0KDQoJaWYgKCpwID09ICcqJykN
+CgkJKytwOw0KCXJldHVybiAhKnA7DQp9DQoNCg0KDQovKiByZXR1cm4gMCBpZiBhbGwgdGhlIHJl
+c3VsdCBvZiB0aHJlZSBmdW5jdGlvbiBpcyBzYW1lLCBlbHNlIHJldHVybiAxLiAqLw0Kc3RhdGlj
+IGludCB0ZXN0X21hdGNoKCkNCnsNCgljaGFyICpTdHJbXSA9IHsgIlpJUCIsDQoJICAgICAgICAg
+ICAgICAgICIuWklQIiwNCgkgICAgICAgICAgICAgICAgIlpJUC4iLA0KCSAgICAgICAgICAgICAg
+ICAiYWZkWmZkYVpJUCINCgkgICAgICAgICAgICAgICAgImFkZnNhZlpmZHNhZGZJZmRhZmRzUGZk
+YXNkZiIsDQoJICAgICAgICAgICAgICAgICJhY2NiZGRjcnJmZGRodXVsZ2duZmZwaGhxZ2d5eXly
+bm52aGdmbGxsbW1ubm5ua3BpLml1dXVpeXQiLA0KCSAgICAgICAgICAgICAgICAiQS5ia2RmYWRm
+YXNmYS5mYXNrZmEuc2ZhZj9rbC5BLlpJUCIsDQoJICAgICAgICAgICAgICAgICJBc2RoZ2VybHRo
+d2VnanNka2xnanNkZ2pzZGtnanNkZ2pzZGcuWklQIiwNCgkgICAgICAgICAgICAgICAgIkFBZ3Nk
+anR3ZW9ydXRlcmp0ZXJ0d2VpdXR3ZWp0d2VqdHdldHdvZWp0d2VqdHJ3bGVBQS5aSVAiLA0KCSAg
+ICAgICAgICAgICAgICAiQWdqc2RnamRzamdzZGtqZ3NkamdzamQ/Z2pzZD9nanNkP2dqP3NkZ2ou
+QS5aSWRnanNka2pnbHNkamdQUE8iLA0KCSAgICAgICAgICAgICAgICAiZmFzZGZlMzIzcmVydGV0
+ZXI1NXJ0cmV3dHJ3d2UiDQoJICAgICAgICAgICAgICB9Ow0KCWNoYXIgKlBhdHRbXSA9IHsgIj9a
+SVAiLCAiKlpJUCIsICJaSVAuIiwgIipaSVAiLCAiKj9aSVAiLCAiPyo/WklQIiwgIio/Kj9aSVAi
+LCAiKloqSSpQKiIsDQoJICAgICAgICAgICAgICAgICAiKj8qPypaSVAiLCAiYSo/Kj8qWklQIiwg
+IipaST8iLCAiKlpJPyIsICIqWkkqIiwgIipaSSoiLA0KCSAgICAgICAgICAgICAgICAgImEqPyo/
+IiwgIj8qPyoiLCJaSVAiLCAiWklQIiwgIkFBWklQIiwgIkFaSVAiLCAiQUFBQVpJUCIsICJBQVpJ
+UFBPIg0KCSAgICAgICAgICAgICAgIH07DQoJaW50IGkgPSAwLCBqID0gMCwgcmV0ID0gMDsNCg0K
+CWZvciAoaSA9IDAgOyBpIDwgc2l6ZW9mKFBhdHQpL3NpemVvZihQYXR0WzBdKTsgaSsrKSB7DQoJ
+CWZvciAoaiA9IDA7IGogPCBzaXplb2YoU3RyKS9zaXplb2YoU3RyWzBdKTsgaisrKSB7DQoJCQlj
+aGFyICpwYXQgPSBQYXR0W2ldOw0KCQkJY2hhciAqc3RyID0gU3RyW2pdOw0KCQkJYm9vbCBtYXRj
+aDEgPSBtYXRjaF9wYXR0ZXJuMShwYXQsIHN0cik7DQoJCQlib29sIG1hdGNoMiA9IG1hdGNoX3Bh
+dHRlcm4yKHBhdCwgc3RyKTsNCgkJCWJvb2wgbWF0Y2gzID0gbWF0Y2hfcGF0dGVybjMocGF0LCBz
+dHIpOw0KDQoJCQlwcmludGYoIlwiJXNcIiA9Pz0gXCIlc1wiXG4iLCBwYXQsIHN0cik7DQoJCQlp
+ZiAobWF0Y2gxID09IG1hdGNoMiAmJiBtYXRjaDIgPT0gbWF0Y2gzKQ0KCQkJCXByaW50ZigiQWxs
+IHRocmVlIHJlc3VsdCBpcyBzYW1lOiAlZFxuIiwgbWF0Y2gxKTsNCgkJCWVsc2Ugew0KCQkJCXBy
+aW50ZigiKioqKlxuIg0KCQkJCSAgICAgICAiKioqKlNvbWVvbmUgaXMgd3Jvbmc6IG1hdGNoMT0l
+ZCBtYXRjaDI9JWQgbWF0Y2gzPSVkXG4iDQoJCQkJICAgICAgICIqKioqXG4iLA0KCQkJCSAgICAg
+ICBtYXRjaDEsIG1hdGNoMiwgbWF0Y2gzKTsNCgkJCQlyZXQgPSAxOw0KCQkJfQ0KCQkJcHJpbnRm
+KCJcbiIpOw0KCQl9DQoJCXByaW50ZigiXG4iKTsNCgl9DQoJcmV0dXJuIHJldDsNCn0NCg0KaW50
+IG1haW4oKQ0Kew0KCXJldHVybiB0ZXN0X21hdGNoKCk7DQp9DQo=
+--089e013d1442b686a604e9f5b7e5--
