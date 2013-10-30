@@ -1,141 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729Ab3J3Oih (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 10:38:37 -0400
-Received: from usindpps04.hds.com ([207.126.252.17]:46739 "EHLO
-	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167Ab3J3Oie convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 10:38:34 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Madper Xie <cxie@redhat.com>, "tony.luck@intel.com" <tony.luck@intel.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "anton@enomsg.org" <anton@enomsg.org>
-CC: "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bbboson@gmail.com" <bbboson@gmail.com>
-Subject: RE: [PATCH 2/2] pstore: Differentiating names by adding count and
- timestamp
-Thread-Topic: [PATCH 2/2] pstore: Differentiating names by adding count and
- timestamp
-Thread-Index: AQHO1VTBz7UK19tnr0iaAQUmaI3oOJoNUGjw
-Date: Wed, 30 Oct 2013 14:38:13 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D47F9D38B4@USINDEM103.corp.hds.com>
-References: <1383126294-28793-1-git-send-email-cxie@redhat.com>
- <1383126294-28793-3-git-send-email-cxie@redhat.com>
-In-Reply-To: <1383126294-28793-3-git-send-email-cxie@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-10-30_05:2013-10-30,2013-10-30,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1310300099
+	id S1754745Ab3J3OjE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 10:39:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2353 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752763Ab3J3OjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 10:39:01 -0400
+Message-ID: <1383143422.4097.170.camel@ul30vt.home>
+Subject: Re: [PATCH 1/4] kvm: Destroy & free KVM devices on release
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: kvm@vger.kernel.org, aik@ozlabs.ru, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org
+Date: Wed, 30 Oct 2013 08:30:22 -0600
+In-Reply-To: <20131030104029.GE4651@redhat.com>
+References: <20131029160019.22578.16409.stgit@bling.home>
+	 <20131029161322.22578.18997.stgit@bling.home>
+	 <20131030104029.GE4651@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2013-10-30 at 12:40 +0200, Gleb Natapov wrote:
+> On Tue, Oct 29, 2013 at 10:13:22AM -0600, Alex Williamson wrote:
+> > The KVM device interface allocates a struct kvm_device and calls
+> > kvm_device_ops.create on it from KVM VM ioctl KVM_CREATE_DEVICE.
+> > This returns a file descriptor to the user for them to set/get/check
+> > further attributes.  On closing the file descriptor, one would assume
+> > that kvm_device_ops.destroy is called and all traces of the device
+> > would go away.  One would be wrong, it actually does nothing more
+> > than release the struct kvm reference, waiting until the VM is
+> > destroyed before doing more.  This leaves devices that only want a
+> > single instance of themselves per VM in a tough spot.
+> > 
+> This is by design. Otherwise locking will be needed on each device access
+> and for interrupt controllers this is unnecessary serialization and
+> overhead. Device API is not designed for devices that can go away while
+> machine is running anyway, so after creation device is only destroyed
+> during VM destruction.
 
+Hmm, ok.  In that case I can drop this patch and I think the rest just
+boils down to userspace use of the device.  I had been close()'ing the
+kvm device fd when all QEMU vfio devices are detached, but I can just as
+easily leave it open in case a new device is added later.  I'll send out
+a new series after doing some more review and testing.  Do you have any
+comments on the rest of the series?  Thanks,
 
-> -----Original Message-----
-> From: Madper Xie [mailto:cxie@redhat.com]
-> Sent: Wednesday, October 30, 2013 5:45 AM
-> To: tony.luck@intel.com; keescook@chromium.org; ccross@android.com; anton@enomsg.org; Seiji Aguchi
-> Cc: linux-efi@vger.kernel.org; linux-kernel@vger.kernel.org; bbboson@gmail.com; Madper Xie
-> Subject: [PATCH 2/2] pstore: Differentiating names by adding count and timestamp
-> 
-> From: Madper Xie <bbboson@gmail.com>
-> 
-> pstore denominates dumped file as type-psname-id. it makes many file have
-> the same name if there are many entries in backend have the same id.
-> So adding count and timestamp to file name for differentiating.
-> 
-> Signed-off-by: Madper Xie <cxie@redhat.com>
+Alex
 
-It should be tested by other drivers as well..
-But, looks good to me.
-Acked-by: Seiji Aguchi <seiji.aguchi@hds.com>
-
-> ---
->  fs/pstore/inode.c | 29 ++++++++++++++++++-----------
->  1 file changed, 18 insertions(+), 11 deletions(-)
-> 
-> diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-> index 0ae994c..36b502f 100644
-> --- a/fs/pstore/inode.c
-> +++ b/fs/pstore/inode.c
-> @@ -285,7 +285,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
->  	int			rc = 0;
->  	char			name[PSTORE_NAMELEN];
->  	struct pstore_private	*private, *pos;
-> -	unsigned long		flags;
-> +	unsigned long		flags, timestamp;
-> 
->  	spin_lock_irqsave(&allpstore_lock, flags);
->  	list_for_each_entry(pos, &allpstore, list) {
-> @@ -316,35 +316,42 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
->  	private->count = count;
->  	private->psi = psi;
->  	memcpy(&private->time, &time, sizeof(struct timespec));
-> +	timestamp = time.tv_sec;
-> 
->  	switch (type) {
->  	case PSTORE_TYPE_DMESG:
-> -		sprintf(name, "dmesg-%s-%lld%s", psname, id,
-> -						compressed ? ".enc.z" : "");
-> +		sprintf(name, "dmesg-%s-%lld-%d-%ld%s", psname, id, count,
-> +			timestamp, compressed ? ".enc.z" : "");
->  		break;
->  	case PSTORE_TYPE_CONSOLE:
-> -		sprintf(name, "console-%s", psname);
-> +		sprintf(name, "console-%s-%d-%ld", psname, count, timestamp);
->  		break;
->  	case PSTORE_TYPE_FTRACE:
-> -		sprintf(name, "ftrace-%s", psname);
-> +		sprintf(name, "ftrace-%s-%d-%ld", psname, count, timestamp);
->  		break;
->  	case PSTORE_TYPE_MCE:
-> -		sprintf(name, "mce-%s-%lld", psname, id);
-> +		sprintf(name, "mce-%s-%lld-%d-%ld", psname, id, count,
-> +			timestamp);
->  		break;
->  	case PSTORE_TYPE_PPC_RTAS:
-> -		sprintf(name, "rtas-%s-%lld", psname, id);
-> +		sprintf(name, "rtas-%s-%lld-%d-%ld", psname, id, count,
-> +			timestamp);
->  		break;
->  	case PSTORE_TYPE_PPC_OF:
-> -		sprintf(name, "powerpc-ofw-%s-%lld", psname, id);
-> +		sprintf(name, "powerpc-ofw-%s-%lld-%d-%ld", psname, id, count,
-> +			timestamp);
->  		break;
->  	case PSTORE_TYPE_PPC_COMMON:
-> -		sprintf(name, "powerpc-common-%s-%lld", psname, id);
-> +		sprintf(name, "powerpc-common-%s-%lld-%d-%ld", psname, id,
-> +			count, timestamp);
->  		break;
->  	case PSTORE_TYPE_UNKNOWN:
-> -		sprintf(name, "unknown-%s-%lld", psname, id);
-> +		sprintf(name, "unknown-%s-%lld-%d-%ld", psname, id, count,
-> +			timestamp);
->  		break;
->  	default:
-> -		sprintf(name, "type%d-%s-%lld", type, psname, id);
-> +		sprintf(name, "type%d-%s-%lld-%d-%ld", type, psname, id, count,
-> +			timestamp);
->  		break;
->  	}
+> > To fix this, do full cleanup on release of the device file descriptor.
+> > It's also non-symmetric that one of the existing devices frees the
+> > struct kvm_device from it's .destroy function, while the other
+> > doesn't.  KVM-core allocates the structure and should therefore be
+> > responsible for freeing it.  Finally, add a missing kfree for the
+> > device creation error path.
+> > 
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > ---
+> >  arch/powerpc/kvm/book3s_xics.c |    1 -
+> >  virt/kvm/kvm_main.c            |    5 +++++
+> >  2 files changed, 5 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/powerpc/kvm/book3s_xics.c b/arch/powerpc/kvm/book3s_xics.c
+> > index a3a5cb8..9a82426 100644
+> > --- a/arch/powerpc/kvm/book3s_xics.c
+> > +++ b/arch/powerpc/kvm/book3s_xics.c
+> > @@ -1220,7 +1220,6 @@ static void kvmppc_xics_free(struct kvm_device *dev)
+> >  	for (i = 0; i <= xics->max_icsid; i++)
+> >  		kfree(xics->ics[i]);
+> >  	kfree(xics);
+> > -	kfree(dev);
+> >  }
+> >  
+> >  static int kvmppc_xics_create(struct kvm_device *dev, u32 type)
+> > diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> > index a9dd682..fec8320 100644
+> > --- a/virt/kvm/kvm_main.c
+> > +++ b/virt/kvm/kvm_main.c
+> > @@ -572,6 +572,7 @@ static void kvm_destroy_devices(struct kvm *kvm)
+> >  
+> >  		list_del(node);
+> >  		dev->ops->destroy(dev);
+> > +		kfree(dev);
+> >  	}
+> >  }
+> >  
+> > @@ -2231,6 +2232,9 @@ static int kvm_device_release(struct inode *inode, struct file *filp)
+> >  	struct kvm_device *dev = filp->private_data;
+> >  	struct kvm *kvm = dev->kvm;
+> >  
+> > +	list_del(&dev->vm_node);
+> > +	dev->ops->destroy(dev);
+> > +	kfree(dev);
+> >  	kvm_put_kvm(kvm);
+> >  	return 0;
+> >  }
+> > @@ -2294,6 +2298,7 @@ static int kvm_ioctl_create_device(struct kvm *kvm,
+> >  	ret = anon_inode_getfd(ops->name, &kvm_device_fops, dev, O_RDWR | O_CLOEXEC);
+> >  	if (ret < 0) {
+> >  		ops->destroy(dev);
+> > +		kfree(dev);
+> >  		return ret;
+> >  	}
+> >  
 > 
 > --
-> 1.8.4.2
+> 			Gleb.
+
+
 
