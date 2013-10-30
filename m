@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab3J3Q1h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 12:27:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62239 "EHLO mx1.redhat.com"
+	id S1753538Ab3J3Q1i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 12:27:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40387 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753216Ab3J3Q1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752895Ab3J3Q1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Oct 2013 12:27:33 -0400
 From: Aristeu Rozanski <arozansk@redhat.com>
 To: linux-edac@vger.kernel.org
 Cc: tony.luck@intel.com, Aristeu Rozanski <arozansk@redhat.com>,
         Mauro Carvalho Chehab <m.chehab@samsung.com> (maintainer:EDAC-SBRIDGE),
         Doug Thompson <dougthompson@xmission.com> (supporter:EDAC-CORE),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 03/12] sb_edac: isolate TOLM retrieval
-Date: Wed, 30 Oct 2013 12:26:57 -0400
-Message-Id: <1383150426-24730-4-git-send-email-arozansk@redhat.com>
+        Bjorn Helgaas <bhelgaas@google.com> (supporter:PCI SUBSYSTEM),
+        linux-kernel@vger.kernel.org (open list),
+        linux-pci@vger.kernel.org (open list:PCI SUBSYSTEM)
+Subject: [PATCH 01/12] sb_edac: move PCI IDs to pci_ids.h
+Date: Wed, 30 Oct 2013 12:26:55 -0400
+Message-Id: <1383150426-24730-2-git-send-email-arozansk@redhat.com>
 In-Reply-To: <1383150426-24730-1-git-send-email-arozansk@redhat.com>
 References: <1383150426-24730-1-git-send-email-arozansk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is in preparation for the Ivy Bridge support.
+According to the comment, it should be done before submitting upstream.
 
 Signed-off-by: Aristeu Rozanski <arozansk@redhat.com>
 ---
- drivers/edac/sb_edac.c |   17 +++++++++++++----
- 1 files changed, 13 insertions(+), 4 deletions(-)
+ drivers/edac/sb_edac.c  |   21 ++-------------------
+ include/linux/pci_ids.h |   11 +++++++++++
+ 2 files changed, 13 insertions(+), 19 deletions(-)
 
 diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index 466c313..3e4837f 100644
+index e04462b..4cdd948 100644
 --- a/drivers/edac/sb_edac.c
 +++ b/drivers/edac/sb_edac.c
-@@ -256,9 +256,11 @@ static const u32 correrrthrsld[] = {
- #define NUM_CHANNELS	4
- #define MAX_DIMMS	3		/* Max DIMMS per channel */
+@@ -57,26 +57,9 @@ static int probed;
+  */
  
-+struct sbridge_pvt;
- struct sbridge_info {
- 	u32	mcmtr;
- 	u32	rankcfgr;
-+	u64	(*get_tolm)(struct sbridge_pvt *pvt);
- };
- 
- struct sbridge_channel {
-@@ -442,6 +444,15 @@ static void free_sbridge_dev(struct sbridge_dev *sbridge_dev)
- 	kfree(sbridge_dev);
- }
- 
-+static u64 sbridge_get_tolm(struct sbridge_pvt *pvt)
-+{
-+	u32 reg;
-+
-+	/* Address range is 32:28 */
-+	pci_read_config_dword(pvt->pci_sad1, TOLM, &reg);
-+	return GET_TOLM(reg);
-+}
-+
- /****************************************************************************
- 			Memory check routines
-  ****************************************************************************/
-@@ -616,10 +627,7 @@ static void get_memory_layout(const struct mem_ctl_info *mci)
- 	 * Step 1) Get TOLM/TOHM ranges
- 	 */
- 
--	/* Address range is 32:28 */
--	pci_read_config_dword(pvt->pci_sad1, TOLM,
--			      &reg);
--	pvt->tolm = GET_TOLM(reg);
-+	pvt->tolm = pvt->info.get_tolm(pvt);
- 	tmp_mb = (1 + pvt->tolm) >> 20;
- 
- 	mb = div_u64_rem(tmp_mb, 1000, &kb);
-@@ -1644,6 +1652,7 @@ static int sbridge_register_mci(struct sbridge_dev *sbridge_dev)
- 	mci->ctl_name = kasprintf(GFP_KERNEL, "Sandy Bridge Socket#%d", mci->mc_idx);
- 	mci->dev_name = pci_name(sbridge_dev->pdev[0]);
- 	mci->ctl_page_to_phys = NULL;
-+	pvt->info.get_tolm = sbridge_get_tolm;
- 
- 	/* Set the function pointer to an actual operation function */
- 	mci->edac_check = sbridge_check_error;
+ /*
+- * FIXME: For now, let's order by device function, as it makes
+- * easier for driver's development process. This table should be
+- * moved to pci_id.h when submitted upstream
++ * Currently, unused, but will be needed in the future
++ * implementations, as they hold the error counters
+  */
+-#define PCI_DEVICE_ID_INTEL_SBRIDGE_SAD0	0x3cf4	/* 12.6 */
+-#define PCI_DEVICE_ID_INTEL_SBRIDGE_SAD1	0x3cf6	/* 12.7 */
+-#define PCI_DEVICE_ID_INTEL_SBRIDGE_BR		0x3cf5	/* 13.6 */
+-#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_HA0	0x3ca0	/* 14.0 */
+-#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TA	0x3ca8	/* 15.0 */
+-#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_RAS	0x3c71	/* 15.1 */
+-#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD0	0x3caa	/* 15.2 */
+-#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD1	0x3cab	/* 15.3 */
+-#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD2	0x3cac	/* 15.4 */
+-#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD3	0x3cad	/* 15.5 */
+-#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_DDRIO	0x3cb8	/* 17.0 */
+-
+-	/*
+-	 * Currently, unused, but will be needed in the future
+-	 * implementations, as they hold the error counters
+-	 */
+ #define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR0	0x3c72	/* 16.2 */
+ #define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR1	0x3c73	/* 16.3 */
+ #define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_ERR2	0x3c76	/* 16.6 */
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 97fbecd..d7d4757 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -2812,7 +2812,18 @@
+ #define PCI_DEVICE_ID_INTEL_UNC_R2PCIE	0x3c43
+ #define PCI_DEVICE_ID_INTEL_UNC_R3QPI0	0x3c44
+ #define PCI_DEVICE_ID_INTEL_UNC_R3QPI1	0x3c45
++#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_RAS	0x3c71
++#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_HA0	0x3ca0
++#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TA	0x3ca8
++#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD0	0x3caa
++#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD1	0x3cab
++#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD2	0x3cac
++#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TAD3	0x3cad
++#define PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_DDRIO	0x3cb8
+ #define PCI_DEVICE_ID_INTEL_JAKETOWN_UBOX	0x3ce0
++#define PCI_DEVICE_ID_INTEL_SBRIDGE_SAD0	0x3cf4
++#define PCI_DEVICE_ID_INTEL_SBRIDGE_BR		0x3cf5
++#define PCI_DEVICE_ID_INTEL_SBRIDGE_SAD1	0x3cf6
+ #define PCI_DEVICE_ID_INTEL_IOAT_SNB	0x402f
+ #define PCI_DEVICE_ID_INTEL_5100_16	0x65f0
+ #define PCI_DEVICE_ID_INTEL_5100_19	0x65f3
 -- 
 1.7.1
 
