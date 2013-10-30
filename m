@@ -1,357 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab3J3O7r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 10:59:47 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49644 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754246Ab3J3O6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 10:58:23 -0400
-From: Sricharan R <r.sricharan@ti.com>
-To: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
-        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
-        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <mark.rutland@arm.com>, <robherring2@gmail.com>, <tglx@linutronix.de>,
-        <santosh.shilimkar@ti.com>, <r.sricharan@ti.com>
-CC: Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH V2 2/7] DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar IP
-Date: Wed, 30 Oct 2013 20:27:15 +0530
-Message-ID: <1383145040-15852-3-git-send-email-r.sricharan@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1383145040-15852-1-git-send-email-r.sricharan@ti.com>
-References: <1383145040-15852-1-git-send-email-r.sricharan@ti.com>
+	id S1754774Ab3J3PB7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 11:01:59 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41973 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753350Ab3J3PB5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 11:01:57 -0400
+Date: Wed, 30 Oct 2013 15:01:06 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Michal Simek <michal.simek@xilinx.com>, Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>,
+        Vitaly Andrianov <vitalya@ti.com>, Cyril Chemparathy <cyril@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: mm: Fix ECC mem policy printk
+Message-ID: <20131030150106.GC16735@n2100.arm.linux.org.uk>
+References: <8986e8f1a3761e45a7927bdb0e54393c9155e6bf.1383137171.git.michal.simek@xilinx.com> <20131030130728.GA16735@n2100.arm.linux.org.uk> <5271165A.4050509@monstr.eu> <52711869.60703@monstr.eu>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52711869.60703@monstr.eu>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some socs have a large number of interrupts requests to service
-the needs of its many peripherals and subsystems. All of the
-interrupt lines from the subsystems are not needed at the same
-time, so they have to be muxed to the irq-controller appropriately.
-In such places a interrupt controllers are preceded by an CROSSBAR
-that provides flexibility in muxing the device requests to the controller
-inputs.
+On Wed, Oct 30, 2013 at 03:32:09PM +0100, Michal Simek wrote:
+> btw: passing ecc=on through command line will caused that "ECC enabled"
+> message will be there even on systems which don't implement this bit.
+> It is just side effect for both these solutions.
 
-This driver takes care a allocating a free irq and then configuring the
-crossbar IP as a part of the mpu's irqchip callbacks. crossbar_init should
-be called right before the irqchip_init, so that it is setup to handle the
-irqchip callbacks.
+It is a hint, nothing more.  There is no way to detect whether it's
+implemented or even how it has been implemented.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Rajendra Nayak <rnayak@ti.com>
-Cc: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Signed-off-by: Sricharan R <r.sricharan@ti.com>
----
- [V2] Addressed Thomas Gleixner <tglx@linutronix.de> comments
-      and renamed the bindings as per Kumar Gala <galak@codeaurora.org>
-      comments.
+> Isn't there any easy way to test if this bit is implemented or not just
+> by setting it up and clear it?
 
- .../devicetree/bindings/arm/omap/crossbar.txt      |   27 +++
- drivers/irqchip/Kconfig                            |    8 +
- drivers/irqchip/Makefile                           |    1 +
- drivers/irqchip/irq-crossbar.c                     |  206 ++++++++++++++++++++
- include/linux/irqchip/irq-crossbar.h               |   11 ++
- 5 files changed, 253 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/omap/crossbar.txt
- create mode 100644 drivers/irqchip/irq-crossbar.c
- create mode 100644 include/linux/irqchip/irq-crossbar.h
+So... let's summerise the message that you're giving.
 
-diff --git a/Documentation/devicetree/bindings/arm/omap/crossbar.txt b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-new file mode 100644
-index 0000000..fb88585
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-@@ -0,0 +1,27 @@
-+Some socs have a large number of interrupts requests to service
-+the needs of its many peripherals and subsystems. All of the
-+interrupt lines from the subsystems are not needed at the same
-+time, so they have to be muxed to the irq-controller appropriately.
-+In such places a interrupt controllers are preceded by an CROSSBAR
-+that provides flexibility in muxing the device requests to the controller
-+inputs.
-+
-+Required properties:
-+- compatible : Should be "ti,irq-crossbar"
-+- reg: Base address and the size of the crossbar registers.
-+- ti,max-irqs: Total number of irqs available at the interrupt controller.
-+- ti,reg-size: Size of a individual register in bytes. Every individual
-+	    register is assumed to be of same size. Valid sizes are 1, 2, 4.
-+- ti,irqs-reserved: List of the reserved irq lines that are not muxed using
-+		 crossbar. These interrupt lines are reserved in the soc,
-+		 so crossbar bar driver should not consider them as free
-+		 lines.
-+
-+Examples:
-+		crossbar_mpu: @4a020000 {
-+			compatible = "ti,irq-crossbar";
-+			reg = <0x4a002a48 0x130>;
-+			ti,max-irqs = <160>;
-+			ti,reg-size = <2>;
-+			ti,irqs-reserved = <0 1 2 3 5 6 131 132 139 140>;
-+		};
-diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-index 3792a1a..2efcde6 100644
---- a/drivers/irqchip/Kconfig
-+++ b/drivers/irqchip/Kconfig
-@@ -61,3 +61,11 @@ config VERSATILE_FPGA_IRQ_NR
-        int
-        default 4
-        depends on VERSATILE_FPGA_IRQ
-+
-+config IRQ_CROSSBAR
-+	bool
-+	help
-+	  Support for a CROSSBAR ip that preceeds the main interrupt controller.
-+	  The primary irqchip invokes the crossbar's callback which inturn allocates
-+	  a free irq and configures the IP. Thus the peripheral interrupts are
-+	  routed to one of the free irqchip interrupt lines.
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index c60b901..2edead9 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -22,3 +22,4 @@ obj-$(CONFIG_RENESAS_IRQC)		+= irq-renesas-irqc.o
- obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
- obj-$(CONFIG_ARCH_VT8500)		+= irq-vt8500.o
- obj-$(CONFIG_TB10X_IRQC)		+= irq-tb10x.o
-+obj-$(CONFIG_IRQ_CROSSBAR)		+= irq-crossbar.o
-diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
-new file mode 100644
-index 0000000..2d355e4
---- /dev/null
-+++ b/drivers/irqchip/irq-crossbar.c
-@@ -0,0 +1,206 @@
-+/*
-+ *  drivers/irqchip/irq-crossbar.c
-+ *
-+ *  Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
-+ *  Author: Sricharan R <r.sricharan@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/slab.h>
-+#include <linux/irqchip/arm-gic.h>
-+
-+#define IRQ_FREE	-1
-+#define GIC_IRQ_START	32
-+
-+/*
-+ * @int_max: maximum number of supported interrupts
-+ * @irq_map: array of interrupts to crossbar number mapping
-+ * @crossbar_base: crossbar base address
-+ * @register_offsets: offsets for each irq number
-+ */
-+struct crossbar_device {
-+	uint int_max;
-+	uint *irq_map;
-+	void __iomem *crossbar_base;
-+	int *register_offsets;
-+	void (*write) (int, int);
-+};
-+
-+static struct crossbar_device *cb;
-+
-+static inline void crossbar_writel(int irq_no, int cb_no)
-+{
-+	writel(cb_no, cb->crossbar_base + cb->register_offsets[irq_no]);
-+}
-+
-+static inline void crossbar_writew(int irq_no, int cb_no)
-+{
-+	writew(cb_no, cb->crossbar_base + cb->register_offsets[irq_no]);
-+}
-+
-+static inline void crossbar_writeb(int irq_no, int cb_no)
-+{
-+	writeb(cb_no, cb->crossbar_base + cb->register_offsets[irq_no]);
-+}
-+
-+static inline const u32 allocate_free_irq(int cb_no)
-+{
-+	int i;
-+
-+	for (i = 0; i < cb->int_max; i++) {
-+		if (cb->irq_map[i] == IRQ_FREE) {
-+			cb->irq_map[i] = cb_no;
-+			return i;
-+		}
-+	}
-+
-+	return -ENODEV;
-+}
-+
-+static int crossbar_domain_map(struct irq_domain *d, unsigned int irq,
-+			       irq_hw_number_t hw)
-+{
-+	cb->write(hw - GIC_IRQ_START, cb->irq_map[hw - GIC_IRQ_START]);
-+	return 0;
-+}
-+
-+static void crossbar_domain_unmap(struct irq_domain *d, unsigned int irq)
-+{
-+	irq_hw_number_t hw = irq_get_irq_data(irq)->hwirq;
-+
-+	if (hw > GIC_IRQ_START)
-+		cb->irq_map[hw - GIC_IRQ_START] = IRQ_FREE;
-+}
-+
-+static int crossbar_domain_xlate(struct irq_domain *d,
-+				 struct device_node *controller,
-+				 const u32 *intspec, unsigned int intsize,
-+				 unsigned long *out_hwirq,
-+				 unsigned int *out_type)
-+{
-+	unsigned long ret = 0;
-+
-+	ret = allocate_free_irq(intspec[1]);
-+
-+	if (IS_ERR_VALUE(ret))
-+		return ret;
-+
-+	*out_hwirq = ret + GIC_IRQ_START;
-+	return 0;
-+}
-+
-+const struct irq_domain_ops routable_irq_domain_ops = {
-+	.map = crossbar_domain_map,
-+	.unmap = crossbar_domain_unmap,
-+	.xlate = crossbar_domain_xlate
-+};
-+
-+static int __init crossbar_of_init(struct device_node *node)
-+{
-+	int i, size, max, reserved = 0, entry;
-+	const __be32 *irqsr;
-+
-+	cb = kzalloc(sizeof(struct cb_device *), GFP_KERNEL);
-+
-+	if (!cb)
-+		return -ENOMEM;
-+
-+	cb->crossbar_base = of_iomap(node, 0);
-+	if (!cb->crossbar_base)
-+		goto err1;
-+
-+	of_property_read_u32(node, "ti,max-irqs", &max);
-+	cb->irq_map = kzalloc(max * sizeof(int), GFP_KERNEL);
-+	if (!cb->irq_map)
-+		goto err2;
-+
-+	cb->int_max = max;
-+
-+	for (i = 0; i < max; i++)
-+		cb->irq_map[i] = IRQ_FREE;
-+
-+	/* Get and mark reserved irqs */
-+	irqsr = of_get_property(node, "ti,irqs-reserved", &size);
-+	if (irqsr) {
-+		size /= sizeof(__be32);
-+
-+		for (i = 0; i < size; i++) {
-+			entry = be32_to_cpup(irqsr + i);
-+			if (entry > max) {
-+				pr_err("Invalid reserved entry\n");
-+				goto err3;
-+			}
-+			cb->irq_map[entry] = 0;
-+		}
-+	}
-+
-+	cb->register_offsets = kzalloc(max * sizeof(int), GFP_KERNEL);
-+	if (!cb->register_offsets)
-+		goto err3;
-+
-+	of_property_read_u32(node, "ti,reg-size", &size);
-+
-+	switch (size) {
-+	case 1:
-+		cb->write = crossbar_writeb;
-+		break;
-+	case 2:
-+		cb->write = crossbar_writew;
-+		break;
-+	case 4:
-+		cb->write = crossbar_writel;
-+		break;
-+	default:
-+		pr_err("Invalid reg-size property\n");
-+		goto err4;
-+		break;
-+	}
-+
-+	/*
-+	 * Register offsets are not linear because of the
-+	 * reserved irqs. so find and store the offsets once.
-+	 */
-+	for (i = 0; i < max; i++) {
-+		if (!cb->irq_map[i])
-+			continue;
-+
-+		cb->register_offsets[i] = reserved;
-+		reserved += size;
-+	}
-+
-+	register_routable_domain_ops(&routable_irq_domain_ops);
-+	return 0;
-+
-+err4:
-+	kfree(cb->register_offsets);
-+err3:
-+	kfree(cb->irq_map);
-+err2:
-+	iounmap(cb->crossbar_base);
-+err1:
-+	kfree(cb);
-+	return -ENOMEM;
-+}
-+
-+static const struct of_device_id crossbar_match[] __initconst = {
-+	{ .compatible = "ti,irq-crossbar" },
-+	{}
-+};
-+
-+int crossbar_init(void)
-+{
-+	struct device_node *np;
-+	np = of_find_matching_node(NULL, crossbar_match);
-+	if (!np)
-+		return -ENODEV;
-+
-+	crossbar_of_init(np);
-+	return 0;
-+}
-diff --git a/include/linux/irqchip/irq-crossbar.h b/include/linux/irqchip/irq-crossbar.h
-new file mode 100644
-index 0000000..ad2f744
---- /dev/null
-+++ b/include/linux/irqchip/irq-crossbar.h
-@@ -0,0 +1,11 @@
-+/*
-+ *  drivers/irqchip/irq-crossbar.h
-+ *
-+ *  Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+int crossbar_init(void);
--- 
-1.7.9.5
+"My SoC doesn't implement this bit other than to provide ECC at the L1
+cache, instead implementing a separate ECC scheme for system memory.
+Therefore, I want to change it to describe my implementation, because
+my customers are complaining that it says ECC is disabled when that
+is not the case.  If it can't describe my setup, I want to remove the
+whole facility."
 
+That's a very selfish attitude.  Sorry, but it would be wrong of me
+to allow your situation to change what we have beyond the proposed
+patch.
+
+I've shown you the ARM architecture reference manual where this bit in
+the page tables is described, both older and newer versions.  What we're
+doing is in the spirit of the descriptions of bit 9 in the L1 page tables.
+
+I don't think there's any sensible short description which would
+adequately describe this setting which would satisfy both your situation
+and situations on other SoCs.  We could make the kernel print an entire
+paragraph on it, something like:
+
+"ECC might be %sabled.  The exact ECC setting depends on how your SoC
+is implemented.  Please refer to your SoCs technical reference manual
+for a description of bit 9 in the level one page tables for further
+information on how to interpret this statement."
+
+but that would be idiotic.
+
+Of course, we could just print nothing, but the purpose of printing this
+is so that _we_ as developers looking at the kernel messages know the
+status of this bit, particularly when interpreting oops dumps.  Hiding
+this information would make some oops dumps harder to diagnose.  So...
+this is a matter for user education if your users are complaining about
+it.
