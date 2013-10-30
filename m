@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab3J3Tue (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 15:50:34 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:46409 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754870Ab3J3Tub (ORCPT
+	id S1754905Ab3J3Tul (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 15:50:41 -0400
+Received: from smtpfb2-g21.free.fr ([212.27.42.10]:48774 "EHLO
+	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754881Ab3J3Tug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 15:50:31 -0400
-Date: Wed, 30 Oct 2013 20:50:28 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: will.deacon@arm.com, mingo@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] perf: arch_perf_out_copy_user default
-Message-ID: <20131030195013.GA2253@localhost.localdomain>
-References: <20131030143750.GT19466@laptop.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131030143750.GT19466@laptop.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 30 Oct 2013 15:50:36 -0400
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 3/7] binfmt_misc: use get_unused_fd_flags(0) instead of get_unused_fd()
+Date: Wed, 30 Oct 2013 20:47:43 +0100
+Message-Id: <700d638c74d09073bb803b2db2347d3a7f40fbc7.1383121137.git.ydroneaud@opteya.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <cover.1383121137.git.ydroneaud@opteya.com>
+References: <cover.1383121137.git.ydroneaud@opteya.com>
+In-Reply-To: <cover.1383121137.git.ydroneaud@opteya.com>
+References: <cover.1383121137.git.ydroneaud@opteya.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 03:37:50PM +0100, Peter Zijlstra wrote:
-> Hi Frederic,
-> 
-> I just spotted:
-> 
-> #ifndef arch_perf_out_copy_user
-> #define arch_perf_out_copy_user __copy_from_user_inatomic
-> #endif
-> 
-> vs:
-> 
-> arch/x86/include/asm/perf_event.h:#define arch_perf_out_copy_user copy_from_user_nmi
-> 
-> Now the problem is that copy_from_user_nmi() and
-> __copy_from_user_inatomic() have different return semantics.
-> 
-> Furthermore, the macro you use them in DEFINE_OUTPUT_COPY() assumes the
-> return value is the amount of memory copied; as also illustrated by
-> memcpy_common().
-> 
-> Trouble is, __copy_from_user_inatomic() returns the number of bytes
-> _NOT_ copied.
+Macro get_unused_fd() is used to allocate a file descriptor with
+default flags. Those default flags (0) can be "unsafe":
+O_CLOEXEC must be used by default to not leak file descriptor
+across exec().
 
-Aie, sorry about that, I did a wrong assumption indeed.
+Instead of macro get_unused_fd(), functions anon_inode_getfd()
+or get_unused_fd_flags() should be used with flags given by userspace.
+If not possible, flags should be set to O_CLOEXEC to provide userspace
+with a default safe behavor.
 
-> 
-> With this, my question to Will is, how did your ARM unwind support
-> patches ever work? AFAICT they end up using the
-> __copy_from_user_inatomic() thing.
-> 
-> 
-> ---
->  kernel/events/internal.h | 17 +++++++++++++++--
->  1 file changed, 15 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-> index ca6599723be5..d7a0f753e695 100644
-> --- a/kernel/events/internal.h
-> +++ b/kernel/events/internal.h
-> @@ -110,7 +110,8 @@ func_name(struct perf_output_handle *handle,				\
->  	return len;							\
->  }
->  
-> -static inline int memcpy_common(void *dst, const void *src, size_t n)
-> +static inline unsigned long
-> +memcpy_common(void *dst, const void *src, unsigned long n)
->  {
->  	memcpy(dst, src, n);
->  	return n;
-> @@ -123,7 +124,19 @@ DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
->  DEFINE_OUTPUT_COPY(__output_skip, MEMCPY_SKIP)
->  
->  #ifndef arch_perf_out_copy_user
-> -#define arch_perf_out_copy_user __copy_from_user_inatomic
-> +#define arch_perf_out_copy_user arch_perf_out_copy_user
-> +
-> +static inline unsigned long
-> +arch_perf_out_copy_user(void *dst, const void *src, unsigned long n)
-> +{
-> +	unsigned long ret;
-> +
-> +	pagefault_disable();
-> +	ret = __copy_from_user_inatomic(to, from, n);
-> +	pagefault_enable();
-> +
-> +	return n - ret;
+In a further patch, get_unused_fd() will be removed so that
+new code start using anon_inode_getfd() or get_unused_fd_flags()
+with correct flags.
 
-Would it make sense to rather make copy_from_user_nmi() to use a return value
-pattern that is closer to those of the existing copy_from_user_*() ?
+This patch replaces calls to get_unused_fd() with equivalent call to
+get_unused_fd_flags(0) to preserve current behavor for existing code.
 
-This way we avoid future mistakes of that kind.
+The hard coded flag value (0) should be reviewed on a per-subsystem basis,
+and, if possible, set to O_CLOEXEC.
 
-Thanks.
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Link: http://lkml.kernel.org/r/cover.1383121137.git.ydroneaud@opteya.com
+---
+ fs/binfmt_misc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> +}
->  #endif
->  
->  DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
+diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
+index 1c740e1..052f6dc 100644
+--- a/fs/binfmt_misc.c
++++ b/fs/binfmt_misc.c
+@@ -138,7 +138,7 @@ static int load_misc_binary(struct linux_binprm *bprm)
+ 		/* if the binary should be opened on behalf of the
+ 		 * interpreter than keep it open and assign descriptor
+ 		 * to it */
+- 		fd_binary = get_unused_fd();
++		fd_binary = get_unused_fd_flags(0);
+  		if (fd_binary < 0) {
+  			retval = fd_binary;
+  			goto _ret;
+-- 
+1.8.3.1
+
