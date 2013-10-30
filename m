@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752053Ab3J3KFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 06:05:49 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:36027 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088Ab3J3KFr (ORCPT
+	id S1753566Ab3J3KFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 06:05:55 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54769 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752579Ab3J3KFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 06:05:47 -0400
-Message-ID: <5270D9F7.3090105@hitachi.com>
-Date: Wed, 30 Oct 2013 19:05:43 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 30 Oct 2013 06:05:52 -0400
+X-AuditID: 9c930179-b7c9bae000000e4c-fe-5270d9ff8351
+Date: Wed, 30 Oct 2013 19:06:14 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Pekka Enberg <penberg@iki.fi>
+Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 13/15] slab: use struct page for slab management
+Message-ID: <20131030100614.GB5753@lge.com>
+References: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1381913052-23875-14-git-send-email-iamjoonsoo.kim@lge.com>
+ <20131030082800.GA5753@lge.com>
+ <5270C666.6090209@iki.fi>
 MIME-Version: 1.0
-To: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
-        anton@redhat.com, systemtap@sourceware.org,
-        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com,
-        dsahern@gmail.com,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
-References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora> <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com> <y0mbo2cs2oa.fsf@fche.csb>
-In-Reply-To: <y0mbo2cs2oa.fsf@fche.csb>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5270C666.6090209@iki.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/26 20:16), Frank Ch. Eigler wrote:
-> Pekka Enberg <penberg@kernel.org> writes:
+On Wed, Oct 30, 2013 at 10:42:14AM +0200, Pekka Enberg wrote:
+> On 10/30/2013 10:28 AM, Joonsoo Kim wrote:
+> >If you want an incremental patch against original patchset,
+> >I can do it. Please let me know what you want.
 > 
->> Is there a technical reason why 'perf list' could not show all the
->> available SDT markers on a system and that the 'mark to event'
->> mapping cannot happen automatically? [...]
-> 
-> A quick experiment with:
-> 
->   find `echo $PATH | tr : ' '` -type f -perm -555 | 
->        xargs readelf -n 2>/dev/null | 
->        grep STAP 2>/dev/null 
-> 
-> suggests reasonable performance for my F19 workstation (a second or
-> two over ~6000 executables), once all the ELF content is in the block
-> cache.  According to a stap eventcount.stp run, that required about
-> 50000 syscall.read events.
-> 
-> Note that a $PATH search excludes shared libraries, which can also
-> carry <sys/sdt.h> markers.  Adding /usr/lib* in more than doubles the
-> work, then there's /usr/libexec etc.
+> Yes, please. Incremental is much easier to deal with if we want this
+> to end up in v3.13.
 
-To find all system libraries, we can use ldconfig.
+Okay. I just sent them.
 
-$ ldconfig --print-cache
-
-shows what dynamic libraries will be loaded. On my own laptop (running
-ubuntu13.04) shows ~1000 libs.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Thanks.
 
