@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab3J3RjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 13:39:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46879 "EHLO
+	id S1752747Ab3J3RoH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 13:44:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46967 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806Ab3J3RjG (ORCPT
+	with ESMTP id S1750882Ab3J3RoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 13:39:06 -0400
-Date: Wed, 30 Oct 2013 10:39:05 -0700
+	Wed, 30 Oct 2013 13:44:04 -0400
+Date: Wed, 30 Oct 2013 10:44:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Frank Haverkamp <haver@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
@@ -16,7 +16,7 @@ Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
         cascardo@linux.vnet.ibm.com, michael@ibmra.de,
         Frank Haverkamp <haver@vnet.ibm.com>
 Subject: Re: [PATCH] Generic WorkQueue Engine (GenWQE) device driver (v4)
-Message-ID: <20131030173905.GE20147@kroah.com>
+Message-ID: <20131030174403.GF20147@kroah.com>
 References: <1383125578-26202-1-git-send-email-haver@linux.vnet.ibm.com>
  <1383125578-26202-2-git-send-email-haver@linux.vnet.ibm.com>
 MIME-Version: 1.0
@@ -30,26 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, Oct 30, 2013 at 10:32:58AM +0100, Frank Haverkamp wrote:
 > +/*
-> + * GenWQE Driver: Need SLC timeout set to 250ms (temporary setting for
-> + * testing of 1000ms due to decompressor testcase failing)
+> + * Create device_attribute structures / params: name, mode, show, store
+> + * additional flag if valid in VF
+> + */
+> +struct genwqe_dev_attrib {
+> +	struct device_attribute att;	/* sysfs entry attributes */
+> +	int vf;				/* may exist in VF or not */
+> +};
+
+Why do you need your own structure?  Use the is_visible() callback to
+create or not, the individual attributes for a specific device, don't
+roll your own logic for something the driver core already supports.
+
+> +static struct genwqe_dev_attrib dev_attr_tab[] = {
+> +	{__ATTR(tempsens,       S_IRUGO, show_card_tempsens, NULL), 0},
+> +	{__ATTR(next_bitstream, (S_IRUGO | S_IWUSR),
+> +		show_card_next_bitstream, store_card_next_bitstream), 0},
+> +	{__ATTR(curr_bitstream, S_IRUGO, show_card_curr_bitstream, NULL), 0},
+> +	{__ATTR(cpld_version,   S_IRUGO, show_cpld_version, NULL), 0},
+> +	{__ATTR(base_clock,	S_IRUGO, show_card_base_clock, NULL), 0},
+> +
+> +	{__ATTR(driver,		S_IRUGO, show_card_driver, NULL), 1},
+> +	{__ATTR(type,		S_IRUGO, show_card_type, NULL), 1},
+> +	{__ATTR(version,	S_IRUGO, show_card_version, NULL), 1},
+> +	{__ATTR(appid,		S_IRUGO, show_card_appid, NULL), 1},
+> +	{__ATTR(status,		S_IRUGO, show_card_status, NULL), 1},
+> +};
+> +
+> +/**
+> + * create_card_sysfs() - Setup sysfs entries of the card device
 > + *
-> + * There is a requirement by the card users that the timeout must not
-> + * exceed the 250ms.
-> + *
-> + * In this case the settings must be done before any interaction to
-> + * the device can be done, since we cannot change the settings without
-> + * stopping the queues.
+> + * VFs have restricted mmio capabilities, so not all sysfs entries
+> + * are allowed in VFs.
+> + */
+> +int create_card_sysfs(struct genwqe_dev *cd)
+> +{
+> +	int rc, priv;
+> +	unsigned int i;
+> +
+> +	priv = genwqe_is_privileged(cd);
+> +	for (i = 0; i < ARRAY_SIZE(dev_attr_tab); i++) {
+> +		struct genwqe_dev_attrib *dev_attr = &dev_attr_tab[i];
+> +		if (dev_attr->vf || priv) {
+> +			rc = device_create_file(cd->dev, &dev_attr->att);
 
-Then stop the queue, change the value, and start them up again.
+No, you just raced with userspace, creating the sysfs files _after_ it
+was told to userspace that the driver was bound to the device.
 
-Why would anyone ever want to change these values?  Don't make anything
-"tunable", just get it right and don't rely on someone making tweaks
-later with module options, especially as, again, these are driver wide,
-not specific to a device.
+Please use the attribute groups for this driver to have the driver core
+create the files before it it told to userspace.
 
-If you _really_ need them for a device, make them a sysfs file and fix
-the code to handle stopping and starting.  You have to handle that
-anyway with dynamic bind/unbind of the driver to specific devices
-anyway, so this shouldn't be a big deal.
+Also, instead of using __ATTR(), please use DEVICE_ATTR_RO(), it makes
+things easier to audit and saves me from having to change it later on
+(I'm doing a tree-wide change of this type of thing...)
+
+thanks,
 
 greg k-h
