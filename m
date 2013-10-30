@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab3J3NIb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 09:08:31 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41960 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752358Ab3J3NI2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 09:08:28 -0400
-Date: Wed, 30 Oct 2013 13:07:28 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: Will Deacon <will.deacon@arm.com>, linux-arm-kernel@lists.infradead.org,
-        monstr@monstr.eu, Nicolas Pitre <nico@linaro.org>,
-        Vitaly Andrianov <vitalya@ti.com>, Cyril Chemparathy <cyril@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: mm: Fix ECC mem policy printk
-Message-ID: <20131030130728.GA16735@n2100.arm.linux.org.uk>
-References: <8986e8f1a3761e45a7927bdb0e54393c9155e6bf.1383137171.git.michal.simek@xilinx.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8986e8f1a3761e45a7927bdb0e54393c9155e6bf.1383137171.git.michal.simek@xilinx.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1754144Ab3J3NIz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 09:08:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6246 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752358Ab3J3NIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 09:08:54 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: jmorris@namei.org
+cc: dhowells@redhat.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, gang.chen@asianux.com,
+        yongjun_wei@trendmicro.com.cn, sgallagh@redhat.com,
+        jwboyer@fedoraproject.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] KEYS: Fixes for next branch
+Date: Wed, 30 Oct 2013 13:08:40 +0000
+Message-ID: <30717.1383138520@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 01:46:18PM +0100, Michal Simek wrote:
-> Russell, Will: We discussed this at KS that will be good
-> to rephrase it or have different logic around this.
-> I am not sure if we can also test that this bit is
-> implemented by particular SoC or not.
-> 
-> Maybe logic should be that if SoC uses this bit
-> that message is shown in origin format to declare
-> that ECC is enabled or disabled.
-> When SoC doesn't implement it then do not show this message.
 
-This is not quite what I meant - by making the change you have, you also
-omit to print the data cache policy.
+Hi James,
 
-> @@ -556,8 +556,9 @@ static void __init build_mem_type_table(void)
->  		mem_types[MT_CACHECLEAN].prot_sect |= PMD_SECT_WB;
->  		break;
->  	}
-> -	printk("Memory policy: ECC %sabled, Data cache %s\n",
-> -		ecc_mask ? "en" : "dis", cp->policy);
-> +	if (ecc_mask)
-> +		pr_info("Memory policy: ECC enabled, Data cache %s\n",
-> +			cp->policy);
+Could you pull these five commits into your next branch?  They are a set of
+fixes, some for the commits you have there and some for the upstream kernel.
 
-	pr_info("Memory policy: %sData cache %s\n",
-		ecc_mask ? "ECC enabled, " : "", cp->policy);
+David
+---
+The following changes since commit 50b719f811583a47762ecb7e480d253abc2eb22f:
 
-is more what I was suggesting.
+  Merge branch 'smack-for-3.13' of git://git.gitorious.org/smack-next/kernel into ra-next (2013-10-30 14:07:10 +1100)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git keys-devel
+
+for you to fetch changes up to 6ef4d2eaf5a46d4ab6db02612b5e883b834017b8:
+
+  kernel/system_certificate.S: use real contents instead of macro GLOBAL() (2013-10-30 12:58:00 +0000)
+
+----------------------------------------------------------------
+(from the branch description for keys-devel local branch)
+
+clone of "master"
+----------------------------------------------------------------
+Chen Gang (1):
+      kernel/system_certificate.S: use real contents instead of macro GLOBAL()
+
+David Howells (2):
+      KEYS: Fix a race between negating a key and reading the error set
+      KEYS: Fix keyring quota misaccounting on key replacement and unlink
+
+Josh Boyer (1):
+      KEYS: Make BIG_KEYS boolean
+
+Wei Yongjun (1):
+      KEYS: fix error return code in big_key_instantiate()
+
+ kernel/system_certificates.S | 10 ++++------
+ security/keys/Kconfig        |  2 +-
+ security/keys/big_key.c      |  4 +++-
+ security/keys/key.c          |  3 ++-
+ security/keys/keyring.c      | 28 ++++++++++++++++------------
+ security/keys/request_key.c  |  4 +++-
+ 6 files changed, 29 insertions(+), 22 deletions(-)
