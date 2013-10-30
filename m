@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab3J3CgX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 22:36:23 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:62026 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab3J3CgW (ORCPT
+	id S1752394Ab3J3Ci0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 22:38:26 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52265 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab3J3CiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 22:36:22 -0400
-X-AuditID: 9c93016f-b7cb6ae000000e4c-84-527070a43fc2
-Date: Wed, 30 Oct 2013 11:36:27 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: opw-kernel@googlegroups.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchand@redhat.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v7 1/3] Staging: zram: Fix access of NULL pointer
-Message-ID: <20131030023627.GD17013@bbox>
-References: <20131019110539.GA25167@gmail.com>
- <cc16130b4e23207971139eff313a4ec71f51c187.1383087326.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cc16130b4e23207971139eff313a4ec71f51c187.1383087326.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 29 Oct 2013 22:38:24 -0400
+Date: Tue, 29 Oct 2013 22:38:23 -0400 (EDT)
+Message-Id: <20131029.223823.1852248673779937090.davem@davemloft.net>
+To: changbinx.du@intel.com
+Cc: oliver@neukum.org, linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/cdc_ncm: fix null pointer panic at
+ usbnet_link_change
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <0C18FE92A7765D4EB9EE5D38D86A563A019F450F@SHSMSX103.ccr.corp.intel.com>
+References: <0C18FE92A7765D4EB9EE5D38D86A563A019F450F@SHSMSX103.ccr.corp.intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 29 Oct 2013 19:38:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 04:40:54AM +0530, Rashika Kheria wrote:
-> This patch fixes the bug in reset_store caused by accessing NULL pointer.
-> 
-> The bdev gets its value from bdget_disk() which could fail when memory
-> pressure is severe and hence can return NULL because allocation of
-> inode in bdget could fail.
-> 
-> Hence, this patch introduces a check for bdev to prevent reference to a
-> NULL pointer in the later part of the code. It also removes unnecessary
-> check of bdev for fsync_bdev().
-> 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> ---
-> 
-> This patch fixes the following issues of the previous revision-
-> Better Description
-> 
->  drivers/staging/zram/zram_drv.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index 2c4ed52..d640a8f 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -648,6 +648,9 @@ static ssize_t reset_store(struct device *dev,
->  	zram = dev_to_zram(dev);
->  	bdev = bdget_disk(zram->disk, 0);
->  
-> +	if (!bdev)
-> +		return -EBUSY;
-> +
+From: "Du, ChangbinX" <changbinx.du@intel.com>
+Date: Tue, 29 Oct 2013 03:30:42 +0000
 
-Oops, Sorry.
-I don't think EBUSY is right. How about ENOMEM?
+> In cdc_ncm_bind() function, it call cdc_ncm_bind_common() to setup usb.
+> But cdc_ncm_bind_common() may meet error and cause usbnet_disconnect()
+> be called which calls free_netdev(net). Thus usbnet structure(alloced
+> with net_device structure) will be freed,too.
+> So we cannot call usbnet_link_change() if cdc_ncm_bind_common() return
+> error.
 
--- 
-Kind regards,
-Minchan Kim
+This is not the bug.
+
+The problem is in cdc_ncm_bind_common().
+
+It seems to leave dangling interface data pointers in some cases, and
+then branches just to "error" so that they don't get cleared back out.
+
+This bypasses the protection present in cdc_ncm_disconnect() meant to
+avoid this problem.
