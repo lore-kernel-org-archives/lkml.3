@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab3J3Qvc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 12:51:32 -0400
-Received: from imap.thunk.org ([74.207.234.97]:52524 "EHLO imap.thunk.org"
+	id S1753293Ab3J3Qv3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 12:51:29 -0400
+Received: from imap.thunk.org ([74.207.234.97]:52523 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752674Ab3J3QvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752628Ab3J3QvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Oct 2013 12:51:07 -0400
-Date: Wed, 30 Oct 2013 10:42:29 -0400
+Date: Wed, 30 Oct 2013 10:30:24 -0400
 From: "Theodore Ts'o" <tytso@mit.edu>
 To: T Makphaibulchoke <tmac@hp.com>
 Cc: adilger.kernel@dilger.ca, viro@zeniv.linux.org.uk,
         linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, aswin@hp.com,
         torvalds@linux-foundation.org, aswin_proj@groups.hp.com
-Subject: Re: [PATCH v3 1/2] mbcache: decoupling the locking of local from
- global data
-Message-ID: <20131030144229.GC3305@thunk.org>
+Subject: Re: [PATCH v3 2/2] ext4: each filesystem creates and uses its own
+ mb_cache
+Message-ID: <20131030143024.GB3305@thunk.org>
 Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
 	T Makphaibulchoke <tmac@hp.com>, adilger.kernel@dilger.ca,
 	viro@zeniv.linux.org.uk, linux-ext4@vger.kernel.org,
@@ -24,11 +24,11 @@ Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
 	aswin_proj@groups.hp.com
 References: <1374108934-50550-1-git-send-email-tmac@hp.com>
  <1378312756-68597-1-git-send-email-tmac@hp.com>
- <1378312756-68597-2-git-send-email-tmac@hp.com>
+ <1378312756-68597-3-git-send-email-tmac@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1378312756-68597-2-git-send-email-tmac@hp.com>
+In-Reply-To: <1378312756-68597-3-git-send-email-tmac@hp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: tytso@thunk.org
@@ -37,115 +37,225 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 10:39:15AM -0600, T Makphaibulchoke wrote:
-> The patch increases the parallelism of mb_cache_entry utilization by
-> replacing list_head with hlist_bl_node for the implementation of both the
-> block and index hash tables.  Each hlist_bl_node contains a built-in lock
-> used to protect mb_cache's local block and index hash chains. The global
-> data mb_cache_lru_list and mb_cache_list continue to be protected by the
-> global mb_cache_spinlock.
-> 
-> Signed-off-by: T. Makphaibulchoke <tmac@hp.com>
+On Wed, Sep 04, 2013 at 10:39:16AM -0600, T Makphaibulchoke wrote:
+> This patch adds new interfaces to create and destory cache,
+> ext4_xattr_create_cache() and ext4_xattr_destroy_cache(), and remove the
+> cache creation and destory calls from ex4_init_xattr() and ext4_exitxattr()
+> in fs/ext4/xattr.c.
+> fs/ext4/super.c has been changed so that when a filesystem is mounted a
+> cache is allocated and attched to its ext4_sb_info structure.
 
-I tried running xfstests with this patch, and it blew up on
-generic/020 test:
+One problem with this patch is that it creates separate slabs for each
+ext4 file system where previously we had a single slab cache for
+mbcache entries.  I've tried adding the following patch on top of
+yours so that we can retain the previous behavior of creating a single
+kmem_cache for all ext4 file systems.
 
-generic/020	[10:21:50][  105.170352] ------------[ cut here ]------------
-[  105.171683] kernel BUG at /usr/projects/linux/ext4/include/linux/bit_spinlock.h:76!
-[  105.173346] invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
-[  105.173346] Modules linked in:
-[  105.173346] CPU: 1 PID: 8519 Comm: attr Not tainted 3.12.0-rc5-00008-gffbe1d7-dirty #1492
-[  105.173346] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[  105.173346] task: f5abe560 ti: f2274000 task.ti: f2274000
-[  105.173346] EIP: 0060:[<c026b464>] EFLAGS: 00010246 CPU: 1
-[  105.173346] EIP is at hlist_bl_unlock+0x7/0x1c
-[  105.173346] EAX: f488d360 EBX: f488d360 ECX: 00000000 EDX: f2998800
-[  105.173346] ESI: f29987f0 EDI: 6954c848 EBP: f2275cc8 ESP: f2275cb8
-[  105.173346]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[  105.173346] CR0: 80050033 CR2: b76bcf54 CR3: 34844000 CR4: 000006f0
-[  105.173346] Stack:
-[  105.173346]  c026bc78 f2275d48 6954c848 f29987f0 f2275d24 c02cd7a9 f2275ce4 c02e2881
-[  105.173346]  f255d8c8 00000000 f1109020 f4a67f00 f2275d54 f2275d08 c02cd020 6954c848
-[  105.173346]  f4a67f00 f1109000 f2b0eba8 f2ee3800 f2275d28 f4f811e8 f2275d38 00000000
-[  105.173346] Call Trace:
-[  105.173346]  [<c026bc78>] ? mb_cache_entry_find_first+0x4b/0x55
-[  105.173346]  [<c02cd7a9>] ext4_xattr_block_set+0x248/0x6e7
-[  105.173346]  [<c02e2881>] ? jbd2_journal_put_journal_head+0xe2/0xed
-[  105.173346]  [<c02cd020>] ? ext4_xattr_find_entry+0x52/0xac
-[  105.173346]  [<c02ce307>] ext4_xattr_set_handle+0x1c7/0x30f
-[  105.173346]  [<c02ce4f4>] ext4_xattr_set+0xa5/0xe1
-[  105.173346]  [<c02ceb36>] ext4_xattr_user_set+0x46/0x5f
-[  105.173346]  [<c024a4da>] generic_setxattr+0x4c/0x5e
-[  105.173346]  [<c024a48e>] ? generic_listxattr+0x95/0x95
-[  105.173346]  [<c024ab0f>] __vfs_setxattr_noperm+0x56/0xb6
-[  105.173346]  [<c024abd2>] vfs_setxattr+0x63/0x7e
-[  105.173346]  [<c024ace8>] setxattr+0xfb/0x139
-[  105.173346]  [<c01b200a>] ? __lock_acquire+0x540/0xca6
-[  105.173346]  [<c01877a3>] ? lg_local_unlock+0x1b/0x34
-[  105.173346]  [<c01af8dd>] ? trace_hardirqs_off_caller+0x2e/0x98
-[  105.173346]  [<c0227e69>] ? kmem_cache_free+0xd4/0x149
-[  105.173346]  [<c01b2c2b>] ? lock_acquire+0xdd/0x107
-[  105.173346]  [<c023225e>] ? __sb_start_write+0xee/0x11d
-[  105.173346]  [<c0247383>] ? mnt_want_write+0x1e/0x3e
-[  105.173346]  [<c01b3019>] ? trace_hardirqs_on_caller+0x12a/0x17e
-[  105.173346]  [<c0247353>] ? __mnt_want_write+0x4e/0x60
-[  105.173346]  [<c024af3b>] SyS_lsetxattr+0x6a/0x9f
-[  105.173346]  [<c078d0e8>] syscall_call+0x7/0xb
-[  105.173346] Code: 00 00 00 00 5b 5d c3 55 89 e5 53 3e 8d 74 26 00 8b 58 08 89 c2 8b 43 18 e8 3f c9 fb ff f0 ff 4b 0c 5b 5d c3 8b 10 80 e2 01 75 02 <0f> 0b 55 89 e5 0f ba 30 00 89 e0 25 00 e0 ff ff ff 48 14 5d c3
-[  105.173346] EIP: [<c026b464>] hlist_bl_unlock+0x7/0x1c SS:ESP 0068:f2275cb8
-[  105.273781] ---[ end trace 1ee45ddfc1df0935 ]---
+Please comment/review...
 
-When I tried to find a potential problem, I immediately ran into this.
-I'm not entirely sure it's the problem, but it's raised a number of
-red flags for me in terms of (a) how much testing you've employed with
-this patch set, and (b) how maintaining and easy-to-audit the code
-will be with this extra locking.  The comments are good start, but
-some additional comments about exactly what assumptions a function
-assumes about locks that are held on function entry, or especially if
-the locking is different on function entry and function exit, might
-make it easier for people to audit this patch.
+							- Ted
 
-Or maybe this commit needs to be split up with first a conversion from
-using list_head to hlist_hl_node, and the changing the locking?  The
-bottom line is that we need to somehow make this patch easier to
-validate/review.
-
-> @@ -520,18 +647,23 @@ __mb_cache_entry_find(struct list_head *l, struct list_head *head,
->  				ce->e_queued++;
->  				prepare_to_wait(&mb_cache_queue, &wait,
->  						TASK_UNINTERRUPTIBLE);
-> -				spin_unlock(&mb_cache_spinlock);
-> +				hlist_bl_unlock(head);
->  				schedule();
-> -				spin_lock(&mb_cache_spinlock);
-> +				hlist_bl_lock(head);
-> +				mb_assert(ce->e_index_hash_p == head);
->  				ce->e_queued--;
->  			}
-> +			hlist_bl_unlock(head);
->  			finish_wait(&mb_cache_queue, &wait);
->  
-> -			if (!__mb_cache_entry_is_hashed(ce)) {
-> +			hlist_bl_lock(ce->e_block_hash_p);
-> +			if (!__mb_cache_entry_is_block_hashed(ce)) {
->  				__mb_cache_entry_release_unlock(ce);
-> -				spin_lock(&mb_cache_spinlock);
-> +				hlist_bl_lock(head);
-
-<---  are we missing a "hlist_bl_unlock(ce->e_block_hash_p);" here?
-
-<---- Why is it that we call "hlist_bl_lock(head);" but not in the else clause?
-
->  				return ERR_PTR(-EAGAIN);
-> -			}
-> +			} else
-> +				hlist_bl_unlock(ce->e_block_hash_p);
-> +			mb_assert(ce->e_index_hash_p == head);
->  			return ce;
->  		}
->  		l = l->next; 
-
-
-Cheers,
-
-					- Ted
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 3b525b6..d529807 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -31,6 +31,7 @@
+ #include <linux/vfs.h>
+ #include <linux/random.h>
+ #include <linux/mount.h>
++#include <linux/mbcache.h>
+ #include <linux/namei.h>
+ #include <linux/quotaops.h>
+ #include <linux/seq_file.h>
+@@ -5492,9 +5493,16 @@ static int __init ext4_init_fs(void)
+ 		init_waitqueue_head(&ext4__ioend_wq[i]);
+ 	}
+ 
++	ext4_xattr_kmem_cache = kmem_cache_create("ext4_xattr",
++		sizeof(struct mb_cache_entry), 0,
++		SLAB_RECLAIM_ACCOUNT|SLAB_MEM_SPREAD, NULL);
++	if (ext4_xattr_kmem_cache == NULL)
++		return -ENOMEM;
++
++
+ 	err = ext4_init_es();
+ 	if (err)
+-		return err;
++		goto out8;
+ 
+ 	err = ext4_init_pageio();
+ 	if (err)
+@@ -5548,12 +5556,15 @@ out6:
+ 	ext4_exit_pageio();
+ out7:
+ 	ext4_exit_es();
++out8:
++	kmem_cache_destroy(ext4_xattr_kmem_cache);
+ 
+ 	return err;
+ }
+ 
+ static void __exit ext4_exit_fs(void)
+ {
++	kmem_cache_destroy(ext4_xattr_kmem_cache);
+ 	ext4_destroy_lazyinit_thread();
+ 	unregister_as_ext2();
+ 	unregister_as_ext3();
+diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
+index 07ca399..3d2bd5a 100644
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -81,6 +81,8 @@
+ # define ea_bdebug(bh, fmt, ...)	no_printk(fmt, ##__VA_ARGS__)
+ #endif
+ 
++struct kmem_cache *ext4_xattr_kmem_cache;
++
+ static void ext4_xattr_cache_insert(struct mb_cache *, struct buffer_head *);
+ static struct buffer_head *ext4_xattr_cache_find(struct inode *,
+ 						 struct ext4_xattr_header *,
+@@ -1687,7 +1689,8 @@ static void ext4_xattr_rehash(struct ext4_xattr_header *header,
+ struct mb_cache *
+ ext4_xattr_create_cache(char *name)
+ {
+-	return mb_cache_create(name, HASH_BUCKET_BITS);
++	return mb_cache_create_instance(name, HASH_BUCKET_BITS,
++					ext4_xattr_kmem_cache);
+ }
+ 
+ void ext4_xattr_destroy_cache(struct mb_cache *cache)
+diff --git a/fs/ext4/xattr.h b/fs/ext4/xattr.h
+index b930320..15616eb 100644
+--- a/fs/ext4/xattr.h
++++ b/fs/ext4/xattr.h
+@@ -94,6 +94,8 @@ struct ext4_xattr_ibody_find {
+ 	struct ext4_iloc iloc;
+ };
+ 
++extern struct kmem_cache *ext4_xattr_kmem_cache;
++
+ extern const struct xattr_handler ext4_xattr_user_handler;
+ extern const struct xattr_handler ext4_xattr_trusted_handler;
+ extern const struct xattr_handler ext4_xattr_acl_access_handler;
+diff --git a/fs/mbcache.c b/fs/mbcache.c
+index 44e7153..8e373c6 100644
+--- a/fs/mbcache.c
++++ b/fs/mbcache.c
+@@ -96,6 +96,7 @@ MODULE_DESCRIPTION("Meta block cache (for extended attributes)");
+ MODULE_LICENSE("GPL");
+ 
+ EXPORT_SYMBOL(mb_cache_create);
++EXPORT_SYMBOL(mb_cache_create_instance);
+ EXPORT_SYMBOL(mb_cache_shrink);
+ EXPORT_SYMBOL(mb_cache_destroy);
+ EXPORT_SYMBOL(mb_cache_entry_alloc);
+@@ -260,18 +261,20 @@ static struct shrinker mb_cache_shrinker = {
+ };
+ 
+ /*
+- * mb_cache_create()  create a new cache
++ * mb_cache_create_instance()  create a new cache for a device
+  *
+  * All entries in one cache are equal size. Cache entries may be from
+- * multiple devices. If this is the first mbcache created, registers
+- * the cache with kernel memory management. Returns NULL if no more
++ * multiple devices.  The caller must create a kmem_cache appropriate
++ * for allocating struct mb_cache_entry.  Returns NULL if no more
+  * memory was available.
+  *
+  * @name: name of the cache (informal)
+  * @bucket_bits: log2(number of hash buckets)
++ * @mb_kmem_cache: slab cache for mb_cache_entry structures
+  */
+ struct mb_cache *
+-mb_cache_create(const char *name, int bucket_bits)
++mb_cache_create_instance(const char *name, int bucket_bits,
++			 struct kmem_cache *mb_kmem_cache)
+ {
+ 	int n, bucket_count = 1 << bucket_bits;
+ 	struct mb_cache *cache = NULL;
+@@ -294,11 +297,8 @@ mb_cache_create(const char *name, int bucket_bits)
+ 		goto fail;
+ 	for (n=0; n<bucket_count; n++)
+ 		INIT_HLIST_BL_HEAD(&cache->c_index_hash[n]);
+-	cache->c_entry_cache = kmem_cache_create(name,
+-		sizeof(struct mb_cache_entry), 0,
+-		SLAB_RECLAIM_ACCOUNT|SLAB_MEM_SPREAD, NULL);
+-	if (!cache->c_entry_cache)
+-		goto fail2;
++	BUG_ON(mb_kmem_cache == NULL);
++	cache->c_entry_cache = mb_kmem_cache;
+ 
+ 	/*
+ 	 * Set an upper limit on the number of cache entries so that the hash
+@@ -311,15 +311,38 @@ mb_cache_create(const char *name, int bucket_bits)
+ 	spin_unlock(&mb_cache_spinlock);
+ 	return cache;
+ 
+-fail2:
+-	kfree(cache->c_index_hash);
+-
+ fail:
+ 	kfree(cache->c_block_hash);
+ 	kfree(cache);
+ 	return NULL;
+ }
+ 
++/*
++ * mb_cache_create()  create a new cache
++ *
++ * All entries in one cache are equal size. Cache entries may be from
++ * multiple devices.  Returns NULL if no more memory was available.
++ *
++ * @name: name of the cache (informal)
++ * @bucket_bits: log2(number of hash buckets)
++ */
++struct mb_cache *
++mb_cache_create(const char *name, int bucket_bits)
++{
++	struct kmem_cache *mb_kmem_cache;
++	struct mb_cache *cache;
++
++	mb_kmem_cache = kmem_cache_create(name,
++		sizeof(struct mb_cache_entry), 0,
++		SLAB_RECLAIM_ACCOUNT|SLAB_MEM_SPREAD, NULL);
++	if (mb_kmem_cache == NULL)
++		return NULL;
++	cache = mb_cache_create_instance(name, bucket_bits, mb_kmem_cache); 
++	if (cache == NULL)
++		kmem_cache_destroy(mb_kmem_cache);
++	cache->c_entry_cache_autofree = 1;
++	return cache;
++}
+ 
+ /*
+  * mb_cache_shrink()
+@@ -406,7 +429,8 @@ mb_cache_destroy(struct mb_cache *cache)
+ 			  atomic_read(&cache->c_entry_count));
+ 	}
+ 
+-	kmem_cache_destroy(cache->c_entry_cache);
++	if (cache->c_entry_cache_autofree)
++		kmem_cache_destroy(cache->c_entry_cache);
+ 
+ 	kfree(cache->c_index_hash);
+ 	kfree(cache->c_block_hash);
+diff --git a/include/linux/mbcache.h b/include/linux/mbcache.h
+index 89826c0..b326ce7 100644
+--- a/include/linux/mbcache.h
++++ b/include/linux/mbcache.h
+@@ -29,11 +29,14 @@ struct mb_cache {
+ 	struct kmem_cache		*c_entry_cache;
+ 	struct hlist_bl_head		*c_block_hash;
+ 	struct hlist_bl_head		*c_index_hash;
++	unsigned int			c_entry_cache_autofree:1;
+ };
+ 
+ /* Functions on caches */
+ 
+ struct mb_cache *mb_cache_create(const char *, int);
++struct mb_cache *mb_cache_create_instance(const char *,
++					  int, struct kmem_cache *);
+ void mb_cache_shrink(struct block_device *);
+ void mb_cache_destroy(struct mb_cache *);
+ 
