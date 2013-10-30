@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959Ab3J3DFv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 23:05:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41072 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605Ab3J3DFu (ORCPT
+	id S1753186Ab3J3DHr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 23:07:47 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:42251 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751948Ab3J3DHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 23:05:50 -0400
-Date: Tue, 29 Oct 2013 20:07:47 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
-Cc: Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] tpm/tpm_i2c_stm_st33: Check return code of
- get_burstcount (fix CID: 986658)
-Message-ID: <20131030030747.GA12179@kroah.com>
-References: <1383090860-15901-1-git-send-email-peterhuewe@gmx.de>
- <20131030000618.GA5241@kroah.com>
- <201310300142.11716.PeterHuewe@gmx.de>
+	Tue, 29 Oct 2013 23:07:46 -0400
+Message-ID: <52707800.9020009@free-electrons.com>
+Date: Wed, 30 Oct 2013 04:07:44 +0100
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201310300142.11716.PeterHuewe@gmx.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Michal Marek <mmarek@suse.cz>
+CC: Joe Perches <joe@perches.com>, yann.morin.1998@free.fr,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts/checkkconfig.py: find unused Kconfig parameters
+References: <1382592209-10246-1-git-send-email-michael.opdenacker@free-electrons.com> <1382599849.22433.51.camel@joe-AO722> <526A746C.3060806@free-electrons.com> <526A75E7.30109@suse.cz>
+In-Reply-To: <526A75E7.30109@suse.cz>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 01:42:11AM +0100, Peter Hüwe wrote:
-> Hi Greg,
-> > > 
-> > > CID: 986658
-> > What is this field for?
-> 
-> That's the scan id in the coverity database.
-> If you think that's just noise I can leave it out.
+Hi Michal,
 
-It's noise as not everyone can see it or make anything out of it, so
-please don't include it.
+Thank you very much for your reviews!
 
-thanks,
+On 10/25/2013 03:45 PM, Michal Marek wrote:
 
-greg k-h
+> You can process Kconfig files and source files separately. And you can
+> speed up the script a lot, if you simply record all CONFIG_* strings
+> found in the sources, and then compare this to the set of config options
+> defined in Kconfig. Then you can also easily implement the opposite
+> check, which is currently done by scripts/checkkconfigsymbols.sh.
+I like the idea. CONFIG_* strings at least should be easy to identify in
+the source code indeed. I'll also have to find all the parameters
+referred to in Kconfig files (namely as dependencies), but this should
+be worth the effort.
+
+The whole program will be a bit more complex, but it will be orders of
+magnitude faster!
+
+Thanks again,
+
+Michael.
+
+-- 
+Michael Opdenacker, CEO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
+
