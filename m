@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681Ab3J3Pdi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 11:33:38 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:3026 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab3J3Pdh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 11:33:37 -0400
-Date: Wed, 30 Oct 2013 16:33:26 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Wei Ni <wni@nvidia.com>, thierry.reding@gmail.com,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v3 2/4] hwmon: (lm90) use macro defines for the status
- bit
-Message-ID: <20131030163326.4e7e0cfc@endymion.delvare>
-In-Reply-To: <20130715173322.GA20484@roeck-us.net>
-References: <1373615287-18502-1-git-send-email-wni@nvidia.com>
-	<1373615287-18502-3-git-send-email-wni@nvidia.com>
-	<20130715185727.4ebde8c4@endymion.delvare>
-	<20130715173322.GA20484@roeck-us.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751936Ab3J3PeO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 11:34:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29841 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751305Ab3J3PeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 11:34:12 -0400
+Date: Wed, 30 Oct 2013 17:33:38 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm@vger.kernel.org, aik@ozlabs.ru, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] kvm: Destroy & free KVM devices on release
+Message-ID: <20131030153338.GI4651@redhat.com>
+References: <20131029160019.22578.16409.stgit@bling.home>
+ <20131029161322.22578.18997.stgit@bling.home>
+ <20131030104029.GE4651@redhat.com>
+ <1383143422.4097.170.camel@ul30vt.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383143422.4097.170.camel@ul30vt.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
-
-On Mon, 15 Jul 2013 10:33:22 -0700, Guenter Roeck wrote:
-> On Mon, Jul 15, 2013 at 06:57:27PM +0200, Jean Delvare wrote:
-> > Unrelated to this patch, but Guenter, I am worried about the MAX6696
-> > handling here. I realize that I am the one who accepted your code, but
-> > now it looks wrong. Specifically:
-> > * We check for (status2 & 0xfe) i.e. 7 alarm bits, but the code below
-> >   only reports 2 alarms bits. So if any of the 5 other alarm bits in
-> >   STATUS2 are, we may return true (chip is tripped) but not print the
-> >   cause.
-> > * At least bits 1 and 2 of STATUS 2 fit totally fine in the driver as
-> >   it currently exists, so I can't think of any reason for not handling
-> >   them. Why are we not? Ideally we should print a message for every
-> >   alarm bit so that we never return "true" without printing a message.
-> >   Even though OT2 limits aren't handled by the driver...
-> > * If you think this piece of code shouldn't deal with OT/THERM limits
-> >   because they do not trigger an SMBus alarm, this can be discussed,
-> >   but all chips should be handled the same in this respect then.
-> > * Why in the first place is max6696's data->alert_alarms set to 0x187c
-> >   and not 0x1c7c? Including 1OPEN but not 2OPEN makes no sense.
+On Wed, Oct 30, 2013 at 08:30:22AM -0600, Alex Williamson wrote:
+> On Wed, 2013-10-30 at 12:40 +0200, Gleb Natapov wrote:
+> > On Tue, Oct 29, 2013 at 10:13:22AM -0600, Alex Williamson wrote:
+> > > The KVM device interface allocates a struct kvm_device and calls
+> > > kvm_device_ops.create on it from KVM VM ioctl KVM_CREATE_DEVICE.
+> > > This returns a file descriptor to the user for them to set/get/check
+> > > further attributes.  On closing the file descriptor, one would assume
+> > > that kvm_device_ops.destroy is called and all traces of the device
+> > > would go away.  One would be wrong, it actually does nothing more
+> > > than release the struct kvm reference, waiting until the VM is
+> > > destroyed before doing more.  This leaves devices that only want a
+> > > single instance of themselves per VM in a tough spot.
+> > > 
+> > This is by design. Otherwise locking will be needed on each device access
+> > and for interrupt controllers this is unnecessary serialization and
+> > overhead. Device API is not designed for devices that can go away while
+> > machine is running anyway, so after creation device is only destroyed
+> > during VM destruction.
 > 
-> I am about to leave for vacation, so this will have to wait for a couple of
-> weeks. I'll look at it after I am back.
+> Hmm, ok.  In that case I can drop this patch and I think the rest just
+> boils down to userspace use of the device.  I had been close()'ing the
+> kvm device fd when all QEMU vfio devices are detached, but I can just as
+> easily leave it open in case a new device is added later.  I'll send out
+> a new series after doing some more review and testing.  Do you have any
+> comments on the rest of the series?  Thanks,
+> 
+If I understand 4/4 correctly if there is VFIO device connected we
+assume non coherent domain. How hard it would be to do proper checking
+in this path series?
 
-Are you back now? ;-)
-
--- 
-Jean Delvare
+--
+			Gleb.
