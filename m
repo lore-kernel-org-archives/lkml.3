@@ -1,71 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab3J3W7k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 18:59:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49834 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab3J3W7j (ORCPT
+	id S1754458Ab3J3XBt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 19:01:49 -0400
+Received: from smtprelay0221.hostedemail.com ([216.40.44.221]:51838 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751369Ab3J3XBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 18:59:39 -0400
-Date: Wed, 30 Oct 2013 15:59:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Nazarewicz <mpn@google.com>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>
-Subject: Re: [PATCH] drivers: w1: make w1_slave::flags long to avoid casts
-Message-Id: <20131030155938.0f5416fe3c5c2cbd3f9cd319@linux-foundation.org>
-In-Reply-To: <5083d6c8452b765cb33acdf03fa9b20b1d15c452.1382788496.git.mina86@mina86.com>
-References: <5083d6c8452b765cb33acdf03fa9b20b1d15c452.1382788496.git.mina86@mina86.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Wed, 30 Oct 2013 19:01:47 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3353:3865:3866:3867:3872:4250:4321:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12296:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: limit71_f3a11c2c842a
+X-Filterd-Recvd-Size: 3204
+Message-ID: <1383174102.9435.54.camel@joe-AO722>
+Subject: [PATCH V2] printk/cache: Mark printk_once test variable
+ __read_mostly
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: James Hogan <james.hogan@imgtec.com>, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-metag@vger.kernel.org
+Date: Wed, 30 Oct 2013 16:01:42 -0700
+In-Reply-To: <20131030134839.8bdf70cc68d1bf0beb1fb63a@linux-foundation.org>
+References: <1383128301-20231-1-git-send-email-james.hogan@imgtec.com>
+	 <20131030134839.8bdf70cc68d1bf0beb1fb63a@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Oct 2013 12:56:11 +0100 Michal Nazarewicz <mpn@google.com> wrote:
+Add #include <linux/cache.h> to define __read_mostly.
 
-> From: Michal Nazarewicz <mina86@mina86.com>
-> 
-> Changing flags field of the w1_slave to unsigned long may on
-> some architectures increase the size of the structure, but
-> otherwise makes the code more kosher as casting is avoided
-> and *_bit family of calls do not attempt to operate on an
-> entity of bigger size than realy is available.
-> 
-> The current behaviour does not introduce any bugs (since any
-> bytes past flags field are preserved)
+Convert cache.h to use uapi/linux/kernel.h instead
+of linux/kernel.h to avoid recursive #includes.
 
-hm, what does this mean....
+Convert the ALIGN macro to __KERNEL_ALIGN.
 
-> --- a/drivers/w1/w1.c
-> +++ b/drivers/w1/w1.c
-> @@ -709,7 +709,7 @@ static int w1_attach_slave_device(struct w1_master *dev, struct w1_reg_num *rn)
->  
->  	sl->owner = THIS_MODULE;
->  	sl->master = dev;
-> -	set_bit(W1_SLAVE_ACTIVE, (long *)&sl->flags);
-> +	set_bit(W1_SLAVE_ACTIVE, &sl->flags);
+printk_once only sets the bool variable tested
+once so mark it __read_mostly.
 
-...  I'd have though that running this code on little-endian 64-bit
-would result in a scribble over ...
+Neaten the alignment so it matches the rest of the
+pr_<level>_once #defines too.
 
-> --- a/drivers/w1/w1.h
-> +++ b/drivers/w1/w1.h
-> @@ -67,8 +67,8 @@ struct w1_slave
->  	struct w1_reg_num	reg_num;
->  	atomic_t		refcnt;
->  	u8			rom[9];
-> -	u32			flags;
->  	int			ttl;
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+V2: Add cache.h which was nearly always used
+    indirectly via #include <some_other_file.h>,
+    generally module.h
+    Update cache.h to avoid recursive #include
 
-... w1_slave.ttl?
+ include/linux/cache.h  |  4 ++--
+ include/linux/printk.h | 19 ++++++++++---------
+ 2 files changed, 12 insertions(+), 11 deletions(-)
 
-> +	unsigned long		flags;
->  
->  	struct w1_master	*master;
->  	struct w1_family	*family;
->
-> ...
->
+diff --git a/include/linux/cache.h b/include/linux/cache.h
+index 4c57065..63a1d97 100644
+--- a/include/linux/cache.h
++++ b/include/linux/cache.h
+@@ -1,11 +1,11 @@
+ #ifndef __LINUX_CACHE_H
+ #define __LINUX_CACHE_H
+ 
+-#include <linux/kernel.h>
++#include <uapi/linux/kernel.h>
+ #include <asm/cache.h>
+ 
+ #ifndef L1_CACHE_ALIGN
+-#define L1_CACHE_ALIGN(x) ALIGN(x, L1_CACHE_BYTES)
++#define L1_CACHE_ALIGN(x) __KERNEL_ALIGN(x, L1_CACHE_BYTES)
+ #endif
+ 
+ #ifndef SMP_CACHE_BYTES
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index e6131a78..2449da9 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -5,6 +5,7 @@
+ #include <linux/init.h>
+ #include <linux/kern_levels.h>
+ #include <linux/linkage.h>
++#include <linux/cache.h>
+ 
+ extern const char linux_banner[];
+ extern const char linux_proc_banner[];
+@@ -251,17 +252,17 @@ extern asmlinkage void dump_stack(void) __cold;
+  */
+ 
+ #ifdef CONFIG_PRINTK
+-#define printk_once(fmt, ...)			\
+-({						\
+-	static bool __print_once;		\
+-						\
+-	if (!__print_once) {			\
+-		__print_once = true;		\
+-		printk(fmt, ##__VA_ARGS__);	\
+-	}					\
++#define printk_once(fmt, ...)					\
++({								\
++	static bool __print_once __read_mostly;			\
++								\
++	if (!__print_once) {					\
++		__print_once = true;				\
++		printk(fmt, ##__VA_ARGS__);			\
++	}							\
+ })
+ #else
+-#define printk_once(fmt, ...)			\
++#define printk_once(fmt, ...)					\
+ 	no_printk(fmt, ##__VA_ARGS__)
+ #endif
+ 
+
+
