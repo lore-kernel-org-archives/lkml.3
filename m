@@ -1,132 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab3J3OXL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 10:23:11 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:40415 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754360Ab3J3OXJ (ORCPT
+	id S1754642Ab3J3OXa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 10:23:30 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:49444 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754360Ab3J3OX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 10:23:09 -0400
-From: "Du, Changbin" <changbin.du@gmail.com>
-To: jbaron@akamai.com, joe@perches.com
-Cc: linux-kernel@vger.kernel.org, marcel@holtmann.org,
-        "Du, Changbin" <changbin.du@gmail.com>
-Subject: [PATCH v4 1/2] dynamic_debug: add wildcard support to filter files/functions/modules
-Date: Wed, 30 Oct 2013 22:21:40 +0800
-Message-Id: <1383142901-6186-1-git-send-email-changbin.du@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <CABgQ-TjqiALfieAz8+6nt6TVxy93dJRv1UzkGMRMVO1CgfwXNg@mail.gmail.com>
-References: <CABgQ-TjqiALfieAz8+6nt6TVxy93dJRv1UzkGMRMVO1CgfwXNg@mail.gmail.com>
+	Wed, 30 Oct 2013 10:23:29 -0400
+Message-ID: <5271165A.4050509@monstr.eu>
+Date: Wed, 30 Oct 2013 15:23:22 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Michal Simek <michal.simek@xilinx.com>, Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>,
+        Vitaly Andrianov <vitalya@ti.com>, Cyril Chemparathy <cyril@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: mm: Fix ECC mem policy printk
+References: <8986e8f1a3761e45a7927bdb0e54393c9155e6bf.1383137171.git.michal.simek@xilinx.com> <20131030130728.GA16735@n2100.arm.linux.org.uk>
+In-Reply-To: <20131030130728.GA16735@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="h31faIHsV7BVcWGSG8oSGa1kpdXJF4TPC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Du, Changbin" <changbin.du@gmail.com>
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--h31faIHsV7BVcWGSG8oSGa1kpdXJF4TPC
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-This patch add wildcard '*'(matches zero or more characters) and '?'
-(matches one character) support when qurying debug flags.
+On 10/30/2013 02:07 PM, Russell King - ARM Linux wrote:
+> On Wed, Oct 30, 2013 at 01:46:18PM +0100, Michal Simek wrote:
+>> Russell, Will: We discussed this at KS that will be good
+>> to rephrase it or have different logic around this.
+>> I am not sure if we can also test that this bit is
+>> implemented by particular SoC or not.
+>>
+>> Maybe logic should be that if SoC uses this bit
+>> that message is shown in origin format to declare
+>> that ECC is enabled or disabled.
+>> When SoC doesn't implement it then do not show this message.
+>=20
+> This is not quite what I meant - by making the change you have, you als=
+o
+> omit to print the data cache policy.
+>=20
+>> @@ -556,8 +556,9 @@ static void __init build_mem_type_table(void)
+>>  		mem_types[MT_CACHECLEAN].prot_sect |=3D PMD_SECT_WB;
+>>  		break;
+>>  	}
+>> -	printk("Memory policy: ECC %sabled, Data cache %s\n",
+>> -		ecc_mask ? "en" : "dis", cp->policy);
+>> +	if (ecc_mask)
+>> +		pr_info("Memory policy: ECC enabled, Data cache %s\n",
+>> +			cp->policy);
+>=20
+> 	pr_info("Memory policy: %sData cache %s\n",
+> 		ecc_mask ? "ECC enabled, " : "", cp->policy);
+>=20
+> is more what I was suggesting.
 
-Now we can open debug messages using keywords. eg:
-1. open debug logs in all usb drivers
-    echo "file drivers/usb/* +p" > <debugfs>/dynamic_debug/control
-2.  open debug logs for usb xhci code
-    echo "file *xhci* +p" > <debugfs>/dynamic_debug/control
+If this is what you would like to see it there, I am fine with that too.
 
-Signed-off-by: Du, Changbin <changbin.du@gmail.com>
----
- lib/dynamic_debug.c | 54 ++++++++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 49 insertions(+), 5 deletions(-)
+Thanks,
+Michal
 
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index c37aeac..b953780 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -8,6 +8,7 @@
-  * By Greg Banks <gnb@melbourne.sgi.com>
-  * Copyright (c) 2008 Silicon Graphics Inc.  All Rights Reserved.
-  * Copyright (C) 2011 Bart Van Assche.  All Rights Reserved.
-+ * Copyright (C) 2013 Du, Changbin <changbin.du@gmail.com>
-  */
- 
- #define pr_fmt(fmt) KBUILD_MODNAME ":%s: " fmt, __func__
-@@ -127,6 +128,46 @@ static void vpr_info_dq(const struct ddebug_query *query, const char *msg)
- 		 query->first_lineno, query->last_lineno);
- }
- 
-+/* check if the string matches given pattern which includes wildcards */
-+static bool match_pattern(const char *pattern, const char *string)
-+{
-+	const char *s = string;
-+	const char *p = pattern;
-+	bool star = false;
-+
-+	while (*s) {
-+		switch (*p) {
-+		case '?':
-+			s++;
-+			p++;
-+			break;
-+		case '*':
-+			star = true;
-+			string = s;
-+			if (!*++p)
-+				return true;
-+			pattern = p;
-+			break;
-+		default:
-+			if (*s == *p) {
-+				s++;
-+				p++;
-+			} else {
-+				if (!star)
-+					return false;
-+				string++;
-+				s = string;
-+				p = pattern;
-+			}
-+			break;
-+		}
-+	}
-+
-+	if (*p == '*')
-+		++p;
-+	return !*p;
-+}
-+
- /*
-  * Search the tables for _ddebug's which match the given `query' and
-  * apply the `flags' and `mask' to them.  Returns number of matching
-@@ -147,7 +188,8 @@ static int ddebug_change(const struct ddebug_query *query,
- 	list_for_each_entry(dt, &ddebug_tables, link) {
- 
- 		/* match against the module name */
--		if (query->module && strcmp(query->module, dt->mod_name))
-+		if (query->module &&
-+		    !match_pattern(query->module, dt->mod_name))
- 			continue;
- 
- 		for (i = 0; i < dt->num_ddebugs; i++) {
-@@ -155,14 +197,16 @@ static int ddebug_change(const struct ddebug_query *query,
- 
- 			/* match against the source filename */
- 			if (query->filename &&
--			    strcmp(query->filename, dp->filename) &&
--			    strcmp(query->filename, kbasename(dp->filename)) &&
--			    strcmp(query->filename, trim_prefix(dp->filename)))
-+			    !match_pattern(query->filename, dp->filename) &&
-+			    !match_pattern(query->filename,
-+					   kbasename(dp->filename)) &&
-+			    !match_pattern(query->filename,
-+					   trim_prefix(dp->filename)))
- 				continue;
- 
- 			/* match against the function */
- 			if (query->function &&
--			    strcmp(query->function, dp->function))
-+			    !match_pattern(query->function, dp->function))
- 				continue;
- 
- 			/* match against the format */
--- 
-1.8.1.2
 
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--h31faIHsV7BVcWGSG8oSGa1kpdXJF4TPC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlJxFloACgkQykllyylKDCH88gCgjBpLZNwcxBMVvWor6CfneQk7
+51IAmwTeE/v/DMQCSperzMqvhKOQ0vZO
+=gx3S
+-----END PGP SIGNATURE-----
+
+--h31faIHsV7BVcWGSG8oSGa1kpdXJF4TPC--
