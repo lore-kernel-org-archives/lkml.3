@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab3J3TtI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 15:49:08 -0400
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:48564 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754187Ab3J3TtG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 15:49:06 -0400
+	id S1754867Ab3J3Tu1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 15:50:27 -0400
+Received: from fifo99.com ([67.223.236.141]:39176 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754696Ab3J3TuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 15:50:25 -0400
+Date: Wed, 30 Oct 2013 12:50:16 -0700
+From: Daniel Walker <dwalker@fifo99.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: misc: stcam: Renesas stcam device
+Message-ID: <20131030195015.GB8502@fifo99.com>
+References: <1383160668-8403-1-git-send-email-dwalker@fifo99.com>
+ <20131030194206.GB8047@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20131030141616.GB16735@n2100.arm.linux.org.uk>
-References: <20131030141616.GB16735@n2100.arm.linux.org.uk>
-Date: Wed, 30 Oct 2013 12:49:05 -0700
-X-Google-Sender-Auth: c7xz9Eo9CphQNatafasSW5vHLFA
-Message-ID: <CA+55aFzmpzjt-o=R95i_EvvyKvYhwG00o6i324johxJ1bjSMiQ@mail.gmail.com>
-Subject: Re: [PATCH] mm: list_lru: fix almost infinite loop causing effective livelock
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Chinner <dchinner@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131030194206.GB8047@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 7:16 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
->
-> So, if *nr_to_walk was zero when this function was entered, that means
-> we're wanting to operate on (~0UL)+1 objects - which might as well be
-> infinite.
->
-> Clearly this is not correct behaviour.  If we think about the behaviour
-> of this function when *nr_to_walk is 1, then clearly it's wrong - we
-> decrement first and then test for zero - which results in us doing
-> nothing at all.  A post-decrement would give the desired behaviour -
-> we'd try to walk one object and one object only if *nr_to_walk were
-> one.
->
-> It also gives the correct behaviour for zero - we exit at this point.
+On Wed, Oct 30, 2013 at 12:42:06PM -0700, Greg Kroah-Hartman wrote:
+> On Wed, Oct 30, 2013 at 12:17:48PM -0700, Daniel Walker wrote:
+> > This is a driver for the ternary content addressable memory unit from Renesas. It
+> > allows filtering on bits, and wildcards thru the chip.
+> > 
+> > Signed-off-by: Daniel Walker <dwalker@fifo99.com>
+> 
+> What about the Cisco copyright?  Has that author signed off on this?
 
-Good analysis.
+He's not aware of the release .. I can ask him to sign off, but I think
+it's academic (he doesn't care).. I don't think he knows what a sign off
+means.
 
-HOWEVER.
+> And why a separate driver, can't you do this all from userspace as a
+> normal i2c driver?
 
-I actually think even your version is very dangerous, because we pass
-in the *address* to that count, and the only real reason to do that is
-because we might call it in a loop, and we want the function to update
-that count.
+I don't know , can I ? This is what Cisco is currently using ..
 
-And even your version still underflows from 0 to really-large-count.
-It *returns* when underflow happens, but you end up with the counter
-updated to a large value, and then anybody who uses it later would be
-screwed.
+> 
+> You are creating sysfs files without the corrisponding
+> Documentation/ABI/ files, why?
 
-See, for example, the inline list_lru_walk() function in <linux/list_lru.h>
+Because I didn't realize I needed to.. This release is one in about 25
+or so similar drivers that I am planning to release.. I wasn't really
+sure of what I needed to do w.r.t the sysfs interface details. Most of
+the drivers have them in some form.
 
-So I think we should either change that "unsigned long" to just
-"long", and then check for "<= 0" (like list_lru_walk() already does),
-or we should do
+> and most important, what is a "ternary content addressable memory unit"
+> and what would you do with such a thing?
 
-    if (!*nr_to_walk)
-        break;
-    --*nr_to_walk;
+I asked the same question when I looked at the driver. It's in
+wikipedia,
 
-to make sure that we never do that underflow.
+http://en.wikipedia.org/wiki/Content_addressable_memory#Ternary_CAMs
 
-I will modify your patch to do the latter, since it's the smaller
-change, but I suspect we should think about making that thing signed.
+It used for filtering things by 0,1 or wildcard.. In Cisco case "things"
+is packets.
 
-Hmm?
-
-                   Linus
+Daniel
