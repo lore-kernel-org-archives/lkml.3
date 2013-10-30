@@ -1,131 +1,722 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974Ab3J3RX5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 13:23:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56224 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750865Ab3J3RX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 13:23:56 -0400
-Date: Wed, 30 Oct 2013 12:24:23 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-CC: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/PATCH v2 0/3] add gadget quirk to adapt f_fs for DWC3
-Message-ID: <20131030172423.GM12193@gimli>
-Reply-To: <balbi@ti.com>
-References: <1383083578-16447-1-git-send-email-david.a.cohen@linux.intel.com>
- <A2CA0424C0A6F04399FB9E1CD98E030458E2061F@US01WEMBX2.internal.synopsys.com>
- <52713584.60804@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aiCxlS1GuupXjEh3"
-Content-Disposition: inline
-In-Reply-To: <52713584.60804@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752135Ab3J3RZs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 13:25:48 -0400
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:56058 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719Ab3J3RZq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 13:25:46 -0400
+X-AuditID: cbfec372-b7fe76d000003347-c1-5271411a80b4
+Date: Wed, 30 Oct 2013 15:25:40 -0200
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Aristeu Rozanski <arozansk@redhat.com>
+Cc: linux-edac@vger.kernel.org, tony.luck@intel.com,
+        Doug Thompson <dougthompson@xmission.com> (supporter:EDAC-CORE),
+        linux-kernel@vger.kernel.org (open list)
+Subject: Re: [PATCH 12/12] sb_edac: add support for Ivy Bridge
+Message-id: <20131030152540.658b45a3@samsung.com>
+In-reply-to: <1383150426-24730-13-git-send-email-arozansk@redhat.com>
+References: <1383150426-24730-1-git-send-email-arozansk@redhat.com>
+ <1383150426-24730-13-git-send-email-arozansk@redhat.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrILMWRmVeSWpSXmKPExsVy+t/hYF0px8Igg+7VTBZtJ36zWVxddpbJ
+	4sKpBiaLy7vmsFm8uXCPxYHVY/Gel0we7/ddZfP4vEnOY8qhdpYAligum5TUnMyy1CJ9uwSu
+	jK5T65gLPq9jrDi34AZTA+PKDsYuRk4OCQETif8XWtghbDGJC/fWs3UxcnEICSxhlOjZ08II
+	4XQzSTT0tbKAVLEIqEq0H3vKDGKzCRhJvGpsYQWxRQS0JG6dWMsM0sAssIhR4k/rEzaQhLCA
+	ncT53c1gRbwChhLnenaCDeIUcJXoPfILrEZIoE6iZ9U+oGYOoDOcJHYfkIIoF5T4MfkeWDkz
+	0PzN25pYIWx5ic1r3jJPYBSYhaRsFpKyWUjKFjAyr2IULS1OLihOSs811CtOzC0uzUvXS87P
+	3cQICeaiHYzPNlgdYhTgYFTi4WXQLQwSYk0sK67MPcQowcGsJMKrZwwU4k1JrKxKLcqPLyrN
+	SS0+xMjEwSnVwOjW67Xy0my1hJJXm1+c118Sy663RHtyzLQfBq4/D7k0fHoY27xpwRb7c07X
+	P4lX1M3OOfRg//2CxJY1zP83NvAkam+f08LyzNdD/6rwppU/LabLCQQyaVy8bRarlvLNQbzg
+	6pYln1uPeh/r7GkP/rIme2/vXMcJ32w63kUwqpS9uikVw5F8yF6JpTgj0VCLuag4EQAsijq+
+	RAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---aiCxlS1GuupXjEh3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Em Wed, 30 Oct 2013 12:27:06 -0400
+Aristeu Rozanski <arozansk@redhat.com> escreveu:
 
-Hi,
+> Since Ivy Bridge memory controller is very similar to Sandy Bridge, it's
+> wiser to modify sb_edac to support both instead of creating another
+> driver.
 
-On Wed, Oct 30, 2013 at 09:36:20AM -0700, David Cohen wrote:
-> On 10/29/2013 03:47 PM, Paul Zimmerman wrote:
-> >>From: David Cohen
-> >>Sent: Tuesday, October 29, 2013 2:53 PM
-> >>
-> >>These patches are a proposal to add gadget quirks in an immediate objec=
-tive to
-> >>adapt f_fs when using DWC3 controller. But the quirk solution is generi=
-c and
-> >>can be used by other controllers to adapt gadget functions to their
-> >>non-standard restrictions.
-> >>
-> >>This change is necessary to make Android's adbd service to work on Intel
-> >>Merrifield with f_fs instead of out-of-tree android gadget.
-> >>
-> >>---
-> >>David Cohen (3):
-> >>   usb: gadget: add quirks field to struct usb_gadget
-> >>   usb: ffs: check quirk to pad epout buf size when not aligned to
-> >>     maxpacketsize
-> >>   usb: dwc3: add quirk USB_GADGET_QUIRK_EP_OUT_ALIGNED_SIZE to gadget
-> >>     driver
-> >>
-> >>  drivers/usb/dwc3/gadget.c  |  1 +
-> >>  drivers/usb/gadget/f_fs.c  | 17 +++++++++++++++++
-> >>  include/linux/usb/gadget.h |  5 +++++
-> >>  3 files changed, 23 insertions(+)
-> >
-> >Wouldn't it be simpler and safer to just do this unconditionally? Sure,
-> >you need it for DWC3 because the controller refuses to do an OUT transfer
-> >at all if the transfer size is less than maxpacketsize. But it's possible
-> >that other controllers allow the transfer, and it works in most cases,
-> >but if an error occurs and the host sends too much data, they could
-> >overrun the buffer and crash your device.
-> >
-> >For example, the DWC2 databook says "For OUT transfers, the Transfer
-> >Size field in the endpoint's Transfer Size register must be a multiple
-> >of the maximum packet size of the endpoint". But I don't think the
-> >controller enforces that, it is up to the programmer to do the right
-> >thing. So that controller probably needs this quirk also. There could be
-> >more like that which we don't know about.
->=20
-> Unfortunately DWC2 is a bad example... the driver couldn't even get out
-> of staging. If the author was reckless to ignore this restriction (s)he
-> should fix.
-> But I don't have enough data to tell it's better to waste everybody's
-> memory in this case in favor of DWC3. I'd still stick with the
-> exception.
+Nice patch! Yeah, it is a way better to reuse the existing driver than
+to create another one.
 
-on top of that we don't what quirks other controllers might have. There
-could very well be a controller which quirk goes the other around: you
-_must_ set bulk out length to the correct size (e.g. 31 bytes for mass
-storage's CBW) otherwise transfer won't complete.
+Provided that you fix the minor issue with the PCI IDs, for patches 1 and 12:
 
-I could see that happening on controllers with broken short packet
-handling.
+Reviewed-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-> >So unless the buffer allocation code is in a real fast path, I would
-> >suggest to just do the aligned buffer allocation always.
->=20
-> This code would affect embedded devices which value too much memory
-> consumption (and performance on handling it!). IMO we'd need to be more
-> careful prior to take such decision.
+> 
+> Signed-off-by: Aristeu Rozanski <arozansk@redhat.com>
+> ---
+>  drivers/edac/sb_edac.c |  447 ++++++++++++++++++++++++++++++++++++++++--------
+>  1 files changed, 377 insertions(+), 70 deletions(-)
+> 
+> diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+> index 3c2f52b..09bf76f 100644
+> --- a/drivers/edac/sb_edac.c
+> +++ b/drivers/edac/sb_edac.c
+> @@ -34,7 +34,7 @@ static int probed;
+>  /*
+>   * Alter this version for the module when modifications are made
+>   */
+> -#define SBRIDGE_REVISION    " Ver: 1.0.0 "
+> +#define SBRIDGE_REVISION    " Ver: 1.1.0 "
+>  #define EDAC_MOD_STR      "sbridge_edac"
+>  
+>  /*
+> @@ -71,6 +71,14 @@ static const u32 sbridge_dram_rule[] = {
+>  	0xa8, 0xb0, 0xb8, 0xc0, 0xc8,
+>  };
+>  
+> +static const u32 ibridge_dram_rule[] =
+> +{
+> +	0x60, 0x68, 0x70, 0x78, 0x80,
+> +	0x88, 0x90, 0x98, 0xa0,	0xa8,
+> +	0xb0, 0xb8, 0xc0, 0xc8, 0xd0,
+> +	0xd8, 0xe0, 0xe8, 0xf0, 0xf8,
+> +};
+> +
+>  #define SAD_LIMIT(reg)		((GET_BITFIELD(reg, 6, 25) << 26) | 0x3ffffff)
+>  #define DRAM_ATTR(reg)		GET_BITFIELD(reg, 2,  3)
+>  #define INTERLEAVE_MODE(reg)	GET_BITFIELD(reg, 1,  1)
+> @@ -95,6 +103,13 @@ static const u32 sbridge_interleave_list[] = {
+>  	0xac, 0xb4, 0xbc, 0xc4, 0xcc,
+>  };
+>  
+> +static const u32 ibridge_interleave_list[] = {
+> +	0x64, 0x6c, 0x74, 0x7c, 0x84,
+> +	0x8c, 0x94, 0x9c, 0xa4, 0xac,
+> +	0xb4, 0xbc, 0xc4, 0xcc, 0xd4,
+> +	0xdc, 0xe4, 0xec, 0xf4, 0xfc,
+> +};
+> +
+>  struct interleave_pkg {
+>  	unsigned char start;
+>  	unsigned char end;
+> @@ -111,6 +126,17 @@ static const struct interleave_pkg sbridge_interleave_pkg[] = {
+>  	{ 27, 29 },
+>  };
+>  
+> +static const struct interleave_pkg ibridge_interleave_pkg[] = {
+> +	{ 0, 3 },
+> +	{ 4, 7 },
+> +	{ 8, 11 },
+> +	{ 12, 15 },
+> +	{ 16, 19 },
+> +	{ 20, 23 },
+> +	{ 24, 27 },
+> +	{ 28, 31 },
+> +};
+> +
+>  static inline int sad_pkg(const struct interleave_pkg *table, u32 reg,
+>  			  int interleave)
+>  {
+> @@ -235,6 +261,8 @@ static const u32 correrrthrsld[] = {
+>  
+>  #define SB_RANK_CFG_A		0x0328
+>  
+> +#define IB_RANK_CFG_A		0x0320
+> +
+>  #define IS_RDIMM_ENABLED(reg)		GET_BITFIELD(reg, 11, 11)
+>  
+>  /*
+> @@ -244,8 +272,14 @@ static const u32 correrrthrsld[] = {
+>  #define NUM_CHANNELS	4
+>  #define MAX_DIMMS	3		/* Max DIMMS per channel */
+>  
+> +enum type {
+> +	SANDY_BRIDGE,
+> +	IVY_BRIDGE,
+> +};
+> +
+>  struct sbridge_pvt;
+>  struct sbridge_info {
+> +	enum type	type;
+>  	u32		mcmtr;
+>  	u32		rankcfgr;	
+>  	u64		(*get_tolm)(struct sbridge_pvt *pvt);
+> @@ -285,8 +319,9 @@ struct sbridge_dev {
+>  
+>  struct sbridge_pvt {
+>  	struct pci_dev		*pci_ta, *pci_ddrio, *pci_ras;
+> -	struct pci_dev		*pci_sad0, *pci_sad1, *pci_ha0;
+> -	struct pci_dev		*pci_br0;
+> +	struct pci_dev		*pci_sad0, *pci_sad1;
+> +	struct pci_dev		*pci_ha0, *pci_ha1;
+> +	struct pci_dev		*pci_br0, *pci_br1;
+>  	struct pci_dev		*pci_tad[NUM_CHANNELS];
+>  
+>  	struct sbridge_dev	*sbridge_dev;
+> @@ -344,11 +379,75 @@ static const struct pci_id_table pci_dev_descr_sbridge_table[] = {
+>  	{0,}			/* 0 terminated list. */
+>  };
+>  
+> +/* This changes depending if 1HA or 2HA:
+> + * 1HA:
+> + *	0x0eb8 (17.0) is DDRIO0
+> + * 2HA:
+> + * 	0x0ebc (17.4) is DDRIO0
+> + */
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_1HA_DDRIO0	0x0eb8
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_2HA_DDRIO0	0x0ebc
+> +
+> +/* pci ids */
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0		0x0ea0
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TA		0x0ea8
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_RAS		0x0e71
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TAD0	0x0eaa
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TAD1	0x0eab
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TAD2	0x0eac
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TAD3	0x0ead
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_SAD			0x0ec8
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_BR0			0x0ec9
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_BR1			0x0eca
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA1		0x0e60
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA1_TA		0x0e68
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA1_RAS		0x0e79
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA1_TAD0	0x0e6a
+> +#define PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA1_TAD1	0x0e6b
 
-agreed. Quirk flag is the way to go here.
+As mentioned on patch 1, please either keep all PCI IDs here, or move
+them all to pci_ids.h.
 
---=20
-balbi
+> +
+> +static const struct pci_id_descr pci_dev_descr_ibridge[] = {
+> +		/* Processor Home Agent */
+> +	{ PCI_DESCR(14, 0, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0, 0)	},
+> +
+> +		/* Memory controller */
+> +	{ PCI_DESCR(15, 0, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TA, 0)	},
+> +	{ PCI_DESCR(15, 1, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_RAS, 0)	},
+> +	{ PCI_DESCR(15, 2, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TAD0, 0)	},
+> +	{ PCI_DESCR(15, 3, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TAD1, 0)	},
+> +	{ PCI_DESCR(15, 4, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TAD2, 0)	},
+> +	{ PCI_DESCR(15, 5, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TAD3, 0)	},
+> +
+> +		/* System Address Decoder */
+> +	{ PCI_DESCR(22, 0, PCI_DEVICE_ID_INTEL_IBRIDGE_SAD, 0)		},
+> +
+> +		/* Broadcast Registers */
+> +	{ PCI_DESCR(22, 1, PCI_DEVICE_ID_INTEL_IBRIDGE_BR0, 1)		},
+> +	{ PCI_DESCR(22, 2, PCI_DEVICE_ID_INTEL_IBRIDGE_BR1, 0)		},
+> +
+> +		/* Optional, mode 2HA */
+> +	{ PCI_DESCR(28, 0, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA1, 1)	},
+> +#if 0
+> +	{ PCI_DESCR(29, 0, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA1_TA, 1)	},
+> +	{ PCI_DESCR(29, 1, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA1_RAS, 1)	},
+> +#endif
+> +	{ PCI_DESCR(29, 2, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA1_TAD0, 1)	},
+> +	{ PCI_DESCR(29, 3, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA1_TAD1, 1)	},
+> +
+> +	{ PCI_DESCR(17, 0, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_1HA_DDRIO0, 1) },
+> +	{ PCI_DESCR(17, 4, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_2HA_DDRIO0, 1) },
+> +};
+> +
+> +static const struct pci_id_table pci_dev_descr_ibridge_table[] = {
+> +	PCI_ID_TABLE_ENTRY(pci_dev_descr_ibridge),
+> +	{0,}			/* 0 terminated list. */
+> +};
+> +
+>  /*
+>   *	pci_device_id	table for which devices we are looking for
+>   */
+>  static DEFINE_PCI_DEVICE_TABLE(sbridge_pci_tbl) = {
+>  	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SBRIDGE_IMC_TA)},
+> +	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TA)},
+>  	{0,}			/* 0 terminated list. */
+>  };
+>  
+> @@ -455,6 +554,35 @@ static u64 sbridge_get_tohm(struct sbridge_pvt *pvt)
+>  	return GET_TOHM(reg);
+>  }
+>  
+> +static u64 ibridge_get_tolm(struct sbridge_pvt *pvt)
+> +{
+> +	u32 reg;
+> +
+> +	pci_read_config_dword(pvt->pci_br1, TOLM, &reg);
+> +
+> +	return GET_TOLM(reg);
+> +}
+> +
+> +static u64 ibridge_get_tohm(struct sbridge_pvt *pvt)
+> +{
+> +	u32 reg;
+> +
+> +	pci_read_config_dword(pvt->pci_br1, TOHM, &reg);
+> +
+> +	return GET_TOHM(reg);
+> +}
+> +
+> +static inline u8 sad_pkg_socket(u8 pkg)
+> +{
+> +	/* on Ivy Bridge, nodeID is SASS, where A is HA and S is node id */
+> +	return (pkg >> 3) | (pkg & 0x3);
+> +}
+> +
+> +static inline u8 sad_pkg_ha(u8 pkg)
+> +{
+> +	return (pkg >> 2) & 0x1;
+> +}
+> +
+>  /****************************************************************************
+>  			Memory check routines
+>   ****************************************************************************/
+> @@ -517,8 +645,6 @@ static int get_dimm_config(struct mem_ctl_info *mci)
+>  	enum edac_type mode;
+>  	enum mem_type mtype;
+>  
+> -	pvt->info.rankcfgr = SB_RANK_CFG_A;
+> -
+>  	pci_read_config_dword(pvt->pci_br0, SAD_TARGET, &reg);
+>  	pvt->sbridge_dev->source_id = SOURCE_ID(reg);
+>  
+> @@ -793,12 +919,13 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
+>  {
+>  	struct mem_ctl_info	*new_mci;
+>  	struct sbridge_pvt *pvt = mci->pvt_info;
+> +	struct pci_dev		*pci_ha;
+>  	int 			n_rir, n_sads, n_tads, sad_way, sck_xch;
+>  	int			sad_interl, idx, base_ch;
+>  	int			interleave_mode;
+>  	unsigned		sad_interleave[pvt->info.max_interleave];
+>  	u32			reg;
+> -	u8			ch_way,sck_way;
+> +	u8			ch_way,sck_way,pkg,sad_ha = 0;
+>  	u32			tad_offset;
+>  	u32			rir_way;
+>  	u32			mb, kb;
+> @@ -849,45 +976,56 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
+>  
+>  	pci_read_config_dword(pvt->pci_sad0, pvt->info.interleave_list[n_sads],
+>  			      &reg);
+> -	sad_interl = sad_pkg(pvt->info.interleave_pkg, reg, 0);
+> -	for (sad_way = 0; sad_way < 8; sad_way++) {
+> -		u32 pkg = sad_pkg(pvt->info.interleave_pkg, reg, sad_way);
+> -		if (sad_way > 0 && sad_interl == pkg)
+> +
+> +	if (pvt->info.type == SANDY_BRIDGE) {
+> +		sad_interl = sad_pkg(pvt->info.interleave_pkg, reg, 0);
+> +		for (sad_way = 0; sad_way < 8; sad_way++) {
+> +			u32 pkg = sad_pkg(pvt->info.interleave_pkg, reg, sad_way);
+> +			if (sad_way > 0 && sad_interl == pkg)
+> +				break;
+> +			sad_interleave[sad_way] = pkg;
+> +			edac_dbg(0, "SAD interleave #%d: %d\n",
+> +				 sad_way, sad_interleave[sad_way]);
+> +		}
+> +		edac_dbg(0, "mc#%d: Error detected on SAD#%d: address 0x%016Lx < 0x%016Lx, Interleave [%d:6]%s\n",
+> +			 pvt->sbridge_dev->mc,
+> +			 n_sads,
+> +			 addr,
+> +			 limit,
+> +			 sad_way + 7,
+> +			 !interleave_mode ? "" : "XOR[18:16]");
+> +		if (interleave_mode)
+> +			idx = ((addr >> 6) ^ (addr >> 16)) & 7;
+> +		else
+> +			idx = (addr >> 6) & 7;
+> +		switch (sad_way) {
+> +		case 1:
+> +			idx = 0;
+>  			break;
+> -		sad_interleave[sad_way] = pkg;
+> -		edac_dbg(0, "SAD interleave #%d: %d\n",
+> -			 sad_way, sad_interleave[sad_way]);
+> -	}
+> -	edac_dbg(0, "mc#%d: Error detected on SAD#%d: address 0x%016Lx < 0x%016Lx, Interleave [%d:6]%s\n",
+> -		 pvt->sbridge_dev->mc,
+> -		 n_sads,
+> -		 addr,
+> -		 limit,
+> -		 sad_way + 7,
+> -		 interleave_mode ? "" : "XOR[18:16]");
+> -	if (interleave_mode)
+> -		idx = ((addr >> 6) ^ (addr >> 16)) & 7;
+> -	else
+> +		case 2:
+> +			idx = idx & 1;
+> +			break;
+> +		case 4:
+> +			idx = idx & 3;
+> +			break;
+> +		case 8:
+> +			break;
+> +		default:
+> +			sprintf(msg, "Can't discover socket interleave");
+> +			return -EINVAL;
+> +		}
+> +		*socket = sad_interleave[idx];
+> +		edac_dbg(0, "SAD interleave index: %d (wayness %d) = CPU socket %d\n",
+> +			 idx, sad_way, *socket);
+> +	} else {
+> +		/* Ivy Bridge's SAD mode doesn't support XOR interleave mode */
+>  		idx = (addr >> 6) & 7;
+> -	switch (sad_way) {
+> -	case 1:
+> -		idx = 0;
+> -		break;
+> -	case 2:
+> -		idx = idx & 1;
+> -		break;
+> -	case 4:
+> -		idx = idx & 3;
+> -		break;
+> -	case 8:
+> -		break;
+> -	default:
+> -		sprintf(msg, "Can't discover socket interleave");
+> -		return -EINVAL;
+> +		pkg = sad_pkg(pvt->info.interleave_pkg, reg, idx);
+> +		*socket = sad_pkg_socket(pkg);
+> +		sad_ha = sad_pkg_ha(pkg);
+> +		edac_dbg(0, "SAD interleave package: %d = CPU socket %d, HA %d\n",
+> +			 idx, *socket, sad_ha);
+>  	}
+> -	*socket = sad_interleave[idx];
+> -	edac_dbg(0, "SAD interleave index: %d (wayness %d) = CPU socket %d\n",
+> -		 idx, sad_way, *socket);
+>  
+>  	/*
+>  	 * Move to the proper node structure, in order to access the
+> @@ -906,9 +1044,16 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
+>  	 * Step 2) Get memory channel
+>  	 */
+>  	prv = 0;
+> +	if (pvt->info.type == SANDY_BRIDGE)
+> +		pci_ha = pvt->pci_ha0;
+> +	else {
+> +		if (sad_ha)
+> +			pci_ha = pvt->pci_ha1;
+> +		else
+> +			pci_ha = pvt->pci_ha0;
+> +	}
+>  	for (n_tads = 0; n_tads < MAX_TAD; n_tads++) {
+> -		pci_read_config_dword(pvt->pci_ha0, tad_dram_rule[n_tads],
+> -				      &reg);
+> +		pci_read_config_dword(pci_ha, tad_dram_rule[n_tads], &reg);
+>  		limit = TAD_LIMIT(reg);
+>  		if (limit <= prv) {
+>  			sprintf(msg, "Can't discover the memory channel");
+> @@ -918,14 +1063,13 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
+>  			break;
+>  		prv = limit;
+>  	}
+> +	if (n_tads == MAX_TAD) {
+> +		sprintf(msg, "Can't discover the memory channel");
+> +		return -EINVAL;
+> +	}
+> +
+>  	ch_way = TAD_CH(reg) + 1;
+>  	sck_way = TAD_SOCK(reg) + 1;
+> -	/*
+> -	 * FIXME: Is it right to always use channel 0 for offsets?
+> -	 */
+> -	pci_read_config_dword(pvt->pci_tad[0],
+> -				tad_ch_nilv_offset[n_tads],
+> -				&tad_offset);
+>  
+>  	if (ch_way == 3)
+>  		idx = addr >> 6;
+> @@ -955,6 +1099,10 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
+>  	}
+>  	*channel_mask = 1 << base_ch;
+>  
+> +	pci_read_config_dword(pvt->pci_tad[base_ch],
+> +				tad_ch_nilv_offset[n_tads],
+> +				&tad_offset);
+> +
+>  	if (pvt->is_mirrored) {
+>  		*channel_mask |= 1 << ((base_ch + 2) % 4);
+>  		switch(ch_way) {
+> @@ -1330,6 +1478,131 @@ error:
+>  	return -EINVAL;
+>  }
+>  
+> +static int ibridge_mci_bind_devs(struct mem_ctl_info *mci,
+> +				 struct sbridge_dev *sbridge_dev)
+> +{
+> +	struct sbridge_pvt *pvt = mci->pvt_info;
+> +	struct pci_dev *pdev, *tmp;
+> +	int i, func, slot;
+> +	bool mode_2ha = false;
+> +
+> +	tmp = pci_get_device(PCI_VENDOR_ID_INTEL,
+> +			     PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA1, NULL);
+> +	if (tmp) {
+> +		mode_2ha = true;
+> +		pci_dev_put(tmp);
+> +	}
+> +
+> +	for (i = 0; i < sbridge_dev->n_devs; i++) {
+> +		pdev = sbridge_dev->pdev[i];
+> +		if (!pdev)
+> +			continue;
+> +		slot = PCI_SLOT(pdev->devfn);
+> +		func = PCI_FUNC(pdev->devfn);
+> +
+> +		switch (slot) {
+> +		case 14:
+> +			if (func == 0) {
+> +				pvt->pci_ha0 = pdev;
+> +				break;
+> +			}
+> +			goto error;
+> +		case 15:
+> +			switch (func) {
+> +			case 0:
+> +				pvt->pci_ta = pdev;
+> +				break;
+> +			case 1:
+> +				pvt->pci_ras = pdev;
+> +				break;
+> +			case 4:
+> +			case 5:
+> +				/* if we have 2 HAs active, channels 2 and 3
+> +				 * are in other device */
+> +				if (mode_2ha)
+> +					break;
+> +				/* fall through */
+> +			case 2:
+> +			case 3:
+> +				pvt->pci_tad[func - 2] = pdev;
+> +				break;
+> +			default:
+> +				goto error;
+> +			}
+> +			break;
+> +		case 17:
+> +			if (func == 4) {
+> +				pvt->pci_ddrio = pdev;
+> +				break;
+> +			} else if (func == 0) {
+> +				if (!mode_2ha)
+> +					pvt->pci_ddrio = pdev;
+> +				break;
+> +			}
+> +			goto error;
+> +		case 22:
+> +			switch (func) {
+> +			case 0:
+> +				pvt->pci_sad0 = pdev;
+> +				break;
+> +			case 1:
+> +				pvt->pci_br0 = pdev;
+> +				break;
+> +			case 2:
+> +				pvt->pci_br1 = pdev;
+> +				break;
+> +			default:
+> +				goto error;
+> +			}
+> +			break;
+> +		case 28:
+> +			if (func == 0) {
+> +				pvt->pci_ha1 = pdev;
+> +				break;
+> +			}
+> +			goto error;
+> +		case 29:
+> +			/* we shouldn't have this device if we have just one
+> +			 * HA present */
+> +			WARN_ON(!mode_2ha);
+> +			if (func == 2 || func == 3) {
+> +				pvt->pci_tad[func] = pdev;
+> +				break;
+> +			}
+> +			goto error;
+> +		default:
+> +			goto error;
+> +		}
+> +
+> +		edac_dbg(0, "Associated PCI %02x.%02d.%d with dev = %p\n",
+> +			 sbridge_dev->bus,
+> +			 PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn),
+> +			 pdev);
+> +	}
+> +
+> +	/* Check if everything were registered */
+> +	if (!pvt->pci_sad0 || !pvt->pci_ha0 || !pvt->pci_br0 ||
+> +	    !pvt->pci_br1 || !pvt->pci_tad || !pvt->pci_ras  ||
+> +	    !pvt->pci_ta)
+> +		goto enodev;
+> +
+> +	for (i = 0; i < NUM_CHANNELS; i++) {
+> +		if (!pvt->pci_tad[i])
+> +			goto enodev;
+> +	}
+> +	return 0;
+> +
+> +enodev:
+> +	sbridge_printk(KERN_ERR, "Some needed devices are missing\n");
+> +	return -ENODEV;
+> +
+> +error:
+> +	sbridge_printk(KERN_ERR, "Device %d, function %d "
+> +		      "is out of the expected range\n",
+> +		      slot, func);
+> +	return -EINVAL;
+> +}
+> +
+>  /****************************************************************************
+>  			Error check routines
+>   ****************************************************************************/
+> @@ -1350,7 +1623,7 @@ static void sbridge_mce_output_error(struct mem_ctl_info *mci,
+>  	bool ripv = GET_BITFIELD(m->mcgstatus, 0, 0);
+>  	bool overflow = GET_BITFIELD(m->status, 62, 62);
+>  	bool uncorrected_error = GET_BITFIELD(m->status, 61, 61);
+> -	bool recoverable = GET_BITFIELD(m->status, 56, 56);
+> +	bool recoverable;
+>  	u32 core_err_cnt = GET_BITFIELD(m->status, 38, 52);
+>  	u32 mscod = GET_BITFIELD(m->status, 16, 31);
+>  	u32 errcode = GET_BITFIELD(m->status, 0, 15);
+> @@ -1361,6 +1634,11 @@ static void sbridge_mce_output_error(struct mem_ctl_info *mci,
+>  	int rc, dimm;
+>  	char *area_type = NULL;
+>  
+> +	if (pvt->info.type == IVY_BRIDGE)
+> +		recoverable = true;
+> +	else
+> +		recoverable = GET_BITFIELD(m->status, 56, 56);
+> +
+>  	if (uncorrected_error) {
+>  		if (ripv) {
+>  			type = "FATAL";
+> @@ -1619,11 +1897,12 @@ static void sbridge_unregister_mci(struct sbridge_dev *sbridge_dev)
+>  	sbridge_dev->mci = NULL;
+>  }
+>  
+> -static int sbridge_register_mci(struct sbridge_dev *sbridge_dev)
+> +static int sbridge_register_mci(struct sbridge_dev *sbridge_dev, enum type type)
+>  {
+>  	struct mem_ctl_info *mci;
+>  	struct edac_mc_layer layers[2];
+>  	struct sbridge_pvt *pvt;
+> +	struct pci_dev *pdev = sbridge_dev->pdev[0];
+>  	int rc;
+>  
+>  	/* Check the number of active and not disabled channels */
+> @@ -1645,7 +1924,7 @@ static int sbridge_register_mci(struct sbridge_dev *sbridge_dev)
+>  		return -ENOMEM;
+>  
+>  	edac_dbg(0, "MC: mci = %p, dev = %p\n",
+> -		 mci, &sbridge_dev->pdev[0]->dev);
+> +		 mci, &pdev->dev);
+>  
+>  	pvt = mci->pvt_info;
+>  	memset(pvt, 0, sizeof(*pvt));
+> @@ -1659,31 +1938,52 @@ static int sbridge_register_mci(struct sbridge_dev *sbridge_dev)
+>  	mci->edac_cap = EDAC_FLAG_NONE;
+>  	mci->mod_name = "sbridge_edac.c";
+>  	mci->mod_ver = SBRIDGE_REVISION;
+> -	mci->ctl_name = kasprintf(GFP_KERNEL, "Sandy Bridge Socket#%d", mci->mc_idx);
+> -	mci->dev_name = pci_name(sbridge_dev->pdev[0]);
+> +	mci->dev_name = pci_name(pdev);
+>  	mci->ctl_page_to_phys = NULL;
+> -	pvt->info.get_tolm = sbridge_get_tolm;
+> -	pvt->info.get_tohm = sbridge_get_tohm;
+> -	pvt->info.dram_rule = sbridge_dram_rule;
+> -	pvt->info.max_sad = ARRAY_SIZE(sbridge_dram_rule);
+> -	pvt->info.interleave_list = sbridge_interleave_list;
+> -	pvt->info.max_interleave = ARRAY_SIZE(sbridge_interleave_list);
+> -	pvt->info.interleave_pkg = sbridge_interleave_pkg;
+>  
+>  	/* Set the function pointer to an actual operation function */
+>  	mci->edac_check = sbridge_check_error;
+>  
+> -	/* Store pci devices at mci for faster access */
+> -	rc = sbridge_mci_bind_devs(mci, sbridge_dev);
+> -	if (unlikely(rc < 0))
+> -		goto fail0;
+> +	pvt->info.type = type;
+> +	if (type == IVY_BRIDGE) {
+> +		pvt->info.rankcfgr = IB_RANK_CFG_A;
+> +		pvt->info.get_tolm = ibridge_get_tolm;
+> +		pvt->info.get_tohm = ibridge_get_tohm;
+> +		pvt->info.dram_rule = ibridge_dram_rule;
+> +		pvt->info.max_sad = ARRAY_SIZE(ibridge_dram_rule);
+> +		pvt->info.interleave_list = ibridge_interleave_list;
+> +		pvt->info.max_interleave = ARRAY_SIZE(ibridge_interleave_list);
+> +		pvt->info.interleave_pkg = ibridge_interleave_pkg;
+> +		mci->ctl_name = kasprintf(GFP_KERNEL, "Ivy Bridge Socket#%d", mci->mc_idx);
+> +
+> +		/* Store pci devices at mci for faster access */
+> +		rc = ibridge_mci_bind_devs(mci, sbridge_dev);
+> +		if (unlikely(rc < 0))
+> +			goto fail0;
+> +	} else {
+> +		pvt->info.rankcfgr = SB_RANK_CFG_A;
+> +		pvt->info.get_tolm = sbridge_get_tolm;
+> +		pvt->info.get_tohm = sbridge_get_tohm;
+> +		pvt->info.dram_rule = sbridge_dram_rule;
+> +		pvt->info.max_sad = ARRAY_SIZE(sbridge_dram_rule);
+> +		pvt->info.interleave_list = sbridge_interleave_list;
+> +		pvt->info.max_interleave = ARRAY_SIZE(sbridge_interleave_list);
+> +		pvt->info.interleave_pkg = sbridge_interleave_pkg;
+> +		mci->ctl_name = kasprintf(GFP_KERNEL, "Sandy Bridge Socket#%d", mci->mc_idx);
+> +
+> +		/* Store pci devices at mci for faster access */
+> +		rc = sbridge_mci_bind_devs(mci, sbridge_dev);
+> +		if (unlikely(rc < 0))
+> +			goto fail0;
+> +	}
+> +
+>  
+>  	/* Get dimm basic config and the memory layout */
+>  	get_dimm_config(mci);
+>  	get_memory_layout(mci);
+>  
+>  	/* record ptr to the generic device */
+> -	mci->pdev = &sbridge_dev->pdev[0]->dev;
+> +	mci->pdev = &pdev->dev;
+>  
+>  	/* add this new MC control structure to EDAC's list of MCs */
+>  	if (unlikely(edac_mc_add_mc(mci))) {
+> @@ -1714,6 +2014,7 @@ static int sbridge_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>  	int rc;
+>  	u8 mc, num_mc = 0;
+>  	struct sbridge_dev *sbridge_dev;
+> +	enum type type;
+>  
+>  	/* get the pci devices we want to reserve for our use */
+>  	mutex_lock(&sbridge_edac_lock);
+> @@ -1727,7 +2028,13 @@ static int sbridge_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>  	}
+>  	probed++;
+>  
+> -	rc = sbridge_get_all_devices(&num_mc, pci_dev_descr_sbridge_table);
+> +	if (pdev->device == PCI_DEVICE_ID_INTEL_IBRIDGE_IMC_HA0_TA) {
+> +		rc = sbridge_get_all_devices(&num_mc, pci_dev_descr_ibridge_table);
+> +		type = IVY_BRIDGE;
+> +	} else {
+> +		rc = sbridge_get_all_devices(&num_mc, pci_dev_descr_sbridge_table);
+> +		type = SANDY_BRIDGE;
+> +	}
+>  	if (unlikely(rc < 0))
+>  		goto fail0;
+>  	mc = 0;
+> @@ -1736,7 +2043,7 @@ static int sbridge_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>  		edac_dbg(0, "Registering MC#%d (%d of %d)\n",
+>  			 mc, mc + 1, num_mc);
+>  		sbridge_dev->mc = mc++;
+> -		rc = sbridge_register_mci(sbridge_dev);
+> +		rc = sbridge_register_mci(sbridge_dev, type);
+>  		if (unlikely(rc < 0))
+>  			goto fail1;
+>  	}
+> @@ -1851,5 +2158,5 @@ MODULE_PARM_DESC(edac_op_state, "EDAC Error Reporting state: 0=Poll,1=NMI");
+>  MODULE_LICENSE("GPL");
+>  MODULE_AUTHOR("Mauro Carvalho Chehab <mchehab@redhat.com>");
+>  MODULE_AUTHOR("Red Hat Inc. (http://www.redhat.com)");
+> -MODULE_DESCRIPTION("MC Driver for Intel Sandy Bridge memory controllers - "
+> +MODULE_DESCRIPTION("MC Driver for Intel Sandy Bridge and Ivy Bridge memory controllers - "
+>  		   SBRIDGE_REVISION);
 
---aiCxlS1GuupXjEh3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJScUDGAAoJEIaOsuA1yqREO6EP/1Nj0yY8bg2S1H9jCjVqNGza
-q9D1Wtq2F+WWvWBrY9XB9zEkal8Yq37c/p7wyZU0Qo/qcZ27wsEI8VlqJWWjLlwZ
-n9aF9YjJtP6COWNpXoAkJ6+N9IbStng8iSMpTanx3SQq51lqc79Hp3b2p8j/DZSD
-6FemQNNdduxGsvSALZBuOLE77MBstq7MgjFz84TlYp3I0tcXTQVpTburKXDGOIAR
-bw+HbA3bAoRrVgk8lHzkGkUz/PGRC7/nVeEeQDi3sF5IUGeK+A61rKzo5nejx2zR
-mLODklZCIwWCxxHyzLJKic0APgRjWidq7hP/TONGtI0C5D6NFmg1mYJUmbuthROr
-orREAoA7/BfIyrnMvskNcY3oIF1pLP3zi8p+wSPiPhowEQWqzmkVm8EJpO+kZR/b
-eLs8MEZq4fbpDHYmWFEWckkXhZZ2fgZgusY7nPZsnVgabdXVyMWIFJVN+VKhOMgt
-o1LflFC6Wd/EJvtHbYF1i0e9D4IoczvKhBsFntG3CazvUG8HskfPKe/XBk1rtCS1
-ULT0/mzIQafm9LaWh2fvl/6atgAHx9LMWDIgiEf087Vn7MpexaGHjfIAoHl4j1gf
-RJqF3XQVi/D2GaWxlSd+/Ia4b1MnhPGvLygKwSGqd8eMGyQ0XWii0spQSheJljx+
-mCBAaTb+kgtv4hPEdeaO
-=oCCC
------END PGP SIGNATURE-----
-
---aiCxlS1GuupXjEh3--
