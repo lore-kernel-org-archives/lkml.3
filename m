@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab3J3LfG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 07:35:06 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34563 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257Ab3J3LfE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 07:35:04 -0400
-Date: Wed, 30 Oct 2013 12:35:02 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, sre@ring0.de, joni.lapilainen@gmail.com,
-        David Gnedt <david.gnedt@davizone.at>
-Subject: Re: [PATCH 07/16] wl1251: configure hardware en-/decryption for
- monitor mode
-Message-ID: <20131030113502.GA8763@amd.pavel.ucw.cz>
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
- <1382819655-30430-8-git-send-email-pali.rohar@gmail.com>
+	id S1754114Ab3J3Lfl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 07:35:41 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41003 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753930Ab3J3Lfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 07:35:39 -0400
+Message-ID: <5270EF08.8000003@ti.com>
+Date: Wed, 30 Oct 2013 13:35:36 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1382819655-30430-8-git-send-email-pali.rohar@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Joe Perches <joe@perches.com>
+CC: linux-fbdev <linux-fbdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Trivial PATCH] video: Remove unnecessary semicolons
+References: <1381274604.23937.15.camel@joe-AO722>
+In-Reply-To: <1381274604.23937.15.camel@joe-AO722>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="G9SS5v1k8HMRA6LnkX2gfpfOeDS3vSsVn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2013-10-26 22:34:06, Pali Rohár wrote:
-> From: David Gnedt <david.gnedt@davizone.at>
-> 
-> Disable hardware encryption (DF_ENCRYPTION_DISABLE) and decryption
-> (DF_SNIFF_MODE_ENABLE) via wl1251_acx_feature_cfg while monitor interface is
-> present.
-> 
-> Signed-off-by: David Gnedt <david.gnedt@davizone.at>
+--G9SS5v1k8HMRA6LnkX2gfpfOeDS3vSsVn
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-You need to sign off the patch, otherwise looks ok.
+On 2013-10-09 02:23, Joe Perches wrote:
+> These aren't necessary after switch, for, and if blocks.
+>=20
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/video/cfbimgblt.c                       | 2 +-
+>  drivers/video/cg14.c                            | 4 ++--
+>  drivers/video/cg6.c                             | 2 +-
+>  drivers/video/exynos/exynos_mipi_dsi_common.c   | 2 +-
+>  drivers/video/fsl-diu-fb.c                      | 2 +-
+>  drivers/video/leo.c                             | 2 +-
+>  drivers/video/matrox/matroxfb_DAC1064.c         | 4 ++--
+>  drivers/video/matrox/matroxfb_Ti3026.c          | 2 +-
+>  drivers/video/nvidia/nv_hw.c                    | 2 +-
+>  drivers/video/omap2/displays-new/panel-dsi-cm.c | 2 +-
+>  drivers/video/omap2/dss/dispc.c                 | 2 +-
+>  drivers/video/omap2/dss/dsi.c                   | 2 +-
+>  drivers/video/sbuslib.c                         | 2 +-
+>  drivers/video/sysimgblt.c                       | 2 +-
+>  drivers/video/tcx.c                             | 4 ++--
+>  drivers/video/vt8500lcdfb.c                     | 2 +-
+>  16 files changed, 19 insertions(+), 19 deletions(-)
 
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
+Thanks, queued for 3.13.
 
-Thanks,
-									Pavel
+ Tomi
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+
+
+--G9SS5v1k8HMRA6LnkX2gfpfOeDS3vSsVn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJScO8IAAoJEPo9qoy8lh71H5cQAJwxG4nCkLqj5XTNJjsbZUsI
+NVTNg0QnwYvKOLiBtaCcG4qMOPxBtwQmOqMQ0FpUnctRyNO6sjoWWwMg81MkNSBs
+eUdLUAzhZHkn+UavXNaazXFsjcXiZ4hndp0gTi4QH34Ic0aDXbwr5Kt8ZUumYQ96
+Gas86K0I90SNjOjuT2+PjcvfGh92Ps0LZrgUHGWgtOC0LQZSGcQY/fGv7KKG1yVT
+JabitWHhFMOiRFuHXW8RRDj/PHGkG5cWXXLjcNt6s6EhkkG1MBW5jEn1dGc7Lkxx
+4L5F/KCj5pZnktauBxIIQWhDXqRyZnDSGrSl3QSNU8vmmgLij2J2RY4g+x5VVbrP
+OgygXg6u5rwA/85WJfoIH6sCwPfvH//OQaxxauFf0ItC+dU6X9ATmWoYL8bZlnxg
+NlysTEcPGENLLHFUBT+OTiNvEXALwnY4LxJ4ATNS4XpuskNKfJg6nlc1blPYsWcu
+HMwVEhDeu1RyyyuC2JB7GfS3s+5iveLBBb/n6v2fuZKGYSV6/SNZLZBWAIwZyLHr
+htI1gEeY2B3o7s4jGnAyu/ZmFi8SmBlwTC+ARcMO7Dpgx4vMZBaIBH1/4Rksgqbt
+FpIqNZAFrLhs8pQoWs97iIQ+6m19bv72oXbDWNtyrXK9EltLDZ/m/Klq6jOn4au3
++i0whh0v7/YzZtpitzPu
+=hTjm
+-----END PGP SIGNATURE-----
+
+--G9SS5v1k8HMRA6LnkX2gfpfOeDS3vSsVn--
