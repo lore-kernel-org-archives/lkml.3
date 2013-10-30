@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab3J3XMB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 19:12:01 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:39519 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485Ab3J3XMA (ORCPT
+	id S1754801Ab3J3XM5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 19:12:57 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:62719 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752079Ab3J3XMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 19:12:00 -0400
-Date: Thu, 31 Oct 2013 07:11:35 +0800
+	Wed, 30 Oct 2013 19:12:55 -0400
+Date: Thu, 31 Oct 2013 07:12:31 +0800
 From: Wang YanQing <udknight@gmail.com>
 To: airlied@linux.ie
 Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] drm:drm_usb: fix resource leak in drm_get_usb_dev
-Message-ID: <20131030231135.GB5719@udknight>
+Subject: [PATCH 5/5] drm:drm_stub: rewrite error handle code for
+ drm_fill_in_dev
+Message-ID: <20131030231228.GC5719@udknight>
 Mail-Followup-To: Wang YanQing <udknight@gmail.com>, airlied@linux.ie,
 	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
@@ -23,69 +24,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should call drm_cleanup_in_dev in error handle
-code path after drm_fill_in_dev had been called,
-or it will cause resource leak heavily, vmalloc
-leak etc.
-
-This patch also add call to dev->unload in error
-handle code path.
+Rewrite error handle code in a more rational and
+normal way, it bring us benefit that we could drop
+call to drm_lastclose which do "too much" cleanup work
+for drm_fill_in_dev.
 
 Signed-off-by: Wang YanQing <udknight@gmail.com>
 ---
- drivers/gpu/drm/drm_usb.c | 18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/drm_stub.c | 26 +++++++++++++++++++++-----
+ 1 file changed, 21 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_usb.c b/drivers/gpu/drm/drm_usb.c
-index 34a156f..7e4de60 100644
---- a/drivers/gpu/drm/drm_usb.c
-+++ b/drivers/gpu/drm/drm_usb.c
-@@ -31,23 +31,23 @@ int drm_get_usb_dev(struct usb_interface *interface,
- 	usb_set_intfdata(interface, dev);
- 	ret = drm_get_minor(dev, &dev->control, DRM_MINOR_CONTROL);
- 	if (ret)
--		goto err_g1;
-+		goto err_g2;
- 
- 	ret = drm_get_minor(dev, &dev->primary, DRM_MINOR_LEGACY);
- 	if (ret)
--		goto err_g2;
-+		goto err_g3;
- 
- 	if (dev->driver->load) {
- 		ret = dev->driver->load(dev, 0);
- 		if (ret)
--			goto err_g3;
-+			goto err_g4;
+diff --git a/drivers/gpu/drm/drm_stub.c b/drivers/gpu/drm/drm_stub.c
+index 3f3b167..6c5f65f 100644
+--- a/drivers/gpu/drm/drm_stub.c
++++ b/drivers/gpu/drm/drm_stub.c
+@@ -316,7 +316,7 @@ int drm_fill_in_dev(struct drm_device *dev,
+ 	if (dev->driver->bus->agp_init) {
+ 		retcode = dev->driver->bus->agp_init(dev);
+ 		if (retcode)
+-			goto error_out_unreg;
++			goto err_g1;
  	}
  
- 	/* setup the grouping for the legacy output */
- 	ret = drm_mode_group_init_legacy_group(dev,
- 					       &dev->primary->mode_group);
- 	if (ret)
--		goto err_g3;
-+		goto err_g5;
  
- 	list_add_tail(&dev->driver_item, &driver->device_list);
+@@ -324,7 +324,7 @@ int drm_fill_in_dev(struct drm_device *dev,
+ 	retcode = drm_ctxbitmap_init(dev);
+ 	if (retcode) {
+ 		DRM_ERROR("Cannot allocate memory for context bitmap.\n");
+-		goto error_out_unreg;
++		goto err_g2;
+ 	}
  
-@@ -58,11 +58,15 @@ int drm_get_usb_dev(struct usb_interface *interface,
- 		 driver->date, dev->primary->index);
+ 	if (driver->driver_features & DRIVER_GEM) {
+@@ -332,14 +332,30 @@ int drm_fill_in_dev(struct drm_device *dev,
+ 		if (retcode) {
+ 			DRM_ERROR("Cannot initialize graphics execution "
+ 				  "manager (GEM)\n");
+-			goto error_out_unreg;
++			goto err_g3;
+ 		}
+ 	}
  
  	return 0;
--
--err_g3:
-+err_g5:
-+	if (dev->driver->unload)
-+		dev->driver->unload(dev);
-+err_g4:
- 	drm_put_minor(&dev->primary);
--err_g2:
+ 
+-      error_out_unreg:
+-	drm_lastclose(dev);
 +err_g3:
- 	drm_put_minor(&dev->control);
++	drm_ctxbitmap_cleanup(dev);
 +err_g2:
-+	drm_cleanup_in_dev(dev);
- err_g1:
- 	kfree(dev);
- 	mutex_unlock(&drm_global_mutex);
++	if (drm_core_has_MTRR(dev) && drm_core_has_AGP(dev) &&
++		dev->agp && dev->agp->agp_mtrr >= 0) {
++		int retval;
++		retval = mtrr_del(dev->agp->agp_mtrr,
++				dev->agp->agp_info.aper_base,
++				dev->agp->agp_info.aper_size * 1024 * 1024);
++		DRM_DEBUG("mtrr_del=%d\n", retval);
++	}
++
++	if (drm_core_has_AGP(dev) && dev->agp) {
++		kfree(dev->agp);
++		dev->agp = NULL;
++	}
++err_g1:
++	drm_ht_remove(&dev->map_hash);
+ 	return retcode;
+ }
+ EXPORT_SYMBOL(drm_fill_in_dev);
 -- 
 1.7.12.4.dirty
