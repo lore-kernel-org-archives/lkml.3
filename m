@@ -1,122 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab3J3BSZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 21:18:25 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:21414 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751292Ab3J3BSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 21:18:24 -0400
-X-IronPort-AV: E=Sophos;i="4.93,597,1378857600"; 
-   d="scan'208";a="68694906"
-Date: Wed, 30 Oct 2013 01:17:14 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <Ian.Campbell@citrix.com>,
-        <will.deacon@arm.com>
-Subject: Re: [PATCH v9 01/18] arm: make SWIOTLB available
-In-Reply-To: <20131029180105.GR16735@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.02.1310300112520.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com> <1382698313-13161-1-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1310251206450.26077@kaball.uk.xensource.com> <alpine.DEB.2.02.1310290441260.26077@kaball.uk.xensource.com>
- <20131029142023.GE20487@phenom.dumpdata.com> <20131029142626.GQ16735@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1310291716120.26077@kaball.uk.xensource.com> <20131029180105.GR16735@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753016Ab3J3BXl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 21:23:41 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:36358 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116Ab3J3BXk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 21:23:40 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, a.sahrawat@samsung.com,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH 1/5] fat: add i_disksize to represent uninitialized size
+References: <1381329627-11837-1-git-send-email-linkinjeon@gmail.com>
+	<87zjpuygtd.fsf@devron.myhome.or.jp>
+	<CAKYAXd-P83JNoOZKEv2cfTSok9SbE1bwW34Z56EPe7WrTHSP0g@mail.gmail.com>
+Date: Wed, 30 Oct 2013 10:23:29 +0900
+In-Reply-To: <CAKYAXd-P83JNoOZKEv2cfTSok9SbE1bwW34Z56EPe7WrTHSP0g@mail.gmail.com>
+	(Namjae Jeon's message of "Wed, 30 Oct 2013 08:01:07 +0900")
+Message-ID: <874n7zy2jy.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Oct 2013, Russell King - ARM Linux wrote:
-> So... what I'm saying is please fix xgmac to use the DMA API properly
-> rather than working around such problems. :)
- 
-OK.
-Would the appended patch fix your concerns?
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
----
+>>> diff --git a/fs/fat/cache.c b/fs/fat/cache.c
+>>> index 91ad9e1..37572c2 100644
+>>> --- a/fs/fat/cache.c
+>>> +++ b/fs/fat/cache.c
+>>> @@ -329,10 +329,10 @@ int fat_bmap(struct inode *inode, sector_t sector,
+>>> sector_t *phys,
+>>>  			return 0;
+>>>
+>>>  		/*
+>>> -		 * ->mmu_private can access on only allocation path.
+>>> +		 * ->i_disksize can access on only allocation path.
+>>>  		 * (caller must hold ->i_mutex)
+>>>  		 */
+>>> -		last_block = (MSDOS_I(inode)->mmu_private + (blocksize - 1))
+>>> +		last_block = (MSDOS_I(inode)->i_disksize + (blocksize - 1))
+>>>  			>> blocksize_bits;
+>>>  		if (sector >= last_block)
+>>>  			return 0;
+>>
+>> Hm, bmap() ioctl returns between ->mmu_private and i_disksize? I'm not
+>> checking other FSes what does...
+> I added this code after checking such behaviour from ext4.
 
-arm: make SWIOTLB available
-
-IOMMU_HELPER is needed because SWIOTLB calls iommu_is_span_boundary,
-provided by lib/iommu_helper.c.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-Changes in v9:
-- remove uneeded include asm/cacheflush.h;
-- just return 0 if !dev->dma_mask in dma_capable.
-
----
- arch/arm/Kconfig                   |    6 ++++++
- arch/arm/include/asm/dma-mapping.h |   33 +++++++++++++++++++++++++++++++++
- 2 files changed, 39 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 1ad6fb6..b08374f 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1872,6 +1872,12 @@ config CC_STACKPROTECTOR
- 	  neutralized via a kernel panic.
- 	  This feature requires gcc version 4.2 or above.
- 
-+config SWIOTLB
-+	def_bool y
-+
-+config IOMMU_HELPER
-+	def_bool SWIOTLB
-+
- config XEN_DOM0
- 	def_bool y
- 	depends on XEN
-diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-index 5b579b9..1ad2c17 100644
---- a/arch/arm/include/asm/dma-mapping.h
-+++ b/arch/arm/include/asm/dma-mapping.h
-@@ -86,6 +86,39 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
- }
- #endif
- 
-+static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
-+{
-+	unsigned int offset = paddr & ~PAGE_MASK;
-+	return pfn_to_dma(dev, __phys_to_pfn(paddr)) + offset;
-+}
-+
-+static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
-+{
-+	unsigned int offset = dev_addr & ~PAGE_MASK;
-+	return __pfn_to_phys(dma_to_pfn(dev, dev_addr)) + offset;
-+}
-+
-+static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
-+{
-+	u64 limit, mask;
-+
-+	if (!dev->dma_mask)
-+		return 0;
-+
-+	mask = *dev->dma_mask;
-+
-+	limit = (mask + 1) & ~mask;
-+	if (limit && size > limit)
-+		return 0;
-+
-+	if ((addr | (addr + size - 1)) & ~mask)
-+		return 0;
-+
-+	return 1;
-+}
-+
-+static inline void dma_mark_clean(void *addr, size_t size) { }
-+
- /*
-  * DMA errors are defined by all-bits-set in the DMA address.
-  */
+OK. I will check with it. BTW, comment should say the both
+(i.e. ->mmu_private and ->i_disksize must under ->i_mutex).
 -- 
-1.7.2.5
-
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
