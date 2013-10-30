@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab3J3Ff1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 01:35:27 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:38737 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777Ab3J3FfY (ORCPT
+	id S1752031Ab3J3FiU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 01:38:20 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:61008 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab3J3FiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 01:35:24 -0400
-Date: Wed, 30 Oct 2013 06:35:21 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        Tom Tromey <tromey@redhat.com>, Ben Widawsky <ben@bwidawsk.net>,
-        Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH v6 01/21] scripts/gdb: Add infrastructure
-Message-ID: <20131030053521.GU29695@two.firstfloor.org>
-References: <cover.1382950737.git.jan.kiszka@siemens.com>
- <74596df6935455908a146314b9b42ae2d79f6712.1382950737.git.jan.kiszka@siemens.com>
+	Wed, 30 Oct 2013 01:38:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <74596df6935455908a146314b9b42ae2d79f6712.1382950737.git.jan.kiszka@siemens.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Wed, 30 Oct 2013 13:38:18 +0800
+Message-ID: <CAPgLHd9U4t3K4ziGQub9fat6Wqwj2PXh0O+DDYFNnf7r5eB_2Q@mail.gmail.com>
+Subject: [PATCH -next] ARM: ixp4xx: remove duplicated include from dsmg600-setup.c
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: kaloz@openwrt.org, khc@pm.waw.pl, linux@arm.linux.org.uk
+Cc: yongjun_wei@trendmicro.com.cn, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The loading mechanism is based on gdb loading for <objfile>-gdb.py when
-> opening <objfile>. Therefore, this places a corresponding link to the
-> main helper script into the output directory that contains vmlinux.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-> This feature depends on CONFIG_DEBUG_INFO.
+Remove duplicated include.
 
-Could you make this a separate config option? Having the links for
-people who don't use gdb would be ugly.
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ arch/arm/mach-ixp4xx/dsmg600-setup.c | 1 -
+ 1 file changed, 1 deletion(-)
 
--Andi
+diff --git a/arch/arm/mach-ixp4xx/dsmg600-setup.c b/arch/arm/mach-ixp4xx/dsmg600-setup.c
+index 736dc69..7740e13 100644
+--- a/arch/arm/mach-ixp4xx/dsmg600-setup.c
++++ b/arch/arm/mach-ixp4xx/dsmg600-setup.c
+@@ -26,7 +26,6 @@
+ #include <linux/reboot.h>
+ #include <linux/i2c.h>
+ #include <linux/i2c-gpio.h>
+-#include <linux/gpio.h>
+ 
+ #include <mach/hardware.h>
+ 
+
