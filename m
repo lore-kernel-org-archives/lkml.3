@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801Ab3J3Uhi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 16:37:38 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:63513 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704Ab3J3Uhh (ORCPT
+	id S1752926Ab3J3UmT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 16:42:19 -0400
+Received: from usindpps04.hds.com ([207.126.252.17]:58856 "EHLO
+	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab3J3UmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 16:37:37 -0400
-Message-ID: <52716E2D.8060708@gmail.com>
-Date: Thu, 31 Oct 2013 07:38:05 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Wed, 30 Oct 2013 16:42:17 -0400
+Message-ID: <52716DB8.1080702@hds.com>
+Date: Wed, 30 Oct 2013 16:36:08 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Frank Haverkamp <haver@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, cody@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
-        utz.bacher@de.ibm.com, mmarek@suse.cz, jsvogt@de.ibm.com,
-        MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com, michael@ibmra.de,
-        Frank Haverkamp <haver@vnet.ibm.com>
-Subject: Re: [PATCH] Generic WorkQueue Engine (GenWQE) device driver (v4)
-References: <1383125578-26202-1-git-send-email-haver@linux.vnet.ibm.com> <1383125578-26202-2-git-send-email-haver@linux.vnet.ibm.com> <20131030173521.GB20147@kroah.com>
-In-Reply-To: <20131030173521.GB20147@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org, x86@kernel.org
+CC: hpa@zytor.com, rostedt@goodmis.org, mingo@elte.hu, bp@alien8.de,
+        tglx@linutronix.de, fdeslaur@gmail.com, raphael.beamonte@gmail.com,
+        dle-develop@lists.sourceforge.net, tomoki.sekiyama@hds.com
+Subject: [PATCH v4 1/4] Move set_intr_gate() into macro
+References: <52716D74.3070201@hds.com>
+In-Reply-To: <52716D74.3070201@hds.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-10-30_06:2013-10-30,2013-10-30,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1310300176
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/10/13 04:35, Greg KH wrote:
+Move set_intr_gate() into a macro by removing __alloc_intr_gate().
 
-> On Wed, Oct 30, 2013 at 10:32:58AM +0100, Frank Haverkamp wrote:
->> +if GENWQE
->> +
->> +config GENWQE_DEVNAME
->> +        string "Name for sysfs and device nodes"
->> +	default "genwqe"
->> +        help
->> +          Select alternate name for sysfs and device nodes.
-> 
-> Don't let the user pick this, it's up to the driver to set this once and
-> then live with it.
-> 
-> And, from what I can tell in the driver, this help text is wrong (there
-> are no device nodes with this name in it, right?)
+The purpose is to avoid failing a kernel build after applying
+a subsequent patch which changes set_intr_gate() to macro.
 
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+---
+ arch/x86/include/asm/desc.h | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-The indentation is also messed up here. Kconfig should use hard tabs, with
-two additional spaces for the help text. This has mixed tabs and spaces
-between lines.
-
-~Ryan
+diff --git a/arch/x86/include/asm/desc.h b/arch/x86/include/asm/desc.h
+index b90e5df..d939567 100644
+--- a/arch/x86/include/asm/desc.h
++++ b/arch/x86/include/asm/desc.h
+@@ -395,15 +395,10 @@ static inline void trace_set_intr_gate(unsigned int gate, void *addr)
+ #define __trace_alloc_intr_gate(n, addr)
+ #endif
+ 
+-static inline void __alloc_intr_gate(unsigned int n, void *addr)
+-{
+-	set_intr_gate(n, addr);
+-}
+-
+ #define alloc_intr_gate(n, addr)				\
+ 	do {							\
+ 		alloc_system_vector(n);				\
+-		__alloc_intr_gate(n, addr);			\
++		set_intr_gate(n, addr);				\
+ 		__trace_alloc_intr_gate(n, trace_##addr);	\
+ 	} while (0)
+ 
+-- 
+1.8.3.1
 
 
