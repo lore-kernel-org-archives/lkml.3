@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab3J3GMG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 02:12:06 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:56221 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab3J3GMD (ORCPT
+	id S1752869Ab3J3GNJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 02:13:09 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:43000 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751903Ab3J3GNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 02:12:03 -0400
-Message-ID: <5270A32F.5030909@linux.com>
-Date: Wed, 30 Oct 2013 07:11:59 +0100
-From: Levente Kurusa <levex@linux.com>
-Reply-To: levex@linux.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Len Brown <lenb@kernel.org>, Robert Hancock <hancockrwd@gmail.com>,
-        Aaron Lu <aaron.lu@intel.com>, ACPI List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] ACPI: Add Toshiba NB100 to Vista _OSI blacklist
-References: <526FE7E8.80806@linux.com> <2710175.xeuRHdVpyL@vostro.rjw.lan>
-In-Reply-To: <2710175.xeuRHdVpyL@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 30 Oct 2013 02:13:05 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [RFC PATCH 1/2] driver core: introduce module_platform_driver_match_and_probe
+Date: Wed, 30 Oct 2013 01:12:50 -0500
+Message-Id: <1383113571-13029-2-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1383113571-13029-1-git-send-email-robherring2@gmail.com>
+References: <1383113571-13029-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-10-29 23:44 keltezéssel, Rafael J. Wysocki írta:
-> On Tuesday, October 29, 2013 05:52:56 PM Levente Kurusa wrote:
->> This patch adds Toshiba NB100 to the Vista _OSI blacklist.
->>
->> The _OSI(Windows 2006) method is bugged on the netbook resulting in messed up
->> PCI IRQ Routing information. This was observed on a netbook,
->> whose SATA controller mode was set to Compatibility mode.
->> The driver would then register itself to IRQ#16, but the device
->> was in fact issuing interrupts to IRQ#20.
->> No side-effects were found during testing, everything is
->> working as it did before.
->>
->> See thread:
->> http://marc.info/?t=137862230200001&r=1&w=2
->> http://www.spinics.net/lists/linux-ide/msg46173.html
->>
->>
->> Signed-off-by: Levente Kurusa <levex@linux.com>
->> Reviewed-by: Robert Hancock <hancockrwd@gmail.com>
-> 
-> That should be in linux-pm/linux-next already, isn't it there?
+From: Rob Herring <rob.herring@calxeda.com>
 
-Hm, I didn't receive any reply back on the other mail, so I thought it got
-lost somewhere. I see now that it has been applied, thanks and sorry for
-the inconvenience.
+Introduce a helper to match, create and probe a platform device. This
+is for drivers such as cpuidle or cpufreq that typically don't have a
+bus device node and need to match on a system-level compatible property.
 
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+---
+ include/linux/platform_device.h | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+index ce8e4ff..0b4b1c9 100644
+--- a/include/linux/platform_device.h
++++ b/include/linux/platform_device.h
+@@ -12,6 +12,7 @@
+ #define _PLATFORM_DEVICE_H_
+ 
+ #include <linux/device.h>
++#include <linux/err.h>
+ #include <linux/mod_devicetable.h>
+ 
+ #define PLATFORM_DEVID_NONE	(-1)
+@@ -241,6 +242,28 @@ extern struct platform_device *platform_create_bundle(
+ 	struct resource *res, unsigned int n_res,
+ 	const void *data, size_t size);
+ 
++/*
++ * module_platform_driver_match_and_probe() - Helper macro for drivers without
++ * a bus device node and need to match on an arbitrary compatible property.
++ * This eliminates a lot of boilerplate.  Each module may only use this macro
++ * once, and calling it replaces module_init() and module_exit()
++ */
++#define module_platform_driver_match_and_probe(__platform_driver, __platform_probe) \
++static int __init __platform_driver##_init(void) \
++{ \
++	if (of_find_matching_node(NULL, (__platform_driver).driver.of_match_table)) \
++		return PTR_ERR_OR_ZERO(platform_create_bundle(&(__platform_driver), \
++			__platform_probe, NULL, 0, NULL, 0)); \
++	else \
++		return -ENODEV;	\
++} \
++module_init(__platform_driver##_init); \
++static void __exit __platform_driver##_exit(void) \
++{ \
++	platform_driver_unregister(&(__platform_driver)); \
++} \
++module_exit(__platform_driver##_exit);
++
+ /* early platform driver interface */
+ struct early_platform_driver {
+ 	const char *class_str;
 -- 
-Regards,
-Levente Kurusa
+1.8.1.2
+
