@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab3J3Wwc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 18:52:32 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:49928 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754384Ab3J3Ww3 (ORCPT
+	id S1754859Ab3J3Wwm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 18:52:42 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:53202 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754818Ab3J3Wwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 18:52:29 -0400
+	Wed, 30 Oct 2013 18:52:39 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, viresh.kumar@linaro.org
-Subject: [PATCH V2 Resend 08/16] cpufreq: loongson2: use cpufreq_generic_get() routine
-Date: Thu, 31 Oct 2013 04:22:06 +0530
-Message-Id: <a8347b281454fbc186027a9b92ae949858cfb32f.1383173230.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 Resend 12/16] cpufreq: s5pv210: use cpufreq_generic_get() routine
+Date: Thu, 31 Oct 2013 04:22:10 +0530
+Message-Id: <30a7fe7b07dad08b80f8b8d6df3dc5ffdeb906be.1383173230.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1383173230.git.viresh.kumar@linaro.org>
 References: <cover.1383173230.git.viresh.kumar@linaro.org>
@@ -29,78 +29,79 @@ Lets use it for this driver.
 
 We don't need a global variable to hold clock anymore.
 
-Cc: John Crispin <blogic@openwrt.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/loongson2_cpufreq.c | 15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+ drivers/cpufreq/s5pv210-cpufreq.c | 21 ++++++---------------
+ 1 file changed, 6 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/cpufreq/loongson2_cpufreq.c b/drivers/cpufreq/loongson2_cpufreq.c
-index a436092..b6581ab 100644
---- a/drivers/cpufreq/loongson2_cpufreq.c
-+++ b/drivers/cpufreq/loongson2_cpufreq.c
-@@ -24,8 +24,6 @@
+diff --git a/drivers/cpufreq/s5pv210-cpufreq.c b/drivers/cpufreq/s5pv210-cpufreq.c
+index e3973da..da0e291 100644
+--- a/drivers/cpufreq/s5pv210-cpufreq.c
++++ b/drivers/cpufreq/s5pv210-cpufreq.c
+@@ -23,7 +23,6 @@
+ #include <mach/map.h>
+ #include <mach/regs-clock.h>
  
- static uint nowait;
- 
--static struct clk *cpuclk;
--
- static void (*saved_cpu_wait) (void);
- 
- static int loongson2_cpu_freq_notifier(struct notifier_block *nb,
-@@ -44,11 +42,6 @@ static int loongson2_cpu_freq_notifier(struct notifier_block *nb,
- 	return 0;
+-static struct clk *cpu_clk;
+ static struct clk *dmc0_clk;
+ static struct clk *dmc1_clk;
+ static DEFINE_MUTEX(set_freq_lock);
+@@ -164,14 +163,6 @@ static void s5pv210_set_refresh(enum s5pv210_dmc_port ch, unsigned long freq)
+ 	__raw_writel(tmp1, reg);
  }
  
--static unsigned int loongson2_cpufreq_get(unsigned int cpu)
+-static unsigned int s5pv210_getspeed(unsigned int cpu)
 -{
--	return clk_get_rate(cpuclk);
+-	if (cpu)
+-		return 0;
+-
+-	return clk_get_rate(cpu_clk) / 1000;
 -}
 -
- /*
-  * Here we notify other drivers of the proposed change and the final change.
-  */
-@@ -69,13 +62,14 @@ static int loongson2_cpufreq_target(struct cpufreq_policy *policy,
- 	set_cpus_allowed_ptr(current, &cpus_allowed);
- 
- 	/* setting the cpu frequency */
--	clk_set_rate(cpuclk, freq);
-+	clk_set_rate(policy->clk, freq);
- 
- 	return 0;
- }
- 
- static int loongson2_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ static int s5pv210_target(struct cpufreq_policy *policy, unsigned int index)
  {
-+	static struct clk *cpuclk;
- 	int i;
- 	unsigned long rate;
- 	int ret;
-@@ -104,13 +98,14 @@ static int loongson2_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 		return ret;
+ 	unsigned long reg;
+@@ -193,7 +184,7 @@ static int s5pv210_target(struct cpufreq_policy *policy, unsigned int index)
+ 		goto exit;
  	}
  
-+	policy->clk = cpuclk;
- 	return cpufreq_generic_init(policy, &loongson2_clockmod_table[0], 0);
- }
+-	old_freq = s5pv210_getspeed(0);
++	old_freq = policy->cur;
+ 	new_freq = s5pv210_freq_table[index].frequency;
  
- static int loongson2_cpufreq_exit(struct cpufreq_policy *policy)
- {
- 	cpufreq_frequency_table_put_attr(policy->cpu);
--	clk_put(cpuclk);
+ 	/* Finding current running level index */
+@@ -471,9 +462,9 @@ static int __init s5pv210_cpu_init(struct cpufreq_policy *policy)
+ 	unsigned long mem_type;
+ 	int ret;
+ 
+-	cpu_clk = clk_get(NULL, "armclk");
+-	if (IS_ERR(cpu_clk))
+-		return PTR_ERR(cpu_clk);
++	policy->clk = clk_get(NULL, "armclk");
++	if (IS_ERR(policy->clk))
++		return PTR_ERR(policy->clk);
+ 
+ 	dmc0_clk = clk_get(NULL, "sclk_dmc0");
+ 	if (IS_ERR(dmc0_clk)) {
+@@ -516,7 +507,7 @@ static int __init s5pv210_cpu_init(struct cpufreq_policy *policy)
+ out_dmc1:
+ 	clk_put(dmc0_clk);
+ out_dmc0:
+-	clk_put(cpu_clk);
 +	clk_put(policy->clk);
- 	return 0;
+ 	return ret;
  }
  
-@@ -119,7 +114,7 @@ static struct cpufreq_driver loongson2_cpufreq_driver = {
- 	.init = loongson2_cpufreq_cpu_init,
- 	.verify = cpufreq_generic_frequency_table_verify,
- 	.target_index = loongson2_cpufreq_target,
--	.get = loongson2_cpufreq_get,
-+	.get = cpufreq_generic_get,
- 	.exit = loongson2_cpufreq_exit,
- 	.attr = cpufreq_generic_attr,
- };
+@@ -563,7 +554,7 @@ static struct cpufreq_driver s5pv210_driver = {
+ 	.flags		= CPUFREQ_STICKY,
+ 	.verify		= cpufreq_generic_frequency_table_verify,
+ 	.target_index	= s5pv210_target,
+-	.get		= s5pv210_getspeed,
++	.get		= cpufreq_generic_get,
+ 	.init		= s5pv210_cpu_init,
+ 	.name		= "s5pv210",
+ #ifdef CONFIG_PM
 -- 
 1.7.12.rc2.18.g61b472e
 
