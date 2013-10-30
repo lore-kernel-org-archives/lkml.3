@@ -1,90 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab3J3SoQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 14:44:16 -0400
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:14666
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752189Ab3J3SoM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 14:44:12 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371Ic89bh1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h906i1155h192ch)
-Date: Wed, 30 Oct 2013 11:44:03 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>
-CC: Kumar Gala <galak@codeaurora.org>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] clk/zynq/clkc: Add 'fclk-enable' feature
-References: <1381425018-5653-1-git-send-email-soren.brinkmann@xilinx.com>
- <1592656.1ojHcSlzVh@flatron>
- <b7840a0d-ac49-4c2d-beaa-9f79748c70d0@CH1EHSMHS006.ehs.local>
- <2028580.HhySWWnU2A@flatron>
- <8864256B-F8F9-4474-9B5F-416C3BB96523@codeaurora.org>
- <ceac2f8e-30b4-415e-b8f3-f2af1270be88@DB9EHSMHS020.ehs.local>
+	id S1754217Ab3J3Sod (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 14:44:33 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44876 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751698Ab3J3Soa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 14:44:30 -0400
+Date: Wed, 30 Oct 2013 19:44:23 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Paolo Bonzini <pbonzini@redhat.com>, Andre Przywara <andre@andrep.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Gleb Natapov <gleb@redhat.com>,
+        Joerg Roedel <joro@8bytes.org>, X86 ML <x86@kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 0/6] kvm: Emulate MOVBE, v3
+Message-ID: <20131030184423.GG13290@pd.tnic>
+References: <1379861095-628-1-git-send-email-bp@alien8.de>
+ <52714BB0.8010504@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <ceac2f8e-30b4-415e-b8f3-f2af1270be88@DB9EHSMHS020.ehs.local>
+In-Reply-To: <52714BB0.8010504@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <229e9b6b-1229-4bc6-bbec-a4395a5b1885@CO9EHSMHS022.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 02:04:06PM +0100, Michal Simek wrote:
-> On 10/29/2013 09:26 AM, Kumar Gala wrote:
-> > 
-> > On Oct 28, 2013, at 5:17 PM, Tomasz Figa wrote:
-> > 
-> >>>>> diff --git a/Documentation/devicetree/bindings/clock/zynq-7000.txt
-> >>>>> b/Documentation/devicetree/bindings/clock/zynq-7000.txt index
-> >>>>> d99af878f5d7..11fdd146ec83 100644
-> >>>>> --- a/Documentation/devicetree/bindings/clock/zynq-7000.txt
-> >>>>> +++ b/Documentation/devicetree/bindings/clock/zynq-7000.txt
-> >>>>>
-> >>>>> @@ -22,6 +22,10 @@ Required properties:
-> >>>>> Optional properties:
-> >>>>>  - clocks : as described in the clock bindings
-> >>>>>  - clock-names : as described in the clock bindings
-> >>>>>
-> >>>>> + - fclk-enable : Bit mask to enable FCLKs in cases no proper CCF
-> >>>>
-> >>>> Since it's a vendor specific property, it should include vendor
-> >>>> prefix.
-> >>>
-> >>> The whole driver is vendor specific. Should there really be another
-> >>> prefix for that property?
-> >>
-> >> Yes. If a property is introduced just for use by this particular driver 
-> >> then it must be prepended by a vendor prefix. That's a general rule.
-> > 
-> > Most all nodes are vendor specific by definition ;).
+On Wed, Oct 30, 2013 at 07:10:56PM +0100, Paolo Bonzini wrote:
+> I tested this patch manually with a small C test program and asm.
 > 
-> Is this really generic rule? I haven't seen/heard any point regarding this on KS.
-> 
-> I don't think we should use prefix here. It is xilinx specific option
-> but there shouldn't be any problem to use fclk-enable without any prefix.
-> Because it means we have to also rename ps-clk-frequency.
-> 
-> We are using xlnx prefix for properties which are autogenerated from design tools
-> which is not even this case.
+> Would you please prepare a patch to kvm-unit-tests that stresses the new
+> codepath?
 
-So, what is the final call on this? Respin this and changing the prop name,
-or leaving it as is?
+Ha, now that you bring that up, I think Andre already had something
+ready. Andre?
 
-	Thanks,
-	Sören
+-- 
+Regards/Gruss,
+    Boris.
 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
