@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904Ab3J3LT5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 07:19:57 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:55916 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab3J3LTz (ORCPT
+	id S1753941Ab3J3LUK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 07:20:10 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:54577 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753911Ab3J3LUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 07:19:55 -0400
-Date: Wed, 30 Oct 2013 04:18:49 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH 2/8] rcu: remove irq/softirq context check in
- rcu_read_unlock_special()
-Message-ID: <20131030111849.GB19599@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
- <1375871104-10688-3-git-send-email-laijs@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375871104-10688-3-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 30 Oct 2013 07:20:04 -0400
+Subject: Re: [PATCH] Generic WorkQueue Engine (GenWQE) device driver (v3)
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Reply-To: haver@linux.vnet.ibm.com
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
+        jsvogt@de.ibm.com, MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com,
+        michael@ibmra.de, Frank Haverkamp <haver@vnet.ibm.com>
+In-Reply-To: <20131025152146.GA27323@kroah.com>
+References: <20131024100942.GA13614@kroah.com>
+	 <1382695784-10127-2-git-send-email-haver@linux.vnet.ibm.com>
+	 <20131025104212.GA22369@kroah.com>
+	 <1382709644.8698.31.camel@oc7383187364.ibm.com>
+	 <20131025152146.GA27323@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Wed, 30 Oct 2013 12:19:58 +0100
+Message-ID: <1383131998.16560.106.camel@oc7383187364.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13103011-9332-0000-0000-000001F984E9
+x-cbid: 13103011-0342-0000-0000-000006B580D8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 06:24:58PM +0800, Lai Jiangshan wrote:
-> After patch 10f39bb1, "special & RCU_READ_UNLOCK_BLOCKED" can't be true
-> in irq nor softirq.(due to RCU_READ_UNLOCK_BLOCKED can only be set
-> when preemption)
+Hi Greg,
+
+Am Freitag, den 25.10.2013, 16:21 +0100 schrieb Greg KH:
+> On Fri, Oct 25, 2013 at 04:00:44PM +0200, Frank Haverkamp wrote:
+> > > And why are you doing debug stuff through the ioctl interface?  Please
+> > > move that to debugfs if you really want/need that information, it does
+> > > not belong in an ioctl.
+> > 
+> > I will look into that. We need that information per card when it fails.
 > 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
->  kernel/rcutree_plugin.h |    6 ------
->  1 files changed, 0 insertions(+), 6 deletions(-)
+> People put per-card information in debugfs all the time, look at the USB
+> host controller files in debugfs for an example of how to do this.
+
+Thanks for pointing me to the example. I moved some of my former sysfs
+interfaces to debugfs. Especially those which were printing out more
+than one item. I guess you don't like those in sysfs anyways.
+
+> thanks,
 > 
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index 8fd947e..54f7e45 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -361,12 +361,6 @@ void rcu_read_unlock_special(struct task_struct *t)
->  		rcu_preempt_qs(smp_processor_id());
->  	}
+> greg k-h
 > 
-> -	/* Hardware IRQ handlers cannot block. */
-> -	if (in_irq() || in_serving_softirq()) {
-> -		local_irq_restore(flags);
-> -		return;
-> -	}
-> -
 
-Good point, it is time to relax the redundant checking.  Paranoid that
-I am, I took an intermediate position, wrapping a WARN_ON_ONCE() around
-the check as follows:
+I re-posted our driver in "[PATCH] Generic WorkQueue Engine (GenWQE)
+device driver (v4)" and addressed Ryans comments too.
 
-	if (WARN_ON_ONCE(in_irq() || in_serving_softirq())) {
-		local_irq_restore(flags);
-		return;
-	}
+Some of the module parameters I got rid of, some others I turned into
+debugfs interfaces. Again others I replaced by constants with proven
+default values. For those I kept, I added comments why I want them as
+parameters still.
 
-If this warning never triggers over a period of some time, we can remove
-it entirely.
+Regards
 
-I have queued this for 3.14 with your Signed-off-by.  Please let me know
-if you have any objections.
-
-							Thanx, Paul
-
->  	/* Clean up if blocked during RCU read-side critical section. */
->  	if (special & RCU_READ_UNLOCK_BLOCKED) {
->  		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_BLOCKED;
-> -- 
-> 1.7.4.4
-> 
+Frank
 
