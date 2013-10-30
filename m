@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715Ab3J3K2k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 06:28:40 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:33028 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751644Ab3J3K2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 06:28:38 -0400
-Message-ID: <5270DF35.1040708@siemens.com>
-Date: Wed, 30 Oct 2013 11:28:05 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1753795Ab3J3K3u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 06:29:50 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:47662 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751353Ab3J3K3s convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 06:29:48 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Tom Tromey <tromey@redhat.com>,
-        Ben Widawsky <ben@bwidawsk.net>, Borislav Petkov <bp@suse.de>,
-        Tatiana Al-Chueyr Martins <tatiana.alchueyr@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH v6 01/21] scripts/gdb: Add infrastructure
-References: <cover.1382950737.git.jan.kiszka@siemens.com> <74596df6935455908a146314b9b42ae2d79f6712.1382950737.git.jan.kiszka@siemens.com> <20131030053521.GU29695@two.firstfloor.org>
-In-Reply-To: <20131030053521.GU29695@two.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Date: Wed, 30 Oct 2013 10:27:30 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B73C2@saturn3.aculab.com>
+In-Reply-To: <201310300525.r9U5Pdqo014902@ib.usersys.redhat.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Thread-Index: Ac7VMEhEoPA1tpjMQzSXmI3yif0kwAAJbglg
+References: 20131029202644.GB32389@localhost.localdomain <201310300525.r9U5Pdqo014902@ib.usersys.redhat.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Doug Ledford" <dledford@redhat.com>,
+        "Neil Horman" <nhorman@tuxdriver.com>
+Cc: "Ingo Molnar" <mingo@kernel.org>, "Eric Dumazet" <eric.dumazet@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-10-30 06:35, Andi Kleen wrote:
->> The loading mechanism is based on gdb loading for <objfile>-gdb.py when
->> opening <objfile>. Therefore, this places a corresponding link to the
->> main helper script into the output directory that contains vmlinux.
-> 
->> This feature depends on CONFIG_DEBUG_INFO.
-> 
-> Could you make this a separate config option? Having the links for
-> people who don't use gdb would be ugly.
-> 
+> The parallel ALU design of this patch seems OK at first glance, but it means
+> that two parallel operations are both trying to set/clear both the overflow
+> and carry flags of the EFLAGS register of the *CPU* (not the ALU).  So, either
+> some CPU in the past had a set of overflow/carry flags per ALU and did some
+> sort of magic to make sure that the last state of those flags across multiple
+> ALUs that might have been used in parallelizing work were always in the CPU's
+> logical EFLAGS register, or the CPU has a buggy microcode that allowed two
+> ALUs to operate on data at the same time in situations where they would
+> potentially stomp on the carry/overflow flags of the other ALUs operations.
 
-Like this?
+IIRC x86 cpu treat the (arithmetic) flags register as a single entity.
+So an instruction that only changes some of the flags is dependant
+on any previous instruction that changes any flags.
+OTOH it the instruction writes all of the flags then it doesn't
+have to wait for the earlier instruction to complete.
 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 06344d9..d66a8f8 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -143,6 +143,17 @@ config DEBUG_INFO_REDUCED
- 	  DEBUG_INFO build and compile times are reduced too.
- 	  Only works with newer gcc versions.
- 
-+config GDB_SCRIPTS
-+	bool "Provide GDB scripts for kernel debugging"
-+	select DEBUG_INFO
-+	help
-+	  This creates the required links to GDB helper scripts in the
-+	  build directory. If you load vmlinux into gdb, the helper
-+	  scripts will be automatically imported by gdb as well, and
-+	  additional functions are available to analyze a Linux kernel
-+	  instance. See Documentation/gdb-kernel-debugging.txt for further
-+	  details.
-+
- config ENABLE_WARN_DEPRECATED
- 	bool "Enable __deprecated logic"
- 	default y
+This is problematic for the ADC chain in the IP checksum.
+I did once try to use the SSE instructions to sum 16bit
+fields into multiple 32bit registers.
 
-Will send an updated series soon, also adjusting the docs, just waiting
-for potential further comments.
+	David
 
-Jan
 
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+
