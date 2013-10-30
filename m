@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab3J3VST (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 17:18:19 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:49246 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab3J3VSS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 17:18:18 -0400
-Date: Wed, 30 Oct 2013 22:18:15 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Paulo Zanoni <przanoni@gmail.com>
-Cc: David Airlie <airlied@linux.ie>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>
-Subject: Re: [PATCH] drm/sysfs: Do not drop device reference twice
-Message-ID: <20131030211814.GC7686@mithrandir>
-References: <1383130745-32165-1-git-send-email-treding@nvidia.com>
- <CA+gsUGSjJmqu9Ph0znE5XJJOJdeh-UT3z2Cjm7sEMB4F+ZtAvg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="L6iaP+gRLNZHKoI4"
-Content-Disposition: inline
-In-Reply-To: <CA+gsUGSjJmqu9Ph0znE5XJJOJdeh-UT3z2Cjm7sEMB4F+ZtAvg@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1753525Ab3J3VSd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 17:18:33 -0400
+Received: from mga01.intel.com ([192.55.52.88]:25425 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752924Ab3J3VSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 17:18:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,604,1378882800"; 
+   d="scan'208";a="425421261"
+Message-ID: <1383142680.2460.5.camel@dvhart-mobl4.amr.corp.intel.com>
+Subject: Re: [PATCH 4/8] minnowboard: Add base platform driver for the
+ MinnowBoard
+From: Darren Hart <dvhart@linux.intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "peter.p.waskiewicz.jr" <peter.p.waskiewicz.jr@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        danders <danders@circuitco.com>,
+        "vishal.l.verma" <vishal.l.verma@intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Richard Purdie <richard.purdie@linuxfoundation.org>,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>
+In-Reply-To: <20130721234134.GA9858@sirena.org.uk>
+References: <cover.1372211451.git.dvhart@linux.intel.com>
+	 <a459c0b97ea41148af901fc73dbeff98778c7419.1372211451.git.dvhart@linux.intel.com>
+	 <CACRpkda8QGdoAvjsUs7Uu+ukUu7ST63g=H9arA7SS7ceWmMTaQ@mail.gmail.com>
+	 <1372398218.9243.29.camel@envy.home> <20130704162641.GG27646@sirena.org.uk>
+	 <CACRpkdbKGti==FTfHm81EkwD++iRfixnXt3kWgBj7CxjM+2znA@mail.gmail.com>
+	 <20130721234134.GA9858@sirena.org.uk>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 30 Oct 2013 14:18:00 +0000
+Mime-Version: 1.0
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2013-07-22 at 00:41 +0100, Mark Brown wrote:
+> On Sat, Jul 20, 2013 at 07:37:54PM +0200, Linus Walleij wrote:
+> > On Thu, Jul 4, 2013 at 6:26 PM, Mark Brown <broonie@kernel.org> wrote:
+> 
+> > > We should really have a subsystem for this too - the general idea idea
+> > > of identifying boards, fit options and so on by looking at things like
+> > > GPIOs or numbers in flash is really common.
+> 
+> > Would it then be a bus following the pattern we chiseled out for
+> > the soc bus? (Greg, Lee & Arnd architectured this.)
+> 
+> I'd expect it to be a bus, yes.
 
---L6iaP+gRLNZHKoI4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It seems to me the platform bus already provides everything we need. We
+can just make a platform driver, say platform-id-gpio.c which can get
+it's platform data from OF or ACPI (_PRP proposal from kernel summit
+last week for example). Why would a separate bus type need to be
+defined?
 
-On Wed, Oct 30, 2013 at 02:05:02PM -0200, Paulo Zanoni wrote:
-> 2013/10/30 Thierry Reding <thierry.reding@gmail.com>:
-> > device_unregister() already drops its reference to the struct device, so
-> > explicitly calling put_device() before device_unregister() can cause the
-> > device to have been freed before it can be unregistered.
-> >
-> > Signed-off-by: Thierry Reding <treding@nvidia.com>
->=20
-> I started investigating this problem yesterday and reached the same
-> conclusion. The connector path can be easily reproduced on i915.ko:
-> get a machine that has an eDP panel, physically disconnect the panel,
-> boot the machine, "modprobe i915" and watch the segfault.
->=20
-> Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-> Tested-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
->=20
-> I didn't really bisect, but I believe this is probably a regression
-> from "drm/sysfs: sort out minor and connector device object
-> lifetimes".
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
 
-Yes, I think that's the one that broke it.
 
-Thierry
-
---L6iaP+gRLNZHKoI4
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJScXeVAAoJEN0jrNd/PrOhTLsP/1jSA43Ie5nwnqy51Zr+fL63
-/3bCepldqSDmi3/a24pOPkO5EYwKw03MzC/47HdkrkzM2JVpOBaY6LTVZW7sJ9G+
-59WSJiPVjArvmiUKAY0en3Y3QKT6KGIdaYDlzHOUe/o8IGAhMNNpYQDJK8eadgGP
-zhtr5wujfxVUL4wT4dmygWp12WsqztVEY/vipPGNzQROiFJuhB4LTtwytA08FESU
-imRBmJIIWG4Bjn6fpvRImTZz7sNwnNHr4MXGtUS0ZwoNr7dYSWDH/jioiyuCVCb2
-KsX8HmVUvW98GnxfKbF3RH15totmEYsj/ijQLlCEe972adMxg3P57FlO5271yu1U
-U/e2EKrLTLVQwGFx+hlPTHxRf9ihsh8QCY9Kr6QwQDJf5n/6JAQ+5EJkTcFhuqkY
-fPwAYVuOkCJQMxX0GCHJUfO3oNHHb+AHq3bsPh0AikAcymtAWpICYUmMXzSgon18
-/6eTa822k0zPzZ1iN49PL1xyKZmuDTew+Os4SK8kZgBFeTez9YGwIQ1kIS7DuQXv
-RNwlVFR2KW8orErHyf75kYZHjP9IAamvE7ZZkyHc5SKRAQb6kVnPswZt+I7NVK/y
-EueKuKCqnOOXQubi5nD1YmiHxEIU3Nft0ofNoUQk0UdW1+yRMy/qAlONAtB1Uhrm
-l285mn8jFJrniYRZwPCF
-=7zvV
------END PGP SIGNATURE-----
-
---L6iaP+gRLNZHKoI4--
