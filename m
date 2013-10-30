@@ -1,102 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab3J3Rg2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 13:36:28 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43139 "EHLO comal.ext.ti.com"
+	id S1754187Ab3J3Rgx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 13:36:53 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:1795 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751795Ab3J3RgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 13:36:25 -0400
-Date: Wed, 30 Oct 2013 12:36:51 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: David Cohen <david.a.cohen@linux.intel.com>, <balbi@ti.com>,
-        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <Paul.Zimmerman@synopsys.com>
-Subject: Re: [PATCH v3 1/3] usb: gadget: add quirk_ep_out_aligned_size field
- to struct usb_gadget
-Message-ID: <20131030173651.GQ12193@gimli>
-Reply-To: <balbi@ti.com>
-References: <1383152778-30739-2-git-send-email-david.a.cohen@linux.intel.com>
- <Pine.LNX.4.44L0.1310301329350.1312-100000@iolanthe.rowland.org>
+	id S1752885Ab3J3Rgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 13:36:50 -0400
+X-IronPort-AV: E=Sophos;i="4.93,602,1378857600"; 
+   d="scan'208";a="66379331"
+Date: Wed, 30 Oct 2013 17:35:39 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Xen Devel <Xen-devel@lists.xensource.com>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: linux-next: manual merge of the xen-tip tree with the  tree
+In-Reply-To: <alpine.DEB.2.02.1310301733230.26077@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1310301734420.26077@kaball.uk.xensource.com>
+References: <20131030160956.dfa5c1900c2decb0018061b9@canb.auug.org.au> <alpine.DEB.2.02.1310301733230.26077@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SWsnvgFfkTS2ATo5"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1310301329350.1312-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---SWsnvgFfkTS2ATo5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 30 Oct 2013, Stefano Stabellini wrote:
+> Looks fine thanks!
+> Just an heads up: I'll be updating the Xen code below soon so this
+> conflict might come up again.
 
-On Wed, Oct 30, 2013 at 01:31:50PM -0400, Alan Stern wrote:
-> On Wed, 30 Oct 2013, David Cohen wrote:
->=20
-> > Due to USB controllers may have different restrictions, usb gadget layer
-> > needs to provide a generic way to inform gadget functions to complain
-> > with non-standard requirements.
-> >=20
-> > This patch adds 'quirk_ep_out_aligned_size' field to struct usb_gadget
-> > to inform when controller's epout requires buffer size to be aligned to
-> > MaxPacketSize.
-> >=20
-> > Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> > ---
-> >  include/linux/usb/gadget.h | 3 +++
-> >  1 file changed, 3 insertions(+)
-> >=20
-> > diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-> > index 942ef5e..9405d0f 100644
-> > --- a/include/linux/usb/gadget.h
-> > +++ b/include/linux/usb/gadget.h
-> > @@ -540,6 +540,9 @@ struct usb_gadget {
-> >  	struct device			dev;
-> >  	unsigned			out_epnum;
-> >  	unsigned			in_epnum;
-> > +
-> > +	/* epout requires buffer size to be aligned to MaxPacketSize */
-> > +	unsigned			quirk_ep_out_aligned_size:1;
-> >  };
-> >  #define work_to_gadget(w)	(container_of((w), struct usb_gadget, work))
->=20
-> Instead of adding this new bitflag to the end of the structure, where=20
-> it will cause the structure to grow by at least 4 bytes, why not add it=
-=20
-> in the middle, along with all the other bitflags, where it won't cause=20
-> any change in the structure's size?
->=20
-> If you prefer, you can move the name, dev, out_epnum, and in_epnum=20
-> fields higher up, so that the bitflags come last.
+Just to be clear: I meant the dma_capable function.
+Sorry for top posting.
 
-I'd prefer moving the fields and having all bit-fields, last. Thanks
 
---=20
-balbi
-
---SWsnvgFfkTS2ATo5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJScUOyAAoJEIaOsuA1yqREjEYP/3xLvgvUyaZkPkUmSeL4aZRN
-e+cQsUfKloCwhXsDoJxFjxn2+F9rKRxs/78Zx8q1oip7wW+ejmytfiiBAOnIUzmu
-IhXFcp0yTsB+qjtVqZ5FCGW/OkXWRn59wx8tBXmVD8uG+KAbnekN4W46AM6RtPtx
-kHk0nGAstvaUGw+ZLotasFO8e5lF88KvDWBU3NI6lAymQXF/gWcGri9wWmpZi4pJ
-t2a4a/umrS/8zo9yzK+4t3cBBhLXrHhoH2j454rC1VBhzhjatO/DZlgS36u0W7wS
-MaRH36hVeiFfOk9X2xXAdtTYONoS0hk1SJLVVHrPzoi39hd1n/4YKPQR52Da7m1Y
-WESAfWT9bMgo8d1jlhjCO42N94IXAxCfpwnRNWHEMohOTlS0XvCHrXLb0G4XpYGO
-YrCSLIdoMhzv4w2PT29pRWJckUAxF6KQm4kjkA57A1qZUskPq07iqdbu/8Yzcq8V
-nOMatWwzhgW5LhwJdcKxoGvsOWe+qH0IFkjjIcO6AZwoTfzmuGtwouH5HAw6YjBN
-2QBGFZmTbJbMNA85RxbqffsD+NmuYMVrZWFbRBNsl4cAytZY5VLNWv4pHlHMzf5b
-cXO8XYaG8ZZ8s0dVfyJTJT/VYeeldVy7jdZQ7FaM4z7juum0cuqhMDC6BVWOYbVe
-ucXrVwLyEAtcZgYtBiC5
-=qYNG
------END PGP SIGNATURE-----
-
---SWsnvgFfkTS2ATo5--
+> On Wed, 30 Oct 2013, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > Today's linux-next merge of the xen-tip tree got a conflict in
+> > arch/arm/include/asm/dma-mapping.h between commit 223016339ce7 ("ARM:
+> > 7805/1: mm: change max*pfn to include the physical offset of memory")
+> > from the arm tree and commit 06e6295bcece ("arm: make SWIOTLB available")
+> > from the xen-tip tree.
+> > 
+> > I fixed it up (see below) and can carry the fix as necessary (no action
+> > is required).
+> > 
+> > -- 
+> > Cheers,
+> > Stephen Rothwell                    sfr@canb.auug.org.au
+> > 
+> > diff --cc arch/arm/include/asm/dma-mapping.h
+> > index 863cd84eb1a2,f5945d4e4e9f..000000000000
+> > --- a/arch/arm/include/asm/dma-mapping.h
+> > +++ b/arch/arm/include/asm/dma-mapping.h
+> > @@@ -87,13 -98,42 +99,49 @@@ static inline dma_addr_t virt_to_dma(st
+> >   }
+> >   #endif
+> >   
+> >  +/* The ARM override for dma_max_pfn() */
+> >  +static inline unsigned long dma_max_pfn(struct device *dev)
+> >  +{
+> >  +	return PHYS_PFN_OFFSET + dma_to_pfn(dev, *dev->dma_mask);
+> >  +}
+> >  +#define dma_max_pfn(dev) dma_max_pfn(dev)
+> >  +
+> > + static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+> > + {
+> > + 	unsigned int offset = paddr & ~PAGE_MASK;
+> > + 	return pfn_to_dma(dev, __phys_to_pfn(paddr)) + offset;
+> > + }
+> > + 
+> > + static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
+> > + {
+> > + 	unsigned int offset = dev_addr & ~PAGE_MASK;
+> > + 	return __pfn_to_phys(dma_to_pfn(dev, dev_addr)) + offset;
+> > + }
+> > + 
+> > + static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
+> > + {
+> > + 	u64 limit, mask;
+> > + 	
+> > + 	if (dev->dma_mask)
+> > + 		mask = *dev->dma_mask;
+> > + 	else 
+> > + 		mask = dev->coherent_dma_mask;
+> > + 
+> > + 	if (mask == 0)
+> > + 		return 0;
+> > + 
+> > + 	limit = (mask + 1) & ~mask;
+> > + 	if (limit && size > limit)
+> > + 		return 0;
+> > + 
+> > + 	if ((addr | (addr + size - 1)) & ~mask)
+> > + 		return 0;
+> > + 
+> > + 	return 1;
+> > + }
+> > + 
+> > + static inline void dma_mark_clean(void *addr, size_t size) { }
+> > + 
+> >   /*
+> >    * DMA errors are defined by all-bits-set in the DMA address.
+> >    */
+> > 
+> 
