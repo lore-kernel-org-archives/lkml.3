@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab3J3BXl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 21:23:41 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:36358 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116Ab3J3BXk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 21:23:40 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, a.sahrawat@samsung.com,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH 1/5] fat: add i_disksize to represent uninitialized size
-References: <1381329627-11837-1-git-send-email-linkinjeon@gmail.com>
-	<87zjpuygtd.fsf@devron.myhome.or.jp>
-	<CAKYAXd-P83JNoOZKEv2cfTSok9SbE1bwW34Z56EPe7WrTHSP0g@mail.gmail.com>
-Date: Wed, 30 Oct 2013 10:23:29 +0900
-In-Reply-To: <CAKYAXd-P83JNoOZKEv2cfTSok9SbE1bwW34Z56EPe7WrTHSP0g@mail.gmail.com>
-	(Namjae Jeon's message of "Wed, 30 Oct 2013 08:01:07 +0900")
-Message-ID: <874n7zy2jy.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	id S1753205Ab3J3BYF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 21:24:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52444 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751470Ab3J3BYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 21:24:03 -0400
+Date: Tue, 29 Oct 2013 20:29:36 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: axboe@kernel.dk, dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        hch@infradead.org, tj@kernel.org, Alasdair Kergon <agk@redhat.com>
+Subject: Re: [PATCH 17/23] dm: Refactor for new bio cloning/splitting
+Message-ID: <20131030002935.GA3449@redhat.com>
+References: <1383077896-4132-1-git-send-email-kmo@daterainc.com>
+ <1383077896-4132-18-git-send-email-kmo@daterainc.com>
+ <20131030000908.GB2989@redhat.com>
+ <20131030001959.GB27129@kmo>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131030001959.GB27129@kmo>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+On Tue, Oct 29 2013 at  8:19pm -0400,
+Kent Overstreet <kmo@daterainc.com> wrote:
 
->>> diff --git a/fs/fat/cache.c b/fs/fat/cache.c
->>> index 91ad9e1..37572c2 100644
->>> --- a/fs/fat/cache.c
->>> +++ b/fs/fat/cache.c
->>> @@ -329,10 +329,10 @@ int fat_bmap(struct inode *inode, sector_t sector,
->>> sector_t *phys,
->>>  			return 0;
->>>
->>>  		/*
->>> -		 * ->mmu_private can access on only allocation path.
->>> +		 * ->i_disksize can access on only allocation path.
->>>  		 * (caller must hold ->i_mutex)
->>>  		 */
->>> -		last_block = (MSDOS_I(inode)->mmu_private + (blocksize - 1))
->>> +		last_block = (MSDOS_I(inode)->i_disksize + (blocksize - 1))
->>>  			>> blocksize_bits;
->>>  		if (sector >= last_block)
->>>  			return 0;
->>
->> Hm, bmap() ioctl returns between ->mmu_private and i_disksize? I'm not
->> checking other FSes what does...
-> I added this code after checking such behaviour from ext4.
+> On Tue, Oct 29, 2013 at 08:09:08PM -0400, Mike Snitzer wrote:
+> > 
+> > But now that I look closer, the above dm-thin.c hunks belong in:
+> > [PATCH 19/23] block: Generic bio chaining
+> > 
+> > Seems these changes were mistakenly folded into this 17/23 patch?
+> 
+> ...Whoops, fixed. Here's the new versions if you want to take a look:
+> 
+> http://evilpiepirate.org/git/linux-bcache.git/log/?h=for-jens
+> http://evilpiepirate.org/git/linux-bcache.git/commit/?h=for-jens&id=74f0f2084f88bb38403ca80bb98976f8219f9262
 
-OK. I will check with it. BTW, comment should say the both
-(i.e. ->mmu_private and ->i_disksize must under ->i_mutex).
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Yeap, looks good (aside from the dm patches not having my Reviewed-by).
+
+Not sure if Jens can add it?..  that said, I don't mind the commits not
+having my Reviewed-by but it does lose some context for your changes
+having had some other eyeballs on them.
