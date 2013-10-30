@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab3J3ODv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 10:03:51 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:40106 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216Ab3J3ODt (ORCPT
+	id S1754510Ab3J3OFT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 10:05:19 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:53840 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180Ab3J3OFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 10:03:49 -0400
-Message-ID: <527111BD.9010803@gmail.com>
-Date: Wed, 30 Oct 2013 08:03:41 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 30 Oct 2013 10:05:18 -0400
+Date: Wed, 30 Oct 2013 10:13:11 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>, Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, eranian@google.com
+Subject: Re: perf: PERF_EVENT_IOC_PERIOD on ARM vs everywhere else
+In-Reply-To: <20131030095615.GG16117@laptop.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1310301006190.8668@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1310272233120.12721@vincent-weaver-1.um.maine.edu> <20131028085700.GB20218@mudshark.cambridge.arm.com> <alpine.DEB.2.10.1310281002020.24060@vincent-weaver-1.um.maine.edu> <20131029042810.GD22291@mudshark.cambridge.arm.com>
+ <20131029134536.GD16117@laptop.programming.kicks-ass.net> <alpine.DEB.2.10.1310291129090.15619@vincent-weaver-1.um.maine.edu> <20131030095615.GG16117@laptop.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>, yoshihiro.yunomae.ez@hitachi.com,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: RFC: paravirtualizing perf_clock
-References: <526DBD7F.1010807@gmail.com> <20131028131556.GN19466@laptop.lan> <526F2440.9030607@gmail.com> <5270A03F.8020301@hitachi.com>
-In-Reply-To: <5270A03F.8020301@hitachi.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-945360069-1383142404=:8668"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/13 11:59 PM, Masami Hiramatsu wrote:
-> (2013/10/29 11:58), David Ahern wrote:
->> To back out a bit, my end goal is to be able to create and merge
->> perf-events from any context on a KVM-based host -- guest userspace,
->> guest kernel space, host userspace and host kernel space (userspace
->> events with a perf-clock timestamp is another topic ;-)).
->
-> That is almost same as what we(Yoshihiro and I) are trying on integrated
-> tracing, we are doing it on ftrace and trace-cmd (but perhaps, it eventually
-> works on perf-ftrace).
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I thought at this point (well, once perf-ftrace gets committed) that you 
-can do everything with perf. What feature is missing in perf that you 
-get with trace-cmd or using debugfs directly?
+--8323329-945360069-1383142404=:8668
+Content-Type: TEXT/PLAIN; charset=ISO-8859-7
+Content-Transfer-Encoding: 8BIT
 
+On Wed, 30 Oct 2013, Peter Zijlstra wrote:
 
->> And then for the cherry on top a design that works across architectures
->> (e.g., x86 now, but arm later).
->
-> I think your proposal is good for the default implementation, it doesn't
-> depends on the arch specific feature. However, since physical timer(clock)
-> interfaces and virtualization interfaces strongly depends on the arch,
-> I guess the optimized implementations will become different on each arch.
-> For example, maybe we can export tsc-offset to the guest to adjust clock
-> on x86, but not on ARM, or other devices. In that case, until implementing
-> optimized one, we can use paravirt perf_clock.
+> Right, it was one of those interfaces that people claimed were
+> absolutely required so I implemented them but then nobody actually tried
+> using them for a long while :-(
 
-So this MSR read takes about 1.6usecs (from 'perf stat kvm live') and 
-that is total time between VMEXIT and VMENTRY. The time it takes to run 
-perf_clock in the host should be a very small part of that 1.6 usec. 
-I'll take a look at the TSC path to see how it is optimized (suggestions 
-appreciated).
+Well, the initial perf_event code drop was a big huge new interface 
+without much documentation and it took a while for people to come up to 
+speed on it.
 
-Another thought is to make the use of pv_perf_clock an option -- user 
-can knowingly decide the additional latency/overhead is worth the feature.
+People have tried to use PERF_EVENT_IOC_PERIOD but stopped because it was 
+buggy.  It is still used, as someone complaining to me about the manpage 
+description not matching reality is what started this whole thread.
 
-David
+There was a push for getting this issue fixed back in 2010 but it never 
+went anywhere.
 
+The userspace users will report bugs, but they are usually intimidated by 
+the linux-kernel list and won't push along changes themselves.  Usually 
+it's up to someone like me or Stephane to do that, and we miss things 
+sometimes.
+
+The users will just find a workaround and drop the issue, especially if 
+it's going to take years before the fix shows up in RHEL or whatever 
+ancient vendor kernel they are using.
+
+> The below code should deal with both cases I think -- completely
+> untested.
+
+Uncompiled too I guess?
+
+kernel/events/core.c: In function ¡perf_event_period¢:
+kernel/events/core.c:3531: error: invalid type argument of ¡->¢ (have ¡local64_t¢)
+make[3]: *** [kernel/events/core.o] Error 1
+
+I also won't be able to test the ARM change, as my pandaboard won't boot 
+with recent kernels (can't find the MMC root filesystem) and I haven't had 
+time to track down why.  Also even on a simple period changing test it 
+often fails due to lost interrupts (the Cortex-A9 lost interrupt errata?).
+
+Vince
+--8323329-945360069-1383142404=:8668--
