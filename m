@@ -1,97 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629Ab3J3Hy5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 03:54:57 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40812 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab3J3Hyz (ORCPT
+	id S1752881Ab3J3H5l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 03:57:41 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:51790 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab3J3H5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 03:54:55 -0400
-Date: Wed, 30 Oct 2013 08:54:46 +0100
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Joe Perches <joe@perches.com>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: Re: [PATCH v2] can: c_can: Speed up rx_poll function
-Message-ID: <20131030075446.GE20839@pengutronix.de>
-References: <1383035267-19604-1-git-send-email-mpa@pengutronix.de>
- <1383035688.2713.2.camel@joe-AO722>
- <20131029085853.GC20839@pengutronix.de>
- <1383063845.2713.15.camel@joe-AO722>
+	Wed, 30 Oct 2013 03:57:40 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID r9U7ri7R010606, This message is accepted by code: ctloc85258
+From: <rogerable@realtek.com>
+To: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>
+CC: <maximlevitsky@gmail.com>, <gregkh@linuxfoundation.org>, <oakad@yahoo.com>,
+        <wei_wang@realsil.com.cn>, <micky_ching@realsil.com.cn>,
+        Roger Tseng <rogerable@realtek.com>
+Subject: [PATCH] memstick: fix unreachable state in h_msb_read_page() in ms_block.c
+Date: Wed, 30 Oct 2013 15:54:11 +0800
+Message-ID: <1383119651-31317-1-git-send-email-rogerable@realtek.com>
+X-Mailer: git-send-email 1.8.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1383063845.2713.15.camel@joe-AO722>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:38:09 up 66 days, 17:08, 48 users,  load average: 0.17, 0.13,
- 0.11
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
+X-Originating-IP: [172.21.81.189]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 09:24:05AM -0700, Joe Perches wrote:
-> On Tue, 2013-10-29 at 09:58 +0100, Markus Pargmann wrote:
-> > On Tue, Oct 29, 2013 at 01:34:48AM -0700, Joe Perches wrote:
-> > > On Tue, 2013-10-29 at 09:27 +0100, Markus Pargmann wrote:
-> > > > This patch speeds up the rx_poll function by reducing the number of
-> > > > register reads.
-> > > []
-> > > > 125kbit:
-> > > >   Function                               Hit    Time            Avg             s^2
-> > > >   --------                               ---    ----            ---             ---
-> > > >   c_can_do_rx_poll                     63960    10168178 us     158.977 us      1493056 us
-> > > > With patch:
-> > > >   c_can_do_rx_poll                     63939    4268457 us     66.758 us       818790.9 us
-> > > > 
-> > > > 1Mbit:
-> > > >   Function                               Hit    Time            Avg             s^2
-> > > >   --------                               ---    ----            ---             ---
-> > > >   c_can_do_rx_poll                     69489    30049498 us     432.435 us      9271851 us
-> > > > With patch:
-> > > >   c_can_do_rx_poll                    103034    24220362 us     235.071 us      6016656 us
-> []
-> > Yes I just measured the timings again:
-> []
-> > ./perf_can_test.sh 125000 30
-> []
-> >   c_can_do_rx_poll                     63941    3764057 us     58.867 us       776162.2 us 
-> 
-> Good, it's slightly faster still.
-> 
-> > ./perf_can_test.sh 1000000 30
-> []
-> >   c_can_do_rx_poll                    207109    24322185 us     117.436 us      171469047 us 
-> []
-> > It is interesting that the number of hits for c_can_do_rx_poll is twice as much
-> > as it was with find_next_bit.
-> 
-> How is this possible?  Any idea?
+From: Roger Tseng <rogerable@realtek.com>
 
-Perhaps the can core received more messages in the previous patch
-version while being in the poll function. This way it can handle more
-messages without a new interrupt/poll call.
+In h_msb_read_page() in ms_block.c, flow never reaches case
+MSB_RP_RECIVE_STATUS_REG. This causes error when MEMSTICK_INT_ERR is
+encountered and status error bits are going to be examined, but the status will
+never be copied back.
 
-The new patch is faster so it does not receive as many new messages as
-the old one, leading to more interrupts and less handled messages per
-poll call.
+Fix it by transiting to MSB_RP_RECIVE_STATUS_REG right after
+MSB_RP_SEND_READ_STATUS_REG.
 
-Regards,
+Signed-off-by: Roger Tseng <rogerable@realtek.com>
+---
+ drivers/memstick/core/ms_block.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Markus Pargmann
-
+diff --git a/drivers/memstick/core/ms_block.c b/drivers/memstick/core/ms_block.c
+index 08e7023..9188ef5 100644
+--- a/drivers/memstick/core/ms_block.c
++++ b/drivers/memstick/core/ms_block.c
+@@ -401,7 +401,7 @@ again:
+ 			sizeof(struct ms_status_register)))
+ 			return 0;
+ 
+-		msb->state = MSB_RP_RECEIVE_OOB_READ;
++		msb->state = MSB_RP_RECIVE_STATUS_REG;
+ 		return 0;
+ 
+ 	case MSB_RP_RECIVE_STATUS_REG:
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.8.2
+
