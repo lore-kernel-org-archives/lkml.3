@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269Ab3J3XJp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 19:09:45 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:44873 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab3J3XJo (ORCPT
+	id S1754583Ab3J3XJs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 19:09:48 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42085 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937Ab3J3XJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 19:09:44 -0400
-Date: Thu, 31 Oct 2013 07:09:17 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: airlied@linux.ie
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] drm:drm_pci: fix resource leak in drm_get_pci_dev
-Message-ID: <20131030230914.GA5697@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>, airlied@linux.ie,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+	Wed, 30 Oct 2013 19:09:46 -0400
+Date: Wed, 30 Oct 2013 23:09:20 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Ming Lei <tom.leiming@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chen Gang <gang.chen@asianux.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Michal Marek <mmarek@suse.cz>
+Subject: Re: [RFC PATCH] kernel/kallsyms.c: only show legal kernel symbol
+Message-ID: <20131030230920.GQ16735@n2100.arm.linux.org.uk>
+References: <20131024084559.GD16735@n2100.arm.linux.org.uk> <87mwlyclng.fsf@rustcorp.com.au> <CACVXFVO86u0h0V-1_DCkO5HNyUp2i_UsjPrVWDb-ZBtmwVk28A@mail.gmail.com> <87y55h7vcd.fsf@rustcorp.com.au> <CACVXFVPXEUX9JQ2NZvL8=J34zbw2fn202QW2SQtpKjdQ+tv=vg@mail.gmail.com> <87sivp7eai.fsf@rustcorp.com.au> <CACVXFVN7PiU1dorkeamtC9-Wg_TVQE8xFiJtad-C8q4_=Rc1Ow@mail.gmail.com> <874n82gk89.fsf@rustcorp.com.au> <20131028132348.62f7e368@tom-ThinkPad-T410> <87ob6aeyg4.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87ob6aeyg4.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should call drm_cleanup_in_dev in error handle
-code path after drm_fill_in_dev had been called,
-or it will cause resource leak heavily, vmalloc
-leak etc.
+On Mon, Oct 28, 2013 at 04:20:19PM +1030, Rusty Russell wrote:
+> Ming Lei <tom.leiming@gmail.com> writes:
+> > On Mon, 28 Oct 2013 13:44:30 +1030
+> > Rusty Russell <rusty@rustcorp.com.au> wrote:
+> >
+> >> Ming Lei <tom.leiming@gmail.com> writes:
+> >> 
+> >> I don't know...  It would be your job, as the person making the change,
+> >> to find all the users of kallsyms and prove that.
+> >> 
+> >> This is why it is easier not to include incorrect values in the kernel's
+> >> kallsyms in the first place.
+> >
+> > OK, thanks for your comment, and I figured out one way to do it in
+> > scripts/kallsyms.c, could you comment on below patch?
+> 
+> Looks great! Seems like we spent more time arguing than it took you to
+> code that up.
+> 
+> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+> 
+> Russell, this seems logical for you to take along with the changes which
+> caused the problem?
 
-This patch also add call to dev->unload in error
-handle code path.
-
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- drivers/gpu/drm/drm_pci.c | 18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/gpu/drm/drm_pci.c b/drivers/gpu/drm/drm_pci.c
-index 14194b6..5f15805 100644
---- a/drivers/gpu/drm/drm_pci.c
-+++ b/drivers/gpu/drm/drm_pci.c
-@@ -345,16 +345,16 @@ int drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
- 		pci_set_drvdata(pdev, dev);
- 		ret = drm_get_minor(dev, &dev->control, DRM_MINOR_CONTROL);
- 		if (ret)
--			goto err_g2;
-+			goto err_g3;
- 	}
- 
- 	if ((ret = drm_get_minor(dev, &dev->primary, DRM_MINOR_LEGACY)))
--		goto err_g3;
-+		goto err_g4;
- 
- 	if (dev->driver->load) {
- 		ret = dev->driver->load(dev, ent->driver_data);
- 		if (ret)
--			goto err_g4;
-+			goto err_g5;
- 	}
- 
- 	/* setup the grouping for the legacy output */
-@@ -362,7 +362,7 @@ int drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
- 		ret = drm_mode_group_init_legacy_group(dev,
- 						&dev->primary->mode_group);
- 		if (ret)
--			goto err_g4;
-+			goto err_g6;
- 	}
- 
- 	list_add_tail(&dev->driver_item, &driver->device_list);
-@@ -373,12 +373,16 @@ int drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
- 
- 	mutex_unlock(&drm_global_mutex);
- 	return 0;
--
--err_g4:
-+err_g6:
-+	if (dev->driver->unload)
-+		dev->driver->unload(dev);
-+err_g5:
- 	drm_put_minor(&dev->primary);
--err_g3:
-+err_g4:
- 	if (drm_core_check_feature(dev, DRIVER_MODESET))
- 		drm_put_minor(&dev->control);
-+err_g3:
-+	drm_cleanup_in_dev(dev);
- err_g2:
- 	pci_disable_device(pdev);
- err_g1:
--- 
-1.7.12.4.dirty
+The changes are already in mainline since a long time (back in July/August
+time).  Am I the right person to take stuff for scripts/ ?  Isn't that
+more kbuild territory?
