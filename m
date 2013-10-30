@@ -1,110 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab3J3Llr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 07:41:47 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34699 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300Ab3J3Llp (ORCPT
+	id S1754005Ab3J3Lp2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 07:45:28 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:63316 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753925Ab3J3LpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 07:41:45 -0400
-Date: Wed, 30 Oct 2013 12:41:44 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, sre@ring0.de, joni.lapilainen@gmail.com,
-        David Gnedt <david.gnedt@davizone.at>
-Subject: Re: [PATCH 08/16] wl1251: implement multicast address filtering
-Message-ID: <20131030114144.GB8763@amd.pavel.ucw.cz>
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
- <1382819655-30430-9-git-send-email-pali.rohar@gmail.com>
-MIME-Version: 1.0
+	Wed, 30 Oct 2013 07:45:25 -0400
+X-Nat-Received: from [202.181.97.72]:57505 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1383133512.16657
+To: jack@suse.cz, mike.marciniszyn@intel.com, roland@purestorage.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH linux-next-20131029] IB/ipath: Fix random stack overflow.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Message-Id: <201310302045.AEH12985.FSOOJOQLHFtMFV@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Wed, 30 Oct 2013 20:45:10 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1382819655-30430-9-git-send-email-pali.rohar@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 30102013 #10426834, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+>From bbba584a502b9417af06e4a55401c013a7e90eb1 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Wed, 30 Oct 2013 16:12:58 +0900
+Subject: [PATCH linux-next-20131029] IB/ipath: Fix random stack overflow.
 
-> Port multicast address filtering from wl1271 driver.
-> It sets up the hardware multicast address filter in configure_filter() with
-> addresses supplied through prepare_multicast().
+Commit 18fec3c6 "IB/ipath: Convert ipath_user_sdma_pin_pages() to use
+get_user_pages_fast()" requested for undefined number of pages with buffer for
+2 pages.
 
-> +static u64 wl1251_op_prepare_multicast(struct ieee80211_hw *hw,
-> +				       struct netdev_hw_addr_list *mc_list)
-> +{
-> +	struct wl1251_filter_params *fp;
-> +	struct netdev_hw_addr *ha;
-> +	struct wl1251 *wl = hw->priv;
-> +
-> +	if (unlikely(wl->state == WL1251_STATE_OFF))
-> +		return 0;
-> +
-> +	fp = kzalloc(sizeof(*fp), GFP_ATOMIC);
-> +	if (!fp) {
-> +		wl1251_error("Out of memory setting filters.");
-> +		return 0;
-> +	}
+  drivers/infiniband/hw/ipath/ipath_user_sdma.c: In function 'ipath_user_sdma_pin_pages':
+  drivers/infiniband/hw/ipath/ipath_user_sdma.c:283: warning: 'j' is used uninitialized in this function
 
-So if there's not enough memory, we return 0.
+ipath_user_sdma_pin_pages() assumes that npages is either 1 or 2 because
+ipath_user_sdma_queue_pkts() checks that 0 < iov->iov_len <= PAGE_SIZE
+which lets ipath_user_sdma_num_pages() return either 1 or 2.
 
-> +	/* update multicast filtering parameters */
-> +	fp->mc_list_length = 0;
-> +	if (netdev_hw_addr_list_count(mc_list) > ACX_MC_ADDRESS_GROUP_MAX) {
-> +		fp->enabled = false;
-> +	} else {
-> +		fp->enabled = true;
-> +		netdev_hw_addr_list_for_each(ha, mc_list) {
-> +			memcpy(fp->mc_list[fp->mc_list_length],
-> +					ha->addr, ETH_ALEN);
-> +			fp->mc_list_length++;
-> +		}
-> +	}
-> +
-> +	return (u64)(unsigned long)fp;
-> +}
+Please check whether commit 18fec3c6 was backported
+because that commit has "Cc: <stable@vger.kernel.org>" line.
 
-Hiding pointers into u64 is not exactly nice, but I guess that's how
-interface is designed? :-(.
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: <stable@vger.kernel.org>
+---
+ drivers/infiniband/hw/ipath/ipath_user_sdma.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> @@ -737,6 +779,15 @@ static void wl1251_op_configure_filter(struct ieee80211_hw *hw,
->  	if (ret < 0)
->  		goto out;
->  
-> +	if (*total & FIF_ALLMULTI || *total & FIF_PROMISC_IN_BSS)
-> +		ret = wl1251_acx_group_address_tbl(wl, false, NULL, 0);
-> +	else if (fp)
-> +		ret = wl1251_acx_group_address_tbl(wl, fp->enabled,
-> +						   fp->mc_list,
-> +						     	fp->mc_list_length);
-
-Is it correct not to call anything in !fp case (for example because we
-were out of memory?)
-
-> +	if (ret < 0)
-> +		goto out;
-> +
->  	/* send filters to firmware */
->  	wl1251_acx_rx_config(wl, wl->rx_config, wl->rx_filter);
->  
-> @@ -744,6 +795,7 @@ static void wl1251_op_configure_filter(struct ieee80211_hw *hw,
->  
->  out:
->  	mutex_unlock(&wl->mutex);
-> +	kfree(fp);
->  }
-
-Umm, this is interesting. Who frees the memory in the success case?
-
-Thanks,
-									Pavel
+diff --git a/drivers/infiniband/hw/ipath/ipath_user_sdma.c b/drivers/infiniband/hw/ipath/ipath_user_sdma.c
+index 06cbfd4..cc04b7b 100644
+--- a/drivers/infiniband/hw/ipath/ipath_user_sdma.c
++++ b/drivers/infiniband/hw/ipath/ipath_user_sdma.c
+@@ -280,7 +280,7 @@ static int ipath_user_sdma_pin_pages(const struct ipath_devdata *dd,
+ 	int j;
+ 	int ret;
+ 
+-	ret = get_user_pages_fast(addr, j, 0, pages);
++	ret = get_user_pages_fast(addr, npages, 0, pages);
+ 	if (ret != npages) {
+ 		int i;
+ 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.1
