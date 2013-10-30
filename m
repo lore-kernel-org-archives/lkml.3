@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab3J3LuU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 07:50:20 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:12871 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751786Ab3J3LuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 07:50:17 -0400
-Message-ID: <5270F21C.3080805@imgtec.com>
-Date: Wed, 30 Oct 2013 11:48:44 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754009Ab3J3Lvw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 07:51:52 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34979 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab3J3Lvu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 07:51:50 -0400
+Date: Wed, 30 Oct 2013 12:51:48 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Luciano Coelho <luca@coelho.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
+        aaro.koskinen@iki.fi, sre@ring0.de, joni.lapilainen@gmail.com,
+        David Gnedt <david.gnedt@davizone.at>
+Subject: Re: [PATCH 11/16] wl1251: enable tx path in monitor mode if
+ necessary for packet injection
+Message-ID: <20131030115148.GE8763@amd.pavel.ucw.cz>
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
+ <1382819655-30430-12-git-send-email-pali.rohar@gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Vince Weaver <vince@deater.net>, Victor Kaplansky <VICTORK@il.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-metag <linux-metag@vger.kernel.org>
-Subject: Re: perf events ring buffer memory barrier on powerpc
-References: <20131025173749.GG19466@laptop.lan> <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com> <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com> <20131028132634.GO19466@laptop.lan> <20131028163418.GD4126@linux.vnet.ibm.com> <20131028201735.GA15629@redhat.com> <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com> <20131029102131.GA16117@laptop.programming.kicks-ass.net> <20131029103057.GN2490@laptop.programming.kicks-ass.net> <alpine.DEB.2.02.1310291524240.6608@pianoman.cluster.toy> <20131030104246.GH16117@laptop.programming.kicks-ass.net>
-In-Reply-To: <20131030104246.GH16117@laptop.programming.kicks-ass.net>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_10_30_11_50_07
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382819655-30430-12-git-send-email-pali.rohar@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-
-On 30/10/13 10:42, Peter Zijlstra wrote:
-> Subject: perf, tool: Add required memory barriers
+Hi!
 > 
-> To match patch bf378d341e48 ("perf: Fix perf ring buffer memory
-> ordering") change userspace to also adhere to the ordering outlined.
+> If necessary enable the tx path in monitor mode for packet injection using
+> the JOIN command with BSS_TYPE_STA_BSS and zero BSSID.
 > 
-> Most barrier implementations were gleaned from
-> arch/*/include/asm/barrier.h and with the exception of metag I'm fairly
-> sure they're correct.
+> Signed-off-by: David Gnedt <david.gnedt@davizone.at>
+> ---
+>  drivers/net/wireless/ti/wl1251/main.c   |    5 +++++
+>  drivers/net/wireless/ti/wl1251/tx.c     |   17 +++++++++++++++++
+>  drivers/net/wireless/ti/wl1251/wl1251.h |    1 +
+>  3 files changed, 23 insertions(+)
+> 
+> diff --git a/drivers/net/wireless/ti/wl1251/main.c b/drivers/net/wireless/ti/wl1251/main.c
+> diff --git a/drivers/net/wireless/ti/wl1251/tx.c b/drivers/net/wireless/ti/wl1251/tx.c
+> index 3cc82fd..1de4ccb 100644
+> --- a/drivers/net/wireless/ti/wl1251/tx.c
+> +++ b/drivers/net/wireless/ti/wl1251/tx.c
+> @@ -28,6 +28,7 @@
+>  #include "tx.h"
+>  #include "ps.h"
+>  #include "io.h"
+> +#include "event.h"
+>  
+>  static bool wl1251_tx_double_buffer_busy(struct wl1251 *wl, u32 data_out_count)
+>  {
+> @@ -298,6 +299,22 @@ static int wl1251_tx_frame(struct wl1251 *wl, struct sk_buff *skb)
+>  		}
+>  	}
+>  
+> +	/* Enable tx path in monitor mode for packet injection */
+> +	if ((wl->vif == NULL) && !wl->joined) {
+> +		ret = wl1251_cmd_join(wl, BSS_TYPE_STA_BSS, wl->channel,
+> +				      wl->beacon_int, wl->dtim_period);
+> +		if (ret < 0)
+> +			wl1251_warning("join failed");
+> +		else {
+> +			ret = wl1251_event_wait(wl, JOIN_EVENT_COMPLETE_ID,
+> +						100);
+> +			if (ret < 0)
+> +				wl1251_warning("join timeout");
+> +			else
+> +				wl->joined = true;
+> +		}
+> +	}
 
-Yeh...
+Create function enable_tx_for_packet_injection() and then just return
+so that you don't have to nest ifs?
 
-Short answer:
-For Meta you're probably best off assuming
-CONFIG_METAG_SMP_WRITE_REORDERING=n and just using compiler barriers.
-
-Long answer:
-The issue with write reordering between Meta's hardware threads beyond
-the cache is only with a particular SoC, and SMP is not used in
-production on it.
-It is possible to make the LINSYSEVENT_WR_COMBINE_FLUSH register
-writable to userspace (it's in a non-mappable region already) but even
-then the write to that register needs odd placement to be effective
-(before the shmem write rather than after - which isn't a place any
-existing barriers are guaranteed to be placed). I'm fairly confident we
-get away with it in the kernel, and userland normally just uses linked
-load/store instructions for atomicity which works fine.
-
-Cheers
-James
-
+Thanks,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
