@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab3J3UFJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 16:05:09 -0400
-Received: from plane.gmane.org ([80.91.229.3]:36445 "EHLO plane.gmane.org"
+	id S1754711Ab3J3UIQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 16:08:16 -0400
+Received: from sandeen.net ([63.231.237.45]:53690 "EHLO sandeen.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752697Ab3J3UFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 16:05:07 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Leon Gorge <leon@georgemail.de>
-Subject: Re: compile =?utf-8?b?eDg2XzY0?= waring
-Date: Wed, 30 Oct 2013 13:04:42 +0000 (UTC)
-Message-ID: <loom.20131030T132303-504@post.gmane.org>
-References: <201307051956052638321@gmail.com>  <1374699912.29835.8.camel@x61.thuisdomein> <51F061CC.9080704@ti.com>  <1374742433.29835.31.camel@x61.thuisdomein> <1374745288.29835.41.camel@x61.thuisdomein> <51F1174D.2010105@ti.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754666Ab3J3UIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 16:08:15 -0400
+Message-ID: <5271672C.7070101@sandeen.net>
+Date: Wed, 30 Oct 2013 15:08:12 -0500
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Ben Myers <bpm@sgi.com>,
+        =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
+CC: Alex Elder <elder@kernel.org>, open list <linux-kernel@vger.kernel.org>,
+        XFS FILESYSTEM <xfs@oss.sgi.com>
+Subject: Re: [PATCH] xfs: fix possible NULL dereference
+References: <20131021231849.GL10553@sgi.com> <20131021235601.GG4446@dastard>	<5265C03B.50701@sandeen.net> <20131022001732.GI4446@dastard>	<CAGG-pUTh-PJJ4Nzo0r-f3VDPMc81U2z_NMX+Wcex3KzGs=U8cA@mail.gmail.com>	<20131022203946.GB2797@dastard> <5266E4BD.8030601@sandeen.net>	<20131022210300.GC2797@dastard> <5266EBF0.901@sandeen.net>	<CAGG-pUTtYomspBXn=RE7YFU=vu6rWZ1fU7CBO45Mmodj8DZFiQ@mail.gmail.com> <20131023203435.GR1935@sgi.com>
+In-Reply-To: <20131023203435.GR1935@sgi.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 178.5.208.15 (Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tom Rini <trini <at> ti.com> writes:
+On 10/23/13 3:34 PM, Ben Myers wrote:
 
+> xfs: fix possible NULL dereference in xlog_verify_iclog
 > 
-> On 07/25/2013 05:41 AM, Paul Bolle wrote:
-> > Tom,
-> > 
-> > On Thu, 2013-07-25 at 10:53 +0200, Paul Bolle wrote:
-> >> But I've just pulled top-of-tree Linus, ie commit 07bc9dc1b0
-> >> ("git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc'"). I'll
-> >> try to build that and I 'll send you my .config if this all is still
-> >> triggered.
-> > 
-> > It is still seen with "make bzImage" at v3.11-rc2-185-g07bc9dc (current
-> > Linus' tip-of-tree). I get, in summary:
-> >     WARNING: arch/x86/mm/built-in.o(.text.unlikely+0xbf2): Section
-mismatch in reference from the
-> function __node_set.constprop.0() to the variable .init.data:numa_nodes_parsed
-> >     WARNING: arch/x86/built-in.o(.text.unlikely+0x140e): Section
-mismatch in reference from the
-> function __node_set.constprop.0() to the variable .init.data:numa_nodes_parsed
-> >     WARNING: vmlinux.o(.text.unlikely+0x1444): Section mismatch in
-reference from the function
-> __node_set.constprop.0() to the variable .init.data:numa_nodes_parsed
-> > 
-> > But it is all the same thing (the issue apparently just repeat itself
-> > when arch/x86/mm/built-in.o is merged into arch/x86/built-in.o, and
-> > again when arch/x86/built-in.o is merged into vmlinux.o).
+> In xlog_verify_iclog a debug check of the incore log buffers prints an
+> error if icptr is null and then goes on to dereference the pointer
+> regardless.  Convert this to an assert so that the intention is clear.
+> This was reported by Coverty.
 > 
-> OK, thanks.  I just posted a patch that fixes the warning here.  The
-> problem is that __node_set wasn't being inlined by the compiler, so you
-> have the section mis-match above.
+> Reported-by: Geyslan G. Bem <geyslan@gmail.com>
+> Signed-off-by: Ben Myers <bpm@sgi.com>
+
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+
+> ---
+>  fs/xfs/xfs_log.c |    8 +++-----
+>  1 file changed, 3 insertions(+), 5 deletions(-)
 > 
-
-
-Hello,
-
-I'm just facing the same warning compiling 3.11.4 and 3.11.6 and i wondered
-wether your patch shouldn't already be included?
-
-The config was being used with practically every third or fourth
-kernel-release since 3.2.something (with adjustments from time to time).
-
-I've re-done the NUMA-related config with 3.7 and didn't get any warnings
-until now. Shall i post my config?
+> Index: b/fs/xfs/xfs_log.c
+> ===================================================================
+> --- a/fs/xfs/xfs_log.c	2013-10-23 14:52:47.875216875 -0500
+> +++ b/fs/xfs/xfs_log.c	2013-10-23 14:53:53.775245830 -0500
+> @@ -3714,11 +3714,9 @@ xlog_verify_iclog(
+>  	/* check validity of iclog pointers */
+>  	spin_lock(&log->l_icloglock);
+>  	icptr = log->l_iclog;
+> -	for (i=0; i < log->l_iclog_bufs; i++) {
+> -		if (icptr == NULL)
+> -			xfs_emerg(log->l_mp, "%s: invalid ptr", __func__);
+> -		icptr = icptr->ic_next;
+> -	}
+> +	for (i=0; i < log->l_iclog_bufs; i++, icptr = icptr->ic_next)
+> +      		ASSERT(icptr);
+> +
+>  	if (icptr != log->l_iclog)
+>  		xfs_emerg(log->l_mp, "%s: corrupt iclog ring", __func__);
+>  	spin_unlock(&log->l_icloglock);
+> 
+> _______________________________________________
+> xfs mailing list
+> xfs@oss.sgi.com
+> http://oss.sgi.com/mailman/listinfo/xfs
+> 
 
