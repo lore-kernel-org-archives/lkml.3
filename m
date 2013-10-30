@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755004Ab3J3Wxp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 18:53:45 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:47080 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754823Ab3J3Wwk (ORCPT
+	id S1755045Ab3J3WyE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 18:54:04 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:42909 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754775Ab3J3Wwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 18:52:40 -0400
+	Wed, 30 Oct 2013 18:52:37 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, viresh.kumar@linaro.org
-Subject: [PATCH V2 Resend 13/16] cpufreq: spear: use cpufreq_generic_get() routine
-Date: Thu, 31 Oct 2013 04:22:11 +0530
-Message-Id: <f1849128586bb8e8d130a0a96630386182cc419e.1383173230.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 Resend 11/16] cpufreq: s3c: use cpufreq_generic_get() routine
+Date: Thu, 31 Oct 2013 04:22:09 +0530
+Message-Id: <8af60ac5fac0a952e94925b38e09f275ebb446bf.1383173230.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1383173230.git.viresh.kumar@linaro.org>
 References: <cover.1383173230.git.viresh.kumar@linaro.org>
@@ -27,45 +27,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 We have common infrastructure available with us for getting a CPUs clk rate.
 Lets use it for this driver.
 
-Cc: spear-devel@list.st.com
+We don't need a global variable to hold clock anymore.
+
+Cc: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/spear-cpufreq.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/cpufreq/s3c24xx-cpufreq.c | 10 +++-------
+ drivers/cpufreq/s3c64xx-cpufreq.c | 33 ++++++++++++---------------------
+ 2 files changed, 15 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/cpufreq/spear-cpufreq.c b/drivers/cpufreq/spear-cpufreq.c
-index d02ccd1..5bed954 100644
---- a/drivers/cpufreq/spear-cpufreq.c
-+++ b/drivers/cpufreq/spear-cpufreq.c
-@@ -30,11 +30,6 @@ static struct {
- 	u32 cnt;
- } spear_cpufreq;
+diff --git a/drivers/cpufreq/s3c24xx-cpufreq.c b/drivers/cpufreq/s3c24xx-cpufreq.c
+index 4850882..7be6c2d 100644
+--- a/drivers/cpufreq/s3c24xx-cpufreq.c
++++ b/drivers/cpufreq/s3c24xx-cpufreq.c
+@@ -355,11 +355,6 @@ static int s3c_cpufreq_target(struct cpufreq_policy *policy,
+ 	return -EINVAL;
+ }
  
--static unsigned int spear_cpufreq_get(unsigned int cpu)
+-static unsigned int s3c_cpufreq_get(unsigned int cpu)
 -{
--	return clk_get_rate(spear_cpufreq.clk) / 1000;
+-	return clk_get_rate(clk_arm) / 1000;
 -}
 -
- static struct clk *spear1340_cpu_get_possible_parent(unsigned long newfreq)
+ struct clk *s3c_cpufreq_clk_get(struct device *dev, const char *name)
  {
- 	struct clk *sys_pclk;
-@@ -156,6 +151,7 @@ static int spear_cpufreq_target(struct cpufreq_policy *policy,
+ 	struct clk *clk;
+@@ -373,6 +368,7 @@ struct clk *s3c_cpufreq_clk_get(struct device *dev, const char *name)
  
- static int spear_cpufreq_init(struct cpufreq_policy *policy)
+ static int s3c_cpufreq_init(struct cpufreq_policy *policy)
  {
-+	policy->clk = spear_cpufreq.clk;
- 	return cpufreq_generic_init(policy, spear_cpufreq.freq_tbl,
- 			spear_cpufreq.transition_latency);
++	policy->clk = clk_arm;
+ 	return cpufreq_generic_init(policy, ftab, cpu_cur.info->latency);
  }
-@@ -165,7 +161,7 @@ static struct cpufreq_driver spear_cpufreq_driver = {
+ 
+@@ -408,7 +404,7 @@ static int s3c_cpufreq_suspend(struct cpufreq_policy *policy)
+ {
+ 	suspend_pll.frequency = clk_get_rate(_clk_mpll);
+ 	suspend_pll.driver_data = __raw_readl(S3C2410_MPLLCON);
+-	suspend_freq = s3c_cpufreq_get(0) * 1000;
++	suspend_freq = clk_get_rate(clk_arm);
+ 
+ 	return 0;
+ }
+@@ -450,7 +446,7 @@ static int s3c_cpufreq_resume(struct cpufreq_policy *policy)
+ static struct cpufreq_driver s3c24xx_driver = {
  	.flags		= CPUFREQ_STICKY,
- 	.verify		= cpufreq_generic_frequency_table_verify,
- 	.target_index	= spear_cpufreq_target,
--	.get		= spear_cpufreq_get,
+ 	.target		= s3c_cpufreq_target,
+-	.get		= s3c_cpufreq_get,
 +	.get		= cpufreq_generic_get,
- 	.init		= spear_cpufreq_init,
- 	.exit		= cpufreq_generic_exit,
- 	.attr		= cpufreq_generic_attr,
+ 	.init		= s3c_cpufreq_init,
+ 	.suspend	= s3c_cpufreq_suspend,
+ 	.resume		= s3c_cpufreq_resume,
+diff --git a/drivers/cpufreq/s3c64xx-cpufreq.c b/drivers/cpufreq/s3c64xx-cpufreq.c
+index 67e302e..02feae3 100644
+--- a/drivers/cpufreq/s3c64xx-cpufreq.c
++++ b/drivers/cpufreq/s3c64xx-cpufreq.c
+@@ -19,7 +19,6 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/module.h>
+ 
+-static struct clk *armclk;
+ static struct regulator *vddarm;
+ static unsigned long regulator_latency;
+ 
+@@ -54,14 +53,6 @@ static struct cpufreq_frequency_table s3c64xx_freq_table[] = {
+ };
+ #endif
+ 
+-static unsigned int s3c64xx_cpufreq_get_speed(unsigned int cpu)
+-{
+-	if (cpu != 0)
+-		return 0;
+-
+-	return clk_get_rate(armclk) / 1000;
+-}
+-
+ static int s3c64xx_cpufreq_set_target(struct cpufreq_policy *policy,
+ 				      unsigned int index)
+ {
+@@ -69,7 +60,7 @@ static int s3c64xx_cpufreq_set_target(struct cpufreq_policy *policy,
+ 	unsigned int old_freq, new_freq;
+ 	int ret;
+ 
+-	old_freq = clk_get_rate(armclk) / 1000;
++	old_freq = clk_get_rate(policy->clk) / 1000;
+ 	new_freq = s3c64xx_freq_table[index].frequency;
+ 	dvfs = &s3c64xx_dvfs_table[s3c64xx_freq_table[index].driver_data];
+ 
+@@ -86,7 +77,7 @@ static int s3c64xx_cpufreq_set_target(struct cpufreq_policy *policy,
+ 	}
+ #endif
+ 
+-	ret = clk_set_rate(armclk, new_freq * 1000);
++	ret = clk_set_rate(policy->clk, new_freq * 1000);
+ 	if (ret < 0) {
+ 		pr_err("Failed to set rate %dkHz: %d\n",
+ 		       new_freq, ret);
+@@ -101,7 +92,7 @@ static int s3c64xx_cpufreq_set_target(struct cpufreq_policy *policy,
+ 		if (ret != 0) {
+ 			pr_err("Failed to set VDDARM for %dkHz: %d\n",
+ 			       new_freq, ret);
+-			if (clk_set_rate(armclk, old_freq * 1000) < 0)
++			if (clk_set_rate(policy->clk, old_freq * 1000) < 0)
+ 				pr_err("Failed to restore original clock rate\n");
+ 
+ 			return ret;
+@@ -110,7 +101,7 @@ static int s3c64xx_cpufreq_set_target(struct cpufreq_policy *policy,
+ #endif
+ 
+ 	pr_debug("Set actual frequency %lukHz\n",
+-		 clk_get_rate(armclk) / 1000);
++		 clk_get_rate(policy->clk) / 1000);
+ 
+ 	return 0;
+ }
+@@ -169,11 +160,11 @@ static int s3c64xx_cpufreq_driver_init(struct cpufreq_policy *policy)
+ 		return -ENODEV;
+ 	}
+ 
+-	armclk = clk_get(NULL, "armclk");
+-	if (IS_ERR(armclk)) {
++	policy->clk = clk_get(NULL, "armclk");
++	if (IS_ERR(policy->clk)) {
+ 		pr_err("Unable to obtain ARMCLK: %ld\n",
+-		       PTR_ERR(armclk));
+-		return PTR_ERR(armclk);
++		       PTR_ERR(policy->clk));
++		return PTR_ERR(policy->clk);
+ 	}
+ 
+ #ifdef CONFIG_REGULATOR
+@@ -193,7 +184,7 @@ static int s3c64xx_cpufreq_driver_init(struct cpufreq_policy *policy)
+ 		unsigned long r;
+ 
+ 		/* Check for frequencies we can generate */
+-		r = clk_round_rate(armclk, freq->frequency * 1000);
++		r = clk_round_rate(policy->clk, freq->frequency * 1000);
+ 		r /= 1000;
+ 		if (r != freq->frequency) {
+ 			pr_debug("%dkHz unsupported by clock\n",
+@@ -203,7 +194,7 @@ static int s3c64xx_cpufreq_driver_init(struct cpufreq_policy *policy)
+ 
+ 		/* If we have no regulator then assume startup
+ 		 * frequency is the maximum we can support. */
+-		if (!vddarm && freq->frequency > s3c64xx_cpufreq_get_speed(0))
++		if (!vddarm && freq->frequency > clk_get_rate(policy->clk) / 1000)
+ 			freq->frequency = CPUFREQ_ENTRY_INVALID;
+ 
+ 		freq++;
+@@ -219,7 +210,7 @@ static int s3c64xx_cpufreq_driver_init(struct cpufreq_policy *policy)
+ 		pr_err("Failed to configure frequency table: %d\n",
+ 		       ret);
+ 		regulator_put(vddarm);
+-		clk_put(armclk);
++		clk_put(policy->clk);
+ 	}
+ 
+ 	return ret;
+@@ -229,7 +220,7 @@ static struct cpufreq_driver s3c64xx_cpufreq_driver = {
+ 	.flags          = 0,
+ 	.verify		= cpufreq_generic_frequency_table_verify,
+ 	.target_index	= s3c64xx_cpufreq_set_target,
+-	.get		= s3c64xx_cpufreq_get_speed,
++	.get		= cpufreq_generic_get,
+ 	.init		= s3c64xx_cpufreq_driver_init,
+ 	.name		= "s3c",
+ };
 -- 
 1.7.12.rc2.18.g61b472e
 
