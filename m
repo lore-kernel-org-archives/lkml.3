@@ -1,115 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab3J3JvX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 05:51:23 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47913 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab3J3JvV (ORCPT
+	id S1753436Ab3J3J40 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 05:56:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40687 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464Ab3J3J4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 05:51:21 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <5270D604.9020409@jp.fujitsu.com>
-Date: Wed, 30 Oct 2013 18:48:52 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 30 Oct 2013 05:56:25 -0400
+Date: Wed, 30 Oct 2013 10:56:15 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, eranian@google.com
+Subject: Re: perf: PERF_EVENT_IOC_PERIOD on ARM vs everywhere else
+Message-ID: <20131030095615.GG16117@laptop.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1310272233120.12721@vincent-weaver-1.um.maine.edu>
+ <20131028085700.GB20218@mudshark.cambridge.arm.com>
+ <alpine.DEB.2.10.1310281002020.24060@vincent-weaver-1.um.maine.edu>
+ <20131029042810.GD22291@mudshark.cambridge.arm.com>
+ <20131029134536.GD16117@laptop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1310291129090.15619@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-To: Baoquan He <bhe@redhat.com>
-CC: fengguang.wu@intel.com, jingbai.ma@hp.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bp@alien8.de, ebiederm@xmission.com,
-        akpm@linux-foundation.org, hpa@linux.intel.com, vgoyal@redhat.com
-Subject: Re: [PATCH v4 0/3] x86, apic, kexec: Add disable_cpu_apic kernel
- parameter
-References: <20131022150015.24240.39686.stgit@localhost6.localdomain6> <20131029142151.GA2782@dhcp-16-105.nay.redhat.com> <5270567D.8000706@jp.fujitsu.com> <20131030060643.GA24866@dhcp-16-105.nay.redhat.com>
-In-Reply-To: <20131030060643.GA24866@dhcp-16-105.nay.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1310291129090.15619@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/30 15:06), Baoquan He wrote:
-> On 10/30/13 at 09:44am, HATAYAMA Daisuke wrote:
->> (2013/10/29 23:21), Baoquan He wrote:
->>> Hi,
->>>
->>> I am reviewing this patchset, and found there's a cpu0 hotplug feature
->>> posted by intel which we can borrow an idea from. In that implementation,
->>> CPU0 is waken up by nmi not INIT to avoid the realmode bootstrap code
->>> execution. I tried it by below patch which includes one line of change.
->>>
->>> By console printing, I got the boot cpu is always 0(namely cpu=0),
->>> however the apicid related to each processor keeps the same as in 1st
->>> kernel. In my HP Z420 machine, the apicid for BSP is 0, so I just make a
->>> test patch which depends on the fact that apicid for BSP is 0. Maybe
->>> generally the apicid for BSP can't be guaranteed, then passing it from
->>> 1st kernel to 2nd kernel in cmdline is very helpful, just as you have
->>> done for disable_cpu_apic.
->>>
->>> On my HP z420, I add nr_cpus=4 in /etc/sysconfig/kdump, and then execute
->>> below command, then 3 APs (1 boot cpu and 2 AP) can be waken up
->>> correctly, but BSP failed because NMI received for unknown reason 21 on
->>> CPU0. I think I need further check why BSP failed to wake up by nmi. But
->>> 3 processors are brought up successfully and kdump is successful too.
->>>
->>> sudo taskset -c 1 sh -c "echo c >/proc/sysrq-trigger"
->>>
->>> [    0.296831] smpboot: Booting Node   0, Processors  #   1
->>> [    0.302095]
->>> *****************************************************cpu=1, apicid=0, wakeup_cpu_via_init_nmi
->>> [    0.311942] cpu=1, apicid=0, register_nmi_handlercpu=1, apicid=0, wakeup_secondary_cpu_via_nmi
->>> [    0.320826] Uhhuh. NMI received for unknown reason 21 on CPU 0.
->>> [    0.327129] Do you have a strange power saving mode enabled?
->>> [    0.333858] Dazed and confused, but trying to continue
->>> [    0.339290] cpu=1, apicid=0, wakeup_cpu_via_init_nmi
->>> [    2.409099] Uhhuh. NMI received for unknown reason 21 on CPU 0.
->>> [    2.415393] Do you have a strange power saving mode enabled?
->>> [    2.421142] Dazed and confused, but trying to continue
->>> [    5.379519] smpboot: CPU1: Not responding
->>> [    5.383692] NMI watchdog: enabled on all CPUs, permanently consumes one hw-PMU counter.
->>>
->>
->> We've already discussed this approach and concluded this is not applicable
->> to our issue.
->> Follow http://lists.infradead.org/pipermail/kexec/2012-October/006905.html.
->>
->> The reason is:
->>
->> - The cpu0-hotplugging approach assumes BSP to be halting before initiating
->>    NMI to it while in our case, BSP is halting in the 1st kernel or is
->>    running in arbitrary position of the 1st kernel in catastrophic state.
->>
->> - In general, NMI modifies stack, which means if throwing NMI to the BSP
->>    in the 1st kernel, stack on the 1st kernel is modified. It's unpermissible
->>    from kdump's perspective.
->
-> Hi HATAYAMA,
->
-> All right. I didn't think of the stack issues NMI will bring. In fact
-> without this NMI stack problem, using CPU0 Hotplug as a base and sending
-> nmi to bsp will be good, because BSP failure can be acceptable, then
-> (N-1)cpus can be used. Later on if possible the contexts modifying can
-> be changed to let BSP wake up correctly. After all, from the user's
-> point of view, multiple cpus can be waken up, why not waking up all cpus
-> including BSP.
->
-> Anyway, this issue has been discussed so long time, and it will be great
-> to run multiple cpus in 2nd kernel. This evolution may be like CPU0 Hotplug,
-> they let cpus except of BSP hot plug available, then hanle the last cpu -
-> the BSP finally. From this perspective, I like your patch and hope it
-> can be merged asap.
->
+On Tue, Oct 29, 2013 at 11:36:52AM -0400, Vince Weaver wrote:
+> On Tue, 29 Oct 2013, Peter Zijlstra wrote:
+> > On Tue, Oct 29, 2013 at 04:28:10AM +0000, Will Deacon wrote:
+> > > 
+> > > I can CC LKML on ARM perf patches if you think it will help, but all PMU
+> > > backend patches go via their respective arch trees afaict.
+> > 
+> > Just those that change user visible semantics that are shared between
+> > archs I suppose :-)
+> 
+> I suppose it is hard to know what's commonly shared.  I hadn't realized
+> that the IOC_PERIOD stuff was arch specific code, I would have thought
+> it was common code.
 
-Considering again, I'm now beginning with thinking that making CPU halting
-in the 1st kernel to execute the 2nd kernel's NMI handler is impossible.
+OK, so I've gone over this and this isn't in fact arch specific at all.
+The arch code should simply use ->period to reset the counters, and
+stuff the last period into ->last_period.
 
-The address of IDT is saved in IDTR and this is a per-cpu register, and
-value of IDTR in the 2nd kernel and the one in the 1st kernel are different.
-In other words, to wake up BSP from 2nd kernel using NMI, it's necessary to
-tell the address of IDTR in the 2nd kernel to the BSP halting in the 1st
-kernel.
+Aside from that it shouldn't do anything. So what ARM did was actively
+wrong.
 
--- 
-Thanks.
-HATAYAMA, Daisuke
+Esp. since it added code to the common path instead of the uncommon
+(ioctl) path.
 
+> > We could start by making all archs do the same thing again; but yes
+> > ideally we'd move some of it into generic code. Not entirely sure how
+> > that will work out though, there's a reason its in per-arch code :/
+> > 
+> > 
+> > Vince, what would you prefer to do here?
+> 
+> as with most of thes things there isn't really a good answer.
+
+Yeah, I was afraid of that :/
+
+> It turns out in the end that PAPI isn't bit by this one, because instead 
+> of using PERF_EVENT_IOC_PERIOD when the period is changed, PAPI just tears 
+> down all the perf_events and re-sets them up from scratch with the new 
+> period.  This is probably because PERF_EVENT_IOC_PERIOD was broken until 
+> 2.6.36.
+
+Right, it was one of those interfaces that people claimed were
+absolutely required so I implemented them but then nobody actually tried
+using them for a long while :-(
+
+This is a prime example of why Ingo now insists the perf tools supports
+every new interface, we had too many of these incidents.
+
+> It is true the current behavior is unexpected.  What was the logic behind 
+> deferring to the next overflow for the update?  Was it a code simplicity 
+> thing?  Or were there hardware reasons behind it?
+
+Mostly an oversight I think. The delay is simply how it worked out in
+that the arch code has to reload the period once an event fires in order
+to reprogram. Since nobody actually used the thing, nobody had
+experience with it.
+
+Now it turns out someone had a complaint but hid it somewhere on some
+obscure list :-(
+
+There is actually generic code that force resets the period; see
+perf_event_period().
+
+> Definitely when an event is stopped, it makes more sense for 
+> PERF_EVENT_IOC_PERIOD to take place immediately.  
+> 
+> I'm not sure what happens if we try to use it on a running event, 
+> especially if we've already passed the new period value.
+
+The below code should deal with both cases I think -- completely
+untested.
+
+---
+ arch/arm/kernel/perf_event.c |  4 ----
+ kernel/events/core.c         | 16 +++++++++++++++-
+ 2 files changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index e186ee1e63f6..4eb288f7ba69 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -99,10 +99,6 @@ int armpmu_event_set_period(struct perf_event *event)
+ 	s64 period = hwc->sample_period;
+ 	int ret = 0;
+ 
+-	/* The period may have been changed by PERF_EVENT_IOC_PERIOD */
+-	if (unlikely(period != hwc->last_period))
+-		left = period - (hwc->last_period - left);
+-
+ 	if (unlikely(left <= -period)) {
+ 		left = period;
+ 		local64_set(&hwc->period_left, left);
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 17b3c6cf1606..c45d53e561da 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3530,7 +3530,7 @@ static void perf_event_for_each(struct perf_event *event,
+ static int perf_event_period(struct perf_event *event, u64 __user *arg)
+ {
+ 	struct perf_event_context *ctx = event->ctx;
+-	int ret = 0;
++	int ret = 0, active;
+ 	u64 value;
+ 
+ 	if (!is_sampling_event(event))
+@@ -3554,6 +3554,20 @@ static int perf_event_period(struct perf_event *event, u64 __user *arg)
+ 		event->attr.sample_period = value;
+ 		event->hw.sample_period = value;
+ 	}
++
++	active = (event->state == PERF_EVENT_STATE_ACTIVE);
++	if (active) {
++		perf_pmu_disable(ctx->pmu);
++		event->pmu->stop(event, PERF_EF_UPDATE);
++	}
++
++	local64_set(event->hw.period_left, 0);
++
++	if (active) {
++		event->pmu->start(event, PERF_EF_RELOAD);
++		perf_pmu_enable(ctx->pmu);
++	}
++
+ unlock:
+ 	raw_spin_unlock_irq(&ctx->lock);
+ 
