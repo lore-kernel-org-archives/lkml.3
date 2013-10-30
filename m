@@ -1,42 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab3J3Tej (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 15:34:39 -0400
-Received: from mout.gmx.net ([212.227.17.20]:61929 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850Ab3J3Teh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 15:34:37 -0400
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] tpm/tpm_i2c_stm_st33: Check return code of get_burstcount (fix CID: 986658)
-Date: Wed, 30 Oct 2013 20:38:04 +0100
-User-Agent: KMail/1.13.7 (Linux/3.10.9; KDE/4.10.5; x86_64; ; )
-Cc: Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-References: <1383090860-15901-1-git-send-email-peterhuewe@gmx.de> <201310300142.11716.PeterHuewe@gmx.de> <20131030030747.GA12179@kroah.com>
-In-Reply-To: <20131030030747.GA12179@kroah.com>
+	id S1754481Ab3J3Tfo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 15:35:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52867 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751Ab3J3Tfn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 15:35:43 -0400
+Date: Wed, 30 Oct 2013 20:35:38 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] perf: arch_perf_out_copy_user default
+Message-ID: <20131030193538.GQ16117@laptop.programming.kicks-ass.net>
+References: <20131030143750.GT19466@laptop.lan>
+ <20131030192927.GB27625@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201310302038.04122.PeterHuewe@gmx.de>
-X-Provags-ID: V03:K0:xY1MX+kqDS+P6k06VV87Rx0tHitL6zeAOCeAdJS7S8is8uCKdSW
- hQrB1Hrnsr8HaSorPDKO91wCFsmYGZVmhyP0/SZw6pVM8/74CgWY7mo1tZnDISgWBQsgqe/
- TzTSSsgrZ7JQw/zw2JQfUvv3H/i8JKofqcH4OFPUaY5LmXIr/QrbNXeeFTGzEJ3ezelzMMg
- xsmzVyZsPYztIPycgmQKw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131030192927.GB27625@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
- 
-> It [the CID] is noise as not everyone can see it or make anything out of it, 
-> so please don't include it.
+On Wed, Oct 30, 2013 at 07:29:27PM +0000, Will Deacon wrote:
+> Yeah, that's weird, because they *do* appear to work! In fact, looking at
+> the code in kernel/events/core.c, it looks like __output_copy_user is
+> expected to return the number of bytes not copied, 
 
-I'll remove it from my tree before sending out the pull request to James.
-Thanks for your opinion.
-
-Peter
-
+Oh, cute, double fail.. head hurts.
