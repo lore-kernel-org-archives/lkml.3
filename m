@@ -1,81 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab3J3N2h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 09:28:37 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:58696 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091Ab3J3N2f (ORCPT
+	id S1754195Ab3J3NaW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 09:30:22 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:51044 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607Ab3J3NaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 09:28:35 -0400
-Date: Wed, 30 Oct 2013 09:28:31 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sysfs: move assignment to be under lock in
- sysfs_remove_dir()
-Message-ID: <20131030132831.GB27632@htj.dyndns.org>
-References: <20131029220939.GA23060@kroah.com>
- <8761sflhi1.fsf@tw-ebiederman.twitter.com>
- <CA+55aFwaxAoezL6GAJzw=D+7E_Oxr2sqdxvM3sFgPiO-1eh5LQ@mail.gmail.com>
- <87sivj9vi0.fsf@xmission.com>
+	Wed, 30 Oct 2013 09:30:21 -0400
+In-Reply-To: <20131030092725.GL4126@linux.vnet.ibm.com>
+References: <12083.1382486094@ale.ozlabs.ibm.com> <20131023141948.GB3566@localhost.localdomain> <20131025173749.GG19466@laptop.lan> <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com> <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com> <20131028132634.GO19466@laptop.lan> <20131028163418.GD4126@linux.vnet.ibm.com> <20131028201735.GA15629@redhat.com> <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com> <20131030092725.GL4126@linux.vnet.ibm.com>
+Subject: Re: perf events ring buffer memory barrier on powerpc
+X-KeepSent: C6B7100E:31C6B190-42257C14:004841C6;
+ type=4; name=$KeepSent
+To: paulmck@linux.vnet.ibm.com
+Cc: Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Michael Neuling <mikey@neuling.org>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
+Message-ID: <OFC6B7100E.31C6B190-ON42257C14.004841C6-42257C14.004A0EA6@il.ibm.com>
+From: Victor Kaplansky <VICTORK@il.ibm.com>
+Date: Wed, 30 Oct 2013 15:28:54 +0200
+X-MIMETrack: Serialize by Router on D06ML319/06/M/IBM(Release 8.5.3FP5|July 31, 2013) at
+ 30/10/2013 15:28:47
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87sivj9vi0.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-type: text/plain; charset=US-ASCII
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13103013-4966-0000-0000-00000757E163
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote on 10/30/2013
+11:27:25 AM:
 
-On Tue, Oct 29, 2013 at 10:29:43PM -0700, Eric W. Biederman wrote:
-> I never actually looked deeply into it, and I was working from several
-> year old memory and a quick skim of the patch when I asked the question.
-> 
-> The protection we have previous to this patch is that syfs_remove_dir is
-> only sane to call once.
-> 
-> Which makes the code that does:
-> 	if (!dir_sd)
->         	return;
-> in __sysfs_remove_dir very suspicious.   I expect we want a
-> WARN_ON(!dir_sd);
+> If you were to back up that insistence with a description of the
+orderings
+> you are relying on, why other orderings are not important, and how the
+> important orderings are enforced, I might be tempted to pay attention
+> to your opinion.
+>
+>                      Thanx, Paul
 
-It was always like that, probably in the same spirit as kfree() taking
-NULL so that it can be easier, for example, in init failure paths.
+NP, though, I feel too embarrassed to explain things about memory barriers
+when
+one of the authors of Documentation/memory-barriers.txt is on cc: list ;-)
 
-> But the entire directory removal process and working on sysfs stopped
-> being fun before I managed to get that cleaned up.  And unless I missed
-> something go by Tejun is going to go generalize this thing before this
-> bit gets cleaned up.  Sigh.
+Disclaimer: it is anyway impossible to prove lack of *any* problem.
 
-I kept the same behavior for kernfs_remove().  I don't think it's
-something we explicitly want to clean up tho?  It's an acceptable
-behavior.
+Having said that, lets look into an example in
+Documentation/circular-buffers.txt:
 
-> On an equally bizarre note.  I don't understand why we have a separate
-> spinlock there.  Looks...  Sigh.  We use a different lock from
-> everything as a premature optimization so that sysfs_remove_dir could be
-> modified to just take a sysfs_dirent, and all of the kobject handling
-> could be removed.
-> 
-> Sigh. It was never in my way and while I was working on the code that
-> there was a good locking reason for doing that silly thing.
+> THE PRODUCER
+> ------------
+>
+> The producer will look something like this:
+>
+>       spin_lock(&producer_lock);
+>
+>       unsigned long head = buffer->head;
+>       unsigned long tail = ACCESS_ONCE(buffer->tail);
+>
+>       if (CIRC_SPACE(head, tail, buffer->size) >= 1) {
+>               /* insert one item into the buffer */
+>               struct item *item = buffer[head];
+>
+>               produce_item(item);
+>
+>               smp_wmb(); /* commit the item before incrementing the head
+*/
+>
+>               buffer->head = (head + 1) & (buffer->size - 1);
+>
+>               /* wake_up() will make sure that the head is committed
+before
+>                * waking anyone up */
+>               wake_up(consumer);
+>       }
+>
+>       spin_unlock(&producer_lock);
 
-Umm... you got it completely wrong.  It's there to address a race
-condition between removal and symlinking and has nothing to do with
-optimization.
+We can see that authors of the document didn't put any memory barrier
+after "buffer->tail" read and before "produce_item(item)" and I think they
+have
+a good reason.
 
-The current odd looking locking on removal side serves a purpose in
-making it clear that it isn't synchronizing concurrent removal calls.
-Maybe we should rename the lock to sysfs_symlink_target_lock and add
-fat comments on both sides?  Or we can make it a mutex and exclude the
-entire removal and symlinking, which would probably easier to follow.
+Lets consider an imaginary smp_mb() right before "produce_item(item);".
+Such a barrier will ensure that -
 
-Thanks.
+    - the memory read on "buffer->tail" is completed
+	before store to memory pointed by "item" is committed.
 
--- 
-tejun
+However, the store to "buffer->tail" anyway cannot be completed before
+conditional
+branch implied by "if ()" is proven to execute body statement of the if().
+And the
+latter cannot be proven before read of "buffer->tail" is completed.
+
+Lets see this other way. Lets imagine that somehow a store to the data
+pointed by "item"
+is completed before we read "buffer->tail". That would mean, that the store
+was completed
+speculatively. But speculative execution of conditional stores is
+prohibited by C/C++ standard,
+otherwise any conditional store at any random place of code could pollute
+shared memory.
+
+On the other hand, if compiler or processor can prove that condition in
+above if() is going
+to be true (or if speculative store writes the same value as it was before
+write), the
+speculative store *is* allowed. In this case we should not be bothered by
+the fact that
+memory pointed by "item" is written before a read from "buffer->tail" is
+completed.
+
+Regards,
+-- Victor
+
