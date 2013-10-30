@@ -1,146 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab3J3N6C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 09:58:02 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13189 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754496Ab3J3N57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 09:57:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="427076894"
-Date: Wed, 30 Oct 2013 18:33:25 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Olof Johansson <olof@lixom.net>, Joel Fernandes <joelf@ti.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Sekhar Nori <nsekhar@ti.com>, Matt Porter <matt.porter@linaro.org>
-Subject: Re: [PATCH 01/28] dmaengine: use DMA_COMPLETE for dma completion
- status
-Message-ID: <20131030130325.GA18788@intel.com>
-References: <CAPcyv4hOZHmegDiPYmeVWzOUCasQaixzCzpLHs37i7RZznhGsA@mail.gmail.com>
- <20131017020745.GA14013@intel.com>
- <20131017142755.GA4477@breakpoint.cc>
- <20131017134846.GG14013@intel.com>
- <Pine.LNX.4.64.1310242326500.2900@axis700.grange>
- <20131025042310.GC21230@intel.com>
- <Pine.LNX.4.64.1310250813370.6186@axis700.grange>
- <20131025054321.GD21230@intel.com>
- <Pine.LNX.4.64.1310250840350.6186@axis700.grange>
- <CAOesGMivD_3zSL503R0OaqyGv4Rj8qJqnbM2TdmjtxR2U63ztw@mail.gmail.com>
+	id S1754561Ab3J3N7H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 09:59:07 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38588 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628Ab3J3N7E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 09:59:04 -0400
+Date: Wed, 30 Oct 2013 14:59:02 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: linux-input@vger.kernel.org, "'Beno?t Cousson'" <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCHv2 1/3] Input: twl4030-keypad - add device tree support
+Message-ID: <20131030135902.GA2656@amd.pavel.ucw.cz>
+References: <1382446042-27099-1-git-send-email-sre@debian.org>
+ <1382446042-27099-2-git-send-email-sre@debian.org>
+ <20131027111715.GA2437@xo-6d-61-c0.localdomain>
+ <20131027114026.GB14091@earth.universe>
+ <20131027114753.GB14901@amd.pavel.ucw.cz>
+ <20131030135307.D8CE1C402A0@trevor.secretlab.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOesGMivD_3zSL503R0OaqyGv4Rj8qJqnbM2TdmjtxR2U63ztw@mail.gmail.com>
+In-Reply-To: <20131030135307.D8CE1C402A0@trevor.secretlab.ca>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 09:47:55AM -0700, Olof Johansson wrote:
-> This patch broke some TI platforms (using edma) due to namespace
-> conflicts. The error is:
+On Wed 2013-10-30 06:53:07, Grant Likely wrote:
+> On Sun, 27 Oct 2013 12:47:53 +0100, Pavel Machek <pavel@ucw.cz> wrote:
+> > > > > +#if IS_ENABLED(CONFIG_OF)
+> > > > I'm probably missing something here, but why not #ifdef CONFIG_OF?
+> > > 
+> > > I have been told for other drivers, that IS_ENABLED() is
+> > > the prefered way to check for configuration these days.
+> > 
+> > CONFIG_OF can not be module, using IS_ENABLED() on it is just wrong.
 > 
-> ../../include/linux/dmaengine.h:54:2: error: expected identifier
-> before numeric constant   (for DMA_COMPLETE)
-> 
-> .. it's because they define DMA_COMPLETE in include/platform_data/edma.h.
-> 
-> The edma driver seems to overall lack prefixes and thus pollutes
-> global namespaces, so it should be fixed up.
-Yup this needs some work.
+> That makes no sense. There is absolutely nothing wrong with using
+> IS_ENABLED() for CONFIG_OF.
 
-I fixed up the error with below, can you pls verify. Pls note this is compile
-tested only!
+Besides being too long, confusing for a reader, and testing for an
+option that can't exist?
 
------><8---------------------------
+include/linux/kconfig.h-/*
+include/linux/kconfig.h: * IS_ENABLED(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'y' or 'm',
+include/linux/kconfig.h- * 0 otherwise.
+include/linux/kconfig.h- *
+include/linux/kconfig.h- */
+include/linux/kconfig.h:#define IS_ENABLED(option) \
+include/linux/kconfig.h-	(config_enabled(option) || config_enabled(option##_MODULE))
+include/linux/kconfig.h-
+include/linux/kconfig.h-/*
+include/linux/kconfig.h- * IS_BUILTIN(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'y', 0
+include/linux/kconfig.h- * otherwise. For boolean options, this is
+equivalent to
+include/linux/kconfig.h: * IS_ENABLED(CONFIG_FOO).
+include/linux/kconfig.h- */
+include/linux/kconfig.h-#define IS_BUILTIN(option) config_enabled(option)
+include/linux/kconfig.h-
 
-From: Vinod Koul <vinod.koul@intel.com>
-Date: Wed, 30 Oct 2013 18:22:30 +0530
-Subject: [PATCH] dmanengine: fix edma driver to not define DMA_COMPLETE
+Oops. And I made a mistake of looking up config_enabled(). Obfuscated
+C code contest.
 
-edma header defines DMA_COMPLETE, this causes issues as commit adfedd9a32e4 move
-DMA_SUCCESS to DMA_COMPLETE. edma should properly namespace its defines and
-needs a future fix
-
-Reported-by: Olof Johansson <olof@lixom.net>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
----
- arch/arm/common/edma.c             |    4 ++--
- drivers/dma/edma.c                 |    4 ++--
- include/linux/platform_data/edma.h |    8 ++++----
- 3 files changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-index 8e1a024..41bca32 100644
---- a/arch/arm/common/edma.c
-+++ b/arch/arm/common/edma.c
-@@ -404,7 +404,7 @@ static irqreturn_t dma_irq_handler(int irq, void *data)
- 					BIT(slot));
- 			if (edma_cc[ctlr]->intr_data[channel].callback)
- 				edma_cc[ctlr]->intr_data[channel].callback(
--					channel, DMA_COMPLETE,
-+					channel, EDMA_DMA_COMPLETE,
- 					edma_cc[ctlr]->intr_data[channel].data);
- 		}
- 	} while (sh_ipr);
-@@ -459,7 +459,7 @@ static irqreturn_t dma_ccerr_handler(int irq, void *data)
- 								callback) {
- 						edma_cc[ctlr]->intr_data[k].
- 						callback(k,
--						DMA_CC_ERROR,
-+						EDMA_DMA_CC_ERROR,
- 						edma_cc[ctlr]->intr_data
- 						[k].data);
- 					}
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 29fa358..cb69f3a 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -407,7 +407,7 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
- 	edma_pause(echan->ch_num);
- 
- 	switch (ch_status) {
--	case DMA_COMPLETE:
-+	case EDMA_DMA_COMPLETE:
- 		spin_lock_irqsave(&echan->vchan.lock, flags);
- 
- 		edesc = echan->edesc;
-@@ -426,7 +426,7 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
- 		spin_unlock_irqrestore(&echan->vchan.lock, flags);
- 
- 		break;
--	case DMA_CC_ERROR:
-+	case EDMA_DMA_CC_ERROR:
- 		spin_lock_irqsave(&echan->vchan.lock, flags);
- 
- 		edma_read_slot(EDMA_CHAN_SLOT(echan->slot[0]), &p);
-diff --git a/include/linux/platform_data/edma.h b/include/linux/platform_data/edma.h
-index 179fb91..f50821c 100644
---- a/include/linux/platform_data/edma.h
-+++ b/include/linux/platform_data/edma.h
-@@ -67,10 +67,10 @@ struct edmacc_param {
- #define ITCCHEN		BIT(23)
- 
- /*ch_status paramater of callback function possible values*/
--#define DMA_COMPLETE 1
--#define DMA_CC_ERROR 2
--#define DMA_TC1_ERROR 3
--#define DMA_TC2_ERROR 4
-+#define EDMA_DMA_COMPLETE 1
-+#define EDMA_DMA_CC_ERROR 2
-+#define EDMA_DMA_TC1_ERROR 3
-+#define EDMA_DMA_TC2_ERROR 4
- 
- enum address_mode {
- 	INCR = 0,
+Just use #ifdef CONFIG_foo.
+									Pavel
 -- 
-1.7.0.4
-
---
-~Vinod
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
