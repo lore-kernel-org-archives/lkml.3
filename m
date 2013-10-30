@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab3J3WTc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 18:19:32 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:48741 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474Ab3J3WTb (ORCPT
+	id S1754034Ab3J3WTi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 18:19:38 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:12931 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753734Ab3J3WTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 18:19:31 -0400
-Date: Wed, 30 Oct 2013 15:19:28 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@linux.intel.com>
-cc: "K. Y. Srinivasan" <kys@microsoft.com>, Olaf Hering <olaf@aepfle.de>,
-        linux-kernel@vger.kernel.org, linux-tip-commits@vger.kernel.org
-Subject: [patch x86/hyperv resend] x86, hyperv: Fix build error
-In-Reply-To: <alpine.DEB.2.02.1310111604160.31170@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1310301516250.12808@chino.kir.corp.google.com>
-References: <1380554932-9888-1-git-send-email-olaf@aepfle.de> <tip-9e7827b5ea4ca93b4d864bc07c0fafb838d496b1@git.kernel.org> <alpine.DEB.2.02.1310111604160.31170@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 30 Oct 2013 18:19:35 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 30 Oct 2013 15:18:58 -0700
+Date: Thu, 31 Oct 2013 00:19:32 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Lucas Stach <l.stach@pengutronix.de>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>, Mark Zhang <markz@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Thierry Reding <treding@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clk: tegra: use pll_ref as the pll_e parent
+Message-ID: <20131030221932.GR22111@tbergstrom-lnx.Nvidia.com>
+References: <1383093707-10312-1-git-send-email-pdeschrijver@nvidia.com>
+ <527128B5.2020101@wwwdotorg.org>
+ <1383147850.4095.3.camel@weser.hi.pengutronix.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1383147850.4095.3.camel@weser.hi.pengutronix.de>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-9e7827b5ea4c ("x86, hyperv: Get the local APIC timer frequency from the 
-hypervisor") breaks the build when CONFIG_SMP is disabled because apic.h 
-isn't directly included:
+On Wed, Oct 30, 2013 at 04:44:10PM +0100, Lucas Stach wrote:
+> Am Mittwoch, den 30.10.2013, 09:41 -0600 schrieb Stephen Warren:
+> > On 10/29/2013 06:41 PM, Peter De Schrijver wrote:
+> > > Use pll_ref instead of pll_re_vco as the pll_e parent on Tegra114 and
+> > > Tegra124. Also add a pll_ref table entry for pll_e for Tegra114.
+> > 
+> > Why? What benefit does this give, or what bug does this fix?
+> > 
+> > > diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
+> > 
+> > >  	val_aux = pll_readl(pll_params->aux_reg, pll);
+> > >  
+> > >  	if (val & PLL_BASE_ENABLE) {
+> > > -		if (!(val_aux & PLLE_AUX_PLLRE_SEL))
+> > > +		if ((val_aux & PLLE_AUX_PLLRE_SEL) || (val_aux & val_aux))
+> > 
+> > Isn't "|| (val_aux & val_aux)" always true, at least if the value is
+> > non-zero? Either this should be simply "|| val_aux", or one of those two
+> > "val_aux" is the wrong thing.
+> > 
+> > >  			WARN(1, "pll_e enabled with unsupported parent %s\n",
+> > > -			  (val & PLLE_AUX_PLLP_SEL) ? "pllp_out0" : "pll_ref");
+> > > +			  (val_aux & PLLE_AUX_PLLP_SEL) ? "pllp_out0" :
+> > > +					"pll_re_vco");
+> > >  	} else {
+> > > -		val_aux |= PLLE_AUX_PLLRE_SEL;
+> > > +		val_aux &= ~(PLLE_AUX_PLLRE_SEL | PLLE_AUX_PLLP_SEL);
+> > >  		pll_writel(val, pll_params->aux_reg, pll);
+> > >  	}
+> > 
+> > > diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
+> > 
+> > > @@ -560,6 +560,7 @@ static struct tegra_clk_pll_freq_table pll_e_freq_table[] = {
+> > >  	/* PLLE special case: use cpcon field to store cml divider value */
+> > >  	{336000000, 100000000, 100, 21, 16, 11},
+> > >  	{312000000, 100000000, 200, 26, 24, 13},
+> > > +	{12000000, 100000000, 200,  1,  24, 13},
+> > 
+> > Presumably this is because pll_ref is the crystal, which runs at 12MHz.
+> > What if it doesn't; Tegra supports a bunch of other crystal rates. Don't
+> > we need entries for all the other potential crystal rates too?
+> 
+> The TRM states that PCIe and thus PLLE are only supported with 12MHz
+> external crystal rate.
+> 
 
-arch/x86/kernel/cpu/mshyperv.c: In function 'ms_hyperv_init_platform':
-arch/x86/kernel/cpu/mshyperv.c:90:3: error: 'lapic_timer_frequency' undeclared (first use in this function)
-arch/x86/kernel/cpu/mshyperv.c:90:3: note: each undeclared identifier is reported only once for each function it appears in
+This is has been different for Tegra114 at least (where PLLE is used for USB3)
 
-This happens because mshyperv.c includes linux/desc.h, which includes 
-linux/smp.h, which includes asm/smp.h iff CONFIG_SMP is enabled, and 
-asm/smp.h is what includes asm/apic.h for CONFIG_X86_LOCAL_APIC.
+Cheers,
 
-Fix it by directly including asm/apic.h.
-
-Acked-by: "K. Y. Srinivasan" <kys@microsoft.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- arch/x86/kernel/cpu/mshyperv.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -25,6 +25,7 @@
- #include <asm/idle.h>
- #include <asm/irq_regs.h>
- #include <asm/i8259.h>
-+#include <asm/apic.h>
- 
- struct ms_hyperv_info ms_hyperv;
- EXPORT_SYMBOL_GPL(ms_hyperv);
+Peter.
