@@ -1,62 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750880Ab3J3Eec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 00:34:32 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:36119 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702Ab3J3Eeb (ORCPT
+	id S1751225Ab3J3E7T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 00:59:19 -0400
+Received: from [213.199.154.251] ([213.199.154.251]:27714 "EHLO
+	db9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1750706Ab3J3E7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 00:34:31 -0400
+	Wed, 30 Oct 2013 00:59:16 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VS4(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kz70kz17326ah1de097h186068hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h1155h)
+Date: Wed, 30 Oct 2013 12:48:48 +0800
+From: Nicolin Chen <b42378@freescale.com>
+To: <timur@tabi.org>, <shawn.guo@linaro.org>, <broonie@kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <dmaengine@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <alsa-devel@alsa-project.org>, <rob.herring@calxeda.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>, <pawel.moll@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <b32955@freescale.com>
+Subject: Re: [PATCH 1/3] dma: imx-sdma: Add ssi dual fifo script support
+Message-ID: <20131030044848.GE9605@MrMyself>
+References: <cover.1383047327.git.b42378@freescale.com>
+ <9ed025d4e98f716ba80b27acaaa98f43ad3bd75a.1383047327.git.b42378@freescale.com>
+ <20131029135142.GT30088@pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <874n7zy2jy.fsf@devron.myhome.or.jp>
-References: <1381329627-11837-1-git-send-email-linkinjeon@gmail.com>
-	<87zjpuygtd.fsf@devron.myhome.or.jp>
-	<CAKYAXd-P83JNoOZKEv2cfTSok9SbE1bwW34Z56EPe7WrTHSP0g@mail.gmail.com>
-	<874n7zy2jy.fsf@devron.myhome.or.jp>
-Date: Wed, 30 Oct 2013 13:34:29 +0900
-Message-ID: <CAKYAXd-V21vyFatz0LmKThXoXxKkYgK9JB8HvtKeNhXQQ8rN5g@mail.gmail.com>
-Subject: Re: [PATCH 1/5] fat: add i_disksize to represent uninitialized size
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, a.sahrawat@samsung.com,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20131029135142.GT30088@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/30, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->>>> diff --git a/fs/fat/cache.c b/fs/fat/cache.c
->>>> index 91ad9e1..37572c2 100644
->>>> --- a/fs/fat/cache.c
->>>> +++ b/fs/fat/cache.c
->>>> @@ -329,10 +329,10 @@ int fat_bmap(struct inode *inode, sector_t
->>>> sector,
->>>> sector_t *phys,
->>>>  			return 0;
->>>>
->>>>  		/*
->>>> -		 * ->mmu_private can access on only allocation path.
->>>> +		 * ->i_disksize can access on only allocation path.
->>>>  		 * (caller must hold ->i_mutex)
->>>>  		 */
->>>> -		last_block = (MSDOS_I(inode)->mmu_private + (blocksize - 1))
->>>> +		last_block = (MSDOS_I(inode)->i_disksize + (blocksize - 1))
->>>>  			>> blocksize_bits;
->>>>  		if (sector >= last_block)
->>>>  			return 0;
->>>
->>> Hm, bmap() ioctl returns between ->mmu_private and i_disksize? I'm not
->>> checking other FSes what does...
->> I added this code after checking such behaviour from ext4.
->
-> OK. I will check with it. BTW, comment should say the both
-> (i.e. ->mmu_private and ->i_disksize must under ->i_mutex).
-Okay, I will update.
-Thanks!
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+Hi Sascha,
+
+On Tue, Oct 29, 2013 at 02:51:43PM +0100, Sascha Hauer wrote:
+> Look at drivers/dma/imx-sdma.c:
+> 
+> > /**
+> >  * struct sdma_firmware_header - Layout of the firmware image
+> >  *
+> >  * @magic		"SDMA"
+> >  * @version_major	increased whenever layout of struct
+> >  * sdma_script_start_addrs
+> >  *			changes.
+> 
+> Can you image why this firmware has a version field? Right, it's because
+> it encodes the layout of struct sdma_script_start_addrs.
+> 
+> As the comment clearly states you have to *increase this field* when you
+> add scripts.
+> 
+> Obviously you missed that, as the firmware on lkml posted recently
+> shows:
+> 
+> > 00000000: 414d4453 00000001 00000001 0000001c SDMA............
+>                      ^^^^^^^^
+>                      Still '1'
+> 
+> > 00000010: 00000026 000000b4 0000067a 00000282 &.......z.......
+> > 00000020: ffffffff 00000000 ffffffff ffffffff ................
+> > 00000030: ffffffff ffffffff ffffffff ffffffff ................
+> > 00000040: ffffffff ffffffff 00001a6a ffffffff ........j.......
+> > 00000050: 000002eb 000018bb ffffffff 00000408 ................
+> > 00000060: ffffffff 000003c0 ffffffff ffffffff ................
+> > 00000070: ffffffff 000002ab ffffffff 0000037b ............{...
+> > 00000080: ffffffff ffffffff 0000044c 0000046e ........L...n...
+> > 00000090: ffffffff 00001800 ffffffff ffffffff ................
+> > 000000a0: 00000000 00001800 00001862 00001a16 ........b.......
+>                               ^^^^^^^^^^^^^^^^^
+>                               new script addresses introduced
+> 
+> 
+> > -#define SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V1	34
+> > +#define SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V1	37
+> 
+> And no, this is not a bug. It's your firmware header that is buggy.
+> 
+
+I wasn't aware that the problem is far more complicated than I thought.
+And thank you for telling me all this.
+
+> What you need is:
+> 
+> #define SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V2      37
+> 
+> You (you as a company, not you as a person) knew that it was me who
+> created this firmware format. So it was absolutely unnecessary to create
+> an incompatible firmware instead of dropping me a short note.
+> 
+> Please add a version check to the driver as necessary and provide a proper
+> firmware.
+> 
+
+Just currently it's not easy for me to create a new proper firmware,
+and I's been told that besides this version number, it also lacks a
+decent license info. So may I just refine this patch as you suggested
+to add a version check and add those new scripts first?
+
+Thank you,
+Nicolin Chen
+
+> Sascha
+> 
+> -- 
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> 
+
+
