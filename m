@@ -1,195 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab3J3DP7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 23:15:59 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:54181 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753121Ab3J3DP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 23:15:57 -0400
-Subject: [PATCH V2 2/2] sched: Remove un-necessary iteration over sched
- domains to update nr_busy_cpus
-To: peterz@infradead.org, mikey@neuling.org, svaidy@linux.vnet.ibm.com,
-        mingo@kernel.org
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: vincent.guittot@linaro.org, bitbucket@online.de, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org, anton@samba.org,
-        linuxppc-dev@lists.ozlabs.org, Morten.Rasmussen@arm.com,
-        pjt@google.com
-Date: Wed, 30 Oct 2013 08:42:52 +0530
-Message-ID: <20131030031252.23426.4417.stgit@preeti.in.ibm.com>
-In-Reply-To: <20131030031145.23426.22930.stgit@preeti.in.ibm.com>
-References: <20131030031145.23426.22930.stgit@preeti.in.ibm.com>
-User-Agent: StGit/0.16-38-g167d
+	id S1753356Ab3J3DTD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 23:19:03 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:55500 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137Ab3J3DTB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 23:19:01 -0400
+Date: Wed, 30 Oct 2013 11:18:38 +0800
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, mingo@redhat.com
+Cc: weiyang@linux.vnet.ibm.com
+Subject: Re: [PATCH] perf: fix two warning in bench/numa
+Message-ID: <20131030031838.GA9662@weiyang.vnet.ibm.com>
+Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
+References: <1379839764-9245-1-git-send-email-weiyang@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1379839764-9245-1-git-send-email-weiyang@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13103003-7182-0000-0000-000008F0B1A3
+x-cbid: 13103003-7014-0000-0000-000003D8FC66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nr_busy_cpus parameter is used by nohz_kick_needed() to find out the number
-of busy cpus in a sched domain which has SD_SHARE_PKG_RESOURCES flag set.
-Therefore instead of updating nr_busy_cpus at every level of sched domain,
-since it is irrelevant, we can update this parameter only at the parent
-domain of the sd which has this flag set. Introduce a per-cpu parameter
-sd_busy which represents this parent domain.
+Dear maintainer,
 
-In nohz_kick_needed() we directly query the nr_busy_cpus parameter
-associated with the groups of sd_busy.
+Is this one accepted or droped?
+Or I missed the right person?
 
-By associating sd_busy with the highest domain which has
-SD_SHARE_PKG_RESOURCES flag set, we cover all lower level domains which could
-have this flag set and trigger nohz_idle_balancing if any of the levels have
-more than one busy cpu.
+On Sun, Sep 22, 2013 at 04:49:24PM +0800, Wei Yang wrote:
+>There two warnings in bench/numa, when buiding this on 32-bit machine. 
+>
+>The warning output is attached:
+>
+>bench/numa.c:1113:20: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
+>bench/numa.c:1161:6: error: format ‘%lx’ expects argument of t'long unsigned int’, but argument 5 has type ‘u64’ [-Werror=format]
+>
+>This patch fixs these two warnings.
+>
+>Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
+>---
+> tools/perf/bench/numa.c |    4 ++--
+> 1 files changed, 2 insertions(+), 2 deletions(-)
+>
+>diff --git a/tools/perf/bench/numa.c b/tools/perf/bench/numa.c
+>index 30d1c32..a73c4ed 100644
+>--- a/tools/perf/bench/numa.c
+>+++ b/tools/perf/bench/numa.c
+>@@ -1110,7 +1110,7 @@ static void *worker_thread(void *__tdata)
+> 		/* Check whether our max runtime timed out: */
+> 		if (g->p.nr_secs) {
+> 			timersub(&stop, &start0, &diff);
+>-			if (diff.tv_sec >= g->p.nr_secs) {
+>+			if (diff.tv_sec >= (time_t)g->p.nr_secs) {
+> 				g->stop_work = true;
+> 				break;
+> 			}
+>@@ -1157,7 +1157,7 @@ static void *worker_thread(void *__tdata)
+> 			runtime_ns_max += diff.tv_usec * 1000;
+>
+> 			if (details >= 0) {
+>-				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016lx]\n",
+>+				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016"PRIu64"]\n",
+> 					process_nr, thread_nr, runtime_ns_max / bytes_done, val);
+> 			}
+> 			fflush(stdout);
+>-- 
+>1.7.5.4
 
-sd_busy is irrelevant for asymmetric load balancing.
-
-While we are at it, we might as well change the nohz_idle parameter to be
-updated at the sd_busy domain level alone and not the base domain level of a CPU.
-This will unify the concept of busy cpus at just one level of sched domain
-where it is currently used.
-
-Signed-off-by: Preeti U Murthy<preeti@linux.vnet.ibm.com>
----
-
- kernel/sched/core.c  |    6 ++++++
- kernel/sched/fair.c  |   38 ++++++++++++++++++++------------------
- kernel/sched/sched.h |    2 ++
- 3 files changed, 28 insertions(+), 18 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c06b8d3..e6a6244 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5271,6 +5271,8 @@ DEFINE_PER_CPU(struct sched_domain *, sd_llc);
- DEFINE_PER_CPU(int, sd_llc_size);
- DEFINE_PER_CPU(int, sd_llc_id);
- DEFINE_PER_CPU(struct sched_domain *, sd_numa);
-+DEFINE_PER_CPU(struct sched_domain *, sd_busy);
-+DEFINE_PER_CPU(struct sched_domain *, sd_asym);
- 
- static void update_top_cache_domain(int cpu)
- {
-@@ -5282,6 +5284,7 @@ static void update_top_cache_domain(int cpu)
- 	if (sd) {
- 		id = cpumask_first(sched_domain_span(sd));
- 		size = cpumask_weight(sched_domain_span(sd));
-+		rcu_assign_pointer(per_cpu(sd_busy, cpu), sd->parent);
- 	}
- 
- 	rcu_assign_pointer(per_cpu(sd_llc, cpu), sd);
-@@ -5290,6 +5293,9 @@ static void update_top_cache_domain(int cpu)
- 
- 	sd = lowest_flag_domain(cpu, SD_NUMA);
- 	rcu_assign_pointer(per_cpu(sd_numa, cpu), sd);
-+
-+	sd = highest_flag_domain(cpu, SD_ASYM_PACKING);
-+	rcu_assign_pointer(per_cpu(sd_asym, cpu), sd);
- }
- 
- /*
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index e9c9549..8602b2c 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6515,16 +6515,16 @@ static inline void nohz_balance_exit_idle(int cpu)
- static inline void set_cpu_sd_state_busy(void)
- {
- 	struct sched_domain *sd;
-+	int cpu = smp_processor_id();
- 
- 	rcu_read_lock();
--	sd = rcu_dereference_check_sched_domain(this_rq()->sd);
-+	sd = rcu_dereference(per_cpu(sd_busy, cpu));
- 
- 	if (!sd || !sd->nohz_idle)
- 		goto unlock;
- 	sd->nohz_idle = 0;
- 
--	for (; sd; sd = sd->parent)
--		atomic_inc(&sd->groups->sgp->nr_busy_cpus);
-+	atomic_inc(&sd->groups->sgp->nr_busy_cpus);
- unlock:
- 	rcu_read_unlock();
- }
-@@ -6532,16 +6532,16 @@ unlock:
- void set_cpu_sd_state_idle(void)
- {
- 	struct sched_domain *sd;
-+	int cpu = smp_processor_id();
- 
- 	rcu_read_lock();
--	sd = rcu_dereference_check_sched_domain(this_rq()->sd);
-+	sd = rcu_dereference(per_cpu(sd_busy, cpu));
- 
- 	if (!sd || sd->nohz_idle)
- 		goto unlock;
- 	sd->nohz_idle = 1;
- 
--	for (; sd; sd = sd->parent)
--		atomic_dec(&sd->groups->sgp->nr_busy_cpus);
-+	atomic_dec(&sd->groups->sgp->nr_busy_cpus);
- unlock:
- 	rcu_read_unlock();
- }
-@@ -6748,6 +6748,8 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
- {
- 	unsigned long now = jiffies;
- 	struct sched_domain *sd;
-+	struct sched_group_power *sgp;
-+	int nr_busy;
- 
- 	if (unlikely(idle_cpu(cpu)))
- 		return 0;
-@@ -6773,22 +6775,22 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
- 		goto need_kick;
- 
- 	rcu_read_lock();
--	for_each_domain(cpu, sd) {
--		struct sched_group *sg = sd->groups;
--		struct sched_group_power *sgp = sg->sgp;
--		int nr_busy = atomic_read(&sgp->nr_busy_cpus);
-+	sd = rcu_dereference(per_cpu(sd_busy, cpu));
- 
--		if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
--			goto need_kick_unlock;
-+	if (sd) {
-+		sgp = sd->groups->sgp;
-+		nr_busy = atomic_read(&sgp->nr_busy_cpus);
- 
--		if (sd->flags & SD_ASYM_PACKING
--		    && (cpumask_first_and(nohz.idle_cpus_mask,
--					  sched_domain_span(sd)) < cpu))
-+		if (nr_busy > 1)
- 			goto need_kick_unlock;
--
--		if (!(sd->flags & (SD_SHARE_PKG_RESOURCES | SD_ASYM_PACKING)))
--			break;
- 	}
-+
-+	sd = rcu_dereference(per_cpu(sd_asym, cpu));
-+
-+	if (sd && (cpumask_first_and(nohz.idle_cpus_mask,
-+				  sched_domain_span(sd)) < cpu))
-+		goto need_kick_unlock;
-+
- 	rcu_read_unlock();
- 	return 0;
- 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index ffc7087..c8cb145 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -623,6 +623,8 @@ DECLARE_PER_CPU(struct sched_domain *, sd_llc);
- DECLARE_PER_CPU(int, sd_llc_size);
- DECLARE_PER_CPU(int, sd_llc_id);
- DECLARE_PER_CPU(struct sched_domain *, sd_numa);
-+DECLARE_PER_CPU(struct sched_domain *, sd_busy);
-+DECLARE_PER_CPU(struct sched_domain *, sd_asym);
- 
- struct sched_group_power {
- 	atomic_t ref;
+-- 
+Richard Yang
+Help you, Help me
 
