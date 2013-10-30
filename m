@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab3J3Lp2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 07:45:28 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:63316 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753925Ab3J3LpZ (ORCPT
+	id S1754058Ab3J3Lq3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 07:46:29 -0400
+Received: from toccata.ens-lyon.org ([140.77.166.68]:45450 "EHLO
+	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752494Ab3J3Lq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 07:45:25 -0400
-X-Nat-Received: from [202.181.97.72]:57505 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1383133512.16657
-To: jack@suse.cz, mike.marciniszyn@intel.com, roland@purestorage.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH linux-next-20131029] IB/ipath: Fix random stack overflow.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Message-Id: <201310302045.AEH12985.FSOOJOQLHFtMFV@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Wed, 30 Oct 2013 20:45:10 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 30102013 #10426834, status: clean
+	Wed, 30 Oct 2013 07:46:28 -0400
+Date: Wed, 30 Oct 2013 12:46:24 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: [PATCH] Fix build without CONFIG_INPUT_LEDS [Was: mmotm
+ 2013-10-29-16-22 uploaded (input)]
+Message-ID: <20131030114624.GY5442@type.youpi.perso.aquilenet.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Randy Dunlap <rdunlap@infradead.org>, akpm@linux-foundation.org,
+	linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+References: <20131029232351.D2E6F31C173@corp2gmr1-1.hot.corp.google.com>
+ <52706790.9090602@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52706790.9090602@infradead.org>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From bbba584a502b9417af06e4a55401c013a7e90eb1 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Wed, 30 Oct 2013 16:12:58 +0900
-Subject: [PATCH linux-next-20131029] IB/ipath: Fix random stack overflow.
+Randy Dunlap, le Tue 29 Oct 2013 18:57:36 -0700, a écrit :
+> arc_ps2.c:(.text+0x500): multiple definition of `input_led_connect'
 
-Commit 18fec3c6 "IB/ipath: Convert ipath_user_sdma_pin_pages() to use
-get_user_pages_fast()" requested for undefined number of pages with buffer for
-2 pages.
+D'oh.  I indeed hadn't tested the inlines, sorry about this.
 
-  drivers/infiniband/hw/ipath/ipath_user_sdma.c: In function 'ipath_user_sdma_pin_pages':
-  drivers/infiniband/hw/ipath/ipath_user_sdma.c:283: warning: 'j' is used uninitialized in this function
+Andrew, could you add the following patch on top of
+input-route-kbd-leds-through-the-generic-leds-layer.patch
+or perhaps rather fold into it?
 
-ipath_user_sdma_pin_pages() assumes that npages is either 1 or 2 because
-ipath_user_sdma_queue_pkts() checks that 0 < iov->iov_len <= PAGE_SIZE
-which lets ipath_user_sdma_num_pages() return either 1 or 2.
+Samuel
 
-Please check whether commit 18fec3c6 was backported
-because that commit has "Cc: <stable@vger.kernel.org>" line.
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: <stable@vger.kernel.org>
----
- drivers/infiniband/hw/ipath/ipath_user_sdma.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/infiniband/hw/ipath/ipath_user_sdma.c b/drivers/infiniband/hw/ipath/ipath_user_sdma.c
-index 06cbfd4..cc04b7b 100644
---- a/drivers/infiniband/hw/ipath/ipath_user_sdma.c
-+++ b/drivers/infiniband/hw/ipath/ipath_user_sdma.c
-@@ -280,7 +280,7 @@ static int ipath_user_sdma_pin_pages(const struct ipath_devdata *dd,
- 	int j;
- 	int ret;
+Really mark inlines as static inlines, so they are not defined multiple
+times.
+
+Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+
+--- include/linux/input.h.orig	2013-10-30 12:42:41.169038670 +0100
++++ include/linux/input.h	2013-10-30 12:42:42.908987157 +0100
+@@ -540,12 +540,12 @@
  
--	ret = get_user_pages_fast(addr, j, 0, pages);
-+	ret = get_user_pages_fast(addr, npages, 0, pages);
- 	if (ret != npages) {
- 		int i;
+ #else
  
--- 
-1.7.1
+-int input_led_connect(struct input_dev *dev)
++static inline int input_led_connect(struct input_dev *dev)
+ {
+ 	return 0;
+ }
+ 
+-void input_led_disconnect(struct input_dev *dev)
++static inline void input_led_disconnect(struct input_dev *dev)
+ {
+ }
+ 
