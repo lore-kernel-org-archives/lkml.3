@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab3J3Aip (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 20:38:45 -0400
-Received: from mout.gmx.net ([212.227.17.21]:52508 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753063Ab3J3Ain (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 20:38:43 -0400
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] tpm/tpm_i2c_stm_st33: Check return code of get_burstcount (fix CID: 986658)
-Date: Wed, 30 Oct 2013 01:42:11 +0100
-User-Agent: KMail/1.13.7 (Linux/3.10.9; KDE/4.10.5; x86_64; ; )
-Cc: Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-References: <1383090860-15901-1-git-send-email-peterhuewe@gmx.de> <20131030000618.GA5241@kroah.com>
-In-Reply-To: <20131030000618.GA5241@kroah.com>
+	id S1752750Ab3J3AlE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 20:41:04 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:57050 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470Ab3J3AlB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 20:41:01 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201310300142.11716.PeterHuewe@gmx.de>
-X-Provags-ID: V03:K0:JDKSr34/eA457AoSsevZboPk/kX5z+G18+g6JjXPit/ivQDrd6m
- MimT9m83ELvMh0ci2+R9kvB4JSddwFMzNKvk11hQCW+J+731sJ11s5jxquTe0+4AOOCKiJ7
- /ono6+cSZLwSmOgaxXYoqchVCiYpGLgMuarNHRt8bxKEWpccbeoqaP6159A8mrTFBTzmha7
- 5UmVMnEbDfxEjC91kjplg==
+In-Reply-To: <20131030003317.GD2527@localhost>
+References: <1383000855-8377-1-git-send-email-ezequiel.garcia@free-electrons.com>
+	<1383000855-8377-2-git-send-email-ezequiel.garcia@free-electrons.com>
+	<CAPcyv4iQVoYCXz16T3N4MbdVJV7MoKKeL0wq9t9WF1Kf3gz3Bw@mail.gmail.com>
+	<20131029083407.GA2416@localhost>
+	<20131029103229.5e095a24@skate>
+	<CAPcyv4iRawGxPwcPhyKCHG+2orVNmPktObR7_TSXwN+6tZ=qog@mail.gmail.com>
+	<20131030003317.GD2527@localhost>
+Date: Tue, 29 Oct 2013 17:40:59 -0700
+Message-ID: <CAPcyv4gMCSBeQbT6tCoJPLwXLe36iOCtL+HLhhzvA1=S_qBoYA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] dma: mv_xor: Use high_base mmio where appropriate
+From: Dan Williams <dan.j.williams@intel.com>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        sachin.kamat@linaro.org, Vinod Koul <vinod.koul@intel.com>,
+        dmaengine@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-> > 
-> > CID: 986658
-> What is this field for?
+On Tue, Oct 29, 2013 at 5:33 PM, Ezequiel Garcia
+<ezequiel.garcia@free-electrons.com> wrote:
+> By the way, I didn't initially Cced dmaengine list because it's not
+> in the MAINTAINERS file.
+>
+> How about we add it and avoid this happening to other developers?
 
-That's the scan id in the coverity database.
-If you think that's just noise I can leave it out.
+It's there now, but we just created it so you happened to be one of
+the first ones through...
 
-Thanks,
-Peter 
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/MAINTAINERS#n2728
+
+--
+Dan
