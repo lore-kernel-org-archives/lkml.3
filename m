@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026Ab3J3TMA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 15:12:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52240 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440Ab3J3TL6 (ORCPT
+	id S1754331Ab3J3TNE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 15:13:04 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:41916 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698Ab3J3TNB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 15:11:58 -0400
-Date: Wed, 30 Oct 2013 20:11:41 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Victor Kaplansky <VICTORK@il.ibm.com>
-Cc: paulmck@linux.vnet.ibm.com, Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: perf events ring buffer memory barrier on powerpc
-Message-ID: <20131030191141.GR2490@laptop.programming.kicks-ass.net>
-References: <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com>
- <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com>
- <20131028132634.GO19466@laptop.lan>
- <20131028163418.GD4126@linux.vnet.ibm.com>
- <20131028201735.GA15629@redhat.com>
- <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com>
- <20131030092725.GL4126@linux.vnet.ibm.com>
- <OFC6B7100E.31C6B190-ON42257C14.004841C6-42257C14.004A0EA6@il.ibm.com>
- <20131030155116.GO16117@laptop.programming.kicks-ass.net>
- <20131030182930.GP2490@laptop.programming.kicks-ass.net>
+	Wed, 30 Oct 2013 15:13:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131030182930.GP2490@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131030143923.GA9996@console-pimps.org>
+References: <1381775837-26023-1-git-send-email-geyslan@gmail.com>
+	<20131030123850.GA8193@console-pimps.org>
+	<CAGG-pUQZ2R0JMZuGi07cL5q4EABYouZJfMpkO6YPy+ry2WkbNw@mail.gmail.com>
+	<20131030143923.GA9996@console-pimps.org>
+Date: Wed, 30 Oct 2013 17:13:00 -0200
+Message-ID: <CAGG-pUTYhJZvjosykckFjRiKE-isKbCPTtomY3jTxrU2_a1LJA@mail.gmail.com>
+Subject: Re: [PATCH] efivarfs: 'efivarfs_file_write' function reorganization
+From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: matthew.garrett@nebula.com, Jeremy Kerr <jk@ozlabs.org>,
+        matt.fleming@intel.com, linux-efi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        kernel-br <kernel-br@googlegroups.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 07:29:30PM +0100, Peter Zijlstra wrote:
-> +	page_shift = PAGE_SHIFT + page_order(rb);
-> +
-> +	handle->page = (offset >> page_shift) & (rb->nr_pages - 1);
-> +
-> +	offset &= page_shift - 1;
+2013/10/30 Matt Fleming <matt@console-pimps.org>:
+> On Wed, 30 Oct, at 10:44:16AM, Geyslan Gregório Bem wrote:
+>> Do you want that I undo that? I aggre that the variable use only
+>> reduces the line code.
+>
+> Yes please.
+>
+> --
+> Matt Fleming, Intel Open Source Technology Center
 
-offset &= (1UL << page_shift) - 1;
+Done:
+[PATCH v2] efivarfs: 'efivarfs_file_write' function reorganization
 
-Weird that it even appeared to work.. /me wonders if he even booted the
-right kernel.
+-- 
+Regards,
 
-> +
-> +	handle->addr = rb->data_pages[handle->page] + offset;
-> +	handle->size = (1 << page_shift) - offset;
+Geyslan G. Bem
+hackingbits.com
