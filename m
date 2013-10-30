@@ -1,82 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab3J3Vmn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 17:42:43 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:39369 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068Ab3J3Vml (ORCPT
+	id S1753899Ab3J3Vpo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 17:45:44 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:33271 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532Ab3J3Vpm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 17:42:41 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-References: <20131029220939.GA23060@kroah.com>
-Date: Wed, 30 Oct 2013 14:42:35 -0700
-In-Reply-To: <20131029220939.GA23060@kroah.com> (Greg KH's message of "Tue, 29
-	Oct 2013 15:09:39 -0700")
-Message-ID: <87wqku1lmc.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+cI7BGOxz2l8NinrRX/wEmaZVHm+y3Kiw=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0066]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Greg KH <gregkh@linuxfoundation.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] sysfs: move assignment to be under lock in sysfs_remove_dir()
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Wed, 30 Oct 2013 17:45:42 -0400
+Subject: Re: [PATCH v2 4/6] edac: Document Krait L1/L2 EDAC driver binding
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1383164736-1849-5-git-send-email-sboyd@codeaurora.org>
+Date: Wed, 30 Oct 2013 16:45:39 -0500
+Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mark Rutland <mark.rutland@arm.com>, <devicetree@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <872F86E8-85CE-472B-9546-CDCC96F6F08B@codeaurora.org>
+References: <1383164736-1849-1-git-send-email-sboyd@codeaurora.org> <1383164736-1849-5-git-send-email-sboyd@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <gregkh@linuxfoundation.org> writes:
 
-> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
-> Linus noticed that the assignment of sd isn't protected by the lock in
-> sysfs_remove_dir(), so move the assignment of the variable under the
-> lock to be safe.
->
-> Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Oct 30, 2013, at 3:25 PM, Stephen Boyd wrote:
 
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
-
+> The Krait L1/L2 error reporting device is made up of two
+> interrupts, one per-CPU interrupt for the L1 caches and one
+> interrupt for the L2 cache.
+> 
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Kumar Gala <galak@codeaurora.org>
+> Cc: <devicetree@vger.kernel.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 > ---
->
-> Tejun, any objection to this patch?  You consolidated the locks back in
-> 2007 on this function, and nothing has changed there since then, so odds
-> are it's not a problem, but nice to be safe, right?
->
->  fs/sysfs/dir.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-> index eab59de4..2609f934 100644
-> --- a/fs/sysfs/dir.c
-> +++ b/fs/sysfs/dir.c
-> @@ -856,9 +856,10 @@ void sysfs_remove(struct sysfs_dirent *sd)
->   */
->  void sysfs_remove_dir(struct kobject *kobj)
->  {
-> -	struct sysfs_dirent *sd = kobj->sd;
-> +	struct sysfs_dirent *sd;
->  
->  	spin_lock(&sysfs_assoc_lock);
-> +	sd = kobj->sd;
->  	kobj->sd = NULL;
->  	spin_unlock(&sysfs_assoc_lock);
->  
+> Documentation/devicetree/bindings/arm/cpus.txt | 49 ++++++++++++++++++++++++++
+> 1 file changed, 49 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+> index f32494d..0f7b27f 100644
+> --- a/Documentation/devicetree/bindings/arm/cpus.txt
+> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
+> @@ -44,6 +44,8 @@ For the ARM architecture every CPU node must contain the following properties:
+> 		"marvell,mohawk"
+> 		"marvell,xsc3"
+> 		"marvell,xscale"
+> +		"qcom,scorpion"
+> +		"qcom,krait"
+> 
+> Example:
+> 
+> @@ -75,3 +77,50 @@ Example:
+> 			reg = <0x101>;
+> 		};
+> 	};
+> +
+> +If the compatible string contains "qcom,krait" there shall be an interrupts
+> +property containing the L1/CPU error interrupt number. There shall also be an
+
+'also be a'
+
+> +l2-cache node containing the following properties:
+
+Is the L1 interrupt not per core L1 cache (even if they are OR together at PIC)?
+
+> +
+> + - compatible: Shall contain at least "cache"
+> + - cache-level: Must be 2
+> + - interrupts: Shall contain the L2 error interrupt
+> +
+> +Example:
+> +
+> +	cpus {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		interrupts = <1 9 0xf04>;
+> +		compatible = "qcom,krait";
+> +
+> +		cpu@0 {
+> +			device_type = "cpu";
+> +			reg = <0>;
+> +			next-level-cache = <&L2>;
+> +		};
+> +
+> +		cpu@1 {
+> +			device_type = "cpu";
+> +			reg = <1>;
+> +			next-level-cache = <&L2>;
+> +		};
+> +
+> +		cpu@2 {
+> +			device_type = "cpu";
+> +			reg = <2>;
+> +			next-level-cache = <&L2>;
+> +		};
+> +
+> +		cpu@3 {
+> +			device_type = "cpu";
+> +			reg = <3>;
+> +			next-level-cache = <&L2>;
+> +		};
+> +
+> +		L2: l2-cache {
+> +			compatible = "cache";
+> +			cache-level = <2>;
+> +			interrupts = <0 2 0x4>;
+> +		};
+> +	};
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
