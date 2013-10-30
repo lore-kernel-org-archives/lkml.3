@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab3J3QTF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 12:19:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29094 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751390Ab3J3QTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 12:19:03 -0400
-Date: Wed, 30 Oct 2013 18:18:32 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
-        aik@ozlabs.ru, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] kvm: Destroy & free KVM devices on release
-Message-ID: <20131030161832.GL4651@redhat.com>
-References: <20131029160019.22578.16409.stgit@bling.home>
- <20131029161322.22578.18997.stgit@bling.home>
- <20131030104029.GE4651@redhat.com>
- <1383143422.4097.170.camel@ul30vt.home>
- <20131030153338.GI4651@redhat.com>
- <527128D7.9070603@redhat.com>
- <1383148594.4097.184.camel@ul30vt.home>
- <52712F7D.3090309@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52712F7D.3090309@redhat.com>
+	id S1752731Ab3J3QV4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 12:21:56 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:31426 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab3J3QVy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 12:21:54 -0400
+Date: Wed, 30 Oct 2013 17:21:42 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Wei Ni <wni@nvidia.com>
+Cc: <linux@roeck-us.net>, <lm-sensors@lm-sensors.org>,
+        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v4 3/3] hwmon: (lm90) use enums for the indexes of temp8
+ and temp11
+Message-ID: <20131030172142.49234b28@endymion.delvare>
+In-Reply-To: <1375856306-14415-4-git-send-email-wni@nvidia.com>
+References: <1375856306-14415-1-git-send-email-wni@nvidia.com>
+	<1375856306-14415-4-git-send-email-wni@nvidia.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 05:10:37PM +0100, Paolo Bonzini wrote:
-> Il 30/10/2013 16:56, Alex Williamson ha scritto:
-> > On Wed, 2013-10-30 at 16:42 +0100, Paolo Bonzini wrote:
-> >> Il 30/10/2013 16:33, Gleb Natapov ha scritto:
-> >>>> Hmm, ok.  In that case I can drop this patch and I think the rest just
-> >>>> boils down to userspace use of the device.  I had been close()'ing the
-> >>>> kvm device fd when all QEMU vfio devices are detached, but I can just as
-> >>>> easily leave it open in case a new device is added later.  I'll send out
-> >>>> a new series after doing some more review and testing.  Do you have any
-> >>>> comments on the rest of the series?  Thanks,
-> >>>
-> >>> If I understand 4/4 correctly if there is VFIO device connected we
-> >>> assume non coherent domain. How hard it would be to do proper checking
-> >>> in this path series?
-> >>
-> >> Yes, that's my understanding as well.  Is the performance impact measurable?
-> > 
-> > I have additional patches to do this, the blocker is that intel-iommu
-> > strips IOMMU_CACHE from the flags I provide if the IOMMU domain as a
-> > whole (ie. all of the hardware units involved in the domain) do not all
-> > support Snoop Control (SC).  Thus I can't rely on simply tracking the
-> > hardware capabilities of the domain because some IOMMU PTEs will have
-> > SNP set, others will not.  It depends on the state of the IOMMU domain
-> > at the time of the mapping.  Therefore the only way to switch back to
-> > coherent from non-coherent is to unmap and remap everything.  This is
-> > what legacy KVM device assignment does, but I can't see how that's not
-> > racy wrt inflight DMA.
-> > 
-> > The patch approach I was taking is:
-> > 
-> > 1) Enable KVM to handle the VM as non-coherent (which is trued, VFIO
-> > never sets IOMMU_CACHE currently due to the above issues).
-> > 
-> > 2) Get QEMU to enable the KVM device, fixing the coherency issue.
-> > 
-> > 3) Fix Intel IOMMU to honor IOMMU_CACHE regardless of hw capabilities
-> > (patch posted).
-> > 
-> > 4) Make VFIO always map w/ IOMMU_CACHE
-> > 
-> > 5) Create VFIO external user interface to query capabilities.
-> > 
-> > 6) Update KVM device to use it.
-> > 
-> > As to performance, for graphics I can't tell a difference whether
-> > NoSnoop is prevented or KVM does WBINVD.  I'm hoping though that we can
-> > consider the mode enabled by this patch as a temporary step in the
-> > process and we'll eventually get to a state where we only emulate WBINVD
-> > when necessary.  Correctness trumps performance in the current round.
-> > Thanks,
-> 
-> Thanks for the explanation.  Gleb, this looks fine to me.  WDYT?
-> 
-To me too. Alex please resend with first patch dropped
-(kvm_vfio_destroy() will have to free dev).
+Hi Wei,
 
+On Wed, 7 Aug 2013 14:18:26 +0800, Wei Ni wrote:
+> Using enums for the indexes and nrs of temp8 and temp11.
+> This make the code much more readable.
+> 
+> Signed-off-by: Wei Ni <wni@nvidia.com>
+> ---
+>  drivers/hwmon/lm90.c |  154 +++++++++++++++++++++++++++++---------------------
+>  1 file changed, 90 insertions(+), 64 deletions(-)
+> (...)
 
---
-			Gleb.
+Looks much better except for one minor detail:
+
+> +/*
+> + * TEMP11 register index
+> + */
+> +enum lm90_temp11_reg_index {
+> +	REMOTE_TEMP = 0,
+> +	REMOTE_LOW,
+> +	REMOTE_HIGH,
+> +	REMOTE_OFFSET,	/* except max6646, max6657/58/59,
+> +			 *  and max6695/96
+> +			 */
+
+This comment fits on a single line now.
+
+> +	LOCAL_TEMP,
+> +	REMOTE2_TEMP,	/* max6695/96 only */
+> +	REMOTE2_LOW,	/* max6695/96 only */
+> +	REMOTE2_HIGH,	/* max6695/96 only */
+> +	TEMP11_REG_NUM
+> +};
+
+Other than that, it's OK, and I think I'll apply it after all.
+
+-- 
+Jean Delvare
