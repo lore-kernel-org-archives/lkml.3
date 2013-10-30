@@ -1,116 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab3J3SE5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 14:04:57 -0400
-Received: from mail.us.es ([193.147.175.20]:52951 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751803Ab3J3SEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 14:04:55 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98/18037. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-97.2/7.5):. 
- Processed in 2.638151 secs); 30 Oct 2013 18:04:50 -0000
-X-Spam-ASN: AS12715 188.78.0.0/16
-X-Envelope-From: pneira@us.es
-Date: Wed, 30 Oct 2013 19:04:47 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        David Miller <davem@davemloft.net>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        netfilter-devel@vger.kernel.org
-Subject: Re: [BUG 3.12.rc4] Oops: unable to handle kernel paging request
- during shutdown
-Message-ID: <20131030180447.GA9515@localhost>
-References: <525BD08C.2080101@t-online.de>
- <CA+55aFwN++wO=rTFaH7m6YYQX+Fv3qDt6Hxs7UnPUJpFsrwSkA@mail.gmail.com>
- <CA+55aFy7TpvkVuPEOJ7Qqirwap1gXoD1_MrYLhgPAYuVpN8u=w@mail.gmail.com>
- <alpine.DEB.2.02.1310251221310.5266@ionos.tec.linutronix.de>
- <CA+55aFxw1Hm4QVeEigkByP5RppSL30oHnLoR16C=henf-a=uFQ@mail.gmail.com>
- <CA+55aFyb72qoZ1Tjpb+=q-6+GmwoOXjfntY_zZnf300gg3d1Hg@mail.gmail.com>
- <CA+55aFxuVpDo3LvmG9j-Hu7sENLTcsB6_CY2TA4mE-k+CuTeGg@mail.gmail.com>
+	id S1754061Ab3J3SFj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 14:05:39 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:47968 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752995Ab3J3SFi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 14:05:38 -0400
+Date: Wed, 30 Oct 2013 11:05:36 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>
+Subject: Re: [PATCH v3 04/10] spmi: Add MSM PMIC Arbiter SPMI controller
+Message-ID: <20131030180536.GI21983@codeaurora.org>
+References: <cover.1382985169.git.joshc@codeaurora.org>
+ <7467ed718314cb98c9e40f135e9926cf14ed218b.1382985169.git.joshc@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="xHFwDpU9dbj6ez1V"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxuVpDo3LvmG9j-Hu7sENLTcsB6_CY2TA4mE-k+CuTeGg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <7467ed718314cb98c9e40f135e9926cf14ed218b.1382985169.git.joshc@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/28, Josh Cartwright wrote:
+> +
+> +/**
+> + * pa_write_data: write 1..4 bytes from buf to pmic-arb's register
+> + * @bc byte-count -1. range: 0..3
+> + * @reg register's address
+> + * @buf buffer to write. length must be bc+1
 
---xHFwDpU9dbj6ez1V
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Missing colon between variable and description.
 
-On Sun, Oct 27, 2013 at 08:39:47PM +0000, Linus Torvalds wrote:
-> On Sun, Oct 27, 2013 at 8:20 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > Appended is a warning I get with DEBUG_TIMER_OBJECTS. Seems to be a
-> > device-mapper issue.
-> 
-> .. and here's another one. This time it looks like nf_conntrack_free()
-> is freeing something that has a delayed work in it (again, likely an
-> embedded 'struct kobject'). Looks like it is the
-> 
->     kmem_cache_destroy(net->ct.nf_conntrack_cachep);
-> 
-> that triggers this. Which probably means that there are still slab
-> entries on that slab cache or something, but I didn't dig any deeper..
-> 
-> David? Patrick? Pablo? Jozsef? Any ideas? This was immediately preceded by
-> 
->   [ 1136.316280] kobject: 'nf_conntrack_ffff8800b74d0000'
-> (ffff8801196fac78): kobject_uevent_env
->   [ 1136.316287] kobject: 'nf_conntrack_ffff8800b74d0000'
-> (ffff8801196fac78): fill_kobj_path: path =
-> '/kernel/slab/nf_conntrack_ffff8800b74d0000'
->   [ 1136.316331] kobject: 'nf_conntrack_ffff8800b74d0000'
-> (ffff8801196fac78): kobject_release, parent           (null) (delayed)
-> 
-> and I think it's that delayed "kobject_release()" that triggers this.
-> 
-> Notice that kobject_release() can be delayed *without* the magic
-> kobject debugging option by simply having a reference count on it from
-> some external source. So this particular issue is probably triggered
-> by my extra debug options in this case (I'm running with all those
-> nasty "try to find bad object freeing" options, and doing module
-> unloading etc), but can happen without it (it's just very hard to
-> trigger in practice without the debug options).
+> + */
+> +static void
+> +pa_write_data(struct spmi_pmic_arb_dev *dev, const u8 *buf, u32 reg, u8 bc)
+> +{
+> +	u32 data = 0;
+> +	memcpy(&data, buf, (bc & 3) + 1);
+> +	pmic_arb_base_write(dev, reg, data);
+> +}
+> +
+[...]
+> +static int pmic_arb_read_cmd(struct spmi_controller *ctrl,
+> +			     u8 opc, u8 sid, u16 addr, u8 bc, u8 *buf)
+> +{
+> +	struct spmi_pmic_arb_dev *pmic_arb = spmi_controller_get_drvdata(ctrl);
+> +	unsigned long flags;
+> +	u32 cmd;
+> +	int rc;
+> +
+> +	if (bc >= PMIC_ARB_MAX_TRANS_BYTES) {
+> +		dev_err(&ctrl->dev,
+> +			"pmic-arb supports 1..%d bytes per trans, but:%d requested",
 
-nf_conntrack_free() is decrementing our object counter (net->ct.count)
-before releasing the object. That counter is used in the
-nf_conntrack_cleanup_net_list path to check if it's time to
-kmem_cache_destroy our cache of conntrack objects. I think we have a
-race there that should be easier to trigger (although still hard) with
-CONFIG_DEBUG_OBJECTS_FREE as object releases become slowier.
+Nitpick: Please replace the colon between but and %d with a space.
 
---xHFwDpU9dbj6ez1V
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="linus.patch"
+> +			PMIC_ARB_MAX_TRANS_BYTES, bc+1);
 
-diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
-index 5d892fe..d60cf16 100644
---- a/net/netfilter/nf_conntrack_core.c
-+++ b/net/netfilter/nf_conntrack_core.c
-@@ -764,9 +764,10 @@ void nf_conntrack_free(struct nf_conn *ct)
- 	struct net *net = nf_ct_net(ct);
- 
- 	nf_ct_ext_destroy(ct);
--	atomic_dec(&net->ct.count);
- 	nf_ct_ext_free(ct);
- 	kmem_cache_free(net->ct.nf_conntrack_cachep, ct);
-+	smp_mb__before_atomic_dec();
-+	atomic_dec(&net->ct.count);
- }
- EXPORT_SYMBOL_GPL(nf_conntrack_free);
- 
+Space around that '+' please.
 
---xHFwDpU9dbj6ez1V--
+> +		return  -EINVAL;
+> +	}
+> +	dev_dbg(&ctrl->dev,
+> +		"op:0x%x sid:%d bc:%d addr:0x%x\n", opc, sid, bc, addr);
+> +
+> +	/* Check the opcode */
+> +	if (opc >= 0x60 && opc <= 0x7F)
+> +		opc = PMIC_ARB_OP_READ;
+> +	else if (opc >= 0x20 && opc <= 0x2F)
+> +		opc = PMIC_ARB_OP_EXT_READ;
+> +	else if (opc >= 0x38 && opc <= 0x3F)
+> +		opc = PMIC_ARB_OP_EXT_READL;
+> +	else
+> +		return -EINVAL;
+> +
+> +	cmd = (opc << 27) | ((sid & 0xf) << 20) | (addr << 4) | (bc & 0x7);
+> +
+> +	spin_lock_irqsave(&pmic_arb->lock, flags);
+> +	pmic_arb_base_write(pmic_arb, PMIC_ARB_CMD(pmic_arb->channel), cmd);
+> +	rc = pmic_arb_wait_for_done(ctrl);
+> +	if (rc)
+> +		goto done;
+> +
+> +	/* Read from FIFO, note 'bc' is actually number of bytes minus 1 */
+> +	pa_read_data(pmic_arb, buf, PMIC_ARB_RDATA0(pmic_arb->channel)
+> +							, min_t(u8, bc, 3));
+
+Nitpick: Weird comma starting a line here.
+
+> +
+> +	if (bc > 3)
+> +		pa_read_data(pmic_arb, buf + 4,
+> +				PMIC_ARB_RDATA1(pmic_arb->channel), bc - 4);
+> +
+> +done:
+> +	spin_unlock_irqrestore(&pmic_arb->lock, flags);
+> +	return rc;
+> +}
+> +
+[...]
+> +static int spmi_pmic_arb_probe(struct platform_device *pdev)
+> +{
+> +	struct spmi_pmic_arb_dev *pa;
+> +	struct spmi_controller *ctrl;
+> +	struct resource *res;
+> +	int err, i;
+> +
+> +	ctrl = spmi_controller_alloc(&pdev->dev, sizeof(*pa));
+> +	if (!ctrl)
+> +		return -ENOMEM;
+> +
+> +	pa = spmi_controller_get_drvdata(ctrl);
+> +
+> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "core");
+> +	pa->base = devm_ioremap_resource(&ctrl->dev, res);
+> +	if (IS_ERR(pa->base)) {
+> +		err = PTR_ERR(pa->base);
+> +		goto err_put_ctrl;
+> +	}
+> +
+> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "intr");
+> +	pa->intr = devm_ioremap_resource(&ctrl->dev, res);
+> +	if (IS_ERR(pa->intr)) {
+> +		err = PTR_ERR(pa->intr);
+> +		goto err_put_ctrl;
+> +	}
+> +
+> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "cnfg");
+> +	pa->cnfg = devm_ioremap_resource(&ctrl->dev, res);
+> +	if (IS_ERR(pa->cnfg)) {
+> +		err = PTR_ERR(pa->cnfg);
+> +		goto err_put_ctrl;
+> +	}
+> +
+> +	for (i = 0; i < ARRAY_SIZE(pa->mapping_table); ++i)
+> +		pa->mapping_table[i] = readl_relaxed(
+> +				pa->cnfg + SPMI_MAPPING_TABLE_REG(i));
+> +
+> +	platform_set_drvdata(pdev, ctrl);
+> +	spin_lock_init(&pa->lock);
+> +
+> +	pa->channel = 0;
+> +	pa->max_apid = 0;
+> +	pa->min_apid = PMIC_ARB_MAX_PERIPHS - 1;
+
+That looks backwards. Is this right?
+
+> +
+> +	ctrl->cmd = pmic_arb_cmd;
+> +	ctrl->read_cmd = pmic_arb_read_cmd;
+> +	ctrl->write_cmd = pmic_arb_write_cmd;
+> +
+> +	err = spmi_controller_add(ctrl);
+> +	if (err)
+> +		goto err_put_ctrl;
+> +
+> +	dev_dbg(&ctrl->dev, "PMIC Arb Version 0x%x\n",
+> +		pmic_arb_base_read(pa, PMIC_ARB_VERSION));
+> +
+> +	return 0;
+> +
+> +err_put_ctrl:
+> +	spmi_controller_put(ctrl);
+> +	return err;
+> +}
+> +
+> +static int __exit spmi_pmic_arb_remove(struct platform_device *pdev)
+
+__exit shouldn't be here. We want this function in modules.
+
+> +{
+> +	struct spmi_controller *ctrl = platform_get_drvdata(pdev);
+> +	spmi_controller_remove(ctrl);
+> +	return 0;
+> +}
+> +
+> +static struct of_device_id spmi_pmic_arb_match_table[] = {
+> +	{	.compatible = "qcom,spmi-pmic-arb", },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, spmi_pmic_arb_match_table);
+> +
+> +static struct platform_driver spmi_pmic_arb_driver = {
+> +	.probe		= spmi_pmic_arb_probe,
+> +	.remove		= __exit_p(spmi_pmic_arb_remove),
+
+Please drop this __exit_p() usage as well.
+
+> +	.driver		= {
+> +		.name	= "spmi_pmic_arb",
+> +		.owner	= THIS_MODULE,
+> +		.of_match_table = spmi_pmic_arb_match_table,
+> +	},
+> +};
+> +module_platform_driver(spmi_pmic_arb_driver);
+
+MODULE_LICENSE()
+MODULE_ALIAS()
+?
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
