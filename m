@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab3J3VSd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 17:18:33 -0400
-Received: from mga01.intel.com ([192.55.52.88]:25425 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752924Ab3J3VSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 17:18:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,604,1378882800"; 
-   d="scan'208";a="425421261"
-Message-ID: <1383142680.2460.5.camel@dvhart-mobl4.amr.corp.intel.com>
-Subject: Re: [PATCH 4/8] minnowboard: Add base platform driver for the
- MinnowBoard
-From: Darren Hart <dvhart@linux.intel.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "peter.p.waskiewicz.jr" <peter.p.waskiewicz.jr@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        danders <danders@circuitco.com>,
-        "vishal.l.verma" <vishal.l.verma@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Richard Purdie <richard.purdie@linuxfoundation.org>,
-        platform-driver-x86 <platform-driver-x86@vger.kernel.org>
-In-Reply-To: <20130721234134.GA9858@sirena.org.uk>
-References: <cover.1372211451.git.dvhart@linux.intel.com>
-	 <a459c0b97ea41148af901fc73dbeff98778c7419.1372211451.git.dvhart@linux.intel.com>
-	 <CACRpkda8QGdoAvjsUs7Uu+ukUu7ST63g=H9arA7SS7ceWmMTaQ@mail.gmail.com>
-	 <1372398218.9243.29.camel@envy.home> <20130704162641.GG27646@sirena.org.uk>
-	 <CACRpkdbKGti==FTfHm81EkwD++iRfixnXt3kWgBj7CxjM+2znA@mail.gmail.com>
-	 <20130721234134.GA9858@sirena.org.uk>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Oct 2013 14:18:00 +0000
-Mime-Version: 1.0
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Content-Transfer-Encoding: 7bit
+	id S1753567Ab3J3VTB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 17:19:01 -0400
+Received: from mx-out.ocsa-data.net ([194.36.166.37]:65462 "EHLO
+	mx-out.ocsa-data.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751865Ab3J3VTA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 17:19:00 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Wed, 30 Oct 2013 22:18:56 +0100
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        ydroneaud@opteya.com
+Subject: Re: [PATCH v4 6/7] events: use =?UTF-8?Q?get=5Funused=5Ffd=5Fflag?=
+ =?UTF-8?Q?s=28=30=29=20instead=20of=20get=5Funused=5Ffd=28=29?=
+Organization: OPTEYA
+In-Reply-To: <20131030202041.GS16117@laptop.programming.kicks-ass.net>
+References: <cover.1383121137.git.ydroneaud@opteya.com>
+ <3b0bc009ff1410d04f8a1e71bfae0d27e1254b90.1383121137.git.ydroneaud@opteya.com>
+ <20131030202041.GS16117@laptop.programming.kicks-ass.net>
+Message-ID: <94b641a81a06ba4943cf77e80bc271c8@meuh.org>
+User-Agent: Roundcube Webmail/0.9.2
+X-abuse-contact: abuse@ocsa-data.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-22 at 00:41 +0100, Mark Brown wrote:
-> On Sat, Jul 20, 2013 at 07:37:54PM +0200, Linus Walleij wrote:
-> > On Thu, Jul 4, 2013 at 6:26 PM, Mark Brown <broonie@kernel.org> wrote:
-> 
-> > > We should really have a subsystem for this too - the general idea idea
-> > > of identifying boards, fit options and so on by looking at things like
-> > > GPIOs or numbers in flash is really common.
-> 
-> > Would it then be a bus following the pattern we chiseled out for
-> > the soc bus? (Greg, Lee & Arnd architectured this.)
-> 
-> I'd expect it to be a bus, yes.
+Hi,
 
-It seems to me the platform bus already provides everything we need. We
-can just make a platform driver, say platform-id-gpio.c which can get
-it's platform data from OF or ACPI (_PRP proposal from kernel summit
-last week for example). Why would a separate bus type need to be
-defined?
+Le 30.10.2013 21:20, Peter Zijlstra a écrit :
+> On Wed, Oct 30, 2013 at 08:47:46PM +0100, Yann Droneaud wrote:
+>> This patch replaces calls to get_unused_fd() with equivalent call to
+>> get_unused_fd_flags(0) to preserve current behavor for existing code.
+>> 
+>> The hard coded flag value (0) should be reviewed on a per-subsystem 
+>> basis,
+>> and, if possible, set to O_CLOEXEC.
+> 
+> And how am I supposed to know if that is 'possible'? You provide a 
+> total
+> number of 0 useful clues on how to determine this.
+
+Fair.
+
+Short: Will it break kernel ABI ? If no, use O_CLOEXEC, if yes, use 0.
+
+Long: If userspace expect to retrieve a file descriptor with plain old 
+Unix(tm)
+       semantics, O_CLOEXEC must not be the default, as it could break 
+some applications
+       expecting that the file descriptor will be inherited during 
+exec().
+
+       But for some subsystems, such as InfiniBand, KVM, VFIO, it make no 
+sense to have
+       file descriptors inherited since those are tied to resources that 
+will vanish
+       when a another program will replace the current one by mean of 
+exec(),
+       so it's safe to use O_CLOEXEC in such cases.
+
+       For others, like XFS, the file descriptor is retrieved by one 
+program and will
+       be used by a different program, executed as a child. In this case, 
+setting O_CLOEXEC
+       would break existing application, which do not expect to have to 
+call fcntl(fd, F_SETFD,
+       FD_CLOEXEC) to make it available across exec().
+
+       If file descriptor created by events subsystem are not tied to the 
+current process
+       resources, it's likely legal to use it in a different process 
+context, thus O_CLOEXEC
+       must not be the default.
+
+Aside: If O_CLOEXEC cannot be made the default, it would be interesting 
+to think to extend
+        the API to have a (set of) function(s) taking a flags parameter 
+so that userspace can
+        set O_CLOEXEC if wanted. And I have a patch for this :)
+
+PS: I like the title of this article: "Excuse me son, but your code is 
+leaking !!!" [1]
+     by Dan Walsh but one should probably read PEP-446 "Make newly 
+created file descriptors
+     non-inheritable" [2] instead since it has lot more background 
+information on file
+     descriptor leaking.
+
+[1] http://danwalsh.livejournal.com/53603.html
+[2] http://www.python.org/dev/peps/pep-0446/
+
+
+Regards.
 
 -- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
-
+Yann Droneaud
+OPTEYA
 
