@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab3J3Ipn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 04:45:43 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59590 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752700Ab3J3Ipl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 04:45:41 -0400
-Date: Wed, 30 Oct 2013 09:45:31 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mel Gorman <mgorman@suse.de>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Chris Mason <chris.mason@fusionio.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] futex: Remove requirement for lock_page in
- get_futex_key
-In-Reply-To: <20131029173814.GH2400@suse.de>
-Message-ID: <alpine.DEB.2.02.1310300929420.19212@ionos.tec.linutronix.de>
-References: <20131029173814.GH2400@suse.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753105Ab3J3IwA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 04:52:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42974 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751377Ab3J3Iv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 04:51:56 -0400
+Date: Wed, 30 Oct 2013 16:51:24 +0800
+From: Asias He <asias@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] virtio_blk: blk-mq support
+Message-ID: <20131030085124.GA30084@hj.localdomain>
+References: <20131025130459.730903511@bombadil.infradead.org>
+ <20131025130735.637242058@bombadil.infradead.org>
+ <87ob6aglgl.fsf@rustcorp.com.au>
+ <20131028085206.GB31270@infradead.org>
+ <527029C9.2030102@kernel.dk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <527029C9.2030102@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Oct 2013, Mel Gorman wrote:
+Hello Jens,
 
-> Thomas Gleixner and Peter Zijlstra discussed off-list that real-time users
-> currently have a problem with the page lock being contended for unbounded
-> periods of time during futex operations. The three of us discussed the
-> possibiltity that the page lock is unnecessary in this case because we are
-> not concerned with the usual races with reclaim and page cache updates. For
-> anonymous pages, the associated futex object is the mm_struct which does
-> not require the page lock. For inodes, we should be able to check under
-> RCU read lock if the page mapping is still valid to take a reference to
-> the inode.  This just leaves one rare race that requires the page lock
-> in the slow path. This patch does not completely eliminate the page lock
-> but it should reduce contention in the majority of cases.
+On Tue, Oct 29, 2013 at 03:34:01PM -0600, Jens Axboe wrote:
+> On 10/28/2013 02:52 AM, Christoph Hellwig wrote:
+> > On Mon, Oct 28, 2013 at 01:17:54PM +1030, Rusty Russell wrote:
+> >> Let's pretend I'm stupid.
+> >>
+> >> We don't actually have multiple queues through to the host, but we're
+> >> pretending to, because it makes the block layer go faster?
+> >>
+> >> Do I want to know *why* it's faster?  Or should I look the other way?
+> > 
+> > You shouldn't.  To how multiple queues benefit here I'd like to defer to
+> > Jens, given the single workqueue I don't really know where to look here.
 > 
-> Patch boots and futextest did not explode but I did no comparison
-> performance tests. Thomas, do you have details of the workload that
-> drove you to examine this problem? Alternatively, can you test it and
+> The 4 was chosen to "have some number of multiple queues" and to be able
+> to exercise that part, no real performance testing was done by me after
+> the implementation to verify whether it was faster at 1, 2, 4, or
+> others. But it was useful for that! For merging, we can easily just make
+> it 1 since that's the most logical transformation. I can set some time
+> aside to play with multiple queues and see if we gain anything, but that
+> can be done post merge.
+> 
+> > The real benefit that unfortunately wasn't obvious from the description
+> > is that even with just a single queue the blk-multiqueue infrastructure
+> > will be a lot faster, because it is designed in a much more streaminline
+> > fashion and avoids lots of lock roundtrips both during submission itself
+> > and for submission vs complettion.  Back when I tried to get virtio-blk
+> > to perform well on high-end flash (the work that Asias took over later)
+> > the queue_lock contention was the major issue in virtio-blk and this
+> > patch gets rid of that even with a single queue.
+> > 
+> > A good example are the patches from Nick to move scsi drivers over to
+> > the infrastructure that only support a single queue.  Even that gave
+> > over a 10 fold improvement over the old code.
+> > 
+> > Unfortunately I do not have access to this kind of hardware at the
+> > moment, but I'd love to see if Asias or anyone at Red Hat could redo
+> > those old numbers.
+> 
+> I've got a variety of fast devices, so should be able to run that.
+> Asias, let me know what your position is, it'd be great to have
+> independent results.
 
-The scenario is simple. All you need is a PSHARED futex.
+I'd love to run the test but I do not have fast devices around. It would
+be nice if Nick can give a try ;-)
 
-Task A 
-     get_futex_key()
-     lock_page()
+1) Set .nr_hw_queues to 1 instead 4 for now.
+2) Drop some more unused code in the other mail I sent
 
----> preemption
+Otherwise, feel free to add:
 
-Now any other task trying to lock that page will have to wait until
-task A gets scheduled back in, which is an unbound time.
+Acked-by: Asias He <asias@redhat.com>
 
-It takes quite some time to reproduce, but I'll ask the people who
-have that workload to give it a try.
+> -- 
+> Jens Axboe
+> 
 
-Thanks,
-
-	tglx
+-- 
+Asias
