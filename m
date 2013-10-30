@@ -1,21 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739Ab3J3Kxn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 06:53:43 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:44526 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751627Ab3J3Kxm (ORCPT
+	id S1753930Ab3J3Kxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 06:53:46 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:39488 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691Ab3J3Kxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 06:53:42 -0400
-X-AuditID: 85900ec0-d1328b9000001514-8a-5270e5338a47
-Subject: [PATCH -tip  0/2] kprobes: fix bugs by updating blacklist
+	Wed, 30 Oct 2013 06:53:44 -0400
+X-AuditID: 85900ec0-d272ab9000001514-8b-5270e5369943
+Subject: [PATCH -tip 1/2] [BUGFIX] kprobes/x86: Prohibit probing on
+ debug_stack_*
 To: Ingo Molnar <mingo@kernel.org>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: x86@kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+Cc: Fenghua Yu <fenghua.yu@intel.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
         "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Date: Wed, 30 Oct 2013 10:53:34 +0000
-Message-ID: <20131030105334.7997.750.stgit@kbuild-fedora.novalocal>
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@suse.de>
+Date: Wed, 30 Oct 2013 10:53:41 +0000
+Message-ID: <20131030105341.7997.48258.stgit@kbuild-fedora.novalocal>
+In-Reply-To: <20131030105334.7997.750.stgit@kbuild-fedora.novalocal>
+References: <20131030105334.7997.750.stgit@kbuild-fedora.novalocal>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -25,30 +31,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently I've found that putting probes on some functions
-could lock or reboot the kernel. These two patches fix
-those bugs by prohibiting probing such functions by
-adding those to blacklist(kprobes.text).
+Prohibit probing on debug_stack_reset and debug_stack_set_zero.
+Since the both functions are called from TRACE_IRQS_ON/OFF_DEBUG
+macros which run in int3 ist entry, probing it may cause a soft
+lockup.
 
-In both cases, those functions are related to int3 handling
-execution path. One is related to irqoff-tracer and the other
-is related to notifier debug option.
+This happens when the kernel built with CONFIG_DYNAMIC_FTRACE=y
+and CONFIG_TRACE_IRQFLAGS=y.
 
-Thank you,
-
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
 ---
-
-Masami Hiramatsu (2):
-      [BUGFIX] kprobes/x86: Prohibit probing on debug_stack_*
-      [BUGFIX] kprobes: Prohibit probing on func_ptr_is_kernel_text
-
-
  arch/x86/kernel/cpu/common.c |    7 ++++---
- kernel/extable.c             |    3 ++-
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 35e28b0..8712a1a 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -11,6 +11,7 @@
+ #include <linux/kgdb.h>
+ #include <linux/smp.h>
+ #include <linux/io.h>
++#include <linux/kprobes.h>
+ 
+ #include <asm/stackprotector.h>
+ #include <asm/perf_event.h>
+@@ -1158,7 +1159,7 @@ DEFINE_PER_CPU(struct orig_ist, orig_ist);
+ static DEFINE_PER_CPU(unsigned long, debug_stack_addr);
+ DEFINE_PER_CPU(int, debug_stack_usage);
+ 
+-int is_debug_stack(unsigned long addr)
++int __kprobes is_debug_stack(unsigned long addr)
+ {
+ 	return __get_cpu_var(debug_stack_usage) ||
+ 		(addr <= __get_cpu_var(debug_stack_addr) &&
+@@ -1167,13 +1168,13 @@ int is_debug_stack(unsigned long addr)
+ 
+ DEFINE_PER_CPU(u32, debug_idt_ctr);
+ 
+-void debug_stack_set_zero(void)
++void __kprobes debug_stack_set_zero(void)
+ {
+ 	this_cpu_inc(debug_idt_ctr);
+ 	load_current_idt();
+ }
+ 
+-void debug_stack_reset(void)
++void __kprobes debug_stack_reset(void)
+ {
+ 	if (WARN_ON(!this_cpu_read(debug_idt_ctr)))
+ 		return;
+
