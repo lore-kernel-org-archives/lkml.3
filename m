@@ -1,146 +1,377 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab3J3Xh1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 19:37:27 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:23875 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459Ab3J3Xg7 (ORCPT
+	id S1752106Ab3J3Xmp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 19:42:45 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:46881 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab3J3Xmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 19:36:59 -0400
-Message-ID: <52714295.6040605@hp.com>
-Date: Wed, 30 Oct 2013 11:32:05 -0600
-From: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 30 Oct 2013 19:42:43 -0400
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, T Makphaibulchoke <tmac@hp.com>,
-        adilger.kernel@dilger.ca, viro@zeniv.linux.org.uk,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, aswin@hp.com,
-        torvalds@linux-foundation.org, aswin_proj@groups.hp.com
-Subject: Re: [PATCH v3 1/2] mbcache: decoupling the locking of local from
- global data
-References: <1374108934-50550-1-git-send-email-tmac@hp.com> <1378312756-68597-1-git-send-email-tmac@hp.com> <1378312756-68597-2-git-send-email-tmac@hp.com> <20131030144229.GC3305@thunk.org>
-In-Reply-To: <20131030144229.GC3305@thunk.org>
+In-Reply-To: <1383151090-13885-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1383151090-13885-1-git-send-email-soren.brinkmann@xilinx.com>
+Date: Wed, 30 Oct 2013 18:42:41 -0500
+Message-ID: <CAL_JsqKGPg67t8iGL_+hBJMO8kRm0H5YHPZXpU03RAKqn2DSDg@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] mmc: arasan: Add driver for Arasan SDHCI
+From: Rob Herring <robherring2@gmail.com>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Chris Ball <cjb@laptop.org>, Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2013 08:42 AM, Theodore Ts'o wrote:
-> I tried running xfstests with this patch, and it blew up on
-> generic/020 test:
-> 
-> generic/020	[10:21:50][  105.170352] ------------[ cut here ]------------
-> [  105.171683] kernel BUG at /usr/projects/linux/ext4/include/linux/bit_spinlock.h:76!
-> [  105.173346] invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
-> [  105.173346] Modules linked in:
-> [  105.173346] CPU: 1 PID: 8519 Comm: attr Not tainted 3.12.0-rc5-00008-gffbe1d7-dirty #1492
-> [  105.173346] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [  105.173346] task: f5abe560 ti: f2274000 task.ti: f2274000
-> [  105.173346] EIP: 0060:[<c026b464>] EFLAGS: 00010246 CPU: 1
-> [  105.173346] EIP is at hlist_bl_unlock+0x7/0x1c
-> [  105.173346] EAX: f488d360 EBX: f488d360 ECX: 00000000 EDX: f2998800
-> [  105.173346] ESI: f29987f0 EDI: 6954c848 EBP: f2275cc8 ESP: f2275cb8
-> [  105.173346]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-> [  105.173346] CR0: 80050033 CR2: b76bcf54 CR3: 34844000 CR4: 000006f0
-> [  105.173346] Stack:
-> [  105.173346]  c026bc78 f2275d48 6954c848 f29987f0 f2275d24 c02cd7a9 f2275ce4 c02e2881
-> [  105.173346]  f255d8c8 00000000 f1109020 f4a67f00 f2275d54 f2275d08 c02cd020 6954c848
-> [  105.173346]  f4a67f00 f1109000 f2b0eba8 f2ee3800 f2275d28 f4f811e8 f2275d38 00000000
-> [  105.173346] Call Trace:
-> [  105.173346]  [<c026bc78>] ? mb_cache_entry_find_first+0x4b/0x55
-> [  105.173346]  [<c02cd7a9>] ext4_xattr_block_set+0x248/0x6e7
-> [  105.173346]  [<c02e2881>] ? jbd2_journal_put_journal_head+0xe2/0xed
-> [  105.173346]  [<c02cd020>] ? ext4_xattr_find_entry+0x52/0xac
-> [  105.173346]  [<c02ce307>] ext4_xattr_set_handle+0x1c7/0x30f
-> [  105.173346]  [<c02ce4f4>] ext4_xattr_set+0xa5/0xe1
-> [  105.173346]  [<c02ceb36>] ext4_xattr_user_set+0x46/0x5f
-> [  105.173346]  [<c024a4da>] generic_setxattr+0x4c/0x5e
-> [  105.173346]  [<c024a48e>] ? generic_listxattr+0x95/0x95
-> [  105.173346]  [<c024ab0f>] __vfs_setxattr_noperm+0x56/0xb6
-> [  105.173346]  [<c024abd2>] vfs_setxattr+0x63/0x7e
-> [  105.173346]  [<c024ace8>] setxattr+0xfb/0x139
-> [  105.173346]  [<c01b200a>] ? __lock_acquire+0x540/0xca6
-> [  105.173346]  [<c01877a3>] ? lg_local_unlock+0x1b/0x34
-> [  105.173346]  [<c01af8dd>] ? trace_hardirqs_off_caller+0x2e/0x98
-> [  105.173346]  [<c0227e69>] ? kmem_cache_free+0xd4/0x149
-> [  105.173346]  [<c01b2c2b>] ? lock_acquire+0xdd/0x107
-> [  105.173346]  [<c023225e>] ? __sb_start_write+0xee/0x11d
-> [  105.173346]  [<c0247383>] ? mnt_want_write+0x1e/0x3e
-> [  105.173346]  [<c01b3019>] ? trace_hardirqs_on_caller+0x12a/0x17e
-> [  105.173346]  [<c0247353>] ? __mnt_want_write+0x4e/0x60
-> [  105.173346]  [<c024af3b>] SyS_lsetxattr+0x6a/0x9f
-> [  105.173346]  [<c078d0e8>] syscall_call+0x7/0xb
-> [  105.173346] Code: 00 00 00 00 5b 5d c3 55 89 e5 53 3e 8d 74 26 00 8b 58 08 89 c2 8b 43 18 e8 3f c9 fb ff f0 ff 4b 0c 5b 5d c3 8b 10 80 e2 01 75 02 <0f> 0b 55 89 e5 0f ba 30 00 89 e0 25 00 e0 ff ff ff 48 14 5d c3
-> [  105.173346] EIP: [<c026b464>] hlist_bl_unlock+0x7/0x1c SS:ESP 0068:f2275cb8
-> [  105.273781] ---[ end trace 1ee45ddfc1df0935 ]---
-> 
-> When I tried to find a potential problem, I immediately ran into this.
-> I'm not entirely sure it's the problem, but it's raised a number of
-> red flags for me in terms of (a) how much testing you've employed with
-> this patch set, and (b) how maintaining and easy-to-audit the code
-> will be with this extra locking.  The comments are good start, but
-> some additional comments about exactly what assumptions a function
-> assumes about locks that are held on function entry, or especially if
-> the locking is different on function entry and function exit, might
-> make it easier for people to audit this patch.
-> 
-> Or maybe this commit needs to be split up with first a conversion from
-> using list_head to hlist_hl_node, and the changing the locking?  The
-> bottom line is that we need to somehow make this patch easier to
-> validate/review.
-> 
+On Wed, Oct 30, 2013 at 11:38 AM, Soren Brinkmann
+<soren.brinkmann@xilinx.com> wrote:
+> Add a driver for Arasan's SDHCI controller core.
+>
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-Thanks for the comemnts.  Yes, I did run through xfstests.  My guess is that you probably ran into a race condition that I did not.
+For the binding:
 
-I will try to port the patch to a more recent kernel, including the mb_cache_shrink_scan() sent earlier (BTW, it looks good) and debug the problem.
+Acked-by: Rob Herring <rob.herring@calxeda.com>
 
-Yes, those are good suggestions.  Once I find the problem, I will resubmit with more comments and also split it into two patches, as suggested. 
-
->> @@ -520,18 +647,23 @@ __mb_cache_entry_find(struct list_head *l, struct list_head *head,
->>  				ce->e_queued++;
->>  				prepare_to_wait(&mb_cache_queue, &wait,
->>  						TASK_UNINTERRUPTIBLE);
->> -				spin_unlock(&mb_cache_spinlock);
->> +				hlist_bl_unlock(head);
->>  				schedule();
->> -				spin_lock(&mb_cache_spinlock);
->> +				hlist_bl_lock(head);
->> +				mb_assert(ce->e_index_hash_p == head);
->>  				ce->e_queued--;
->>  			}
->> +			hlist_bl_unlock(head);
->>  			finish_wait(&mb_cache_queue, &wait);
->>  
->> -			if (!__mb_cache_entry_is_hashed(ce)) {
->> +			hlist_bl_lock(ce->e_block_hash_p);
->> +			if (!__mb_cache_entry_is_block_hashed(ce)) {
->>  				__mb_cache_entry_release_unlock(ce);
->> -				spin_lock(&mb_cache_spinlock);
->> +				hlist_bl_lock(head);
-> 
-> <---  are we missing a "hlist_bl_unlock(ce->e_block_hash_p);" here?
-> 
-> <---- Why is it that we call "hlist_bl_lock(head);" but not in the else clause?
-
-The function __mb_cache_entry_release_unlock() releases both the e_block_hash and e_index_hash locks.  So we have to reacquire the e_index_hash (head) lock in the then part, and release the e_block_hash lock in the else part.
-> 
->>  				return ERR_PTR(-EAGAIN);
->> -			}
->> +			} else
->> +				hlist_bl_unlock(ce->e_block_hash_p);
->> +			mb_assert(ce->e_index_hash_p == head);
->>  			return ce;
->>  		}
->>  		l = l->next; 
-> 
-> 
-> Cheers,
-> 
-> 					- Ted
-> 
-
-Thanks,
-Mak.
-
+> ---
+> v2:
+>  - document 'interrupts' and 'interrupt-parent' properties in the driver
+>    bindings
+>  - append '-8.9a' IP version specifier to comaptibility string
+> ---
+>  .../devicetree/bindings/mmc/arasan,sdhci.txt       |  27 +++
+>  MAINTAINERS                                        |   1 +
+>  drivers/mmc/host/Kconfig                           |  12 ++
+>  drivers/mmc/host/Makefile                          |   1 +
+>  drivers/mmc/host/sdhci-of-arasan.c                 | 224 +++++++++++++++++++++
+>  5 files changed, 265 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
+>  create mode 100644 drivers/mmc/host/sdhci-of-arasan.c
+>
+> diff --git a/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt b/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
+> new file mode 100644
+> index 000000000000..ef4c5ac753e8
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
+> @@ -0,0 +1,27 @@
+> +Device Tree Bindings for the Arasan SDCHI Controller
+> +
+> +  The bindings follow the mmc[1], clock[2] and interrupt[3] bindings. Only
+> +  deviations are documented here.
+> +
+> +  [1] Documentation/devicetree/bindings/mmc/mmc.txt
+> +  [2] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +  [3] Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+> +
+> +Required Properties:
+> +  - compatible: Compatibility string. Must be 'arasan,sdhci-8.9a'
+> +  - reg: From mmc bindings: Register location and length.
+> +  - clocks: From clock bindings: Handles to clock inputs.
+> +  - clock-names: From clock bindings: Tuple including "clk_xin" and "clk_ahb"
+> +  - interrupts: Interrupt specifier
+> +  - interrupt-parent: Phandle for the interrupt controller that services
+> +                     interrupts for this device.
+> +
+> +Example:
+> +       sdhci@e0100000 {
+> +               compatible = "arasan,sdhci-8.9a";
+> +               reg = <0xe0100000 0x1000>;
+> +               clock-names = "clk_xin", "clk_ahb";
+> +               clocks = <&clkc 21>, <&clkc 32>;
+> +               interrupt-parent = <&gic>;
+> +               interrupts = <0 24 4>;
+> +       } ;
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 3438384d270c..5ede7f722025 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -1357,6 +1357,7 @@ T:        git git://git.xilinx.com/linux-xlnx.git
+>  S:     Supported
+>  F:     arch/arm/mach-zynq/
+>  F:     drivers/cpuidle/cpuidle-zynq.c
+> +F:     drivers/mmc/host/sdhci-of-arasan.c
+>
+>  ARM SMMU DRIVER
+>  M:     Will Deacon <will.deacon@arm.com>
+> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+> index 7fc5099e44b2..1eb090c187bb 100644
+> --- a/drivers/mmc/host/Kconfig
+> +++ b/drivers/mmc/host/Kconfig
+> @@ -104,6 +104,18 @@ config MMC_SDHCI_PLTFM
+>
+>           If unsure, say N.
+>
+> +config MMC_SDHCI_OF_ARASAN
+> +       tristate "SDHCI OF support for the Arasan SDHCI controllers"
+> +       depends on MMC_SDHCI_PLTFM
+> +       depends on OF
+> +       help
+> +         This selects the Arasan Secure Digital Host Controller Interface
+> +         (SDHCI). This hardware is found e.g. in Xilinx' Zynq SoC.
+> +
+> +         If you have a controller with this interface, say Y or M here.
+> +
+> +         If unsure, say N.
+> +
+>  config MMC_SDHCI_OF_ESDHC
+>         tristate "SDHCI OF support for the Freescale eSDHC controller"
+>         depends on MMC_SDHCI_PLTFM
+> diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
+> index c41d0c364509..f93617ec6548 100644
+> --- a/drivers/mmc/host/Makefile
+> +++ b/drivers/mmc/host/Makefile
+> @@ -57,6 +57,7 @@ obj-$(CONFIG_MMC_SDHCI_CNS3XXX)               += sdhci-cns3xxx.o
+>  obj-$(CONFIG_MMC_SDHCI_ESDHC_IMX)      += sdhci-esdhc-imx.o
+>  obj-$(CONFIG_MMC_SDHCI_DOVE)           += sdhci-dove.o
+>  obj-$(CONFIG_MMC_SDHCI_TEGRA)          += sdhci-tegra.o
+> +obj-$(CONFIG_MMC_SDHCI_OF_ARASAN)      += sdhci-of-arasan.o
+>  obj-$(CONFIG_MMC_SDHCI_OF_ESDHC)       += sdhci-of-esdhc.o
+>  obj-$(CONFIG_MMC_SDHCI_OF_HLWD)                += sdhci-of-hlwd.o
+>  obj-$(CONFIG_MMC_SDHCI_BCM_KONA)       += sdhci-bcm-kona.o
+> diff --git a/drivers/mmc/host/sdhci-of-arasan.c b/drivers/mmc/host/sdhci-of-arasan.c
+> new file mode 100644
+> index 000000000000..98464bc732f6
+> --- /dev/null
+> +++ b/drivers/mmc/host/sdhci-of-arasan.c
+> @@ -0,0 +1,224 @@
+> +/*
+> + * Arasan Secure Digital Host Controller Interface.
+> + * Copyright (C) 2011 - 2012 Michal Simek <monstr@monstr.eu>
+> + * Copyright (c) 2012 Wind River Systems, Inc.
+> + * Copyright (C) 2013 Pengutronix e.K.
+> + * Copyright (C) 2013 Xilinx Inc.
+> + *
+> + * Based on sdhci-of-esdhc.c
+> + *
+> + * Copyright (c) 2007 Freescale Semiconductor, Inc.
+> + * Copyright (c) 2009 MontaVista Software, Inc.
+> + *
+> + * Authors: Xiaobo Xie <X.Xie@freescale.com>
+> + *         Anton Vorontsov <avorontsov@ru.mvista.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or (at
+> + * your option) any later version.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include "sdhci-pltfm.h"
+> +
+> +#define SDHCI_ARASAN_CLK_CTRL_OFFSET   0x2c
+> +
+> +#define CLK_CTRL_TIMEOUT_SHIFT         16
+> +#define CLK_CTRL_TIMEOUT_MASK          (0xf << CLK_CTRL_TIMEOUT_SHIFT)
+> +#define CLK_CTRL_TIMEOUT_MIN_EXP       13
+> +
+> +/**
+> + * struct sdhci_arasan_data
+> + * @clk_ahb:   Pointer to the AHB clock
+> + */
+> +struct sdhci_arasan_data {
+> +       struct clk      *clk_ahb;
+> +};
+> +
+> +static unsigned int sdhci_arasan_get_timeout_clock(struct sdhci_host *host)
+> +{
+> +       u32 div;
+> +       unsigned long freq;
+> +       struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +
+> +       div = readl(host->ioaddr + SDHCI_ARASAN_CLK_CTRL_OFFSET);
+> +       div = (div & CLK_CTRL_TIMEOUT_MASK) >> CLK_CTRL_TIMEOUT_SHIFT;
+> +
+> +       freq = clk_get_rate(pltfm_host->clk);
+> +       freq /= 1 << (CLK_CTRL_TIMEOUT_MIN_EXP + div);
+> +
+> +       return freq;
+> +}
+> +
+> +static struct sdhci_ops sdhci_arasan_ops = {
+> +       .get_max_clock = sdhci_pltfm_clk_get_max_clock,
+> +       .get_timeout_clock = sdhci_arasan_get_timeout_clock,
+> +};
+> +
+> +static struct sdhci_pltfm_data sdhci_arasan_pdata = {
+> +       .ops = &sdhci_arasan_ops,
+> +};
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +/**
+> + * sdhci_arasan_suspend - Suspend method for the driver
+> + * @dev:       Address of the device structure
+> + * Returns 0 on success and error value on error
+> + *
+> + * Put the device in a low power state.
+> + */
+> +static int sdhci_arasan_suspend(struct device *dev)
+> +{
+> +       struct platform_device *pdev = to_platform_device(dev);
+> +       struct sdhci_host *host = platform_get_drvdata(pdev);
+> +       struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +       struct sdhci_arasan_data *sdhci_arasan = pltfm_host->priv;
+> +       int ret;
+> +
+> +       ret = sdhci_suspend_host(host);
+> +       if (ret)
+> +               return ret;
+> +
+> +       clk_disable(pltfm_host->clk);
+> +       clk_disable(sdhci_arasan->clk_ahb);
+> +
+> +       return 0;
+> +}
+> +
+> +/**
+> + * sdhci_arasan_resume - Resume method for the driver
+> + * @dev:       Address of the device structure
+> + * Returns 0 on success and error value on error
+> + *
+> + * Resume operation after suspend
+> + */
+> +static int sdhci_arasan_resume(struct device *dev)
+> +{
+> +       struct platform_device *pdev = to_platform_device(dev);
+> +       struct sdhci_host *host = platform_get_drvdata(pdev);
+> +       struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +       struct sdhci_arasan_data *sdhci_arasan = pltfm_host->priv;
+> +       int ret;
+> +
+> +       ret = clk_enable(sdhci_arasan->clk_ahb);
+> +       if (ret) {
+> +               dev_err(dev, "Cannot enable AHB clock.\n");
+> +               return ret;
+> +       }
+> +
+> +       ret = clk_enable(pltfm_host->clk);
+> +       if (ret) {
+> +               dev_err(dev, "Cannot enable SD clock.\n");
+> +               clk_disable(sdhci_arasan->clk_ahb);
+> +               return ret;
+> +       }
+> +
+> +       return sdhci_resume_host(host);
+> +}
+> +#endif /* ! CONFIG_PM_SLEEP */
+> +
+> +static SIMPLE_DEV_PM_OPS(sdhci_arasan_dev_pm_ops, sdhci_arasan_suspend,
+> +                        sdhci_arasan_resume);
+> +
+> +static int sdhci_arasan_probe(struct platform_device *pdev)
+> +{
+> +       int ret;
+> +       struct clk *clk_xin;
+> +       struct sdhci_host *host;
+> +       struct sdhci_pltfm_host *pltfm_host;
+> +       struct sdhci_arasan_data *sdhci_arasan;
+> +
+> +       sdhci_arasan = devm_kzalloc(&pdev->dev, sizeof(*sdhci_arasan),
+> +                       GFP_KERNEL);
+> +       if (!sdhci_arasan)
+> +               return -ENOMEM;
+> +
+> +       sdhci_arasan->clk_ahb = devm_clk_get(&pdev->dev, "clk_ahb");
+> +       if (IS_ERR(sdhci_arasan->clk_ahb)) {
+> +               dev_err(&pdev->dev, "clk_ahb clock not found.\n");
+> +               return PTR_ERR(sdhci_arasan->clk_ahb);
+> +       }
+> +
+> +       clk_xin = devm_clk_get(&pdev->dev, "clk_xin");
+> +       if (IS_ERR(clk_xin)) {
+> +               dev_err(&pdev->dev, "clk_xin clock not found.\n");
+> +               return PTR_ERR(clk_xin);
+> +       }
+> +
+> +       ret = clk_prepare_enable(sdhci_arasan->clk_ahb);
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "Unable to enable AHB clock.\n");
+> +               return ret;
+> +       }
+> +
+> +       ret = clk_prepare_enable(clk_xin);
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "Unable to enable SD clock.\n");
+> +               goto clk_dis_ahb;
+> +       }
+> +
+> +       host = sdhci_pltfm_init(pdev, &sdhci_arasan_pdata, 0);
+> +       if (IS_ERR(host)) {
+> +               ret = PTR_ERR(host);
+> +               dev_err(&pdev->dev, "platform init failed (%u)\n", ret);
+> +               goto clk_disable_all;
+> +       }
+> +
+> +       sdhci_get_of_property(pdev);
+> +       pltfm_host = sdhci_priv(host);
+> +       pltfm_host->priv = sdhci_arasan;
+> +       pltfm_host->clk = clk_xin;
+> +
+> +       ret = sdhci_add_host(host);
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "platform register failed (%u)\n", ret);
+> +               goto err_pltfm_free;
+> +       }
+> +
+> +       return 0;
+> +
+> +err_pltfm_free:
+> +       sdhci_pltfm_free(pdev);
+> +clk_disable_all:
+> +       clk_disable_unprepare(clk_xin);
+> +clk_dis_ahb:
+> +       clk_disable_unprepare(sdhci_arasan->clk_ahb);
+> +
+> +       return ret;
+> +}
+> +
+> +static int sdhci_arasan_remove(struct platform_device *pdev)
+> +{
+> +       struct sdhci_host *host = platform_get_drvdata(pdev);
+> +       struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +       struct sdhci_arasan_data *sdhci_arasan = pltfm_host->priv;
+> +
+> +       clk_disable_unprepare(pltfm_host->clk);
+> +       clk_disable_unprepare(sdhci_arasan->clk_ahb);
+> +
+> +       return sdhci_pltfm_unregister(pdev);
+> +}
+> +
+> +static const struct of_device_id sdhci_arasan_of_match[] = {
+> +       { .compatible = "arasan,sdhci-8.9a" },
+> +       { }
+> +};
+> +MODULE_DEVICE_TABLE(of, sdhci_arasan_of_match);
+> +
+> +static struct platform_driver sdhci_arasan_driver = {
+> +       .driver = {
+> +               .name = "sdhci-arasan",
+> +               .owner = THIS_MODULE,
+> +               .of_match_table = sdhci_arasan_of_match,
+> +               .pm = &sdhci_arasan_dev_pm_ops,
+> +       },
+> +       .probe = sdhci_arasan_probe,
+> +       .remove = sdhci_arasan_remove,
+> +};
+> +
+> +module_platform_driver(sdhci_arasan_driver);
+> +
+> +MODULE_DESCRIPTION("Driver for the Arasan SDHCI Controller");
+> +MODULE_AUTHOR("Soeren Brinkmann <soren.brinkmann@xilinx.com");
+> +MODULE_LICENSE("GPL");
+> --
+> 1.8.4.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
