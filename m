@@ -1,64 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab3J3Ofr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 10:35:47 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:53749 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754473Ab3J3Ofq (ORCPT
+	id S1754713Ab3J3Of7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 10:35:59 -0400
+Received: from usindpps04.hds.com ([207.126.252.17]:46089 "EHLO
+	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754473Ab3J3Of4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 10:35:46 -0400
-Date: Wed, 30 Oct 2013 10:35:45 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: David Cohen <david.a.cohen@linux.intel.com>
-cc: balbi@ti.com, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/PATCH v2 1/3] usb: gadget: add quirks field to struct
- usb_gadget
-In-Reply-To: <1383083578-16447-2-git-send-email-david.a.cohen@linux.intel.com>
-Message-ID: <Pine.LNX.4.44L0.1310301033040.1312-100000@iolanthe.rowland.org>
+	Wed, 30 Oct 2013 10:35:56 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Madper Xie <cxie@redhat.com>, "tony.luck@intel.com" <tony.luck@intel.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "anton@enomsg.org" <anton@enomsg.org>
+CC: "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bbboson@gmail.com" <bbboson@gmail.com>
+Subject: RE: [PATCH 1/2] pstore: avoid incorrectly mark entry as duplicate
+Thread-Topic: [PATCH 1/2] pstore: avoid incorrectly mark entry as duplicate
+Thread-Index: AQHO1VS/53L4/byEZ0qzxFcOA1dMPZoNTiYg
+Date: Wed, 30 Oct 2013 14:35:27 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D47F9D388F@USINDEM103.corp.hds.com>
+References: <1383126294-28793-1-git-send-email-cxie@redhat.com>
+ <1383126294-28793-2-git-send-email-cxie@redhat.com>
+In-Reply-To: <1383126294-28793-2-git-send-email-cxie@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-10-30_05:2013-10-30,2013-10-30,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1310300098
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Oct 2013, David Cohen wrote:
 
-> Due to USB controllers may have different restrictions, usb gadget layer
-> needs to provide a generic way to inform gadget functions to complain
-> with non-standard requirements.
+
+> -----Original Message-----
+> From: Madper Xie [mailto:cxie@redhat.com]
+> Sent: Wednesday, October 30, 2013 5:45 AM
+> To: tony.luck@intel.com; keescook@chromium.org; ccross@android.com; anton@enomsg.org; Seiji Aguchi
+> Cc: linux-efi@vger.kernel.org; linux-kernel@vger.kernel.org; bbboson@gmail.com; Madper Xie
+> Subject: [PATCH 1/2] pstore: avoid incorrectly mark entry as duplicate
 > 
-> This patch adds 'quirks' field to struct usb_gadget and the first quirk
-> called USB_GADGET_QUIRK_EP_OUT_ALIGNED_SIZE necessary to inform when
-> controller's epout requires buffer size to be aligned to MaxPacketSize.
+> From: Madper Xie <bbboson@gmail.com>
 > 
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> pstore try to find duplicate entries by check both ID, type and psi.
+> They are not really enough for efi backend. dumped vars always have
+> the same type, psi and ID. like follows:
+> dump-type0-9-1-1382511508-C-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
+> dump-type0-9-1-1382515661-C-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
+> 
+> The "duplicate" entries won't appear in pstorefs. And a complain will be
+> print -- pstore: failed to load 76 record(s) from 'efi'
+> So I add two more checks: timespec and count.
+> 
+> Signed-off-by: Madper Xie <cxie@redhat.com>
+
+Looks good to me.
+Acked-by: Seiji Aguchi <seiji.aguchi@hds.com>
+
+But, this patch has to be tested by other backend drivers like erst and ramoops.
+In my understanding, erst has supported to log multiple events.
+So, I'm interested why the same error hasn't happened in the other drivers.
+
+Seiji
+
 > ---
->  include/linux/usb/gadget.h | 5 +++++
->  1 file changed, 5 insertions(+)
+>  fs/pstore/inode.c | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
 > 
-> diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-> index 942ef5e..7014ad9 100644
-> --- a/include/linux/usb/gadget.h
-> +++ b/include/linux/usb/gadget.h
-> @@ -540,6 +540,11 @@ struct usb_gadget {
->  	struct device			dev;
->  	unsigned			out_epnum;
->  	unsigned			in_epnum;
-> +
-> +	u32				quirks;
-> +/* epout requires buffer size to be aligned to MaxPacketSize */
-> +#define USB_GADGET_QUIRK_EP_OUT_ALIGNED_SIZE		(1 << 0)
-
-If you decide to go through with this, it might be better to define a 
-series of single-bit flags instead of a single "quirks" field.  For 
-example:
-
-	unsigned			quirk_ep_out_aligned_size:1;
-
-Yes, other people (including me!) have done it your way in the past,
-but now this seems to make more sense.
-
-Alan Stern
+> diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+> index 1282384..0ae994c 100644
+> --- a/fs/pstore/inode.c
+> +++ b/fs/pstore/inode.c
+> @@ -47,6 +47,7 @@ static LIST_HEAD(allpstore);
+>  struct pstore_private {
+>  	struct list_head list;
+>  	struct pstore_info *psi;
+> +	struct timespec time;
+>  	enum pstore_type_id type;
+>  	u64	id;
+>  	int	count;
+> @@ -290,7 +291,9 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+>  	list_for_each_entry(pos, &allpstore, list) {
+>  		if (pos->type == type &&
+>  		    pos->id == id &&
+> -		    pos->psi == psi) {
+> +		    pos->psi == psi &&
+> +		    pos->count == count &&
+> +		    !timespec_compare(&pos->time, &time)) {
+>  			rc = -EEXIST;
+>  			break;
+>  		}
+> @@ -312,6 +315,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+>  	private->id = id;
+>  	private->count = count;
+>  	private->psi = psi;
+> +	memcpy(&private->time, &time, sizeof(struct timespec));
+> 
+>  	switch (type) {
+>  	case PSTORE_TYPE_DMESG:
+> --
+> 1.8.4.2
 
