@@ -1,60 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751Ab3J3KHM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 06:07:12 -0400
-Received: from smtprelay0030.b.hostedemail.com ([64.98.42.30]:60166 "EHLO
-	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753721Ab3J3KHK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 06:07:10 -0400
-X-Session-Marker: 742E617274656D406C79636F732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:::::::::::::::::,RULES_HIT:41:152:355:379:582:599:966:968:988:989:1152:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2198:2199:2200:2393:2553:2559:2562:2693:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:4250:4321:4385:5007:6119:6261:7875:7903:10004:10400:10450:10455:10848:11026:11232:11658:11914:12043:12438:12517:12519:12740:13069:13161:13229:13311:13357:13618:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: cart46_5b7963ac93e24
-X-Filterd-Recvd-Size: 2801
-Date: Wed, 30 Oct 2013 10:07:08 +0000 (UTC)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: jack@suse.cz
-Cc: tytso@mit.edu, fengguang.wu@intel.com, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        diegocg@gmail.com, david@lang.hm, neilb@suse.de
-Message-ID: <1532891663.73423.1383127628582.JavaMail.mail@webmail14>
-References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
- <CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
- <1814253454.3449.1382689853825.JavaMail.mail@webmail07>
- <20131025091842.GA28681@thunk.org> <20131025230545.GB31280@localhost>
- <20131025233753.GD19823@thunk.org><20131029204052.GF9568@quack.suse.cz>
-Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
+	id S1752242Ab3J3KSa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 06:18:30 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:4222 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751667Ab3J3KS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 06:18:28 -0400
+X-IronPort-AV: E=Sophos;i="4.93,599,1378828800"; 
+   d="scan'208";a="8899884"
+Message-ID: <5270DB8B.6070600@cn.fujitsu.com>
+Date: Wed, 30 Oct 2013 18:12:27 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] pci-sysfs: fix a potential deadlock when concurrent remove&rescan
+ pci device via sysfs
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/30 18:16:44,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/30 18:16:44,
+	Serialize complete at 2013/10/30 18:16:44
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [46.146.117.87]
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oct 30, 2013 02:41:01 AM, Jack wrote:
-On Fri 25-10-13 19:37:53, Ted Tso wrote:
->> Sure, although I wonder if it would be worth it calcuate some kind of
->> rolling average of the write bandwidth while we are doing writeback,
->> so if it turns out we got unlucky with the contents of the first 100MB
->> of dirty data (it could be either highly random or highly sequential)
->> the we'll eventually correct to the right level.
->  We already do average measured throughput over a longer time window and
->have kind of rolling average algorithm doing some averaging.
->
->> This means that VM would have to keep dirty page counters for each BDI
->> --- which I thought we weren't doing right now, which is why we have a
->> global vm.dirty_ratio/vm.dirty_background_ratio threshold.  (Or do I
->> have cause and effect reversed?  :-)
->  And we do currently keep the number of dirty & under writeback pages per
->BDI. We have global limits because mm wants to limit the total number of dirty
->pages (as those are harder to free). It doesn't care as much to which device
->these pages belong (although it probably should care a bit more because
->there are huge differences between how quickly can different devices get rid
->of dirty pages).
+There is a potential deadlock situation when we manipulate pci device 
+(remove&rescan) via the pci-sysfs user interfaces simultaneously. 
 
-This might sound like an absolutely stupid question which makes no sense at
-all, so I want to apologize for it in advance, but since the Linux kernel lacks
-revoke(), does that mean that dirty buffers will always occupy the kernel memory
-if I for instance remove my USB stick before the kernel has had the time to flush
-these buffers?
+Privious patch:
+https://lkml.org/lkml/2012/12/27/10
+
+Related bug reports on bugzilla:
+https://bugzilla.kernel.org/show_bug.cgi?id=60672
+https://bugzilla.kernel.org/show_bug.cgi?id=60695
+
+deadlock info described as following:
+
+*dmesg ifno*:
+(snip)
+1000e 0000:1c:00.0: eth9: Intel(R) PRO/1000 Network Connection
+sd 13:2:0:0: [sdb] Attached SCSI disk
+e1000e 0000:1c:00.0: eth9: MAC: 0, PHY: 4, PBA No: D50228-005
+e1000e 0000:1c:00.1: Disabling ASPM  L1
+e1000e 0000:1c:00.1: Interrupt Throttling Rate (ints/sec) set to dynamic
+conservative mode
+e1000e 0000:1c:00.1: irq 143 for MSI/MSI-X
+e1000e 0000:1c:00.1: eth10: (PCI Express:2.5GT/s:Width x4) 00:15:17:cd:96:bf
+e1000e 0000:1c:00.1: eth10: Intel(R) PRO/1000 Network Connection
+e1000e 0000:1c:00.1: eth10: MAC: 0, PHY: 4, PBA No: D50228-005
+INFO: task bash:62982 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+bash            D 0000000000000000     0 62982  62978 0x00000080
+ ffff88038b277db8 0000000000000082 ffff88038b277fd8 0000000000013940
+ ffff88038b276010 0000000000013940 0000000000013940 0000000000013940
+ ffff88038b277fd8 0000000000013940 ffff880377449e30 ffff8806e822c670
+Call Trace:
+ [<ffffffff8151ba79>] schedule+0x29/0x70
+ [<ffffffff8151bd6e>] schedule_preempt_disabled+0xe/0x10
+ [<ffffffff8151a4e3>] __mutex_lock_slowpath+0xd3/0x150
+ [<ffffffff8151a3eb>] mutex_lock+0x2b/0x50
+ [<ffffffff812821dc>] dev_rescan_store+0x5c/0x80
+ [<ffffffff81341800>] dev_attr_store+0x20/0x30
+ [<ffffffff811e3eef>] sysfs_write_file+0xef/0x170
+ [<ffffffff81173d08>] vfs_write+0xc8/0x190
+ [<ffffffff81173ed1>] sys_write+0x51/0x90
+ [<ffffffff81524b29>] system_call_fastpath+0x16/0x1b
+INFO: task bash:64141 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+bash            D ffffffff81610460     0 64141  64136 0x00000080
+ ffff8803540e9db8 0000000000000086 ffff8803540e9fd8 0000000000013940
+ ffff8803540e8010 0000000000013940 0000000000013940 0000000000013940
+ ffff8803540e9fd8 0000000000013940 ffff8807db338a10 ffff8806f09abc60
+Call Trace:
+ [<ffffffff8151ba79>] schedule+0x29/0x70
+ [<ffffffff8151bd6e>] schedule_preempt_disabled+0xe/0x10
+ [<ffffffff8151a4e3>] __mutex_lock_slowpath+0xd3/0x150
+ [<ffffffff8151a3eb>] mutex_lock+0x2b/0x50
+ [<ffffffff812821dc>] dev_rescan_store+0x5c/0x80
+ [<ffffffff81341800>] dev_attr_store+0x20/0x30
+ [<ffffffff811e3eef>] sysfs_write_file+0xef/0x170
+ [<ffffffff81173d08>] vfs_write+0xc8/0x190
+ [<ffffffff81173ed1>] sys_write+0x51/0x90
+ [<ffffffff81524b29>] system_call_fastpath+0x16/0x1b
+INFO: task kworker/u:3:64451 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+kworker/u:3     D ffffffff81610460     0 64451      2 0x00000080
+ ffff8807d51b7a30 0000000000000046 ffff8807d51b7fd8 0000000000013940
+ ffff8807d51b6010 0000000000013940 0000000000013940 0000000000013940
+ ffff8807d51b7fd8 0000000000013940 ffff8807db339420 ffff88037744b250
+Call Trace:
+ [<ffffffff8151ba79>] schedule+0x29/0x70
+ [<ffffffff81519ded>] schedule_timeout+0x19d/0x220
+ [<ffffffff81165f92>] ? __slab_free+0x1f2/0x2f0
+ [<ffffffff8151b8fe>] wait_for_common+0x11e/0x190
+ [<ffffffff8108a6e0>] ? try_to_wake_up+0x2c0/0x2c0
+ [<ffffffff8151ba4d>] wait_for_completion+0x1d/0x20
+ [<ffffffff811e53e8>] sysfs_addrm_finish+0xb8/0xd0
+ [<ffffffff811e4320>] ? sysfs_schedule_callback+0x1e0/0x1e0
+ [<ffffffff811e33f0>] sysfs_hash_and_remove+0x60/0xb0
+ [<ffffffff811e43c9>] sysfs_remove_file+0x39/0x50
+ [<ffffffff81342cb7>] device_remove_file+0x17/0x20
+ [<ffffffff8134505c>] bus_remove_device+0xdc/0x180
+ [<ffffffff81342eb0>] device_del+0x120/0x1d0
+ [<ffffffff81342f82>] device_unregister+0x22/0x60
+ [<ffffffff8127ade4>] pci_stop_bus_device+0x94/0xa0
+ [<ffffffff8127ad90>] pci_stop_bus_device+0x40/0xa0
+ [<ffffffff8127ad90>] pci_stop_bus_device+0x40/0xa0
+ [<ffffffff8127ad90>] pci_stop_bus_device+0x40/0xa0
+ [<ffffffff8127af66>] pci_stop_and_remove_bus_device+0x16/0x30
+ [<ffffffff81282359>] remove_callback+0x29/0x40
+ [<ffffffff811e4344>] sysfs_schedule_callback_work+0x24/0x70
+ [<ffffffff81070009>] process_one_work+0x179/0x4b0
+ [<ffffffff8107210e>] worker_thread+0x12e/0x330
+ [<ffffffff81071fe0>] ? manage_workers+0x110/0x110
+ [<ffffffff8107705e>] kthread+0x9e/0xb0
+ [<ffffffff81525bc4>] kernel_thread_helper+0x4/0x10
+ [<ffffffff81076fc0>] ? kthread_freezable_should_stop+0x70/0x70
+ [<ffffffff81525bc0>] ? gs_change+0x13/0x13
+
+path1: sysfs remove device:             | path2: sysfs rescan device:
+sysfs_schedule_callback_work()          | sysfs_write_file()
+  remove_callback()                     |   flush_write_buffer()
+*1* mutex_lock(&pci_remove_rescan_mutex)|*2*  sysfs_get_active(attr_sd)
+      ...                               |     dev_attr_store()
+        device_remove_file()            |       dev_rescan_store()
+          ...                           |*4*  mutex_lock(&pci_remove_rescan_mutex)
+*3*       sysfs_deactivate(sd)          |     ...
+            wait_for_completion()       |*5*  sysfs_put_active(attr_sd)
+*6* mutex_unlock(&pci_remove_rescan_mutex)
+
+If path1 first holds the pci_remove_rescan_mutex at *1*, then another path
+called path2 actived and runs to *2* before path1 runs to *3*, we now runs
+to a deadlock situation:
+Path1 holds the mutex waiting path2 to decrease sysfs_dirent's s_active
+counter at *5*, but path2 is blocked at *4* when trying to get the
+pci_remove_rescan_mutex. The mutex won't be put by path1 until it reach
+*6*, but it's now blocked at *3*.
+
+So we use mutex_try_lock to avoid this deadlock, and additional wait/restart_syscall
+steps are used to make the fail path of try_lock more friendly to user space task.
+
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ drivers/pci/pci-sysfs.c |   48 +++++++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 40 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index 7128cfd..0dac6f4 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -29,6 +29,7 @@
+ #include <linux/slab.h>
+ #include <linux/vgaarb.h>
+ #include <linux/pm_runtime.h>
++#include <linux/delay.h>
+ #include "pci.h"
+ 
+ static int sysfs_initialized;	/* = 0 */
+@@ -285,6 +286,25 @@ msi_bus_store(struct device *dev, struct device_attribute *attr,
+ }
+ 
+ static DEFINE_MUTEX(pci_remove_rescan_mutex);
++
++static void pci_remove_rescan_lock(void)
++{
++	mutex_lock(&pci_remove_rescan_mutex);
++}
++
++static int pci_remove_rescan_lock_sysfs(void)
++{
++	if (mutex_trylock(&pci_remove_rescan_mutex))
++		return 0;
++	/* Avoid busy looping (20 ms of sleep should do). */
++	msleep(20);
++	return restart_syscall();
++}
++
++static void pci_remove_rescan_unlock(void)
++{
++	mutex_unlock(&pci_remove_rescan_mutex);
++}
+ static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
+ 				size_t count)
+ {
+@@ -295,10 +315,14 @@ static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
+ 		return -EINVAL;
+ 
+ 	if (val) {
+-		mutex_lock(&pci_remove_rescan_mutex);
++		int ret;
++
++		ret = pci_remove_rescan_lock_sysfs();
++		if (ret)
++			return ret;
+ 		while ((b = pci_find_next_bus(b)) != NULL)
+ 			pci_rescan_bus(b);
+-		mutex_unlock(&pci_remove_rescan_mutex);
++		pci_remove_rescan_unlock();
+ 	}
+ 	return count;
+ }
+@@ -319,9 +343,13 @@ dev_rescan_store(struct device *dev, struct device_attribute *attr,
+ 		return -EINVAL;
+ 
+ 	if (val) {
+-		mutex_lock(&pci_remove_rescan_mutex);
++		int ret;
++
++		ret = pci_remove_rescan_lock_sysfs();
++		if (ret)
++			return ret;
+ 		pci_rescan_bus(pdev->bus);
+-		mutex_unlock(&pci_remove_rescan_mutex);
++		pci_remove_rescan_unlock();
+ 	}
+ 	return count;
+ }
+@@ -332,9 +360,9 @@ static void remove_callback(struct device *dev)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+ 
+-	mutex_lock(&pci_remove_rescan_mutex);
++	pci_remove_rescan_lock();
+ 	pci_stop_and_remove_bus_device(pdev);
+-	mutex_unlock(&pci_remove_rescan_mutex);
++	pci_remove_rescan_unlock();
+ }
+ 
+ static ssize_t
+@@ -370,12 +398,16 @@ dev_bus_rescan_store(struct device *dev, struct device_attribute *attr,
+ 		return -EINVAL;
+ 
+ 	if (val) {
+-		mutex_lock(&pci_remove_rescan_mutex);
++		int ret;
++
++		ret = pci_remove_rescan_lock_sysfs();
++		if (ret)
++			return ret;
+ 		if (!pci_is_root_bus(bus) && list_empty(&bus->devices))
+ 			pci_rescan_bus_bridge_resize(bus->self);
+ 		else
+ 			pci_rescan_bus(bus);
+-		mutex_unlock(&pci_remove_rescan_mutex);
++		pci_remove_rescan_unlock();
+ 	}
+ 	return count;
+ }
+-- 
+1.7.7
+
