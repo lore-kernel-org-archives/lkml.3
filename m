@@ -1,65 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab3J3XId (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 19:08:33 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:59924 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab3J3XIb (ORCPT
+	id S1754269Ab3J3XJp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 19:09:45 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:44873 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937Ab3J3XJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 19:08:31 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Daniel Walker <dwalker@fifo99.com>, David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/4] ARM: msm: Remove 7x00 support
-References: <1382993006-27359-1-git-send-email-davidb@codeaurora.org>
-	<1382993006-27359-3-git-send-email-davidb@codeaurora.org>
-	<20131029132043.GA28165@fifo99.com>
-	<CAOesGMhg8HN4Su9FXSeoAgmH6NVKXW+wmnreUvWH+1G6GWkkaA@mail.gmail.com>
-Date: Wed, 30 Oct 2013 16:08:27 -0700
-In-Reply-To: <CAOesGMhg8HN4Su9FXSeoAgmH6NVKXW+wmnreUvWH+1G6GWkkaA@mail.gmail.com>
-	(Olof Johansson's message of "Tue, 29 Oct 2013 08:37:28 -0700")
-Message-ID: <87ob66nyqc.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 30 Oct 2013 19:09:44 -0400
+Date: Thu, 31 Oct 2013 07:09:17 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: airlied@linux.ie
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] drm:drm_pci: fix resource leak in drm_get_pci_dev
+Message-ID: <20131030230914.GA5697@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>, airlied@linux.ie,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olof Johansson <olof@lixom.net> writes:
+We should call drm_cleanup_in_dev in error handle
+code path after drm_fill_in_dev had been called,
+or it will cause resource leak heavily, vmalloc
+leak etc.
 
-> I would be very happy to take more code for the older Qualcomm chipset
-> to enable full functionality for them, but it's been my impression
-> that far from all that is needed to make it a useful platform is in
-> the upstream kernel, and there's been no signs of more of it showing
-> up at least in the last two years.
->
-> So we have a bit of a stalemate here -- the current Qualcomm team
-> wants to avoid having to deal too much with the legacy platforms --
-> they are technically quite different from the current platforms and
-> the divergence makes it hard to deal with supporting it all in a
-> modern way without risking regressions. I tend to agree with them.
+This patch also add call to dev->unload in error
+handle code path.
 
-As do I.
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+---
+ drivers/gpu/drm/drm_pci.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
-> Just like omap split between omap1 and omap2plus, I think it's a time
-> to create a mach-qcom instead, and move the modern (v7, most likely)
-> platforms there -- enable them with device tree, modern framework
-> infrastructure, etc. That way you can keep older platforms in mach-msm
-> without risk of regressions, and they have a clean base to start on
-> with their later platforms.
-
-I think this split approach is a good compromise.
-
-If the maintainers of the current older platforms wish to bring them up
-to modern frameworks, we can consider combining again.  If not, they the
-older platforms will take the same path as the rest of the older
-platforms that slowly fade away.
-
-Kevin
+diff --git a/drivers/gpu/drm/drm_pci.c b/drivers/gpu/drm/drm_pci.c
+index 14194b6..5f15805 100644
+--- a/drivers/gpu/drm/drm_pci.c
++++ b/drivers/gpu/drm/drm_pci.c
+@@ -345,16 +345,16 @@ int drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
+ 		pci_set_drvdata(pdev, dev);
+ 		ret = drm_get_minor(dev, &dev->control, DRM_MINOR_CONTROL);
+ 		if (ret)
+-			goto err_g2;
++			goto err_g3;
+ 	}
+ 
+ 	if ((ret = drm_get_minor(dev, &dev->primary, DRM_MINOR_LEGACY)))
+-		goto err_g3;
++		goto err_g4;
+ 
+ 	if (dev->driver->load) {
+ 		ret = dev->driver->load(dev, ent->driver_data);
+ 		if (ret)
+-			goto err_g4;
++			goto err_g5;
+ 	}
+ 
+ 	/* setup the grouping for the legacy output */
+@@ -362,7 +362,7 @@ int drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
+ 		ret = drm_mode_group_init_legacy_group(dev,
+ 						&dev->primary->mode_group);
+ 		if (ret)
+-			goto err_g4;
++			goto err_g6;
+ 	}
+ 
+ 	list_add_tail(&dev->driver_item, &driver->device_list);
+@@ -373,12 +373,16 @@ int drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
+ 
+ 	mutex_unlock(&drm_global_mutex);
+ 	return 0;
+-
+-err_g4:
++err_g6:
++	if (dev->driver->unload)
++		dev->driver->unload(dev);
++err_g5:
+ 	drm_put_minor(&dev->primary);
+-err_g3:
++err_g4:
+ 	if (drm_core_check_feature(dev, DRIVER_MODESET))
+ 		drm_put_minor(&dev->control);
++err_g3:
++	drm_cleanup_in_dev(dev);
+ err_g2:
+ 	pci_disable_device(pdev);
+ err_g1:
+-- 
+1.7.12.4.dirty
