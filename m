@@ -1,78 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab3J3P4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 11:56:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59217 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784Ab3J3P4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 11:56:37 -0400
-Message-ID: <1383148594.4097.184.camel@ul30vt.home>
-Subject: Re: [PATCH 1/4] kvm: Destroy & free KVM devices on release
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, kvm@vger.kernel.org, aik@ozlabs.ru,
-        linux-kernel@vger.kernel.org
-Date: Wed, 30 Oct 2013 09:56:34 -0600
-In-Reply-To: <527128D7.9070603@redhat.com>
-References: <20131029160019.22578.16409.stgit@bling.home>
-	 <20131029161322.22578.18997.stgit@bling.home>
-	 <20131030104029.GE4651@redhat.com> <1383143422.4097.170.camel@ul30vt.home>
-	 <20131030153338.GI4651@redhat.com> <527128D7.9070603@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752042Ab3J3P7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 11:59:11 -0400
+Received: from sinikuusama.dnainternet.net ([83.102.40.134]:58058 "EHLO
+	sinikuusama.dnainternet.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751088Ab3J3P7J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 11:59:09 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -1
+To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+Subject: Re: [PATCH 1/4] ALSA: hda - hdmi: Add ATI/AMD multi-channel audio  support
+HTTP-Posting-Client: 109.204.228.164
+HTTP-Posting-URI: mail.onse.fi:443/index.php
+HTTP-Posting-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20100101 Firefox/17.0
+X-PHP-Originating-Script: 0:rcmail.php
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Wed, 30 Oct 2013 17:59:01 +0200
+From: Anssi Hannula <anssi.hannula@iki.fi>
+Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        =?UTF-8?Q?Peter_Fr=C3=BChberger?= <fritsch@xbmc.org>,
+        Olivier Langlois <olivier@trillion01.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <CACna6ryr37WRvKbMFmLEGt_A2zUD46rZOtJMVom+B_xK9WNLuw@mail.gmail.com>
+References: <1380659456-3746-1-git-send-email-anssi.hannula@iki.fi>
+ <1380659456-3746-2-git-send-email-anssi.hannula@iki.fi>
+ <CACna6ryr37WRvKbMFmLEGt_A2zUD46rZOtJMVom+B_xK9WNLuw@mail.gmail.com>
+Message-ID: <07e8973b4665cc23c3f4a77e9c7e2b7c@mail.onse.fi>
+User-Agent: Roundcube Webmail/0.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-30 at 16:42 +0100, Paolo Bonzini wrote:
-> Il 30/10/2013 16:33, Gleb Natapov ha scritto:
-> > > Hmm, ok.  In that case I can drop this patch and I think the rest just
-> > > boils down to userspace use of the device.  I had been close()'ing the
-> > > kvm device fd when all QEMU vfio devices are detached, but I can just as
-> > > easily leave it open in case a new device is added later.  I'll send out
-> > > a new series after doing some more review and testing.  Do you have any
-> > > comments on the rest of the series?  Thanks,
-> >
-> > If I understand 4/4 correctly if there is VFIO device connected we
-> > assume non coherent domain. How hard it would be to do proper checking
-> > in this path series?
+Rafał Miłecki kirjoitti 2013-10-30 17:35:
+> 2013/10/1 Anssi Hannula <anssi.hannula@iki.fi>:
+> ATI/AMD codecs do not support all the standard HDA HDMI/DP functions,
+> instead various vendor-specific verbs are provided.
 > 
-> Yes, that's my understanding as well.  Is the performance impact measurable?
+> I've just tried my HD6970M (BARTS, DCE5) in my Samsung NP700G7A-S01PL.
+> 
+> cat /proc/asound/card1/eld#0.0
+> monitor_present 1
+> eld_valid 1
+> monitor_name
+> connection_type HDMI
+> eld_version [0x2] CEA-861D or below
+> edid_version [0x0] no CEA EDID Timing Extension block present
+> manufacture_id 0x0
+> product_id 0x0
+> port_id 0x0
+> support_hdcp 0
+> support_ai 0
+> audio_sync_delay 0
+> speakers [0x5f] FL/FR LFE FC RL/RR RC RLC/RRC
+> sad_count 6
+> sad0_coding_type [0x1] LPCM
+> sad0_channels 8
+> sad0_rates [0x1ee0] 32000 44100 48000 88200 96000 176400 192000
+> sad0_bits [0xe0000] 16 20 24
+> sad1_coding_type [0x2] AC-3
+> sad1_channels 6
+> sad1_rates [0xe0] 32000 44100 48000
+> sad1_max_bitrate 640000
+> sad2_coding_type [0x7] DTS
+> sad2_channels 6
+> sad2_rates [0x6c0] 44100 48000 88200 96000
+> sad2_max_bitrate 1536000
+> sad3_coding_type [0xa] E-AC-3/DD+ (Dolby Digital Plus)
+> sad3_channels 8
+> sad3_rates [0xc0] 44100 48000
+> sad4_coding_type [0xb] DTS-HD
+> sad4_channels 8
+> sad4_rates [0x1ec0] 44100 48000 88200 96000 176400 192000
+> sad5_coding_type [0xc] MLP (Dolby TrueHD)
+> sad5_channels 8
+> sad5_rates [0x1ec0] 44100 48000 88200 96000 176400 192000
+> 
+> Command:
+> speaker-test -D hdmi:CARD=Generic,DEV=0 -c8 -r192000 -F S16_LE
+> works, I just have 5.1 (not 7.1), so Side left goes to the Read left
+> and Side right goes to the Rear right. But they were working!
 
-I have additional patches to do this, the blocker is that intel-iommu
-strips IOMMU_CACHE from the flags I provide if the IOMMU domain as a
-whole (ie. all of the hardware units involved in the domain) do not all
-support Snoop Control (SC).  Thus I can't rely on simply tracking the
-hardware capabilities of the domain because some IOMMU PTEs will have
-SNP set, others will not.  It depends on the state of the IOMMU domain
-at the time of the mapping.  Therefore the only way to switch back to
-coherent from non-coherent is to unmap and remap everything.  This is
-what legacy KVM device assignment does, but I can't see how that's not
-racy wrt inflight DMA.
+Good :)
 
-The patch approach I was taking is:
+BTW, there is a newer version (which was actually applied) of this 
+patchset in alsa-devel@, seems you were missing from CC on that one.
 
-1) Enable KVM to handle the VM as non-coherent (which is trued, VFIO
-never sets IOMMU_CACHE currently due to the above issues).
+> Next I've used howto from
+> http://phoronix.com/forums/showthread.php?27348-TrueHD-DTS-HD-E-AC3-Over-HDMI-On-Linux
+> to test DTS MA and TrueHD.
+> 
+> In the file from howto I've used:
+> card Generic
+> and then tested:
+> 
+> zajec@linux-samsung700g7a:~> aplay -D hdmihdtest0 -c8 -fs16_le
+> -r192000 thd.spdif
+> Playing raw data 'thd.spdif' : Signed 16 bit Little Endian, Rate
+> 192000 Hz, Channels 8
+> zajec@linux-samsung700g7a:~> aplay -D hdmihdtest0 -c8 -fs16_le
+> -r192000 dts.spdif
+> Playing raw data 'dts.spdif' : Signed 16 bit Little Endian, Rate
+> 192000 Hz, Channels 8
 
-2) Get QEMU to enable the KVM device, fixing the coherency issue.
+For the record, the "howto" is mostly a workaround for missing 
+DEV=[1..3] on (now) very old systems, instead of messing around with 
+asoundrc you can just use "-D hdmi:CARD=Generic,DEV=0,AES0=6" instead of 
+-DhdmihdtestX. (in AES0 the 0x2 is non-PCM flag, 0x4 is non-copyright 
+flag IIRC - ALSA default is 0x4).
 
-3) Fix Intel IOMMU to honor IOMMU_CACHE regardless of hw capabilities
-(patch posted).
+> Hooray! I got
+> DOLBY HD
+> and
+> DTS-HD MA
+> on my Denon 1912 display!
+> 
+> Now the main question... do you have any experience on using DTS-HD MA
+> (or TrueHD) with mplayer? :|
 
-4) Make VFIO always map w/ IOMMU_CACHE
+Nope (well, any that I still remember). Support is there, though, so I 
+guess it should work.
 
-5) Create VFIO external user interface to query capabilities.
-
-6) Update KVM device to use it.
-
-As to performance, for graphics I can't tell a difference whether
-NoSnoop is prevented or KVM does WBINVD.  I'm hoping though that we can
-consider the mode enabled by this patch as a temporary step in the
-process and we'll eventually get to a state where we only emulate WBINVD
-when necessary.  Correctness trumps performance in the current round.
-Thanks,
-
-Alex
+-- 
+Anssi Hannula
 
