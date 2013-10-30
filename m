@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab3J3TvT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 15:51:19 -0400
-Received: from mout.gmx.net ([212.227.15.15]:64361 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754975Ab3J3TvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 15:51:15 -0400
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        Sirrix AG <tpmdd@sirrix.com>
-Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Joel Schopp <jschopp@linux.vnet.ibm.com>
-Subject: [PATCH] tpm: MAINTAINERS: Cleanup TPM Maintainers file
-Date: Wed, 30 Oct 2013 20:54:45 +0100
-Message-Id: <1383162885-5140-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-X-Provags-ID: V03:K0:niTUyo6B3uc0a46/LXqTPkH+R5elj1W6tGQSYqd2L/zqgeKIc1/
- KfcQtF4FCUzBu7hfRBFYhCfzVovhaBFKfMLmNn8FNN0VTPJ2KWQtsRyCe29IIBkMIEodev7
- xbYwHa1H/D77jpvFqTaOzrCG7tlF24eg2pJw0qBf6iTIp/HGQHhYMVd4B0QEF21AmA/7pJQ
- u+otVFL7bsiSopmwb7ZCA==
+	id S1755045Ab3J3Tve (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 15:51:34 -0400
+Received: from smtpfb2-g21.free.fr ([212.27.42.10]:48836 "EHLO
+	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754999Ab3J3Tva (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 15:51:30 -0400
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 7/7] file: remove get_unused_fd() macro
+Date: Wed, 30 Oct 2013 20:47:47 +0100
+Message-Id: <2464316e40e4784529f3f80dbc1f4830cdb92ade.1383121137.git.ydroneaud@opteya.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <cover.1383121137.git.ydroneaud@opteya.com>
+References: <cover.1383121137.git.ydroneaud@opteya.com>
+In-Reply-To: <cover.1383121137.git.ydroneaud@opteya.com>
+References: <cover.1383121137.git.ydroneaud@opteya.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- removing stale/inactive maintainers
-- removing stale/outdated website
-- regrouped maintainers
+Macro get_unused_fd() allocates a file descriptor without O_CLOEXEC flag.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+This can be seen as an unsafe default: in most case O_CLOEXEC
+must be used to not leak file descriptor across exec().
+
+Using O_CLOEXEC by default allows userspace to choose, without race,
+if the file descriptor is going to be inherited across exec(),
+by calling fcntl() when needed.
+
+This patch removes get_unused_fd() so that newer kernel code use
+anon_inode_getfd() or get_unused_fd_flags() with flags provided
+by userspace. If flags cannot be given by userspace, O_CLOEXEC must be
+used by default.
+
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Link: http://lkml.kernel.org/r/cover.1383121137.git.ydroneaud@opteya.com
 ---
-@to-recipients: please provide a signed-off/acked-by in a timely fashion
+ include/linux/file.h | 1 -
+ 1 file changed, 1 deletion(-)
 
- MAINTAINERS |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 936adb4..0f42b97 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -8473,14 +8473,10 @@ S:	Odd fixes
- F:	drivers/media/usb/tm6000/
+diff --git a/include/linux/file.h b/include/linux/file.h
+index cbacf4f..8666002 100644
+--- a/include/linux/file.h
++++ b/include/linux/file.h
+@@ -63,7 +63,6 @@ extern void set_close_on_exec(unsigned int fd, int flag);
+ extern bool get_close_on_exec(unsigned int fd);
+ extern void put_filp(struct file *);
+ extern int get_unused_fd_flags(unsigned flags);
+-#define get_unused_fd() get_unused_fd_flags(0)
+ extern void put_unused_fd(unsigned int fd);
  
- TPM DEVICE DRIVER
--M:	Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
--M:	Ashley Lai <ashley@ashleylai.com>
- M:	Peter Huewe <peterhuewe@gmx.de>
--M:	Rajiv Andrade <mail@srajiv.net>
--W:	http://tpmdd.sourceforge.net
-+M:	Ashley Lai <ashley@ashleylai.com>
- M:	Marcel Selhorst <tpmdd@selhorst.net>
--M:	Sirrix AG <tpmdd@sirrix.com>
--W:	http://www.sirrix.com
-+W:	http://tpmdd.sourceforge.net
- L:	tpmdd-devel@lists.sourceforge.net (moderated for non-subscribers)
- S:	Maintained
- F:	drivers/char/tpm/
+ extern void fd_install(unsigned int fd, struct file *file);
 -- 
-1.7.8.6
+1.8.3.1
 
