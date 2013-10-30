@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774Ab3J3PB7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 11:01:59 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41973 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753350Ab3J3PB5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 11:01:57 -0400
-Date: Wed, 30 Oct 2013 15:01:06 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Michal Simek <michal.simek@xilinx.com>, Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>,
-        Vitaly Andrianov <vitalya@ti.com>, Cyril Chemparathy <cyril@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: mm: Fix ECC mem policy printk
-Message-ID: <20131030150106.GC16735@n2100.arm.linux.org.uk>
-References: <8986e8f1a3761e45a7927bdb0e54393c9155e6bf.1383137171.git.michal.simek@xilinx.com> <20131030130728.GA16735@n2100.arm.linux.org.uk> <5271165A.4050509@monstr.eu> <52711869.60703@monstr.eu>
+	id S1754337Ab3J3PEc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 11:04:32 -0400
+Received: from nm44.bullet.mail.ne1.yahoo.com ([98.138.120.51]:44333 "EHLO
+	nm44.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752759Ab3J3PEb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 11:04:31 -0400
+X-Yahoo-Newman-Property: ymail-4
+X-Yahoo-Newman-Id: 104865.87345.bm@omp1017.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=ymail.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=J0d52q8+DmXChxa9CX4VRXgWLOotOJEuvUuWMvcmcfX3ZnXhT1R+K93nUMnyrj0zYZ146PlQCJmWAc9pjsSfpV0x3BjvrpC8CBdbROqDfW4Dga2lLj/7K9XmHb4hAsyh/BDzn0WbY4Nrt7OI1q+/xeqLBy8VMyFaIYrXjxJN5y4=;
+X-YMail-OSG: 43X8Xi0VM1mSI2u59HuIdUSaYPzH5HOF_gjm0MG2GWXNfId
+ 099wmjOX1nykTCHTQ6NyfVkPVC2FoH4d.m.dZQoU3p40wnWmYnkBEnRnWmAM
+ -
+X-Rocket-MIMEInfo: 002.001,DQpEZWFyIGZyaWVuZCwNCg0KDQpNeSBuYW1lIGlzIE1yLiBNdXNhIElicmFoaW0uIEkgYW0gd29ya2luZyB3aXRoIG9uZSBvZiB0aGUgcHJpbWUgYmFua3MgaGVyZSBpbiBCdXJraW5hIEZhc28uIEhlcmUgaW4gdGhpcyBiYW5rIGV4aXN0ZWQgYSBkb3JtYW50IGFjY291bnQgZm9yIG1hbnkgeWVhcnMsIHdoaWNoIGJlbG9uZyB0byBvbmUgb2Ygb3VyIGxhdGUgZm9yZWlnbiBjdXN0b21lci4NCg0KDQpXaGVuIEkgZGlzY292ZXJlZCB0aGF0IHRoZXJlIGhhZCBiZWVuIG5laXRoZXIgZGVwb3NpdHMgbm9yIHdpdGgBMAEBAQE-
+X-RocketYMMF: john.elebenua@ymail.com
+X-Mailer: YahooMailClassic/362 YahooMailWebService/0.8.160.587
+Message-ID: <1383145435.68022.YahooMailBasic@web161803.mail.bf1.yahoo.com>
+Date: Wed, 30 Oct 2013 08:03:55 -0700 (PDT)
+From: "Mr. Musa Ibrahim" <musaibrahim33550@gmail.com>
+Reply-To: musa_ibrahim350@gmail.com
+Subject: STRICTLY CONFIDENTIAL: URGENT RESPONSE NEEDED
+To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52711869.60703@monstr.eu>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 03:32:09PM +0100, Michal Simek wrote:
-> btw: passing ecc=on through command line will caused that "ECC enabled"
-> message will be there even on systems which don't implement this bit.
-> It is just side effect for both these solutions.
 
-It is a hint, nothing more.  There is no way to detect whether it's
-implemented or even how it has been implemented.
+Dear friend,
 
-> Isn't there any easy way to test if this bit is implemented or not just
-> by setting it up and clear it?
 
-So... let's summerise the message that you're giving.
+My name is Mr. Musa Ibrahim. I am working with one of the prime banks here in Burkina Faso. Here in this bank existed a dormant account for many years, which belong to one of our late foreign customer.
 
-"My SoC doesn't implement this bit other than to provide ECC at the L1
-cache, instead implementing a separate ECC scheme for system memory.
-Therefore, I want to change it to describe my implementation, because
-my customers are complaining that it says ECC is disabled when that
-is not the case.  If it can't describe my setup, I want to remove the
-whole facility."
 
-That's a very selfish attitude.  Sorry, but it would be wrong of me
-to allow your situation to change what we have beyond the proposed
-patch.
+When I discovered that there had been neither deposits nor withdrawals from this account for this long period, I decided to carry out a system investigation and discovered that none of the family member or relations of the late person are aware of this account, which means nobody will come to take it. The amount in this account stands at $13, 300, 000.00 (Thirteen Million Three Hundred Thousand USA Dollars). 
 
-I've shown you the ARM architecture reference manual where this bit in
-the page tables is described, both older and newer versions.  What we're
-doing is in the spirit of the descriptions of bit 9 in the L1 page tables.
 
-I don't think there's any sensible short description which would
-adequately describe this setting which would satisfy both your situation
-and situations on other SoCs.  We could make the kernel print an entire
-paragraph on it, something like:
+I want a foreign account where the bank will transfer this fund. I will front you in the bank as the Next of Kin to the late customer and back you up with relevant information. What the bank need is proof and information about the late customer which I will assist you on. This is a genuine, risk free and legal business transaction.
 
-"ECC might be %sabled.  The exact ECC setting depends on how your SoC
-is implemented.  Please refer to your SoCs technical reference manual
-for a description of bit 9 in the level one page tables for further
-information on how to interpret this statement."
 
-but that would be idiotic.
+All details shall be sent to you once I hear from you. The information as contained herein be accorded the necessary attention, urgency as well as the secrecy it deserves. If you are really sure of your integrity, trustworthy and confidentiality, reply back to me urgently.
 
-Of course, we could just print nothing, but the purpose of printing this
-is so that _we_ as developers looking at the kernel messages know the
-status of this bit, particularly when interpreting oops dumps.  Hiding
-this information would make some oops dumps harder to diagnose.  So...
-this is a matter for user education if your users are complaining about
-it.
+
+Best regards, 
+
+
+Mr. Musa Ibrahim
