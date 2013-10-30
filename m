@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab3J3LwE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 07:52:04 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:53479 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754021Ab3J3LwB (ORCPT
+	id S1754204Ab3J3Lwy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 07:52:54 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35002 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752299Ab3J3Lwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 07:52:01 -0400
-X-Sasl-enc: 6w5czCOTqzGEsURKKPu7m1LKJE0E2guTdDpimyG/rpM2 1383133920
-Message-ID: <5270F2DE.6040505@iki.fi>
-Date: Wed, 30 Oct 2013 13:51:58 +0200
-From: Pekka Enberg <penberg@iki.fi>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 30 Oct 2013 07:52:53 -0400
+Date: Wed, 30 Oct 2013 12:52:51 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Luciano Coelho <luca@coelho.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
+        aaro.koskinen@iki.fi, sre@ring0.de, joni.lapilainen@gmail.com,
+        David Gnedt <david.gnedt@davizone.at>
+Subject: Re: [PATCH 12/16] wl1251: disable retry and ACK policy for
+ injected packets
+Message-ID: <20131030115251.GF8763@amd.pavel.ucw.cz>
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
+ <1382819655-30430-13-git-send-email-pali.rohar@gmail.com>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-CC: Pekka Enberg <penberg@kernel.org>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
-        anton@redhat.com, systemtap@sourceware.org,
-        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com,
-        dsahern@gmail.com,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
-References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora> <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com> <y0mbo2cs2oa.fsf@fche.csb> <5270D9F7.3090105@hitachi.com>
-In-Reply-To: <5270D9F7.3090105@hitachi.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1382819655-30430-13-git-send-email-pali.rohar@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/13 12:05 PM, Masami Hiramatsu wrote:
-> To find all system libraries, we can use ldconfig.
->
-> $ ldconfig --print-cache
->
-> shows what dynamic libraries will be loaded. On my own laptop (running
-> ubuntu13.04) shows ~1000 libs.
+On Sat 2013-10-26 22:34:11, Pali Rohár wrote:
+> From: David Gnedt <david.gnedt@davizone.at>
+> 
+> Set the retry limit to 0 and disable the ACK policy for injected packets.
+> 
+> Signed-off-by: David Gnedt <david.gnedt@davizone.at>
 
-Good point. That definitely narrows down the scanned set.
+Missing sign-off, otherwise ok:
 
-                         Pekka
+Reviewed-by: Pavel Machek <pavel@ucw.cz>
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
