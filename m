@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab3J3R3I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 13:29:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46825 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719Ab3J3R3G (ORCPT
+	id S1753346Ab3J3Rbw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 13:31:52 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:53948 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751497Ab3J3Rbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 13:29:06 -0400
-Date: Wed, 30 Oct 2013 10:29:04 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: devel@driverdev.osuosl.org, linux-usb@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: USB, TTY, char/misc, and Staging trees now closed for 3.13
-Message-ID: <20131030172904.GA11800@kroah.com>
+	Wed, 30 Oct 2013 13:31:51 -0400
+Date: Wed, 30 Oct 2013 13:31:50 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: David Cohen <david.a.cohen@linux.intel.com>
+cc: balbi@ti.com, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <Paul.Zimmerman@synopsys.com>
+Subject: Re: [PATCH v3 1/3] usb: gadget: add quirk_ep_out_aligned_size field
+ to struct usb_gadget
+In-Reply-To: <1383152778-30739-2-git-send-email-david.a.cohen@linux.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1310301329350.1312-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Wed, 30 Oct 2013, David Cohen wrote:
 
-Given that 3.12 will be out in a few days, it's time to close my trees
-for new patches until 3.13-rc1 is out.
+> Due to USB controllers may have different restrictions, usb gadget layer
+> needs to provide a generic way to inform gadget functions to complain
+> with non-standard requirements.
+> 
+> This patch adds 'quirk_ep_out_aligned_size' field to struct usb_gadget
+> to inform when controller's epout requires buffer size to be aligned to
+> MaxPacketSize.
+> 
+> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> ---
+>  include/linux/usb/gadget.h | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
+> index 942ef5e..9405d0f 100644
+> --- a/include/linux/usb/gadget.h
+> +++ b/include/linux/usb/gadget.h
+> @@ -540,6 +540,9 @@ struct usb_gadget {
+>  	struct device			dev;
+>  	unsigned			out_epnum;
+>  	unsigned			in_epnum;
+> +
+> +	/* epout requires buffer size to be aligned to MaxPacketSize */
+> +	unsigned			quirk_ep_out_aligned_size:1;
+>  };
+>  #define work_to_gadget(w)	(container_of((w), struct usb_gadget, work))
 
-The merge window for 3.13-rc1 is going to be a bit longer than normal as
-Linus has pointed out, due to travel and conferences.  I'll also be
-traveling for 2 weeks, so my response time to patches is going to be
-_hugely_ delayed.
+Instead of adding this new bitflag to the end of the structure, where 
+it will cause the structure to grow by at least 4 bytes, why not add it 
+in the middle, along with all the other bitflags, where it won't cause 
+any change in the structure's size?
 
-So much delayed, that I would _really_ appreciate people not sending
-patches until 3.13-rc1 is out, just so that I can not have a ton of
-pending patches to dig through when that happens.  If patches are sent
-before 3.13-rc1 is out, I will queue them up, but note that it will be
-delayed.
+If you prefer, you can move the name, dev, out_epnum, and in_epnum 
+fields higher up, so that the bitflags come last.
 
-Due to travel, conferences, and other stuff I want to work on (i.e.
-stable releases and xen kexec work), my response time to email is going
-to be really slow for a few weeks.
+Alan Stern
 
-thanks,
-
-greg k-h
