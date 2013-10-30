@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927Ab3J3Tuq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 15:50:46 -0400
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:56957 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881Ab3J3Tuo (ORCPT
+	id S1754965Ab3J3Tu6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 15:50:58 -0400
+Received: from smtpfb2-g21.free.fr ([212.27.42.10]:48810 "EHLO
+	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754939Ab3J3Tu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 15:50:44 -0400
+	Wed, 30 Oct 2013 15:50:56 -0400
 From: Yann Droneaud <ydroneaud@opteya.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 4/7] file: use get_unused_fd_flags(0) instead of get_unused_fd()
-Date: Wed, 30 Oct 2013 20:47:44 +0100
-Message-Id: <3120dfc4b59637efad2eb6e2778f3b4d92914f36.1383121137.git.ydroneaud@opteya.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 5/7] fanotify: use get_unused_fd_flags(0) instead of get_unused_fd()
+Date: Wed, 30 Oct 2013 20:47:45 +0100
+Message-Id: <ab677213bb53a5cb6589f117cdab3e0a8628b651.1383121137.git.ydroneaud@opteya.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <cover.1383121137.git.ydroneaud@opteya.com>
 References: <cover.1383121137.git.ydroneaud@opteya.com>
@@ -46,22 +45,22 @@ and, if possible, set to O_CLOEXEC.
 Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 Link: http://lkml.kernel.org/r/cover.1383121137.git.ydroneaud@opteya.com
 ---
- fs/file.c | 2 +-
+ fs/notify/fanotify/fanotify_user.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/file.c b/fs/file.c
-index 4a78f98..1420d28 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -897,7 +897,7 @@ SYSCALL_DEFINE1(dup, unsigned int, fildes)
- 	struct file *file = fget_raw(fildes);
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index e44cb64..644b9a7 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -69,7 +69,7 @@ static int create_fd(struct fsnotify_group *group,
  
- 	if (file) {
--		ret = get_unused_fd();
-+		ret = get_unused_fd_flags(0);
- 		if (ret >= 0)
- 			fd_install(ret, file);
- 		else
+ 	pr_debug("%s: group=%p event=%p\n", __func__, group, event);
+ 
+-	client_fd = get_unused_fd();
++	client_fd = get_unused_fd_flags(0);
+ 	if (client_fd < 0)
+ 		return client_fd;
+ 
 -- 
 1.8.3.1
 
