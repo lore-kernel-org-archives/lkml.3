@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040Ab3J3Qpk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 12:45:40 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:50395 "EHLO quartz.orcorp.ca"
+	id S1752579Ab3J3QvF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 12:51:05 -0400
+Received: from imap.thunk.org ([74.207.234.97]:52498 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751305Ab3J3Qpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 12:45:38 -0400
-Date: Wed, 30 Oct 2013 10:45:35 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Rajiv Andrade <mail@srajiv.net>, tpmdd-devel@lists.sourceforge.net,
-        Xiaoyan Zhang <xiaoyan.zhang@intel.com>, Gang Wei <gang.wei@intel.com>
-Subject: Re: [tpmdd-devel] [PATCH 1/2] tpm/tpm_ppi: Do not compare strcmp(a,
- b) == -1
-Message-ID: <20131030164535.GA3511@obsidianresearch.com>
-References: <1383093628-31580-1-git-send-email-peterhuewe@gmx.de>
+	id S1751387Ab3J3Qu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 12:50:59 -0400
+Date: Wed, 30 Oct 2013 10:55:23 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Azat Khuzhin <a3at.mail@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andreas Dilger <adilger.kernel@dilger.ca>,
+        "open list:EXT4 FILE SYSTEM" <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH] ext4: drop unsed reclen variable from
+ ext4_add_dirent_to_inline()
+Message-ID: <20131030145523.GD3305@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Azat Khuzhin <a3at.mail@gmail.com>, linux-kernel@vger.kernel.org,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	"open list:EXT4 FILE SYSTEM" <linux-ext4@vger.kernel.org>
+References: <1379535450-31253-1-git-send-email-a3at.mail@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383093628-31580-1-git-send-email-peterhuewe@gmx.de>
+In-Reply-To: <1379535450-31253-1-git-send-email-a3at.mail@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 01:40:27AM +0100, Peter Huewe wrote:
-> strcmp does return the difference between two strings not only -1,0,1
-> consequently
->  if (strcmp (a,b) == -1)
-> might lead to taking the wrong branch
+On Thu, Sep 19, 2013 at 12:17:30AM +0400, Azat Khuzhin wrote:
+> Functions that need in it, already calculate reclen from namelen by
+> themselves:
+> - ext4_find_dest_de()
+> - ext4_insert_dentry()
 > 
-> -> compare with <= instead.
+> Signed-off-by: Azat Khuzhin <a3at.mail@gmail.com>
 
-I've always thought this was the preferred idiom:
+Applied, thanks.
 
-cmp(a,b) == 0
-cmp(a,b) < 0
-cmp(a,b) > 0
-
-As the operator matches what is actually happening in all cases.
-
-'>= -1' doesn't mean a >= b.
-
-Regards,
-Jason
+					- Ted
