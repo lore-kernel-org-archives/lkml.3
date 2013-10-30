@@ -1,81 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab3J3LCe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 07:02:34 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:50610 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639Ab3J3LCc (ORCPT
+	id S1753911Ab3J3LCw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 07:02:52 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:56739 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753501Ab3J3LCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 07:02:32 -0400
-Date: Wed, 30 Oct 2013 07:02:14 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Doug Ledford <dledford@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Eric Dumazet <eric.dumazet@gmail.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-Message-ID: <20131030110214.GA10220@localhost.localdomain>
-References: <201310300525.r9U5Pdqo014902@ib.usersys.redhat.com>
+	Wed, 30 Oct 2013 07:02:50 -0400
+Date: Wed, 30 Oct 2013 04:02:44 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH 1/8] rcu: add a warn to rcu_preempt_note_context_switch()
+Message-ID: <20131030110244.GA19599@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
+ <1375871104-10688-2-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201310300525.r9U5Pdqo014902@ib.usersys.redhat.com>
+In-Reply-To: <1375871104-10688-2-git-send-email-laijs@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13103011-6688-0000-0000-000002FD4BB4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 01:25:39AM -0400, Doug Ledford wrote:
-> * Neil Horman <nhorman@tuxdriver.com> wrote:
-> > 3) The run times are proportionally larger, but still indicate that Parallel ALU
-> > execution is hurting rather than helping, which is counter-intuitive.  I'm
-> > looking into it, but thought you might want to see these results in case
-> > something jumped out at you
+On Wed, Aug 07, 2013 at 06:24:57PM +0800, Lai Jiangshan wrote:
+> It is expected that _nesting == INT_MIN if _nesting < 0.
+> Add a warning to it if something unexpected happen.
 > 
-> So here's my theory about all of this.
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  kernel/rcutree_plugin.h |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> I think that the original observation some years back was a fluke caused by
-> either a buggy CPU or a CPU design that is no longer used.
-> 
-> The parallel ALU design of this patch seems OK at first glance, but it means
-> that two parallel operations are both trying to set/clear both the overflow
-> and carry flags of the EFLAGS register of the *CPU* (not the ALU).  So, either
-> some CPU in the past had a set of overflow/carry flags per ALU and did some
-> sort of magic to make sure that the last state of those flags across multiple
-> ALUs that might have been used in parallelizing work were always in the CPU's
-> logical EFLAGS register, or the CPU has a buggy microcode that allowed two
-> ALUs to operate on data at the same time in situations where they would
-> potentially stomp on the carry/overflow flags of the other ALUs operations.
-> 
-> It's my theory that all modern CPUs have this behavior fixed, probably via a
-> microcode update, and so trying to do parallel ALU operations like this simply
-> has no effect because the CPU (rightly so) serializes the operations to keep
-> them from clobbering the overflow/carry flags of the other ALUs operations.
-> 
-> My additional theory then is that the reason you see a slowdown from this
-> patch is because the attempt to parallelize the ALU operation has caused
-> us to write a series of instructions that, once serialized, are non-optimal
-> and hinder smooth pipelining of the data (aka going 0*8, 2*8, 4*8, 6*8, 1*8,
-> 3*8, 5*8, and 7*8 in terms of memory accesses is worse than doing them in
-> order, and since we aren't getting the parallel operation we want, this
-> is the net result of the patch).
-> 
-> It would explain things anyway.
-> 
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index 63098a5..8fd947e 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -243,6 +243,7 @@ static void rcu_preempt_note_context_switch(int cpu)
+>  				       : rnp->gpnum + 1);
+>  		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+>  	} else if (t->rcu_read_lock_nesting < 0 &&
+> +		   !WARN_ON_ONCE(t->rcu_read_lock_nesting != INT_MIN) &&
 
-That does makes sense, but it then begs the question, whats the advantage of
-having multiple alu's at all?  If they're just going to serialize on the
-updating of the condition register, there doesn't seem to be much advantage in
-having multiple alu's at all, especially if a common use case (parallelizing an
-operation on a large linear dataset) resulted in lower performance.
+Finally getting back to this...
 
-/me wonders if rearranging the instructions into this order:
-adcq 0*8(src), res1
-adcq 1*8(src), res2
-adcq 2*8(src), res1
+>From what I can see, this is safe right now because
+->rcu_read_lock_nesting is incremented only in case of an interrupt, NMI,
+or softirq interrupting the rcu_read_unlock() code path on the one hand,
+and because the functions called from rcu_read_unlock_special() currently
+disable interrupts before doing any rcu_read_lock()s.  With this in
+mind, it is currently impossible to have a context switch occur within
+an RCU read-side critical section that is invoked (either directly or
+indirectly) from the portion of __rcu_read_unlock() that has negative
+->rcu_read_lock_nesting.
 
-would prevent pipeline stalls.  That would be interesting data, and (I think)
-support your theory, Doug.  I'll give that a try
+But this could change should any part of the rt_mutex_unlock() code
+called from rcu_read_unlock_special() were to do rcu_read_lock() before
+disabling interrupts.  Is there any reason we should prohibit such a
+pattern in rt_mutex_unlock()?
 
-Neil
+(For the record, I am currently OK prohibiting this pattern in
+rcu_report_exp_rnp(), which is also called from rcu_read_unlock_special()
+-- it seems unlikely that someone would use RCU to protect RCU's
+expedited-grace-period data structures.)
+
+							Thanx, Paul
+
+
+>  		   t->rcu_read_unlock_special) {
+> 
+>  		/*
+> -- 
+> 1.7.4.4
+> 
 
