@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab3J3KD6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 06:03:58 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56869 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752953Ab3J3KDw (ORCPT
+	id S1752053Ab3J3KFt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 06:05:49 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:36027 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088Ab3J3KFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 06:03:52 -0400
-X-AuditID: 9c930197-b7b3eae00000122e-0b-5270d9816a03
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 17/15] slab: replace non-existing 'struct freelist *' with 'void *'
-Date: Wed, 30 Oct 2013 19:04:01 +0900
-Message-Id: <1383127441-30563-2-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1383127441-30563-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1383127441-30563-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 30 Oct 2013 06:05:47 -0400
+Message-ID: <5270D9F7.3090105@hitachi.com>
+Date: Wed, 30 Oct 2013 19:05:43 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
+        anton@redhat.com, systemtap@sourceware.org,
+        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com,
+        dsahern@gmail.com,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
+References: <20131023044511.1886.82571.stgit@hemant-fedora> <20131023050502.1886.15779.stgit@hemant-fedora> <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com> <y0mbo2cs2oa.fsf@fche.csb>
+In-Reply-To: <y0mbo2cs2oa.fsf@fche.csb>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no 'strcut freelist', but codes use pointer to 'struct freelist'.
-Although compiler doesn't complain anything about this wrong usage and
-codes work fine, but fixing it is better.
+(2013/10/26 20:16), Frank Ch. Eigler wrote:
+> Pekka Enberg <penberg@kernel.org> writes:
+> 
+>> Is there a technical reason why 'perf list' could not show all the
+>> available SDT markers on a system and that the 'mark to event'
+>> mapping cannot happen automatically? [...]
+> 
+> A quick experiment with:
+> 
+>   find `echo $PATH | tr : ' '` -type f -perm -555 | 
+>        xargs readelf -n 2>/dev/null | 
+>        grep STAP 2>/dev/null 
+> 
+> suggests reasonable performance for my F19 workstation (a second or
+> two over ~6000 executables), once all the ELF content is in the block
+> cache.  According to a stap eventcount.stp run, that required about
+> 50000 syscall.read events.
+> 
+> Note that a $PATH search excludes shared libraries, which can also
+> carry <sys/sdt.h> markers.  Adding /usr/lib* in more than doubles the
+> work, then there's /usr/libexec etc.
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To find all system libraries, we can use ldconfig.
 
-diff --git a/mm/slab.c b/mm/slab.c
-index a8a9349..a983e30 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1954,7 +1954,7 @@ static void slab_destroy_debugcheck(struct kmem_cache *cachep,
-  */
- static void slab_destroy(struct kmem_cache *cachep, struct page *page)
- {
--	struct freelist *freelist;
-+	void *freelist;
- 
- 	freelist = page->freelist;
- 	slab_destroy_debugcheck(cachep, page);
-@@ -2520,11 +2520,11 @@ int __kmem_cache_shutdown(struct kmem_cache *cachep)
-  * kmem_find_general_cachep till the initialization is complete.
-  * Hence we cannot have freelist_cache same as the original cache.
-  */
--static struct freelist *alloc_slabmgmt(struct kmem_cache *cachep,
-+static void *alloc_slabmgmt(struct kmem_cache *cachep,
- 				   struct page *page, int colour_off,
- 				   gfp_t local_flags, int nodeid)
- {
--	struct freelist *freelist;
-+	void *freelist;
- 	void *addr = page_address(page);
- 
- 	if (OFF_SLAB(cachep)) {
-@@ -2646,7 +2646,7 @@ static void slab_put_obj(struct kmem_cache *cachep, struct page *page,
-  * virtual address for kfree, ksize, and slab debugging.
-  */
- static void slab_map_pages(struct kmem_cache *cache, struct page *page,
--			   struct freelist *freelist)
-+			   void *freelist)
- {
- 	page->slab_cache = cache;
- 	page->freelist = freelist;
-@@ -2659,7 +2659,7 @@ static void slab_map_pages(struct kmem_cache *cache, struct page *page,
- static int cache_grow(struct kmem_cache *cachep,
- 		gfp_t flags, int nodeid, struct page *page)
- {
--	struct freelist *freelist;
-+	void *freelist;
- 	size_t offset;
- 	gfp_t local_flags;
- 	struct kmem_cache_node *n;
+$ ldconfig --print-cache
+
+shows what dynamic libraries will be loaded. On my own laptop (running
+ubuntu13.04) shows ~1000 libs.
+
+Thank you,
+
 -- 
-1.7.9.5
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
