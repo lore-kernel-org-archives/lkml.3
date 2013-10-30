@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab3J3UhN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 16:37:13 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45372 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab3J3UhL (ORCPT
+	id S1754801Ab3J3Uhi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 16:37:38 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:63513 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704Ab3J3Uhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 16:37:11 -0400
-Date: Thu, 31 Oct 2013 07:37:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Salter <msalter@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        ccross@android.com, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next build failure
-Message-Id: <20131031073700.f9642ce6c35674a45b3905bc@canb.auug.org.au>
-In-Reply-To: <1383146865.11574.3.camel@deneb.redhat.com>
-References: <1383146865.11574.3.camel@deneb.redhat.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__31_Oct_2013_07_37_00_+1100_O+I9JuAxaFYHRTJW"
+	Wed, 30 Oct 2013 16:37:37 -0400
+Message-ID: <52716E2D.8060708@gmail.com>
+Date: Thu, 31 Oct 2013 07:38:05 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Frank Haverkamp <haver@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, cody@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
+        utz.bacher@de.ibm.com, mmarek@suse.cz, jsvogt@de.ibm.com,
+        MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com, michael@ibmra.de,
+        Frank Haverkamp <haver@vnet.ibm.com>
+Subject: Re: [PATCH] Generic WorkQueue Engine (GenWQE) device driver (v4)
+References: <1383125578-26202-1-git-send-email-haver@linux.vnet.ibm.com> <1383125578-26202-2-git-send-email-haver@linux.vnet.ibm.com> <20131030173521.GB20147@kroah.com>
+In-Reply-To: <20131030173521.GB20147@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__31_Oct_2013_07_37_00_+1100_O+I9JuAxaFYHRTJW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 31/10/13 04:35, Greg KH wrote:
 
-[Jut add Andrew to the cc list]
+> On Wed, Oct 30, 2013 at 10:32:58AM +0100, Frank Haverkamp wrote:
+>> +if GENWQE
+>> +
+>> +config GENWQE_DEVNAME
+>> +        string "Name for sysfs and device nodes"
+>> +	default "genwqe"
+>> +        help
+>> +          Select alternate name for sysfs and device nodes.
+> 
+> Don't let the user pick this, it's up to the driver to set this once and
+> then live with it.
+> 
+> And, from what I can tell in the driver, this help text is wrong (there
+> are no device nodes with this name in it, right?)
 
-On Wed, 30 Oct 2013 11:27:45 -0400 Mark Salter <msalter@redhat.com> wrote:
->
-> This patch causes a build failure for no-MMU builds:
->=20
->   commit 41df2957cb010edfa2f9d394d3617da6beeeb660
->   Author: Colin Cross <ccross@android.com>
->   Date:   Wed Oct 30 11:45:39 2013 +1100
->=20
->       mm: add a field to store names for private anonymous memory
->    =20
-> The problem is:
->=20
->   kernel/built-in.o: In function `sys_prctl':
->   (.text+0x19854): undefined reference to `madvise_set_anon_name'
->=20
-> madvise doesn't make sense without an MMU.
->=20
-> --Mark
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The indentation is also messed up here. Kconfig should use hard tabs, with
+two additional spaces for the help text. This has mixed tabs and spaces
+between lines.
 
---Signature=_Thu__31_Oct_2013_07_37_00_+1100_O+I9JuAxaFYHRTJW
-Content-Type: application/pgp-signature
+~Ryan
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBCAAGBQJScW3yAAoJEMDTa8Ir7ZwV7xEP/jbNCZtFOWZoRIYDhpwe5ciS
-+P+cD/5N/TjbUvVJXQVhwn75cg1jIIujuxaJx98jtrwdHxqSmks63XeIMaT7Kr6o
-havPP/q9cemVo8DFgDV+YcUoRpScI64wNtuPjgzuQVtXTBCnZQZlJDah5H7DjcXg
-Ty6AmF5MvNTyIWdmfI/U3W/IUSISiSHGPjzI+lQ5lDKQ3stJ9pp6Q+S8KF8H4s6e
-SewwnsEqzhe7j/PQgnw3xTOH7LOFLrcH4QU7n3/GeBVt9kkAMYcx+unYOrN7LY6D
-E11aclOBmifcNR1kGUiJkhQ/C5V6SiJBSH10527X59XOzcKg1cg2U0dF6JcTCWAE
-omXfKaTMzGeow/WChH3HyGEiuBOYZ7ycFNXvqQ9fcsHTLkJnwmTHppxdQj+8pTg5
-KXWNJDP5O5yXECChgQtSy84oDD1ay41XShHrDhhEdmVrwCb1ZonelCladziKsOI+
-Y+pscLbY10FF6NUoDE8xAieqwQfu1MBYqIiYmZXjaddwCGtedFFQgy7vP9eHbaio
-qJ2Ak+jvJ+9+JLZ9P9VQu9Tg7qVgXt0LMJmVkR6X2b1GpMSe1uoHfWj/+ipLZkU6
-1OogjBZIAomoq0C2P322l/Lw8SZFR3Oub7j7G1QBIdhqlvdrcRtYYlqGA+rmM6kg
-y/XUkSFrv5Tf7TKi3/E5
-=Auu9
------END PGP SIGNATURE-----
-
---Signature=_Thu__31_Oct_2013_07_37_00_+1100_O+I9JuAxaFYHRTJW--
