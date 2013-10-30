@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab3J3OST (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 10:18:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45423 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615Ab3J3OSS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 10:18:18 -0400
-Date: Wed, 30 Oct 2013 07:20:17 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peng Tao <bergwolf@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: Re: [PATCH 2/4] staging/lustre/obdclass: read jobid from proc
-Message-ID: <20131030142017.GB30896@kroah.com>
-References: <1383132636-8952-1-git-send-email-bergwolf@gmail.com>
- <1383132636-8952-2-git-send-email-bergwolf@gmail.com>
- <20131030132101.GD30087@kroah.com>
- <CA+a=Yy6rL6CV3THZ4Mr4oHqVDiejr++r9Oa4kro4Y_CCbFEfEQ@mail.gmail.com>
+	id S1754373Ab3J3OVU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 10:21:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35161 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751615Ab3J3OVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 10:21:19 -0400
+Date: Wed, 30 Oct 2013 16:20:13 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
+        yoshihiro.yunomae.ez@hitachi.com
+Subject: Re: RFC: paravirtualizing perf_clock
+Message-ID: <20131030142013.GH4651@redhat.com>
+References: <526DBD7F.1010807@gmail.com>
+ <20131028131556.GN19466@laptop.lan>
+ <526F2440.9030607@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+a=Yy6rL6CV3THZ4Mr4oHqVDiejr++r9Oa4kro4Y_CCbFEfEQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <526F2440.9030607@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 09:31:24PM +0800, Peng Tao wrote:
-> On Wed, Oct 30, 2013 at 9:21 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Wed, Oct 30, 2013 at 07:30:34PM +0800, Peng Tao wrote:
-> >> so that we can get rid of cfs_get_environ() that needs access_process_vm() that
-> >> is a core mm function and is not available on some architectures.
-> >>
-> >> Reviewed-by: Niu Yawei <yawei.niu@intel.com>
-> >> Signed-off-by: Peng Tao <bergwolf@gmail.com>
-> >> Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
-> >> ---
-> >>  drivers/staging/lustre/lustre/obdclass/class_obd.c |  119 +++++++++++++++++++-
-> >>  1 file changed, 115 insertions(+), 4 deletions(-)
-> >>
-> >> diff --git a/drivers/staging/lustre/lustre/obdclass/class_obd.c b/drivers/staging/lustre/lustre/obdclass/class_obd.c
-> >> index b1024a6..99ce863 100644
-> >> --- a/drivers/staging/lustre/lustre/obdclass/class_obd.c
-> >> +++ b/drivers/staging/lustre/lustre/obdclass/class_obd.c
-> >> @@ -96,8 +96,117 @@ EXPORT_SYMBOL(obd_dirty_transit_pages);
-> >>  char obd_jobid_var[JOBSTATS_JOBID_VAR_MAX_LEN + 1] = JOBSTATS_DISABLE;
-> >>  EXPORT_SYMBOL(obd_jobid_var);
-> >>
-> >> -/* Get jobid of current process by reading the environment variable
-> >> - * stored in between the "env_start" & "env_end" of task struct.
-> >> +static char *self_environ_file = "/proc/self/environ";
+On Mon, Oct 28, 2013 at 08:58:08PM -0600, David Ahern wrote:
+> On 10/28/13 7:15 AM, Peter Zijlstra wrote:
+> >>Any suggestions on how to do this and without impacting performance. I
+> >>noticed the MSR path seems to take about twice as long as the current
+> >>implementation (which I believe results in rdtsc in the VM for x86 with
+> >>stable TSC).
 > >
-> > Heh, no, that's not ok at all.
+> >So assuming all the TSCs are in fact stable; you could implement this by
+> >syncing up the guest TSC to the host TSC on guest boot. I don't think
+> >anything _should_ rely on the absolute TSC value.
 > >
-> > This is a _huge_ sign that you are doing something wrong in your driver
-> > if you need something that isn't exported, or that you have to dig out
-> > of proc.
+> >Of course you then also need to make sure the host and guest tsc
+> >multipliers (cyc2ns) are identical, you can play games with
+> >cyc2ns_offset if you're brave.
 > >
-> Lustre has a functionality that lets applications specify a global
-> jobid by setting the same environment variable across the cluster and
-> thus server can trace IO that is issued by different job. Currently it
-> is implemented by having a private version of cfs_access_process_vm
-> because access_process_vm is not exported. The patch intends to change
-> it to reading from proc. If we cannot dig it out from proc either, how
-> can we keep the functionality then? Please advise.
+> 
+> This and the method Gleb mentioned both are going to be complex and
+> fragile -- based assumptions on how the perf_clock timestamps are
+> generated. For example, 489223e assumes you have the tracepoint
+> enabled at VM start with some means of capturing the data (e.g., a
+> perf-session active).
+We can think of other ways to provide tsc offset to perf.
 
-Kernel code should not care about environment variables.  Just because
-you created a crazy requirement, does not mean it is a valid one, nor
-that I have to be the one to tell you how to implement it.
+>                        In both cases the end result requires piecing
+> together and re-generating the VM's timestamp on the events. For
+> perf this means either modifying the tool to take parameters and an
+> algorithm on how to modify the timestamp or a homegrown tool to
+> regenerate the file with updated timestamps.
+> 
+> To back out a bit, my end goal is to be able to create and merge
+> perf-events from any context on a KVM-based host -- guest userspace,
+> guest kernel space, host userspace and host kernel space (userspace
+> events with a perf-clock timestamp is another topic ;-)). Having the
+> events generated with the proper timestamp is the simpler approach
+> than trying to collect various tidbits of data, massage timestamps
+> (and hoping the clock source hasn't changed) and then merge events.
+> 
+So can you explain a little bit more about how this will work? You run
+perf on a host and get both host and guest events? How do you pass
+events from guest to host in this case?
 
-I'm never going to take code that parses proc files, you all know better
-than that.
+> And then for the cherry on top a design that works across
+> architectures (e.g., x86 now, but arm later).
+> 
+MSR is x86 thing.
 
-greg k-h
+--
+			Gleb.
