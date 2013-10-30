@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729Ab3J3TkJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 15:40:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47702 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754704Ab3J3TkH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 15:40:07 -0400
-Date: Wed, 30 Oct 2013 12:42:06 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: misc: stcam: Renesas stcam device
-Message-ID: <20131030194206.GB8047@kroah.com>
-References: <1383160668-8403-1-git-send-email-dwalker@fifo99.com>
+	id S1754737Ab3J3Tke (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 15:40:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5857 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752324Ab3J3Tkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 15:40:33 -0400
+Date: Wed, 30 Oct 2013 21:43:01 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Alexander Graf <agraf@suse.de>,
+        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
+        "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] kvm_host: typo fix
+Message-ID: <20131030194301.GA26143@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383160668-8403-1-git-send-email-dwalker@fifo99.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 12:17:48PM -0700, Daniel Walker wrote:
-> This is a driver for the ternary content addressable memory unit from Renesas. It
-> allows filtering on bits, and wildcards thru the chip.
-> 
-> Signed-off-by: Daniel Walker <dwalker@fifo99.com>
+fix up typo in comment.
 
-What about the Cisco copyright?  Has that author signed off on this?
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ include/linux/kvm_host.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-And why a separate driver, can't you do this all from userspace as a
-normal i2c driver?
-
-You are creating sysfs files without the corrisponding
-Documentation/ABI/ files, why?
-
-and most important, what is a "ternary content addressable memory unit"
-and what would you do with such a thing?
-
-greg k-h
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 0fbbc7a..7445013 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -789,7 +789,7 @@ static inline void kvm_guest_enter(void)
+ 
+ 	/* KVM does not hold any references to rcu protected data when it
+ 	 * switches CPU into a guest mode. In fact switching to a guest mode
+-	 * is very similar to exiting to userspase from rcu point of view. In
++	 * is very similar to exiting to userspace from rcu point of view. In
+ 	 * addition CPU may stay in a guest mode for quite a long time (up to
+ 	 * one time slice). Lets treat guest mode as quiescent state, just like
+ 	 * we do with user-mode execution.
+-- 
+MST
