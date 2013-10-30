@@ -1,72 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab3J3WAQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 18:00:16 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:48453 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310Ab3J3WAN (ORCPT
+	id S1754328Ab3J3WA3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 18:00:29 -0400
+Received: from mx-out.ocsa-data.net ([194.36.166.37]:52067 "EHLO
+	mx-out.ocsa-data.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085Ab3J3WA1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 18:00:13 -0400
-Date: Wed, 30 Oct 2013 18:00:04 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sysfs: move assignment to be under lock in
- sysfs_remove_dir()
-Message-ID: <20131030220004.GC26375@mtj.dyndns.org>
-References: <20131029220939.GA23060@kroah.com>
- <8761sflhi1.fsf@tw-ebiederman.twitter.com>
- <CA+55aFwaxAoezL6GAJzw=D+7E_Oxr2sqdxvM3sFgPiO-1eh5LQ@mail.gmail.com>
- <87sivj9vi0.fsf@xmission.com>
- <20131030132831.GB27632@htj.dyndns.org>
- <8738ni308z.fsf@xmission.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8738ni308z.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 30 Oct 2013 18:00:27 -0400
+Message-ID: <1383170413.9171.10.camel@dworkin>
+Subject: Re: [PATCH v4 6/7] events: use get_unused_fd_flags(0) instead of
+ get_unused_fd()
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk
+Date: Wed, 30 Oct 2013 23:00:13 +0100
+In-Reply-To: <94b641a81a06ba4943cf77e80bc271c8@meuh.org>
+References: <cover.1383121137.git.ydroneaud@opteya.com>
+	 <3b0bc009ff1410d04f8a1e71bfae0d27e1254b90.1383121137.git.ydroneaud@opteya.com>
+	 <20131030202041.GS16117@laptop.programming.kicks-ass.net>
+	 <94b641a81a06ba4943cf77e80bc271c8@meuh.org>
+Organization: OPTEYA
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+X-Spam-Score: -1.363
+X-abuse-contact: abuse@ocsa-data.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Eric.
-
-On Wed, Oct 30, 2013 at 02:41:16PM -0700, Eric W. Biederman wrote:
-> Being nice here has resulted in buggy semantics exported to userspace,
-> and buggy kernel code being written.  In a generalized version of sysfs
-> we don't want to be nice to avoid the existing mess that sysfs sees.
-
-Hmm... given that the generalized version always does recursive
-deletion, I don't think the problem you described is too relevant.  It
-really is something which can be either way.  Given that other
-interfaces including sysfs_put() allow for NULL input, I think
-flipping the behavior is likely more churn than worthwhile.
-
-> Which given how sysfs is used is really insane. If we don't support
-> something we need to warn about it, not 
-
-Add the warning then?  Given that sysfs_remove() ends up putting the
-base reference, it's something ultimately pointless tho.
-
-> > Maybe we should rename the lock to sysfs_symlink_target_lock and add
-> > fat comments on both sides?  Or we can make it a mutex and exclude the
-> > entire removal and symlinking, which would probably easier to follow.
+Le mercredi 30 octobre 2013 à 22:18 +0100, Yann Droneaud a écrit :
+> Hi,
 > 
-> Agreed.  A mutex to excluse the entire removal and symlinking does sound
-> easier to follow.  Why don't we call that mutex sysfs_mutex?
+> Le 30.10.2013 21:20, Peter Zijlstra a écrit :
+> > On Wed, Oct 30, 2013 at 08:47:46PM +0100, Yann Droneaud wrote:
+> >> This patch replaces calls to get_unused_fd() with equivalent call to
+> >> get_unused_fd_flags(0) to preserve current behavor for existing code.
+> >> 
+> >> The hard coded flag value (0) should be reviewed on a per-subsystem 
+> >> basis,
+> >> and, if possible, set to O_CLOEXEC.
+> > 
+> > And how am I supposed to know if that is 'possible'? You provide a 
+> > total
+> > number of 0 useful clues on how to determine this.
+> 
 
-Well, we can merge any locking but that's likely to lead to some ugly
-code.  sysfs core has always been somewhat isolated from kobject
-integration and what you're suggesting would violate such isolation.
-With the pending sysfs core separation, I don't think it's gonna work
-at all.  kobj->sd association is something which is specific to kobj
-<-> sysfs interaction.  If you wanna make behavior in that layer more
-strictly synchronized, please go ahead but let's please not mix the
-two layers.
+I'm sorry for sending this email so unreadable ... "unformatted" by
+RoundCube webmail.
+Please find something more readable below:
 
-Thanks.
+> Fair.
+>
+> Short: Will it break kernel ABI ?
+>        If no, use O_CLOEXEC, if yes, use 0.
+>
+> Long: If userspace expect to retrieve a file descriptor with plain
+>       old Unix(tm) semantics, O_CLOEXEC must not be the default, as it
+>       could break some applications expecting that the file descriptor
+>       will be inherited during exec().
+>
+>       But for some subsystems, such as InfiniBand, KVM, VFIO, it make no
+>       sense to have file descriptors inherited since those are tied to
+>       resources that will vanish when a another program will replace the
+>       current one by mean of exec(), so it's safe to use O_CLOEXEC in
+>       such cases.
+>
+>       For others, like XFS, the file descriptor is retrieved by one
+>       program and will be used by a different program, executed as a
+>       child. In this case, setting O_CLOEXEC would break existing
+>       application, which do not expect to have to call fcntl(fd,
+>       F_SETFD, FD_CLOEXEC) to make it available across exec().
+>
+>       If file descriptor created by events subsystem are not tied to the
+>       current process resources, it's likely legal to use it in a
+>       different process context, thus O_CLOEXEC must not be the default.
+>
+> Aside: If O_CLOEXEC cannot be made the default, it would be interesting
+>        to think to extend the API to have a (set of) function(s) taking
+>        a flags parameter so that userspace can set O_CLOEXEC if wanted.
+>        And I have a patch for this :)
+>
+> PS: I like the title of this article: "Excuse me son, but your code is
+>     leaking !!!" [1] by Dan Walsh but one should probably read PEP-446
+>     "Make newly created file descriptors non-inheritable" [2] instead
+>     since it has lot more background information on file descriptor
+>     leaking.
+>
+> [1] http://danwalsh.livejournal.com/53603.html
+> [2] http://www.python.org/dev/peps/pep-0446/
+>
+>
+> Regards.
+>
 
 -- 
-tejun
+Yann Droneaud
+OPTEYA
+
+
