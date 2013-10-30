@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485Ab3J3PPh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 11:15:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33472 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753423Ab3J3PPe (ORCPT
+	id S1753566Ab3J3PPn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 11:15:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46709 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256Ab3J3PPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 11:15:34 -0400
-Date: Wed, 30 Oct 2013 16:15:28 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sricharan R <r.sricharan@ti.com>
-cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linus.walleij@linaro.org,
-        linux@arm.linux.org.uk, tony@atomide.com, rnayak@ti.com,
-        marc.zyngier@arm.com, grant.likely@linaro.org, mark.rutland@arm.com,
-        robherring2@gmail.com, santosh.shilimkar@ti.com,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH V2 1/7] DRIVERS: IRQCHIP: IRQ-GIC: Add support for routable
- irqs
-In-Reply-To: <1383145040-15852-2-git-send-email-r.sricharan@ti.com>
-Message-ID: <alpine.DEB.2.02.1310301608380.24686@ionos.tec.linutronix.de>
-References: <1383145040-15852-1-git-send-email-r.sricharan@ti.com> <1383145040-15852-2-git-send-email-r.sricharan@ti.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 30 Oct 2013 11:15:41 -0400
+Message-ID: <52712293.90808@infradead.org>
+Date: Wed, 30 Oct 2013 08:15:31 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Chen Gang <gang.chen@asianux.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] include/linux/wait.h: add ';' for the statement which
+ missed it.
+References: <52708623.504@asianux.com>
+In-Reply-To: <52708623.504@asianux.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Oct 2013, Sricharan R wrote:
-> @@ -700,11 +709,22 @@ static int gic_irq_domain_xlate(struct irq_domain *d,
->  	*out_hwirq = intspec[1] + 16;
+On 10/29/13 21:08, Chen Gang wrote:
+> Add ';' for the statement, or can not pass compiling. The related error
+> (for powerpc allmodconfig):
+> 
+>     CC      block/blk-mq.o
+>   block/blk-mq.c: In function ‘blk_mq_queue_enter’:
+>   block/blk-mq.c:108:8: error: expected ‘;’ before ‘__ret’
+>   block/blk-mq.c:108:6: error: void value not ignored as it ought to be
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
+
+I have that same patch on my machine but never posted it.
+
+Thanks.
+
+> ---
+>  include/linux/wait.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/wait.h b/include/linux/wait.h
+> index 7f8caa5..fcc9680 100644
+> --- a/include/linux/wait.h
+> +++ b/include/linux/wait.h
+> @@ -768,7 +768,7 @@ do {									\
+>  	int __ret = 0;							\
+>  	if (!(condition))						\
+>  		__ret = __wait_event_interruptible_lock_irq(wq,		\
+> -						condition, lock,)	\
+> +						condition, lock,);	\
+>  	__ret;								\
+>  })
 >  
->  	/* For SPIs, we need to add 16 more to get the GIC irq ID number */
-> -	if (!intspec[0])
-> +	if (!intspec[0]) {
->  		*out_hwirq += 16;
+> 
 
-Minor nit. This should be in the default implementation. The crossbar
-implementation will fill out_hwirq in its own way and is not
-interested in the +16 operation at all.
 
-> +		ret = gic_routable_irq_domain_ops->xlate(d, controller,
-> +							 intspec,
-> +							 intsize,
-> +							 out_hwirq,
-> +							 out_type);
-> +
-
-> +		gic->domain = irq_domain_add_legacy(node, gic_irqs, irq_base,
-> +					hwirq_base, &gic_irq_domain_ops, gic);
-> +	} else {
-> +		if (WARN_ON(!gic_routable_irq_domain_ops))
-> +			return;
-
-This warning is pointless, because you have default ops now.
-
-> +
-> +		gic->domain = irq_domain_add_linear(node, nr_routable_irqs,
-> +						    &gic_irq_domain_ops,
-> +						    gic);
->  	}
-
-Thanks,
-
-	tglx
+-- 
+~Randy
