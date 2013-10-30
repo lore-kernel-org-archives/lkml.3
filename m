@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab3J3KmW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 06:42:22 -0400
-Received: from isis.unlp.edu.ar ([163.10.0.66]:38087 "EHLO isis.unlp.edu.ar"
+	id S1753687Ab3J3Kme (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 06:42:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10654 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751442Ab3J3KmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 06:42:21 -0400
-X-Greylist: delayed 3207 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Oct 2013 06:42:21 EDT
-X-Spam-Flag: NO
-X-Spam-Score: -1.145
-Message-ID: <20131030054825.19189b81oze367rs@isis.unlp.edu.ar>
-Date: Wed, 30 Oct 2013 05:48:25 -0300
-From: Kim Attorney <comision.discapacidad@psico.unlp.edu.ar>
-Reply-to: kim022@163.com
-To: undisclosed-recipients:;
-Subject: 
+	id S1753614Ab3J3Kmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 06:42:32 -0400
+Message-ID: <5270E27F.9080001@redhat.com>
+Date: Wed, 30 Oct 2013 11:42:07 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
+To: Rashika Kheria <rashika.kheria@gmail.com>
+CC: opw-kernel@googlegroups.com, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchand@redhat.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v7 1/3] Staging: zram: Fix access of NULL pointer
+References: <20131019110539.GA25167@gmail.com> <cc16130b4e23207971139eff313a4ec71f51c187.1383087326.git.rashika.kheria@gmail.com>
+In-Reply-To: <cc16130b4e23207971139eff313a4ec71f51c187.1383087326.git.rashika.kheria@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/30/2013 12:10 AM, Rashika Kheria wrote:
+> This patch fixes the bug in reset_store caused by accessing NULL pointer.
+> 
+> The bdev gets its value from bdget_disk() which could fail when memory
+> pressure is severe and hence can return NULL because allocation of
+> inode in bdget could fail.
+> 
+> Hence, this patch introduces a check for bdev to prevent reference to a
+> NULL pointer in the later part of the code. It also removes unnecessary
+> check of bdev for fsync_bdev().
+> 
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
 
-Hello,
-
-The Project is about the exportation of 100,000 barrels of Light Crude
-Oil daily out from Iraq to Turkey through my client?s company in Iraq
-at the rate of $92.00 a barrel. This amount to $9,200,000 daily. I ask
-for your support as a foreigner to handle this business project with my
-client and you are not expected to invest in Iraq
-
-If yes, let me know and we will discuss this project proper.
-
-Kim.
-
-
-
-
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
-
+> ---
+> 
+> This patch fixes the following issues of the previous revision-
+> Better Description
+> 
+>  drivers/staging/zram/zram_drv.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index 2c4ed52..d640a8f 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -648,6 +648,9 @@ static ssize_t reset_store(struct device *dev,
+>  	zram = dev_to_zram(dev);
+>  	bdev = bdget_disk(zram->disk, 0);
+>  
+> +	if (!bdev)
+> +		return -EBUSY;
+> +
+>  	/* Do not reset an active device! */
+>  	if (bdev->bd_holders)
+>  		return -EBUSY;
+> @@ -660,8 +663,7 @@ static ssize_t reset_store(struct device *dev,
+>  		return -EINVAL;
+>  
+>  	/* Make sure all pending I/O is finished */
+> -	if (bdev)
+> -		fsync_bdev(bdev);
+> +	fsync_bdev(bdev);
+>  
+>  	zram_reset_device(zram, true);
+>  	return len;
+> 
 
