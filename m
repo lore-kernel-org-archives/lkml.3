@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086Ab3J3Cmb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 22:42:31 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:52287 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab3J3Cm3 (ORCPT
+	id S1753079Ab3J3CmQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 22:42:16 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:59455 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab3J3Cly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 22:42:29 -0400
-Date: Tue, 29 Oct 2013 22:42:27 -0400 (EDT)
-Message-Id: <20131029.224227.1700872646112764527.davem@davemloft.net>
-To: tdmackey@booleanhaiku.com
-Cc: mchan@broadcom.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bnx2: Use dev_kfree_skb_any() in bnx2_tx_int()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1383084998-22673-1-git-send-email-tdmackey@booleanhaiku.com>
-References: <1383084998-22673-1-git-send-email-tdmackey@booleanhaiku.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 29 Oct 2013 22:41:54 -0400
+Date: Wed, 30 Oct 2013 10:41:39 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: axboe <axboe@kernel.dk>, NeilBrown <neilb@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-raid <linux-raid@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: [PATCH 1/3] block: Add REQ_NOMERGE into REQ_COMMON_MASK
+X-Priority: 3
+X-GUID: F0F53160-0C14-4546-8EC2-4E500F4B9F62
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.93[cn]
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 29 Oct 2013 19:42:28 -0700 (PDT)
+Message-ID: <2013103010413537651613@gmail.com>
+Content-Type: text/plain;
+	charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r9U2gq2Y017363
 
-From: David Mackey <tdmackey@booleanhaiku.com>
-Date: Tue, 29 Oct 2013 15:16:38 -0700
+For bio with REQ_NOMERGE,it mean this bio can't merge with other bios.
+And the request with this bio has the same meaning.
+In blk_queue_bio, bio with REQ_NOMERGE can't be merged and get a new
+request. But in init_request_from_bio, request can't test REQ_NOMERGE.
+So the request can merge other bio or merge other request.
+Add REQ_NOMERGE into REQ_COMMON_MASK to avoid this.
 
-> Using dev_kfree_skb_any() will resolve the below issue when a
-> netconsole message is transmitted in an irq.
- ...
-> Signed-off-by: David Mackey <tdmackey@booleanhaiku.com>
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+---
+ include/linux/blk_types.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-This is absolutely not the correct fix.
-
-The netpoll facility must invoke ->poll() in an environment which
-is compatible, locking and interrupt/soft-interrupt wise, as that
-in which it is normally called.
-
-Therefore, bnx2_tx_int(), which is invoked from the driver's ->poll()
-method, should not need to use dev_kfree_skb_any().  The real problem
-is somewhere else.
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index fa1abeb..fc7f4c5 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -197,7 +197,7 @@ enum rq_flag_bits {
+ #define REQ_COMMON_MASK \
+ 	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_SYNC | REQ_META | REQ_PRIO | \
+ 	 REQ_DISCARD | REQ_WRITE_SAME | REQ_NOIDLE | REQ_FLUSH | REQ_FUA | \
+-	 REQ_SECURE)
++	 REQ_SECURE | REQ_NOMERGE)
+ #define REQ_CLONE_MASK		REQ_COMMON_MASK
+ 
+ #define BIO_NO_ADVANCE_ITER_MASK	(REQ_DISCARD|REQ_WRITE_SAME)
+-- 
+1.8.4ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
