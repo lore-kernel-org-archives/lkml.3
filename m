@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab3J3Woq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 18:44:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49550 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751642Ab3J3Wop (ORCPT
+	id S1753543Ab3J3WuJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 18:50:09 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45512 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab3J3WuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 18:44:45 -0400
-Date: Wed, 30 Oct 2013 15:44:44 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: WTF: driver-core-next contains recursive directory removal!
-Message-ID: <20131030224444.GA9092@kroah.com>
-References: <8761sexu2l.fsf@xmission.com>
+	Wed, 30 Oct 2013 18:50:07 -0400
+Message-ID: <52718D1B.6030106@wwwdotorg.org>
+Date: Wed, 30 Oct 2013 16:50:03 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8761sexu2l.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Mark Zhang <markz@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: tegra: use pll_ref as the pll_e parent
+References: <1383093707-10312-1-git-send-email-pdeschrijver@nvidia.com> <527128B5.2020101@wwwdotorg.org> <20131030221833.GQ22111@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20131030221833.GQ22111@tbergstrom-lnx.Nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 03:38:58PM -0700, Eric W. Biederman wrote:
+On 10/30/2013 04:18 PM, Peter De Schrijver wrote:
+> On Wed, Oct 30, 2013 at 04:41:41PM +0100, Stephen Warren wrote:
+>> On 10/29/2013 06:41 PM, Peter De Schrijver wrote:
+>>> Use pll_ref instead of pll_re_vco as the pll_e parent on Tegra114 and
+>>> Tegra124. Also add a pll_ref table entry for pll_e for Tegra114.
+>>
+>> Why? What benefit does this give, or what bug does this fix?
 > 
-> Greg what is  going on?  I just looked and Tejuns ill-conceived recursive
-> directory deletion code has been merged into your driver-core-next tree.
-> 
-> That code is semantically broken.  I reviewed it and I gave the reasons
-> why it was wrong.  You came up to me and mentioned at LPC that you
-> agreed with my reasons.  And yet I just looked in driver-core-next and
-> there the code is in all of it's broken glory.
+> Otherrwise Tegra114 will crash on boot.
 
-Because I tested it out, and there were no such problems.
-
-> Please pull out that crap it has no business ever going into a stable
-> kernel.
-
-Really?  It seems to survive my testing here just fine.
-
-> The short version is unless someone has drastically changed pci hotplug
-> since last time I looked the code is dramatically wrong as pci hotplug
-> removes directories in the wrong order remove the parent first.
-
-That should still work here, and I'm pretty sure I tested it, but will
-do so before I send it to Linus.
-
-I don't think there's an issue here, otherwise both Tejun and I would
-have found some issues during testing, same for all of the other
-linux-next users for the past few weeks.
-
-thanks,
-
-greg k-h
+Sigh. For what reason?
