@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753743Ab3J3LRn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 07:17:43 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:51310 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612Ab3J3LRk (ORCPT
+	id S1753904Ab3J3LT5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 07:19:57 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:55916 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab3J3LTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 07:17:40 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, tim.gardner@canonical.com, gleb@redhat.com,
-        torvalds@linux-foundation.org
-Subject: [PATCH] KVM: use a more sensible error number when debugfs directory creation fails
-Date: Wed, 30 Oct 2013 12:17:32 +0100
-Message-Id: <1383131852-5566-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Wed, 30 Oct 2013 07:19:55 -0400
+Date: Wed, 30 Oct 2013 04:18:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH 2/8] rcu: remove irq/softirq context check in
+ rcu_read_unlock_special()
+Message-ID: <20131030111849.GB19599@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
+ <1375871104-10688-3-git-send-email-laijs@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375871104-10688-3-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13103011-9332-0000-0000-000001F984E9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't know if this was due to cut and paste, or somebody was really
-using a D20 to pick the error code for kvm_init_debugfs as suggested by
-Linus (EFAULT is 14, so the possibility cannot be entirely ruled out).
+On Wed, Aug 07, 2013 at 06:24:58PM +0800, Lai Jiangshan wrote:
+> After patch 10f39bb1, "special & RCU_READ_UNLOCK_BLOCKED" can't be true
+> in irq nor softirq.(due to RCU_READ_UNLOCK_BLOCKED can only be set
+> when preemption)
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  kernel/rcutree_plugin.h |    6 ------
+>  1 files changed, 0 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index 8fd947e..54f7e45 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -361,12 +361,6 @@ void rcu_read_unlock_special(struct task_struct *t)
+>  		rcu_preempt_qs(smp_processor_id());
+>  	}
+> 
+> -	/* Hardware IRQ handlers cannot block. */
+> -	if (in_irq() || in_serving_softirq()) {
+> -		local_irq_restore(flags);
+> -		return;
+> -	}
+> -
 
-In any case, this patch fixes it.
+Good point, it is time to relax the redundant checking.  Paranoid that
+I am, I took an intermediate position, wrapping a WARN_ON_ONCE() around
+the check as follows:
 
-Reported-by: Tim Gardner <tim.gardner@canonical.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- virt/kvm/kvm_main.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+	if (WARN_ON_ONCE(in_irq() || in_serving_softirq())) {
+		local_irq_restore(flags);
+		return;
+	}
 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index a9dd682cf5e3..1cf9ccb01013 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -3091,7 +3091,7 @@ static const struct file_operations *stat_fops[] = {
- 
- static int kvm_init_debug(void)
- {
--	int r = -EFAULT;
-+	int r = -EEXIST;
- 	struct kvm_stats_debugfs_item *p;
- 
- 	kvm_debugfs_dir = debugfs_create_dir("kvm", NULL);
--- 
-1.8.3.1
+If this warning never triggers over a period of some time, we can remove
+it entirely.
+
+I have queued this for 3.14 with your Signed-off-by.  Please let me know
+if you have any objections.
+
+							Thanx, Paul
+
+>  	/* Clean up if blocked during RCU read-side critical section. */
+>  	if (special & RCU_READ_UNLOCK_BLOCKED) {
+>  		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_BLOCKED;
+> -- 
+> 1.7.4.4
+> 
 
