@@ -1,108 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab3J3Rfn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 13:35:43 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:27422 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753893Ab3J3Rfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 13:35:40 -0400
-X-IronPort-AV: E=Sophos;i="4.93,602,1378857600"; 
-   d="scan'208";a="68981872"
-Date: Wed, 30 Oct 2013 17:34:28 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Xen Devel <Xen-devel@lists.xensource.com>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: linux-next: manual merge of the xen-tip tree with the  tree
-In-Reply-To: <20131030160956.dfa5c1900c2decb0018061b9@canb.auug.org.au>
-Message-ID: <alpine.DEB.2.02.1310301733230.26077@kaball.uk.xensource.com>
-References: <20131030160956.dfa5c1900c2decb0018061b9@canb.auug.org.au>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754021Ab3J3Rf6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 13:35:58 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:53961 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753441Ab3J3Rf5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 13:35:57 -0400
+Date: Wed, 30 Oct 2013 13:35:56 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: David Cohen <david.a.cohen@linux.intel.com>
+cc: balbi@ti.com, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <Paul.Zimmerman@synopsys.com>
+Subject: Re: [PATCH v3 2/3] usb: ffs: check quirk to pad epout buf size when
+ not aligned to maxpacketsize
+In-Reply-To: <1383152778-30739-3-git-send-email-david.a.cohen@linux.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1310301331580.1312-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks fine thanks!
-Just an heads up: I'll be updating the Xen code below soon so this
-conflict might come up again.
+On Wed, 30 Oct 2013, David Cohen wrote:
 
-On Wed, 30 Oct 2013, Stephen Rothwell wrote:
-> Hi all,
+> Check gadget.quirk_ep_out_aligned_size to decide if buffer size requires
+> to be aligned to maxpacketsize of an out endpoint. ffs_epfile_io() needs
+> to pad epout buffer to match above condition if quirk is found.
 > 
-> Today's linux-next merge of the xen-tip tree got a conflict in
-> arch/arm/include/asm/dma-mapping.h between commit 223016339ce7 ("ARM:
-> 7805/1: mm: change max*pfn to include the physical offset of memory")
-> from the arm tree and commit 06e6295bcece ("arm: make SWIOTLB available")
-> from the xen-tip tree.
+> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> ---
+>  drivers/usb/gadget/f_fs.c | 17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
 > 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc arch/arm/include/asm/dma-mapping.h
-> index 863cd84eb1a2,f5945d4e4e9f..000000000000
-> --- a/arch/arm/include/asm/dma-mapping.h
-> +++ b/arch/arm/include/asm/dma-mapping.h
-> @@@ -87,13 -98,42 +99,49 @@@ static inline dma_addr_t virt_to_dma(st
->   }
->   #endif
->   
->  +/* The ARM override for dma_max_pfn() */
->  +static inline unsigned long dma_max_pfn(struct device *dev)
->  +{
->  +	return PHYS_PFN_OFFSET + dma_to_pfn(dev, *dev->dma_mask);
->  +}
->  +#define dma_max_pfn(dev) dma_max_pfn(dev)
->  +
-> + static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
-> + {
-> + 	unsigned int offset = paddr & ~PAGE_MASK;
-> + 	return pfn_to_dma(dev, __phys_to_pfn(paddr)) + offset;
-> + }
-> + 
-> + static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
-> + {
-> + 	unsigned int offset = dev_addr & ~PAGE_MASK;
-> + 	return __pfn_to_phys(dma_to_pfn(dev, dev_addr)) + offset;
-> + }
-> + 
-> + static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
-> + {
-> + 	u64 limit, mask;
-> + 	
-> + 	if (dev->dma_mask)
-> + 		mask = *dev->dma_mask;
-> + 	else 
-> + 		mask = dev->coherent_dma_mask;
-> + 
-> + 	if (mask == 0)
-> + 		return 0;
-> + 
-> + 	limit = (mask + 1) & ~mask;
-> + 	if (limit && size > limit)
-> + 		return 0;
-> + 
-> + 	if ((addr | (addr + size - 1)) & ~mask)
-> + 		return 0;
-> + 
-> + 	return 1;
-> + }
-> + 
-> + static inline void dma_mark_clean(void *addr, size_t size) { }
-> + 
->   /*
->    * DMA errors are defined by all-bits-set in the DMA address.
->    */
-> 
+> diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+> index 75e4b78..b49dd55 100644
+> --- a/drivers/usb/gadget/f_fs.c
+> +++ b/drivers/usb/gadget/f_fs.c
+> @@ -755,10 +755,12 @@ static ssize_t ffs_epfile_io(struct file *file,
+>  			     char __user *buf, size_t len, int read)
+>  {
+>  	struct ffs_epfile *epfile = file->private_data;
+> +	struct usb_gadget *gadget = epfile->ffs->gadget;
+>  	struct ffs_ep *ep;
+>  	char *data = NULL;
+>  	ssize_t ret;
+>  	int halt;
+> +	size_t orig_len = len;
+>  
+>  	goto first_try;
+>  	do {
+> @@ -794,6 +796,21 @@ first_try:
+>  			goto error;
+>  		}
+>  
+> +		/*
+> +		 * Controller requires buffer size to be aligned to
+> +		 * maxpacketsize of an out endpoint.
+> +		 */
+> +		if (gadget->quirk_ep_out_aligned_size && read &&
+> +		    !IS_ALIGNED(len, ep->ep->desc->wMaxPacketSize)) {
+
+IS_ALIGNED works only when the second argument is a power of 2.  
+
+Interrupt endpoints are not required to have maxpacket sizes that are 
+powers of 2.  Does this code ever get used for an interrupt endpoint?
+
+> +			size_t old_len = len;
+
+Why add old_len here when you added orig_len above?
+
+> +			len = roundup(orig_len,
+> +				      (size_t)ep->ep->desc->wMaxPacketSize);
+> +			if (unlikely(data) && len > old_len) {
+
+If the original value wasn't aligned, how can len fail to be > old_len?
+
+> +				kfree(data);
+> +				data = NULL;
+> +			}
+> +		}
+> +
+>  		/* Allocate & copy */
+>  		if (!halt && !data) {
+>  			data = kzalloc(len, GFP_KERNEL);
+
+Alan Stern
+
