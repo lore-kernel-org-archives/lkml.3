@@ -1,30 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598Ab3J3UWZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 16:22:25 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:34531 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab3J3UWX (ORCPT
+	id S1754905Ab3J3UWd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 16:22:33 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:47265 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752381Ab3J3UW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 16:22:23 -0400
-Message-Id: <20131030195951.201688764@openvz.org>
+	Wed, 30 Oct 2013 16:22:26 -0400
+Message-Id: <20131030202221.257009634@openvz.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 30 Oct 2013 23:59:51 +0400
+Date: Wed, 30 Oct 2013 23:59:54 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org
-Subject: [patch 0/6] Rework file::show_fdinfo method to use seq-files engine
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrey Vagin <avagin@openvz.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [patch 3/6] eventfd: Use sequential fdinfo engine
+References: <20131030195951.201688764@openvz.org>
+Content-Disposition: inline; filename=0003-procfs-eventfd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, in criu we intensively use additional information provided by
-/proc/<pid>/fdinfo/<fd> particular to the object opened file
-represents. The output is printed out by file_operations::show_fdinfo
-method and the implementation of this method is pretty simple. Still
-I think better would be to convert this method to seq_operations pointer
-where all suppliers (epoll, eventfd and such) provide own seq-file
-operations. While this makes code a little more complex this will
-decrease the amount of kernel memory needed for output (because
-we won't need to provide all information in one pass but by chunks).
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrey Vagin <avagin@openvz.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: James Bottomley <jbottomley@parallels.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Matthew Helsley <matt.helsley@gmail.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ fs/eventfd.c |   30 +++++++++++++++++++++++++++---
+ 1 file changed, 27 insertions(+), 3 deletions(-)
 
-Please take a look, thanks!
+Index: linux-2.6.git/fs/eventfd.c
+===================================================================
+--- linux-2.6.git.orig/fs/eventfd.c
++++ linux-2.6.git/fs/eventfd.c
+@@ -287,9 +287,26 @@ static ssize_t eventfd_write(struct file
+ }
+ 
+ #ifdef CONFIG_PROC_FS
+-static int eventfd_show_fdinfo(struct seq_file *m, struct file *f)
++static void *seq_start(struct seq_file *m, loff_t *pos)
+ {
+-	struct eventfd_ctx *ctx = f->private_data;
++	if (*pos == 0)
++		return m->private;
++	return NULL;
++}
++
++static void seq_stop(struct seq_file *m, void *v)
++{
++}
++
++static void *seq_next(struct seq_file *m, void *p, loff_t *pos)
++{
++	++*pos;
++	return NULL;
++}
++
++static int seq_show(struct seq_file *m, void *v)
++{
++	struct eventfd_ctx *ctx = ((struct file *)v)->private_data;
+ 	int ret;
+ 
+ 	spin_lock_irq(&ctx->wqh.lock);
+@@ -299,11 +316,18 @@ static int eventfd_show_fdinfo(struct se
+ 
+ 	return ret;
+ }
++
++static struct seq_operations eventfd_fdinfo_ops = {
++	.start		= seq_start,
++	.next		= seq_next,
++	.stop		= seq_stop,
++	.show		= seq_show,
++};
+ #endif
+ 
+ static const struct file_operations eventfd_fops = {
+ #ifdef CONFIG_PROC_FS
+-	.show_fdinfo	= eventfd_show_fdinfo,
++	.fdinfo_ops	= &eventfd_fdinfo_ops,
+ #endif
+ 	.release	= eventfd_release,
+ 	.poll		= eventfd_poll,
+
