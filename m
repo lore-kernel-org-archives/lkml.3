@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab3J3HOL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 03:14:11 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:35379 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751625Ab3J3HOI (ORCPT
+	id S1753692Ab3J3HQO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 03:16:14 -0400
+Received: from mga03.intel.com ([143.182.124.21]:28500 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751647Ab3J3HQM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 03:14:08 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID r9U7E67r031787, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net v2 0/3] r8152 bug fixes
-Date: Wed, 30 Oct 2013 15:13:37 +0800
-Message-ID: <1383117220-893-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1383033377-1178-1-git-send-email-hayeswang@realtek.com>
-References: <1383033377-1178-1-git-send-email-hayeswang@realtek.com>
+	Wed, 30 Oct 2013 03:16:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="382098397"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [char-misc-next 1/8] mei: debugfs: validate dev is not null
+Thread-Topic: [char-misc-next 1/8] mei: debugfs: validate dev is not null
+Thread-Index: AQHO1P06TyNlQAzZmEa3ng99D0wzFJoM1X5g
+Date: Wed, 30 Oct 2013 07:16:07 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AEFB8F5@HASMSX106.ger.corp.intel.com>
+References: <1382382343-12066-1-git-send-email-tomas.winkler@intel.com>
+ <1382382343-12066-2-git-send-email-tomas.winkler@intel.com>
+ <20131029231841.GA30410@kroah.com>
+In-Reply-To: <20131029231841.GA30410@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.218]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have update the commit messages. I hope they are clear enough.
+> 
+> On Mon, Oct 21, 2013 at 10:05:36PM +0300, Tomas Winkler wrote:
+> > make static analyzer happy
+> 
+> That's a stupid analyzer.
+> 
+> Sorry, this case can never be true, so don't check for it.  Fix your
+> analyzer.
+> 
+> > and validate dev argument before dereferencing
+> 
+> Again, no need to do so, it's always set properly.
+> 
+> sorry, I can't take this.
 
-I remove the stop/wake tx queue from the second patch first, until
-I find a way to determine which value is suitable for TX_QLEN.
-
-Hayes Wang (3):
-  r8152: fix tx/rx memory overflow
-  r8152: modify the tx flow
-  r8152: fix incorrect type in assignment
-
- drivers/net/usb/r8152.c | 94 +++++++++++++++----------------------------------
- 1 file changed, 29 insertions(+), 65 deletions(-)
-
--- 
-1.8.3.1
+Fair enough, I didn't like that patch myself now I have other confirmation that this is stupid.
+ 
+Tomas
 
