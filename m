@@ -1,74 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab3J3LZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 07:25:59 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:54726 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753920Ab3J3LZ4 (ORCPT
+	id S1753911Ab3J3L25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 07:28:57 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34333 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683Ab3J3L24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 07:25:56 -0400
-Date: Wed, 30 Oct 2013 12:25:51 +0100
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, Johan Hovold <jhovold@gmail.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] misc: atmel_pwm: add deferred-probing support
-Message-ID: <20131030112551.GB29813@localhost>
-References: <1382459560-26596-1-git-send-email-jhovold@gmail.com>
- <1382459560-26596-2-git-send-email-jhovold@gmail.com>
+	Wed, 30 Oct 2013 07:28:56 -0400
+Date: Wed, 30 Oct 2013 12:28:54 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Luciano Coelho <luca@coelho.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
+        aaro.koskinen@iki.fi, sre@ring0.de, joni.lapilainen@gmail.com,
+        David Gnedt <david.gnedt@davizone.at>
+Subject: Re: [PATCH 05/16] wl1251: implement hardware ARP filtering
+Message-ID: <20131030112854.GB8204@amd.pavel.ucw.cz>
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
+ <1382819655-30430-6-git-send-email-pali.rohar@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382459560-26596-2-git-send-email-jhovold@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1382819655-30430-6-git-send-email-pali.rohar@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 22, 2013 at 06:32:39PM +0200, Johan Hovold wrote:
-> Two drivers (atmel-pwm-bl and leds-atmel-pwm) currently depend on the
-> atmel_pwm driver to have bound to any pwm-device before their devices
-> are probed.
-> 
-> Support deferred probing of such devices by making sure to return
-> -EPROBE_DEFER from pwm_channel_alloc when no pwm-device has yet been
-> bound.
-> 
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Hi!
 
-This patch, 5c6d6fd1 ("misc: atmel_pwm: add deferred-probing support"),
-and 9d3fde86 ("backlight: atmel-pwm-bl: fix deferred probe from __init")
-in linux-next should probably be considered for inclusion in stable.
+> Update hardware ARP filter configuration on BSS_CHANGED_ARP_FILTER
+> notification from mac80211.
+> Ported from wl1271 driver.
+> 
+> Signed-off-by: David Gnedt <david.gnedt@davizone.at>
+> ---
+>  drivers/net/wireless/ti/wl1251/acx.c  |   31 +++++++++++++++++++++++++++++++
+>  drivers/net/wireless/ti/wl1251/acx.h  |   15 +++++++++++++++
+>  drivers/net/wireless/ti/wl1251/main.c |   13 +++++++++++++
+>  3 files changed, 59 insertions(+)
+> 
+> diff --git a/drivers/net/wireless/ti/wl1251/acx.c b/drivers/net/wireless/ti/wl1251/acx.c
+> index cce50e2..9295090 100644
+> --- a/drivers/net/wireless/ti/wl1251/acx.c
+> +++ b/drivers/net/wireless/ti/wl1251/acx.c
+> @@ -1062,6 +1062,37 @@ out:
+>  	return ret;
+>  }
+>  
+> +int wl1251_acx_arp_ip_filter(struct wl1251 *wl, bool enable, __be32 address)
+> +{
+> +	struct wl1251_acx_arp_filter *acx;
+> +	int ret;
+> +
+> +	wl1251_debug(DEBUG_ACX, "acx arp ip filter, enable: %d", enable);
+> +
+> +	acx = kzalloc(sizeof(*acx), GFP_KERNEL);
+> +	if (!acx) {
+> +		ret = -ENOMEM;
+> +		goto out;
+> +	}
 
-Without them the atmel-pwm-bl driver may always fail to probe depending
-on link order.
+I'd do "return -ENOMEM;" here. Trying to free NULL pointer is
+unneccessary complication.
+
+> +	acx->version = ACX_IPV4_VERSION;
+> +	acx->enable = enable;
+> +
+> +	if (enable == true)
+
+if (enable) would be C way of writing stuff.
+
+> +		memcpy(acx->address, &address, ACX_IPV4_ADDR_SIZE);
+> +
+> +	ret = wl1251_cmd_configure(wl, ACX_ARP_IP_FILTER,
+> +				   acx, sizeof(*acx));
+> +	if (ret < 0) {
+> +		wl1251_warning("failed to set arp ip filter: %d", ret);
+> +		goto out;
+> +	}
+> +
+> +out:
+
+No need for the out label now.
+
+> diff --git a/drivers/net/wireless/ti/wl1251/main.c b/drivers/net/wireless/ti/wl1251/main.c
+> index 46a2494..9752745 100644
+> --- a/drivers/net/wireless/ti/wl1251/main.c
+> +++ b/drivers/net/wireless/ti/wl1251/main.c
+> @@ -1078,6 +1078,19 @@ static void wl1251_op_bss_info_changed(struct ieee80211_hw *hw,
+>  		}
+>  	}
+>  
+> +	if (changed & BSS_CHANGED_ARP_FILTER) {
+> +		__be32 addr = bss_conf->arp_addr_list[0];
+> +		WARN_ON(wl->bss_type != BSS_TYPE_STA_BSS);
+> +
+> +		if (bss_conf->arp_addr_cnt == 1 && bss_conf->assoc)
+> +			ret = wl1251_acx_arp_ip_filter(wl, true, addr);
+> +		else
+> +			ret = wl1251_acx_arp_ip_filter(wl, false, addr);
+
+
+  		enable = bss_conf->arp_addr_cnt == 1 && bss_conf->assoc;
+		ret = wl1251_acx_arp_ip_filter(wl, enable, addr);
+
+?
 
 Thanks,
-Johan
-
-> ---
->  drivers/misc/atmel_pwm.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/misc/atmel_pwm.c b/drivers/misc/atmel_pwm.c
-> index 494d050..a6dc56e 100644
-> --- a/drivers/misc/atmel_pwm.c
-> +++ b/drivers/misc/atmel_pwm.c
-> @@ -90,8 +90,10 @@ int pwm_channel_alloc(int index, struct pwm_channel *ch)
->  	unsigned long	flags;
->  	int		status = 0;
->  
-> -	/* insist on PWM init, with this signal pinned out */
-> -	if (!pwm || !(pwm->mask & 1 << index))
-> +	if (!pwm)
-> +		return -EPROBE_DEFER;
-> +
-> +	if (!(pwm->mask & 1 << index))
->  		return -ENODEV;
->  
->  	if (index < 0 || index >= PWM_NCHAN || !ch)
-> -- 
-> 1.8.4
-> 
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
