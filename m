@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505Ab3J3T3S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 15:29:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11859 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752059Ab3J3T3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 15:29:17 -0400
-Date: Wed, 30 Oct 2013 21:31:50 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: print microcode revision on PEBs errors
-Message-ID: <20131030193150.GA7765@redhat.com>
+	id S1754550Ab3J3T3q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 15:29:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38349 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698Ab3J3T3o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 15:29:44 -0400
+Message-ID: <52715DF5.9040100@canonical.com>
+Date: Wed, 30 Oct 2013 15:28:53 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-To: unlisted-recipients:; (no To-header on input)
+To: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: hpa@zytor.com, JBottomley@Parallels.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kamal Mostafa <kamal.mostafa@canonical.com>,
+        linux-scsi@vger.kernel.org,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: Re: Subject:  [v3.8][v3.11][Regression] [SCSI] sd: Update WRITE SAME
+ heuristics
+References: <52700AD2.6000703@canonical.com> <5270108E.5040401@itwm.fraunhofer.de>
+In-Reply-To: <5270108E.5040401@itwm.fraunhofer.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sandy bridge CPUs with old microcode, PEBs
-fails and suggests a microcode update.
-Print out the required and the actual revision to
-make it easier to figure out what's wrong.
+On 10/29/2013 03:46 PM, Bernd Schubert wrote:
+> Hello Joseph,
+>
+> On 10/29/2013 08:21 PM, Joseph Salisbury wrote:
+>> Hi Martin,
+>>
+>> A bug was opened against the Ubuntu kernel[0].  After a kernel bisect,
+>> it was found that reverting the following commit resolved this bug:
+>>
+>> commit 66c28f97120e8a621afd5aa7a31c4b85c547d33d
+>> Author: Martin K. Petersen <martin.petersen@oracle.com>
+>> Date:   Thu Jun 6 22:15:55 2013 -0400
+>>
+>>      [SCSI] sd: Update WRITE SAME heuristics
+>>
+>>
+>> The regression was introduced as of v3.11-rc1, but it also made it's way
+>> into the stable trees.
+>>
+>> I see that you are the author of this patch, so I wanted to run this by
+>> you.  I was thinking of requesting a revert for v3.12, but I wanted to
+>> get your feedback first.
+>>
+>
+> James queued this up for 3.13
+>
+>> http://git.kernel.org/cgit/linux/kernel/git/jejb/scsi.git/commit/?id=735e39e680256a13e7be3492acfb4d9721287a42
+>>
+>
+> Maybe we should try to convince James to take it into 3.12?
+>
+>
+> Cheers,
+> Bernd
+Hi Bernd,
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c | 2 ++
- 1 file changed, 2 insertions(+)
+The bug reporter confirms that your patch fixes the bug.  Any chance
+this patch can make it into 3.12?
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index f31a165..81f2789 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2105,6 +2105,8 @@ static int intel_snb_pebs_broken(int cpu)
- 		}
- 	}
- 
-+	pr_info("PEBS checking: microcode 0x%x min legal 0x%x\n",
-+		cpu_data(cpu).microcode, rev);
- 	return (cpu_data(cpu).microcode < rev);
- }
- 
--- 
-MST
+Thanks,
+
+Joe
