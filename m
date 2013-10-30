@@ -1,95 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab3J3Id7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 04:33:59 -0400
-Received: from mga11.intel.com ([192.55.52.93]:16978 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752401Ab3J3Idz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 04:33:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,599,1378882800"; 
-   d="scan'208";a="419578555"
-Message-ID: <5270C47C.5040206@intel.com>
-Date: Wed, 30 Oct 2013 16:34:04 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+	id S1753281Ab3J3Ihk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 04:37:40 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:38318 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752394Ab3J3Ihf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 04:37:35 -0400
+Message-ID: <5270C549.30201@gmail.com>
+Date: Wed, 30 Oct 2013 10:37:29 +0200
+From: Nikolai Kondrashov <spbnick@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Tony Luck <tony.luck@intel.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Yoknis, Mike" <mike.yoknis@hp.com>,
-        "Pearson, Greg" <greg.pearson@hp.com>
-Subject: Re: [Resend PATCH 5/5] IA64/PCI/ACPI: Rework PCI root bridge ACPI
- resource conversion
-References: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com> <1381493941-4650-6-git-send-email-tianyu.lan@intel.com> <20131016235541.GD17866@google.com> <525F7F0F.5010306@intel.com> <CAErSpo7P+n5c2uUoodT=LOjE3UH3LBcjifbj8reXzAeWydsoLA@mail.gmail.com> <52612D1C.4070701@intel.com> <20131023223904.GA18454@google.com> <526BF37E.8040801@intel.com> <CAErSpo50_JQEhGOK6mcnaj36f6Fhgp3VcHKSmziC6JB_Ycu0Xg@mail.gmail.com>
-In-Reply-To: <CAErSpo50_JQEhGOK6mcnaj36f6Fhgp3VcHKSmziC6JB_Ycu0Xg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: AceLan Kao <acelan.kao@canonical.com>
+CC: Josh Boyer <jwboyer@fedoraproject.org>, Kevin Fenzi <kevin@scrye.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: ELAN Touchscreen regression in recent 3.12 rc's? (USB)
+References: <20131028150250.755b4cc8@voldemort.scrye.com> <CA+5PVA5hB9CcoxqWPvF1uJymKMtfyGJv9Tkkh8bxOdAmM-jKkQ@mail.gmail.com> <CAFv23QmGeGMCVAJCQHv8oDk_ZrXHKsemP1MHnn+uaQQ5DKoFOA@mail.gmail.com>
+In-Reply-To: <CAFv23QmGeGMCVAJCQHv8oDk_ZrXHKsemP1MHnn+uaQQ5DKoFOA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年10月29日 01:32, Bjorn Helgaas wrote:
-> On Sat, Oct 26, 2013 at 10:53 AM, Lan Tianyu <tianyu.lan@intel.com> wrote:
->> On 10/24/2013 06:39 AM, Bjorn Helgaas wrote:
->>> On Fri, Oct 18, 2013 at 08:44:12PM +0800, Lan Tianyu wrote:
->>>>
->>>> On 10/18/2013 04:33 AM, Bjorn Helgaas wrote:
->
->>>>> I wonder if it would make sense to make
->>>>> acpi_dev_resource_address_space() ignore addr.translation_offset for
->>>>> IO resources.  Or maybe ignore it if the _TTP (type translation) bit
->>>>> is set?
->>>>
->>>>
->>>> I wonder why current code doesn't check _TTP? The code in the
->>>> add_io_space() seems to think _TTP is always set, right?
->>>
->>> I think it's an oversight, and you should fix it.  I suggest that you
->>> ignore the _TRA value when _TTP is set.  Obviously this only applies
->>> to I/O port resources, since _TTP is only defined in the I/O Resource
->>> Flag (Table 6-185 in ACPI 5.0 spec).
->>
->> _TTP is also defined in the Memory Resource flag, Please have a look at
->> Table 6-184 in the ACPI 5.0 Spec.
->
-> Yes, you're right.  That would be for a host bridge that converts I/O
-> on the primary (upstream) side of the bridge to memory on the PCI
-> side.  I've never seen such a bridge, and I can't really imagine why
-> anybody would do that.  But I guess you should be able to safely
-> ignore _TRA when _TTP is set in either a MEM or IO descriptor, because
-> the same reasoning should apply to both.
->
->> I am not sure how to deal with _TTP unsetting io resource? _TTP unsetting
->> mean the resource is IO on the primary side and also IO on the secondary
->> side.
->
-> If _TTP is not set, I guess you would apply _TRA.  That's what you
-> already do for MEM descriptors, and think you should just do the same
-> for IO descriptors.  I would guess that having _TTP = 0 and _TRA != 0
-> is rare for IO descriptors, but I suppose it could happen.
+Hi AceLan,
 
-Yes, my concern is for the IO resource case of _TTP=0 and _TRA !=0. The
-only reason for this case I think of is that the IO resource offsets on
-the prime bus and second bus are different. In this case, we still need
-to pass _TRA to new_space() and the finial resource->start still should 
-be acpi_resource->min + offset returned by add_io_space(), right?
-
-If yes, I think _TRA can't be applied to IO resource in the
-acpi_dev_resource_address_space() regardless of the value of _TTP.
-
-BTW, Translation Sparse(_TRS) is only meaningful if _TTP is set.(Table 
-6-185). The add_io_space() doesn't check _TTP when set sparse. So this 
-should be corrected?
-
+On 10/30/2013 03:41 AM, AceLan Kao wrote:
+> It's hard to believe that those quirks will lead to the problem.
+> And actually, there are 4 new commits introduced to -rc7, and 3 of
+> them are quirks.
 >
-> Bjorn
+> % git log --pretty=oneline v3.12-rc6..v3.12-rc7 drivers/hid
+> 86b84167d4e67372376a57ea9955c5d53dae232f HID: wiimote: add LEGO-wiimote VID
+> ad0e669b922c7790182cf19f8015b30e23ad9499 HID: Fix unit exponent parsing again
+> 684524d35fe8d13be1f2649633e43bd02c96c695 HID: usbhid: quirk for SiS Touchscreen
+> 8171a67d587a09e14a4949a81e070345fedcf410 HID: usbhid: quirk for
+> Synaptics Large Touchccreen
 >
+> CC'd Nikolai, since his commit changes the protocol.
 
+My change is very unlikely to produce such problems. It changes calculation of
+axes resolution at the time the report descriptor is processed. The results of
+the calculation are not used by the kernel, AFAIK, but only by userspace
+drivers. The results should not be used to affect the interactions with the
+device, but only the interpretation of the reports (again, in userspace), and
+even that is barely done currently.
 
--- 
-Best regards
-Tianyu Lan
+Please try reverting that particular commit and see if it affects the
+behavior.
+
+Sincerely,
+Nick
