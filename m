@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905Ab3J3Tul (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 15:50:41 -0400
-Received: from smtpfb2-g21.free.fr ([212.27.42.10]:48774 "EHLO
-	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881Ab3J3Tug (ORCPT
+	id S1754927Ab3J3Tuq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 15:50:46 -0400
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:56957 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754881Ab3J3Tuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 15:50:36 -0400
+	Wed, 30 Oct 2013 15:50:44 -0400
 From: Yann Droneaud <ydroneaud@opteya.com>
 To: Al Viro <viro@zeniv.linux.org.uk>
 Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v4 3/7] binfmt_misc: use get_unused_fd_flags(0) instead of get_unused_fd()
-Date: Wed, 30 Oct 2013 20:47:43 +0100
-Message-Id: <700d638c74d09073bb803b2db2347d3a7f40fbc7.1383121137.git.ydroneaud@opteya.com>
+Subject: [PATCH v4 4/7] file: use get_unused_fd_flags(0) instead of get_unused_fd()
+Date: Wed, 30 Oct 2013 20:47:44 +0100
+Message-Id: <3120dfc4b59637efad2eb6e2778f3b4d92914f36.1383121137.git.ydroneaud@opteya.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <cover.1383121137.git.ydroneaud@opteya.com>
 References: <cover.1383121137.git.ydroneaud@opteya.com>
@@ -46,22 +46,22 @@ and, if possible, set to O_CLOEXEC.
 Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 Link: http://lkml.kernel.org/r/cover.1383121137.git.ydroneaud@opteya.com
 ---
- fs/binfmt_misc.c | 2 +-
+ fs/file.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
-index 1c740e1..052f6dc 100644
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -138,7 +138,7 @@ static int load_misc_binary(struct linux_binprm *bprm)
- 		/* if the binary should be opened on behalf of the
- 		 * interpreter than keep it open and assign descriptor
- 		 * to it */
-- 		fd_binary = get_unused_fd();
-+		fd_binary = get_unused_fd_flags(0);
-  		if (fd_binary < 0) {
-  			retval = fd_binary;
-  			goto _ret;
+diff --git a/fs/file.c b/fs/file.c
+index 4a78f98..1420d28 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -897,7 +897,7 @@ SYSCALL_DEFINE1(dup, unsigned int, fildes)
+ 	struct file *file = fget_raw(fildes);
+ 
+ 	if (file) {
+-		ret = get_unused_fd();
++		ret = get_unused_fd_flags(0);
+ 		if (ret >= 0)
+ 			fd_install(ret, file);
+ 		else
 -- 
 1.8.3.1
 
