@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab3J3ArZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 20:47:25 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46662 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab3J3ArY (ORCPT
+	id S1752881Ab3J3As2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 20:48:28 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:1313 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906Ab3J3As1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 20:47:24 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <5270567D.8000706@jp.fujitsu.com>
-Date: Wed, 30 Oct 2013 09:44:45 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Tue, 29 Oct 2013 20:48:27 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 29 Oct 2013 17:47:54 -0700
+Date: Wed, 30 Oct 2013 02:47:52 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Mike Turquette <mturquette@linaro.org>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: pull request for Tegra clock rework and Tegra124 clock support
+Message-ID: <20131030004752.GH22111@tbergstrom-lnx.Nvidia.com>
+References: <20131021135638.GA10943@tbergstrom-lnx.Nvidia.com>
+ <20131022101904.7554.73999@quantum>
+ <20131023084631.GG22111@tbergstrom-lnx.Nvidia.com>
 MIME-Version: 1.0
-To: Baoquan He <bhe@redhat.com>
-CC: hpa@linux.intel.com, ebiederm@xmission.com, vgoyal@redhat.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org, bp@alien8.de,
-        akpm@linux-foundation.org, fengguang.wu@intel.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v4 0/3] x86, apic, kexec: Add disable_cpu_apic kernel
- parameter
-References: <20131022150015.24240.39686.stgit@localhost6.localdomain6> <20131029142151.GA2782@dhcp-16-105.nay.redhat.com>
-In-Reply-To: <20131029142151.GA2782@dhcp-16-105.nay.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20131023084631.GG22111@tbergstrom-lnx.Nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/29 23:21), Baoquan He wrote:
-> Hi,
->
-> I am reviewing this patchset, and found there's a cpu0 hotplug feature
-> posted by intel which we can borrow an idea from. In that implementation,
-> CPU0 is waken up by nmi not INIT to avoid the realmode bootstrap code
-> execution. I tried it by below patch which includes one line of change.
->
-> By console printing, I got the boot cpu is always 0(namely cpu=0),
-> however the apicid related to each processor keeps the same as in 1st
-> kernel. In my HP Z420 machine, the apicid for BSP is 0, so I just make a
-> test patch which depends on the fact that apicid for BSP is 0. Maybe
-> generally the apicid for BSP can't be guaranteed, then passing it from
-> 1st kernel to 2nd kernel in cmdline is very helpful, just as you have
-> done for disable_cpu_apic.
->
-> On my HP z420, I add nr_cpus=4 in /etc/sysconfig/kdump, and then execute
-> below command, then 3 APs (1 boot cpu and 2 AP) can be waken up
-> correctly, but BSP failed because NMI received for unknown reason 21 on
-> CPU0. I think I need further check why BSP failed to wake up by nmi. But
-> 3 processors are brought up successfully and kdump is successful too.
->
-> sudo taskset -c 1 sh -c "echo c >/proc/sysrq-trigger"
->
-> [    0.296831] smpboot: Booting Node   0, Processors  #   1
-> [    0.302095]
-> *****************************************************cpu=1, apicid=0, wakeup_cpu_via_init_nmi
-> [    0.311942] cpu=1, apicid=0, register_nmi_handlercpu=1, apicid=0, wakeup_secondary_cpu_via_nmi
-> [    0.320826] Uhhuh. NMI received for unknown reason 21 on CPU 0.
-> [    0.327129] Do you have a strange power saving mode enabled?
-> [    0.333858] Dazed and confused, but trying to continue
-> [    0.339290] cpu=1, apicid=0, wakeup_cpu_via_init_nmi
-> [    2.409099] Uhhuh. NMI received for unknown reason 21 on CPU 0.
-> [    2.415393] Do you have a strange power saving mode enabled?
-> [    2.421142] Dazed and confused, but trying to continue
-> [    5.379519] smpboot: CPU1: Not responding
-> [    5.383692] NMI watchdog: enabled on all CPUs, permanently consumes one hw-PMU counter.
->
+Mike,
 
-We've already discussed this approach and concluded this is not applicable
-to our issue.
-Follow http://lists.infradead.org/pipermail/kexec/2012-October/006905.html.
+This is an update to the previous pull request which fixes some late bugs.
 
-The reason is:
+Thanks,
 
-- The cpu0-hotplugging approach assumes BSP to be halting before initiating
-   NMI to it while in our case, BSP is halting in the 1st kernel or is
-   running in arbitrary position of the 1st kernel in catastrophic state.
+Peter.
 
-- In general, NMI modifies stack, which means if throwing NMI to the BSP
-   in the 1st kernel, stack on the 1st kernel is modified. It's unpermissible
-   from kdump's perspective.
+The following changes since commit 6c984fc8c6314596c302bbecf79dc59d9f98f348:
 
-- On x86_64, there are two cases where stack is changed to another one
-   when receiving interrupts. One is when receiving interrupt in user mode.
-   The other is when using Interrupt Stack Table (IST), which is already
-   used in the current x86_64 implementation.
+  clk: tegra124: add suspend/resume function for tegra_cpu_car_ops (2013-10-21 16:39:24 +0300)
 
-   By using either, it would be possible to wake up BSP in the 1st kernel
-   by modifying the contexts on the 2nd kernel's NMI stack pushed on when NMI
-   to the 1st kernel is initiated.
+are available in the git repository at:
+  git://nv-tegra.nvidia.com/user/pdeschrijver/linux.git tegra-clk-tegra124-0
 
-   However, this approach depends on the logic in the 1st kernel, there's
-   no guarantee that it works well. Consider severely buggy situation again.
+Mikko Perttunen (1):
+      clk: tegra114: Initialize clocks needed for HDMI
 
-- To do this approach rigorously, we need to check if states of BSP and APs
-   are kept in just what we assume in the place where logic is guaranteed to be
-   sane, i.e., at least after purgatory. However, adding new logic in the
-   purgatory means we are forced to introduce additional dependency between
-   kernel and kexec. The process performed in purgatory itself is not so
-   simple.I don't like this complication.
+Peter De Schrijver (1):
+      clk: tegra: use pll_ref as the pll_e parent
 
-To sum up, I think the current idea is simple enough approach.
+Thierry Reding (2):
+      clk: tegra: Initialize secondary gr3d clock on Tegra30
+      clk: tegra: Properly setup PWM clock on Tegra30
 
--- 
-Thanks.
-HATAYAMA, Daisuke
-
+ drivers/clk/tegra/clk-pll.c      |    7 ++++---
+ drivers/clk/tegra/clk-tegra114.c |    5 ++++-
+ drivers/clk/tegra/clk-tegra30.c  |    5 ++++-
+ 3 files changed, 12 insertions(+), 5 deletions(-)
