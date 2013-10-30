@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab3J3Uq0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 16:46:26 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52578 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056Ab3J3UqZ (ORCPT
+	id S1754911Ab3J3Uqb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 16:46:31 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:58238 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056Ab3J3Uq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 16:46:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Johan Hovold <jhovold@gmail.com>
-Subject: Re: [PATCH 2/2] misc: atmel_pwm: set initcall level to subsys
-Date: Wed, 30 Oct 2013 21:46:17 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org
-References: <1382459560-26596-1-git-send-email-jhovold@gmail.com> <20131029232249.GA20476@kroah.com> <20131030110705.GA29813@localhost>
-In-Reply-To: <20131030110705.GA29813@localhost>
+	Wed, 30 Oct 2013 16:46:28 -0400
+Message-ID: <5271701C.3010706@codeaurora.org>
+Date: Wed, 30 Oct 2013 13:46:20 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Andy Gross <agross@codeaurora.org>
+CC: Vinod Koul <vinod.koul@intel.com>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Subject: Re: [PATCH 1/2] dmaengine: add msm bam dma driver
+References: <1382732643-8184-1-git-send-email-agross@codeaurora.org> <1382732643-8184-2-git-send-email-agross@codeaurora.org> <20131029175603.GF21983@codeaurora.org> <20131030203105.GA14525@agross>
+In-Reply-To: <20131030203105.GA14525@agross>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201310302146.18248.arnd@arndb.de>
-X-Provags-ID: V02:K0:QYC/kS2mCqCbOq3v+5McssUpVrH95+hEHkgLDo+eK0E
- Z+oxVvf5OyeHkvyntgVVy3D3X5tmFLMVx6pnzzTTejveRazIdC
- UOJzdL2F+J6NBRX1lwkvSn59CF6R/QawejiweAjBXqrluMZL9G
- +E1VG+qMo2Zj5pSmnNWNHhZdRxerSoDXU1D3NdmxKuA+7lTyhy
- 1oAHFVbovFy/QBIlF0jkp/bTjLU4bRe2CsGZPU9qRklh4zJcIp
- GRduauKcxU4Gj8k+2vUQLnTODkR3Qti8r3pVYwPa9PlU9vbGZT
- tCv51OjRRL7ZQ6s/SXiEorxpqGVvTU0Oz6WsZqjz5XTFMgd9XM
- MuzkEat9nzFTe8mAnY/Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 October 2013, Johan Hovold wrote:
-> > I really hate this type of patch, as it's papering over the real
-> > problem.  What happens when someone else moves their driver to this
-> > level?  Then you are back to the original problem.
-> 
-> Yes, it's crude, but it's currently the only way to express a preferred
-> probe order.
+On 10/30/13 13:31, Andy Gross wrote:
+> On Tue, Oct 29, 2013 at 10:56:03AM -0700, Stephen Boyd wrote:
+>> On 10/25, Andy Gross wrote:
+>>> +#include <linux/scatterlist.h>
+>>> +#include <linux/device.h>
+>>> +#include <linux/platform_device.h>
+>>> +#include <linux/of.h>
+>>> +#include <linux/of_address.h>
+>>> +#include <linux/of_irq.h>
+>>> +#include <linux/of_dma.h>
+>>> +#include <linux/clk.h>
+>>> +#include <linux/msm_bam_dma.h>
+>>> +
+>>> +#include "dmaengine.h"
+>>> +#include "msm_bam_dma_priv.h"
+>> Why do we need this file? Can't we just put the #defines in this
+>> file?
+>  
+> There were enough definitions and structures to warrant another file.
+>
 
-Does the same problem occur with the generic PWM subsystem?
+Ah ok. I find it annoying to flip between two files but I guess that's
+my problem.
 
-The atmel_pwm driver apparently is the last PWM driver that has
-not been converted to the generic subsystem yet. Doing that would
-also let us drop the atmel-pwm-bl driver in favor of the generic
-backlight.
+>>> +	if (!bdev) {
+>>> +		dev_err(&pdev->dev, "insufficient memory for private data\n");
+>> kmalloc calls already print errors when they fail, so this can be
+>> removed.
+>  
+> has this always been the case?
 
-	Arnd
+The warning in the page allocator seems to have been there since pre-git
+days (see __alloc_pages_slowpath() and how it calls warn_alloc_failed())
+. Other warnings in the sl*b allocators seem to have come later (see
+8bdec192b40cf7f7eec170b317c76089eb5eeddb for example).
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
