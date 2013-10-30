@@ -1,40 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab3J3P1w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 11:27:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29581 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752455Ab3J3P1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 11:27:50 -0400
-Message-ID: <1383146865.11574.3.camel@deneb.redhat.com>
-Subject: linux-next build failure
-From: Mark Salter <msalter@redhat.com>
-To: linux-next@vger.kernel.org
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, ccross@android.com
-Date: Wed, 30 Oct 2013 11:27:45 -0400
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753057Ab3J3Pah (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 11:30:37 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33536 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab3J3Pag (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 11:30:36 -0400
+Date: Wed, 30 Oct 2013 16:30:31 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sricharan R <r.sricharan@ti.com>
+cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linus.walleij@linaro.org,
+        linux@arm.linux.org.uk, tony@atomide.com, rnayak@ti.com,
+        marc.zyngier@arm.com, grant.likely@linaro.org, mark.rutland@arm.com,
+        robherring2@gmail.com, santosh.shilimkar@ti.com,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH V2 2/7] DRIVERS: IRQCHIP: CROSSBAR: Add support for
+ Crossbar IP
+In-Reply-To: <1383145040-15852-3-git-send-email-r.sricharan@ti.com>
+Message-ID: <alpine.DEB.2.02.1310301615430.24686@ionos.tec.linutronix.de>
+References: <1383145040-15852-1-git-send-email-r.sricharan@ti.com> <1383145040-15852-3-git-send-email-r.sricharan@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch causes a build failure for no-MMU builds:
+On Wed, 30 Oct 2013, Sricharan R wrote:
+> +static inline const u32 allocate_free_irq(int cb_no)
 
-  commit 41df2957cb010edfa2f9d394d3617da6beeeb660
-  Author: Colin Cross <ccross@android.com>
-  Date:   Wed Oct 30 11:45:39 2013 +1100
+I understand the "static inline" part, but "const u32" is more than
+fishy. What's wrong with "static inline int" ?
 
-      mm: add a field to store names for private anonymous memory
-    
-The problem is:
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < cb->int_max; i++) {
+> +		if (cb->irq_map[i] == IRQ_FREE) {
+> +			cb->irq_map[i] = cb_no;
+> +			return i;
+> +		}
+> +	}
+> +
+> +	return -ENODEV;
+> +}
 
-  kernel/built-in.o: In function `sys_prctl':
-  (.text+0x19854): undefined reference to `madvise_set_anon_name'
+> +static int crossbar_domain_xlate(struct irq_domain *d,
+> +				 struct device_node *controller,
+> +				 const u32 *intspec, unsigned int intsize,
+> +				 unsigned long *out_hwirq,
+> +				 unsigned int *out_type)
+> +{
+> +	unsigned long ret = 0;
 
-madvise doesn't make sense without an MMU.
+Why do you need to initialize ret when you assign a value to it in the
+next line?
 
---Mark
+Thanks,
 
-
+	tglx
