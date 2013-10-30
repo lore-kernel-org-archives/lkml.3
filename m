@@ -1,51 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab3J3CEk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 22:04:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45554 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752198Ab3J3CEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 22:04:38 -0400
-Date: Wed, 30 Oct 2013 10:03:49 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.fedoraproject.org, kexec@lists.infradead.org
-Subject: Re: [patch 3/6] Cleanup efi_enter_virtual_mode function
-Message-ID: <20131030020348.GA4332@dhcp-16-126.nay.redhat.com>
-References: <20131028094049.GC25527@dhcp-16-126.nay.redhat.com>
- <20131028095117.GD25527@dhcp-16-126.nay.redhat.com>
- <20131028100402.GC4314@pd.tnic>
- <20131028101011.GF25527@dhcp-16-126.nay.redhat.com>
- <20131028112045.GH4314@pd.tnic>
- <20131028112458.GD29133@dhcp-16-126.nay.redhat.com>
- <20131028145801.GM4314@pd.tnic>
- <20131028151048.GA14984@dhcp-16-126.nay.redhat.com>
- <20131029023203.GB5185@dhcp-16-126.nay.redhat.com>
- <20131029134302.GI10972@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131029134302.GI10972@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751653Ab3J3COZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 22:14:25 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41213 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab3J3COY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Oct 2013 22:14:24 -0400
+Date: Wed, 30 Oct 2013 13:14:13 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
+        Joe Perches <joe@perches.com>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20131030131413.51b3be1c0b0ac49b15eb6a5d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__30_Oct_2013_13_14_13_+1100_M2eGa+aZxh.SWkwU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/13 at 02:43pm, Borislav Petkov wrote:
-> On Tue, Oct 29, 2013 at 10:32:03AM +0800, Dave Young wrote:
-> > I remember I tried your efi branch, but the code is different from
-> > what you sent to list, thus I turned to use the mbox patches.
-> 
-> Yeah, please use the #efi branch as I keep refreshing it with the newest
-> changes. They're hopefully not serious changes but minor stuff here and
-> there so basing stuff ontop should be ok.
+--Signature=_Wed__30_Oct_2013_13_14_13_+1100_M2eGa+aZxh.SWkwU
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Will try, but please keep the posted patches in mailing list up-to-date,
-I'm an old-fashioned person, do not tend to depend on git.
+Hi all,
 
-Thanks in advance.
-Dave
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/netconsole.c between commit c7c6effdeffc ("netconsole: fix
+multiple race conditions") from the net tree and commit 22ded57729e6
+("netconsole: Convert to pr_<level>") from the net-next tree.
+
+(Thanks for removing that spare blank line :-))
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/net/netconsole.c
+index c9a15925a1f7,a8ef4c4b94be..000000000000
+--- a/drivers/net/netconsole.c
++++ b/drivers/net/netconsole.c
+@@@ -333,18 -336,14 +335,18 @@@ static ssize_t store_enabled(struct net
+  		netpoll_print_options(&nt->np);
+ =20
+  		err =3D netpoll_setup(&nt->np);
+ -		if (err) {
+ -			mutex_unlock(&nt->mutex);
+ +		if (err)
+  			return err;
+ -		}
+ =20
+- 		printk(KERN_INFO "netconsole: network logging started\n");
++ 		pr_info("network logging started\n");
+ -
+  	} else {	/* 0 */
+ +		/* We need to disable the netconsole before cleaning it up
+ +		 * otherwise we might end up in write_msg() with
+ +		 * nt->np.dev =3D=3D NULL and nt->enabled =3D=3D 1
+ +		 */
+ +		spin_lock_irqsave(&target_list_lock, flags);
+ +		nt->enabled =3D 0;
+ +		spin_unlock_irqrestore(&target_list_lock, flags);
+  		netpoll_cleanup(&nt->np);
+  	}
+ =20
+
+--Signature=_Wed__30_Oct_2013_13_14_13_+1100_M2eGa+aZxh.SWkwU
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJScGt5AAoJEMDTa8Ir7ZwVB88P/jc+1moeyOiW1LD5b0WAp2Xf
+Cy3mnffXsXc4mu9AkHPHidyI0fyXzO9sWiuR53Q8ezGep8Zc5GsS47oRKLxNzmwe
+zTtO33cAt/FYQuyw8bezzcGeytdt3CLm0AK0n1LX6We6+K2DQU7Ky+XUf1+82Hn8
+SQqu4AYfR2lqmPZRgR3492gTOXeO+PRf+vMAsEDQu7kwZzf/b54FGNjGDttU25s+
+NLmfVVAxlpctfY9BpwaTCUwxUhE3iH/D4g7OltLftmkvL1HWAqqdNV7nt4xrhjng
+e6YiAmX6f13QswR8ZkovR6NvJWzcstN1rmH2gRe8oW8rwLQugNaPlNJwPvqebBSV
+1m6NHDzjSKoHTQcaJs2QMLl+quZatQlcjWhwtmU/Qw8W/HaG8vHyHKVMQ5bkkGyV
+8wALM7ujvmmswgdmNy783B4fgOo/mPo/wWi6ELY1GDUQSY9qJVtHJAuW2E4xUsBO
+vLnDqDrPUoCr4dxtnFB4BCCCqwgcgS8u4PV0fFW/GevIOiELt61/y73LDhjSswk0
+ed2otAimsvqKhOass51tUxtuzJIotPMXBUReGKZ+szKLpBa79KNYOGJsM1CDhgdt
+o55TKET43LVEuHcAQWaDFAKwrM3V1Dx2XYAX3itHSDnppuHK5BDuN06MnOgJmBOd
+0l1qiRkHaeXVEUc6I0Gk
+=7mnK
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__30_Oct_2013_13_14_13_+1100_M2eGa+aZxh.SWkwU--
