@@ -1,59 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936Ab3J3PeO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 11:34:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29841 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751305Ab3J3PeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 11:34:12 -0400
-Date: Wed, 30 Oct 2013 17:33:38 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: kvm@vger.kernel.org, aik@ozlabs.ru, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] kvm: Destroy & free KVM devices on release
-Message-ID: <20131030153338.GI4651@redhat.com>
-References: <20131029160019.22578.16409.stgit@bling.home>
- <20131029161322.22578.18997.stgit@bling.home>
- <20131030104029.GE4651@redhat.com>
- <1383143422.4097.170.camel@ul30vt.home>
+	id S1752036Ab3J3PfW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 11:35:22 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:44261 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab3J3PfU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 11:35:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383143422.4097.170.camel@ul30vt.home>
+In-Reply-To: <1380659456-3746-2-git-send-email-anssi.hannula@iki.fi>
+References: <1380659456-3746-1-git-send-email-anssi.hannula@iki.fi>
+	<1380659456-3746-2-git-send-email-anssi.hannula@iki.fi>
+Date: Wed, 30 Oct 2013 16:35:20 +0100
+Message-ID: <CACna6ryr37WRvKbMFmLEGt_A2zUD46rZOtJMVom+B_xK9WNLuw@mail.gmail.com>
+Subject: Re: [PATCH 1/4] ALSA: hda - hdmi: Add ATI/AMD multi-channel audio support
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Anssi Hannula <anssi.hannula@iki.fi>
+Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        =?UTF-8?Q?Peter_Fr=C3=BChberger?= <fritsch@xbmc.org>,
+        Olivier Langlois <olivier@trillion01.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 08:30:22AM -0600, Alex Williamson wrote:
-> On Wed, 2013-10-30 at 12:40 +0200, Gleb Natapov wrote:
-> > On Tue, Oct 29, 2013 at 10:13:22AM -0600, Alex Williamson wrote:
-> > > The KVM device interface allocates a struct kvm_device and calls
-> > > kvm_device_ops.create on it from KVM VM ioctl KVM_CREATE_DEVICE.
-> > > This returns a file descriptor to the user for them to set/get/check
-> > > further attributes.  On closing the file descriptor, one would assume
-> > > that kvm_device_ops.destroy is called and all traces of the device
-> > > would go away.  One would be wrong, it actually does nothing more
-> > > than release the struct kvm reference, waiting until the VM is
-> > > destroyed before doing more.  This leaves devices that only want a
-> > > single instance of themselves per VM in a tough spot.
-> > > 
-> > This is by design. Otherwise locking will be needed on each device access
-> > and for interrupt controllers this is unnecessary serialization and
-> > overhead. Device API is not designed for devices that can go away while
-> > machine is running anyway, so after creation device is only destroyed
-> > during VM destruction.
-> 
-> Hmm, ok.  In that case I can drop this patch and I think the rest just
-> boils down to userspace use of the device.  I had been close()'ing the
-> kvm device fd when all QEMU vfio devices are detached, but I can just as
-> easily leave it open in case a new device is added later.  I'll send out
-> a new series after doing some more review and testing.  Do you have any
-> comments on the rest of the series?  Thanks,
-> 
-If I understand 4/4 correctly if there is VFIO device connected we
-assume non coherent domain. How hard it would be to do proper checking
-in this path series?
+2013/10/1 Anssi Hannula <anssi.hannula@iki.fi>:
+> ATI/AMD codecs do not support all the standard HDA HDMI/DP functions,
+> instead various vendor-specific verbs are provided.
 
---
-			Gleb.
+I've just tried my HD6970M (BARTS, DCE5) in my Samsung NP700G7A-S01PL.
+
+> cat /proc/asound/card1/eld#0.0
+monitor_present 1
+eld_valid 1
+monitor_name
+connection_type HDMI
+eld_version [0x2] CEA-861D or below
+edid_version [0x0] no CEA EDID Timing Extension block present
+manufacture_id 0x0
+product_id 0x0
+port_id 0x0
+support_hdcp 0
+support_ai 0
+audio_sync_delay 0
+speakers [0x5f] FL/FR LFE FC RL/RR RC RLC/RRC
+sad_count 6
+sad0_coding_type [0x1] LPCM
+sad0_channels 8
+sad0_rates [0x1ee0] 32000 44100 48000 88200 96000 176400 192000
+sad0_bits [0xe0000] 16 20 24
+sad1_coding_type [0x2] AC-3
+sad1_channels 6
+sad1_rates [0xe0] 32000 44100 48000
+sad1_max_bitrate 640000
+sad2_coding_type [0x7] DTS
+sad2_channels 6
+sad2_rates [0x6c0] 44100 48000 88200 96000
+sad2_max_bitrate 1536000
+sad3_coding_type [0xa] E-AC-3/DD+ (Dolby Digital Plus)
+sad3_channels 8
+sad3_rates [0xc0] 44100 48000
+sad4_coding_type [0xb] DTS-HD
+sad4_channels 8
+sad4_rates [0x1ec0] 44100 48000 88200 96000 176400 192000
+sad5_coding_type [0xc] MLP (Dolby TrueHD)
+sad5_channels 8
+sad5_rates [0x1ec0] 44100 48000 88200 96000 176400 192000
+
+Command:
+speaker-test -D hdmi:CARD=Generic,DEV=0 -c8 -r192000 -F S16_LE
+works, I just have 5.1 (not 7.1), so Side left goes to the Read left
+and Side right goes to the Rear right. But they were working!
+
+Next I've used howto from
+http://phoronix.com/forums/showthread.php?27348-TrueHD-DTS-HD-E-AC3-Over-HDMI-On-Linux
+to test DTS MA and TrueHD.
+
+In the file from howto I've used:
+card Generic
+and then tested:
+
+zajec@linux-samsung700g7a:~> aplay -D hdmihdtest0 -c8 -fs16_le
+-r192000 thd.spdif
+Playing raw data 'thd.spdif' : Signed 16 bit Little Endian, Rate
+192000 Hz, Channels 8
+zajec@linux-samsung700g7a:~> aplay -D hdmihdtest0 -c8 -fs16_le
+-r192000 dts.spdif
+Playing raw data 'dts.spdif' : Signed 16 bit Little Endian, Rate
+192000 Hz, Channels 8
+
+Hooray! I got
+DOLBY HD
+and
+DTS-HD MA
+on my Denon 1912 display!
+
+Now the main question... do you have any experience on using DTS-HD MA
+(or TrueHD) with mplayer? :|
