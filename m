@@ -1,89 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab3J3Tn2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 15:43:28 -0400
-Received: from mout.gmx.net ([212.227.15.19]:53177 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754565Ab3J3Tn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 15:43:26 -0400
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Xiaoyan Zhang <xiaoyan.zhang@intel.com>, Gang Wei <gang.wei@intel.com>,
-        stable@vger.kernel.org
-Subject: [PATCH 1/2 v2] tpm/tpm_ppi: Do not compare strcmp(a,b) == -1
-Date: Wed, 30 Oct 2013 20:46:55 +0100
-Message-Id: <1383162416-4444-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1383093628-31580-1-git-send-email-peterhuewe@gmx.de>
-References: <1383093628-31580-1-git-send-email-peterhuewe@gmx.de>
-X-Provags-ID: V03:K0:bbOcyHcBtORiSNXYwfLXhZN2Pl5fDMPAzNKuA3SZt0JneWrp4PU
- RTlyWpW+e23mNwKnOzj8RBhdcJtRmJHPMoeg9V7HFHO6vkZL6BWRgXVNgmU6s246a6KFM3m
- RQ4UoyMa8CZCMDtw/Oklsmbp8lKPv1t7kFSS4i+ZHM+u0dZjSBXpyN3Qhyjl0zsbm367Y3u
- +i0uB6qIn9ENOW4Xc6RgQ==
+	id S1754664Ab3J3Toh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 15:44:37 -0400
+Received: from 4.mo2.mail-out.ovh.net ([87.98.172.75]:46069 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751850Ab3J3Tof (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 15:44:35 -0400
+X-Greylist: delayed 599 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Oct 2013 15:44:34 EDT
+Date: Wed, 30 Oct 2013 20:30:09 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 9/9] backlight: atmel-pwm-bl: use gpio_request_one
+Message-ID: <20131030193009.GW18477@ns203013.ovh.net>
+References: <1382522143-32072-1-git-send-email-jhovold@gmail.com>
+ <1382522143-32072-10-git-send-email-jhovold@gmail.com>
+ <20131025111543.GV18477@ns203013.ovh.net>
+ <20131029132018.GC29615@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131029132018.GC29615@localhost>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 6746392243624913742
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrgeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrgeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Depending on the implementation strcmp might return the difference between
-two strings not only -1,0,1 consequently
- if (strcmp (a,b) == -1)
-might lead to taking the wrong branch
+On 14:20 Tue 29 Oct     , Johan Hovold wrote:
+> On Fri, Oct 25, 2013 at 01:15:43PM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > On 11:55 Wed 23 Oct     , Johan Hovold wrote:
+> > > Use devm_gpio_request_one rather than requesting and setting direction
+> > > in two calls.
+> > 
+> > this is the same I do not see any advantage
+> 
+> It removes one error path.
+> 
+> > and as I said for ather backligth It's wrong to enable or disable it at probe
+> > as the bootloader might have already enable it for splash screen
+> 
+> I agree with you on that, and it's actually the reason for the below
+> clean up. I use a second patch:
+> 
+>         if (gpio_is_valid(pwmbl->gpio_on)) {
+> -               /* Turn display off by default. */
+> -               if (pdata->on_active_low)
+> +               /* Turn display off unless already enabled. */
+> +               if (pdata->gpio_on_enabled ^ pdata->on_active_low)
+>                         flags = GPIOF_OUT_INIT_HIGH;
+>                 else
+>                         flags = GPIOF_OUT_INIT_LOW;
+> 
+> to make sure the driver does not temporarily disable the backlight at
+> probe.
+> 
+> Decided not to submit it as part of this series when I realised that
+> several other backlight drivers did the same, but perhaps I should?
 
--> compare with < 0  instead,
-which in any case is more canonical.
+I'm not happy with this idea to play with enable at probe time
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
-sorry for the rubbish first patch, 
-should get more sleep, but coding is too much fun;)
+we need to detect the current status if possible and only enable or disable
+when requiered
 
- drivers/char/tpm/tpm_ppi.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/char/tpm/tpm_ppi.c b/drivers/char/tpm/tpm_ppi.c
-index 8e562dc..18c5810 100644
---- a/drivers/char/tpm/tpm_ppi.c
-+++ b/drivers/char/tpm/tpm_ppi.c
-@@ -169,7 +169,7 @@ static ssize_t tpm_store_ppi_request(struct device *dev,
- 	 * is updated with function index from SUBREQ to SUBREQ2 since PPI
- 	 * version 1.1
- 	 */
--	if (strcmp(version, "1.1") == -1)
-+	if (strcmp(version, "1.1") < 0)
- 		params[2].integer.value = TPM_PPI_FN_SUBREQ;
- 	else
- 		params[2].integer.value = TPM_PPI_FN_SUBREQ2;
-@@ -179,7 +179,7 @@ static ssize_t tpm_store_ppi_request(struct device *dev,
- 	 * string/package type. For PPI version 1.0 and 1.1, use buffer type
- 	 * for compatibility, and use package type since 1.2 according to spec.
- 	 */
--	if (strcmp(version, "1.2") == -1) {
-+	if (strcmp(version, "1.2") < 0) {
- 		params[3].type = ACPI_TYPE_BUFFER;
- 		params[3].buffer.length = sizeof(req);
- 		sscanf(buf, "%d", &req);
-@@ -245,7 +245,7 @@ static ssize_t tpm_show_ppi_transition_action(struct device *dev,
- 	 * (e.g. Capella with PPI 1.0) need integer/string/buffer type, so for
- 	 * compatibility, define params[3].type as buffer, if PPI version < 1.2
- 	 */
--	if (strcmp(version, "1.2") == -1) {
-+	if (strcmp(version, "1.2") < 0) {
- 		params[3].type = ACPI_TYPE_BUFFER;
- 		params[3].buffer.length =  0;
- 		params[3].buffer.pointer = NULL;
-@@ -387,7 +387,7 @@ static ssize_t show_ppi_operations(char *buf, u32 start, u32 end)
- 	kfree(output.pointer);
- 	output.length = ACPI_ALLOCATE_BUFFER;
- 	output.pointer = NULL;
--	if (strcmp(version, "1.2") == -1)
-+	if (strcmp(version, "1.2") < 0)
- 		return -EPERM;
- 
- 	params[2].integer.value = TPM_PPI_FN_GETOPR;
--- 
-1.7.8.6
-
+Best Regards,
+J.
+> 
+> Thanks,
+> Johan
+> 
+> > > 
+> > > Acked-by: Jingoo Han <jg1.han@samsung.com>:w
+> > > Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> > > ---
+> > >  drivers/video/backlight/atmel-pwm-bl.c | 15 ++++++++-------
+> > >  1 file changed, 8 insertions(+), 7 deletions(-)
+> > > 
+> > > diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
+> > > index 1277e0c..5ea2517 100644
+> > > --- a/drivers/video/backlight/atmel-pwm-bl.c
+> > > +++ b/drivers/video/backlight/atmel-pwm-bl.c
+> > > @@ -124,6 +124,7 @@ static int atmel_pwm_bl_probe(struct platform_device *pdev)
+> > >  	const struct atmel_pwm_bl_platform_data *pdata;
+> > >  	struct backlight_device *bldev;
+> > >  	struct atmel_pwm_bl *pwmbl;
+> > > +	int flags;
+> > >  	int retval;
+> > >  
+> > >  	pdata = dev_get_platdata(&pdev->dev);
+> > > @@ -149,14 +150,14 @@ static int atmel_pwm_bl_probe(struct platform_device *pdev)
+> > >  		return retval;
+> > >  
+> > >  	if (gpio_is_valid(pwmbl->gpio_on)) {
+> > > -		retval = devm_gpio_request(&pdev->dev, pwmbl->gpio_on,
+> > > -					"gpio_atmel_pwm_bl");
+> > > -		if (retval)
+> > > -			goto err_free_pwm;
+> > > -
+> > >  		/* Turn display off by default. */
+> > > -		retval = gpio_direction_output(pwmbl->gpio_on,
+> > > -				0 ^ pdata->on_active_low);
+> > > +		if (pdata->on_active_low)
+> > > +			flags = GPIOF_OUT_INIT_HIGH;
+> > > +		else
+> > > +			flags = GPIOF_OUT_INIT_LOW;
+> > > +
+> > > +		retval = devm_gpio_request_one(&pdev->dev, pwmbl->gpio_on,
+> > > +						flags, "gpio_atmel_pwm_bl");
+> > >  		if (retval)
+> > >  			goto err_free_pwm;
+> > >  	}
+> > > -- 
+> > > 1.8.4
+> > > 
