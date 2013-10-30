@@ -1,147 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325Ab3J3DID (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Oct 2013 23:08:03 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:7422 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219Ab3J3DH7 (ORCPT
+	id S1753381Ab3J3DI7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Oct 2013 23:08:59 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52431 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab3J3DI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Oct 2013 23:07:59 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 29 Oct 2013 20:02:59 -0700
-Message-ID: <52707808.8020503@nvidia.com>
-Date: Wed, 30 Oct 2013 12:07:52 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>
-CC: Tomasz Figa <tomasz.figa@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <Pawel.Moll@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Dave P Martin <Dave.Martin@arm.com>
-Subject: Re: [PATCH v9 1/5] ARM: add basic support for Trusted Foundations
-References: <1382956118-12495-1-git-send-email-acourbot@nvidia.com> <D49A3E92-54FD-4275-82F5-DBB476086B03@codeaurora.org> <20131028215649.GB10833@quad.lixom.net> <2702565.PHk13m6fVo@flatron> <20131029002543.GF4763@kartoffel> <0232E02C-5F41-4EC6-9011-86D67005433D@codeaurora.org>
-In-Reply-To: <0232E02C-5F41-4EC6-9011-86D67005433D@codeaurora.org>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Tue, 29 Oct 2013 23:08:58 -0400
+Date: Tue, 29 Oct 2013 23:08:56 -0400 (EDT)
+Message-Id: <20131029.230856.328906289275539939.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net 2/3] r8152: modify the tx flow
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <7F69554959F74FA58AE07F06B9FCF029@realtek.com.tw>
+References: <1383033377-1178-3-git-send-email-hayeswang@realtek.com>
+	<20131029.174936.13317032766742363.davem@davemloft.net>
+	<7F69554959F74FA58AE07F06B9FCF029@realtek.com.tw>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 29 Oct 2013 20:08:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2013 05:12 PM, Kumar Gala wrote:
->
-> On Oct 28, 2013, at 7:25 PM, Mark Rutland wrote:
->
->> On Mon, Oct 28, 2013 at 11:31:36PM +0000, Tomasz Figa wrote:
->>> On Monday 28 of October 2013 14:56:49 Olof Johansson wrote:
->>>> On Mon, Oct 28, 2013 at 05:57:04AM -0500, Kumar Gala wrote:
->>>>> On Oct 28, 2013, at 5:28 AM, Alexandre Courbot wrote:
->>>>>> Trusted Foundations is a TrustZone-based secure monitor for ARM that
->>>>>> can be invoked using the same SMC-based API on all supported
->>>>>> platforms. This patch adds initial basic support for Trusted
->>>>>> Foundations using the ARM firmware API. Current features are limited
->>>>>> to the ability to boot secondary processors.
->>>>>>
->>>>>> Note: The API followed by Trusted Foundations does *not* follow the
->>>>>> SMC
->>>>>> calling conventions. It has nothing to do with PSCI neither and is
->>>>>> only
->>>>>> relevant to devices that use Trusted Foundations (like most
->>>>>> Tegra-based
->>>>>> retail devices).
->>>>>>
->>>>>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->>>>>> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
->>>>>> Reviewed-by: Stephen Warren <swarren@nvidia.com>
->>>>>> ---
->>>>>> .../arm/firmware/tl,trusted-foundations.txt        | 20 ++++++
->>>>>> .../devicetree/bindings/vendor-prefixes.txt        |  1 +
->>>>>> arch/arm/Kconfig                                   |  2 +
->>>>>> arch/arm/Makefile                                  |  1 +
->>>>>> arch/arm/firmware/Kconfig                          | 28 ++++++++
->>>>>> arch/arm/firmware/Makefile                         |  1 +
->>>>>> arch/arm/firmware/trusted_foundations.c            | 79
->>>>>> ++++++++++++++++++++++ arch/arm/include/asm/trusted_foundations.h
->>>>>>       | 67 ++++++++++++++++++ 8 files changed, 199 insertions(+)
->>>>>> create mode 100644
->>>>>> Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundatio
->>>>>> ns.txt create mode 100644 arch/arm/firmware/Kconfig
->>>>>> create mode 100644 arch/arm/firmware/Makefile
->>>>>> create mode 100644 arch/arm/firmware/trusted_foundations.c
->>>>>> create mode 100644 arch/arm/include/asm/trusted_foundations.h
->>>>>>
->>>>>> diff --git
->>>>>> a/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundat
->>>>>> ions.txt
->>>>>> b/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundat
->>>>>> ions.txt new file mode 100644
->>>>>> index 0000000..2ec75c9
->>>>>> --- /dev/null
->>>>>> +++
->>>>>> b/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundat
->>>>>> ions.txt @@ -0,0 +1,20 @@
->>>>>> +Trusted Foundations
->>>>>> +-------------------
->>>>>> +
->>>>>> +Boards that use the Trusted Foundations secure monitor can signal
->>>>>> its
->>>>>> +presence by declaring a node compatible with
->>>>>> "tl,trusted-foundations"
->>>>>> +under the /firmware/ node
->>>>>> +
->>>>>> +Required properties:
->>>>>> +- compatible : "tl,trusted-foundations"
->>>>>> +- version-major : major version number of Trusted Foundations
->>>>>> firmware
->>>>>> +- version-minor: minor version number of Trusted Foundations
->>>>>> firmware
->>>>>
->>>>> vendor prefix version.
->>>>
->>>> Are you saying he should use tl,version-major tl,version-minor? For
->>>> bindings that are already vendor-specific we haven't (on ARM) asked for
->>>> vendor prefix on properties. It doesn't mean that we should keep going
->>>> down that route though, so I'm just asking for clarification for my own
->>>> edification. :)
->>>
->>> This is a good question. We should decide what the right thing (TM) is and
->>> write it down. I, on the contrary, was convinced that it's the way Kumar
->>> says.
->>
->> The impression I got was that properties should be prefixed when they're
->> extremely vendor-specific and could clash with a more generic property. I'm not
->> sure that firmware will ever have a generic binding given the variation even in
->> the set of implemented functionality.
->>
->> I would imagine that there are many ways different firmwares might be
->> versioned, and I can't see version-major or version-minor clashing with a
->> generic property we might add later. However prefixing would not be harmful, so
->> I'm not opposed to it if others want that.
->>
->> Another option would be to support a fallback compatible list (e.g.
->> "tl,trusted-foundations-${MAJOR}-${MINOR}", "tl,trusted-foundations"), and get
->> versioning information from there. Given that could be painful to handle I
->> don't want to force it if not required.
->>
->> Thanks,
->> Mark.
->
-> I'm of the opinion that making all vendor specific properties vendor prefixed is the easiest rule of thumb and leaves no gray area to have to argue about.
+From: hayeswang <hayeswang@realtek.com>
+Date: Wed, 30 Oct 2013 11:03:55 +0800
 
-All good points, I will vendor-prefix these properties.
+>  David Miller [mailto:davem@davemloft.net] 
+>> Sent: Wednesday, October 30, 2013 5:50 AM
+>> To: Hayeswang
+>> Cc: netdev@vger.kernel.org; nic_swsd; 
+>> linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org
+>> Subject: Re: [PATCH net 2/3] r8152: modify the tx flow
+>> 
+>> From: Hayes Wang <hayeswang@realtek.com>
+>> Date: Tue, 29 Oct 2013 15:56:16 +0800
+>> 
+>> > Support stopping and waking tx queue. The maximum tx queue length
+>> > is 60.
+>> 
+>> What is so special about the number 60?  It seems arbitrary, and if
+>> it isn't arbitrary you haven't described why this value was choosen.
+> 
+> The value is arbitrary. I think it is better to stop tx when
+> queuing many packets, otherwise all the available memory may
+> be used for tx skb. The queue length could be any value or
+> unlimited if the memory is enough. Should I remove it?
 
-Thanks,
-Alex.
+You should at least pick some value that you have analyzed in some
+way.  We've done a lot of work to strongly limit the amount of SKB
+data which sits in device queues on transmit, and what you're doing
+here works against to those goals.
 
+Ideally you should pick a value which is sufficient to meet two
+goals at the same time:
+
+1) With constant transmit traffic coming from the networking stack,
+   the device never starves for new transmit data to send.
+
+2) We never queue up more traffic than we need to satisfy requirement
+   #1.
