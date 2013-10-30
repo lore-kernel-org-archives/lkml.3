@@ -1,62 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab3J3QLV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 12:11:21 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:64382 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab3J3QLT (ORCPT
+	id S1752446Ab3J3QPR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 12:15:17 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:52971 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab3J3QPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 12:11:19 -0400
-Date: Wed, 30 Oct 2013 09:11:17 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Wei Ni <wni@nvidia.com>, thierry.reding@gmail.com,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v3 2/4] hwmon: (lm90) use macro defines for the status bit
-Message-ID: <20131030161117.GB4526@roeck-us.net>
-References: <1373615287-18502-1-git-send-email-wni@nvidia.com>
- <1373615287-18502-3-git-send-email-wni@nvidia.com>
- <20130715185727.4ebde8c4@endymion.delvare>
- <20130715173322.GA20484@roeck-us.net>
- <20131030163326.4e7e0cfc@endymion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131030163326.4e7e0cfc@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 30 Oct 2013 12:15:14 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 1/2] perf list: Remove a level of indentation
+Date: Wed, 30 Oct 2013 10:15:06 -0600
+Message-Id: <1383149707-1008-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 04:33:26PM +0100, Jean Delvare wrote:
-> Hi Guenter,
-> 
-> On Mon, 15 Jul 2013 10:33:22 -0700, Guenter Roeck wrote:
-> > On Mon, Jul 15, 2013 at 06:57:27PM +0200, Jean Delvare wrote:
-> > > Unrelated to this patch, but Guenter, I am worried about the MAX6696
-> > > handling here. I realize that I am the one who accepted your code, but
-> > > now it looks wrong. Specifically:
-> > > * We check for (status2 & 0xfe) i.e. 7 alarm bits, but the code below
-> > >   only reports 2 alarms bits. So if any of the 5 other alarm bits in
-> > >   STATUS2 are, we may return true (chip is tripped) but not print the
-> > >   cause.
-> > > * At least bits 1 and 2 of STATUS 2 fit totally fine in the driver as
-> > >   it currently exists, so I can't think of any reason for not handling
-> > >   them. Why are we not? Ideally we should print a message for every
-> > >   alarm bit so that we never return "true" without printing a message.
-> > >   Even though OT2 limits aren't handled by the driver...
-> > > * If you think this piece of code shouldn't deal with OT/THERM limits
-> > >   because they do not trigger an SMBus alarm, this can be discussed,
-> > >   but all chips should be handled the same in this respect then.
-> > > * Why in the first place is max6696's data->alert_alarms set to 0x187c
-> > >   and not 0x1c7c? Including 1OPEN but not 2OPEN makes no sense.
-> > 
-> > I am about to leave for vacation, so this will have to wait for a couple of
-> > weeks. I'll look at it after I am back.
-> 
-> Are you back now? ;-)
-> 
-Yes, only I completely forgot about this :-). I'll add it to my task list.
+With a return after the if check an indentation level can be removed.
+Indentation shift only; no functional changes.
 
-Guenter
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Stephane Eranian <eranian@google.com>
+---
+ tools/perf/builtin-list.c | 73 ++++++++++++++++++++++++-----------------------
+ 1 file changed, 37 insertions(+), 36 deletions(-)
+
+diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
+index e79f423cc302..45000e7d4398 100644
+--- a/tools/perf/builtin-list.c
++++ b/tools/perf/builtin-list.c
+@@ -17,48 +17,49 @@
+ 
+ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
++	int i;
++
+ 	setup_pager();
+ 
+-	if (argc == 1)
++	if (argc == 1) {
+ 		print_events(NULL, false);
+-	else {
+-		int i;
+-
+-		for (i = 1; i < argc; ++i) {
+-			if (i > 2)
+-				putchar('\n');
+-			if (strncmp(argv[i], "tracepoint", 10) == 0)
+-				print_tracepoint_events(NULL, NULL, false);
+-			else if (strcmp(argv[i], "hw") == 0 ||
+-				 strcmp(argv[i], "hardware") == 0)
+-				print_events_type(PERF_TYPE_HARDWARE);
+-			else if (strcmp(argv[i], "sw") == 0 ||
+-				 strcmp(argv[i], "software") == 0)
+-				print_events_type(PERF_TYPE_SOFTWARE);
+-			else if (strcmp(argv[i], "cache") == 0 ||
+-				 strcmp(argv[i], "hwcache") == 0)
+-				print_hwcache_events(NULL, false);
+-			else if (strcmp(argv[i], "pmu") == 0)
+-				print_pmu_events(NULL, false);
+-			else if (strcmp(argv[i], "--raw-dump") == 0)
+-				print_events(NULL, true);
+-			else {
+-				char *sep = strchr(argv[i], ':'), *s;
+-				int sep_idx;
++		return 0;
++	}
+ 
+-				if (sep == NULL) {
+-					print_events(argv[i], false);
+-					continue;
+-				}
+-				sep_idx = sep - argv[i];
+-				s = strdup(argv[i]);
+-				if (s == NULL)
+-					return -1;
++	for (i = 1; i < argc; ++i) {
++		if (i > 2)
++			putchar('\n');
++		if (strncmp(argv[i], "tracepoint", 10) == 0)
++			print_tracepoint_events(NULL, NULL, false);
++		else if (strcmp(argv[i], "hw") == 0 ||
++			 strcmp(argv[i], "hardware") == 0)
++			print_events_type(PERF_TYPE_HARDWARE);
++		else if (strcmp(argv[i], "sw") == 0 ||
++			 strcmp(argv[i], "software") == 0)
++			print_events_type(PERF_TYPE_SOFTWARE);
++		else if (strcmp(argv[i], "cache") == 0 ||
++			 strcmp(argv[i], "hwcache") == 0)
++			print_hwcache_events(NULL, false);
++		else if (strcmp(argv[i], "pmu") == 0)
++			print_pmu_events(NULL, false);
++		else if (strcmp(argv[i], "--raw-dump") == 0)
++			print_events(NULL, true);
++		else {
++			char *sep = strchr(argv[i], ':'), *s;
++			int sep_idx;
+ 
+-				s[sep_idx] = '\0';
+-				print_tracepoint_events(s, s + sep_idx + 1, false);
+-				free(s);
++			if (sep == NULL) {
++				print_events(argv[i], false);
++				continue;
+ 			}
++			sep_idx = sep - argv[i];
++			s = strdup(argv[i]);
++			if (s == NULL)
++				return -1;
++
++			s[sep_idx] = '\0';
++			print_tracepoint_events(s, s + sep_idx + 1, false);
++			free(s);
+ 		}
+ 	}
+ 	return 0;
+-- 
+1.8.3.4 (Apple Git-47)
+
