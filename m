@@ -1,110 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753790Ab3J3PTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 11:19:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55172 "EHLO mx2.suse.de"
+	id S1753053Ab3J3PVB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 11:21:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55241 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088Ab3J3PTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 11:19:08 -0400
-Date: Wed, 30 Oct 2013 15:19:04 +0000
+	id S1751932Ab3J3PVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 11:21:00 -0400
+Date: Wed, 30 Oct 2013 15:20:57 +0000
 From: Mel Gorman <mgorman@suse.de>
 To: kosaki.motohiro@gmail.com
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         akpm@linux-foundation.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: get rid of unnecessary pageblock scanning in
- setup_zone_migrate_reserve
-Message-ID: <20131030151904.GO2400@suse.de>
-References: <1382562092-15570-1-git-send-email-kosaki.motohiro@gmail.com>
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH] mm: get rid of unnecessary overhead of
+ trace_mm_page_alloc_extfrag()
+Message-ID: <20131030152057.GP2400@suse.de>
+References: <1382719367-11537-1-git-send-email-kosaki.motohiro@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1382562092-15570-1-git-send-email-kosaki.motohiro@gmail.com>
+In-Reply-To: <1382719367-11537-1-git-send-email-kosaki.motohiro@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 23, 2013 at 05:01:32PM -0400, kosaki.motohiro@gmail.com wrote:
+On Fri, Oct 25, 2013 at 12:42:47PM -0400, kosaki.motohiro@gmail.com wrote:
 > From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 > 
-> Yasuaki Ithimatsu reported memory hot-add spent more than 5 _hours_
-> on 9TB memory machine and we found out setup_zone_migrate_reserve
-> spnet >90% time.
+> In general, every tracepoint should be zero overhead if it is disabled.
+> However, trace_mm_page_alloc_extfrag() is one of exception. It evaluate
+> "new_type == start_migratetype" even if tracepoint is disabled.
 > 
-> The problem is, setup_zone_migrate_reserve scan all pageblock
-> unconditionally, but it is only necessary number of reserved block
-> was reduced (i.e. memory hot remove).
-> Moreover, maximum MIGRATE_RESERVE per zone are currently 2. It mean,
-> number of reserved pageblock are almost always unchanged.
+> However, the code can be moved into tracepoint's TP_fast_assign() and
+> TP_fast_assign exist exactly such purpose. This patch does it.
 > 
-> This patch adds zone->nr_migrate_reserve_block to maintain number
-> of MIGRATE_RESERVE pageblock and it reduce an overhead of
-> setup_zone_migrate_reserve dramatically.
-> 
+> Cc: Mel Gorman <mgorman@suse.de>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-It seems regrettable to expand the size of struct zone just for this.
-You are right that the number of blocks does not exceed 2 because of a
-check made in setup_zone_migrate_reserve so it should be possible to
-special case this. I didn't test this or think about it particularly
-carefully and no doubt there is a nicer way but for illustration
-purposes see the patch below.
+Acked-by: Mel Gorman <mgorman@suse.de>
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index dd886fa..1aedddd 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3897,6 +3897,8 @@ static int pageblock_is_reserved(unsigned long start_pfn, unsigned long end_pfn)
- 	return 0;
- }
- 
-+#define MAX_MIGRATE_RESERVE_BLOCKS 2
-+
- /*
-  * Mark a number of pageblocks as MIGRATE_RESERVE. The number
-  * of blocks reserved is based on min_wmark_pages(zone). The memory within
-@@ -3910,6 +3912,7 @@ static void setup_zone_migrate_reserve(struct zone *zone)
- 	struct page *page;
- 	unsigned long block_migratetype;
- 	int reserve;
-+	int found = 0;
- 
- 	/*
- 	 * Get the start pfn, end pfn and the number of blocks to reserve
-@@ -3926,11 +3929,11 @@ static void setup_zone_migrate_reserve(struct zone *zone)
- 	/*
- 	 * Reserve blocks are generally in place to help high-order atomic
- 	 * allocations that are short-lived. A min_free_kbytes value that
--	 * would result in more than 2 reserve blocks for atomic allocations
--	 * is assumed to be in place to help anti-fragmentation for the
--	 * future allocation of hugepages at runtime.
-+	 * would result in more than MAX_MIGRATE_RESERVE_BLOCKS reserve blocks
-+	 * for atomic allocations is assumed to be in place to help
-+	 * anti-fragmentation for the future allocation of hugepages at runtime.
- 	 */
--	reserve = min(2, reserve);
-+	reserve = min(MAX_MIGRATE_RESERVE_BLOCKS, reserve);
- 
- 	for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
- 		if (!pfn_valid(pfn))
-@@ -3956,6 +3959,7 @@ static void setup_zone_migrate_reserve(struct zone *zone)
- 			/* If this block is reserved, account for it */
- 			if (block_migratetype == MIGRATE_RESERVE) {
- 				reserve--;
-+				found++;
- 				continue;
- 			}
- 
-@@ -3970,6 +3974,10 @@ static void setup_zone_migrate_reserve(struct zone *zone)
- 			}
- 		}
- 
-+		/* If all possible reserve blocks have been found, we're done */
-+		if (found >= MAX_MIGRATE_RESERVE_BLOCKS)
-+			break;
-+
- 		/*
- 		 * If the reserve is met and this is a previous reserved block,
- 		 * take it back
-
+-- 
+Mel Gorman
+SUSE Labs
