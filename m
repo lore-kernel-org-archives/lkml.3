@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab3J3Kot (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 06:44:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18291 "EHLO mx1.redhat.com"
+	id S1753829Ab3J3Kpf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 06:45:35 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44647 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691Ab3J3Kor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 06:44:47 -0400
-Message-ID: <5270E308.4010301@redhat.com>
-Date: Wed, 30 Oct 2013 11:44:24 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751691Ab3J3Kpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 06:45:33 -0400
+Date: Wed, 30 Oct 2013 11:45:26 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-efi@vger.kernel.org,
+        fwts-devel@lists.ubuntu.com
+Subject: Re: [PATCH 12/12] EFI: Runtime services virtual mapping
+Message-ID: <20131030104526.GA13290@pd.tnic>
+References: <1379602494-26684-1-git-send-email-bp@alien8.de>
+ <20131008164551.GB16793@pd.tnic>
+ <20131008164831.GD16793@pd.tnic>
+ <20131029064720.GA16009@dhcp-16-126.nay.redhat.com>
+ <20131029094033.GA10972@pd.tnic>
+ <20131030093227.GA5791@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-To: Rashika Kheria <rashika.kheria@gmail.com>
-CC: opw-kernel@googlegroups.com, Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchand@redhat.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v7 3/3] Staging: zram: Fix variable dereferenced before
- check
-References: <20131019110539.GA25167@gmail.com> <a40fc8ee88e324a8f5ee5c79750e160b5c16288c.1383087326.git.rashika.kheria@gmail.com>
-In-Reply-To: <a40fc8ee88e324a8f5ee5c79750e160b5c16288c.1383087326.git.rashika.kheria@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131030093227.GA5791@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2013 12:15 AM, Rashika Kheria wrote:
-> This patch fixes the following Smatch warning in zram_drv.c-
-> drivers/staging/zram/zram_drv.c:899
-> destroy_device() warn: variable dereferenced before check 'zram->disk' (see line 896)
-> 
-> Cc: stable@vger.kernel.org
-> Acked-by: Minchan Kim <minchan@kernel.org>
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
+On Wed, Oct 30, 2013 at 05:32:27PM +0800, Dave Young wrote:
+> Boris, thanks for update, it's very elaborate, I have still wonder if
+> 32 bit case should be mentioned as well.
 
-> ---
->  drivers/staging/zram/zram_drv.c |    9 +++------
->  1 file changed, 3 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index 592e760..bf28d56 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -901,13 +901,10 @@ static void destroy_device(struct zram *zram)
->  	sysfs_remove_group(&disk_to_dev(zram->disk)->kobj,
->  			&zram_disk_attr_group);
->  
-> -	if (zram->disk) {
-> -		del_gendisk(zram->disk);
-> -		put_disk(zram->disk);
-> -	}
-> +	del_gendisk(zram->disk);
-> +	put_disk(zram->disk);
->  
-> -	if (zram->queue)
-> -		blk_cleanup_queue(zram->queue);
-> +	blk_cleanup_queue(zram->queue);
->  }
->  
->  static int __init zram_init(void)
-> 
+Ah, so that's why is mfleming bugging me about it on IRC :)
 
+Well, I left out the 32-bit case simply because I don't think anyone
+cares about it.
+
+> Waiting for you next version of the patch series. I will redo my
+> patches based on that.
+
+Since I'm doing only minor fixups, I didn't want to spam
+the lists again.
+
+The latest version is my 'efi' branch at
+git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git
+
+and you can pull it from there.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
