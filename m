@@ -1,90 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab3J3Rf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 13:35:58 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:53961 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753441Ab3J3Rf5 (ORCPT
+	id S1754061Ab3J3RgT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 13:36:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46856 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795Ab3J3RgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 13:35:57 -0400
-Date: Wed, 30 Oct 2013 13:35:56 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: David Cohen <david.a.cohen@linux.intel.com>
-cc: balbi@ti.com, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <Paul.Zimmerman@synopsys.com>
-Subject: Re: [PATCH v3 2/3] usb: ffs: check quirk to pad epout buf size when
- not aligned to maxpacketsize
-In-Reply-To: <1383152778-30739-3-git-send-email-david.a.cohen@linux.intel.com>
-Message-ID: <Pine.LNX.4.44L0.1310301331580.1312-100000@iolanthe.rowland.org>
+	Wed, 30 Oct 2013 13:36:16 -0400
+Date: Wed, 30 Oct 2013 10:36:15 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
+        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
+        cascardo@linux.vnet.ibm.com, michael@ibmra.de,
+        Frank Haverkamp <haver@vnet.ibm.com>
+Subject: Re: [PATCH] Generic WorkQueue Engine (GenWQE) device driver (v4)
+Message-ID: <20131030173615.GC20147@kroah.com>
+References: <1383125578-26202-1-git-send-email-haver@linux.vnet.ibm.com>
+ <1383125578-26202-2-git-send-email-haver@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383125578-26202-2-git-send-email-haver@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Oct 2013, David Cohen wrote:
+On Wed, Oct 30, 2013 at 10:32:58AM +0100, Frank Haverkamp wrote:
+> +/*
+> + * Module initialization and PCIe setup. Card health monitoring and
+> + * recovery functionality. Character device creation and deletion are
+> + * controlled from here.
+> + *
+> + * Please use the new sysfs interfaces to enable the VFs after PF
+> + * driver loading.
+> + *
+> + * Enable VFs:
+> + *   sudo sh -c 'echo 15 > /sys/bus/pci/devices/0000\:1b\:00.0/sriov_numvfs'
+> + * or
+> + *   sudo sh -c 'echo 15 > /sys/class/genwqe/genwqe0_card/device/sriov_numvfs'
+> + * Disable VFs:
+> + *   Write a 0 into the same sysfs entries.
+> + */
 
-> Check gadget.quirk_ep_out_aligned_size to decide if buffer size requires
-> to be aligned to maxpacketsize of an out endpoint. ffs_epfile_io() needs
-> to pad epout buffer to match above condition if quirk is found.
-> 
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> ---
->  drivers/usb/gadget/f_fs.c | 17 +++++++++++++++++
->  1 file changed, 17 insertions(+)
-> 
-> diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-> index 75e4b78..b49dd55 100644
-> --- a/drivers/usb/gadget/f_fs.c
-> +++ b/drivers/usb/gadget/f_fs.c
-> @@ -755,10 +755,12 @@ static ssize_t ffs_epfile_io(struct file *file,
->  			     char __user *buf, size_t len, int read)
->  {
->  	struct ffs_epfile *epfile = file->private_data;
-> +	struct usb_gadget *gadget = epfile->ffs->gadget;
->  	struct ffs_ep *ep;
->  	char *data = NULL;
->  	ssize_t ret;
->  	int halt;
-> +	size_t orig_len = len;
->  
->  	goto first_try;
->  	do {
-> @@ -794,6 +796,21 @@ first_try:
->  			goto error;
->  		}
->  
-> +		/*
-> +		 * Controller requires buffer size to be aligned to
-> +		 * maxpacketsize of an out endpoint.
-> +		 */
-> +		if (gadget->quirk_ep_out_aligned_size && read &&
-> +		    !IS_ALIGNED(len, ep->ep->desc->wMaxPacketSize)) {
+Put this documentation somewhere a user has a _chance_ of reading it.
+Digging it out of code comments is not ok.  Why isn't this in the ABI
+file for the sysfs files?
 
-IS_ALIGNED works only when the second argument is a power of 2.  
+thanks,
 
-Interrupt endpoints are not required to have maxpacket sizes that are 
-powers of 2.  Does this code ever get used for an interrupt endpoint?
-
-> +			size_t old_len = len;
-
-Why add old_len here when you added orig_len above?
-
-> +			len = roundup(orig_len,
-> +				      (size_t)ep->ep->desc->wMaxPacketSize);
-> +			if (unlikely(data) && len > old_len) {
-
-If the original value wasn't aligned, how can len fail to be > old_len?
-
-> +				kfree(data);
-> +				data = NULL;
-> +			}
-> +		}
-> +
->  		/* Allocate & copy */
->  		if (!halt && !data) {
->  			data = kzalloc(len, GFP_KERNEL);
-
-Alan Stern
-
+greg k-h
