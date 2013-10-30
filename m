@@ -1,89 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab3J3RoH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 13:44:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46967 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882Ab3J3RoE (ORCPT
+	id S1753535Ab3J3RoX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 13:44:23 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50429 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751Ab3J3RoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 13:44:04 -0400
-Date: Wed, 30 Oct 2013 10:44:03 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
-        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
-        cascardo@linux.vnet.ibm.com, michael@ibmra.de,
-        Frank Haverkamp <haver@vnet.ibm.com>
-Subject: Re: [PATCH] Generic WorkQueue Engine (GenWQE) device driver (v4)
-Message-ID: <20131030174403.GF20147@kroah.com>
-References: <1383125578-26202-1-git-send-email-haver@linux.vnet.ibm.com>
- <1383125578-26202-2-git-send-email-haver@linux.vnet.ibm.com>
+	Wed, 30 Oct 2013 13:44:22 -0400
+Date: Wed, 30 Oct 2013 18:44:02 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Victor Kaplansky <VICTORK@il.ibm.com>
+Cc: Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Michael Neuling <mikey@neuling.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: perf events ring buffer memory barrier on powerpc
+Message-ID: <20131030174402.GP16117@laptop.programming.kicks-ass.net>
+References: <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com>
+ <20131028132634.GO19466@laptop.lan>
+ <20131028163418.GD4126@linux.vnet.ibm.com>
+ <20131028201735.GA15629@redhat.com>
+ <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com>
+ <20131030092725.GL4126@linux.vnet.ibm.com>
+ <20131030112526.GI16117@laptop.programming.kicks-ass.net>
+ <OFF6C78E48.E477DB1E-ON42257C14.0050F9B3-42257C14.0051AC6D@il.ibm.com>
+ <20131030153931.GM16117@laptop.programming.kicks-ass.net>
+ <OFCA1DB4AC.7D4F6EEE-ON42257C14.0056F77D-42257C14.005EB5EA@il.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383125578-26202-2-git-send-email-haver@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <OFCA1DB4AC.7D4F6EEE-ON42257C14.0056F77D-42257C14.005EB5EA@il.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 10:32:58AM +0100, Frank Haverkamp wrote:
-> +/*
-> + * Create device_attribute structures / params: name, mode, show, store
-> + * additional flag if valid in VF
-> + */
-> +struct genwqe_dev_attrib {
-> +	struct device_attribute att;	/* sysfs entry attributes */
-> +	int vf;				/* may exist in VF or not */
-> +};
+On Wed, Oct 30, 2013 at 07:14:29PM +0200, Victor Kaplansky wrote:
+> We need a complete rmb() here IMO. I think there is a fundamental
+> difference between load and stores in this aspect. Load are allowed to
+> be hoisted by compiler or executed speculatively by HW. To prevent
+> load "*(ubuf->data + tail)" to be hoisted beyond "ubuf->head" load you
+> would need something like this:
 
-Why do you need your own structure?  Use the is_visible() callback to
-create or not, the individual attributes for a specific device, don't
-roll your own logic for something the driver core already supports.
+Indeed, we could compute and load ->data + tail the moment we've
+completed the tail load but before we've completed the head load and
+done the comparison.
 
-> +static struct genwqe_dev_attrib dev_attr_tab[] = {
-> +	{__ATTR(tempsens,       S_IRUGO, show_card_tempsens, NULL), 0},
-> +	{__ATTR(next_bitstream, (S_IRUGO | S_IWUSR),
-> +		show_card_next_bitstream, store_card_next_bitstream), 0},
-> +	{__ATTR(curr_bitstream, S_IRUGO, show_card_curr_bitstream, NULL), 0},
-> +	{__ATTR(cpld_version,   S_IRUGO, show_cpld_version, NULL), 0},
-> +	{__ATTR(base_clock,	S_IRUGO, show_card_base_clock, NULL), 0},
-> +
-> +	{__ATTR(driver,		S_IRUGO, show_card_driver, NULL), 1},
-> +	{__ATTR(type,		S_IRUGO, show_card_type, NULL), 1},
-> +	{__ATTR(version,	S_IRUGO, show_card_version, NULL), 1},
-> +	{__ATTR(appid,		S_IRUGO, show_card_appid, NULL), 1},
-> +	{__ATTR(status,		S_IRUGO, show_card_status, NULL), 1},
-> +};
-> +
-> +/**
-> + * create_card_sysfs() - Setup sysfs entries of the card device
-> + *
-> + * VFs have restricted mmio capabilities, so not all sysfs entries
-> + * are allowed in VFs.
-> + */
-> +int create_card_sysfs(struct genwqe_dev *cd)
-> +{
-> +	int rc, priv;
-> +	unsigned int i;
-> +
-> +	priv = genwqe_is_privileged(cd);
-> +	for (i = 0; i < ARRAY_SIZE(dev_attr_tab); i++) {
-> +		struct genwqe_dev_attrib *dev_attr = &dev_attr_tab[i];
-> +		if (dev_attr->vf || priv) {
-> +			rc = device_create_file(cd->dev, &dev_attr->att);
+So yes, full rmb() it is.
 
-No, you just raced with userspace, creating the sysfs files _after_ it
-was told to userspace that the driver was bound to the device.
+> void
+> ubuf_read(void)
+> {
+>         u64 head, tail;
+> 
+>         tail = ubuf->tail;
+>         head = ACCESS_ONCE(ubuf->head);
+> 
+>         /*
+>          * Ensure we read the buffer boundaries before the actual buffer
+>          * data...
+>          */
+> 
+>         while (tail != head) {
+> 		    smp_read_barrier_depends();         /* for Alpha */
+>                 obj = *(ubuf->data + head - 128);
+>                 /* process obj */
+>                 tail += obj->size;
+>                 tail %= ubuf->size;
+>         }
+> 
+>         /*
+>          * Ensure all data reads are complete before we issue the
+>          * ubuf->tail update; once that update hits, kbuf_write() can
+>          * observe and overwrite data.
+>          */
+>         smp_mb();               /* D, matches with A */
+> 
+>         ubuf->tail = tail;
+> }
+> 
+> (note that "head" is part of address calculation of obj load now).
 
-Please use the attribute groups for this driver to have the driver core
-create the files before it it told to userspace.
+Right, explicit dependent loads; I was hoping the conditional in between
+might be enough, but as argued above it is not. The above cannot work in
+our case though, we must use tail to find the obj since we have variable
+size objects.
 
-Also, instead of using __ATTR(), please use DEVICE_ATTR_RO(), it makes
-things easier to audit and saves me from having to change it later on
-(I'm doing a tree-wide change of this type of thing...)
+> But, even in this demo example some "smp_read_barrier_depends()" before
+> "obj = *(ubuf->data + head - 100);" is required for architectures
+> like Alpha. Though, on more sane architectures "smp_read_barrier_depends()"
+> will be translated to nothing.
 
-thanks,
-
-greg k-h
+Sure.. I know all about that.
