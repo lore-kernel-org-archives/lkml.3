@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab3J3Sdu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 14:33:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14152 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751055Ab3J3Sdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 14:33:49 -0400
-Date: Wed, 30 Oct 2013 14:33:39 -0400
-From: Dave Jones <davej@redhat.com>
-To: sandeen@redhat.com, tytso@mit.edu,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ext4: Fix up bh refcount in xattr code.
-Message-ID: <20131030183339.GA11641@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, sandeen@redhat.com,
-	tytso@mit.edu, Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1754248Ab3J3Sea (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 14:34:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47396 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab3J3Se3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 14:34:29 -0400
+Date: Wed, 30 Oct 2013 11:34:28 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [GIT PATCH] TTY/Serial fixes for 3.12-rc8/final
+Message-ID: <20131030183428.GA4837@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,58 +23,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<post kernel-summit re-ping>
+The following changes since commit d0e639c9e06d44e713170031fe05fb60ebe680af:
 
-On Tue, Oct 15, 2013 at 02:11:42PM -0400, Dave Jones wrote:
- > On Mon, Oct 14, 2013 at 01:31:23PM -0700, gregkh@linuxfoundation.org wrote:
- >  
- >  > If we take the 2nd retry path in ext4_expand_extra_isize_ea, we
- >  > potentionally return from the function without having freed these
- >  > allocations.  If we don't do the return, we over-write the previous
- >  > allocation pointers, so we leak either way.
- >  > 
- >  > Spotted with Coverity.
- >  > 
- >  > [ Fixed by tytso to set is and bs to NULL after freeing these
- >  >   pointers, in case in the retry loop we later end up triggering an
- >  >   error causing a jump to cleanup, at which point we could have a double
- >  >   free bug. -- Ted ]
- >  > 
- >  > ---
- >  >  fs/ext4/xattr.c |    2 ++
- >  >  1 file changed, 2 insertions(+)
- >  > 
- >  > --- a/fs/ext4/xattr.c
- >  > +++ b/fs/ext4/xattr.c
- >  > @@ -1271,6 +1271,8 @@ retry:
- >  >  				    s_min_extra_isize) {
- >  >  					tried_min_extra_isize++;
- >  >  					new_extra_isize = s_min_extra_isize;
- >  > +					kfree(is); is = NULL;
- >  > +					kfree(bs); bs = NULL;
- >  >  					goto retry;
- >  >  				}
- > 
- > Because this was different in my local tree I ended up looking it over again
- > when I rebased. Do we also need the patch below ?
- > 
- > 	Dave
- > 
- > If we take the retry path here, we end up potentially overwriting bh, leaving
- > it with an elevated reference count.
- > 
- > Signed-off-by: Dave Jones <davej@fedoraproject.org>
- > 
- > diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
- > index 03e9beb..1423c48 100644
- > --- a/fs/ext4/xattr.c
- > +++ b/fs/ext4/xattr.c
- > @@ -1352,6 +1352,7 @@ retry:
- >  					new_extra_isize = s_min_extra_isize;
- >  					kfree(is); is = NULL;
- >  					kfree(bs); bs = NULL;
- > +					brelse(bh);
- >  					goto retry;
- >  				}
- >  				error = -1;
----end quoted text---
+  Linux 3.12-rc4 (2013-10-06 14:00:20 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.12-rc8
+
+for you to fetch changes up to 6e757ad2c92caf721fd0efaac7088247e3934c5e:
+
+  tty/serial: at91: fix uart/usart selection for older products (2013-10-17 13:27:24 -0700)
+
+----------------------------------------------------------------
+Serial fixes for 3.12-final
+
+Here are 3 tiny fixes that are needed for 3.12-final for some serial
+drivers.  One of them is a revert of a broken patch, and two others are
+fixes for reported bugs.  All of these have been in linux-next for a
+while, I forgot I had not sent them to you yet, my fault.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Greg Kroah-Hartman (1):
+      Revert "serial: i.MX: evaluate linux,stdout-path property"
+
+Nicolas Ferre (1):
+      tty/serial: at91: fix uart/usart selection for older products
+
+Roel Kluin (1):
+      serial: vt8500: add missing braces
+
+ drivers/tty/serial/atmel_serial.c  | 9 ++-------
+ drivers/tty/serial/imx.c           | 3 ---
+ drivers/tty/serial/vt8500_serial.c | 5 +++--
+ 3 files changed, 5 insertions(+), 12 deletions(-)
