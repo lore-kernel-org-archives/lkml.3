@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab3JaRU3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 13:20:29 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:53836 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353Ab3JaRU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 13:20:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=H9qZ9FKPcdn7Uh7ke9TSHORWBZM9wFkd
-	mdtqMrcpO/dlUX7pPFAqoFnfIJMWYmmymUBwY9CcBLFRBjN4h73bMfEkLVmhL8Xi
-	f4qKJu++NKlONAaJHv6kCtJF6e1IlWpWl3judwcgno7TPKPOj3i9WeR3HpUhknHN
-	5hIvmn9Oi7A=
-From: Junio C Hamano <gitster@pobox.com>
-To: Duy Nguyen <pclouds@gmail.com>
-Cc: Johan Herland <johan@herland.net>, Jeff King <peff@peff.net>,
-        Michael Haggerty <mhagger@alum.mit.edu>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Git mailing list <git@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, Greg KH <greg@kroah.com>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] commit: Add -f, --fixes <commit> option to add Fixes: line
-References: <20131024122255.GI9378@mwanda> <20131024122512.GB9534@mwanda>
-	<20131026181709.GB10488@kroah.com> <20131027013402.GA7146@leaf>
-	<526CA7D4.1070904@alum.mit.edu> <20131027071407.GA11683@leaf>
-	<526E283A.1070801@alum.mit.edu>
-	<CALKQrgfsk3fjyF77XL9+CPyJ_s-AfzkNAj4Eaj1LT-G0Ph=bfg@mail.gmail.com>
-	<20131029020824.GE11861@sigill.intra.peff.net>
-	<CALKQrge8T8R7roUUYyLcu_QnL1afeqTATOp+0n_OOsZZoJXF4Q@mail.gmail.com>
-	<CACsJy8DVSpmmDw-jGJoJK171u5UeJR7GKPuX7QAK4=7yYn6n8Q@mail.gmail.com>
-Date: Thu, 31 Oct 2013 10:20:25 -0700
-In-Reply-To: <CACsJy8DVSpmmDw-jGJoJK171u5UeJR7GKPuX7QAK4=7yYn6n8Q@mail.gmail.com>
-	(Duy Nguyen's message of "Thu, 31 Oct 2013 13:28:44 +0700")
-Message-ID: <xmqqa9hp9x2e.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1752435Ab3JaRav (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 13:30:51 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48062 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab3JaRat (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 13:30:49 -0400
+Date: Thu, 31 Oct 2013 10:30:47 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 4/6] edac: Document Krait L1/L2 EDAC driver binding
+Message-ID: <20131031173047.GK21983@codeaurora.org>
+References: <1383164736-1849-1-git-send-email-sboyd@codeaurora.org>
+ <1383164736-1849-5-git-send-email-sboyd@codeaurora.org>
+ <872F86E8-85CE-472B-9546-CDCC96F6F08B@codeaurora.org>
+ <52717EA5.6030208@codeaurora.org>
+ <F38814D8-723E-4A41-839D-DEE351738017@codeaurora.org>
+ <52718118.1020009@codeaurora.org>
+ <D081E03B-01D6-497F-B8D0-E994219C8282@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: BC1B61B8-4250-11E3-92CF-1FFB7F2839F8-77302942!b-pb-sasl-quonix.pobox.com
+Content-Disposition: inline
+In-Reply-To: <D081E03B-01D6-497F-B8D0-E994219C8282@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Duy Nguyen <pclouds@gmail.com> writes:
+On 10/30, Kumar Gala wrote:
+> 
+> On Oct 30, 2013, at 4:58 PM, Stephen Boyd wrote:
+> 
+> > On 10/30/13 14:56, Kumar Gala wrote:
+> >> On Oct 30, 2013, at 4:48 PM, Stephen Boyd wrote:
+> >> 
+> >>> On 10/30/13 14:45, Kumar Gala wrote:
+> >>>> On Oct 30, 2013, at 3:25 PM, Stephen Boyd wrote:
+> >>>>> +l2-cache node containing the following properties:
+> >>>> Is the L1 interrupt not per core L1 cache (even if they are OR together at PIC)?
+> >>> Yes it is per CPU. That is what the 0xf part of the cpus interrupts
+> >>> property is showing.
+> >> Than why not have it in each cpu node?
+> > 
+> > Because that duplicates things unnecessarily? The cpus node can hold
+> > things that are common to all CPUs to avoid duplication. If it was a
+> > different PPI for each CPU then I would agree that we need to put it in
+> > each cpu node.
+> 
+> Ok, I'll accept that as the binding is specific to Krait (and I assume all SoCs w/Krait wire this up to a common interrupt)
+> 
 
-> OK how about, if $GIT_DIR/hooks/something is a directory, then the
-> directory must contain a file named "index", listing all the hooks of
-> type "something". All the hooks in "index" will be executed in the
-> listing order.
+Can I take that as an ack? I'll resend with the s/an/a/ fix
+today.
 
-Hooks that take arbitrary amount of information from the body read
-their standard input. How are your multiple hooks supposed to
-interact?
-
-Hooks that prevent you from doing something stupid signal allow/deny
-with their exit code. Do you fail a commit if any of your pre-commit
-hook fails, or is it OK to commit as long as one of them says so?
-If the former, do all the hooks described in the index still run, or
-does the first failure short-cut the remainder?
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
