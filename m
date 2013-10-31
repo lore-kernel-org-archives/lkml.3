@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab3JaQ0K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 12:26:10 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49584 "EHLO mail.skyhub.de"
+	id S1754819Ab3JaQ0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 12:26:35 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49587 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751666Ab3JaQZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 12:25:23 -0400
+	id S1754948Ab3JaQZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 12:25:22 -0400
 From: Borislav Petkov <bp@alien8.de>
 To: Linux EFI <linux-efi@vger.kernel.org>
 Cc: Borislav Petkov <bp@suse.de>, Dave Young <dyoung@redhat.com>,
@@ -14,9 +14,9 @@ Cc: Borislav Petkov <bp@suse.de>, Dave Young <dyoung@redhat.com>,
         Matt Fleming <matt@console-pimps.org>,
         Matthew Garrett <mjg59@srcf.ucam.org>, Vivek Goyal <vgoyal@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, X86 ML <x86@kernel.org>
-Subject: [PATCH 10/11] EFI: Runtime services virtual mapping
-Date: Thu, 31 Oct 2013 17:25:08 +0100
-Message-Id: <1383236709-19716-11-git-send-email-bp@alien8.de>
+Subject: [PATCH 08/11] x86, pageattr: Add last levels of error path
+Date: Thu, 31 Oct 2013 17:25:06 +0100
+Message-Id: <1383236709-19716-9-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1383236709-19716-1-git-send-email-bp@alien8.de>
 References: <1383236709-19716-1-git-send-email-bp@alien8.de>
@@ -26,645 +26,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-We map the EFI regions needed for runtime services non-contiguously,
-with preserved alignment on virtual addresses starting from -4G down
-for a total max space of 64G. This way, we provide for stable runtime
-services addresses across kernels so that a kexec'd kernel can still use
-them.
-
-Thus, they're mapped in a separate pagetable so that we don't pollute
-the kernel namespace.
-
-Add an efi= kernel command line parameter for passing miscellaneous
-options and chicken bits from the command line.
-
-While at it, add a chicken bit called "efi=old_map" which can be used as
-a fallback to the old runtime services mapping method in case there's
-some b0rkage with a particular EFI implementation (haha, it is hard to
-hold up the sarcasm here...).
-
-Also, add the UEFI RT VA space to Documentation/x86/x86_64/mm.txt.
+We try to free the pagetable pages once we've unmapped our portion.
 
 Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- Documentation/kernel-parameters.txt  |   6 ++
- Documentation/x86/x86_64/mm.txt      |   7 +++
- arch/x86/include/asm/efi.h           |  64 ++++++++++++++------
- arch/x86/include/asm/pgtable_types.h |   3 +-
- arch/x86/platform/efi/efi.c          |  94 +++++++++++++++++++++---------
- arch/x86/platform/efi/efi_32.c       |   9 ++-
- arch/x86/platform/efi/efi_64.c       | 109 +++++++++++++++++++++++++++++++++++
- arch/x86/platform/efi/efi_stub_64.S  |  54 +++++++++++++++++
- include/linux/efi.h                  |   1 +
- 9 files changed, 300 insertions(+), 47 deletions(-)
+ arch/x86/mm/pageattr.c | 94 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 93 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 7f9d4f53882c..57603f2d7e86 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -833,6 +833,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	edd=		[EDD]
- 			Format: {"off" | "on" | "skip[mbr]"}
- 
-+	efi=		[EFI]
-+			Format: { "old_map" }
-+			old_map [X86-64]: switch to the old ioremap-based EFI
-+			runtime services mapping. 32-bit still uses this one by
-+			default.
-+
- 	efi_no_storage_paranoia [EFI; X86]
- 			Using this parameter you can use more than 50% of
- 			your efi variable storage. Use this parameter only if
-diff --git a/Documentation/x86/x86_64/mm.txt b/Documentation/x86/x86_64/mm.txt
-index 881582f75c9c..c584a51add15 100644
---- a/Documentation/x86/x86_64/mm.txt
-+++ b/Documentation/x86/x86_64/mm.txt
-@@ -28,4 +28,11 @@ reference.
- Current X86-64 implementations only support 40 bits of address space,
- but we support up to 46 bits. This expands into MBZ space in the page tables.
- 
-+->trampoline_pgd:
-+
-+We map EFI runtime services in the aforementioned PGD in the virtual
-+range of 64Gb (arbitrarily set, can be raised if needed)
-+
-+0xffffffef00000000 - 0xffffffff00000000
-+
- -Andi Kleen, Jul 2004
-diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-index 0062a0125041..ee86179f8ca7 100644
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -1,6 +1,24 @@
- #ifndef _ASM_X86_EFI_H
- #define _ASM_X86_EFI_H
- 
-+/*
-+ * We map the EFI regions needed for runtime services non-contiguously,
-+ * with preserved alignment on virtual addresses starting from -4G down
-+ * for a total max space of 64G. This way, we provide for stable runtime
-+ * services addresses across kernels so that a kexec'd kernel can still
-+ * use them.
-+ *
-+ * This is the main reason why we're doing stable VA mappings for RT
-+ * services.
-+ *
-+ * This flag is used in conjuction with a chicken bit called
-+ * "efi=old_map" which can be used as a fallback to the old runtime
-+ * services mapping method in case there's some b0rkage with a
-+ * particular EFI implementation (haha, it is hard to hold up the
-+ * sarcasm here...).
-+ */
-+#define EFI_OLD_MEMMAP		EFI_ARCH_1
-+
- #ifdef CONFIG_X86_32
- 
- #define EFI_LOADER_SIGNATURE	"EL32"
-@@ -69,24 +87,31 @@ extern u64 efi_call6(void *fp, u64 arg1, u64 arg2, u64 arg3,
- 	efi_call6((f), (u64)(a1), (u64)(a2), (u64)(a3),		\
- 		  (u64)(a4), (u64)(a5), (u64)(a6))
- 
-+#define _efi_call_virtX(x, f, ...)					\
-+({									\
-+	efi_status_t __s;						\
-+									\
-+	efi_sync_low_kernel_mappings();					\
-+	preempt_disable();						\
-+	__s = efi_call##x((void *)efi.systab->runtime->f, __VA_ARGS__);	\
-+	preempt_enable();						\
-+	__s;								\
-+})
-+
- #define efi_call_virt0(f)				\
--	efi_call0((efi.systab->runtime->f))
--#define efi_call_virt1(f, a1)					\
--	efi_call1((efi.systab->runtime->f), (u64)(a1))
--#define efi_call_virt2(f, a1, a2)					\
--	efi_call2((efi.systab->runtime->f), (u64)(a1), (u64)(a2))
--#define efi_call_virt3(f, a1, a2, a3)					\
--	efi_call3((efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
--		  (u64)(a3))
--#define efi_call_virt4(f, a1, a2, a3, a4)				\
--	efi_call4((efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
--		  (u64)(a3), (u64)(a4))
--#define efi_call_virt5(f, a1, a2, a3, a4, a5)				\
--	efi_call5((efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
--		  (u64)(a3), (u64)(a4), (u64)(a5))
--#define efi_call_virt6(f, a1, a2, a3, a4, a5, a6)			\
--	efi_call6((efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
--		  (u64)(a3), (u64)(a4), (u64)(a5), (u64)(a6))
-+	_efi_call_virtX(0, f)
-+#define efi_call_virt1(f, a1)				\
-+	_efi_call_virtX(1, f, (u64)(a1))
-+#define efi_call_virt2(f, a1, a2)			\
-+	_efi_call_virtX(2, f, (u64)(a1), (u64)(a2))
-+#define efi_call_virt3(f, a1, a2, a3)			\
-+	_efi_call_virtX(3, f, (u64)(a1), (u64)(a2), (u64)(a3))
-+#define efi_call_virt4(f, a1, a2, a3, a4)		\
-+	_efi_call_virtX(4, f, (u64)(a1), (u64)(a2), (u64)(a3), (u64)(a4))
-+#define efi_call_virt5(f, a1, a2, a3, a4, a5)		\
-+	_efi_call_virtX(5, f, (u64)(a1), (u64)(a2), (u64)(a3), (u64)(a4), (u64)(a5))
-+#define efi_call_virt6(f, a1, a2, a3, a4, a5, a6)	\
-+	_efi_call_virtX(6, f, (u64)(a1), (u64)(a2), (u64)(a3), (u64)(a4), (u64)(a5), (u64)(a6))
- 
- extern void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
- 				 u32 type, u64 attribute);
-@@ -95,12 +120,17 @@ extern void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
- 
- extern int add_efi_memmap;
- extern unsigned long x86_efi_facility;
-+extern struct efi_scratch efi_scratch;
- extern void efi_set_executable(efi_memory_desc_t *md, bool executable);
- extern int efi_memblock_x86_reserve_range(void);
- extern void efi_call_phys_prelog(void);
- extern void efi_call_phys_epilog(void);
- extern void efi_unmap_memmap(void);
- extern void efi_memory_uc(u64 addr, unsigned long size);
-+extern void __init efi_map_region(efi_memory_desc_t *md);
-+extern void efi_sync_low_kernel_mappings(void);
-+extern void efi_setup_page_tables(void);
-+extern void __init old_map_region(efi_memory_desc_t *md);
- 
- #ifdef CONFIG_EFI
- 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index f4843e031131..028e28b6fc2c 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -379,7 +379,8 @@ static inline void update_page_count(int level, unsigned long pages) { }
-  */
- extern pte_t *lookup_address(unsigned long address, unsigned int *level);
- extern phys_addr_t slow_virt_to_phys(void *__address);
--
-+extern int kernel_map_pages_in_pgd(pgd_t *pgd, u64 pfn, unsigned long address,
-+				   unsigned numpages, unsigned long page_flags);
- #endif	/* !__ASSEMBLY__ */
- 
- #endif /* _ASM_X86_PGTABLE_DEFS_H */
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index f396163b0402..b453069236fd 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -12,6 +12,8 @@
-  *	Bibo Mao <bibo.mao@intel.com>
-  *	Chandramouli Narayanan <mouli@linux.intel.com>
-  *	Huang Ying <ying.huang@intel.com>
-+ * Copyright (C) 2013 SuSE Labs
-+ *	Borislav Petkov <bp@suse.de> - runtime services VA mapping
-  *
-  * Copied from efi_32.c to eliminate the duplicated code between EFI
-  * 32/64 support code. --ying 2007-10-26
-@@ -745,21 +747,56 @@ void efi_memory_uc(u64 addr, unsigned long size)
- 	set_memory_uc(addr, npages);
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index 1cbdbbc35b47..db8ace29514f 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -666,7 +666,99 @@ static int split_large_page(pte_t *kpte, unsigned long address)
+ 	return 0;
  }
  
-+void __init old_map_region(efi_memory_desc_t *md)
+-#define unmap_pmd_range(pud, start, pre_end)		do {} while (0)
++static bool try_to_free_pte_page(pte_t *pte)
 +{
-+	u64 start_pfn, end_pfn, end;
-+	unsigned long size;
-+	void *va;
++	int i;
 +
-+	start_pfn = PFN_DOWN(md->phys_addr);
-+	size	  = md->num_pages << PAGE_SHIFT;
-+	end	  = md->phys_addr + size;
-+	end_pfn   = PFN_UP(end);
++	for (i = 0; i < PTRS_PER_PTE; i++)
++		if (!pte_none(pte[i]))
++			return false;
 +
-+	if (pfn_range_is_mapped(start_pfn, end_pfn)) {
-+		va = __va(md->phys_addr);
-+
-+		if (!(md->attribute & EFI_MEMORY_WB))
-+			efi_memory_uc((u64)(unsigned long)va, size);
-+	} else
-+		va = efi_ioremap(md->phys_addr, size,
-+				 md->type, md->attribute);
-+
-+	md->virt_addr = (u64) (unsigned long) va;
-+	if (!va)
-+		pr_err("ioremap of 0x%llX failed!\n",
-+		       (unsigned long long)md->phys_addr);
++	free_page((unsigned long)pte);
++	return true;
 +}
 +
- /*
-  * This function will switch the EFI runtime services to virtual mode.
-- * Essentially, look through the EFI memmap and map every region that
-- * has the runtime attribute bit set in its memory descriptor and update
-- * that memory descriptor with the virtual address obtained from ioremap().
-- * This enables the runtime services to be called without having to
-+ * Essentially, we look through the EFI memmap and map every region that
-+ * has the runtime attribute bit set in its memory descriptor into the
-+ * ->trampoline_pgd page table using a top-down VA allocation scheme.
-+ *
-+ * The old method which used to update that memory descriptor with the
-+ * virtual address obtained from ioremap() is still supported when the
-+ * kernel is booted with efi=old_map on its command line. Same old
-+ * method enabled the runtime services to be called without having to
-  * thunk back into physical mode for every invocation.
-+ *
-+ * The new method does a pagetable switch in a preemption-safe manner
-+ * so that we're in a different address space when calling a runtime
-+ * function. For function arguments passing we do copy the PGDs of the
-+ * kernel page table into ->trampoline_pgd prior to each call.
-  */
- void __init efi_enter_virtual_mode(void)
- {
- 	efi_memory_desc_t *md, *prev_md = NULL;
--	efi_status_t status;
-+	void *p, *new_memmap = NULL;
- 	unsigned long size;
--	u64 end, systab, start_pfn, end_pfn;
--	void *p, *va, *new_memmap = NULL;
-+	efi_status_t status;
-+	u64 end, systab;
- 	int count = 0;
- 
- 	efi.systab = NULL;
-@@ -768,7 +805,6 @@ void __init efi_enter_virtual_mode(void)
- 	 * We don't do virtual mode, since we don't do runtime services, on
- 	 * non-native EFI
- 	 */
--
- 	if (!efi_is_native()) {
- 		efi_unmap_memmap();
- 		return;
-@@ -799,6 +835,7 @@ void __init efi_enter_virtual_mode(void)
- 			continue;
- 		}
- 		prev_md = md;
-+
- 	}
- 
- 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
-@@ -808,33 +845,18 @@ void __init efi_enter_virtual_mode(void)
- 		    md->type != EFI_BOOT_SERVICES_DATA)
- 			continue;
- 
-+		efi_map_region(md);
-+
- 		size = md->num_pages << EFI_PAGE_SHIFT;
- 		end = md->phys_addr + size;
- 
--		start_pfn = PFN_DOWN(md->phys_addr);
--		end_pfn = PFN_UP(end);
--		if (pfn_range_is_mapped(start_pfn, end_pfn)) {
--			va = __va(md->phys_addr);
--
--			if (!(md->attribute & EFI_MEMORY_WB))
--				efi_memory_uc((u64)(unsigned long)va, size);
--		} else
--			va = efi_ioremap(md->phys_addr, size,
--					 md->type, md->attribute);
--
--		md->virt_addr = (u64) (unsigned long) va;
--
--		if (!va) {
--			pr_err("ioremap of 0x%llX failed!\n",
--			       (unsigned long long)md->phys_addr);
--			continue;
--		}
--
- 		systab = (u64) (unsigned long) efi_phys.systab;
- 		if (md->phys_addr <= systab && systab < end) {
- 			systab += md->virt_addr - md->phys_addr;
-+
- 			efi.systab = (efi_system_table_t *) (unsigned long) systab;
- 		}
-+
- 		new_memmap = krealloc(new_memmap,
- 				      (count + 1) * memmap.desc_size,
- 				      GFP_KERNEL);
-@@ -845,6 +867,9 @@ void __init efi_enter_virtual_mode(void)
- 
- 	BUG_ON(!efi.systab);
- 
-+	efi_setup_page_tables();
-+	efi_sync_low_kernel_mappings();
-+
- 	status = phys_efi_set_virtual_address_map(
- 		memmap.desc_size * count,
- 		memmap.desc_size,
-@@ -877,7 +902,8 @@ void __init efi_enter_virtual_mode(void)
- 	efi.query_variable_info = virt_efi_query_variable_info;
- 	efi.update_capsule = virt_efi_update_capsule;
- 	efi.query_capsule_caps = virt_efi_query_capsule_caps;
--	if (__supported_pte_mask & _PAGE_NX)
-+
-+	if (efi_enabled(EFI_OLD_MEMMAP) && (__supported_pte_mask & _PAGE_NX))
- 		runtime_code_page_mkexec();
- 
- 	kfree(new_memmap);
-@@ -1007,3 +1033,15 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
- 	return EFI_SUCCESS;
- }
- EXPORT_SYMBOL_GPL(efi_query_variable_store);
-+
-+static int __init parse_efi_cmdline(char *str)
++static bool try_to_free_pmd_page(pmd_t *pmd)
 +{
-+	if (*str == '=')
-+		str++;
++	int i;
 +
-+	if (!strncmp(str, "old_map", 7))
-+		set_bit(EFI_OLD_MEMMAP, &x86_efi_facility);
++	for (i = 0; i < PTRS_PER_PMD; i++)
++		if (!pmd_none(pmd[i]))
++			return false;
 +
-+	return 0;
-+}
-+early_param("efi", parse_efi_cmdline);
-diff --git a/arch/x86/platform/efi/efi_32.c b/arch/x86/platform/efi/efi_32.c
-index 40e446941dd7..e94557cf5487 100644
---- a/arch/x86/platform/efi/efi_32.c
-+++ b/arch/x86/platform/efi/efi_32.c
-@@ -37,9 +37,16 @@
-  * claim EFI runtime service handler exclusively and to duplicate a memory in
-  * low memory space say 0 - 3G.
-  */
--
- static unsigned long efi_rt_eflags;
- 
-+void efi_sync_low_kernel_mappings(void) {}
-+void efi_setup_page_tables(void) {}
-+
-+void __init efi_map_region(efi_memory_desc_t *md)
-+{
-+	old_map_region(md);
++	free_page((unsigned long)pmd);
++	return true;
 +}
 +
- void efi_call_phys_prelog(void)
- {
- 	struct desc_ptr gdt_descr;
-diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
-index 39a0e7f1f0a3..bf286c386d33 100644
---- a/arch/x86/platform/efi/efi_64.c
-+++ b/arch/x86/platform/efi/efi_64.c
-@@ -38,10 +38,28 @@
- #include <asm/efi.h>
- #include <asm/cacheflush.h>
- #include <asm/fixmap.h>
-+#include <asm/realmode.h>
- 
- static pgd_t *save_pgd __initdata;
- static unsigned long efi_flags __initdata;
- 
-+/*
-+ * We allocate runtime services regions bottom-up, starting from -4G, i.e.
-+ * 0xffff_ffff_0000_0000 and limit EFI VA mapping space to 64G.
-+ */
-+static u64 efi_va	= -4 * (1UL << 30);
-+#define EFI_VA_END	(-68 * (1UL << 30))
-+
-+/*
-+ * Scratch space used for switching the pagetable in the EFI stub
-+ */
-+struct efi_scratch {
-+	u64 r15;
-+	u64 prev_cr3;
-+	pgd_t *efi_pgt;
-+	bool use_pgd;
-+};
-+
- static void __init early_code_mapping_set_exec(int executable)
- {
- 	efi_memory_desc_t *md;
-@@ -65,6 +83,9 @@ void __init efi_call_phys_prelog(void)
- 	int pgd;
- 	int n_pgds;
- 
-+	if (!efi_enabled(EFI_OLD_MEMMAP))
-+		return;
-+
- 	early_code_mapping_set_exec(1);
- 	local_irq_save(efi_flags);
- 
-@@ -86,6 +107,10 @@ void __init efi_call_phys_epilog(void)
- 	 */
- 	int pgd;
- 	int n_pgds = DIV_ROUND_UP((max_pfn << PAGE_SHIFT) , PGDIR_SIZE);
-+
-+	if (!efi_enabled(EFI_OLD_MEMMAP))
-+		return;
-+
- 	for (pgd = 0; pgd < n_pgds; pgd++)
- 		set_pgd(pgd_offset_k(pgd * PGDIR_SIZE), save_pgd[pgd]);
- 	kfree(save_pgd);
-@@ -94,6 +119,90 @@ void __init efi_call_phys_epilog(void)
- 	early_code_mapping_set_exec(0);
- }
- 
-+/*
-+ * Add low kernel mappings for passing arguments to EFI functions.
-+ */
-+void efi_sync_low_kernel_mappings(void)
++static bool unmap_pte_range(pmd_t *pmd, unsigned long start, unsigned long end)
 +{
-+	unsigned num_pgds;
-+	pgd_t *pgd = (pgd_t *)__va(real_mode_header->trampoline_pgd);
++	pte_t *pte = pte_offset_kernel(pmd, start);
 +
-+	if (efi_enabled(EFI_OLD_MEMMAP))
-+		return;
++	while (start < end) {
++		set_pte(pte, __pte(0));
 +
-+	num_pgds = pgd_index(MODULES_END - 1) - pgd_index(PAGE_OFFSET);
++		start += PAGE_SIZE;
++		pte++;
++	}
 +
-+	memcpy(pgd + pgd_index(PAGE_OFFSET),
-+		init_mm.pgd + pgd_index(PAGE_OFFSET),
-+		sizeof(pgd_t) * num_pgds);
++	if (try_to_free_pte_page((pte_t *)pmd_page_vaddr(*pmd))) {
++		pmd_clear(pmd);
++		return true;
++	}
++	return false;
 +}
 +
-+void efi_setup_page_tables(void)
++static void __unmap_pmd_range(pud_t *pud, pmd_t *pmd,
++			      unsigned long start, unsigned long end)
 +{
-+	efi_scratch.efi_pgt = (pgd_t *)(unsigned long)real_mode_header->trampoline_pgd;
-+
-+	if (!efi_enabled(EFI_OLD_MEMMAP))
-+		efi_scratch.use_pgd = true;
++	if (unmap_pte_range(pmd, start, end))
++		if (try_to_free_pmd_page((pmd_t *)pud_page_vaddr(*pud)))
++			pud_clear(pud);
 +}
 +
-+static void __init __map_region(efi_memory_desc_t *md, u64 va)
++static void unmap_pmd_range(pud_t *pud, unsigned long start, unsigned long end)
 +{
-+	pgd_t *pgd = (pgd_t *)__va(real_mode_header->trampoline_pgd);
-+	unsigned long pf = 0, size;
-+	u64 end;
-+
-+	if (!(md->attribute & EFI_MEMORY_WB))
-+		pf |= _PAGE_PCD;
-+
-+	size = md->num_pages << PAGE_SHIFT;
-+	end  = va + size;
-+
-+	if (kernel_map_pages_in_pgd(pgd, md->phys_addr, va, md->num_pages, pf))
-+		pr_warn("Error mapping PA 0x%llx -> VA 0x%llx!\n",
-+			   md->phys_addr, va);
-+}
-+
-+void __init efi_map_region(efi_memory_desc_t *md)
-+{
-+	unsigned long size = md->num_pages << PAGE_SHIFT;
-+	u64 pa = md->phys_addr;
-+
-+	if (efi_enabled(EFI_OLD_MEMMAP))
-+		return old_map_region(md);
++	pmd_t *pmd = pmd_offset(pud, start);
 +
 +	/*
-+	 * Make sure the 1:1 mappings are present as a catch-all for b0rked
-+	 * firmware which doesn't update all internal pointers after switching
-+	 * to virtual mode and would otherwise crap on us.
++	 * Not on a 2MB page boundary?
 +	 */
-+	__map_region(md, md->phys_addr);
++	if (start & (PMD_SIZE - 1)) {
++		unsigned long next_page = (start + PMD_SIZE) & PMD_MASK;
++		unsigned long pre_end = min_t(unsigned long, end, next_page);
 +
-+	efi_va -= size;
++		__unmap_pmd_range(pud, pmd, start, pre_end);
 +
-+	/* Is PA 2M-aligned? */
-+	if (!(pa & (PMD_SIZE - 1))) {
-+		efi_va &= PMD_MASK;
-+	} else {
-+		u64 pa_offset = pa & (PMD_SIZE - 1);
-+		u64 prev_va = efi_va;
-+
-+		/* get us the same offset within this 2M page */
-+		efi_va = (efi_va & PMD_MASK) + pa_offset;
-+
-+		if (efi_va > prev_va)
-+			efi_va -= PMD_SIZE;
++		start = pre_end;
++		pmd++;
 +	}
 +
-+	if (efi_va < EFI_VA_END) {
-+		pr_warn(FW_WARN "VA address range overflow!\n");
-+		return;
++	/*
++	 * Try to unmap in 2M chunks.
++	 */
++	while (end - start >= PMD_SIZE) {
++		if (pmd_large(*pmd))
++			pmd_clear(pmd);
++		else
++			__unmap_pmd_range(pud, pmd, start, start + PMD_SIZE);
++
++		start += PMD_SIZE;
++		pmd++;
 +	}
 +
-+	/* Do the VA map */
-+	__map_region(md, efi_va);
-+	md->virt_addr = efi_va;
++	/*
++	 * 4K leftovers?
++	 */
++	if (start < end)
++		return __unmap_pmd_range(pud, pmd, start, end);
++
++	/*
++	 * Try again to free the PMD page if haven't succeeded above.
++	 */
++	if (!pud_none(*pud))
++		if (try_to_free_pmd_page((pmd_t *)pud_page_vaddr(*pud)))
++			pud_clear(pud);
 +}
-+
- void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
- 				 u32 type, u64 attribute)
+ 
+ static void unmap_pud_range(pgd_t *pgd, unsigned long start, unsigned long end)
  {
-diff --git a/arch/x86/platform/efi/efi_stub_64.S b/arch/x86/platform/efi/efi_stub_64.S
-index 4c07ccab8146..88073b140298 100644
---- a/arch/x86/platform/efi/efi_stub_64.S
-+++ b/arch/x86/platform/efi/efi_stub_64.S
-@@ -34,10 +34,47 @@
- 	mov %rsi, %cr0;			\
- 	mov (%rsp), %rsp
- 
-+	/* stolen from gcc */
-+	.macro FLUSH_TLB_ALL
-+	movq %r15, efi_scratch(%rip)
-+	movq %r14, efi_scratch+8(%rip)
-+	movq %cr4, %r15
-+	movq %r15, %r14
-+	andb $0x7f, %r14b
-+	movq %r14, %cr4
-+	movq %r15, %cr4
-+	movq efi_scratch+8(%rip), %r14
-+	movq efi_scratch(%rip), %r15
-+	.endm
-+
-+	.macro SWITCH_PGT
-+	cmpb $0, efi_scratch+24(%rip)
-+	je 1f
-+	movq %r15, efi_scratch(%rip)		# r15
-+	# save previous CR3
-+	movq %cr3, %r15
-+	movq %r15, efi_scratch+8(%rip)		# prev_cr3
-+	movq efi_scratch+16(%rip), %r15		# EFI pgt
-+	movq %r15, %cr3
-+	1:
-+	.endm
-+
-+	.macro RESTORE_PGT
-+	cmpb $0, efi_scratch+24(%rip)
-+	je 2f
-+	movq efi_scratch+8(%rip), %r15
-+	movq %r15, %cr3
-+	movq efi_scratch(%rip), %r15
-+	FLUSH_TLB_ALL
-+	2:
-+	.endm
-+
- ENTRY(efi_call0)
- 	SAVE_XMM
- 	subq $32, %rsp
-+	SWITCH_PGT
- 	call *%rdi
-+	RESTORE_PGT
- 	addq $32, %rsp
- 	RESTORE_XMM
- 	ret
-@@ -47,7 +84,9 @@ ENTRY(efi_call1)
- 	SAVE_XMM
- 	subq $32, %rsp
- 	mov  %rsi, %rcx
-+	SWITCH_PGT
- 	call *%rdi
-+	RESTORE_PGT
- 	addq $32, %rsp
- 	RESTORE_XMM
- 	ret
-@@ -57,7 +96,9 @@ ENTRY(efi_call2)
- 	SAVE_XMM
- 	subq $32, %rsp
- 	mov  %rsi, %rcx
-+	SWITCH_PGT
- 	call *%rdi
-+	RESTORE_PGT
- 	addq $32, %rsp
- 	RESTORE_XMM
- 	ret
-@@ -68,7 +109,9 @@ ENTRY(efi_call3)
- 	subq $32, %rsp
- 	mov  %rcx, %r8
- 	mov  %rsi, %rcx
-+	SWITCH_PGT
- 	call *%rdi
-+	RESTORE_PGT
- 	addq $32, %rsp
- 	RESTORE_XMM
- 	ret
-@@ -80,7 +123,9 @@ ENTRY(efi_call4)
- 	mov %r8, %r9
- 	mov %rcx, %r8
- 	mov %rsi, %rcx
-+	SWITCH_PGT
- 	call *%rdi
-+	RESTORE_PGT
- 	addq $32, %rsp
- 	RESTORE_XMM
- 	ret
-@@ -93,7 +138,9 @@ ENTRY(efi_call5)
- 	mov %r8, %r9
- 	mov %rcx, %r8
- 	mov %rsi, %rcx
-+	SWITCH_PGT
- 	call *%rdi
-+	RESTORE_PGT
- 	addq $48, %rsp
- 	RESTORE_XMM
- 	ret
-@@ -109,8 +156,15 @@ ENTRY(efi_call6)
- 	mov %r8, %r9
- 	mov %rcx, %r8
- 	mov %rsi, %rcx
-+	SWITCH_PGT
- 	call *%rdi
-+	RESTORE_PGT
- 	addq $48, %rsp
- 	RESTORE_XMM
- 	ret
- ENDPROC(efi_call6)
-+
-+	.data
-+ENTRY(efi_scratch)
-+	.fill 3,8,0
-+	.byte 0
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index bc5687d0f315..6c0ca528300c 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -653,6 +653,7 @@ extern int __init efi_setup_pcdp_console(char *);
- #define EFI_RUNTIME_SERVICES	3	/* Can we use runtime services? */
- #define EFI_MEMMAP		4	/* Can we use EFI memory map? */
- #define EFI_64BIT		5	/* Is the firmware 64-bit? */
-+#define EFI_ARCH_1		6	/* First arch-specific bit */
- 
- #ifdef CONFIG_EFI
- # ifdef CONFIG_X86
 -- 
 1.8.4
 
