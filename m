@@ -1,162 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab3JaXUf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 19:20:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34923 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694Ab3JaXUU (ORCPT
+	id S1754324Ab3JaXXX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 19:23:23 -0400
+Received: from usindpps04.hds.com ([207.126.252.17]:60940 "EHLO
+	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448Ab3JaXXV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 19:20:20 -0400
-Date: Thu, 31 Oct 2013 16:20:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jason Baron <jbaron@akamai.com>, paulmck@linux.vnet.ibm.com,
-        normalperson@yhbt.net, nzimmer@sgi.com, viro@zeniv.linux.org.uk,
-        nelhage@nelhage.com, davidel@xmailserver.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] epoll: remove the on_list check for 'struct epitem'
-Message-Id: <20131031162019.aeb38873819cbbc78f7e8948@linux-foundation.org>
-In-Reply-To: <20131101100912.1d83667289bcca24c882b109@canb.auug.org.au>
-References: <20131030183241.AE8201FF9@prod-mail-relay06.akamai.com>
-	<20131101100912.1d83667289bcca24c882b109@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Oct 2013 19:23:21 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony" <tony.luck@intel.com>, Madper Xie <bbboson@gmail.com>
+CC: Madper Xie <cxie@redhat.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "anton@enomsg.org" <anton@enomsg.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/2] make all stored entries accessible.
+Thread-Topic: [PATCH 0/2] make all stored entries accessible.
+Thread-Index: AQHO1VS/gENfXKMKsEu0OLLoqy46ppoOAbKA///bNICAAFq+AIAAK32AgAB7i2CAAKdxgP//vung
+Date: Thu, 31 Oct 2013 23:22:55 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D47F9DBBA3@USINDEM103.corp.hds.com>
+References: <1383126294-28793-1-git-send-email-cxie@redhat.com>
+ <3908561D78D1C84285E8C5FCA982C28F31D529D7@ORSMSX106.amr.corp.intel.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D47F9D4476@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F31D52E99@ORSMSX106.amr.corp.intel.com>
+ <87d2mm6t64.fsf@gmail.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D47F9D4D01@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F31D53A1F@ORSMSX106.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31D53A1F@ORSMSX106.amr.corp.intel.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-10-31_08:2013-10-31,2013-10-31,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1310310220
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Nov 2013 10:09:12 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-
-> Hi Andrew,
+> I also like option 1 ... but I think the "id" should be a persistent value for
+> a given saved record.  So some func(timestamp, part, count) would be a
+> good idea.  If we try using "sequential" numbers - and don't manage to
+> clear out /sys/fs/pstore each time - then we may have the same "dmesg"
+> file show up with different names on each boot.
 > 
-> On Wed, 30 Oct 2013 18:32:41 +0000 (GMT) Jason Baron <jbaron@akamai.com> wrote:
-> >
-> > By removing the 'int on_list' field from 'struct epitem', we avoid hitting the
-> > BUILD_BUG_ON() for 'struct epitem' being larger than 128 bytes.
-> > 
-> > In file included from include/linux/init.h:4:0,
-> >                  from fs/eventpoll.c:14:
-> > fs/eventpoll.c: In function 'eventpoll_init':
-> > include/linux/compiler.h:321:20: error: call to '__compiletime_assert_2137' declared with attribute error: BUILD_BUG_ON failed: sizeof(void *) <= 8 && sizeof(struct epitem) > 128
-> >     prefix ## suffix();    \
-> > 
-> > The check to make sure that the 'struct epitem' was actually linked via
-> > epi->fllink was added to avoid having the list removal primitives called twice
-> > for the same 'struct epitem'. However, the double call possibility was removed
-> > by 'Subject: epoll: optimize EPOLL_CTL_DEL using rcu'. There, the call to
-> > 'list_del_init()' in eventpoll_release_file() was removed (we now rely on the
-> > list delete happening entirely in 'ep_remove()', which is called from
-> > eventpoll_release_file()).
-> > 
-> > There is also the question as to whether multiple ep_remove() calls could
-> > happen concurrently. This can not happen since EPOLL_CTL_DEL can't
-> > race with eventpoll_release_file() or ep_free() - it has to do an fget()
-> > to proceed. Further, eventpoll_release_file() can not race with ep_free(),
-> > since they both acquire the 'epmutex'.
-> > 
-> > Signed-off-by: Jason Baron <jbaron@akamai.com>
+> Right now I have a simple script to save & clear ... not much more
+> complex than:
 > 
-> Do you want me to put this in my copy of the mmotm instead of reverting
-> these three?
+> 	cd /sys/fs/pstore
+> 	cp * /var/log/save-pstore
+> 	rm *
 > 
-> epoll-do-not-take-global-epmutex-for-simple-topologies-fix
-> epoll: do not take global 'epmutex' for simple topologies
-> epoll: optimize EPOLL_CTL_DEL using rcu
+> This depends on not re-using filenames (otherwise new files in pstore
+> might overwrite older saved files in my /var/log/save-pstore area).
 
-Sure.  Here's my epoll-optimize-epoll_ctl_del-using-rcu-fix.patch:
+I see.. It is a persuasive use case.
 
-From: Jason Baron <jbaron@akamai.com>
-Subject: epoll: remove the on_list check for 'struct epitem'
-
-By removing the 'int on_list' field from 'struct epitem', we avoid hitting
-the BUILD_BUG_ON() for 'struct epitem' being larger than 128 bytes.
-
-In file included from include/linux/init.h:4:0,
-                 from fs/eventpoll.c:14:
-fs/eventpoll.c: In function 'eventpoll_init':
-include/linux/compiler.h:321:20: error: call to '__compiletime_assert_2137' declared with attribute error: BUILD_BUG_ON failed: sizeof(void *) <= 8 && sizeof(struct epitem) > 128
-    prefix ## suffix();    \
-
-The check to make sure that the 'struct epitem' was actually linked via
-epi->fllink was added to avoid having the list removal primitives called
-twice for the same 'struct epitem'.  However, the double call possibility
-was removed by 'Subject: epoll: optimize EPOLL_CTL_DEL using rcu'.  There,
-the call to 'list_del_init()' in eventpoll_release_file() was removed (we
-now rely on the list delete happening entirely in 'ep_remove()', which is
-called from eventpoll_release_file()).
-
-There is also the question as to whether multiple ep_remove() calls could
-happen concurrently.  This can not happen since EPOLL_CTL_DEL can't race
-with eventpoll_release_file() or ep_free() - it has to do an fget() to
-proceed.  Further, eventpoll_release_file() can not race with ep_free(),
-since they both acquire the 'epmutex'.
-
-Signed-off-by: Jason Baron <jbaron@akamai.com>
-Reported-by: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Nathan Zimmer <nzimmer@sgi.com>
-Cc: Eric Wong <normalperson@yhbt.net>
-Cc: Nelson Elhage <nelhage@nelhage.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Davide Libenzi <davidel@xmailserver.org>
-Cc: "Paul E. McKenney" <paulmck@us.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- fs/eventpoll.c |   13 ++-----------
- 1 file changed, 2 insertions(+), 11 deletions(-)
-
-diff -puN fs/eventpoll.c~epoll-optimize-epoll_ctl_del-using-rcu-fix fs/eventpoll.c
---- a/fs/eventpoll.c~epoll-optimize-epoll_ctl_del-using-rcu-fix
-+++ a/fs/eventpoll.c
-@@ -171,9 +171,6 @@ struct epitem {
+(1) I agree that some func(timestamp, part, count) would be  good idea.
+      This might work, although an overflow will happen some time...
+      sprintf(id_str, "%lld%d%d", timestamp, part, count)
+      simple_str_to_ull(id_str, &id, base)
  
- 	/* The structure that describe the interested events and the source fd */
- 	struct epoll_event event;
--
--	/* The fllink is in use. Since rcu can't do 'list_del_init()' */
--	int on_list;
- };
+(2) There is a GetNextHighMonotonicCount() runtime service in EFI specification
+       to get a persistent number across the reboot, but I'm not sure if it is safe to use it..
+      Also,  it would be good if we can create the id by ourselves, rather than using firmware.
+
+ (3) Also, (it might not be good idea),  if a pstore filesystem expects all backend drivers
+       to use the persistent id, the pstore should provide it by itself.
+       (by using time stamp counter or something like that.)
+
+       As I looked into the ramoops's code. It seems to use a non-persistent sequential counter,by initializing
+       read_cnt to "0" in ramoops_pstore_open(), and incrementing it in ramoops_pstore_read().
+       It doesn't seem to be the pstore's expectation. 
+       And when someone introduces a new driver, they may misunderstand how to create the id as well..
+
+As above, there are mutiple ideas, but (1) is reasonable to me.    
  
- /*
-@@ -707,10 +704,7 @@ static int ep_remove(struct eventpoll *e
- 
- 	/* Remove the current item from the list of epoll hooks */
- 	spin_lock(&file->f_lock);
--	if (epi->on_list) {
--		list_del_rcu(&epi->fllink);
--		epi->on_list = 0;
--	}
-+	list_del_rcu(&epi->fllink);
- 	spin_unlock(&file->f_lock);
- 
- 	rb_erase(&epi->rbn, &ep->rbr);
-@@ -1273,7 +1267,6 @@ static int ep_insert(struct eventpoll *e
- 	epi->event = *event;
- 	epi->nwait = 0;
- 	epi->next = EP_UNACTIVE_PTR;
--	epi->on_list = 0;
- 	if (epi->event.events & EPOLLWAKEUP) {
- 		error = ep_create_wakeup_source(epi);
- 		if (error)
-@@ -1307,7 +1300,6 @@ static int ep_insert(struct eventpoll *e
- 	/* Add the current item to the list of active epoll hook for this file */
- 	spin_lock(&tfile->f_lock);
- 	list_add_tail_rcu(&epi->fllink, &tfile->f_ep_links);
--	epi->on_list = 1;
- 	spin_unlock(&tfile->f_lock);
- 
- 	/*
-@@ -1348,8 +1340,7 @@ static int ep_insert(struct eventpoll *e
- 
- error_remove_epi:
- 	spin_lock(&tfile->f_lock);
--	if (epi->on_list)
--		list_del_rcu(&epi->fllink);
-+	list_del_rcu(&epi->fllink);
- 	spin_unlock(&tfile->f_lock);
- 
- 	rb_erase(&epi->rbn, &ep->rbr);
-_
+Seiji
+
+
+
 
