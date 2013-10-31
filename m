@@ -1,107 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab3JaUpQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 16:45:16 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42165 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710Ab3JaUpO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 16:45:14 -0400
-Message-ID: <5272C156.30007@wwwdotorg.org>
-Date: Thu, 31 Oct 2013 14:45:10 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>
-CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [RFC 4/9] of/irq: Refactor interrupt-map parsing [CPU hotplug
- clockevents issue]
-References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org> <1381869563-16083-5-git-send-email-grant.likely@linaro.org>
-In-Reply-To: <1381869563-16083-5-git-send-email-grant.likely@linaro.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753386Ab3JaUuV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 16:50:21 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:45235 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751710Ab3JaUuU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 16:50:20 -0400
+Date: Thu, 31 Oct 2013 16:50:15 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Kenneth Lee <nek.in.cn@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: An small ftrace enhancement idea
+Message-ID: <20131031165015.757d0efb@gandalf.local.home>
+In-Reply-To: <4A791BBD-EBBE-420F-8199-E4BAAF6A3C46@gmail.com>
+References: <4A791BBD-EBBE-420F-8199-E4BAAF6A3C46@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2013 02:39 PM, Grant Likely wrote:
-> All the users of of_irq_parse_raw pass in a raw interrupt specifier from
-> the device tree and expect it to be returned (possibly modified) in an
-> of_phandle_args structure. However, the primary function of
-> of_irq_parse_raw() is to check for translations due to the presence of
-> one or more interrupt-map properties. The actual placing of the data
-> into an of_phandle_args structure is trivial. If it is refactored to
-> accept an of_phandle_args structure directly, then it becomes possible
-> to consume of_phandle_args from other sources. This is important for an
-> upcoming patch that allows a device to be connected to more than one
-> interrupt parent. It also simplifies the code a bit.
+On Wed, 30 Oct 2013 15:39:50 -0700
+Kenneth Lee <nek.in.cn@gmail.com> wrote:
+
+> Dear Steven,
 > 
-> The biggest complication with this patch is that the old version works
-> on the interrupt specifiers in __be32 form, but the of_phandle_args
-> structure is intended to carry it in the cpu-native version. A bit of
-> churn was required to make this work. In the end it results in tighter
-> code, so the churn is worth it.
+> I want to add a new function to ftrace subsystem. Sometimes, we will face such a problem: system do not response to the input on time one to two times everyday. It is not easy to capture because it rarely happens. So I want to add a function to the kernel. If I have such problem, I insert a kernel module, who add a hook to the position that receive the input and another to the position that response to the input (with a session id if necessary). And I can compare the time between them and if the period is longer then a pre-set threshold, I can give a signal to a user helper application (maybe a script waiting on the file), which then can save the trace event to a file for later inspection.
 
-This commit appears to cause kernel error spew while performing CPU
-hotplug operations on Tegra114. For example, see the log at the end of
-this message.
+I'm a little confused in what you want.
 
-I guess this boot-time message is the clue:
 
-[    0.000000] arch_timer: No interrupt available, giving up
+> 
+>  
+> 
+> The user helper script may look like this:
+> 
+>  
+> 
+> #/bin/sh
+> 
+>  
+> 
+> echo ‘sched:*’ > /sys/kernel/debug/tracing/set_event
+> 
+> modprobe delay_inspector.ko threshold=500
+> 
+> cat /sys/kernel/debug/tracing/waiter #wait for signal
+> 
+> cp /sys/kernel/debug/tracing/trace /var/log/delay_infomation
+> 
+>  
+> 
+>  
+> 
+> It looks like a standalone function. But I don’t have place to put it. Do you think I can implement it in ftrace? And do you think if there are better solution?
+> 
 
-which corresponds to this diff in /proc/interrupts:
+You want something to wake up if it takes too long before an event
+happens?
 
-> - 27:       2929       2216       2027       1922       GIC  27  arch_timer
+If so, why not just use a select() on the trace_pipe and if it times
+out, then dump the trace. You can even set up a separate instance.
 
-The relevant DT node is probably:
+ (this is waiting for a schedule switch to pid 1)
 
->         timer {
->                 compatible = "arm,armv7-timer";
->                 interrupts =
->                         <GIC_PPI 13
->                                 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
->                         <GIC_PPI 14
->                                 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
->                         <GIC_PPI 11
->                                 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
->                         <GIC_PPI 10
->                                 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>;
->         };
+cd /sys/kernel/debug/tracing
+mkdir instances/mine
+echo 'next_pid == 1' > instances/mine/events/sched/sched_switch/filter
+echo 1 > instances/mine/events/sched/sched_switch/enable
 
-I guess this is a similar problem to that which Olof reported; there's
-no reg property in that node, yet #size-cells=<0> since the timer node
-is a direct child of the root node.
 
-Hotplug error spew:
+The in a userspace program, I open "instances/mine/events/trace_pipe"
+and run a select() on that file descriptor with a given timeout. If the
+event does not happen within the expected time frame, the select
+returns zero, and this userspace program can deal with it.
 
-> root@localhost:~# ./cpuonline.py 
-> echo 0 > /sys/devices/system/cpu/cpu2/online
-> [   46.753347] CPU2: shutdown
-> echo 0 > /sys/devices/system/cpu/cpu1/online
-> [   48.848007] CPU1: shutdown
-> echo 0 > /sys/devices/system/cpu/cpu3/online
-> [   50.897720] CPU3: shutdown
-> echo 1 > /sys/devices/system/cpu/cpu1/online
-> [   52.949980] CPU1: Booted secondary processor
-> [   52.961188] Clockevents: could not switch to one-shot mode: dummy_timer is not functional.
-> [   52.969566] Could not switch to high resolution mode on CPU 1
-> echo 1 > /sys/devices/system/cpu/cpu2/online
-> [   54.999852] CPU2: Booted secondary processor
-> [   55.011164] Clockevents: could not switch to one-shot mode: dummy_timer is not functional.
-> [   55.019543] Could not switch to high resolution mode on CPU 2
-> echo 0 > /sys/devices/system/cpu/cpu1/online
-> [   57.048730] CPU1: shutdown
-> echo 1 > /sys/devices/system/cpu/cpu3/online
-> [   59.088927] CPU3: Booted secondary processor
-> [   59.101149] Clockevents: could not switch to one-shot mode: dummy_timer is not functional.
-> [   59.109517] Could not switch to high resolution mode on CPU 3
-> echo 1 > /sys/devices/system/cpu/cpu1/online
-> [   61.129737] CPU1: Booted secondary processor
-> [   61.141161] Clockevents: could not switch to one-shot mode: dummy_timer is not functional.
-> [   61.149540] Could not switch to high resolution mode on CPU 1
+Is that the functionality you are trying to achieve?
 
+-- Steve
