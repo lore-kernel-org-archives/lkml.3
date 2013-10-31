@@ -1,146 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255Ab3JaJDU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 05:03:20 -0400
-Received: from canardo.mork.no ([148.122.252.1]:58274 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784Ab3JaJDR convert rfc822-to-8bit (ORCPT
+	id S1752233Ab3JaJFV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 05:05:21 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37808 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab3JaJFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 05:03:17 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: "Du\, ChangbinX" <changbinx.du@intel.com>
-Cc: "oliver\@neukum.org" <oliver@neukum.org>,
-        "linux-usb\@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] net/cdc_ncm: fix null pointer panic at usbnet_link_change
-Organization: m
-References: <0C18FE92A7765D4EB9EE5D38D86A563A019F450F@SHSMSX103.ccr.corp.intel.com>
-	<87wqkwii4p.fsf@nemi.mork.no>
-	<0C18FE92A7765D4EB9EE5D38D86A563A019F6384@SHSMSX103.ccr.corp.intel.com>
-Date: Thu, 31 Oct 2013 10:02:56 +0100
-In-Reply-To: <0C18FE92A7765D4EB9EE5D38D86A563A019F6384@SHSMSX103.ccr.corp.intel.com>
-	(ChangbinX Du's message of "Thu, 31 Oct 2013 03:06:03 +0000")
-Message-ID: <87sivhdd8f.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	Thu, 31 Oct 2013 05:05:20 -0400
+Date: Thu, 31 Oct 2013 10:04:57 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Victor Kaplansky <VICTORK@il.ibm.com>, Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Michael Neuling <mikey@neuling.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: perf events ring buffer memory barrier on powerpc
+Message-ID: <20131031090457.GU19466@laptop.lan>
+References: <20131025173749.GG19466@laptop.lan>
+ <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com>
+ <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com>
+ <20131028132634.GO19466@laptop.lan>
+ <20131028163418.GD4126@linux.vnet.ibm.com>
+ <20131028201735.GA15629@redhat.com>
+ <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com>
+ <20131030092725.GL4126@linux.vnet.ibm.com>
+ <OFC6B7100E.31C6B190-ON42257C14.004841C6-42257C14.004A0EA6@il.ibm.com>
+ <20131031043258.GQ4126@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131031043258.GQ4126@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Du, ChangbinX" <changbinx.du@intel.com> writes:
+On Wed, Oct 30, 2013 at 09:32:58PM -0700, Paul E. McKenney wrote:
+> Before C/C++11, the closest thing to such a prohibition is use of
+> volatile, for example, ACCESS_ONCE().  Even in C/C++11, you have to
+> use atomics to get anything resembing this prohibition.
+> 
+> If you just use normal variables, the compiler is within its rights
+> to transform something like the following:
+> 
+> 	if (a)
+> 		b = 1;
+> 	else
+> 		b = 42;
+> 
+> Into:
+> 
+> 	b = 42;
+> 	if (a)
+> 		b = 1;
+> 
+> Many other similar transformations are permitted.  Some are used to all
+> vector instructions to be used -- the compiler can do a write with an
+> overly wide vector instruction, then clean up the clobbered variables
+> later, if it wishes.  Again, if the variables are not marked volatile,
+> or, in C/C++11, atomic.
 
->> From: Bjørn Mork [mailto:bjorn@mork.no]
->> Sent: Tuesday, October 29, 2013 4:41 PM
->> To: Du, ChangbinX
->> Cc: oliver@neukum.org; linux-usb@vger.kernel.org; netdev@vger.kernel.org;
->> linux-kernel@vger.kernel.org
->> Subject: Re: [PATCH] net/cdc_ncm: fix null pointer panic at usbnet_link_change
->> 
->> "Du, ChangbinX" <changbinx.du@intel.com> writes:
->> 
->> > From: "Du, Changbin" <changbinx.du@intel.com>
->> >
->> > In cdc_ncm_bind() function, it call cdc_ncm_bind_common() to setup usb.
->> > But cdc_ncm_bind_common() may meet error and cause usbnet_disconnect()
->> > be called which calls free_netdev(net).
->> 
->> I am sure you are right, but I really don't see how that can happen.
->> 
->> AFAICS, we ensure that the intfdata is set to NULL before calling
->> usb_driver_release_interface() in the error cleanup in
->> cdc_ncm_bind_common():
->> 
->> 
->> error2:
->> 	usb_set_intfdata(ctx->control, NULL);
->> 	usb_set_intfdata(ctx->data, NULL);
->> 	if (ctx->data != ctx->control)
->> 		usb_driver_release_interface(driver, ctx->data);
->> error:
->> 	cdc_ncm_free((struct cdc_ncm_ctx *)dev->data[0]);
->> 	dev->data[0] = 0;
->> 	dev_info(&dev->udev->dev, "bind() failure\n");
->> 	return -ENODEV;
->> 
->> 
->> Thus we hit the test in disconnect, and usbnet_disconnect() is never
->> called:
->> 
->> static void cdc_ncm_disconnect(struct usb_interface *intf)
->> {
->> 	struct usbnet *dev = usb_get_intfdata(intf);
->> 
->> 	if (dev == NULL)
->> 		return;		/* already disconnected */
->> 
->> 	usbnet_disconnect(intf);
->> }
->> 
->> So we should really be OK, but we are not????  I would appreciate it if
->> anyone took the time to feed me why, with a very small spoon...
->> 
->
-> Yes, you are right. It should not happen if cdc_ncm_disconnect is not
-> called. But this really happened.  It produced on kernel 3.10.
+While I've heard you tell this story before, my mind keeps boggling how
+we've been able to use shared memory at all, all these years.
 
-Yes, I do not doubt it.  I just don't understand it.  There is no
-contradiction there. I believe lots of stuff I don't understand :-)
-
-The version this happened is very useful, although I don't think there
-are any relevant changes after v3.10.
-
-> Here is the full panic message for you to refer. I will get a method try to 
-> reproduce it.
-
-That would be great if you were able to.  Otherwise it will be difficult
-to verify that the proposed fix works.
-
-In any case, as I said: I believe a fix which avoids the call to
-usbnet_link_change() in case of bind failure is correct and
-appropriate.  But I suggest that you do it by removing the call and
-comment from cdc_ncm_bind() and instead set the FLAG_LINK_INTR in the
-driver_info.  That's how this should have been implemented from the
-beginning.
-
-> [   15.635727] BUG: Bad page state in process khubd  pfn:31994
-> [   15.641989] page:f3ad9280 count:0 mapcount:0 mapping:00000020 index:0x0
-> [   15.649384] page flags: 0x40000000()
-> [   15.670096] BUG: unable to handle kernel NULL pointer dereference at 00000078
-> [   15.678078] IP: [<c24b7f5e>] usbnet_link_change+0x1e/0x80
-> [   15.684120] *pde = 00000000 
-> [   15.687339] Oops: 0000 [#1] SMP 
-> [   15.690953] Modules linked in: atmel_mxt_ts vxd392 videobuf_vmalloc videobuf_core bcm_bt_lpm bcm432)
-> [   15.702658] CPU: 0 PID: 573 Comm: khubd Tainted: G    B   W  O 3.10.1+ #1
-> [   15.710241] task: f27e8f30 ti: f2084000 task.ti: f2084000
-> [   15.716270] EIP: 0060:[<c24b7f5e>] EFLAGS: 00010246 CPU: 0
-> [   15.722396] EIP is at usbnet_link_change+0x1e/0x80
-> [   15.727747] EAX: f18524c0 EBX: 00000000 ECX: f18524c0 EDX: 00000000
-> [   15.734746] ESI: f18524c0 EDI: 00000000 EBP: f2085b7c ESP: f2085b70
-> [   15.741746] DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-> [   15.747775] CR0: 8005003b CR2: 00000078 CR3: 02c3b000 CR4: 001007d0
-> [   15.754774] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-> [   15.761774] DR6: ffff0ff0 DR7: 00000400
-> [   15.766054] Stack:
-> [   15.768295]  00000000 f18524c0 c2a03818 f2085b8c c24bc69a f1852000 f1f52e00 f2085be0
-> [   15.776991]  c24b8d32 00000000 00000001 00000000 c2167f2c f2085bb4 c2821253 f2085bec
-> [   15.785687]  00000246 00000246 f18d8088 f1f52e1c f1fce464 f1fce400 f18524c0 c28a06e0
-> [   15.794376] Call Trace:
-> [   15.797109]  [<c24bc69a>] cdc_ncm_bind+0x3a/0x50
-> [   15.802267]  [<c24b8d32>] usbnet_probe+0x282/0x7d0
-> [   15.807621]  [<c2167f2c>] ? sysfs_new_dirent+0x6c/0x100
-> [   15.813460]  [<c2821253>] ? mutex_lock+0x13/0x40
-> [   15.818618]  [<c24bb278>] cdc_ncm_probe+0x8/0x10
-> [   15.823777]  [<c24e0ef7>] usb_probe_interface+0x187/0x2c0
-
-I still do not understand how this happens, but usbnet_link_change will
-schedule some delayed work which absolutely is not appropriate if
-usbnet_probe fails.  There are no cancel_work calls in the usbnet_probe
-exit path....
-
-So the call should definitely be avoided if bind fails.
-
-
-Bjørn
+It seems to me stuff should have broken left, right and center if
+compilers were really aggressive about this.
