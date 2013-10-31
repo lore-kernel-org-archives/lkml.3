@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab3JaKyz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 06:54:55 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:53552 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754439Ab3JaKyw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 06:54:52 -0400
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Avi Kivity <avi@redhat.com>
-Subject: [PATCH 2/3] Documentation/kvm: patches should be against linux.git
-Date: Thu, 31 Oct 2013 16:16:35 +0530
-Message-Id: <1383216396-12869-3-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.8.5.rc0
-In-Reply-To: <1383216396-12869-1-git-send-email-artagnon@gmail.com>
-References: <1383216396-12869-1-git-send-email-artagnon@gmail.com>
+	id S1754624Ab3JaKzh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 06:55:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24497 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753973Ab3JaKze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 06:55:34 -0400
+Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
+From: Mark Wielaard <mjw@redhat.com>
+To: Pekka Enberg <penberg@iki.fi>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
+        anton@redhat.com, systemtap@sourceware.org,
+        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com,
+        dsahern@gmail.com,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+In-Reply-To: <5270F2DE.6040505@iki.fi>
+References: <20131023044511.1886.82571.stgit@hemant-fedora>
+	 <20131023050502.1886.15779.stgit@hemant-fedora>
+	 <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com>
+	 <y0mbo2cs2oa.fsf@fche.csb> <5270D9F7.3090105@hitachi.com>
+	 <5270F2DE.6040505@iki.fi>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 31 Oct 2013 11:54:46 +0100
+Message-ID: <1383216886.6521.5910.camel@bordewijk.wildebeest.org>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The document hasn't been updated since cf3e3d3 (KVM: Document KVM
-specific review items, 2010-06-24); kvm does not have a separate
-repository anymore.
+On Wed, 2013-10-30 at 13:51 +0200, Pekka Enberg wrote:
+> On 10/30/13 12:05 PM, Masami Hiramatsu wrote:
+> > To find all system libraries, we can use ldconfig.
+> >
+> > $ ldconfig --print-cache
+> >
+> > shows what dynamic libraries will be loaded. On my own laptop (running
+> > ubuntu13.04) shows ~1000 libs.
+> 
+> Good point. That definitely narrows down the scanned set.
 
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
----
- Documentation/virtual/kvm/review-checklist.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+It is fast. But that would miss the various libjvm.so variants for
+example. Or other programs, like libreoffice, which have SDT probes in
+their internal shared libraries that aren't in the default ldconfig
+paths.
 
-diff --git a/Documentation/virtual/kvm/review-checklist.txt b/Documentation/virtual/kvm/review-checklist.txt
-index a850986..8385c4d 100644
---- a/Documentation/virtual/kvm/review-checklist.txt
-+++ b/Documentation/virtual/kvm/review-checklist.txt
-@@ -4,7 +4,7 @@ Review checklist for kvm patches
- 1.  The patch must follow Documentation/CodingStyle and
-     Documentation/SubmittingPatches.
- 
--2.  Patches should be against kvm.git master branch.
-+2.  Patches should be against linux.git master branch.
- 
- 3.  If the patch introduces or modifies a new userspace API:
-     - the API must be documented in Documentation/virtual/kvm/api.txt
--- 
-1.8.5.rc0
+Cheers,
+
+Mark
 
