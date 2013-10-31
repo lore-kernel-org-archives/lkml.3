@@ -1,136 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461Ab3JaTUy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 15:20:54 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:59743 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752036Ab3JaTUx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 15:20:53 -0400
-Message-ID: <5272AD80.90203@interlog.com>
-Date: Thu, 31 Oct 2013 15:20:32 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
+	id S1755302Ab3JaTWc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 15:22:32 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:13805 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852Ab3JaTWb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 15:22:31 -0400
+X-IronPort-AV: E=Sophos;i="4.93,611,1378857600"; 
+   d="scan'208";a="66876217"
+Message-ID: <5272ADF3.2000301@citrix.com>
+Date: Thu, 31 Oct 2013 19:22:27 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: SCSI development list <linux-scsi@vger.kernel.org>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        vaughan <vaughan.cao@oracle.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] sg: O_EXCL and other lock handling
-References: <52718713.7050906@interlog.com> <20131031155653.GA16944@infradead.org>
-In-Reply-To: <20131031155653.GA16944@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jan Beulich <JBeulich@suse.com>
+CC: <ian.campbell@citrix.com>, <jonathan.davies@citrix.com>,
+        <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH net-next RFC 1/5] xen-netback: Introduce TX
+ grant map definitions
+References: <1383094220-14775-1-git-send-email-zoltan.kiss@citrix.com> <1383094220-14775-2-git-send-email-zoltan.kiss@citrix.com> <5270DF3602000078000FDFBE@nat28.tlf.novell.com>
+In-Reply-To: <5270DF3602000078000FDFBE@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-10-31 11:56 AM, Christoph Hellwig wrote:
->> +	struct semaphore or_sem;  /* protect co-incident opens and releases */
->
-> Seems like this should be a mutex.
-
-Yes, it is being used as a mutex. However looking at
-their semantics (mutex.h versus semaphore.h), a mutex
-takes into account the task owner. If the user space
-wants to pass around a sg file descriptor in a Unix
-domain socket (see TLPI, Kerrisk) I don't see why the
-sg driver should object (and pay the small performance
-hit for each check).
-
-A nasty side effect of a mutex taking into account the
-task owner is that it can't be used in interrupt
-context. My patch does not try to do that yet (see next
-section) but why bother. Give me a simple mutex and
-I'll use it.
-
->> sfds_list_empty(Sg_device *sdp)
->>   {
->>   	unsigned long flags;
->>   	int ret;
+On 30/10/13 09:28, Jan Beulich wrote:
+>>>> On 30.10.13 at 01:50, Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
+>> @@ -119,13 +126,22 @@ struct xenvif {
+>>   	pending_ring_idx_t pending_cons;
+>>   	u16 pending_ring[MAX_PENDING_REQS];
+>>   	struct pending_tx_info pending_tx_info[MAX_PENDING_REQS];
+>> +	grant_handle_t grant_tx_handle[MAX_PENDING_REQS];
 >>
->> +	spin_lock_irqsave(&sdp->sfd_lock, flags);
->> +	ret = list_empty(&sdp->sfds);
->> +	spin_unlock_irqrestore(&sdp->sfd_lock, flags);
->>   	return ret;
+>>   	/* Coalescing tx requests before copying makes number of grant
+>>   	 * copy ops greater or equal to number of slots required. In
+>>   	 * worst case a tx request consumes 2 gnttab_copy.
+>>   	 */
+>>   	struct gnttab_copy tx_copy_ops[2*MAX_PENDING_REQS];
+>> +	struct gnttab_unmap_grant_ref tx_unmap_ops[MAX_PENDING_REQS];
+>> +	struct gnttab_map_grant_ref tx_map_ops[MAX_PENDING_REQS];
+>> +	/* passed to gnttab_[un]map_refs with pages under (un)mapping */
+>> +	struct page *pages_to_gnt[MAX_PENDING_REQS];
 >
-> Protecting just a list_empty check with a local will give you racy
-> results.  Seems like you should take the look over the check and the
-> resulting action that modifies the list.  That'd also mean replacing the
-> wait_event* calls with open coded prepare_wait / finish_wait loops.
+> I think you will want to try to limit the structure size here by putting
+> things into unions that can't be used at the same time: Without
+> having looked at the later patches yet, it seems quite unlikely that
+> map and unmap can be used simultaneously. And the total of copy
+> and map can't also be used at the same time, as for each pending
+> request you would use either up to two copy slots or a single map
+> slot. I didn't look for further opportunities of sharing space.
 
-Not (usually) in this case. The sdp->sfds list can only
-be expanded by another sg_open(same_dev) but this has
-been excluded by taking down(&sdp->or_sem) prior to that
-call. The sdp->sfds list is only normally decreased by
-sg_release() which is also excluded by down(&sdp->or_sem).
+Indeed, map and unmap can't be done at the same time, so it's safe to 
+put them into union. But I'm afraid grant_tx_handle and pages_to_gnt 
+can't share space with other members.
+tx_copy_ops is a different topic, let's discuss that in it's own thread ...
 
-The abnormal case is device removal (detaching). Now an
-open(same_dev, O_EXCL) may start waiting just after a
-detach but miss the wake up on open_wait. That suggests
-the wake_up(open_wait) in sg_remove() should also
-take the sdp->or_sem semaphore.
-Ah, and if sg_remove() can be called from an interrupt
-context then that takes out using mutexes :-)
+Thanks,
 
-The two level of locks in sg_remove() is already making me
-uncomfortable, adding the sdp->or_sem semaphore to the
-mix calls for more analysis.
-
-Also note that sdp->detached is only protected by a
-volatile type modifier and checks on it are sprinkled
-around the code in a rather unscientific way.
-
-As you are no doubt aware, handling the "surprise" device
-removal case safely is hard, very hard. And I have tried
-to test this, loading up 4 processes with 100 tasks each,
-some with asynchronous queueing requests but most hanging
-on an open_wait then remove the device. So far I have not
-seen a hang. Again, somebody with a big machine and
-patience might like to try a scaled up device removal test
-to see what breaks.
-
->> +	down(&sdp->or_sem);
->> +	alone = sfds_list_empty(sdp);
->> +	if ((flags & O_EXCL) && (O_RDONLY == (flags & O_ACCMODE))) {
->> +		retval = -EPERM; /* Don't allow O_EXCL with read only access */
->> +		goto error_out;
->> +	}
->
-> Seems like the pure flags check should move to the beginning of the
-> function before taking any locks.
-
-As Vaughan pointed out, just prior to that down() is a call
-scsi_block_when_processing_errors() for blocking open()s.
-That function will do a non-interruptible wait if error
-recovery processing is underway. That could take tens of
-seconds. If the down() was before that line then a subsequent
-sg_open(dev, O_NONBLOCK) would block on a previous down()
-for tens of seconds. That is not what an O_NONBLOCK open()
-should do.
-
-IMO that is a bug in scsi_block_when_processing_errors()
-and the down() is placed lower than it should be in
-sg_open() to account for that bug.
-
-
-PS Most of the O_EXCL locking was designed by Vaughan Cao and
-fixes the previous flaky O_EXCL handling (the block layer's
-O_EXCL handling is also flaky) and races between sg_open()
-and sg_release(). His solution went just a little too far
-using read-write semaphores to implement the O_EXCL handling.
-This was wrong because you cannot hold a semaphore when
-returning to the user space (at least mutex.h documents
-that subtle point). My part in this was to revert that
-read-write semaphore to the previous wait queue solution for
-O_EXCL, promote a few wake_up() calls to the "all" variants
-and write some test code. That test code shows Vaughan's
-strategy seems to be correct and is faster than the previous
-implementation. I'm impressed; it may not be perfect but
-is better than is what is in the mainline (released) kernels
-today.
-
-Doug Gilbert
-
+Zoli
 
