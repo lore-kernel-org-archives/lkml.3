@@ -1,69 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab3JaMKH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 08:10:07 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53689 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752145Ab3JaMKE (ORCPT
+	id S1753084Ab3JaMMd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 08:12:33 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:42124 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536Ab3JaMMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 08:10:04 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lv Zheng <lv.zheng@intel.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Bob Moore <robert.moore@intel.com>
-Subject: Re: [PATCH 0/4] ACPICA: Stable material of ACPI executer fixes for linux-3.8.
-Date: Thu, 31 Oct 2013 13:22:11 +0100
-Message-ID: <18963273.JtsE7nd0JW@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20131031120850.GA17048@kroah.com>
-References: <cover.1383181113.git.lv.zheng@intel.com> <2226874.g7cLvQ5SiE@vostro.rjw.lan> <20131031120850.GA17048@kroah.com>
+	Thu, 31 Oct 2013 08:12:31 -0400
+Date: Thu, 31 Oct 2013 16:12:28 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrey Vagin <avagin@openvz.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        James Bottomley <jbottomley@parallels.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 1/6] procfs: Introduce sequential fdinfo engine
+Message-ID: <20131031121228.GA7560@moon>
+References: <20131030195951.201688764@openvz.org>
+ <20131030202221.047149911@openvz.org>
+ <CACVxJT8vuh+Jm1LYhiQBLvi6TASpGgKm0CCqVS=g3QE+eHK7Wg@mail.gmail.com>
+ <20131031105752.GB24809@moon>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131031105752.GB24809@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 31, 2013 05:08:50 AM Greg Kroah-Hartman wrote:
-> On Thu, Oct 31, 2013 at 12:39:21PM +0100, Rafael J. Wysocki wrote:
-> > On Thursday, October 31, 2013 09:07:40 AM Lv Zheng wrote:
-> > > There are bug-fixes for AML interpreter upstreamed, fixing some serious
-> > > issues found in recent platforms.  These fixes make Linux AML interpreter
-> > > more ACPI 2.0 ASL concept compliant.  Further AML interpreter fixes should
-> > > be based on such improvements, thus they are good materials for stable.
-> > > 
-> > > This patch set can be safely applied to linux-3.8:
-> > > commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200 upstream.
-> > > 
-> > > The patch set has passed build/boot tests on the following machines:
-> > >   Dell Inspiron Mini 1010 (i386)
-> > >   HP Compaq 8200 Elite SFF PC (x86-64)
-> > > 
-> > > Bob Moore (4):
-> > >   ACPICA: Interpreter: Fix Store() when implicit conversion is not
-> > >     possible.
-> > >   ACPICA: DeRefOf operator: Update to fully resolve FieldUnit and
-> > >     BufferField refs.
-> > >   ACPICA: Return error if DerefOf resolves to a null package element.
-> > >   ACPICA: Fix for a Store->ArgX when ArgX contains a reference to a
-> > >     field.
+On Thu, Oct 31, 2013 at 02:57:52PM +0400, Cyrill Gorcunov wrote:
+> > > At moment the fdinfo operations (ie the output from /proc/$pid/fdinfo/$fd)
+> > > are generating output in one pass, which makes useless memory pressue
+> > > if the reader/user provides a buffer with a small size.
 > > 
-> > Hi Greg,
-> > 
-> > Please take patches [1-4/4] for stable.
+> > cat(1) uses 64 KB buffer.
+> > The output doesn't exceed one page anyway.
 > 
-> "Which" stable tree?
-> 
-> I don't do 3.8, it's long been end-of-life, although one company is
-> trying to keep it alive, but that's not me.
-> 
-> I'm only handling 3.4, 3.10, and 3.11 stable trees right now, which
-> one(s) should these be applied to?
+> Yes, good point. I probably need to update changelog (forgot that i'm using
+> single_open here). What if we meet a file with that big number of epoll
+> or say notifies assigned that the fdinfo won't fit a page? I didn't meet
+> such scenario yet, but I think it's possible?
 
-3.10.x and 3.11.x then.
+Alexey, would the following changelog sound better? I've been testing the
+program which creates 100 pipes, which in turn are watched with epoll
+(I don't think someone ever need to do that actully) then tried to read
+fdinfo and it failed. Instead if I'm using this series I can see all 100
+pipes in the output.
+---
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: procfs: Introduce sequential fdinfo engine
 
-Lv, do the original mainline commits apply to these kernels?
+At moment the fdinfo operations (ie the output from /proc/$pid/fdinfo/$fd)
+are generating output in one pass, allocating one page buffer as maximum.
+But in case of lots of event polls watchees (100 and more) read procedure
+will fail because one page is not enough to provide all information associated
+with watch descriptors.
 
-Rafael
+Instead, provide proc_fdinfo structure where each file hook own seq_operations
+for fdinfo output and the seq-file engine will be able to traverse over the all
+records and provide the reader complete information increasing buffer size if
+needed.
 
+Once all callers to fdinfo are converted (addressed in next patches)
+the former @show_fdinfo will be deleted.
+
+Note the patch doesn't change current output it's rather preparing
+the ground for next patches.
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrey Vagin <avagin@openvz.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: James Bottomley <jbottomley@parallels.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Matthew Helsley <matt.helsley@gmail.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ fs/proc/fd.c       |  162 ++++++++++++++++++++++++++++++++++++++++++-----------
+ include/linux/fs.h |    1 
+ 2 files changed, 130 insertions(+), 33 deletions(-)
+
+Index: linux-2.6.git/fs/proc/fd.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/fd.c
++++ linux-2.6.git/fs/proc/fd.c
+@@ -14,60 +14,156 @@
+ #include "internal.h"
+ #include "fd.h"
+ 
++struct proc_fdinfo {
++	struct seq_file		seq;		/* Make sure it's first */
++	struct seq_operations	*fdinfo_ops;
++	loff_t			pos;
++	struct file		*f_file;
++	unsigned int		f_flags;
++};
++
++#define seq_info(m)	(container_of(m, struct proc_fdinfo, seq))
++
++static void *seq_start(struct seq_file *m, loff_t *pos)
++{
++	struct proc_fdinfo *info = seq_info(m);
++
++	info->pos = *pos;
++	if (*pos == 0)
++		return info;
++	return info->fdinfo_ops ? info->fdinfo_ops->start(m, pos) : NULL;
++}
++
++static void seq_stop(struct seq_file *m, void *v)
++{
++	struct proc_fdinfo *info = seq_info(m);
++
++	if (info->pos > 0 && info->fdinfo_ops)
++		info->fdinfo_ops->stop(m, v);
++}
++
++static void *seq_next(struct seq_file *m, void *p, loff_t *pos)
++{
++	struct proc_fdinfo *info = seq_info(m);
++	void *v = NULL;
++
++	if (info->fdinfo_ops) {
++		int ret = 0;
++
++		if (*pos == 0) {
++			v = info->fdinfo_ops->start(m, pos);
++			if (v) {
++				ret = info->fdinfo_ops->show(m, v);
++				p = v;
++			} else
++				ret = -1;
++		}
++
++		if (!ret)
++			v = info->fdinfo_ops->next(m, p, pos);
++		else
++			++*pos;
++	} else
++		++*pos;
++
++	info->pos = *pos;
++	return v;
++}
++
+ static int seq_show(struct seq_file *m, void *v)
+ {
++	struct proc_fdinfo *info = seq_info(m);
++
++	if (info->fdinfo_ops && info->pos > 0)
++		return info->fdinfo_ops->show(m, v);
++
++	seq_printf(m, "pos:\t%lli\nflags:\t0%o\n",
++		   (long long)info->f_file->f_pos, info->f_flags);
++
++	/* Legacy interface */
++	if (info->f_file->f_op->show_fdinfo)
++		return info->f_file->f_op->show_fdinfo(m, info->f_file);
++
++	return 0;
++}
++
++static const struct seq_operations fdinfo_seq_ops = {
++	.start	= seq_start,
++	.stop	= seq_stop,
++	.next	= seq_next,
++	.show	= seq_show,
++};
++
++static int seq_fdinfo_open(struct inode *inode, struct file *file)
++{
+ 	struct files_struct *files = NULL;
+-	int f_flags = 0, ret = -ENOENT;
+-	struct file *file = NULL;
++	struct proc_fdinfo *info;
+ 	struct task_struct *task;
++	int ret;
+ 
+-	task = get_proc_task(m->private);
+-	if (!task)
+-		return -ENOENT;
+-
+-	files = get_files_struct(task);
+-	put_task_struct(task);
+-
+-	if (files) {
+-		int fd = proc_fd(m->private);
+-
+-		spin_lock(&files->file_lock);
+-		file = fcheck_files(files, fd);
+-		if (file) {
+-			struct fdtable *fdt = files_fdtable(files);
+-
+-			f_flags = file->f_flags;
+-			if (close_on_exec(fd, fdt))
+-				f_flags |= O_CLOEXEC;
++	info = kzalloc(sizeof(*info), GFP_KERNEL);
++	if (!info)
++		return -ENOMEM;
++	file->private_data = &info->seq;
+ 
+-			get_file(file);
+-			ret = 0;
++	ret = seq_open(file, &fdinfo_seq_ops);
++	if (!ret) {
++		ret = -ENOENT;
++
++		task = get_proc_task(inode);
++		if (task) {
++			files = get_files_struct(task);
++			put_task_struct(task);
++		}
++
++		if (files) {
++			struct seq_file *m = file->private_data;
++			int fd = proc_fd(inode);
++
++			spin_lock(&files->file_lock);
++			info->f_file = fcheck_files(files, fd);
++			if (info->f_file) {
++				struct fdtable *fdt = files_fdtable(files);
++
++				info->f_flags = info->f_file->f_flags & ~O_CLOEXEC;
++				if (close_on_exec(fd, fdt))
++					info->f_flags |= O_CLOEXEC;
++
++				info->fdinfo_ops = info->f_file->f_op->fdinfo_ops;
++				m->private = info->f_file;
++
++				get_file(info->f_file);
++				ret = 0;
++			}
++			spin_unlock(&files->file_lock);
++			put_files_struct(files);
+ 		}
+-		spin_unlock(&files->file_lock);
+-		put_files_struct(files);
+ 	}
+ 
+-	if (!ret) {
+-                seq_printf(m, "pos:\t%lli\nflags:\t0%o\n",
+-			   (long long)file->f_pos, f_flags);
+-		if (file->f_op->show_fdinfo)
+-			ret = file->f_op->show_fdinfo(m, file);
+-		fput(file);
++	if (ret) {
++		if (info->f_file)
++			fput(info->f_file);
++		file->private_data = NULL;
++		kfree(info);
+ 	}
+ 
+ 	return ret;
+ }
+ 
+-static int seq_fdinfo_open(struct inode *inode, struct file *file)
++static int seq_fdinfo_release(struct inode *inode, struct file *file)
+ {
+-	return single_open(file, seq_show, inode);
++	struct seq_file *m = file->private_data;
++	struct proc_fdinfo *info = seq_info(m);
++
++	fput(info->f_file);
++	return seq_release(inode, file);
+ }
+ 
+ static const struct file_operations proc_fdinfo_file_operations = {
+ 	.open		= seq_fdinfo_open,
+ 	.read		= seq_read,
+ 	.llseek		= seq_lseek,
+-	.release	= single_release,
++	.release	= seq_fdinfo_release,
+ };
+ 
+ static int tid_fd_revalidate(struct dentry *dentry, unsigned int flags)
+Index: linux-2.6.git/include/linux/fs.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/fs.h
++++ linux-2.6.git/include/linux/fs.h
+@@ -1552,6 +1552,7 @@ struct file_operations {
+ 	long (*fallocate)(struct file *file, int mode, loff_t offset,
+ 			  loff_t len);
+ 	int (*show_fdinfo)(struct seq_file *m, struct file *f);
++	struct seq_operations *fdinfo_ops;
+ };
+ 
+ struct inode_operations {
