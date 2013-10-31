@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab3JaNod (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 09:44:33 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:30359
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752435Ab3JaNo3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 09:44:29 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VS2(zz154dIzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
-From: Nicolin Chen <b42378@freescale.com>
-To: <timur@tabi.org>, <shawn.guo@linaro.org>, <broonie@kernel.org>,
-        <s.hauer@pengutronix.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alsa-devel@alsa-project.org>, <rob.herring@calxeda.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>, <pawel.moll@arm.com>,
-        <ijc+devicetree@hellion.org.uk>
-Subject: [PATCH v4 0/4] Add dual-fifo mode support of i.MX ssi
-Date: Thu, 31 Oct 2013 21:44:12 +0800
-Message-ID: <cover.1383226444.git.b42378@freescale.com>
-X-Mailer: git-send-email 1.8.4
+	id S1754404Ab3JaNy0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 09:54:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53315 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753728Ab3JaNyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 09:54:25 -0400
+Date: Thu, 31 Oct 2013 15:57:14 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
+        gleb@redhat.com, pbonzini@redhat.com
+Subject: Re: [PATCH RFC] kvm: optimize out smp_mb using srcu_read_unlock
+Message-ID: <20131031135714.GE8976@redhat.com>
+References: <20131030190929.GA7153@redhat.com>
+ <20131030201552.GP4126@linux.vnet.ibm.com>
+ <20131030232605.GA28823@redhat.com>
+ <20131031045629.GT4126@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131031045629.GT4126@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog
-v4:
- * PATCH-3: Drop useless register configuration.
- *
- * Nothing changes for the other three patches
-v3:
- * PATCH-1: Add comments to indicate the end of v1 and v2 array.
- * PATCH-3: Use better way to keep watermark as even number.
- *
- * Nothing changes for PATCH-2 and PATCH-4
-v2:
- * Instead of adding rogue scripts to current SDMA driver based on firmware
- * V1, we define the new SDMA firmware as version 2 and bisect the PATCH-1
- * to two patches: The first is to add version check code to the SDMA driver;
- * And the second is to add SSI dual FIFO DMATYPE.
- *
- * Nothing changes for the last two patches.
-v1:
- * SSI can reduce hardware overrun/underrun possibility when using dual
- * fifo mode. To support this mode, we need to first update sdma sciprt
- * list, and then enable dual fifo BIT in SSI driver, and last update DT
- * bindings of i.MX series.
- *
- * ! This series of patches has a direct dependency between them. When
- * ! applying them, we need to apply to one single branch. Otherwise,
- * ! it would break currect branches.
+On Wed, Oct 30, 2013 at 09:56:29PM -0700, Paul E. McKenney wrote:
+> On Thu, Oct 31, 2013 at 01:26:05AM +0200, Michael S. Tsirkin wrote:
+> > > > Paul, could you review this patch please?
+> > > > Documentation/memory-barriers.txt says that unlock has a weaker
+> > > > uni-directional barrier, but in practice srcu_read_unlock calls
+> > > > smp_mb().
+> > > > 
+> > > > Is it OK to rely on this? If not, can I add
+> > > > smp_mb__after_srcu_read_unlock (making it an empty macro for now)
+> > > > so we can avoid an actual extra smp_mb()?
+> > > 
+> > > Please use smp_mb__after_srcu_read_unlock().  After all, it was not
+> > > that long ago that srcu_read_unlock() contained no memory barriers,
+> > > and perhaps some day it won't need to once again.
+> > > 
+> > > 							Thanx, Paul
+> > >
+> > 
+> > Thanks!
+> > Something like this will be enough?
+> > 
+> > diff --git a/include/linux/srcu.h b/include/linux/srcu.h
+> > index c114614..9b058ee 100644
+> > --- a/include/linux/srcu.h
+> > +++ b/include/linux/srcu.h
+> > @@ -237,4 +237,18 @@ static inline void srcu_read_unlock(struct srcu_struct *sp, int idx)
+> >  	__srcu_read_unlock(sp, idx);
+> >  }
+> > 
+> > +/**
+> > + * smp_mb__after_srcu_read_unlock - ensure full ordering after srcu_read_unlock
+> > + *
+> > + * Converts the preceding srcu_read_unlock into a two-way memory barrier.
+> > + *
+> > + * Call this after srcu_read_unlock, to guarantee that all memory operations
+> > + * that occur after smp_mb__after_srcu_read_unlock will appear to happen after
+> > + * the preceding srcu_read_unlock.
+> > + */
+> > +static inline void smp_mb__after_srcu_read_unlock(void)
+> > +{
+> > +	/* __srcu_read_unlock has smp_mb() internally so nothing to do here. */
+> > +}
+> > +
+> >  #endif
+> 
+> Yep, that should do it!
+> 
+> 							Thanx, Paul
 
-Nicolin Chen (4):
-  dma: imx-sdma: Add sdma firmware version 2 support
-  dma: imx-sdma: Add new dma type for ssi dual fifo script
-  ASoC: fsl_ssi: Add dual fifo mode support
-  ARM: dts: imx: use dual-fifo sdma script for ssi
+BTW I'm wondering about the smb_mb within srcu_read_lock.
+If we kept the index in the same memory with the buffer we
+dereference, could we get rid of it and use a dependency barrier
+instead? It does appear prominently in the profiles.
+Thoughts?
 
- .../devicetree/bindings/dma/fsl-imx-sdma.txt          |  1 +
- arch/arm/boot/dts/imx51.dtsi                          |  4 ++--
- arch/arm/boot/dts/imx53.dtsi                          |  4 ++--
- arch/arm/boot/dts/imx6qdl.dtsi                        | 12 ++++++------
- arch/arm/boot/dts/imx6sl.dtsi                         | 12 ++++++------
- drivers/dma/imx-sdma.c                                | 19 ++++++++++++++++++-
- include/linux/platform_data/dma-imx-sdma.h            |  5 +++++
- include/linux/platform_data/dma-imx.h                 |  1 +
- sound/soc/fsl/fsl_ssi.c                               | 18 +++++++++++++++++-
- 9 files changed, 58 insertions(+), 18 deletions(-)
 
 -- 
-1.8.4
-
-
+MST
