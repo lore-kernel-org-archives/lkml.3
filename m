@@ -1,95 +1,405 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab3JaJnf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 05:43:35 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:49513 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248Ab3JaJn2 (ORCPT
+	id S1752182Ab3JaJvu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 05:51:50 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:43560 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab3JaJvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 05:43:28 -0400
-Date: Thu, 31 Oct 2013 10:43:24 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: suravee.suthikulpanit@amd.com
-Cc: mingo@kernel.org, mingo@redhat.com, jacob.w.shin@gmail.com,
-        oleg@redhat.com, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
-        hpa@zytor.com, tgl@domain.invalid, linux-kernel@vger.kernel.org,
-        sherry.hurwitz@amd.com
-Subject: Re: [PATCH V5 0/3] perf/x86/amd: AMD Family 16h Data Breakpoint
- Extensions
-Message-ID: <20131031094322.GD2253@localhost.localdomain>
-References: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com>
+	Thu, 31 Oct 2013 05:51:48 -0400
+Date: Thu, 31 Oct 2013 10:51:44 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Tom Weber <l_linux-kernel@mail2news.4t2.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [RFC GIT PULL] NUMA-balancing memory corruption fixes
+Message-ID: <20131031095143.GA9692@gmail.com>
+References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
+ <20131024122646.GB2402@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com>
+In-Reply-To: <20131024122646.GB2402@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 11:11:05AM -0500, suravee.suthikulpanit@amd.com wrote:
-> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-> 
-> Frederic, this is the rebase of the V4 patch onto the linux-3.12.0-rc3 (linux.git),
-> and retest.
-> 
-> The following patchset enables hardware breakpoint bp_len greater than
-> HW_BREAKPOINT_LEN_8 on AMD Family 16h and later.
-> 
->   $ perf stat -e mem:0x1000/16:w a.out
->                             ^^
->                             bp_len
-> 
-> This will count writes to [0x1000 ~ 0x1010)
 
-This interface looks good to me. I mean it seems flexible enough to provide
-a range of address that fits anyway whenever the architecture supports breakpoint
-ranges through either a length or a mask.
+Linus,
 
-Thanks.
+* Mel Gorman <mgorman@suse.de> wrote:
 
+> Hi Ingo,
 > 
-> V5:
-> * Rebase onto 3.12.0-rc3.
-> * Modify the tools/perf/util/parse-events.y due to change in
->   parse_events_add_breakpoint().
-> 
-> V4:
-> Even more per Oleg's suggestion:
-> * Further simplify info->len and info->mask setting switch statement
-> 
-> V3:
-> More per Oleg's suggestion:
-> * Use already existing bp_len instead of changing userland API and
->   in kernel turn bp_len into proper AMD hardware breakpoint address
->   mask.
-> 
-> V2:
-> Per Oleg's suggestions:
-> * Moved testing of bp_addr_mask to validate_hw_breakpoint()
-> * Changed perf tool syntax to mem:<addr>[/addr_mask][:access]
-> 
-> 
-> Jacob Shin (3):
->   perf/x86/amd: AMD support for bp_len > HW_BREAKPOINT_LEN_8
->   perf tools: allow user to specify hardware breakpoint bp_len
->   perf tools: add hardware breakpoint bp_len test cases
-> 
->  arch/x86/include/asm/cpufeature.h        |  2 ++
->  arch/x86/include/asm/debugreg.h          |  5 +++
->  arch/x86/include/asm/hw_breakpoint.h     |  1 +
->  arch/x86/include/uapi/asm/msr-index.h    |  4 +++
->  arch/x86/kernel/cpu/amd.c                | 19 +++++++++++
->  arch/x86/kernel/hw_breakpoint.c          | 47 +++++++++++----------------
->  tools/perf/Documentation/perf-record.txt |  7 ++--
->  tools/perf/tests/parse-events.c          | 55 ++++++++++++++++++++++++++++++++
->  tools/perf/util/parse-events.c           | 17 ++++------
->  tools/perf/util/parse-events.h           |  2 +-
->  tools/perf/util/parse-events.l           |  1 +
->  tools/perf/util/parse-events.y           | 26 +++++++++++++--
->  12 files changed, 142 insertions(+), 44 deletions(-)
-> 
-> -- 
-> 1.8.1.2
-> 
-> 
+> Off-list we talked with Peter about the fact that automatic NUMA 
+> balancing as merged in 3.10, 3.11 and 3.12 shortly may corrupt 
+> userspace memory. [...]
+
+So these fixes are definitely not something I'd like to sit on, but 
+as I said to you at the KS the timing is quite tight, with Linus 
+planning v3.12-final within a week.
+
+Fedora-19 is affected:
+
+ comet:~> grep NUMA_BALANCING /boot/config-3.11.3-201.fc19.x86_64 
+
+ CONFIG_ARCH_SUPPORTS_NUMA_BALANCING=y
+ CONFIG_NUMA_BALANCING_DEFAULT_ENABLED=y
+ CONFIG_NUMA_BALANCING=y
+
+AFAICS Ubuntu will be affected as well, once it updates the kernel:
+
+ hubble:~> grep NUMA_BALANCING /boot/config-3.8.0-32-generic 
+
+ CONFIG_ARCH_SUPPORTS_NUMA_BALANCING=y
+ CONFIG_NUMA_BALANCING_DEFAULT_ENABLED=y
+ CONFIG_NUMA_BALANCING=y
+
+Linus, please consider pulling the latest core-urgent-for-linus git 
+tree from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-urgent-for-linus
+
+   # HEAD: 0255d491848032f6c601b6410c3b8ebded3a37b1 mm: Account for a THP NUMA hinting update as one PTE update
+
+These 6 commits are a minimalized set of cherry-picks needed to fix 
+the memory corruption bugs. All commits are fixes, except "mm: numa: 
+Sanitize task_numa_fault() callsites" which is a cleanup that made 
+two followup fixes simpler.
+
+I've done targeted testing with just this SHA1 to try to make sure 
+there are no cherry-picking artifacts. The original 
+non-cherry-picked set of fixes were exposed to linux-next for a 
+couple of weeks.
+
+( If you think this is too dangerous for too little benefit then
+  I'll drop this separate tree and will send the original commits in 
+  the merge window. )
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Mel Gorman (6):
+      mm: numa: Do not account for a hinting fault if we raced
+      mm: Wait for THP migrations to complete during NUMA hinting faults
+      mm: Prevent parallel splits during THP migration
+      mm: numa: Sanitize task_numa_fault() callsites
+      mm: Close races between THP migration and PMD numa clearing
+      mm: Account for a THP NUMA hinting update as one PTE update
+
+
+ mm/huge_memory.c | 70 ++++++++++++++++++++++++++++++++++++++------------------
+ mm/memory.c      | 53 +++++++++++++++++-------------------------
+ mm/migrate.c     | 19 ++++++++-------
+ mm/mprotect.c    |  2 +-
+ 4 files changed, 81 insertions(+), 63 deletions(-)
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 610e3df..cca80d9 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1278,64 +1278,90 @@ out:
+ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 				unsigned long addr, pmd_t pmd, pmd_t *pmdp)
+ {
++	struct anon_vma *anon_vma = NULL;
+ 	struct page *page;
+ 	unsigned long haddr = addr & HPAGE_PMD_MASK;
++	int page_nid = -1, this_nid = numa_node_id();
+ 	int target_nid;
+-	int current_nid = -1;
+-	bool migrated;
++	bool page_locked;
++	bool migrated = false;
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(pmd, *pmdp)))
+ 		goto out_unlock;
+ 
+ 	page = pmd_page(pmd);
+-	get_page(page);
+-	current_nid = page_to_nid(page);
++	page_nid = page_to_nid(page);
+ 	count_vm_numa_event(NUMA_HINT_FAULTS);
+-	if (current_nid == numa_node_id())
++	if (page_nid == this_nid)
+ 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
+ 
++	/*
++	 * Acquire the page lock to serialise THP migrations but avoid dropping
++	 * page_table_lock if at all possible
++	 */
++	page_locked = trylock_page(page);
+ 	target_nid = mpol_misplaced(page, vma, haddr);
+ 	if (target_nid == -1) {
+-		put_page(page);
+-		goto clear_pmdnuma;
++		/* If the page was locked, there are no parallel migrations */
++		if (page_locked)
++			goto clear_pmdnuma;
++
++		/*
++		 * Otherwise wait for potential migrations and retry. We do
++		 * relock and check_same as the page may no longer be mapped.
++		 * As the fault is being retried, do not account for it.
++		 */
++		spin_unlock(&mm->page_table_lock);
++		wait_on_page_locked(page);
++		page_nid = -1;
++		goto out;
+ 	}
+ 
+-	/* Acquire the page lock to serialise THP migrations */
++	/* Page is misplaced, serialise migrations and parallel THP splits */
++	get_page(page);
+ 	spin_unlock(&mm->page_table_lock);
+-	lock_page(page);
++	if (!page_locked)
++		lock_page(page);
++	anon_vma = page_lock_anon_vma_read(page);
+ 
+ 	/* Confirm the PTE did not while locked */
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(pmd, *pmdp))) {
+ 		unlock_page(page);
+ 		put_page(page);
++		page_nid = -1;
+ 		goto out_unlock;
+ 	}
+-	spin_unlock(&mm->page_table_lock);
+ 
+-	/* Migrate the THP to the requested node */
++	/*
++	 * Migrate the THP to the requested node, returns with page unlocked
++	 * and pmd_numa cleared.
++	 */
++	spin_unlock(&mm->page_table_lock);
+ 	migrated = migrate_misplaced_transhuge_page(mm, vma,
+ 				pmdp, pmd, addr, page, target_nid);
+-	if (!migrated)
+-		goto check_same;
+-
+-	task_numa_fault(target_nid, HPAGE_PMD_NR, true);
+-	return 0;
++	if (migrated)
++		page_nid = target_nid;
+ 
+-check_same:
+-	spin_lock(&mm->page_table_lock);
+-	if (unlikely(!pmd_same(pmd, *pmdp)))
+-		goto out_unlock;
++	goto out;
+ clear_pmdnuma:
++	BUG_ON(!PageLocked(page));
+ 	pmd = pmd_mknonnuma(pmd);
+ 	set_pmd_at(mm, haddr, pmdp, pmd);
+ 	VM_BUG_ON(pmd_numa(*pmdp));
+ 	update_mmu_cache_pmd(vma, addr, pmdp);
++	unlock_page(page);
+ out_unlock:
+ 	spin_unlock(&mm->page_table_lock);
+-	if (current_nid != -1)
+-		task_numa_fault(current_nid, HPAGE_PMD_NR, false);
++
++out:
++	if (anon_vma)
++		page_unlock_anon_vma_read(anon_vma);
++
++	if (page_nid != -1)
++		task_numa_fault(page_nid, HPAGE_PMD_NR, migrated);
++
+ 	return 0;
+ }
+ 
+diff --git a/mm/memory.c b/mm/memory.c
+index 1311f26..d176154 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3521,12 +3521,12 @@ static int do_nonlinear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ }
+ 
+ int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
+-				unsigned long addr, int current_nid)
++				unsigned long addr, int page_nid)
+ {
+ 	get_page(page);
+ 
+ 	count_vm_numa_event(NUMA_HINT_FAULTS);
+-	if (current_nid == numa_node_id())
++	if (page_nid == numa_node_id())
+ 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
+ 
+ 	return mpol_misplaced(page, vma, addr);
+@@ -3537,7 +3537,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ {
+ 	struct page *page = NULL;
+ 	spinlock_t *ptl;
+-	int current_nid = -1;
++	int page_nid = -1;
+ 	int target_nid;
+ 	bool migrated = false;
+ 
+@@ -3567,15 +3567,10 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		return 0;
+ 	}
+ 
+-	current_nid = page_to_nid(page);
+-	target_nid = numa_migrate_prep(page, vma, addr, current_nid);
++	page_nid = page_to_nid(page);
++	target_nid = numa_migrate_prep(page, vma, addr, page_nid);
+ 	pte_unmap_unlock(ptep, ptl);
+ 	if (target_nid == -1) {
+-		/*
+-		 * Account for the fault against the current node if it not
+-		 * being replaced regardless of where the page is located.
+-		 */
+-		current_nid = numa_node_id();
+ 		put_page(page);
+ 		goto out;
+ 	}
+@@ -3583,11 +3578,11 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	/* Migrate to the requested node */
+ 	migrated = migrate_misplaced_page(page, target_nid);
+ 	if (migrated)
+-		current_nid = target_nid;
++		page_nid = target_nid;
+ 
+ out:
+-	if (current_nid != -1)
+-		task_numa_fault(current_nid, 1, migrated);
++	if (page_nid != -1)
++		task_numa_fault(page_nid, 1, migrated);
+ 	return 0;
+ }
+ 
+@@ -3602,7 +3597,6 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	unsigned long offset;
+ 	spinlock_t *ptl;
+ 	bool numa = false;
+-	int local_nid = numa_node_id();
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	pmd = *pmdp;
+@@ -3625,9 +3619,10 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	for (addr = _addr + offset; addr < _addr + PMD_SIZE; pte++, addr += PAGE_SIZE) {
+ 		pte_t pteval = *pte;
+ 		struct page *page;
+-		int curr_nid = local_nid;
++		int page_nid = -1;
+ 		int target_nid;
+-		bool migrated;
++		bool migrated = false;
++
+ 		if (!pte_present(pteval))
+ 			continue;
+ 		if (!pte_numa(pteval))
+@@ -3649,25 +3644,19 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		if (unlikely(page_mapcount(page) != 1))
+ 			continue;
+ 
+-		/*
+-		 * Note that the NUMA fault is later accounted to either
+-		 * the node that is currently running or where the page is
+-		 * migrated to.
+-		 */
+-		curr_nid = local_nid;
+-		target_nid = numa_migrate_prep(page, vma, addr,
+-					       page_to_nid(page));
+-		if (target_nid == -1) {
++		page_nid = page_to_nid(page);
++		target_nid = numa_migrate_prep(page, vma, addr, page_nid);
++		pte_unmap_unlock(pte, ptl);
++		if (target_nid != -1) {
++			migrated = migrate_misplaced_page(page, target_nid);
++			if (migrated)
++				page_nid = target_nid;
++		} else {
+ 			put_page(page);
+-			continue;
+ 		}
+ 
+-		/* Migrate to the requested node */
+-		pte_unmap_unlock(pte, ptl);
+-		migrated = migrate_misplaced_page(page, target_nid);
+-		if (migrated)
+-			curr_nid = target_nid;
+-		task_numa_fault(curr_nid, 1, migrated);
++		if (page_nid != -1)
++			task_numa_fault(page_nid, 1, migrated);
+ 
+ 		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
+ 	}
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 7a7325e..c046927 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1715,12 +1715,12 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
+ 		unlock_page(new_page);
+ 		put_page(new_page);		/* Free it */
+ 
+-		unlock_page(page);
++		/* Retake the callers reference and putback on LRU */
++		get_page(page);
+ 		putback_lru_page(page);
+-
+-		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
+-		isolated = 0;
+-		goto out;
++		mod_zone_page_state(page_zone(page),
++			 NR_ISOLATED_ANON + page_lru, -HPAGE_PMD_NR);
++		goto out_fail;
+ 	}
+ 
+ 	/*
+@@ -1737,9 +1737,9 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
+ 	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+ 	entry = pmd_mkhuge(entry);
+ 
+-	page_add_new_anon_rmap(new_page, vma, haddr);
+-
++	pmdp_clear_flush(vma, haddr, pmd);
+ 	set_pmd_at(mm, haddr, pmd, entry);
++	page_add_new_anon_rmap(new_page, vma, haddr);
+ 	update_mmu_cache_pmd(vma, address, &entry);
+ 	page_remove_rmap(page);
+ 	/*
+@@ -1758,7 +1758,6 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
+ 	count_vm_events(PGMIGRATE_SUCCESS, HPAGE_PMD_NR);
+ 	count_vm_numa_events(NUMA_PAGE_MIGRATE, HPAGE_PMD_NR);
+ 
+-out:
+ 	mod_zone_page_state(page_zone(page),
+ 			NR_ISOLATED_ANON + page_lru,
+ 			-HPAGE_PMD_NR);
+@@ -1767,6 +1766,10 @@ out:
+ out_fail:
+ 	count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
+ out_dropref:
++	entry = pmd_mknonnuma(entry);
++	set_pmd_at(mm, haddr, pmd, entry);
++	update_mmu_cache_pmd(vma, address, &entry);
++
+ 	unlock_page(page);
+ 	put_page(page);
+ 	return 0;
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index a3af058..412ba2b 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -148,7 +148,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
+ 				split_huge_page_pmd(vma, addr, pmd);
+ 			else if (change_huge_pmd(vma, pmd, addr, newprot,
+ 						 prot_numa)) {
+-				pages += HPAGE_PMD_NR;
++				pages++;
+ 				continue;
+ 			}
+ 			/* fall through */
