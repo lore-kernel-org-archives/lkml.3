@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab3JaQLn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 12:11:43 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:40077 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522Ab3JaQLP (ORCPT
+	id S1755406Ab3JaQNA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 12:13:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43960 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032Ab3JaQM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 12:11:15 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 5/6] arm: zynq: Set proper GIC flags
-Date: Thu, 31 Oct 2013 09:10:18 -0700
-Message-Id: <1383235819-2552-6-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.4.1
-In-Reply-To: <1383235819-2552-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1383235819-2552-1-git-send-email-soren.brinkmann@xilinx.com>
+	Thu, 31 Oct 2013 12:12:58 -0400
+Message-ID: <1383235969.7651.42.camel@fourier>
+Subject: Re: [PATCH 0/4] ACPICA: Stable material of ACPI executer fixes for
+ linux-3.8.
+From: Kamal Mostafa <kamal@canonical.com>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Bob Moore <robert.moore@intel.com>
+Date: Thu, 31 Oct 2013 09:12:49 -0700
+In-Reply-To: <cover.1383181113.git.lv.zheng@intel.com>
+References: <cover.1383181113.git.lv.zheng@intel.com>
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-o6TH7ILyAIjnDe1vXfJ1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zynq is able to wake up on any IRQ, so flag it with
-IRQCHIP_SKIP_SET_WAKE, and we want to mask off the IRQs when
-going to suspend to avoid transient effects so also flag
-this with IRQCHIP_MASK_ON_SUSPEND.
 
-This is essentially, making the same changes as commit
-'ARM: ux500: set proper GIC flags'
-(sha1: 7e1f97ea8ffa66679252520dbbbd6ec413ecae68) for Zynq.
+--=-o6TH7ILyAIjnDe1vXfJ1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- arch/arm/mach-zynq/common.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+On Thu, 2013-10-31 at 09:07 +0800, Lv Zheng wrote:
+> There are bug-fixes for AML interpreter upstreamed, fixing some serious
+> issues found in recent platforms.  These fixes make Linux AML interpreter
+> more ACPI 2.0 ASL concept compliant.  Further AML interpreter fixes shoul=
+d
+> be based on such improvements, thus they are good materials for stable.
+>=20
+> This patch set can be safely applied to linux-3.8:
+> commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200 upstream.
+>=20
+> The patch set has passed build/boot tests on the following machines:
+>   Dell Inspiron Mini 1010 (i386)
+>   HP Compaq 8200 Elite SFF PC (x86-64)
+>=20
+> Bob Moore (4):
+>   ACPICA: Interpreter: Fix Store() when implicit conversion is not
+>     possible.
+>   ACPICA: DeRefOf operator: Update to fully resolve FieldUnit and
+>     BufferField refs.
+>   ACPICA: Return error if DerefOf resolves to a null package element.
+>   ACPICA: Fix for a Store->ArgX when ArgX contains a reference to a
+>     field.
+>=20
+>  drivers/acpi/acpica/exoparg1.c |   48 +++++++++++--
+>  drivers/acpi/acpica/exstore.c  |  151 +++++++++++++++++++++++++++-------=
+------
+>  2 files changed, 146 insertions(+), 53 deletions(-)
+>=20
+> Cc: Bob Moore <robert.moore@intel.com>
 
-diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-index 5690925519bf..eb59bae37c04 100644
---- a/arch/arm/mach-zynq/common.c
-+++ b/arch/arm/mach-zynq/common.c
-@@ -25,6 +25,8 @@
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <linux/of.h>
-+#include <linux/irqchip.h>
-+#include <linux/irqchip/arm-gic.h>
- 
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
-@@ -86,6 +88,12 @@ static void __init zynq_map_io(void)
- 	zynq_scu_map_io();
- }
- 
-+static void __init zynq_irq_init(void)
-+{
-+	gic_arch_extn.flags = IRQCHIP_SKIP_SET_WAKE | IRQCHIP_MASK_ON_SUSPEND;
-+	irqchip_init();
-+}
-+
- static void zynq_system_reset(enum reboot_mode mode, const char *cmd)
- {
- 	zynq_slcr_system_reset();
-@@ -99,6 +107,7 @@ static const char * const zynq_dt_match[] = {
- DT_MACHINE_START(XILINX_EP107, "Xilinx Zynq Platform")
- 	.smp		= smp_ops(zynq_smp_ops),
- 	.map_io		= zynq_map_io,
-+	.init_irq	= zynq_irq_init,
- 	.init_machine	= zynq_init_machine,
- 	.init_time	= zynq_timer_init,
- 	.dt_compat	= zynq_dt_match,
--- 
-1.8.4.1
+
+OK, I'm queuing these up for 3.8-stable (they'll appear in v3.8.13.13).
+Thanks very much Lv, Rafael, and Bob.
+
+ -Kamal
+
+
+--=-o6TH7ILyAIjnDe1vXfJ1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABCAAGBQJScoGBAAoJEHqwmdxYrXhZV3YP/1ZTnpdv4IB7+580zcFtWqLx
+hzrZTZOaBrnGrFZnpX+o3Vx2qtWLl/iV7n29h4knXQJENSZtjSSE+n4n/9c9YcEg
+VSL/M77IOUER0p9JdVHeuiVRxZ1LlkiLrdJ+a51kp6Not/M5zS9QnkzrK+dpsISV
+p1Xppp2R+XsYk2D3qQTj3G3B5Dk40ir9vj0o2H2j6qU3u2CTVfx6y4O3AEv79gPo
+l94f6aF7dZ9RHfYqbtmFPwp4ryGZPg/UL5+y+Wb1P8lYUcNGhhLxc1f9kpfoAFrb
+GPxIFILSzqC51hd6L5TWcta4aLgJ7DWrU63/t/B/LJUegrc4K/fdcniwIpIe+j+S
+ymMgFP50UosJYPce0u7dVxM3R95Tsx5U8f6duih0qydJfbulPZDmfpfQ8M3fYJ5l
+prXtHU9qnRsDdpekOYTwg+ppxM93toUPgGq2LhbBnWV/3QA4uG/3RrLxIl20bd4F
+NzN1x2ctGHqcVPnmJWuR/xYEEE76AgJ9vyB6KH3joGPfuXUubLfkCoEce2/47xGJ
+D8wwLMbrTj/7cdTOzegDTSS8B4UoDiNPVHDfY5RfLKdVTFItFuWtb9orRg/h+ETi
+WDV3pUF2Wz5MVdjm+vZfpy3g0OS1P/jnS1qmml5iqwfle4caITgwetncqa907Egr
+41Np7kt0XHEp8Kj6/s9q
+=oaar
+-----END PGP SIGNATURE-----
+
+--=-o6TH7ILyAIjnDe1vXfJ1--
 
