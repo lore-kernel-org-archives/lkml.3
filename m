@@ -1,50 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab3JaQAL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 12:00:11 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:20896 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590Ab3JaQAK (ORCPT
+	id S1755282Ab3JaQAR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 12:00:17 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33736 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752590Ab3JaQAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 12:00:10 -0400
-From: Jamie Iles <jamie.iles@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jamie Iles <jamie.iles@oracle.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH] recordmcount.pl: add support for __fentry__
-Date: Thu, 31 Oct 2013 15:59:58 +0000
-Message-Id: <1383235198-24961-1-git-send-email-jamie.iles@oracle.com>
-X-Mailer: git-send-email 1.8.4.2
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Thu, 31 Oct 2013 12:00:13 -0400
+Date: Thu, 31 Oct 2013 15:59:34 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: Re: [PATCH 3/5] iommu/arm-smmu: Use devm_ioremap_resource
+Message-ID: <20131031155933.GA30623@mudshark.cambridge.arm.com>
+References: <1383217687-12037-1-git-send-email-tushar.behera@linaro.org>
+ <1383217687-12037-4-git-send-email-tushar.behera@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383217687-12037-4-git-send-email-tushar.behera@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With gcc 4.6.0 the -mfentry feature places the function profiling call
-at the start of the function. When this is used, the call is to
-__fentry__ and not mcount.
+On Thu, Oct 31, 2013 at 11:08:05AM +0000, Tushar Behera wrote:
+> While at it, propagate the error code.
 
-Based on 48bb5dc6cd9d30fe0d594947563da1f8bd9abada (ftrace: Make
-recordmcount.c handle __fentry__).
+Thanks, but I already have an equivalent patch queued which Joerg is going
+to pull real soon now (right, Joerg? :p).
 
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Jamie Iles <jamie.iles@oracle.com>
----
- scripts/recordmcount.pl | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
-index a674fd5..6460fc68 100755
---- a/scripts/recordmcount.pl
-+++ b/scripts/recordmcount.pl
-@@ -214,7 +214,7 @@ $local_regex = "^[0-9a-fA-F]+\\s+t\\s+(\\S+)";
- $weak_regex = "^[0-9a-fA-F]+\\s+([wW])\\s+(\\S+)";
- $section_regex = "Disassembly of section\\s+(\\S+):";
- $function_regex = "^([0-9a-fA-F]+)\\s+<(.*?)>:";
--$mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\smcount\$";
-+$mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s(mcount|__fentry__)\$";
- $section_type = '@progbits';
- $mcount_adjust = 0;
- $type = ".long";
--- 
-1.8.4.2
-
+Will
