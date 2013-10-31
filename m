@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab3JaNoe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 09:44:34 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:1179 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752548Ab3JaNoa (ORCPT
+	id S1754708Ab3JaNoi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 09:44:38 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:53911 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754601Ab3JaNoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 09:44:30 -0400
+	Thu, 31 Oct 2013 09:44:34 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 3
 X-BigFish: VS3(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
@@ -19,9 +19,9 @@ CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
         <alsa-devel@alsa-project.org>, <rob.herring@calxeda.com>,
         <mark.rutland@arm.com>, <swarren@wwwdotorg.org>, <pawel.moll@arm.com>,
         <ijc+devicetree@hellion.org.uk>
-Subject: [PATCH v4 1/4] dma: imx-sdma: Add sdma firmware version 2 support
-Date: Thu, 31 Oct 2013 21:44:13 +0800
-Message-ID: <4fd9bd97312d255a80d686e911f5e9493db31d54.1383226444.git.b42378@freescale.com>
+Subject: [PATCH v4 2/4] dma: imx-sdma: Add new dma type for ssi dual fifo script
+Date: Thu, 31 Oct 2013 21:44:14 +0800
+Message-ID: <cc3826390838f98455647eb47338e0fbf4be57b2.1383226444.git.b42378@freescale.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <cover.1383226444.git.b42378@freescale.com>
 References: <cover.1383226444.git.b42378@freescale.com>
@@ -33,78 +33,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On i.MX5/6 series, SDMA is using new version firmware to support SSI
-dual FIFO feature and HDMI Audio (i.MX6Q/DL only). Thus add it.
+This patch adds a new DMA_TYPE for SSI dual FIFO script, included
+in SDMA firmware version 2. This script would allow SSI use dual
+fifo mode to transimit/receive data without occasional hardware
+underrun/overrun.
 
 Signed-off-by: Nicolin Chen <b42378@freescale.com>
 ---
- drivers/dma/imx-sdma.c                     | 15 ++++++++++++++-
- include/linux/platform_data/dma-imx-sdma.h |  5 +++++
- 2 files changed, 19 insertions(+), 1 deletion(-)
+ Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt | 1 +
+ drivers/dma/imx-sdma.c                                 | 4 ++++
+ include/linux/platform_data/dma-imx.h                  | 1 +
+ 3 files changed, 6 insertions(+)
 
+diff --git a/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt b/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
+index 4fa814d..68b83ec 100644
+--- a/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
++++ b/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
+@@ -42,6 +42,7 @@ The full ID of peripheral types can be found below.
+ 	19	IPU Memory
+ 	20	ASRC
+ 	21	ESAI
++	22	SSI Dual FIFO	(needs firmware ver >= 2)
+ 
+ The third cell specifies the transfer priority as below.
+ 
 diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index fc43603..c7ece8d 100644
+index c7ece8d..efaa9a9 100644
 --- a/drivers/dma/imx-sdma.c
 +++ b/drivers/dma/imx-sdma.c
-@@ -323,6 +323,7 @@ struct sdma_engine {
- 	struct clk			*clk_ipg;
- 	struct clk			*clk_ahb;
- 	spinlock_t			channel_0_lock;
-+	u32				script_number;
- 	struct sdma_script_start_addrs	*script_addrs;
- 	const struct sdma_driver_data	*drvdata;
- };
-@@ -1238,6 +1239,7 @@ static void sdma_issue_pending(struct dma_chan *chan)
- }
- 
- #define SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V1	34
-+#define SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V2	38
- 
- static void sdma_add_scripts(struct sdma_engine *sdma,
- 		const struct sdma_script_start_addrs *addr)
-@@ -1246,7 +1248,7 @@ static void sdma_add_scripts(struct sdma_engine *sdma,
- 	s32 *saddr_arr = (u32 *)sdma->script_addrs;
- 	int i;
- 
--	for (i = 0; i < SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V1; i++)
-+	for (i = 0; i < sdma->script_number; i++)
- 		if (addr_arr[i] > 0)
- 			saddr_arr[i] = addr_arr[i];
- }
-@@ -1272,6 +1274,17 @@ static void sdma_load_firmware(const struct firmware *fw, void *context)
- 		goto err_firmware;
- 	if (header->ram_code_start + header->ram_code_size > fw->size)
- 		goto err_firmware;
-+	switch (header->version_major) {
-+		case 1:
-+			sdma->script_number = SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V1;
-+			break;
-+		case 2:
-+			sdma->script_number = SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V2;
-+			break;
-+		default:
-+			dev_err(sdma->dev, "unknown firmware version\n");
-+			return;
-+	}
- 
- 	addr = (void *)header + header->script_addrs_start;
- 	ram_code = (void *)header + header->ram_code_start;
-diff --git a/include/linux/platform_data/dma-imx-sdma.h b/include/linux/platform_data/dma-imx-sdma.h
-index 3a39428..eabac4e 100644
---- a/include/linux/platform_data/dma-imx-sdma.h
-+++ b/include/linux/platform_data/dma-imx-sdma.h
-@@ -43,6 +43,11 @@ struct sdma_script_start_addrs {
- 	s32 dptc_dvfs_addr;
- 	s32 utra_addr;
- 	s32 ram_code_start_addr;
-+	/* End of v1 array */
-+	s32 mcu_2_ssish_addr;
-+	s32 ssish_2_mcu_addr;
-+	s32 hdmi_dma_addr;
-+	/* End of v2 array */
+@@ -725,6 +725,10 @@ static void sdma_get_pc(struct sdma_channel *sdmac,
+ 		per_2_emi = sdma->script_addrs->app_2_mcu_addr;
+ 		emi_2_per = sdma->script_addrs->mcu_2_app_addr;
+ 		break;
++	case IMX_DMATYPE_SSI_DUAL:
++		per_2_emi = sdma->script_addrs->ssish_2_mcu_addr;
++		emi_2_per = sdma->script_addrs->mcu_2_ssish_addr;
++		break;
+ 	case IMX_DMATYPE_SSI_SP:
+ 	case IMX_DMATYPE_MMC:
+ 	case IMX_DMATYPE_SDHC:
+diff --git a/include/linux/platform_data/dma-imx.h b/include/linux/platform_data/dma-imx.h
+index beac6b8..bcbc6c3 100644
+--- a/include/linux/platform_data/dma-imx.h
++++ b/include/linux/platform_data/dma-imx.h
+@@ -39,6 +39,7 @@ enum sdma_peripheral_type {
+ 	IMX_DMATYPE_IPU_MEMORY,	/* IPU Memory */
+ 	IMX_DMATYPE_ASRC,	/* ASRC */
+ 	IMX_DMATYPE_ESAI,	/* ESAI */
++	IMX_DMATYPE_SSI_DUAL,	/* SSI Dual FIFO */
  };
  
- /**
+ enum imx_dma_prio {
 -- 
 1.8.4
 
