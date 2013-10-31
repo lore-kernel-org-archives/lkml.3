@@ -1,273 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab3JaJ6g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 05:58:36 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:57301 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753954Ab3JaJ6f (ORCPT
+	id S1754092Ab3JaJ7K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 05:59:10 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:54339 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753954Ab3JaJ7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 05:58:35 -0400
-Date: Thu, 31 Oct 2013 10:58:31 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: suravee.suthikulpanit@amd.com
-Cc: mingo@kernel.org, mingo@redhat.com, jacob.w.shin@gmail.com,
-        oleg@redhat.com, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
-        hpa@zytor.com, tgl@domain.invalid, linux-kernel@vger.kernel.org,
-        sherry.hurwitz@amd.com
-Subject: Re: [PATCH 1/3] perf/x86/amd: AMD support for bp_len >
- HW_BREAKPOINT_LEN_8
-Message-ID: <20131031095829.GE2253@localhost.localdomain>
-References: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1380730268-25807-2-git-send-email-suravee.suthikulpanit@amd.com>
+	Thu, 31 Oct 2013 05:59:08 -0400
+Date: Thu, 31 Oct 2013 10:59:02 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Pekka Enberg <penberg@iki.fi>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
+        anton@redhat.com, systemtap@sourceware.org,
+        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com,
+        dsahern@gmail.com,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
+Message-ID: <20131031095902.GA9971@gmail.com>
+References: <20131023044511.1886.82571.stgit@hemant-fedora>
+ <20131023050502.1886.15779.stgit@hemant-fedora>
+ <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com>
+ <y0mbo2cs2oa.fsf@fche.csb>
+ <5270D9F7.3090105@hitachi.com>
+ <5270F2DE.6040505@iki.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1380730268-25807-2-git-send-email-suravee.suthikulpanit@amd.com>
+In-Reply-To: <5270F2DE.6040505@iki.fi>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 02, 2013 at 11:11:06AM -0500, suravee.suthikulpanit@amd.com wrote:
-> From: Jacob Shin <jacob.w.shin@gmail.com>
+
+* Pekka Enberg <penberg@iki.fi> wrote:
+
+> On 10/30/13 12:05 PM, Masami Hiramatsu wrote:
+> >To find all system libraries, we can use ldconfig.
+> >
+> >$ ldconfig --print-cache
+> >
+> >shows what dynamic libraries will be loaded. On my own laptop (running
+> >ubuntu13.04) shows ~1000 libs.
 > 
-> Implement hardware breakpoint address mask for AMD Family 16h and
-> above processors. CPUID feature bit indicates hardware support for
-> DRn_ADDR_MASK MSRs. These masks further qualify DRn/DR7 hardware
-> breakpoint addresses to allow matching of larger addresses ranges.
+> Good point. That definitely narrows down the scanned set.
 > 
-> Valuable advice and pseudo code from Oleg Nesterov <oleg@redhat.com>
-> 
-> Signed-off-by: Jacob Shin <jacob.w.shin@gmail.com>
-> Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-> ---
->  arch/x86/include/asm/cpufeature.h     |  2 ++
->  arch/x86/include/asm/debugreg.h       |  5 ++++
->  arch/x86/include/asm/hw_breakpoint.h  |  1 +
->  arch/x86/include/uapi/asm/msr-index.h |  4 +++
->  arch/x86/kernel/cpu/amd.c             | 19 ++++++++++++++
->  arch/x86/kernel/hw_breakpoint.c       | 47 ++++++++++++++---------------------
->  6 files changed, 49 insertions(+), 29 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-> index d3f5c63..26609bb 100644
-> --- a/arch/x86/include/asm/cpufeature.h
-> +++ b/arch/x86/include/asm/cpufeature.h
-> @@ -170,6 +170,7 @@
->  #define X86_FEATURE_TOPOEXT	(6*32+22) /* topology extensions CPUID leafs */
->  #define X86_FEATURE_PERFCTR_CORE (6*32+23) /* core performance counter extensions */
->  #define X86_FEATURE_PERFCTR_NB  (6*32+24) /* NB performance counter extensions */
-> +#define X86_FEATURE_BPEXT	(6*32+26) /* data breakpoint extension */
+>                         Pekka
 
-Is this perhaps a bit too generic? Extension can mean about everything and who knows
-what other feature Intel and Amd will add to breakpoints in the future.
+There's also 'strings /etc/prelink.cache' that should give a good 
+list of binaries and libraries that matter.
 
-How about X86_FEATURE_BP_RANGE?
+Thanks,
 
->  #define X86_FEATURE_PERFCTR_L2	(6*32+28) /* L2 performance counter extensions */
->  
->  /*
-> @@ -332,6 +333,7 @@ extern const char * const x86_power_flags[32];
->  #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
->  #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
->  #define cpu_has_topoext		boot_cpu_has(X86_FEATURE_TOPOEXT)
-> +#define cpu_has_bpext		boot_cpu_has(X86_FEATURE_BPEXT)
->  
->  #ifdef CONFIG_X86_64
->  
-> diff --git a/arch/x86/include/asm/debugreg.h b/arch/x86/include/asm/debugreg.h
-> index 4b528a9..145b009 100644
-> --- a/arch/x86/include/asm/debugreg.h
-> +++ b/arch/x86/include/asm/debugreg.h
-> @@ -114,5 +114,10 @@ static inline void debug_stack_usage_inc(void) { }
->  static inline void debug_stack_usage_dec(void) { }
->  #endif /* X86_64 */
->  
-> +#ifdef CONFIG_CPU_SUP_AMD
-> +extern void set_dr_addr_mask(unsigned long mask, int dr);
-> +#else
-> +static inline void set_dr_addr_mask(unsigned long mask, int dr) { }
-> +#endif
->  
->  #endif /* _ASM_X86_DEBUGREG_H */
-> diff --git a/arch/x86/include/asm/hw_breakpoint.h b/arch/x86/include/asm/hw_breakpoint.h
-> index ef1c4d2..6c98be8 100644
-> --- a/arch/x86/include/asm/hw_breakpoint.h
-> +++ b/arch/x86/include/asm/hw_breakpoint.h
-> @@ -12,6 +12,7 @@
->   */
->  struct arch_hw_breakpoint {
->  	unsigned long	address;
-> +	unsigned long	mask;
->  	u8		len;
-
-So it's a bit sad that we have both len and mask. OTOH it's my fault because we have that len
-thing that is actually buggy for instruction breakpoints and needs to be sizeof(long) (who knows
-what kind of fluorescent bier I drank before writing that).
-
-But Oleg had a patch to fix that.
-
-Oleg?
-
->  	u8		type;
->  };
-> diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-> index bb04650..1f04f6c 100644
-> --- a/arch/x86/include/uapi/asm/msr-index.h
-> +++ b/arch/x86/include/uapi/asm/msr-index.h
-> @@ -205,6 +205,10 @@
->  /* Fam 16h MSRs */
->  #define MSR_F16H_L2I_PERF_CTL		0xc0010230
->  #define MSR_F16H_L2I_PERF_CTR		0xc0010231
-> +#define MSR_F16H_DR1_ADDR_MASK		0xc0011019
-> +#define MSR_F16H_DR2_ADDR_MASK		0xc001101a
-> +#define MSR_F16H_DR3_ADDR_MASK		0xc001101b
-> +#define MSR_F16H_DR0_ADDR_MASK		0xc0011027
->  
->  /* Fam 15h MSRs */
->  #define MSR_F15H_PERF_CTL		0xc0010200
-> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-> index 903a264..fffc9cb 100644
-> --- a/arch/x86/kernel/cpu/amd.c
-> +++ b/arch/x86/kernel/cpu/amd.c
-> @@ -909,3 +909,22 @@ static bool cpu_has_amd_erratum(struct cpuinfo_x86 *cpu, const int *erratum)
->  
->  	return false;
->  }
-> +
-> +void set_dr_addr_mask(unsigned long mask, int dr)
-> +{
-> +	if (!cpu_has_bpext)
-> +		return;
-> +
-> +	switch (dr) {
-> +	case 0:
-> +		wrmsr(MSR_F16H_DR0_ADDR_MASK, mask, 0);
-> +		break;
-> +	case 1:
-> +	case 2:
-> +	case 3:
-> +		wrmsr(MSR_F16H_DR1_ADDR_MASK - 1 + dr, mask, 0);
-> +		break;
-> +	default:
-> +		break;
-> +	}
-> +}
-> diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
-> index f66ff16..3cb1951 100644
-> --- a/arch/x86/kernel/hw_breakpoint.c
-> +++ b/arch/x86/kernel/hw_breakpoint.c
-> @@ -128,6 +128,8 @@ int arch_install_hw_breakpoint(struct perf_event *bp)
->  	*dr7 |= encode_dr7(i, info->len, info->type);
->  
->  	set_debugreg(*dr7, 7);
-> +	if (info->mask)
-> +		set_dr_addr_mask(info->mask, i);
->  
->  	return 0;
->  }
-> @@ -163,29 +165,8 @@ void arch_uninstall_hw_breakpoint(struct perf_event *bp)
->  	*dr7 &= ~__encode_dr7(i, info->len, info->type);
->  
->  	set_debugreg(*dr7, 7);
-> -}
-> -
-> -static int get_hbp_len(u8 hbp_len)
-> -{
-> -	unsigned int len_in_bytes = 0;
-> -
-> -	switch (hbp_len) {
-> -	case X86_BREAKPOINT_LEN_1:
-> -		len_in_bytes = 1;
-> -		break;
-> -	case X86_BREAKPOINT_LEN_2:
-> -		len_in_bytes = 2;
-> -		break;
-> -	case X86_BREAKPOINT_LEN_4:
-> -		len_in_bytes = 4;
-> -		break;
-> -#ifdef CONFIG_X86_64
-> -	case X86_BREAKPOINT_LEN_8:
-> -		len_in_bytes = 8;
-> -		break;
-> -#endif
-> -	}
-> -	return len_in_bytes;
-> +	if (info->mask)
-> +		set_dr_addr_mask(0, i);
->  }
->  
->  /*
-> @@ -198,7 +179,7 @@ int arch_check_bp_in_kernelspace(struct perf_event *bp)
->  	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
->  
->  	va = info->address;
-> -	len = get_hbp_len(info->len);
-> +	len = bp->attr.bp_len;
->  
->  	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
->  }
-> @@ -279,7 +260,16 @@ static int arch_build_bp_info(struct perf_event *bp)
->  	}
->  
->  	/* Len */
-> +	info->mask = 0;
-> +
->  	switch (bp->attr.bp_len) {
-> +	default:
-> +		if (!is_power_of_2(bp->attr.bp_len))
-> +			return -EINVAL;
-> +		if (!cpu_has_bpext)
-> +			return -EOPNOTSUPP;
-> +		info->mask = bp->attr.bp_len - 1;
-> +		/* fall through */
->  	case HW_BREAKPOINT_LEN_1:
->  		info->len = X86_BREAKPOINT_LEN_1;
->  		break;
-> @@ -294,12 +284,11 @@ static int arch_build_bp_info(struct perf_event *bp)
->  		info->len = X86_BREAKPOINT_LEN_8;
->  		break;
->  #endif
-> -	default:
-> -		return -EINVAL;
->  	}
->  
->  	return 0;
->  }
-> +
->  /*
->   * Validate the arch-specific HW Breakpoint register settings
->   */
-> @@ -314,11 +303,11 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp)
->  	if (ret)
->  		return ret;
->  
-> -	ret = -EINVAL;
-> -
->  	switch (info->len) {
->  	case X86_BREAKPOINT_LEN_1:
->  		align = 0;
-> +		if (info->mask)
-> +			align = info->mask;
->  		break;
->  	case X86_BREAKPOINT_LEN_2:
->  		align = 1;
-> @@ -332,7 +321,7 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp)
->  		break;
->  #endif
->  	default:
-> -		return ret;
-> +		BUG();
-
-Please use WARN_ON_ONCE(1) instead. BUG() makes the machine unusable, which may make the
-user unhappy and the warning hard to log. BUG() is good only when letting things run may
-compromize user persistent storage data integrity or so, like a scary filesystem bug for example.
-
-
->  	}
->  
->  	/*
-> -- 
-> 1.8.1.2
-> 
-> 
+	Ingo
