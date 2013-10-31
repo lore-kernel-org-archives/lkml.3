@@ -1,112 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031Ab3JaO0J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 10:26:09 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57756 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754953Ab3JaO0F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 10:26:05 -0400
-Message-ID: <1383229563.4857.71.camel@edumazet-glaptop.roam.corp.google.com>
-Subject: Re: [PATCH net-next V2 1/2] net: introduce skb_coalesce_rx_frag()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, edumazet@google.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
-        mwdalton@google.com, virtualization@lists.linux-foundation.org,
-        kmindg@gmail.com
-Date: Thu, 31 Oct 2013 07:26:03 -0700
-In-Reply-To: <1383220027-12278-1-git-send-email-jasowang@redhat.com>
-References: <1383220027-12278-1-git-send-email-jasowang@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1755087Ab3JaO1y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 10:27:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4916 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753658Ab3JaO1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 10:27:52 -0400
+Message-ID: <527268E4.2070505@redhat.com>
+Date: Thu, 31 Oct 2013 15:27:48 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: emulate SAHF instruction
+References: <1383215382-10072-1-git-send-email-pbonzini@redhat.com> <20131031142119.GS4651@redhat.com>
+In-Reply-To: <20131031142119.GS4651@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-31 at 19:47 +0800, Jason Wang wrote:
-> Sometimes we need to coalesce the rx frags to avoid frag list. One example is
-> virtio-net driver which tries to use small frags for both MTU sized packet and
-> GSO packet. So this patch introduce skb_coalesce_rx_frag() to do this.
+Il 31/10/2013 15:21, Gleb Natapov ha scritto:
+> On Thu, Oct 31, 2013 at 11:29:42AM +0100, Paolo Bonzini wrote:
+>> Yet another instruction that we fail to emulate, this time found
+>> in Windows 2008R2 32-bit.
+>>
+>> Cc: stable@vger.kernel.org
+>> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+>> ---
+>> 	Testcase on its way.  BTW, lahf/sahf is another candidate for
+>> 	#UD emulation.
+>>
+>>  arch/x86/kvm/emulate.c | 14 +++++++++++++-
+>>  1 file changed, 13 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+>> index 8e2a07bd8eac..ef750e75c930 100644
+>> --- a/arch/x86/kvm/emulate.c
+>> +++ b/arch/x86/kvm/emulate.c
+>> @@ -3296,6 +3296,18 @@ static int em_cpuid(struct x86_emulate_ctxt *ctxt)
+>>  	return X86EMUL_CONTINUE;
+>>  }
+>>  
+>> +static int em_sahf(struct x86_emulate_ctxt *ctxt)
+>> +{
+>> +	u32 flags;
+>> +
+> Shouldn't we check CPUID.80000001H.ECX[0] = 1 in 64 bit mode?
+
+If we want to we should check for it in em_lahf too.  But we don't
+usually check for CPUID bits.  The recently added movbe is an exception,
+and syscall too, but we don't do that for SSE or MMX instructions.
+
+The way I understand it, either AMD was lazy, or they wanted to use
+lahf/sahf as prefixes later on.  But it didn't work out that way, so I
+think it's fine to skip the check.
+
+Paolo
+
+>> +	flags = EFLG_CF | EFLG_PF | EFLG_AF | EFLG_ZF | EFLG_SF;
+>> +	flags &= *reg_rmw(ctxt, VCPU_REGS_RAX) >> 8;
+>> +
+>> +	ctxt->eflags &= ~0xffUL;
+>> +	ctxt->eflags |= flags | X86_EFLAGS_FIXED;
+>> +	return X86EMUL_CONTINUE;
+>> +}
+>> +
+>>  static int em_lahf(struct x86_emulate_ctxt *ctxt)
+>>  {
+>>  	*reg_rmw(ctxt, VCPU_REGS_RAX) &= ~0xff00UL;
+>> @@ -3788,7 +3800,7 @@ static const struct opcode opcode_table[256] = {
+>>  	DI(SrcAcc | DstReg, pause), X7(D(SrcAcc | DstReg)),
+>>  	/* 0x98 - 0x9F */
+>>  	D(DstAcc | SrcNone), I(ImplicitOps | SrcAcc, em_cwd),
+>> -	I(SrcImmFAddr | No64, em_call_far), N,
+>> +	I(SrcImmFAddr | No64, em_call_far), I(ImplicitOps, em_sahf),
+>>  	II(ImplicitOps | Stack, em_pushf, pushf),
+>>  	II(ImplicitOps | Stack, em_popf, popf), N, I(ImplicitOps, em_lahf),
+>>  	/* 0xA0 - 0xA7 */
+>> -- 
+>> 1.8.3.1
 > 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: Michael Dalton <mwdalton@google.com>
-> Cc: Eric Dumazet <edumazet@google.com>
-> Acked-by: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
-> Changes from V1:
-> - remove the useless off parameter.
-> ---
->  include/linux/skbuff.h |  3 +++
->  net/core/skbuff.c      | 13 +++++++++++++
->  2 files changed, 16 insertions(+)
+> --
+> 			Gleb.
 > 
-> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-> index 2c15497..fffaeaf 100644
-> --- a/include/linux/skbuff.h
-> +++ b/include/linux/skbuff.h
-> @@ -1372,6 +1372,9 @@ static inline void skb_fill_page_desc(struct sk_buff *skb, int i,
->  void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page, int off,
->  		     int size, unsigned int truesize);
->  
-> +void skb_coalesce_rx_frag(struct sk_buff *skb, int i, int size,
-> +			  unsigned int truesize);
-> +
->  #define SKB_PAGE_ASSERT(skb) 	BUG_ON(skb_shinfo(skb)->nr_frags)
->  #define SKB_FRAG_ASSERT(skb) 	BUG_ON(skb_has_frag_list(skb))
->  #define SKB_LINEAR_ASSERT(skb)  BUG_ON(skb_is_nonlinear(skb))
-> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> index 0ab32fa..87670e1 100644
-> --- a/net/core/skbuff.c
-> +++ b/net/core/skbuff.c
-> @@ -476,6 +476,19 @@ void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page, int off,
->  }
->  EXPORT_SYMBOL(skb_add_rx_frag);
->  
-> +void skb_coalesce_rx_frag(struct sk_buff *skb, int i, int size,
-> +			  unsigned int truesize)
-> +{
-> +	skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
-> +
-> +	skb_frag_size_add(frag, size);
-> +	skb->len += size;
-> +	skb->data_len += size;
-> +	skb->truesize += truesize;
-
-
-> +	skb_frag_unref(skb, i);
-
-This unref is not logical, or should at least be
-
-__skb_frag_unref(frag);
-
-But I do think this is best done in the caller.
-
-In virtio_net this would be a :
-
-put_page(page);
-
-In tcp stack we do almost the same, but we take the reference on the
-page if we could not coalesce with prio frag, instead of doing a get and
-put in the other case.
-
-        if (can_coalesce) {
-                skb_frag_size_add(&skb_shinfo(skb)->frags[i - 1], copy);
-        } else {
-                get_page(page);
-                skb_fill_page_desc(skb, i, page, offset, copy);
-        }
-
-
-> +}
-> +EXPORT_SYMBOL(skb_coalesce_rx_frag);
-> +
->  static void skb_drop_list(struct sk_buff **listp)
->  {
->  	kfree_skb_list(*listp);
-
 
