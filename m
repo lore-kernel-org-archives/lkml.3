@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755483Ab3JaXZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 19:25:46 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:38327 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766Ab3JaXZo convert rfc822-to-8bit (ORCPT
+	id S1754009Ab3JaXbj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 19:31:39 -0400
+Received: from smtprelay0181.hostedemail.com ([216.40.44.181]:52653 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751761Ab3JaXbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 19:25:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <5272BCE1.7010700@iki.fi>
-References: <1380659456-3746-1-git-send-email-anssi.hannula@iki.fi>
-	<1380659456-3746-2-git-send-email-anssi.hannula@iki.fi>
-	<CACna6ryr37WRvKbMFmLEGt_A2zUD46rZOtJMVom+B_xK9WNLuw@mail.gmail.com>
-	<07e8973b4665cc23c3f4a77e9c7e2b7c@mail.onse.fi>
-	<CACna6ryFtmZHAhmCPEsoxZc5h4mLuM4ajnKGsp=q0jag2f_SYw@mail.gmail.com>
-	<5272BCE1.7010700@iki.fi>
-Date: Fri, 1 Nov 2013 00:25:44 +0100
-Message-ID: <CACna6rzejyTOF2Fvvw1m2SAob7uU5-hJ+yRVk6HS5pDTz7+JWg@mail.gmail.com>
-Subject: Re: [PATCH 1/4] ALSA: hda - hdmi: Add ATI/AMD multi-channel audio support
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Anssi Hannula <anssi.hannula@iki.fi>
-Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        =?UTF-8?Q?Peter_Fr=C3=BChberger?= <fritsch@xbmc.org>,
-        Olivier Langlois <olivier@trillion01.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 31 Oct 2013 19:31:38 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3870:3872:3874:4321:4384:4389:4395:5007:7514:7652:10004:10400:10848:10967:11026:11232:11658:11914:12043:12296:12517:12519:12679:12740:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: train15_255a2564e0744
+X-Filterd-Recvd-Size: 2318
+Message-ID: <1383262255.2769.11.camel@joe-AO722>
+Subject: Re: [PATCH v2] dynamic_debug: add wildcard support to filter
+ files/functions/modules
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Du, Changbin" <changbin.du@gmail.com>, jbaron@akamai.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 31 Oct 2013 16:30:55 -0700
+In-Reply-To: <20131031155253.79a21d6a126be11a64153d8b@linux-foundation.org>
+References: <51F73A17.2090208@akamai.com>
+	 <1382974150-7392-1-git-send-email-changbin.du@gmail.com>
+	 <20131031155253.79a21d6a126be11a64153d8b@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/31 Anssi Hannula <anssi.hannula@iki.fi>:
->> But I can hear sound for rear right and rear left only :(
->>
->> Is there anything more I can provide to help resolve this? Do you have
->> any idea how we can resolve this?
->
-> According to the below the receiver has separate PCM SADs for 2-channel
-> and multichannel playback. However, due to a radeon driver bug (see
-> "[PATCH] drm/radeon/audio: fix missing multichannel PCM SAD in some
-> cases", you were CCd) the multichannel SAD is lost and not shown below.
->
-> However, that is not (or at least should not be) the reason you are not
-> getting audio.
-> I suspect that the receiver does not support 192kHz multichannel audio
-> (which would be indicated in the missing multichannel PCM SAD). Does it
-> work with 48kHz or 96kHz?
-> (TODO: refuse PCM playback in such cases)
->
-> If it does not work with 48kHz or 96kHz either, then we have a bug to
-> solve :)
+On Thu, 2013-10-31 at 15:52 -0700, Andrew Morton wrote:
+> On Mon, 28 Oct 2013 23:29:10 +0800 "Du, Changbin" <changbin.du@gmail.com> wrote:
+[]
+> > +/* check if the string matches given pattern which includes wildcards */
+> > +static int match_pattern(const char *pattern, const char *string)
+[]
+> No, something like this should be in lib/ so that other callers can use
+> it.  We already have at least one copy handy in
+> drivers/ata/libata-core.c:glob_match().  A better approach would be to
+> move that glob_match() into lib/glob_match.c then teach dynamic_debug
+> to use it.
+> 
+> There are probably other private globbing functions lying around the
+> kernel, but it's rather a hard thing to grep for...
 
-First of all, you're right about 2 SADs for PCM.
+Maybe use lib/parser.c where the other match_<foo> functions
+are already.
 
-The weird thing is that 192kHz support... According to the EDID (SADs)
-it should be supported:
-Format: 1 (PCM)        Channels:1    Freq:0x7F (32-192)    B2:0x07 (16-24b)
-Format: 1 (PCM)        Channels:7    Freq:0x7F (32-192)    B2:0x07 (16-24b)
-Format: 2 (AC3)        Channels:7    Freq:0x07 (32-48)    B2:0x50 (640?)
-Format: 7 (DTS)        Channels:7    Freq:0x06 (44-48)    B2:0xC0 (1536?)
-Format: 10 (EAC3)    Channels:7    Freq:0x06 (44-48)    B2:0x00
-Format: 11 (DTS_HD)    Channels:7    Freq:0x7E (44-192)    B2:0x01
-Format: 12 (MLP)    Channels:7    Freq:0x1E (44-96)    B2:0x00
+match_glob has the disadvantage that it's recursive too.
 
-So I performed more tests and:
+trace has:
 
-1) speaker-test -D hdmi:CARD=Generic,DEV=0 -c6 -r192000 -F S16_LE
-A nice noise for rear right and rear left, silent for the rest
+kernel/trace/trace_events_filter.c:static int regex_match_full(char *str, struct regex *r, int len)
+kernel/trace/trace_events_filter.c:static int regex_match_front(char *str, struct regex *r, int len)
+kernel/trace/trace_events_filter.c:static int regex_match_middle(char *str, struct regex *r, int len)
+kernel/trace/trace_events_filter.c:static int regex_match_end(char *str, struct regex *r, int len)
 
-2) speaker-test -D hdmi:CARD=Generic,DEV=0 -c6 -r176400 -F S16_LE
-A nice noise for rear right and rear left, short "bump" sound for the rest
+but there probably aren't many more that could be converted.
 
-3) speaker-test -D hdmi:CARD=Generic,DEV=0 -c6 -r96000 -F S16_LE
-A nice noise for all speakers (the same applies to 88200, 48000, 44100, 32000)
-
-I don't get it. Onkyo reports support for 192kHz and it supports it,
-but only for 2 rear speakers... does it make any sense do you?
-
--- 
-Rafał
