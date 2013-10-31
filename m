@@ -1,84 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab3JaGGU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 02:06:20 -0400
-Received: from 10.mo6.mail-out.ovh.net ([87.98.157.236]:58036 "EHLO
-	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752629Ab3JaGGT (ORCPT
+	id S1752656Ab3JaGNA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 02:13:00 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:55930 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab3JaGM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 02:06:19 -0400
-X-Greylist: delayed 1805 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Oct 2013 02:06:18 EDT
-Date: Thu, 31 Oct 2013 06:30:37 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Bo Shen <voice.shen@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] misc: atmel_pwm: set initcall level to subsys
-Message-ID: <20131031053037.GA30542@ns203013.ovh.net>
-References: <1382459560-26596-1-git-send-email-jhovold@gmail.com>
- <20131029232249.GA20476@kroah.com>
- <20131030110705.GA29813@localhost>
- <201310302146.18248.arnd@arndb.de>
- <5271B012.4060200@atmel.com>
+	Thu, 31 Oct 2013 02:12:58 -0400
+X-Spam-Score: -100.8
+Message-ID: <5271F4A9.40804@asianux.com>
+Date: Thu, 31 Oct 2013 14:11:53 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5271B012.4060200@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Ovh-Tracer-Id: 16938319674227469107
-X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrgeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrgeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        realmz paranoid <realmz6@gmail.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "uclinux-dist-devel@blackfin.uclinux.org" 
+	<uclinux-dist-devel@blackfin.uclinux.org>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] arch: *: remove '__init' for setup_profiling_timer()
+References: <52672ECD.9010800@asianux.com> <C2D7FE5348E1B147BCA15975FBA23075153861@IN01WEMBXA.internal.synopsys.com>
+In-Reply-To: <C2D7FE5348E1B147BCA15975FBA23075153861@IN01WEMBXA.internal.synopsys.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09:19 Thu 31 Oct     , Bo Shen wrote:
-> Hi Arnd,
+On 10/31/2013 01:45 PM, Vineet Gupta wrote:
+> On 10/23/2013 07:36 AM, Chen Gang wrote:
+>> Most of architectures not use '__init' for setup_profiling_timer(), so
+>> need remove it, or can generate warning (e.g. arc with allmodconfig):
+>>
+>>     MODPOST vmlinux.o
+>>   WARNING: vmlinux.o(.text+0x3c682): Section mismatch in reference from the function write_profile() to the function .init.text:setup_profiling_timer()
+>>   The function write_profile() references
+>>   the function __init setup_profiling_timer().
+>>   This is often because write_profile lacks a __init
+>>   annotation or the annotation of setup_profiling_timer is wrong.
+>>
+>>
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> ---
+>>  arch/arc/kernel/smp.c          |    2 +-
+>>  arch/blackfin/mach-bf561/smp.c |    2 +-
+>>  arch/parisc/kernel/smp.c       |    2 +-
+>>  3 files changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/arch/arc/kernel/smp.c b/arch/arc/kernel/smp.c
+>> index bca3052..3bdac11 100644
+>> --- a/arch/arc/kernel/smp.c
+>> +++ b/arch/arc/kernel/smp.c
+>> @@ -187,7 +187,7 @@ int __cpu_up(unsigned int cpu, struct task_struct *idle)
+>>  /*
+>>   * not supported here
+>>   */
+>> -int __init setup_profiling_timer(unsigned int multiplier)
+>> +int setup_profiling_timer(unsigned int multiplier)
+>>  {
+>>  	return -EINVAL;
+>>  }
+>> diff --git a/arch/blackfin/mach-bf561/smp.c b/arch/blackfin/mach-bf561/smp.c
+>> index 11789be..3bef058 100644
+>> --- a/arch/blackfin/mach-bf561/smp.c
+>> +++ b/arch/blackfin/mach-bf561/smp.c
+>> @@ -43,7 +43,7 @@ void __init platform_prepare_cpus(unsigned int max_cpus)
+>>  	init_cpu_present(&mask);
+>>  }
+>>  
+>> -int __init setup_profiling_timer(unsigned int multiplier) /* not supported */
+>> +int setup_profiling_timer(unsigned int multiplier) /* not supported */
+>>  {
+>>  	return -EINVAL;
+>>  }
+>> diff --git a/arch/parisc/kernel/smp.c b/arch/parisc/kernel/smp.c
+>> index 8a252f2..2e8cd36 100644
+>> --- a/arch/parisc/kernel/smp.c
+>> +++ b/arch/parisc/kernel/smp.c
+>> @@ -433,7 +433,7 @@ int __cpu_up(unsigned int cpu, struct task_struct *tidle)
+>>  }
+>>  
+>>  #ifdef CONFIG_PROC_FS
+>> -int __init
+>> +int
+>>  setup_profiling_timer(unsigned int multiplier)
+>>  {
+>>  	return -EINVAL;
 > 
-> On 10/31/2013 04:46, Arnd Bergmann wrote:
-> >On Wednesday 30 October 2013, Johan Hovold wrote:
-> >>>I really hate this type of patch, as it's papering over the real
-> >>>problem.  What happens when someone else moves their driver to this
-> >>>level?  Then you are back to the original problem.
-> >>
-> >>Yes, it's crude, but it's currently the only way to express a preferred
-> >>probe order.
-> >
-> >Does the same problem occur with the generic PWM subsystem?
-> >
-> >The atmel_pwm driver apparently is the last PWM driver that has
-> >not been converted to the generic subsystem yet. Doing that would
-> >also let us drop the atmel-pwm-bl driver in favor of the generic
-> >backlight.
+> In theory this change is OK. However this is legacy code at best and it would be
+> better to define a weak definition in kernel/profile.c and remove this cruft from
+> relevant arches. I'll send out a patch.
 > 
-> The atmel pwm driver is on the way to generic subsystem. more
-> information at:
-> --->8---
-> PWM: atmel-pwm: add PWM controller driver:
->    https://patchwork.kernel.org/patch/2963081/
 
-so the fix can be drop in favor of the conversion
+That sounds good to me.
 
-Best Regards,
-J.
-> ---<8---
-> 
-> Best Regards,
-> Bo Shen
+> -Vineet
 > 
 > 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+
+-- 
+Chen Gang
