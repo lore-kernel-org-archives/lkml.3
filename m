@@ -1,113 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab3JaKSx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 06:18:53 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:45779 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750712Ab3JaKSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 06:18:52 -0400
-X-IronPort-AV: E=Sophos;i="4.93,607,1378828800"; 
-   d="scan'208";a="8910357"
-Message-ID: <52722D19.7080004@cn.fujitsu.com>
-Date: Thu, 31 Oct 2013 18:12:41 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1753989Ab3JaKTb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 06:19:31 -0400
+Received: from 15.mo4.mail-out.ovh.net ([91.121.62.11]:43395 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752357Ab3JaKT2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 06:19:28 -0400
+Date: Thu, 31 Oct 2013 11:13:50 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: boris brezillon <b.brezillon@overkiz.com>, linux-watchdog@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Yang Wenyou <wenyou.yang@atmel.com>, Wim Van Sebroeck <wim@iguana.be>,
+        Fabio Porcedda <fabio.porcedda@gmail.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Guenter Roeck <groeck7@gmail.com>
+Subject: Re: [PATCH] watchdog: at91sam9_wdt: various fixes
+Message-ID: <20131031101350.GB28304@ns203013.ovh.net>
+References: <20131029075028.GF19704@spo001.leaseweb.com>
+ <1383043053-3520-1-git-send-email-b.brezillon@overkiz.com>
+ <20131029154519.GB9266@roeck-us.net>
+ <526FE0DA.1020308@overkiz.com>
+ <20131029164323.GF9266@roeck-us.net>
+ <526FEEE7.7030708@overkiz.com>
+ <20131029212738.GA16739@roeck-us.net>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pci: fix invalid list entry warning for double pci device
- removing via sysfs
-References: <5270DBFC.3050705@cn.fujitsu.com> <CAE9FiQXp+9XKbs8ccJVt08icax6SOWioDfL5s+H1SWGi9cTAiw@mail.gmail.com>
-In-Reply-To: <CAE9FiQXp+9XKbs8ccJVt08icax6SOWioDfL5s+H1SWGi9cTAiw@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/31 18:16:56,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/31 18:16:57,
-	Serialize complete at 2013/10/31 18:16:57
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131029212738.GA16739@roeck-us.net>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 3236399284294626063
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrgeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrgeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yinghai,
-
-On 10/31/2013 02:45 PM, Yinghai Lu wrote:
-
-> On Wed, Oct 30, 2013 at 3:14 AM, Gu Zheng <guz.fnst@cn.fujitsu.com> wrote:
->> When concurent removing pci devices which are in the same pci subtree
->> via sysfs, such as:
->> echo -n 1 > /sys/bus/pci/devices/0000\:10\:00.0/remove ; echo -n 1 >
->> /sys/bus/pci/devices/0000\:1a\:01.0/remove
->> (1a:01.0 device is downstream from the 10:00.0 bridge)
->>
->> the following warning will show:
->> [ 1799.280918] ------------[ cut here ]------------
->> [ 1799.336199] WARNING: CPU: 7 PID: 126 at lib/list_debug.c:53 __list_del_entry+0x63/0xd0()
->> [ 1799.433093] list_del corruption, ffff8807b4a7c000->next is LIST_POISON1 (dead000000100100)
->> [ 1799.532110] Modules linked in: nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables iptable_filter ip_tables sg dm_mirror dm_region_hash dm_log dm_mod vfat fat e1000e igb iTCO_wdt iTCO_vendor_support ioatdma ptp i7core_edac ipmi_si edac_core lpc_ich pps_core i2c_i801 pcspkr mfd_core dca ipmi_msghandler acpi_cpufreq xfs libcrc32c sd_mod crc_t10dif crct10dif_common i2c_algo_bit drm_kms_helper ttm drm mptsas scsi_transport_sas mptscsih i2c_core megaraid_sas mptbase
->> [ 1800.276623] CPU: 7 PID: 126 Comm: kworker/u512:1 Tainted: G        W    3.12.0-rc5+ #196
->> [ 1800.508918] Workqueue: sysfsd sysfs_schedule_callback_work
->> [ 1800.574703]  0000000000000009 ffff8807adbadbd8 ffffffff8168b26c ffff8807c27d08a8
->> [ 1800.663860]  ffff8807adbadc28 ffff8807adbadc18 ffffffff810711dc ffff8807adbadc68
->> [ 1800.753130]  ffff8807b4a7c000 ffff8807b4a7c000 ffff8807ad089c00 0000000000000000
->> [ 1800.842282] Call Trace:
->> [ 1800.871651]  [<ffffffff8168b26c>] dump_stack+0x55/0x76
->> [ 1800.933301]  [<ffffffff810711dc>] warn_slowpath_common+0x8c/0xc0
->> [ 1801.005283]  [<ffffffff810712c6>] warn_slowpath_fmt+0x46/0x50
->> [ 1801.074081]  [<ffffffff8135a343>] __list_del_entry+0x63/0xd0
->> [ 1801.141839]  [<ffffffff8135a3c1>] list_del+0x11/0x40
->> [ 1801.201320]  [<ffffffff813734da>] pci_remove_bus_device+0x6a/0xe0
->> [ 1801.274279]  [<ffffffff8137356e>] pci_stop_and_remove_bus_device+0x1e/0x30
->> [ 1801.356606]  [<ffffffff8137b20b>] remove_callback+0x2b/0x40
->> [ 1801.423412]  [<ffffffff81251848>] sysfs_schedule_callback_work+0x18/0x60
->> [ 1801.503744]  [<ffffffff8108eab5>] process_one_work+0x1f5/0x540
->> [ 1801.573640]  [<ffffffff8108ea53>] ? process_one_work+0x193/0x540
->> [ 1801.645616]  [<ffffffff8108f2ac>] worker_thread+0x11c/0x370
->> [ 1801.712337]  [<ffffffff8108f190>] ? rescuer_thread+0x350/0x350
->> [ 1801.782178]  [<ffffffff8109731d>] kthread+0xed/0x100
->> [ 1801.841661]  [<ffffffff81097230>] ? kthread_create_on_node+0x160/0x160
->> [ 1801.919919]  [<ffffffff8169cc3c>] ret_from_fork+0x7c/0xb0
->> [ 1801.984608]  [<ffffffff81097230>] ? kthread_create_on_node+0x160/0x160
->> [ 1802.062825] ---[ end trace d77f2054de000fb7 ]---
->>
->> This issue is related to the bug 54411:
->> https://bugzilla.kernel.org/show_bug.cgi?id=54411
->>
->> Since we added the pci_bus reference management, the bug becomes a
->> invalid list entry warning as descripted above. Beacuse it still
->> trys to delete an deleted pci device from device list.
->>
->> So here we make stop device actually detach driver only, and remove
->> device will do device_del instead, and move bus_list change and pci device
->> resource free into pci_release_dev, so that it'll consistent with
->> bus reference managment, and the device only can be deleted from device
->> list in pci_release_dev just for one time.
->>
->> Besides, it also makes hostbridge to use device_unregister to be pair
->> with device_register before.
->>
->> This patch is based on Yinghai's privious similar patch:
->> http://lkml.org/lkml/2013/5/13/658
+On 14:27 Tue 29 Oct     , Guenter Roeck wrote:
+> On Tue, Oct 29, 2013 at 06:22:47PM +0100, boris brezillon wrote:
+> > On 29/10/2013 17:43, Guenter Roeck wrote:
+> > >On Tue, Oct 29, 2013 at 05:22:50PM +0100, boris brezillon wrote:
+> > >>On 29/10/2013 16:45, Guenter Roeck wrote:
+> > >>>On Tue, Oct 29, 2013 at 11:37:33AM +0100, Boris BREZILLON wrote:
+> > >>>>Fix the secs_to_ticks macro in case 0 is passed as an argument.
+> > >>>>
+> > >>>>Rework the heartbeat calculation to increase the security margin of the
+> > >>>>watchdog reset timer.
+> > >>>>
+> > >>>>Use the min_heartbeat value instead of the calculated heartbeat value for
+> > >>>>the first watchdog reset.
+> > >>>>
+> > >>>>Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> > >>>Hi Boris,
+> > >>>
+> > >>>can you possibly split the three changes into separate patches ?
+> > >>Sure. My first idea was to split this in 3 patches, but, as the
+> > >>buggy at91 watchdog series was
+> > >>already applied to linux-watchdog-next, I thought it would be faster
+> > >>to only provide one
+> > >>patch to fix all the issues at once.
+> > >>
+> > >>>The first is a no-brainer. Gives my opinion of my code review capabilities
+> > >>>a slight damper ;-).
+> > >>>
+> > >>>For the other two problems, it might make sense to describe
+> > >>>the problems you are trying to solve.
+> > >>>
+> > >>>Couple of comments inline.
+> > >>>
+> > >>>Thanks,
+> > >>>Guenter
+> > >>>
+> > >>>
+> > >>>>---
+> > >>>>  drivers/watchdog/at91sam9_wdt.c |   35 ++++++++++++++++++++++++-----------
+> > >>>>  1 file changed, 24 insertions(+), 11 deletions(-)
+> > >>>>
+> > >>>>diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
+> > >>>>index 9bd089e..f1b59f1 100644
+> > >>>>--- a/drivers/watchdog/at91sam9_wdt.c
+> > >>>>+++ b/drivers/watchdog/at91sam9_wdt.c
+> > >>>>@@ -51,7 +51,7 @@
+> > >>>>  #define ticks_to_hz_rounddown(t)	((((t) + 1) * HZ) >> 8)
+> > >>>>  #define ticks_to_hz_roundup(t)		(((((t) + 1) * HZ) + 255) >> 8)
+> > >>>>  #define ticks_to_secs(t)		(((t) + 1) >> 8)
+> > >>>>-#define secs_to_ticks(s)		(((s) << 8) - 1)
+> > >>>>+#define secs_to_ticks(s)		(s ? (((s) << 8) - 1) : 0)
+> > >>>	(s)
+> > >>>
+> > >>>>  #define WDT_MR_RESET	0x3FFF2FFF
+> > >>>>@@ -61,6 +61,11 @@
+> > >>>>  /* Watchdog max delta/value in secs */
+> > >>>>  #define WDT_COUNTER_MAX_SECS	ticks_to_secs(WDT_COUNTER_MAX_TICKS)
+> > >>>>+/* Watchdog heartbeat shift used for security margin:
+> > >>>>+ * we'll try to rshift the heartbeat value with this value to secure
+> > >>>>+ * the watchdog reset. */
+> > >>>>+#define WDT_HEARTBEAT_SHIFT	2
+> > >>>>+
+> > >>>>  /* Hardware timeout in seconds */
+> > >>>>  #define WDT_HW_TIMEOUT 2
+> > >>>>@@ -158,7 +163,9 @@ static int at91_wdt_init(struct platform_device *pdev, struct at91wdt *wdt)
+> > >>>>  	int err;
+> > >>>>  	u32 mask = wdt->mr_mask;
+> > >>>>  	unsigned long min_heartbeat = 1;
+> > >>>>+	unsigned long max_heartbeat;
+> > >>>>  	struct device *dev = &pdev->dev;
+> > >>>>+	int shift;
+> > >>>>  	tmp = wdt_read(wdt, AT91_WDT_MR);
+> > >>>>  	if ((tmp & mask) != (wdt->mr & mask)) {
+> > >>>>@@ -181,23 +188,27 @@ static int at91_wdt_init(struct platform_device *pdev, struct at91wdt *wdt)
+> > >>>>  	if (delta < value)
+> > >>>>  		min_heartbeat = ticks_to_hz_roundup(value - delta);
+> > >>>>-	wdt->heartbeat = ticks_to_hz_rounddown(value);
+> > >>>>-	if (!wdt->heartbeat) {
+> > >>>>+	max_heartbeat = ticks_to_hz_rounddown(value);
+> > >>>>+	if (!max_heartbeat) {
+> > >>>>  		dev_err(dev,
+> > >>>>  			"heartbeat is too small for the system to handle it correctly\n");
+> > >>>>  		return -EINVAL;
+> > >>>>  	}
+> > >>>>-	if (wdt->heartbeat < min_heartbeat + 4) {
+> > >>>>+	for (shift = WDT_HEARTBEAT_SHIFT; shift > 0; shift--) {
+> > >>>>+		if ((max_heartbeat >> shift) < min_heartbeat)
+> > >>>>+			continue;
+> > >>>>+
+> > >>>>+		wdt->heartbeat = max_heartbeat >> shift;
+> > >>>>+		break;
+> > >>>>+	}
+> > >>>>+
+> > >>>>+	if (!shift)
+> > >>>>  		wdt->heartbeat = min_heartbeat;
+> > >>>Correct me if I am wrong, but it seems to me that
+> > >>>
+> > >>>	if ((max_heartbeat >> 2) >= min_heartbeat)
+> > >>>		 wdt->heartbeat = max_heartbeat >> 2;
+> > >>>	else if ((max_heartbeat >> 1) >= min_heartbeat)
+> > >>>		wdt->heartbeat = max_heartbeat >> 1;
+> > >>>	else
+> > >>>		wdt->heartbeat = min_heartbeat;
+> > >>>
+> > >>>would accomplish the same and be easier to understand.
+> > >>This is exactly what I'm trying to accomplish.
+> > >>I used the for loop in case we ever want to change the
+> > >>WDT_HEARTBEAT_SHIFT value
+> > >>(which is unlikely to happen).
+> > >>
+> > >>I'll move to your proposition.
+> > >>
+> > >>>However, given that, I wonder if it is really necessary to bail out above if
+> > >>>max_heartbeat is 0. After all, you set heartbeat to min_heartbeat anyway
+> > >>>in this case.
+> > >>Yes it is necessary. The max_heartbeat is a configuration that
+> > >>cannot be changed once configured.
+> > >>We have to inform the user that his max_heartbeat value is too small
+> > >>to be handled correctly by the Linux kernel.
+> > >>
+> > >>If we simply use the min_heartbeat value as heartbeat and ignore the
+> > >>wrong max_heartbeat value,
+> > >>the watchdog will reset the SoC before we can ever reset the
+> > >>watchdog counter.
+> > >>
+> > >>>>+
+> > >>>>+	if (max_heartbeat < min_heartbeat + 4)
+> > >>>>  		dev_warn(dev,
+> > >>>>  			 "min heartbeat and max heartbeat might be too close for the system to handle it correctly\n");
+> > >>>>-		if (wdt->heartbeat < 4)
+> > >>>>-			dev_warn(dev,
+> > >>>>-				 "heartbeat might be too small for the system to handle it correctly\n");
+> > >>>>-	} else {
+> > >>>>-		wdt->heartbeat -= 4;
+> > >>>>-	}
+> > >>>>  	if ((tmp & AT91_WDT_WDFIEN) && wdt->irq) {
+> > >>>>  		err = request_irq(wdt->irq, wdt_interrupt,
+> > >>>>@@ -213,7 +224,9 @@ static int at91_wdt_init(struct platform_device *pdev, struct at91wdt *wdt)
+> > >>>>  			 tmp & wdt->mr_mask, wdt->mr & wdt->mr_mask);
+> > >>>>  	setup_timer(&wdt->timer, at91_ping, (unsigned long)wdt);
+> > >>>>-	mod_timer(&wdt->timer, jiffies + wdt->heartbeat);
+> > >>>>+	/* Use min_heartbeat the first time because the watchdog timer might
+> > >>>>+	 * be running for a long time when we reach this init function. */
+> > >>>	/*
+> > >>>	 * Multi-line comment style
+> > >>>	 *
+> > >>>	 * Not really sure I understand what this accomplishes. What problem
+> > >>>	 * are you trying to solve here ?
+> > >>>	 */
+> > >>Sure, I'll change the comment style.
+> > >>
+> > >>What, I'm trying to explain, is that the watchdog might (or should)
+> > >>have been resetted
+> > >>before loading the linux kernel. But loading the kernel takes some
+> > >>time (uncompressing,
+> > >>low level init, ...), and if we take the heartbeat (or max_heartbeat
+> > >>/ 4 in the common case) value as
+> > >>the next trigger to reset the watchdog counter, the watchdog timer
+> > >>might have already expired.
+> > >>
+> > >But increasing anything in the watchdog driver itself won't help you there.
+> > >You can not execute any kernel code before that kernel code is running.
+> > 
+> > Of course, but you can at least try to minimize the time between the
+> > watchdog driver init
+> > and the first wathdog counter reset.
+> > 
+> Sure.
 > 
-> I have updated version, please check if attached patches fix the problem.
+> > >>Here is an example:
+> > >>  - max_heartbeat configured to 8 seconds
+> > >>  - min_heartbeat configured to 1 second
+> > >>  => heartbeat = 2s
+> > >>  - kernel boot time (before at91 watchdog is loaded) = 6 secs
+> > >>
+> > >Guess that is where I got lost. Do you mean the time from loading the driver
+> > >to starting the watchdog application ? Because the init function is only
+> > >executed after the driver is loaded, so nothing will help you if it takes
+> > >too long for the driver to load.
+> > 
+> > I think there is another bug here: the driver should not be compiled
+> > as a module.
+> > 
+> > Here is why:
+> > 
+> > At POR the at91 SoC configure its watchdog with these default values:
+> >  - enabled
+> >  - min heartbeat = 0 ticks
+> >  - max heartbeat = 0xfff ticks <=> 16 secs
+> >  - some reset options
+> > After a POR the watchdog can only be reconfigured once (and only once).
+> > This configuration oftenly takes place in the the bootstrap (or bootloader),
+> > but can eventually be done by the Linux kernel.
+> > 
+> > If the watchdog is kept enabled by the bootstrap (or bootloader), this means
+> > the linux kernel will have to reset the watchdog counter as soon as
+> > possible to avoid
+> > a possible watchdog reset.
+> > 
+> > => If we authorize the at91 sam9 watchdog to be compiled as a
+> > module, we're not sure
+> > the module will be loaded soon enough to be able to reset the
+> > watchdog counter.
+> > 
+> Agreed, but that is only an issue _if_ the watchdog is enabled from ROMMON,
+> which we don't know. This makes it a configuration issue: If the watchdog 
+> is enabled by ROMMON, the driver should not be built as module. On the other
+> side, unless it is known for sure (say, from the HW architecture) that it
+> is always enabled, we should not force everyone to build it into the kernel.
 > 
-> virtfn_release.patch
-> fix_cx3_hotplug_2.patch
-> fix_racing_removing_6_1.patch
-> fix_racing_removing_6_2.patch
-> fix_racing_removing_6_3.patch
+> Other drivers deal with that condition by only resetting and re-initializing
+> the watchdog if it is already running. This driver is a bit of an exception,
+> as it always enables the watchdog during initialization. Which is actually
+> another reason to be able to build it as module: If the watchdog was not
+> enabled by ROMMON, this ensures that it only starts running when the module
+> is loaded.
 
-It works well on latest Linus' tree, thanks.
+this make no sense on at91 as the watchdog is always ON and can be disable
+only once
 
-Regards,
-Gu 
+so always enable as builtin is the right way to do
 
-> 
-> Thanks
-> 
-> Yinghai
-
-
+Best Regards
+J.
