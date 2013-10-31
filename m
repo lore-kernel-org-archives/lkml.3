@@ -1,118 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab3JaS3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 14:29:39 -0400
-Received: from smtprelay0021.hostedemail.com ([216.40.44.21]:58419 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751390Ab3JaS3i (ORCPT
+	id S1755257Ab3JaSab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 14:30:31 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:40938 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583Ab3JaSaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 14:29:38 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3353:3865:3866:3867:3868:3872:4250:4321:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12296:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: cows52_1986256019552
-X-Filterd-Recvd-Size: 3330
-Message-ID: <1383244173.8740.9.camel@joe-AO722>
-Subject: [PATCH V3] printk/cache: Mark printk_once test variable
- __read_mostly
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: James Hogan <james.hogan@imgtec.com>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-metag@vger.kernel.org
-Date: Thu, 31 Oct 2013 11:29:33 -0700
-In-Reply-To: <20131030134839.8bdf70cc68d1bf0beb1fb63a@linux-foundation.org>
-References: <1383128301-20231-1-git-send-email-james.hogan@imgtec.com>
-	 <20131030134839.8bdf70cc68d1bf0beb1fb63a@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 31 Oct 2013 14:30:30 -0400
+Date: Thu, 31 Oct 2013 14:30:03 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Doug Ledford <dledford@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        David Laight <David.Laight@ACULAB.COM>
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Message-ID: <20131031183003.GC25894@hmsreliant.think-freely.org>
+References: <201310300525.r9U5Pdqo014902@ib.usersys.redhat.com>
+ <20131030110214.GA10220@localhost.localdomain>
+ <52710B09.6090302@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52710B09.6090302@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add #include <linux/cache.h> to define __read_mostly.
+On Wed, Oct 30, 2013 at 09:35:05AM -0400, Doug Ledford wrote:
+> On 10/30/2013 07:02 AM, Neil Horman wrote:
+> 
+> >That does makes sense, but it then begs the question, whats the advantage of
+> >having multiple alu's at all?
+> 
+> There's lots of ALU operations that don't operate on the flags or
+> other entities that can be run in parallel.
+> 
+> >If they're just going to serialize on the
+> >updating of the condition register, there doesn't seem to be much advantage in
+> >having multiple alu's at all, especially if a common use case (parallelizing an
+> >operation on a large linear dataset) resulted in lower performance.
+> >
+> >/me wonders if rearranging the instructions into this order:
+> >adcq 0*8(src), res1
+> >adcq 1*8(src), res2
+> >adcq 2*8(src), res1
+> >
+> >would prevent pipeline stalls.  That would be interesting data, and (I think)
+> >support your theory, Doug.  I'll give that a try
+> 
+> Just to avoid spending too much time on various combinations, here
+> are the methods I've tried:
+> 
+> Original code
+> 2 chains doing interleaved memory accesses
+> 2 chains doing serial memory accesses (as above)
+> 4 chains doing serial memory accesses
+> 4 chains using 32bit values in 64bit registers so you can always use
+> add instead of adc and never need the carry flag
+> 
+> And I've done all of the above with simple prefetch and smart prefetch.
+> 
+> 
 
-Convert cache.h to use uapi/linux/kernel.h instead
-of linux/kernel.h to avoid recursive #includes.
 
-Convert the ALIGN macro to __ALIGN_KERNEL.
-
-printk_once only sets the bool variable tested
-once so mark it __read_mostly.
-
-Neaten the alignment so it matches the rest of the
-pr_<level>_once #defines too.
-
-Signed-off-by: Joe Perches <joe@perches.com>
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
----
-V3: Fix cache.h conversion and actually
-    compiled/built defconfig x86.
-V2: Add cache.h which was nearly always used
-    indirectly via #include <some_other_file.h>,
-    generally module.h
-    Update cache.h to avoid recursive #include
-
- include/linux/cache.h  |  4 ++--
- include/linux/printk.h | 19 ++++++++++---------
- 2 files changed, 12 insertions(+), 11 deletions(-)
-
-diff --git a/include/linux/cache.h b/include/linux/cache.h
-index 4c57065..17e7e82 100644
---- a/include/linux/cache.h
-+++ b/include/linux/cache.h
-@@ -1,11 +1,11 @@
- #ifndef __LINUX_CACHE_H
- #define __LINUX_CACHE_H
+So, above and beyond this I spent yesterday trying this pattern, something Doug
+and I discussed together offline:
  
--#include <linux/kernel.h>
-+#include <uapi/linux/kernel.h>
- #include <asm/cache.h>
- 
- #ifndef L1_CACHE_ALIGN
--#define L1_CACHE_ALIGN(x) ALIGN(x, L1_CACHE_BYTES)
-+#define L1_CACHE_ALIGN(x) __ALIGN_KERNEL(x, L1_CACHE_BYTES)
- #endif
- 
- #ifndef SMP_CACHE_BYTES
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index e6131a78..2449da9 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -5,6 +5,7 @@
- #include <linux/init.h>
- #include <linux/kern_levels.h>
- #include <linux/linkage.h>
-+#include <linux/cache.h>
- 
- extern const char linux_banner[];
- extern const char linux_proc_banner[];
-@@ -251,17 +252,17 @@ extern asmlinkage void dump_stack(void) __cold;
-  */
- 
- #ifdef CONFIG_PRINTK
--#define printk_once(fmt, ...)			\
--({						\
--	static bool __print_once;		\
--						\
--	if (!__print_once) {			\
--		__print_once = true;		\
--		printk(fmt, ##__VA_ARGS__);	\
--	}					\
-+#define printk_once(fmt, ...)					\
-+({								\
-+	static bool __print_once __read_mostly;			\
-+								\
-+	if (!__print_once) {					\
-+		__print_once = true;				\
-+		printk(fmt, ##__VA_ARGS__);			\
-+	}							\
- })
- #else
--#define printk_once(fmt, ...)			\
-+#define printk_once(fmt, ...)					\
- 	no_printk(fmt, ##__VA_ARGS__)
- #endif
- 
+asm("prefetch 5*64(%[src])\n\t"
+    "addq 0*8(%[src]),%[res1]\n\t"
+    "jo 2f\n\t"
+    "incq %[cry]\n\t"
+    "2:addq 1*8(%[src]),%[res2]\n\t"
+    "jc 3f\n\t"
+    "incq %[cry]\n\t"
+    "3:addq 2*8(%[src]),%[res1]\n\t"
+    ...
 
+The hope being that by using the add instead instead of the adc instruction, and
+alternatively testing the overflow and carry flags, I could break the
+serialization on the flags register between subeuqent adds and start doing
+things in parallel (creating a poor mans adcx/adox instruction in effect).  It
+functions, but unfortunately the performance lost to the completely broken
+branch prediction that this inflicts makes it a non starter:
+
+
+Base Performance:
+ Performance counter stats for './test.sh' (20 runs):
+
+        48,143,372 L1-dcache-load-misses                                         ( +-  0.03% ) [74.99%]
+                 0 L1-dcache-prefetches                                         [75.00%]
+    13,913,339,911 cycles                    #    0.000 GHz                      ( +-  0.06% ) [75.01%]
+        28,878,999 branch-misses                                                 ( +-  0.05% ) [75.00%]
+
+       5.367618727 seconds time elapsed                                          ( +-  0.06% )
+
+
+Prefetch and simluated adcx/adox from above:
+ Performance counter stats for './test.sh' (20 runs):
+
+        35,704,331 L1-dcache-load-misses                                         ( +-  0.07% ) [75.00%]
+                 0 L1-dcache-prefetches                                         [75.00%]
+    19,751,409,264 cycles                    #    0.000 GHz                      ( +-  0.59% ) [75.00%]
+        34,850,056 branch-misses                                                 ( +-  1.29% ) [75.00%]
+
+       7.768602160 seconds time elapsed                                          ( +-  1.38% )
+
+
+With the above instruction changes the prefetching lowers our dcache miss rate
+significantly, but greatly raises our branch miss rate, and absolutely kills our
+cycle count and run time.
+
+At this point I feel like this is dead in the water.  I apologize for wasting
+everyones time.  The best thing to do here would seem to be:
+
+1) Add in some prefetching (from what I've seen a simple prefetch is as
+performant as smart prefetching), so we may as well do it exactly as
+csum_copy_from_user does it, and save ourselves the extra while loop.
+
+2) Revisit this when the AVX extensions, or the adcx/adox instructions are
+available and we can really preform parallel alu ops here.
+
+Does that sound reasonable?
+Neil
 
