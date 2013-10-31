@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab3JaQQP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 12:16:15 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:49866 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755297Ab3JaQQN (ORCPT
+	id S1755348Ab3JaQRw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 12:17:52 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42195 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752916Ab3JaQRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 12:16:13 -0400
-Date: Thu, 31 Oct 2013 09:16:03 -0700
-From: Lee Jones <lee.jones@linaro.org>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, mturquette@linaro.org,
-        kgene.kim@samsung.com, patches@linaro.org
-Subject: Re: [PATCH 3/4] mfd: sec-core: Add cells for S5M8767-clocks
-Message-ID: <20131031161603.GB9587@lee--X1>
-References: <1383202124-1775-1-git-send-email-tushar.behera@linaro.org>
- <1383202124-1775-4-git-send-email-tushar.behera@linaro.org>
+	Thu, 31 Oct 2013 12:17:51 -0400
+Date: Thu, 31 Oct 2013 16:17:39 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+Subject: Re: [PATCH 1/6] arm: zynq: platsmp: Fix CPU presence check
+Message-ID: <20131031161739.GE16735@n2100.arm.linux.org.uk>
+References: <1383235819-2552-1-git-send-email-soren.brinkmann@xilinx.com> <1383235819-2552-2-git-send-email-soren.brinkmann@xilinx.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1383202124-1775-4-git-send-email-tushar.behera@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1383235819-2552-2-git-send-email-soren.brinkmann@xilinx.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Oct 2013, Tushar Behera wrote:
-
-> S5M8767 chip has 3 crystal oscillators running at 32KHz. These are
-> supported by s2mps11-clk driver.
+On Thu, Oct 31, 2013 at 09:10:14AM -0700, Soren Brinkmann wrote:
+> From: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
 > 
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> CC: Lee Jones <lee.jones@linaro.org>
+> Fix an off-by-one error in the logic that checks if a CPU is present.
+> The ncores variable is a count of cores while the cpu variable is a
+> 0 based index. So if ncores == cpu, cpu is out of range. Fix this
+> comparison so non-existent CPUs are not probed.
+> 
+> Signed-off-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+
+There's another two bugs here.
+
 > ---
->  drivers/mfd/sec-core.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+>  arch/arm/mach-zynq/platsmp.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-> index 34c18fb..020b86b 100644
-> --- a/drivers/mfd/sec-core.c
-> +++ b/drivers/mfd/sec-core.c
-> @@ -56,7 +56,9 @@ static struct mfd_cell s5m8767_devs[] = {
->  		.name = "s5m8767-pmic",
->  	}, {
->  		.name = "s5m-rtc",
-> -	},
-> +	}, {
-> +		.name = "s5m8767-clk",
-> +	}
->  };
+> diff --git a/arch/arm/mach-zynq/platsmp.c b/arch/arm/mach-zynq/platsmp.c
+> index 689fbbc3d9c8..2512624e657d 100644
+> --- a/arch/arm/mach-zynq/platsmp.c
+> +++ b/arch/arm/mach-zynq/platsmp.c
+> @@ -39,7 +39,7 @@ int zynq_cpun_start(u32 address, int cpu)
+>  	u32 trampoline_code_size = &zynq_secondary_trampoline_end -
+>  						&zynq_secondary_trampoline;
 >  
->  static struct mfd_cell s2mps11_devs[] = {
+> -	if (cpu > ncores) {
+> +	if (cpu >= ncores) {
+>  		pr_warn("CPU No. is not available in the system\n");
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+Much better: pr_warn("CPU%d is not available\n", cpu);
 
-I'd prefer to take this patch in via the MFD tree once you have
-support from the other maintainers for the set.
+However, if you have set the cpu possible/present masks correctly,
+you will never hit this because the generic code already checks that
+the CPU being requested is legal.  So actually I'd suggest getting
+rid of this entire if() statement and block.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>  		return -1;
+
+The second issue is one of laziness.  -1 as a return code for something
+that gets propagated back to userspace.  Do we really mean to return to
+userspace -EPERM because of this or other failures in this function?
+All those idiotic and lazy (and that's exactly what they are - idiotic
+and lazy) "return -1" statements need to be fixed.
+
+Shame on the arm-soc maintainers for not having an automatic filter for
+this kind of sloppy programming.
