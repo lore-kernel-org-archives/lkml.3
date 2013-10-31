@@ -1,93 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684Ab3JaFbw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 01:31:52 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:3222 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845Ab3JaFbv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 01:31:51 -0400
-Message-ID: <5271EAFC.3040608@atmel.com>
-Date: Thu, 31 Oct 2013 13:30:36 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: <plagnioj@jcrosoft.com>, <linux-pwm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <alexandre.belloni@free-electrons.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-Subject: Re: [PATCH v5] PWM: atmel-pwm: add PWM controller driver
-References: <1380532240-18650-1-git-send-email-voice.shen@atmel.com> <20131008131727.GB12839@ulmo.nvidia.com> <52664FB6.4000004@atmel.com> <526E797A.9010509@atmel.com>
-In-Reply-To: <526E797A.9010509@atmel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+	id S1752212Ab3JaFhB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 01:37:01 -0400
+Received: from mga02.intel.com ([134.134.136.20]:25166 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750762Ab3JaFhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 01:37:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="401351326"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, ak@linux.intel.com, eranian@google.com,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH 1/2] perf/x86/intel/uncore: Add filter support for IvyBridge-EP QPI boxes
+Date: Thu, 31 Oct 2013 13:36:54 +0800
+Message-Id: <1383197815-17706-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicolas,
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-On 10/28/2013 10:49 PM, Nicolas Ferre wrote:
-> On 22/10/2013 12:13, Bo Shen :
->> Hi All,
->>
->> On 10/8/2013 21:17, Thierry Reding wrote:
->>> On Mon, Sep 30, 2013 at 05:10:40PM +0800, Bo Shen wrote:
->>>> Add Atmel PWM controller driver based on PWM framework.
->>>>
->>>> This is the basic function implementation of Atmel PWM controller.
->>>> It can work with PWM based led and backlight.
->>>>
->>>> Signed-off-by: Bo Shen <voice.shen@atmel.com>
->>>>
->>>> ---
->>>> Changes in v5:
->>>>     - call clk_disable directly, if so, it won't cause more than one
->>>> channel
->>>>       enabled, the clock can not be disabled.
->>>>
->>>> Changes in v4:
->>>>     - check the return value of clk_prepare()
->>>>     - change channel register size as constant
->>>>
->>>> Changes in v3:
->>>>     - change compatible string from "atmel,sama5-pwm" to
->>>> "atmel,sama5d3-pwm"
->>>>     - Add PWM led example in binding documentation
->>>>     - Using micro replace hard code
->>>>
->>>> Changes in v2:
->>>>     - Address the comments from Thierry Reding
->>>>
->>>>    .../devicetree/bindings/pwm/atmel-pwm.txt          |   41 +++
->>>>    drivers/pwm/Kconfig                                |    9 +
->>>>    drivers/pwm/Makefile                               |    1 +
->>>>    drivers/pwm/pwm-atmel.c                            |  344
->>>> ++++++++++++++++++++
->>>>    4 files changed, 395 insertions(+)
->>>>    create mode 100644
->>>> Documentation/devicetree/bindings/pwm/atmel-pwm.txt
->>>>    create mode 100644 drivers/pwm/pwm-atmel.c
->>>
->>> I haven't seen an Acked-by from the device tree bindings maintainers on
->>> this. I've Cc'ed them, so hopefully one of them has time to review.
->>
->> Any comments?
->
-> As a recommendation from the recent Kernel Summit stated, you will have
-> to separate the binding itself from the driver and associated code.
-> Simply send the binding documentation to the DT maintainers but still
-> keep the two patches linked together in a series (but without putting DT
-> maintainers nor the DT mailing-list in CC of the non-documentation
-> patches).
->
-> This way you may have more chances to get feedback.
+The encoding for filter registers of IvyBridge-EP uncore QPI boxes is
+completely the same as SandyBridge-EP.
 
-Thanks, I will split the binding document as a separate patch.
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 61 ++++++++++++++++++++++-----
+ 1 file changed, 51 insertions(+), 10 deletions(-)
 
-> Thanks, bye,
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 4118f9f..6da3999 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -1099,6 +1099,24 @@ static struct attribute *ivt_uncore_qpi_formats_attr[] = {
+ 	&format_attr_umask.attr,
+ 	&format_attr_edge.attr,
+ 	&format_attr_thresh8.attr,
++	&format_attr_match_rds.attr,
++	&format_attr_match_rnid30.attr,
++	&format_attr_match_rnid4.attr,
++	&format_attr_match_dnid.attr,
++	&format_attr_match_mc.attr,
++	&format_attr_match_opc.attr,
++	&format_attr_match_vnw.attr,
++	&format_attr_match0.attr,
++	&format_attr_match1.attr,
++	&format_attr_mask_rds.attr,
++	&format_attr_mask_rnid30.attr,
++	&format_attr_mask_rnid4.attr,
++	&format_attr_mask_dnid.attr,
++	&format_attr_mask_mc.attr,
++	&format_attr_mask_opc.attr,
++	&format_attr_mask_vnw.attr,
++	&format_attr_mask0.attr,
++	&format_attr_mask1.attr,
+ 	NULL,
+ };
+ 
+@@ -1312,17 +1330,30 @@ static struct intel_uncore_type ivt_uncore_imc = {
+ 	IVT_UNCORE_PCI_COMMON_INIT(),
+ };
+ 
++static struct intel_uncore_ops ivt_uncore_qpi_ops = {
++	.init_box	= ivt_uncore_pci_init_box,
++	.disable_box	= snbep_uncore_pci_disable_box,
++	.enable_box	= snbep_uncore_pci_enable_box,
++	.disable_event	= snbep_uncore_pci_disable_event,
++	.enable_event	= snbep_qpi_enable_event,
++	.read_counter	= snbep_uncore_pci_read_counter,
++	.hw_config	= snbep_qpi_hw_config,
++	.get_constraint	= uncore_get_constraint,
++	.put_constraint	= uncore_put_constraint,
++};
++
+ static struct intel_uncore_type ivt_uncore_qpi = {
+-	.name		= "qpi",
+-	.num_counters   = 4,
+-	.num_boxes	= 3,
+-	.perf_ctr_bits	= 48,
+-	.perf_ctr	= SNBEP_PCI_PMON_CTR0,
+-	.event_ctl	= SNBEP_PCI_PMON_CTL0,
+-	.event_mask	= IVT_QPI_PCI_PMON_RAW_EVENT_MASK,
+-	.box_ctl	= SNBEP_PCI_PMON_BOX_CTL,
+-	.ops		= &ivt_uncore_pci_ops,
+-	.format_group	= &ivt_uncore_qpi_format_group,
++	.name			= "qpi",
++	.num_counters		= 4,
++	.num_boxes		= 3,
++	.perf_ctr_bits		= 48,
++	.perf_ctr		= SNBEP_PCI_PMON_CTR0,
++	.event_ctl		= SNBEP_PCI_PMON_CTL0,
++	.event_mask		= IVT_QPI_PCI_PMON_RAW_EVENT_MASK,
++	.box_ctl		= SNBEP_PCI_PMON_BOX_CTL,
++	.num_shared_regs	= 1,
++	.ops			= &ivt_uncore_qpi_ops,
++	.format_group		= &ivt_uncore_qpi_format_group,
+ };
+ 
+ static struct intel_uncore_type ivt_uncore_r2pcie = {
+@@ -1429,6 +1460,16 @@ static DEFINE_PCI_DEVICE_TABLE(ivt_uncore_pci_ids) = {
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe3e),
+ 		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_R3QPI, 2),
+ 	},
++	{ /* QPI Port 0 filter  */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe86),
++		.driver_data = UNCORE_PCI_DEV_DATA(UNCORE_EXTRA_PCI_DEV,
++						   SNBEP_PCI_QPI_PORT0_FILTER),
++	},
++	{ /* QPI Port 0 filter  */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe96),
++		.driver_data = UNCORE_PCI_DEV_DATA(UNCORE_EXTRA_PCI_DEV,
++						   SNBEP_PCI_QPI_PORT1_FILTER),
++	},
+ 	{ /* end: all zeroes */ }
+ };
+ 
+-- 
+1.8.1.4
 
-Best Regards,
-Bo Shen
