@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab3JaRMD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 13:12:03 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:43837 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590Ab3JaRMA (ORCPT
+	id S1754456Ab3JaRMK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 13:12:10 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:58771 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754312Ab3JaRMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 13:12:00 -0400
+	Thu, 31 Oct 2013 13:12:07 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: Olof Johansson <olof@lixom.net>, David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/4] ARM: msm: Remove 7x00 support
+References: <1382993006-27359-1-git-send-email-davidb@codeaurora.org>
+	<1382993006-27359-3-git-send-email-davidb@codeaurora.org>
+	<20131029132043.GA28165@fifo99.com>
+	<CAOesGMhg8HN4Su9FXSeoAgmH6NVKXW+wmnreUvWH+1G6GWkkaA@mail.gmail.com>
+	<87ob66nyqc.fsf@linaro.org> <20131030232412.GA10229@fifo99.com>
+Date: Thu, 31 Oct 2013 10:12:03 -0700
+In-Reply-To: <20131030232412.GA10229@fifo99.com> (Daniel Walker's message of
+	"Wed, 30 Oct 2013 16:25:32 -0700")
+Message-ID: <8738nhnz4s.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <87txfxml2b.fsf@intel.com>
-References: <cover.1381939165.git.joseph.salisbury@canonical.com>
-	<397b1b6f028317a3ef897cdaf79eb1e5519e587d.1381939165.git.joseph.salisbury@canonical.com>
-	<20131016210213.GR4830@phenom.ffwll.local>
-	<526A8FE3.8040801@canonical.com>
-	<87txfxpjv1.fsf@intel.com>
-	<CA+5PVA7j+90_iwZD+Gx9cAuqwEGH+cKB98OQj2+w4fhC_JT0pw@mail.gmail.com>
-	<87txfxml2b.fsf@intel.com>
-Date: Thu, 31 Oct 2013 13:11:59 -0400
-X-Google-Sender-Auth: FmQcOZu-gxyQu3ZC8bmC7RVg5ME
-Message-ID: <CA+5PVA7s8q1-N5Pz1N-zgEcn309LJUtwWvD+zWf=z3zv-UJ6TA@mail.gmail.com>
-Subject: Re: [Intel-gfx] [v3.10][v3.11][v3.12][Regression][PATCH 1/1] Revert
- "Revert "drm/i915: revert eDP bpp clamping code changes""
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>, przanoni@gmail.com,
-        Dave Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 1:01 PM, Jani Nikula
-<jani.nikula@linux.intel.com> wrote:
-> On Thu, 31 Oct 2013, Josh Boyer <jwboyer@fedoraproject.org> wrote:
->> On Thu, Oct 31, 2013 at 10:58 AM, Jani Nikula
->> <jani.nikula@linux.intel.com> wrote:
->>> On Fri, 25 Oct 2013, Joseph Salisbury <joseph.salisbury@canonical.com> wrote:
->>>> On 10/16/2013 05:02 PM, Daniel Vetter wrote:
->>>>> It's by far not that simple. Jani is working on both the underlying bug
->>>>> and a better w/a. See
->>>>>
->>>>> https://bugzilla.kernel.org/show_bug.cgi?id=59841
->>>>>
->>>>> for the full story in its entire glory.
->>>>>
->>>>> Cheers, Daniel
->>>>
->>>> Thanks for the feedback, Daniel.  Is there an estimate on what mainline
->>>> release might contain Jani's work?
->>>
->>> commit c6cd2ee2d59111a07cd9199564c9bdcb2d11e5cf
->>> Author: Jani Nikula <jani.nikula@intel.com>
->>> Date:   Mon Oct 21 10:52:07 2013 +0300
->>>
->>>     drm/i915/dp: workaround BIOS eDP bpp clamping issue
->>>
->>> and a couple of dependencies are now in Linus' tree, i.e. should be
->>> released in 3.12. The commits are also CC: stable.
->>
->> Are the dependency commits you mentioned these?
+Daniel Walker <dwalker@fifo99.com> writes:
+
+> On Wed, Oct 30, 2013 at 04:08:27PM -0700, Kevin Hilman wrote:
+>> Olof Johansson <olof@lixom.net> writes:
+>> 
+>> > I would be very happy to take more code for the older Qualcomm chipset
+>> > to enable full functionality for them, but it's been my impression
+>> > that far from all that is needed to make it a useful platform is in
+>> > the upstream kernel, and there's been no signs of more of it showing
+>> > up at least in the last two years.
+>> >
+>> > So we have a bit of a stalemate here -- the current Qualcomm team
+>> > wants to avoid having to deal too much with the legacy platforms --
+>> > they are technically quite different from the current platforms and
+>> > the divergence makes it hard to deal with supporting it all in a
+>> > modern way without risking regressions. I tend to agree with them.
+>> 
+>> As do I.
+>> 
+>> > Just like omap split between omap1 and omap2plus, I think it's a time
+>> > to create a mach-qcom instead, and move the modern (v7, most likely)
+>> > platforms there -- enable them with device tree, modern framework
+>> > infrastructure, etc. That way you can keep older platforms in mach-msm
+>> > without risk of regressions, and they have a clean base to start on
+>> > with their later platforms.
+>> 
+>> I think this split approach is a good compromise.
+>> 
+>> If the maintainers of the current older platforms wish to bring them up
+>> to modern frameworks, we can consider combining again.  If not, they the
+>> older platforms will take the same path as the rest of the older
+>> platforms that slowly fade away.
+>> 
 >
-> Yes; sorry for not mentioning them explicitly.
+> So the current users of those platforms are, what SOL ?
 
-No problem.  Thanks for confirming.
+No.  The idea behind splitting them is to allow current platforms with
+active maintainers to progress without being held back.  The older
+platforms can stay and have an opportunity to modernize. 
 
-josh
+The kernel is a moving target, without some minimal effort to keep
+platforms up to date, the effort to continue to maintain/modernize them
+can become more of a pain than it's worth.  If maintainers of these older
+platforms are willing to put in the work, nobody will be SOL.  If
+nobody shows interest in modernizing these older platforms (which seems
+to be the case based on the last couple years), then it is reasonable
+IMO for them to fade away slowly.
+
+Kevin
+
+
