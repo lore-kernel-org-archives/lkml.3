@@ -1,90 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab3JaO1y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 10:27:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4916 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753658Ab3JaO1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 10:27:52 -0400
-Message-ID: <527268E4.2070505@redhat.com>
-Date: Thu, 31 Oct 2013 15:27:48 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] KVM: x86: emulate SAHF instruction
-References: <1383215382-10072-1-git-send-email-pbonzini@redhat.com> <20131031142119.GS4651@redhat.com>
-In-Reply-To: <20131031142119.GS4651@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754620Ab3JaOcy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 10:32:54 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35367 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab3JaOcw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 10:32:52 -0400
+Subject: Re: [PATCH V2 1/7] DRIVERS: IRQCHIP: IRQ-GIC: Add support for routable irqs
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1383145040-15852-2-git-send-email-r.sricharan@ti.com>
+Date: Thu, 31 Oct 2013 09:32:51 -0500
+Cc: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
+        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
+        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <mark.rutland@arm.com>, <robherring2@gmail.com>, <tglx@linutronix.de>,
+        <santosh.shilimkar@ti.com>, Rob Herring <rob.herring@calxeda.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <7A94EADA-645A-4287-9D68-AB5163DC1782@codeaurora.org>
+References: <1383145040-15852-1-git-send-email-r.sricharan@ti.com> <1383145040-15852-2-git-send-email-r.sricharan@ti.com>
+To: Sricharan R <r.sricharan@ti.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 31/10/2013 15:21, Gleb Natapov ha scritto:
-> On Thu, Oct 31, 2013 at 11:29:42AM +0100, Paolo Bonzini wrote:
->> Yet another instruction that we fail to emulate, this time found
->> in Windows 2008R2 32-bit.
->>
->> Cc: stable@vger.kernel.org
->> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
->> ---
->> 	Testcase on its way.  BTW, lahf/sahf is another candidate for
->> 	#UD emulation.
->>
->>  arch/x86/kvm/emulate.c | 14 +++++++++++++-
->>  1 file changed, 13 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
->> index 8e2a07bd8eac..ef750e75c930 100644
->> --- a/arch/x86/kvm/emulate.c
->> +++ b/arch/x86/kvm/emulate.c
->> @@ -3296,6 +3296,18 @@ static int em_cpuid(struct x86_emulate_ctxt *ctxt)
->>  	return X86EMUL_CONTINUE;
->>  }
->>  
->> +static int em_sahf(struct x86_emulate_ctxt *ctxt)
->> +{
->> +	u32 flags;
->> +
-> Shouldn't we check CPUID.80000001H.ECX[0] = 1 in 64 bit mode?
 
-If we want to we should check for it in em_lahf too.  But we don't
-usually check for CPUID bits.  The recently added movbe is an exception,
-and syscall too, but we don't do that for SSE or MMX instructions.
+On Oct 30, 2013, at 9:57 AM, Sricharan R wrote:
 
-The way I understand it, either AMD was lazy, or they wanted to use
-lahf/sahf as prefixes later on.  But it didn't work out that way, so I
-think it's fine to skip the check.
-
-Paolo
-
->> +	flags = EFLG_CF | EFLG_PF | EFLG_AF | EFLG_ZF | EFLG_SF;
->> +	flags &= *reg_rmw(ctxt, VCPU_REGS_RAX) >> 8;
->> +
->> +	ctxt->eflags &= ~0xffUL;
->> +	ctxt->eflags |= flags | X86_EFLAGS_FIXED;
->> +	return X86EMUL_CONTINUE;
->> +}
->> +
->>  static int em_lahf(struct x86_emulate_ctxt *ctxt)
->>  {
->>  	*reg_rmw(ctxt, VCPU_REGS_RAX) &= ~0xff00UL;
->> @@ -3788,7 +3800,7 @@ static const struct opcode opcode_table[256] = {
->>  	DI(SrcAcc | DstReg, pause), X7(D(SrcAcc | DstReg)),
->>  	/* 0x98 - 0x9F */
->>  	D(DstAcc | SrcNone), I(ImplicitOps | SrcAcc, em_cwd),
->> -	I(SrcImmFAddr | No64, em_call_far), N,
->> +	I(SrcImmFAddr | No64, em_call_far), I(ImplicitOps, em_sahf),
->>  	II(ImplicitOps | Stack, em_pushf, pushf),
->>  	II(ImplicitOps | Stack, em_popf, popf), N, I(ImplicitOps, em_lahf),
->>  	/* 0xA0 - 0xA7 */
->> -- 
->> 1.8.3.1
+> In some socs the gic can be preceded by a crossbar IP which
+> routes the peripheral interrupts to the gic inputs. The peripheral
+> interrupts are associated with a fixed crossbar input line and the
+> crossbar routes that to one of the free gic input line.
 > 
-> --
-> 			Gleb.
+> The DT entries for peripherals provides the fixed crossbar input line
+> as its interrupt number and the mapping code should associate this with
+> a free gic input line. This patch adds the support inside the gic irqchip
+> to handle such routable irqs. The routable irqs are registered in a linear
+> domain. The registered routable domain's callback should be implemented
+> to get a free irq and to configure the IP to route it.
 > 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: Rajendra Nayak <rnayak@ti.com>
+> Cc: Marc Zyngier <marc.zyngier@arm.com>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Signed-off-by: Sricharan R <r.sricharan@ti.com>
+> ---
+> [V2] Added default routable-irqs functions to avoid
+>      unnessecary if checks as per Thomas Gleixner comments
+>      and renamed routable-irq binding as per
+>      Kumar Gala <galak@codeaurora.org> comments.
+> 
+> Documentation/devicetree/bindings/arm/gic.txt |    6 ++
+> drivers/irqchip/irq-gic.c                     |   83 ++++++++++++++++++++++---
+> include/linux/irqchip/arm-gic.h               |    8 ++-
+> 3 files changed, 87 insertions(+), 10 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+> index 3dfb0c0..5357745 100644
+> --- a/Documentation/devicetree/bindings/arm/gic.txt
+> +++ b/Documentation/devicetree/bindings/arm/gic.txt
+> @@ -49,6 +49,11 @@ Optional
+>   regions, used when the GIC doesn't have banked registers. The offset is
+>   cpu-offset * cpu-nr.
+> 
+> +- arm,routable-irqs : Total number of gic irq inputs which are not directly
+> +		  connected from the peripherals, but are routed dynamically
+> +		  by a crossbar/multiplexer preceding the GIC. The GIC irq
+> +		  input line is assigned dynamically when the corresponding
+> +		  peripheral's crossbar line is mapped.
+> Example:
+> 
+> 	intc: interrupt-controller@fff11000 {
+> @@ -56,6 +61,7 @@ Example:
+> 		#interrupt-cells = <3>;
+> 		#address-cells = <1>;
+> 		interrupt-controller;
+> +		arm,routable-irqs = <160>;
+> 		reg = <0xfff11000 0x1000>,
+> 		      <0xfff10100 0x100>;
+> 	};
+
+DT Binding portion:
+
+Acked-by: Kumar Gala <galak@codeaurora.org>
+
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
