@@ -1,147 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab3JaQ13 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 12:27:29 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:35456 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754334Ab3JaQ1Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 12:27:25 -0400
-X-AuditID: cbfec7f5-b7ef66d00000795a-36-527284ebd588
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: dhowells@redhat.com, rusty@rustcorp.com.au,
-        linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-modules@vger.kernel.org,
-        dmitry.kasatkin@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH 1/1] KEYS: store keys in the dedicated directory
-Date: Thu, 31 Oct 2013 18:26:30 +0200
-Message-id: <1c88669c38d627ca2f5ccc9ffc2e24e2d04c05ea.1383236790.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLJMWRmVeSWpSXmKPExsVy+t/xa7qvW4qCDJ49YrW49Xcvs8W7pt8s
-	Fl+W1llc3jWHzaJh9ndWiw89j9gsbk67wOLA7rFz1l12j/f7rrJ5rNhwgtmjb8sqRo/Pm+QC
-	WKO4bFJSczLLUov07RK4Mi7u38xU0KhUMfXkZqYGxk8yXYycHBICJhIruh+yQNhiEhfurWfr
-	YuTiEBJYyiixpGEBI4TTySTx7PQ5ZpAqNgE9iQ3NP9hBbBGBcImuiYvBipgF2hglXkxoASsS
-	FnCQ+Lr2JGsXIwcHi4CqRN/yYpAwr0CcxLv/nYwQ2xQkfl4+wTaBkXsBI8MqRtHU0uSC4qT0
-	XCO94sTc4tK8dL3k/NxNjJAg+bqDcekxq0OMAhyMSjy8DLqFQUKsiWXFlbmHGCU4mJVEeEVy
-	ioKEeFMSK6tSi/Lji0pzUosPMTJxcEo1MMY5MbucL8pkf8zyymq3YNi8OCv5AzZ7Nvbptx+M
-	UL6ZffTLJoPcvf4cwo8ZJS1rOhP/LHkf4x+stNTxxTcpp2MMYr62hyp/bDSzPNEmZX/p50E9
-	NaN7zXd3XGV7ovroQs71qSE/RDLrhbNavU0Elxck9TzVLApR7+55uGXeS9b4edHLFhjOU2Ip
-	zkg01GIuKk4EACaALlHwAQAA
+	id S1755517Ab3JaQ1w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 12:27:52 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49586 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754381Ab3JaQZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 12:25:22 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: Linux EFI <linux-efi@vger.kernel.org>
+Cc: Borislav Petkov <bp@suse.de>, Dave Young <dyoung@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Vivek Goyal <vgoyal@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 ML <x86@kernel.org>
+Subject: [PATCH 05/11] x86, pageattr: Add a PMD pagetable populating function
+Date: Thu, 31 Oct 2013 17:25:03 +0100
+Message-Id: <1383236709-19716-6-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1383236709-19716-1-git-send-email-bp@alien8.de>
+References: <1383236709-19716-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recent patch "KEYS: Load *.x509 files into kernel keyring" allows to bultin
-multiple X509 certificates. It is easier to manage keys and certificates
-when they are stored in the dedicated directory.
+From: Borislav Petkov <bp@suse.de>
 
-This patch proposes to store keys in the 'keys' directory.
+Handle PMD-level mappings the same as PUD ones.
 
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- Makefile        |  4 ++--
- kernel/Makefile | 55 +++++++++++++++++++++++++++++++------------------------
- 2 files changed, 33 insertions(+), 26 deletions(-)
+ arch/x86/mm/pageattr.c | 82 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 81 insertions(+), 1 deletion(-)
 
-diff --git a/Makefile b/Makefile
-index 8d0668f..329684a 100644
---- a/Makefile
-+++ b/Makefile
-@@ -722,8 +722,8 @@ export mod_strip_cmd
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index 81deca77b871..968398b023c0 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -666,6 +666,16 @@ static int split_large_page(pte_t *kpte, unsigned long address)
+ 	return 0;
+ }
  
- 
- ifdef CONFIG_MODULE_SIG_ALL
--MODSECKEY = ./signing_key.priv
--MODPUBKEY = ./signing_key.x509
-+MODSECKEY = ./keys/signing_key.priv
-+MODPUBKEY = ./keys/signing_key.x509
- export MODPUBKEY
- mod_sign_cmd = perl $(srctree)/scripts/sign-file $(CONFIG_MODULE_SIG_HASH) $(MODSECKEY) $(MODPUBKEY)
- else
-diff --git a/kernel/Makefile b/kernel/Makefile
-index 6313698..3e7799a 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -154,9 +154,15 @@ $(obj)/timeconst.h: $(obj)/hz.bc $(src)/timeconst.bc FORCE
- # duplicates.
- #
- ###############################################################################
++static int alloc_pte_page(pmd_t *pmd)
++{
++	pte_t *pte = (pte_t *)get_zeroed_page(GFP_KERNEL | __GFP_NOTRACK);
++	if (!pte)
++		return -1;
 +
-+KEYDIR = keys
-+MODGENKEY = $(KEYDIR)/x509.genkey
-+MODSECKEY = $(KEYDIR)/signing_key.priv
-+MODPUBKEY = $(KEYDIR)/signing_key.x509
++	set_pmd(pmd, __pmd(__pa(pte) | _KERNPG_TABLE));
++	return 0;
++}
 +
- ifeq ($(CONFIG_SYSTEM_TRUSTED_KEYRING),y)
--X509_CERTIFICATES-y := $(wildcard *.x509) $(wildcard $(srctree)/*.x509)
--X509_CERTIFICATES-$(CONFIG_MODULE_SIG) += signing_key.x509
-+X509_CERTIFICATES-y := $(wildcard $(srctree)/keys/*.x509)
-+X509_CERTIFICATES-$(CONFIG_MODULE_SIG) += $(MODPUBKEY)
- X509_CERTIFICATES := $(sort $(foreach CERT,$(X509_CERTIFICATES-y), \
- 				$(or $(realpath $(CERT)),$(CERT))))
+ static int alloc_pmd_page(pud_t *pud)
+ {
+ 	pmd_t *pmd = (pmd_t *)get_zeroed_page(GFP_KERNEL | __GFP_NOTRACK);
+@@ -676,7 +686,77 @@ static int alloc_pmd_page(pud_t *pud)
+ 	return 0;
+ }
  
-@@ -199,7 +205,7 @@ ifndef CONFIG_MODULE_SIG_HASH
- $(error Could not determine digest type to use from kernel config)
- endif
+-#define populate_pmd(cpa, start, end, pages, pud, pgprot)	(-1)
++#define populate_pte(cpa, start, end, pages, pmd, pgprot)	do {} while (0)
++
++static int populate_pmd(struct cpa_data *cpa,
++			unsigned long start, unsigned long end,
++			unsigned num_pages, pud_t *pud, pgprot_t pgprot)
++{
++	unsigned int cur_pages = 0;
++	pmd_t *pmd;
++
++	/*
++	 * Not on a 2M boundary?
++	 */
++	if (start & (PMD_SIZE - 1)) {
++		unsigned long pre_end = start + (num_pages << PAGE_SHIFT);
++		unsigned long next_page = (start + PMD_SIZE) & PMD_MASK;
++
++		pre_end   = min_t(unsigned long, pre_end, next_page);
++		cur_pages = (pre_end - start) >> PAGE_SHIFT;
++		cur_pages = min_t(unsigned int, num_pages, cur_pages);
++
++		/*
++		 * Need a PTE page?
++		 */
++		pmd = pmd_offset(pud, start);
++		if (pmd_none(*pmd))
++			if (alloc_pte_page(pmd))
++				return -1;
++
++		populate_pte(cpa, start, pre_end, cur_pages, pmd, pgprot);
++
++		start = pre_end;
++	}
++
++	/*
++	 * We mapped them all?
++	 */
++	if (num_pages == cur_pages)
++		return cur_pages;
++
++	while (end - start >= PMD_SIZE) {
++
++		/*
++		 * We cannot use a 1G page so allocate a PMD page if needed.
++		 */
++		if (pud_none(*pud))
++			if (alloc_pmd_page(pud))
++				return -1;
++
++		pmd = pmd_offset(pud, start);
++
++		set_pmd(pmd, __pmd(cpa->pfn | _PAGE_PSE | massage_pgprot(pgprot)));
++
++		start	  += PMD_SIZE;
++		cpa->pfn  += PMD_SIZE;
++		cur_pages += PMD_SIZE >> PAGE_SHIFT;
++	}
++
++	/*
++	 * Map trailing 4K pages.
++	 */
++	if (start < end) {
++		pmd = pmd_offset(pud, start);
++		if (pmd_none(*pmd))
++			if (alloc_pte_page(pmd))
++				return -1;
++
++		populate_pte(cpa, start, end, num_pages - cur_pages,
++			     pmd, pgprot);
++	}
++	return num_pages;
++}
  
--signing_key.priv signing_key.x509: x509.genkey
-+$(MODSECKEY) $(MODPUBKEY): $(MODGENKEY)
- 	@echo "###"
- 	@echo "### Now generating an X.509 key pair to be used for signing modules."
- 	@echo "###"
-@@ -209,30 +215,31 @@ signing_key.priv signing_key.x509: x509.genkey
- 	@echo "### number generator if one is available."
- 	@echo "###"
- 	openssl req -new -nodes -utf8 -$(CONFIG_MODULE_SIG_HASH) -days 36500 \
--		-batch -x509 -config x509.genkey \
--		-outform DER -out signing_key.x509 \
--		-keyout signing_key.priv 2>&1
-+		-batch -x509 -config $(MODGENKEY) \
-+		-outform DER -out $(MODPUBKEY) \
-+		-keyout $(MODSECKEY) 2>&1
- 	@echo "###"
- 	@echo "### Key pair generated."
- 	@echo "###"
- 
--x509.genkey:
-+$(MODGENKEY):
- 	@echo Generating X.509 key generation config
--	@echo  >x509.genkey "[ req ]"
--	@echo >>x509.genkey "default_bits = 4096"
--	@echo >>x509.genkey "distinguished_name = req_distinguished_name"
--	@echo >>x509.genkey "prompt = no"
--	@echo >>x509.genkey "string_mask = utf8only"
--	@echo >>x509.genkey "x509_extensions = myexts"
--	@echo >>x509.genkey
--	@echo >>x509.genkey "[ req_distinguished_name ]"
--	@echo >>x509.genkey "O = Magrathea"
--	@echo >>x509.genkey "CN = Glacier signing key"
--	@echo >>x509.genkey "emailAddress = slartibartfast@magrathea.h2g2"
--	@echo >>x509.genkey
--	@echo >>x509.genkey "[ myexts ]"
--	@echo >>x509.genkey "basicConstraints=critical,CA:FALSE"
--	@echo >>x509.genkey "keyUsage=digitalSignature"
--	@echo >>x509.genkey "subjectKeyIdentifier=hash"
--	@echo >>x509.genkey "authorityKeyIdentifier=keyid"
-+	@mkdir -p $(KEYDIR)
-+	@echo  >$(MODGENKEY) "[ req ]"
-+	@echo >>$(MODGENKEY) "default_bits = 4096"
-+	@echo >>$(MODGENKEY) "distinguished_name = req_distinguished_name"
-+	@echo >>$(MODGENKEY) "prompt = no"
-+	@echo >>$(MODGENKEY) "string_mask = utf8only"
-+	@echo >>$(MODGENKEY) "x509_extensions = myexts"
-+	@echo >>$(MODGENKEY)
-+	@echo >>$(MODGENKEY) "[ req_distinguished_name ]"
-+	@echo >>$(MODGENKEY) "O = Magrathea"
-+	@echo >>$(MODGENKEY) "CN = Glacier signing key"
-+	@echo >>$(MODGENKEY) "emailAddress = slartibartfast@magrathea.h2g2"
-+	@echo >>$(MODGENKEY)
-+	@echo >>$(MODGENKEY) "[ myexts ]"
-+	@echo >>$(MODGENKEY) "basicConstraints=critical,CA:FALSE"
-+	@echo >>$(MODGENKEY) "keyUsage=digitalSignature"
-+	@echo >>$(MODGENKEY) "subjectKeyIdentifier=hash"
-+	@echo >>$(MODGENKEY) "authorityKeyIdentifier=keyid"
- endif
+ static int populate_pud(struct cpa_data *cpa, unsigned long start, pgd_t *pgd,
+ 			pgprot_t pgprot)
 -- 
-1.8.1.2
+1.8.4
 
