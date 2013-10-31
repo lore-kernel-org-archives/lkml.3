@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab3JaKzh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 06:55:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24497 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753973Ab3JaKze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 06:55:34 -0400
-Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
-From: Mark Wielaard <mjw@redhat.com>
-To: Pekka Enberg <penberg@iki.fi>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
-        anton@redhat.com, systemtap@sourceware.org,
-        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com,
-        dsahern@gmail.com,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-In-Reply-To: <5270F2DE.6040505@iki.fi>
-References: <20131023044511.1886.82571.stgit@hemant-fedora>
-	 <20131023050502.1886.15779.stgit@hemant-fedora>
-	 <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com>
-	 <y0mbo2cs2oa.fsf@fche.csb> <5270D9F7.3090105@hitachi.com>
-	 <5270F2DE.6040505@iki.fi>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 31 Oct 2013 11:54:46 +0100
-Message-ID: <1383216886.6521.5910.camel@bordewijk.wildebeest.org>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754197Ab3JaK55 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 06:57:57 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:39185 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752053Ab3JaK5z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 06:57:55 -0400
+Date: Thu, 31 Oct 2013 14:57:52 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrey Vagin <avagin@openvz.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        James Bottomley <jbottomley@parallels.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 1/6] procfs: Introduce sequential fdinfo engine
+Message-ID: <20131031105752.GB24809@moon>
+References: <20131030195951.201688764@openvz.org>
+ <20131030202221.047149911@openvz.org>
+ <CACVxJT8vuh+Jm1LYhiQBLvi6TASpGgKm0CCqVS=g3QE+eHK7Wg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVxJT8vuh+Jm1LYhiQBLvi6TASpGgKm0CCqVS=g3QE+eHK7Wg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-30 at 13:51 +0200, Pekka Enberg wrote:
-> On 10/30/13 12:05 PM, Masami Hiramatsu wrote:
-> > To find all system libraries, we can use ldconfig.
-> >
-> > $ ldconfig --print-cache
-> >
-> > shows what dynamic libraries will be loaded. On my own laptop (running
-> > ubuntu13.04) shows ~1000 libs.
+On Thu, Oct 31, 2013 at 01:32:13PM +0300, Alexey Dobriyan wrote:
+> On Wed, Oct 30, 2013 at 10:59 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> > At moment the fdinfo operations (ie the output from /proc/$pid/fdinfo/$fd)
+> > are generating output in one pass, which makes useless memory pressue
+> > if the reader/user provides a buffer with a small size.
 > 
-> Good point. That definitely narrows down the scanned set.
+> cat(1) uses 64 KB buffer.
+> The output doesn't exceed one page anyway.
 
-It is fast. But that would miss the various libjvm.so variants for
-example. Or other programs, like libreoffice, which have SDT probes in
-their internal shared libraries that aren't in the default ldconfig
-paths.
-
-Cheers,
-
-Mark
-
+Yes, good point. I probably need to update changelog (forgot that i'm using
+single_open here). What if we meet a file with that big number of epoll
+or say notifies assigned that the fdinfo won't fit a page? I didn't meet
+such scenario yet, but I think it's possible?
