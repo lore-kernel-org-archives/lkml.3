@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab3JaQl0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 12:41:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44122 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836Ab3JaQlY (ORCPT
+	id S1751772Ab3JaQla (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 12:41:30 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46640 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753486Ab3JaQl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 12:41:24 -0400
-Message-ID: <5272882D.2070807@canonical.com>
-Date: Thu, 31 Oct 2013 12:41:17 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
+	Thu, 31 Oct 2013 12:41:27 -0400
+Message-ID: <52728833.2030709@wwwdotorg.org>
+Date: Thu, 31 Oct 2013 10:41:23 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Jani Nikula <jani.nikula@linux.intel.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, przanoni@gmail.com, airlied@linux.ie,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [v3.10][v3.11][v3.12][Regression][PATCH 1/1] Revert
- "Revert "drm/i915: revert eDP bpp clamping code changes""
-References: <cover.1381939165.git.joseph.salisbury@canonical.com> <397b1b6f028317a3ef897cdaf79eb1e5519e587d.1381939165.git.joseph.salisbury@canonical.com> <20131016210213.GR4830@phenom.ffwll.local> <526A8FE3.8040801@canonical.com> <87txfxpjv1.fsf@intel.com>
-In-Reply-To: <87txfxpjv1.fsf@intel.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Mark Zhang <markz@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: tegra: use pll_ref as the pll_e parent
+References: <1383093707-10312-1-git-send-email-pdeschrijver@nvidia.com> <527128B5.2020101@wwwdotorg.org> <20131030221833.GQ22111@tbergstrom-lnx.Nvidia.com> <52718D1B.6030106@wwwdotorg.org> <20131031154142.GX22111@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20131031154142.GX22111@tbergstrom-lnx.Nvidia.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2013 10:58 AM, Jani Nikula wrote:
-> On Fri, 25 Oct 2013, Joseph Salisbury <joseph.salisbury@canonical.com> wrote:
->> On 10/16/2013 05:02 PM, Daniel Vetter wrote:
->>> It's by far not that simple. Jani is working on both the underlying bug
->>> and a better w/a. See
+On 10/31/2013 09:41 AM, Peter De Schrijver wrote:
+> On Wed, Oct 30, 2013 at 11:50:03PM +0100, Stephen Warren wrote:
+>> On 10/30/2013 04:18 PM, Peter De Schrijver wrote:
+>>> On Wed, Oct 30, 2013 at 04:41:41PM +0100, Stephen Warren wrote:
+>>>> On 10/29/2013 06:41 PM, Peter De Schrijver wrote:
+>>>>> Use pll_ref instead of pll_re_vco as the pll_e parent on Tegra114 and
+>>>>> Tegra124. Also add a pll_ref table entry for pll_e for Tegra114.
+>>>>
+>>>> Why? What benefit does this give, or what bug does this fix?
 >>>
->>> https://bugzilla.kernel.org/show_bug.cgi?id=59841
->>>
->>> for the full story in its entire glory.
->>>
->>> Cheers, Daniel
->> Thanks for the feedback, Daniel.  Is there an estimate on what mainline
->> release might contain Jani's work?
-> commit c6cd2ee2d59111a07cd9199564c9bdcb2d11e5cf
-> Author: Jani Nikula <jani.nikula@intel.com>
-> Date:   Mon Oct 21 10:52:07 2013 +0300
->
->     drm/i915/dp: workaround BIOS eDP bpp clamping issue
->
-> and a couple of dependencies are now in Linus' tree, i.e. should be
-> released in 3.12. The commits are also CC: stable.
->
-> BR,
-> Jani.
->
->
-Great news!  Thanks, Jani.
+>>> Otherrwise Tegra114 will crash on boot.
+>>
+>> Sigh. For what reason?
+> 
+> pll_re_vco having an unsupported rate of 300Mhz. My guess is that it depends
+> on the bootloader if you will see this. I'm fairly sure I verified this on
+> my dalmore in helsinki and it worked, but it failed on Paul's test setup.
+
+OK, so this is primarily a SW issue, because pll_e's freq_table simply
+doesn't have an entry for input frequency 300MHz. Can you make sure the
+commit description explains that?
