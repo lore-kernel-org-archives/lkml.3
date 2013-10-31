@@ -1,119 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab3JaOgC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 10:36:02 -0400
-Received: from usindpps05.hds.com ([207.126.252.18]:55081 "EHLO
-	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754616Ab3JaOgA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 10:36:00 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Madper Xie <bbboson@gmail.com>, "Luck, Tony" <tony.luck@intel.com>
-CC: Madper Xie <cxie@redhat.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "anton@enomsg.org" <anton@enomsg.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/2] make all stored entries accessible.
-Thread-Topic: [PATCH 0/2] make all stored entries accessible.
-Thread-Index: AQHO1VS/gENfXKMKsEu0OLLoqy46ppoOAbKA///bNICAAFq+AIAAK32AgAB7i2A=
-Date: Thu, 31 Oct 2013 14:35:33 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D47F9D4D01@USINDEM103.corp.hds.com>
-References: <1383126294-28793-1-git-send-email-cxie@redhat.com>
- <3908561D78D1C84285E8C5FCA982C28F31D529D7@ORSMSX106.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D47F9D4476@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F31D52E99@ORSMSX106.amr.corp.intel.com>
- <87d2mm6t64.fsf@gmail.com>
-In-Reply-To: <87d2mm6t64.fsf@gmail.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755075Ab3JaOhW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 10:37:22 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47321 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753658Ab3JaOhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 10:37:21 -0400
+Date: Thu, 31 Oct 2013 15:37:11 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: emanoil.kotsev@fincom.at
+Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Subject: Re: kernel 3.11.6 general protection fault
+Message-ID: <20131031143711.GA9818@pd.tnic>
+References: <e09ad4cb88b923ec017a516e6778b6bd@fincom.at>
 MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-10-31_05:2013-10-31,2013-10-31,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1310310103
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <e09ad4cb88b923ec017a516e6778b6bd@fincom.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Adding intel-gfx@ to CC.
 
+On Thu, Oct 31, 2013 at 03:00:24PM +0100, emanoil.kotsev@fincom.at wrote:
+> Hi again, just noticed that it happens also without starring at
+> youtube, but again in the drm
 
-> 1. combine timestamp, count and part into "id".
->    for now, in efi-pstore.c, *id = part. and we could simply change it
->    to unique one. F.E. *id = (timestamp * 100 + part) * 100 + count.
+Right, I can see a bunch of #GPs happening at
 
-My opinion close to 1.
-But, the "*id" should not be the complex one like (timestamp * 100 + part) * 100 + count.
-Rather, it should be a simple sequential number beginning with 1.
+drivers/gpu/drm/i915/intel_display.c:8292 check_crtc_state+0x5cf/0xa60
 
- - Remove "id" member from pstore_read_info struct.
- -  Introduce a global sequential counter like "static u64 efi_pstore_read_count" (or add the member to pstore_info structure?)
- - Initialize to "1" in efi_pstore_open().
- - Increment it in efi_pstore_read().
+(I'm looking also at your other mail) but also, there are other ones
+which are completely unrelated and happening at random places. The whole
+thing looks like random corruption to me.
 
-If we can do it, we don't need to touch a code of pstore filesystem and can avoid regressions of
-other backend drivers.
+And you have out of tree, proprietary crap loaded so can you reproduce
+the same issue without those modules, i.e. vsock, vmci, vmmon... loaded?
 
-Seiji
+Leaving the rest for reference.
 
-> -----Original Message-----
-> From: linux-efi-owner@vger.kernel.org [mailto:linux-efi-owner@vger.kernel.org] On Behalf Of Madper Xie
-> Sent: Wednesday, October 30, 2013 11:01 PM
-> To: Luck, Tony
-> Cc: Seiji Aguchi; Madper Xie; keescook@chromium.org; ccross@android.com; anton@enomsg.org; linux-efi@vger.kernel.org; linux-
-> kernel@vger.kernel.org; bbboson@gmail.com
-> Subject: Re: [PATCH 0/2] make all stored entries accessible.
+> Thanks in advance and kind regards
 > 
+> ------- cut --------
 > 
-> tony.luck@intel.com writes:
+> Oct 31 10:51:01 maistor kernel: [drm] Setting output timings on
+> SDVOB failed
+> Oct 31 10:51:01 maistor kernel: lp: driver loaded but no devices found
+> Oct 31 10:51:01 maistor kernel: ppdev: user-space parallel port driver
+> Oct 31 10:51:01 maistor kernel: ------------[ cut here ]------------
+> Oct 31 10:51:01 maistor kernel: WARNING: CPU: 1 PID: 6441 at
+> drivers/gpu/drm/i915/intel_display.c:8292
+> check_crtc_state+0x5cf/0xa60 [i915]()
+> Oct 31 10:51:01 maistor kernel: pipe state doesn't match!
+> Oct 31 10:51:01 maistor kernel: Modules linked in: ppdev lp bnep
+> rfcomm bluetooth crc16 vmnet(O) parport_pc parport vsock(O) vmci(O)
+> vmmon(O) cpufreq_ondemand cpufreq_powersave cpufreq_performance
+> cpufreq_stats cpufreq_conservative xt_state xt_tcpudp ipt_REJECT
+> xt_limit iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4
+> nf_nat nf_conntrack iptable_mangle iptable_filter ip_tables x_tables
+> acpi_pad custom_method sbs sbshc fan acpi_ipmi ipmi_msghandler
+> snd_hrtimer binfmt_misc uinput fuse af_packet ipv6 firewire_sbp2
+> usb_storage snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep
+> snd_pcm_oss snd_mixer_oss snd_pcm iTCO_wdt iTCO_vendor_support
+> snd_seq_dummy snd_page_alloc snd_seq_oss snd_seq_midi
+> snd_seq_midi_event snd_rawmidi yenta_socket snd_seq pcmcia_rsrc
+> lpc_ich acpi_cpufreq snd_seq_device snd_timer snd i2c_i801 arc4
+> mperf iwl3945 iwlegacy mac80211 cfg80211 rfkill soundcore irda
+> ehci_pci 8250 crc_ccitt joydev processor dcdbas dell_wmi
+> sparse_keymap rtc_cmos wmi evdev battery ac serial_core sha256_ssse3
+> s
+> Oct 31 10:51:01 maistor kernel: ha256_generic cbc hid_generic usbhid
+> hid loop dm_crypt dm_mod sg sr_mod cdrom sd_mod firewire_ohci
+> firewire_core thermal b44 ssb mmc_core mii pcmcia crc_itu_t
+> pcmcia_core i915 cfbfillrect cfbimgblt video button i2c_algo_bit
+> cfbcopyarea drm_kms_helper drm intel_agp uhci_hcd ehci_hcd intel_gtt
+> agpgart i2c_core thermal_sys freq_table usbcore usb_common
+> Oct 31 10:51:01 maistor kernel: CPU: 1 PID: 6441 Comm: Xorg Tainted:
+> P           O 3.11.6eko2 #1
+> Oct 31 10:51:01 maistor kernel: Hardware name: Dell Inc. Latitude
+> D520                   /0NF743, BIOS A04 12/18/2006
+> Oct 31 10:51:01 maistor kernel: 0000000000000000 0000000000000009
+> ffffffff813db19f ffff8800268b1888
+> Oct 31 10:51:01 maistor kernel: ffffffff8103f561 ffff880037fd96d8
+> ffff8800268b1900 ffff880037c01800
+> Oct 31 10:51:01 maistor kernel: 0000000000000001 ffff880037c01c88
+> ffffffff8103f645 ffffffffa0162ea2
+> Oct 31 10:51:01 maistor kernel: Call Trace:
+> Oct 31 10:51:01 maistor kernel: [<ffffffff813db19f>] ?
+> dump_stack+0x50/0x80
+> Oct 31 10:51:01 maistor kernel: [<ffffffff8103f561>] ?
+> warn_slowpath_common+0x81/0xb0
+> Oct 31 10:51:01 maistor kernel: [<ffffffff8103f645>] ?
+> warn_slowpath_fmt+0x45/0x50
+> Oct 31 10:51:01 maistor kernel: [<ffffffffa01106ff>] ?
+> check_crtc_state+0x5cf/0xa60 [i915]
+> Oct 31 10:51:01 maistor kernel: [<ffffffffa011aeed>] ?
+> intel_modeset_check_state+0x2bd/0x730 [i915]
+> Oct 31 10:51:01 maistor kernel: [<ffffffff811fa769>] ?
+> snprintf+0x39/0x40
+> Oct 31 10:51:01 maistor kernel: [<ffffffffa011b3cd>] ?
+> intel_set_mode+0x1d/0x30 [i915]
+> Oct 31 10:51:01 maistor kernel: [<ffffffffa011bb8a>] ?
+> intel_crtc_set_config+0x7aa/0x980 [i915]
+> Oct 31 10:51:01 maistor kernel: [<ffffffffa00a8505>] ?
+> drm_mode_set_config_internal+0x55/0xd0 [drm]
+> Oct 31 10:51:01 maistor kernel: [<ffffffffa00aa378>] ?
+> drm_mode_setcrtc+0x118/0x640 [drm]
+> Oct 31 10:51:01 maistor kernel: [<ffffffffa009b1ad>] ?
+> drm_ioctl+0x4ed/0x5f0 [drm]
+> Oct 31 10:51:01 maistor kernel: [<ffffffffa00aa260>] ?
+> drm_mode_setplane+0x3a0/0x3a0 [drm]
+> Oct 31 10:51:01 maistor kernel: [<ffffffff8111d97b>] ?
+> do_vfs_ioctl+0x8b/0x530
+> Oct 31 10:51:01 maistor kernel: [<ffffffff8111de6d>] ?
+> SyS_ioctl+0x4d/0xa0
+> Oct 31 10:51:01 maistor kernel: [<ffffffff813e1e56>] ?
+> system_call_fastpath+0x1a/0x1f
+> Oct 31 10:51:01 maistor kernel: ---[ end trace 65327d016e6b6847 ]---
+> Oct 31 10:51:08 maistor kernel: [drm] Setting output timings on
+> SDVOB failed
+> Oct 31 10:51:08 maistor kernel: ------------[ cut here ]------------
+> Oct 31 10:51:08 maistor kernel: WARNING: CPU: 1 PID: 6441 at
+> drivers/gpu/drm/i915/intel_display.c:8292
+> check_crtc_state+0x5cf/0xa60 [i915]()
+> Oct 31 10:51:08 maistor kernel: pipe state doesn't match!
+> Oct 31 10:51:08 maistor kernel: Modules linked in: ppdev lp bnep
+> rfcomm bluetooth crc16 vmnet(O) parport_pc parport vsock(O) vmci(O)
+> vmmon(O) cpufreq_ondemand cpufreq_powersave cpufreq_performance
+> cpufreq_stats cpufreq_conservative xt_state xt_tcpudp ipt_REJECT
+> xt_limit iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4
+> nf_nat nf_conntrack iptable_mangle iptable_filter ip_tables x_tables
+> acpi_pad custom_method sbs sbshc fan acpi_ipmi ipmi_msghandler
+> snd_hrtimer binfmt_misc uinput fuse af_packet ipv6 firewire_sbp2
+> usb_storage snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep
+> snd_pcm_oss snd_mixer_oss snd_pcm iTCO_wdt iTCO_vendor_support
+> snd_seq_dummy snd_page_alloc snd_seq_oss snd_seq_midi
+> snd_seq_midi_event snd_rawmidi yenta_socket snd_seq pcmcia_rsrc
+> lpc_ich acpi_cpufreq snd_seq_device snd_timer snd i2c_i801 arc4
+> mperf iwl3945 iwlegacy mac80211 cfg80211 rfkill soundcore irda
+> ehci_pci 8250 crc_ccitt joydev processor dcdbas dell_wmi
+> sparse_keymap rtc_cmos wmi evdev battery ac serial_core sha256_ssse3
+> s
+> Oct 31 10:51:08 maistor kernel: ha256_generic cbc hid_generic usbhid
+> hid loop dm_crypt dm_mod sg sr_mod cdrom sd_mod firewire_ohci
+> firewire_core thermal b44 ssb mmc_core mii pcmcia crc_itu_t
+> pcmcia_core i915 cfbfillrect cfbimgblt video button i2c_algo_bit
+> cfbcopyarea drm_kms_helper drm intel_agp uhci_hcd ehci_hcd intel_gtt
+> agpgart i2c_core thermal_sys freq_table usbcore usb_common
+> Oct 31 10:51:08 maistor kernel: CPU: 1 PID: 6441 Comm: Xorg Tainted:
+> P        W  O 3.11.6eko2 #1
+> Oct 31 10:51:08 maistor kernel: Hardware name: Dell Inc. Latitude
+> D520                   /0NF743, BIOS A04 12/18/2006
+> Oct 31 10:51:08 maistor kernel: 0000000000000000 0000000000000009
+> ffffffff813db19f ffff8800268b1888
+> Oct 31 10:51:08 maistor kernel: ffffffff8103f561 ffff880037fd96d8
+> ffff8800268b1900 ffff880037c01800
+> Oct 31 10:51:08 maistor kernel: 0000000000000001 ffff880037c01c88
+> ffffffff8103f645 ffffffffa0162ea2
+> Oct 31 10:51:08 maistor kernel: Call Trace:
+> Oct 31 10:51:08 maistor kernel: [<ffffffff813db19f>] ?
+> dump_stack+0x50/0x80
+> Oct 31 10:51:08 maistor kernel: [<ffffffff8103f561>] ?
+> warn_slowpath_common+0x81/0xb0
+> Oct 31 10:51:08 maistor kernel: [<ffffffff8103f645>] ?
+> warn_slowpath_fmt+0x45/0x50
+> Oct 31 10:51:08 maistor kernel: [<ffffffffa01106ff>] ?
+> check_crtc_state+0x5cf/0xa60 [i915]
+> Oct 31 10:51:08 maistor kernel: [<ffffffffa011aeed>] ?
+> intel_modeset_check_state+0x2bd/0x730 [i915]
+> Oct 31 10:51:08 maistor kernel: [<ffffffff811fa769>] ?
+> snprintf+0x39/0x40
+> Oct 31 10:51:08 maistor kernel: [<ffffffffa011b3cd>] ?
+> intel_set_mode+0x1d/0x30 [i915]
+> Oct 31 10:51:08 maistor kernel: [<ffffffffa011bb8a>] ?
+> intel_crtc_set_config+0x7aa/0x980 [i915]
+> Oct 31 10:51:08 maistor kernel: [<ffffffffa00a8505>] ?
+> drm_mode_set_config_internal+0x55/0xd0 [drm]
+> Oct 31 10:51:08 maistor kernel: [<ffffffffa00aa378>] ?
+> drm_mode_setcrtc+0x118/0x640 [drm]
+> Oct 31 10:51:08 maistor kernel: [<ffffffffa009b1ad>] ?
+> drm_ioctl+0x4ed/0x5f0 [drm]
+> Oct 31 10:51:08 maistor kernel: [<ffffffffa00aa260>] ?
+> drm_mode_setplane+0x3a0/0x3a0 [drm]
+> Oct 31 10:51:08 maistor kernel: [<ffffffff8111d97b>] ?
+> do_vfs_ioctl+0x8b/0x530
+> Oct 31 10:51:08 maistor kernel: [<ffffffff810424d5>] ?
+> do_setitimer+0x1b5/0x1e0
+> Oct 31 10:51:08 maistor kernel: [<ffffffff8111de6d>] ?
+> SyS_ioctl+0x4d/0xa0
+> Oct 31 10:51:08 maistor kernel: [<ffffffff813e1e56>] ?
+> system_call_fastpath+0x1a/0x1f
+> Oct 31 10:51:08 maistor kernel: ---[ end trace 65327d016e6b6848 ]---
+> Oct 31 10:51:49 maistor kernel: [drm] Setting output timings on
+> SDVOB failed
+> Oct 31 10:55:06 maistor kernel: perf samples too long (2512 > 2500),
+> lowering kernel.perf_event_max_sample_rate to 50000
+> Oct 31 11:22:11 maistor kernel: perf samples too long (5003 > 5000),
+> lowering kernel.perf_event_max_sample_rate to 25000
 > 
-> >> So, do you mean efivars should fix to use the "id" in a proper way?
-> >
-> > It would avoid the need for all these tests, and additions to the filename to guarantee
-> > uniqueness.
-> >
-> > Not sure what options efivars has to create a unique, persistent "id" for each
-> > record.  It's a fundamental part of how ERST works (though the unique ID is just
-> > based around a timestamp).
-> >
-> Okay, maybe there are three options here:
-> 1. combine timestamp, count and part into "id".
->    for now, in efi-pstore.c, *id = part. and we could simply change it
->    to unique one. F.E. *id = (timestamp * 100 + part) * 100 + count.
-> 2. change the id's type. let id become a string.
->    so every backend could write anything to id. then it will become a
->    part of filename in pstore filesystem. (but we need fix all backends
->    since we modified api.)
-> 3. apply the patches I have sent... even if the filename will be ugly
->    and gory...
-> Which one do you prefer?
-> >> I acked Madper's patch 2/2 earlier today, but when I look at your test result, I'm not sure if
-> >> it is reasonable for users to make multiple numbers visible to the file name.
-> >>
-> >>> -r--r--r-- 1 root root 17499 Oct 30 13:41 dmesg-erst-5940651313304961029--2129078373-1383165669
-> >
-> > after I added the "count = 0" initialization the filename gets a tiny bit less
-> > scary:
-> >
-> > -r--r--r-- 1 root root 17499 Oct 30 13:41 dmesg-erst-5940651313304961029-0-1383165669
-> >
-> > -Tony
+> ------- cut --------
 > 
 > 
 > --
-> Best,
-> Madper Xie.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-efi" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
