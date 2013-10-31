@@ -1,259 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab3JaVcI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 17:32:08 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38450 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502Ab3JaVcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 17:32:07 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: <vinod.koul@intel.com>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <matt.porter@linaro.org>, Joel Fernandes <joelf@ti.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "open list:DMA GENERIC OFFLO..." <dmaengine@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] dma: edma: Add support for Cyclic DMA
-Date: Thu, 31 Oct 2013 16:31:23 -0500
-Message-ID: <1383255083-31186-1-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.8.1.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753678Ab3JaVmo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 17:42:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33935 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751806Ab3JaVmn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 17:42:43 -0400
+Date: Thu, 31 Oct 2013 14:42:41 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        stephenmcameron@gmail.com, mikem@beardog.cce.hp.com,
+        linux-kernel@vger.kernel.org, thenzl@redhat.com
+Subject: Re: [PATCH] cciss: return 0 from driver probe function on success,
+ not 1
+Message-Id: <20131031144241.25090ab7a6c0b668c5c1c2b2@linux-foundation.org>
+In-Reply-To: <52700541.70405@kernel.dk>
+References: <20131029184135.5505.77412.stgit@beardog.cce.hp.com>
+	<52700541.70405@kernel.dk>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the PaRAM configuration function that we split for reuse by the
-different DMA types, we implement Cyclic DMA support.
-For the cyclic case, we pass different configuration parameters to this
-function, and handle all the Cyclic-specific functionality separately.
+On Tue, 29 Oct 2013 12:58:09 -0600 Jens Axboe <axboe@kernel.dk> wrote:
 
-Callbacks to the DMA users are handled using vchan_cyclic_callback in
-the virt-dma layer. Linking is handled the same way as the slave SG case
-except for the last slot where we link it back to the first one in a
-cyclic fashion.
+> On 10/29/2013 12:41 PM, Stephen M. Cameron wrote:
+> > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> > 
+> > A return value of 1 is interpreted as an error
+> > 
+> > Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> > ---
+> >  drivers/block/cciss.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+> > index edfa251..0c004ac 100644
+> > --- a/drivers/block/cciss.c
+> > +++ b/drivers/block/cciss.c
+> > @@ -5183,7 +5183,7 @@ reinit_after_soft_reset:
+> >  	rebuild_lun_table(h, 1, 0);
+> >  	cciss_engage_scsi(h);
+> >  	h->busy_initializing = 0;
+> > -	return 1;
+> > +	return 0;
+> >  
+> >  clean4:
+> >  	cciss_free_cmd_pool(h);
+> > 
+> 
+> How did this ever work?
 
-For continuity, we check for cases where no.of periods is great than the
-MAX number of slots the driver can allocate for a particular descriptor
-and error out on such cases.
+Beats me.  local_pci_probe() does
 
-Signed-off-by: Joel Fernandes <joelf@ti.com>
+	rc = pci_drv->probe(pci_dev, ddi->id);
+	if (rc) {
+		pci_dev->driver = NULL;
+		pm_runtime_put_sync(dev);
+	}
+	return rc;
+
+shrug, maybe this ->probe somehow has a different caller which checks
+for <0.
+
+
+While we're there...
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: drivers/block/cciss.c:cciss_init_one(): use proper errnos
+
+pci_driver.probe should return a meaningful errno, not -1.
+
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
-Patch is rebased on slave-dma.git 'next' branch.
 
- drivers/dma/edma.c | 159 ++++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 151 insertions(+), 8 deletions(-)
+ drivers/block/cciss.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 183ec85..592f3be 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -60,6 +60,7 @@
- struct edma_desc {
- 	struct virt_dma_desc		vdesc;
- 	struct list_head		node;
-+	int				cyclic;
- 	int				absync;
- 	int				pset_nr;
- 	int				processed;
-@@ -173,8 +174,13 @@ static void edma_execute(struct edma_chan *echan)
- 	 * then setup a link to the dummy slot, this results in all future
- 	 * events being absorbed and that's OK because we're done
+diff -puN drivers/block/cciss.c~drivers-block-ccissc-cciss_init_one-use-proper-errnos drivers/block/cciss.c
+--- a/drivers/block/cciss.c~drivers-block-ccissc-cciss_init_one-use-proper-errnos
++++ a/drivers/block/cciss.c
+@@ -5004,7 +5004,7 @@ reinit_after_soft_reset:
+ 
+ 	i = alloc_cciss_hba(pdev);
+ 	if (i < 0)
+-		return -1;
++		return -ENOMEM;
+ 
+ 	h = hba[i];
+ 	h->pdev = pdev;
+@@ -5205,7 +5205,7 @@ clean_no_release_regions:
  	 */
--	if (edesc->processed == edesc->pset_nr)
--		edma_link(echan->slot[nslots-1], echan->ecc->dummy_slot);
-+	if (edesc->processed == edesc->pset_nr) {
-+		if (edesc->cyclic)
-+			edma_link(echan->slot[nslots-1], echan->slot[1]);
-+		else
-+			edma_link(echan->slot[nslots-1],
-+				  echan->ecc->dummy_slot);
-+	}
- 
- 	edma_resume(echan->ch_num);
- 
-@@ -459,6 +465,138 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
- 	return vchan_tx_prep(&echan->vchan, &edesc->vdesc, tx_flags);
+ 	pci_set_drvdata(pdev, NULL);
+ 	free_hba(h);
+-	return -1;
++	return -ENODEV;
  }
  
-+static struct dma_async_tx_descriptor *edma_prep_dma_cyclic(
-+	struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
-+	size_t period_len, enum dma_transfer_direction direction,
-+	unsigned long tx_flags, void *context)
-+{
-+	struct edma_chan *echan = to_edma_chan(chan);
-+	struct device *dev = chan->device->dev;
-+	struct edma_desc *edesc;
-+	dma_addr_t src_addr, dst_addr;
-+	enum dma_slave_buswidth dev_width;
-+	u32 burst;
-+	int i, ret, nslots;
-+
-+	if (unlikely(!echan || !buf_len || !period_len))
-+		return NULL;
-+
-+	if (direction == DMA_DEV_TO_MEM) {
-+		src_addr = echan->cfg.src_addr;
-+		dst_addr = buf_addr;
-+		dev_width = echan->cfg.src_addr_width;
-+		burst = echan->cfg.src_maxburst;
-+	} else if (direction == DMA_MEM_TO_DEV) {
-+		src_addr = buf_addr;
-+		dst_addr = echan->cfg.dst_addr;
-+		dev_width = echan->cfg.dst_addr_width;
-+		burst = echan->cfg.dst_maxburst;
-+	} else {
-+		dev_err(dev, "%s: bad direction?\n", __func__);
-+		return NULL;
-+	}
-+
-+	if (dev_width == DMA_SLAVE_BUSWIDTH_UNDEFINED) {
-+		dev_err(dev, "Undefined slave buswidth\n");
-+		return NULL;
-+	}
-+
-+	if (unlikely(buf_len % period_len)) {
-+		dev_err(dev, "Period should be multiple of Buffer length\n");
-+		return NULL;
-+	}
-+
-+	nslots = (buf_len / period_len) + 1;
-+
-+	/*
-+	 * Cyclic DMA users such as audio cannot tolerate delays introduced
-+	 * by cases where the number of periods is more than the maximum
-+	 * number of SGs the EDMA driver can handle at a time. For DMA types
-+	 * such as Slave SGs, such delays are tolerable and synchronized,
-+	 * but the synchronization is difficult to achieve with Cyclic and
-+	 * cannot be guaranteed, so we error out early.
-+	 */
-+	if (nslots > MAX_NR_SG)
-+		return NULL;
-+
-+	edesc = kzalloc(sizeof(*edesc) + nslots *
-+		sizeof(edesc->pset[0]), GFP_ATOMIC);
-+	if (!edesc) {
-+		dev_dbg(dev, "Failed to allocate a descriptor\n");
-+		return NULL;
-+	}
-+
-+	edesc->cyclic = 1;
-+	edesc->pset_nr = nslots;
-+
-+	dev_dbg(dev, "%s: nslots=%d\n", __func__, nslots);
-+	dev_dbg(dev, "%s: period_len=%d\n", __func__, period_len);
-+	dev_dbg(dev, "%s: buf_len=%d\n", __func__, buf_len);
-+
-+	for (i = 0; i < nslots; i++) {
-+		/* Allocate a PaRAM slot, if needed */
-+		if (echan->slot[i] < 0) {
-+			echan->slot[i] =
-+				edma_alloc_slot(EDMA_CTLR(echan->ch_num),
-+						EDMA_SLOT_ANY);
-+			if (echan->slot[i] < 0) {
-+				dev_err(dev, "Failed to allocate slot\n");
-+				return NULL;
-+			}
-+		}
-+
-+		if (i == nslots - 1) {
-+			memcpy(&edesc->pset[i], &edesc->pset[0],
-+			       sizeof(edesc->pset[0]));
-+			break;
-+		}
-+
-+		ret = edma_config_pset(chan, &edesc->pset[i], src_addr,
-+				       dst_addr, burst, dev_width, period_len,
-+				       direction);
-+		if (ret < 0)
-+			return NULL;
-+
-+		if (direction == DMA_DEV_TO_MEM)
-+			dst_addr += period_len;
-+		else
-+			src_addr += period_len;
-+
-+		dev_dbg(dev, "%s: Configure period %d of buf:\n", __func__, i);
-+		dev_dbg(dev,
-+			"\n pset[%d]:\n"
-+			"  chnum\t%d\n"
-+			"  slot\t%d\n"
-+			"  opt\t%08x\n"
-+			"  src\t%08x\n"
-+			"  dst\t%08x\n"
-+			"  abcnt\t%08x\n"
-+			"  ccnt\t%08x\n"
-+			"  bidx\t%08x\n"
-+			"  cidx\t%08x\n"
-+			"  lkrld\t%08x\n",
-+			i, echan->ch_num, echan->slot[i],
-+			edesc->pset[i].opt,
-+			edesc->pset[i].src,
-+			edesc->pset[i].dst,
-+			edesc->pset[i].a_b_cnt,
-+			edesc->pset[i].ccnt,
-+			edesc->pset[i].src_dst_bidx,
-+			edesc->pset[i].src_dst_cidx,
-+			edesc->pset[i].link_bcntrld);
-+
-+		edesc->absync = ret;
-+
-+		/*
-+		 * Enable interrupts for every period because callback
-+		 * has to be called for every period.
-+		 */
-+		edesc->pset[i].opt |= TCINTEN;
-+	}
-+
-+	return vchan_tx_prep(&echan->vchan, &edesc->vdesc, tx_flags);
-+}
-+
- static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
- {
- 	struct edma_chan *echan = data;
-@@ -467,24 +605,28 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
- 	unsigned long flags;
- 	struct edmacc_param p;
- 
--	/* Pause the channel */
--	edma_pause(echan->ch_num);
-+	edesc = echan->edesc;
-+
-+	/* Pause the channel for non-cyclic */
-+	if (!edesc || (edesc && !edesc->cyclic))
-+		edma_pause(echan->ch_num);
- 
- 	switch (ch_status) {
- 	case EDMA_DMA_COMPLETE:
- 		spin_lock_irqsave(&echan->vchan.lock, flags);
- 
--		edesc = echan->edesc;
- 		if (edesc) {
--			if (edesc->processed == edesc->pset_nr) {
-+			if (edesc->cyclic) {
-+				vchan_cyclic_callback(&edesc->vdesc);
-+			} else if (edesc->processed == edesc->pset_nr) {
- 				dev_dbg(dev, "Transfer complete, stopping channel %d\n", ch_num);
- 				edma_stop(echan->ch_num);
- 				vchan_cookie_complete(&edesc->vdesc);
-+				edma_execute(echan);
- 			} else {
- 				dev_dbg(dev, "Intermediate transfer complete on channel %d\n", ch_num);
-+				edma_execute(echan);
- 			}
--
--			edma_execute(echan);
- 		}
- 
- 		spin_unlock_irqrestore(&echan->vchan.lock, flags);
-@@ -680,6 +822,7 @@ static void edma_dma_init(struct edma_cc *ecc, struct dma_device *dma,
- 			  struct device *dev)
- {
- 	dma->device_prep_slave_sg = edma_prep_slave_sg;
-+	dma->device_prep_dma_cyclic = edma_prep_dma_cyclic;
- 	dma->device_alloc_chan_resources = edma_alloc_chan_resources;
- 	dma->device_free_chan_resources = edma_free_chan_resources;
- 	dma->device_issue_pending = edma_issue_pending;
--- 
-1.8.1.2
+ static void cciss_shutdown(struct pci_dev *pdev)
+_
 
