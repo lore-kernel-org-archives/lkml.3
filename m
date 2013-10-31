@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab3JaNIk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 09:08:40 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:4368 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753498Ab3JaNIj (ORCPT
+	id S1754245Ab3JaNJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 09:09:56 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:56549 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753498Ab3JaNJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 09:08:39 -0400
-X-Greylist: delayed 2721 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Oct 2013 09:08:38 EDT
-Message-ID: <1383222136.26923.24.camel@thorin>
-Subject: Re: [PATCH 1/2] tpm/tpm_ppi: Do not compare strcmp(a,b) == -1
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Joe Perches <joe@perches.com>
-Cc: Peter =?ISO-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Xiaoyan Zhang <xiaoyan.zhang@intel.com>, Gang Wei <gang.wei@intel.com>,
-        stable@vger.kernel.org
-Date: Thu, 31 Oct 2013 13:22:16 +0100
-In-Reply-To: <1383162100.9435.39.camel@joe-AO722>
-References: <1383093628-31580-1-git-send-email-peterhuewe@gmx.de>
-	 <1383095144.12439.41.camel@joe-AO722>
-	 <201310302035.36579.PeterHuewe@gmx.de> <1383162100.9435.39.camel@joe-AO722>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	Thu, 31 Oct 2013 09:09:54 -0400
+Date: Thu, 31 Oct 2013 09:09:51 -0400 (EDT)
+From: Philippe Proulx <philippe.proulx@savoirfairelinux.com>
+To: sedat dilek <sedat.dilek@gmail.com>
+Cc: Greg KH <greg@kroah.com>, linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Message-ID: <73605653.13929.1383224991870.JavaMail.root@mail>
+In-Reply-To: <CA+icZUWYHSU3yvsW6fB5aKJ0LQVaY0afsF2DiS9=m_bzy80=hw@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the tty tree
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-DCC-wuwien-Metrics: esgaroth.petrovitsch.priv.at 1290; Body=11 Fuz1=11
-	Fuz2=11
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.4 SARE_SUB_6CONS_WORD subject word consists of consecutive consonants
-	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.2 AWL AWL: From: address is in the auto white-list
+X-Mailer: Zimbra 7.1.4_GA_2555 (ZimbraWebClient - GC30 (Win)/7.1.4_GA_2555)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all!
+----- Original Message -----
+> From: "Sedat Dilek" <sedat.dilek@gmail.com>
+> To: "Stephen Rothwell" <sfr@canb.auug.org.au>, "Philippe Proulx" <philippe.proulx@savoirfairelinux.com>
+> Cc: "Greg KH" <greg@kroah.com>, "linux-next" <linux-next@vger.kernel.org>, "LKML" <linux-kernel@vger.kernel.org>,
+> linux-serial@vger.kernel.org
+> Sent: Thursday, 31 October, 2013 6:35:23 AM
+> Subject: Re: linux-next: build failure after merge of the tty tree
+> 
+> On Thu, Oct 31, 2013 at 8:40 AM, Stephen Rothwell
+> <sfr@canb.auug.org.au> wrote:
+> > Hi Greg,
+> >
+> > After merging the tty tree, today's linux-next build (arm
+> > multi_v7_defconfig) failed like this:
+> >
+> > drivers/tty/serial/omap-serial.c: In function 'serial_omap_probe':
+> > drivers/tty/serial/omap-serial.c:1724:22: error: expected ')'
+> > before numeric constant
+> > drivers/tty/serial/omap-serial.c:1724:22: warning: format '%d'
+> > expects a matching 'int' argument [-Wformat]
+> >
+> > Caused by commit e5f9bf72efbc ("serial: omap: fix a few checkpatch
+> > warnings").  There is a missing ',' in the dev_warn() ...
+> >
+> > I have used the version of the tty tree from next-20131030 for
+> > today.
+> >
+> 
+> [ Add CC to linux-serial ML ]
+> 
+> Happy HelloWien and WelcomeBackStephen!
+> 
+> That was only checkpatch-tested, eh :-)?
+> 
+> @@ -1724,8 +1722,9 @@ static int serial_omap_probe(struct
+> platform_device *pdev)
+> up->port.uartclk = omap_up_info->uartclk;
+> if (!up->port.uartclk) {
+> up->port.uartclk = DEFAULT_CLK_SPEED;
+> - dev_warn(&pdev->dev, "No clock speed specified: using default:"
+> - "%d\n", DEFAULT_CLK_SPEED);
+> + dev_warn(&pdev->dev,
+> + "No clock speed specified: using default: %d\n" <--- Comma missing
+> here!
 
-On Mit, 2013-10-30 at 12:41 -0700, Joe Perches wrote:
-[...]
-> The arch/... assembly versions don't always
-> return -1, 0, 1 so I don't think it's worth
-> it to change all of those.
+Oops, something obviously went wrong in my process. Sorry about this.
 
-FWIW user-space strcmp() - e.g. as in
-http://pubs.opengroup.org/onlinepubs/009695399/functions/strcmp.html but
-also (glibcs) manual page- doesn't guarantee -1 or +1 either,
+Do you want me to fix this commit?
 
-MfG,
-	Bernd
--- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
-
+> + DEFAULT_CLK_SPEED);
+> }
+> 
+> - Sedat -
+> 
