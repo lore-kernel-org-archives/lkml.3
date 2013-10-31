@@ -1,98 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab3JaTib (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 15:38:31 -0400
-Received: from dkim1.fusionio.com ([66.114.96.53]:39119 "EHLO
-	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752769Ab3JaTi1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 15:38:27 -0400
-X-ASG-Debug-ID: 1383248306-03d6a54d19a7540001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Content-Type: text/plain; charset="utf-8"
+	id S1755350Ab3JaTjd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 15:39:33 -0400
+Received: from fifo99.com ([67.223.236.141]:55310 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752303Ab3JaTjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 15:39:31 -0400
+Date: Thu, 31 Oct 2013 12:39:13 -0700
+From: Daniel Walker <dwalker@fifo99.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>, David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/4] ARM: msm: Remove 7x00 support
+Message-ID: <20131031193912.GB31722@fifo99.com>
+References: <1382993006-27359-1-git-send-email-davidb@codeaurora.org>
+ <1382993006-27359-3-git-send-email-davidb@codeaurora.org>
+ <20131029132043.GA28165@fifo99.com>
+ <CAOesGMhg8HN4Su9FXSeoAgmH6NVKXW+wmnreUvWH+1G6GWkkaA@mail.gmail.com>
+ <87ob66nyqc.fsf@linaro.org>
+ <20131030232412.GA10229@fifo99.com>
+ <8738nhnz4s.fsf@linaro.org>
+ <20131031173506.GA31722@fifo99.com>
+ <87eh71mfyh.fsf@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: Chris Mason <chris.mason@fusionio.com>
-CC: <linux-kernel@vger.kernel.org>, <dm-devel@redhat.com>,
-        <linux-fsdevel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
-        Christoph Hellwig <hch@infradead.org>
-User-Agent: alot/0.3.4
-To: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>
-Message-ID: <20131031193820.10239.79827@localhost.localdomain>
-Subject: [PATCH] Btrfs: update bi_remaining to relfect our bio endio chaining
-Date: Thu, 31 Oct 2013 15:38:20 -0400
-X-ASG-Orig-Subj: [PATCH] Btrfs: update bi_remaining to relfect our bio endio chaining
-X-Originating-IP: [10.101.1.160]
-X-Barracuda-Connect: cas1.int.fusionio.com[10.101.1.40]
-X-Barracuda-Start-Time: 1383248306
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.141940
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87eh71mfyh.fsf@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btrfs is sometimes calling bio_endio twice on the same bio while
-we chain things.  This makes sure we don't trip over new assertions in
-fs/bio.c
+On Thu, Oct 31, 2013 at 11:51:34AM -0700, Kevin Hilman wrote:
+> Daniel Walker <dwalker@fifo99.com> writes:
+> 
+> > On Thu, Oct 31, 2013 at 10:12:03AM -0700, Kevin Hilman wrote:
+> >> Daniel Walker <dwalker@fifo99.com> writes:
+> >> 
+> >> 
+> >> No.  The idea behind splitting them is to allow current platforms with
+> >> active maintainers to progress without being held back.  The older
+> >> platforms can stay and have an opportunity to modernize. 
+> >> 
+> >> The kernel is a moving target, without some minimal effort to keep
+> >> platforms up to date, the effort to continue to maintain/modernize them
+> >> can become more of a pain than it's worth.  If maintainers of these older
+> >> platforms are willing to put in the work, nobody will be SOL.  If
+> >> nobody shows interest in modernizing these older platforms (which seems
+> >> to be the case based on the last couple years), then it is reasonable
+> >> IMO for them to fade away slowly.
+> >
+> >
+> > According to a prior email Tony suggested that OMAP was split for purely
+> > technical reasons.. If code is shared in some way , or has synergies, and there's no
+> > technical reason to split a sub-architecture, then to me there's no win in splitting
+> > things.. 
+> 
+> The wins have already been well described in this thread in terms of
+> maintenance of newer platforms using modern kernel infrastructure.
 
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 
-diff --git a/fs/btrfs/check-integrity.c b/fs/btrfs/check-integrity.c
-index 7fcac70..5b30360 100644
---- a/fs/btrfs/check-integrity.c
-+++ b/fs/btrfs/check-integrity.c
-@@ -2289,6 +2289,10 @@ static void btrfsic_bio_end_io(struct bio *bp, int bio_error_status)
- 		block = next_block;
- 	} while (NULL != block);
- 
-+	/*
-+	 * since we're not using bio_endio here, we don't need to worry about
-+	 * the remaining count
-+	 */
- 	bp->bi_end_io(bp, bio_error_status);
- }
- 
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 62176ad..786ddac 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -1684,7 +1684,7 @@ static void end_workqueue_fn(struct btrfs_work *work)
- 	bio->bi_private = end_io_wq->private;
- 	bio->bi_end_io = end_io_wq->end_io;
- 	kfree(end_io_wq);
--	bio_endio(bio, error);
-+	bio_endio_nodec(bio, error);
- }
- 
- static int cleaner_kthread(void *arg)
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index ef48947..a31448f 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -5284,9 +5284,17 @@ static void btrfs_end_bio(struct bio *bio, int err)
- 		}
- 	}
- 
--	if (bio == bbio->orig_bio)
-+	if (bio == bbio->orig_bio) {
- 		is_orig_bio = 1;
- 
-+		/*
-+		 * eventually we will call the bi_endio for the original bio,
-+		 * make sure that we've properly bumped bi_remaining to reflect
-+		 * our chain of endios here
-+		 */
-+		atomic_inc(&bio->bi_remaining);
-+	}
-+
- 	if (atomic_dec_and_test(&bbio->stripes_pending)) {
- 		if (!is_orig_bio) {
- 			bio_put(bio);
+That's not very concrete .. Can you be specific, and what platforms are
+we talking about?
+
+
+> > It's just more directories, more confusion etc.. The confusion
+> > would come from someone wanting to find the code related to a platform,
+> > but woops there's a bunch of directories, or code flow and how the
+> > sub-architecture is strung together .. Personally I found OMAP very
+> > confusing in that regard.
+> >
+> > ARM and the sub-architectures is already confusing I don't think we need
+> > to start compounding the problem by allowing random whatever-you-want
+> > sub-directories from every sub-architecture.
+> 
+> Randomness is quite a bit of an exaggeration of what's been proposed
+> here.
+
+No one has proposed anything, as far as I can tell.
+
+
+> These decisions are made on a case-by-case basis and is this case is
+> being done for ease of maintainence for newer platforms, which may not
+> be a "technical reason" for you, but is important for overall
+> maintenance of arm-soc.
+
+Who's making this decision ? If there's some reason why maintenance is
+easier , can you explain it ? That's typically how we make decisions in
+this community there needs to be a clear reason to do something.
+
+> If we do this split, you are more than welcome to demonstrate the
+> commonality by modernizing mach-msm, combining it with mach-qcom,
+> removing mach-msm, and then removing all the "confusion."
+
+Thanks, why not get it right the first time..
+
+Daniel
+
+
