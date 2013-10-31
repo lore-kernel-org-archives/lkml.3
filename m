@@ -1,102 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab3JaTfh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 15:35:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51181 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752122Ab3JaTfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 15:35:36 -0400
-Date: Thu, 31 Oct 2013 20:35:33 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH 3.5 29/64] fs: buffer: move allocation failure loop into
- the allocator
-Message-ID: <20131031193533.GA10524@quack.suse.cz>
-References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
- <1382971703-17393-30-git-send-email-luis.henriques@canonical.com>
- <20131031140008.GB14054@cmpxchg.org>
- <20131031144848.GA3275@quack.suse.cz>
- <20131031090353.a67265bf.akpm@linux-foundation.org>
+	id S1755116Ab3JaTib (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 15:38:31 -0400
+Received: from dkim1.fusionio.com ([66.114.96.53]:39119 "EHLO
+	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769Ab3JaTi1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 15:38:27 -0400
+X-ASG-Debug-ID: 1383248306-03d6a54d19a7540001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131031090353.a67265bf.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+From: Chris Mason <chris.mason@fusionio.com>
+CC: <linux-kernel@vger.kernel.org>, <dm-devel@redhat.com>,
+        <linux-fsdevel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
+        Christoph Hellwig <hch@infradead.org>
+User-Agent: alot/0.3.4
+To: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>
+Message-ID: <20131031193820.10239.79827@localhost.localdomain>
+Subject: [PATCH] Btrfs: update bi_remaining to relfect our bio endio chaining
+Date: Thu, 31 Oct 2013 15:38:20 -0400
+X-ASG-Orig-Subj: [PATCH] Btrfs: update bi_remaining to relfect our bio endio chaining
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas1.int.fusionio.com[10.101.1.40]
+X-Barracuda-Start-Time: 1383248306
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.141940
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 31-10-13 09:03:53, Andrew Morton wrote:
-> On Thu, 31 Oct 2013 15:48:48 +0100 Jan Kara <jack@suse.cz> wrote:
-> 
-> > On Thu 31-10-13 10:00:08, Johannes Weiner wrote:
-> > > On Mon, Oct 28, 2013 at 02:47:48PM +0000, Luis Henriques wrote:
-> > > > 3.5.7.24 -stable review patch.  If anyone has any objections, please let me know.
-> > > > 
-> > > > ------------------
-> > > > 
-> > > > From: Johannes Weiner <hannes@cmpxchg.org>
-> > > > 
-> > > > commit 84235de394d9775bfaa7fa9762a59d91fef0c1fc upstream.
-> > > > 
-> > > > Buffer allocation has a very crude indefinite loop around waking the
-> > > > flusher threads and performing global NOFS direct reclaim because it can
-> > > > not handle allocation failures.
-> > > > 
-> > > > The most immediate problem with this is that the allocation may fail due
-> > > > to a memory cgroup limit, where flushers + direct reclaim might not make
-> > > > any progress towards resolving the situation at all.  Because unlike the
-> > > > global case, a memory cgroup may not have any cache at all, only
-> > > > anonymous pages but no swap.  This situation will lead to a reclaim
-> > > > livelock with insane IO from waking the flushers and thrashing unrelated
-> > > > filesystem cache in a tight loop.
-> > > > 
-> > > > Use __GFP_NOFAIL allocations for buffers for now.  This makes sure that
-> > > > any looping happens in the page allocator, which knows how to
-> > > > orchestrate kswapd, direct reclaim, and the flushers sensibly.  It also
-> > > > allows memory cgroups to detect allocations that can't handle failure
-> > > > and will allow them to ultimately bypass the limit if reclaim can not
-> > > > make progress.
-> >   So I was under the impression that __GFP_NOFAIL is going away, doesn't
-> > it? At least about an year ago there was some effort to remove its users so
-> > we ended up creating loops like the above one (and similar ones for
-> > jbd/jbd2) in cases where handling the failure wasn't easily possible. And now
-> > it seems we are going in the opposite direction... At least we have a
-> > steady flow of patches guaranteed :)
-> 
-> Argh.  The whole point behind __GFP_NOFAIL was to centralise the
-> open-coded infinite-retry loops into the MM core.  So they can be
-> easily located and fixed up.
-> 
-> Yes, __GFP_NOFAIL *should* go away, once all those infinite-retry loops
-> are fixed to handle allocation failures.  But it sounds like this
-> "effort" was just undoing
-> 
-> : commit f3615244f15c8bee5783fcf032717ffdfd56e219
-> : Author:     akpm <akpm>
-> : AuthorDate: Sun Apr 20 21:28:12 2003 +0000
-> : Commit:     akpm <akpm>
-> : CommitDate: Sun Apr 20 21:28:12 2003 +0000
-> : 
-> :     [PATCH] implement __GFP_REPEAT, __GFP_NOFAIL, __GFP_NORETRY
-> 
-> and thereby hiding the bad code from grep again :(
-  So I also looked into history trying to find out why we opencoded the
-allocation loops. It seems originally the patch set described and
-referenced in http://lwn.net/Articles/401915/ from David Rientjes in 2010
-triggered the discussion. You actually opposed to that series so I didn't
-merge the jbd patch. But jbd2 change got merged by Ted. Then an year later
-I've noticed jbd2 is avoiding __GFP_NOFAIL and forgot you were opposing
-that change and copied the change over to jbd. So I'll back out the jbd
-change. I'll also look into removing the retry loop from jbd2 (there the
-change actually made some sense because in some cases we can deal with
-allocation failure).
+Btrfs is sometimes calling bio_endio twice on the same bio while
+we chain things.  This makes sure we don't trip over new assertions in
+fs/bio.c
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+
+diff --git a/fs/btrfs/check-integrity.c b/fs/btrfs/check-integrity.c
+index 7fcac70..5b30360 100644
+--- a/fs/btrfs/check-integrity.c
++++ b/fs/btrfs/check-integrity.c
+@@ -2289,6 +2289,10 @@ static void btrfsic_bio_end_io(struct bio *bp, int bio_error_status)
+ 		block = next_block;
+ 	} while (NULL != block);
+ 
++	/*
++	 * since we're not using bio_endio here, we don't need to worry about
++	 * the remaining count
++	 */
+ 	bp->bi_end_io(bp, bio_error_status);
+ }
+ 
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 62176ad..786ddac 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -1684,7 +1684,7 @@ static void end_workqueue_fn(struct btrfs_work *work)
+ 	bio->bi_private = end_io_wq->private;
+ 	bio->bi_end_io = end_io_wq->end_io;
+ 	kfree(end_io_wq);
+-	bio_endio(bio, error);
++	bio_endio_nodec(bio, error);
+ }
+ 
+ static int cleaner_kthread(void *arg)
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index ef48947..a31448f 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -5284,9 +5284,17 @@ static void btrfs_end_bio(struct bio *bio, int err)
+ 		}
+ 	}
+ 
+-	if (bio == bbio->orig_bio)
++	if (bio == bbio->orig_bio) {
+ 		is_orig_bio = 1;
+ 
++		/*
++		 * eventually we will call the bi_endio for the original bio,
++		 * make sure that we've properly bumped bi_remaining to reflect
++		 * our chain of endios here
++		 */
++		atomic_inc(&bio->bi_remaining);
++	}
++
+ 	if (atomic_dec_and_test(&bbio->stripes_pending)) {
+ 		if (!is_orig_bio) {
+ 			bio_put(bio);
