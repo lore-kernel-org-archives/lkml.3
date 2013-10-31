@@ -1,183 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab3JaN7y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 09:59:54 -0400
-Received: from nebula.mojo.cc ([46.4.89.19]:40642 "EHLO nebula.mojo.cc"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754439Ab3JaN7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 09:59:53 -0400
+	id S1754763Ab3JaOBr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 10:01:47 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:57525 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871Ab3JaOBp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 10:01:45 -0400
+Date: Thu, 31 Oct 2013 15:01:40 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] misc: atmel_pwm: set initcall level to subsys
+Message-ID: <20131031140140.GG29813@localhost>
+References: <1382459560-26596-1-git-send-email-jhovold@gmail.com>
+ <20131029232249.GA20476@kroah.com>
+ <20131030110705.GA29813@localhost>
+ <201310302146.18248.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Thu, 31 Oct 2013 15:00:24 +0100
-From: emanoil.kotsev@fincom.at
-To: linux-kernel@vger.kernel.org
-Subject: kernel 3.11.6 general protection fault
-Message-ID: <e09ad4cb88b923ec017a516e6778b6bd@fincom.at>
-User-Agent: Roundcube Webmail/0.9.2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201310302146.18248.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi again, just noticed that it happens also without starring at youtube, 
-but again in the drm
+On Wed, Oct 30, 2013 at 09:46:17PM +0100, Arnd Bergmann wrote:
+> On Wednesday 30 October 2013, Johan Hovold wrote:
+> > > I really hate this type of patch, as it's papering over the real
+> > > problem.  What happens when someone else moves their driver to this
+> > > level?  Then you are back to the original problem.
+> > 
+> > Yes, it's crude, but it's currently the only way to express a preferred
+> > probe order.
+> 
+> Does the same problem occur with the generic PWM subsystem?
 
-Thanks in advance and kind regards
+It does not suffer from the problem with failed probe as it supports
+deferred probing, but there could be added delays depending on probe
+order.
 
-------- cut --------
+> The atmel_pwm driver apparently is the last PWM driver that has
+> not been converted to the generic subsystem yet. Doing that would
+> also let us drop the atmel-pwm-bl driver in favor of the generic
+> backlight.
 
-Oct 31 10:51:01 maistor kernel: [drm] Setting output timings on SDVOB 
-failed
-Oct 31 10:51:01 maistor kernel: lp: driver loaded but no devices found
-Oct 31 10:51:01 maistor kernel: ppdev: user-space parallel port driver
-Oct 31 10:51:01 maistor kernel: ------------[ cut here ]------------
-Oct 31 10:51:01 maistor kernel: WARNING: CPU: 1 PID: 6441 at 
-drivers/gpu/drm/i915/intel_display.c:8292 check_crtc_state+0x5cf/0xa60 
-[i915]()
-Oct 31 10:51:01 maistor kernel: pipe state doesn't match!
-Oct 31 10:51:01 maistor kernel: Modules linked in: ppdev lp bnep rfcomm 
-bluetooth crc16 vmnet(O) parport_pc parport vsock(O) vmci(O) vmmon(O) 
-cpufreq_ondemand cpufreq_powersave cpufreq_performance cpufreq_stats 
-cpufreq_conservative xt_state xt_tcpudp ipt_REJECT xt_limit iptable_nat 
-nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack 
-iptable_mangle iptable_filter ip_tables x_tables acpi_pad custom_method 
-sbs sbshc fan acpi_ipmi ipmi_msghandler snd_hrtimer binfmt_misc uinput 
-fuse af_packet ipv6 firewire_sbp2 usb_storage snd_hda_codec_idt 
-snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm 
-iTCO_wdt iTCO_vendor_support snd_seq_dummy snd_page_alloc snd_seq_oss 
-snd_seq_midi snd_seq_midi_event snd_rawmidi yenta_socket snd_seq 
-pcmcia_rsrc lpc_ich acpi_cpufreq snd_seq_device snd_timer snd i2c_i801 
-arc4 mperf iwl3945 iwlegacy mac80211 cfg80211 rfkill soundcore irda 
-ehci_pci 8250 crc_ccitt joydev processor dcdbas dell_wmi sparse_keymap 
-rtc_cmos wmi evdev battery ac serial_core sha256_ssse3 s
-Oct 31 10:51:01 maistor kernel: ha256_generic cbc hid_generic usbhid hid 
-loop dm_crypt dm_mod sg sr_mod cdrom sd_mod firewire_ohci firewire_core 
-thermal b44 ssb mmc_core mii pcmcia crc_itu_t pcmcia_core i915 
-cfbfillrect cfbimgblt video button i2c_algo_bit cfbcopyarea 
-drm_kms_helper drm intel_agp uhci_hcd ehci_hcd intel_gtt agpgart 
-i2c_core thermal_sys freq_table usbcore usb_common
-Oct 31 10:51:01 maistor kernel: CPU: 1 PID: 6441 Comm: Xorg Tainted: P   
-         O 3.11.6eko2 #1
-Oct 31 10:51:01 maistor kernel: Hardware name: Dell Inc. Latitude D520   
-                 /0NF743, BIOS A04 12/18/2006
-Oct 31 10:51:01 maistor kernel: 0000000000000000 0000000000000009 
-ffffffff813db19f ffff8800268b1888
-Oct 31 10:51:01 maistor kernel: ffffffff8103f561 ffff880037fd96d8 
-ffff8800268b1900 ffff880037c01800
-Oct 31 10:51:01 maistor kernel: 0000000000000001 ffff880037c01c88 
-ffffffff8103f645 ffffffffa0162ea2
-Oct 31 10:51:01 maistor kernel: Call Trace:
-Oct 31 10:51:01 maistor kernel: [<ffffffff813db19f>] ? 
-dump_stack+0x50/0x80
-Oct 31 10:51:01 maistor kernel: [<ffffffff8103f561>] ? 
-warn_slowpath_common+0x81/0xb0
-Oct 31 10:51:01 maistor kernel: [<ffffffff8103f645>] ? 
-warn_slowpath_fmt+0x45/0x50
-Oct 31 10:51:01 maistor kernel: [<ffffffffa01106ff>] ? 
-check_crtc_state+0x5cf/0xa60 [i915]
-Oct 31 10:51:01 maistor kernel: [<ffffffffa011aeed>] ? 
-intel_modeset_check_state+0x2bd/0x730 [i915]
-Oct 31 10:51:01 maistor kernel: [<ffffffff811fa769>] ? 
-snprintf+0x39/0x40
-Oct 31 10:51:01 maistor kernel: [<ffffffffa011b3cd>] ? 
-intel_set_mode+0x1d/0x30 [i915]
-Oct 31 10:51:01 maistor kernel: [<ffffffffa011bb8a>] ? 
-intel_crtc_set_config+0x7aa/0x980 [i915]
-Oct 31 10:51:01 maistor kernel: [<ffffffffa00a8505>] ? 
-drm_mode_set_config_internal+0x55/0xd0 [drm]
-Oct 31 10:51:01 maistor kernel: [<ffffffffa00aa378>] ? 
-drm_mode_setcrtc+0x118/0x640 [drm]
-Oct 31 10:51:01 maistor kernel: [<ffffffffa009b1ad>] ? 
-drm_ioctl+0x4ed/0x5f0 [drm]
-Oct 31 10:51:01 maistor kernel: [<ffffffffa00aa260>] ? 
-drm_mode_setplane+0x3a0/0x3a0 [drm]
-Oct 31 10:51:01 maistor kernel: [<ffffffff8111d97b>] ? 
-do_vfs_ioctl+0x8b/0x530
-Oct 31 10:51:01 maistor kernel: [<ffffffff8111de6d>] ? 
-SyS_ioctl+0x4d/0xa0
-Oct 31 10:51:01 maistor kernel: [<ffffffff813e1e56>] ? 
-system_call_fastpath+0x1a/0x1f
-Oct 31 10:51:01 maistor kernel: ---[ end trace 65327d016e6b6847 ]---
-Oct 31 10:51:08 maistor kernel: [drm] Setting output timings on SDVOB 
-failed
-Oct 31 10:51:08 maistor kernel: ------------[ cut here ]------------
-Oct 31 10:51:08 maistor kernel: WARNING: CPU: 1 PID: 6441 at 
-drivers/gpu/drm/i915/intel_display.c:8292 check_crtc_state+0x5cf/0xa60 
-[i915]()
-Oct 31 10:51:08 maistor kernel: pipe state doesn't match!
-Oct 31 10:51:08 maistor kernel: Modules linked in: ppdev lp bnep rfcomm 
-bluetooth crc16 vmnet(O) parport_pc parport vsock(O) vmci(O) vmmon(O) 
-cpufreq_ondemand cpufreq_powersave cpufreq_performance cpufreq_stats 
-cpufreq_conservative xt_state xt_tcpudp ipt_REJECT xt_limit iptable_nat 
-nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack 
-iptable_mangle iptable_filter ip_tables x_tables acpi_pad custom_method 
-sbs sbshc fan acpi_ipmi ipmi_msghandler snd_hrtimer binfmt_misc uinput 
-fuse af_packet ipv6 firewire_sbp2 usb_storage snd_hda_codec_idt 
-snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm 
-iTCO_wdt iTCO_vendor_support snd_seq_dummy snd_page_alloc snd_seq_oss 
-snd_seq_midi snd_seq_midi_event snd_rawmidi yenta_socket snd_seq 
-pcmcia_rsrc lpc_ich acpi_cpufreq snd_seq_device snd_timer snd i2c_i801 
-arc4 mperf iwl3945 iwlegacy mac80211 cfg80211 rfkill soundcore irda 
-ehci_pci 8250 crc_ccitt joydev processor dcdbas dell_wmi sparse_keymap 
-rtc_cmos wmi evdev battery ac serial_core sha256_ssse3 s
-Oct 31 10:51:08 maistor kernel: ha256_generic cbc hid_generic usbhid hid 
-loop dm_crypt dm_mod sg sr_mod cdrom sd_mod firewire_ohci firewire_core 
-thermal b44 ssb mmc_core mii pcmcia crc_itu_t pcmcia_core i915 
-cfbfillrect cfbimgblt video button i2c_algo_bit cfbcopyarea 
-drm_kms_helper drm intel_agp uhci_hcd ehci_hcd intel_gtt agpgart 
-i2c_core thermal_sys freq_table usbcore usb_common
-Oct 31 10:51:08 maistor kernel: CPU: 1 PID: 6441 Comm: Xorg Tainted: P   
-      W  O 3.11.6eko2 #1
-Oct 31 10:51:08 maistor kernel: Hardware name: Dell Inc. Latitude D520   
-                 /0NF743, BIOS A04 12/18/2006
-Oct 31 10:51:08 maistor kernel: 0000000000000000 0000000000000009 
-ffffffff813db19f ffff8800268b1888
-Oct 31 10:51:08 maistor kernel: ffffffff8103f561 ffff880037fd96d8 
-ffff8800268b1900 ffff880037c01800
-Oct 31 10:51:08 maistor kernel: 0000000000000001 ffff880037c01c88 
-ffffffff8103f645 ffffffffa0162ea2
-Oct 31 10:51:08 maistor kernel: Call Trace:
-Oct 31 10:51:08 maistor kernel: [<ffffffff813db19f>] ? 
-dump_stack+0x50/0x80
-Oct 31 10:51:08 maistor kernel: [<ffffffff8103f561>] ? 
-warn_slowpath_common+0x81/0xb0
-Oct 31 10:51:08 maistor kernel: [<ffffffff8103f645>] ? 
-warn_slowpath_fmt+0x45/0x50
-Oct 31 10:51:08 maistor kernel: [<ffffffffa01106ff>] ? 
-check_crtc_state+0x5cf/0xa60 [i915]
-Oct 31 10:51:08 maistor kernel: [<ffffffffa011aeed>] ? 
-intel_modeset_check_state+0x2bd/0x730 [i915]
-Oct 31 10:51:08 maistor kernel: [<ffffffff811fa769>] ? 
-snprintf+0x39/0x40
-Oct 31 10:51:08 maistor kernel: [<ffffffffa011b3cd>] ? 
-intel_set_mode+0x1d/0x30 [i915]
-Oct 31 10:51:08 maistor kernel: [<ffffffffa011bb8a>] ? 
-intel_crtc_set_config+0x7aa/0x980 [i915]
-Oct 31 10:51:08 maistor kernel: [<ffffffffa00a8505>] ? 
-drm_mode_set_config_internal+0x55/0xd0 [drm]
-Oct 31 10:51:08 maistor kernel: [<ffffffffa00aa378>] ? 
-drm_mode_setcrtc+0x118/0x640 [drm]
-Oct 31 10:51:08 maistor kernel: [<ffffffffa009b1ad>] ? 
-drm_ioctl+0x4ed/0x5f0 [drm]
-Oct 31 10:51:08 maistor kernel: [<ffffffffa00aa260>] ? 
-drm_mode_setplane+0x3a0/0x3a0 [drm]
-Oct 31 10:51:08 maistor kernel: [<ffffffff8111d97b>] ? 
-do_vfs_ioctl+0x8b/0x530
-Oct 31 10:51:08 maistor kernel: [<ffffffff810424d5>] ? 
-do_setitimer+0x1b5/0x1e0
-Oct 31 10:51:08 maistor kernel: [<ffffffff8111de6d>] ? 
-SyS_ioctl+0x4d/0xa0
-Oct 31 10:51:08 maistor kernel: [<ffffffff813e1e56>] ? 
-system_call_fastpath+0x1a/0x1f
-Oct 31 10:51:08 maistor kernel: ---[ end trace 65327d016e6b6848 ]---
-Oct 31 10:51:49 maistor kernel: [drm] Setting output timings on SDVOB 
-failed
-Oct 31 10:55:06 maistor kernel: perf samples too long (2512 > 2500), 
-lowering kernel.perf_event_max_sample_rate to 50000
-Oct 31 11:22:11 maistor kernel: perf samples too long (5003 > 5000), 
-lowering kernel.perf_event_max_sample_rate to 25000
+As Bo mentioned, it's work in progress that hasn't been merged yet.
 
-------- cut --------
-
-
+Johan
