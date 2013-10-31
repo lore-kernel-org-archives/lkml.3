@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241Ab3JaPCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 11:02:12 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9250 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754738Ab3JaPCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 11:02:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="401594054"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        przanoni@gmail.com, airlied@linux.ie, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [v3.10][v3.11][v3.12][Regression][PATCH 1/1] Revert "Revert "drm/i915: revert eDP bpp clamping code changes""
-In-Reply-To: <526A8FE3.8040801@canonical.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <cover.1381939165.git.joseph.salisbury@canonical.com> <397b1b6f028317a3ef897cdaf79eb1e5519e587d.1381939165.git.joseph.salisbury@canonical.com> <20131016210213.GR4830@phenom.ffwll.local> <526A8FE3.8040801@canonical.com>
-User-Agent: Notmuch/0.16+114~g6de60df (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 31 Oct 2013 16:58:58 +0200
-Message-ID: <87txfxpjv1.fsf@intel.com>
+	id S1755261Ab3JaPC5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 11:02:57 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:33067 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754220Ab3JaPC4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 11:02:56 -0400
+Date: Thu, 31 Oct 2013 11:02:52 -0400
+From: Tejun Heo <tj@kernel.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: WTF: driver-core-next contains recursive directory removal!
+Message-ID: <20131031150252.GA11698@mtj.dyndns.org>
+References: <8761sexu2l.fsf@xmission.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8761sexu2l.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Oct 2013, Joseph Salisbury <joseph.salisbury@canonical.com> wrote:
-> On 10/16/2013 05:02 PM, Daniel Vetter wrote:
->> It's by far not that simple. Jani is working on both the underlying bug
->> and a better w/a. See
->>
->> https://bugzilla.kernel.org/show_bug.cgi?id=59841
->>
->> for the full story in its entire glory.
->>
->> Cheers, Daniel
->
-> Thanks for the feedback, Daniel.  Is there an estimate on what mainline
-> release might contain Jani's work?
+Hey, Eric.
 
-commit c6cd2ee2d59111a07cd9199564c9bdcb2d11e5cf
-Author: Jani Nikula <jani.nikula@intel.com>
-Date:   Mon Oct 21 10:52:07 2013 +0300
+On Wed, Oct 30, 2013 at 03:38:58PM -0700, Eric W. Biederman wrote:
+> Please pull out that crap it has no business ever going into a stable
+> kernel.
 
-    drm/i915/dp: workaround BIOS eDP bpp clamping issue
+Can you please calm down a bit?  It's becoming pretty difficult to
+take your opinions as technical especially as all the points you're
+raising had already been discussed before without you providing much
+meat to it.  I'll just go over all the points in the thread and
+reiterate what was discussed before just in case.
 
-and a couple of dependencies are now in Linus' tree, i.e. should be
-released in 3.12. The commits are also CC: stable.
+> The short version is unless someone has drastically changed pci hotplug
+> since last time I looked the code is dramatically wrong as pci hotplug
+> removes directories in the wrong order remove the parent first.
 
-BR,
-Jani.
+We already discussed this.  kobject sysfs interface code holds onto
+its sysfs_dirent until the kobject itself is removed.  Given that the
+existing sysfs interface doesn't even provide sd based interface for
+files or subdirectories (all removals are by dir + name), this
+shouldn't break anything.  Even if removal order is reversed, the only
+behavior change would be that a kobj would be disconnected from the
+hierarchy if one of parent is removed before it.  I can't think of a
+scenario where that'd lead to an explosion.  Even in the very unlikely
+case this causes an actual problem, I can't see how this would be
+something too difficult to rectify.
 
+> So now we have sysfs code that is remove directories multiple times, and
+> we just finished the conversation about sysfs_assoc_lock where Tejun was
+> just explaining how multiple removal of kobjects is not safe.
+
+No, you're completely misunderstanding what I said in the thread.
+Multiple *concurrent* removal invocations on the same kobject is
+unsafe (no intrinsic reason for it to be that way tho) becaues of the
+way kobj <-> sysfs association is handled - it's about synchronizing
+conflicting operations to the same sysfs_diernt.  The sysfs hierarchy
+proper has always been fully protected by sysfs_mutex.  There's
+nothing racy about recursive removal.  In fact, we've been doing
+partial recursive removal for a very long time now.
+
+> This sysfs semantic change is an unmaintainable disaster.
+
+That's a very strong statement without matching backing arguments.
+AFAICS, most, if not all, of your arguments stem either from
+misunderstanding or heavily handwavy.  I'll continue on the thread.
+
+> Linus if you would be so kind as to not merge this disaster when the
+> merge window opens I would very much appreciate it.
+
+Nice going.
 
 -- 
-Jani Nikula, Intel Open Source Technology Center
+tejun
