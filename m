@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab3JaPly (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 11:41:54 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:7899 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab3JaPlw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 11:41:52 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 31 Oct 2013 08:41:13 -0700
-Date: Thu, 31 Oct 2013 17:41:42 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, Mark Zhang <markz@nvidia.com>,
-        Thierry Reding <treding@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: tegra: use pll_ref as the pll_e parent
-Message-ID: <20131031154142.GX22111@tbergstrom-lnx.Nvidia.com>
-References: <1383093707-10312-1-git-send-email-pdeschrijver@nvidia.com>
- <527128B5.2020101@wwwdotorg.org>
- <20131030221833.GQ22111@tbergstrom-lnx.Nvidia.com>
- <52718D1B.6030106@wwwdotorg.org>
+	id S1754093Ab3JaPrO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 11:47:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31891 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752053Ab3JaPrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 11:47:11 -0400
+Date: Thu, 31 Oct 2013 17:47:07 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: emulate SAHF instruction
+Message-ID: <20131031154707.GC20205@redhat.com>
+References: <1383215382-10072-1-git-send-email-pbonzini@redhat.com>
+ <20131031142119.GS4651@redhat.com>
+ <527268E4.2070505@redhat.com>
+ <20131031143405.GT4651@redhat.com>
+ <52726DE0.3060207@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52718D1B.6030106@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <52726DE0.3060207@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 11:50:03PM +0100, Stephen Warren wrote:
-> On 10/30/2013 04:18 PM, Peter De Schrijver wrote:
-> > On Wed, Oct 30, 2013 at 04:41:41PM +0100, Stephen Warren wrote:
-> >> On 10/29/2013 06:41 PM, Peter De Schrijver wrote:
-> >>> Use pll_ref instead of pll_re_vco as the pll_e parent on Tegra114 and
-> >>> Tegra124. Also add a pll_ref table entry for pll_e for Tegra114.
-> >>
-> >> Why? What benefit does this give, or what bug does this fix?
-> > 
-> > Otherrwise Tegra114 will crash on boot.
+On Thu, Oct 31, 2013 at 03:49:04PM +0100, Paolo Bonzini wrote:
+> Il 31/10/2013 15:34, Gleb Natapov ha scritto:
+> > I haven't checked AMD doc, but if it is documented that lahf/sahf #UDs at 64
+> > bit we should emulate it correctly.
 > 
-> Sigh. For what reason?
+> It says "The LAHF instruction can only be executed in 64-bit mode if
+> supported by the processor implementation. Check the status of ECX bit 0
+> returned by CPUID function 8000_0001h to verify that the processor
+> supports LAHF in 64-bit mode".  Same as Intel---in fact 80000001h is an
+> "AMD leaf" so to speak.
+> 
+> I found "AMD introduced support for the instructions with their Athlon
+> 64, Opteron and Turion 64 revision D processors in March 2005 and Intel
+> introduced support for the instructions with the Pentium 4 G1 stepping
+> in December 2005".  I think we can for all practical purposes ignore the
+> lahf_lm CPUID flag.
+> 
+Yep,
 
-pll_re_vco having an unsupported rate of 300Mhz. My guess is that it depends
-on the bootloader if you will see this. I'm fairly sure I verified this on
-my dalmore in helsinki and it worked, but it failed on Paul's test setup.
+Reviewed-by: Gleb Natapov <gleb@redhat.com>
 
-Cheers,
-
-Peter.
+--
+			Gleb.
