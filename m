@@ -1,101 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184Ab3JaKcT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 06:32:19 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39612 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975Ab3JaKcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 06:32:16 -0400
-Message-ID: <527231A1.5010402@ti.com>
-Date: Thu, 31 Oct 2013 12:32:01 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753953Ab3JaKf1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 06:35:27 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:39184 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752915Ab3JaKfY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 06:35:24 -0400
 MIME-Version: 1.0
-To: Marek Belisko <marek@goldelico.com>
-CC: <plagnioj@jcrosoft.com>, <hns@goldelico.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH v3] omapdss: Add new panel driver for Topolly td028ttec1
- LCD.
-References: <1383085540-8063-1-git-send-email-marek@goldelico.com>
-In-Reply-To: <1383085540-8063-1-git-send-email-marek@goldelico.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="5LK1iAkfBTwtKSd7FXgBWg1p7qIi6U2Xx"
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20131031184015.adc000259e9931fd0b5d5cf7@canb.auug.org.au>
+References: <20131031184015.adc000259e9931fd0b5d5cf7@canb.auug.org.au>
+Date: Thu, 31 Oct 2013 11:35:23 +0100
+Message-ID: <CA+icZUWYHSU3yvsW6fB5aKJ0LQVaY0afsF2DiS9=m_bzy80=hw@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the tty tree
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Philippe Proulx <philippe.proulx@savoirfairelinux.com>
+Cc: Greg KH <greg@kroah.com>, linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---5LK1iAkfBTwtKSd7FXgBWg1p7qIi6U2Xx
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, Oct 31, 2013 at 8:40 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Greg,
+>
+> After merging the tty tree, today's linux-next build (arm
+> multi_v7_defconfig) failed like this:
+>
+> drivers/tty/serial/omap-serial.c: In function 'serial_omap_probe':
+> drivers/tty/serial/omap-serial.c:1724:22: error: expected ')' before numeric constant
+> drivers/tty/serial/omap-serial.c:1724:22: warning: format '%d' expects a matching 'int' argument [-Wformat]
+>
+> Caused by commit e5f9bf72efbc ("serial: omap: fix a few checkpatch
+> warnings").  There is a missing ',' in the dev_warn() ...
+>
+> I have used the version of the tty tree from next-20131030 for today.
+>
 
-On 2013-10-30 00:25, Marek Belisko wrote:
-> Signed-off-by: Marek Belisko <marek@goldelico.com>
-> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.com>
-> ---
-> changes from v2:
-> - move tx_buf from driver data to functions where it's used
-> - update write functions names (to reflect how many bytes are transferr=
-ed)
-> - update delays from 1s to 1ms (probably typo)
-> - remove unnecessary 90ms sleep (tested and works fine)
-> - disable dpi output after disable panel
->=20
-> changes from v1:
-> - reworked to be spi driver instead platform with custom spi bitbang
->   this configuration was tested with spi_gpio bitbang driver on gta04 b=
-oard
->   and works fine (thanks Tomi and Lars-Peter for comments)
-> - address previous comments
->=20
->  drivers/video/omap2/displays-new/Kconfig           |   6 +
->  drivers/video/omap2/displays-new/Makefile          |   1 +
->  .../omap2/displays-new/panel-tpo-td028ttec1.c      | 480 +++++++++++++=
-++++++++
->  include/video/omap-panel-data.h                    |  13 +
->  4 files changed, 500 insertions(+)
->  create mode 100644 drivers/video/omap2/displays-new/panel-tpo-td028tte=
-c1.c
+[ Add CC to linux-serial ML ]
 
-Sparse gave these warnings:
+Happy HelloWien and WelcomeBackStephen!
 
-drivers/video/omap2/displays-new/panel-tpo-td028ttec1.c:67:5: warning:
-symbol 'jbt_ret_write_0' was not declared. Should it be static?
-drivers/video/omap2/displays-new/panel-tpo-td028ttec1.c:81:5: warning:
-symbol 'jbt_reg_write_1' was not declared. Should it be static?
-drivers/video/omap2/displays-new/panel-tpo-td028ttec1.c:97:5: warning:
-symbol 'jbt_reg_write_2' was not declared. Should it be static?
+That was only checkpatch-tested, eh :-)?
 
-I fixed them and queued the patch for 3.13.
+@@ -1724,8 +1722,9 @@ static int serial_omap_probe(struct platform_device *pdev)
+up->port.uartclk = omap_up_info->uartclk;
+if (!up->port.uartclk) {
+up->port.uartclk = DEFAULT_CLK_SPEED;
+- dev_warn(&pdev->dev, "No clock speed specified: using default:"
+- "%d\n", DEFAULT_CLK_SPEED);
++ dev_warn(&pdev->dev,
++ "No clock speed specified: using default: %d\n" <--- Comma missing here!
++ DEFAULT_CLK_SPEED);
+}
 
- Tomi
-
-
-
---5LK1iAkfBTwtKSd7FXgBWg1p7qIi6U2Xx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJScjGmAAoJEPo9qoy8lh710WUQAIQ5cxjfLdeR8QjGnG+uTyAs
-3Z3sVmafIWSVMvelQPaNzH5yceqijJLpul6FcNCjgiZ3yGKo14nE4BrT/IdR8qyO
-xskam6h0+Dq0sbqs/02aiNlJ3VLiwlXVQqmmfK/LKxJDPr+lxl/SNYrXj1wHKTGX
-EEnNSr/1h33G0EbK+0VZwaLe/Az9L8Cw8JjUwSiC8KS3cARp5nOM3aJQ1zgpTsJW
-v7BPVkHHHUKTLSFoUaa6ieWZYWuArzRMO3UfiSAysSrZDWNLDykF1waFp0ra5y9A
-xcLKT+bCwSWbmcr6jMRpzHr/vOdx6fPArK81aZ57jheIhy6zxClT9wrfAbgd9DJP
-HnGJXTwO1eXbPoc8joq47zZavPHPj9T5iMfdXgy5PQ4eGptrklswiX2YfySwNUFF
-HBG3Ff1ubLcdPcwk92IsAKAxzfkVlHlZ0JguIAAjkwMwDjBAd9uAsnG4SAz1Q6Fd
-eCNOTZwwLBSQmLTfQV8fbkTP8ieJkveGVbNDqeu8WpF6fIPhhBDxn/frjd5kme6x
-hiGVGoW2KqkJoD/LjkKOddUDJFuw7LIJnDCCNswL3DJq2c5DYvpHWzJNwPN3qe3Y
-18QQbDKtcZlIQK8nhGh5AVQv7v0pZc9tz7bYsfSY+IhoftL2cbiUsr2KfFoQ8MDS
-RP11ACwzcVLwtWUKoKvK
-=LY3Z
------END PGP SIGNATURE-----
-
---5LK1iAkfBTwtKSd7FXgBWg1p7qIi6U2Xx--
+- Sedat -
