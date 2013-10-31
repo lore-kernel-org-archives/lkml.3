@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab3JaL6b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 07:58:31 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:62393 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031Ab3JaL63 (ORCPT
+	id S1752527Ab3JaMCp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 08:02:45 -0400
+Received: from eu1sys200aog123.obsmtp.com ([207.126.144.155]:38874 "EHLO
+	eu1sys200aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751038Ab3JaMCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 07:58:29 -0400
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: opw-kernel@googlegroups.com, Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchand@redhat.com>, linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org
-Subject: [PATCH v9 2/2] Staging: zram: Fix decrement of variable by calling bdput()
-Date: Thu, 31 Oct 2013 17:28:18 +0530
-Message-Id: <4fdb273ab0b1e7514f119d7e619ac708d2277d34.1383220461.git.rashika.kheria@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20131019110539.GA25167@gmail.com>
-References: <20131019110539.GA25167@gmail.com>
-In-Reply-To: <3d7e050910ca994862e7880b4bd3681267681b56.1383220461.git.rashika.kheria@gmail.com>
-References: <3d7e050910ca994862e7880b4bd3681267681b56.1383220461.git.rashika.kheria@gmail.com>
+	Thu, 31 Oct 2013 08:02:44 -0400
+From: <srinivas.kandagatla@st.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: Mark Brown <broonie@kernel.org>, <srinivas.kandagatla@st.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH RFC 0/2] Introduce BITS_MASK macro
+Date: Thu, 31 Oct 2013 11:53:09 +0000
+Message-ID: <1383220389-18420-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.6.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.65.51.59]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As suggested by Jerome Marchand "The code in reset_store get the block device
-(bdget_disk()) but it does not put it (bdput()) when it's done using it.
-The usage count is therefore incremented but never decremented."
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-This patch also puts bdput() for all error cases.
+This patch series introduces BITS_MASK macro which creates a mask for a given
+lsb and msb bit locations. The usage of masks spread over mutiple bits is
+becoming very common for example with regmap_update_bits kind of apis. Having a
+common macro for this makes much sense and is clean and readable way to encode
+the mask rather than having an hex number for a mask.
 
-Cc: stable@vger.kernel.org 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
----
+Second patch is to show an example usage of this new macro in regmap.
 
-This revision fixes the following issues of the previous revision-
-Proper error handling
+Comments ?
 
- drivers/staging/zram/zram_drv.c |   19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
+Thanks,
+srini
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 012ba15..a1f8b1f 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -652,21 +652,30 @@ static ssize_t reset_store(struct device *dev,
- 		return -ENOMEM;
- 
- 	/* Do not reset an active device! */
--	if (bdev->bd_holders)
--		return -EBUSY;
-+	if (bdev->bd_holders) {
-+		ret = -EBUSY;
-+		goto out;
-+	}
- 
- 	ret = kstrtou16(buf, 10, &do_reset);
- 	if (ret)
--		return ret;
-+		goto out;
- 
--	if (!do_reset)
--		return -EINVAL;
-+	if (!do_reset) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
- 
- 	/* Make sure all pending I/O is finished */
- 	fsync_bdev(bdev);
-+	bdput(bdev);
- 
- 	zram_reset_device(zram, true);
- 	return len;
-+
-+out:	
-+	bdput(bdev);
-+	return ret;
- }
- 
- static void __zram_make_request(struct zram *zram, struct bio *bio, int rw)
+Srinivas Kandagatla (2):
+  bitops: introduce BITS_MASK macro
+  regmap: move to using BITS_MASK macro
+
+ drivers/base/regmap/regmap.c |    3 +--
+ include/linux/bitops.h       |    1 +
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
 -- 
-1.7.9.5
+1.7.6.5
 
