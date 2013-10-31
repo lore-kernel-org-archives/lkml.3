@@ -1,112 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab3JaIiF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 04:38:05 -0400
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:19110
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751590Ab3JaIiA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 04:38:00 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
-From: Nicolin Chen <b42378@freescale.com>
-To: <s.hauer@pengutronix.de>, <timur@tabi.org>, <shawn.guo@linaro.org>,
-        <broonie@kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alsa-devel@alsa-project.org>, <rob.herring@calxeda.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>, <pawel.moll@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <philippe.retornaz@gmail.com>
-Subject: [PATCH v3 1/4] dma: imx-sdma: Add sdma firmware version 2 support
-Date: Thu, 31 Oct 2013 16:22:38 +0800
-Message-ID: <4fd9bd97312d255a80d686e911f5e9493db31d54.1383207153.git.b42378@freescale.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <cover.1383207153.git.b42378@freescale.com>
-References: <cover.1383207153.git.b42378@freescale.com>
+	id S1752069Ab3JaIqt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 04:46:49 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50263 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751071Ab3JaIqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 04:46:47 -0400
+Message-ID: <527218F4.3090006@ti.com>
+Date: Thu, 31 Oct 2013 14:16:44 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Sachin Kamat <sachin.kamat@linaro.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] drivers: phy: Fix memory leak
+References: <1382678784-20191-1-git-send-email-sachin.kamat@linaro.org>
+In-Reply-To: <1382678784-20191-1-git-send-email-sachin.kamat@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On i.MX5/6 series, SDMA is using new version firmware to support SSI
-dual FIFO feature and HDMI Audio (i.MX6Q/DL only). Thus add it.
+Hi,
 
-Signed-off-by: Nicolin Chen <b42378@freescale.com>
----
- drivers/dma/imx-sdma.c                     | 15 ++++++++++++++-
- include/linux/platform_data/dma-imx-sdma.h |  5 +++++
- 2 files changed, 19 insertions(+), 1 deletion(-)
+On Friday 25 October 2013 10:56 AM, Sachin Kamat wrote:
+> 'phy' was not being freed upon error in one of the cases.
+> Adjust the 'goto's to fix this.
 
-diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index fc43603..c7ece8d 100644
---- a/drivers/dma/imx-sdma.c
-+++ b/drivers/dma/imx-sdma.c
-@@ -323,6 +323,7 @@ struct sdma_engine {
- 	struct clk			*clk_ipg;
- 	struct clk			*clk_ahb;
- 	spinlock_t			channel_0_lock;
-+	u32				script_number;
- 	struct sdma_script_start_addrs	*script_addrs;
- 	const struct sdma_driver_data	*drvdata;
- };
-@@ -1238,6 +1239,7 @@ static void sdma_issue_pending(struct dma_chan *chan)
- }
- 
- #define SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V1	34
-+#define SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V2	38
- 
- static void sdma_add_scripts(struct sdma_engine *sdma,
- 		const struct sdma_script_start_addrs *addr)
-@@ -1246,7 +1248,7 @@ static void sdma_add_scripts(struct sdma_engine *sdma,
- 	s32 *saddr_arr = (u32 *)sdma->script_addrs;
- 	int i;
- 
--	for (i = 0; i < SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V1; i++)
-+	for (i = 0; i < sdma->script_number; i++)
- 		if (addr_arr[i] > 0)
- 			saddr_arr[i] = addr_arr[i];
- }
-@@ -1272,6 +1274,17 @@ static void sdma_load_firmware(const struct firmware *fw, void *context)
- 		goto err_firmware;
- 	if (header->ram_code_start + header->ram_code_size > fw->size)
- 		goto err_firmware;
-+	switch (header->version_major) {
-+		case 1:
-+			sdma->script_number = SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V1;
-+			break;
-+		case 2:
-+			sdma->script_number = SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V2;
-+			break;
-+		default:
-+			dev_err(sdma->dev, "unknown firmware version\n");
-+			return;
-+	}
- 
- 	addr = (void *)header + header->script_addrs_start;
- 	ram_code = (void *)header + header->ram_code_start;
-diff --git a/include/linux/platform_data/dma-imx-sdma.h b/include/linux/platform_data/dma-imx-sdma.h
-index 3a39428..eabac4e 100644
---- a/include/linux/platform_data/dma-imx-sdma.h
-+++ b/include/linux/platform_data/dma-imx-sdma.h
-@@ -43,6 +43,11 @@ struct sdma_script_start_addrs {
- 	s32 dptc_dvfs_addr;
- 	s32 utra_addr;
- 	s32 ram_code_start_addr;
-+	/* End of v1 array */
-+	s32 mcu_2_ssish_addr;
-+	s32 ssish_2_mcu_addr;
-+	s32 hdmi_dma_addr;
-+	/* End of v2 array */
- };
- 
- /**
--- 
-1.8.4
+This patch looks good. I'll send this once -rc1 is tagged?
 
+Thanks
+Kishon
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
+>  drivers/phy/phy-core.c |   10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+> index 03cf8fb..712b358 100644
+> --- a/drivers/phy/phy-core.c
+> +++ b/drivers/phy/phy-core.c
+> @@ -453,7 +453,7 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+>  	if (id < 0) {
+>  		dev_err(dev, "unable to get id\n");
+>  		ret = id;
+> -		goto err0;
+> +		goto err1;
+>  	}
+>  
+>  	device_initialize(&phy->dev);
+> @@ -468,11 +468,11 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+>  
+>  	ret = dev_set_name(&phy->dev, "phy-%s.%d", dev_name(dev), id);
+>  	if (ret)
+> -		goto err1;
+> +		goto err2;
+>  
+>  	ret = device_add(&phy->dev);
+>  	if (ret)
+> -		goto err1;
+> +		goto err2;
+>  
+>  	if (pm_runtime_enabled(dev)) {
+>  		pm_runtime_enable(&phy->dev);
+> @@ -481,11 +481,11 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+>  
+>  	return phy;
+>  
+> -err1:
+> +err2:
+>  	ida_remove(&phy_ida, phy->id);
+>  	put_device(&phy->dev);
+> +err1:
+>  	kfree(phy);
+> -
+>  err0:
+>  	return ERR_PTR(ret);
+>  }
+> 
 
