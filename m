@@ -1,48 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab3JaOtK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 10:49:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22750 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754302Ab3JaOtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 10:49:08 -0400
-Message-ID: <52726DE0.3060207@redhat.com>
-Date: Thu, 31 Oct 2013 15:49:04 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] KVM: x86: emulate SAHF instruction
-References: <1383215382-10072-1-git-send-email-pbonzini@redhat.com> <20131031142119.GS4651@redhat.com> <527268E4.2070505@redhat.com> <20131031143405.GT4651@redhat.com>
-In-Reply-To: <20131031143405.GT4651@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755150Ab3JaOvm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 10:51:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43488 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755096Ab3JaOvk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 10:51:40 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: lwn@lwn.net
+Subject: Re: [3.5.y.z extended stable] Linux 3.5.7.25
+Date: Thu, 31 Oct 2013 14:51:36 +0000
+Message-Id: <1383231096-11941-2-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1383231096-11941-1-git-send-email-luis.henriques@canonical.com>
+References: <1383231096-11941-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 31/10/2013 15:34, Gleb Natapov ha scritto:
-> I haven't checked AMD doc, but if it is documented that lahf/sahf #UDs at 64
-> bit we should emulate it correctly.
-
-It says "The LAHF instruction can only be executed in 64-bit mode if
-supported by the processor implementation. Check the status of ECX bit 0
-returned by CPUID function 8000_0001h to verify that the processor
-supports LAHF in 64-bit mode".  Same as Intel---in fact 80000001h is an
-"AMD leaf" so to speak.
-
-I found "AMD introduced support for the instructions with their Athlon
-64, Opteron and Turion 64 revision D processors in March 2005 and Intel
-introduced support for the instructions with the Pentium 4 G1 stepping
-in December 2005".  I think we can for all practical purposes ignore the
-lahf_lm CPUID flag.
-
-> Who knows what code depends on it.
-> Of course I pretty much doubt we will ever emulate sahf in 64 bit mode
-
-Yep.
-
-Paolo
-
+diff --git a/Makefile b/Makefile
+index f51c204..e753078 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 3
+ PATCHLEVEL = 5
+ SUBLEVEL = 7
+-EXTRAVERSION = .24
++EXTRAVERSION = .25
+ NAME = Saber-toothed Squirrel
+ 
+ # *DOCUMENTATION*
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 2675e5a..2c78739 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -957,19 +957,9 @@ grow_dev_page(struct block_device *bdev, sector_t block,
+ 	struct buffer_head *bh;
+ 	sector_t end_block;
+ 	int ret = 0;		/* Will call free_more_memory() */
+-	gfp_t gfp_mask;
+ 
+-	gfp_mask = mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS;
+-	gfp_mask |= __GFP_MOVABLE;
+-	/*
+-	 * XXX: __getblk_slow() can not really deal with failure and
+-	 * will endlessly loop on improvised global reclaim.  Prefer
+-	 * looping in the allocator rather than here, at least that
+-	 * code knows what it's doing.
+-	 */
+-	gfp_mask |= __GFP_NOFAIL;
+-
+-	page = find_or_create_page(inode->i_mapping, index, gfp_mask);
++	page = find_or_create_page(inode->i_mapping, index,
++		(mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS)|__GFP_MOVABLE);
+ 	if (!page)
+ 		return ret;
+ 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 953bf3c..226b63e 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2405,8 +2405,6 @@ done:
+ 	return 0;
+ nomem:
+ 	*ptr = NULL;
+-	if (gfp_mask & __GFP_NOFAIL)
+-		return 0;
+ 	return -ENOMEM;
+ bypass:
+ 	*ptr = root_mem_cgroup;
