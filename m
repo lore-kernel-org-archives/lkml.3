@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab3JaWOj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 18:14:39 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:49340 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753519Ab3JaWOh (ORCPT
+	id S1753102Ab3JaWZa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 18:25:30 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:56489 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761Ab3JaWZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 18:14:37 -0400
-X-Sasl-enc: iYiwCHtEFDYDPKeKokJApdmDaioIE00PLwpL3anjuCpH 1383257677
-Date: Thu, 31 Oct 2013 15:16:40 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Chris Ball <cjb@laptop.org>
-Subject: Re: linux-next: manual merge of the driver-core tree with the mmc
- tree
-Message-ID: <20131031221640.GB3595@kroah.com>
-References: <20131028222007.30619a9f7d18f5acd9b1ae60@canb.auug.org.au>
+	Thu, 31 Oct 2013 18:25:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131028222007.30619a9f7d18f5acd9b1ae60@canb.auug.org.au>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20131031095143.GA9692@gmail.com>
+References: <1381141781-10992-1-git-send-email-mgorman@suse.de>
+	<20131024122646.GB2402@suse.de>
+	<20131031095143.GA9692@gmail.com>
+Date: Thu, 31 Oct 2013 15:25:22 -0700
+X-Google-Sender-Auth: yuCHwUPy9SARZcxIS6yiOexySyc
+Message-ID: <CA+55aFyDve4RtZ6n11ghFcq1kmzs52OB+xetZjyP1q3RparUkw@mail.gmail.com>
+Subject: Re: [RFC GIT PULL] NUMA-balancing memory corruption fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Tom Weber <l_linux-kernel@mail2news.4t2.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 28, 2013 at 10:20:07PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the driver-core tree got a conflict in
-> drivers/mmc/host/mvsdio.c between commit 50596285e0be ("mmc: mvsdio:
-> Remove redundant suspend and resume callbacks") from the mmc tree and
-> commit 1867adee6ed7 ("mmc: mvsdio: fix deferred probe from __init") from
-> the driver-core tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+On Thu, Oct 31, 2013 at 2:51 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+>
+> ( If you think this is too dangerous for too little benefit then
+>   I'll drop this separate tree and will send the original commits in
+>   the merge window. )
 
-Looks good to me, thanks.
+Ugh. I hate hate hate the timing, and this is much larger and scarier
+than what I'd like at this point, but I don't see the point to
+delaying this either.
 
-greg k-h
+So I'm pulling them. And then I may end up doing an rc8 after all.
+
+                 Linus
