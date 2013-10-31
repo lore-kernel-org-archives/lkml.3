@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab3JaGrt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 02:47:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20946 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751948Ab3JaGrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 02:47:48 -0400
-Date: Thu, 31 Oct 2013 08:47:43 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-        pbonzini@redhat.com
-Subject: Re: [PATCH RFC] kvm: optimize out smp_mb using srcu_read_unlock
-Message-ID: <20131031064743.GB20205@redhat.com>
-References: <20131030190929.GA7153@redhat.com>
- <20131030201552.GP4126@linux.vnet.ibm.com>
- <20131030232605.GA28823@redhat.com>
- <20131031045629.GT4126@linux.vnet.ibm.com>
+	id S1753260Ab3JaGs1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 02:48:27 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:41532 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab3JaGsZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 02:48:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131031045629.GT4126@linux.vnet.ibm.com>
+In-Reply-To: <5270BBD5.2080403@huawei.com>
+References: <CAMxnaaUim-MCDpaTiLmBqN3wfxjn9V6XE_n4SMfuO=vqeT6rVA@mail.gmail.com>
+	<CAErSpo4KU9VAC=SnKuYH3EPz8NuozixAhUQBKv+=Y=76wywdTg@mail.gmail.com>
+	<20131015024452.GA31951@srcf.ucam.org>
+	<20131016202123.GA17866@google.com>
+	<CAMxnaaV1DhaxKo6h85Upa8sPQz2jSYSaW1OJ7+JtvR5F9sAYZw@mail.gmail.com>
+	<CAErSpo4q0rcvkHX3_L2rcJrwT-Ofu4My8JXxtxH8gyULLxTDEw@mail.gmail.com>
+	<CAE9FiQUMKSak4tWiyZ-N1_50M5ytUp-JAhb7GTG29Y1aRBPuSQ@mail.gmail.com>
+	<5270BBD5.2080403@huawei.com>
+Date: Wed, 30 Oct 2013 23:48:24 -0700
+X-Google-Sender-Auth: tKjR-KQ_m5sQrJthziKhtR4LmKg
+Message-ID: <CAE9FiQVfE1f-sN2=4cd3Dg49ar7zOb6dy-Cet=ubhY2irobbbg@mail.gmail.com>
+Subject: Re: [3.11.4] Thunderbolt/PCI unplug oops in pci_pme_list_scan
+From: Yinghai Lu <yinghai@kernel.org>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Andreas Noever <andreas.noever@gmail.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 09:56:29PM -0700, Paul E. McKenney wrote:
-> On Thu, Oct 31, 2013 at 01:26:05AM +0200, Michael S. Tsirkin wrote:
-> > > > Paul, could you review this patch please?
-> > > > Documentation/memory-barriers.txt says that unlock has a weaker
-> > > > uni-directional barrier, but in practice srcu_read_unlock calls
-> > > > smp_mb().
-> > > > 
-> > > > Is it OK to rely on this? If not, can I add
-> > > > smp_mb__after_srcu_read_unlock (making it an empty macro for now)
-> > > > so we can avoid an actual extra smp_mb()?
-> > > 
-> > > Please use smp_mb__after_srcu_read_unlock().  After all, it was not
-> > > that long ago that srcu_read_unlock() contained no memory barriers,
-> > > and perhaps some day it won't need to once again.
-> > > 
-> > > 							Thanx, Paul
-> > >
-> > 
-> > Thanks!
-> > Something like this will be enough?
-> > 
-> > diff --git a/include/linux/srcu.h b/include/linux/srcu.h
-> > index c114614..9b058ee 100644
-> > --- a/include/linux/srcu.h
-> > +++ b/include/linux/srcu.h
-> > @@ -237,4 +237,18 @@ static inline void srcu_read_unlock(struct srcu_struct *sp, int idx)
-> >  	__srcu_read_unlock(sp, idx);
-> >  }
-> > 
-> > +/**
-> > + * smp_mb__after_srcu_read_unlock - ensure full ordering after srcu_read_unlock
-> > + *
-> > + * Converts the preceding srcu_read_unlock into a two-way memory barrier.
-> > + *
-> > + * Call this after srcu_read_unlock, to guarantee that all memory operations
-> > + * that occur after smp_mb__after_srcu_read_unlock will appear to happen after
-> > + * the preceding srcu_read_unlock.
-> > + */
-> > +static inline void smp_mb__after_srcu_read_unlock(void)
-> > +{
-> > +	/* __srcu_read_unlock has smp_mb() internally so nothing to do here. */
-> > +}
-> > +
-> >  #endif
-> 
-> Yep, that should do it!
-> 
-This looks dubious to me. All other smp_mb__after_* variants are there
-because some atomic operations have different memory barrier semantics on
-different arches, but srcu_read_unlock() have the same semantics on all
-arches, so smp_mb__after_srcu_read_unlock() becomes
-smp_mb__after_a_function_that_happens_to_have_mb_now_but_may_not_have_in_the_feature().
-How likely it is that smp_mb() will disappear from srcu_read_unlock()
-(if was added for a reason I guess)?  May be we should change documentation
-to say that srcu_read_unlock() is a memory barrier which will reflect
-the reality.
+On Wed, Oct 30, 2013 at 12:57 AM, Yijing Wang <wangyijing@huawei.com> wrote:
+>>>> Bisection points to 928bea964827d7824b548c1f8e06eccbbc4d0d7d .
+>>>
+>>> This is "PCI: Delay enabling bridges until they're needed" by Yinghai.
+>>
+>> that double disabling should be addressed by:
+>>
+>> https://lkml.org/lkml/2013/4/25/608
+>>
+>> [PATCH] PCI: Remove duplicate pci_disable_device for pcie port
+>
+> Hi Yinghai and Bjorn,
+>    I found a related issue in the latest Bjorn/pci-next branch.
+>
+> Now if we remove the pcie port device in the system, there is a warning occured.
+> It seems introduced after commit 928bea9 "PCI: Delay enabling bridges until they're needed".
+>
+> [ 2124.129478] ------------[ cut here ]------------
+> [ 2124.129490] WARNING: CPU: 3 PID: 7 at drivers/pci/pci.c:1424 pci_disable_device+0x90/0xa0()
+> [ 2124.129492] Device pcieport
+> [ 2124.129492] disabling already-disabled device
 
---
-			Gleb.
+yes. that is pcie port driver problem.
+
+| 928bea delay bridge enabling, and it's pci_is_enabled checking will prevent
+| pci bridge get enabled second time, so enable_cnt will be only 1. instead of
+| 2. if we enable bridge at first and then pcie port driver.
