@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab3JaG42 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 02:56:28 -0400
+	id S1753422Ab3JaG41 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 02:56:27 -0400
 Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42171 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753333Ab3JaG40 (ORCPT
+	with ESMTP id S1753211Ab3JaG4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 02:56:26 -0400
-X-AuditID: 9c930197-b7b3eae00000122e-f2-5271ff1788af
+	Thu, 31 Oct 2013 02:56:24 -0400
+X-AuditID: 9c930197-b7b3eae00000122e-db-5271ff154147
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
-Subject: [PATCH 14/14] perf report: Add -g cumulative option
-Date: Thu, 31 Oct 2013 15:56:16 +0900
-Message-Id: <1383202576-28141-15-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 08/14] perf report: Cache cumulative callchains
+Date: Thu, 31 Oct 2013 15:56:10 +0900
+Message-Id: <1383202576-28141-9-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
 References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
@@ -29,76 +29,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-The -g cumulative option is for showing accumulated overhead (period)
-value as well as self overhead.
+It is possble that a callchain has cycles or recursive calls.  In that
+case it'll end up having entries more than 100% overhead in the
+output.  In order to prevent such entries, cache each callchain node
+and skip if same entry already cumulated.
 
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Documentation/perf-report.txt |  2 ++
- tools/perf/builtin-report.c              |  3 +++
- tools/perf/util/callchain.c              | 12 +++++++++++-
- 3 files changed, 16 insertions(+), 1 deletion(-)
+ tools/perf/builtin-report.c | 49 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 49 insertions(+)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 10a279871251..b150bfb734f4 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -130,6 +130,8 @@ OPTIONS
- 	- graph: use a graph tree, displaying absolute overhead rates.
- 	- fractal: like graph, but displays relative rates. Each branch of
- 		 the tree is considered as a new profiled object. +
-+        - cumulative: accumulate callchain to parent entry so that they can
-+		    show up in the output.
- 
- 	order can be either:
- 	- callee: callee based call graph.
 diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 3b626127c8d6..281053b28898 100644
+index 1b152a8b7f51..1a0de9a4a568 100644
 --- a/tools/perf/builtin-report.c
 +++ b/tools/perf/builtin-report.c
-@@ -1030,6 +1030,9 @@ parse_callchain_opt(const struct option *opt, const char *arg, int unset)
- 	else if (!strncmp(tok, "fractal", strlen(arg)))
- 		callchain_param.mode = CHAIN_GRAPH_REL;
- 
-+	else if (!strncmp(tok, "cumulative", strlen(arg)))
-+		callchain_param.mode = CHAIN_CUMULATIVE;
-+
- 	else if (!strncmp(tok, "none", strlen(arg))) {
- 		callchain_param.mode = CHAIN_NONE;
- 		symbol_conf.use_callchain = false;
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index c10052c6e73c..c3c73eb839df 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -150,6 +150,14 @@ sort_chain_graph_rel(struct rb_root *rb_root, struct callchain_root *chain_root,
- 	rb_root->rb_node = chain_root->node.rb_root.rb_node;
+@@ -387,6 +387,11 @@ iter_finish_normal_entry(struct add_entry_iter *iter, struct addr_location *al)
+ 	return err;
  }
  
-+static void
-+sort_chain_cumulative(struct rb_root *rb_root __maybe_unused,
-+		      struct callchain_root *chain_root __maybe_unused,
-+		      u64 min_hit __maybe_unused,
-+		      struct callchain_param *param __maybe_unused)
-+{
-+}
++struct cumulative_cache {
++	struct dso *dso;
++	struct symbol *sym;
++};
 +
- int callchain_register_param(struct callchain_param *param)
+ static int
+ iter_prepare_cumulative_entry(struct add_entry_iter *iter,
+ 			      struct machine *machine,
+@@ -394,9 +399,31 @@ iter_prepare_cumulative_entry(struct add_entry_iter *iter,
+ 			      struct addr_location *al __maybe_unused,
+ 			      struct perf_sample *sample)
  {
- 	switch (param->mode) {
-@@ -162,8 +170,10 @@ int callchain_register_param(struct callchain_param *param)
- 	case CHAIN_FLAT:
- 		param->sort = sort_chain_flat;
- 		break;
--	case CHAIN_NONE:
- 	case CHAIN_CUMULATIVE:
-+		param->sort = sort_chain_cumulative;
-+		break;
-+	case CHAIN_NONE:
- 	default:
- 		return -1;
- 	}
++	struct callchain_cursor_node *node;
++	struct cumulative_cache *ccache;
++
+ 	callchain_cursor_commit(&callchain_cursor);
+ 
+ 	/*
++	 * This is for detecting cycles or recursions so that they're
++	 * cumulated only one time to prevent entries more than 100%
++	 * overhead.
++	 */
++	ccache = malloc(sizeof(*ccache) * PERF_MAX_STACK_DEPTH);
++	if (ccache == NULL)
++		return -ENOMEM;
++
++	node = callchain_cursor_current(&callchain_cursor);
++	if (node == NULL)
++		return 0;
++
++	ccache[0].dso = node->map->dso;
++	ccache[0].sym = node->sym;
++
++	iter->priv = ccache;
++	iter->curr = 1;
++
++	/*
+ 	 * The first callchain node always contains same information
+ 	 * as a hist entry itself.  So skip it in order to prevent
+ 	 * double accounting.
+@@ -501,8 +528,29 @@ iter_add_next_cumulative_entry(struct add_entry_iter *iter,
+ {
+ 	struct perf_evsel *evsel = iter->evsel;
+ 	struct perf_sample *sample = iter->sample;
++	struct cumulative_cache *ccache = iter->priv;
+ 	struct hist_entry *he;
+ 	int err = 0;
++	int i;
++
++	/*
++	 * Check if there's duplicate entries in the callchain.
++	 * It's possible that it has cycles or recursive calls.
++	 */
++	for (i = 0; i < iter->curr; i++) {
++		if (sort__has_sym) {
++			if (ccache[i].sym == al->sym)
++				return 0;
++		} else {
++			/* Not much we can do - just compare the dso. */
++			if (ccache[i].dso == al->map->dso)
++				return 0;
++		}
++	}
++
++	ccache[i].dso = al->map->dso;
++	ccache[i].sym = al->sym;
++	iter->curr++;
+ 
+ 	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
+ 				sample->period, sample->weight,
+@@ -538,6 +586,7 @@ iter_finish_cumulative_entry(struct add_entry_iter *iter,
+ 	evsel->hists.stats.total_period += sample->period;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+ 
++	free(iter->priv);
+ 	return 0;
+ }
+ 
 -- 
 1.7.11.7
 
