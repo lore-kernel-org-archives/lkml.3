@@ -1,38 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282Ab3JaQAR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 12:00:17 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33736 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752590Ab3JaQAN (ORCPT
+	id S1755302Ab3JaQAt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 12:00:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57719 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755020Ab3JaQAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 12:00:13 -0400
-Date: Thu, 31 Oct 2013 15:59:34 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: Re: [PATCH 3/5] iommu/arm-smmu: Use devm_ioremap_resource
-Message-ID: <20131031155933.GA30623@mudshark.cambridge.arm.com>
-References: <1383217687-12037-1-git-send-email-tushar.behera@linaro.org>
- <1383217687-12037-4-git-send-email-tushar.behera@linaro.org>
+	Thu, 31 Oct 2013 12:00:47 -0400
+Date: Thu, 31 Oct 2013 09:02:50 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Philippe Proulx <philippe.proulx@savoirfairelinux.com>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Jiri Slaby <jslaby@suse.cz>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@savoirfairelinux.com
+Subject: Re: [PATCH] serial: omap: fix missing comma
+Message-ID: <20131031160250.GA17258@kroah.com>
+References: <fa11da334af37a035497c235fa9f5f5cfe11adec.1383226313.git.philippe.proulx@savoirfairelinux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383217687-12037-4-git-send-email-tushar.behera@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <fa11da334af37a035497c235fa9f5f5cfe11adec.1383226313.git.philippe.proulx@savoirfairelinux.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 11:08:05AM +0000, Tushar Behera wrote:
-> While at it, propagate the error code.
+On Thu, Oct 31, 2013 at 09:39:58AM -0400, Philippe Proulx wrote:
+> Signed-off-by: Philippe Proulx <philippe.proulx@savoirfairelinux.com>
+> ---
+>  drivers/tty/serial/omap-serial.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks, but I already have an equivalent patch queued which Joerg is going
-to pull real soon now (right, Joerg? :p).
+Please always credit who told you about the problem with a Reported-by:
+tag...
 
-Will
