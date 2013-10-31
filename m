@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab3JaM2l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 08:28:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57688 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751817Ab3JaM2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 08:28:40 -0400
-Date: Thu, 31 Oct 2013 14:28:36 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
-Subject: Re: [PATCH RFC] kvm: optimize out smp_mb using srcu_read_unlock
-Message-ID: <20131031122836.GQ4651@redhat.com>
-References: <20131030190929.GA7153@redhat.com>
- <20131030201552.GP4126@linux.vnet.ibm.com>
- <20131030232605.GA28823@redhat.com>
- <20131031045629.GT4126@linux.vnet.ibm.com>
- <20131031064743.GB20205@redhat.com>
- <52723AD9.4040902@redhat.com>
+	id S1753599Ab3JaM3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 08:29:00 -0400
+Received: from mail-db8lp0186.outbound.messaging.microsoft.com ([213.199.154.186]:25181
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752527Ab3JaM25 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 08:28:57 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zz98dIzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh2a8h839h8e2h8e3h947hd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18deh18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216hbe9i1155h)
+From: Chen Guangyu-B42378 <B42378@freescale.com>
+To: Timur Tabi <timur@tabi.org>
+CC: "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "philippe.retornaz@gmail.com" <philippe.retornaz@gmail.com>
+Subject: Re: [PATCH v3 3/4] ASoC: fsl_ssi: Add dual fifo mode support
+Thread-Topic: [PATCH v3 3/4] ASoC: fsl_ssi: Add dual fifo mode support
+Thread-Index: AQHO1hLCD5WkQaYbh0645wKm66q9o5oOto6AgAAGzOI=
+Date: Thu, 31 Oct 2013 12:28:49 +0000
+Message-ID: <oxq6yw1a1g6ccnd85o4ral9y.1383222536476@email.android.com>
+References: <cover.1383207153.git.b42378@freescale.com>
+ <da997ce67d9817364248ca1eba716bb6c7814a24.1383207153.git.b42378@freescale.com>,<5272474D.5000207@tabi.org>
+In-Reply-To: <5272474D.5000207@tabi.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52723AD9.4040902@redhat.com>
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 12:11:21PM +0100, Paolo Bonzini wrote:
-> Il 31/10/2013 07:47, Gleb Natapov ha scritto:
-> > This looks dubious to me. All other smp_mb__after_* variants are there
-> > because some atomic operations have different memory barrier semantics on
-> > different arches,
-> 
-> It doesn't have to be arches; 
-Of course it doesn't, but it is now :)
+Thank you for the comments.
+I'll refine this part.
 
->                               unlock APIs typically have release
-> semantics only, but SRCU is stronger.
-> 
-Yes the question is if it is by design or implementation detail we should
-not rely on.
+Sent by Android device.
 
-> > but srcu_read_unlock() have the same semantics on all
-> > arches, so smp_mb__after_srcu_read_unlock() becomes
-> > smp_mb__after_a_function_that_happens_to_have_mb_now_but_may_not_have_in_the_feature().
-> > How likely it is that smp_mb() will disappear from srcu_read_unlock()
-> > (if was added for a reason I guess)?  May be we should change documentation
-> > to say that srcu_read_unlock() is a memory barrier which will reflect
-> > the reality.
-> 
-> That would be different from all other unlock APIs.
-> 
-As long as it is documented... smp_mb__after_srcu_read_unlock() is just
-a form of documentation anyway right now. I do not have strong objection
-to smp_mb__after_srcu_read_unlock() though, the improvement is impressive
-for such a small change.
+Timur Tabi <timur@tabi.org> wrote:
 
---
-			Gleb.
+
+Nicolin Chen wrote:
+> +     if (ssi_private->use_dual_fifo) {
+> +             write_ssi_mask(&ssi->srcr, 0, CCSR_SSI_SRCR_RFEN1);
+> +             write_ssi_mask(&ssi->stcr, 0, CCSR_SSI_STCR_TFEN1);
+> +             write_ssi_mask(&ssi->scr, 0, CCSR_SSI_SCR_TCH_EN);
+> +     } else {
+> +             write_ssi_mask(&ssi->srcr, CCSR_SSI_SRCR_RFEN1, 0);
+> +             write_ssi_mask(&ssi->stcr, CCSR_SSI_STCR_TFEN1, 0);
+> +             write_ssi_mask(&ssi->scr, CCSR_SSI_SCR_TCH_EN, 0);
+> +     }
+
+Why do you need the "else" part?  Why can't you just do this:
+
+if (ssi_private->use_dual_fifo) {
+        write_ssi_mask(&ssi->srcr, 0, CCSR_SSI_SRCR_RFEN1);
+        write_ssi_mask(&ssi->stcr, 0, CCSR_SSI_STCR_TFEN1);
+        write_ssi_mask(&ssi->scr, 0, CCSR_SSI_SCR_TCH_EN);
+}
+
+
