@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab3JaTWc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 15:22:32 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:13805 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab3JaTWb (ORCPT
+	id S1755413Ab3JaTX5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 15:23:57 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42207 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753423Ab3JaTXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 15:22:31 -0400
-X-IronPort-AV: E=Sophos;i="4.93,611,1378857600"; 
-   d="scan'208";a="66876217"
-Message-ID: <5272ADF3.2000301@citrix.com>
-Date: Thu, 31 Oct 2013 19:22:27 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 31 Oct 2013 15:23:55 -0400
+Date: Thu, 31 Oct 2013 19:23:30 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/4] ARM: msm: Remove 7x00 support
+Message-ID: <20131031192330.GG16735@n2100.arm.linux.org.uk>
+References: <1382993006-27359-1-git-send-email-davidb@codeaurora.org> <1382993006-27359-3-git-send-email-davidb@codeaurora.org> <20131029132043.GA28165@fifo99.com> <CAOesGMhg8HN4Su9FXSeoAgmH6NVKXW+wmnreUvWH+1G6GWkkaA@mail.gmail.com> <87ob66nyqc.fsf@linaro.org> <20131030232412.GA10229@fifo99.com> <8738nhnz4s.fsf@linaro.org> <20131031173506.GA31722@fifo99.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: <ian.campbell@citrix.com>, <jonathan.davies@citrix.com>,
-        <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH net-next RFC 1/5] xen-netback: Introduce TX
- grant map definitions
-References: <1383094220-14775-1-git-send-email-zoltan.kiss@citrix.com> <1383094220-14775-2-git-send-email-zoltan.kiss@citrix.com> <5270DF3602000078000FDFBE@nat28.tlf.novell.com>
-In-Reply-To: <5270DF3602000078000FDFBE@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131031173506.GA31722@fifo99.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/10/13 09:28, Jan Beulich wrote:
->>>> On 30.10.13 at 01:50, Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
->> @@ -119,13 +126,22 @@ struct xenvif {
->>   	pending_ring_idx_t pending_cons;
->>   	u16 pending_ring[MAX_PENDING_REQS];
->>   	struct pending_tx_info pending_tx_info[MAX_PENDING_REQS];
->> +	grant_handle_t grant_tx_handle[MAX_PENDING_REQS];
->>
->>   	/* Coalescing tx requests before copying makes number of grant
->>   	 * copy ops greater or equal to number of slots required. In
->>   	 * worst case a tx request consumes 2 gnttab_copy.
->>   	 */
->>   	struct gnttab_copy tx_copy_ops[2*MAX_PENDING_REQS];
->> +	struct gnttab_unmap_grant_ref tx_unmap_ops[MAX_PENDING_REQS];
->> +	struct gnttab_map_grant_ref tx_map_ops[MAX_PENDING_REQS];
->> +	/* passed to gnttab_[un]map_refs with pages under (un)mapping */
->> +	struct page *pages_to_gnt[MAX_PENDING_REQS];
->
-> I think you will want to try to limit the structure size here by putting
-> things into unions that can't be used at the same time: Without
-> having looked at the later patches yet, it seems quite unlikely that
-> map and unmap can be used simultaneously. And the total of copy
-> and map can't also be used at the same time, as for each pending
-> request you would use either up to two copy slots or a single map
-> slot. I didn't look for further opportunities of sharing space.
+On Thu, Oct 31, 2013 at 10:35:06AM -0700, Daniel Walker wrote:
+> ARM and the sub-architectures is already confusing I don't think we need
+> to start compounding the problem by allowing random whatever-you-want
+> sub-directories from every sub-architecture.
 
-Indeed, map and unmap can't be done at the same time, so it's safe to 
-put them into union. But I'm afraid grant_tx_handle and pages_to_gnt 
-can't share space with other members.
-tx_copy_ops is a different topic, let's discuss that in it's own thread ...
+Confusing?
 
-Thanks,
+I'm not sure about that.  It's actually really simple from my perspective:
 
-Zoli
+arch/arm - the ARM 32-bit architecture
 
+arch/arm/mach-* - support for a single SoC or a group of similar SoCs
+
+arch/arm/plat-* - common support for a set of dissimilar SoCs which want
+	to share code between themselves
+
+How is that confusing?
