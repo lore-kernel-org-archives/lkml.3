@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419Ab3JaSjV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 14:39:21 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:63791 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728Ab3JaSjT (ORCPT
+	id S1755369Ab3JaSlJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 14:41:09 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51179 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750754Ab3JaSlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 14:39:19 -0400
+	Thu, 31 Oct 2013 14:41:07 -0400
+Date: Thu, 31 Oct 2013 17:39:46 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Will Deacon <Will.Deacon@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 1/7] arm64: introduce basic aarch64 instruction
+ decoding helpers
+Message-ID: <20131031173946.GL26009@arm.com>
+References: <1382109602-27432-1-git-send-email-liuj97@gmail.com>
+ <1382109602-27432-2-git-send-email-liuj97@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <5272A118.1090908@semaphore.gr>
-References: <5272A118.1090908@semaphore.gr>
-Date: Fri, 1 Nov 2013 00:09:16 +0530
-Message-ID: <CAKohponQ+oRYpdYrpKV3=GMh6ACQr+E+WygLHk0mdC+ivjeP_Q@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: ondemand: Remove redundant return statement
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Henrik Nilsson <Karl.Henrik.Nilsson@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382109602-27432-2-git-send-email-liuj97@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 October 2013 23:57, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> After commit dfa5bb622555d9da0df21b50f46ebdeef390041b
-> "cpufreq: ondemand: Change the calculation of target frequency",
-> this return statement is no longer needed.
->
-> Reported-by: Henrik Nilsson <Karl.Henrik.Nilsson@gmail.com>
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> ---
->  drivers/cpufreq/cpufreq_ondemand.c | 1 -
->  1 file changed, 1 deletion(-)
->
-> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-> index 32f26f6..18d4091 100644
-> --- a/drivers/cpufreq/cpufreq_ondemand.c
-> +++ b/drivers/cpufreq/cpufreq_ondemand.c
-> @@ -168,7 +168,6 @@ static void od_check_cpu(int cpu, unsigned int load)
->                         dbs_info->rate_mult =
->                                 od_tuners->sampling_down_factor;
->                 dbs_freq_increase(policy, policy->max);
-> -               return;
->         } else {
->                 /* Calculate the next frequency proportional to load */
->                 unsigned int freq_next;
+On Fri, Oct 18, 2013 at 04:19:55PM +0100, Jiang Liu wrote:
+> +/*
+> + * ARMv8-A Section B2.6.5:
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Minor comment - please specify the document revision and the title of
+the section as they keep changing in subsequent ARMv8 ARM updates and
+this comment would no longer match.
+
+-- 
+Catalin
