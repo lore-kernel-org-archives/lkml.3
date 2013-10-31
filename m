@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258Ab3JaNMr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 09:12:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42252 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753508Ab3JaNMq (ORCPT
+	id S1754330Ab3JaNR2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 09:17:28 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:57716 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754144Ab3JaNR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 09:12:46 -0400
-Date: Thu, 31 Oct 2013 14:12:28 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Mark Wielaard <mjw@redhat.com>, Pekka Enberg <penberg@iki.fi>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, hegdevasant@linux.vnet.ibm.com,
-        Ingo Molnar <mingo@redhat.com>, anton@redhat.com,
-        systemtap@sourceware.org, Namhyung Kim <namhyung@kernel.org>,
-        aravinda@linux.vnet.ibm.com, dsahern@gmail.com,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
-Message-ID: <20131031131228.GV19466@laptop.lan>
-References: <20131023044511.1886.82571.stgit@hemant-fedora>
- <20131023050502.1886.15779.stgit@hemant-fedora>
- <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com>
- <y0mbo2cs2oa.fsf@fche.csb>
- <5270D9F7.3090105@hitachi.com>
- <5270F2DE.6040505@iki.fi>
- <1383216886.6521.5910.camel@bordewijk.wildebeest.org>
- <20131031105759.GB12066@gmail.com>
+	Thu, 31 Oct 2013 09:17:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131031105759.GB12066@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <8761sexu2l.fsf@xmission.com>
+References: <8761sexu2l.fsf@xmission.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 31 Oct 2013 07:17:04 -0600
+Message-ID: <CAErSpo7BH3k7nmECwRzgRFzhQLyiGhSkxbpwW8dtn+yk7MnrXg@mail.gmail.com>
+Subject: Re: WTF: driver-core-next contains recursive directory removal!
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 11:57:59AM +0100, Ingo Molnar wrote:
-> I suppose those Java libraries ought to show up in 
-> /etc/prelink.cache though, right?
+[+cc linux-pci]
 
-I just checked, none of my systems have prelinking enabled by default;
-so its not something you can rely on.
+On Wed, Oct 30, 2013 at 4:38 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+>
+> Greg what is  going on?  I just looked and Tejuns ill-conceived recursive
+> directory deletion code has been merged into your driver-core-next tree.
+>
+> That code is semantically broken.  I reviewed it and I gave the reasons
+> why it was wrong.  You came up to me and mentioned at LPC that you
+> agreed with my reasons.  And yet I just looked in driver-core-next and
+> there the code is in all of it's broken glory.
+>
+> Please pull out that crap it has no business ever going into a stable
+> kernel.
+>
+> The short version is unless someone has drastically changed pci hotplug
+> since last time I looked the code is dramatically wrong as pci hotplug
+> removes directories in the wrong order remove the parent first.
 
-ISTR prelinking defeated ASLR and thus was very short lived.
+Can you please elaborate on exactly where PCI hotplug removes things
+in the wrong order?  We are struggling with many issues in PCI
+removal, and if you can help us fix them by pointing out an issue,
+that would be great.
+
+I did work through removal of a small tree [1], and it appeared to me
+that we removed sysfs things in bottom-up order, but maybe I missed
+something or you're talking about a different situation.
+
+Thanks,
+  Bjorn
+
+[1] http://lkml.kernel.org/r/CAErSpo6g5vR0NMs18YZBz+6RGZd0zNeDu_=1Pk4c5a+OqHfS1g@mail.gmail.com
+
+> So now we have sysfs code that is remove directories multiple times, and
+> we just finished the conversation about sysfs_assoc_lock where Tejun was
+> just explaining how multiple removal of kobjects is not safe.
+>
+> This sysfs semantic change is an unmaintainable disaster.
+>
+> Linus if you would be so kind as to not merge this disaster when the
+> merge window opens I would very much appreciate it.
+>
+> Eric
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
