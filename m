@@ -1,189 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab3JaQWu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 12:22:50 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:56398 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272Ab3JaQWs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 12:22:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <07e8973b4665cc23c3f4a77e9c7e2b7c@mail.onse.fi>
-References: <1380659456-3746-1-git-send-email-anssi.hannula@iki.fi>
-	<1380659456-3746-2-git-send-email-anssi.hannula@iki.fi>
-	<CACna6ryr37WRvKbMFmLEGt_A2zUD46rZOtJMVom+B_xK9WNLuw@mail.gmail.com>
-	<07e8973b4665cc23c3f4a77e9c7e2b7c@mail.onse.fi>
-Date: Thu, 31 Oct 2013 17:22:48 +0100
-Message-ID: <CACna6ryFtmZHAhmCPEsoxZc5h4mLuM4ajnKGsp=q0jag2f_SYw@mail.gmail.com>
-Subject: Re: [PATCH 1/4] ALSA: hda - hdmi: Add ATI/AMD multi-channel audio support
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Anssi Hannula <anssi.hannula@iki.fi>
-Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        =?UTF-8?Q?Peter_Fr=C3=BChberger?= <fritsch@xbmc.org>,
-        Olivier Langlois <olivier@trillion01.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755389Ab3JaQZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 12:25:28 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49556 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752120Ab3JaQZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 12:25:20 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: Linux EFI <linux-efi@vger.kernel.org>
+Cc: Borislav Petkov <bp@suse.de>, Dave Young <dyoung@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Vivek Goyal <vgoyal@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 ML <x86@kernel.org>
+Subject: [PATCH 02/11] x86, pageattr: Lookup address in an arbitrary PGD
+Date: Thu, 31 Oct 2013 17:25:00 +0100
+Message-Id: <1383236709-19716-3-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1383236709-19716-1-git-send-email-bp@alien8.de>
+References: <1383236709-19716-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/10/30 Anssi Hannula <anssi.hannula@iki.fi>:
-> BTW, there is a newer version (which was actually applied) of this patchset
-> in alsa-devel@, seems you were missing from CC on that one.
+From: Borislav Petkov <bp@suse.de>
 
-I didn't try that updated version yet, but I'm afraid I discovered
-some problem. I've switched from my Denon 1912 to the older Onkyo
-TX-SR605 and there is problem with multichannel playback. I've tried:
-> speaker-test -D hdmi:CARD=Generic,DEV=0 -c6 -r192000 -F S16_LE
+This is preparatory work in order to be able to map pages into a
+specified PGD and not implicitly and only into init_mm.
 
-speaker-test 1.0.25
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/mm/pageattr.c | 36 ++++++++++++++++++++++++++----------
+ 1 file changed, 26 insertions(+), 10 deletions(-)
 
-Playback device is hdmi:CARD=Generic,DEV=0
-Stream parameters are 192000Hz, S16_LE, 6 channels
-Using 16 octaves of pink noise
-Rate set to 192000Hz (requested 192000Hz)
-Buffer size range from 64 to 87360
-Period size range from 32 to 43680
-Using max buffer size 87360
-Periods = 4
-was set period_size = 17472
-was set buffer_size = 87360
-0 - Front Left
-4 - Center
-1 - Front Right
-3 - Rear Right
-2 - Rear Left
-5 - LFE
-Time per period = 17.027360
-
-But I can hear sound for rear right and rear left only :(
-
-Is there anything more I can provide to help resolve this? Do you have
-any idea how we can resolve this?
-
-zajec@linux-samsung700g7a:/proc/asound/card1> cat eld#0.0
-monitor_present         1
-eld_valid               1
-monitor_name
-connection_type         HDMI
-eld_version             [0x2] CEA-861D or below
-edid_version            [0x0] no CEA EDID Timing Extension block present
-manufacture_id          0x0
-product_id              0x0
-port_id                 0x0
-support_hdcp            0
-support_ai              0
-audio_sync_delay        0
-speakers                [0x4f] FL/FR LFE FC RL/RR RLC/RRC
-sad_count               6
-sad0_coding_type        [0x1] LPCM
-sad0_channels           2
-sad0_rates              [0x1ee0] 32000 44100 48000 88200 96000 176400 192000
-sad0_bits               [0xe0000] 16 20 24
-sad1_coding_type        [0x2] AC-3
-sad1_channels           8
-sad1_rates              [0xe0] 32000 44100 48000
-sad1_max_bitrate        640000
-sad2_coding_type        [0x7] DTS
-sad2_channels           8
-sad2_rates              [0xc0] 44100 48000
-sad2_max_bitrate        1536000
-sad3_coding_type        [0xa] E-AC-3/DD+ (Dolby Digital Plus)
-sad3_channels           8
-sad3_rates              [0xc0] 44100 48000
-sad4_coding_type        [0xb] DTS-HD
-sad4_channels           8
-sad4_rates              [0x1ec0] 44100 48000 88200 96000 176400 192000
-sad5_coding_type        [0xc] MLP (Dolby TrueHD)
-sad5_channels           8
-sad5_rates              [0x6c0] 44100 48000 88200 96000
-zajec@linux-samsung700g7a:/proc/asound/card1> ls
-codec#0  eld#0.0  id  pcm3p
-zajec@linux-samsung700g7a:/proc/asound/card1> cat codec#0
-Codec: ATI R6xx HDMI
-Address: 0
-AFG Function Id: 0x1 (unsol 0)
-Vendor Id: 0x1002aa01
-Subsystem Id: 0x00aa0100
-Revision Id: 0x100200
-No Modem Function Group found
-Default PCM:
-    rates [0x70]: 32000 44100 48000
-    bits [0x2]: 16
-    formats [0x1]: PCM
-Default Amp-In caps: N/A
-Default Amp-Out caps: N/A
-State of AFG node 0x01:
-  Power states:  D0 D3
-  Power: setting=D0, actual=D0
-GPIO: io=0, o=0, i=0, unsolicited=0, wake=0
-Node 0x02 [Audio Output] wcaps 0x201: Stereo Digital
-  Converter: stream=0, channel=0
-  Digital: Enabled GenLevel
-  Digital category: 0x2
-  IEC Coding Type: 0x0
-Node 0x03 [Pin Complex] wcaps 0x400381: Stereo Digital
-  Control: name="HDMI/DP,pcm=3 Jack", index=0, device=0
-  Control: name="IEC958 Playback Con Mask", index=0, device=0
-  Control: name="IEC958 Playback Pro Mask", index=0, device=0
-  Control: name="IEC958 Playback Default", index=0, device=0
-  Control: name="IEC958 Playback Switch", index=0, device=0
-  Control: name="ELD", index=0, device=3
-  Pincap 0x00000094: OUT Detect HDMI
-  Pin Default 0x18560010: [Jack] Digital Out at Int HDMI
-    Conn = Digital, Color = Unknown
-    DefAssociation = 0x1, Sequence = 0x0
-  Pin-ctls: 0x40: OUT
-  Unsolicited: tag=01, enabled=1
-  Connection: 1
-     0x02
-zajec@linux-samsung700g7a:/proc/asound/card1> cat eld#0.0
-monitor_present         1
-eld_valid               1
-monitor_name
-connection_type         HDMI
-eld_version             [0x2] CEA-861D or below
-edid_version            [0x0] no CEA EDID Timing Extension block present
-manufacture_id          0x0
-product_id              0x0
-port_id                 0x0
-support_hdcp            0
-support_ai              0
-audio_sync_delay        0
-speakers                [0x4f] FL/FR LFE FC RL/RR RLC/RRC
-sad_count               6
-sad0_coding_type        [0x1] LPCM
-sad0_channels           2
-sad0_rates              [0x1ee0] 32000 44100 48000 88200 96000 176400 192000
-sad0_bits               [0xe0000] 16 20 24
-sad1_coding_type        [0x2] AC-3
-sad1_channels           8
-sad1_rates              [0xe0] 32000 44100 48000
-sad1_max_bitrate        640000
-sad2_coding_type        [0x7] DTS
-sad2_channels           8
-sad2_rates              [0xc0] 44100 48000
-sad2_max_bitrate        1536000
-sad3_coding_type        [0xa] E-AC-3/DD+ (Dolby Digital Plus)
-sad3_channels           8
-sad3_rates              [0xc0] 44100 48000
-sad4_coding_type        [0xb] DTS-HD
-sad4_channels           8
-sad4_rates              [0x1ec0] 44100 48000 88200 96000 176400 192000
-sad5_coding_type        [0xc] MLP (Dolby TrueHD)
-sad5_channels           8
-sad5_rates              [0x6c0] 44100 48000 88200 96000
-
-
->> Now the main question... do you have any experience on using DTS-HD MA
->> (or TrueHD) with mplayer? :|
->
->
-> Nope (well, any that I still remember). Support is there, though, so I guess
-> it should work.
-
-After some testing I found out that xbmc works very nice :)
-
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index bb32480c2d71..c53de62a1170 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -30,6 +30,7 @@
+  */
+ struct cpa_data {
+ 	unsigned long	*vaddr;
++	pgd_t		*pgd;
+ 	pgprot_t	mask_set;
+ 	pgprot_t	mask_clr;
+ 	int		numpages;
+@@ -322,17 +323,9 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ 	return prot;
+ }
+ 
+-/*
+- * Lookup the page table entry for a virtual address. Return a pointer
+- * to the entry and the level of the mapping.
+- *
+- * Note: We return pud and pmd either when the entry is marked large
+- * or when the present bit is not set. Otherwise we would return a
+- * pointer to a nonexisting mapping.
+- */
+-pte_t *lookup_address(unsigned long address, unsigned int *level)
++static pte_t *__lookup_address_in_pgd(pgd_t *pgd, unsigned long address,
++				      unsigned int *level)
+ {
+-	pgd_t *pgd = pgd_offset_k(address);
+ 	pud_t *pud;
+ 	pmd_t *pmd;
+ 
+@@ -361,8 +354,31 @@ pte_t *lookup_address(unsigned long address, unsigned int *level)
+ 
+ 	return pte_offset_kernel(pmd, address);
+ }
++
++/*
++ * Lookup the page table entry for a virtual address. Return a pointer
++ * to the entry and the level of the mapping.
++ *
++ * Note: We return pud and pmd either when the entry is marked large
++ * or when the present bit is not set. Otherwise we would return a
++ * pointer to a nonexisting mapping.
++ */
++pte_t *lookup_address(unsigned long address, unsigned int *level)
++{
++        return __lookup_address_in_pgd(pgd_offset_k(address), address, level);
++}
+ EXPORT_SYMBOL_GPL(lookup_address);
+ 
++static pte_t *_lookup_address_cpa(struct cpa_data *cpa, unsigned long address,
++				  unsigned int *level)
++{
++        if (cpa->pgd)
++		return __lookup_address_in_pgd(cpa->pgd + pgd_index(address),
++					       address, level);
++
++        return lookup_address(address, level);
++}
++
+ /*
+  * This is necessary because __pa() does not work on some
+  * kinds of memory, like vmalloc() or the alloc_remap()
 -- 
-Rafał
+1.8.4
+
