@@ -1,73 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab3JaOZv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 10:25:51 -0400
-Received: from exprod5og118.obsmtp.com ([64.18.0.160]:58538 "EHLO
-	exprod5og118.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754961Ab3JaOZt (ORCPT
+	id S1755031Ab3JaO0J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 10:26:09 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57756 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754953Ab3JaO0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 10:25:49 -0400
-Date: Thu, 31 Oct 2013 15:26:12 +0100
-From: Karl Kiniger <karl.kiniger@med.ge.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Artem S. Tashkinov" <t.artem@lycos.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
-Message-ID: <20131031142612.GA28003@kipc2.localdomain>
-References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
- <CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
- <1814253454.3449.1382689853825.JavaMail.mail@webmail07>
- <CA+55aFxhJUrqdvw1To=9KLdxhYAOVwZLLeJT5yMRY5BT1weuHA@mail.gmail.com>
- <20131025091555.GA30895@kipc2.localdomain>
- <20131029203050.GE9568@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131029203050.GE9568@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-GEHealthcare-MailScanner: Found to be clean
-X-GEHealthcare-MailScanner-From: karl.kiniger@med.ge.com
+	Thu, 31 Oct 2013 10:26:05 -0400
+Message-ID: <1383229563.4857.71.camel@edumazet-glaptop.roam.corp.google.com>
+Subject: Re: [PATCH net-next V2 1/2] net: introduce skb_coalesce_rx_frag()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, edumazet@google.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
+        mwdalton@google.com, virtualization@lists.linux-foundation.org,
+        kmindg@gmail.com
+Date: Thu, 31 Oct 2013 07:26:03 -0700
+In-Reply-To: <1383220027-12278-1-git-send-email-jasowang@redhat.com>
+References: <1383220027-12278-1-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 131029, Jan Kara wrote:
-> On Fri 25-10-13 11:15:55, Karl Kiniger wrote:
-> > On Fri 131025, Linus Torvalds wrote:
-.... 
-> > Is it currently possible to somehow set above values per block device?
->   Yes, to some extent. You can set /sys/block/<device>/bdi/max_ratio to
-> the maximum proportion the device's dirty data can take from the total
-> amount. The caveat currently is that this setting only takes effect after
-> we have more than (dirty_background_ratio + dirty_ratio)/2 dirty data in
-> total because that is an amount of dirty data when we start to throttle
-> processes. So if the device you'd like to limit is the only one which is
-> currently written to, the limiting doesn't have a big effect.
+On Thu, 2013-10-31 at 19:47 +0800, Jason Wang wrote:
+> Sometimes we need to coalesce the rx frags to avoid frag list. One example is
+> virtio-net driver which tries to use small frags for both MTU sized packet and
+> GSO packet. So this patch introduce skb_coalesce_rx_frag() to do this.
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: Michael Dalton <mwdalton@google.com>
+> Cc: Eric Dumazet <edumazet@google.com>
+> Acked-by: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+> Changes from V1:
+> - remove the useless off parameter.
+> ---
+>  include/linux/skbuff.h |  3 +++
+>  net/core/skbuff.c      | 13 +++++++++++++
+>  2 files changed, 16 insertions(+)
+> 
+> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+> index 2c15497..fffaeaf 100644
+> --- a/include/linux/skbuff.h
+> +++ b/include/linux/skbuff.h
+> @@ -1372,6 +1372,9 @@ static inline void skb_fill_page_desc(struct sk_buff *skb, int i,
+>  void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page, int off,
+>  		     int size, unsigned int truesize);
+>  
+> +void skb_coalesce_rx_frag(struct sk_buff *skb, int i, int size,
+> +			  unsigned int truesize);
+> +
+>  #define SKB_PAGE_ASSERT(skb) 	BUG_ON(skb_shinfo(skb)->nr_frags)
+>  #define SKB_FRAG_ASSERT(skb) 	BUG_ON(skb_has_frag_list(skb))
+>  #define SKB_LINEAR_ASSERT(skb)  BUG_ON(skb_is_nonlinear(skb))
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index 0ab32fa..87670e1 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -476,6 +476,19 @@ void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page, int off,
+>  }
+>  EXPORT_SYMBOL(skb_add_rx_frag);
+>  
+> +void skb_coalesce_rx_frag(struct sk_buff *skb, int i, int size,
+> +			  unsigned int truesize)
+> +{
+> +	skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
+> +
+> +	skb_frag_size_add(frag, size);
+> +	skb->len += size;
+> +	skb->data_len += size;
+> +	skb->truesize += truesize;
 
-Thanks for the info - thats was I am looking for.
 
-You are right that the limiting doesn't have a big effect right now:
+> +	skb_frag_unref(skb, i);
 
-on my  4x speed  DVD+RW on /dev/sr0, x86_64, 4GB,
-Fedora19:
+This unref is not logical, or should at least be
 
-max_ratio set to 100  - about 500MB buffered, sync time 2:10 min.
-max_ratio set to 1    - about 330MB buffered, sync time 1:23 min.
+__skb_frag_unref(frag);
 
-... way too much buffering.
+But I do think this is best done in the caller.
 
-(measured with strace -tt -ewrite dd if=/dev/zero of=bigfile bs=1M count=1000
-by looking at the timestamps).
+In virtio_net this would be a :
+
+put_page(page);
+
+In tcp stack we do almost the same, but we take the reference on the
+page if we could not coalesce with prio frag, instead of doing a get and
+put in the other case.
+
+        if (can_coalesce) {
+                skb_frag_size_add(&skb_shinfo(skb)->frags[i - 1], copy);
+        } else {
+                get_page(page);
+                skb_fill_page_desc(skb, i, page, offset, copy);
+        }
 
 
-Karl
+> +}
+> +EXPORT_SYMBOL(skb_coalesce_rx_frag);
+> +
+>  static void skb_drop_list(struct sk_buff **listp)
+>  {
+>  	kfree_skb_list(*listp);
 
-....
-								Honza
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
 
