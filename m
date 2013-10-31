@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab3JaNy0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 09:54:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53315 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753728Ab3JaNyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 09:54:25 -0400
-Date: Thu, 31 Oct 2013 15:57:14 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-        gleb@redhat.com, pbonzini@redhat.com
-Subject: Re: [PATCH RFC] kvm: optimize out smp_mb using srcu_read_unlock
-Message-ID: <20131031135714.GE8976@redhat.com>
-References: <20131030190929.GA7153@redhat.com>
- <20131030201552.GP4126@linux.vnet.ibm.com>
- <20131030232605.GA28823@redhat.com>
- <20131031045629.GT4126@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131031045629.GT4126@linux.vnet.ibm.com>
+	id S1754511Ab3JaN54 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 09:57:56 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:55324 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754323Ab3JaN5y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 09:57:54 -0400
+Message-ID: <1383227872.4857.65.camel@edumazet-glaptop.roam.corp.google.com>
+Subject: Re: [PATCH net-next V2 2/2] virtio-net: coalesce rx frags when
+ possible during rx
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, edumazet@google.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
+        mwdalton@google.com, virtualization@lists.linux-foundation.org,
+        kmindg@gmail.com
+Date: Thu, 31 Oct 2013 06:57:52 -0700
+In-Reply-To: <1383220027-12278-2-git-send-email-jasowang@redhat.com>
+References: <1383220027-12278-1-git-send-email-jasowang@redhat.com>
+	 <1383220027-12278-2-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 09:56:29PM -0700, Paul E. McKenney wrote:
-> On Thu, Oct 31, 2013 at 01:26:05AM +0200, Michael S. Tsirkin wrote:
-> > > > Paul, could you review this patch please?
-> > > > Documentation/memory-barriers.txt says that unlock has a weaker
-> > > > uni-directional barrier, but in practice srcu_read_unlock calls
-> > > > smp_mb().
-> > > > 
-> > > > Is it OK to rely on this? If not, can I add
-> > > > smp_mb__after_srcu_read_unlock (making it an empty macro for now)
-> > > > so we can avoid an actual extra smp_mb()?
-> > > 
-> > > Please use smp_mb__after_srcu_read_unlock().  After all, it was not
-> > > that long ago that srcu_read_unlock() contained no memory barriers,
-> > > and perhaps some day it won't need to once again.
-> > > 
-> > > 							Thanx, Paul
-> > >
-> > 
-> > Thanks!
-> > Something like this will be enough?
-> > 
-> > diff --git a/include/linux/srcu.h b/include/linux/srcu.h
-> > index c114614..9b058ee 100644
-> > --- a/include/linux/srcu.h
-> > +++ b/include/linux/srcu.h
-> > @@ -237,4 +237,18 @@ static inline void srcu_read_unlock(struct srcu_struct *sp, int idx)
-> >  	__srcu_read_unlock(sp, idx);
-> >  }
-> > 
-> > +/**
-> > + * smp_mb__after_srcu_read_unlock - ensure full ordering after srcu_read_unlock
-> > + *
-> > + * Converts the preceding srcu_read_unlock into a two-way memory barrier.
-> > + *
-> > + * Call this after srcu_read_unlock, to guarantee that all memory operations
-> > + * that occur after smp_mb__after_srcu_read_unlock will appear to happen after
-> > + * the preceding srcu_read_unlock.
-> > + */
-> > +static inline void smp_mb__after_srcu_read_unlock(void)
-> > +{
-> > +	/* __srcu_read_unlock has smp_mb() internally so nothing to do here. */
-> > +}
-> > +
-> >  #endif
+On Thu, 2013-10-31 at 19:47 +0800, Jason Wang wrote:
+> Commit 2613af0ed18a11d5c566a81f9a6510b73180660a (virtio_net: migrate mergeable
+> rx buffers to page frag allocators) try to increase the payload/truesize for
+> MTU-sized traffic. But this will introduce the extra overhead for GSO packets
+> received because of the frag list. This commit tries to reduce this issue by
+> coalesce the possible rx frags when possible during rx. Test result shows the
+> about 15% improvement on full size GSO packet receiving (and even better than
+> commit 2613af0ed18a11d5c566a81f9a6510b73180660a).
 > 
-> Yep, that should do it!
+> Before this commit:
+> ./netperf -H 192.168.100.4
+> MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.100.4
+> () port 0 AF_INET : demo
+> Recv   Send    Send
+> Socket Socket  Message  Elapsed
+> Size   Size    Size     Time     Throughput
+> bytes  bytes   bytes    secs.    10^6bits/sec
 > 
-> 							Thanx, Paul
+>  87380  16384  16384    10.00    20303.87
+> 
+> After this commit:
+> ./netperf -H 192.168.100.4
+> MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.100.4 () port 0 AF_INET : demo
+> Recv   Send    Send
+> Socket Socket  Message  Elapsed
+> Size   Size    Size     Time     Throughput
+> bytes  bytes   bytes    secs.    10^6bits/sec
+> 
+>  87380  16384  16384    10.00    23841.26
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: Michael Dalton <mwdalton@google.com>
+> Cc: Eric Dumazet <edumazet@google.com>
+> Acked-by: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
 
-BTW I'm wondering about the smb_mb within srcu_read_lock.
-If we kept the index in the same memory with the buffer we
-dereference, could we get rid of it and use a dependency barrier
-instead? It does appear prominently in the profiles.
-Thoughts?
+Excellent !
+
+We now have 2 or 3 frags per skb, like tcp stack manages to do on output
+path.
+
+Michael Dalton is also working on a autotuning patch, using an EWMA, so
+that the size of individual sg blocks can vary from 1500 to 4096, this
+might show even better throughput, we'll see.
+
+Acked-by: Eric Dumazet <edumazet@google.com>
 
 
--- 
-MST
+
