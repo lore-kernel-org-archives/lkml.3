@@ -1,55 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab3JaGpA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 02:45:00 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:55565 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751668Ab3JaGo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 02:44:59 -0400
-Date: Thu, 31 Oct 2013 06:44:55 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [drm pull] drm radeon fixes
-Message-ID: <alpine.DEB.2.00.1310310644070.4275@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753064Ab3JaGpk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 02:45:40 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:62525 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668Ab3JaGpI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 02:45:08 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <5270DBFC.3050705@cn.fujitsu.com>
+References: <5270DBFC.3050705@cn.fujitsu.com>
+Date: Wed, 30 Oct 2013 23:45:07 -0700
+X-Google-Sender-Auth: 7dAn9TROn9WbPH2y53BNdRuS5b4
+Message-ID: <CAE9FiQXp+9XKbs8ccJVt08icax6SOWioDfL5s+H1SWGi9cTAiw@mail.gmail.com>
+Subject: Re: [PATCH] pci: fix invalid list entry warning for double pci device
+ removing via sysfs
+From: Yinghai Lu <yinghai@kernel.org>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=047d7bd758b859407e04ea03ca1b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--047d7bd758b859407e04ea03ca1b
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Oops missed in my post ks sweep, just 3 small fixes for radeon.
+On Wed, Oct 30, 2013 at 3:14 AM, Gu Zheng <guz.fnst@cn.fujitsu.com> wrote:
+> When concurent removing pci devices which are in the same pci subtree
+> via sysfs, such as:
+> echo -n 1 > /sys/bus/pci/devices/0000\:10\:00.0/remove ; echo -n 1 >
+> /sys/bus/pci/devices/0000\:1a\:01.0/remove
+> (1a:01.0 device is downstream from the 10:00.0 bridge)
+>
+> the following warning will show:
+> [ 1799.280918] ------------[ cut here ]------------
+> [ 1799.336199] WARNING: CPU: 7 PID: 126 at lib/list_debug.c:53 __list_del=
+_entry+0x63/0xd0()
+> [ 1799.433093] list_del corruption, ffff8807b4a7c000->next is LIST_POISON=
+1 (dead000000100100)
+> [ 1799.532110] Modules linked in: nf_conntrack_netbios_ns nf_conntrack_br=
+oadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_def=
+rag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle ipt_REJECT nf_conntr=
+ack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables i=
+p6table_filter ip6_tables iptable_filter ip_tables sg dm_mirror dm_region_h=
+ash dm_log dm_mod vfat fat e1000e igb iTCO_wdt iTCO_vendor_support ioatdma =
+ptp i7core_edac ipmi_si edac_core lpc_ich pps_core i2c_i801 pcspkr mfd_core=
+ dca ipmi_msghandler acpi_cpufreq xfs libcrc32c sd_mod crc_t10dif crct10dif=
+_common i2c_algo_bit drm_kms_helper ttm drm mptsas scsi_transport_sas mptsc=
+sih i2c_core megaraid_sas mptbase
+> [ 1800.276623] CPU: 7 PID: 126 Comm: kworker/u512:1 Tainted: G        W  =
+  3.12.0-rc5+ #196
+> [ 1800.508918] Workqueue: sysfsd sysfs_schedule_callback_work
+> [ 1800.574703]  0000000000000009 ffff8807adbadbd8 ffffffff8168b26c ffff88=
+07c27d08a8
+> [ 1800.663860]  ffff8807adbadc28 ffff8807adbadc18 ffffffff810711dc ffff88=
+07adbadc68
+> [ 1800.753130]  ffff8807b4a7c000 ffff8807b4a7c000 ffff8807ad089c00 000000=
+0000000000
+> [ 1800.842282] Call Trace:
+> [ 1800.871651]  [<ffffffff8168b26c>] dump_stack+0x55/0x76
+> [ 1800.933301]  [<ffffffff810711dc>] warn_slowpath_common+0x8c/0xc0
+> [ 1801.005283]  [<ffffffff810712c6>] warn_slowpath_fmt+0x46/0x50
+> [ 1801.074081]  [<ffffffff8135a343>] __list_del_entry+0x63/0xd0
+> [ 1801.141839]  [<ffffffff8135a3c1>] list_del+0x11/0x40
+> [ 1801.201320]  [<ffffffff813734da>] pci_remove_bus_device+0x6a/0xe0
+> [ 1801.274279]  [<ffffffff8137356e>] pci_stop_and_remove_bus_device+0x1e/=
+0x30
+> [ 1801.356606]  [<ffffffff8137b20b>] remove_callback+0x2b/0x40
+> [ 1801.423412]  [<ffffffff81251848>] sysfs_schedule_callback_work+0x18/0x=
+60
+> [ 1801.503744]  [<ffffffff8108eab5>] process_one_work+0x1f5/0x540
+> [ 1801.573640]  [<ffffffff8108ea53>] ? process_one_work+0x193/0x540
+> [ 1801.645616]  [<ffffffff8108f2ac>] worker_thread+0x11c/0x370
+> [ 1801.712337]  [<ffffffff8108f190>] ? rescuer_thread+0x350/0x350
+> [ 1801.782178]  [<ffffffff8109731d>] kthread+0xed/0x100
+> [ 1801.841661]  [<ffffffff81097230>] ? kthread_create_on_node+0x160/0x160
+> [ 1801.919919]  [<ffffffff8169cc3c>] ret_from_fork+0x7c/0xb0
+> [ 1801.984608]  [<ffffffff81097230>] ? kthread_create_on_node+0x160/0x160
+> [ 1802.062825] ---[ end trace d77f2054de000fb7 ]---
+>
+> This issue is related to the bug 54411:
+> https://bugzilla.kernel.org/show_bug.cgi?id=3D54411
+>
+> Since we added the pci_bus reference management, the bug becomes a
+> invalid list entry warning as descripted above. Beacuse it still
+> trys to delete an deleted pci device from device list.
+>
+> So here we make stop device actually detach driver only, and remove
+> device will do device_del instead, and move bus_list change and pci devic=
+e
+> resource free into pci_release_dev, so that it'll consistent with
+> bus reference managment, and the device only can be deleted from device
+> list in pci_release_dev just for one time.
+>
+> Besides, it also makes hostbridge to use device_unregister to be pair
+> with device_register before.
+>
+> This patch is based on Yinghai's privious similar patch:
+> http://lkml.org/lkml/2013/5/13/658
 
-Dave.
+I have updated version, please check if attached patches fix the problem.
 
-The following changes since commit 12aee278b50c4a94a93fa0b4d201ae35d792c696:
+virtfn_release.patch
+fix_cx3_hotplug_2.patch
+fix_racing_removing_6_1.patch
+fix_racing_removing_6_2.patch
+fix_racing_removing_6_3.patch
 
-  Merge branch 'akpm' (fixes from Andrew Morton) (2013-10-30 14:27:10 -0700)
+Thanks
 
-are available in the git repository at:
+Yinghai
 
+--047d7bd758b859407e04ea03ca1b
+Content-Type: text/x-patch; charset=US-ASCII; name="virtfn_release.patch"
+Content-Disposition: attachment; filename="virtfn_release.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hnfmlhjc0
 
-  git://people.freedesktop.org/~airlied/linux drm-fixes
+U3ViamVjdDogW1BBVENIXSBQQ0k6IFJlbGVhc2UgUEYgcmVmIGR1cmluZyByZW1vdmluZyBWRgpG
+cm9tOiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+Cgpjb21taXQgZGMwODdmMmY2YTI5
+MjVlODE4MzFmMzAxNmI5Y2JiNmU0NzBlNzQyMwooUENJOiBTaW1wbGlmeSBJT1YgaW1wbGVtZW50
+YXRpb24gYW5kIGZpeCByZWZlcmVuY2UgY291bnQgcmFjZXMpCmJyb2tlIHRoZSBwY2llIG5hdGl2
+ZSBob3RwbHVnIHdpdGggU1JJT1YgZW5hYmxlZDogUEYgaXMgbm90IGZyZWVkCmR1cmluZyBob3Qt
+cmVtb3ZlLCBhbmQgbGF0ZXIgaG90LWFkZCBkbyBub3Qgd29yayBhcyBvbGQgcGNpX2RldgppcyBz
+dGlsbCBhcm91bmQsIGFuZCBjYW4gbm90IGNyZWF0ZSBuZXcgcGNpX2Rldi4KClRoYXQgY29tbWl0
+IG5lZWQgVkZzIHRvIGJlIHJlbW92ZWQgdmlhIHBjaV9kaXNhYmxlX3NyaW92L3ZpcnRmbl9yZW1v
+dmUKdG8gbWFrZSBzdXJlIHJlZiB0byBQRiBpcyBwdXQgYmFjay4KClNvIHdlIGNhbiBub3QgY2Fs
+bCBzdG9wX2FuZF9yZW1vdmUgZm9yIFZGIGJlZm9yZSBQRiwgdGhhdCB3aWxsCm1ha2UgVkYgZ2V0
+IHJlbW92ZWQgZGlyZWN0bHkgYmVmb3JlIFBGJ3MgZHJpdmVyIHRyeSB0byB1c2UKcGNpX2Rpc2Fi
+bGVfc3Jpb3YvdmlydGZuX3JlbW92ZSB0byBkbyBpdC4KClNvbHV0aW9uIHdvdWxkIGJlCjEuIHNl
+cGFyYXRpbmcgc3RvcCBhbmQgcmVtb3ZlIGluIHR3byBpdGVyYXRpb25zLgoyLiBvciBtYWtlIHBj
+aV9zdG9wX2FuZF9yZW1vdmVfYnVzX2RldmljZSBjb3VsZCBiZSB1c2VkIG9uIFZGLgoKVGhpcyBw
+YXRjaCBpcyBzZWNvbmQgc29sdXRpb246ClNlcGFyYXRlIFBGIHJlZiByZWxlYXNpbmcgZnJvbSB2
+aXJ0Zm5fcmVtb3ZlLCBhbGwgdGhhdCBkdXJpbmcKcGNpX2Rlc3Ryb3lfZGV2IGZvciBWRnMuCgot
+djI6IGZpeCB3YXJuaW5nIHdoZW4gU1JJT1YgaXMgbm90IGRlZmluZWQuCgpTaWduZWQtb2ZmLWJ5
+OiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CgotLS0KIGRyaXZlcnMvcGNpL2lvdi5j
+ICAgIHwgICAzNCArKysrKysrKysrKysrKysrKysrKysrKysrKysrKy0tLS0tCiBkcml2ZXJzL3Bj
+aS9wY2kuaCAgICB8ICAgIDQgKysrKwogZHJpdmVycy9wY2kvcmVtb3ZlLmMgfCAgIDE3ICsrKysr
+KysrKysrKysrKysrCiAzIGZpbGVzIGNoYW5nZWQsIDUwIGluc2VydGlvbnMoKyksIDUgZGVsZXRp
+b25zKC0pCgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvcGNpL2lvdi5jCj09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0t
+IGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvcGNpL2lvdi5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9w
+Y2kvaW92LmMKQEAgLTEzMiw5ICsxMzIsMzcgQEAgZmFpbGVkOgogCXJldHVybiByYzsKIH0KIAot
+c3RhdGljIHZvaWQgdmlydGZuX3JlbW92ZShzdHJ1Y3QgcGNpX2RldiAqZGV2LCBpbnQgaWQsIGlu
+dCByZXNldCkKK3ZvaWQgdmlydGZuX3JlbGVhc2Uoc3RydWN0IHBjaV9kZXYgKnZpcnRmbikKIHsK
+KwlpbnQgaTsKKwlzdHJ1Y3QgcGNpX2RldiAqZGV2OwogCWNoYXIgYnVmW1ZJUlRGTl9JRF9MRU5d
+OworCisJaWYgKCF2aXJ0Zm4tPmlzX3ZpcnRmbikKKwkJcmV0dXJuOworCisJZGV2ID0gdmlydGZu
+LT5waHlzZm47CisKKwkvKgorCSAqIFJlbW92ZSBsaW5rIHRvIHZpcnRmbiBmb3IgUEYuCisJICog
+cGNpX2Rpc2FibGVfc3Jpb3YoKSBjb3VsZCBiZSBjYWxsZWQgYWZ0ZXIgcGNpX3N0b3BfZGV2KCkg
+aXMKKwkgKiBjYWxsZWQgZm9yIFBGLiBTbyBjaGVjayBzZCB0byBhdm9pZCBzcHVyaW91cyBzZnNm
+cyB3YXJuaW5nLgorCSAqLworCWlmIChkZXYtPmRldi5rb2JqLnNkKQorCQlmb3IgKGkgPSAwOyBp
+IDwgZGV2LT5zcmlvdi0+bnVtX1ZGczsgaSsrKQorCQkJaWYgKCh2aXJ0Zm5fYnVzKGRldiwgaSkg
+PT0gdmlydGZuLT5idXMtPm51bWJlcikgJiYKKwkJCSAgICAodmlydGZuX2RldmZuKGRldiwgaSkg
+PT0gdmlydGZuLT5kZXZmbikpIHsKKwkJCQlzcHJpbnRmKGJ1ZiwgInZpcnRmbiV1IiwgaSk7CisJ
+CQkJc3lzZnNfcmVtb3ZlX2xpbmsoJmRldi0+ZGV2LmtvYmosIGJ1Zik7CisJCQkJYnJlYWs7CisJ
+CQl9CisKKwl2aXJ0Zm5fcmVtb3ZlX2J1cyhkZXYtPmJ1cywgdmlydGZuLT5idXMpOworCXBjaV9k
+ZXZfcHV0KGRldik7Cit9CisKK3N0YXRpYyB2b2lkIHZpcnRmbl9yZW1vdmUoc3RydWN0IHBjaV9k
+ZXYgKmRldiwgaW50IGlkLCBpbnQgcmVzZXQpCit7CiAJc3RydWN0IHBjaV9kZXYgKnZpcnRmbjsK
+IAlzdHJ1Y3QgcGNpX3NyaW92ICppb3YgPSBkZXYtPnNyaW92OwogCkBAIC0xNDksOCArMTc3LDYg
+QEAgc3RhdGljIHZvaWQgdmlydGZuX3JlbW92ZShzdHJ1Y3QgcGNpX2RldgogCQlfX3BjaV9yZXNl
+dF9mdW5jdGlvbih2aXJ0Zm4pOwogCX0KIAotCXNwcmludGYoYnVmLCAidmlydGZuJXUiLCBpZCk7
+Ci0Jc3lzZnNfcmVtb3ZlX2xpbmsoJmRldi0+ZGV2LmtvYmosIGJ1Zik7CiAJLyoKIAkgKiBwY2lf
+c3RvcF9kZXYoKSBjb3VsZCBoYXZlIGJlZW4gY2FsbGVkIGZvciB0aGlzIHZpcnRmbiBhbHJlYWR5
+LAogCSAqIHNvIHRoZSBkaXJlY3RvcnkgZm9yIHRoZSB2aXJ0Zm4gbWF5IGhhdmUgYmVlbiByZW1v
+dmVkIGJlZm9yZS4KQEAgLTE2MSwxMiArMTg3LDEwIEBAIHN0YXRpYyB2b2lkIHZpcnRmbl9yZW1v
+dmUoc3RydWN0IHBjaV9kZXYKIAogCW11dGV4X2xvY2soJmlvdi0+ZGV2LT5zcmlvdi0+bG9jayk7
+CiAJcGNpX3N0b3BfYW5kX3JlbW92ZV9idXNfZGV2aWNlKHZpcnRmbik7Ci0JdmlydGZuX3JlbW92
+ZV9idXMoZGV2LT5idXMsIHZpcnRmbi0+YnVzKTsKIAltdXRleF91bmxvY2soJmlvdi0+ZGV2LT5z
+cmlvdi0+bG9jayk7CiAKIAkvKiBiYWxhbmNlIHBjaV9nZXRfZG9tYWluX2J1c19hbmRfc2xvdCgp
+ICovCiAJcGNpX2Rldl9wdXQodmlydGZuKTsKLQlwY2lfZGV2X3B1dChkZXYpOwogfQogCiBzdGF0
+aWMgaW50IHNyaW92X21pZ3JhdGlvbihzdHJ1Y3QgcGNpX2RldiAqZGV2KQpJbmRleDogbGludXgt
+Mi42L2RyaXZlcnMvcGNpL3BjaS5oCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZl
+cnMvcGNpL3BjaS5oCisrKyBsaW51eC0yLjYvZHJpdmVycy9wY2kvcGNpLmgKQEAgLTI1OSw2ICsy
+NTksNyBAQCBpbnQgcGNpX2lvdl9yZXNvdXJjZV9iYXIoc3RydWN0IHBjaV9kZXYKIHJlc291cmNl
+X3NpemVfdCBwY2lfc3Jpb3ZfcmVzb3VyY2VfYWxpZ25tZW50KHN0cnVjdCBwY2lfZGV2ICpkZXYs
+IGludCByZXNubyk7CiB2b2lkIHBjaV9yZXN0b3JlX2lvdl9zdGF0ZShzdHJ1Y3QgcGNpX2RldiAq
+ZGV2KTsKIGludCBwY2lfaW92X2J1c19yYW5nZShzdHJ1Y3QgcGNpX2J1cyAqYnVzKTsKK3ZvaWQg
+dmlydGZuX3JlbGVhc2Uoc3RydWN0IHBjaV9kZXYgKmRldik7CiAKICNlbHNlCiBzdGF0aWMgaW5s
+aW5lIGludCBwY2lfaW92X2luaXQoc3RydWN0IHBjaV9kZXYgKmRldikKQEAgLTI4MSw2ICsyODIs
+OSBAQCBzdGF0aWMgaW5saW5lIGludCBwY2lfaW92X2J1c19yYW5nZShzdHJ1CiB7CiAJcmV0dXJu
+IDA7CiB9CitzdGF0aWMgaW5saW5lIHZvaWQgdmlydGZuX3JlbGVhc2Uoc3RydWN0IHBjaV9kZXYg
+KmRldikKK3sKK30KIAogI2VuZGlmIC8qIENPTkZJR19QQ0lfSU9WICovCiAKSW5kZXg6IGxpbnV4
+LTIuNi9kcml2ZXJzL3BjaS9yZW1vdmUuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9k
+cml2ZXJzL3BjaS9yZW1vdmUuYworKysgbGludXgtMi42L2RyaXZlcnMvcGNpL3JlbW92ZS5jCkBA
+IC0zOCw2ICszOCw4IEBAIHN0YXRpYyB2b2lkIHBjaV9kZXN0cm95X2RldihzdHJ1Y3QgcGNpX2QK
+IAlsaXN0X2RlbCgmZGV2LT5idXNfbGlzdCk7CiAJdXBfd3JpdGUoJnBjaV9idXNfc2VtKTsKIAor
+CXZpcnRmbl9yZWxlYXNlKGRldik7CisKIAlwY2lfZnJlZV9yZXNvdXJjZXMoZGV2KTsKIAlwdXRf
+ZGV2aWNlKCZkZXYtPmRldik7CiB9CkBAIC0xMDcsOCArMTA5LDIzIEBAIHN0YXRpYyB2b2lkIHBj
+aV9yZW1vdmVfYnVzX2RldmljZShzdHJ1Y3QKICAqLwogdm9pZCBwY2lfc3RvcF9hbmRfcmVtb3Zl
+X2J1c19kZXZpY2Uoc3RydWN0IHBjaV9kZXYgKmRldikKIHsKKyNpZmRlZiBDT05GSUdfUENJX0FU
+UworCXN0cnVjdCBwY2lfc3Jpb3YgKmlvdiA9IE5VTEw7CisJaW50IGxvY2tlZCA9IDA7CisKKwlp
+ZiAoZGV2LT5pc192aXJ0Zm4pIHsKKwkJaW92ID0gZGV2LT5waHlzZm4tPnNyaW92OworCQlsb2Nr
+ZWQgPSBtdXRleF90cnlsb2NrKCZpb3YtPmRldi0+c3Jpb3YtPmxvY2spOworCX0KKyNlbmRpZgor
+CiAJcGNpX3N0b3BfYnVzX2RldmljZShkZXYpOwogCXBjaV9yZW1vdmVfYnVzX2RldmljZShkZXYp
+OworCisjaWZkZWYgQ09ORklHX1BDSV9BVFMKKwlpZiAobG9ja2VkKQorCQltdXRleF91bmxvY2so
+Jmlvdi0+ZGV2LT5zcmlvdi0+bG9jayk7CisjZW5kaWYKIH0KIEVYUE9SVF9TWU1CT0wocGNpX3N0
+b3BfYW5kX3JlbW92ZV9idXNfZGV2aWNlKTsKIAo=
+--047d7bd758b859407e04ea03ca1b
+Content-Type: text/x-patch; charset=US-ASCII; name="fix_cx3_hotplug_2.patch"
+Content-Disposition: attachment; filename="fix_cx3_hotplug_2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hnfmlvkx1
 
-for you to fetch changes up to 74c85e1357e30f3f21944989bf9948038faef6ab:
+U3ViamVjdDogW1BBVENIIHYyIDMvM10gUENJOiBTdG9wIHNyaW92IGFmdGVyIHN0b3AgUEYgaWYg
+UEYncyBkcml2ZXIgc2tpcCB0aGF0CkZyb206IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9y
+Zz4KCkFmdGVyIGNvbW1pdCBkYzA4N2YyZjZhMjkyNWU4MTgzMWYzMDE2YjljYmI2ZTQ3MGU3NDIz
+CihQQ0k6IFNpbXBsaWZ5IElPViBpbXBsZW1lbnRhdGlvbiBhbmQgZml4IHJlZmVyZW5jZSBjb3Vu
+dCByYWNlcykKVkYgbmVlZCB0byBiZSByZW1vdmVkIHZpYSB2aXJ0Zm5fcmVtb3ZlIHRvIG1ha2Ug
+c3VyZSByZWYgdG8gUEYKaXMgcHV0IGJhY2suCgpTb21lIGRyaXZlciAobGlrZSBpeGdiZSkgZG9l
+cyBub3QgY2FsbCBwY2lfZGlzYWJsZV9zcmlvdigpIGlmCnNyaW92IGlzIGVuYWJsZWQgdmlhIC9z
+eXMvLi4uL3NyaW92X251bXZmcyBzZXR0aW5nLgppeGdiZSBkb2VzIGFsbG93IGRyaXZlciBmb3Ig
+UEYgZ2V0IGRldGFjaGVkLCBidXQgc3RpbGwgaGF2ZSBWRnMKYXJvdW5kLgoKQnV0IGhvdyBhYm91
+dCBQRiBnZXQgcmVtb3ZlZCB2aWEgL3N5cyBvciBwY2llaHAgZmluYWxseT8KCkR1cmluZyBob3Qt
+cmVtb3ZlLCBWRiB3aWxsIHN0aWxsIGhvbGQgb25lIHJlZiB0byBQRiBhbmQgaXQKcHJldmVudCBQ
+RiB0byBiZSByZW1vdmVkLgpUaGF0IG1ha2UgdGhlIG5leHQgaG90LWFkZCBmYWlscywgYXMgb2xk
+IFBGIGRldiBzdHJ1Y3QgaXMgc3RpbGwgYXJvdW5kLgoKV2UgbmVlZCB0byBhZGQgcGNpX2Rpc2Fi
+bGVfc3Jpb3YoKSBjYWxsaW5nIGR1cmluZyBzdG9wIFBGIC4KCk5lZWQgdGhpcyBvbmUgZm9yIHYz
+LjExCgotdjI6IEFjY29yaW5nIHRvIEJqb3JuLCBtb3ZlIHRoYXQgY2FsbGluZyB0byBwY2lfc3Rv
+cF9kZXYuCgpTaWduZWQtb2ZmLWJ5OiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CkNj
+OiBKaWFuZyBMaXUgPGxpdWo5N0BnbWFpbC5jb20+CkNjOiBBbGV4YW5kZXIgRHV5Y2sgPGFsZXhh
+bmRlci5oLmR1eWNrQGludGVsLmNvbT4KQ2M6IERvbmFsZCBEdXRpbGUgPGRkdXRpbGVAcmVkaGF0
+LmNvbT4KQ2M6IEdyZWcgUm9zZSA8Z3JlZ29yeS52LnJvc2VAaW50ZWwuY29tPgoKLS0tCiBkcml2
+ZXJzL3BjaS9yZW1vdmUuYyB8ICAgIDIgKysKIDEgZmlsZSBjaGFuZ2VkLCAyIGluc2VydGlvbnMo
+KykKCkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9wY2kvcmVtb3ZlLmMKPT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0g
+bGludXgtMi42Lm9yaWcvZHJpdmVycy9wY2kvcmVtb3ZlLmMKKysrIGxpbnV4LTIuNi9kcml2ZXJz
+L3BjaS9yZW1vdmUuYwpAQCAtMjUsNiArMjUsOCBAQCBzdGF0aWMgdm9pZCBwY2lfc3RvcF9kZXYo
+c3RydWN0IHBjaV9kZXYKIAkJcGNpX3Byb2NfZGV0YWNoX2RldmljZShkZXYpOwogCQlwY2lfcmVt
+b3ZlX3N5c2ZzX2Rldl9maWxlcyhkZXYpOwogCQlkZXZpY2VfZGVsKCZkZXYtPmRldik7CisJCS8q
+IHJlbW92ZSBWRiwgaWYgUEYgZHJpdmVyIHNraXAgdGhhdCAqLworCQlwY2lfZGlzYWJsZV9zcmlv
+dihkZXYpOwogCQlkZXYtPmlzX2FkZGVkID0gMDsKIAl9CiAK
+--047d7bd758b859407e04ea03ca1b
+Content-Type: text/x-patch; charset=US-ASCII; name="fix_racing_removing_6_1.patch"
+Content-Disposition: attachment; filename="fix_racing_removing_6_1.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hnfmm9ru2
 
-  Merge branch 'drm-fixes-3.12' of git://people.freedesktop.org/~agd5f/linux into drm-fixes (2013-10-31 15:29:10 +1000)
+U3ViamVjdDogW1BBVENIIDEvN10gUENJOiBtb3ZlIGJhY2sgcGNpX3Byb2NfYXR0YWNoX2Rldmlj
+ZXMgY2FsbGluZwpGcm9tOiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CgpXZSBzdG9w
+IGRldGFjaCBwcm9jIHdoZW4gcGNpX3N0b3BfZGV2aWNlLgpTbyBzaG91bGQgYXR0YWNoIHRoYXQg
+ZHVyaW5nIHBjaV9idXNfYWRkX2RldmljZS4KClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlp
+bmdoYWlAa2VybmVsLm9yZz4KCi0tLQogZHJpdmVycy9wY2kvYnVzLmMgICB8ICAgIDEgKwogZHJp
+dmVycy9wY2kvcHJvYmUuYyB8ICAgIDIgLS0KIDIgZmlsZXMgY2hhbmdlZCwgMSBpbnNlcnRpb24o
+KyksIDIgZGVsZXRpb25zKC0pCgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvcGNpL3Byb2JlLmMK
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9wY2kvcHJvYmUuYworKysgbGlu
+dXgtMi42L2RyaXZlcnMvcGNpL3Byb2JlLmMKQEAgLTEzODIsOCArMTM4Miw2IEBAIHZvaWQgcGNp
+X2RldmljZV9hZGQoc3RydWN0IHBjaV9kZXYgKmRldiwKIAlkZXYtPm1hdGNoX2RyaXZlciA9IGZh
+bHNlOwogCXJldCA9IGRldmljZV9hZGQoJmRldi0+ZGV2KTsKIAlXQVJOX09OKHJldCA8IDApOwot
+Ci0JcGNpX3Byb2NfYXR0YWNoX2RldmljZShkZXYpOwogfQogCiBzdHJ1Y3QgcGNpX2RldiAqX19y
+ZWYgcGNpX3NjYW5fc2luZ2xlX2RldmljZShzdHJ1Y3QgcGNpX2J1cyAqYnVzLCBpbnQgZGV2Zm4p
+CkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9wY2kvYnVzLmMKPT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgt
+Mi42Lm9yaWcvZHJpdmVycy9wY2kvYnVzLmMKKysrIGxpbnV4LTIuNi9kcml2ZXJzL3BjaS9idXMu
+YwpAQCAtMTc1LDYgKzE3NSw3IEBAIGludCBwY2lfYnVzX2FkZF9kZXZpY2Uoc3RydWN0IHBjaV9k
+ZXYgKmQKIAkgKiBhcmUgbm90IGFzc2lnbmVkIHlldCBmb3Igc29tZSBkZXZpY2VzLgogCSAqLwog
+CXBjaV9maXh1cF9kZXZpY2UocGNpX2ZpeHVwX2ZpbmFsLCBkZXYpOworCXBjaV9wcm9jX2F0dGFj
+aF9kZXZpY2UoZGV2KTsKIAlwY2lfY3JlYXRlX3N5c2ZzX2Rldl9maWxlcyhkZXYpOwogCiAJZGV2
+LT5tYXRjaF9kcml2ZXIgPSB0cnVlOwo=
+--047d7bd758b859407e04ea03ca1b
+Content-Type: text/x-patch; charset=US-ASCII; name="fix_racing_removing_6_2.patch"
+Content-Disposition: attachment; filename="fix_racing_removing_6_2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hnfmmth53
 
-----------------------------------------------------------------
+U3ViamVjdDogW1BBVENIIDIvN10gUENJOiBtb3ZlIHJlc291cmNlcyBhbmQgYnVzX2xpc3QgcmVs
+ZWFzaW5nIHRvIHBjaV9yZWxlYXNlX2RldgpGcm9tOiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5l
+bC5vcmc+CgpXZSBzaG91bGQgbm90IHJlbGVhc2UgcmVzb3VyY2UgaW4gcGNpX2Rlc3Ryb3kgdGhh
+dCBpcyB0b28gZWFybHkKYXMgdGhlcmUgY291bGQgYmUgc3RpbGwgb3RoZXIgdXNlIGhvbGQgcmVm
+ZXJlbmNlLgoKcmVsZWFzZSB0aGVtIG9yIHJlbW92ZSBpdCBmcm9tIGJ1cyBkZXZpY2VzIGxpc3Qg
+YXQgbGFzdAppbiBwY2lfcmVsZWFzZV9kZXYgaW5zdGVhZC4KClNpZ25lZC1vZmYtYnk6IFlpbmdo
+YWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogZHJpdmVycy9wY2kvcHJvYmUuYyAgfCAg
+IDI1ICsrKysrKysrKysrKysrKysrKysrKysrLS0KIGRyaXZlcnMvcGNpL3JlbW92ZS5jIHwgICAy
+MSAtLS0tLS0tLS0tLS0tLS0tLS0tLS0KIDIgZmlsZXMgY2hhbmdlZCwgMjMgaW5zZXJ0aW9ucygr
+KSwgMjMgZGVsZXRpb25zKC0pCgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvcGNpL3Byb2JlLmMK
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9wY2kvcHJvYmUuYworKysgbGlu
+dXgtMi42L2RyaXZlcnMvcGNpL3Byb2JlLmMKQEAgLTExNTUsNiArMTE1NSwyMCBAQCBzdGF0aWMg
+dm9pZCBwY2lfcmVsZWFzZV9jYXBhYmlsaXRpZXMoc3RyCiAJcGNpX2ZyZWVfY2FwX3NhdmVfYnVm
+ZmVycyhkZXYpOwogfQogCitzdGF0aWMgdm9pZCBwY2lfZnJlZV9yZXNvdXJjZXMoc3RydWN0IHBj
+aV9kZXYgKmRldikKK3sKKwlpbnQgaTsKKworCW1zaV9yZW1vdmVfcGNpX2lycV92ZWN0b3JzKGRl
+dik7CisKKwlwY2lfY2xlYW51cF9yb20oZGV2KTsKKwlmb3IgKGkgPSAwOyBpIDwgUENJX05VTV9S
+RVNPVVJDRVM7IGkrKykgeworCQlzdHJ1Y3QgcmVzb3VyY2UgKnJlcyA9IGRldi0+cmVzb3VyY2Ug
+KyBpOworCQlpZiAocmVzLT5wYXJlbnQpCisJCQlyZWxlYXNlX3Jlc291cmNlKHJlcyk7CisJfQor
+fQorCiAvKioKICAqIHBjaV9yZWxlYXNlX2RldiAtIGZyZWUgYSBwY2kgZGV2aWNlIHN0cnVjdHVy
+ZSB3aGVuIGFsbCB1c2VycyBvZiBpdCBhcmUgZmluaXNoZWQuCiAgKiBAZGV2OiBkZXZpY2UgdGhh
+dCdzIGJlZW4gZGlzY29ubmVjdGVkCkBAIC0xMTY0LDkgKzExNzgsMTYgQEAgc3RhdGljIHZvaWQg
+cGNpX3JlbGVhc2VfY2FwYWJpbGl0aWVzKHN0cgogICovCiBzdGF0aWMgdm9pZCBwY2lfcmVsZWFz
+ZV9kZXYoc3RydWN0IGRldmljZSAqZGV2KQogewotCXN0cnVjdCBwY2lfZGV2ICpwY2lfZGV2Owor
+CXN0cnVjdCBwY2lfZGV2ICpwY2lfZGV2ID0gdG9fcGNpX2RldihkZXYpOworCisJZG93bl93cml0
+ZSgmcGNpX2J1c19zZW0pOworCWxpc3RfZGVsKCZwY2lfZGV2LT5idXNfbGlzdCk7CisJdXBfd3Jp
+dGUoJnBjaV9idXNfc2VtKTsKKworCXZpcnRmbl9yZWxlYXNlKHBjaV9kZXYpOworCisJcGNpX2Zy
+ZWVfcmVzb3VyY2VzKHBjaV9kZXYpOwogCi0JcGNpX2RldiA9IHRvX3BjaV9kZXYoZGV2KTsKIAlw
+Y2lfcmVsZWFzZV9jYXBhYmlsaXRpZXMocGNpX2Rldik7CiAJcGNpX3JlbGVhc2Vfb2Zfbm9kZShw
+Y2lfZGV2KTsKIAlwY2liaW9zX3JlbGVhc2VfZGV2aWNlKHBjaV9kZXYpOwpJbmRleDogbGludXgt
+Mi42L2RyaXZlcnMvcGNpL3JlbW92ZS5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2Ry
+aXZlcnMvcGNpL3JlbW92ZS5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9wY2kvcmVtb3ZlLmMKQEAg
+LTMsMjAgKzMsNiBAQAogI2luY2x1ZGUgPGxpbnV4L3BjaS1hc3BtLmg+CiAjaW5jbHVkZSAicGNp
+LmgiCiAKLXN0YXRpYyB2b2lkIHBjaV9mcmVlX3Jlc291cmNlcyhzdHJ1Y3QgcGNpX2RldiAqZGV2
+KQotewotCWludCBpOwotCi0gCW1zaV9yZW1vdmVfcGNpX2lycV92ZWN0b3JzKGRldik7Ci0KLQlw
+Y2lfY2xlYW51cF9yb20oZGV2KTsKLQlmb3IgKGkgPSAwOyBpIDwgUENJX05VTV9SRVNPVVJDRVM7
+IGkrKykgewotCQlzdHJ1Y3QgcmVzb3VyY2UgKnJlcyA9IGRldi0+cmVzb3VyY2UgKyBpOwotCQlp
+ZiAocmVzLT5wYXJlbnQpCi0JCQlyZWxlYXNlX3Jlc291cmNlKHJlcyk7Ci0JfQotfQotCiBzdGF0
+aWMgdm9pZCBwY2lfc3RvcF9kZXYoc3RydWN0IHBjaV9kZXYgKmRldikKIHsKIAlwY2lfcG1lX2Fj
+dGl2ZShkZXYsIGZhbHNlKTsKQEAgLTM2LDEzICsyMiw2IEBAIHN0YXRpYyB2b2lkIHBjaV9zdG9w
+X2RldihzdHJ1Y3QgcGNpX2RldgogCiBzdGF0aWMgdm9pZCBwY2lfZGVzdHJveV9kZXYoc3RydWN0
+IHBjaV9kZXYgKmRldikKIHsKLQlkb3duX3dyaXRlKCZwY2lfYnVzX3NlbSk7Ci0JbGlzdF9kZWwo
+JmRldi0+YnVzX2xpc3QpOwotCXVwX3dyaXRlKCZwY2lfYnVzX3NlbSk7Ci0KLQl2aXJ0Zm5fcmVs
+ZWFzZShkZXYpOwotCi0JcGNpX2ZyZWVfcmVzb3VyY2VzKGRldik7CiAJcHV0X2RldmljZSgmZGV2
+LT5kZXYpOwogfQogCg==
+--047d7bd758b859407e04ea03ca1b
+Content-Type: text/x-patch; charset=US-ASCII; name="fix_racing_removing_6_3.patch"
+Content-Disposition: attachment; filename="fix_racing_removing_6_3.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hnfmn5864
 
-Alex Deucher (3):
-      drm/radeon: use sw CTS/N values for audio on DCE4+
-      drm/radeon: disable bapm on KB
-      drm/radeon/dpm: fix incompatible casting on big endian
-
-Dave Airlie (1):
-      Merge branch 'drm-fixes-3.12' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
-
- drivers/gpu/drm/radeon/evergreen_hdmi.c | 1 +
- drivers/gpu/drm/radeon/kv_dpm.c         | 2 +-
- drivers/gpu/drm/radeon/radeon.h         | 4 ++--
- 3 files changed, 4 insertions(+), 3 deletions(-)
+U3ViamVjdDogW1BBVENIIDMvN10gUENJOiBEZXN0cm95IHBjaSBkZXYgb25seSBvbmNlCkZyb206
+IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCk11dGxpcGxlIHJlbW92aW5nIHZpYSAv
+c3lzIHdpbGwgY2FsbCBwY2lfZGVzdHJveV9kZXYgdHdvIHRpbWVzLgoKQWRkIGlzX3JlbW92ZWQg
+dG8gcmVjb3JkIGlmIHBjaV9kZXN0cm95X2RldiBpcyBjYWxsZWQgYWxyZWFkeS4KCkR1cmluZyBz
+ZWNvbmQgY2FsbGluZywgc3RpbGwgaGF2ZSBleHRyYSBkZXYgcmVmIGhvbGQgdmlhCmRldmljZV9z
+Y2hlZHVsZV9jYWxsLCBzbyB3ZSBhcmUgc2FmZSB0byBjaGVjayBkZXYtPmlzX3JlbW92ZWQuCgpT
+aWduZWQtb2ZmLWJ5OiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CgotLS0KIGRyaXZl
+cnMvcGNpL3JlbW92ZS5jIHwgICAgNSArKysrLQogaW5jbHVkZS9saW51eC9wY2kuaCAgfCAgICAx
+ICsKIDIgZmlsZXMgY2hhbmdlZCwgNSBpbnNlcnRpb25zKCspLCAxIGRlbGV0aW9uKC0pCgpJbmRl
+eDogbGludXgtMi42L2RyaXZlcnMvcGNpL3JlbW92ZS5jCj09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIu
+Ni5vcmlnL2RyaXZlcnMvcGNpL3JlbW92ZS5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9wY2kvcmVt
+b3ZlLmMKQEAgLTIyLDcgKzIyLDEwIEBAIHN0YXRpYyB2b2lkIHBjaV9zdG9wX2RldihzdHJ1Y3Qg
+cGNpX2RldgogCiBzdGF0aWMgdm9pZCBwY2lfZGVzdHJveV9kZXYoc3RydWN0IHBjaV9kZXYgKmRl
+dikKIHsKLQlwdXRfZGV2aWNlKCZkZXYtPmRldik7CisJaWYgKCFkZXYtPmlzX3JlbW92ZWQpIHsK
+KwkJZGV2LT5pc19yZW1vdmVkID0gMTsKKwkJcHV0X2RldmljZSgmZGV2LT5kZXYpOworCX0KIH0K
+IAogdm9pZCBwY2lfcmVtb3ZlX2J1cyhzdHJ1Y3QgcGNpX2J1cyAqYnVzKQpJbmRleDogbGludXgt
+Mi42L2luY2x1ZGUvbGludXgvcGNpLmgKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvaW5j
+bHVkZS9saW51eC9wY2kuaAorKysgbGludXgtMi42L2luY2x1ZGUvbGludXgvcGNpLmgKQEAgLTMw
+OCw2ICszMDgsNyBAQCBzdHJ1Y3QgcGNpX2RldiB7CiAJdW5zaWduZWQgaW50CW11bHRpZnVuY3Rp
+b246MTsvKiBQYXJ0IG9mIG11bHRpLWZ1bmN0aW9uIGRldmljZSAqLwogCS8qIGtlZXAgdHJhY2sg
+b2YgZGV2aWNlIHN0YXRlICovCiAJdW5zaWduZWQgaW50CWlzX2FkZGVkOjE7CisJdW5zaWduZWQg
+aW50CWlzX3JlbW92ZWQ6MTsJLyogcGNpX2Rlc3Ryb3lfZGV2IGlzIGNhbGxlZCAqLwogCXVuc2ln
+bmVkIGludAlpc19idXNtYXN0ZXI6MTsgLyogZGV2aWNlIGlzIGJ1c21hc3RlciAqLwogCXVuc2ln
+bmVkIGludAlub19tc2k6MTsJLyogZGV2aWNlIG1heSBub3QgdXNlIG1zaSAqLwogCXVuc2lnbmVk
+IGludAlibG9ja19jZmdfYWNjZXNzOjE7CS8qIGNvbmZpZyBzcGFjZSBhY2Nlc3MgaXMgYmxvY2tl
+ZCAqLwo=
+--047d7bd758b859407e04ea03ca1b--
