@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab3JaXvj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 19:51:39 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:39677 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517Ab3JaXvi convert rfc822-to-8bit (ORCPT
+	id S1755570Ab3JaXxJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 19:53:09 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:54111 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124Ab3JaXxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 19:51:38 -0400
+	Thu, 31 Oct 2013 19:53:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <5272E920.6030606@iki.fi>
-References: <1380659456-3746-1-git-send-email-anssi.hannula@iki.fi>
-	<1380659456-3746-2-git-send-email-anssi.hannula@iki.fi>
-	<CACna6ryr37WRvKbMFmLEGt_A2zUD46rZOtJMVom+B_xK9WNLuw@mail.gmail.com>
-	<07e8973b4665cc23c3f4a77e9c7e2b7c@mail.onse.fi>
-	<CACna6ryFtmZHAhmCPEsoxZc5h4mLuM4ajnKGsp=q0jag2f_SYw@mail.gmail.com>
-	<5272BCE1.7010700@iki.fi>
-	<CACna6rzejyTOF2Fvvw1m2SAob7uU5-hJ+yRVk6HS5pDTz7+JWg@mail.gmail.com>
-	<5272E920.6030606@iki.fi>
-Date: Fri, 1 Nov 2013 00:51:37 +0100
-Message-ID: <CACna6rxuSUA9_1HXnY8yPhQ8BDeEnMvoX6i0WvTtst7UTvcgHA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] ALSA: hda - hdmi: Add ATI/AMD multi-channel audio support
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Anssi Hannula <anssi.hannula@iki.fi>
-Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        =?UTF-8?Q?Peter_Fr=C3=BChberger?= <fritsch@xbmc.org>,
-        Olivier Langlois <olivier@trillion01.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <xmqqa9hp9x2e.fsf@gitster.dls.corp.google.com>
+References: <20131024122255.GI9378@mwanda> <20131024122512.GB9534@mwanda>
+ <20131026181709.GB10488@kroah.com> <20131027013402.GA7146@leaf>
+ <526CA7D4.1070904@alum.mit.edu> <20131027071407.GA11683@leaf>
+ <526E283A.1070801@alum.mit.edu> <CALKQrgfsk3fjyF77XL9+CPyJ_s-AfzkNAj4Eaj1LT-G0Ph=bfg@mail.gmail.com>
+ <20131029020824.GE11861@sigill.intra.peff.net> <CALKQrge8T8R7roUUYyLcu_QnL1afeqTATOp+0n_OOsZZoJXF4Q@mail.gmail.com>
+ <CACsJy8DVSpmmDw-jGJoJK171u5UeJR7GKPuX7QAK4=7yYn6n8Q@mail.gmail.com> <xmqqa9hp9x2e.fsf@gitster.dls.corp.google.com>
+From: Duy Nguyen <pclouds@gmail.com>
+Date: Fri, 1 Nov 2013 06:52:35 +0700
+Message-ID: <CACsJy8CEnKxmhRYQqWoMVyLpfDUp7tqdnLxiV47XqaOFFCcUMw@mail.gmail.com>
+Subject: Re: [PATCH] commit: Add -f, --fixes <commit> option to add Fixes: line
+To: Junio C Hamano <gitster@pobox.com>
+Cc: Johan Herland <johan@herland.net>, Jeff King <peff@peff.net>,
+        Michael Haggerty <mhagger@alum.mit.edu>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Git mailing list <git@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, Greg KH <greg@kroah.com>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/1 Anssi Hannula <anssi.hannula@iki.fi>:
-> Just to check, is the display mode 720p50 or higher (as per HDMI spec
-> 7.3.3)? Though I guess too small mode would cause something else, not
-> this...
+On Fri, Nov 1, 2013 at 12:20 AM, Junio C Hamano <gitster@pobox.com> wrote:
+> Duy Nguyen <pclouds@gmail.com> writes:
+>
+>> OK how about, if $GIT_DIR/hooks/something is a directory, then the
+>> directory must contain a file named "index", listing all the hooks of
+>> type "something". All the hooks in "index" will be executed in the
+>> listing order.
+>
+> Hooks that take arbitrary amount of information from the body read
+> their standard input. How are your multiple hooks supposed to
+> interact?
 
-I'm using 1080p all the time. Do you think that
-HDMI_AUDIO_PACKETS_PER_LINE may have anything to do with this issue
-(see evergreen_hdmi.c)?
+If each only needs to read a few lines from stdin, they can do so in
+order. If two hooks need to read till the end of stdin, they are
+incompatible. If we support some sort of hook signature, we could warn
+the user when they combine the two. If not, the second's failing
+(because stdin is already closed) may show the incompatibility. "git
+hook" should support dry-run mode to test out new combinations.
 
+> Hooks that prevent you from doing something stupid signal allow/deny
+> with their exit code. Do you fail a commit if any of your pre-commit
+> hook fails, or is it OK to commit as long as one of them says so?
+> If the former, do all the hooks described in the index still run, or
+> does the first failure short-cut the remainder?
 
-> Also, does DTS-HD/TrueHD work with this receiver (interesting since
-> those require 8-channel 192kHz link)?
-
-Both are working for me. I've tested it using 2 movies:
-1) English TrueHD.5.1 @ 1417 kbps
-2) Audio
-Codec................: DTSHD-MA
-Bitrate..............: 3718 kbps
-kHz/bit..............: 24-bit
-Channels.............: 5.1
-Language.............: English
-
-
-> Would be interesting to check if this works in Windows I guess (or maybe
-> even just fglrx, though I can't think of a reason it'd make a difference).
-
-Installing fglrx is an option, I can try that. Not a big chance for
-Windows here.
-
+One failed hook fails the commit and stops the remaining from
+executing. You can skip the hook if you want with --exclude-hooks.
 -- 
-Rafał
+Duy
