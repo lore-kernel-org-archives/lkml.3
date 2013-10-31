@@ -1,104 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751558Ab3JaAQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 20:16:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43236 "EHLO mx2.suse.de"
+	id S1751728Ab3JaAZA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 20:25:00 -0400
+Received: from mga03.intel.com ([143.182.124.21]:13398 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750715Ab3JaAQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 20:16:28 -0400
-Date: Thu, 31 Oct 2013 11:16:12 +1100
-From: NeilBrown <neilb@suse.de>
-To: Pawel Baldysiak <pawel.baldysiak@intel.com>
-Cc: linux-raid@vger.kernel.org, shli@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] raid0: Set discard_granularity to correct value after
- reshape.
-Message-ID: <20131031111612.2735d0c1@notabene.brown>
-In-Reply-To: <20131030122022.20862.97997.stgit@gklab-154-222.igk.intel.com>
-References: <20131030122022.20862.97997.stgit@gklab-154-222.igk.intel.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/QN1VansVW.J2ZAn8L_Hzkvd"; protocol="application/pgp-signature"
+	id S1750714Ab3JaAY7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 20:24:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="382527464"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>, Madper Xie <cxie@redhat.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "anton@enomsg.org" <anton@enomsg.org>
+CC: "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bbboson@gmail.com" <bbboson@gmail.com>
+Subject: RE: [PATCH 0/2] make all stored entries accessible.
+Thread-Topic: [PATCH 0/2] make all stored entries accessible.
+Thread-Index: AQHO1VTFeljrJQot5kSnramJnOjynpoNuMFggAChDwD//5kvUA==
+Date: Thu, 31 Oct 2013 00:24:56 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F31D52E99@ORSMSX106.amr.corp.intel.com>
+References: <1383126294-28793-1-git-send-email-cxie@redhat.com>
+ <3908561D78D1C84285E8C5FCA982C28F31D529D7@ORSMSX106.amr.corp.intel.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D47F9D4476@USINDEM103.corp.hds.com>
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D47F9D4476@USINDEM103.corp.hds.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/QN1VansVW.J2ZAn8L_Hzkvd
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+> So, do you mean efivars should fix to use the "id" in a proper way?
 
-On Wed, 30 Oct 2013 13:20:22 +0100 Pawel Baldysiak
-<pawel.baldysiak@intel.com> wrote:
+It would avoid the need for all these tests, and additions to the filename to guarantee
+uniqueness.
 
-> In case of reshape of raid0 through raid4 a value of discard_granularity
-> will be set to stripe size. MD driver should re-set this value to correct
-> one when migration will be finished. Otherwise array will be left with
-> wrong value and discard operations will not work properly.
->=20
-> Signed-off-by: Pawel Baldysiak <pawel.baldysiak@intel.com>
-> Cc: Shaohua Li <shli@kernel.org>
-> ---
->  drivers/md/raid0.c |    2 ++
->  1 file changed, 2 insertions(+)
->=20
-> diff --git a/drivers/md/raid0.c b/drivers/md/raid0.c
-> index c4d420b..807ca3a 100644
-> --- a/drivers/md/raid0.c
-> +++ b/drivers/md/raid0.c
-> @@ -266,6 +266,8 @@ static int create_strip_zones(struct mddev *mddev, st=
-ruct r0conf **private_conf)
->  	}
->  	mddev->queue->backing_dev_info.congested_fn =3D raid0_congested;
->  	mddev->queue->backing_dev_info.congested_data =3D mddev;
-> +	mddev->queue->limits.discard_granularity =3D
-> +			queue_logical_block_size(mddev->queue);
-> =20
->  	/*
->  	 * now since we have the hard sector sizes, we can make sure
+Not sure what options efivars has to create a unique, persistent "id" for each
+record.  It's a fundamental part of how ERST works (though the unique ID is just
+based around a timestamp).
 
-Thanks, but this doesn't seem like the right sort of fix.  It is to specific
-to the symptom rather than trying to address the underlying problem.
+> I acked Madper's patch 2/2 earlier today, but when I look at your test result, I'm not sure if
+> it is reasonable for users to make multiple numbers visible to the file name.
+>
+>> -r--r--r-- 1 root root 17499 Oct 30 13:41 dmesg-erst-5940651313304961029--2129078373-1383165669
 
-Maybe something like this?  Can you review and test?
+after I added the "count = 0" initialization the filename gets a tiny bit less
+scary:
 
-Thanks,
-NeilBrown
+-r--r--r-- 1 root root 17499 Oct 30 13:41 dmesg-erst-5940651313304961029-0-1383165669
 
-
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 628cd529343f..740b6340f980 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -3620,6 +3620,7 @@ level_store(struct mddev *mddev, const char *buf, siz=
-e_t len)
- 		mddev->in_sync =3D 1;
- 		del_timer_sync(&mddev->safemode_timer);
- 	}
-+	blk_set_stacking_limit(&mddev->queue->limits);
- 	pers->run(mddev);
- 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
- 	mddev_resume(mddev);
-
---Sig_/QN1VansVW.J2ZAn8L_Hzkvd
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUnGhTDnsnt1WYoG5AQLoeBAAjZBrsLz72tts2FXhs8B4A+1/Tp9exK1S
-udJJk38SYP1r8XuKAzqH/nbQpwZ6yAW/gt902mbUgJgiuwAACuMypCJPD2hxIYD3
-S2RaSFDNZ5h8U22fHyYplgQwA0jAbRYC+mdHLdxHD/yQ5IqmztBdOTDEK62ZuaKZ
-lgM71hFJpIscaiLTl3glJK1Nh3Sez6rmI00yZizRQ6Dd2KdVcJPTNjZZ07SD5ek/
-id+K9Qdx7Iy2drE7fK5L8NG22BphE8dY5XFGj9cpKEE9sPWtt/kwnnPNXSV72OzF
-rd1GR8pSQ+oYlITVSa528Qi9nX2pAiQMDgm741HyruOFWSq7tZahvWMoYHwrlM5U
-Z6mms+6bqLKom6ExswdwKwGdwIxOCvNV5Fv6k0Zly1bD8wp1racIbhK9Ekumk9ZJ
-W30T+OWJIGG8irKX9hfPO/noAE02PpszFuyfw/VA+WDsmpNGDs1xEwxQ9V9ejFsd
-S9PhvPdsI0JJd+OrGt7C1K9HHTm2s6hsqFuPDiAU450UukipnVBLaWeBecXBR5YD
-WBMrWJgAN00pIimiUzBWLDMelHXj3dX29A0CWjDEy1U6sUnSnxt83SQNKPSnKlB2
-dbYSO8A/npyY5Y66z6FFnxCJdvpelZtxpW61muK3WjwDUtYv8zxUCksz0IDBcQco
-Kaamw5szsM4=
-=F60I
------END PGP SIGNATURE-----
-
---Sig_/QN1VansVW.J2ZAn8L_Hzkvd--
+-Tony
