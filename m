@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406Ab3JaQNA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 12:13:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43960 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032Ab3JaQM6 (ORCPT
+	id S1755413Ab3JaQN5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 12:13:57 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:49615 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab3JaQN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 12:12:58 -0400
-Message-ID: <1383235969.7651.42.camel@fourier>
-Subject: Re: [PATCH 0/4] ACPICA: Stable material of ACPI executer fixes for
- linux-3.8.
-From: Kamal Mostafa <kamal@canonical.com>
-To: Lv Zheng <lv.zheng@intel.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Bob Moore <robert.moore@intel.com>
-Date: Thu, 31 Oct 2013 09:12:49 -0700
-In-Reply-To: <cover.1383181113.git.lv.zheng@intel.com>
-References: <cover.1383181113.git.lv.zheng@intel.com>
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-o6TH7ILyAIjnDe1vXfJ1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	Thu, 31 Oct 2013 12:13:56 -0400
+Date: Thu, 31 Oct 2013 09:13:52 -0700
+From: Lee Jones <lee.jones@linaro.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: lkml <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: sysfs: cannot create duplicate filename /bus/i2c/drivers/tps65010
+Message-ID: <20131031161352.GA9587@lee--X1>
+References: <20131031152343.GE10544@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131031152343.GE10544@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> just FYI: I see the below with the attached randconfig on latest -rc7+
+> (output is a bit funny due to keeping earlyprintk on).
+> 
+> [    0.460026] ------------[ cut here ]------------
+> [    0.462726] WARNING: CPU: 0 PID: 1 at fs/sysfs/dir.c:526 sysfs_add_one+0xa0/0xc0()
+> [    0.464002] sysfs: cannot create duplicate filename '/bus/i2c/drivers/tps65010'
+> [    0.466018] CPU: 0 PID: 1 Comm: swapper Not tainted 3.12.0-rc7-02023-gf5889fb1b3ba #1
+> [    0.468002]  0000000000000009
+> [    0.468002]  0000000000000009 ffff88007e44fc20 ffff88007e44fc20 ffffffff89cda7e4 ffffffff89cda7e4 ffff88007e44fc58 ffff88007e44fc58
+> [    0.470111]  ffffffff89089307
+> [    0.470111]  ffffffff89089307 00000000ffffffef 00000000ffffffef ffff88007e52cd20 ffff88007e52cd20 ffff88007e44fd00 ffff88007e44fd00
+> [    0.473348]  ffff88007e549000
+> [    0.473348]  ffff88007e549000 0000000000000000 0000000000000000 ffff88007e44fcb8 ffff88007e44fcb8 ffffffff890893a7 ffffffff890893a7
+> [    0.475453] Call Trace:
+> [    0.476004]  [<ffffffff89cda7e4>] dump_stack+0x19/0x1b
+> [    0.477448]  [<ffffffff89089307>] warn_slowpath_common+0x67/0x90
+> [    0.479108]  [<ffffffff890893a7>] warn_slowpath_fmt+0x47/0x50
+> [    0.480003]  [<ffffffff89198ea0>] sysfs_add_one+0xa0/0xc0
+> [    0.481493]  [<ffffffff8919900f>] create_dir+0x6f/0xe0
+> [    0.482910]  [<ffffffff89199394>] sysfs_create_dir+0x84/0xe0
+> [    0.484011]  [<ffffffff8941dd7f>] kobject_add_internal+0xaf/0x2c0
+> [    0.485690]  [<ffffffff8941dff0>] kobject_init_and_add+0x60/0x80
+> [    0.488010]  [<ffffffff8943ee2d>] ? __raw_spin_lock_init+0x2d/0x50
+> [    0.489721]  [<ffffffff895774ae>] bus_add_driver+0x9e/0x2a0
+> [    0.492017]  [<ffffffff8a769b5d>] ? wm831x_spi_init+0x28/0x28
+> [    0.493622]  [<ffffffff8957914f>] driver_register+0x5f/0xf0
+> [    0.495160]  [<ffffffff8a769b5d>] ? wm831x_spi_init+0x28/0x28
+> [    0.496018]  [<ffffffff89845c67>] i2c_register_driver+0x27/0xb0
+> [    0.497650]  [<ffffffff8a769b91>] tps_init+0x34/0x79
+> [    0.499041]  [<ffffffff8a743df3>] do_one_initcall+0x7c/0x117
+> [    0.500011]  [<ffffffff890a62d8>] ? parse_args+0x1f8/0x330
+> [    0.501522]  [<ffffffff8a743fa1>] kernel_init_freeable+0x113/0x198
+> [    0.504002]  [<ffffffff8a74382f>] ? do_early_param+0x88/0x88
+> [    0.505587]  [<ffffffff89cc9990>] ? rest_init+0x130/0x130
+> [    0.507079]  [<ffffffff89cc9999>] kernel_init+0x9/0x180
+> [    0.508004]  [<ffffffff89ced98a>] ret_from_fork+0x7a/0xb0
+> [    0.509496]  [<ffffffff89cc9990>] ? rest_init+0x130/0x130
+> [    0.512011] ---[ end trace 70292a51052b5aeb ]---
 
---=-o6TH7ILyAIjnDe1vXfJ1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Is this an MFD issue?
 
-On Thu, 2013-10-31 at 09:07 +0800, Lv Zheng wrote:
-> There are bug-fixes for AML interpreter upstreamed, fixing some serious
-> issues found in recent platforms.  These fixes make Linux AML interpreter
-> more ACPI 2.0 ASL concept compliant.  Further AML interpreter fixes shoul=
-d
-> be based on such improvements, thus they are good materials for stable.
->=20
-> This patch set can be safely applied to linux-3.8:
-> commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200 upstream.
->=20
-> The patch set has passed build/boot tests on the following machines:
->   Dell Inspiron Mini 1010 (i386)
->   HP Compaq 8200 Elite SFF PC (x86-64)
->=20
-> Bob Moore (4):
->   ACPICA: Interpreter: Fix Store() when implicit conversion is not
->     possible.
->   ACPICA: DeRefOf operator: Update to fully resolve FieldUnit and
->     BufferField refs.
->   ACPICA: Return error if DerefOf resolves to a null package element.
->   ACPICA: Fix for a Store->ArgX when ArgX contains a reference to a
->     field.
->=20
->  drivers/acpi/acpica/exoparg1.c |   48 +++++++++++--
->  drivers/acpi/acpica/exstore.c  |  151 +++++++++++++++++++++++++++-------=
-------
->  2 files changed, 146 insertions(+), 53 deletions(-)
->=20
-> Cc: Bob Moore <robert.moore@intel.com>
+It looks more like an SPI/I2C one?
 
-
-OK, I'm queuing these up for 3.8-stable (they'll appear in v3.8.13.13).
-Thanks very much Lv, Rafael, and Bob.
-
- -Kamal
-
-
---=-o6TH7ILyAIjnDe1vXfJ1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABCAAGBQJScoGBAAoJEHqwmdxYrXhZV3YP/1ZTnpdv4IB7+580zcFtWqLx
-hzrZTZOaBrnGrFZnpX+o3Vx2qtWLl/iV7n29h4knXQJENSZtjSSE+n4n/9c9YcEg
-VSL/M77IOUER0p9JdVHeuiVRxZ1LlkiLrdJ+a51kp6Not/M5zS9QnkzrK+dpsISV
-p1Xppp2R+XsYk2D3qQTj3G3B5Dk40ir9vj0o2H2j6qU3u2CTVfx6y4O3AEv79gPo
-l94f6aF7dZ9RHfYqbtmFPwp4ryGZPg/UL5+y+Wb1P8lYUcNGhhLxc1f9kpfoAFrb
-GPxIFILSzqC51hd6L5TWcta4aLgJ7DWrU63/t/B/LJUegrc4K/fdcniwIpIe+j+S
-ymMgFP50UosJYPce0u7dVxM3R95Tsx5U8f6duih0qydJfbulPZDmfpfQ8M3fYJ5l
-prXtHU9qnRsDdpekOYTwg+ppxM93toUPgGq2LhbBnWV/3QA4uG/3RrLxIl20bd4F
-NzN1x2ctGHqcVPnmJWuR/xYEEE76AgJ9vyB6KH3joGPfuXUubLfkCoEce2/47xGJ
-D8wwLMbrTj/7cdTOzegDTSS8B4UoDiNPVHDfY5RfLKdVTFItFuWtb9orRg/h+ETi
-WDV3pUF2Wz5MVdjm+vZfpy3g0OS1P/jnS1qmml5iqwfle4caITgwetncqa907Egr
-41Np7kt0XHEp8Kj6/s9q
-=oaar
------END PGP SIGNATURE-----
-
---=-o6TH7ILyAIjnDe1vXfJ1--
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
