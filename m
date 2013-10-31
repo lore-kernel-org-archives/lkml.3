@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab3JaQR5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 12:17:57 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:56436 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752916Ab3JaQRy (ORCPT
+	id S1755447Ab3JaQSm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 12:18:42 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:51328 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754733Ab3JaQSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 12:17:54 -0400
+	Thu, 31 Oct 2013 12:18:41 -0400
+Date: Thu, 31 Oct 2013 16:18:26 +0000
+From: Jamie Iles <jamie.iles@oracle.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jamie Iles <jamie.iles@oracle.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] recordmcount.pl: add support for __fentry__
+Message-ID: <20131031161826.GH29371@localhost>
+References: <1383235198-24961-1-git-send-email-jamie.iles@oracle.com>
+ <20131031120926.112c3c26@gandalf.local.home>
 MIME-Version: 1.0
-In-Reply-To: <20131031104549.GZ18477@ns203013.ovh.net>
-References: <1380732056-5387-1-git-send-email-dh.herrmann@gmail.com>
-	<20131031104549.GZ18477@ns203013.ovh.net>
-Date: Thu, 31 Oct 2013 17:17:54 +0100
-Message-ID: <CANq1E4QAwOG8Vdw2nCb8+LirZ278w58j+wpieeKvnNepga+baw@mail.gmail.com>
-Subject: Re: [PATCH v2] efifb: prevent null-deref when iterating dmi_list
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        James Bates <james.h.bates@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        James Bates <james.h.bates@yahoo.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131031120926.112c3c26@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Thu, Oct 31, 2013 at 12:09:26PM -0400, Steven Rostedt wrote:
+> On Thu, 31 Oct 2013 15:59:58 +0000
+> Jamie Iles <jamie.iles@oracle.com> wrote:
+> 
+> > With gcc 4.6.0 the -mfentry feature places the function profiling call
+> > at the start of the function. When this is used, the call is to
+> > __fentry__ and not mcount.
+> > 
+> > Based on 48bb5dc6cd9d30fe0d594947563da1f8bd9abada (ftrace: Make
+> > recordmcount.c handle __fentry__).
+> 
+> Why? All current users of __fentry__ use the C version of recordmcount.
+> This just slows down the few archs that still use recordmcount.pl.
 
-On Thu, Oct 31, 2013 at 11:45 AM, Jean-Christophe PLAGNIOL-VILLARD
-<plagnioj@jcrosoft.com> wrote:
-> On 18:40 Wed 02 Oct     , David Herrmann wrote:
->> The dmi_list array is initialized using gnu designated initializers, and
->> therefore may contain fewer explicitly defined entries as there are
->> elements in it. This is because the enum above with M_xyz constants
->> contains more items than the designated initializer. Those elements not
->> explicitly initialized are implicitly set to 0.
->>
->> Now efifb_setup() loops through all these array elements, and performs
->> a strcmp on each item. For non explicitly initialized elements this will
->> be a null pointer:
->>
->> This patch swaps the check order in the if statement, thus checks first
->> whether dmi_list[i].base is null.
->>
->> Signed-off-by: James Bates <james.h.bates@yahoo.com>
->> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
->
-> with the simpleDRM arriving next merge I'm wondering if we need to keep it?
+Okay, it's probably fair to drop this one then if it's not useful to the 
+other arches.  We have a corner case with Ksplice where the C version of 
+mcount not writing the section symbol for __mcount_loc causes a problem 
+and we fall back to the perl version, but I'll spend some time working 
+on fixing that instead.
 
-SimpleDRM is not coming next merge-window. It's basically finished,
-but I'm still working on the user-space side as its KMS api is highly
-reduced compared to fully-featured DRM/KMS drivers. Maybe 3.13 will
-work out.
+Thanks,
 
-Anyhow, this patch is still needed as it fixes a serious bug for simplefb.
-
-Thanks
-David
+Jamie
