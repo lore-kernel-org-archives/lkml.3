@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab3JaK6I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 06:58:08 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:60765 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753298Ab3JaK6E (ORCPT
+	id S1754757Ab3JaK6z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 06:58:55 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39224 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753961Ab3JaK6w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 06:58:04 -0400
-Date: Thu, 31 Oct 2013 11:57:59 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Mark Wielaard <mjw@redhat.com>
-Cc: Pekka Enberg <penberg@iki.fi>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
-        anton@redhat.com, systemtap@sourceware.org,
-        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com,
-        dsahern@gmail.com,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
-Message-ID: <20131031105759.GB12066@gmail.com>
-References: <20131023044511.1886.82571.stgit@hemant-fedora>
- <20131023050502.1886.15779.stgit@hemant-fedora>
- <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com>
- <y0mbo2cs2oa.fsf@fche.csb>
- <5270D9F7.3090105@hitachi.com>
- <5270F2DE.6040505@iki.fi>
- <1383216886.6521.5910.camel@bordewijk.wildebeest.org>
+	Thu, 31 Oct 2013 06:58:52 -0400
+From: "R, Sricharan" <r.sricharan@ti.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "Nayak, Rajendra" <rnayak@ti.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: RE: [PATCH V2 2/7] DRIVERS: IRQCHIP: CROSSBAR: Add support for
+ Crossbar IP
+Thread-Topic: [PATCH V2 2/7] DRIVERS: IRQCHIP: CROSSBAR: Add support for
+ Crossbar IP
+Thread-Index: AQHO1YBiICNK6tuSpUKo5P741bpUK5oM2NKAgAHKfns=
+Date: Thu, 31 Oct 2013 10:57:47 +0000
+Message-ID: <F934AE11CE617240AE4A874A49F629E4832579@DBDE04.ent.ti.com>
+References: <1383145040-15852-1-git-send-email-r.sricharan@ti.com>
+ <1383145040-15852-3-git-send-email-r.sricharan@ti.com>,<alpine.DEB.2.02.1310301615430.24686@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1310301615430.24686@ionos.tec.linutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.56]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383216886.6521.5910.camel@bordewijk.wildebeest.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Thomas,
+  Again sorry for top post. 
 
-* Mark Wielaard <mjw@redhat.com> wrote:
+  I agree and will fix both of the comments below.
 
-> On Wed, 2013-10-30 at 13:51 +0200, Pekka Enberg wrote:
-> > On 10/30/13 12:05 PM, Masami Hiramatsu wrote:
-> > > To find all system libraries, we can use ldconfig.
-> > >
-> > > $ ldconfig --print-cache
-> > >
-> > > shows what dynamic libraries will be loaded. On my own laptop (running
-> > > ubuntu13.04) shows ~1000 libs.
-> > 
-> > Good point. That definitely narrows down the scanned set.
-> 
-> It is fast. But that would miss the various libjvm.so variants for 
-> example. Or other programs, like libreoffice, which have SDT 
-> probes in their internal shared libraries that aren't in the 
-> default ldconfig paths.
+  Thanks for the reviews.
 
-I suppose those Java libraries ought to show up in 
-/etc/prelink.cache though, right?
+Regards,
+ Sricharan
+________________________________________
+From: Thomas Gleixner [tglx@linutronix.de]
+Sent: Wednesday, October 30, 2013 9:00 PM
+To: R, Sricharan
+Cc: linux-kernel@vger.kernel.org; devicetree@vger.kernel.org; linux-doc@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-omap@vger.kernel.org; linus.walleij@linaro.org; linux@arm.linux.org.uk; tony@atomide.com; Nayak, Rajendra; marc.zyngier@arm.com; grant.likely@linaro.org; mark.rutland@arm.com; robherring2@gmail.com; Shilimkar, Santosh; Rob Herring
+Subject: Re: [PATCH V2 2/7] DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar IP
+
+On Wed, 30 Oct 2013, Sricharan R wrote:
+> +static inline const u32 allocate_free_irq(int cb_no)
+
+I understand the "static inline" part, but "const u32" is more than
+fishy. What's wrong with "static inline int" ?
+
+> +{
+> +     int i;
+> +
+> +     for (i = 0; i < cb->int_max; i++) {
+> +             if (cb->irq_map[i] == IRQ_FREE) {
+> +                     cb->irq_map[i] = cb_no;
+> +                     return i;
+> +             }
+> +     }
+> +
+> +     return -ENODEV;
+> +}
+
+> +static int crossbar_domain_xlate(struct irq_domain *d,
+> +                              struct device_node *controller,
+> +                              const u32 *intspec, unsigned int intsize,
+> +                              unsigned long *out_hwirq,
+> +                              unsigned int *out_type)
+> +{
+> +     unsigned long ret = 0;
+
+Why do you need to initialize ret when you assign a value to it in the
+next line?
 
 Thanks,
 
-	Ingo
+        tglx
