@@ -1,98 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab3JaK6z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 06:58:55 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39224 "EHLO bear.ext.ti.com"
+	id S1754496Ab3JaK7d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 06:59:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7648 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753961Ab3JaK6w convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 06:58:52 -0400
-From: "R, Sricharan" <r.sricharan@ti.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "Nayak, Rajendra" <rnayak@ti.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: RE: [PATCH V2 2/7] DRIVERS: IRQCHIP: CROSSBAR: Add support for
- Crossbar IP
-Thread-Topic: [PATCH V2 2/7] DRIVERS: IRQCHIP: CROSSBAR: Add support for
- Crossbar IP
-Thread-Index: AQHO1YBiICNK6tuSpUKo5P741bpUK5oM2NKAgAHKfns=
-Date: Thu, 31 Oct 2013 10:57:47 +0000
-Message-ID: <F934AE11CE617240AE4A874A49F629E4832579@DBDE04.ent.ti.com>
-References: <1383145040-15852-1-git-send-email-r.sricharan@ti.com>
- <1383145040-15852-3-git-send-email-r.sricharan@ti.com>,<alpine.DEB.2.02.1310301615430.24686@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1310301615430.24686@ionos.tec.linutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.56]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753469Ab3JaK7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 06:59:32 -0400
+Message-ID: <5272380F.9000600@redhat.com>
+Date: Thu, 31 Oct 2013 11:59:27 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
 MIME-Version: 1.0
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Gleb Natapov <gleb@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/3] Documentation/kvm: patches should be against linux.git
+References: <1383216396-12869-1-git-send-email-artagnon@gmail.com> <1383216396-12869-3-git-send-email-artagnon@gmail.com>
+In-Reply-To: <1383216396-12869-3-git-send-email-artagnon@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
-  Again sorry for top post. 
+Il 31/10/2013 11:46, Ramkumar Ramachandra ha scritto:
+> The document hasn't been updated since cf3e3d3 (KVM: Document KVM
+> specific review items, 2010-06-24); kvm does not have a separate
+> repository anymore.
 
-  I agree and will fix both of the comments below.
+Maintainer have their repository at
+git://git.kernel.org/pub/scm/virt/kvm/kvm.git.  The right fix is to add
+that tree to MAINTAINERS.
 
-  Thanks for the reviews.
+Paolo
 
-Regards,
- Sricharan
-________________________________________
-From: Thomas Gleixner [tglx@linutronix.de]
-Sent: Wednesday, October 30, 2013 9:00 PM
-To: R, Sricharan
-Cc: linux-kernel@vger.kernel.org; devicetree@vger.kernel.org; linux-doc@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-omap@vger.kernel.org; linus.walleij@linaro.org; linux@arm.linux.org.uk; tony@atomide.com; Nayak, Rajendra; marc.zyngier@arm.com; grant.likely@linaro.org; mark.rutland@arm.com; robherring2@gmail.com; Shilimkar, Santosh; Rob Herring
-Subject: Re: [PATCH V2 2/7] DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar IP
+> Cc: Avi Kivity <avi@redhat.com>
+> Cc: Gleb Natapov <gleb@redhat.com>
+> Cc: Paolo Bonzini <pbonzini@redhat.com>
+> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+> ---
+>  Documentation/virtual/kvm/review-checklist.txt | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/virtual/kvm/review-checklist.txt b/Documentation/virtual/kvm/review-checklist.txt
+> index a850986..8385c4d 100644
+> --- a/Documentation/virtual/kvm/review-checklist.txt
+> +++ b/Documentation/virtual/kvm/review-checklist.txt
+> @@ -4,7 +4,7 @@ Review checklist for kvm patches
+>  1.  The patch must follow Documentation/CodingStyle and
+>      Documentation/SubmittingPatches.
+>  
+> -2.  Patches should be against kvm.git master branch.
+> +2.  Patches should be against linux.git master branch.
+>  
+>  3.  If the patch introduces or modifies a new userspace API:
+>      - the API must be documented in Documentation/virtual/kvm/api.txt
+> 
 
-On Wed, 30 Oct 2013, Sricharan R wrote:
-> +static inline const u32 allocate_free_irq(int cb_no)
-
-I understand the "static inline" part, but "const u32" is more than
-fishy. What's wrong with "static inline int" ?
-
-> +{
-> +     int i;
-> +
-> +     for (i = 0; i < cb->int_max; i++) {
-> +             if (cb->irq_map[i] == IRQ_FREE) {
-> +                     cb->irq_map[i] = cb_no;
-> +                     return i;
-> +             }
-> +     }
-> +
-> +     return -ENODEV;
-> +}
-
-> +static int crossbar_domain_xlate(struct irq_domain *d,
-> +                              struct device_node *controller,
-> +                              const u32 *intspec, unsigned int intsize,
-> +                              unsigned long *out_hwirq,
-> +                              unsigned int *out_type)
-> +{
-> +     unsigned long ret = 0;
-
-Why do you need to initialize ret when you assign a value to it in the
-next line?
-
-Thanks,
-
-        tglx
