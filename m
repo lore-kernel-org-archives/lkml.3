@@ -1,52 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab3JaOo0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 10:44:26 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:37599 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599Ab3JaOoY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 10:44:24 -0400
+	id S1754868Ab3JaOsw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 10:48:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39121 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754230Ab3JaOsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 10:48:51 -0400
+Date: Thu, 31 Oct 2013 15:48:48 +0100
+From: Jan Kara <jack@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Luis Henriques <luis.henriques@canonical.com>,
+        linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3.5 29/64] fs: buffer: move allocation failure loop into
+ the allocator
+Message-ID: <20131031144848.GA3275@quack.suse.cz>
+References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
+ <1382971703-17393-30-git-send-email-luis.henriques@canonical.com>
+ <20131031140008.GB14054@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <1382909086-10493-5-git-send-email-sre@debian.org>
-References: <1382909086-10493-1-git-send-email-sre@debian.org>
-	<1382909086-10493-5-git-send-email-sre@debian.org>
-Date: Thu, 31 Oct 2013 07:44:22 -0700
-Message-ID: <CACRpkdb1dAiDCeZkOiZ6inbDruaUwLgk3joWwuQmSRNZ9WkDGw@mail.gmail.com>
-Subject: Re: [RFC 4/4] ASoC: RX-51: Add DT support to sound driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Sebastian Reichel <sre@ring0.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131031140008.GB14054@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 27, 2013 at 2:24 PM, Sebastian Reichel <sre@debian.org> wrote:
+On Thu 31-10-13 10:00:08, Johannes Weiner wrote:
+> On Mon, Oct 28, 2013 at 02:47:48PM +0000, Luis Henriques wrote:
+> > 3.5.7.24 -stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Johannes Weiner <hannes@cmpxchg.org>
+> > 
+> > commit 84235de394d9775bfaa7fa9762a59d91fef0c1fc upstream.
+> > 
+> > Buffer allocation has a very crude indefinite loop around waking the
+> > flusher threads and performing global NOFS direct reclaim because it can
+> > not handle allocation failures.
+> > 
+> > The most immediate problem with this is that the allocation may fail due
+> > to a memory cgroup limit, where flushers + direct reclaim might not make
+> > any progress towards resolving the situation at all.  Because unlike the
+> > global case, a memory cgroup may not have any cache at all, only
+> > anonymous pages but no swap.  This situation will lead to a reclaim
+> > livelock with insane IO from waking the flushers and thrashing unrelated
+> > filesystem cache in a tight loop.
+> > 
+> > Use __GFP_NOFAIL allocations for buffers for now.  This makes sure that
+> > any looping happens in the page allocator, which knows how to
+> > orchestrate kswapd, direct reclaim, and the flushers sensibly.  It also
+> > allows memory cgroups to detect allocations that can't handle failure
+> > and will allow them to ultimately bypass the limit if reclaim can not
+> > make progress.
+  So I was under the impression that __GFP_NOFAIL is going away, doesn't
+it? At least about an year ago there was some effort to remove its users so
+we ended up creating loops like the above one (and similar ones for
+jbd/jbd2) in cases where handling the failure wasn't easily possible. And now
+it seems we are going in the opposite direction... At least we have a
+steady flow of patches guaranteed :)
 
-> +- eci-sw-gpio: GPIO for ECI SW
-> +- speaker-amp-gpio: GPIO for Speaker Amp
-
-Can you please spell out the acronyms? ECI? SW? Amp?
-
-I guess SW=switch, Amp=amplifier, but ECI beats me.
-
-Yours,
-Linus Walleij
+								Honza
+> > 
+> > Reported-by: azurIt <azurit@pobox.sk>
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > Cc: Michal Hocko <mhocko@suse.cz>
+> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> > Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> > ---
+> >  fs/buffer.c     | 14 ++++++++++++--
+> >  mm/memcontrol.c |  2 ++
+> >  2 files changed, 14 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/fs/buffer.c b/fs/buffer.c
+> > index 2c78739..2675e5a 100644
+> > --- a/fs/buffer.c
+> > +++ b/fs/buffer.c
+> > @@ -957,9 +957,19 @@ grow_dev_page(struct block_device *bdev, sector_t block,
+> >  	struct buffer_head *bh;
+> >  	sector_t end_block;
+> >  	int ret = 0;		/* Will call free_more_memory() */
+> > +	gfp_t gfp_mask;
+> >  
+> > -	page = find_or_create_page(inode->i_mapping, index,
+> > -		(mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS)|__GFP_MOVABLE);
+> > +	gfp_mask = mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS;
+> > +	gfp_mask |= __GFP_MOVABLE;
+> > +	/*
+> > +	 * XXX: __getblk_slow() can not really deal with failure and
+> > +	 * will endlessly loop on improvised global reclaim.  Prefer
+> > +	 * looping in the allocator rather than here, at least that
+> > +	 * code knows what it's doing.
+> > +	 */
+> > +	gfp_mask |= __GFP_NOFAIL;
+> > +
+> > +	page = find_or_create_page(inode->i_mapping, index, gfp_mask);
+> >  	if (!page)
+> >  		return ret;
+> >  
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 226b63e..953bf3c 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -2405,6 +2405,8 @@ done:
+> >  	return 0;
+> >  nomem:
+> >  	*ptr = NULL;
+> > +	if (gfp_mask & __GFP_NOFAIL)
+> > +		return 0;
+> >  	return -ENOMEM;
+> >  bypass:
+> >  	*ptr = root_mem_cgroup;
+> > -- 
+> > 1.8.3.2
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
