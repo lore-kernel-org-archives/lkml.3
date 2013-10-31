@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807Ab3JaBT6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 21:19:58 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:35418 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab3JaBTq (ORCPT
+	id S1752054Ab3JaBUa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 21:20:30 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:43255 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab3JaBU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 21:19:46 -0400
+	Wed, 30 Oct 2013 21:20:28 -0400
+Message-ID: <5271B012.4060200@atmel.com>
+Date: Thu, 31 Oct 2013 09:19:14 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <CAOesGMj03kgJXttm80pHvPYeqg5hOaeOJAJ4DA8tf5LxqdArrQ@mail.gmail.com>
-References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
-	<1381869563-16083-5-git-send-email-grant.likely@linaro.org>
-	<CAOesGMj03kgJXttm80pHvPYeqg5hOaeOJAJ4DA8tf5LxqdArrQ@mail.gmail.com>
-Date: Thu, 31 Oct 2013 09:19:44 +0800
-Message-ID: <CACVXFVM5EMb+zs_ep-Hj3zt2+zKrTb9X7_FANHxfegebYvG43Q@mail.gmail.com>
-Subject: Re: [RFC 4/9] of/irq: Refactor interrupt-map parsing
-From: Ming Lei <tom.leiming@gmail.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kevin Hilman <khilman@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>, Johan Hovold <jhovold@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] misc: atmel_pwm: set initcall level to subsys
+References: <1382459560-26596-1-git-send-email-jhovold@gmail.com> <20131029232249.GA20476@kroah.com> <20131030110705.GA29813@localhost> <201310302146.18248.arnd@arndb.de>
+In-Reply-To: <201310302146.18248.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 12:23 AM, Olof Johansson <olof@lixom.net> wrote:
-> Hi,
->
-> On Tue, Oct 15, 2013 at 1:39 PM, Grant Likely <grant.likely@linaro.org> wrote:
->> All the users of of_irq_parse_raw pass in a raw interrupt specifier from
->> the device tree and expect it to be returned (possibly modified) in an
->> of_phandle_args structure. However, the primary function of
->> of_irq_parse_raw() is to check for translations due to the presence of
->> one or more interrupt-map properties. The actual placing of the data
->> into an of_phandle_args structure is trivial. If it is refactored to
->> accept an of_phandle_args structure directly, then it becomes possible
->> to consume of_phandle_args from other sources. This is important for an
->> upcoming patch that allows a device to be connected to more than one
->> interrupt parent. It also simplifies the code a bit.
+Hi Arnd,
+
+On 10/31/2013 04:46, Arnd Bergmann wrote:
+> On Wednesday 30 October 2013, Johan Hovold wrote:
+>>> I really hate this type of patch, as it's papering over the real
+>>> problem.  What happens when someone else moves their driver to this
+>>> level?  Then you are back to the original problem.
 >>
->> The biggest complication with this patch is that the old version works
->> on the interrupt specifiers in __be32 form, but the of_phandle_args
->> structure is intended to carry it in the cpu-native version. A bit of
->> churn was required to make this work. In the end it results in tighter
->> code, so the churn is worth it.
->>
->> Signed-off-by: Grant Likely <grant.likely@linaro.org>
->> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> Yes, it's crude, but it's currently the only way to express a preferred
+>> probe order.
 >
-> This patch stopped exynos/arndale from booting when it hit next (i.e.
-> last night). I bisected down to this commit.
-
-+1, :-)
-
+> Does the same problem occur with the generic PWM subsystem?
 >
-> It seems that the platform is getting stuck calibrating delay loop,
-> i.e. it is not getting interrupts. Let me know if you want me to
-> collect more data of some sort.
+> The atmel_pwm driver apparently is the last PWM driver that has
+> not been converted to the generic subsystem yet. Doing that would
+> also let us drop the atmel-pwm-bl driver in favor of the generic
+> backlight.
 
+The atmel pwm driver is on the way to generic subsystem. more 
+information at:
+--->8---
+PWM: atmel-pwm: add PWM controller driver:
+    https://patchwork.kernel.org/patch/2963081/
+---<8---
 
+Best Regards,
+Bo Shen
 
-Thanks,
--- 
-Ming Lei
