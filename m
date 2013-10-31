@@ -1,36 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab3JaOCu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 10:02:50 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:33807 "EHLO zene.cmpxchg.org"
+	id S1754847Ab3JaOED (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 10:04:03 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:33813 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754435Ab3JaOCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 10:02:49 -0400
-Date: Thu, 31 Oct 2013 10:00:08 -0400
+	id S1754299Ab3JaOEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 10:04:01 -0400
+Date: Thu, 31 Oct 2013 10:01:16 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
-To: Luis Henriques <luis.henriques@canonical.com>
+To: Kamal Mostafa <kamal@canonical.com>
 Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com, Michal Hocko <mhocko@suse.cz>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 3.5 29/64] fs: buffer: move allocation failure loop into
+Subject: Re: [PATCH 3.8 79/81] fs: buffer: move allocation failure loop into
  the allocator
-Message-ID: <20131031140008.GB14054@cmpxchg.org>
-References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
- <1382971703-17393-30-git-send-email-luis.henriques@canonical.com>
+Message-ID: <20131031140116.GC14054@cmpxchg.org>
+References: <1383069882-11437-1-git-send-email-kamal@canonical.com>
+ <1383069882-11437-80-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1382971703-17393-30-git-send-email-luis.henriques@canonical.com>
+In-Reply-To: <1383069882-11437-80-git-send-email-kamal@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is part of a bigger series and was tagged for stable as a
-reminder only.  Please don't apply for now.
+This fix was tagged as a reminder for a bigger series, please don't
+apply for now.
 
-On Mon, Oct 28, 2013 at 02:47:48PM +0000, Luis Henriques wrote:
-> 3.5.7.24 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Oct 29, 2013 at 11:04:40AM -0700, Kamal Mostafa wrote:
+> 3.8.13.12 -stable review patch.  If anyone has any objections, please let me know.
 > 
 > ------------------
 > 
@@ -62,17 +62,17 @@ On Mon, Oct 28, 2013 at 02:47:48PM +0000, Luis Henriques wrote:
 > Cc: Michal Hocko <mhocko@suse.cz>
 > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 > Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 > ---
 >  fs/buffer.c     | 14 ++++++++++++--
 >  mm/memcontrol.c |  2 ++
 >  2 files changed, 14 insertions(+), 2 deletions(-)
 > 
 > diff --git a/fs/buffer.c b/fs/buffer.c
-> index 2c78739..2675e5a 100644
+> index 7a75c3e..be83882 100644
 > --- a/fs/buffer.c
 > +++ b/fs/buffer.c
-> @@ -957,9 +957,19 @@ grow_dev_page(struct block_device *bdev, sector_t block,
+> @@ -965,9 +965,19 @@ grow_dev_page(struct block_device *bdev, sector_t block,
 >  	struct buffer_head *bh;
 >  	sector_t end_block;
 >  	int ret = 0;		/* Will call free_more_memory() */
@@ -95,10 +95,10 @@ On Mon, Oct 28, 2013 at 02:47:48PM +0000, Luis Henriques wrote:
 >  		return ret;
 >  
 > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 226b63e..953bf3c 100644
+> index 6b7ff19..b150e66f 100644
 > --- a/mm/memcontrol.c
 > +++ b/mm/memcontrol.c
-> @@ -2405,6 +2405,8 @@ done:
+> @@ -2614,6 +2614,8 @@ done:
 >  	return 0;
 >  nomem:
 >  	*ptr = NULL;
@@ -108,5 +108,5 @@ On Mon, Oct 28, 2013 at 02:47:48PM +0000, Luis Henriques wrote:
 >  bypass:
 >  	*ptr = root_mem_cgroup;
 > -- 
-> 1.8.3.2
+> 1.8.1.2
 > 
