@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312Ab3JaRhh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 13:37:37 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:36708 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522Ab3JaRhg (ORCPT
+	id S1754164Ab3JaRnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 13:43:10 -0400
+Received: from zimbra3.corp.accelance.fr ([213.162.49.233]:54062 "EHLO
+	zimbra3.corp.accelance.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576Ab3JaRnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 13:37:36 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>
-Cc: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] arm: zynq: platsmp: Remove CPU presence check
-Date: Thu, 31 Oct 2013 10:37:09 -0700
-Message-Id: <1383241029-32018-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.4.1
-In-Reply-To: <20131031161739.GE16735@n2100.arm.linux.org.uk>
-References: <20131031161739.GE16735@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 31 Oct 2013 13:43:09 -0400
+From: Romain Naour <romain.naour@openwide.fr>
+To: linux-kernel@vger.kernel.org
+Cc: Romain <romain.naour@openwide.fr>
+Subject: [PATCH 1/1] trace-cmd: use pkg-config instead of python-config
+Date: Thu, 31 Oct 2013 18:39:42 +0100
+Message-Id: <1383241182-11162-1-git-send-email-romain.naour@openwide.fr>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The generic code already checks that the CPU being requested is legal if
-the cpu possible/present masks are set correctly.
+From: Romain <romain.naour@openwide.fr>
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+trace-cmd use python-config to find out which headers
+and libraries should be used to link against the Python libraries.
+By default, python-config returns paths that are inappropriate for
+cross-compilation.
+
+Add PYTHON_VERS to build trace-cmd with python2 or python3
+
+Signed-off-by: Romain Naour <romain.naour@openwide.fr>
 ---
-As per Russel's suggestion, consider this alternative for 1/6.
+ Makefile | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-	Sören
-
- arch/arm/mach-zynq/platsmp.c | 5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/arch/arm/mach-zynq/platsmp.c b/arch/arm/mach-zynq/platsmp.c
-index bc730eb38f00..8021499e7b70 100644
---- a/arch/arm/mach-zynq/platsmp.c
-+++ b/arch/arm/mach-zynq/platsmp.c
-@@ -39,11 +39,6 @@ int zynq_cpun_start(u32 address, int cpu)
- 	u32 trampoline_code_size = &zynq_secondary_trampoline_end -
- 						&zynq_secondary_trampoline;
+diff --git a/Makefile b/Makefile
+index 1964949..2f862ec 100644
+--- a/Makefile
++++ b/Makefile
+@@ -81,8 +81,10 @@ ifndef NO_PYTHON
+ PYTHON		:= ctracecmd.so
+ PYTHON_GUI	:= ctracecmd.so ctracecmdgui.so
  
--	if (cpu > ncores) {
--		pr_warn("CPU No. is not available in the system\n");
--		return -1;
--	}
--
- 	/* MS: Expectation that SLCR are directly map and accessible */
- 	/* Not possible to jump to non aligned address */
- 	if (!(address & 3) && (!address || (address >= trampoline_code_size))) {
++PYTHON_VERS ?= python
++
+ # Can build python?
+-ifeq ($(shell sh -c "python-config --includes > /dev/null 2>&1 && echo y"), y)
++ifeq ($(shell sh -c "pkg-config --cflags $(PYTHON_VERS) > /dev/null 2>&1 && echo y"), y)
+ 	PYTHON_PLUGINS := plugin_python.so
+ 	BUILD_PYTHON := $(PYTHON) $(PYTHON_PLUGINS)
+ 	PYTHON_SO_INSTALL := ctracecmd.install
+@@ -550,8 +552,8 @@ clean:
+ 
+ ##### PYTHON STUFF #####
+ 
+-PYTHON_INCLUDES = `python-config --includes`
+-PYTHON_LDFLAGS = `python-config --ldflags` \
++PYTHON_INCLUDES = `pkg-config --cflags $(PYTHON_VERS)`
++PYTHON_LDFLAGS = `pkg-config --libs $(PYTHON_VERS)` \
+ 		$(shell python -c "import distutils.sysconfig; print distutils.sysconfig.get_config_var('LINKFORSHARED')")
+ PYGTK_CFLAGS = `pkg-config --cflags pygtk-2.0`
+ 
 -- 
-1.8.4.1
+1.8.1.4
 
