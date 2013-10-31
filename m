@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab3JaQEa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 12:04:30 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:59636 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab3JaQE2 (ORCPT
+	id S1755312Ab3JaQEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 12:04:39 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48884 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755214Ab3JaQEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 12:04:28 -0400
-From: Paul Moore <paul@paul-moore.com>
-To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        libseccomp-discuss@lists.sourceforge.net
-Subject: ANN: libseccomp 2.1.1 released
-Date: Thu, 31 Oct 2013 12:04:25 -0400
-Message-ID: <5205940.GnC9iqXGhX@sifl>
-User-Agent: KMail/4.11.2 (Linux/3.10.13-gentoo; KDE/4.11.2; x86_64; ; )
+	Thu, 31 Oct 2013 12:04:36 -0400
+Message-ID: <52727F63.6040703@ti.com>
+Date: Thu, 31 Oct 2013 11:03:47 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+To: Vinod Koul <vinod.koul@intel.com>
+CC: <dmaengine@vger.kernel.org>, Matt Porter <matt@ohporter.com>,
+        Russell King <linux@arm.linux.org.uk>, Dan Williams <djbw@fb.com>,
+        Jyri Sarha <jsarha@ti.com>, Lars Peter-Clausen <lars@metafoo.de>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH 2/3] dma: edma: Add support for Cyclic DMA
+References: <1379977515-3794-1-git-send-email-joelf@ti.com> <1379977515-3794-3-git-send-email-joelf@ti.com> <20131021065319.GM14013@intel.com> <52669A23.2080805@ti.com> <20131024163829.GA21230@intel.com> <52695F6E.4030002@ti.com> <20131031141012.GJ18788@intel.com>
+In-Reply-To: <20131031141012.GJ18788@intel.com>
 Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I would like to announce a maintenance release for the libseccomp library, 
-libseccomp version 2.1.1.  The libseccomp library provides an easy to use, 
-platform independent, interface to the Linux enhanced syscall filtering 
-mechanism that was first introduced in Linux 3.5.
+On 10/31/2013 09:10 AM, Vinod Koul wrote:
+> On Thu, Oct 24, 2013 at 12:57:02PM -0500, Joel Fernandes wrote:
+>> Rebased on slave-dma/next branch and reapplied:
+> Looks like your MUA caused lines to get wrapped and patch is corrupt, can you
+> pls resend again using git-send email. I tried even the patch from
+> patchworks but that too failed!
 
- * http://sourceforge.net/projects/libseccomp
+Oops my bad, I ran into wordwrap issues. thanks for pointing this out, fixed my
+MUA and wont happen again!
 
-This new version of libseccomp is binary compatible with versions 2.0.0 and 
-greater while retaining source compatibility with versions 1.0.0 and greater.  
-All users are encouraged to upgrade to the new version at their earliest 
-convenience.
+Will rebase/resend through git-send-email
 
-Changes in the 2.1.1 release include:
+thanks,
 
- * Fixes to the internal syscall rule filtering database
- * Improvements to the build and automated test systems
- * Coding style verification tools
-
-Finally, thank you to everyone who has submitted suggestions, provided testing 
-help, and contributed patches to the project.
-
--- 
-paul moore
-www.paul-moore.com
+-Joel
 
