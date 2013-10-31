@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab3JaQZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 12:25:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49558 "EHLO mail.skyhub.de"
+	id S1755297Ab3JaQZY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 12:25:24 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49559 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751805Ab3JaQZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751932Ab3JaQZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 Oct 2013 12:25:20 -0400
 From: Borislav Petkov <bp@alien8.de>
 To: Linux EFI <linux-efi@vger.kernel.org>
@@ -14,76 +14,70 @@ Cc: Borislav Petkov <bp@suse.de>, Dave Young <dyoung@redhat.com>,
         Matt Fleming <matt@console-pimps.org>,
         Matthew Garrett <mjg59@srcf.ucam.org>, Vivek Goyal <vgoyal@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, X86 ML <x86@kernel.org>
-Subject: [PATCH 00/11] EFI runtime services virtual mapping, vN++
-Date: Thu, 31 Oct 2013 17:24:58 +0100
-Message-Id: <1383236709-19716-1-git-send-email-bp@alien8.de>
+Subject: [PATCH 01/11] efi: Simplify EFI_DEBUG
+Date: Thu, 31 Oct 2013 17:24:59 +0100
+Message-Id: <1383236709-19716-2-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1383236709-19716-1-git-send-email-bp@alien8.de>
+References: <1383236709-19716-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-Hi all,
+... and lose one #ifdef .. #endif sandwich.
 
-here's maybe the final version of the patchset, no major changes since
-the last time but cosmetic and cleanups and tidying as requested by Matt
-and others.
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/platform/efi/efi.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-Patches also at:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git#efi
-
-The previous announcement:
-
-here's finally a new version of the runtime services VA mapping patchset
-which hopefully implements hpa's idea of statically mapping EFI runtime
-regions in a top-down manner starting at -4Gb virtual.
-
-We're also using a different pagetable so as not to pollute kernel
-address space. For that, we switch to that table before doing an EFI
-call, and afterwards we switch back to the previous one.
-
-To the patches:
-
-1-2 are simple cleanups which Matt probably can take now
-
-3-10 add the machinery to map regions into an arbitrary PGD. Those I've
-split deliberately into very small bites so that they can be reviewed
-more thoroughly and easily for my pagetable skills are pretty basic.
-
-11 is the actual patch which implements that mapping so that we can use
-runtime services in kexec (which is the whole reason for this fuss :))
-
-So please take a long hard look at those, hammer on them on your
-boxes and let me know. They boot fine on my Dell UEFI box and in OVMF
-(obviously :)).
-
-Borislav Petkov (11):
-  efi: Simplify EFI_DEBUG
-  x86, pageattr: Lookup address in an arbitrary PGD
-  x86, pageattr: Add a PGD pagetable populating function
-  x86, pageattr: Add a PUD pagetable populating function
-  x86, pageattr: Add a PMD pagetable populating function
-  x86, pageattr: Add a PTE pagetable populating function
-  x86, pageattr: Add a PUD error unwinding path
-  x86, pageattr: Add last levels of error path
-  x86, cpa: Map in an arbitrary pgd
-  EFI: Runtime services virtual mapping
-  efi: Check krealloc return value
-
- Documentation/kernel-parameters.txt  |   6 +
- Documentation/x86/x86_64/mm.txt      |   7 +
- arch/x86/include/asm/efi.h           |  64 +++--
- arch/x86/include/asm/pgtable_types.h |   3 +-
- arch/x86/mm/pageattr.c               | 461 +++++++++++++++++++++++++++++++++--
- arch/x86/platform/efi/efi.c          | 111 ++++++---
- arch/x86/platform/efi/efi_32.c       |   9 +-
- arch/x86/platform/efi/efi_64.c       | 109 +++++++++
- arch/x86/platform/efi/efi_stub_64.S  |  54 ++++
- include/linux/efi.h                  |   1 +
- 10 files changed, 755 insertions(+), 70 deletions(-)
-
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 1d3372ac9c66..f396163b0402 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -51,7 +51,7 @@
+ #include <asm/x86_init.h>
+ #include <asm/rtc.h>
+ 
+-#define EFI_DEBUG	1
++#define EFI_DEBUG
+ 
+ #define EFI_MIN_RESERVE 5120
+ 
+@@ -398,9 +398,9 @@ int __init efi_memblock_x86_reserve_range(void)
+ 	return 0;
+ }
+ 
+-#if EFI_DEBUG
+ static void __init print_efi_memmap(void)
+ {
++#ifdef EFI_DEBUG
+ 	efi_memory_desc_t *md;
+ 	void *p;
+ 	int i;
+@@ -415,8 +415,8 @@ static void __init print_efi_memmap(void)
+ 			md->phys_addr + (md->num_pages << EFI_PAGE_SHIFT),
+ 			(md->num_pages >> (20 - EFI_PAGE_SHIFT)));
+ 	}
+-}
+ #endif  /*  EFI_DEBUG  */
++}
+ 
+ void __init efi_reserve_boot_services(void)
+ {
+@@ -696,10 +696,7 @@ void __init efi_init(void)
+ 		x86_platform.set_wallclock = efi_set_rtc_mmss;
+ 	}
+ #endif
+-
+-#if EFI_DEBUG
+ 	print_efi_memmap();
+-#endif
+ }
+ 
+ void __init efi_late_init(void)
 -- 
 1.8.4
 
