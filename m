@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab3JaEps (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 00:45:48 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44768 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743Ab3JaEpq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 00:45:46 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <5271DFEC.7070802@jp.fujitsu.com>
-Date: Thu, 31 Oct 2013 13:43:24 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751944Ab3JaEyV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 00:54:21 -0400
+Received: from nm44.bullet.mail.ne1.yahoo.com ([98.138.120.51]:27870 "EHLO
+	nm44.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750783Ab3JaEyU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 00:54:20 -0400
+X-Yahoo-Newman-Property: ymail-4
+X-Yahoo-Newman-Id: 650592.14548.bm@omp1033.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=y7mail.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=IZVw9TZrWdriCNoLBVM3xwfVrw5kYtAC0CFolY7LeZeZKZOxqYF9m+wUOHXOPAGH+DuMuB5+3KmMql4jc3oZqSPYcL/CIQwWSh9gOJge57F4Rkr6r1Snkjr4db31PhRAUuRedy9u1nFF/8cKXN9jjIIfCQw3DLApNxO9skc92tU=;
+X-YMail-OSG: 6_mwPiIVM1kaAjFGa7sYzPf0gq7s8lM7EvvtaYWguzrX.xj
+ RfAzKsvDC3sSatOKe267imbKfR22M95V_NLpsqhqlHTRqbq_fA34C0FtVuw-
+ -
+X-Rocket-MIMEInfo: 002.001,DQpEZWFyIEZyaWVuZCwNCiAgICAgICAgICAgICAgICAgICAgICAgICAgR3JlZXRpbmcgdG8geW91ISEhDQoNCkkga25vdyB0aGF0IHRoaXMgbWFpbCB3aWxsIGNvbWUgdG8geW91IGFzIGEgc3VycHJpc2UgYXMgd2UgbmV2ZXIgbWV0IGJlZm9yZS4gSSBhbSAgTXIuIEtlYmEgQmEgVGhlIENoaWVmIHJlcHJlc2VudGF0aXZlIG9mIHRoZSBBZnJpY2FuIERldmVsb3BtZW50IEJhbmsgZm9yIENlbnRyYWwgYW5kIFdlc3QgQWZyaWNhbiBEaXZpc2lvbiwgSSBIb3BlZCB0aGF0IHlvdSB3aWxsIG5vdCBleHBvc2Ugb3IBMAEBAQE-
+X-RocketYMMF: ibrahim_dabashi@y7mail.com
+X-Mailer: YahooMailClassic/365 YahooMailWebService/0.8.160.587
+Message-ID: <1383195240.34607.YahooMailBasic@web162902.mail.bf1.yahoo.com>
+Date: Wed, 30 Oct 2013 21:54:00 -0700 (PDT)
+From: Mr Keba Ba <dir.keba1@gmail.com>
+Reply-To: keba.ba1@laposte.net
+Subject: I GOT YOUR CONTACT... I WAIT OK!
+To: undisclosed recipients:;
 MIME-Version: 1.0
-To: jerry.hoemann@hp.com
-CC: hpa@linux.intel.com, ebiederm@xmission.com, vgoyal@redhat.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org, bp@alien8.de,
-        akpm@linux-foundation.org, fengguang.wu@intel.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v4 0/3] x86, apic, kexec: Add disable_cpu_apic kernel
- parameter
-References: <20131022150015.24240.39686.stgit@localhost6.localdomain6> <20131022220803.GA32387@anatevka.fc.hp.com> <526712B2.7070108@jp.fujitsu.com> <20131031005812.GA15459@anatevka.fc.hp.com>
-In-Reply-To: <20131031005812.GA15459@anatevka.fc.hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/31 9:58), jerry.hoemann@hp.com wrote:
-> On Wed, Oct 23, 2013 at 09:05:06AM +0900, HATAYAMA Daisuke wrote:
->>>>
->>>> - Rebased on top of v3.12-rc6
->>>>
->>>> - Basic design has been changed. Now users need to figure out initial
->>>>    APIC ID of BSP in the 1st kernel and configures kernel parameter for
->>>>    the 2nd kernel manually using disable_cpu_apic kernel parameter to
->>>>    be newly introduced in this patch set. This design is more flexible
->>>>    than the previous version in that we no longer have to rely on
->>>>    ACPI/MP table to get initial APIC ID of BSP.
->>>
->>>
->>> Do you literally mean a human at each boot will have to configure
->>> the kdump configuration files for passing disable_cpu_apic?
->>> Or do you envision the setting of disable_cpu_apic being put into
->>> the kdump initialization scripts?
->>>
->>> thanks
->>>
->>> Jerry
->>
->> Nearer to the former case, but this is not what a human should do. It's
->> a cumbersome task. I think, on fedora/RHEL system for example, kdump
->> service should check at each boot automatically.
->>
->> HATAYAMA, Daisuke
->
->
-> Daisuke,
->
-> Are you planning on making changes to the kexec tools to automate
-> the setting of disable_cpu_apic to the capture kernel? Or do you
-> know someone who is planning this?
->
-> I back ported the kernel side changes to a 4.2.32 based kernel.
-> I tested the patch on a prototype system which exhibits a stable
-> initial_apic_id for CPU 0.  While not something that would be suitable
-> for customers, it does allow me to test the kernel portion of the patch.
->
-> I will report the results of the testing later this week.
->
 
-I'll do that after this patch is merged in kernel. But it is still under
-reviewing.
+Dear Friend,
+                          Greeting to you!!!
 
--- 
-Thanks.
-HATAYAMA, Daisuke
+I know that this mail will come to you as a surprise as we never met before. I am  Mr. Keba Ba The Chief representative of the African Development Bank for Central and West African Division, I Hoped that you will not expose or betray this trust and confident that I am about to repose on you for the mutual benefit of our both families and for the less privilege, I need your urgent assistance in transferring the sum of Two Million state dollars ($10,000.000) Immediately to your account. For comprehensive Detail, Go through the following website. (http://www.afdb.org/en/news-and-events/article/burkina-faso-receives-us-50-66-million-grant-for-drainage-of-ouagadougou-districts-12353/)
+        As I am talking to you right the contractor died last week in Mali, The $10m was credited in his contract CBI Bank account before the event, I am the head of the project that is going on right now, Please I would like you to keep this proposal as a top secret and delete it if you are not interested. Upon receipt of your reply, I will send you the application form you will fill and send to the bank for transfer of the fund into your bank account and also note that you will have 40% of the above mentioned amount if you agree to help me execute this business. And also 10% had been mapped out for you for the expense you will make in this transaction and 50% is for me.  I want us to complete the transaction within a week, very urgent nobody is aware if he has cash the money before his death, except me that knew and have all the information, I need your information’s so that I will send you the application form.
+
+Now my questions are:-
+1. Can you handle this project? ……………
+2. Can I give you this trust? ………………
+
+Waiting for your urgent response so that we will proceed immediately, for confidentiality my contact info is on the bank website (www.afdb.org) What I need is confident and honest, I am very serious, I wait for your respond and call me as soon as possible.
+
+Best Regards, 
+Mr. Keba Ba
++226 64558872
 
