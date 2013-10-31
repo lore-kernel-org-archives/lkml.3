@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab3JaPO0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 11:14:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36080 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754793Ab3JaPOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 11:14:24 -0400
-Date: Thu, 31 Oct 2013 16:14:16 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] KVM: x86: emulate SAHF instruction
-Message-ID: <20131031151416.GB9818@pd.tnic>
-References: <1383215382-10072-1-git-send-email-pbonzini@redhat.com>
- <20131031142119.GS4651@redhat.com>
- <527268E4.2070505@redhat.com>
- <20131031143405.GT4651@redhat.com>
- <52726DE0.3060207@redhat.com>
+	id S1755224Ab3JaPOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 11:14:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44770 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754681Ab3JaPOj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 11:14:39 -0400
+Date: Thu, 31 Oct 2013 16:14:23 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
+        acme@redhat.com, jolsa@redhat.com, zheng.z.yan@intel.com, bp@alien8.de,
+        maria.n.dimakopoulou@gmail.com
+Subject: Re: [PATCH v4 3/4] perf/x86: add Intel RAPL PMU support
+Message-ID: <20131031151423.GX19466@laptop.lan>
+References: <1383231582-15856-1-git-send-email-eranian@google.com>
+ <1383231582-15856-4-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52726DE0.3060207@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1383231582-15856-4-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 03:49:04PM +0100, Paolo Bonzini wrote:
-> Il 31/10/2013 15:34, Gleb Natapov ha scritto:
-> > I haven't checked AMD doc, but if it is documented that lahf/sahf #UDs at 64
-> > bit we should emulate it correctly.
-> 
-> It says "The LAHF instruction can only be executed in 64-bit mode if
-> supported by the processor implementation. Check the status of ECX bit 0
-> returned by CPUID function 8000_0001h to verify that the processor
-> supports LAHF in 64-bit mode".  Same as Intel---in fact 80000001h is an
-> "AMD leaf" so to speak.
+On Thu, Oct 31, 2013 at 03:59:41PM +0100, Stephane Eranian wrote:
+> +/*
+> + * we compute in 0.23 nJ increments regardless of MSR
 
-Yes, we #UD if L/SAHF are not supported:
+We don't in fact use 0.23 nJ, we use 2^-32 J.
 
-Invalid opcode,			The LAHF instruction is not supported, as indicated by CPUID
-#UD				Fn8000_0001_ECX[LahfSahf] = 0.
+> + */
+> +EVENT_ATTR_STR(energy-cores.scale, rapl_cores_scale, "2.3e-10");
+> +EVENT_ATTR_STR(energy-pkg.scale, rapl_pkg_scale, "2.3e-10");
+> +EVENT_ATTR_STR(energy-ram.scale, rapl_ram_scale, "2.3e-10");
 
-> I found "AMD introduced support for the instructions with their Athlon
-> 64, Opteron and Turion 64 revision D processors in March 2005 and Intel
-> introduced support for the instructions with the Pentium 4 G1 stepping
-> in December 2005".  I think we can for all practical purposes ignore the
-> lahf_lm CPUID flag.
-> 
-> > Who knows what code depends on it.
+Am I weird for proposing we use:
 
-I remember an issue where we had to turn off the LAHF_LM CPUID bit for
-certain K8s because otherwise the flashplayer would SIGSEGV as it was
-trying to execute LAHF but the CPU was not really supporting it although
-CPUID said so :). See fbd8b1819e80a and 6b0f43ddfa358.
+  "2.3283064365386962890625e-10"
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+instead? Its not like anybody needs to go type this by hand.
