@@ -1,166 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab3JaV1N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 17:27:13 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:52845 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502Ab3JaV1M (ORCPT
+	id S1755515Ab3JaV2W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 17:28:22 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:63964 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753743Ab3JaV2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 17:27:12 -0400
-From: Kent Overstreet <kmo@daterainc.com>
-To: axboe@kernel.dk
-Cc: tj@kernel.org, linux-kernel@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>, NeilBrown <neilb@suse.de>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH] block: Document immutable biovecs
-Date: Thu, 31 Oct 2013 14:27:05 -0700
-Message-Id: <1383254825-25609-1-git-send-email-kmo@daterainc.com>
-X-Mailer: git-send-email 1.8.4.rc3
+	Thu, 31 Oct 2013 17:28:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1310301125400.19090@pobox.suse.cz>
+References: <alpine.LNX.2.00.1308271141080.2077@pobox.suse.cz>
+ <alpine.LNX.2.00.1308271144420.2077@pobox.suse.cz> <alpine.LNX.2.00.1308281745460.4557@pobox.suse.cz>
+ <CAErSpo6saRNMw6Js0PLXZzYDdH0M3ypSFLDxVxp0G02aetp0Dw@mail.gmail.com>
+ <alpine.LNX.2.00.1309061150140.26934@pobox.suse.cz> <CAErSpo5ExXsbSd+jYP5JYwq-RBf-dx1T_AZx6CV4=6-AfTTynQ@mail.gmail.com>
+ <alpine.LNX.2.00.1309271106090.18703@pobox.suse.cz> <alpine.LNX.2.00.1310301125400.19090@pobox.suse.cz>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 31 Oct 2013 15:27:58 -0600
+Message-ID: <CAErSpo7qORQjs62zdi-5et2WnWwy3weMs56G84rWhNrW59F5WQ@mail.gmail.com>
+Subject: Re: [PATCH] PCI: add quirk for 3ware 9650SE controller
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Adam Radford <aradford@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: NeilBrown <neilb@suse.de>
-Cc: Christoph Hellwig <hch@lst.de>
----
- Documentation/block/biovecs.txt | 111 ++++++++++++++++++++++++++++++++++++++++
- include/linux/blk_types.h       |   3 +-
- 2 files changed, 113 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/block/biovecs.txt
+On Wed, Oct 30, 2013 at 4:27 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> Attached is dmesg output leading to timeouts (that are cured by my
+> original patch in this thread) and lspci.
 
-diff --git a/Documentation/block/biovecs.txt b/Documentation/block/biovecs.txt
-new file mode 100644
-index 0000000..34711fa
---- /dev/null
-+++ b/Documentation/block/biovecs.txt
-@@ -0,0 +1,111 @@
-+
-+Immutable biovecs and biovec iterators:
-+=======================================
-+
-+Kent Overstreet <kmo@daterainc.com>
-+
-+As of 3.13, biovecs should never be modified after a bio has been submitted.
-+Instead, we have a new struct bvec_iter which represents a range of a biovec -
-+the iterator will be modified as the bio is completed, not the biovec.
-+
-+More specifically, old code that needed to partially complete a bio would
-+update bi_sector and bi_size, and advance bi_idx to the next biovec. If it
-+ended up partway through a biovec, it would increment bv_offset and decrement
-+bv_len by the number of bytes completed in that biovec.
-+
-+In the new scheme of things, everything that must be mutated in order to
-+partially complete a bio is segregated into struct bvec_iter: bi_sector,
-+bi_size and bi_idx have been moved there; and instead of modifying bv_offset
-+and bv_len, struct bvec_iter has bi_bvec_done, which represents the number of
-+bytes completed in the current bvec.
-+
-+There are a bunch of new helper macros for hiding the gory details - in
-+particular, presenting the illusion of partially completed biovecs so that
-+normal code doesn't have to deal with bi_bvec_done.
-+
-+ * Driver code should no longer refer to biovecs directly; we now have
-+   bio_iovec() and bio_iovec_iter() macros that return literal struct biovecs,
-+   constructed from the raw biovecs but taking into account bi_bvec_done and
-+   bi_size.
-+
-+   bio_for_each_segment() has been updated to take a bvec_iter argument
-+   instead of an integer (that corresponded to bi_idx); for a lot of code the
-+   conversion just required changing the types of the arguments to
-+   bio_for_each_segment().
-+
-+ * Advancing a bvec_iter is done with bio_advance_iter(); bio_advance() is a
-+   wrapper around bio_advance_iter() that operates on bio->bi_iter, and also
-+   advances the bio integrity's iter if present.
-+
-+   There is a lower level advance function - bvec_iter_advance() - which takes
-+   a pointer to a biovec, not a bio; this is used by the bio integrity code.
-+
-+What's all this get us?
-+=======================
-+
-+Having a real iterator, and making biovecs immutable, has a number of
-+advantages:
-+
-+ * Before, iterating over bios was very awkward when you weren't processing
-+   exactly one bvec at a time - for example, bio_copy_data() in fs/bio.c,
-+   which copies the contents of one bio into another. Because the biovecs
-+   wouldn't necessarily be the same size, the old code was tricky convoluted -
-+   it had to walk two different bios at the same time, keeping both bi_idx and
-+   and offset into the current biovec for each.
-+
-+   The new code is much more straightforward - have a look. This sort of
-+   pattern comes up in a lot of places; a lot of drivers were essentially open
-+   coding bvec iterators before, and having common implementation considerably
-+   simplifies a lot of code.
-+
-+ * Before, any code that might need to use the biovec after the bio had been
-+   completed (perhaps to copy the data somewhere else, or perhaps to resubmit
-+   it somewhere else if there was an error) had to save the entire bvec array
-+   - again, this was being done in a fair number of places.
-+
-+ * Biovecs can be shared between multiple bios - a bvec iter can represent an
-+   arbitrary range of an existing biovec, both starting an ending midway
-+   through biovecs. This is what enables efficient splitting of arbitrary
-+   bios. Note that this means we _only_ use bi_size to determine when we're
-+   reached the end of a bio, not bi_vcnt - and the bio_iovec() macro takes
-+   bi_size into account when constructing biovecs.
-+
-+ * Splitting bios is now much simpler. The old bio_split() didn't even work on
-+   bios with more than a single bvec! Now, we can efficiently split arbitrary
-+   size bios - because the new bio can share the old bio's biovec.
-+
-+   Care must be taken to ensure the biovec isn't freed while the split bio is
-+   still using it, in case the original bio completes first, though. Using
-+   bio_chain() when splitting bios helps with this.
-+
-+ * Submitting partially completed bios is now perfectly fine - this comes up
-+   occasionally in stacking block drivers and various code (e.g. md and
-+   bcache) had some ugly workarounds for this.
-+
-+   It used to be the case that submitting a partially completed bio would work
-+   fine to _most_ devices, but since accessing the raw bvec array was the
-+   norm, not all drivers would respect bi_idx and those would break. Now,
-+   since all drivers _must_ go through the bvec iterator - and have been
-+   audited to make sure they are - submitting partially completed bios is
-+   perfectly fine.
-+
-+Other implications:
-+===================
-+
-+ * Almost all usage of bi_idx is now incorrect and has been removed; instead,
-+   where previously you would have used bi_idx you'd now use a bvec_iter,
-+   probably passing it to one of the helper macros.
-+
-+   i.e. instead of using bio_iovec_idx() (or bio->bi_iovec[bio->bi_idx]), you
-+   would now use bio_iter_iovec(), which takes a bvec_iter and returns a
-+   literal struct bio_vec - constructed on the fly from the raw biovec but
-+   taking into account bi_bvec_done (and bi_size).
-+
-+ * bi_vcnt can't be trusted or relied upon by driver code - i.e. anything that
-+   doesn't actually own the bio. The reason is twofold: firstly, it's not
-+   actually needed for iterating over the bio anymore - we only go bi_size.
-+   Secondly, when cloning a bio and reusing (a portion of) the original bio's
-+   biovec, in order to calculate bi_vcnt for the new bio we'd have to iterate
-+   over all the biovecs in the new bio - which is silly as it's not needed.
-+
-+   So, don't use bi_vcnt anymore.
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index a3f83e9..a4bba03 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -35,7 +35,8 @@ struct bvec_iter {
- 
- 	unsigned int		bi_idx;		/* current index into bvl_vec */
- 
--	unsigned int            bi_bvec_done;
-+	unsigned int            bi_bvec_done;	/* number of bytes completed in
-+						   current bvec */
- };
- 
- /*
--- 
-1.8.4.rc3
+I opened https://bugzilla.kernel.org/show_bug.cgi?id=64141 for this
+issue and attached your dmesg log and lspci output.
 
+> Please let me know if there is anything else I could do, or if you are
+> going to proceed with my patch adding the quirk.
+
+Your quirk keeps us from disabling MSIs on the device during
+enumeration.  But even if the BIOS left MSIs enabled, there's nothing
+to field the MSI until after the driver claims the device.  So I don't
+believe this has to be done as a quirk.  It should work just as well
+to do something in the driver when it claims the device.
+
+I guess another way to say this is that I don't think we understand
+what the real problem is, and if we just add a quirk to work around
+it, we might miss the chance to fix the real problem, and we may never
+be able to remove the special-case code we're adding in the generic
+path.
+
+I know you said you tried doing something in the driver, and it didn't
+work.  I don't know exactly what you tried, but twa_probe() looks
+strange to me.  The other drivers I looked at do all their PCI
+initialization before the scsi_host_alloc() / scsi_add_host() /
+scsi_scan_host() stuff.  But twa_probe() has PCI stuff scattered
+around between those three SCSI calls.  In particular, it does the MSI
+setup way down near the end, after scsi_add_host(), which seems like
+just the sort of thing that could explain this problem.
+
+Bjorn
