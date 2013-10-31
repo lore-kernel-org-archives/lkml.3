@@ -1,365 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab3JaDt3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 23:49:29 -0400
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:45086 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab3JaDt2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 23:49:28 -0400
-Message-ID: <5271D340.2090706@gmail.com>
-Date: Thu, 31 Oct 2013 14:49:20 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752261Ab3JaDva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 23:51:30 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:28495 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751851Ab3JaDv3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 23:51:29 -0400
+X-IronPort-AV: E=Sophos;i="4.93,606,1378828800"; 
+   d="scan'208";a="8906586"
+Message-ID: <5271D3FC.8000709@cn.fujitsu.com>
+Date: Thu, 31 Oct 2013 11:52:28 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Frank Haverkamp <haver@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-CC: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
-        jsvogt@de.ibm.com, MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com,
-        michael@ibmra.de, Frank Haverkamp <haver@vnet.ibm.com>
-Subject: Re: [PATCH] Generic WorkQueue Engine (GenWQE) device driver (v4)
-References: <1383125578-26202-1-git-send-email-haver@linux.vnet.ibm.com> <1383125578-26202-2-git-send-email-haver@linux.vnet.ibm.com>
-In-Reply-To: <1383125578-26202-2-git-send-email-haver@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: eparis@redhat.com
+CC: Gao feng <gaofeng@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, containers@lists.linux-foundation.org,
+        ebiederm@xmission.com, serge.hallyn@ubuntu.com, sgrubb@redhat.com,
+        toshi.okajima@jp.fujitsu.com, Richard Guy Briggs <rgb@redhat.com>
+Subject: Re: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
+References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
+In-Reply-To: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/31 11:49:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/31 11:49:44,
+	Serialize complete at 2013/10/31 11:49:44
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/10/13 20:32, Frank Haverkamp wrote:
-> From: Frank Haverkamp <haver@vnet.ibm.com>
+Hi Eric Paris,
 
-> Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
-> Co-authors: Joerg-Stephan Vogt <jsvogt@de.ibm.com>,
->             Michael Jung <MIJUNG@de.ibm.com>,
->             Michael Ruettger <michael@ibmra.de>
-> ---
->  Documentation/ABI/testing/debugfs-driver-genwqe |   57 +
->  Documentation/ABI/testing/sysfs-driver-genwqe   |   46 +
->  drivers/misc/Kconfig                            |    1 +
->  drivers/misc/Makefile                           |    1 +
->  drivers/misc/genwqe/Kconfig                     |   23 +
->  drivers/misc/genwqe/Makefile                    |    8 +
->  drivers/misc/genwqe/card_base.c                 | 1238 +++++++++++++++++++
->  drivers/misc/genwqe/card_base.h                 |  569 +++++++++
->  drivers/misc/genwqe/card_ddcb.c                 | 1380 +++++++++++++++++++++
->  drivers/misc/genwqe/card_ddcb.h                 |  188 +++
->  drivers/misc/genwqe/card_debugfs.c              |  566 +++++++++
->  drivers/misc/genwqe/card_dev.c                  | 1499 +++++++++++++++++++++++
->  drivers/misc/genwqe/card_sysfs.c                |  306 +++++
->  drivers/misc/genwqe/card_utils.c                |  983 +++++++++++++++
->  drivers/misc/genwqe/genwqe_driver.h             |   75 ++
->  include/linux/genwqe/genwqe_card.h              |  559 +++++++++
->  16 files changed, 7499 insertions(+), 0 deletions(-)
+Can you give me some comments?
 
+You think the tying audit namespace to user namespace is a bad idea,
+so this patchset doesn't assign auditns to userns and introduce an
+new audit netlink type to help to create audit namespace.
 
-Please consider breaking this into multiple patches. One behemoth patch
-is harder to review and less likely for people to read all of it. Since
-this adds a new driver, you can add it in parts, e.g: core, sysfs,
-documentation, etc, and add the Makefile/Kconfig bits in the final
-patch. That way it won't break the build at any point.
+and this patchset also introduces an new proc interface to make
+sure container can't influence the whole system.
 
-Couple of comments on the sysfs bits below.
+and the audit rules are not namespace aware, all of audit namespaces
+should comply with the rules. in next step, if we find it's need to
+make audit rules per audit namespace, then it's the time to do that
+job.
 
-~Ryan
+This patchset also makes all of net namespaces have ability to send/
+receive audit netlink message.
 
-> +++ b/drivers/misc/genwqe/card_sysfs.c
-> @@ -0,0 +1,306 @@
-> +/**
-> + * IBM Accelerator Family 'GenWQE'
-> + *
-> + * (C) Copyright IBM Corp. 2013
-> + *
-> + * Author: Frank Haverkamp <haver@linux.vnet.ibm.com>
-> + * Author: Joerg-Stephan Vogt <jsvogt@de.ibm.com>
-> + * Author: Michael Jung <mijung@de.ibm.com>
-> + * Author: Michael Ruettger <michael@ibmra.de>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License (version 2 only)
-> + * as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +/*
-> + * Sysfs interfaces for the GenWQE card. There are attributes to query
-> + * the version of the bitstream as well as some for the
-> + * driver. Additionally there are some attributes which help to debug
-> + * potential problems.
-> + */
-> +
-> +#include <linux/version.h>
-> +#include <linux/kernel.h>
-> +#include <linux/types.h>
-> +#include <linux/module.h>
-> +#include <linux/pci.h>
-> +#include <linux/string.h>
-> +#include <linux/fs.h>
-> +#include <linux/sysfs.h>
-> +#include <linux/ctype.h>
-> +
-> +#include "card_base.h"
-> +#include "card_ddcb.h"
-> +
-> +static const char * const genwqe_types[] = {
-> +	[GENWQE_TYPE_ALTERA_230] = "GenWQE4-230",
-> +	[GENWQE_TYPE_ALTERA_530] = "GenWQE4-530",
-> +	[GENWQE_TYPE_ALTERA_A4]  = "GenWQE5-A4",
-> +	[GENWQE_TYPE_ALTERA_A7]  = "GenWQE5-A7",
-> +};
-> +
-> +static ssize_t show_card_status(struct device *dev,
-> +				struct device_attribute *attr,
-> +				char *buf)
-> +{
-> +	ssize_t len = 0;
-> +	struct genwqe_dev *cd = dev_get_drvdata(dev);
-> +	const char *cs[GENWQE_CARD_STATE_MAX] = { "unused", "used", "error" };
-> +
-> +	len += scnprintf(&buf[len], PAGE_SIZE - len,
-> +			 "%s\n", cs[cd->card_state]);
-> +	return len;
+I may miss some points, if you find there are some shortage or loophole,
+please let me know.
 
-This is a bit confusingly written. Why do:
+Thanks!
 
-	scnprintf(&buf[len], ...
-
-When len is always zero at that point? Since you are printing from an
-array of statically sized strings that are guaranteed to be smaller than
-PAGE_SIZE, you can safely do:
-
-	sprintf(buf, "%s\n", cs[cd->card_state]);
-
-You might want to add some checking for cd->card_state being out of
-bounds, and printing "unknown" or something in that case.
-
-Same issue exists in other sysfs handlers.
-
-> +}
-> +
-> +static ssize_t show_card_appid(struct device *dev,
-> +			       struct device_attribute *attr,
-> +			       char *buf)
-> +{
-> +	ssize_t len = 0;
-> +	char app_name[5];
-> +	struct genwqe_dev *cd = dev_get_drvdata(dev);
-> +
-> +	genwqe_read_app_id(cd, app_name, sizeof(app_name));
-> +	len += scnprintf(&buf[len], PAGE_SIZE - len,
-> +			 "%s\n", app_name);
-> +	return len;
-> +}
-> +
-> +static ssize_t show_card_version(struct device *dev,
-> +				 struct device_attribute *attr,
-> +				 char *buf)
-> +{
-> +	ssize_t len = 0;
-> +	u64 slu_id, app_id;
-> +	struct genwqe_dev *cd = dev_get_drvdata(dev);
-> +
-> +	slu_id = __genwqe_readq(cd, IO_SLU_UNITCFG);
-> +	app_id = __genwqe_readq(cd, IO_APP_UNITCFG);
-> +
-> +	len += scnprintf(&buf[len], PAGE_SIZE - len,
-> +			 "%016llx.%016llx\n", slu_id, app_id);
-> +	return len;
-> +}
-> +
-> +/**
-> + * FIXME Implement me!
-> + */
-> +static ssize_t show_cpld_version(struct device *dev,
-> +				 struct device_attribute *attr,
-> +				 char *buf)
-> +{
-> +	ssize_t len = 0;
-> +	len += scnprintf(&buf[len], PAGE_SIZE - len,
-> +			 "unknown (FIXME)\n");
-> +	return len;
-> +}
-> +
-> +static ssize_t show_card_type(struct device *dev,
-> +			      struct device_attribute *attr,
-> +			      char *buf)
-> +{
-> +	ssize_t len = 0;
-> +	u8 card_type;
-> +	struct genwqe_dev *cd = dev_get_drvdata(dev);
-> +
-> +	card_type = genwqe_card_type(cd);
-> +	len += scnprintf(&buf[len], PAGE_SIZE - len,
-> +			 "%s\n", (card_type >= ARRAY_SIZE(genwqe_types)) ?
-> +			 "invalid" : genwqe_types[card_type]);
-> +	return len;
-> +}
-> +
-> +static ssize_t show_card_driver(struct device *dev,
-> +				struct device_attribute *attr,
-> +				char *buf)
-> +{
-> +	ssize_t len = 0;
-> +	len += scnprintf(&buf[len], PAGE_SIZE - len,
-> +			 "%s\n", DRV_VERS_STRING);
-> +	return len;
-> +}
-> +
-> +static ssize_t show_card_tempsens(struct device *dev,
-> +				  struct device_attribute *attr,
-> +				  char *buf)
-> +{
-> +	ssize_t len = 0;
-> +	u64 tempsens;
-> +	struct genwqe_dev *cd = dev_get_drvdata(dev);
-> +
-> +	tempsens = __genwqe_readq(cd, IO_SLU_TEMPERATURE_SENSOR);
-> +	len += scnprintf(&buf[len], PAGE_SIZE - len,
-> +			 "%016llx\n", tempsens);
-> +	return len;
-> +}
-> +
-> +static ssize_t show_card_base_clock(struct device *dev,
-> +				    struct device_attribute *attr,
-> +				    char *buf)
-> +{
-> +	ssize_t len = 0;
-> +	u64 base_clock;
-> +	struct genwqe_dev *cd = dev_get_drvdata(dev);
-> +
-> +	base_clock = genwqe_base_clock_frequency(cd);
-> +	len += scnprintf(&buf[len], PAGE_SIZE - len,
-> +			 "%lld\n", base_clock);
-> +	return len;
-> +}
-> +
-> +/**
-> + * show_card_curr_bitstream() - Show the current bitstream id
-> + *
-> + * There is a bug in some old versions of the CPLD which selects the
-> + * bitstream, which causes the IO_SLU_BITSTREAM register to report
-> + * unreliable data in very rare cases. This makes this sysfs
-> + * unreliable up to the point were a new CPLD version is being used.
-> + *
-> + * Unfortunately there is no automatic way yet to query the CPLD
-> + * version (See show_cpld_version() ;-)), such that you need to
-> + * manually ensure via programming tools that you have a recent
-> + * version of the CPLD software.
-> + *
-> + * The proposed circumvention is to use a special recovery bitstream
-> + * on the backup partition (0) to identify problems while loading the
-> + * image.
-> + */
-> +static ssize_t show_card_curr_bitstream(struct device *dev,
-> +					struct device_attribute *attr,
-> +					char *buf)
-> +{
-> +	ssize_t len = 0;
-> +	int curr_bitstream;
-> +	struct genwqe_dev *cd = dev_get_drvdata(dev);
-> +
-> +	curr_bitstream = __genwqe_readq(cd, IO_SLU_BITSTREAM) & 0x1;
-> +	len += scnprintf(&buf[len], PAGE_SIZE - len,
-> +			 "%d\n", curr_bitstream);
-> +	return len;
-> +}
-> +
-> +/**
-> + * show_card_next_bitstream() - Show the next activated bitstream
-> + *
-> + * IO_SLC_CFGREG_SOFTRESET: This register can only be accessed by the PF.
-> + */
-> +static ssize_t show_card_next_bitstream(struct device *dev,
-> +					struct device_attribute *attr,
-> +					char *buf)
-> +{
-> +	ssize_t len = 0;
-> +	int next_bitstream;
-> +	struct genwqe_dev *cd = dev_get_drvdata(dev);
-> +
-> +	switch ((cd->softreset & 0xCull) >> 2) {
-> +	case 0x2:
-> +		next_bitstream =  0;
-> +		break;
-> +	case 0x3:
-> +		next_bitstream =  1;
-> +		break;
-> +	default:
-> +		next_bitstream = -1;
-> +		break;		/* error */
-> +	}
-> +	len += scnprintf(&buf[len], PAGE_SIZE - len,
-> +			 "%d\n", next_bitstream);
-> +	return len;
-> +}
-> +
-> +static ssize_t store_card_next_bitstream(struct device *dev,
-> +					 struct device_attribute *attr,
-> +					 const char *buf, size_t count)
-> +{
-> +	u64 partition;
-> +	struct genwqe_dev *cd = dev_get_drvdata(dev);
-> +
-> +	if (kstrtoull(buf, 0, &partition) < 0)
-> +		return -EINVAL;
-
-Does this give a type error? partition should be unsigned long long,
-which is _at least_ 64 bits.
-
-> +
-> +	switch (partition) {
-> +	case 0x0:
-> +		cd->softreset = 0x78ull;
-> +		break;
-> +	case 0x1:
-> +		cd->softreset = 0x7cull;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	__genwqe_writeq(cd, IO_SLC_CFGREG_SOFTRESET, cd->softreset);
-> +	return count;
-> +}
-> +
-> +/*
-> + * Create device_attribute structures / params: name, mode, show, store
-> + * additional flag if valid in VF
-> + */
-> +struct genwqe_dev_attrib {
-> +	struct device_attribute att;	/* sysfs entry attributes */
-> +	int vf;				/* may exist in VF or not */
-> +};
-> +
-> +static struct genwqe_dev_attrib dev_attr_tab[] = {
-> +	{__ATTR(tempsens,       S_IRUGO, show_card_tempsens, NULL), 0},
-> +	{__ATTR(next_bitstream, (S_IRUGO | S_IWUSR),
-> +		show_card_next_bitstream, store_card_next_bitstream), 0},
-> +	{__ATTR(curr_bitstream, S_IRUGO, show_card_curr_bitstream, NULL), 0},
-> +	{__ATTR(cpld_version,   S_IRUGO, show_cpld_version, NULL), 0},
-> +	{__ATTR(base_clock,	S_IRUGO, show_card_base_clock, NULL), 0},
-> +
-> +	{__ATTR(driver,		S_IRUGO, show_card_driver, NULL), 1},
-> +	{__ATTR(type,		S_IRUGO, show_card_type, NULL), 1},
-> +	{__ATTR(version,	S_IRUGO, show_card_version, NULL), 1},
-> +	{__ATTR(appid,		S_IRUGO, show_card_appid, NULL), 1},
-> +	{__ATTR(status,		S_IRUGO, show_card_status, NULL), 1},
-> +};
-> +
-> +/**
-> + * create_card_sysfs() - Setup sysfs entries of the card device
-> + *
-> + * VFs have restricted mmio capabilities, so not all sysfs entries
-> + * are allowed in VFs.
-> + */
-> +int create_card_sysfs(struct genwqe_dev *cd)
-
-This is extern, and has a very generic name. Prefix it with genwqe or
-something. Same for the function below, and for any other extern symbols
-you have.
-
+On 10/24/2013 03:31 PM, Gao feng wrote:
+> Here is the v1 patchset: http://lwn.net/Articles/549546/
+> 
+> The main target of this patchset is allowing user in audit
+> namespace to generate the USER_MSG type of audit message,
+> some userspace tools need to generate audit message, or
+> these tools will broken.
+> 
+> And the login process in container may want to setup
+> /proc/<pid>/loginuid, right now this value is unalterable
+> once it being set. this will also broke the login problem
+> in container. After this patchset, we can reset this loginuid
+> to zero if task is running in a new audit namespace.
+> 
+> Same with v1 patchset, in this patchset, only the privileged
+> user in init_audit_ns and init_user_ns has rights to
+> add/del audit rules. and these rules are gloabl. all
+> audit namespace will comply with the rules.
+> 
+> Compared with v1, v2 patch has some big changes.
+> 1, the audit namespace is not assigned to user namespace.
+>    since there is no available bit of flags for clone, we
+>    create audit namespace through netlink, patch[18/20]
+>    introduces a new audit netlink type AUDIT_CREATE_NS.
+>    the privileged user in userns has rights to create a
+>    audit namespace, it means the unprivileged user can
+>    create auditns through create userns first. In order
+>    to prevent them from doing harm to host, the default
+>    audit_backlog_limit of un-init-audit-ns is zero(means
+>    audit is unavailable in audit namespace). and it can't
+>    be changed in auditns through netlink.
+> 
+> 2, introduce /proc/<pid>/audit_log_limit
+>    this interface is used to setup log_limit of audit
+>    namespace.  we need this interface to make audit
+>    available in un-init-audit-ns. Only the privileged user
+>    has right to set this value, it means only the root user
+>    of host can change it.
+> 
+> 3, make audit namespace don't depend on net namespace.
+>    patch[1/20] add a compare function audit_compare for
+>    audit netlink, it always return true, it means the
+>    netlink subsystem will find out the netlink socket
+>    only through portid and netlink type. So we needn't
+>    to create kernel side audit netlink socket for per
+>    net namespace, all userspace audit netlink socket
+>    can find out the audit_sock, and audit_sock can
+>    communicate with them through the proper portid.
+>    it's just like the behavior we don't have net
+>    namespace before.
+> 
+> 
+> This patchset still need some work, such as allow changing
+> audit_enabled in audit namespace, auditd wants this feature.
+> 
+> I send this patchset now in order to get more comments, so
+> I can keep on improving namespace support for audit.
+> 
+> Gao feng (20):
+>   Audit: make audit netlink socket net namespace unaware
+>   audit: introduce configure option CONFIG_AUDIT_NS
+>   audit: make audit_skb_queue per audit namespace
+>   audit: make audit_skb_hold_queue per audit namespace
+>   audit: make audit_pid per audit namespace
+>   audit: make kauditd_task per audit namespace
+>   aduit: make audit_nlk_portid per audit namespace
+>   audit: make kaudit_wait queue per audit namespace
+>   audit: make audit_backlog_wait per audit namespace
+>   audit: allow un-init audit ns to change pid and portid only
+>   audit: use proper audit namespace in audit_receive_msg
+>   audit: use proper audit_namespace in kauditd_thread
+>   audit: introduce new audit logging interface for audit namespace
+>   audit: pass proper audit namespace to audit_log_common_recv_msg
+>   audit: Log audit pid config change in audit namespace
+>   audit: allow GET,SET,USER MSG operations in audit namespace
+>   nsproxy: don't make create_new_namespaces static
+>   audit: add new message type AUDIT_CREATE_NS
+>   audit: make audit_backlog_limit per audit namespace
+>   audit: introduce /proc/<pid>/audit_backlog_limit
+> 
+>  fs/proc/base.c                  |  53 ++++++
+>  include/linux/audit.h           |  26 ++-
+>  include/linux/audit_namespace.h |  92 ++++++++++
+>  include/linux/nsproxy.h         |  15 +-
+>  include/uapi/linux/audit.h      |   1 +
+>  init/Kconfig                    |  10 ++
+>  kernel/Makefile                 |   2 +-
+>  kernel/audit.c                  | 364 +++++++++++++++++++++++++---------------
+>  kernel/audit.h                  |   5 +-
+>  kernel/audit_namespace.c        | 123 ++++++++++++++
+>  kernel/auditsc.c                |   6 +-
+>  kernel/nsproxy.c                |  18 +-
+>  12 files changed, 561 insertions(+), 154 deletions(-)
+>  create mode 100644 include/linux/audit_namespace.h
+>  create mode 100644 kernel/audit_namespace.c
+> 
 
