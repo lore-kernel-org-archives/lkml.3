@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727Ab3JaWFg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 18:05:36 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:59239 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab3JaWFe (ORCPT
+	id S1754067Ab3JaWGU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 18:06:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34113 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753273Ab3JaWGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 18:05:34 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michele Baldessari <michele@redhat.com>, stable@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>
-Subject: [PATCH] KVM: x86: fix emulation of "movzbl %bpl, %eax"
-Date: Thu, 31 Oct 2013 23:05:24 +0100
-Message-Id: <1383257124-8241-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Thu, 31 Oct 2013 18:06:19 -0400
+Date: Thu, 31 Oct 2013 15:06:18 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: scameron@beardog.cce.hp.com
+Cc: Jens Axboe <axboe@kernel.dk>, stephenmcameron@gmail.com,
+        mikem@beardog.cce.hp.com, linux-kernel@vger.kernel.org,
+        thenzl@redhat.com
+Subject: Re: [PATCH] cciss: return 0 from driver probe function on success,
+ not 1
+Message-Id: <20131031150618.fa9430269e0de7a5ebad1387@linux-foundation.org>
+In-Reply-To: <20131031215444.GN31390@beardog.cce.hp.com>
+References: <20131029184135.5505.77412.stgit@beardog.cce.hp.com>
+	<52700541.70405@kernel.dk>
+	<20131031144241.25090ab7a6c0b668c5c1c2b2@linux-foundation.org>
+	<20131031215444.GN31390@beardog.cce.hp.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I was looking at RHEL5.9's failure to start with
-unrestricted_guest=0/emulate_invalid_guest_state=1, I got it working with a
-slightly older tree than kvm.git.  I now debugged the remaining failure,
-which was introduced by commit 660696d1 (KVM: X86 emulator: fix
-source operand decoding for 8bit mov[zs]x instructions, 2013-04-24)
-introduced a similar mis-emulation to the one in commit 8acb4207 (KVM:
-fix sil/dil/bpl/spl in the mod/rm fields, 2013-05-30).  The incorrect
-decoding occurs in 8-bit movzx/movsx instructions whose 8-bit operand
-is sil/dil/bpl/spl.
+On Thu, 31 Oct 2013 16:54:44 -0500 scameron@beardog.cce.hp.com wrote:
 
-Needless to say, "movzbl %bpl, %eax" does occur in RHEL5.9's decompression
-prolog, just a handful of instructions before finally giving control to
-the decompressed vmlinux and getting out of the invalid guest state.
+> > > How did this ever work?
+> > 
+> > Beats me.  local_pci_probe() does
+> > 
+> > 	rc = pci_drv->probe(pci_dev, ddi->id);
+> > 	if (rc) {
+> > 		pci_dev->driver = NULL;
+> > 		pm_runtime_put_sync(dev);
+> > 	}
+> > 	return rc;
+> > 
+> > shrug, maybe this ->probe somehow has a different caller which checks
+> > for <0.
+> 
+> Older kernels (eg: http://lxr.linux.no/#linux+v2.6.32.61/drivers/pci/pci-driver.c )
+> had different code:
+> 
+>  330__pci_device_probe(struct pci_driver *drv, struct pci_dev *pci_dev)
+>  331{
+>  332        const struct pci_device_id *id;
+>  333        int error = 0;
+>  334
+>  335        if (!pci_dev->driver && drv->probe) {
+>  336                error = -ENODEV;
+>  337
+>  338                id = pci_match_device(drv, pci_dev);
+>  339                if (id)
+>  340                        error = pci_call_probe(drv, pci_dev, id);
+>  341                if (error >= 0) {
+>  342                        pci_dev->driver = drv;
+>  343                        error = 0;
+>  344                }
+>  345        }
+>  346        return error;
+>  347}
 
-Because OpMem8 bypasses decode_modrm, the same handling of the REX prefix
-must be applied to OpMem8.
+So cciss is presently kompletely kaput?  If so, the kapputting code is
+present in 3.9 and probably earlier, so this patch is needed in 3.12 and
+-stable.  Or if not, what?
 
-Reported-by: Michele Baldessari <michele@redhat.com>
-Cc: stable@vger.kernel.org
-Cc: Gleb Natapov <gleb@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/x86/kvm/emulate.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 16c037e7db7d..282d28cb9931 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -4117,7 +4117,10 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
- 	case OpMem8:
- 		ctxt->memop.bytes = 1;
- 		if (ctxt->memop.type == OP_REG) {
--			ctxt->memop.addr.reg = decode_register(ctxt, ctxt->modrm_rm, 1);
-+			int highbyte_regs = ctxt->rex_prefix == 0;
-+
-+			ctxt->memop.addr.reg = decode_register(ctxt, ctxt->modrm_rm,
-+					       highbyte_regs);
- 			fetch_register_operand(&ctxt->memop);
- 		}
- 		goto mem_common;
--- 
-1.8.3.1
+(Playing question and answer like this is a bad way of writing a
+changelog btw - all this stuff should have been right there in the v1
+changelog).
 
