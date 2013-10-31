@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab3JaOF4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 10:05:56 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43297 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754283Ab3JaOFz (ORCPT
+	id S1754886Ab3JaOHp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 10:07:45 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:52839 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754391Ab3JaOHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 10:05:55 -0400
-Date: Thu, 31 Oct 2013 08:05:49 -0600
-From: Jens Axboe <axboe@kernel.dk>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Kent Overstreet <kmo@daterainc.com>, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org, hch@infradead.org, tj@kernel.org,
-        Alasdair Kergon <agk@redhat.com>
-Subject: Re: [PATCH 17/23] dm: Refactor for new bio cloning/splitting
-Message-ID: <20131031140549.GD10091@kernel.dk>
-References: <1383077896-4132-1-git-send-email-kmo@daterainc.com>
- <1383077896-4132-18-git-send-email-kmo@daterainc.com>
- <20131030000908.GB2989@redhat.com>
- <20131030001959.GB27129@kmo>
- <20131030002935.GA3449@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131030002935.GA3449@redhat.com>
+	Thu, 31 Oct 2013 10:07:44 -0400
+Message-ID: <1383228427.5272.36.camel@marge.simpson.net>
+Subject: CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo
+From: Mike Galbraith <bitbucket@online.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>
+Date: Thu, 31 Oct 2013 15:07:07 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:v6nMkNLPR1b6gFcrC7ze2DpiWnRw48pESdKEi4eL0w0
+ QIaNXjYunh2/OY4ORZUVSyLhrmDh9v/f4kqJtMLqka5svGTlT6
+ 3t709AE0M05jKnsHVGrqOHMfbTj0GtV2vvvlzt7nyMAyNduDe+
+ 7xB10TboXan6e90arAU/F0K2Q7DpSbRhMNp5mB4iW9Pa5Nkp43
+ 8OtxhOwtnJRy55/MPAHhTYH7o36wqs9k9wvXe9CQA0xoELI9Sb
+ W/aX4sr93pYz/iq/MGGwbk0rIBXG4ePQJqKooZIs0jMp6iPNLh
+ v5ApWv6Mz/oo53w5FisTu91vBCTiHLJiE5yBd0+Xn0tBVQzMZt
+ ks7SqjaLFIQchkXulGVStnebIrMiiRlzC7h9BooPFvs9DlM+hx
+ Gv3g3hNpXoleA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29 2013, Mike Snitzer wrote:
-> On Tue, Oct 29 2013 at  8:19pm -0400,
-> Kent Overstreet <kmo@daterainc.com> wrote:
-> 
-> > On Tue, Oct 29, 2013 at 08:09:08PM -0400, Mike Snitzer wrote:
-> > > 
-> > > But now that I look closer, the above dm-thin.c hunks belong in:
-> > > [PATCH 19/23] block: Generic bio chaining
-> > > 
-> > > Seems these changes were mistakenly folded into this 17/23 patch?
-> > 
-> > ...Whoops, fixed. Here's the new versions if you want to take a look:
-> > 
-> > http://evilpiepirate.org/git/linux-bcache.git/log/?h=for-jens
-> > http://evilpiepirate.org/git/linux-bcache.git/commit/?h=for-jens&id=74f0f2084f88bb38403ca80bb98976f8219f9262
-> 
-> Yeap, looks good (aside from the dm patches not having my Reviewed-by).
-> 
-> Not sure if Jens can add it?..  that said, I don't mind the commits not
-> having my Reviewed-by but it does lose some context for your changes
-> having had some other eyeballs on them.
+Hi Frederic,
 
-I have added it, thanks Mike.
+The tick wakes ksoftirqd, ensuring nr_running test ain't gonna happen
+when an otherwise lonely task takes the timer interrupt.  Deferring to
+softirq processing time..... works.
 
--- 
-Jens Axboe
+---
+ kernel/sched/core.c      |    2 +-
+ kernel/softirq.c         |   10 ++++++++++
+ kernel/time/tick-sched.c |    2 ++
+ 3 files changed, 13 insertions(+), 1 deletion(-)
+
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -704,7 +704,7 @@ bool sched_can_stop_tick(void)
+        smp_rmb();
+ 
+        /* More than one running task need preemption */
+-       if (rq->nr_running > 1)
++       if (rq->nr_running - (rq->curr == this_cpu_ksoftirqd()) > 1)
+                return false;
+ 
+        return true;
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -529,6 +529,11 @@ static void do_current_softirqs(int need
+ 		softirq_clr_runner(i);
+ 		unlock_softirq(i);
+ 		WARN_ON(current->softirq_nestcnt != 1);
++
++#ifdef CONFIG_NO_HZ_COMMON
++		if (i == TIMER_SOFTIRQ && tick_nohz_full_cpu(raw_smp_processor_id()))
++			 tick_nohz_irq_exit();
++#endif
+ 	}
+ }
+ 
+@@ -728,6 +733,11 @@ static inline void tick_irq_exit(void)
+ #ifdef CONFIG_NO_HZ_COMMON
+ 	int cpu = smp_processor_id();
+ 
++#ifdef CONFIG_PREEMPT_RT_FULL
++	if (tick_nohz_full_cpu(cpu))
++		return;
++#endif
++
+ 	/* Make sure that timer wheel updates are propagated */
+ 	if ((idle_cpu(cpu) && !need_resched()) || tick_nohz_full_cpu(cpu)) {
+ 		if (!in_interrupt())
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -157,7 +157,9 @@ bool have_nohz_full_mask;
+ 
+ static bool can_stop_full_tick(void)
+ {
++#ifndef CONFIG_PREEMPT_RT_FULL
+ 	WARN_ON_ONCE(!irqs_disabled());
++#endif
+ 
+ 	if (!sched_can_stop_tick()) {
+ 		trace_tick_stop(0, "more than 1 task in runqueue\n");
+
 
