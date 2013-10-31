@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130Ab3JaB5k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 21:57:40 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:55161 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752004Ab3JaB5i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 21:57:38 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: andrzej.p@samsung.com, trivial@kernel.org, gregkh@linuxfoundation.org,
-        rdunlap@infradead.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        kyungmin.park@samsung.com
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial] doc: usb: Fix typo in Documentation/usb/gadget_configs.txt
-Date: Thu, 31 Oct 2013 10:57:28 +0900
-Message-Id: <1383184648-27765-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.5.rc0
+	id S1752020Ab3JaCFv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 22:05:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47413 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750730Ab3JaCFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 22:05:50 -0400
+Date: Thu, 31 Oct 2013 10:04:05 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.fedoraproject.org, kexec@lists.infradead.org
+Subject: Re: [patch 3/6] Cleanup efi_enter_virtual_mode function
+Message-ID: <20131031020405.GA4377@dhcp-16-126.nay.redhat.com>
+References: <20131028100402.GC4314@pd.tnic>
+ <20131028101011.GF25527@dhcp-16-126.nay.redhat.com>
+ <20131028112045.GH4314@pd.tnic>
+ <20131028112458.GD29133@dhcp-16-126.nay.redhat.com>
+ <20131028145801.GM4314@pd.tnic>
+ <20131028151048.GA14984@dhcp-16-126.nay.redhat.com>
+ <20131029023203.GB5185@dhcp-16-126.nay.redhat.com>
+ <20131029134302.GI10972@pd.tnic>
+ <20131030020348.GA4332@dhcp-16-126.nay.redhat.com>
+ <20131030104718.GB13290@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131030104718.GB13290@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in Documentation/usb/gadget_configs.txt
+On 10/30/13 at 11:47am, Borislav Petkov wrote:
+> On Wed, Oct 30, 2013 at 10:03:49AM +0800, Dave Young wrote:
+> > Will try, but please keep the posted patches in mailing list up-to-date,
+> 
+> Would you like me to send them to you privately?
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- Documentation/usb/gadget_configfs.txt | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Thanks, do not bother to send me privately I can get it from your git tree.
 
-diff --git a/Documentation/usb/gadget_configfs.txt b/Documentation/usb/gadget_configfs.txt
-index 8ec2a67..4cf53e4 100644
---- a/Documentation/usb/gadget_configfs.txt
-+++ b/Documentation/usb/gadget_configfs.txt
-@@ -26,7 +26,7 @@ Linux provides a number of functions for gadgets to use.
- Creating a gadget means deciding what configurations there will be
- and which functions each configuration will provide.
- 
--Configfs (please see Documentation/filesystems/configfs/*) lends itslef nicely
-+Configfs (please see Documentation/filesystems/configfs/*) lends itself nicely
- for the purpose of telling the kernel about the above mentioned decision.
- This document is about how to do it.
- 
-@@ -99,7 +99,7 @@ directories must be created:
- $ mkdir configs/<name>.<number>
- 
- where <name> can be any string which is legal in a filesystem and the
--<numebr> is the configuration's number, e.g.:
-+<number> is the configuration's number, e.g.:
- 
- $ mkdir configs/c.1
- 
-@@ -327,7 +327,7 @@ from the buffer to the cs), but it is up to the implementer of the
- two functions to decide what they actually do.
- 
- typedef struct configured_structure cs;
--typedef struc specific_attribute sa;
-+typedef struct specific_attribute sa;
- 
-                                        sa
-                        +----------------------------------+
--- 
-1.8.4.1.600.g3d092bf
+But Frankly I'd like to see them in list instead even with only small fixes
+beacuse in this way there might be more people to review it carefully.
 
+--
+Thanks
+Dave
