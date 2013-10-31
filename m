@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab3JaXxJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 19:53:09 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:54111 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab3JaXxG (ORCPT
+	id S1755636Ab3JaXxn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 19:53:43 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42238 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650Ab3JaXxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 19:53:06 -0400
+	Thu, 31 Oct 2013 19:53:42 -0400
+Date: Thu, 31 Oct 2013 23:53:29 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        linux-arm-kernel@lists.infradead.org, Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH] scripts/kallsyms: filter symbols not in kernel address
+	space
+Message-ID: <20131031235329.GK16735@n2100.arm.linux.org.uk>
+References: <1382975339-25831-1-git-send-email-tom.leiming@gmail.com> <20131031154311.e65d16d79ba540ced736413b@linux-foundation.org> <20131031225022.GJ16735@n2100.arm.linux.org.uk> <20131031155831.4dce58a80c621cf450967de0@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <xmqqa9hp9x2e.fsf@gitster.dls.corp.google.com>
-References: <20131024122255.GI9378@mwanda> <20131024122512.GB9534@mwanda>
- <20131026181709.GB10488@kroah.com> <20131027013402.GA7146@leaf>
- <526CA7D4.1070904@alum.mit.edu> <20131027071407.GA11683@leaf>
- <526E283A.1070801@alum.mit.edu> <CALKQrgfsk3fjyF77XL9+CPyJ_s-AfzkNAj4Eaj1LT-G0Ph=bfg@mail.gmail.com>
- <20131029020824.GE11861@sigill.intra.peff.net> <CALKQrge8T8R7roUUYyLcu_QnL1afeqTATOp+0n_OOsZZoJXF4Q@mail.gmail.com>
- <CACsJy8DVSpmmDw-jGJoJK171u5UeJR7GKPuX7QAK4=7yYn6n8Q@mail.gmail.com> <xmqqa9hp9x2e.fsf@gitster.dls.corp.google.com>
-From: Duy Nguyen <pclouds@gmail.com>
-Date: Fri, 1 Nov 2013 06:52:35 +0700
-Message-ID: <CACsJy8CEnKxmhRYQqWoMVyLpfDUp7tqdnLxiV47XqaOFFCcUMw@mail.gmail.com>
-Subject: Re: [PATCH] commit: Add -f, --fixes <commit> option to add Fixes: line
-To: Junio C Hamano <gitster@pobox.com>
-Cc: Johan Herland <johan@herland.net>, Jeff King <peff@peff.net>,
-        Michael Haggerty <mhagger@alum.mit.edu>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Git mailing list <git@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, Greg KH <greg@kroah.com>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131031155831.4dce58a80c621cf450967de0@linux-foundation.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 1, 2013 at 12:20 AM, Junio C Hamano <gitster@pobox.com> wrote:
-> Duy Nguyen <pclouds@gmail.com> writes:
->
->> OK how about, if $GIT_DIR/hooks/something is a directory, then the
->> directory must contain a file named "index", listing all the hooks of
->> type "something". All the hooks in "index" will be executed in the
->> listing order.
->
-> Hooks that take arbitrary amount of information from the body read
-> their standard input. How are your multiple hooks supposed to
-> interact?
+On Thu, Oct 31, 2013 at 03:58:31PM -0700, Andrew Morton wrote:
+> On Thu, 31 Oct 2013 22:50:22 +0000 Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> 
+> > On Thu, Oct 31, 2013 at 03:43:11PM -0700, Andrew Morton wrote:
+> > > On Mon, 28 Oct 2013 23:48:59 +0800 Ming Lei <tom.leiming@gmail.com> wrote:
+> > > 
+> > > > This patch uses CONFIG_PAGE_OFFSET to filter symbols which
+> > > > are not in kernel address space because these symbols are
+> > > > generally for generating code purpose and can't be run at
+> > > > kernel mode, so we needn't keep them in /proc/kallsyms.
+> > > > 
+> > > > For example, on ARM there are some symbols which are
+> > > > linked in relocatable code section, then perf can't parse
+> > > > symbols any more from /proc/kallsyms, and this patch fixes
+> > > > the problem.
+> > > 
+> > > This is a non-back-compatible change and I'd like to see a much
+> > > stronger assurance that it is safe to merge and will not break any
+> > > existing application on the planet, please.
+> > > 
+> > > For a start, please describe with great precision what these excluded
+> > > symbols are (examples would help) and explain why no application will
+> > > conceivably have had any use for them.
+> > 
+> > These symbols are used to build what is relocatable code; the code which
+> > ends up being placed in the machine vectors and the following page.
+> > 
+> > Rather than have to manually calculate them, I merged a patch which used
+> > the tools we have, namely the assembler and linker, to do the job for us.
+> 
+> OK.  Do you recall which patch that was?  And is it the case that this
+> patch excludes only the symbols which that patch accidentally added?
 
-If each only needs to read a few lines from stdin, they can do so in
-order. If two hooks need to read till the end of stdin, they are
-incompatible. If we support some sort of hook signature, we could warn
-the user when they combine the two. If not, the second's failing
-(because stdin is already closed) may show the incompatibility. "git
-hook" should support dry-run mode to test out new combinations.
+It's not a case of "accidentally added" - as we include all symbols in
+kallsyms which are marked as text/data etc, irrespective of whether they
+are local or global.
 
-> Hooks that prevent you from doing something stupid signal allow/deny
-> with their exit code. Do you fail a commit if any of your pre-commit
-> hook fails, or is it OK to commit as long as one of them says so?
-> If the former, do all the hooks described in the index still run, or
-> does the first failure short-cut the remainder?
+b9b32bf70f2fb made the change, backported to stable trees.  e39e3f3ebfef
+depended on that change so that it could get at the correct offset to
+copy FIQ code.
 
-One failed hook fails the commit and stops the remaining from
-executing. You can skip the hook if you want with --exclude-hooks.
--- 
-Duy
+Both commits are part of closing an information leak from the kernel
+as part of a security report back in July.
