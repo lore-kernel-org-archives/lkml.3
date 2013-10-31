@@ -1,30 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab3JaW1r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 18:27:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34377 "EHLO
+	id S1753568Ab3JaWnO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 18:43:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34553 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab3JaW1q (ORCPT
+	with ESMTP id S1752101Ab3JaWnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 18:27:46 -0400
-Date: Thu, 31 Oct 2013 15:27:45 -0700
+	Thu, 31 Oct 2013 18:43:13 -0400
+Date: Thu, 31 Oct 2013 15:43:11 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-kernel@vger.kernel.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, Simon Baatz <gmbnomis@gmail.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] lib/scatterlist.c: don't flush_kernel_dcache_page on
- slab page
-Message-Id: <20131031152745.821d2b5dbe93e2ca69d45264@linux-foundation.org>
-In-Reply-To: <1382977205-26268-1-git-send-email-ming.lei@canonical.com>
-References: <1382977205-26268-1-git-send-email-ming.lei@canonical.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH] scripts/kallsyms: filter symbols not in kernel address
+ space
+Message-Id: <20131031154311.e65d16d79ba540ced736413b@linux-foundation.org>
+In-Reply-To: <1382975339-25831-1-git-send-email-tom.leiming@gmail.com>
+References: <1382975339-25831-1-git-send-email-tom.leiming@gmail.com>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -33,31 +26,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Oct 2013 00:20:05 +0800 Ming Lei <ming.lei@canonical.com> wrote:
+On Mon, 28 Oct 2013 23:48:59 +0800 Ming Lei <tom.leiming@gmail.com> wrote:
 
-> Commit b1adaf65ba03([SCSI] block: add sg buffer copy helper functions)
-> introduces two sg buffer copy helpers, and calls flush_kernel_dcache_page()
-> on pages in SG list after these pages are written to.
+> This patch uses CONFIG_PAGE_OFFSET to filter symbols which
+> are not in kernel address space because these symbols are
+> generally for generating code purpose and can't be run at
+> kernel mode, so we needn't keep them in /proc/kallsyms.
 > 
-> Unfortunately, the commit may introduce a potential bug:
-> 
-> 	- Before sending some SCSI commands, kmalloc() buffer may be
-> 	passed to block layper, so flush_kernel_dcache_page() can
-> 	see a slab page finally
-> 
-> 	- According to cachetlb.txt, flush_kernel_dcache_page() is
-> 	only called on "a user page", which surely can't be a slab page.
-> 
-> 	- ARCH's implementation of flush_kernel_dcache_page() may
-> 	use page mapping information to do optimization so page_mapping()
-> 	will see the slab page, then VM_BUG_ON() is triggered.
-> 
-> Aaro Koskinen reported the bug on ARM/kirkwood when DEBUG_VM is enabled,
-> and this patch fixes the bug by adding test of '!PageSlab(miter->page)'
-> before calling flush_kernel_dcache_page().
+> For example, on ARM there are some symbols which are
+> linked in relocatable code section, then perf can't parse
+> symbols any more from /proc/kallsyms, and this patch fixes
+> the problem.
 
-We should work out which kernel(s) need this patch.  b1adaf65ba03 was
-merged in 2008, so presumably some more recent patch has exposed the
-problem, but I don't know what one that was.
+This is a non-back-compatible change and I'd like to see a much
+stronger assurance that it is safe to merge and will not break any
+existing application on the planet, please.
 
-Help me out here?
+For a start, please describe with great precision what these excluded
+symbols are (examples would help) and explain why no application will
+conceivably have had any use for them.
+
