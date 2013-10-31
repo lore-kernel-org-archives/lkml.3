@@ -1,49 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab3JaFrc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 01:47:32 -0400
-Received: from smtprelay0037.hostedemail.com ([216.40.44.37]:56813 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750845Ab3JaFrb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 01:47:31 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3874:4250:4321:5007:7652:10004:10400:10848:11026:11232:11657:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sheep73_4176386390d46
-X-Filterd-Recvd-Size: 1642
-Message-ID: <1383198448.24582.3.camel@joe-AO722>
-Subject: Re: [PATCH 2/2] perf/x86/intel: Add Ivy Bridge-EP uncore IRP box
- support
-From: Joe Perches <joe@perches.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, ak@linux.intel.com,
-        eranian@google.com
-Date: Wed, 30 Oct 2013 22:47:28 -0700
-In-Reply-To: <1383197815-17706-2-git-send-email-zheng.z.yan@intel.com>
-References: <1383197815-17706-1-git-send-email-zheng.z.yan@intel.com>
-	 <1383197815-17706-2-git-send-email-zheng.z.yan@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752637Ab3JaFwc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 01:52:32 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:33721 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750845Ab3JaFw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 01:52:29 -0400
+Date: Thu, 31 Oct 2013 01:49:42 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch] mm, memcg: add memory.oom_control notification for
+ system oom
+Message-ID: <20131031054942.GA26301@cmpxchg.org>
+References: <alpine.DEB.2.02.1310301838300.13556@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1310301838300.13556@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-10-31 at 13:36 +0800, Yan, Zheng wrote:
-> Unlike other uncore boxes, IRP boxes live in PCI buses with no UBOX
-> device. For PCI bus without UBOX device, we find the next bus that
-> has UBOX device and use its 'bus to socket' mapping.
-[]
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-[]
-> @@ -997,6 +997,20 @@ static int snbep_pci2phy_map_init(int devid)
-[]
-> +/* registers in IRP boxes are not properly aligned */
-> +static unsigned ivt_uncore_irp_ctls[] = {0xd8, 0xdc, 0xe0, 0xe4};
-> +static unsigned ivt_uncore_irp_ctrs[] = {0xa0, 0xb0, 0xb8, 0xc0};
+On Wed, Oct 30, 2013 at 06:39:16PM -0700, David Rientjes wrote:
+> A subset of applications that wait on memory.oom_control don't disable
+> the oom killer for that memcg and simply log or cleanup after the kernel
+> oom killer kills a process to free memory.
+> 
+> We need the ability to do this for system oom conditions as well, i.e.
+> when the system is depleted of all memory and must kill a process.  For
+> convenience, this can use memcg since oom notifiers are already present.
+> 
+> When a userspace process waits on the root memcg's memory.oom_control, it
+> will wake up anytime there is a system oom condition so that it can log
+> the event, including what process was killed and the stack, or cleanup
+> after the kernel oom killer has killed something.
+> 
+> This is a special case of oom notifiers since it doesn't subsequently
+> notify all memcgs under the root memcg (all memcgs on the system).  We
+> don't want to trigger those oom handlers which are set aside specifically
+> for true memcg oom notifications that disable their own oom killers to
+> enforce their own oom policy, for example.
 
-Using this sort of naming is like asking for a typo
-or a copy/paste defect.
+There is nothing they can do anyway since the handler is hardcoded for
+the root cgroup, so this seems fine.
 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -155,6 +155,7 @@ static inline bool task_in_memcg_oom(struct task_struct *p)
+>  }
+>  
+>  bool mem_cgroup_oom_synchronize(bool wait);
+> +void mem_cgroup_root_oom_notify(void);
+>  
+>  #ifdef CONFIG_MEMCG_SWAP
+>  extern int do_swap_account;
+> @@ -397,6 +398,10 @@ static inline bool mem_cgroup_oom_synchronize(bool wait)
+>  	return false;
+>  }
+>  
+> +static inline void mem_cgroup_root_oom_notify(void)
+> +{
+> +}
+> +
+>  static inline void mem_cgroup_inc_page_stat(struct page *page,
+>  					    enum mem_cgroup_stat_index idx)
+>  {
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -5641,6 +5641,15 @@ static void mem_cgroup_oom_notify(struct mem_cgroup *memcg)
+>  		mem_cgroup_oom_notify_cb(iter);
+>  }
+>  
+> +/*
+> + * Notify any process waiting on the root memcg's memory.oom_control, but do not
+> + * notify any child memcgs to avoid triggering their per-memcg oom handlers.
+> + */
+> +void mem_cgroup_root_oom_notify(void)
+> +{
+> +	mem_cgroup_oom_notify_cb(root_mem_cgroup);
+> +}
+> +
+>  static int mem_cgroup_usage_register_event(struct cgroup_subsys_state *css,
+>  	struct cftype *cft, struct eventfd_ctx *eventfd, const char *args)
+>  {
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -632,6 +632,10 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
+>  		return;
+>  	}
+>  
+> +	/* Avoid waking up processes for oom kills triggered by sysrq */
+> +	if (!force_kill)
+> +		mem_cgroup_root_oom_notify();
 
+We have an API for global OOM notifications, please just use
+register_oom_notifier() instead.
