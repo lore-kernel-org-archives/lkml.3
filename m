@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab3JaCx3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 22:53:29 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:45153 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751741Ab3JaCx2 (ORCPT
+	id S1752305Ab3JaDAo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 23:00:44 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:45084 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751741Ab3JaDAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 22:53:28 -0400
-X-Spam-Score: -100.8
-Message-ID: <5271C5E5.6080606@asianux.com>
-Date: Thu, 31 Oct 2013 10:52:21 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 30 Oct 2013 23:00:43 -0400
+References: <1383126294-28793-1-git-send-email-cxie@redhat.com> <3908561D78D1C84285E8C5FCA982C28F31D529D7@ORSMSX106.amr.corp.intel.com> <A5ED84D3BB3A384992CBB9C77DEDA4D47F9D4476@USINDEM103.corp.hds.com> <3908561D78D1C84285E8C5FCA982C28F31D52E99@ORSMSX106.amr.corp.intel.com>
+User-agent: mu4e 0.9.9.5; emacs 24.3.1
+From: Madper Xie <bbboson@gmail.com>
+To: "Luck\, Tony" <tony.luck@intel.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>, Madper Xie <cxie@redhat.com>,
+        "keescook\@chromium.org" <keescook@chromium.org>,
+        "ccross\@android.com" <ccross@android.com>,
+        "anton\@enomsg.org" <anton@enomsg.org>,
+        "linux-efi\@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bbboson\@gmail.com" <bbboson@gmail.com>
+Subject: Re: [PATCH 0/2] make all stored entries accessible.
+In-reply-to: <3908561D78D1C84285E8C5FCA982C28F31D52E99@ORSMSX106.amr.corp.intel.com>
+Date: Thu, 31 Oct 2013 11:00:35 +0800
+Message-ID: <87d2mm6t64.fsf@gmail.com>
 MIME-Version: 1.0
-To: Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] fs/befs/linuxvfs.c: need signed cast for variable 'block'
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need signed cast for it, the original author assume the type of 'block'
-is long, so just cast to long. The related warnings (with allmodconfig):
 
-  fs/befs/linuxvfs.c:136:2: warning: comparison of unsigned expression < 0 is always false [-Wtype-limits]
+tony.luck@intel.com writes:
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- fs/befs/linuxvfs.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+>> So, do you mean efivars should fix to use the "id" in a proper way?
+>
+> It would avoid the need for all these tests, and additions to the filename to guarantee
+> uniqueness.
+>
+> Not sure what options efivars has to create a unique, persistent "id" for each
+> record.  It's a fundamental part of how ERST works (though the unique ID is just
+> based around a timestamp).
+>
+Okay, maybe there are three options here:
+1. combine timestamp, count and part into "id".
+   for now, in efi-pstore.c, *id = part. and we could simply change it
+   to unique one. F.E. *id = (timestamp * 100 + part) * 100 + count.
+2. change the id's type. let id become a string.
+   so every backend could write anything to id. then it will become a
+   part of filename in pstore filesystem. (but we need fix all backends
+   since we modified api.)
+3. apply the patches I have sent... even if the filename will be ugly
+   and gory...
+Which one do you prefer?
+>> I acked Madper's patch 2/2 earlier today, but when I look at your test result, I'm not sure if
+>> it is reasonable for users to make multiple numbers visible to the file name.
+>>
+>>> -r--r--r-- 1 root root 17499 Oct 30 13:41 dmesg-erst-5940651313304961029--2129078373-1383165669
+>
+> after I added the "count = 0" initialization the filename gets a tiny bit less
+> scary:
+>
+> -r--r--r-- 1 root root 17499 Oct 30 13:41 dmesg-erst-5940651313304961029-0-1383165669
+>
+> -Tony
 
-diff --git a/fs/befs/linuxvfs.c b/fs/befs/linuxvfs.c
-index daa15d6..27e5179 100644
---- a/fs/befs/linuxvfs.c
-+++ b/fs/befs/linuxvfs.c
-@@ -133,7 +133,7 @@ befs_get_block(struct inode *inode, sector_t block,
- 	befs_debug(sb, "---> befs_get_block() for inode %lu, block %ld",
- 		   inode->i_ino, block);
- 
--	if (block < 0) {
-+	if ((long)block < 0) {
- 		befs_error(sb, "befs_get_block() was asked for a block "
- 			   "number less than zero: block %ld in inode %lu",
- 			   block, inode->i_ino);
+
 -- 
-1.7.7.6
+Best,
+Madper Xie.
