@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753678Ab3JaXkR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 19:40:17 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:55934 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab3JaXkP convert rfc822-to-8bit (ORCPT
+	id S1754090Ab3JaXrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 19:47:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46056 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766Ab3JaXrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 19:40:15 -0400
-Content-Type: text/plain; charset=GB2312
-Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1816\))
-Subject: Re: An small ftrace enhancement idea
-From: Kenneth Lee <nek.in.cn@gmail.com>
-In-Reply-To: <20131031165015.757d0efb@gandalf.local.home>
-Date: Thu, 31 Oct 2013 16:40:12 -0700
-Cc: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1B57F15E-49C6-4D62-8A2F-A3D54F783593@gmail.com>
-References: <4A791BBD-EBBE-420F-8199-E4BAAF6A3C46@gmail.com> <20131031165015.757d0efb@gandalf.local.home>
-To: Steven Rostedt <rostedt@goodmis.org>
-X-Mailer: Apple Mail (2.1816)
+	Thu, 31 Oct 2013 19:47:51 -0400
+From: Michael Hudson-Doyle <michael.hudson@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Will Deacon <will.deacon@arm.com>, Jean Pihet <jean.pihet@linaro.org>
+Subject: [PATCH v2] perf tools: Remove cast of non-variadic function to variadic
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/24.3.50.2 (x86_64-pc-linux-gnu)
+Date: Thu, 31 Oct 2013 16:47:45 -0700
+Message-ID: <87zjppvw7y.fsf@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you, Steve, 
+4fb71074a570 (perf ui/hist: Consolidate hpp helpers) introduced a cast of
+percent_color_snprintf to a function pointer type with varargs.  Change
+percent_color_snprintf to be variadic and remove the cast.
 
-Yes, with a separated instance, I can measure the latency for a stimulation while capture the other schedule events which I am interesting in. This is a better solution. I don’t know this “instance” stuff before. I don’t need to create another axe. I am sorry for my ignorance. 
+The symptom of this was all percentages being reported as 0.00% in perf
+report --stdio output.
 
-Thanks and regards.
+Signed-off-by: Michael Hudson-Doyle <michael.hudson@linaro.org>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Cc: <stable@vger.kernel.org>
+---
+ tools/perf/ui/hist.c    |  2 +-
+ tools/perf/util/color.c | 11 +++++++++--
+ tools/perf/util/color.h |  2 +-
+ 3 files changed, 11 insertions(+), 4 deletions(-)
 
---Kenneth
-
-在 2013年10月31日，下午1:50，Steven Rostedt <rostedt@goodmis.org> 写道：
-
-> On Wed, 30 Oct 2013 15:39:50 -0700
-> Kenneth Lee <nek.in.cn@gmail.com> wrote:
-> 
->> Dear Steven,
->> 
->> I want to add a new function to ftrace subsystem. Sometimes, we will face such a problem: system do not response to the input on time one to two times everyday. It is not easy to capture because it rarely happens. So I want to add a function to the kernel. If I have such problem, I insert a kernel module, who add a hook to the position that receive the input and another to the position that response to the input (with a session id if necessary). And I can compare the time between them and if the period is longer then a pre-set threshold, I can give a signal to a user helper application (maybe a script waiting on the file), which then can save the trace event to a file for later inspection.
-> 
-> I'm a little confused in what you want.
-> 
-> 
->> 
->> 
->> 
->> The user helper script may look like this:
->> 
->> 
->> 
->> #/bin/sh
->> 
->> 
->> 
->> echo ‘sched:*’ > /sys/kernel/debug/tracing/set_event
->> 
->> modprobe delay_inspector.ko threshold=500
->> 
->> cat /sys/kernel/debug/tracing/waiter #wait for signal
->> 
->> cp /sys/kernel/debug/tracing/trace /var/log/delay_infomation
->> 
->> 
->> 
->> 
->> 
->> It looks like a standalone function. But I don’t have place to put it. Do you think I can implement it in ftrace? And do you think if there are better solution?
->> 
-> 
-> You want something to wake up if it takes too long before an event
-> happens?
-> 
-> If so, why not just use a select() on the trace_pipe and if it times
-> out, then dump the trace. You can even set up a separate instance.
-> 
-> (this is waiting for a schedule switch to pid 1)
-> 
-> cd /sys/kernel/debug/tracing
-> mkdir instances/mine
-> echo 'next_pid == 1' > instances/mine/events/sched/sched_switch/filter
-> echo 1 > instances/mine/events/sched/sched_switch/enable
-> 
-> 
-> The in a userspace program, I open "instances/mine/events/trace_pipe"
-> and run a select() on that file descriptor with a given timeout. If the
-> event does not happen within the expected time frame, the select
-> returns zero, and this userspace program can deal with it.
-> 
-> Is that the functionality you are trying to achieve?
-> 
-> -- Steve
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 0a19328..78f4c92 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -117,7 +117,7 @@ static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
+ 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+ {										\
+ 	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
+-			  (hpp_snprint_fn)percent_color_snprintf, true);	\
++			  percent_color_snprintf, true);			\
+ }
+ 
+ #define __HPP_ENTRY_PERCENT_FN(_type, _field)					\
+diff --git a/tools/perf/util/color.c b/tools/perf/util/color.c
+index 11e46da..66e44a5 100644
+--- a/tools/perf/util/color.c
++++ b/tools/perf/util/color.c
+@@ -318,8 +318,15 @@ int percent_color_fprintf(FILE *fp, const char *fmt, double percent)
+ 	return r;
+ }
+ 
+-int percent_color_snprintf(char *bf, size_t size, const char *fmt, double percent)
++int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...)
+ {
+-	const char *color = get_percent_color(percent);
++	va_list args;
++	double percent;
++	const char *color;
++
++	va_start(args, fmt);
++	percent = va_arg(args, double);
++	va_end(args);
++	color = get_percent_color(percent);
+ 	return color_snprintf(bf, size, color, fmt, percent);
+ }
+diff --git a/tools/perf/util/color.h b/tools/perf/util/color.h
+index dea082b..fced384 100644
+--- a/tools/perf/util/color.h
++++ b/tools/perf/util/color.h
+@@ -39,7 +39,7 @@ int color_fprintf(FILE *fp, const char *color, const char *fmt, ...);
+ int color_snprintf(char *bf, size_t size, const char *color, const char *fmt, ...);
+ int color_fprintf_ln(FILE *fp, const char *color, const char *fmt, ...);
+ int color_fwrite_lines(FILE *fp, const char *color, size_t count, const char *buf);
+-int percent_color_snprintf(char *bf, size_t size, const char *fmt, double percent);
++int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...);
+ int percent_color_fprintf(FILE *fp, const char *fmt, double percent);
+ const char *get_percent_color(double percent);
+ 
+-- 
+1.8.3.2
 
