@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab3JaBUa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 21:20:30 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:43255 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab3JaBU2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 21:20:28 -0400
-Message-ID: <5271B012.4060200@atmel.com>
-Date: Thu, 31 Oct 2013 09:19:14 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752103Ab3JaBXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 21:23:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:21504 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750715Ab3JaBXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 21:23:07 -0400
+X-IronPort-AV: E=Sophos;i="4.93,605,1378828800"; 
+   d="scan'208";a="8904952"
+Message-ID: <5271AF91.4090109@cn.fujitsu.com>
+Date: Thu, 31 Oct 2013 09:17:05 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Johan Hovold <jhovold@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] misc: atmel_pwm: set initcall level to subsys
-References: <1382459560-26596-1-git-send-email-jhovold@gmail.com> <20131029232249.GA20476@kroah.com> <20131030110705.GA29813@localhost> <201310302146.18248.arnd@arndb.de>
-In-Reply-To: <201310302146.18248.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH RESEND] fb: reorder the lock sequence to fix a potential
+ lockdep
+References: <526DFDA8.7010806@cn.fujitsu.com> <5270EB85.1030103@ti.com>
+In-Reply-To: <5270EB85.1030103@ti.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/31 09:21:21,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/10/31 09:21:21,
+	Serialize complete at 2013/10/31 09:21:21
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Hi Tomi,
 
-On 10/31/2013 04:46, Arnd Bergmann wrote:
-> On Wednesday 30 October 2013, Johan Hovold wrote:
->>> I really hate this type of patch, as it's papering over the real
->>> problem.  What happens when someone else moves their driver to this
->>> level?  Then you are back to the original problem.
+On 10/30/2013 07:20 PM, Tomi Valkeinen wrote:
+
+> Hi,
+> 
+> On 2013-10-28 08:01, Gu Zheng wrote:
+>> Following commits:
+>> 50e244cc79 fb: rework locking to fix lock ordering on takeover
+>> e93a9a8687 fb: Yet another band-aid for fixing lockdep mess
+>> 054430e773 fbcon: fix locking harder
 >>
->> Yes, it's crude, but it's currently the only way to express a preferred
->> probe order.
->
-> Does the same problem occur with the generic PWM subsystem?
->
-> The atmel_pwm driver apparently is the last PWM driver that has
-> not been converted to the generic subsystem yet. Doing that would
-> also let us drop the atmel-pwm-bl driver in favor of the generic
-> backlight.
+>> reworked locking to fix related lock ordering on takeover, and introduced console_lock
+>> into fbmem, but it seems that the new lock sequence(fb_info->lock ---> console_lock)
+>> is against with the one in console_callback(console_lock ---> fb_info->lock), and leads to
+>> a potential deadlock as following:
+> 
+> A quick grep shows that there are other places than fbmem.c which use
+> lock_fb_info and console_lock, for example drivers/video/sh_mobile_lcdcfb.c.
 
-The atmel pwm driver is on the way to generic subsystem. more 
-information at:
---->8---
-PWM: atmel-pwm: add PWM controller driver:
-    https://patchwork.kernel.org/patch/2963081/
----<8---
+Yes, thanks for your reminder, I'll fix them all in the next version.
 
-Best Regards,
-Bo Shen
+Regards,
+Gu
+
+> 
+>  Tomi
+> 
+> 
+
 
