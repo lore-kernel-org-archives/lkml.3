@@ -1,104 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab3JaIXB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 04:23:01 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:5755 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753646Ab3JaIW4 (ORCPT
+	id S1754074Ab3JaIYF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 04:24:05 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49537 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938Ab3JaIYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 04:22:56 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
-From: Nicolin Chen <b42378@freescale.com>
-To: <s.hauer@pengutronix.de>, <timur@tabi.org>, <shawn.guo@linaro.org>,
-        <broonie@kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alsa-devel@alsa-project.org>, <rob.herring@calxeda.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>, <pawel.moll@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <philippe.retornaz@gmail.com>
-Subject: [PATCH v3 3/4] ASoC: fsl_ssi: Add dual fifo mode support
-Date: Thu, 31 Oct 2013 16:22:40 +0800
-Message-ID: <da997ce67d9817364248ca1eba716bb6c7814a24.1383207153.git.b42378@freescale.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <cover.1383207153.git.b42378@freescale.com>
-References: <cover.1383207153.git.b42378@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Thu, 31 Oct 2013 04:24:01 -0400
+Date: Thu, 31 Oct 2013 19:23:54 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: linux-next: manual merge of the arm-soc tree with the devicetree
+ tree
+Message-Id: <20131031192354.32945644fbdca2e0d6ca5455@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__31_Oct_2013_19_23_54_+1100_MUsLh42x6OQ6R8rK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By enabling dual fifo mode, it would allow SSI enter a better performance
-to transimit/receive data without occasional hardware underrun/overrun.
+--Signature=_Thu__31_Oct_2013_19_23_54_+1100_MUsLh42x6OQ6R8rK
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[ Passed compile-test with mpc85xx_defconfig ]
+Hi all,
 
-Signed-off-by: Nicolin Chen <b42378@freescale.com>
----
- sound/soc/fsl/fsl_ssi.c | 22 +++++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
+Today's linux-next merge of the arm-soc tree got a conflict in
+drivers/pci/host/pci-mvebu.c between commit 16b84e5a505c ("of/irq: Create
+of_irq_parse_and_map_pci() to consolidate arch code.") from the
+devicetree tree and commit e5615c30c1c9 ("PCI: mvebu: remove
+subsys_initcall") from the arm-soc tree.
 
-diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
-index 35e2773..51a2022 100644
---- a/sound/soc/fsl/fsl_ssi.c
-+++ b/sound/soc/fsl/fsl_ssi.c
-@@ -143,6 +143,7 @@ struct fsl_ssi_private {
- 	bool ssi_on_imx;
- 	bool imx_ac97;
- 	bool use_dma;
-+	bool use_dual_fifo;
- 	struct clk *clk;
- 	struct snd_dmaengine_dai_dma_data dma_params_tx;
- 	struct snd_dmaengine_dai_dma_data dma_params_rx;
-@@ -413,6 +414,16 @@ static int fsl_ssi_setup(struct fsl_ssi_private *ssi_private)
- 		write_ssi(CCSR_SSI_SOR_WAIT(3), &ssi->sor);
- 	}
- 
-+	if (ssi_private->use_dual_fifo) {
-+		write_ssi_mask(&ssi->srcr, 0, CCSR_SSI_SRCR_RFEN1);
-+		write_ssi_mask(&ssi->stcr, 0, CCSR_SSI_STCR_TFEN1);
-+		write_ssi_mask(&ssi->scr, 0, CCSR_SSI_SCR_TCH_EN);
-+	} else {
-+		write_ssi_mask(&ssi->srcr, CCSR_SSI_SRCR_RFEN1, 0);
-+		write_ssi_mask(&ssi->stcr, CCSR_SSI_STCR_TFEN1, 0);
-+		write_ssi_mask(&ssi->scr, CCSR_SSI_SCR_TCH_EN, 0);
-+	}
-+
- 	return 0;
- }
- 
-@@ -947,7 +958,7 @@ static int fsl_ssi_probe(struct platform_device *pdev)
- 		ssi_private->fifo_depth = 8;
- 
- 	if (of_device_is_compatible(pdev->dev.of_node, "fsl,imx21-ssi")) {
--		u32 dma_events[2];
-+		u32 dma_events[2], dmas[4];
- 		ssi_private->ssi_on_imx = true;
- 
- 		ssi_private->clk = devm_clk_get(&pdev->dev, NULL);
-@@ -1001,6 +1012,15 @@ static int fsl_ssi_probe(struct platform_device *pdev)
- 			dma_events[0], shared ? IMX_DMATYPE_SSI_SP : IMX_DMATYPE_SSI);
- 		imx_pcm_dma_params_init_data(&ssi_private->filter_data_rx,
- 			dma_events[1], shared ? IMX_DMATYPE_SSI_SP : IMX_DMATYPE_SSI);
-+		if (!of_property_read_u32_array(pdev->dev.of_node, "dmas", dmas, 4)
-+				&& dmas[2] == IMX_DMATYPE_SSI_DUAL) {
-+			ssi_private->use_dual_fifo = true;
-+			/* When using dual fifo mode, we need to keep watermark
-+			 * as even numbers due to dma script limitation.
-+			 */
-+			ssi_private->dma_params_tx.maxburst &= ~0x1;
-+			ssi_private->dma_params_rx.maxburst &= ~0x1;
-+		}
- 	} else if (ssi_private->use_dma) {
- 		/* The 'name' should not have any slashes in it. */
- 		ret = devm_request_irq(&pdev->dev, ssi_private->irq,
--- 
-1.8.4
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/pci/host/pci-mvebu.c
+index 07ddb3a13c6e,80b2250ea19a..000000000000
+--- a/drivers/pci/host/pci-mvebu.c
++++ b/drivers/pci/host/pci-mvebu.c
+@@@ -693,9 -732,10 +719,10 @@@ static void mvebu_pcie_enable(struct mv
+  	hw.private_data   =3D (void **)&pcie;
+  	hw.setup          =3D mvebu_pcie_setup;
+  	hw.scan           =3D mvebu_pcie_scan_bus;
+ -	hw.map_irq        =3D mvebu_pcie_map_irq;
+ +	hw.map_irq        =3D of_irq_parse_and_map_pci;
+  	hw.ops            =3D &mvebu_pcie_ops;
+  	hw.align_resource =3D mvebu_pcie_align_resource;
++ 	hw.add_bus        =3D mvebu_pcie_add_bus;
+ =20
+  	pci_common_init(&hw);
+  }
+
+--Signature=_Thu__31_Oct_2013_19_23_54_+1100_MUsLh42x6OQ6R8rK
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSchOfAAoJEMDTa8Ir7ZwVMMUP/0sM+QdYjlrPnrd6Y55G50Ec
+mhL5riA6dmHeRGZ1AsGBJJnwuKSi0O0NcPALHzWxVI1rgLHM4QDM7U1hnkfSQiMu
+WLdIY+botPW3Yz3AGCkHfdMZCBhOZo4w/9fwaCnIxIUEToFSUkvlPxKn7zl52JeY
+JCMk/B7UPBFtqLNpcJy58KxPdT88HepG8PBuXrwjNzqMRKR8ivkp9+cn5h3N1SVR
+uSmF6r/ofkN6k+PsvWZW9hEu8UCddD0AJUPlXrw0AB3CV47370QbvUuxrG4ixFu5
+x1Wy8d2o0wKNrsjBZMuO7F7HJs8YC7WKrgIz1ZRk2v7BmWZQC1kneEmfBpeavdi+
+3jz6PluCrMeb5Mj/UqjEfCNSdUaFb1X2E4Gv/ttpWtVTvnhaGRPptRtYEd6ZXL22
+JSlfcx0glRL7dH2rLa0baiYz7lKHr6b+x9o5yb6mpGgkj3vYTxgbNPCfoLd3IgBh
+Gv9B9KfXqc41AOq9QXUnl8ZKQOn6mce1PagwrNUmRX8ua0M81jPubCSOArY/y6Qt
+4S2Oj7nRGuZ/fbBGSlpzRvS1Lq0ak0SWIDKyQPgF2TgQHwbZnTcZ6eaiimGSo1u4
+jxKvaf4/lodHIwM4Ne3eQm9ArpLH9PDX5ORjERL2ci4Y/hlIDHMqXAFm1M/hmZKj
+w5KfNadxRr+jMdYAiLFt
+=wsuf
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__31_Oct_2013_19_23_54_+1100_MUsLh42x6OQ6R8rK--
