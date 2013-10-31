@@ -1,128 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab3JaOsw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 10:48:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39121 "EHLO mx2.suse.de"
+	id S1754948Ab3JaOtK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 10:49:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22750 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754230Ab3JaOsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 10:48:51 -0400
-Date: Thu, 31 Oct 2013 15:48:48 +0100
-From: Jan Kara <jack@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Luis Henriques <luis.henriques@canonical.com>,
-        linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3.5 29/64] fs: buffer: move allocation failure loop into
- the allocator
-Message-ID: <20131031144848.GA3275@quack.suse.cz>
-References: <1382971703-17393-1-git-send-email-luis.henriques@canonical.com>
- <1382971703-17393-30-git-send-email-luis.henriques@canonical.com>
- <20131031140008.GB14054@cmpxchg.org>
+	id S1754302Ab3JaOtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 10:49:08 -0400
+Message-ID: <52726DE0.3060207@redhat.com>
+Date: Thu, 31 Oct 2013 15:49:04 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131031140008.GB14054@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: emulate SAHF instruction
+References: <1383215382-10072-1-git-send-email-pbonzini@redhat.com> <20131031142119.GS4651@redhat.com> <527268E4.2070505@redhat.com> <20131031143405.GT4651@redhat.com>
+In-Reply-To: <20131031143405.GT4651@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 31-10-13 10:00:08, Johannes Weiner wrote:
-> On Mon, Oct 28, 2013 at 02:47:48PM +0000, Luis Henriques wrote:
-> > 3.5.7.24 -stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Johannes Weiner <hannes@cmpxchg.org>
-> > 
-> > commit 84235de394d9775bfaa7fa9762a59d91fef0c1fc upstream.
-> > 
-> > Buffer allocation has a very crude indefinite loop around waking the
-> > flusher threads and performing global NOFS direct reclaim because it can
-> > not handle allocation failures.
-> > 
-> > The most immediate problem with this is that the allocation may fail due
-> > to a memory cgroup limit, where flushers + direct reclaim might not make
-> > any progress towards resolving the situation at all.  Because unlike the
-> > global case, a memory cgroup may not have any cache at all, only
-> > anonymous pages but no swap.  This situation will lead to a reclaim
-> > livelock with insane IO from waking the flushers and thrashing unrelated
-> > filesystem cache in a tight loop.
-> > 
-> > Use __GFP_NOFAIL allocations for buffers for now.  This makes sure that
-> > any looping happens in the page allocator, which knows how to
-> > orchestrate kswapd, direct reclaim, and the flushers sensibly.  It also
-> > allows memory cgroups to detect allocations that can't handle failure
-> > and will allow them to ultimately bypass the limit if reclaim can not
-> > make progress.
-  So I was under the impression that __GFP_NOFAIL is going away, doesn't
-it? At least about an year ago there was some effort to remove its users so
-we ended up creating loops like the above one (and similar ones for
-jbd/jbd2) in cases where handling the failure wasn't easily possible. And now
-it seems we are going in the opposite direction... At least we have a
-steady flow of patches guaranteed :)
+Il 31/10/2013 15:34, Gleb Natapov ha scritto:
+> I haven't checked AMD doc, but if it is documented that lahf/sahf #UDs at 64
+> bit we should emulate it correctly.
 
-								Honza
-> > 
-> > Reported-by: azurIt <azurit@pobox.sk>
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > Cc: Michal Hocko <mhocko@suse.cz>
-> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> > Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> > Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-> > ---
-> >  fs/buffer.c     | 14 ++++++++++++--
-> >  mm/memcontrol.c |  2 ++
-> >  2 files changed, 14 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/buffer.c b/fs/buffer.c
-> > index 2c78739..2675e5a 100644
-> > --- a/fs/buffer.c
-> > +++ b/fs/buffer.c
-> > @@ -957,9 +957,19 @@ grow_dev_page(struct block_device *bdev, sector_t block,
-> >  	struct buffer_head *bh;
-> >  	sector_t end_block;
-> >  	int ret = 0;		/* Will call free_more_memory() */
-> > +	gfp_t gfp_mask;
-> >  
-> > -	page = find_or_create_page(inode->i_mapping, index,
-> > -		(mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS)|__GFP_MOVABLE);
-> > +	gfp_mask = mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS;
-> > +	gfp_mask |= __GFP_MOVABLE;
-> > +	/*
-> > +	 * XXX: __getblk_slow() can not really deal with failure and
-> > +	 * will endlessly loop on improvised global reclaim.  Prefer
-> > +	 * looping in the allocator rather than here, at least that
-> > +	 * code knows what it's doing.
-> > +	 */
-> > +	gfp_mask |= __GFP_NOFAIL;
-> > +
-> > +	page = find_or_create_page(inode->i_mapping, index, gfp_mask);
-> >  	if (!page)
-> >  		return ret;
-> >  
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index 226b63e..953bf3c 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -2405,6 +2405,8 @@ done:
-> >  	return 0;
-> >  nomem:
-> >  	*ptr = NULL;
-> > +	if (gfp_mask & __GFP_NOFAIL)
-> > +		return 0;
-> >  	return -ENOMEM;
-> >  bypass:
-> >  	*ptr = root_mem_cgroup;
-> > -- 
-> > 1.8.3.2
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+It says "The LAHF instruction can only be executed in 64-bit mode if
+supported by the processor implementation. Check the status of ECX bit 0
+returned by CPUID function 8000_0001h to verify that the processor
+supports LAHF in 64-bit mode".  Same as Intel---in fact 80000001h is an
+"AMD leaf" so to speak.
+
+I found "AMD introduced support for the instructions with their Athlon
+64, Opteron and Turion 64 revision D processors in March 2005 and Intel
+introduced support for the instructions with the Pentium 4 G1 stepping
+in December 2005".  I think we can for all practical purposes ignore the
+lahf_lm CPUID flag.
+
+> Who knows what code depends on it.
+> Of course I pretty much doubt we will ever emulate sahf in 64 bit mode
+
+Yep.
+
+Paolo
+
