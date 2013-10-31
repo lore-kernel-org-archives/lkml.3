@@ -1,93 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab3JaXXX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 19:23:23 -0400
-Received: from usindpps04.hds.com ([207.126.252.17]:60940 "EHLO
-	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448Ab3JaXXV convert rfc822-to-8bit (ORCPT
+	id S1755483Ab3JaXZq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 19:25:46 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:38327 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766Ab3JaXZo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 19:23:21 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "Luck, Tony" <tony.luck@intel.com>, Madper Xie <bbboson@gmail.com>
-CC: Madper Xie <cxie@redhat.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "anton@enomsg.org" <anton@enomsg.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/2] make all stored entries accessible.
-Thread-Topic: [PATCH 0/2] make all stored entries accessible.
-Thread-Index: AQHO1VS/gENfXKMKsEu0OLLoqy46ppoOAbKA///bNICAAFq+AIAAK32AgAB7i2CAAKdxgP//vung
-Date: Thu, 31 Oct 2013 23:22:55 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D47F9DBBA3@USINDEM103.corp.hds.com>
-References: <1383126294-28793-1-git-send-email-cxie@redhat.com>
- <3908561D78D1C84285E8C5FCA982C28F31D529D7@ORSMSX106.amr.corp.intel.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D47F9D4476@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F31D52E99@ORSMSX106.amr.corp.intel.com>
- <87d2mm6t64.fsf@gmail.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D47F9D4D01@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F31D53A1F@ORSMSX106.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31D53A1F@ORSMSX106.amr.corp.intel.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 31 Oct 2013 19:25:44 -0400
 MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-10-31_08:2013-10-31,2013-10-31,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1310310220
+In-Reply-To: <5272BCE1.7010700@iki.fi>
+References: <1380659456-3746-1-git-send-email-anssi.hannula@iki.fi>
+	<1380659456-3746-2-git-send-email-anssi.hannula@iki.fi>
+	<CACna6ryr37WRvKbMFmLEGt_A2zUD46rZOtJMVom+B_xK9WNLuw@mail.gmail.com>
+	<07e8973b4665cc23c3f4a77e9c7e2b7c@mail.onse.fi>
+	<CACna6ryFtmZHAhmCPEsoxZc5h4mLuM4ajnKGsp=q0jag2f_SYw@mail.gmail.com>
+	<5272BCE1.7010700@iki.fi>
+Date: Fri, 1 Nov 2013 00:25:44 +0100
+Message-ID: <CACna6rzejyTOF2Fvvw1m2SAob7uU5-hJ+yRVk6HS5pDTz7+JWg@mail.gmail.com>
+Subject: Re: [PATCH 1/4] ALSA: hda - hdmi: Add ATI/AMD multi-channel audio support
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Anssi Hannula <anssi.hannula@iki.fi>
+Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        =?UTF-8?Q?Peter_Fr=C3=BChberger?= <fritsch@xbmc.org>,
+        Olivier Langlois <olivier@trillion01.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I also like option 1 ... but I think the "id" should be a persistent value for
-> a given saved record.  So some func(timestamp, part, count) would be a
-> good idea.  If we try using "sequential" numbers - and don't manage to
-> clear out /sys/fs/pstore each time - then we may have the same "dmesg"
-> file show up with different names on each boot.
-> 
-> Right now I have a simple script to save & clear ... not much more
-> complex than:
-> 
-> 	cd /sys/fs/pstore
-> 	cp * /var/log/save-pstore
-> 	rm *
-> 
-> This depends on not re-using filenames (otherwise new files in pstore
-> might overwrite older saved files in my /var/log/save-pstore area).
+2013/10/31 Anssi Hannula <anssi.hannula@iki.fi>:
+>> But I can hear sound for rear right and rear left only :(
+>>
+>> Is there anything more I can provide to help resolve this? Do you have
+>> any idea how we can resolve this?
+>
+> According to the below the receiver has separate PCM SADs for 2-channel
+> and multichannel playback. However, due to a radeon driver bug (see
+> "[PATCH] drm/radeon/audio: fix missing multichannel PCM SAD in some
+> cases", you were CCd) the multichannel SAD is lost and not shown below.
+>
+> However, that is not (or at least should not be) the reason you are not
+> getting audio.
+> I suspect that the receiver does not support 192kHz multichannel audio
+> (which would be indicated in the missing multichannel PCM SAD). Does it
+> work with 48kHz or 96kHz?
+> (TODO: refuse PCM playback in such cases)
+>
+> If it does not work with 48kHz or 96kHz either, then we have a bug to
+> solve :)
 
-I see.. It is a persuasive use case.
+First of all, you're right about 2 SADs for PCM.
 
-(1) I agree that some func(timestamp, part, count) would be  good idea.
-      This might work, although an overflow will happen some time...
-      sprintf(id_str, "%lld%d%d", timestamp, part, count)
-      simple_str_to_ull(id_str, &id, base)
- 
-(2) There is a GetNextHighMonotonicCount() runtime service in EFI specification
-       to get a persistent number across the reboot, but I'm not sure if it is safe to use it..
-      Also,  it would be good if we can create the id by ourselves, rather than using firmware.
+The weird thing is that 192kHz support... According to the EDID (SADs)
+it should be supported:
+Format: 1 (PCM)        Channels:1    Freq:0x7F (32-192)    B2:0x07 (16-24b)
+Format: 1 (PCM)        Channels:7    Freq:0x7F (32-192)    B2:0x07 (16-24b)
+Format: 2 (AC3)        Channels:7    Freq:0x07 (32-48)    B2:0x50 (640?)
+Format: 7 (DTS)        Channels:7    Freq:0x06 (44-48)    B2:0xC0 (1536?)
+Format: 10 (EAC3)    Channels:7    Freq:0x06 (44-48)    B2:0x00
+Format: 11 (DTS_HD)    Channels:7    Freq:0x7E (44-192)    B2:0x01
+Format: 12 (MLP)    Channels:7    Freq:0x1E (44-96)    B2:0x00
 
- (3) Also, (it might not be good idea),  if a pstore filesystem expects all backend drivers
-       to use the persistent id, the pstore should provide it by itself.
-       (by using time stamp counter or something like that.)
+So I performed more tests and:
 
-       As I looked into the ramoops's code. It seems to use a non-persistent sequential counter,by initializing
-       read_cnt to "0" in ramoops_pstore_open(), and incrementing it in ramoops_pstore_read().
-       It doesn't seem to be the pstore's expectation. 
-       And when someone introduces a new driver, they may misunderstand how to create the id as well..
+1) speaker-test -D hdmi:CARD=Generic,DEV=0 -c6 -r192000 -F S16_LE
+A nice noise for rear right and rear left, silent for the rest
 
-As above, there are mutiple ideas, but (1) is reasonable to me.    
- 
-Seiji
+2) speaker-test -D hdmi:CARD=Generic,DEV=0 -c6 -r176400 -F S16_LE
+A nice noise for rear right and rear left, short "bump" sound for the rest
 
+3) speaker-test -D hdmi:CARD=Generic,DEV=0 -c6 -r96000 -F S16_LE
+A nice noise for all speakers (the same applies to 88200, 48000, 44100, 32000)
 
+I don't get it. Onkyo reports support for 192kHz and it supports it,
+but only for 2 rear speakers... does it make any sense do you?
 
-
+-- 
+Rafał
