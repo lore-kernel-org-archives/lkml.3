@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab3JaMHs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 08:07:48 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:48602 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817Ab3JaMHr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 08:07:47 -0400
-X-Originating-IP: 50.43.39.152
-Date: Thu, 31 Oct 2013 05:07:39 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Andrew Morton <akpm@linux-foundation.org>, Nathan Lynch <ntl@pobox.com>,
-        Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] scripts/bloat-o-meter: Ignore changes in the size of
- linux_banner
-Message-ID: <97cb4d841ddf10d44432487cf0b4de19f39349ed.1383221003.git.josh@joshtriplett.org>
+	id S1753928Ab3JaMHz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 08:07:55 -0400
+Received: from fifo99.com ([67.223.236.141]:41858 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751817Ab3JaMHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 08:07:51 -0400
+Date: Thu, 31 Oct 2013 05:07:28 -0700
+From: Daniel Walker <dwalker@fifo99.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Kevin Hilman <khilman@linaro.org>, David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/4] ARM: msm: Remove 7x00 support
+Message-ID: <20131031120727.GA28330@fifo99.com>
+References: <1382993006-27359-1-git-send-email-davidb@codeaurora.org>
+ <1382993006-27359-3-git-send-email-davidb@codeaurora.org>
+ <20131029132043.GA28165@fifo99.com>
+ <CAOesGMhg8HN4Su9FXSeoAgmH6NVKXW+wmnreUvWH+1G6GWkkaA@mail.gmail.com>
+ <87ob66nyqc.fsf@linaro.org>
+ <20131030232412.GA10229@fifo99.com>
+ <CAOesGMi2E1Ynr4rWY1eBmcZeB7Vahb5VdPUVs1ebLJowH1kpWw@mail.gmail.com>
+ <20131031024538.GA17886@fifo99.com>
+ <CAOesGMiEGJ8iMe=_-eJzhx3sRQO8VKbKGD-iLWsRztxUeJWJbQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CAOesGMiEGJ8iMe=_-eJzhx3sRQO8VKbKGD-iLWsRztxUeJWJbQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-linux_banner can change size due to changes in the compiler, build
-number, or the user@host the system was compiled on; ignore size changes
-in linux_banner entirely.
+On Wed, Oct 30, 2013 at 10:19:30PM -0700, Olof Johansson wrote:
+> On Wed, Oct 30, 2013 at 7:45 PM, Daniel Walker <dwalker@fifo99.com> wrote:
+> > On Wed, Oct 30, 2013 at 05:36:58PM -0700, Olof Johansson wrote:
+> >> On Wed, Oct 30, 2013 at 4:25 PM, Daniel Walker <dwalker@fifo99.com> wrote:
+> >>
+> >> > So the current users of those platforms are, what SOL ?
+> >>
+> >> What users? Show me one.
+> >
+> > What am I chop liver ?
+> 
+> Ah, right. So, what platforms do you currently rely on mainline
+> support for? Please be precise so we can figure out what needs to be
+> kept and not.
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
- scripts/bloat-o-meter | 1 +
- 1 file changed, 1 insertion(+)
+The only one I don't have is 7x30, as I said in prior emails. 
 
-diff --git a/scripts/bloat-o-meter b/scripts/bloat-o-meter
-index 6129020..bf24f50 100755
---- a/scripts/bloat-o-meter
-+++ b/scripts/bloat-o-meter
-@@ -20,6 +20,7 @@ def getsizes(file):
-         if type in "tTdDbBrR":
-             # strip generated symbols
-             if name[:6] == "__mod_": continue
-+            if name == "linux_banner": continue
-             # function names begin with '.' on 64-bit powerpc
-             if "." in name[1:]: name = "static." + name.split(".")[0]
-             sym[name] = sym.get(name, 0) + int(size, 16)
--- 
-1.8.4.2
-
+Daniel
