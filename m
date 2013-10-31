@@ -1,62 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab3JaG7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 02:59:50 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:25958 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754497Ab3JaG7s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 02:59:48 -0400
-X-Spam-Score: -100.8
-Message-ID: <5271FFA5.1080909@asianux.com>
-Date: Thu, 31 Oct 2013 14:58:45 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753205Ab3JaHFR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 03:05:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12149 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752003Ab3JaHFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 03:05:15 -0400
+Date: Thu, 31 Oct 2013 12:35:05 +0530 (IST)
+From: P J P <ppandit@redhat.com>
+X-X-Sender: pjp@javelin.pnq.redhat.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [Patch] Read CONFIG_RD_ variables for initramfs compression
+In-Reply-To: <20131030150521.ff3fd577a6e506e4278db48c@linux-foundation.org>
+Message-ID: <alpine.LFD.2.03.1310311222150.23774@erqung.pbz>
+References: <alpine.LFD.2.03.1310152002200.7552@erqung.pbz> <20131029151507.8f63dad8e7525e33431d9596@linux-foundation.org> <alpine.LFD.2.03.1310301226260.12975@erqung.pbz> <20131030150521.ff3fd577a6e506e4278db48c@linux-foundation.org>
 MIME-Version: 1.0
-To: Jonas Bonn <jonas@southpole.se>
-CC: linux@openrisc.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] openrisc: include: asm: define empty SERIAL_PORT_DFNS
- in serial.h
-References: <5271B83C.50807@asianux.com>
-In-Reply-To: <5271B83C.50807@asianux.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="0-1886419531-1383203113=:23774"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2013 09:54 AM, Chen Gang wrote:
-> For some architectures (e.g. openrisc, arc), BASE_BAUD isn't constant
-> And SERIAL_PORT_DFNS always use BASE_BAUND, and also all drivers use
-> SERIAL_PORT_DFNS to initialize static variables, statically.
-> 
-> So need define SERIAL_PORT_DFNS as empty to tell drivers they don't
-> support SERIAL_PORT_DFNS (mostly like frv and parisc did).
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/openrisc/include/asm/serial.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/openrisc/include/asm/serial.h b/arch/openrisc/include/asm/serial.h
-> index 270a452..254d1ad 100644
-> --- a/arch/openrisc/include/asm/serial.h
-> +++ b/arch/openrisc/include/asm/serial.h
-> @@ -31,6 +31,8 @@
->  
->  #define BASE_BAUD (cpuinfo.clock_frequency/16)
->  
-> +#define SERIAL_PORT_DFNS
-> +
->  #endif /* __KERNEL__ */
->  
->  #endif /* __ASM_OPENRISC_SERIAL_H */
-> 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Oh, sorry, this patch is incorrect, need fix within the driver.
+--0-1886419531-1383203113=:23774
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 
-Thanks.
--- 
-Chen Gang
+  Hello Andrew,
+
++-- On Wed, 30 Oct 2013, Andrew Morton wrote --+
+| Isn't there some convenient way of testing for the presence of an 
+| executable in $PATH?
+| 
+| The shell-builtin `which' seems to dtrt:
+
+  True. Please see an updated patch attached herein.
+
+Thank you.
+--
+Prasad J Pandit / Red Hat Security Response Team
+--0-1886419531-1383203113=:23774
+Content-Type: TEXT/PLAIN; charset=US-ASCII; name=0001-Read-CONFIG_RD_-variables-for-initramfs-compression.patch
+Content-Transfer-Encoding: BASE64
+Content-ID: <alpine.LFD.2.03.1310311235050.23774@erqung.pbz>
+Content-Description: 
+Content-Disposition: attachment; filename=0001-Read-CONFIG_RD_-variables-for-initramfs-compression.patch
+
+RnJvbSAzNTI3ODFmZDI4NDZjNTRlOTJhZTBjMzdkZDk3MmRjNWZjZGZiNjk1
+IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQ0KRnJvbTogUCBKIFAgPHByYXNh
+ZEByZWRoYXQuY29tPg0KRGF0ZTogVGh1LCAzMSBPY3QgMjAxMyAxMjowMzow
+MCArMDUzMA0KU3ViamVjdDogUmVhZCBDT05GSUdfUkRfIHZhcmlhYmxlcyBm
+b3IgaW5pdHJhbWZzIGNvbXByZXNzaW9uDQoNCldoZW4gZXhwZXJ0IGNvbmZp
+Z3VyYXRpb24gb3B0aW9uKENPTkZJR19FWFBFUlQpIGlzIGVuYWJsZWQsDQpt
+ZW51Y29uZmlnIG9mZmVycyBhIGNob2ljZSBvZiBjb21wcmVzc2lvbiBhbGdv
+cml0aG0gdG8gY29tcHJlc3MNCmluaXRpYWwgcmFtZnMgaW1hZ2U7IFRoaXMg
+Y2hvaWNlIGlzIHN0b3JlZCBpbnRvIENPTkZJR19SRF8qDQp2YXJpYWJsZXMu
+IEJ1dCB1c3IvTWFrZWZpbGUgdXNlcyBlYXJsaWVyIElOSVRSQU1GU19DT01Q
+UkVTU0lPTl8qDQptYWNyb3MgdG8gYnVpbGQgaW5pdGlhbCByYW1mcyBmaWxl
+LiBTaW5jZSBub25lIG9mIHRoZW0gaXMgZGVmaW5lZCwNCnJlc3VsdGluZyAn
+aW5pdHJhbWZzX2RhdGEuY3BpbycgZmlsZSByZW1haW5zIHVuLWNvbXByZXNz
+ZWQuDQoNClRoaXMgcGF0Y2ggdXBkYXRlcyB0aGUgTWFrZWZpbGUgdG8gdXNl
+IENPTkZJR19SRF8qIHZhcmlhYmxlcyBhbmQNCmFkZHMgc3VwcG9ydCBmb3Ig
+TFo0IGNvbXByZXNzaW9uIGFsZ29yaXRobS4gQWxzbyB1cGRhdGVzIHRoZQ0K
+J2dlbl9pbml0cmFtZnNfbGlzdC5zaCcgc2NyaXB0IHRvIGNoZWNrIHdoZXRo
+ZXIgYSBzZWxlY3RlZA0KY29tcHJlc3Npb24gY29tbWFuZCBpcyBhY2Nlc3Np
+YmxlIG9yIG5vdC4gQW5kIGZhbGwtYmFjayB0byBkZWZhdWx0DQpnemlwKDEp
+IGNvbXByZXNzaW9uIHdoZW4gaXQgaXMgbm90Lg0KDQpTaWduZWQtb2ZmLWJ5
+OiBQIEogUCA8cHJhc2FkQHJlZGhhdC5jb20+DQoNCmRpZmYgLS1naXQgYS9z
+Y3JpcHRzL2dlbl9pbml0cmFtZnNfbGlzdC5zaCBiL3NjcmlwdHMvZ2VuX2lu
+aXRyYW1mc19saXN0LnNoDQppbmRleCBiNDgyZjE2Li5lZjQ3NDA5IDEwMDY0
+NA0KLS0tIGEvc2NyaXB0cy9nZW5faW5pdHJhbWZzX2xpc3Quc2gNCisrKyBi
+L3NjcmlwdHMvZ2VuX2luaXRyYW1mc19saXN0LnNoDQpAQCAtMjQwLDEyICsy
+NDAsMjQgQEAgY2FzZSAiJGFyZyIgaW4NCiAJCW91dHB1dF9maWxlPSIkMSIN
+CiAJCWNwaW9fbGlzdD0iJChta3RlbXAgJHtUTVBESVI6LS90bXB9L2NwaW9s
+aXN0LlhYWFhYWCkiDQogCQlvdXRwdXQ9JHtjcGlvX2xpc3R9DQotCQllY2hv
+ICIkb3V0cHV0X2ZpbGUiIHwgZ3JlcCAtcSAiXC5neiQiICYmIGNvbXByPSJn
+emlwIC1uIC05IC1mIg0KLQkJZWNobyAiJG91dHB1dF9maWxlIiB8IGdyZXAg
+LXEgIlwuYnoyJCIgJiYgY29tcHI9ImJ6aXAyIC05IC1mIg0KLQkJZWNobyAi
+JG91dHB1dF9maWxlIiB8IGdyZXAgLXEgIlwubHptYSQiICYmIGNvbXByPSJs
+em1hIC05IC1mIg0KLQkJZWNobyAiJG91dHB1dF9maWxlIiB8IGdyZXAgLXEg
+IlwueHokIiAmJiBcDQotCQkJCWNvbXByPSJ4eiAtLWNoZWNrPWNyYzMyIC0t
+bHptYTI9ZGljdD0xTWlCIg0KLQkJZWNobyAiJG91dHB1dF9maWxlIiB8IGdy
+ZXAgLXEgIlwubHpvJCIgJiYgY29tcHI9Imx6b3AgLTkgLWYiDQorCQllY2hv
+ICIkb3V0cHV0X2ZpbGUiIHwgZ3JlcCAtcSAiXC5neiQiIFwNCisgICAgICAg
+ICAgICAgICAgJiYgWyAteCAiYHdoaWNoIGd6aXAgMj4gL2Rldi9udWxsYCIg
+XSBcDQorICAgICAgICAgICAgICAgICYmIGNvbXByPSJnemlwIC1uIC05IC1m
+Ig0KKwkJZWNobyAiJG91dHB1dF9maWxlIiB8IGdyZXAgLXEgIlwuYnoyJCIg
+XA0KKyAgICAgICAgICAgICAgICAmJiBbIC14ICJgd2hpY2ggYnppcDIgMj4g
+L2Rldi9udWxsYCIgXSBcDQorICAgICAgICAgICAgICAgICYmIGNvbXByPSJi
+emlwMiAtOSAtZiINCisJCWVjaG8gIiRvdXRwdXRfZmlsZSIgfCBncmVwIC1x
+ICJcLmx6bWEkIiBcDQorICAgICAgICAgICAgICAgICYmIFsgLXggImB3aGlj
+aCBsem1hIDI+IC9kZXYvbnVsbGAiIF0gXA0KKyAgICAgICAgICAgICAgICAm
+JiBjb21wcj0ibHptYSAtOSAtZiINCisJCWVjaG8gIiRvdXRwdXRfZmlsZSIg
+fCBncmVwIC1xICJcLnh6JCIgXA0KKyAgICAgICAgICAgICAgICAmJiBbIC14
+ICJgd2hpY2ggeHogMj4gL2Rldi9udWxsYCIgXSBcDQorICAgICAgICAgICAg
+ICAgICYmIGNvbXByPSJ4eiAtLWNoZWNrPWNyYzMyIC0tbHptYTI9ZGljdD0x
+TWlCIg0KKwkJZWNobyAiJG91dHB1dF9maWxlIiB8IGdyZXAgLXEgIlwubHpv
+JCIgXA0KKyAgICAgICAgICAgICAgICAmJiBbIC14ICJgd2hpY2ggbHpvcCAy
+PiAvZGV2L251bGxgIiBdIFwNCisgICAgICAgICAgICAgICAgJiYgY29tcHI9
+Imx6b3AgLTkgLWYiDQorCQllY2hvICIkb3V0cHV0X2ZpbGUiIHwgZ3JlcCAt
+cSAiXC5sejQkIiBcDQorICAgICAgICAgICAgICAgICYmIFsgLXggImB3aGlj
+aCBsejQgMj4gL2Rldi9udWxsYCIgXSBcDQorICAgICAgICAgICAgICAgICYm
+IGNvbXByPSJsejQgLTkgLWYiDQogCQllY2hvICIkb3V0cHV0X2ZpbGUiIHwg
+Z3JlcCAtcSAiXC5jcGlvJCIgJiYgY29tcHI9ImNhdCINCiAJCXNoaWZ0DQog
+CQk7Ow0KZGlmZiAtLWdpdCBhL3Vzci9NYWtlZmlsZSBiL3Vzci9NYWtlZmls
+ZQ0KaW5kZXggMDI5ZmZlNi4uZTc2N2YwMSAxMDA2NDQNCi0tLSBhL3Vzci9N
+YWtlZmlsZQ0KKysrIGIvdXNyL01ha2VmaWxlDQpAQCAtNiwyMCArNiwyMyBA
+QCBrbGliY2RpcnM6Ow0KIFBIT05ZICs9IGtsaWJjZGlycw0KIA0KIA0KLSMg
+R3ppcA0KLXN1ZmZpeF8kKENPTkZJR19JTklUUkFNRlNfQ09NUFJFU1NJT05f
+R1pJUCkgICA9IC5neg0KLQ0KICMgQnppcDINCi1zdWZmaXhfJChDT05GSUdf
+SU5JVFJBTUZTX0NPTVBSRVNTSU9OX0JaSVAyKSAgPSAuYnoyDQorc3VmZml4
+XyQoQ09ORklHX1JEX0JaSVAyKSAgPSAuYnoyDQogDQogIyBMem1hDQotc3Vm
+Zml4XyQoQ09ORklHX0lOSVRSQU1GU19DT01QUkVTU0lPTl9MWk1BKSAgID0g
+Lmx6bWENCitzdWZmaXhfJChDT05GSUdfUkRfTFpNQSkgICA9IC5sem1hDQog
+DQogIyBYWg0KLXN1ZmZpeF8kKENPTkZJR19JTklUUkFNRlNfQ09NUFJFU1NJ
+T05fWFopICAgICA9IC54eg0KK3N1ZmZpeF8kKENPTkZJR19SRF9YWikgICAg
+ID0gLnh6DQogDQogIyBMem8NCi1zdWZmaXhfJChDT05GSUdfSU5JVFJBTUZT
+X0NPTVBSRVNTSU9OX0xaTykgICA9IC5sem8NCitzdWZmaXhfJChDT05GSUdf
+UkRfTFpPKSAgICA9IC5sem8NCisNCisjIEx6NA0KK3N1ZmZpeF8kKENPTkZJ
+R19SRF9MWjQpICAgID0gLmx6NA0KKw0KKyMgR3ppcA0KK3N1ZmZpeF8kKENP
+TkZJR19SRF9HWklQKSAgID0gLmd6DQogDQogQUZMQUdTX2luaXRyYW1mc19k
+YXRhLm8gKz0gLURJTklUUkFNRlNfSU1BR0U9InVzci9pbml0cmFtZnNfZGF0
+YS5jcGlvJChzdWZmaXhfeSkiDQogDQpAQCAtNTMsNyArNTYsMTAgQEAgZW5k
+aWYNCiBxdWlldF9jbWRfaW5pdGZzID0gR0VOICAgICAkQA0KICAgICAgIGNt
+ZF9pbml0ZnMgPSAkKGluaXRyYW1mcykgLW8gJEAgJChyYW1mcy1hcmdzKSAk
+KHJhbWZzLWlucHV0KQ0KIA0KLXRhcmdldHMgOj0gaW5pdHJhbWZzX2RhdGEu
+Y3Bpby5neiBpbml0cmFtZnNfZGF0YS5jcGlvLmJ6MiBpbml0cmFtZnNfZGF0
+YS5jcGlvLmx6bWEgaW5pdHJhbWZzX2RhdGEuY3Bpby54eiBpbml0cmFtZnNf
+ZGF0YS5jcGlvLmx6byBpbml0cmFtZnNfZGF0YS5jcGlvDQordGFyZ2V0cyA6
+PSBpbml0cmFtZnNfZGF0YS5jcGlvLmd6IGluaXRyYW1mc19kYXRhLmNwaW8u
+YnoyIFwNCisJaW5pdHJhbWZzX2RhdGEuY3Bpby5sem1hIGluaXRyYW1mc19k
+YXRhLmNwaW8ueHogXA0KKwlpbml0cmFtZnNfZGF0YS5jcGlvLmx6byBpbml0
+cmFtZnNfZGF0YS5jcGlvLmx6NCBcDQorCWluaXRyYW1mc19kYXRhLmNwaW8N
+CiAjIGRvIG5vdCB0cnkgdG8gdXBkYXRlIGZpbGVzIGluY2x1ZGVkIGluIGlu
+aXRyYW1mcw0KICQoZGVwc19pbml0cmFtZnMpOiA7DQogDQpAQCAtNjYsNCAr
+NzIsMyBAQCAkKGRlcHNfaW5pdHJhbWZzKToga2xpYmNkaXJzDQogJChvYmop
+L2luaXRyYW1mc19kYXRhLmNwaW8kKHN1ZmZpeF95KTogJChvYmopL2dlbl9p
+bml0X2NwaW8gJChkZXBzX2luaXRyYW1mcykga2xpYmNkaXJzDQogCSQoUSkk
+KGluaXRyYW1mcykgLWwgJChyYW1mcy1pbnB1dCkgPiAkKG9iaikvLmluaXRy
+YW1mc19kYXRhLmNwaW8uZA0KIAkkKGNhbGwgaWZfY2hhbmdlZCxpbml0ZnMp
+DQotDQotLSANCjEuOC4zLjENCg0K
+
+--0-1886419531-1383203113=:23774--
