@@ -1,44 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab3JaJbh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 05:31:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52332 "EHLO mx1.redhat.com"
+	id S1752153Ab3JaJgi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 05:36:38 -0400
+Received: from mx1.ait.ac.at ([62.218.164.131]:57871 "EHLO mx1.ait.ac.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752789Ab3JaJbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 05:31:36 -0400
-Date: Thu, 31 Oct 2013 17:31:31 +0800
-From: Dave Young <dyoung@redhat.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: [PATCH] enable boot delay for earlyprintk
-Message-ID: <20131031093131.GA22206@dhcp-16-126.nay.redhat.com>
+	id S1750807Ab3JaJgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 05:36:36 -0400
+From: Fiedler Roman <Roman.Fiedler@ait.ac.at>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Extended martian logging with data dump: patch not working, why?
+ RFC on idea
+Thread-Topic: Extended martian logging with data dump: patch not working,
+ why? RFC on idea
+Thread-Index: Ac7WHK+NpSFBz05aRC6JlP2qZvOdFg==
+Date: Thu, 31 Oct 2013 09:36:34 +0000
+Message-ID: <2ECE9D9EEF1F524185270138AE2326593BF8BB7D@S0MSMAIL112.arc.local>
+Accept-Language: en-US, de-AT
+Content-Language: de-DE
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.180.51]
+Content-Type: multipart/mixed;
+	boundary="_002_2ECE9D9EEF1F524185270138AE2326593BF8BB7DS0MSMAIL112arcl_"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-10-31_04:2013-10-31,2013-10-31,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--_002_2ECE9D9EEF1F524185270138AE2326593BF8BB7DS0MSMAIL112arcl_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-Previously boot_delay does not work for earlyprintk
-because the kernel cmdline parsing is late.
+Hello List,
 
-Change to use early_param so early kernel messages
-can also be delayed.
+I have tried to extend the martian logging functionale in kernel, but the p=
+atch does not work.
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
----
- kernel/printk/printk.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Rationale (SKIP IF NOT INTERESTED): martian packets do not inter iptables s=
+tack, hence cannot be full-packet-capture logged via e.g. ulog. The capure =
+would be interesting to distinguish these 3 cases: a) normal noise, e.g. VM=
+-hosts with virtual local networks that occasionally leak packets without n=
+atting those, b) unskilled attacker using forbidden source IP by chance/acc=
+ident with not so problematic payloads c) skilled attacker, who is sending =
+crafted payloads and knows which source-IP/dest/service/vuln he targets. Si=
+nce source policy check also has security advantages, hence complete disabl=
+ing is out of question. Otherwise moving source route checks would require =
+to re-implement those rules in iptables to get same effect, a duplication I=
+ do want to make.
 
---- linux-2.6.orig/kernel/printk/printk.c
-+++ linux-2.6/kernel/printk/printk.c
-@@ -822,7 +822,7 @@ static int __init boot_delay_setup(char
- 		boot_delay, preset_lpj, lpj, HZ, loops_per_msec);
- 	return 1;
- }
--__setup("boot_delay=", boot_delay_setup);
-+early_param("boot_delay", boot_delay_setup);
- 
- static void boot_delay_msec(int level)
- {
+CONTINUE HERE FOR PROGRAMMING PROBLEM: I added log_martian type 2, where pa=
+cket dump should also be produced. Why does setting echo 2 > log_martians n=
+ot activate my new code? Does
+
+./include/linux/inetdevice.h:#define IN_DEV_LOG_MARTIANS(in_dev)        IN_=
+DEV_ORCONF((in_dev), LOG_MARTIANS)
+
+only return 0 or 1?=20
+
+Any help appreciated, I hope Outlook does not mixup the plaintext too much,
+
+Roman
+
+
+--_002_2ECE9D9EEF1F524185270138AE2326593BF8BB7DS0MSMAIL112arcl_
+Content-Type: application/octet-stream; name="martian.patch"
+Content-Description: martian.patch
+Content-Disposition: attachment; filename="martian.patch"; size=3732;
+	creation-date="Thu, 31 Oct 2013 09:20:21 GMT";
+	modification-date="Thu, 31 Oct 2013 09:18:16 GMT"
+Content-Transfer-Encoding: base64
+
+LS0tIG5ldC9pcHY0L3JvdXRlLmMJMjAxMy0xMC0yMyAxNzo0MjowNS4zMDQwNDk4NzYgKzAwMDAK
+KysrIG5ldC9pcHY0L3JvdXRlLmMJMjAxMy0xMC0yNCAwODozODozOS44ODY1OTk3NDEgKzAwMDAK
+QEAgLTc3OCw2ICs3NzgsMTAgQEAKIAkJCQkgICAgICIgIEFkdmlzZWQgcGF0aCA9ICVwSTQgLT4g
+JXBJNFxuIiwKIAkJCQkgICAgICZvbGRfZ3csIGRldi0+bmFtZSwgJm5ld19ndywKIAkJCQkgICAg
+ICZzYWRkciwgJmRhZGRyKTsKKwkJaWYoKElOX0RFVl9MT0dfTUFSVElBTlMoaW5fZGV2KSA9PSAy
+KSAmJiBuZXRfcmF0ZWxpbWl0KCkpIHsKKwkJCXByaW50X2hleF9kdW1wKEtFUk5fSU5GTywgInBh
+Y2tldCBkYXRhOiAiLCBEVU1QX1BSRUZJWF9PRkZTRVQsCisJCQkJMTYsIDEsIHNrYi0+ZGF0YSwg
+c2tiLT5sZW4sIHRydWUpOworCQl9CiAJfQogI2VuZGlmCiAJOwpAQCAtODg2LDEwICs4OTAsMTUg
+QEAKIAkJKytwZWVyLT5yYXRlX3Rva2VuczsKICNpZmRlZiBDT05GSUdfSVBfUk9VVEVfVkVSQk9T
+RQogCQlpZiAobG9nX21hcnRpYW5zICYmCi0JCSAgICBwZWVyLT5yYXRlX3Rva2VucyA9PSBpcF9y
+dF9yZWRpcmVjdF9udW1iZXIpCisJCSAgICBwZWVyLT5yYXRlX3Rva2VucyA9PSBpcF9ydF9yZWRp
+cmVjdF9udW1iZXIpIHsKIAkJCW5ldF93YXJuX3JhdGVsaW1pdGVkKCJob3N0ICVwSTQvaWYlZCBp
+Z25vcmVzIHJlZGlyZWN0cyBmb3IgJXBJNCB0byAlcEk0XG4iLAogCQkJCQkgICAgICZpcF9oZHIo
+c2tiKS0+c2FkZHIsIGluZXRfaWlmKHNrYiksCiAJCQkJCSAgICAgJmlwX2hkcihza2IpLT5kYWRk
+ciwgJmd3KTsKKwkJCWlmKGxvZ19tYXJ0aWFucyA9PSAyKSB7CisJCQkJcHJpbnRfaGV4X2R1bXAo
+S0VSTl9XQVJOSU5HLCAicGFja2V0IGRhdGE6ICIsIERVTVBfUFJFRklYX09GRlNFVCwKKwkJCQkJ
+MTYsIDEsIHNrYi0+ZGF0YSwgc2tiLT5sZW4sIHRydWUpOworCQkJfQorCQl9CiAjZW5kaWYKIAl9
+CiBvdXRfcHV0X3BlZXI6CkBAIC0xNDk0LDkgKzE1MDMsMTEgQEAKIAkJCQkgICAgIF9fYmUzMiBk
+YWRkciwKIAkJCQkgICAgIF9fYmUzMiBzYWRkcikKIHsKKwlpbnQgbG9nX21hcnRpYW5zOwogCVJU
+X0NBQ0hFX1NUQVRfSU5DKGluX21hcnRpYW5fc3JjKTsKICNpZmRlZiBDT05GSUdfSVBfUk9VVEVf
+VkVSQk9TRQotCWlmIChJTl9ERVZfTE9HX01BUlRJQU5TKGluX2RldikgJiYgbmV0X3JhdGVsaW1p
+dCgpKSB7CisJbG9nX21hcnRpYW5zID0gSU5fREVWX0xPR19NQVJUSUFOUyhpbl9kZXYpOworCWlm
+IChsb2dfbWFydGlhbnMgJiYgbmV0X3JhdGVsaW1pdCgpKSB7CiAJCS8qCiAJCSAqCVJGQzE4MTIg
+cmVjb21tZW5kYXRpb24sIGlmIHNvdXJjZSBpcyBtYXJ0aWFuLAogCQkgKgl0aGUgb25seSBoaW50
+IGlzIE1BQyBoZWFkZXIuCkBAIC0xNTA5LDYgKzE1MjAsMTAgQEAKIAkJCQkgICAgICAgc2tiX21h
+Y19oZWFkZXIoc2tiKSwKIAkJCQkgICAgICAgZGV2LT5oYXJkX2hlYWRlcl9sZW4sIHRydWUpOwog
+CQl9CisJCWlmKGxvZ19tYXJ0aWFucyA9PSAyKSB7CisJCQlwcmludF9oZXhfZHVtcChLRVJOX1dB
+Uk5JTkcsICJwYWNrZXQgZGF0YTogIiwgRFVNUF9QUkVGSVhfT0ZGU0VULAorCQkJCTE2LCAxLCBz
+a2ItPmRhdGEsIHNrYi0+bGVuLCB0cnVlKTsKKwkJfQogCX0KICNlbmRpZgogfQpAQCAtMTc5MSw5
+ICsxODA2LDE0IEBACiBtYXJ0aWFuX2Rlc3RpbmF0aW9uOgogCVJUX0NBQ0hFX1NUQVRfSU5DKGlu
+X21hcnRpYW5fZHN0KTsKICNpZmRlZiBDT05GSUdfSVBfUk9VVEVfVkVSQk9TRQotCWlmIChJTl9E
+RVZfTE9HX01BUlRJQU5TKGluX2RldikpCisJaWYgKElOX0RFVl9MT0dfTUFSVElBTlMoaW5fZGV2
+KSkgewogCQluZXRfd2Fybl9yYXRlbGltaXRlZCgibWFydGlhbiBkZXN0aW5hdGlvbiAlcEk0IGZy
+b20gJXBJNCwgZGV2ICVzXG4iLAogCQkJCSAgICAgJmRhZGRyLCAmc2FkZHIsIGRldi0+bmFtZSk7
+CisJCWlmKChJTl9ERVZfTE9HX01BUlRJQU5TKGluX2RldikgPT0gMikgJiYgbmV0X3JhdGVsaW1p
+dCgpKSB7CisJCQlwcmludF9oZXhfZHVtcChLRVJOX1dBUk5JTkcsICJwYWNrZXQgZGF0YTogIiwg
+RFVNUF9QUkVGSVhfT0ZGU0VULAorCQkJCTE2LCAxLCBza2ItPmRhdGEsIHNrYi0+bGVuLCB0cnVl
+KTsKKwkJfQorCX0KICNlbmRpZgogCiBlX2ludmFsOgotLS0gbmV0L2lwdjQvaXBfaW5wdXQuYwky
+MDEzLTEwLTI0IDA4OjI0OjU5LjMwMzIwNjU5NyArMDAwMAorKysgbmV0L2lwdjQvaXBfaW5wdXQu
+YwkyMDEzLTEwLTI0IDA4OjM5OjM2LjU5MTM4MTA4OSArMDAwMApAQCAtMjYyLDYgKzI2Miw3IEBA
+CiAJc3RydWN0IGlwX29wdGlvbnMgKm9wdDsKIAljb25zdCBzdHJ1Y3QgaXBoZHIgKmlwaDsKIAlz
+dHJ1Y3QgbmV0X2RldmljZSAqZGV2ID0gc2tiLT5kZXY7CisJaW50IGxvZ19tYXJ0aWFuczsKIAog
+CS8qIEl0IGxvb2tzIGFzIG92ZXJraWxsLCBiZWNhdXNlIG5vdCBhbGwKIAkgICBJUCBvcHRpb25z
+IHJlcXVpcmUgcGFja2V0IG1hbmdsaW5nLgpAQCAtMjg5LDEwICsyOTAsMTUgQEAKIAogCQlpZiAo
+aW5fZGV2KSB7CiAJCQlpZiAoIUlOX0RFVl9TT1VSQ0VfUk9VVEUoaW5fZGV2KSkgewotCQkJCWlm
+IChJTl9ERVZfTE9HX01BUlRJQU5TKGluX2RldikpCisJCQkJbG9nX21hcnRpYW5zID0gSU5fREVW
+X0xPR19NQVJUSUFOUyhpbl9kZXYpOworCQkJCWlmIChsb2dfbWFydGlhbnMpCiAJCQkJCW5ldF9p
+bmZvX3JhdGVsaW1pdGVkKCJzb3VyY2Ugcm91dGUgb3B0aW9uICVwSTQgLT4gJXBJNFxuIiwKIAkJ
+CQkJCQkgICAgICZpcGgtPnNhZGRyLAogCQkJCQkJCSAgICAgJmlwaC0+ZGFkZHIpOworCQkJCWlm
+KChsb2dfbWFydGlhbnMgPT0gMikgJiYgbmV0X3JhdGVsaW1pdCgpKSB7CisJCQkJCXByaW50X2hl
+eF9kdW1wKEtFUk5fSU5GTywgInBhY2tldCBkYXRhOiAiLCBEVU1QX1BSRUZJWF9PRkZTRVQsCisJ
+CQkJCQkxNiwgMSwgc2tiLT5kYXRhLCBza2ItPmxlbiwgdHJ1ZSk7CisJCQkJfQogCQkJCWdvdG8g
+ZHJvcDsKIAkJCX0KIAkJfQotLS0gRG9jdW1lbnRhdGlvbi9uZXR3b3JraW5nL2lwLXN5c2N0bC50
+eHQJMjAxMy0xMC0xOSAxOToyODoxNS4wMDAwMDAwMDAgKzAwMDAKKysrIERvY3VtZW50YXRpb24v
+bmV0d29ya2luZy9pcC1zeXNjdGwudHh0CTIwMTMtMTAtMjQgMDg6NDI6NDYuNzg1OTk4NjMyICsw
+MDAwCkBAIC04MTAsMTEgKzgxMCwxMiBAQAogCiAJY29uZi9hbGwvKgkgIGlzIHNwZWNpYWwsIGNo
+YW5nZXMgdGhlIHNldHRpbmdzIGZvciBhbGwgaW50ZXJmYWNlcwogCi1sb2dfbWFydGlhbnMgLSBC
+T09MRUFOCitsb2dfbWFydGlhbnMgLSBJTlRFR0VSCiAJTG9nIHBhY2tldHMgd2l0aCBpbXBvc3Np
+YmxlIGFkZHJlc3NlcyB0byBrZXJuZWwgbG9nLgogCWxvZ19tYXJ0aWFucyBmb3IgdGhlIGludGVy
+ZmFjZSB3aWxsIGJlIGVuYWJsZWQgaWYgYXQgbGVhc3Qgb25lIG9mCi0JY29uZi97YWxsLGludGVy
+ZmFjZX0vbG9nX21hcnRpYW5zIGlzIHNldCB0byBUUlVFLAotCWl0IHdpbGwgYmUgZGlzYWJsZWQg
+b3RoZXJ3aXNlCisJY29uZi97YWxsLGludGVyZmFjZX0vbG9nX21hcnRpYW5zIGlzIHNldCB0byBu
+b24temVybyB2YWx1ZSwKKwlpdCB3aWxsIGJlIGRpc2FibGVkIG90aGVyd2lzZS4gV2hlbiB0aGUg
+dmFsdWUgaXMgMiwgbm90CisJb25seSBzb3VyY2UgYW5kIGRlc3RpbmF0aW9uIGJ1dCBmdWxsIHBh
+Y2tldCB3aWxsIGJlIGxvZ2dlZC4KIAogYWNjZXB0X3JlZGlyZWN0cyAtIEJPT0xFQU4KIAlBY2Nl
+cHQgSUNNUCByZWRpcmVjdCBtZXNzYWdlcy4K
+
+--_002_2ECE9D9EEF1F524185270138AE2326593BF8BB7DS0MSMAIL112arcl_--
