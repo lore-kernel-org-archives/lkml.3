@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751153Ab3JaAsX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 20:48:23 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:32974 "EHLO
+	id S1751558Ab3JaAwU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 20:52:20 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:33099 "EHLO
 	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab3JaAsW (ORCPT
+	with ESMTP id S1750721Ab3JaAwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 20:48:22 -0400
+	Wed, 30 Oct 2013 20:52:19 -0400
 X-Spam-Score: -100.8
-Message-ID: <5271A893.4090305@asianux.com>
-Date: Thu, 31 Oct 2013 08:47:15 +0800
+Message-ID: <5271A977.1010609@asianux.com>
+Date: Thu, 31 Oct 2013 08:51:03 +0800
 From: Chen Gang <gang.chen@asianux.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: Joern Rennecke <joern.rennecke@embecosm.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Takashi Iwai <tiwai@suse.de>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        "jeremy.bennett@embecosm.com" <jeremy.bennett@embecosm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Claudiu Zissulescu <Claudiu.Zissulescu@synopsys.com>,
-        Francois Bedard <Francois.Bedard@synopsys.com>,
-        Max Filippov <jcmvbkbc@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH-next v3] kernel/system_certificate.S: use real contents
- instead of macro GLOBAL()
-References: <52705CC0.8020909@asianux.com> <523FD9E7.3050303@asianux.com> <523FDBD7.4040602@asianux.com> <C2D7FE5348E1B147BCA15975FBA2307514DED9@IN01WEMBXA.internal.synopsys.com> <523FE578.5060801@asianux.com> <52672DAC.1030307@asianux.com> <CAMqJFCou4SObPni5Lb_tX=0hQ__kF_9MLDC-6a1opptc9dxT-A@mail.gmail.com> <52673E41.6040606@asianux.com> <5267AF98.1010800@asianux.com> <5268B0B1.9050009@asianux.com> <526F1ACE.7080409@asianux.com> <30128.1383137865@warthog.procyon.org.uk>
-In-Reply-To: <30128.1383137865@warthog.procyon.org.uk>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Randy Dunlap <rdunlap@infradead.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] include/linux/wait.h: add ';' for the statement which
+ missed it.
+References: <52708623.504@asianux.com> <52712293.90808@infradead.org> <20131030154015.GN16117@laptop.programming.kicks-ass.net>
+In-Reply-To: <20131030154015.GN16117@laptop.programming.kicks-ass.net>
 Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2013 08:57 PM, David Howells wrote:
-> Chen Gang <gang.chen@asianux.com> wrote:
-> 
->> If a macro is only used within 2 times, and also its contents are
->> within 2 lines, recommend to expand it to shrink code line.
+On 10/30/2013 11:40 PM, Peter Zijlstra wrote:
+> On Wed, Oct 30, 2013 at 08:15:31AM -0700, Randy Dunlap wrote:
+>> On 10/29/13 21:08, Chen Gang wrote:
+>>> Add ';' for the statement, or can not pass compiling. The related error
+>>> (for powerpc allmodconfig):
+>>>
+>>>     CC      block/blk-mq.o
+>>>   block/blk-mq.c: In function ¡®blk_mq_queue_enter¡¯:
+>>>   block/blk-mq.c:108:8: error: expected ¡®;¡¯ before ¡®__ret¡¯
+>>>   block/blk-mq.c:108:6: error: void value not ignored as it ought to be
+>>>
+>>>
+>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 >>
->> For our case, the macro is not portable either: some architectures'
->> assembler may use another character to mark newline in a macro (e.g.
->> '`' for arc), which will cause issue.
+>> Acked-by: Randy Dunlap <rdunlap@infradead.org>
 >>
->> If still want to use macro and let it portable enough, it will also
->> need include additional header file (e.g "#include <linux/linkage.h>",
->> although it also need be fixed).
+>> I have that same patch on my machine but never posted it.
 > 
-> Fine by me.
-> 
-> Applied.
+> tip already includes commit 92ec11809565cf6429c75204e99e0f583b5c9d7c
+> from the 23th which should fix this.
 > 
 > 
 
-Thanks.
+Thank all of you.
 -- 
 Chen Gang
