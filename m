@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751Ab3JaK25 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 06:28:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24343 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751797Ab3JaK24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 06:28:56 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, edumazet@google.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, mst@redhat.com, rusty@rustcorp.com.au,
-        mwdalton@google.com, virtualization@lists.linux-foundation.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [PATCH net-next 1/2] net: introduce skb_coalesce_rx_frag()
-Date: Thu, 31 Oct 2013 18:28:32 +0800
-Message-Id: <1383215313-23651-1-git-send-email-jasowang@redhat.com>
+	id S1754072Ab3JaK3x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 06:29:53 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:51245 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab3JaK3v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 06:29:51 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, gleb@redhat.com, stable@vger.kernel.org
+Subject: [PATCH] KVM: x86: emulate SAHF instruction
+Date: Thu, 31 Oct 2013 11:29:42 +0100
+Message-Id: <1383215382-10072-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes we need to coalesce the rx frags to avoid frag list. One example is
-virtio-net driver which tries to use small frags for both MTU sized packet and
-GSO packet. So this patch introduce skb_coalesce_rx_frag() to do this.
+Yet another instruction that we fail to emulate, this time found
+in Windows 2008R2 32-bit.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Michael Dalton <mwdalton@google.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- include/linux/skbuff.h |  3 +++
- net/core/skbuff.c      | 13 +++++++++++++
- 2 files changed, 16 insertions(+)
+	Testcase on its way.  BTW, lahf/sahf is another candidate for
+	#UD emulation.
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 2c15497..e34652b 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -1372,6 +1372,9 @@ static inline void skb_fill_page_desc(struct sk_buff *skb, int i,
- void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page, int off,
- 		     int size, unsigned int truesize);
- 
-+void skb_coalesce_rx_frag(struct sk_buff *skb, int i, int off, int size,
-+			  unsigned int truesize);
-+
- #define SKB_PAGE_ASSERT(skb) 	BUG_ON(skb_shinfo(skb)->nr_frags)
- #define SKB_FRAG_ASSERT(skb) 	BUG_ON(skb_has_frag_list(skb))
- #define SKB_LINEAR_ASSERT(skb)  BUG_ON(skb_is_nonlinear(skb))
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 0ab32fa..fdef994 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -476,6 +476,19 @@ void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page, int off,
+ arch/x86/kvm/emulate.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index 8e2a07bd8eac..ef750e75c930 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -3296,6 +3296,18 @@ static int em_cpuid(struct x86_emulate_ctxt *ctxt)
+ 	return X86EMUL_CONTINUE;
  }
- EXPORT_SYMBOL(skb_add_rx_frag);
  
-+void skb_coalesce_rx_frag(struct sk_buff *skb, int i, int off, int size,
-+			  unsigned int truesize)
++static int em_sahf(struct x86_emulate_ctxt *ctxt)
 +{
-+	skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
++	u32 flags;
 +
-+	skb_frag_size_add(frag, size);
-+	skb->len += size;
-+	skb->data_len += size;
-+	skb->truesize += truesize;
-+	skb_frag_unref(skb, i);
++	flags = EFLG_CF | EFLG_PF | EFLG_AF | EFLG_ZF | EFLG_SF;
++	flags &= *reg_rmw(ctxt, VCPU_REGS_RAX) >> 8;
++
++	ctxt->eflags &= ~0xffUL;
++	ctxt->eflags |= flags | X86_EFLAGS_FIXED;
++	return X86EMUL_CONTINUE;
 +}
-+EXPORT_SYMBOL(skb_coalesce_rx_frag);
 +
- static void skb_drop_list(struct sk_buff **listp)
+ static int em_lahf(struct x86_emulate_ctxt *ctxt)
  {
- 	kfree_skb_list(*listp);
+ 	*reg_rmw(ctxt, VCPU_REGS_RAX) &= ~0xff00UL;
+@@ -3788,7 +3800,7 @@ static const struct opcode opcode_table[256] = {
+ 	DI(SrcAcc | DstReg, pause), X7(D(SrcAcc | DstReg)),
+ 	/* 0x98 - 0x9F */
+ 	D(DstAcc | SrcNone), I(ImplicitOps | SrcAcc, em_cwd),
+-	I(SrcImmFAddr | No64, em_call_far), N,
++	I(SrcImmFAddr | No64, em_call_far), I(ImplicitOps, em_sahf),
+ 	II(ImplicitOps | Stack, em_pushf, pushf),
+ 	II(ImplicitOps | Stack, em_popf, popf), N, I(ImplicitOps, em_lahf),
+ 	/* 0xA0 - 0xA7 */
 -- 
-1.8.1.2
+1.8.3.1
 
