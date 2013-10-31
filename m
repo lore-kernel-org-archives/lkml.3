@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab3JaRL0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 13:11:26 -0400
-Received: from mail-gg0-f173.google.com ([209.85.161.173]:39545 "EHLO
-	mail-gg0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab3JaRLY (ORCPT
+	id S1754230Ab3JaRMD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 13:12:03 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:43837 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590Ab3JaRMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 13:11:24 -0400
-Date: Thu, 31 Oct 2013 13:11:20 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH driver-core-next] sysfs: rename sysfs_assoc_lock and
- explain what it's about
-Message-ID: <20131031171120.GD11698@mtj.dyndns.org>
-References: <20131029220939.GA23060@kroah.com>
- <8761sflhi1.fsf@tw-ebiederman.twitter.com>
- <CA+55aFwaxAoezL6GAJzw=D+7E_Oxr2sqdxvM3sFgPiO-1eh5LQ@mail.gmail.com>
- <87sivj9vi0.fsf@xmission.com>
- <20131030132831.GB27632@htj.dyndns.org>
- <20131030142836.GC27632@htj.dyndns.org>
- <8761se1jfx.fsf@xmission.com>
+	Thu, 31 Oct 2013 13:12:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8761se1jfx.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87txfxml2b.fsf@intel.com>
+References: <cover.1381939165.git.joseph.salisbury@canonical.com>
+	<397b1b6f028317a3ef897cdaf79eb1e5519e587d.1381939165.git.joseph.salisbury@canonical.com>
+	<20131016210213.GR4830@phenom.ffwll.local>
+	<526A8FE3.8040801@canonical.com>
+	<87txfxpjv1.fsf@intel.com>
+	<CA+5PVA7j+90_iwZD+Gx9cAuqwEGH+cKB98OQj2+w4fhC_JT0pw@mail.gmail.com>
+	<87txfxml2b.fsf@intel.com>
+Date: Thu, 31 Oct 2013 13:11:59 -0400
+X-Google-Sender-Auth: FmQcOZu-gxyQu3ZC8bmC7RVg5ME
+Message-ID: <CA+5PVA7s8q1-N5Pz1N-zgEcn309LJUtwWvD+zWf=z3zv-UJ6TA@mail.gmail.com>
+Subject: Re: [Intel-gfx] [v3.10][v3.11][v3.12][Regression][PATCH 1/1] Revert
+ "Revert "drm/i915: revert eDP bpp clamping code changes""
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Jani Nikula <jani.nikula@linux.intel.com>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>, przanoni@gmail.com,
+        Dave Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Eric.
+On Thu, Oct 31, 2013 at 1:01 PM, Jani Nikula
+<jani.nikula@linux.intel.com> wrote:
+> On Thu, 31 Oct 2013, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+>> On Thu, Oct 31, 2013 at 10:58 AM, Jani Nikula
+>> <jani.nikula@linux.intel.com> wrote:
+>>> On Fri, 25 Oct 2013, Joseph Salisbury <joseph.salisbury@canonical.com> wrote:
+>>>> On 10/16/2013 05:02 PM, Daniel Vetter wrote:
+>>>>> It's by far not that simple. Jani is working on both the underlying bug
+>>>>> and a better w/a. See
+>>>>>
+>>>>> https://bugzilla.kernel.org/show_bug.cgi?id=59841
+>>>>>
+>>>>> for the full story in its entire glory.
+>>>>>
+>>>>> Cheers, Daniel
+>>>>
+>>>> Thanks for the feedback, Daniel.  Is there an estimate on what mainline
+>>>> release might contain Jani's work?
+>>>
+>>> commit c6cd2ee2d59111a07cd9199564c9bdcb2d11e5cf
+>>> Author: Jani Nikula <jani.nikula@intel.com>
+>>> Date:   Mon Oct 21 10:52:07 2013 +0300
+>>>
+>>>     drm/i915/dp: workaround BIOS eDP bpp clamping issue
+>>>
+>>> and a couple of dependencies are now in Linus' tree, i.e. should be
+>>> released in 3.12. The commits are also CC: stable.
+>>
+>> Are the dependency commits you mentioned these?
+>
+> Yes; sorry for not mentioning them explicitly.
 
-On Wed, Oct 30, 2013 at 03:29:38PM -0700, Eric W. Biederman wrote:
-> Except every time sysfs exports a restriction like that and doesn't
-> verify people have held up their end of it someone in the kernel
-> inevitably gets the code wrong.  So I don't see how a big fat comment
-> buried deep in the underlying abstractions that people use is going to
-> make the code easier to understand or maintain.  It certainly won't
-> prevent people from goofing up and with no warning.
+No problem.  Thanks for confirming.
 
-The big fat comment is not meant for kobject users.  They have always
-assumed the responsibility of not issuing conflicting operations
-concurrently.  The comment explains the role of the lock so that a
-person reading the code can understand what's going on as it is
-confusing why the locking is necessary there when the caller is
-supposed to be responsible.
-
-Now, it's true that we *can* make kobject interface to allow multiple
-concurrent operations and synchronize internally by generalizing the
-locking.  Given how kobject is used, I'm not sure what that'd buy tho,
-especially for removal.  Because removal puts the base ref as I wrote
-before, it's an operation intrinsically reserved to the owner of the
-object.  I'm pretty skeptical about its usefulness but if you think
-it's worthwhile, please feel free to give it a shot.
-
-Thanks.
-
--- 
-tejun
+josh
