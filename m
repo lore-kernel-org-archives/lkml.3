@@ -1,98 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab3JaVPg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 17:15:36 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:37036 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752346Ab3JaVPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 17:15:32 -0400
-Date: Thu, 31 Oct 2013 16:16:02 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <stern@rowland.harvard.edu>,
-        <Paul.Zimmerman@synopsys.com>
-Subject: Re: [PATCH v3 3/3] usb: dwc3: add quirk
- USB_GADGET_QUIRK_EP_OUT_ALIGNED_SIZE to gadget driver
-Message-ID: <20131031211602.GL2281@gimli>
-Reply-To: <balbi@ti.com>
-References: <1383152778-30739-1-git-send-email-david.a.cohen@linux.intel.com>
- <1383152778-30739-4-git-send-email-david.a.cohen@linux.intel.com>
- <20131030173553.GP12193@gimli>
- <5272B67B.6050509@linux.intel.com>
+	id S1755627Ab3JaVTl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 17:19:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45433 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755606Ab3JaVTj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 17:19:39 -0400
+From: Michael Hudson-Doyle <michael.hudson@linaro.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Will Deacon <will.deacon@arm.com>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH] perf tools: Remove cast of non-varadic function to varadic
+In-Reply-To: <20131031200950.GA5949@infradead.org>
+References: <877gctxlry.fsf@canonical.com> <20131031200950.GA5949@infradead.org>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/24.3.50.2 (x86_64-pc-linux-gnu)
+Date: Thu, 31 Oct 2013 14:19:25 -0700
+Message-ID: <874n7xxhnm.fsf@canonical.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KIbT1ud6duwZIwNL"
-Content-Disposition: inline
-In-Reply-To: <5272B67B.6050509@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---KIbT1ud6duwZIwNL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Arnaldo Carvalho de Melo <acme@ghostprotocols.net> writes:
 
-On Thu, Oct 31, 2013 at 12:58:51PM -0700, David Cohen wrote:
-> On 10/30/2013 10:35 AM, Felipe Balbi wrote:
-> > On Wed, Oct 30, 2013 at 10:06:18AM -0700, David Cohen wrote:
-> >> DWC3 requires epout to have buffer size aligned to MaxPacketSize value.
-> >> This patch adds necessary quirk for it.
-> >>
-> >> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> >> ---
-> >>  drivers/usb/dwc3/gadget.c | 6 ++++++
-> >>  1 file changed, 6 insertions(+)
-> >>
-> >> diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-> >> index 5452c0f..528c7d7 100644
-> >> --- a/drivers/usb/dwc3/gadget.c
-> >> +++ b/drivers/usb/dwc3/gadget.c
-> >> @@ -2600,6 +2600,12 @@ int dwc3_gadget_init(struct dwc3 *dwc)
-> >>  	dwc->gadget.name		=3D "dwc3-gadget";
-> >> =20
-> >>  	/*
-> >> +	 * Per databook, DWC3 needs buffer size to be aligned to MaxPacketSi=
-ze
-> >> +	 * on ep out.
-> >> +	 */
-> >> +	dwc->gadget.quirk_ep_out_aligned_size =3D 1;
-> >=20
-> > just to make it look cooler and neater, could you set to 'true' instead
-> > :-)
->=20
-> 'bool' is an alien in C :)
-> But I can change to true in next patch set.
+> Em Thu, Oct 31, 2013 at 12:50:25PM -0700, Michael Hudson-Doyle escreveu:
+>> 4fb71074a570 (perf ui/hist: Consolidate hpp helpers) introduced a cast of
+>> percent_color_snprintf to a function pointer type with varargs.  Change
+>> percent_color_snprintf to be varadic and remove the cast.
+>> 
+>> The symptom of this was all percentages being reported as 0.00% in perf
+>> report --stdio output on armhf.
+>
+> git bisect + visual inspection, right?
 
-don't change the type, just assign true instead of 1. true is defined as
-!0, so it'll be a 1 anywa. Still the rest of the driver uses true/false
-for one-bit fields.
+Well annotate + visual inspection yes.  I haven't tested that it was
+that commit.
 
---=20
-balbi
+> Anyway, good catch, interesting it caused problems on just one arch,
+> or have you tested this in other arches?
 
---KIbT1ud6duwZIwNL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I've only observed the problem on the one platform and don't know the
+ABIs well enough to know what to expect on other platforms... even on
+armhf it's dependent on details of what the compiler decides to do.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+Cheers,
+mwh
 
-iQIbBAEBAgAGBQJScsiSAAoJEIaOsuA1yqREH/MP9jGSy+O1DtqxOippNh+MbmXJ
-nT+npE7hEYMiDWUqjD3KKLuDy7epJ0GlyXNi9+MmJoviJ2MI7iZvFUAlg8VWAN2Q
-7GoU+lI94Jd/Nw35Qwg3t7eLXpqyMEol6FnlA8btMWi0FD/FoQAc7pqC5VcdtFEe
-XNjuQ6wFTp2CaWhUQ+BtjaH0v7EbIK3LbHq3bGK+r5N1hh/vZ5AflB+9SBmjWBua
-4opa8JQmYqB2oC5J+FpQnebVelk6oITknFR9b85qFnEONoGp5fTcqCoDyPxfuUGb
-YZJqQGwuZudOUZCZpTWD4efuQNW+McBaHfW4MYT4/g3G3cCKFzG8Uqy4bQd+kJTl
-rU0S4XjCO7dISY067F818u+KgTSYuR1Xk+gG06sTbKK7loT9rJtWdE8FYZI6btbv
-9sxoluqqoxgHxOTDce/KnCjyEWv8G+XpMHJfGA/JWUW8Hu8KC1SG5dxuc94ei2qQ
-ElrzFZVYckvUwOIfZYV9m7Ex9iaP8xQNtXLN2lYuntsDE34xjmmN3U7xwVtG9sMd
-J3c3kG742DQhF6lA8U6jJxEAQgL30DiNCjbhUg6nzs83zltE1fpRiVWS1ni73YbE
-H1EMkmhQ0BxIpfVvqYJ4uyJxzSB6yPOeFWIP7BgxxXFXq2Ukr/nEfegX0M+oGRso
-ZuGVGnNvcpzaNDjesYQ=
-=YsUB
------END PGP SIGNATURE-----
-
---KIbT1ud6duwZIwNL--
+> Namhyung?
+>
+> - Arnaldo
+>  
+>> Signed-off-by: Michael Hudson-Doyle <michael.hudson@linaro.org>
+>> ---
+>>  tools/perf/ui/hist.c    |  2 +-
+>>  tools/perf/util/color.c | 11 +++++++++--
+>>  tools/perf/util/color.h |  2 +-
+>>  3 files changed, 11 insertions(+), 4 deletions(-)
+>> 
+>> diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+>> index 0a19328..78f4c92 100644
+>> --- a/tools/perf/ui/hist.c
+>> +++ b/tools/perf/ui/hist.c
+>> @@ -117,7 +117,7 @@ static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
+>>  			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+>>  {										\
+>>  	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
+>> -			  (hpp_snprint_fn)percent_color_snprintf, true);	\
+>> +			  percent_color_snprintf, true);			\
+>>  }
+>>  
+>>  #define __HPP_ENTRY_PERCENT_FN(_type, _field)					\
+>> diff --git a/tools/perf/util/color.c b/tools/perf/util/color.c
+>> index 11e46da..66e44a5 100644
+>> --- a/tools/perf/util/color.c
+>> +++ b/tools/perf/util/color.c
+>> @@ -318,8 +318,15 @@ int percent_color_fprintf(FILE *fp, const char *fmt, double percent)
+>>  	return r;
+>>  }
+>>  
+>> -int percent_color_snprintf(char *bf, size_t size, const char *fmt, double percent)
+>> +int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...)
+>>  {
+>> -	const char *color = get_percent_color(percent);
+>> +	va_list args;
+>> +	double percent;
+>> +	const char *color;
+>> +
+>> +	va_start(args, fmt);
+>> +	percent = va_arg(args, double);
+>> +	va_end(args);
+>> +	color = get_percent_color(percent);
+>>  	return color_snprintf(bf, size, color, fmt, percent);
+>>  }
+>> diff --git a/tools/perf/util/color.h b/tools/perf/util/color.h
+>> index dea082b..fced384 100644
+>> --- a/tools/perf/util/color.h
+>> +++ b/tools/perf/util/color.h
+>> @@ -39,7 +39,7 @@ int color_fprintf(FILE *fp, const char *color, const char *fmt, ...);
+>>  int color_snprintf(char *bf, size_t size, const char *color, const char *fmt, ...);
+>>  int color_fprintf_ln(FILE *fp, const char *color, const char *fmt, ...);
+>>  int color_fwrite_lines(FILE *fp, const char *color, size_t count, const char *buf);
+>> -int percent_color_snprintf(char *bf, size_t size, const char *fmt, double percent);
+>> +int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...);
+>>  int percent_color_fprintf(FILE *fp, const char *fmt, double percent);
+>>  const char *get_percent_color(double percent);
+>>  
+>> -- 
+>> 1.8.3.2
