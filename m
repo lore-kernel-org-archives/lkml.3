@@ -1,161 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab3JaU0U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 16:26:20 -0400
-Received: from tulikuusama.dnainternet.net ([83.102.40.132]:56384 "EHLO
-	tulikuusama.dnainternet.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751215Ab3JaU0T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 16:26:19 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -1
-Message-ID: <5272BCE1.7010700@iki.fi>
-Date: Thu, 31 Oct 2013 22:26:09 +0200
-From: Anssi Hannula <anssi.hannula@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-CC: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        =?UTF-8?B?UGV0ZXIgRnLDvGhiZXJnZXI=?= <fritsch@xbmc.org>,
-        Olivier Langlois <olivier@trillion01.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] ALSA: hda - hdmi: Add ATI/AMD multi-channel audio
- support
-References: <1380659456-3746-1-git-send-email-anssi.hannula@iki.fi>	<1380659456-3746-2-git-send-email-anssi.hannula@iki.fi>	<CACna6ryr37WRvKbMFmLEGt_A2zUD46rZOtJMVom+B_xK9WNLuw@mail.gmail.com>	<07e8973b4665cc23c3f4a77e9c7e2b7c@mail.onse.fi> <CACna6ryFtmZHAhmCPEsoxZc5h4mLuM4ajnKGsp=q0jag2f_SYw@mail.gmail.com>
-In-Reply-To: <CACna6ryFtmZHAhmCPEsoxZc5h4mLuM4ajnKGsp=q0jag2f_SYw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1754043Ab3JaUcQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 16:32:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50093 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751305Ab3JaUcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 16:32:14 -0400
+Date: Thu, 31 Oct 2013 16:31:44 -0400
+From: Rik van Riel <riel@redhat.com>
+To: peterz@infradead.org
+Cc: mingo@kernel.org, prarit@redhat.com, mgorman@suse.de,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH -tip] fix race between stop_two_cpus and stop_cpus
+Message-ID: <20131031163144.0fd27457@annuminas.surriel.com>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-31.10.2013 18:22, Rafał Miłecki kirjoitti:
-> 2013/10/30 Anssi Hannula <anssi.hannula@iki.fi>:
->> BTW, there is a newer version (which was actually applied) of this patchset
->> in alsa-devel@, seems you were missing from CC on that one.
-> 
-> I didn't try that updated version yet, but I'm afraid I discovered
-> some problem. I've switched from my Denon 1912 to the older Onkyo
-> TX-SR605 and there is problem with multichannel playback. I've tried:
->> speaker-test -D hdmi:CARD=Generic,DEV=0 -c6 -r192000 -F S16_LE
-> 
-> speaker-test 1.0.25
-> 
-> Playback device is hdmi:CARD=Generic,DEV=0
-> Stream parameters are 192000Hz, S16_LE, 6 channels
-> Using 16 octaves of pink noise
-> Rate set to 192000Hz (requested 192000Hz)
-> Buffer size range from 64 to 87360
-> Period size range from 32 to 43680
-> Using max buffer size 87360
-> Periods = 4
-> was set period_size = 17472
-> was set buffer_size = 87360
-> 0 - Front Left
-> 4 - Center
-> 1 - Front Right
-> 3 - Rear Right
-> 2 - Rear Left
-> 5 - LFE
-> Time per period = 17.027360
-> 
-> But I can hear sound for rear right and rear left only :(
-> 
-> Is there anything more I can provide to help resolve this? Do you have
-> any idea how we can resolve this?
+There is a race between stop_two_cpus, and the global stop_cpus.
 
-According to the below the receiver has separate PCM SADs for 2-channel
-and multichannel playback. However, due to a radeon driver bug (see
-"[PATCH] drm/radeon/audio: fix missing multichannel PCM SAD in some
-cases", you were CCd) the multichannel SAD is lost and not shown below.
+It is possible for two CPUs to get their stopper functions queued
+"backwards" from one another, resulting in the stopper threads
+getting stuck, and the system hanging. This can happen because
+queuing up stoppers is not synchronized.
 
-However, that is not (or at least should not be) the reason you are not
-getting audio.
-I suspect that the receiver does not support 192kHz multichannel audio
-(which would be indicated in the missing multichannel PCM SAD). Does it
-work with 48kHz or 96kHz?
-(TODO: refuse PCM playback in such cases)
+This patch adds synchronization between stop_cpus (a rare operation),
+and stop_two_cpus.
 
-If it does not work with 48kHz or 96kHz either, then we have a bug to
-solve :)
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+Prarit is running a test with this patch. By now the kernel would have
+crashed already, yet it is still going. I expect Prarit will add his
+Tested-by: some time tomorrow morning.
 
-> zajec@linux-samsung700g7a:/proc/asound/card1> cat eld#0.0
-> monitor_present         1
-> eld_valid               1
-> monitor_name
-> connection_type         HDMI
-> eld_version             [0x2] CEA-861D or below
-> edid_version            [0x0] no CEA EDID Timing Extension block present
-> manufacture_id          0x0
-> product_id              0x0
-> port_id                 0x0
-> support_hdcp            0
-> support_ai              0
-> audio_sync_delay        0
-> speakers                [0x4f] FL/FR LFE FC RL/RR RLC/RRC
-> sad_count               6
-> sad0_coding_type        [0x1] LPCM
-> sad0_channels           2
-> sad0_rates              [0x1ee0] 32000 44100 48000 88200 96000 176400 192000
-> sad0_bits               [0xe0000] 16 20 24
-> sad1_coding_type        [0x2] AC-3
-> sad1_channels           8
-> sad1_rates              [0xe0] 32000 44100 48000
-> sad1_max_bitrate        640000
-> sad2_coding_type        [0x7] DTS
-> sad2_channels           8
-> sad2_rates              [0xc0] 44100 48000
-> sad2_max_bitrate        1536000
-> sad3_coding_type        [0xa] E-AC-3/DD+ (Dolby Digital Plus)
-> sad3_channels           8
-> sad3_rates              [0xc0] 44100 48000
-> sad4_coding_type        [0xb] DTS-HD
-> sad4_channels           8
-> sad4_rates              [0x1ec0] 44100 48000 88200 96000 176400 192000
-> sad5_coding_type        [0xc] MLP (Dolby TrueHD)
-> sad5_channels           8
-> sad5_rates              [0x6c0] 44100 48000 88200 96000
-> zajec@linux-samsung700g7a:/proc/asound/card1> ls
-> codec#0  eld#0.0  id  pcm3p
-> zajec@linux-samsung700g7a:/proc/asound/card1> cat codec#0
-> Codec: ATI R6xx HDMI
-> Address: 0
-> AFG Function Id: 0x1 (unsol 0)
-> Vendor Id: 0x1002aa01
-> Subsystem Id: 0x00aa0100
-> Revision Id: 0x100200
-> No Modem Function Group found
-> Default PCM:
->     rates [0x70]: 32000 44100 48000
->     bits [0x2]: 16
->     formats [0x1]: PCM
-> Default Amp-In caps: N/A
-> Default Amp-Out caps: N/A
-> State of AFG node 0x01:
->   Power states:  D0 D3
->   Power: setting=D0, actual=D0
-> GPIO: io=0, o=0, i=0, unsolicited=0, wake=0
-> Node 0x02 [Audio Output] wcaps 0x201: Stereo Digital
->   Converter: stream=0, channel=0
->   Digital: Enabled GenLevel
->   Digital category: 0x2
->   IEC Coding Type: 0x0
-> Node 0x03 [Pin Complex] wcaps 0x400381: Stereo Digital
->   Control: name="HDMI/DP,pcm=3 Jack", index=0, device=0
->   Control: name="IEC958 Playback Con Mask", index=0, device=0
->   Control: name="IEC958 Playback Pro Mask", index=0, device=0
->   Control: name="IEC958 Playback Default", index=0, device=0
->   Control: name="IEC958 Playback Switch", index=0, device=0
->   Control: name="ELD", index=0, device=3
->   Pincap 0x00000094: OUT Detect HDMI
->   Pin Default 0x18560010: [Jack] Digital Out at Int HDMI
->     Conn = Digital, Color = Unknown
->     DefAssociation = 0x1, Sequence = 0x0
->   Pin-ctls: 0x40: OUT
->   Unsolicited: tag=01, enabled=1
->   Connection: 1
->      0x02
-[...]
+ kernel/stop_machine.c | 43 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 42 insertions(+), 1 deletion(-)
 
--- 
-Anssi Hannula
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index 32a6c44..46cb4c2 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -40,8 +40,10 @@ struct cpu_stopper {
+ };
+ 
+ static DEFINE_PER_CPU(struct cpu_stopper, cpu_stopper);
++static DEFINE_PER_CPU(bool, stop_two_cpus_queueing);
+ static DEFINE_PER_CPU(struct task_struct *, cpu_stopper_task);
+ static bool stop_machine_initialized = false;
++static bool stop_cpus_queueing = false;
+ 
+ static void cpu_stop_init_done(struct cpu_stop_done *done, unsigned int nr_todo)
+ {
+@@ -261,16 +263,37 @@ int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *
+ 	cpu_stop_init_done(&done, 2);
+ 	set_state(&msdata, MULTI_STOP_PREPARE);
+ 
++ wait_for_global:
++	/* If a global stop_cpus is queuing up stoppers, wait. */
++	while (unlikely(stop_cpus_queueing))
++		cpu_relax();
++
++	/* This CPU is queuing up stoppers. */
++	preempt_disable();
++	this_cpu_write(stop_two_cpus_queueing, true);
++	smp_mb(); /* matches the smp_wmb in queue_stop_cpus_work */
++
++	/* Global stop_cpus got busy simultaneously. Wait and retry. */
++	if (unlikely(stop_cpus_queueing)) {
++		smp_mb(); /* matches the smp_wmb in queue_stop_cpus_work */
++		this_cpu_write(stop_two_cpus_queueing, false);
++		preempt_enable();
++		goto wait_for_global;
++	}
++
+ 	/*
+ 	 * Queuing needs to be done by the lowest numbered CPU, to ensure
+ 	 * that works are always queued in the same order on every CPU.
+ 	 * This prevents deadlocks.
+ 	 */
+ 	call_cpu = min(cpu1, cpu2);
+-
+ 	smp_call_function_single(call_cpu, &irq_cpu_stop_queue_work,
+ 				 &call_args, 0);
+ 
++	smp_wmb(); /* matches the smp_mb in wait_on_stop_two_cpus */
++	this_cpu_write(stop_two_cpus_queueing, false);
++	preempt_enable();
++
+ 	wait_for_completion(&done.completion);
+ 	return done.executed ? done.ret : -ENOENT;
+ }
+@@ -295,6 +318,19 @@ void stop_one_cpu_nowait(unsigned int cpu, cpu_stop_fn_t fn, void *arg,
+ 	cpu_stop_queue_work(cpu, work_buf);
+ }
+ 
++static void wait_on_stop_two_cpus(const struct cpumask *cpumask)
++{
++	int cpu;
++
++	/* Do not reorder reads before this point */
++	smp_mb(); /* matches the smp_wmb in stop_two_cpus */
++	
++	/* Wait until no stop_two_cpus stopper tasks are being queued */
++	for_each_cpu(cpu, cpumask)
++		while (per_cpu(stop_two_cpus_queueing, cpu) == true)
++			cpu_relax();
++}
++
+ /* static data for stop_cpus */
+ static DEFINE_MUTEX(stop_cpus_mutex);
+ static DEFINE_PER_CPU(struct cpu_stop_work, stop_cpus_work);
+@@ -320,8 +356,12 @@ static void queue_stop_cpus_work(const struct cpumask *cpumask,
+ 	 * to enter @fn which can lead to deadlock.
+ 	 */
+ 	preempt_disable();
++	stop_cpus_queueing = true;
++	wait_on_stop_two_cpus(cpumask);
+ 	for_each_cpu(cpu, cpumask)
+ 		cpu_stop_queue_work(cpu, &per_cpu(stop_cpus_work, cpu));
++	smp_wmb(); /* matches the smp_mb in stop_two_cpus */
++	stop_cpus_queueing = false;
+ 	preempt_enable();
+ }
+ 
+@@ -509,6 +549,7 @@ static int __init cpu_stop_init(void)
+ 
+ 		spin_lock_init(&stopper->lock);
+ 		INIT_LIST_HEAD(&stopper->works);
++		per_cpu(stop_two_cpus_queueing, cpu) = false;
+ 	}
+ 
+ 	BUG_ON(smpboot_register_percpu_thread(&cpu_stop_threads));
