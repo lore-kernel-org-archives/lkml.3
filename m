@@ -1,76 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab3JaQ1R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 12:27:17 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40299 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754334Ab3JaQ1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 12:27:15 -0400
-Date: Thu, 31 Oct 2013 17:27:06 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: sysfs: cannot create duplicate filename /bus/i2c/drivers/tps65010
-Message-ID: <20131031162706.GF10544@pd.tnic>
-References: <20131031152343.GE10544@pd.tnic>
- <20131031161352.GA9587@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131031161352.GA9587@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755504Ab3JaQ13 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 12:27:29 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:35456 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754334Ab3JaQ1Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 12:27:25 -0400
+X-AuditID: cbfec7f5-b7ef66d00000795a-36-527284ebd588
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+To: dhowells@redhat.com, rusty@rustcorp.com.au,
+        linux-security-module@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-modules@vger.kernel.org,
+        dmitry.kasatkin@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>
+Subject: [PATCH 1/1] KEYS: store keys in the dedicated directory
+Date: Thu, 31 Oct 2013 18:26:30 +0200
+Message-id: <1c88669c38d627ca2f5ccc9ffc2e24e2d04c05ea.1383236790.git.d.kasatkin@samsung.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLJMWRmVeSWpSXmKPExsVy+t/xa7qvW4qCDJ49YrW49Xcvs8W7pt8s
+	Fl+W1llc3jWHzaJh9ndWiw89j9gsbk67wOLA7rFz1l12j/f7rrJ5rNhwgtmjb8sqRo/Pm+QC
+	WKO4bFJSczLLUov07RK4Mi7u38xU0KhUMfXkZqYGxk8yXYycHBICJhIruh+yQNhiEhfurWfr
+	YuTiEBJYyiixpGEBI4TTySTx7PQ5ZpAqNgE9iQ3NP9hBbBGBcImuiYvBipgF2hglXkxoASsS
+	FnCQ+Lr2JGsXIwcHi4CqRN/yYpAwr0CcxLv/nYwQ2xQkfl4+wTaBkXsBI8MqRtHU0uSC4qT0
+	XCO94sTc4tK8dL3k/NxNjJAg+bqDcekxq0OMAhyMSjy8DLqFQUKsiWXFlbmHGCU4mJVEeEVy
+	ioKEeFMSK6tSi/Lji0pzUosPMTJxcEo1MMY5MbucL8pkf8zyymq3YNi8OCv5AzZ7Nvbptx+M
+	UL6ZffTLJoPcvf4cwo8ZJS1rOhP/LHkf4x+stNTxxTcpp2MMYr62hyp/bDSzPNEmZX/p50E9
+	NaN7zXd3XGV7ovroQs71qSE/RDLrhbNavU0Elxck9TzVLApR7+55uGXeS9b4edHLFhjOU2Ip
+	zkg01GIuKk4EACaALlHwAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 09:13:52AM -0700, Lee Jones wrote:
-> > just FYI: I see the below with the attached randconfig on latest -rc7+
-> > (output is a bit funny due to keeping earlyprintk on).
-> > 
-> > [    0.460026] ------------[ cut here ]------------
-> > [    0.462726] WARNING: CPU: 0 PID: 1 at fs/sysfs/dir.c:526 sysfs_add_one+0xa0/0xc0()
-> > [    0.464002] sysfs: cannot create duplicate filename '/bus/i2c/drivers/tps65010'
-> > [    0.466018] CPU: 0 PID: 1 Comm: swapper Not tainted 3.12.0-rc7-02023-gf5889fb1b3ba #1
-> > [    0.468002]  0000000000000009
-> > [    0.468002]  0000000000000009 ffff88007e44fc20 ffff88007e44fc20 ffffffff89cda7e4 ffffffff89cda7e4 ffff88007e44fc58 ffff88007e44fc58
-> > [    0.470111]  ffffffff89089307
-> > [    0.470111]  ffffffff89089307 00000000ffffffef 00000000ffffffef ffff88007e52cd20 ffff88007e52cd20 ffff88007e44fd00 ffff88007e44fd00
-> > [    0.473348]  ffff88007e549000
-> > [    0.473348]  ffff88007e549000 0000000000000000 0000000000000000 ffff88007e44fcb8 ffff88007e44fcb8 ffffffff890893a7 ffffffff890893a7
-> > [    0.475453] Call Trace:
-> > [    0.476004]  [<ffffffff89cda7e4>] dump_stack+0x19/0x1b
-> > [    0.477448]  [<ffffffff89089307>] warn_slowpath_common+0x67/0x90
-> > [    0.479108]  [<ffffffff890893a7>] warn_slowpath_fmt+0x47/0x50
-> > [    0.480003]  [<ffffffff89198ea0>] sysfs_add_one+0xa0/0xc0
-> > [    0.481493]  [<ffffffff8919900f>] create_dir+0x6f/0xe0
-> > [    0.482910]  [<ffffffff89199394>] sysfs_create_dir+0x84/0xe0
-> > [    0.484011]  [<ffffffff8941dd7f>] kobject_add_internal+0xaf/0x2c0
-> > [    0.485690]  [<ffffffff8941dff0>] kobject_init_and_add+0x60/0x80
-> > [    0.488010]  [<ffffffff8943ee2d>] ? __raw_spin_lock_init+0x2d/0x50
-> > [    0.489721]  [<ffffffff895774ae>] bus_add_driver+0x9e/0x2a0
-> > [    0.492017]  [<ffffffff8a769b5d>] ? wm831x_spi_init+0x28/0x28
-> > [    0.493622]  [<ffffffff8957914f>] driver_register+0x5f/0xf0
-> > [    0.495160]  [<ffffffff8a769b5d>] ? wm831x_spi_init+0x28/0x28
-> > [    0.496018]  [<ffffffff89845c67>] i2c_register_driver+0x27/0xb0
-> > [    0.497650]  [<ffffffff8a769b91>] tps_init+0x34/0x79
-> > [    0.499041]  [<ffffffff8a743df3>] do_one_initcall+0x7c/0x117
-> > [    0.500011]  [<ffffffff890a62d8>] ? parse_args+0x1f8/0x330
-> > [    0.501522]  [<ffffffff8a743fa1>] kernel_init_freeable+0x113/0x198
-> > [    0.504002]  [<ffffffff8a74382f>] ? do_early_param+0x88/0x88
-> > [    0.505587]  [<ffffffff89cc9990>] ? rest_init+0x130/0x130
-> > [    0.507079]  [<ffffffff89cc9999>] kernel_init+0x9/0x180
-> > [    0.508004]  [<ffffffff89ced98a>] ret_from_fork+0x7a/0xb0
-> > [    0.509496]  [<ffffffff89cc9990>] ? rest_init+0x130/0x130
-> > [    0.512011] ---[ end trace 70292a51052b5aeb ]---
-> 
-> Is this an MFD issue?
+Recent patch "KEYS: Load *.x509 files into kernel keyring" allows to bultin
+multiple X509 certificates. It is easier to manage keys and certificates
+when they are stored in the dedicated directory.
 
-I'd think so because AFAICT it all starts from
-drivers/mfd/tps65010.c::tps_init() but I don't know the code so ...
+This patch proposes to store keys in the 'keys' directory.
 
+Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+---
+ Makefile        |  4 ++--
+ kernel/Makefile | 55 +++++++++++++++++++++++++++++++------------------------
+ 2 files changed, 33 insertions(+), 26 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 8d0668f..329684a 100644
+--- a/Makefile
++++ b/Makefile
+@@ -722,8 +722,8 @@ export mod_strip_cmd
+ 
+ 
+ ifdef CONFIG_MODULE_SIG_ALL
+-MODSECKEY = ./signing_key.priv
+-MODPUBKEY = ./signing_key.x509
++MODSECKEY = ./keys/signing_key.priv
++MODPUBKEY = ./keys/signing_key.x509
+ export MODPUBKEY
+ mod_sign_cmd = perl $(srctree)/scripts/sign-file $(CONFIG_MODULE_SIG_HASH) $(MODSECKEY) $(MODPUBKEY)
+ else
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 6313698..3e7799a 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -154,9 +154,15 @@ $(obj)/timeconst.h: $(obj)/hz.bc $(src)/timeconst.bc FORCE
+ # duplicates.
+ #
+ ###############################################################################
++
++KEYDIR = keys
++MODGENKEY = $(KEYDIR)/x509.genkey
++MODSECKEY = $(KEYDIR)/signing_key.priv
++MODPUBKEY = $(KEYDIR)/signing_key.x509
++
+ ifeq ($(CONFIG_SYSTEM_TRUSTED_KEYRING),y)
+-X509_CERTIFICATES-y := $(wildcard *.x509) $(wildcard $(srctree)/*.x509)
+-X509_CERTIFICATES-$(CONFIG_MODULE_SIG) += signing_key.x509
++X509_CERTIFICATES-y := $(wildcard $(srctree)/keys/*.x509)
++X509_CERTIFICATES-$(CONFIG_MODULE_SIG) += $(MODPUBKEY)
+ X509_CERTIFICATES := $(sort $(foreach CERT,$(X509_CERTIFICATES-y), \
+ 				$(or $(realpath $(CERT)),$(CERT))))
+ 
+@@ -199,7 +205,7 @@ ifndef CONFIG_MODULE_SIG_HASH
+ $(error Could not determine digest type to use from kernel config)
+ endif
+ 
+-signing_key.priv signing_key.x509: x509.genkey
++$(MODSECKEY) $(MODPUBKEY): $(MODGENKEY)
+ 	@echo "###"
+ 	@echo "### Now generating an X.509 key pair to be used for signing modules."
+ 	@echo "###"
+@@ -209,30 +215,31 @@ signing_key.priv signing_key.x509: x509.genkey
+ 	@echo "### number generator if one is available."
+ 	@echo "###"
+ 	openssl req -new -nodes -utf8 -$(CONFIG_MODULE_SIG_HASH) -days 36500 \
+-		-batch -x509 -config x509.genkey \
+-		-outform DER -out signing_key.x509 \
+-		-keyout signing_key.priv 2>&1
++		-batch -x509 -config $(MODGENKEY) \
++		-outform DER -out $(MODPUBKEY) \
++		-keyout $(MODSECKEY) 2>&1
+ 	@echo "###"
+ 	@echo "### Key pair generated."
+ 	@echo "###"
+ 
+-x509.genkey:
++$(MODGENKEY):
+ 	@echo Generating X.509 key generation config
+-	@echo  >x509.genkey "[ req ]"
+-	@echo >>x509.genkey "default_bits = 4096"
+-	@echo >>x509.genkey "distinguished_name = req_distinguished_name"
+-	@echo >>x509.genkey "prompt = no"
+-	@echo >>x509.genkey "string_mask = utf8only"
+-	@echo >>x509.genkey "x509_extensions = myexts"
+-	@echo >>x509.genkey
+-	@echo >>x509.genkey "[ req_distinguished_name ]"
+-	@echo >>x509.genkey "O = Magrathea"
+-	@echo >>x509.genkey "CN = Glacier signing key"
+-	@echo >>x509.genkey "emailAddress = slartibartfast@magrathea.h2g2"
+-	@echo >>x509.genkey
+-	@echo >>x509.genkey "[ myexts ]"
+-	@echo >>x509.genkey "basicConstraints=critical,CA:FALSE"
+-	@echo >>x509.genkey "keyUsage=digitalSignature"
+-	@echo >>x509.genkey "subjectKeyIdentifier=hash"
+-	@echo >>x509.genkey "authorityKeyIdentifier=keyid"
++	@mkdir -p $(KEYDIR)
++	@echo  >$(MODGENKEY) "[ req ]"
++	@echo >>$(MODGENKEY) "default_bits = 4096"
++	@echo >>$(MODGENKEY) "distinguished_name = req_distinguished_name"
++	@echo >>$(MODGENKEY) "prompt = no"
++	@echo >>$(MODGENKEY) "string_mask = utf8only"
++	@echo >>$(MODGENKEY) "x509_extensions = myexts"
++	@echo >>$(MODGENKEY)
++	@echo >>$(MODGENKEY) "[ req_distinguished_name ]"
++	@echo >>$(MODGENKEY) "O = Magrathea"
++	@echo >>$(MODGENKEY) "CN = Glacier signing key"
++	@echo >>$(MODGENKEY) "emailAddress = slartibartfast@magrathea.h2g2"
++	@echo >>$(MODGENKEY)
++	@echo >>$(MODGENKEY) "[ myexts ]"
++	@echo >>$(MODGENKEY) "basicConstraints=critical,CA:FALSE"
++	@echo >>$(MODGENKEY) "keyUsage=digitalSignature"
++	@echo >>$(MODGENKEY) "subjectKeyIdentifier=hash"
++	@echo >>$(MODGENKEY) "authorityKeyIdentifier=keyid"
+ endif
 -- 
-Regards/Gruss,
-    Boris.
+1.8.1.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
