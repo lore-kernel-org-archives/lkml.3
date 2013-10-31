@@ -1,107 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab3JaFp7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 01:45:59 -0400
-Received: from hermes.synopsys.com ([198.182.44.81]:62438 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab3JaFp5 convert rfc822-to-8bit (ORCPT
+	id S1752749Ab3JaFrc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 01:47:32 -0400
+Received: from smtprelay0037.hostedemail.com ([216.40.44.37]:56813 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750845Ab3JaFrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 01:45:57 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Chen Gang <gang.chen@asianux.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, "Arnd Bergmann" <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul Gortmaker" <paul.gortmaker@windriver.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        realmz paranoid <realmz6@gmail.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] arch: *: remove '__init' for setup_profiling_timer()
-Thread-Topic: [PATCH] arch: *: remove '__init' for setup_profiling_timer()
-Thread-Index: AQHOz5Rzfa7H6x8+K0mEPsxJa/nqdw==
-Date: Thu, 31 Oct 2013 05:45:48 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA23075153861@IN01WEMBXA.internal.synopsys.com>
-References: <52672ECD.9010800@asianux.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.239.237]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 31 Oct 2013 01:47:31 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3874:4250:4321:5007:7652:10004:10400:10848:11026:11232:11657:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: sheep73_4176386390d46
+X-Filterd-Recvd-Size: 1642
+Message-ID: <1383198448.24582.3.camel@joe-AO722>
+Subject: Re: [PATCH 2/2] perf/x86/intel: Add Ivy Bridge-EP uncore IRP box
+ support
+From: Joe Perches <joe@perches.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, ak@linux.intel.com,
+        eranian@google.com
+Date: Wed, 30 Oct 2013 22:47:28 -0700
+In-Reply-To: <1383197815-17706-2-git-send-email-zheng.z.yan@intel.com>
+References: <1383197815-17706-1-git-send-email-zheng.z.yan@intel.com>
+	 <1383197815-17706-2-git-send-email-zheng.z.yan@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2013 07:36 AM, Chen Gang wrote:
-> Most of architectures not use '__init' for setup_profiling_timer(), so
-> need remove it, or can generate warning (e.g. arc with allmodconfig):
->
->     MODPOST vmlinux.o
->   WARNING: vmlinux.o(.text+0x3c682): Section mismatch in reference from the function write_profile() to the function .init.text:setup_profiling_timer()
->   The function write_profile() references
->   the function __init setup_profiling_timer().
->   This is often because write_profile lacks a __init
->   annotation or the annotation of setup_profiling_timer is wrong.
->
->
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/arc/kernel/smp.c          |    2 +-
->  arch/blackfin/mach-bf561/smp.c |    2 +-
->  arch/parisc/kernel/smp.c       |    2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/arc/kernel/smp.c b/arch/arc/kernel/smp.c
-> index bca3052..3bdac11 100644
-> --- a/arch/arc/kernel/smp.c
-> +++ b/arch/arc/kernel/smp.c
-> @@ -187,7 +187,7 @@ int __cpu_up(unsigned int cpu, struct task_struct *idle)
->  /*
->   * not supported here
->   */
-> -int __init setup_profiling_timer(unsigned int multiplier)
-> +int setup_profiling_timer(unsigned int multiplier)
->  {
->  	return -EINVAL;
->  }
-> diff --git a/arch/blackfin/mach-bf561/smp.c b/arch/blackfin/mach-bf561/smp.c
-> index 11789be..3bef058 100644
-> --- a/arch/blackfin/mach-bf561/smp.c
-> +++ b/arch/blackfin/mach-bf561/smp.c
-> @@ -43,7 +43,7 @@ void __init platform_prepare_cpus(unsigned int max_cpus)
->  	init_cpu_present(&mask);
->  }
->  
-> -int __init setup_profiling_timer(unsigned int multiplier) /* not supported */
-> +int setup_profiling_timer(unsigned int multiplier) /* not supported */
->  {
->  	return -EINVAL;
->  }
-> diff --git a/arch/parisc/kernel/smp.c b/arch/parisc/kernel/smp.c
-> index 8a252f2..2e8cd36 100644
-> --- a/arch/parisc/kernel/smp.c
-> +++ b/arch/parisc/kernel/smp.c
-> @@ -433,7 +433,7 @@ int __cpu_up(unsigned int cpu, struct task_struct *tidle)
->  }
->  
->  #ifdef CONFIG_PROC_FS
-> -int __init
-> +int
->  setup_profiling_timer(unsigned int multiplier)
->  {
->  	return -EINVAL;
+On Thu, 2013-10-31 at 13:36 +0800, Yan, Zheng wrote:
+> Unlike other uncore boxes, IRP boxes live in PCI buses with no UBOX
+> device. For PCI bus without UBOX device, we find the next bus that
+> has UBOX device and use its 'bus to socket' mapping.
+[]
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+[]
+> @@ -997,6 +997,20 @@ static int snbep_pci2phy_map_init(int devid)
+[]
+> +/* registers in IRP boxes are not properly aligned */
+> +static unsigned ivt_uncore_irp_ctls[] = {0xd8, 0xdc, 0xe0, 0xe4};
+> +static unsigned ivt_uncore_irp_ctrs[] = {0xa0, 0xb0, 0xb8, 0xc0};
 
-In theory this change is OK. However this is legacy code at best and it would be
-better to define a weak definition in kernel/profile.c and remove this cruft from
-relevant arches. I'll send out a patch.
+Using this sort of naming is like asking for a typo
+or a copy/paste defect.
 
--Vineet
+
