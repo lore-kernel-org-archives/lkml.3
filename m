@@ -1,85 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282Ab3JaW6d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 18:58:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34715 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab3JaW6c (ORCPT
+	id S1753800Ab3JaXJc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 19:09:32 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44248 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635Ab3JaXJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 18:58:32 -0400
-Date: Thu, 31 Oct 2013 15:58:31 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        linux-arm-kernel@lists.infradead.org, Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH] scripts/kallsyms: filter symbols not in kernel address
- space
-Message-Id: <20131031155831.4dce58a80c621cf450967de0@linux-foundation.org>
-In-Reply-To: <20131031225022.GJ16735@n2100.arm.linux.org.uk>
-References: <1382975339-25831-1-git-send-email-tom.leiming@gmail.com>
-	<20131031154311.e65d16d79ba540ced736413b@linux-foundation.org>
-	<20131031225022.GJ16735@n2100.arm.linux.org.uk>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Thu, 31 Oct 2013 19:09:31 -0400
+Date: Fri, 1 Nov 2013 10:09:12 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jason Baron <jbaron@akamai.com>, paulmck@linux.vnet.ibm.com,
+        normalperson@yhbt.net, nzimmer@sgi.com, viro@zeniv.linux.org.uk,
+        nelhage@nelhage.com, davidel@xmailserver.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] epoll: remove the on_list check for 'struct epitem'
+Message-Id: <20131101100912.1d83667289bcca24c882b109@canb.auug.org.au>
+In-Reply-To: <20131030183241.AE8201FF9@prod-mail-relay06.akamai.com>
+References: <20131030183241.AE8201FF9@prod-mail-relay06.akamai.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__1_Nov_2013_10_09_12_+1100_sN8BrDkZn=uRgawh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Oct 2013 22:50:22 +0000 Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+--Signature=_Fri__1_Nov_2013_10_09_12_+1100_sN8BrDkZn=uRgawh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Thu, Oct 31, 2013 at 03:43:11PM -0700, Andrew Morton wrote:
-> > On Mon, 28 Oct 2013 23:48:59 +0800 Ming Lei <tom.leiming@gmail.com> wrote:
-> > 
-> > > This patch uses CONFIG_PAGE_OFFSET to filter symbols which
-> > > are not in kernel address space because these symbols are
-> > > generally for generating code purpose and can't be run at
-> > > kernel mode, so we needn't keep them in /proc/kallsyms.
-> > > 
-> > > For example, on ARM there are some symbols which are
-> > > linked in relocatable code section, then perf can't parse
-> > > symbols any more from /proc/kallsyms, and this patch fixes
-> > > the problem.
-> > 
-> > This is a non-back-compatible change and I'd like to see a much
-> > stronger assurance that it is safe to merge and will not break any
-> > existing application on the planet, please.
-> > 
-> > For a start, please describe with great precision what these excluded
-> > symbols are (examples would help) and explain why no application will
-> > conceivably have had any use for them.
-> 
-> These symbols are used to build what is relocatable code; the code which
-> ends up being placed in the machine vectors and the following page.
-> 
-> Rather than have to manually calculate them, I merged a patch which used
-> the tools we have, namely the assembler and linker, to do the job for us.
+Hi Andrew,
 
-OK.  Do you recall which patch that was?  And is it the case that this
-patch excludes only the symbols which that patch accidentally added?
+On Wed, 30 Oct 2013 18:32:41 +0000 (GMT) Jason Baron <jbaron@akamai.com> wr=
+ote:
+>
+> By removing the 'int on_list' field from 'struct epitem', we avoid hittin=
+g the
+> BUILD_BUG_ON() for 'struct epitem' being larger than 128 bytes.
+>=20
+> In file included from include/linux/init.h:4:0,
+>                  from fs/eventpoll.c:14:
+> fs/eventpoll.c: In function 'eventpoll_init':
+> include/linux/compiler.h:321:20: error: call to '__compiletime_assert_213=
+7' declared with attribute error: BUILD_BUG_ON failed: sizeof(void *) <=3D =
+8 && sizeof(struct epitem) > 128
+>     prefix ## suffix();    \
+>=20
+> The check to make sure that the 'struct epitem' was actually linked via
+> epi->fllink was added to avoid having the list removal primitives called =
+twice
+> for the same 'struct epitem'. However, the double call possibility was re=
+moved
+> by 'Subject: epoll: optimize EPOLL_CTL_DEL using rcu'. There, the call to
+> 'list_del_init()' in eventpoll_release_file() was removed (we now rely on=
+ the
+> list delete happening entirely in 'ep_remove()', which is called from
+> eventpoll_release_file()).
+>=20
+> There is also the question as to whether multiple ep_remove() calls could
+> happen concurrently. This can not happen since EPOLL_CTL_DEL can't
+> race with eventpoll_release_file() or ep_free() - it has to do an fget()
+> to proceed. Further, eventpoll_release_file() can not race with ep_free(),
+> since they both acquire the 'epmutex'.
+>=20
+> Signed-off-by: Jason Baron <jbaron@akamai.com>
 
-> Unfortunately, these symbols have ended up in kallsyms, which various
-> programs read, and having symbols down at the lower 8k is not what they
-> expect.
+Do you want me to put this in my copy of the mmotm instead of reverting
+these three?
 
-> What it means is we don't have to play these kinds of games in the
-> assembler:
-> 
-> -       .equ    stubs_offset, __vectors_start + 0x1000 - __stubs_start
->  __vectors_start:
-> -       W(b)    vector_rst + stubs_offset
-> -       W(b)    vector_und + stubs_offset
-> -       W(ldr)  pc, .LCvswi + stubs_offset
-> -       W(b)    vector_pabt + stubs_offset
-> -       W(b)    vector_dabt + stubs_offset
-> -       W(b)    vector_addrexcptn + stubs_offset
-> -       W(b)    vector_irq + stubs_offset
-> -       W(b)    vector_fiq + stubs_offset
-> 
-> where each vector_* symbol is located at an address greater than
-> __stubs_start.  Here's the obvious question: can you understand what's
-> going on with all that?
+epoll-do-not-take-global-epmutex-for-simple-topologies-fix
+epoll: do not take global 'epmutex' for simple topologies
+epoll: optimize EPOLL_CTL_DEL using rcu
 
-Nope ;)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__1_Nov_2013_10_09_12_+1100_sN8BrDkZn=uRgawh
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJScuMeAAoJEMDTa8Ir7ZwVgecP/1QOy677wsozYJydA3IC6Ido
+n3yQdFBIeh03TA2HjPujsKOaVWw24zfkB0EJhcqoIU+PUEda7/lWABJfrmKcqVIC
+nfHydND4Fs776H9elhMs9C2gYxri7O0yrLeBSa4kfblnIQjOhHoMYzxCJAogaqu9
+fvESaudsz6+D8qTMrfpLjMK/7VnZwb/6dlzwRkGNz2xyG5NYsu02SzFrRgNVENw6
+9TTpLcUjU2V6Ne0Xr9u0BFYp5nJmFyxAHayFWVkKPY6zIhVDnEF6GgZejhDza9dU
+KV4ayUMXtgYYmSQIhjosl6D4Vmp5xIjGuAL6qC8411Dc8TbwVZTnpUtMYZscXd+E
+kOcEOkx+jH7scT1x+s+DeufENnWCtVz69o/gGG0+qOb57SHrunO+iilsffsqZbpc
+1I43Mz6WCQQLew5iqGvMOZ+rvfxg2aLd8Kdg1P4APrikkyowrmSbYC100kBUSMRm
+ENmRGG6Y6RAJ2j0uG7xVUWXl7iVlMsnphenshpMBjLzD+zpJTd9iTZkZTTKNsBTj
+GORq9txKjpk3oxaU37lqxUez5X5OV8JKOGq5TYpc5iiazxGZu7nlQqV/E+OapKWt
+4x21EvfgkP9qvJZrcgyiUFgjhcIml6um4ThEnuaA40oUo3p3fBsAeWShCDrzDECj
+vegATiBeo5Bss0wh6fZR
+=erMM
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__1_Nov_2013_10_09_12_+1100_sN8BrDkZn=uRgawh--
