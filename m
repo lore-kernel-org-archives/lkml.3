@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137Ab3JaPMr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 11:12:47 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42185 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754220Ab3JaPMq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 11:12:46 -0400
-Date: Thu, 31 Oct 2013 15:12:33 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: David Airlie <airlied@linux.ie>
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
-        dri-devel@lists.freedesktop.org,
-        Tushar Behera <tushar.behera@linaro.org>
-Subject: Re: [PATCH 2/5] DRM: Armada: Use devm_ioremap_resource
-Message-ID: <20131031151233.GC16735@n2100.arm.linux.org.uk>
-References: <1383217687-12037-1-git-send-email-tushar.behera@linaro.org> <1383217687-12037-3-git-send-email-tushar.behera@linaro.org>
+	id S1755185Ab3JaPO0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 11:14:26 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36080 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754793Ab3JaPOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 11:14:24 -0400
+Date: Thu, 31 Oct 2013 16:14:16 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: emulate SAHF instruction
+Message-ID: <20131031151416.GB9818@pd.tnic>
+References: <1383215382-10072-1-git-send-email-pbonzini@redhat.com>
+ <20131031142119.GS4651@redhat.com>
+ <527268E4.2070505@redhat.com>
+ <20131031143405.GT4651@redhat.com>
+ <52726DE0.3060207@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1383217687-12037-3-git-send-email-tushar.behera@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <52726DE0.3060207@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 04:38:04PM +0530, Tushar Behera wrote:
-> While at it, propagate the error code.
+On Thu, Oct 31, 2013 at 03:49:04PM +0100, Paolo Bonzini wrote:
+> Il 31/10/2013 15:34, Gleb Natapov ha scritto:
+> > I haven't checked AMD doc, but if it is documented that lahf/sahf #UDs at 64
+> > bit we should emulate it correctly.
 > 
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> CC: dri-devel@lists.freedesktop.org
-> CC: Russell King <rmk+kernel@arm.linux.org.uk>
-> CC: David Airlie <airlied@linux.ie>
-> ---
->  drivers/gpu/drm/armada/armada_crtc.c |    8 +++-----
->  1 file changed, 3 insertions(+), 5 deletions(-)
+> It says "The LAHF instruction can only be executed in 64-bit mode if
+> supported by the processor implementation. Check the status of ECX bit 0
+> returned by CPUID function 8000_0001h to verify that the processor
+> supports LAHF in 64-bit mode".  Same as Intel---in fact 80000001h is an
+> "AMD leaf" so to speak.
+
+Yes, we #UD if L/SAHF are not supported:
+
+Invalid opcode,			The LAHF instruction is not supported, as indicated by CPUID
+#UD				Fn8000_0001_ECX[LahfSahf] = 0.
+
+> I found "AMD introduced support for the instructions with their Athlon
+> 64, Opteron and Turion 64 revision D processors in March 2005 and Intel
+> introduced support for the instructions with the Pentium 4 G1 stepping
+> in December 2005".  I think we can for all practical purposes ignore the
+> lahf_lm CPUID flag.
 > 
-> diff --git a/drivers/gpu/drm/armada/armada_crtc.c b/drivers/gpu/drm/armada/armada_crtc.c
-> index d8e3982..2b6e7b7 100644
-> --- a/drivers/gpu/drm/armada/armada_crtc.c
-> +++ b/drivers/gpu/drm/armada/armada_crtc.c
-> @@ -1037,11 +1037,9 @@ int armada_drm_crtc_create(struct drm_device *dev, unsigned num,
->  	if (ret)
->  		return ret;
->  
-> -	base = devm_request_and_ioremap(dev->dev, res);
-> -	if (!base) {
-> -		DRM_ERROR("failed to ioremap register\n");
-> -		return -ENOMEM;
-> -	}
-> +	base = devm_ioremap_resource(dev->dev, res);
-> +	if (IS_ERR(base))
-> +		return PTR_ERR(base);
+> > Who knows what code depends on it.
 
-David,
+I remember an issue where we had to turn off the LAHF_LM CPUID bit for
+certain K8s because otherwise the flashplayer would SIGSEGV as it was
+trying to execute LAHF but the CPU was not really supporting it although
+CPUID said so :). See fbd8b1819e80a and 6b0f43ddfa358.
 
-Do you want to take this directly, or shall I and send you another pull?
-I have a few other minor patches for armada as well (implementing the
-lastclose callback, and destroying the framebuffer associated with the
-fb helper only after the fb helper has been finalised.
+-- 
+Regards/Gruss,
+    Boris.
 
-Thanks.
+Sent from a fat crate under my desk. Formatting is fine.
+--
