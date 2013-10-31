@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab3JaQoN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 12:44:13 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57655 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751621Ab3JaQoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 12:44:11 -0400
-Date: Thu, 31 Oct 2013 17:44:03 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: emanoil.kotsev@fincom.at
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
-Subject: Re: kernel 3.11.6 general protection fault
-Message-ID: <20131031164403.GG10544@pd.tnic>
-References: <e09ad4cb88b923ec017a516e6778b6bd@fincom.at>
- <20131031143711.GA9818@pd.tnic>
- <cfb4b5e820828e60ad24be359b6e574b@fincom.at>
+	id S1753486Ab3JaQqC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 12:46:02 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:47317 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab3JaQqA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 12:46:00 -0400
+Message-ID: <52728945.9070508@gmail.com>
+Date: Thu, 31 Oct 2013 10:45:57 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <cfb4b5e820828e60ad24be359b6e574b@fincom.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>, yoshihiro.yunomae.ez@hitachi.com,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: RFC: paravirtualizing perf_clock
+References: <526DBD7F.1010807@gmail.com> <20131028131556.GN19466@laptop.lan> <526F2440.9030607@gmail.com> <5270A03F.8020301@hitachi.com> <527111BD.9010803@gmail.com> <52721025.4040901@hitachi.com>
+In-Reply-To: <52721025.4040901@hitachi.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please do not top-post.
+On 10/31/13, 2:09 AM, Masami Hiramatsu wrote:
+> (2013/10/30 23:03), David Ahern wrote:
+>> On 10/29/13 11:59 PM, Masami Hiramatsu wrote:
+>>> (2013/10/29 11:58), David Ahern wrote:
+>>>> To back out a bit, my end goal is to be able to create and merge
+>>>> perf-events from any context on a KVM-based host -- guest userspace,
+>>>> guest kernel space, host userspace and host kernel space (userspace
+>>>> events with a perf-clock timestamp is another topic ;-)).
+>>>
+>>> That is almost same as what we(Yoshihiro and I) are trying on integrated
+>>> tracing, we are doing it on ftrace and trace-cmd (but perhaps, it eventually
+>>> works on perf-ftrace).
+>>
+>> I thought at this point (well, once perf-ftrace gets committed) that you
+>> can do everything with perf. What feature is missing in perf that you
+>> get with trace-cmd or using debugfs directly?
+>
+> The perftools interface is the best for profiling a process or in a short period.
+> However, what we'd like to do is monitoring or tracing in background a long
+> period on the memory, while the system life cycle, as a flight recorder.
+> This kind of tracing interface is required for mission-critical system for
+> trouble shooting.
 
-On Thu, Oct 31, 2013 at 04:52:54PM +0100, emanoil.kotsev@fincom.at wrote:
-> Hi, thanks for swift response.
-> Yes, without those modules loaded it hangs as well. Perhaps I did
-> not understand you well - do you mean unloaded or not
-> compiled/installed, or even blacklisted. I tried only with unloading
-> them.
+right. I have a perf-based scheduling daemon that runs in a flight 
+recorder mode - retain the last N-seconds of scheduling data. 
+Challenging mostly to handle memory growth with task-based records 
+(MMAP, FORK, EXIT, COMM). Other events are handled fairly well.
 
-Right, try to build a kernel from pristine 3.11.6 sources without any
-vmware code patched in or loaded. To be sure, get the sources anew so
-that you don't have any remnants of those modules and build the whole
-thing from scratch.
 
-AFAIK, those vendor packages have some hooks into the kernel
-installation path so make sure you remove those vmware packages too with
-your distro's package manager or however they are being removed.
+> Also, on-the-fly configurability of ftrace such as snapshot, multi-buffer,
+> event-adding/removing are very useful, since in the flight-recorder
+> use-case, we can't stop tracing for even a moment.
 
-> The custom stuff is vmware nothing else, but if I remember issues
-> popped up after compiling/patching vmware/player for 3.10 As I said
-> I noticed this recently when I spent more time watching youtube
-> videos, but it could be that this only reveals the problem which was
-> persistent before (perhaps after vmplayer patch/modules).
+interesting.
 
-Yeah, from the looks of it, it probably would happen if you do other
-things too.
+> Moreover, our guest/host integrated tracer can pass event buffers from
+> guest to host with very small overhead, because it uses ftrace ringbuffer
+> and virtio-serial with splice (so, zero page copying in the guest).
+> Note that we need low overhead tracing as small as possible because it
+> is running always in background.
 
-> I'm using the Notebook with a docking station - and I have a same
-> notebook with different bios version. Does it make sense to try the
-> kernel on a different bios version?
+Right. Been meaning to look at what you guys have done, just have not 
+had the time.
 
-Well, since you started seeing this after patching 3.10, I don't think
-the BIOS was the problem so no need to do any BIOS updates for now.
+> That's why we're using ftrace for our purpose. But anyway, the time
+> synchronization is common issue. Let's share the solution :)
 
-HTH.
+Yes, that was one of the key takeaways from the Tracing Summit is the 
+need to have a common time-source - just extending it to VMs as well.
 
--- 
-Regards/Gruss,
-    Boris.
+>>>> And then for the cherry on top a design that works across architectures
+>>>> (e.g., x86 now, but arm later).
+>>>
+>>> I think your proposal is good for the default implementation, it doesn't
+>>> depends on the arch specific feature. However, since physical timer(clock)
+>>> interfaces and virtualization interfaces strongly depends on the arch,
+>>> I guess the optimized implementations will become different on each arch.
+>>> For example, maybe we can export tsc-offset to the guest to adjust clock
+>>> on x86, but not on ARM, or other devices. In that case, until implementing
+>>> optimized one, we can use paravirt perf_clock.
+>>
+>> So this MSR read takes about 1.6usecs (from 'perf stat kvm live') and
+>> that is total time between VMEXIT and VMENTRY. The time it takes to run
+>> perf_clock in the host should be a very small part of that 1.6 usec.
+>
+> Yeah, a hypercall is always heavy operation. So that is not the best
+> solution, we need a optimized one for each arch.
+>
+>> I'll take a look at the TSC path to see how it is optimized (suggestions
+>> appreciated).
+>
+> At least on the machine which has stable tsc, we can relay on that.
+> We just need the tsc-offset to adjust it in the guest. Note that this
+> offset can change if the guest sleeps/resumes or does a live-migration.
+> Each time we need to refresh the tsc-offset.
+>
+>> Another thought is to make the use of pv_perf_clock an option -- user
+>> can knowingly decide the additional latency/overhead is worth the feature.
+>
+> Yeah. BTW, would you see the paravirt_sched_clock(pv_time_ops)?
+> It seems that such synchronized clock is there.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+I have poked around with it a bit.
+
+David
