@@ -1,95 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713Ab3JaDLK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 23:11:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46537 "EHLO mx2.suse.de"
+	id S1752770Ab3JaDNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 23:13:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41703 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752537Ab3JaDLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 23:11:09 -0400
-Date: Thu, 31 Oct 2013 14:10:56 +1100
-From: NeilBrown <neilb@suse.de>
-To: majianpeng <majianpeng@gmail.com>
-Cc: axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
-        linux-raid <linux-raid@vger.kernel.org>
-Subject: Re: [PATCH 3/3] md/raid5: For stripe with R5_ReadNoMerge, we
- replace REQ_FLUSH with REQ_NOMERGE.
-Message-ID: <20131031141056.1525429a@notabene.brown>
-In-Reply-To: <2013103010414134402615@gmail.com>
-References: <2013103010414134402615@gmail.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/kdNGGVz9DkCi9_k/KL7srg."; protocol="application/pgp-signature"
+	id S1751182Ab3JaDNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 23:13:51 -0400
+Message-ID: <5271C981.2050705@zytor.com>
+Date: Wed, 30 Oct 2013 20:07:45 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Dave Young <dyoung@redhat.com>, Borislav Petkov <bp@alien8.de>
+CC: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.fedoraproject.org, kexec@lists.infradead.org
+Subject: Re: [patch 3/6] Cleanup efi_enter_virtual_mode function
+References: <20131028101011.GF25527@dhcp-16-126.nay.redhat.com> <20131028112045.GH4314@pd.tnic> <20131028112458.GD29133@dhcp-16-126.nay.redhat.com> <20131028145801.GM4314@pd.tnic> <20131028151048.GA14984@dhcp-16-126.nay.redhat.com> <20131029023203.GB5185@dhcp-16-126.nay.redhat.com> <20131029134302.GI10972@pd.tnic> <20131030020348.GA4332@dhcp-16-126.nay.redhat.com> <20131030104718.GB13290@pd.tnic> <20131031020405.GA4377@dhcp-16-126.nay.redhat.com> <20131031020714.GB4377@dhcp-16-126.nay.redhat.com>
+In-Reply-To: <20131031020714.GB4377@dhcp-16-126.nay.redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/kdNGGVz9DkCi9_k/KL7srg.
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 10/30/2013 07:07 PM, Dave Young wrote:
+> On 10/31/13 at 10:04am, Dave Young wrote:
+>> On 10/30/13 at 11:47am, Borislav Petkov wrote:
+>>> On Wed, Oct 30, 2013 at 10:03:49AM +0800, Dave Young wrote:
+>>>> Will try, but please keep the posted patches in mailing list up-to-date,
+>>>
+>>> Would you like me to send them to you privately?
+>>
+>> Thanks, do not bother to send me privately I can get it from your git tree.
+>>
+>> But Frankly I'd like to see them in list instead even with only small fixes
+>> beacuse in this way there might be more people to review it carefully.
+> 
+> There's another shorcoming for keeping new patches in git is that nobody know
+> when you push it and when is the proper date to pull from your git. I think
+> it's better to use git only for the patches which have already been accepted
+> and is waiting for maintainer to pull.
+> 
 
-On Wed, 30 Oct 2013 10:41:46 +0800 majianpeng <majianpeng@gmail.com> wrote:
+You can use git for your own purposes, still.
 
-> For R5_ReadNoMerge,it mean this bio can't merge with other bios or
-> request.It used REQ_FLUSH to achieve this. But REQ_NOMERGE can do the
-> same work.
->=20
-> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-> ---
->  drivers/md/raid5.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-> index f8b9068..8e0aeaa 100644
-> --- a/drivers/md/raid5.c
-> +++ b/drivers/md/raid5.c
-> @@ -772,7 +772,7 @@ static void ops_run_io(struct stripe_head *sh, struct=
- stripe_head_state *s)
->  				bi->bi_sector =3D (sh->sector
->  						 + rdev->data_offset);
->  			if (test_bit(R5_ReadNoMerge, &sh->dev[i].flags))
-> -				bi->bi_rw |=3D REQ_FLUSH;
-> +				bi->bi_rw |=3D REQ_NOMERGE;
-> =20
->  			bi->bi_vcnt =3D 1;
->  			bi->bi_io_vec[0].bv_len =3D STRIPE_SIZE;
+	-hpa
 
-Thanks.
 
-I've queued this up pending Jens' acceptance of the other patches.
-
-By the way, your patch file has a carriage return as well as a newline at t=
-he
-end of each line.
-"patch" can still handle them but "git am" doesn't like it.
-
-If you are able to send the patches as plain text with just a NEWLINE at the
-end of each line, rather than base64 encodes with carriage returns, it would
-help a little.
-
-Thanks,
-NeilBrown
-
---Sig_/kdNGGVz9DkCi9_k/KL7srg.
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUnHKQDnsnt1WYoG5AQIw2Q//T8jXW7va5q3Ns8AXymwraVq+t6/Muw8+
-ObhOkOiGZaoPtlsuUj7BCFV3WN18cAmkj00Vdsd7L8cGWsQKmvqwlyc2a6YRKzmv
-JRH6c/h0ky6lyLen86pm4GrOmFAygNo01ZRbMsFN5IfJ+0gB44Q0XzSnrQp9SjtP
-8pSdgQp/mG43PrxFXia3WlfvL8WgIo9CnNBiad6hsgAiWUplqHOJ+vQMHNTDPmu9
-QVI55piGMYpdWK2bnFGDvfBbWMeMKxBfM5vXEndLKAOFTSQD5+R4lknSAGUdnr/U
-zjF6LvTUH8dpdda+1VtPFUPiLK4eqwx7Jba9zbBICMy4CG0P+zojqoaHKgUoiocI
-usohGrW+QeG0XdRAKs1lVYQ36zPXhFSIhn5wzNO6Ma0ecOtBOmkRG5BaulM6BAHF
-lRnkiIMgtKC4cN2gZTdWjnEA0rjku7SGxjRbW3XccCSxADxHBo/AIUdRHEbIApMT
-vSXy1XS7QQ1oC151HJHBK34VlDI2GiK0cpviXaEQFIvNu32yos4U5SrvbtzYb6Tn
-9p3naTfD2v4Zp4pRv2Mi7NdPD89jxgU7bAEJJaS2KXWJ7CO4Nf+WR2bwKV/wUwo3
-8OdzbdCNOJ0fVmDVaJIc3qM6ozzSOXsimekGWcn8y1ceMqrq5jXF9rMewElYTXAL
-Up9dfDFga5g=
-=eQFs
------END PGP SIGNATURE-----
-
---Sig_/kdNGGVz9DkCi9_k/KL7srg.--
