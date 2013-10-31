@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab3JaWtn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 18:49:43 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:51091 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766Ab3JaWtl (ORCPT
+	id S1755392Ab3JaWue (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 18:50:34 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42232 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753812Ab3JaWud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 18:49:41 -0400
-Date: Fri, 1 Nov 2013 00:49:27 +0200
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
+	Thu, 31 Oct 2013 18:50:33 -0400
+Date: Thu, 31 Oct 2013 22:50:22 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, Simon Baatz <gmbnomis@gmail.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] lib/scatterlist.c: don't flush_kernel_dcache_page on
- slab page
-Message-ID: <20131031224927.GK17447@blackmetal.musicnaut.iki.fi>
-References: <1382977205-26268-1-git-send-email-ming.lei@canonical.com>
- <20131031152745.821d2b5dbe93e2ca69d45264@linux-foundation.org>
+Cc: Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        linux-arm-kernel@lists.infradead.org, Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH] scripts/kallsyms: filter symbols not in kernel address
+	space
+Message-ID: <20131031225022.GJ16735@n2100.arm.linux.org.uk>
+References: <1382975339-25831-1-git-send-email-tom.leiming@gmail.com> <20131031154311.e65d16d79ba540ced736413b@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131031152745.821d2b5dbe93e2ca69d45264@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131031154311.e65d16d79ba540ced736413b@linux-foundation.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Oct 31, 2013 at 03:27:45PM -0700, Andrew Morton wrote:
-> On Tue, 29 Oct 2013 00:20:05 +0800 Ming Lei <ming.lei@canonical.com> wrote:
+On Thu, Oct 31, 2013 at 03:43:11PM -0700, Andrew Morton wrote:
+> On Mon, 28 Oct 2013 23:48:59 +0800 Ming Lei <tom.leiming@gmail.com> wrote:
 > 
-> > Commit b1adaf65ba03([SCSI] block: add sg buffer copy helper functions)
-> > introduces two sg buffer copy helpers, and calls flush_kernel_dcache_page()
-> > on pages in SG list after these pages are written to.
+> > This patch uses CONFIG_PAGE_OFFSET to filter symbols which
+> > are not in kernel address space because these symbols are
+> > generally for generating code purpose and can't be run at
+> > kernel mode, so we needn't keep them in /proc/kallsyms.
 > > 
-> > Unfortunately, the commit may introduce a potential bug:
-> > 
-> > 	- Before sending some SCSI commands, kmalloc() buffer may be
-> > 	passed to block layper, so flush_kernel_dcache_page() can
-> > 	see a slab page finally
-> > 
-> > 	- According to cachetlb.txt, flush_kernel_dcache_page() is
-> > 	only called on "a user page", which surely can't be a slab page.
-> > 
-> > 	- ARCH's implementation of flush_kernel_dcache_page() may
-> > 	use page mapping information to do optimization so page_mapping()
-> > 	will see the slab page, then VM_BUG_ON() is triggered.
-> > 
-> > Aaro Koskinen reported the bug on ARM/kirkwood when DEBUG_VM is enabled,
-> > and this patch fixes the bug by adding test of '!PageSlab(miter->page)'
-> > before calling flush_kernel_dcache_page().
+> > For example, on ARM there are some symbols which are
+> > linked in relocatable code section, then perf can't parse
+> > symbols any more from /proc/kallsyms, and this patch fixes
+> > the problem.
 > 
-> We should work out which kernel(s) need this patch.  b1adaf65ba03 was
-> merged in 2008, so presumably some more recent patch has exposed the
-> problem, but I don't know what one that was.
+> This is a non-back-compatible change and I'd like to see a much
+> stronger assurance that it is safe to merge and will not break any
+> existing application on the planet, please.
 > 
-> Help me out here?
+> For a start, please describe with great precision what these excluded
+> symbols are (examples would help) and explain why no application will
+> conceivably have had any use for them.
 
-On ARM, this problem started to appear after
-1bc39742aab09248169ef9d3727c9def3528b3f3 (ARM: 7755/1: handle user space
-mapped pages in flush_kernel_dcache_page) and that was tagged for 3.2+
-stable kernels.
+These symbols are used to build what is relocatable code; the code which
+ends up being placed in the machine vectors and the following page.
 
-A.
+Rather than have to manually calculate them, I merged a patch which used
+the tools we have, namely the assembler and linker, to do the job for us.
+Unfortunately, these symbols have ended up in kallsyms, which various
+programs read, and having symbols down at the lower 8k is not what they
+expect.
+
+What it means is we don't have to play these kinds of games in the
+assembler:
+
+-       .equ    stubs_offset, __vectors_start + 0x1000 - __stubs_start
+ __vectors_start:
+-       W(b)    vector_rst + stubs_offset
+-       W(b)    vector_und + stubs_offset
+-       W(ldr)  pc, .LCvswi + stubs_offset
+-       W(b)    vector_pabt + stubs_offset
+-       W(b)    vector_dabt + stubs_offset
+-       W(b)    vector_addrexcptn + stubs_offset
+-       W(b)    vector_irq + stubs_offset
+-       W(b)    vector_fiq + stubs_offset
+
+where each vector_* symbol is located at an address greater than
+__stubs_start.  Here's the obvious question: can you understand what's
+going on with all that?
