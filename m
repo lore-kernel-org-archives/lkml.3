@@ -1,127 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068Ab3JaCOu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 22:14:50 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:49723 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730Ab3JaCOt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 22:14:49 -0400
-Message-ID: <5271BD15.4050008@codeaurora.org>
-Date: Wed, 30 Oct 2013 19:14:45 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1752145Ab3JaCgy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 22:36:54 -0400
+Received: from mga14.intel.com ([143.182.124.37]:62258 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750799Ab3JaCgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 22:36:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="382569758"
+Message-ID: <5271BFBB.8040307@intel.com>
+Date: Thu, 31 Oct 2013 10:26:03 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Zhang Mingjun <zhang.mingjun@linaro.org>, Mel Gorman <mgorman@suse.de>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, akpm@linux-foundation.org,
-        Haojian Zhuang <haojian.zhuang@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, troy.zhangmingjun@huawei.com
-Subject: Re: [PATCH] mm: cma: free cma page to buddy instead of being cpu
- hot page
-References: <1382960569-6564-1-git-send-email-zhang.mingjun@linaro.org> <20131029093322.GA2400@suse.de> <CAGT3LergVJ1XXCrVD3XeRpRCXehn9gLb7BRHHyjyseKBz39pMg@mail.gmail.com> <20131029122708.GD2400@suse.de> <CAGT3LerfYfgdkDd=LnuA8y7SUjOSTbw-HddbuzQ=O3yw-vtnnQ@mail.gmail.com> <526FDECB.7020201@codeaurora.org> <20131030054006.GF17013@bbox>
-In-Reply-To: <20131030054006.GF17013@bbox>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Tony Luck <tony.luck@intel.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Yoknis, Mike" <mike.yoknis@hp.com>,
+        "Pearson, Greg" <greg.pearson@hp.com>
+Subject: Re: [Resend PATCH 5/5] IA64/PCI/ACPI: Rework PCI root bridge ACPI
+ resource conversion
+References: <1381493941-4650-1-git-send-email-tianyu.lan@intel.com> <1381493941-4650-6-git-send-email-tianyu.lan@intel.com> <20131016235541.GD17866@google.com> <525F7F0F.5010306@intel.com> <CAErSpo7P+n5c2uUoodT=LOjE3UH3LBcjifbj8reXzAeWydsoLA@mail.gmail.com> <52612D1C.4070701@intel.com> <20131023223904.GA18454@google.com> <526BF37E.8040801@intel.com> <CAErSpo50_JQEhGOK6mcnaj36f6Fhgp3VcHKSmziC6JB_Ycu0Xg@mail.gmail.com> <5270C47C.5040206@intel.com> <CAErSpo5ye_Y=b7476cFuDi7-hW4bJzm+D99cTek+wNkWefs4DQ@mail.gmail.com>
+In-Reply-To: <CAErSpo5ye_Y=b7476cFuDi7-hW4bJzm+D99cTek+wNkWefs4DQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2013 10:40 PM, Minchan Kim wrote:
+On 2013年10月31日 00:23, Bjorn Helgaas wrote:
+> On Wed, Oct 30, 2013 at 2:34 AM, Lan Tianyu <tianyu.lan@intel.com> wrote:
+>> On 2013年10月29日 01:32, Bjorn Helgaas wrote:
+>>>
+>>> On Sat, Oct 26, 2013 at 10:53 AM, Lan Tianyu <tianyu.lan@intel.com> wrote:
+>>>>
+>>>> On 10/24/2013 06:39 AM, Bjorn Helgaas wrote:
+>>>>>
+>>>>> On Fri, Oct 18, 2013 at 08:44:12PM +0800, Lan Tianyu wrote:
+>>>>>>
+>>>>>>
+>>>>>> On 10/18/2013 04:33 AM, Bjorn Helgaas wrote:
+>>>
+>>>
+>>>>>>> I wonder if it would make sense to make
+>>>>>>> acpi_dev_resource_address_space() ignore addr.translation_offset for
+>>>>>>> IO resources.  Or maybe ignore it if the _TTP (type translation) bit
+>>>>>>> is set?
+>>>>>>
+>>>>>>
+>>>>>>
+>>>>>> I wonder why current code doesn't check _TTP? The code in the
+>>>>>> add_io_space() seems to think _TTP is always set, right?
+>>>>>
+>>>>>
+>>>>> I think it's an oversight, and you should fix it.  I suggest that you
+>>>>> ignore the _TRA value when _TTP is set.  Obviously this only applies
+>>>>> to I/O port resources, since _TTP is only defined in the I/O Resource
+>>>>> Flag (Table 6-185 in ACPI 5.0 spec).
+>>>>
+>>>>
+>>>> _TTP is also defined in the Memory Resource flag, Please have a look at
+>>>> Table 6-184 in the ACPI 5.0 Spec.
+>>>
+>>>
+>>> Yes, you're right.  That would be for a host bridge that converts I/O
+>>> on the primary (upstream) side of the bridge to memory on the PCI
+>>> side.  I've never seen such a bridge, and I can't really imagine why
+>>> anybody would do that.  But I guess you should be able to safely
+>>> ignore _TRA when _TTP is set in either a MEM or IO descriptor, because
+>>> the same reasoning should apply to both.
+>>>
+>>>> I am not sure how to deal with _TTP unsetting io resource? _TTP unsetting
+>>>> mean the resource is IO on the primary side and also IO on the secondary
+>>>> side.
+>>>
+>>>
+>>> If _TTP is not set, I guess you would apply _TRA.  That's what you
+>>> already do for MEM descriptors, and think you should just do the same
+>>> for IO descriptors.  I would guess that having _TTP = 0 and _TRA != 0
+>>> is rare for IO descriptors, but I suppose it could happen.
 >>
->> We've had a similar patch in our tree for a year and a half because
->> of CMA migration failures, not just for a speedup in allocation
->> time. I understand that CMA is not the fast case or the general use
->> case but the problem is that the cost of CMA failure is very high
->> (complete failure of the feature using CMA). Putting CMA on the PCP
->> lists means they may be picked up by users who temporarily make the
->> movable pages unmovable (page cache etc.) which prevents the
->> allocation from succeeding. The problem still exists even if the CMA
->> pages are not on the PCP list but the window gets slightly smaller.
->
-> I understand that I have seen many people want to use CMA have tweaked
-> their system to work well and although they do best effort, it doesn't
-> work well because CMA doesn't gaurantee to succeed in getting free
-> space since there are lots of hurdle. (get_user_pages, AIO ring buffer,
-> buffer cache, short of free memory for migration, no swap and so on).
-> Even, someone want to allocate CMA space with speedy. SIGH.
->
-> Yeah, at the moment, CMA is really SUCK.
->
-
-Yes, without hacks there are enough issues where it makes more sense to 
-turn off CMA in some cases.
-
 >>
->> This really highlights one of the biggest issues with CMA today.
->> Movable pages make return -EBUSY for any number of reasons. For
->> non-CMA pages this is mostly fine, another movable page may be
->> substituted for the movable page that is busy. CMA is a restricted
->> range though so any failure in that range is very costly because CMA
->> regions are generally sized exactly for the use cases at hand which
->> means there is very little extra space for retries.
+>> Yes, my concern is for the IO resource case of _TTP=0 and _TRA !=0. The
+>> only reason for this case I think of is that the IO resource offsets on
+>> the prime bus and second bus are different. In this case, we still need
+>> to pass _TRA to new_space() and the finial resource->start still should be
+>> acpi_resource->min + offset returned by add_io_space(), right?
+> 
+> No, I don't think so.  If the "phys_base" argument to new_space() is
+> non-zero, it is the base of an MMIO region that needs to be
+> ioremapped.  This is handling the _TTP=1 case, where the MMIO region
+> is translated by the bridge into an IO region on PCI.
+> 
+> If _TTP=0, the region is IO on both the upstream and downstream sides
+> of the host bridge, and we don't want to ioremap a new MMIO region for
+> it.  It might be part of the "legacy I/O port space," but that's
+> already covered elsewhere.
+> 
+> I don't think we need to add special handling for the _TTP=0 and _TRA
+> != 0 case because I don't think it exists in the field.  If and when
+> it *does* exist, we'll know what to do.  In the meantime, it should
+> look just like the MEM path.
+
+
+OK. I get it. acpi_dev_resource_address_space() will only apply _TRA to
+resource ->start and ->end for both mem and io resource when _TTP=0. In
+the add_window(), the offset returned by add_io_space() will be added
+directly to ->start and ->end.
+
+add_window() {
+	...
+	if (resource->flags & IORESOURCE_MEM) {
+		root = &iomem_resource;
+		offset = addr.translation_offset;
+	} else if (resource->flags & IORESOURCE_IO) {
+		root = &ioport_resource;
+
+		offset = add_io_space(info, &addr);
+		if (offset == ~0)
+			return AE_OK;
+
+		resource->start += offset;
+		resource->end += offset;
+	} else
+		return AE_OK;
+
+	...
+}
+
+> 
+>> If yes, I think _TRA can't be applied to IO resource in the
+>> acpi_dev_resource_address_space() regardless of the value of _TTP.
 >>
->> To make CMA actually usable, we've had to go through and add in
->> hacks/quirks that prevent CMA from being allocated in any path which
->> may prevent migration. I've been mixed on if this is the right path
->> or if the definition of MIGRATE_CMA needs to be changed to be more
->> restrictive (can't prevent migration).
->
-> Fundamental problem is that every subsystem could grab a page anytime
-> and they doesn't gaurantee to release it soonish or within time CMA
-> user want so it turns out non-determisitic mess which just hook into
-> core MM system here and there.
->
-> Sometime, I see some people try to solve it case by case with ad-hoc
-> approach. I guess it would be never ending story as kernel evolves.
->
-> I suggest that we could make new wheel with frontswap/cleancache stuff.
-> The idea is that pages in frontswap/cleancache are evicted from kernel
-> POV so that we can gaurantee that there is no chance to grab a page
-> in CMA area and we could remove lots of hook from core MM which just
-> complicated MM without benefit.
->
-> As benefit, cleancache pages could drop easily so it would be fast
-> to get free space but frontswap cache pages should be move into somewhere.
-> If there are enough free pages, it could be migrated out there. Optionally
-> we could compress them. Otherwise, we could pageout them into backed device.
-> Yeah, it could be slow than migration but at least, we could estimate the time
-> by storage speed ideally so we could have tunable knob. If someone want
-> fast CMA, he could control it with ratio of cleancache:frontswap.
-> IOW, higher frontswap page ratio is, slower the speed would be.
-> Important thing is admin could have tuned control knob and it gaurantees to
-> get CMA free space with deterministic time.
->
+>> BTW, Translation Sparse(_TRS) is only meaningful if _TTP is set.(Table
+>> 6-185). The add_io_space() doesn't check _TTP when set sparse. So this
+>> should be corrected?
+> 
+> Sure, I'm OK with this.  It's possible we could trip over a BIOS bug
+> where _TRS=1 but _TTP=0, but I think the risk is low because only
+> large ia64 boxes would use this, and there aren't very many of those.
+> 
 
-Before CMA was available, we attempted to do something similar with 
-carved out memory where we hooked up the carveout to tmem and 
-cleancache. The feature never really went anywhere because we saw 
-impacts on file system benchmarks (too much time copying data to 
-carveout memory). The feature has long been deprecated and we never 
-debugged too far. Admittedly, this was many kernel versions ago and with 
-a backport of various patches to an older kernel so I'd take our results 
-with a grain of salt.
+Ok. I will add a check for _TTP before setting sparse. Something likes this.
 
-> As drawback, if we fail to tune the ratio, memeory efficieny would be
-> bad so that it ends up thrashing but you guys is saying we have been
-> used CMA without movable fallback which means that it's already static
-> reserved memory and it's never CMA so you already have lost memory
-> efficiency and even fail to get a space so I think it's good trade-off
-> for embedded people.
->
+add_io_space()
+{
+...
+if (addr->info.io.translation == ACPI_TYPE_TRANSLATION &&
+    addr->info.io.translation_type == ACPI_SPARSE_TRANSLATION)
+	sparse = 1;
+...
+}
 
-Agreed. It really should be a policy decision how much effort to put 
-into getting CMA pages. There isn't a nice way to do this now.
 
-> If anyone has interest the idea, I will move into that.
-> If it sounds crazy idea, feel free to ignore, please.
->
 
-I'm interested in the idea with the warning noted above.
+> Bjorn
+> 
 
-Thanks,
-Laura
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Best regards
+Tianyu Lan
