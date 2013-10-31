@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab3JaQyC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 12:54:02 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:52015 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751666Ab3JaQyA (ORCPT
+	id S1753281Ab3JaQ5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 12:57:34 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:36203 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab3JaQ5c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 12:54:00 -0400
+	Thu, 31 Oct 2013 12:57:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <5271C5E5.6080606@asianux.com>
-References: <5271C5E5.6080606@asianux.com>
-Date: Thu, 31 Oct 2013 09:53:59 -0700
-X-Google-Sender-Auth: QAbFl0mL70RmdojM5_MrfWQudwg
-Message-ID: <CAGXu5jLMU0+VkJ6N3NTKbEtL+9FwF2gMOTU86-GH6SSXQ0rc0w@mail.gmail.com>
-Subject: Re: [PATCH] fs/befs/linuxvfs.c: need signed cast for variable 'block'
-From: Kees Cook <keescook@chromium.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <87txfxpjv1.fsf@intel.com>
+References: <cover.1381939165.git.joseph.salisbury@canonical.com>
+	<397b1b6f028317a3ef897cdaf79eb1e5519e587d.1381939165.git.joseph.salisbury@canonical.com>
+	<20131016210213.GR4830@phenom.ffwll.local>
+	<526A8FE3.8040801@canonical.com>
+	<87txfxpjv1.fsf@intel.com>
+Date: Thu, 31 Oct 2013 12:57:32 -0400
+X-Google-Sender-Auth: RQt8fOm7k04EbIQfitOuBhaX4NY
+Message-ID: <CA+5PVA7j+90_iwZD+Gx9cAuqwEGH+cKB98OQj2+w4fhC_JT0pw@mail.gmail.com>
+Subject: Re: [Intel-gfx] [v3.10][v3.11][v3.12][Regression][PATCH 1/1] Revert
+ "Revert "drm/i915: revert eDP bpp clamping code changes""
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Jani Nikula <jani.nikula@linux.intel.com>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>, przanoni@gmail.com,
+        Dave Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 7:52 PM, Chen Gang <gang.chen@asianux.com> wrote:
-> Need signed cast for it, the original author assume the type of 'block'
-> is long, so just cast to long. The related warnings (with allmodconfig):
+On Thu, Oct 31, 2013 at 10:58 AM, Jani Nikula
+<jani.nikula@linux.intel.com> wrote:
+> On Fri, 25 Oct 2013, Joseph Salisbury <joseph.salisbury@canonical.com> wrote:
+>> On 10/16/2013 05:02 PM, Daniel Vetter wrote:
+>>> It's by far not that simple. Jani is working on both the underlying bug
+>>> and a better w/a. See
+>>>
+>>> https://bugzilla.kernel.org/show_bug.cgi?id=59841
+>>>
+>>> for the full story in its entire glory.
+>>>
+>>> Cheers, Daniel
+>>
+>> Thanks for the feedback, Daniel.  Is there an estimate on what mainline
+>> release might contain Jani's work?
 >
->   fs/befs/linuxvfs.c:136:2: warning: comparison of unsigned expression < 0 is always false [-Wtype-limits]
+> commit c6cd2ee2d59111a07cd9199564c9bdcb2d11e5cf
+> Author: Jani Nikula <jani.nikula@intel.com>
+> Date:   Mon Oct 21 10:52:07 2013 +0300
 >
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  fs/befs/linuxvfs.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>     drm/i915/dp: workaround BIOS eDP bpp clamping issue
 >
-> diff --git a/fs/befs/linuxvfs.c b/fs/befs/linuxvfs.c
-> index daa15d6..27e5179 100644
-> --- a/fs/befs/linuxvfs.c
-> +++ b/fs/befs/linuxvfs.c
-> @@ -133,7 +133,7 @@ befs_get_block(struct inode *inode, sector_t block,
->         befs_debug(sb, "---> befs_get_block() for inode %lu, block %ld",
->                    inode->i_ino, block);
->
-> -       if (block < 0) {
-> +       if ((long)block < 0) {
->                 befs_error(sb, "befs_get_block() was asked for a block "
->                            "number less than zero: block %ld in inode %lu",
->                            block, inode->i_ino);
+> and a couple of dependencies are now in Linus' tree, i.e. should be
+> released in 3.12. The commits are also CC: stable.
 
-If block (type sector_t) is unsigned, we shouldn't cast it signed.
-This entire code path should be removed. What is BEFS's expected
-maximum block size? (Looks like even befs_blocknr_t is u64, so nothing
-seems trivially in danger of wrapping.) I would also note that all the
-format strings are wrong too (%ld instead of %lu).
+Are the dependency commits you mentioned these?
 
--Kees
+commit 7195a50b5c7e00cc3312934fd022c3006b533d12
+Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Date:   Tue Sep 24 14:24:05 2013 +0300
 
--- 
-Kees Cook
-Chrome OS Security
+    drm/i915: Add HSW CRT output readout support
+
+commit 4f56d12ebb28fceac4c6e60c8993fbfc122e1399
+Author: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Date:   Mon Oct 21 10:52:06 2013 +0300
+
+    drm/i915: Add support for pipe_bpp readout
+
+josh
