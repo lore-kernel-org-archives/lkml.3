@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755675Ab3JaXfQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 19:35:16 -0400
-Received: from sirokuusama.dnainternet.net ([83.102.40.133]:48244 "EHLO
-	sirokuusama.dnainternet.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755636Ab3JaXfO (ORCPT
+	id S1753678Ab3JaXkR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 19:40:17 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:55934 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761Ab3JaXkP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 19:35:14 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -1
-Message-ID: <5272E920.6030606@iki.fi>
-Date: Fri, 01 Nov 2013 01:34:56 +0200
-From: Anssi Hannula <anssi.hannula@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-CC: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        =?UTF-8?B?UGV0ZXIgRnLDvGhiZXJnZXI=?= <fritsch@xbmc.org>,
-        Olivier Langlois <olivier@trillion01.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] ALSA: hda - hdmi: Add ATI/AMD multi-channel audio
- support
-References: <1380659456-3746-1-git-send-email-anssi.hannula@iki.fi>	<1380659456-3746-2-git-send-email-anssi.hannula@iki.fi>	<CACna6ryr37WRvKbMFmLEGt_A2zUD46rZOtJMVom+B_xK9WNLuw@mail.gmail.com>	<07e8973b4665cc23c3f4a77e9c7e2b7c@mail.onse.fi>	<CACna6ryFtmZHAhmCPEsoxZc5h4mLuM4ajnKGsp=q0jag2f_SYw@mail.gmail.com>	<5272BCE1.7010700@iki.fi> <CACna6rzejyTOF2Fvvw1m2SAob7uU5-hJ+yRVk6HS5pDTz7+JWg@mail.gmail.com>
-In-Reply-To: <CACna6rzejyTOF2Fvvw1m2SAob7uU5-hJ+yRVk6HS5pDTz7+JWg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 31 Oct 2013 19:40:15 -0400
+Content-Type: text/plain; charset=GB2312
+Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1816\))
+Subject: Re: An small ftrace enhancement idea
+From: Kenneth Lee <nek.in.cn@gmail.com>
+In-Reply-To: <20131031165015.757d0efb@gandalf.local.home>
+Date: Thu, 31 Oct 2013 16:40:12 -0700
+Cc: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <1B57F15E-49C6-4D62-8A2F-A3D54F783593@gmail.com>
+References: <4A791BBD-EBBE-420F-8199-E4BAAF6A3C46@gmail.com> <20131031165015.757d0efb@gandalf.local.home>
+To: Steven Rostedt <rostedt@goodmis.org>
+X-Mailer: Apple Mail (2.1816)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-01.11.2013 01:25, Rafa艂 Mi艂ecki kirjoitti:
-> 2013/10/31 Anssi Hannula <anssi.hannula@iki.fi>:
->>> But I can hear sound for rear right and rear left only :(
->>>
->>> Is there anything more I can provide to help resolve this? Do you have
->>> any idea how we can resolve this?
->>
->> According to the below the receiver has separate PCM SADs for 2-channel
->> and multichannel playback. However, due to a radeon driver bug (see
->> "[PATCH] drm/radeon/audio: fix missing multichannel PCM SAD in some
->> cases", you were CCd) the multichannel SAD is lost and not shown below.
->>
->> However, that is not (or at least should not be) the reason you are not
->> getting audio.
->> I suspect that the receiver does not support 192kHz multichannel audio
->> (which would be indicated in the missing multichannel PCM SAD). Does it
->> work with 48kHz or 96kHz?
->> (TODO: refuse PCM playback in such cases)
->>
->> If it does not work with 48kHz or 96kHz either, then we have a bug to
->> solve :)
-> 
-> First of all, you're right about 2 SADs for PCM.
-> 
-> The weird thing is that 192kHz support... According to the EDID (SADs)
-> it should be supported:
-> Format: 1 (PCM)        Channels:1    Freq:0x7F (32-192)    B2:0x07 (16-24b)
-> Format: 1 (PCM)        Channels:7    Freq:0x7F (32-192)    B2:0x07 (16-24b)
-> Format: 2 (AC3)        Channels:7    Freq:0x07 (32-48)    B2:0x50 (640?)
-> Format: 7 (DTS)        Channels:7    Freq:0x06 (44-48)    B2:0xC0 (1536?)
-> Format: 10 (EAC3)    Channels:7    Freq:0x06 (44-48)    B2:0x00
-> Format: 11 (DTS_HD)    Channels:7    Freq:0x7E (44-192)    B2:0x01
-> Format: 12 (MLP)    Channels:7    Freq:0x1E (44-96)    B2:0x00
-> 
-> So I performed more tests and:
-> 
-> 1) speaker-test -D hdmi:CARD=Generic,DEV=0 -c6 -r192000 -F S16_LE
-> A nice noise for rear right and rear left, silent for the rest
-> 
-> 2) speaker-test -D hdmi:CARD=Generic,DEV=0 -c6 -r176400 -F S16_LE
-> A nice noise for rear right and rear left, short "bump" sound for the rest
-> 
-> 3) speaker-test -D hdmi:CARD=Generic,DEV=0 -c6 -r96000 -F S16_LE
-> A nice noise for all speakers (the same applies to 88200, 48000, 44100, 32000)
-> 
-> I don't get it. Onkyo reports support for 192kHz and it supports it,
-> but only for 2 rear speakers... does it make any sense do you?
+Thank you, Steve, 
 
-Just to check, is the display mode 720p50 or higher (as per HDMI spec
-7.3.3)? Though I guess too small mode would cause something else, not
-this...
+Yes, with a separated instance, I can measure the latency for a stimulation while capture the other schedule events which I am interesting in. This is a better solution. I don’t know this “instance” stuff before. I don’t need to create another axe. I am sorry for my ignorance. 
 
-Also, does DTS-HD/TrueHD work with this receiver (interesting since
-those require 8-channel 192kHz link)?
+Thanks and regards.
 
-Would be interesting to check if this works in Windows I guess (or maybe
-even just fglrx, though I can't think of a reason it'd make a difference).
+--Kenneth
 
--- 
-Anssi Hannula
+在 2013年10月31日，下午1:50，Steven Rostedt <rostedt@goodmis.org> 写道：
+
+> On Wed, 30 Oct 2013 15:39:50 -0700
+> Kenneth Lee <nek.in.cn@gmail.com> wrote:
+> 
+>> Dear Steven,
+>> 
+>> I want to add a new function to ftrace subsystem. Sometimes, we will face such a problem: system do not response to the input on time one to two times everyday. It is not easy to capture because it rarely happens. So I want to add a function to the kernel. If I have such problem, I insert a kernel module, who add a hook to the position that receive the input and another to the position that response to the input (with a session id if necessary). And I can compare the time between them and if the period is longer then a pre-set threshold, I can give a signal to a user helper application (maybe a script waiting on the file), which then can save the trace event to a file for later inspection.
+> 
+> I'm a little confused in what you want.
+> 
+> 
+>> 
+>> 
+>> 
+>> The user helper script may look like this:
+>> 
+>> 
+>> 
+>> #/bin/sh
+>> 
+>> 
+>> 
+>> echo ‘sched:*’ > /sys/kernel/debug/tracing/set_event
+>> 
+>> modprobe delay_inspector.ko threshold=500
+>> 
+>> cat /sys/kernel/debug/tracing/waiter #wait for signal
+>> 
+>> cp /sys/kernel/debug/tracing/trace /var/log/delay_infomation
+>> 
+>> 
+>> 
+>> 
+>> 
+>> It looks like a standalone function. But I don’t have place to put it. Do you think I can implement it in ftrace? And do you think if there are better solution?
+>> 
+> 
+> You want something to wake up if it takes too long before an event
+> happens?
+> 
+> If so, why not just use a select() on the trace_pipe and if it times
+> out, then dump the trace. You can even set up a separate instance.
+> 
+> (this is waiting for a schedule switch to pid 1)
+> 
+> cd /sys/kernel/debug/tracing
+> mkdir instances/mine
+> echo 'next_pid == 1' > instances/mine/events/sched/sched_switch/filter
+> echo 1 > instances/mine/events/sched/sched_switch/enable
+> 
+> 
+> The in a userspace program, I open "instances/mine/events/trace_pipe"
+> and run a select() on that file descriptor with a given timeout. If the
+> event does not happen within the expected time frame, the select
+> returns zero, and this userspace program can deal with it.
+> 
+> Is that the functionality you are trying to achieve?
+> 
+> -- Steve
 
