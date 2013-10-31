@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713Ab3JaL5X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 07:57:23 -0400
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:59363 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912Ab3JaL5T convert rfc822-to-8bit (ORCPT
+	id S1753165Ab3JaL6b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 07:58:31 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:62393 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031Ab3JaL63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 07:57:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAK2Ky6x+wiwa5F6+K+Ee0y_TkbG-oA3tDBWp+2wO8mPqSTyQnA@mail.gmail.com>
-References: <CAK2Ky6x+wiwa5F6+K+Ee0y_TkbG-oA3tDBWp+2wO8mPqSTyQnA@mail.gmail.com>
-Date: Thu, 31 Oct 2013 12:57:19 +0100
-Message-ID: <CAFLxGvy=pQZBmLuhnY2om-Ypek-B=qTeu_r9P1cgRHcyLxbg-g@mail.gmail.com>
-Subject: Re: A simple question of a linux kernel beginner
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: =?UTF-8?B?6Z+p56OK?= <bonben1989@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 31 Oct 2013 07:58:29 -0400
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: opw-kernel@googlegroups.com, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchand@redhat.com>, linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org
+Subject: [PATCH v9 2/2] Staging: zram: Fix decrement of variable by calling bdput()
+Date: Thu, 31 Oct 2013 17:28:18 +0530
+Message-Id: <4fdb273ab0b1e7514f119d7e619ac708d2277d34.1383220461.git.rashika.kheria@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20131019110539.GA25167@gmail.com>
+References: <20131019110539.GA25167@gmail.com>
+In-Reply-To: <3d7e050910ca994862e7880b4bd3681267681b56.1383220461.git.rashika.kheria@gmail.com>
+References: <3d7e050910ca994862e7880b4bd3681267681b56.1383220461.git.rashika.kheria@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 12:31 PM, 韩磊 <bonben1989@gmail.com> wrote:
-> May I can use  the ''double" as a  basic variables?
->
-> When I define the "double" as a function return type in linux kernel,the error
-> is "error: SSE register return with SSE disabled".
->
-> How to fix it??
+As suggested by Jerome Marchand "The code in reset_store get the block device
+(bdget_disk()) but it does not put it (bdput()) when it's done using it.
+The usage count is therefore incremented but never decremented."
 
-Don't do it. :)
-In kernel land we don't want FPU stuff because it slows the mode switch down.
-If you *really* need to use the FPU look how the raid6 or crypto code does.
+This patch also puts bdput() for all error cases.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Cc: stable@vger.kernel.org 
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+---
 
+This revision fixes the following issues of the previous revision-
+Proper error handling
 
+ drivers/staging/zram/zram_drv.c |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 012ba15..a1f8b1f 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -652,21 +652,30 @@ static ssize_t reset_store(struct device *dev,
+ 		return -ENOMEM;
+ 
+ 	/* Do not reset an active device! */
+-	if (bdev->bd_holders)
+-		return -EBUSY;
++	if (bdev->bd_holders) {
++		ret = -EBUSY;
++		goto out;
++	}
+ 
+ 	ret = kstrtou16(buf, 10, &do_reset);
+ 	if (ret)
+-		return ret;
++		goto out;
+ 
+-	if (!do_reset)
+-		return -EINVAL;
++	if (!do_reset) {
++		ret = -EINVAL;
++		goto out;
++	}
+ 
+ 	/* Make sure all pending I/O is finished */
+ 	fsync_bdev(bdev);
++	bdput(bdev);
+ 
+ 	zram_reset_device(zram, true);
+ 	return len;
++
++out:	
++	bdput(bdev);
++	return ret;
+ }
+ 
+ static void __zram_make_request(struct zram *zram, struct bio *bio, int rw)
 -- 
-Thanks,
-//richard
+1.7.9.5
+
