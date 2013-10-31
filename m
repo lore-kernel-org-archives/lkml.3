@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab3JaKpr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 06:45:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57799 "EHLO mx2.suse.de"
+	id S1753859Ab3JaKsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 06:48:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57865 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753819Ab3JaKpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 06:45:44 -0400
-Date: Thu, 31 Oct 2013 11:45:35 +0100
+	id S1752053Ab3JaKst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 06:48:49 -0400
+Date: Thu, 31 Oct 2013 11:48:36 +0100
 From: Borislav Petkov <bp@suse.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Dave Young <dyoung@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.fedoraproject.org, kexec@lists.infradead.org
-Subject: Re: [patch 3/6] Cleanup efi_enter_virtual_mode function
-Message-ID: <20131031104535.GB10544@pd.tnic>
-References: <20131028112458.GD29133@dhcp-16-126.nay.redhat.com>
- <20131028145801.GM4314@pd.tnic>
- <20131028151048.GA14984@dhcp-16-126.nay.redhat.com>
- <20131029023203.GB5185@dhcp-16-126.nay.redhat.com>
- <20131029134302.GI10972@pd.tnic>
- <20131030020348.GA4332@dhcp-16-126.nay.redhat.com>
- <20131030104718.GB13290@pd.tnic>
- <20131031020405.GA4377@dhcp-16-126.nay.redhat.com>
- <20131031020714.GB4377@dhcp-16-126.nay.redhat.com>
- <5271C981.2050705@zytor.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: suravee.suthikulpanit@amd.com, mingo@kernel.org, mingo@redhat.com,
+        jacob.w.shin@gmail.com, oleg@redhat.com, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        sherry.hurwitz@amd.com, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/3] perf/x86/amd: AMD support for bp_len >
+ HW_BREAKPOINT_LEN_8
+Message-ID: <20131031104836.GC10544@pd.tnic>
+References: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1380730268-25807-2-git-send-email-suravee.suthikulpanit@amd.com>
+ <20131031095829.GE2253@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5271C981.2050705@zytor.com>
+In-Reply-To: <20131031095829.GE2253@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 08:07:45PM -0700, H. Peter Anvin wrote:
-> You can use git for your own purposes, still.
+fix tglx's address.
 
-git mk-coffee --refill --now
+On Thu, Oct 31, 2013 at 10:58:31AM +0100, Frederic Weisbecker wrote:
+> Is this perhaps a bit too generic? Extension can mean about everything
+> and who knows what other feature Intel and Amd will add to breakpoints
+> in the future.
+
+Yeah, but that's the name of the feature. When they come up with another
+extension, they'll call it BP_EXT2, most probably...
+
+:-)
 
 -- 
 Regards/Gruss,
