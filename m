@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751189Ab3JaBTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 21:19:34 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:48401 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab3JaBTd (ORCPT
+	id S1751807Ab3JaBT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 21:19:58 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:35418 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408Ab3JaBTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 21:19:33 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-References: <8761sexu2l.fsf@xmission.com> <20131030224444.GA9092@kroah.com>
-Date: Wed, 30 Oct 2013 18:19:27 -0700
-In-Reply-To: <20131030224444.GA9092@kroah.com> (Greg Kroah-Hartman's message
-	of "Wed, 30 Oct 2013 15:44:44 -0700")
-Message-ID: <87a9hqp78g.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 30 Oct 2013 21:19:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX187WWzQwZtAgA0M2GjiMf9KXb88NHnW1+8=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-X-Spam-Relay-Country: 
-Subject: Re: WTF: driver-core-next contains recursive directory removal!
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <CAOesGMj03kgJXttm80pHvPYeqg5hOaeOJAJ4DA8tf5LxqdArrQ@mail.gmail.com>
+References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
+	<1381869563-16083-5-git-send-email-grant.likely@linaro.org>
+	<CAOesGMj03kgJXttm80pHvPYeqg5hOaeOJAJ4DA8tf5LxqdArrQ@mail.gmail.com>
+Date: Thu, 31 Oct 2013 09:19:44 +0800
+Message-ID: <CACVXFVM5EMb+zs_ep-Hj3zt2+zKrTb9X7_FANHxfegebYvG43Q@mail.gmail.com>
+Subject: Re: [RFC 4/9] of/irq: Refactor interrupt-map parsing
+From: Ming Lei <tom.leiming@gmail.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kevin Hilman <khilman@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
-
-> On Wed, Oct 30, 2013 at 03:38:58PM -0700, Eric W. Biederman wrote:
->> 
->> Greg what is  going on?  I just looked and Tejuns ill-conceived recursive
->> directory deletion code has been merged into your driver-core-next tree.
->> 
->> That code is semantically broken.  I reviewed it and I gave the reasons
->> why it was wrong.  You came up to me and mentioned at LPC that you
->> agreed with my reasons.  And yet I just looked in driver-core-next and
->> there the code is in all of it's broken glory.
+On Wed, Oct 30, 2013 at 12:23 AM, Olof Johansson <olof@lixom.net> wrote:
+> Hi,
 >
-> Because I tested it out, and there were no such problems.
+> On Tue, Oct 15, 2013 at 1:39 PM, Grant Likely <grant.likely@linaro.org> wrote:
+>> All the users of of_irq_parse_raw pass in a raw interrupt specifier from
+>> the device tree and expect it to be returned (possibly modified) in an
+>> of_phandle_args structure. However, the primary function of
+>> of_irq_parse_raw() is to check for translations due to the presence of
+>> one or more interrupt-map properties. The actual placing of the data
+>> into an of_phandle_args structure is trivial. If it is refactored to
+>> accept an of_phandle_args structure directly, then it becomes possible
+>> to consume of_phandle_args from other sources. This is important for an
+>> upcoming patch that allows a device to be connected to more than one
+>> interrupt parent. It also simplifies the code a bit.
+>>
+>> The biggest complication with this patch is that the old version works
+>> on the interrupt specifiers in __be32 form, but the of_phandle_args
+>> structure is intended to carry it in the cpu-native version. A bit of
+>> churn was required to make this work. In the end it results in tighter
+>> code, so the churn is worth it.
+>>
+>> Signed-off-by: Grant Likely <grant.likely@linaro.org>
+>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>
+> This patch stopped exynos/arndale from booting when it hit next (i.e.
+> last night). I bisected down to this commit.
 
-The biggest and worst issue is the semantics are total unmaintable
-garbage and there has never been a single counter argument to that.
++1, :-)
 
-Recursive delete is WRONG.
-
-Further there was no follow up converstion on the list about this trash
-to say you had tested it.  Or anything else.
-
-Even the partial recursive delete we currently have has been responsible
-for broken users of sysfs so I don't see how adding additional checks is
-going to do anything but paper over real bugs in real uses of sysfs.
-
-Will you please remove that garbage from your tree. 
-
-Eric
+>
+> It seems that the platform is getting stuck calibrating delay loop,
+> i.e. it is not getting interrupts. Let me know if you want me to
+> collect more data of some sort.
 
 
+
+Thanks,
+-- 
+Ming Lei
