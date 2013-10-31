@@ -1,58 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab3JaCIw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 22:08:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20271 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836Ab3JaCIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 22:08:51 -0400
-Date: Thu, 31 Oct 2013 10:07:14 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.fedoraproject.org, kexec@lists.infradead.org
-Subject: Re: [patch 3/6] Cleanup efi_enter_virtual_mode function
-Message-ID: <20131031020714.GB4377@dhcp-16-126.nay.redhat.com>
-References: <20131028101011.GF25527@dhcp-16-126.nay.redhat.com>
- <20131028112045.GH4314@pd.tnic>
- <20131028112458.GD29133@dhcp-16-126.nay.redhat.com>
- <20131028145801.GM4314@pd.tnic>
- <20131028151048.GA14984@dhcp-16-126.nay.redhat.com>
- <20131029023203.GB5185@dhcp-16-126.nay.redhat.com>
- <20131029134302.GI10972@pd.tnic>
- <20131030020348.GA4332@dhcp-16-126.nay.redhat.com>
- <20131030104718.GB13290@pd.tnic>
- <20131031020405.GA4377@dhcp-16-126.nay.redhat.com>
+	id S1752068Ab3JaCOu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 22:14:50 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49723 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730Ab3JaCOt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 22:14:49 -0400
+Message-ID: <5271BD15.4050008@codeaurora.org>
+Date: Wed, 30 Oct 2013 19:14:45 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131031020405.GA4377@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Minchan Kim <minchan@kernel.org>
+CC: Zhang Mingjun <zhang.mingjun@linaro.org>, Mel Gorman <mgorman@suse.de>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, akpm@linux-foundation.org,
+        Haojian Zhuang <haojian.zhuang@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, troy.zhangmingjun@huawei.com
+Subject: Re: [PATCH] mm: cma: free cma page to buddy instead of being cpu
+ hot page
+References: <1382960569-6564-1-git-send-email-zhang.mingjun@linaro.org> <20131029093322.GA2400@suse.de> <CAGT3LergVJ1XXCrVD3XeRpRCXehn9gLb7BRHHyjyseKBz39pMg@mail.gmail.com> <20131029122708.GD2400@suse.de> <CAGT3LerfYfgdkDd=LnuA8y7SUjOSTbw-HddbuzQ=O3yw-vtnnQ@mail.gmail.com> <526FDECB.7020201@codeaurora.org> <20131030054006.GF17013@bbox>
+In-Reply-To: <20131030054006.GF17013@bbox>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/13 at 10:04am, Dave Young wrote:
-> On 10/30/13 at 11:47am, Borislav Petkov wrote:
-> > On Wed, Oct 30, 2013 at 10:03:49AM +0800, Dave Young wrote:
-> > > Will try, but please keep the posted patches in mailing list up-to-date,
-> > 
-> > Would you like me to send them to you privately?
-> 
-> Thanks, do not bother to send me privately I can get it from your git tree.
-> 
-> But Frankly I'd like to see them in list instead even with only small fixes
-> beacuse in this way there might be more people to review it carefully.
+On 10/29/2013 10:40 PM, Minchan Kim wrote:
+>>
+>> We've had a similar patch in our tree for a year and a half because
+>> of CMA migration failures, not just for a speedup in allocation
+>> time. I understand that CMA is not the fast case or the general use
+>> case but the problem is that the cost of CMA failure is very high
+>> (complete failure of the feature using CMA). Putting CMA on the PCP
+>> lists means they may be picked up by users who temporarily make the
+>> movable pages unmovable (page cache etc.) which prevents the
+>> allocation from succeeding. The problem still exists even if the CMA
+>> pages are not on the PCP list but the window gets slightly smaller.
+>
+> I understand that I have seen many people want to use CMA have tweaked
+> their system to work well and although they do best effort, it doesn't
+> work well because CMA doesn't gaurantee to succeed in getting free
+> space since there are lots of hurdle. (get_user_pages, AIO ring buffer,
+> buffer cache, short of free memory for migration, no swap and so on).
+> Even, someone want to allocate CMA space with speedy. SIGH.
+>
+> Yeah, at the moment, CMA is really SUCK.
+>
 
-There's another shorcoming for keeping new patches in git is that nobody know
-when you push it and when is the proper date to pull from your git. I think
-it's better to use git only for the patches which have already been accepted
-and is waiting for maintainer to pull.
+Yes, without hacks there are enough issues where it makes more sense to 
+turn off CMA in some cases.
 
-> 
-> --
-> Thanks
-> Dave
+>>
+>> This really highlights one of the biggest issues with CMA today.
+>> Movable pages make return -EBUSY for any number of reasons. For
+>> non-CMA pages this is mostly fine, another movable page may be
+>> substituted for the movable page that is busy. CMA is a restricted
+>> range though so any failure in that range is very costly because CMA
+>> regions are generally sized exactly for the use cases at hand which
+>> means there is very little extra space for retries.
+>>
+>> To make CMA actually usable, we've had to go through and add in
+>> hacks/quirks that prevent CMA from being allocated in any path which
+>> may prevent migration. I've been mixed on if this is the right path
+>> or if the definition of MIGRATE_CMA needs to be changed to be more
+>> restrictive (can't prevent migration).
+>
+> Fundamental problem is that every subsystem could grab a page anytime
+> and they doesn't gaurantee to release it soonish or within time CMA
+> user want so it turns out non-determisitic mess which just hook into
+> core MM system here and there.
+>
+> Sometime, I see some people try to solve it case by case with ad-hoc
+> approach. I guess it would be never ending story as kernel evolves.
+>
+> I suggest that we could make new wheel with frontswap/cleancache stuff.
+> The idea is that pages in frontswap/cleancache are evicted from kernel
+> POV so that we can gaurantee that there is no chance to grab a page
+> in CMA area and we could remove lots of hook from core MM which just
+> complicated MM without benefit.
+>
+> As benefit, cleancache pages could drop easily so it would be fast
+> to get free space but frontswap cache pages should be move into somewhere.
+> If there are enough free pages, it could be migrated out there. Optionally
+> we could compress them. Otherwise, we could pageout them into backed device.
+> Yeah, it could be slow than migration but at least, we could estimate the time
+> by storage speed ideally so we could have tunable knob. If someone want
+> fast CMA, he could control it with ratio of cleancache:frontswap.
+> IOW, higher frontswap page ratio is, slower the speed would be.
+> Important thing is admin could have tuned control knob and it gaurantees to
+> get CMA free space with deterministic time.
+>
+
+Before CMA was available, we attempted to do something similar with 
+carved out memory where we hooked up the carveout to tmem and 
+cleancache. The feature never really went anywhere because we saw 
+impacts on file system benchmarks (too much time copying data to 
+carveout memory). The feature has long been deprecated and we never 
+debugged too far. Admittedly, this was many kernel versions ago and with 
+a backport of various patches to an older kernel so I'd take our results 
+with a grain of salt.
+
+> As drawback, if we fail to tune the ratio, memeory efficieny would be
+> bad so that it ends up thrashing but you guys is saying we have been
+> used CMA without movable fallback which means that it's already static
+> reserved memory and it's never CMA so you already have lost memory
+> efficiency and even fail to get a space so I think it's good trade-off
+> for embedded people.
+>
+
+Agreed. It really should be a policy decision how much effort to put 
+into getting CMA pages. There isn't a nice way to do this now.
+
+> If anyone has interest the idea, I will move into that.
+> If it sounds crazy idea, feel free to ignore, please.
+>
+
+I'm interested in the idea with the warning noted above.
+
+Thanks,
+Laura
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
