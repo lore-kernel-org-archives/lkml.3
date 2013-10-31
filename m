@@ -1,60 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182Ab3JaP34 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 11:29:56 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:37940 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab3JaP3z (ORCPT
+	id S1753165Ab3JaPed (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 11:34:33 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:59777 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab3JaPeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 11:29:55 -0400
-Date: Thu, 31 Oct 2013 11:29:50 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: WTF: driver-core-next contains recursive directory removal!
-Message-ID: <20131031152950.GC11698@mtj.dyndns.org>
-References: <8761sexu2l.fsf@xmission.com>
- <20131030224444.GA9092@kroah.com>
- <87a9hqp78g.fsf@xmission.com>
+	Thu, 31 Oct 2013 11:34:31 -0400
+Date: Thu, 31 Oct 2013 08:33:16 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Message-ID: <20131031153316.GB2493@sirena.org.uk>
+References: <1382909086-10493-1-git-send-email-sre@debian.org>
+ <1382909086-10493-5-git-send-email-sre@debian.org>
+ <CACRpkdb1dAiDCeZkOiZ6inbDruaUwLgk3joWwuQmSRNZ9WkDGw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="q1SX3yAxAkj1z+aD"
 Content-Disposition: inline
-In-Reply-To: <87a9hqp78g.fsf@xmission.com>
+In-Reply-To: <CACRpkdb1dAiDCeZkOiZ6inbDruaUwLgk3joWwuQmSRNZ9WkDGw@mail.gmail.com>
+X-Cookie: You love peace.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 63.239.94.10
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC 4/4] ASoC: RX-51: Add DT support to sound driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Eric.
 
-On Wed, Oct 30, 2013 at 06:19:27PM -0700, Eric W. Biederman wrote:
-> The biggest and worst issue is the semantics are total unmaintable
-> garbage and there has never been a single counter argument to that.
-> 
-> Recursive delete is WRONG.
-> 
-> Further there was no follow up converstion on the list about this trash
-> to say you had tested it.  Or anything else.
+--q1SX3yAxAkj1z+aD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I think you're going over the line.  You were cc'd on all patches and
-all the counter points that I wrote in this thread are repetitions
-from the previous threads.  I don't remember you answering to any of
-the counter points.
+On Thu, Oct 31, 2013 at 07:44:22AM -0700, Linus Walleij wrote:
+> On Sun, Oct 27, 2013 at 2:24 PM, Sebastian Reichel <sre@debian.org> wrote:
 
-> Even the partial recursive delete we currently have has been responsible
-> for broken users of sysfs so I don't see how adding additional checks is
-> going to do anything but paper over real bugs in real uses of sysfs.
+> > +- eci-sw-gpio: GPIO for ECI SW
+> > +- speaker-amp-gpio: GPIO for Speaker Amp
 
-Can you please go into details of what kind of bugs would be
-introduced by recursive removal?  I'd really like to know and be happy
-to fix any actual issues but you really aren't providing useful enough
-information.
+> Can you please spell out the acronyms? ECI? SW? Amp?
 
-> Will you please remove that garbage from your tree. 
+> I guess SW=switch, Amp=amplifier, but ECI beats me.
 
-Eric, chill.
+ECI is the name of Nokia's accesory interface spec, it should be as
+clear as GPIO for anyone working on Nokia hardware (which this is).
 
--- 
-tejun
+--q1SX3yAxAkj1z+aD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJScng5AAoJELSic+t+oim99U4P/0uhuIkwZWipiyPse0NDxCLX
+YlKLJvGPIFjKfsQr0iGArWa4+zW8EnedN9F2Lxj3JgiWEOVGSQMQ6q8SkGdLuTiI
+KRnQlClpi5QnN9OylffmKNTcgfoDOEOjxn7gj7JNaWWSuNPY92zUnNZ/ODMrudeV
+CbmlZlC+t5UhG/VwIXJpRkXgoE6nfyahcr8S8kU/KPFPgrhtJ1kV2sY+xsUmNe+U
+wv6tCAv4lcMMw/DieBI5jGwSZQ/ThVxeWp9dDi9ITZ+SgcfOPc1+OvzOyqphFBzo
+bC4V4mYS+brbnqh+PiHbwN11cRZi5Vgro7NI5p9xCdqwxqygt02gdWmperwCvfs/
+uTz4Iiq6bXtB5yr726BwpLkwh2dyZUMM7b04S4OwccZCe2btKROKEC+diphzyWWa
+gZGFhIBuKw9+aHkyKXmdTRuuImnn0gtBdeBjTyA/cYsBdg+cvNJJ9J7R6jOdzKQL
+e+M1PaY0HZWKs4NE34oVaWXqjXr0hTuLZkZz6FZkbey/qnjg17pjU8vfbhei7PM7
+m0Wubz1cxHLbcVnLNOuE3mwOyYZfLusPUzRuRzpyCnRlnjvLQ8yAE5a1n/f1qYi+
+78nHMBc8gIfYMMQQCpdVtlcChpS/Y4j/EwyX3u3P+yyNaR0JF3KGT1c6VFGCm0Bm
+FxZcHnSG+DClvKI83VgH
+=D34t
+-----END PGP SIGNATURE-----
+
+--q1SX3yAxAkj1z+aD--
