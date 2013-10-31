@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372Ab3JaSvj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 14:51:39 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:34782 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300Ab3JaSvh (ORCPT
+	id S1755345Ab3JaSze (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 14:55:34 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:37748 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134Ab3JaSzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 14:51:37 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: Olof Johansson <olof@lixom.net>, David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/4] ARM: msm: Remove 7x00 support
-References: <1382993006-27359-1-git-send-email-davidb@codeaurora.org>
-	<1382993006-27359-3-git-send-email-davidb@codeaurora.org>
-	<20131029132043.GA28165@fifo99.com>
-	<CAOesGMhg8HN4Su9FXSeoAgmH6NVKXW+wmnreUvWH+1G6GWkkaA@mail.gmail.com>
-	<87ob66nyqc.fsf@linaro.org> <20131030232412.GA10229@fifo99.com>
-	<8738nhnz4s.fsf@linaro.org> <20131031173506.GA31722@fifo99.com>
-Date: Thu, 31 Oct 2013 11:51:34 -0700
-In-Reply-To: <20131031173506.GA31722@fifo99.com> (Daniel Walker's message of
-	"Thu, 31 Oct 2013 10:35:06 -0700")
-Message-ID: <87eh71mfyh.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 31 Oct 2013 14:55:32 -0400
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-fa-5272a7a2dc85
+Message-id: <5272A7A0.7020800@samsung.com>
+Date: Thu, 31 Oct 2013 19:55:28 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.0
+MIME-version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: mturquette@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, jiada_wang@mentor.com,
+        kyungmin.park@samsung.com, laurent.pinchart@ideasonboard.com,
+        linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
+        linux-mips@linux-mips.org, linux-sh@vger.kernel.org,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: [PATCH v7 5/5] clk: Implement clk_unregister()
+References: <1383076268-8984-1-git-send-email-s.nawrocki@samsung.com>
+ <1383076268-8984-6-git-send-email-s.nawrocki@samsung.com>
+ <5272A24A.30800@wwwdotorg.org>
+In-reply-to: <5272A24A.30800@wwwdotorg.org>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t/xq7qLlhcFGXyaZW3R86fS4mzTG3aL
+	zolL2C02Pb7GanF51xw2iwlTJ7FbHFzYxmgx588UZovbl3ktnk64yGbx6mAbi8XChi/sDjwe
+	Lc09bB4rp3t7zO6Yyepx59oeNo+jK9cyeWxeUu+x+2sTo0ffllWMHp83yXlsnBsawBXFZZOS
+	mpNZllqkb5fAlbHrwxe2gu/cFWu2XGVuYLzK2cXIySEhYCIx4WQfI4QtJnHh3nq2LkYuDiGB
+	pYwS69ZOZwNJCAl8YpR4Od0DxOYV0JLY9rybBcRmEVCVeL92DTOIzSZgKNF7FGKQqECYxNGm
+	n6wQ9YISPybfA6sXAeqd9OwfI8gCZoG3TBKHpvSCFQkLWEvMWHqLBWLzIkaJW7uus4MkOAW0
+	JRr//QfbwCygI7G/dRobhC0vsXnNW+YJjAKzkCyZhaRsFpKyBYzMqxhFU0uTC4qT0nMN9YoT
+	c4tL89L1kvNzNzFCYujLDsbFx6wOMQpwMCrx8L7oKwoSYk0sK67MPcQowcGsJMIrkgMU4k1J
+	rKxKLcqPLyrNSS0+xMjEwSnVwOhgP99/bc+ve7sKJT+f+3aSK2Rdcf0sV8EXpTtYDx+etvvy
+	U02JSb5X3nV1pM9O8Gwy8Tl1uWXGjhrWskf7JDbnOl5vSg0/3/C/adEFrXnurgVipWUPOk6e
+	eZzGfpA/sDBR71SI2Jrbk8U3dDx6s5rBzd7gfsq9/dW652xM5x+dvLZsUlfMlB9KLMUZiYZa
+	zEXFiQDJURO/fwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Walker <dwalker@fifo99.com> writes:
-
-> On Thu, Oct 31, 2013 at 10:12:03AM -0700, Kevin Hilman wrote:
->> Daniel Walker <dwalker@fifo99.com> writes:
->> 
->> 
->> No.  The idea behind splitting them is to allow current platforms with
->> active maintainers to progress without being held back.  The older
->> platforms can stay and have an opportunity to modernize. 
->> 
->> The kernel is a moving target, without some minimal effort to keep
->> platforms up to date, the effort to continue to maintain/modernize them
->> can become more of a pain than it's worth.  If maintainers of these older
->> platforms are willing to put in the work, nobody will be SOL.  If
->> nobody shows interest in modernizing these older platforms (which seems
->> to be the case based on the last couple years), then it is reasonable
->> IMO for them to fade away slowly.
+On 31/10/13 19:32, Stephen Warren wrote:
+> On 10/29/2013 01:51 PM, Sylwester Nawrocki wrote:
+>> > clk_unregister() is currently not implemented and it is required when
+>> > a clock provider module needs to be unloaded.
+>> > 
+>> > Normally the clock supplier module is prevented to be unloaded by
+>> > taking reference on the module in clk_get().
+>> > 
+>> > For cases when the clock supplier module deinitializes despite the
+>> > consumers of its clocks holding a reference on the module, e.g. when
+>> > the driver is unbound through "unbind" sysfs attribute, there are
+>> > empty clock ops added. These ops are assigned temporarily to struct
+>> > clk and used until all consumers release the clock, to avoid invoking
+>> > callbacks from the module which just got removed.
 >
->
-> According to a prior email Tony suggested that OMAP was split for purely
-> technical reasons.. If code is shared in some way , or has synergies, and there's no
-> technical reason to split a sub-architecture, then to me there's no win in splitting
-> things.. 
+> This patch is now in Mike's clk-next and hence next-20131031, and causes
+> both a WARN and an OOPS when booting the Tegra Dalmore board. (See log
+> below)
+> 
+> If I do the following to fix some other issues:
+> 
+> 1) Apply:
+> http://www.spinics.net/lists/arm-kernel/msg283619.html
+> clk: fix boot panic with non-dev-associated clocks
+> 
+> 2) Merge some Tegra-specific bug-fixes:
+> https://lkml.org/lkml/2013/10/29/771
+> Re: pull request for Tegra clock rework and Tegra124 clock support
+> 
+> ... then revert this patch a336ed7 "clk: Implement clk_unregister()",
+> everything works again.
 
-The wins have already been well described in this thread in terms of
-maintenance of newer platforms using modern kernel infrastructure.
+Does it still crash when you apply this patch
+http://www.spinics.net/lists/arm-kernel/msg283550.html ?
 
-> It's just more directories, more confusion etc.. The confusion
-> would come from someone wanting to find the code related to a platform,
-> but woops there's a bunch of directories, or code flow and how the
-> sub-architecture is strung together .. Personally I found OMAP very
-> confusing in that regard.
->
-> ARM and the sub-architectures is already confusing I don't think we need
-> to start compounding the problem by allowing random whatever-you-want
-> sub-directories from every sub-architecture.
-
-Randomness is quite a bit of an exaggeration of what's been proposed
-here.
-
-These decisions are made on a case-by-case basis and is this case is
-being done for ease of maintainence for newer platforms, which may not
-be a "technical reason" for you, but is important for overall
-maintenance of arm-soc.
-
-If we do this split, you are more than welcome to demonstrate the
-commonality by modernizing mach-msm, combining it with mach-qcom,
-removing mach-msm, and then removing all the "confusion."
-
-Kevin
+--
+Thanks,
+Sylwester
