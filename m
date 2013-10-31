@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab3JaG6j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 02:58:39 -0400
+	id S1753128Ab3JaG4W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 02:56:22 -0400
 Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42171 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668Ab3JaG4X (ORCPT
+	with ESMTP id S1751668Ab3JaG4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 02:56:23 -0400
-X-AuditID: 9c930197-b7b3eae00000122e-d0-5271ff132ac7
+	Thu, 31 Oct 2013 02:56:21 -0400
+X-AuditID: 9c930197-b7b3eae00000122e-bd-5271ff11fb17
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,206 +16,161 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
-Subject: [PATCH 06/14] perf hists: Accumulate hist entry stat based on the callchain
-Date: Thu, 31 Oct 2013 15:56:08 +0900
-Message-Id: <1383202576-28141-7-git-send-email-namhyung@kernel.org>
+Subject: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist periods (v2)
+Date: Thu, 31 Oct 2013 15:56:02 +0900
+Message-Id: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
-References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hi,
 
-Call __hists__add_entry() for each callchain node to get an
-accumulated stat for an entry.  However skip nodes which do not have
-symbol info as they caused subtle problems.
+This is my second attempt to implement cumulative hist period report.
+This work begins from Arun's SORT_INCLUSIVE patch [1] but I completely
+rewrote it from scratch.
 
-AFAICS the current sort methods cannot distinguish entries with NULL
-dso/sym well so that processing a callchian for an entry that doesn't
-have symbol info might add a period to a same entry multiple times.
-It ended up with an entry that have more than 100% of accumulated
-period value which is not good.  So just stop processing when those
-entries are met.
+Please see first two patches.  I refactored functions that add hist
+entries with struct add_entry_iter.  While I converted all functions
+carefully, it'd be better anyone can test and confirm that I didn't
+mess up something - especially for branch stack and mem stuff.
 
-Introduce new cumulative_iter ops to process them properly.
+This patchset basically adds period in a sample to every node in the
+callchain.  A hist_entry now has an additional fields to keep the
+cumulative period if -g cumulative option is given on perf report.
+
+Let me show you an example:
+
+  $ cat abc.c
+  #define barrier() asm volatile("" ::: "memory")
+
+  void a(void)
+  {
+  	int i;
+  	for (i = 0; i < 1000000; i++)
+  		barrier();
+  }
+  void b(void)
+  {
+  	a();
+  }
+  void c(void)
+  {
+  	b();
+  }
+  int main(void)
+  {
+  	c();
+  	return 0;
+  }
+
+With this simple program I ran perf record and report:
+
+  $ perf record -g -e cycles:u ./abc
+
+  $ perf report --stdio
+      88.29%      abc  abc                [.] a                  
+                  |
+                  --- a
+                      b
+                      c
+                      main
+                      __libc_start_main
+
+       9.43%      abc  ld-2.17.so         [.] _dl_relocate_object
+                  |
+                  --- _dl_relocate_object
+                      dl_main
+                      _dl_sysdep_start
+
+       2.27%      abc  [kernel.kallsyms]  [k] page_fault         
+                  |
+                  --- page_fault
+                     |          
+                     |--95.94%-- _dl_sysdep_start
+                     |          _dl_start_user
+                     |          
+                      --4.06%-- _start
+
+       0.00%      abc  ld-2.17.so         [.] _start             
+                  |
+                  --- _start
+
+
+When the -g cumulative option is given, it'll be shown like this:
+
+  $ perf report -g cumulative --stdio
+
+  # Overhead  Overhead (Acc)  Command      Shared Object                   Symbol
+  # ........  ..............  .......  .................  .......................
+  #
+       0.00%          88.29%      abc  libc-2.17.so       [.] __libc_start_main  
+       0.00%          88.29%      abc  abc                [.] main               
+       0.00%          88.29%      abc  abc                [.] c                  
+       0.00%          88.29%      abc  abc                [.] b                  
+      88.29%          88.29%      abc  abc                [.] a                  
+       0.00%          11.61%      abc  ld-2.17.so         [k] _dl_sysdep_start   
+       0.00%           9.43%      abc  ld-2.17.so         [.] dl_main            
+       9.43%           9.43%      abc  ld-2.17.so         [.] _dl_relocate_object
+       2.27%           2.27%      abc  [kernel.kallsyms]  [k] page_fault         
+       0.00%           2.18%      abc  ld-2.17.so         [k] _dl_start_user     
+       0.00%           0.10%      abc  ld-2.17.so         [.] _start             
+
+As you can see __libc_start_main -> main -> c -> b -> a callchain show
+up in the output.
+
+I know it have some rough edges or even bugs, but I really want to
+release it and get reviews.  It does not handle event groups and
+annotations and it has a bug on TUI.
+
+You can also get this series on 'perf/cumulate-v2' branch in my tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Any comments are welcome, thanks.
+Namhyung
+
 
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-report.c | 142 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 142 insertions(+)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index d171f4d18b67..92cbd5cd1ab1 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -386,6 +386,138 @@ iter_finish_normal_entry(struct add_entry_iter *iter, struct addr_location *al)
- 	return err;
- }
- 
-+static int
-+iter_prepare_cumulative_entry(struct add_entry_iter *iter,
-+			      struct machine *machine __maybe_unused,
-+			      struct perf_evsel *evsel,
-+			      struct addr_location *al __maybe_unused,
-+			      struct perf_sample *sample)
-+{
-+	callchain_cursor_commit(&callchain_cursor);
-+
-+	/*
-+	 * The first callchain node always contains same information
-+	 * as a hist entry itself.  So skip it in order to prevent
-+	 * double accounting.
-+	 */
-+	callchain_cursor_advance(&callchain_cursor);
-+
-+	iter->evsel = evsel;
-+	iter->sample = sample;
-+	return 0;
-+}
-+
-+static int
-+iter_add_single_cumulative_entry(struct add_entry_iter *iter,
-+				 struct addr_location *al)
-+{
-+	struct perf_evsel *evsel = iter->evsel;
-+	struct perf_sample *sample = iter->sample;
-+	struct hist_entry *he;
-+	int err = 0;
-+
-+	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
-+				sample->period, sample->weight,
-+				sample->transaction, true);
-+	if (he == NULL)
-+		return -ENOMEM;
-+
-+	/*
-+	 * This is for putting parents upward during output resort iff
-+	 * only a child gets sampled.  See hist_entry__sort_on_period().
-+	 */
-+	he->callchain->max_depth = PERF_MAX_STACK_DEPTH + 1;
-+
-+	/*
-+	 * Only in the TUI browser we are doing integrated annotation,
-+	 * so we don't allocated the extra space needed because the stdio
-+	 * code will not use it.
-+	 */
-+	if (he->ms.sym != NULL && use_browser == 1 && sort__has_sym) {
-+		struct annotation *notes = symbol__annotation(he->ms.sym);
-+
-+		assert(evsel != NULL);
-+
-+		if (notes->src == NULL && symbol__alloc_hist(he->ms.sym) < 0)
-+			return -ENOMEM;
-+
-+		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
-+	}
-+
-+	return err;
-+}
-+
-+static int
-+iter_next_cumulative_entry(struct add_entry_iter *iter __maybe_unused,
-+			   struct addr_location *al)
-+{
-+	struct callchain_cursor_node *node;
-+
-+	node = callchain_cursor_current(&callchain_cursor);
-+	if (node == NULL)
-+		return 0;
-+
-+	al->map = node->map;
-+	al->sym = node->sym;
-+	al->addr = node->ip;
-+
-+	/*
-+	 * XXX: Adding an entry without symbol info caused subtle
-+	 * problems.  Stop it.
-+	 */
-+	if (al->sym == NULL)
-+		return 0;
-+
-+	callchain_cursor_advance(&callchain_cursor);
-+	return 1;
-+}
-+
-+static int
-+iter_add_next_cumulative_entry(struct add_entry_iter *iter,
-+			       struct addr_location *al)
-+{
-+	struct perf_evsel *evsel = iter->evsel;
-+	struct perf_sample *sample = iter->sample;
-+	struct hist_entry *he;
-+	int err = 0;
-+
-+	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
-+				sample->period, sample->weight,
-+				sample->transaction, false);
-+	if (he == NULL)
-+		return -ENOMEM;
-+
-+	/*
-+	 * Only in the TUI browser we are doing integrated annotation,
-+	 * so we don't allocated the extra space needed because the stdio
-+	 * code will not use it.
-+	 */
-+	if (he->ms.sym != NULL && use_browser == 1 && sort__has_sym) {
-+		struct annotation *notes = symbol__annotation(he->ms.sym);
-+
-+		assert(evsel != NULL);
-+
-+		if (notes->src == NULL && symbol__alloc_hist(he->ms.sym) < 0)
-+			return -ENOMEM;
-+
-+		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
-+	}
-+	return err;
-+}
-+
-+static int
-+iter_finish_cumulative_entry(struct add_entry_iter *iter,
-+			     struct addr_location *al __maybe_unused)
-+{
-+	struct perf_evsel *evsel = iter->evsel;
-+	struct perf_sample *sample = iter->sample;
-+
-+	evsel->hists.stats.total_period += sample->period;
-+	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
-+
-+	return 0;
-+}
-+
- static struct add_entry_iter mem_iter = {
- 	.prepare_entry 		= iter_prepare_mem_entry,
- 	.add_single_entry 	= iter_add_single_mem_entry,
-@@ -410,6 +542,14 @@ static struct add_entry_iter normal_iter = {
- 	.finish_entry 		= iter_finish_normal_entry,
- };
- 
-+static struct add_entry_iter cumulative_iter = {
-+	.prepare_entry 		= iter_prepare_cumulative_entry,
-+	.add_single_entry 	= iter_add_single_cumulative_entry,
-+	.next_entry 		= iter_next_cumulative_entry,
-+	.add_next_entry 	= iter_add_next_cumulative_entry,
-+	.finish_entry 		= iter_finish_cumulative_entry,
-+};
-+
- static int
- perf_evsel__add_entry(struct perf_evsel *evsel, struct addr_location *al,
- 		      struct perf_sample *sample, struct machine *machine,
-@@ -471,6 +611,8 @@ static int process_sample_event(struct perf_tool *tool,
- 		iter = &branch_iter;
- 	else if (rep->mem_mode == 1)
- 		iter = &mem_iter;
-+	else if (callchain_param.mode == CHAIN_CUMULATIVE)
-+		iter = &cumulative_iter;
- 	else
- 		iter = &normal_iter;
- 
+[1] https://lkml.org/lkml/2012/3/31/6
+
+Namhyung Kim (14):
+  perf tools: Consolidate __hists__add_*entry()
+  perf tools: Introduce struct add_entry_iter
+  perf hists: Convert hist entry functions to use struct he_stat
+  perf hists: Add support for accumulated stat of hist entry
+  perf hists: Check if accumulated when adding a hist entry
+  perf hists: Accumulate hist entry stat based on the callchain
+  perf tools: Update cpumode for each cumulative entry
+  perf report: Cache cumulative callchains
+  perf hists: Sort hist entries by accumulated period
+  perf ui/hist: Add support to accumulated hist stat
+  perf ui/browser: Add support to accumulated hist stat
+  perf ui/gtk: Add support to accumulated hist stat
+  perf tools: Apply percent-limit to cumulative percentage
+  perf report: Add -g cumulative option
+
+ tools/perf/Documentation/perf-report.txt |   2 +
+ tools/perf/builtin-annotate.c            |   3 +-
+ tools/perf/builtin-diff.c                |   3 +-
+ tools/perf/builtin-report.c              | 659 ++++++++++++++++++++++++-------
+ tools/perf/builtin-top.c                 |   5 +-
+ tools/perf/tests/hists_link.c            |   6 +-
+ tools/perf/ui/browsers/hists.c           |  32 +-
+ tools/perf/ui/gtk/hists.c                |  20 +
+ tools/perf/ui/hist.c                     |  41 ++
+ tools/perf/ui/stdio/hist.c               |   5 +
+ tools/perf/util/callchain.c              |  12 +
+ tools/perf/util/callchain.h              |   3 +-
+ tools/perf/util/hist.c                   | 142 +++----
+ tools/perf/util/hist.h                   |  22 +-
+ tools/perf/util/sort.h                   |   1 +
+ 15 files changed, 701 insertions(+), 255 deletions(-)
+
 -- 
 1.7.11.7
 
