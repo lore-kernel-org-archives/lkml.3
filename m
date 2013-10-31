@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898Ab3JaKRM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 06:17:12 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:22231 "EHLO song.cn.fujitsu.com"
+	id S1753932Ab3JaKSx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 06:18:53 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:45779 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753750Ab3JaKRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 06:17:09 -0400
+	id S1750712Ab3JaKSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 06:18:52 -0400
 X-IronPort-AV: E=Sophos;i="4.93,607,1378828800"; 
-   d="scan'208";a="8910338"
-Message-ID: <52722CB8.5080700@cn.fujitsu.com>
-Date: Thu, 31 Oct 2013 18:11:04 +0800
+   d="scan'208";a="8910357"
+Message-ID: <52722D19.7080004@cn.fujitsu.com>
+Date: Thu, 31 Oct 2013 18:12:41 +0800
 From: Gu Zheng <guz.fnst@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Yinghai Lu <yinghai@kernel.org>,
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
         "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH] pci: fix invalid list entry warning for double pci device
  removing via sysfs
-References: <5270DBFC.3050705@cn.fujitsu.com> <20131030170805.GA25745@google.com>
-In-Reply-To: <20131030170805.GA25745@google.com>
+References: <5270DBFC.3050705@cn.fujitsu.com> <CAE9FiQXp+9XKbs8ccJVt08icax6SOWioDfL5s+H1SWGi9cTAiw@mail.gmail.com>
+In-Reply-To: <CAE9FiQXp+9XKbs8ccJVt08icax6SOWioDfL5s+H1SWGi9cTAiw@mail.gmail.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/31 18:15:20,
+ 2013/10/31 18:16:56,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/31 18:15:22,
-	Serialize complete at 2013/10/31 18:15:22
+ 2013/10/31 18:16:57,
+	Serialize complete at 2013/10/31 18:16:57
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
-Thanks for your comments.:)
-Please refer to inline.
+Hi Yinghai,
 
-Best regards,
-Gu
+On 10/31/2013 02:45 PM, Yinghai Lu wrote:
 
-On 10/31/2013 01:08 AM, Bjorn Helgaas wrote:
-
-> On Wed, Oct 30, 2013 at 06:14:20PM +0800, Gu Zheng wrote:
+> On Wed, Oct 30, 2013 at 3:14 AM, Gu Zheng <guz.fnst@cn.fujitsu.com> wrote:
 >> When concurent removing pci devices which are in the same pci subtree
 >> via sysfs, such as:
 >> echo -n 1 > /sys/bus/pci/devices/0000\:10\:00.0/remove ; echo -n 1 >
@@ -90,188 +85,29 @@ On 10/31/2013 01:08 AM, Bjorn Helgaas wrote:
 >> resource free into pci_release_dev, so that it'll consistent with
 >> bus reference managment, and the device only can be deleted from device
 >> list in pci_release_dev just for one time.
-> 
-> You have a good argument for moving the &dev->bus_list maintenance from
-> pci_destroy_dev() to pci_release_dev(), because I think we can call
-> pci_destroy_dev() twice for the same device, and we don't want to do the
-> list_del() twice.
-> 
-> I suspect we want to move other stuff, too, but you haven't explained
-> why we need the device_del(), device_release_driver(), and
-> pci_free_resources() changes.  Possibly similar arguments apply.  I'd
-> rather see separate patches to move these pieces so we can think about
-> them individually.
-
-Sorry for missing explanation.
-The reason of moving pci_free_resources() into pci_release_dev is that the original
-place(pci_destory_dev()) is too early as there may be still others holding reference
-as the case mentioned above.
-Changing device_del() and device_release_driver() in order to make pci_stop_dev
-just do one thing--release driver, but it seems this change is nonsense.:(
-
-> 
+>>
 >> Besides, it also makes hostbridge to use device_unregister to be pair
 >> with device_register before.
-> 
-> Please split the host bridge changes into a separate patch.  One logical
-> change, one patch.  If they *can* be split up, please split them up.
-
-Agree all. Thanks for your suggestion, got it.
-
-> 
+>>
 >> This patch is based on Yinghai's privious similar patch:
 >> http://lkml.org/lkml/2013/5/13/658
 > 
-> There are seven patches in that series.  I don't know which one you're
-> referring to.
+> I have updated version, please check if attached patches fix the problem.
+> 
+> virtfn_release.patch
+> fix_cx3_hotplug_2.patch
+> fix_racing_removing_6_1.patch
+> fix_racing_removing_6_2.patch
+> fix_racing_removing_6_3.patch
 
-[2/7]~[4/7]
+It works well on latest Linus' tree, thanks.
+
+Regards,
+Gu 
 
 > 
-> Please run a spell checker on your changelog.  There are many spelling
-> errors.
-
-Got it, Thanks very much.
-
+> Thanks
 > 
->> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
->> ---
->>  drivers/pci/probe.c  | 23 +++++++++++++++++++++--
->>  drivers/pci/remove.c | 32 ++++++++------------------------
->>  2 files changed, 29 insertions(+), 26 deletions(-)
->>
->> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
->> index 7ef0f86..c639f44 100644
->> --- a/drivers/pci/probe.c
->> +++ b/drivers/pci/probe.c
->> @@ -1156,6 +1156,21 @@ static void pci_release_capabilities(struct pci_dev *dev)
->>  	pci_free_cap_save_buffers(dev);
->>  }
->>  
->> +static void pci_free_resources(struct pci_dev *dev)
->> +{
->> +	int i;
->> +
->> +	msi_remove_pci_irq_vectors(dev);
->> +
->> +	pci_cleanup_rom(dev);
->> +	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
->> +		struct resource *res = dev->resource + i;
->> +
->> +		if (res->parent)
->> +			release_resource(res);
->> +	}
->> +}
->> +
->>  /**
->>   * pci_release_dev - free a pci device structure when all users of it are finished.
->>   * @dev: device that's been disconnected
->> @@ -1165,9 +1180,13 @@ static void pci_release_capabilities(struct pci_dev *dev)
->>   */
->>  static void pci_release_dev(struct device *dev)
->>  {
->> -	struct pci_dev *pci_dev;
->> +	struct pci_dev *pci_dev = to_pci_dev(dev);
->> +
->> +	down_write(&pci_bus_sem);
->> +	list_del(&pci_dev->bus_list);
->> +	up_write(&pci_bus_sem);
->> +	pci_free_resources(pci_dev);
->>  
->> -	pci_dev = to_pci_dev(dev);
->>  	pci_release_capabilities(pci_dev);
->>  	pci_release_of_node(pci_dev);
->>  	pcibios_release_device(pci_dev);
->> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
->> index 8fc54b7..5659283 100644
->> --- a/drivers/pci/remove.c
->> +++ b/drivers/pci/remove.c
->> @@ -3,20 +3,6 @@
->>  #include <linux/pci-aspm.h>
->>  #include "pci.h"
->>  
->> -static void pci_free_resources(struct pci_dev *dev)
->> -{
->> -	int i;
->> -
->> - 	msi_remove_pci_irq_vectors(dev);
->> -
->> -	pci_cleanup_rom(dev);
->> -	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
->> -		struct resource *res = dev->resource + i;
->> -		if (res->parent)
->> -			release_resource(res);
->> -	}
->> -}
->> -
->>  static void pci_stop_dev(struct pci_dev *dev)
->>  {
->>  	pci_pme_active(dev, false);
->> @@ -24,8 +10,7 @@ static void pci_stop_dev(struct pci_dev *dev)
->>  	if (dev->is_added) {
->>  		pci_proc_detach_device(dev);
->>  		pci_remove_sysfs_dev_files(dev);
->> -		device_del(&dev->dev);
->> -		dev->is_added = 0;
->> +		device_release_driver(&dev->dev);
->>  	}
->>  
->>  	if (dev->bus->self)
->> @@ -34,12 +19,11 @@ static void pci_stop_dev(struct pci_dev *dev)
->>  
->>  static void pci_destroy_dev(struct pci_dev *dev)
->>  {
->> -	down_write(&pci_bus_sem);
->> -	list_del(&dev->bus_list);
->> -	up_write(&pci_bus_sem);
->> -
->> -	pci_free_resources(dev);
->> -	put_device(&dev->dev);
->> +	if (dev->is_added) {
->> +		device_del(&dev->dev);
->> +		put_device(&dev->dev);
->> +		dev->is_added = 0;
-> 
-> This is wrong.  You can't reference dev->is_added after put_device()
-> because you have to assume you are holding the only reference, and the
-> pci_dev may be deallocated before put_device() returns.
-
-Yes, you're right, it's a low mistake here, dev may be invalid after calling
-put_device().
-
-> 
->> +	}
->>  }
->>  
->>  void pci_remove_bus(struct pci_bus *bus)
->> @@ -126,7 +110,7 @@ void pci_stop_root_bus(struct pci_bus *bus)
->>  		pci_stop_bus_device(child);
->>  
->>  	/* stop the host bridge */
->> -	device_del(&host_bridge->dev);
->> +	device_release_driver(&host_bridge->dev);
->>  }
->>  
->>  void pci_remove_root_bus(struct pci_bus *bus)
->> @@ -145,5 +129,5 @@ void pci_remove_root_bus(struct pci_bus *bus)
->>  	host_bridge->bus = NULL;
->>  
->>  	/* remove the host bridge */
->> -	put_device(&host_bridge->dev);
->> +	device_unregister(&host_bridge->dev);
->>  }
->> -- 
->> 1.8.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> Yinghai
 
 
