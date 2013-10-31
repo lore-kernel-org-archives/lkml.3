@@ -1,106 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab3JaIJR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 04:09:17 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:60461 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752334Ab3JaIJN (ORCPT
+	id S1753533Ab3JaIJk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 04:09:40 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:59439 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334Ab3JaIJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 04:09:13 -0400
-Message-ID: <52721025.4040901@hitachi.com>
-Date: Thu, 31 Oct 2013 17:09:09 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 31 Oct 2013 04:09:35 -0400
+Date: Thu, 31 Oct 2013 09:09:32 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
+Subject: Re: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist
+ periods (v2)
+Message-ID: <20131031080932.GA8479@gmail.com>
+References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>, yoshihiro.yunomae.ez@hitachi.com,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: RFC: paravirtualizing perf_clock
-References: <526DBD7F.1010807@gmail.com> <20131028131556.GN19466@laptop.lan> <526F2440.9030607@gmail.com> <5270A03F.8020301@hitachi.com> <527111BD.9010803@gmail.com>
-In-Reply-To: <527111BD.9010803@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/30 23:03), David Ahern wrote:
-> On 10/29/13 11:59 PM, Masami Hiramatsu wrote:
->> (2013/10/29 11:58), David Ahern wrote:
->>> To back out a bit, my end goal is to be able to create and merge
->>> perf-events from any context on a KVM-based host -- guest userspace,
->>> guest kernel space, host userspace and host kernel space (userspace
->>> events with a perf-clock timestamp is another topic ;-)).
->>
->> That is almost same as what we(Yoshihiro and I) are trying on integrated
->> tracing, we are doing it on ftrace and trace-cmd (but perhaps, it eventually
->> works on perf-ftrace).
+
+
+* Namhyung Kim <namhyung@kernel.org> wrote:
+
+> When the -g cumulative option is given, it'll be shown like this:
 > 
-> I thought at this point (well, once perf-ftrace gets committed) that you 
-> can do everything with perf. What feature is missing in perf that you 
-> get with trace-cmd or using debugfs directly?
-
-The perftools interface is the best for profiling a process or in a short period.
-However, what we'd like to do is monitoring or tracing in background a long
-period on the memory, while the system life cycle, as a flight recorder.
-This kind of tracing interface is required for mission-critical system for
-trouble shooting.
-
-Also, on-the-fly configurability of ftrace such as snapshot, multi-buffer,
-event-adding/removing are very useful, since in the flight-recorder
-use-case, we can't stop tracing for even a moment.
-
-Moreover, our guest/host integrated tracer can pass event buffers from
-guest to host with very small overhead, because it uses ftrace ringbuffer
-and virtio-serial with splice (so, zero page copying in the guest).
-Note that we need low overhead tracing as small as possible because it
-is running always in background.
-
-That's why we're using ftrace for our purpose. But anyway, the time
-synchronization is common issue. Let's share the solution :)
-
-
->>> And then for the cherry on top a design that works across architectures
->>> (e.g., x86 now, but arm later).
->>
->> I think your proposal is good for the default implementation, it doesn't
->> depends on the arch specific feature. However, since physical timer(clock)
->> interfaces and virtualization interfaces strongly depends on the arch,
->> I guess the optimized implementations will become different on each arch.
->> For example, maybe we can export tsc-offset to the guest to adjust clock
->> on x86, but not on ARM, or other devices. In that case, until implementing
->> optimized one, we can use paravirt perf_clock.
+>   $ perf report -g cumulative --stdio
 > 
-> So this MSR read takes about 1.6usecs (from 'perf stat kvm live') and 
-> that is total time between VMEXIT and VMENTRY. The time it takes to run 
-> perf_clock in the host should be a very small part of that 1.6 usec. 
+>   # Overhead  Overhead (Acc)  Command      Shared Object                   Symbol
+>   # ........  ..............  .......  .................  .......................
+>   #
+>        0.00%          88.29%      abc  libc-2.17.so       [.] __libc_start_main  
+>        0.00%          88.29%      abc  abc                [.] main               
+>        0.00%          88.29%      abc  abc                [.] c                  
+>        0.00%          88.29%      abc  abc                [.] b                  
+>       88.29%          88.29%      abc  abc                [.] a                  
+>        0.00%          11.61%      abc  ld-2.17.so         [k] _dl_sysdep_start   
+>        0.00%           9.43%      abc  ld-2.17.so         [.] dl_main            
+>        9.43%           9.43%      abc  ld-2.17.so         [.] _dl_relocate_object
+>        2.27%           2.27%      abc  [kernel.kallsyms]  [k] page_fault         
+>        0.00%           2.18%      abc  ld-2.17.so         [k] _dl_start_user     
+>        0.00%           0.10%      abc  ld-2.17.so         [.] _start             
+> 
+> As you can see __libc_start_main -> main -> c -> b -> a callchain 
+> show up in the output.
 
-Yeah, a hypercall is always heavy operation. So that is not the best
-solution, we need a optimized one for each arch.
+This looks really useful!
 
-> I'll take a look at the TSC path to see how it is optimized (suggestions 
-> appreciated).
+A couple of details:
 
-At least on the machine which has stable tsc, we can relay on that.
-We just need the tsc-offset to adjust it in the guest. Note that this
-offset can change if the guest sleeps/resumes or does a live-migration.
-Each time we need to refresh the tsc-offset.
+1)
 
-> Another thought is to make the use of pv_perf_clock an option -- user 
-> can knowingly decide the additional latency/overhead is worth the feature.
+This is pretty close to SysProf output, right? So why not use the 
+well-known SysProf naming and call the first column 'self' and the 
+second column 'total'? I think those names are pretty intuitive and 
+it would help people who come from SysProf over to perf.
 
-Yeah. BTW, would you see the paravirt_sched_clock(pv_time_ops)?
-It seems that such synchronized clock is there.
+2)
 
-Thank you,
+Is it possible to configure the default 'report -g' style, so that 
+people who'd like to use it all the time don't have to type '-g 
+cumulative' all the time?
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+3)
 
+I'd even argue that we enable this reporting feature by default, if 
+a data file includes call-chain data: the first column will still 
+show the well-known percentage that perf report produces today, the 
+second column will be a new feature in essence.
 
+The only open question would be, by which column should we sort: 
+'sysprof style' sorts by 'total', 'perf style' sorts by 'self'. 
+Agreed?
+
+4)
+
+This is not directly related to the new feature you added: 
+call-graph profiling still takes quite a bit of time. It might make 
+sense to save the ordered histogram to a perf.data.ordered file, so 
+that repeat invocations of 'perf report' don't have to recalculate 
+everything again and again?
+
+This file would be maintained transparently and would only be 
+re-created when the perf.data file changes, or something like that.
+
+5)
+
+I realize that this is an early RFC, still there are some usability 
+complaints I have about call-graph recording/reporting which should 
+be addressed before adding new features.
+
+For example I tried to get a list of the -g output modi via:
+
+   $ perf report -g help
+
+Which produced a lot of options - I think it should produce only a 
+list of -g options. It also doesn't list cumulative:
+
+    -g, --call-graph <output_type,min_percent[,print_limit],call_order>
+                          Display callchains using output_type 
+(graph, flat, fractal, or none) , min percent threshold, optional 
+print limit, callchain order, key (function or address). Default: 
+fractal,0.5,callee,function
+
+Also, the list is very long and not very readable - I think there 
+should be more newlines.
+
+Then I tried to do:
+
+   $ perf report -g
+
+which, somewhat surprisingly, was accepted. Given that call-graph 
+perf.data is recognized automatically by 'perf report', the -g 
+option should only accept -g <type> syntax and provide a list of 
+options when '-g' or '-g help' is provided.
+
+6)
+
+A similar UI problem exists on the 'perf record' side: 'perf record 
+--call-graph help' should produce a specific list of call-graph 
+possibilities, not the two screens full output it does today.
+
+> I know it have some rough edges or even bugs, but I really want to 
+> release it and get reviews.  It does not handle event groups and 
+> annotations and it has a bug on TUI.
+> 
+> You can also get this series on 'perf/cumulate-v2' branch in my tree at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+So I tried it out on top of tip:master, with your testcase, and in 
+the --stdio case it works very well:
+
+# Overhead  Overhead (Acc)  Command      Shared Object                                      Symbol
+# ........  ..............  .......  .................  ..........................................
+#
+     0.00%         100.00%      abc  abc                [.] _start                                
+     0.00%         100.00%      abc  libc-2.17.so       [.] __libc_start_main                     
+     0.00%         100.00%      abc  abc                [.] main                                  
+     0.00%         100.00%      abc  abc                [.] c                                     
+     0.00%         100.00%      abc  abc                [.] b                                     
+    99.79%         100.00%      abc  abc                [.] a                                     
+     0.01%           0.21%      abc  [kernel.kallsyms]  [k] apic_timer_interrupt     
+
+In the TUI output the 'c' entry is not visible:
+
+   99.79%  100.00%  abc  abc                [.] a                                                               
+    0.00%   99.79%  abc  abc                [.] b                                                               
+    0.01%    0.21%  abc  [kernel.kallsyms]  [k] apic_timer_interrupt                                            
+    0.00%    0.19%  abc  [kernel.kallsyms]  [k] smp_apic_timer_interrupt                 
+
+I suspect this is the 'TUI bug' you mentioned?
+
+> Any comments are welcome, thanks.
+
+Cool stuff, let's fix & merge it ASAP! :-)
+
+Thanks,
+
+	Ingo
