@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab3JaNW0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 09:22:26 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:48077 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753751Ab3JaNWY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 09:22:24 -0400
-X-Sasl-enc: bYYT8PAIss3G2rcPDhceLKuQ0Vk8qH0awD2ezbFR/aAA 1383225743
-Date: Thu, 31 Oct 2013 06:24:25 -0700
-From: Greg KH <greg@kroah.com>
-To: Philippe Proulx <philippe.proulx@savoirfairelinux.com>
-Cc: sedat dilek <sedat.dilek@gmail.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: build failure after merge of the tty tree
-Message-ID: <20131031132425.GA2913@kroah.com>
-References: <CA+icZUWYHSU3yvsW6fB5aKJ0LQVaY0afsF2DiS9=m_bzy80=hw@mail.gmail.com>
- <73605653.13929.1383224991870.JavaMail.root@mail>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <73605653.13929.1383224991870.JavaMail.root@mail>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1754312Ab3JaNYS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 09:24:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38489 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753660Ab3JaNYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 09:24:17 -0400
+Subject: Re: [PATCH v4 2/3] Support for perf to probe into SDT markers:
+From: Mark Wielaard <mjw@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Pekka Enberg <penberg@iki.fi>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        hegdevasant@linux.vnet.ibm.com, Ingo Molnar <mingo@redhat.com>,
+        anton@redhat.com, systemtap@sourceware.org,
+        Namhyung Kim <namhyung@kernel.org>, aravinda@linux.vnet.ibm.com,
+        dsahern@gmail.com,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+In-Reply-To: <20131031105759.GB12066@gmail.com>
+References: <20131023044511.1886.82571.stgit@hemant-fedora>
+	 <20131023050502.1886.15779.stgit@hemant-fedora>
+	 <CAOJsxLFKm3TxeTmGjbpr1r4sZ8fHcM481-5BM_Cq0J8hhtvBqQ@mail.gmail.com>
+	 <y0mbo2cs2oa.fsf@fche.csb> <5270D9F7.3090105@hitachi.com>
+	 <5270F2DE.6040505@iki.fi>
+	 <1383216886.6521.5910.camel@bordewijk.wildebeest.org>
+	 <20131031105759.GB12066@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 31 Oct 2013 14:23:26 +0100
+Message-ID: <1383225806.6521.6105.camel@bordewijk.wildebeest.org>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 09:09:51AM -0400, Philippe Proulx wrote:
-> ----- Original Message -----
-> > From: "Sedat Dilek" <sedat.dilek@gmail.com>
-> > To: "Stephen Rothwell" <sfr@canb.auug.org.au>, "Philippe Proulx" <philippe.proulx@savoirfairelinux.com>
-> > Cc: "Greg KH" <greg@kroah.com>, "linux-next" <linux-next@vger.kernel.org>, "LKML" <linux-kernel@vger.kernel.org>,
-> > linux-serial@vger.kernel.org
-> > Sent: Thursday, 31 October, 2013 6:35:23 AM
-> > Subject: Re: linux-next: build failure after merge of the tty tree
+On Thu, 2013-10-31 at 11:57 +0100, Ingo Molnar wrote:
+> * Mark Wielaard <mjw@redhat.com> wrote:
+> > On Wed, 2013-10-30 at 13:51 +0200, Pekka Enberg wrote:
+> > > On 10/30/13 12:05 PM, Masami Hiramatsu wrote:
+> > > > To find all system libraries, we can use ldconfig.
+> > > >
+> > > > $ ldconfig --print-cache
+> > > >
+> > > > shows what dynamic libraries will be loaded. On my own laptop (running
+> > > > ubuntu13.04) shows ~1000 libs.
+> > > 
+> > > Good point. That definitely narrows down the scanned set.
 > > 
-> > On Thu, Oct 31, 2013 at 8:40 AM, Stephen Rothwell
-> > <sfr@canb.auug.org.au> wrote:
-> > > Hi Greg,
-> > >
-> > > After merging the tty tree, today's linux-next build (arm
-> > > multi_v7_defconfig) failed like this:
-> > >
-> > > drivers/tty/serial/omap-serial.c: In function 'serial_omap_probe':
-> > > drivers/tty/serial/omap-serial.c:1724:22: error: expected ')'
-> > > before numeric constant
-> > > drivers/tty/serial/omap-serial.c:1724:22: warning: format '%d'
-> > > expects a matching 'int' argument [-Wformat]
-> > >
-> > > Caused by commit e5f9bf72efbc ("serial: omap: fix a few checkpatch
-> > > warnings").  There is a missing ',' in the dev_warn() ...
-> > >
-> > > I have used the version of the tty tree from next-20131030 for
-> > > today.
-> > >
-> > 
-> > [ Add CC to linux-serial ML ]
-> > 
-> > Happy HelloWien and WelcomeBackStephen!
-> > 
-> > That was only checkpatch-tested, eh :-)?
-> > 
-> > @@ -1724,8 +1722,9 @@ static int serial_omap_probe(struct
-> > platform_device *pdev)
-> > up->port.uartclk = omap_up_info->uartclk;
-> > if (!up->port.uartclk) {
-> > up->port.uartclk = DEFAULT_CLK_SPEED;
-> > - dev_warn(&pdev->dev, "No clock speed specified: using default:"
-> > - "%d\n", DEFAULT_CLK_SPEED);
-> > + dev_warn(&pdev->dev,
-> > + "No clock speed specified: using default: %d\n" <--- Comma missing
-> > here!
+> > It is fast. But that would miss the various libjvm.so variants for 
+> > example. Or other programs, like libreoffice, which have SDT 
+> > probes in their internal shared libraries that aren't in the 
+> > default ldconfig paths.
 > 
-> Oops, something obviously went wrong in my process. Sorry about this.
-> 
-> Do you want me to fix this commit?
+> I suppose those Java libraries ought to show up in 
+> /etc/prelink.cache though, right?
 
-Please send me a patch that I can apply.
+Good point. Yes, all executables and libraries I was missing in ldconfig
+--print-cache do show up with prelink -p.
 
-greg k-h
+Except libjvm.so itself... Apparently prelink is convinced that really
+is never used. hmmm. Apparently all wrapper "java" executables only
+dlopen it, so it is never directly linked, and prelink doesn't cache it.
+
+But except for that special case, prelink -p is a good substitute.
+
+Cheers,
+
+Mark
+
