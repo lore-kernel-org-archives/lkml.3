@@ -1,62 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324Ab3JaIrM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 04:47:12 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:34126 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752046Ab3JaIrK (ORCPT
+	id S1752937Ab3JaItW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 04:49:22 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:63049 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752523Ab3JaItT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 04:47:10 -0400
-Date: Thu, 31 Oct 2013 09:47:06 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [GIT PULL] Move drivers/acpi/apei/cper.c to drivers/firmware/efi/
-Message-ID: <20131031084706.GA8992@gmail.com>
-References: <52700d2920076a466d@agluck-desk.sc.intel.com>
+	Thu, 31 Oct 2013 04:49:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52700d2920076a466d@agluck-desk.sc.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <527218F4.3090006@ti.com>
+References: <1382678784-20191-1-git-send-email-sachin.kamat@linaro.org>
+	<527218F4.3090006@ti.com>
+Date: Thu, 31 Oct 2013 14:19:19 +0530
+Message-ID: <CAK9yfHxgivL9jHUNM82vTOfeC6H5JUaBP7exxc2sie1Hk4jGJA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] drivers: phy: Fix memory leak
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 31 October 2013 14:16, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> Hi,
+>
+> On Friday 25 October 2013 10:56 AM, Sachin Kamat wrote:
+>> 'phy' was not being freed upon error in one of the cases.
+>> Adjust the 'goto's to fix this.
+>
+> This patch looks good. I'll send this once -rc1 is tagged?
 
-* Luck, Tony <tony.luck@intel.com> wrote:
+Sure. Thanks.
 
-> The following changes since commit 56507694de3453076d73e0e9813349586ee67e59:
-> 
->   EDAC, GHES: Update ghes error record info (2013-10-23 10:11:00 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-move-cper
-> 
-> for you to fetch changes up to c57a801195153e111bcd712680a718cf101b6d1f:
-> 
->   Move cper.c from drivers/acpi/apei to drivers/firmware/efi (2013-10-29 09:23:38 -0700)
-> 
-> ----------------------------------------------------------------
-> cper.c implements UEFI Appendix N "Common Platform Error Record"
-> handling. Move it to drivers/firmware/efi/cper.c to reflect this
-> heritage.
-> 
-> ----------------------------------------------------------------
-> Tony Luck (1):
->       Move cper.c from drivers/acpi/apei to drivers/firmware/efi
-> 
->  drivers/acpi/Kconfig                       | 4 +++-
->  drivers/acpi/apei/Kconfig                  | 2 ++
->  drivers/acpi/apei/Makefile                 | 2 +-
->  drivers/firmware/efi/Kconfig               | 3 +++
->  drivers/firmware/efi/Makefile              | 1 +
->  drivers/{acpi/apei => firmware/efi}/cper.c | 0
->  6 files changed, 10 insertions(+), 2 deletions(-)
->  rename drivers/{acpi/apei => firmware/efi}/cper.c (100%)
-
-Pulled, thanks Tony!
-
-	Ingo
+-- 
+With warm regards,
+Sachin
