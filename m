@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab3JaFPm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 01:15:42 -0400
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:59918 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563Ab3JaFPl (ORCPT
+	id S1752527Ab3JaFTd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 01:19:33 -0400
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:56682 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab3JaFTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 01:15:41 -0400
-Message-ID: <5271E77A.7080701@gmail.com>
-Date: Thu, 31 Oct 2013 01:15:38 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 31 Oct 2013 01:19:31 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: linux-mm@kvack.org, akpm@linux-foundation.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH] mm: __rmqueue_fallback() should respect pageblock type
-References: <1383193489-27331-1-git-send-email-kosaki.motohiro@gmail.com>
-In-Reply-To: <1383193489-27331-1-git-send-email-kosaki.motohiro@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <20131031024538.GA17886@fifo99.com>
+References: <1382993006-27359-1-git-send-email-davidb@codeaurora.org>
+	<1382993006-27359-3-git-send-email-davidb@codeaurora.org>
+	<20131029132043.GA28165@fifo99.com>
+	<CAOesGMhg8HN4Su9FXSeoAgmH6NVKXW+wmnreUvWH+1G6GWkkaA@mail.gmail.com>
+	<87ob66nyqc.fsf@linaro.org>
+	<20131030232412.GA10229@fifo99.com>
+	<CAOesGMi2E1Ynr4rWY1eBmcZeB7Vahb5VdPUVs1ebLJowH1kpWw@mail.gmail.com>
+	<20131031024538.GA17886@fifo99.com>
+Date: Wed, 30 Oct 2013 22:19:30 -0700
+Message-ID: <CAOesGMiEGJ8iMe=_-eJzhx3sRQO8VKbKGD-iLWsRztxUeJWJbQ@mail.gmail.com>
+Subject: Re: [PATCH 2/4] ARM: msm: Remove 7x00 support
+From: Olof Johansson <olof@lixom.net>
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: Kevin Hilman <khilman@linaro.org>, David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(10/31/13 12:24 AM), kosaki.motohiro@gmail.com wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> When __rmqueue_fallback() don't find out a free block with the same size
-> of required, it splits a larger page and puts back rest peiece of the page
-> to free list.
-> 
-> But it has one serious mistake. When putting back, __rmqueue_fallback()
-> always use start_migratetype if type is not CMA. However, __rmqueue_fallback()
-> is only called when all of start_migratetype queue are empty. That said,
-> __rmqueue_fallback always put back memory to wrong queue except
-> try_to_steal_freepages() changed pageblock type (i.e. requested size is
-> smaller than half of page block). Finally, antifragmentation framework
-> increase fragmenation instead of decrease.
-> 
-> Mel's original anti fragmentation do the right thing. But commit 47118af076
-> (mm: mmzone: MIGRATE_CMA migration type added) broke it.
-> 
-> This patch restores sane and old behavior.
-> 
-> Cc: Mel Gorman <mgorman@suse.de>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->   mm/page_alloc.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index dd886fa..ea7bb9a 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1101,7 +1101,7 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
->   			 */
->   			expand(zone, page, order, current_order, area,
->   			       is_migrate_cma(migratetype)
-> -			     ? migratetype : start_migratetype);
-> +			     ? migratetype : new_type);
+On Wed, Oct 30, 2013 at 7:45 PM, Daniel Walker <dwalker@fifo99.com> wrote:
+> On Wed, Oct 30, 2013 at 05:36:58PM -0700, Olof Johansson wrote:
+>> On Wed, Oct 30, 2013 at 4:25 PM, Daniel Walker <dwalker@fifo99.com> wrote:
+>>
+>> > So the current users of those platforms are, what SOL ?
+>>
+>> What users? Show me one.
+>
+> What am I chop liver ?
 
-Oops, this can be simplified to following because try_to_steal_freepages() has cma check.
+Ah, right. So, what platforms do you currently rely on mainline
+support for? Please be precise so we can figure out what needs to be
+kept and not.
 
 
--                       expand(zone, page, order, current_order, area,
--                              is_migrate_cma(migratetype)
--                            ? migratetype : start_migratetype);
-+                       expand(zone, page, order, current_order, area, new_type);
-
-
-
+-Olof
