@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab3JaG41 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 02:56:27 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42171 "EHLO
+	id S1753522Ab3JaG4y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 02:56:54 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43539 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753211Ab3JaG4Y (ORCPT
+	with ESMTP id S1753238Ab3JaG40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 02:56:24 -0400
-X-AuditID: 9c930197-b7b3eae00000122e-db-5271ff154147
+	Thu, 31 Oct 2013 02:56:26 -0400
+X-AuditID: 9c930197-b7b3eae00000122e-f0-5271ff17236a
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
-Subject: [PATCH 08/14] perf report: Cache cumulative callchains
-Date: Thu, 31 Oct 2013 15:56:10 +0900
-Message-Id: <1383202576-28141-9-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 13/14] perf tools: Apply percent-limit to cumulative percentage
+Date: Thu, 31 Oct 2013 15:56:15 +0900
+Message-Id: <1383202576-28141-14-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
 References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
@@ -29,103 +29,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-It is possble that a callchain has cycles or recursive calls.  In that
-case it'll end up having entries more than 100% overhead in the
-output.  In order to prevent such entries, cache each callchain node
-and skip if same entry already cumulated.
+If -g cumulative option is given, it needs to show entries which don't
+have self overhead.  So apply percent-limit to accumulated overhead
+percentage in this case.
 
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-report.c | 49 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 49 insertions(+)
+ tools/perf/ui/browsers/hists.c | 15 ++++++++++++---
+ tools/perf/ui/gtk/hists.c      |  4 ++++
+ tools/perf/ui/stdio/hist.c     |  4 ++++
+ 3 files changed, 20 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 1b152a8b7f51..1a0de9a4a568 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -387,6 +387,11 @@ iter_finish_normal_entry(struct add_entry_iter *iter, struct addr_location *al)
- 	return err;
- }
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 2cea6cd9824e..07f500d8df1b 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -834,6 +834,10 @@ static unsigned int hist_browser__refresh(struct ui_browser *browser)
+ 		if (h->filtered)
+ 			continue;
  
-+struct cumulative_cache {
-+	struct dso *dso;
-+	struct symbol *sym;
-+};
++		if (callchain_param.mode == CHAIN_CUMULATIVE)
++			percent = h->stat_acc->period * 100.0 /
++					hb->hists->stats.total_period;
 +
- static int
- iter_prepare_cumulative_entry(struct add_entry_iter *iter,
- 			      struct machine *machine,
-@@ -394,9 +399,31 @@ iter_prepare_cumulative_entry(struct add_entry_iter *iter,
- 			      struct addr_location *al __maybe_unused,
- 			      struct perf_sample *sample)
- {
-+	struct callchain_cursor_node *node;
-+	struct cumulative_cache *ccache;
-+
- 	callchain_cursor_commit(&callchain_cursor);
+ 		if (percent < hb->min_pcnt)
+ 			continue;
  
- 	/*
-+	 * This is for detecting cycles or recursions so that they're
-+	 * cumulated only one time to prevent entries more than 100%
-+	 * overhead.
-+	 */
-+	ccache = malloc(sizeof(*ccache) * PERF_MAX_STACK_DEPTH);
-+	if (ccache == NULL)
-+		return -ENOMEM;
-+
-+	node = callchain_cursor_current(&callchain_cursor);
-+	if (node == NULL)
-+		return 0;
-+
-+	ccache[0].dso = node->map->dso;
-+	ccache[0].sym = node->sym;
-+
-+	iter->priv = ccache;
-+	iter->curr = 1;
-+
-+	/*
- 	 * The first callchain node always contains same information
- 	 * as a hist entry itself.  So skip it in order to prevent
- 	 * double accounting.
-@@ -501,8 +528,29 @@ iter_add_next_cumulative_entry(struct add_entry_iter *iter,
- {
- 	struct perf_evsel *evsel = iter->evsel;
- 	struct perf_sample *sample = iter->sample;
-+	struct cumulative_cache *ccache = iter->priv;
- 	struct hist_entry *he;
- 	int err = 0;
-+	int i;
-+
-+	/*
-+	 * Check if there's duplicate entries in the callchain.
-+	 * It's possible that it has cycles or recursive calls.
-+	 */
-+	for (i = 0; i < iter->curr; i++) {
-+		if (sort__has_sym) {
-+			if (ccache[i].sym == al->sym)
-+				return 0;
-+		} else {
-+			/* Not much we can do - just compare the dso. */
-+			if (ccache[i].dso == al->map->dso)
-+				return 0;
-+		}
-+	}
-+
-+	ccache[i].dso = al->map->dso;
-+	ccache[i].sym = al->sym;
-+	iter->curr++;
+@@ -854,10 +858,11 @@ static struct rb_node *hists__filter_entries(struct rb_node *nd,
+ 		float percent = h->stat.period * 100.0 /
+ 					hists->stats.total_period;
  
- 	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
- 				sample->period, sample->weight,
-@@ -538,6 +586,7 @@ iter_finish_cumulative_entry(struct add_entry_iter *iter,
- 	evsel->hists.stats.total_period += sample->period;
- 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+-		if (percent < min_pcnt)
+-			return NULL;
++		if (callchain_param.mode == CHAIN_CUMULATIVE)
++			percent = h->stat_acc->period * 100.0 /
++					hists->stats.total_period;
  
-+	free(iter->priv);
- 	return 0;
- }
+-		if (!h->filtered)
++		if (!h->filtered && percent >= min_pcnt)
+ 			return nd;
+ 
+ 		nd = rb_next(nd);
+@@ -875,6 +880,10 @@ static struct rb_node *hists__filter_prev_entries(struct rb_node *nd,
+ 		float percent = h->stat.period * 100.0 /
+ 					hists->stats.total_period;
+ 
++		if (callchain_param.mode == CHAIN_CUMULATIVE)
++			percent = h->stat_acc->period * 100.0 /
++					hists->stats.total_period;
++
+ 		if (!h->filtered && percent >= min_pcnt)
+ 			return nd;
+ 
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 70ed0d5e1b94..b93302840cce 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -302,6 +302,10 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 		if (h->filtered)
+ 			continue;
+ 
++		if (callchain_param.mode == CHAIN_CUMULATIVE)
++			percent = h->stat_acc->period * 100.0 /
++					hists->stats.total_period;
++
+ 		if (percent < min_pcnt)
+ 			continue;
+ 
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 302f08afd6a2..49db435f0cc2 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -496,6 +496,10 @@ print_entries:
+ 		if (h->filtered)
+ 			continue;
+ 
++		if (callchain_param.mode == CHAIN_CUMULATIVE)
++			percent = h->stat_acc->period * 100.0 /
++					hists->stats.total_period;
++
+ 		if (percent < min_pcnt)
+ 			continue;
  
 -- 
 1.7.11.7
