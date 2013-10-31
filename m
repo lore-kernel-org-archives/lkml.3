@@ -1,207 +1,551 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751545Ab3JaB2R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Oct 2013 21:28:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:6342 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750727Ab3JaB2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Oct 2013 21:28:15 -0400
-X-IronPort-AV: E=Sophos;i="4.93,605,1378828800"; 
-   d="scan'208";a="8905014"
-Message-ID: <5271B0C6.6030104@cn.fujitsu.com>
-Date: Thu, 31 Oct 2013 09:22:14 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1752110Ab3JaBd0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Oct 2013 21:33:26 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46621 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751742Ab3JaBdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Oct 2013 21:33:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,605,1378882800"; 
+   d="scan'208";a="425519117"
+Message-ID: <5271B362.2040208@linux.intel.com>
+Date: Wed, 30 Oct 2013 18:33:22 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pci-sysfs: fix a potential deadlock when concurrent remove&rescan
- pci device via sysfs
-References: <5270DB8B.6070600@cn.fujitsu.com> <20131030171949.GB25745@google.com>
-In-Reply-To: <20131030171949.GB25745@google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/31 09:26:30,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/10/31 09:26:31,
-	Serialize complete at 2013/10/31 09:26:31
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+To: "R, Durgadoss" <durgadoss.r@intel.com>, "Zhang, Rui" <rui.zhang@intel.com>
+CC: "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hongbo.zhang@freescale.com" <hongbo.zhang@freescale.com>,
+        "wni@nvidia.com" <wni@nvidia.com>
+Subject: Re: [PATCHv4 5/9] Thermal: Add trip point sysfs nodes for sensor
+References: <1380652688-5787-1-git-send-email-durgadoss.r@intel.com>	 <1380652688-5787-6-git-send-email-durgadoss.r@intel.com> <1381835008.2080.45.camel@rzhang1-mobl4> <4D68720C2E767A4AA6A8796D42C8EB59DB0FA4@BGSMSX101.gar.corp.intel.com>
+In-Reply-To: <4D68720C2E767A4AA6A8796D42C8EB59DB0FA4@BGSMSX101.gar.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+You might want to use new DEVICE_ATTR_RO and DEVICE_ATTR_RW in this 
+series. GKH wanted this changes in my powercap patchset.
 
-On 10/31/2013 01:19 AM, Bjorn Helgaas wrote:
+Thanks,
+Srinivas
 
-> On Wed, Oct 30, 2013 at 06:12:27PM +0800, Gu Zheng wrote:
->> There is a potential deadlock situation when we manipulate pci device 
->> (remove&rescan) via the pci-sysfs user interfaces simultaneously. 
+On 10/15/2013 06:12 AM, R, Durgadoss wrote:
+>> -----Original Message-----
+>> From: Zhang, Rui
+>> Sent: Tuesday, October 15, 2013 4:33 PM
+>> To: R, Durgadoss
+>> Cc: eduardo.valentin@ti.com; linux-pm@vger.kernel.org; linux-
+>> kernel@vger.kernel.org; hongbo.zhang@freescale.com; wni@nvidia.com
+>> Subject: Re: [PATCHv4 5/9] Thermal: Add trip point sysfs nodes for sensor
 >>
->> Privious patch:
->> https://lkml.org/lkml/2012/12/27/10
->>
->> Related bug reports on bugzilla:
->> https://bugzilla.kernel.org/show_bug.cgi?id=60672
->> https://bugzilla.kernel.org/show_bug.cgi?id=60695
->>
->> deadlock info described as following:
-<...>
->>
->> path1: sysfs remove device:             | path2: sysfs rescan device:
->> sysfs_schedule_callback_work()          | sysfs_write_file()
->>   remove_callback()                     |   flush_write_buffer()
->> *1* mutex_lock(&pci_remove_rescan_mutex)|*2*  sysfs_get_active(attr_sd)
->>       ...                               |     dev_attr_store()
->>         device_remove_file()            |       dev_rescan_store()
->>           ...                           |*4*  mutex_lock(&pci_remove_rescan_mutex)
->> *3*       sysfs_deactivate(sd)          |     ...
->>             wait_for_completion()       |*5*  sysfs_put_active(attr_sd)
->> *6* mutex_unlock(&pci_remove_rescan_mutex)
->>
->> If path1 first holds the pci_remove_rescan_mutex at *1*, then another path
->> called path2 actived and runs to *2* before path1 runs to *3*, we now runs
->> to a deadlock situation:
->> Path1 holds the mutex waiting path2 to decrease sysfs_dirent's s_active
->> counter at *5*, but path2 is blocked at *4* when trying to get the
->> pci_remove_rescan_mutex. The mutex won't be put by path1 until it reach
->> *6*, but it's now blocked at *3*.
->>
->> So we use mutex_try_lock to avoid this deadlock, and additional wait/restart_syscall
->> steps are used to make the fail path of try_lock more friendly to user space task.
->>
->> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
->> ---
->>  drivers/pci/pci-sysfs.c |   48 +++++++++++++++++++++++++++++++++++++++-------
->>  1 files changed, 40 insertions(+), 8 deletions(-)
->>
->> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
->> index 7128cfd..0dac6f4 100644
->> --- a/drivers/pci/pci-sysfs.c
->> +++ b/drivers/pci/pci-sysfs.c
->> @@ -29,6 +29,7 @@
->>  #include <linux/slab.h>
->>  #include <linux/vgaarb.h>
->>  #include <linux/pm_runtime.h>
->> +#include <linux/delay.h>
->>  #include "pci.h"
->>  
->>  static int sysfs_initialized;	/* = 0 */
->> @@ -285,6 +286,25 @@ msi_bus_store(struct device *dev, struct device_attribute *attr,
->>  }
->>  
->>  static DEFINE_MUTEX(pci_remove_rescan_mutex);
->> +
->> +static void pci_remove_rescan_lock(void)
->> +{
->> +	mutex_lock(&pci_remove_rescan_mutex);
->> +}
->> +
->> +static int pci_remove_rescan_lock_sysfs(void)
->> +{
->> +	if (mutex_trylock(&pci_remove_rescan_mutex))
->> +		return 0;
->> +	/* Avoid busy looping (20 ms of sleep should do). */
->> +	msleep(20);
->> +	return restart_syscall();
-> 
-> There are very few uses of restart_syscall().  I don't believe this
-> situation is so unusual and special that we need to use it here.
-
-What about queuing rescan routines into sysfs wrokqueue just like the
-remove ones? I remember that your also mentioned this way in the previous
-patch threads.
-
-Regards,
-Gu
-
-> 
->> +}
->> +
->> +static void pci_remove_rescan_unlock(void)
->> +{
->> +	mutex_unlock(&pci_remove_rescan_mutex);
->> +}
->>  static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
->>  				size_t count)
->>  {
->> @@ -295,10 +315,14 @@ static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
->>  		return -EINVAL;
->>  
->>  	if (val) {
->> -		mutex_lock(&pci_remove_rescan_mutex);
->> +		int ret;
->> +
->> +		ret = pci_remove_rescan_lock_sysfs();
->> +		if (ret)
->> +			return ret;
->>  		while ((b = pci_find_next_bus(b)) != NULL)
->>  			pci_rescan_bus(b);
->> -		mutex_unlock(&pci_remove_rescan_mutex);
->> +		pci_remove_rescan_unlock();
->>  	}
->>  	return count;
->>  }
->> @@ -319,9 +343,13 @@ dev_rescan_store(struct device *dev, struct device_attribute *attr,
->>  		return -EINVAL;
->>  
->>  	if (val) {
->> -		mutex_lock(&pci_remove_rescan_mutex);
->> +		int ret;
->> +
->> +		ret = pci_remove_rescan_lock_sysfs();
->> +		if (ret)
->> +			return ret;
->>  		pci_rescan_bus(pdev->bus);
->> -		mutex_unlock(&pci_remove_rescan_mutex);
->> +		pci_remove_rescan_unlock();
->>  	}
->>  	return count;
->>  }
->> @@ -332,9 +360,9 @@ static void remove_callback(struct device *dev)
->>  {
->>  	struct pci_dev *pdev = to_pci_dev(dev);
->>  
->> -	mutex_lock(&pci_remove_rescan_mutex);
->> +	pci_remove_rescan_lock();
->>  	pci_stop_and_remove_bus_device(pdev);
->> -	mutex_unlock(&pci_remove_rescan_mutex);
->> +	pci_remove_rescan_unlock();
->>  }
->>  
->>  static ssize_t
->> @@ -370,12 +398,16 @@ dev_bus_rescan_store(struct device *dev, struct device_attribute *attr,
->>  		return -EINVAL;
->>  
->>  	if (val) {
->> -		mutex_lock(&pci_remove_rescan_mutex);
->> +		int ret;
->> +
->> +		ret = pci_remove_rescan_lock_sysfs();
->> +		if (ret)
->> +			return ret;
->>  		if (!pci_is_root_bus(bus) && list_empty(&bus->devices))
->>  			pci_rescan_bus_bridge_resize(bus->self);
->>  		else
->>  			pci_rescan_bus(bus);
->> -		mutex_unlock(&pci_remove_rescan_mutex);
->> +		pci_remove_rescan_unlock();
->>  	}
->>  	return count;
->>  }
->> -- 
->> 1.7.7
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+>> On Wed, 2013-10-02 at 00:08 +0530, Durgadoss R wrote:
+>>> This patch adds a trip point related sysfs nodes
+>>> for each sensor under a zone in /sys/class/thermal/zoneX/.
+>>> The nodes will be named, sensorX_trip_activeY,
+>>> sensorX_trip_passiveY, sensorX_trip_hot, sensorX_trip_critical
+>>> for active, passive, hot and critical trip points
+>>> respectively for sensorX.
+>>>
+>>> Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
+>>> ---
+>>>   drivers/thermal/thermal_core.c |  344
+>> +++++++++++++++++++++++++++++++++++++++-
+>>>   include/linux/thermal.h        |   40 ++++-
+>>>   2 files changed, 379 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+>>> index 3c4ef62..d6e29f6 100644
+>>> --- a/drivers/thermal/thermal_core.c
+>>> +++ b/drivers/thermal/thermal_core.c
+>>> @@ -494,6 +494,60 @@ static void thermal_zone_device_check(struct
+>> work_struct *work)
+>>>   	thermal_zone_device_update(tz);
+>>>   }
+>>>
+>>> +static int get_sensor_indx_by_kobj(struct thermal_zone *tz, const char
+>> *name)
+>>> +{
+>>> +	int i, indx = -EINVAL;
+>>> +
+>>> +	/* Protect against tz->sensors[i] being unregistered */
+>>> +	mutex_lock(&sensor_list_lock);
+>>> +
+>>> +	for (i = 0; i < tz->sensor_indx; i++) {
+>>> +		if (!strnicmp(name, kobject_name(&tz->sensors[i]-
+>>> device.kobj),
+>>> +					THERMAL_NAME_LENGTH)) {
+>>> +			indx = i;
+>>> +			break;
+>>> +		}
+>>> +	}
+>>> +
+>>> +	mutex_unlock(&sensor_list_lock);
+>>> +	return indx;
+>>> +}
+>>> +
+>>> +static void __remove_trip_attr(struct thermal_zone *tz, int indx)
+>>> +{
+>>> +	int i;
+>>> +	struct thermal_trip_attr *attr = tz->trip_attr[indx];
+>>> +	struct thermal_trip_point *trip = tz->sensor_trip[indx];
+>>> +
+>>> +	if (!attr || !trip)
+>>> +		return;
+>>> +
+>>> +	if (trip->crit != THERMAL_TRIPS_NONE)
+>>> +		device_remove_file(&tz->device, &attr->crit_attr.attr);
+>>> +
+>>> +	if (trip->hot != THERMAL_TRIPS_NONE)
+>>> +		device_remove_file(&tz->device, &attr->hot_attr.attr);
+>>> +
+>>> +	if (trip->num_passive_trips > 0) {
+>>> +		for (i = 0; i < trip->num_passive_trips; i++) {
+>>> +			device_remove_file(&tz->device,
+>>> +						&attr->passive_attrs[i].attr);
+>>> +		}
+>>> +		kfree(attr->passive_attrs);
+>>> +	}
+>>> +
+>>> +	if (trip->num_active_trips > 0) {
+>>> +		for (i = 0; i < trip->num_active_trips; i++) {
+>>> +			device_remove_file(&tz->device,
+>>> +						&attr->active_attrs[i].attr);
+>>> +		}
+>>> +		kfree(attr->active_attrs);
+>>> +	}
+>>> +
+>>> +	kfree(tz->trip_attr[indx]);
+>>> +	tz->trip_attr[indx] = NULL;
+>>> +}
+>>> +
+>>>   static void remove_sensor_from_zone(struct thermal_zone *tz,
+>>>   				struct thermal_sensor *ts)
+>>>   {
+>>> @@ -503,13 +557,19 @@ static void remove_sensor_from_zone(struct
+>> thermal_zone *tz,
+>>>   	if (indx < 0)
+>>>   		return;
+>>>
+>>> -	sysfs_remove_link(&tz->device.kobj, kobject_name(&ts->device.kobj));
+>>> -
+>>>   	mutex_lock(&tz->lock);
+>>>
+>>> +	/* Remove trip point attributes associated with this sensor */
+>>> +	__remove_trip_attr(tz, indx);
+>>> +
+>>> +	sysfs_remove_link(&tz->device.kobj, kobject_name(&ts->device.kobj));
+>>> +
+>>>   	/* Shift the entries in the tz->sensors array */
+>>> -	for (j = indx; j < MAX_SENSORS_PER_ZONE - 1; j++)
+>>> +	for (j = indx; j < MAX_SENSORS_PER_ZONE - 1; j++) {
+>>>   		tz->sensors[j] = tz->sensors[j + 1];
+>>> +		tz->sensor_trip[j] = tz->sensor_trip[j + 1];
+>>> +		tz->trip_attr[j] = tz->trip_attr[j + 1];
+>>> +	}
+>>>
+>>>   	tz->sensor_indx--;
+>>>   	mutex_unlock(&tz->lock);
+>>> @@ -952,6 +1012,111 @@ emul_temp_store(struct device *dev, struct
+>> device_attribute *attr,
+>>>   static DEVICE_ATTR(emul_temp, S_IWUSR, NULL, emul_temp_store);
+>>>   #endif/*CONFIG_THERMAL_EMULATION*/
+>>>
+>>> +static ssize_t
+>>> +active_trip_show(struct device *dev, struct device_attribute *attr, char *buf)
+>>> +{
+>>> +	int i, j, val;
+>>> +	char kobj_name[THERMAL_NAME_LENGTH];
+>>> +	struct thermal_zone *tz = to_zone(dev);
+>>> +
+>>> +	if (!sscanf(attr->attr.name, "sensor%d_trip_active%d", &i, &j))
+>>> +		return -EINVAL;
+>>> +
+>>> +	snprintf(kobj_name, THERMAL_NAME_LENGTH, "sensor%d", i);
+>>> +
+>>> +	mutex_lock(&tz->lock);
+>>> +
+>>> +	i = get_sensor_indx_by_kobj(tz, kobj_name);
+>>> +	if (i < 0) {
+>>> +		mutex_unlock(&tz->lock);
+>>> +		return i;
+>>> +	}
+>>> +
+>>> +	val = tz->sensor_trip[i]->active_trips[j];
+>>> +	mutex_unlock(&tz->lock);
+>>> +
+>>> +	return sprintf(buf, "%d\n", val);
+>>> +}
+>>> +
+>>> +static ssize_t
+>>> +passive_trip_show(struct device *dev, struct device_attribute *attr, char
+>> *buf)
+>>> +{
+>>> +	int i, j, val;
+>>> +	char kobj_name[THERMAL_NAME_LENGTH];
+>>> +	struct thermal_zone *tz = to_zone(dev);
+>>> +
+>>> +	if (!sscanf(attr->attr.name, "sensor%d_trip_passive%d", &i, &j))
+>>> +		return -EINVAL;
+>>> +
+>>> +	snprintf(kobj_name, THERMAL_NAME_LENGTH, "sensor%d", i);
+>>> +
+>>> +	mutex_lock(&tz->lock);
+>>> +
+>>> +	i = get_sensor_indx_by_kobj(tz, kobj_name);
+>>> +	if (i < 0) {
+>>> +		mutex_unlock(&tz->lock);
+>>> +		return i;
+>>> +	}
+>>> +
+>>> +	val = tz->sensor_trip[i]->passive_trips[j];
+>>> +	mutex_unlock(&tz->lock);
+>>> +
+>>> +	return sprintf(buf, "%d\n", val);
+>>> +}
+>>> +
+>>> +static ssize_t
+>>> +hot_trip_show(struct device *dev, struct device_attribute *attr, char *buf)
+>>> +{
+>>> +	int indx, val;
+>>> +	char kobj_name[THERMAL_NAME_LENGTH];
+>>> +	struct thermal_zone *tz = to_zone(dev);
+>>> +
+>>> +	if (!sscanf(attr->attr.name, "sensor%d_trip_hot", &indx))
+>>> +		return -EINVAL;
+>>> +
+>>> +	snprintf(kobj_name, THERMAL_NAME_LENGTH, "sensor%d", indx);
+>>> +
+>>> +	mutex_lock(&tz->lock);
+>>> +
+>>> +	indx = get_sensor_indx_by_kobj(tz, kobj_name);
+>>> +	if (indx < 0) {
+>>> +		mutex_unlock(&tz->lock);
+>>> +		return indx;
+>>> +	}
+>>> +
+>>> +	val = tz->sensor_trip[indx]->hot;
+>>> +	mutex_unlock(&tz->lock);
+>>> +
+>>> +	return sprintf(buf, "%d\n", val);
+>>> +}
+>>> +
+>>> +static ssize_t
+>>> +critical_trip_show(struct device *dev,
+>>> +			struct device_attribute *attr, char *buf)
+>>> +{
+>>> +	int indx, val;
+>>> +	char kobj_name[THERMAL_NAME_LENGTH];
+>>> +	struct thermal_zone *tz = to_zone(dev);
+>>> +
+>>> +	if (!sscanf(attr->attr.name, "sensor%d_trip_critical", &indx))
+>>> +		return -EINVAL;
+>>> +
+>>> +	snprintf(kobj_name, THERMAL_NAME_LENGTH, "sensor%d", indx);
+>>> +
+>>> +	mutex_lock(&tz->lock);
+>>> +
+>>> +	indx = get_sensor_indx_by_kobj(tz, kobj_name);
+>>> +	if (indx < 0) {
+>>> +		mutex_unlock(&tz->lock);
+>>> +		return indx;
+>>> +	}
+>>> +
+>>> +	val = tz->sensor_trip[indx]->crit;
+>>> +	mutex_unlock(&tz->lock);
+>>> +
+>>> +	return sprintf(buf, "%d\n", val);
+>>> +}
+>>> +
+>>>   static DEVICE_ATTR(type, 0444, type_show, NULL);
+>>>   static DEVICE_ATTR(temp, 0444, temp_show, NULL);
+>>>   static DEVICE_ATTR(mode, 0644, mode_show, mode_store);
+>>> @@ -962,7 +1127,8 @@ static DEVICE_ATTR(policy, S_IRUGO | S_IWUSR,
+>> policy_show, policy_store);
+>>>   static DEVICE_ATTR(sensor_name, 0444, sensor_name_show, NULL);
+>>>   static DEVICE_ATTR(temp_input, 0444, sensor_temp_show, NULL);
+>>>
+>>> -static DEVICE_ATTR(zone_name, 0444, zone_name_show, NULL);
+>>> +/* Thermal zone attributes */
+>>> +static DEVICE_ATTR(zone_name, S_IRUGO, zone_name_show, NULL);
+>>>
+>>>   /* sys I/F for cooling device */
+>>>   #define to_cooling_device(_dev)	\
+>>> @@ -1841,6 +2007,43 @@ static int enable_sensor_thresholds(struct
+>> thermal_sensor *ts, int count)
+>>>   	return 0;
+>>>   }
+>>>
+>>> +static int create_single_trip_attr(struct thermal_zone *tz,
+>>> +			struct thermal_attr *attr,
+>>> +			const char *attr_name,
+>>> +			ssize_t (*rd_ptr)(struct device *dev,
+>>> +			struct device_attribute *devattr, char *buf))
+>>> +{
+>>> +	snprintf(attr->name, THERMAL_NAME_LENGTH, attr_name);
+>>> +	sysfs_attr_init(&attr->attr.attr);
+>>> +	attr->attr.attr.name = attr->name;
+>>> +	attr->attr.attr.mode = S_IRUGO;
+>>> +	attr->attr.show = rd_ptr;
+>>> +	return device_create_file(&tz->device, &attr->attr);
+>>> +}
+>>> +
+>>> +static int create_multi_trip_attrs(struct thermal_zone *tz, int size,
+>>> +			int indx, struct thermal_attr *attrs,
+>>> +			const char *attr_name,
+>>> +			ssize_t (*rd_ptr)(struct device *dev,
+>>> +			struct device_attribute *devattr, char *buf))
+>>> +{
+>>> +	char name[THERMAL_NAME_LENGTH];
+>>> +	int i, ret;
+>>> +
+>>> +	for (i = 0; i < size; i++) {
+>>> +		snprintf(name, THERMAL_NAME_LENGTH, attr_name, indx, i);
+>>> +		ret = create_single_trip_attr(tz, &attrs[i], name, rd_ptr);
+>>> +		if (ret)
+>>> +			goto exit;
+>>> +	}
+>>> +	return 0;
+>>> +
+>>> +exit:
+>>> +	while (--i >= 0)
+>>> +		device_remove_file(&tz->device, &attrs[i].attr);
+>>> +	return ret;
+>>> +}
+>>> +
+>>>   /**
+>>>    * create_thermal_zone - create sysfs nodes for thermal zone
+>>>    * @name:	Name of the thermla zone
+>>> @@ -2139,6 +2342,139 @@ exit_zone:
+>>>   EXPORT_SYMBOL(add_cdev_to_zone);
+>>>
+>>>   /**
+>>> + * add_sensor_trip_info - Add trip point information for @ts in @tz
+>>> + * @tz:		Thermal zone reference
+>>> + * @ts:		Thermal sensor reference
+>>> + * @trip:	Trip point structure reference
+>>> + *
+>>> + * Returns 0 on success, otherwise
+>>> + * -EINVAL for invalid paramenters
+>>> + * -EINVAL if @ts is not part of 'this' thermal zone @tz
+>>> + * -ENOMEM on kzalloc failures
+>>> + */
+>>> +int add_sensor_trip_info(struct thermal_zone *tz, struct thermal_sensor *ts,
+>>> +			struct thermal_trip_point *trip)
+>>> +{
+>>> +	char name[THERMAL_NAME_LENGTH];
+>>> +	int i, indx, kobj_indx, ret, size;
+>>> +	struct thermal_trip_attr *attrs;
+>>> +
+>>> +	if (!tz || !ts || !trip)
+>>> +		return -EINVAL;
+>>> +
+>>> +	if (!sscanf(kobject_name(&ts->device.kobj), "sensor%d", &kobj_indx))
+>>> +		return -EINVAL;
+>>> +
+>>> +	mutex_lock(&zone_list_lock);
+>>> +
+>>> +	indx = GET_INDEX(tz, ts, sensor);
+>>> +	if (indx < 0) {
+>>> +		ret = -EINVAL;
+>>> +		goto exit;
+>>> +	}
+>>> +
+>>> +	/* Protect against 'ts' being unregistered */
+>>> +	mutex_lock(&sensor_list_lock);
+>>> +
+>>> +	/* Protect tz->trip_attr[] and tz->sensor_trip[] */
+>>> +	mutex_lock(&tz->lock);
+>>> +
+>>> +	tz->trip_attr[indx] = kzalloc(sizeof(struct thermal_trip_attr),
+>>> +					GFP_KERNEL);
+>>> +	if (!tz->trip_attr[indx]) {
+>>> +		ret = -ENOMEM;
+>>> +		goto exit_lock;
+>>> +	}
+>>> +
+>>> +	attrs = tz->trip_attr[indx];
+>>> +
+>>> +	/* Create Critical trip point attribute */
+>>> +	if (trip->crit != THERMAL_TRIPS_NONE) {
+>>> +		snprintf(name, THERMAL_NAME_LENGTH,
+>>> +					"sensor%d_trip_critical", kobj_indx);
+>>> +		ret = create_single_trip_attr(tz, &attrs->crit_attr,
+>>> +					name, critical_trip_show);
+>>> +		if (ret)
+>>> +			goto exit_trip;
+>>> +	}
+>>> +
+>>> +	/* Create Hot trip point attribute */
+>>> +	if (trip->hot != THERMAL_TRIPS_NONE) {
+>>> +		snprintf(name, THERMAL_NAME_LENGTH,
+>>> +					"sensor%d_trip_hot", kobj_indx);
+>>> +		ret = create_single_trip_attr(tz, &attrs->hot_attr,
+>>> +					name, hot_trip_show);
+>>> +		if (ret)
+>>> +			goto exit_crit_trip;
+>>> +	}
+>>> +
+>>> +	/* Create Passive trip point attributes */
+>>> +	if (trip->num_passive_trips > 0) {
+>>> +		size = sizeof(struct thermal_attr) * trip->num_passive_trips;
+>>> +		attrs->passive_attrs = kzalloc(size, GFP_KERNEL);
+>>> +		if (!attrs->passive_attrs) {
+>>> +			ret = -ENOMEM;
+>>> +			goto exit_hot_trip;
+>>> +		}
+>>> +
+>>> +		ret = create_multi_trip_attrs(tz, trip->num_passive_trips,
+>>> +					kobj_indx, attrs->passive_attrs,
+>>> +					"sensor%d_trip_passive%d",
+>> well, I do not think this is a good code style.
+>> I prefer to create the attrs one by one, rather than passing this ugly
+>> format string.
+>> please use create_single_trip_attr() instead if you can not find a clean
+>> way to do this.
+> Okay, Will change in next revision.
+>
+> Thanks,
+> Durga
+>
+>> thanks,
+>> rui
+>>> +					passive_trip_show);
+>>> +		if (ret)
+>>> +			goto exit_hot_trip;
+>>> +	}
+>>> +
+>>> +	/* Create Active trip point attributes */
+>>> +	if (trip->num_active_trips > 0) {
+>>> +		size = sizeof(struct thermal_attr) * trip->num_active_trips;
+>>> +		attrs->active_attrs = kzalloc(size, GFP_KERNEL);
+>>> +		if (!attrs->active_attrs) {
+>>> +			ret = -ENOMEM;
+>>> +			goto exit_passive_trips;
+>>> +		}
+>>> +
+>>> +		ret = create_multi_trip_attrs(tz, trip->num_active_trips,
+>>> +					kobj_indx, attrs->active_attrs,
+>>> +					"sensor%d_trip_active%d",
+>>> +					active_trip_show);
+>>> +		if (ret)
+>>> +			goto exit_passive_trips;
+>>> +	}
+>>> +
+>>> +	tz->sensor_trip[indx] = trip;
+>>> +
+>>> +	mutex_unlock(&tz->lock);
+>>> +	mutex_unlock(&sensor_list_lock);
+>>> +	mutex_unlock(&zone_list_lock);
+>>> +
+>>> +	return 0;
+>>> +
+>>> +exit_passive_trips:
+>>> +	kfree(attrs->active_attrs);
+>>> +	i = trip->num_passive_trips;
+>>> +	while (--i >= 0)
+>>> +		device_remove_file(&tz->device, &attrs->passive_attrs[i].attr);
+>>> +exit_hot_trip:
+>>> +	kfree(attrs->passive_attrs);
+>>> +	if (trip->hot != THERMAL_TRIPS_NONE)
+>>> +		device_remove_file(&tz->device, &attrs->hot_attr.attr);
+>>> +exit_crit_trip:
+>>> +	if (trip->crit != THERMAL_TRIPS_NONE)
+>>> +		device_remove_file(&tz->device, &attrs->crit_attr.attr);
+>>> +exit_trip:
+>>> +	kfree(tz->trip_attr[indx]);
+>>> +	tz->trip_attr[indx] = NULL;
+>>> +exit_lock:
+>>> +	mutex_unlock(&tz->lock);
+>>> +	mutex_unlock(&sensor_list_lock);
+>>> +exit:
+>>> +	mutex_unlock(&zone_list_lock);
+>>> +	return ret;
+>>> +}
+>>> +EXPORT_SYMBOL(add_sensor_trip_info);
+>>> +
+>>> +/**
+>>>    * thermal_sensor_register - register a new thermal sensor
+>>>    * @name:	name of the thermal sensor
+>>>    * @count:	Number of thresholds supported by hardware
+>>> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+>>> index da7520c..f8de86d 100644
+>>> --- a/include/linux/thermal.h
+>>> +++ b/include/linux/thermal.h
+>>> @@ -31,7 +31,7 @@
+>>>
+>>>   #define THERMAL_TRIPS_NONE	-1
+>>>   #define THERMAL_MAX_TRIPS	12
+>>> -#define THERMAL_NAME_LENGTH	20
+>>> +#define THERMAL_NAME_LENGTH	25
+>>>
+>>>   /* invalid cooling state */
+>>>   #define THERMAL_CSTATE_INVALID -1UL
+>>> @@ -170,6 +170,37 @@ struct thermal_attr {
+>>>   	char name[THERMAL_NAME_LENGTH];
+>>>   };
+>>>
+>>> +/*
+>>> + * This structure defines the trip points for a sensor.
+>>> + * The actual values for these trip points come from
+>>> + * platform characterization. The thermal governors
+>>> + * (either kernel or user space) may take appropriate
+>>> + * actions when the sensors reach these trip points.
+>>> + * See Documentation/thermal/sysfs-api2.txt for more details.
+>>> + *
+>>> + * As of now, For a particular sensor, we support:
+>>> + * a) 1 hot trip point
+>>> + * b) 1 critical trip point
+>>> + * c) 'n' passive trip points
+>>> + * d) 'm' active trip points
+>>> + */
+>>> +struct thermal_trip_point {
+>>> +	int hot;
+>>> +	int crit;
+>>> +	int num_passive_trips;
+>>> +	int *passive_trips;
+>>> +	int num_active_trips;
+>>> +	int *active_trips;
+>>> +	int active_trip_mask;
+>>> +};
+>>> +
+>>> +struct thermal_trip_attr {
+>>> +	struct thermal_attr hot_attr;
+>>> +	struct thermal_attr crit_attr;
+>>> +	struct thermal_attr *active_attrs;
+>>> +	struct thermal_attr *passive_attrs;
+>>> +};
+>>> +
+>>>   struct thermal_sensor {
+>>>   	char name[THERMAL_NAME_LENGTH];
+>>>   	int id;
+>>> @@ -229,6 +260,10 @@ struct thermal_zone {
+>>>   	/* cdev level information */
+>>>   	int cdev_indx; /* index into 'cdevs' array */
+>>>   	struct thermal_cooling_device *cdevs[MAX_CDEVS_PER_ZONE];
+>>> +
+>>> +	/* Thermal sensors trip information */
+>>> +	struct thermal_trip_point *sensor_trip[MAX_SENSORS_PER_ZONE];
+>>> +	struct thermal_trip_attr *trip_attr[MAX_SENSORS_PER_ZONE];
+>>>   };
+>>>
+>>>   /* Structure that holds thermal governor information */
+>>> @@ -309,6 +344,9 @@ struct thermal_sensor *get_sensor_by_name(const
+>> char *);
+>>>   int add_cdev_to_zone(struct thermal_zone *, struct thermal_cooling_device
+>> *);
+>>>   struct thermal_cooling_device *get_cdev_by_name(const char *);
+>>>
+>>> +int add_sensor_trip_info(struct thermal_zone *, struct thermal_sensor *,
+>>> +			struct thermal_trip_point *);
+>>> +
+>>>   #ifdef CONFIG_NET
+>>>   extern int thermal_generate_netlink_event(struct thermal_zone_device *tz,
+>>>   						enum events event);
+> N�����r��y���b�X��ǧv�^�)޺{.n�+����{��h����ܨ}���Ơz�&j:+v�������zZ+��+zf���h���~����i���z��w���?����&�)ߢfl===
 
