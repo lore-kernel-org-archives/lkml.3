@@ -1,71 +1,521 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab3JaHk2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 03:40:28 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40585 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086Ab3JaHk1 (ORCPT
+	id S1753286Ab3JaHnP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 03:43:15 -0400
+Received: from nasmtp02.atmel.com ([204.2.163.16]:48884 "EHLO
+	SJOEDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751948Ab3JaHnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 03:40:27 -0400
-Date: Thu, 31 Oct 2013 18:40:15 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Philippe Proulx <philippe.proulx@savoirfairelinux.com>
-Subject: linux-next: build failure after merge of the tty tree
-Message-Id: <20131031184015.adc000259e9931fd0b5d5cf7@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__31_Oct_2013_18_40_15_+1100_9Qu7nDNPJ7_4YSFw"
+	Thu, 31 Oct 2013 03:43:14 -0400
+Message-ID: <52720956.9090808@atmel.com>
+Date: Thu, 31 Oct 2013 15:40:06 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>, <linux-pwm@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: Re: [PATCH v5] PWM: atmel-pwm: add PWM controller driver
+References: <ABFEDD1A8D2AAF42A54E3C074D49DC727313EB16@penmbx01>
+In-Reply-To: <ABFEDD1A8D2AAF42A54E3C074D49DC727313EB16@penmbx01>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__31_Oct_2013_18_40_15_+1100_9Qu7nDNPJ7_4YSFw
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi J,
 
-Hi Greg,
+On 10/31/2013 13:42, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> On 17:10 Mon 30 Sep     , Bo Shen wrote:
+>> Add Atmel PWM controller driver based on PWM framework.
+>>
+>> This is the basic function implementation of Atmel PWM controller.
+>> It can work with PWM based led and backlight.
+>>
+>> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+>>
+>> ---
+>> Changes in v5:
+>>    - call clk_disable directly, if so, it won't cause more than one channel
+>>      enabled, the clock can not be disabled.
+>>
+>> Changes in v4:
+>>    - check the return value of clk_prepare()
+>>    - change channel register size as constant
+>>
+>> Changes in v3:
+>>    - change compatible string from "atmel,sama5-pwm" to "atmel,sama5d3-pwm"
+>>    - Add PWM led example in binding documentation
+>>    - Using micro replace hard code
+>>
+>> Changes in v2:
+>>    - Address the comments from Thierry Reding
+>>
+>>   .../devicetree/bindings/pwm/atmel-pwm.txt          |   41 +++
+>>   drivers/pwm/Kconfig                                |    9 +
+>>   drivers/pwm/Makefile                               |    1 +
+>>   drivers/pwm/pwm-atmel.c                            |  344 ++++++++++++++++++++
+>>   4 files changed, 395 insertions(+)
+>>   create mode 100644
+>> Documentation/devicetree/bindings/pwm/atmel-pwm.txt
+>>   create mode 100644 drivers/pwm/pwm-atmel.c
+>>
+>> diff --git a/Documentation/devicetree/bindings/pwm/atmel-pwm.txt
+>> b/Documentation/devicetree/bindings/pwm/atmel-pwm.txt
+>> new file mode 100644
+>> index 0000000..1c1a5fa
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/pwm/atmel-pwm.txt
+>> @@ -0,0 +1,41 @@
+>> +Atmel PWM controller
+>> +
+>> +Required properties:
+>> +  - compatible: should be one of:
+>> +    - "atmel,at91sam9rl-pwm"
+>> +    - "atmel,sama5d3-pwm"
+>> +  - reg: physical base address and length of the controller's
+>> +registers
+>> +  - #pwm-cells: Should be 3. See pwm.txt in this directory for a
+>> +    description of the cells format
+>> +
+>> +Example:
+>> +
+>> +	pwm0: pwm@f8034000 {
+>> +		compatible = "atmel,at91sam9rl-pwm";
+>> +		reg = <0xf8034000 0x400>;
+>> +		#pwm-cells = <3>;
+>> +	};
+>> +
+>> +The following the pwm led based example:
+>> +
+>> +	pwm0: pwm@f8034000 {
+>> +		compatible = "atmel,at91sam9rl-pwm";
+>> +		reg = <0xf8034000 0x400>;
+>> +		#pwm-cells = <3>;
+>> +	};
+>> +
+>> +	pwdleds {
+>> +		compatible = "pwm-leds";
+>> +
+>> +		d1 {
+>> +			label = "d1";
+>> +			pwms = <&pwm0 3 5000 0>
+>> +			max-brightness = <255>;
+>> +		};
+>> +
+>> +		d2 {
+>> +			label = "d2";
+>> +			pwms = <&pwm0 1 5000 1>
+>> +			max-brightness = <255>;
+>> +		};
+>> +	};
+>> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig index
+>> 75840b5..54237b9 100644
+>> --- a/drivers/pwm/Kconfig
+>> +++ b/drivers/pwm/Kconfig
+>> @@ -41,6 +41,15 @@ config PWM_AB8500
+>>   	  To compile this driver as a module, choose M here: the module
+>>   	  will be called pwm-ab8500.
+>>
+>> +config PWM_ATMEL
+>> +	tristate "Atmel PWM support"
+>> +	depends on ARCH_AT91
+>> +	help
+>> +	  Generic PWM framework driver for Atmel SoC.
+>> +
+>> +	  To compile this driver as a module, choose M here: the module
+>> +	  will be called pwm-atmel.
+>> +
+>>   config PWM_ATMEL_TCB
+>>   	tristate "Atmel TC Block PWM support"
+>>   	depends on ATMEL_TCLIB && OF
+>> diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile index
+>> 77a8c18..5b193f8 100644
+>> --- a/drivers/pwm/Makefile
+>> +++ b/drivers/pwm/Makefile
+>> @@ -1,6 +1,7 @@
+>>   obj-$(CONFIG_PWM)		+= core.o
+>>   obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
+>>   obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
+>> +obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
+>>   obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
+>>   obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
+>>   obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
+>> diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c new
+>> file mode 100644 index 0000000..b4df36c
+>> --- /dev/null
+>> +++ b/drivers/pwm/pwm-atmel.c
+>> @@ -0,0 +1,344 @@
+>> +/*
+>> + * Driver for Atmel Pulse Width Modulation Controller
+>> + *
+>> + * Copyright (C) 2013 Atmel Corporation
+>> + *		 Bo Shen <voice.shen@atmel.com>
+>> + *
+>> + * Licensed under GPLv2.
+>> + */
+>> +
+>> +#include <linux/clk.h>
+>> +#include <linux/err.h>
+>> +#include <linux/io.h>
+>> +#include <linux/module.h>
+>> +#include <linux/of.h>
+>> +#include <linux/of_device.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/pwm.h>
+>> +#include <linux/slab.h>
+>> +
+>> +/* The following is global registers for PWM controller */
+>> +#define PWM_ENA			0x04
+>> +#define PWM_DIS			0x08
+>> +#define PWM_SR			0x0C
+>> +/* bit field in SR */
+>> +#define PWM_SR_ALL_CH_ON	0x0F
+>> +
+>> +/* The following register is PWM channel related registers */
+>> +#define PWM_CH_REG_OFFSET	0x200
+>> +#define PWM_CH_REG_SIZE		0x20
+>> +
+>> +#define PWM_CMR			0x0
+>> +/* bit field in CMR */
+>> +#define PWM_CMR_CPOL		(1 << 9)
+>> +#define PWM_CMR_UPD_CDTY	(1 << 10)
+>> +
+>> +/* The following registers for PWM v1 */
+>> +#define PWMv1_CDTY		0x04
+>> +#define PWMv1_CPRD		0x08
+>> +#define PWMv1_CUPD		0x10
+>> +
+>> +/* The following registers for PWM v2 */
+>> +#define PWMv2_CDTY		0x04
+>> +#define PWMv2_CDTYUPD		0x08
+>> +#define PWMv2_CPRD		0x0C
+>> +#define PWMv2_CPRDUPD		0x10
+>
+> no lowercase
 
-After merging the tty tree, today's linux-next build (arm
-multi_v7_defconfig) failed like this:
+OK, I will change it in v6.
 
-drivers/tty/serial/omap-serial.c: In function 'serial_omap_probe':
-drivers/tty/serial/omap-serial.c:1724:22: error: expected ')' before numeri=
-c constant
-drivers/tty/serial/omap-serial.c:1724:22: warning: format '%d' expects a ma=
-tching 'int' argument [-Wformat]
+>> +
+>> +/* max value for duty and period */
+>> +/*
+>> + * Although the duty and period register is 32 bit,
+>> + * however only the LSB 16 bits are significant.
+>> + */
+>> +#define PWM_MAX_DTY		0xFFFF
+>> +#define PWM_MAX_PRD		0xFFFF
+>> +#define PRD_MAX_PRES		10
+>> +
+>> +struct atmel_pwm_chip {
+>> +	struct pwm_chip chip;
+>> +	struct clk *clk;
+>> +	void __iomem *base;
+>> +
+>> +	void (*config)(struct pwm_chip *chip, struct pwm_device *pwm,
+>> +		       int dty, int prd);
+>> +};
+>> +
+>> +static inline struct atmel_pwm_chip *to_atmel_pwm_chip(struct
+>> +pwm_chip *chip) {
+>> +	return container_of(chip, struct atmel_pwm_chip, chip); }
+>> +
+>> +static inline u32 atmel_pwm_readl(struct atmel_pwm_chip *chip,
+>> +				  unsigned long offset)
+>> +{
+>> +	return readl(chip->base + offset);
+> use relaxed version
 
-Caused by commit e5f9bf72efbc ("serial: omap: fix a few checkpatch
-warnings").  There is a missing ',' in the dev_warn() ...
+OK, I will change in v6.
 
-I have used the version of the tty tree from next-20131030 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>> +}
+>> +
+>> +static inline void atmel_pwm_writel(struct atmel_pwm_chip *chip,
+>> +				    unsigned long offset, unsigned long val) {
+>> +	writel(val, chip->base + offset);
+>> +}
+>> +
+>> +static inline u32 atmel_pwm_ch_readl(struct atmel_pwm_chip *chip,
+>> +				     unsigned int ch, unsigned long offset) {
+>> +	return readl(chip->base + PWM_CH_REG_OFFSET + ch * PWM_CH_REG_SIZE
+>> +		     + offset);
+>> +}
+>> +
+>> +static inline void atmel_pwm_ch_writel(struct atmel_pwm_chip *chip,
+>> +				       unsigned int ch, unsigned long offset,
+>> +				       unsigned long val)
+>> +{
+>> +	writel(val, chip->base + PWM_CH_REG_OFFSET + ch * PWM_CH_REG_SIZE
+>> +	       + offset);
+>> +}
+>> +
+>> +static int atmel_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+>> +		int duty_ns, int period_ns)
+>> +{
+>> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+>> +	unsigned long clk_rate, prd, dty;
+>> +	unsigned long long div;
+>> +	int ret, pres = 0;
+>> +
+>> +	clk_rate = clk_get_rate(atmel_pwm->clk);
+>> +	div = clk_rate;
+>> +
+>> +	/* Calculate the period cycles */
+>> +	while (div > PWM_MAX_PRD) {
+>> +		div = clk_rate / (1 << pres);
+>> +		div = div * period_ns;
+>> +		/* 1/Hz = 100000000 ns */
+>> +		do_div(div, 1000000000);
+>> +
+>> +		if (pres++ > PRD_MAX_PRES) {
+>> +			pr_err("PRES is bigger than maximum pre-scaler\n");
+>> +			return -EINVAL;
+>> +		}
+>> +	}
+>> +
+>> +	/* Calculate the duty cycles */
+>> +	prd = div;
+>> +	div *= duty_ns;
+>> +	do_div(div, period_ns);
+>> +	dty = div;
+>> +
+>> +	ret = clk_enable(atmel_pwm->clk);
+>> +	if (ret) {
+>> +		pr_err("Failed to enable pwm clock\n");
+>> +		return ret;
+>> +	}
+>> +
+>> +	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, pres);
+>> +	atmel_pwm->config(chip, pwm, dty, prd);
+>> +
+>> +	clk_disable(atmel_pwm->clk);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static void atmel_pwm_config_v1(struct pwm_chip *chip, struct pwm_device *pwm,
+>> +				int dty, int prd)
+>> +{
+>> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+>> +	unsigned int val;
+>> +
+>> +	/*
+>> +	 * If the PWM channel is disabled, write value to duty and period
+>> +	 * registers directly.
+>> +	 * If the PWM channel is enabled, using the update register, it needs
+>> +	 * to set bit 10 of CMR to 0
+>> +	 */
+>> +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
+>> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv1_CUPD, dty);
+>> +
+>> +		val = atmel_pwm_ch_readl(atmel_pwm, pwm->hwpwm, PWM_CMR);
+>> +		val &= ~PWM_CMR_UPD_CDTY;
+>> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
+>> +	} else {
+>> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv1_CDTY, dty);
+>> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv1_CPRD, prd);
+>> +	}
+>> +}
+>> +
+>> +static void atmel_pwm_config_v2(struct pwm_chip *chip, struct pwm_device *pwm,
+>> +				int dty, int prd)
+>> +{
+>> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+>> +
+>> +	/*
+>> +	 * If the PWM channel is disabled, write value to duty and period
+>> +	 * registers directly.
+>> +	 * If the PWM channel is enabled, using the duty update register to
+>> +	 * update the value.
+>> +	 */
+>> +	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
+>> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv2_CDTYUPD, dty);
+>> +	} else {
+>> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv2_CDTY, dty);
+>> +		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMv2_CPRD, prd);
+>> +	}
+>> +}
+>> +
+>> +static int atmel_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
+>> +		enum pwm_polarity polarity)
+>> +{
+>> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+>> +	u32 val = 0;
+>> +	int ret;
+>> +
+>> +	ret = clk_enable(atmel_pwm->clk);
+>> +	if (ret) {
+>> +		pr_err("failed to enable pwm clock\n");
+>> +		return ret;
+>> +	}
+>> +
+>> +	if (polarity == PWM_POLARITY_NORMAL)
+>> +		val &= ~PWM_CMR_CPOL;
+>> +	else
+>> +		val |= PWM_CMR_CPOL;
+>> +
+> clk_enable here
 
---Signature=_Thu__31_Oct_2013_18_40_15_+1100_9Qu7nDNPJ7_4YSFw
-Content-Type: application/pgp-signature
+OK, I will move clk enable down to here.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+>> +	atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWM_CMR, val);
+>> +
+>> +	clk_disable(atmel_pwm->clk);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int atmel_pwm_enable(struct pwm_chip *chip, struct pwm_device
+>> +*pwm) {
+>> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+>> +	int ret;
+>> +
+>> +	ret = clk_enable(atmel_pwm->clk);
+>> +	if (ret) {
+>> +		pr_err("failed to enable pwm clock\n");
+>> +		return ret;
+>> +	}
+>> +
+>> +	atmel_pwm_writel(atmel_pwm, PWM_ENA, 1 << pwm->hwpwm);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static void atmel_pwm_disable(struct pwm_chip *chip, struct
+>> +pwm_device *pwm) {
+>> +	struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+>> +
+>> +	atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
+>> +
+>> +	clk_disable(atmel_pwm->clk);
+>> +}
+>> +
+>> +static const struct pwm_ops atmel_pwm_ops = {
+>> +	.config = atmel_pwm_config,
+>> +	.set_polarity = atmel_pwm_set_polarity,
+>> +	.enable = atmel_pwm_enable,
+>> +	.disable = atmel_pwm_disable,
+>> +	.owner = THIS_MODULE,
+>> +};
+>> +
+>> +struct atmel_pwm_data {
+>> +	void (*config)(struct pwm_chip *chip, struct pwm_device *pwm,
+>> +		       int dty, int prd);
+>> +};
+>
+> what is the point to have one struct for one function pointer?
 
-iQIcBAEBCAAGBQJScglkAAoJEMDTa8Ir7ZwVZO0P/0jjp55VkKU5FlGBCVuQD+Hl
-WVUT2xJmLgfKhOfpsmHRGziCiC9dfBBJA7/WUci5QfJPA6FrQwnO0bpiKgYGNzHk
-2uCb6Wq7+g0G61LHB5hE85n5+8b/kfNB9elUModUFHerkj7oS0enGV3vF0VCB4Zh
-19OmZ+1owdAx2PgULLytLcixpPBgoV1fAfsYHguoHKuiljAWGsxikzi4YMrFjlVv
-8pvA32i19PAumwKdxcKrbpgvUpoiibLjyxFxSK9vn4AzyO4vwkv8Uls2tgUOEXnG
-kwn64oTphf7OGXY49tfSokdu2HnSZOe6HIb/+hMKdviYt/etu65wa9v7R2/lHhB6
-HMXpRvlbfr2vr7aVNlRMBhtEcRl6G+M9YZeaOE4jdixtS4e7OvDmwYmNsMkraeGw
-YSON5QqiV+iES65Wjk79CAxQhRDAwnLmbFrv/6kLjIknNzz26j2lkLWGB9ASf3Xu
-XP28zBcslw/9EHDyKIGekN7xDGrbceDSccuATW57NQ3jIlobPWvpJ9ur73RcfEmF
-wnpLpMT912PTK80QsRK/qWoeG/ZZ/eiikyDXDISP1Uif0ZtPE5O6LnHijKlPmzIE
-IehGOA61jidtn/uhnVIFoHjCCdg7ESv27+53aZqsAFt5Dzpdo5QpiSZzqcOzVuQQ
-Toh+wVIVky38mSgRSUcE
-=9+yQ
------END PGP SIGNATURE-----
+This is just used to pass different configuration fucntion for v1 and 
+v2. It will be easy to distinguish between v1 and v2.
 
---Signature=_Thu__31_Oct_2013_18_40_15_+1100_9Qu7nDNPJ7_4YSFw--
+>> +
+>> +static const struct atmel_pwm_data atmel_pwm_data_v1 = {
+>> +	.config = atmel_pwm_config_v1,
+>> +};
+>> +
+>> +static const struct atmel_pwm_data atmel_pwm_data_v2 = {
+>> +	.config = atmel_pwm_config_v2,
+>> +};
+>> +
+>> +#ifdef CONFIG_OF
+>> +static const struct of_device_id atmel_pwm_dt_ids[] = {
+>> +	{
+>> +		.compatible = "atmel,at91sam9rl-pwm",
+>> +		.data = &atmel_pwm_data_v1,
+>> +	}, {
+>> +		.compatible = "atmel,sama5d3-pwm",
+>> +		.data = &atmel_pwm_data_v2,
+>> +	}, {
+>> +		/* sentinel */
+>> +	},
+>> +};
+>> +MODULE_DEVICE_TABLE(of, atmel_pwm_dt_ids); #endif
+>> +
+> you need to handel both case dt and non-DT
+
+Ok, I will add for non-DT case.
+
+>> +static int atmel_pwm_probe(struct platform_device *pdev) {
+>> +	const struct of_device_id *of_id =
+>> +		of_match_device(atmel_pwm_dt_ids, &pdev->dev);
+>> +	const struct atmel_pwm_data *data;
+>> +	struct atmel_pwm_chip *atmel_pwm;
+>> +	struct resource *res;
+>> +	int ret;
+>> +
+>> +	atmel_pwm = devm_kzalloc(&pdev->dev, sizeof(*atmel_pwm), GFP_KERNEL);
+>> +	if (!atmel_pwm)
+>> +		return -ENOMEM;
+>> +
+>> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +	if (!res)
+>> +		return -ENODEV;
+>> +
+>> +	atmel_pwm->base = devm_ioremap_resource(&pdev->dev, res);
+> you need to check the return
+
+OK, I will add it in v6.
+
+>> +
+>> +	atmel_pwm->clk = devm_clk_get(&pdev->dev, NULL);
+>> +	if (IS_ERR(atmel_pwm->clk))
+>> +		return PTR_ERR(atmel_pwm->clk);
+>> +
+>> +	ret = clk_prepare(atmel_pwm->clk);
+>> +	if (ret) {
+>> +		dev_err(&pdev->dev, "failed to prepare pwm clock\n");
+>> +		return ret;
+>> +	}
+>> +
+>> +	atmel_pwm->chip.dev = &pdev->dev;
+>> +	atmel_pwm->chip.ops = &atmel_pwm_ops;
+>> +	atmel_pwm->chip.of_xlate = of_pwm_xlate_with_flags;
+>> +	atmel_pwm->chip.of_pwm_n_cells = 3;
+>> +	atmel_pwm->chip.base = -1;
+>> +	atmel_pwm->chip.npwm = 4;
+>> +
+>> +	data = of_id->data;
+>> +	atmel_pwm->config = data->config;
+>> +
+>> +	ret = pwmchip_add(&atmel_pwm->chip);
+>> +	if (ret < 0) {
+>> +		dev_err(&pdev->dev, "failed to add pwm chip %d\n", ret);
+>> +		goto unprepare_clk;
+>> +	}
+>> +
+>> +	platform_set_drvdata(pdev, atmel_pwm);
+>> +
+>> +unprepare_clk:
+>> +	clk_unprepare(atmel_pwm->clk);
+>> +	return ret;
+>> +}
+>> +
+>> +static int atmel_pwm_remove(struct platform_device *pdev) {
+>> +	struct atmel_pwm_chip *atmel_pwm = platform_get_drvdata(pdev);
+>> +
+>> +	clk_unprepare(atmel_pwm->clk);
+>> +
+>> +	return pwmchip_remove(&atmel_pwm->chip); }
+>> +
+>> +static struct platform_driver atmel_pwm_driver = {
+>> +	.driver = {
+>> +		.name = "atmel-pwm",
+>> +		.of_match_table = of_match_ptr(atmel_pwm_dt_ids),
+>> +	},
+>> +	.probe = atmel_pwm_probe,
+>> +	.remove = atmel_pwm_remove,
+>> +};
+>> +module_platform_driver(atmel_pwm_driver);
+>> +
+>> +MODULE_ALIAS("platform:atmel-pwm");
+>> +MODULE_AUTHOR("Bo Shen <voice.shen@atmel.com>");
+>> +MODULE_DESCRIPTION("Atmel PWM driver"); MODULE_LICENSE("GPL v2");
+>> --
+>> 1.7.9.5
+>>
+
+Best Regards,
+Bo Shen
