@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465Ab3JaN2f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 09:28:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15195 "EHLO mx1.redhat.com"
+	id S1754119Ab3JaNfy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 09:35:54 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:33151 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752598Ab3JaN2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 09:28:34 -0400
-Date: Thu, 31 Oct 2013 09:27:45 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: jerry.hoemann@hp.com
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, hpa@linux.intel.com,
-        ebiederm@xmission.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bp@alien8.de, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, jingbai.ma@hp.com
-Subject: Re: [PATCH v4 0/3] x86, apic, kexec: Add disable_cpu_apic kernel
- parameter
-Message-ID: <20131031132744.GB3392@redhat.com>
-References: <20131022150015.24240.39686.stgit@localhost6.localdomain6>
- <20131022220803.GA32387@anatevka.fc.hp.com>
- <526712B2.7070108@jp.fujitsu.com>
- <20131031005812.GA15459@anatevka.fc.hp.com>
+	id S1752435Ab3JaNfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 09:35:52 -0400
+Message-ID: <52725CB5.5090903@imgtec.com>
+Date: Thu, 31 Oct 2013 13:35:49 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131031005812.GA15459@anatevka.fc.hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joe Perches <joe@perches.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, <linux-metag@vger.kernel.org>
+Subject: Re: [PATCH V2] printk/cache: Mark printk_once test variable __read_mostly
+References: <1383128301-20231-1-git-send-email-james.hogan@imgtec.com>  <20131030134839.8bdf70cc68d1bf0beb1fb63a@linux-foundation.org> <1383174102.9435.54.camel@joe-AO722>
+In-Reply-To: <1383174102.9435.54.camel@joe-AO722>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_10_31_13_35_50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 06:58:13PM -0600, jerry.hoemann@hp.com wrote:
-
-[..]
-> Daisuke,
+On 30/10/13 23:01, Joe Perches wrote:
+> Add #include <linux/cache.h> to define __read_mostly.
 > 
-> Are you planning on making changes to the kexec tools to automate
-> the setting of disable_cpu_apic to the capture kernel? Or do you
-> know someone who is planning this?
+> Convert cache.h to use uapi/linux/kernel.h instead
+> of linux/kernel.h to avoid recursive #includes.
+> 
+> Convert the ALIGN macro to __KERNEL_ALIGN.
+> 
+> printk_once only sets the bool variable tested
+> once so mark it __read_mostly.
+> 
+> Neaten the alignment so it matches the rest of the
+> pr_<level>_once #defines too.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+> V2: Add cache.h which was nearly always used
+>     indirectly via #include <some_other_file.h>,
+>     generally module.h
+>     Update cache.h to avoid recursive #include
+> 
+>  include/linux/cache.h  |  4 ++--
+>  include/linux/printk.h | 19 ++++++++++---------
+>  2 files changed, 12 insertions(+), 11 deletions(-)
+> 
+> diff --git a/include/linux/cache.h b/include/linux/cache.h
+> index 4c57065..63a1d97 100644
+> --- a/include/linux/cache.h
+> +++ b/include/linux/cache.h
+> @@ -1,11 +1,11 @@
+>  #ifndef __LINUX_CACHE_H
+>  #define __LINUX_CACHE_H
+>  
+> -#include <linux/kernel.h>
+> +#include <uapi/linux/kernel.h>
+>  #include <asm/cache.h>
+>  
+>  #ifndef L1_CACHE_ALIGN
+> -#define L1_CACHE_ALIGN(x) ALIGN(x, L1_CACHE_BYTES)
+> +#define L1_CACHE_ALIGN(x) __KERNEL_ALIGN(x, L1_CACHE_BYTES)
 
-I think we should not make this change in kexec-tools and should leave
-it to distro scripts to append disable_cpu_apic.
+I think that should be __ALIGN_KERNEL (same applies to commit message).
 
-Who knows in future this restriction is not there at all and kexec-tools
-will be stuck with always passing disable_cpu_apic. Getting rid of
-this parameter in distro scripts will be much easier.
+Otherwise this patch looks good to me and builds all Meta defconfigs fine.
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
 
 Thanks
-Vivek
+James
+
