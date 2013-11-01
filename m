@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932173Ab3KAWQa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:16:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55523 "EHLO
+	id S1756416Ab3KAWI2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:08:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55485 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756394Ab3KAWIa (ORCPT
+	with ESMTP id S1756332Ab3KAWIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:30 -0400
+	Fri, 1 Nov 2013 18:08:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mariusz Ceier <mceier+kernel@gmail.com>,
-        Mugunthan V N <mugunthanvnm@ti.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 47/66] davinci_emac.c: Fix IFF_ALLMULTI setup
-Date: Fri,  1 Nov 2013 15:07:23 -0700
-Message-Id: <20131101220647.738445603@linuxfoundation.org>
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH 3.11 49/66] ARM: integrator: deactivate timer0 on the Integrator/CP
+Date: Fri,  1 Nov 2013 15:07:25 -0700
+Message-Id: <20131101220648.266054655@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -28,42 +29,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mariusz Ceier <mceier+kernel@gmail.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-[ Upstream commit d69e0f7ea95fef8059251325a79c004bac01f018 ]
+commit 29114fd7db2fc82a34da8340d29b8fa413e03dca upstream.
 
-When IFF_ALLMULTI flag is set on interface and IFF_PROMISC isn't,
-emac_dev_mcast_set should only enable RX of multicasts and reset
-MACHASH registers.
+This fixes a long-standing Integrator/CP regression from
+commit 870e2928cf3368ca9b06bc925d0027b0a56bcd8e
+"ARM: integrator-cp: convert use CLKSRC_OF for timer init"
 
-It does this, but afterwards it either sets up multicast MACs
-filtering or disables RX of multicasts and resets MACHASH registers
-again, rendering IFF_ALLMULTI flag useless.
+When this code was introduced, the both aliases pointing the
+system to use timer1 as primary (clocksource) and timer2
+as secondary (clockevent) was ignored, and the system would
+simply use the first two timers found as clocksource and
+clockevent.
 
-This patch fixes emac_dev_mcast_set, so that multicast MACs filtering and
-disabling of RX of multicasts are skipped when IFF_ALLMULTI flag is set.
+However this made the system timeline accelerate by a
+factor x25, as it turns out that the way the clocking
+actually works (totally undocumented and found after some
+trial-and-error) is that timer0 runs @ 25MHz and timer1
+and timer2 runs @ 1MHz. Presumably this divider setting
+is a boot-on default and configurable albeit the way to
+configure it is not documented.
 
-Tested with kernel 2.6.37.
+So as a quick fix to the problem, let's mark timer0 as
+disabled, so the code will chose timer1 and timer2 as it
+used to.
 
-Signed-off-by: Mariusz Ceier <mceier+kernel@gmail.com>
-Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This also deletes the two aliases for the primary and
+secondary timer as they have been superceded by the
+auto-selection
+
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/ti/davinci_emac.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/ti/davinci_emac.c
-+++ b/drivers/net/ethernet/ti/davinci_emac.c
-@@ -876,8 +876,7 @@ static void emac_dev_mcast_set(struct ne
- 		    netdev_mc_count(ndev) > EMAC_DEF_MAX_MULTICAST_ADDRESSES) {
- 			mbp_enable = (mbp_enable | EMAC_MBP_RXMCAST);
- 			emac_add_mcast(priv, EMAC_ALL_MULTI_SET, NULL);
--		}
--		if (!netdev_mc_empty(ndev)) {
-+		} else if (!netdev_mc_empty(ndev)) {
- 			struct netdev_hw_addr *ha;
+---
+ arch/arm/boot/dts/integratorcp.dts |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+--- a/arch/arm/boot/dts/integratorcp.dts
++++ b/arch/arm/boot/dts/integratorcp.dts
+@@ -9,11 +9,6 @@
+ 	model = "ARM Integrator/CP";
+ 	compatible = "arm,integrator-cp";
  
- 			mbp_enable = (mbp_enable | EMAC_MBP_RXMCAST);
+-	aliases {
+-		arm,timer-primary = &timer2;
+-		arm,timer-secondary = &timer1;
+-	};
+-
+ 	chosen {
+ 		bootargs = "root=/dev/ram0 console=ttyAMA0,38400n8 earlyprintk";
+ 	};
+@@ -24,14 +19,18 @@
+ 	};
+ 
+ 	timer0: timer@13000000 {
++		/* TIMER0 runs @ 25MHz */
+ 		compatible = "arm,integrator-cp-timer";
++		status = "disabled";
+ 	};
+ 
+ 	timer1: timer@13000100 {
++		/* TIMER1 runs @ 1MHz */
+ 		compatible = "arm,integrator-cp-timer";
+ 	};
+ 
+ 	timer2: timer@13000200 {
++		/* TIMER2 runs @ 1MHz */
+ 		compatible = "arm,integrator-cp-timer";
+ 	};
+ 
 
 
