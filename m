@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180Ab3KAWkQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:40:16 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:57489 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756820Ab3KAWkK (ORCPT
+	id S1756242Ab3KAWmU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:42:20 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:39229 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756820Ab3KAWkR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:40:10 -0400
+	Fri, 1 Nov 2013 18:40:17 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: Cody P Schafer <cody@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/8] trace/trace_stat: use rbtree postorder iteration helper instead of opencoding
-Date: Fri,  1 Nov 2013 15:38:46 -0700
-Message-Id: <1383345566-25087-2-git-send-email-cody@linux.vnet.ibm.com>
+To: Andreas Dilger <adilger.kernel@dilger.ca>, "Theodore Ts'o" <tytso@mit.edu>
+Cc: Cody P Schafer <cody@linux.vnet.ibm.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 4/8] fs/ext4: use rbtree postorder iteration helper instead of opencoding
+Date: Fri,  1 Nov 2013 15:38:48 -0700
+Message-Id: <1383345566-25087-4-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1383345566-25087-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1383345566-25087-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110122-0928-0000-0000-0000032B5686
+x-cbid: 13110122-6688-0000-0000-000003163401
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,66 +29,107 @@ of opencoding an alternate postorder iteration that modifies the tree
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- kernel/trace/trace_stat.c | 42 ++++++------------------------------------
- 1 file changed, 6 insertions(+), 36 deletions(-)
+ fs/ext4/block_validity.c | 33 ++++-----------------------------
+ fs/ext4/dir.c            | 35 +++++------------------------------
+ 2 files changed, 9 insertions(+), 59 deletions(-)
 
-diff --git a/kernel/trace/trace_stat.c b/kernel/trace/trace_stat.c
-index 847f88a..fa53acc 100644
---- a/kernel/trace/trace_stat.c
-+++ b/kernel/trace/trace_stat.c
-@@ -43,46 +43,16 @@ static DEFINE_MUTEX(all_stat_sessions_mutex);
- /* The root directory for all stat files */
- static struct dentry		*stat_dir;
- 
--/*
-- * Iterate through the rbtree using a post order traversal path
-- * to release the next node.
-- * It won't necessary release one at each iteration
-- * but it will at least advance closer to the next one
-- * to be released.
-- */
--static struct rb_node *release_next(struct tracer_stat *ts,
--				    struct rb_node *node)
-+static void __reset_stat_session(struct stat_session *session)
+diff --git a/fs/ext4/block_validity.c b/fs/ext4/block_validity.c
+index 3f11656..41eb9dc 100644
+--- a/fs/ext4/block_validity.c
++++ b/fs/ext4/block_validity.c
+@@ -180,37 +180,12 @@ int ext4_setup_system_zone(struct super_block *sb)
+ /* Called when the filesystem is unmounted */
+ void ext4_release_system_zone(struct super_block *sb)
  {
--	struct stat_node *snode;
--	struct rb_node *parent = rb_parent(node);
--
--	if (node->rb_left)
--		return node->rb_left;
--	else if (node->rb_right)
--		return node->rb_right;
--	else {
+-	struct rb_node	*n = EXT4_SB(sb)->system_blks.rb_node;
+-	struct rb_node	*parent;
+-	struct ext4_system_zone	*entry;
++	struct ext4_system_zone	*entry, *n;
+ 
+-	while (n) {
+-		/* Do the node's children first */
+-		if (n->rb_left) {
+-			n = n->rb_left;
+-			continue;
+-		}
+-		if (n->rb_right) {
+-			n = n->rb_right;
+-			continue;
+-		}
+-		/*
+-		 * The node has no children; free it, and then zero
+-		 * out parent's link to it.  Finally go to the
+-		 * beginning of the loop and try to free the parent
+-		 * node.
+-		 */
+-		parent = rb_parent(n);
+-		entry = rb_entry(n, struct ext4_system_zone, node);
++	rbtree_postorder_for_each_entry_safe(entry, n,
++			&EXT4_SB(sb)->system_blks, node)
+ 		kmem_cache_free(ext4_system_zone_cachep, entry);
 -		if (!parent)
--			;
--		else if (parent->rb_left == node)
+-			EXT4_SB(sb)->system_blks = RB_ROOT;
+-		else if (parent->rb_left == n)
 -			parent->rb_left = NULL;
--		else
+-		else if (parent->rb_right == n)
 -			parent->rb_right = NULL;
-+	struct stat_node *snode, *n;
- 
--		snode = container_of(node, struct stat_node, node);
--		if (ts->stat_release)
--			ts->stat_release(snode->stat);
-+	rbtree_postorder_for_each_entry_safe(snode, n, &session->stat_root,
-+			node) {
-+		if (session->ts->stat_release)
-+			session->ts->stat_release(snode->stat);
- 		kfree(snode);
--
--		return parent;
- 	}
--}
--
--static void __reset_stat_session(struct stat_session *session)
--{
--	struct rb_node *node = session->stat_root.rb_node;
--
--	while (node)
--		node = release_next(session->ts, node);
- 
- 	session->stat_root = RB_ROOT;
+-		n = parent;
+-	}
++
+ 	EXT4_SB(sb)->system_blks = RB_ROOT;
  }
+ 
+diff --git a/fs/ext4/dir.c b/fs/ext4/dir.c
+index 680bb33..d638c57 100644
+--- a/fs/ext4/dir.c
++++ b/fs/ext4/dir.c
+@@ -353,41 +353,16 @@ struct fname {
+  */
+ static void free_rb_tree_fname(struct rb_root *root)
+ {
+-	struct rb_node	*n = root->rb_node;
+-	struct rb_node	*parent;
+-	struct fname	*fname;
+-
+-	while (n) {
+-		/* Do the node's children first */
+-		if (n->rb_left) {
+-			n = n->rb_left;
+-			continue;
+-		}
+-		if (n->rb_right) {
+-			n = n->rb_right;
+-			continue;
+-		}
+-		/*
+-		 * The node has no children; free it, and then zero
+-		 * out parent's link to it.  Finally go to the
+-		 * beginning of the loop and try to free the parent
+-		 * node.
+-		 */
+-		parent = rb_parent(n);
+-		fname = rb_entry(n, struct fname, rb_hash);
++	struct fname *fname, *next;
++
++	rbtree_postorder_for_each_entry_safe(fname, next, root, rb_hash)
+ 		while (fname) {
+ 			struct fname *old = fname;
+ 			fname = fname->next;
+ 			kfree(old);
+ 		}
+-		if (!parent)
+-			*root = RB_ROOT;
+-		else if (parent->rb_left == n)
+-			parent->rb_left = NULL;
+-		else if (parent->rb_right == n)
+-			parent->rb_right = NULL;
+-		n = parent;
+-	}
++
++	*root = RB_ROOT;
+ }
+ 
+ 
 -- 
 1.8.4.2
 
