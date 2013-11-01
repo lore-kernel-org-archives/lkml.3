@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671Ab3KAUlS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 16:41:18 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38726 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab3KAUlR (ORCPT
+	id S1752940Ab3KAUrw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 16:47:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53944 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab3KAUru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 16:41:17 -0400
-Message-ID: <527411DD.7050008@oracle.com>
-Date: Fri, 01 Nov 2013 15:41:01 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 1 Nov 2013 16:47:50 -0400
+Date: Fri, 1 Nov 2013 13:47:49 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: NeilBrown <neilb@suse.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Strange location and name for platform  devices when device-tree
+ is used.
+Message-ID: <20131101204749.GA19662@kroah.com>
+References: <20131101145925.66e22f73@notabene.brown>
+ <1383279744.28909.26.camel@pasglop>
+ <1383280054.28909.30.camel@pasglop>
+ <20131101160329.37f3707b@notabene.brown>
+ <1383282516.28909.36.camel@pasglop>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>, Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>, Kent Overstreet <kmo@daterainc.com>
-Subject: Re: linux-next: manual merge of the block tree with the  tree
-References: <20131101142026.10390b6e3f70de348770c137@canb.auug.org.au>	<5273C473.5070803@kernel.dk> <20131102072252.88d2380fa392705b912dbfad@canb.auug.org.au> <52740EB1.2070901@kernel.dk>
-In-Reply-To: <52740EB1.2070901@kernel.dk>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383282516.28909.36.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2013 03:27 PM, Jens Axboe wrote:
-> On 11/01/2013 02:22 PM, Stephen Rothwell wrote:
->> Hi Jens,
->>
->> On Fri, 01 Nov 2013 09:10:43 -0600 Jens Axboe <axboe@kernel.dk> wrote:
->>>
->>> On 10/31/2013 09:20 PM, Stephen Rothwell wrote:
->>>>
->>>> Today's linux-next merge of the block tree got a conflict in
->>>> drivers/block/loop.c between commit 2486740b52fd ("loop: use aio to
->>>> perform io on the underlying file") from the aio-direct tree and commit
->>>> ed2d2f9a8265 ("block: Abstract out bvec iterator") from the block tree.
->>>>
->>>> I fixed it up (I think - see below - I have also attached the final
->>>> resulting file) and can carry the fix as necessary (no action is
->>>> required).
->>>>
->>>
->>> What tree is this from? It'd be a lot more convenient to fold that loop
->>> patch into my tree, especially since the block tree in linux-next failed
->>> after this merge.
->>
->> I can only agree with you.  It is from the aio-direct tree (probably
->> misnamed by me) (git://github.com/kleikamp/linux-shaggy.git#for-next) run
->> by Dave Kleikamp.
+On Fri, Nov 01, 2013 at 04:08:36PM +1100, Benjamin Herrenschmidt wrote:
+> On Fri, 2013-11-01 at 16:03 +1100, NeilBrown wrote:
 > 
-> Dave, input requested.
+> > Do you mean we could allow multiple devices on the one bus to have the same
+> > name, but get sysfs to notice and de-duplicate by mangling one name?  I don't
+> > think I like that but I might have misunderstood.
 > 
-> In any case, I would suggest dropping the aio-direct tree instead of the
-> entire block tree for coverage purposes, if merge or build failures
-> happen because of it.
+> What other option do we have ?
+> 
+> > On my device I seem to have some platform devices registered through
+> > device-tree, and some registered through platform_device_add (e.g.
+> > 'alarmtimer').  Guaranteeing they remain disjoint sets if the kernel is
+> > allowed to evolve independently of the devicetree might be tricky....
+> > Maybe we need "/sys/devices/platform" and "/sys/devices/dt_platform" ??
+> 
+> No, I think device-tree created platform devices should go
+> to /sys/devices/platform like the "classic" ones.
+> 
+> The problem is really how to deal with potential name duplication. We
+> could try to register, if we get -EEXIST (assuming sysfs returns the
+> right stuff), try again with ".1" etc...
 
-I've had these patches in linux-next since August, and I'd really like
-to push them in the 3.13 merge window.
+How can there be device name collisions?  All platform devices _should_
+be named uniquely, if not, you have bigger problems...
 
-Are there other problems besides this merge issue? I'll take a closer
-look at Stephen's merge patch and see if I find any other issues, but I
-really don't want to pull these patches out of linux-next now.
+thanks,
 
-Thanks,
-Dave
+greg k-h
