@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab3KAOqf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 10:46:35 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:49295 "EHLO sabe.cs.wisc.edu"
+	id S1752736Ab3KAOrd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 10:47:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52771 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750719Ab3KAOqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 10:46:34 -0400
-Message-ID: <5273BEBF.2090008@cs.wisc.edu>
-Date: Fri, 01 Nov 2013 09:46:23 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1752391Ab3KAOrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 10:47:32 -0400
+Date: Fri, 1 Nov 2013 14:47:28 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org, prarit@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -v2 -tip] fix race between stop_two_cpus and stop_cpus
+Message-ID: <20131101144728.GY2400@suse.de>
+References: <20131031163144.0fd27457@annuminas.surriel.com>
+ <20131101110825.GX2400@suse.de>
+ <52739244.3060209@redhat.com>
+ <20131101134424.GA32685@suse.de>
+ <20131101142404.GG19466@laptop.lan>
+ <5273BA58.6010404@redhat.com>
+ <20131101104146.03d1e043@annuminas.surriel.com>
 MIME-Version: 1.0
-To: open-iscsi@googlegroups.com
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        Or Gerlitz <ogerlitz@mellanox.com>
-Subject: Re: scsi-mq + open-iscsi support patches..?
-References: <1382997816.19256.767.camel@haakon3.risingtidesystems.com>
-In-Reply-To: <1382997816.19256.767.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20131101104146.03d1e043@annuminas.surriel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/13 5:03 PM, Nicholas A. Bellinger wrote:
-> Hi Mike,
->
-> Just curious as to the status of the scsi-mq conversion patches for
-> open-iscsi that you where working on a while back..?
->
-> I'm asking because recently I've been spending alot of time with scsi-mq
-> + virtio-scsi, and would really to start banging on iser-target ports
-> using an scsi-mq enabled iser-initiator as well..
->
-> So that said, are there any blockers holding things up towards getting a
-> working prototype..?
->
+On Fri, Nov 01, 2013 at 10:41:46AM -0400, Rik van Riel wrote:
+> Subject: fix race between stop_two_cpus and stop_cpus
+> 
+> There is a race between stop_two_cpus, and the global stop_cpus.
+> 
+> It is possible for two CPUs to get their stopper functions queued
+> "backwards" from one another, resulting in the stopper threads
+> getting stuck, and the system hanging. This can happen because
+> queuing up stoppers is not synchronized.
+> 
+> This patch adds synchronization between stop_cpus (a rare operation),
+> and stop_two_cpus.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> ---
+> v2: use lglock, as suggested by Peter & Mel, thanks to both of you
+> for insisting on nicer code :)
+> 
 
-Just time. Just finished a release at work and just got back from 
-vacation so hoping to work on this some more in the next weeks.
+This is a tad more comprehensible :). Thanks!
 
-On a related note, some iscsi vendor has been hitting a crash with your 
-tree. Have you rebased it it to take in Christoph's changes and fixes 
-that are in Jens's tree? The code here
+Acked-by: Mel Gorman <mgorman@suse.de>
 
-https://git.kernel.org/cgit/linux/kernel/git/nab/target-pending.git/log/?h=scsi-mq
-
-looks ok. That is the current code right?
-
+-- 
+Mel Gorman
+SUSE Labs
