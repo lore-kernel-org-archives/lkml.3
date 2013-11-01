@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592Ab3KAGKd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 02:10:33 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:64396 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364Ab3KAGKc (ORCPT
+	id S1753359Ab3KAGMJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 02:12:09 -0400
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:35483 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752207Ab3KAGMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 02:10:32 -0400
-X-AuditID: 9c93017e-b7ca6ae000000e8a-63-527345d68052
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] perf timechart: add support for displaying only tasks related data
-References: <1382439412-23713-1-git-send-email-stfomichev@yandex-team.ru>
-	<1382439412-23713-4-git-send-email-stfomichev@yandex-team.ru>
-	<87ppqo5wgx.fsf@sejong.aot.lge.com>
-	<20131029093329.GC3406@stfomichev-desktop>
-Date: Fri, 01 Nov 2013 15:10:30 +0900
-In-Reply-To: <20131029093329.GC3406@stfomichev-desktop> (Stanislav Fomichev's
-	message of "Tue, 29 Oct 2013 13:33:29 +0400")
-Message-ID: <87zjpo4ppl.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 1 Nov 2013 02:12:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1383233136.4857.77.camel@edumazet-glaptop.roam.corp.google.com>
+References: <CABawtvN+PEzm_h4Gg5uYtJCjVC5yPjikwwMepkZNZR=cQ+YQmg@mail.gmail.com>
+	<1383233136.4857.77.camel@edumazet-glaptop.roam.corp.google.com>
+Date: Fri, 1 Nov 2013 14:12:06 +0800
+Message-ID: <CABawtvMpY6BGRnjq1FvrmyBSqSnqOnRFH_hS8gOTNMxy9JVfGw@mail.gmail.com>
+Subject: Re: Got iperf regression while intel_iommu is on, how to cut the cost
+ of cache flushing
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ashok Raj <ashok.raj@intel.com>, Shaohua Li <shaohua.li@intel.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Oct 2013 13:33:29 +0400, Stanislav Fomichev wrote:
->> Hmm.. double negation is always confusing to me. :-/  How about making
->> it a boolean option that sets "task_only" variable?
-> Ok.
+Eric,
+   Thanks, hope it could kill the most pain of the regression.  I will
+try them and report the result.
+
+Ethan
+
+> You might hit a known problem for some 10Gb links.
 >
->> Also need to update the doc.  And what if user gives -P and -T options
->> at the same time?
-> Is something like this is enough (or you'd like some printout with error
-> details)?
+> 3.12-rc6 has the fixes already, and stable has some pending backports :
 >
-> if (!proc_num && task_only)
-> 		usage_with_options(timechart_usage, options);
-
-It'd be better if we have:
-
-	if (power_only && task_only) {
-		pr_err("-P and -T options cannot be used at the same time.\n");
-		return -1;
-	}
-
-Thanks,
-Namhyung
+> commit 95bd09eb27507691520d39ee1044d6ad831c1168
+> tcp: TSO packets automatic sizing
+>
+> commit c9eeec26e32e087359160406f96e0949b3cc6f10
+> tcp: TSQ can use a dynamic limit
+>
+> Please check that current 3.12-rc6 is OK ?
+>
+>
+>
