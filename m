@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757029Ab3KAW2m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:28:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55267 "EHLO
+	id S1757041Ab3KAW3K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:29:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55258 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756106Ab3KAWHr (ORCPT
+	with ESMTP id S1756080Ab3KAWHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:07:47 -0400
+	Fri, 1 Nov 2013 18:07:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>, Yuchung Cheng <ycheng@google.com>,
+        Eric Dumazet <edumazet@google.com>, Wei Liu <wei.liu2@citrix.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Yuchung Cheng <ycheng@google.com>,
         Neal Cardwell <ncardwell@google.com>,
-        =?UTF-8?q?Ilpo=20J=C3=A4rvinen?= <ilpo.jarvinen@helsinki.fi>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 04/66] tcp: do not forget FIN in tcp_shifted_skb()
-Date: Fri,  1 Nov 2013 15:06:40 -0700
-Message-Id: <20131101220636.162251335@linuxfoundation.org>
+Subject: [PATCH 3.11 02/66] tcp: TSQ can use a dynamic limit
+Date: Fri,  1 Nov 2013 15:06:38 -0700
+Message-Id: <20131101220635.298064095@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,74 +32,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 5e8a402f831dbe7ee831340a91439e46f0d38acd ]
+[ Upstream commit c9eeec26e32e087359160406f96e0949b3cc6f10 ]
 
-Yuchung found following problem :
+When TCP Small Queues was added, we used a sysctl to limit amount of
+packets queues on Qdisc/device queues for a given TCP flow.
 
- There are bugs in the SACK processing code, merging part in
- tcp_shift_skb_data(), that incorrectly resets or ignores the sacked
- skbs FIN flag. When a receiver first SACK the FIN sequence, and later
- throw away ofo queue (e.g., sack-reneging), the sender will stop
- retransmitting the FIN flag, and hangs forever.
+Problem is this limit is either too big for low rates, or too small
+for high rates.
 
-Following packetdrill test can be used to reproduce the bug.
+Now TCP stack has rate estimation in sk->sk_pacing_rate, and TSO
+auto sizing, it can better control number of packets in Qdisc/device
+queues.
 
-$ cat sack-merge-bug.pkt
-`sysctl -q net.ipv4.tcp_fack=0`
+New limit is two packets or at least 1 to 2 ms worth of packets.
 
-// Establish a connection and send 10 MSS.
-0.000 socket(..., SOCK_STREAM, IPPROTO_TCP) = 3
-+.000 setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
-+.000 bind(3, ..., ...) = 0
-+.000 listen(3, 1) = 0
+Low rates flows benefit from this patch by having even smaller
+number of packets in queues, allowing for faster recovery,
+better RTT estimations.
 
-+.050 < S 0:0(0) win 32792 <mss 1000,sackOK,nop,nop,nop,wscale 7>
-+.000 > S. 0:0(0) ack 1 <mss 1460,nop,nop,sackOK,nop,wscale 6>
-+.001 < . 1:1(0) ack 1 win 1024
-+.000 accept(3, ..., ...) = 4
+High rates flows benefit from this patch by allowing more than 2 packets
+in flight as we had reports this was a limiting factor to reach line
+rate. [ In particular if TX completion is delayed because of coalescing
+parameters ]
 
-+.100 write(4, ..., 12000) = 12000
-+.000 shutdown(4, SHUT_WR) = 0
-+.000 > . 1:10001(10000) ack 1
-+.050 < . 1:1(0) ack 2001 win 257
-+.000 > FP. 10001:12001(2000) ack 1
-+.050 < . 1:1(0) ack 2001 win 257 <sack 10001:11001,nop,nop>
-+.050 < . 1:1(0) ack 2001 win 257 <sack 10001:12002,nop,nop>
-// SACK reneg
-+.050 < . 1:1(0) ack 12001 win 257
-+0 %{ print "unacked: ",tcpi_unacked }%
-+5 %{ print "" }%
+Example for a single flow on 10Gbp link controlled by FQ/pacing
 
-First, a typo inverted left/right of one OR operation, then
-code forgot to advance end_seq if the merged skb carried FIN.
+14 packets in flight instead of 2
 
-Bug was added in 2.6.29 by commit 832d11c5cd076ab
-("tcp: Try to restore large SKBs while SACK processing")
+$ tc -s -d qd
+qdisc fq 8001: dev eth0 root refcnt 32 limit 10000p flow_limit 100p
+buckets 1024 quantum 3028 initial_quantum 15140
+ Sent 1168459366606 bytes 771822841 pkt (dropped 0, overlimits 0
+requeues 6822476)
+ rate 9346Mbit 771713pps backlog 953820b 14p requeues 6822476
+  2047 flow, 2046 inactive, 1 throttled, delay 15673 ns
+  2372 gc, 0 highprio, 0 retrans, 9739249 throttled, 0 flows_plimit
+
+Note that sk_pacing_rate is currently set to twice the actual rate, but
+this might be refined in the future when a flow is in congestion
+avoidance.
+
+Additional change : skb->destructor should be set to tcp_wfree().
+
+A future patch (for linux 3.13+) might remove tcp_limit_output_bytes
 
 Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Yuchung Cheng <ycheng@google.com>
+Cc: Wei Liu <wei.liu2@citrix.com>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
 Acked-by: Neal Cardwell <ncardwell@google.com>
-Cc: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
-Acked-by: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_input.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ net/ipv4/tcp_output.c |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -1279,7 +1279,10 @@ static bool tcp_shifted_skb(struct sock
- 		tp->lost_cnt_hint -= tcp_skb_pcount(prev);
- 	}
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -892,8 +892,7 @@ static int tcp_transmit_skb(struct sock
  
--	TCP_SKB_CB(skb)->tcp_flags |= TCP_SKB_CB(prev)->tcp_flags;
-+	TCP_SKB_CB(prev)->tcp_flags |= TCP_SKB_CB(skb)->tcp_flags;
-+	if (TCP_SKB_CB(skb)->tcp_flags & TCPHDR_FIN)
-+		TCP_SKB_CB(prev)->end_seq++;
+ 	skb_orphan(skb);
+ 	skb->sk = sk;
+-	skb->destructor = (sysctl_tcp_limit_output_bytes > 0) ?
+-			  tcp_wfree : sock_wfree;
++	skb->destructor = tcp_wfree;
+ 	atomic_add(skb->truesize, &sk->sk_wmem_alloc);
+ 
+ 	/* Build TCP header and checksum it. */
+@@ -1837,7 +1836,6 @@ static bool tcp_write_xmit(struct sock *
+ 	while ((skb = tcp_send_head(sk))) {
+ 		unsigned int limit;
+ 
+-
+ 		tso_segs = tcp_init_tso_segs(sk, skb, mss_now);
+ 		BUG_ON(!tso_segs);
+ 
+@@ -1866,13 +1864,20 @@ static bool tcp_write_xmit(struct sock *
+ 				break;
+ 		}
+ 
+-		/* TSQ : sk_wmem_alloc accounts skb truesize,
+-		 * including skb overhead. But thats OK.
++		/* TCP Small Queues :
++		 * Control number of packets in qdisc/devices to two packets / or ~1 ms.
++		 * This allows for :
++		 *  - better RTT estimation and ACK scheduling
++		 *  - faster recovery
++		 *  - high rates
+ 		 */
+-		if (atomic_read(&sk->sk_wmem_alloc) >= sysctl_tcp_limit_output_bytes) {
++		limit = max(skb->truesize, sk->sk_pacing_rate >> 10);
 +
- 	if (skb == tcp_highest_sack(sk))
- 		tcp_advance_highest_sack(sk, skb);
- 
++		if (atomic_read(&sk->sk_wmem_alloc) > limit) {
+ 			set_bit(TSQ_THROTTLED, &tp->tsq_flags);
+ 			break;
+ 		}
++
+ 		limit = mss_now;
+ 		if (tso_segs > 1 && !tcp_urg_mode(tp))
+ 			limit = tcp_mss_split_point(sk, skb, mss_now,
 
 
