@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757282Ab3KAWhE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:37:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54962 "EHLO
+	id S932082Ab3KAWha (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:37:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54955 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754504Ab3KAWEi (ORCPT
+	with ESMTP id S1754750Ab3KAWEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:04:38 -0400
+	Fri, 1 Nov 2013 18:04:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christophe Gouault <christophe.gouault@6wind.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 18/54] vti: get rid of nf mark rule in prerouting
-Date: Fri,  1 Nov 2013 15:03:46 -0700
-Message-Id: <20131101220213.368353936@linuxfoundation.org>
+        Paul Durrant <paul.durrant@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: [PATCH 3.10 16/54] xen-netback: Dont destroy the netdev until the vif is shut down
+Date: Fri,  1 Nov 2013 15:03:44 -0700
+Message-Id: <20131101220213.155128792@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -27,125 +28,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christophe Gouault <christophe.gouault@6wind.com>
+From: Paul Durrant <paul.durrant@citrix.com>
 
-[ Upstream commit 7263a5187f9e9de45fcb51349cf0e031142c19a1 ]
+[ upstream commit id: 279f438e36c0a70b23b86d2090aeec50155034a9 ]
 
-This patch fixes and improves the use of vti interfaces (while
-lightly changing the way of configuring them).
+Without this patch, if a frontend cycles through states Closing
+and Closed (which Windows frontends need to do) then the netdev
+will be destroyed and requires re-invocation of hotplug scripts
+to restore state before the frontend can move to Connected. Thus
+when udev is not in use the backend gets stuck in InitWait.
 
-Currently:
+With this patch, the netdev is left alone whilst the backend is
+still online and is only de-registered and freed just prior to
+destroying the vif (which is also nicely symmetrical with the
+netdev allocation and registration being done during probe) so
+no re-invocation of hotplug scripts is required.
 
-- it is necessary to identify and mark inbound IPsec
-  packets destined to each vti interface, via netfilter rules in
-  the mangle table at prerouting hook.
-
-- the vti module cannot retrieve the right tunnel in input since
-  commit b9959fd3: vti tunnels all have an i_key, but the tunnel lookup
-  is done with flag TUNNEL_NO_KEY, so there no chance to retrieve them.
-
-- the i_key is used by the outbound processing as a mark to lookup
-  for the right SP and SA bundle.
-
-This patch uses the o_key to store the vti mark (instead of i_key) and
-enables:
-
-- to avoid the need for previously marking the inbound skbuffs via a
-  netfilter rule.
-- to properly retrieve the right tunnel in input, only based on the IPsec
-  packet outer addresses.
-- to properly perform an inbound policy check (using the tunnel o_key
-  as a mark).
-- to properly perform an outbound SPD and SAD lookup (using the tunnel
-  o_key as a mark).
-- to keep the current mark of the skbuff. The skbuff mark is neither
-  used nor changed by the vti interface. Only the vti interface o_key
-  is used.
-
-SAs have a wildcard mark.
-SPs have a mark equal to the vti interface o_key.
-
-The vti interface must be created as follows (i_key = 0, o_key = mark):
-
-   ip link add vti1 mode vti local 1.1.1.1 remote 2.2.2.2 okey 1
-
-The SPs attached to vti1 must be created as follows (mark = vti1 o_key):
-
-   ip xfrm policy add dir out mark 1 tmpl src 1.1.1.1 dst 2.2.2.2 \
-      proto esp mode tunnel
-   ip xfrm policy add dir in  mark 1 tmpl src 2.2.2.2 dst 1.1.1.1 \
-      proto esp mode tunnel
-
-The SAs are created with the default wildcard mark. There is no
-distinction between global vs. vti SAs. Just their addresses will
-possibly link them to a vti interface:
-
-   ip xfrm state add src 1.1.1.1 dst 2.2.2.2 proto esp spi 1000 mode tunnel \
-                 enc "cbc(aes)" "azertyuiopqsdfgh"
-
-   ip xfrm state add src 2.2.2.2 dst 1.1.1.1 proto esp spi 2000 mode tunnel \
-                 enc "cbc(aes)" "sqbdhgqsdjqjsdfh"
-
-To avoid matching "global" (not vti) SPs in vti interfaces, global SPs
-should no use the default wildcard mark, but explicitly match mark 0.
-
-To avoid a double SPD lookup in input and output (in global and vti SPDs),
-the NOPOLICY and NOXFRM options should be set on the vti interfaces:
-
-   echo 1 > /proc/sys/net/ipv4/conf/vti1/disable_policy
-   echo 1 > /proc/sys/net/ipv4/conf/vti1/disable_xfrm
-
-The outgoing traffic is steered to vti1 by a route via the vti interface:
-
-   ip route add 192.168.0.0/16 dev vti1
-
-The incoming IPsec traffic is steered to vti1 because its outer addresses
-match the vti1 tunnel configuration.
-
-Signed-off-by: Christophe Gouault <christophe.gouault@6wind.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Paul Durrant <paul.durrant@citrix.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Wei Liu <wei.liu2@citrix.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_vti.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ drivers/net/xen-netback/common.h    |    1 +
+ drivers/net/xen-netback/interface.c |   12 ++++++++++--
+ drivers/net/xen-netback/xenbus.c    |   17 ++++++++++++-----
+ 3 files changed, 23 insertions(+), 7 deletions(-)
 
---- a/net/ipv4/ip_vti.c
-+++ b/net/ipv4/ip_vti.c
-@@ -285,8 +285,17 @@ static int vti_rcv(struct sk_buff *skb)
- 	tunnel = vti_tunnel_lookup(dev_net(skb->dev), iph->saddr, iph->daddr);
- 	if (tunnel != NULL) {
- 		struct pcpu_tstats *tstats;
-+		u32 oldmark = skb->mark;
-+		int ret;
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -115,6 +115,7 @@ struct xenvif *xenvif_alloc(struct devic
+ int xenvif_connect(struct xenvif *vif, unsigned long tx_ring_ref,
+ 		   unsigned long rx_ring_ref, unsigned int evtchn);
+ void xenvif_disconnect(struct xenvif *vif);
++void xenvif_free(struct xenvif *vif);
  
--		if (!xfrm4_policy_check(NULL, XFRM_POLICY_IN, skb))
+ void xenvif_get(struct xenvif *vif);
+ void xenvif_put(struct xenvif *vif);
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -304,6 +304,9 @@ struct xenvif *xenvif_alloc(struct devic
+ 	}
+ 
+ 	netdev_dbg(dev, "Successfully created xenvif\n");
 +
-+		/* temporarily mark the skb with the tunnel o_key, to
-+		 * only match policies with this mark.
-+		 */
-+		skb->mark = be32_to_cpu(tunnel->parms.o_key);
-+		ret = xfrm4_policy_check(NULL, XFRM_POLICY_IN, skb);
-+		skb->mark = oldmark;
-+		if (!ret)
- 			return -1;
++	__module_get(THIS_MODULE);
++
+ 	return vif;
+ }
  
- 		tstats = this_cpu_ptr(tunnel->dev->tstats);
-@@ -295,7 +304,6 @@ static int vti_rcv(struct sk_buff *skb)
- 		tstats->rx_bytes += skb->len;
- 		u64_stats_update_end(&tstats->syncp);
+@@ -369,9 +372,14 @@ void xenvif_disconnect(struct xenvif *vi
+ 	if (vif->irq)
+ 		unbind_from_irqhandler(vif->irq, vif);
  
--		skb->mark = 0;
- 		secpath_reset(skb);
- 		skb->dev = tunnel->dev;
- 		return 1;
-@@ -327,7 +335,7 @@ static netdev_tx_t vti_tunnel_xmit(struc
+-	unregister_netdev(vif->dev);
+-
+ 	xen_netbk_unmap_frontend_rings(vif);
++}
++
++void xenvif_free(struct xenvif *vif)
++{
++	unregister_netdev(vif->dev);
  
- 	memset(&fl4, 0, sizeof(fl4));
- 	flowi4_init_output(&fl4, tunnel->parms.link,
--			   be32_to_cpu(tunnel->parms.i_key), RT_TOS(tos),
-+			   be32_to_cpu(tunnel->parms.o_key), RT_TOS(tos),
- 			   RT_SCOPE_UNIVERSE,
- 			   IPPROTO_IPIP, 0,
- 			   dst, tiph->saddr, 0, 0);
+ 	free_netdev(vif->dev);
++
++	module_put(THIS_MODULE);
+ }
+--- a/drivers/net/xen-netback/xenbus.c
++++ b/drivers/net/xen-netback/xenbus.c
+@@ -42,7 +42,7 @@ static int netback_remove(struct xenbus_
+ 	if (be->vif) {
+ 		kobject_uevent(&dev->dev.kobj, KOBJ_OFFLINE);
+ 		xenbus_rm(XBT_NIL, dev->nodename, "hotplug-status");
+-		xenvif_disconnect(be->vif);
++		xenvif_free(be->vif);
+ 		be->vif = NULL;
+ 	}
+ 	kfree(be);
+@@ -203,9 +203,18 @@ static void disconnect_backend(struct xe
+ {
+ 	struct backend_info *be = dev_get_drvdata(&dev->dev);
+ 
++	if (be->vif)
++		xenvif_disconnect(be->vif);
++}
++
++static void destroy_backend(struct xenbus_device *dev)
++{
++	struct backend_info *be = dev_get_drvdata(&dev->dev);
++
+ 	if (be->vif) {
++		kobject_uevent(&dev->dev.kobj, KOBJ_OFFLINE);
+ 		xenbus_rm(XBT_NIL, dev->nodename, "hotplug-status");
+-		xenvif_disconnect(be->vif);
++		xenvif_free(be->vif);
+ 		be->vif = NULL;
+ 	}
+ }
+@@ -237,14 +246,11 @@ static void frontend_changed(struct xenb
+ 	case XenbusStateConnected:
+ 		if (dev->state == XenbusStateConnected)
+ 			break;
+-		backend_create_xenvif(be);
+ 		if (be->vif)
+ 			connect(be);
+ 		break;
+ 
+ 	case XenbusStateClosing:
+-		if (be->vif)
+-			kobject_uevent(&dev->dev.kobj, KOBJ_OFFLINE);
+ 		disconnect_backend(dev);
+ 		xenbus_switch_state(dev, XenbusStateClosing);
+ 		break;
+@@ -253,6 +259,7 @@ static void frontend_changed(struct xenb
+ 		xenbus_switch_state(dev, XenbusStateClosed);
+ 		if (xenbus_dev_is_online(dev))
+ 			break;
++		destroy_backend(dev);
+ 		/* fall through if not online */
+ 	case XenbusStateUnknown:
+ 		device_unregister(&dev->dev);
 
 
