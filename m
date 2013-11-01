@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab3KAWTZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:19:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55449 "EHLO
+	id S1756664Ab3KAWTq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:19:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55443 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756352Ab3KAWIT (ORCPT
+	with ESMTP id S1756340Ab3KAWIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:19 -0400
+	Fri, 1 Nov 2013 18:08:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>
-Subject: [PATCH 3.11 42/66] inet: fix possible memory corruption with UDP_CORK and UFO
-Date: Fri,  1 Nov 2013 15:07:18 -0700
-Message-Id: <20131101220646.234389557@linuxfoundation.org>
+        Seif Mazareeb <seif@marvell.com>, Paul Moore <paul@paul-moore.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.11 41/66] net: fix cipso packet validation when !NETLABEL
+Date: Fri,  1 Nov 2013 15:07:17 -0700
+Message-Id: <20131101220645.996895744@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -28,76 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Seif Mazareeb <seif@marvell.com>
 
-[ This is a simplified -stable version of a set of upstream commits. ]
+[ Upstream commit f2e5ddcc0d12f9c4c7b254358ad245c9dddce13b ]
 
-This is a replacement patch only for stable which does fix the problems
-handled by the following two commits in -net:
+When CONFIG_NETLABEL is disabled, the cipso_v4_validate() function could loop
+forever in the main loop if opt[opt_iter +1] == 0, this will causing a kernel
+crash in an SMP system, since the CPU executing this function will
+stall /not respond to IPIs.
 
-"ip_output: do skb ufo init for peeked non ufo skb as well" (e93b7d748be887cd7639b113ba7d7ef792a7efb9)
-"ip6_output: do skb ufo init for peeked non ufo skb as well" (c547dbf55d5f8cf615ccc0e7265e98db27d3fb8b)
+This problem can be reproduced by running the IP Stack Integrity Checker
+(http://isic.sourceforge.net) using the following command on a Linux machine
+connected to DUT:
 
-Three frames are written on a corked udp socket for which the output
-netdevice has UFO enabled.  If the first and third frame are smaller than
-the mtu and the second one is bigger, we enqueue the second frame with
-skb_append_datato_frags without initializing the gso fields. This leads
-to the third frame appended regulary and thus constructing an invalid skb.
+"icmpsic -s rand -d <DUT IP address> -r 123456"
+wait (1-2 min)
 
-This fixes the problem by always using skb_append_datato_frags as soon
-as the first frag got enqueued to the skb without marking the packet
-as SKB_GSO_UDP.
-
-The problem with only two frames for ipv6 was fixed by "ipv6: udp
-packets following an UFO enqueued packet need also be handled by UFO"
-(2811ebac2521ceac84f2bdae402455baa6a7fb47).
-
-Cc: Jiri Pirko <jiri@resnulli.us>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Seif Mazareeb <seif@marvell.com>
+Acked-by: Paul Moore <paul@paul-moore.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/skbuff.h |    5 +++++
- net/ipv4/ip_output.c   |    2 +-
- net/ipv6/ip6_output.c  |    2 +-
- 3 files changed, 7 insertions(+), 2 deletions(-)
+ include/net/cipso_ipv4.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -1316,6 +1316,11 @@ static inline int skb_pagelen(const stru
- 	return len + skb_headlen(skb);
- }
+--- a/include/net/cipso_ipv4.h
++++ b/include/net/cipso_ipv4.h
+@@ -290,6 +290,7 @@ static inline int cipso_v4_validate(cons
+ 	unsigned char err_offset = 0;
+ 	u8 opt_len = opt[1];
+ 	u8 opt_iter;
++	u8 tag_len;
  
-+static inline bool skb_has_frags(const struct sk_buff *skb)
-+{
-+	return skb_shinfo(skb)->nr_frags;
-+}
-+
- /**
-  * __skb_fill_page_desc - initialise a paged fragment in an skb
-  * @skb: buffer containing fragment to be initialised
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -836,7 +836,7 @@ static int __ip_append_data(struct sock
- 		csummode = CHECKSUM_PARTIAL;
+ 	if (opt_len < 8) {
+ 		err_offset = 1;
+@@ -302,11 +303,12 @@ static inline int cipso_v4_validate(cons
+ 	}
  
- 	cork->length += length;
--	if (((length > mtu) || (skb && skb_is_gso(skb))) &&
-+	if (((length > mtu) || (skb && skb_has_frags(skb))) &&
- 	    (sk->sk_protocol == IPPROTO_UDP) &&
- 	    (rt->dst.dev->features & NETIF_F_UFO) && !rt->dst.header_len) {
- 		err = ip_ufo_append_data(sk, queue, getfrag, from, length,
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1252,7 +1252,7 @@ int ip6_append_data(struct sock *sk, int
- 	skb = skb_peek_tail(&sk->sk_write_queue);
- 	cork->length += length;
- 	if (((length > mtu) ||
--	     (skb && skb_is_gso(skb))) &&
-+	     (skb && skb_has_frags(skb))) &&
- 	    (sk->sk_protocol == IPPROTO_UDP) &&
- 	    (rt->dst.dev->features & NETIF_F_UFO)) {
- 		err = ip6_ufo_append_data(sk, getfrag, from, length,
+ 	for (opt_iter = 6; opt_iter < opt_len;) {
+-		if (opt[opt_iter + 1] > (opt_len - opt_iter)) {
++		tag_len = opt[opt_iter + 1];
++		if ((tag_len == 0) || (opt[opt_iter + 1] > (opt_len - opt_iter))) {
+ 			err_offset = opt_iter + 1;
+ 			goto out;
+ 		}
+-		opt_iter += opt[opt_iter + 1];
++		opt_iter += tag_len;
+ 	}
+ 
+ out:
 
 
