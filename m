@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058Ab3KALtD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 07:49:03 -0400
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:23774
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752453Ab3KALs6 (ORCPT
+	id S1756089Ab3KALtO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 07:49:14 -0400
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:1249 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751919Ab3KALtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 07:48:58 -0400
+	Fri, 1 Nov 2013 07:49:10 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 6
 X-BigFish: VS6(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kz70kz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
@@ -23,9 +23,9 @@ CC: <linux-kernel@vger.kernel.org>,
         <davinci-linux-open-source@linux.davincidsp.com>,
         <linux-arm-kernel@lists.infradead.org>, <dmaengine@vger.kernel.org>,
         <linux-media@vger.kernel.org>, <alsa-devel@alsa-project.org>
-Subject: [PATCH][RESEND 5/8] uio: uio_pruss: use gen_pool_dma_alloc() to allocate sram memory
-Date: Fri, 1 Nov 2013 19:48:18 +0800
-Message-ID: <f26a7fd466d22aaaeae9cf32d3c4c43c333e0b35.1383306365.git.b42378@freescale.com>
+Subject: [PATCH][RESEND 7/8] ASoC: davinci: use gen_pool_dma_alloc() in davinci-pcm.c
+Date: Fri, 1 Nov 2013 19:48:20 +0800
+Message-ID: <8bd26b17552315f0a3ea63c166a97a938c88dcf0.1383306365.git.b42378@freescale.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <cover.1383306365.git.b42378@freescale.com>
 References: <cover.1383306365.git.b42378@freescale.com>
@@ -41,30 +41,25 @@ Since gen_pool_dma_alloc() is introduced, we implement it to simplify code.
 
 Signed-off-by: Nicolin Chen <b42378@freescale.com>
 ---
- drivers/uio/uio_pruss.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ sound/soc/davinci/davinci-pcm.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/uio/uio_pruss.c b/drivers/uio/uio_pruss.c
-index f519da9..96c4a19 100644
---- a/drivers/uio/uio_pruss.c
-+++ b/drivers/uio/uio_pruss.c
-@@ -158,14 +158,12 @@ static int pruss_probe(struct platform_device *dev)
- 	if (pdata->sram_pool) {
- 		gdev->sram_pool = pdata->sram_pool;
- 		gdev->sram_vaddr =
--			gen_pool_alloc(gdev->sram_pool, sram_pool_sz);
-+			(unsigned long)gen_pool_dma_alloc(gdev->sram_pool,
-+					sram_pool_sz, &gdev->sram_paddr);
- 		if (!gdev->sram_vaddr) {
- 			dev_err(&dev->dev, "Could not allocate SRAM pool\n");
- 			goto out_free;
- 		}
--		gdev->sram_paddr =
--			gen_pool_virt_to_phys(gdev->sram_pool,
--					      gdev->sram_vaddr);
- 	}
+diff --git a/sound/soc/davinci/davinci-pcm.c b/sound/soc/davinci/davinci-pcm.c
+index 84a63c6..fa64cd8 100644
+--- a/sound/soc/davinci/davinci-pcm.c
++++ b/sound/soc/davinci/davinci-pcm.c
+@@ -267,10 +267,9 @@ static int allocate_sram(struct snd_pcm_substream *substream,
+ 		return 0;
  
- 	gdev->ddr_vaddr = dma_alloc_coherent(&dev->dev, extram_pool_sz,
+ 	ppcm->period_bytes_max = size;
+-	iram_virt = (void *)gen_pool_alloc(sram_pool, size);
++	iram_virt = gen_pool_dma_alloc(sram_pool, size, &iram_phys);
+ 	if (!iram_virt)
+ 		goto exit1;
+-	iram_phys = gen_pool_virt_to_phys(sram_pool, (unsigned)iram_virt);
+ 	iram_dma = kzalloc(sizeof(*iram_dma), GFP_KERNEL);
+ 	if (!iram_dma)
+ 		goto exit2;
 -- 
 1.8.4
 
