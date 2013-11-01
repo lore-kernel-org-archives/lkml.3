@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab3KAWR7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:17:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55472 "EHLO
+	id S1756373Ab3KAWIV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:08:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55432 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756291Ab3KAWIW (ORCPT
+	with ESMTP id S1756291Ab3KAWIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:22 -0400
+	Fri, 1 Nov 2013 18:08:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Julian Anastasov <ja@ssi.bg>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Eilon Greenstein <eilong@broadcom.com>,
+        Dmitry Kravkov <dmitry@broadcom.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 46/66] ipv6: probe routes asynchronous in rt6_probe
-Date: Fri,  1 Nov 2013 15:07:22 -0700
-Message-Id: <20131101220647.442033766@linuxfoundation.org>
+Subject: [PATCH 3.11 31/66] bnx2x: record rx queue for LRO packets
+Date: Fri,  1 Nov 2013 15:07:07 -0700
+Message-Id: <20131101220643.338036011@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -28,82 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit c2f17e827b419918c856131f592df9521e1a38e3 ]
+[ Upstream commit 60e66fee56b2256dcb1dc2ea1b2ddcb6e273857d ]
 
-Routes need to be probed asynchronous otherwise the call stack gets
-exhausted when the kernel attemps to deliver another skb inline, like
-e.g. xt_TEE does, and we probe at the same time.
+RPS support is kind of broken on bnx2x, because only non LRO packets
+get proper rx queue information. This triggers reorders, as it seems
+bnx2x like to generate a non LRO packet for segment including TCP PUSH
+flag : (this might be pure coincidence, but all the reorders I've
+seen involve segments with a PUSH)
 
-We update neigh->updated still at once, otherwise we would send to
-many probes.
+11:13:34.335847 IP A > B: . 415808:447136(31328) ack 1 win 457 <nop,nop,timestamp 3789336 3985797>
+11:13:34.335992 IP A > B: . 447136:448560(1424) ack 1 win 457 <nop,nop,timestamp 3789336 3985797>
+11:13:34.336391 IP A > B: . 448560:479888(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985797>
+11:13:34.336425 IP A > B: P 511216:512640(1424) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+11:13:34.336423 IP A > B: . 479888:511216(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+11:13:34.336924 IP A > B: . 512640:543968(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+11:13:34.336963 IP A > B: . 543968:575296(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
 
-Cc: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+We must call skb_record_rx_queue() to properly give to RPS (and more
+generally for TX queue selection on forward path) the receive queue
+information.
+
+Similar fix is needed for skb_mark_napi_id(), but will be handled
+in a separate patch to ease stable backports.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Willem de Bruijn <willemb@google.com>
+Cc: Eilon Greenstein <eilong@broadcom.com>
+Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/route.c |   38 +++++++++++++++++++++++++++++++-------
- 1 file changed, 31 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -477,6 +477,24 @@ out:
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -676,6 +676,7 @@ static void bnx2x_gro_receive(struct bnx
+ 		}
+ 	}
+ #endif
++	skb_record_rx_queue(skb, fp->rx_queue);
+ 	napi_gro_receive(&fp->napi, skb);
  }
  
- #ifdef CONFIG_IPV6_ROUTER_PREF
-+struct __rt6_probe_work {
-+	struct work_struct work;
-+	struct in6_addr target;
-+	struct net_device *dev;
-+};
-+
-+static void rt6_probe_deferred(struct work_struct *w)
-+{
-+	struct in6_addr mcaddr;
-+	struct __rt6_probe_work *work =
-+		container_of(w, struct __rt6_probe_work, work);
-+
-+	addrconf_addr_solict_mult(&work->target, &mcaddr);
-+	ndisc_send_ns(work->dev, NULL, &work->target, &mcaddr, NULL);
-+	dev_put(work->dev);
-+	kfree(w);
-+}
-+
- static void rt6_probe(struct rt6_info *rt)
- {
- 	struct neighbour *neigh;
-@@ -500,17 +518,23 @@ static void rt6_probe(struct rt6_info *r
- 
- 	if (!neigh ||
- 	    time_after(jiffies, neigh->updated + rt->rt6i_idev->cnf.rtr_probe_interval)) {
--		struct in6_addr mcaddr;
--		struct in6_addr *target;
-+		struct __rt6_probe_work *work;
- 
--		if (neigh) {
-+		work = kmalloc(sizeof(*work), GFP_ATOMIC);
-+
-+		if (neigh && work)
- 			neigh->updated = jiffies;
-+
-+		if (neigh)
- 			write_unlock(&neigh->lock);
--		}
- 
--		target = (struct in6_addr *)&rt->rt6i_gateway;
--		addrconf_addr_solict_mult(target, &mcaddr);
--		ndisc_send_ns(rt->dst.dev, NULL, target, &mcaddr, NULL);
-+		if (work) {
-+			INIT_WORK(&work->work, rt6_probe_deferred);
-+			work->target = rt->rt6i_gateway;
-+			dev_hold(rt->dst.dev);
-+			work->dev = rt->dst.dev;
-+			schedule_work(&work->work);
-+		}
- 	} else {
- out:
- 		write_unlock(&neigh->lock);
 
 
