@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab3KAWEw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:04:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55010 "EHLO
+	id S1757201Ab3KAWdj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:33:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55033 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755075Ab3KAWEu (ORCPT
+	with ESMTP id S1755075Ab3KAWEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:04:50 -0400
+	Fri, 1 Nov 2013 18:04:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        Jason Wang <jasowang@redhat.com>,
+        Fan Du <fan.du@windriver.com>, Vlad Yasevich <vyasevich@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 24/54] virtio-net: dont respond to cpu hotplug notifier if were not ready
-Date: Fri,  1 Nov 2013 15:03:52 -0700
-Message-Id: <20131101220214.042065189@linuxfoundation.org>
+Subject: [PATCH 3.10 30/54] sctp: Perform software checksum if packet has to be fragmented.
+Date: Fri,  1 Nov 2013 15:03:58 -0700
+Message-Id: <20131101220214.683551591@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -30,56 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-[ Upstream commit 3ab098df35f8b98b6553edc2e40234af512ba877 ]
+[ Upstream commit d2dbbba77e95dff4b4f901fee236fef6d9552072 ]
 
-We're trying to re-configure the affinity unconditionally in cpu hotplug
-callback. This may lead the issue during resuming from s3/s4 since
+IP/IPv6 fragmentation knows how to compute only TCP/UDP checksum.
+This causes problems if SCTP packets has to be fragmented and
+ipsummed has been set to PARTIAL due to checksum offload support.
+This condition can happen when retransmitting after MTU discover,
+or when INIT or other control chunks are larger then MTU.
+Check for the rare fragmentation condition in SCTP and use software
+checksum calculation in this case.
 
-- virt queues haven't been allocated at that time.
-- it's unnecessary since thaw method will re-configure the affinity.
-
-Fix this issue by checking the config_enable and do nothing is we're not ready.
-
-The bug were introduced by commit 8de4b2f3ae90c8fc0f17eeaab87d5a951b66ee17
-(virtio-net: reset virtqueue affinity when doing cpu hotplug).
-
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+CC: Fan Du <fan.du@windriver.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/virtio_net.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/sctp/output.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1097,6 +1097,11 @@ static int virtnet_cpu_callback(struct n
- {
- 	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
+--- a/net/sctp/output.c
++++ b/net/sctp/output.c
+@@ -548,7 +548,7 @@ int sctp_packet_transmit(struct sctp_pac
+ 	 */
+ 	if (!sctp_checksum_disable) {
+ 		if (!(dst->dev->features & NETIF_F_SCTP_CSUM) ||
+-		    (dst_xfrm(dst) != NULL)) {
++		    (dst_xfrm(dst) != NULL) || packet->ipfragok) {
+ 			__u32 crc32 = sctp_start_cksum((__u8 *)sh, cksum_buf_len);
  
-+	mutex_lock(&vi->config_lock);
-+
-+	if (!vi->config_enable)
-+		goto done;
-+
- 	switch(action & ~CPU_TASKS_FROZEN) {
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
-@@ -1109,6 +1114,9 @@ static int virtnet_cpu_callback(struct n
- 	default:
- 		break;
- 	}
-+
-+done:
-+	mutex_unlock(&vi->config_lock);
- 	return NOTIFY_OK;
- }
- 
+ 			/* 3) Put the resultant value into the checksum field in the
 
 
