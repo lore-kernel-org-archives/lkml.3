@@ -1,94 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022Ab3KAT4l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 15:56:41 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:61360 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab3KAT4j (ORCPT
+	id S1753446Ab3KAT7I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 15:59:08 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:55661 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612Ab3KAT7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 15:56:39 -0400
-Message-ID: <52741581.9020106@cogentembedded.com>
-Date: Fri, 01 Nov 2013 23:56:33 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 1 Nov 2013 15:59:06 -0400
+Date: Fri, 1 Nov 2013 15:58:50 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Joe Perches <joe@perches.com>
+Cc: David Laight <David.Laight@ACULAB.COM>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Doug Ledford <dledford@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Message-ID: <20131101195850.GD8467@hmsreliant.think-freely.org>
+References: <201310300525.r9U5Pdqo014902@ib.usersys.redhat.com>
+ <20131030110214.GA10220@localhost.localdomain>
+ <52710B09.6090302@redhat.com>
+ <20131031183003.GC25894@hmsreliant.think-freely.org>
+ <1383320566.1737.0.camel@bwh-desktop.uk.level5networks.com>
+ <20131101160802.GB8467@hmsreliant.think-freely.org>
+ <AE90C24D6B3A694183C094C60CF0A2F6026B73D3@saturn3.aculab.com>
+ <20131101173701.GC8467@hmsreliant.think-freely.org>
+ <1383335129.3042.10.camel@joe-AO722>
 MIME-Version: 1.0
-To: Matt Porter <matt.porter@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>
-CC: Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: Re: [PATCH v2 9/9] ARM: dts: add usb udc support to bcm281xx
-References: <1383335158-19730-1-git-send-email-matt.porter@linaro.org> <1383335158-19730-10-git-send-email-matt.porter@linaro.org>
-In-Reply-To: <1383335158-19730-10-git-send-email-matt.porter@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383335129.3042.10.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, Nov 01, 2013 at 12:45:29PM -0700, Joe Perches wrote:
+> On Fri, 2013-11-01 at 13:37 -0400, Neil Horman wrote:
+> 
+> > I think it would be better if we just did the prefetch here
+> > and re-addressed this area when AVX (or addcx/addox) instructions were available
+> > for testing on hardware.
+> 
+> Could there be a difference if only a single software
+> prefetch was done at the beginning of transfer before
+> the while loop and hardware prefetches did the rest?
+> 
 
-On 11/01/2013 10:45 PM, Matt Porter wrote:
+I wouldn't think so.  If hardware was going to do any prefetching based on
+memory access patterns it will do so regardless of the leading prefetch, and
+that first prefetch isn't helpful because we still wind up stalling on the adds
+while its completing
+Neil
 
-> Adds USB OTG/PHY and clock support to BCM281xx and enables
-> UDC support on the bcm11351-brt and bcm28155-ap boards.
-
-> Signed-off-by: Matt Porter <matt.porter@linaro.org>
-> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-> Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
-> ---
->   arch/arm/boot/dts/bcm11351-brt.dts |  6 ++++++
->   arch/arm/boot/dts/bcm11351.dtsi    | 18 ++++++++++++++++++
->   arch/arm/boot/dts/bcm28155-ap.dts  |  8 ++++++++
->   3 files changed, 32 insertions(+)
-
-[...]
-> diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
-> index 0755f43..247f9fd 100644
-> --- a/arch/arm/boot/dts/bcm11351.dtsi
-> +++ b/arch/arm/boot/dts/bcm11351.dtsi
-> @@ -284,4 +284,22 @@
->   			#clock-cells = <0>;
->   		};
->   	};
-> +
-> +	usbotg: usbotg@3f120000 {
-
-    According to ePAPR spec [1], the node name should be "usb@3f120000".
-
-
-> +		compatible = "snps,dwc2";
-> +		reg = <0x3f120000 0x10000>;
-> +		interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
-> +		clocks = <&usb_otg_ahb_clk>;
-> +		clock-names = "otg";
-> +		phys = <&usbphy>;
-> +		phy-names = "usb2-phy";
-> +		status = "disabled";
-> +	};
-> +
-> +	usbphy: usbphy@3f130000 {
-
-    This one should probably be named "usb-phy@3f130000", just like 
-"ethernet-phy" from the ePAPR spec.
-
-> +		compatible = "brcm,kona-usb2-phy";
-> +		reg = <0x3f130000 0x28>;
-> +		#phy-cells = <0>;
-> +		status = "disabled";
-> +	};
->   };
-
-[1] http://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.0.pdf
-
-WBR, Sergei
-
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
