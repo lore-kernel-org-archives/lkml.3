@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab3KAKLq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 06:11:46 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:43060 "EHLO song.cn.fujitsu.com"
+	id S1755833Ab3KAKNJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 06:13:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62260 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751380Ab3KAKLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 06:11:45 -0400
+	id S1751371Ab3KAKNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 06:13:07 -0400
 X-IronPort-AV: E=Sophos;i="4.93,616,1378828800"; 
-   d="scan'208";a="8921330"
-From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Duan Jiong <duanj.fnst@cn.fujitsu.com>
-Subject: [PATCH] drivers: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
-Date: Fri, 1 Nov 2013 18:09:43 +0800
-Message-Id: <1383300583-6953-1-git-send-email-duanj.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.3.1
+   d="scan'208";a="8921337"
+Message-ID: <52737D46.1000202@cn.fujitsu.com>
+Date: Fri, 01 Nov 2013 18:07:02 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Al Viro <viro@zeniv.linux.org.uk>
+CC: fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] fs/buffer.c: exit if already confirmed page has dirty and
+ writeback buffers
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/01 18:09:58,
+ 2013/11/01 18:11:17,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/01 18:09:58,
-	Serialize complete at 2013/11/01 18:09:58
+ 2013/11/01 18:11:17,
+	Serialize complete at 2013/11/01 18:11:17
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes coccinelle error regarding usage of IS_ERR and
-PTR_ERR instead of PTR_ERR_OR_ZERO.
+Stop the loop of iterating bh if we have confirmed page
+has dirty and writeback buffers.
 
-Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 ---
- drivers/misc/carma/carma-fpga.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ fs/buffer.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/misc/carma/carma-fpga.c b/drivers/misc/carma/carma-fpga.c
-index 08b18f3..9a32e98 100644
---- a/drivers/misc/carma/carma-fpga.c
-+++ b/drivers/misc/carma/carma-fpga.c
-@@ -956,10 +956,7 @@ static int data_debugfs_init(struct fpga_device *priv)
- {
- 	priv->dbg_entry = debugfs_create_file(drv_name, S_IRUGO, NULL, priv,
- 					      &data_debug_fops);
--	if (IS_ERR(priv->dbg_entry))
--		return PTR_ERR(priv->dbg_entry);
--
--	return 0;
-+	return PTR_ERR_OR_ZERO(priv->dbg_entry);
- }
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 6024877..519cc5c 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -112,7 +112,7 @@ void buffer_check_dirty_writeback(struct page *page,
+ 			*dirty = true;
  
- static void data_debugfs_exit(struct fpga_device *priv)
+ 		bh = bh->b_this_page;
+-	} while (bh != head);
++	} while ((bh != head) && !(*writeback && *dirty));
+ }
+ EXPORT_SYMBOL(buffer_check_dirty_writeback);
+ 
 -- 
-1.8.3.1
+1.7.7
 
