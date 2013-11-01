@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756307Ab3KAWIN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:08:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55381 "EHLO
+	id S1756719Ab3KAWU4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:20:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756259Ab3KAWII (ORCPT
+	with ESMTP id S1756305Ab3KAWIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:08 -0400
+	Fri, 1 Nov 2013 18:08:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 29/66] unix_diag: fix info leak
-Date: Fri,  1 Nov 2013 15:07:05 -0700
-Message-Id: <20131101220642.826017066@linuxfoundation.org>
+Subject: [PATCH 3.11 35/66] net: dst: provide accessor function to dst->xfrm
+Date: Fri,  1 Nov 2013 15:07:11 -0700
+Message-Id: <20131101220644.431206928@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -27,30 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-[ Upstream commit 6865d1e834be84ddd5808d93d5035b492346c64a ]
+[ Upstream commit e87b3998d795123b4139bc3f25490dd236f68212 ]
 
-When filling the netlink message we miss to wipe the pad field,
-therefore leak one byte of heap memory to userland. Fix this by
-setting pad to 0.
+dst->xfrm is conditionally defined.  Provide accessor funtion that
+is always available.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/unix/diag.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/net/dst.h |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/net/unix/diag.c
-+++ b/net/unix/diag.c
-@@ -124,6 +124,7 @@ static int sk_diag_fill(struct sock *sk,
- 	rep->udiag_family = AF_UNIX;
- 	rep->udiag_type = sk->sk_type;
- 	rep->udiag_state = sk->sk_state;
-+	rep->pad = 0;
- 	rep->udiag_ino = sk_ino;
- 	sock_diag_save_cookie(sk, rep->udiag_cookie);
+--- a/include/net/dst.h
++++ b/include/net/dst.h
+@@ -477,10 +477,22 @@ static inline struct dst_entry *xfrm_loo
+ {
+ 	return dst_orig;
+ } 
++
++static inline struct xfrm_state *dst_xfrm(const struct dst_entry *dst)
++{
++	return NULL;
++}
++
+ #else
+ extern struct dst_entry *xfrm_lookup(struct net *net, struct dst_entry *dst_orig,
+ 				     const struct flowi *fl, struct sock *sk,
+ 				     int flags);
++
++/* skb attached with this dst needs transformation if dst->xfrm is valid */
++static inline struct xfrm_state *dst_xfrm(const struct dst_entry *dst)
++{
++	return dst->xfrm;
++}
+ #endif
  
+ #endif /* _NET_DST_H */
 
 
