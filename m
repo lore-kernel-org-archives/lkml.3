@@ -1,87 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198Ab3KAOG0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 10:06:26 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:40445 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310Ab3KAOGY (ORCPT
+	id S1753287Ab3KAOHN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 10:07:13 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:52069 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752371Ab3KAOHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 10:06:24 -0400
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: opw-kernel@googlegroups.com, Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchand@redhat.com>, linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org
-Subject: [PATCH v10] Staging: zram: Fix memory leak by refcount mismatch
-Date: Fri,  1 Nov 2013 19:36:09 +0530
-Message-Id: <1383314769-3667-1-git-send-email-rashika.kheria@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20131019110539.GA25167@gmail.com>
-References: <20131019110539.GA25167@gmail.com>
+	Fri, 1 Nov 2013 10:07:11 -0400
+Date: Fri, 1 Nov 2013 10:06:55 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Message-ID: <20131101140655.GA8467@hmsreliant.think-freely.org>
+References: <20131029114907.GE24477@neilslaptop.think-freely.org>
+ <20131029125233.GA17449@gmail.com>
+ <20131029130712.GA25078@neilslaptop.think-freely.org>
+ <20131029131149.GB20408@gmail.com>
+ <20131029141706.GC25078@neilslaptop.think-freely.org>
+ <20131029142716.GA28113@gmail.com>
+ <20131029202644.GB32389@localhost.localdomain>
+ <20131031102200.GA10098@gmail.com>
+ <20131031143325.GB25894@hmsreliant.think-freely.org>
+ <20131101091337.GA27063@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131101091337.GA27063@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As suggested by Minchan Kim and Jerome Marchand "The code in reset_store
-get the block device (bdget_disk()) but it does not put it (bdput()) when
-it's done using it. The usage count is therefore incremented but never
-decremented."
+On Fri, Nov 01, 2013 at 10:13:37AM +0100, Ingo Molnar wrote:
+> 
+> * Neil Horman <nhorman@tuxdriver.com> wrote:
+> 
+> > On Thu, Oct 31, 2013 at 11:22:00AM +0100, Ingo Molnar wrote:
+> > > 
+> > > * Neil Horman <nhorman@tuxdriver.com> wrote:
+> > > 
+> > > > > etc. For such short runtimes make sure the last column displays 
+> > > > > close to 100%, so that the PMU results become trustable.
+> > > > > 
+> > > > > A nehalem+ PMU will allow 2-4 events to be measured in parallel, 
+> > > > > plus generics like 'cycles', 'instructions' can be added 'for free' 
+> > > > > because they get counted in a separate (fixed purpose) PMU register.
+> > > > > 
+> > > > > The last colum tells you what percentage of the runtime that 
+> > > > > particular event was actually active. 100% (or empty last column) 
+> > > > > means it was active all the time.
+> > > > > 
+> > > > > Thanks,
+> > > > > 
+> > > > > 	Ingo
+> > > > > 
+> > > > 
+> > > > Hmm, 
+> > > > 
+> > > > I ran this test:
+> > > > 
+> > > > for i in `seq 0 1 3`
+> > > > do
+> > > > echo $i > /sys/module/csum_test/parameters/module_test_mode
+> > > > taskset -c 0 perf stat --repeat 20 -C 0 -e L1-dcache-load-misses -e L1-dcache-prefetches -e cycles -e instructions -ddd ./test.sh
+> > > > done
+> > > 
+> > > You need to remove '-ddd' which is a shortcut for a ton of useful 
+> > > events, but here you want to use fewer events, to increase the 
+> > > precision of the measurement.
+> > > 
+> > > Thanks,
+> > > 
+> > > 	Ingo
+> > > 
+> > 
+> > Thank you ingo, that fixed it.  I'm trying some other variants of 
+> > the csum algorithm that Doug and I discussed last night, but FWIW, 
+> > the relative performance of the 4 test cases 
+> > (base/prefetch/parallel/both) remains unchanged. I'm starting to 
+> > feel like at this point, theres very little point in doing 
+> > parallel alu operations (unless we can find a way to break the 
+> > dependency on the carry flag, which is what I'm tinkering with 
+> > now).
+> 
+> I would still like to encourage you to pick up the improvements that 
+> Doug measured (mostly via prefetch tweaking?) - that looked like 
+> some significant speedups that we don't want to lose!
+> 
+Well, yes, I made a line item of that in my subsequent note below.  I'm going to
+repost that shortly, and I suggested that we revisit this when the AVX
+instruction extensions are available.
 
-This patch also puts bdput() for all error cases.
+> Also, trying to stick the in-kernel implementation into 'perf bench' 
+> would be a useful first step as well, for this and future efforts.
+> 
+> See what we do in tools/perf/bench/mem-memcpy-x86-64-asm.S to pick 
+> up the in-kernel assembly memcpy implementations:
+> 
+Yes, I'll look into adding this as well
+Regards
+Neil
 
-Acked-by: Minchan Kim <minchan@kernel.org>
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
----
-
-This revision fixes the following issue of the previous revision-
-Incorrect Subject Line
-
- drivers/staging/zram/zram_drv.c |   19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 012ba15..a1f8b1f 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -652,21 +652,30 @@ static ssize_t reset_store(struct device *dev,
- 		return -ENOMEM;
- 
- 	/* Do not reset an active device! */
--	if (bdev->bd_holders)
--		return -EBUSY;
-+	if (bdev->bd_holders) {
-+		ret = -EBUSY;
-+		goto out;
-+	}
- 
- 	ret = kstrtou16(buf, 10, &do_reset);
- 	if (ret)
--		return ret;
-+		goto out;
- 
--	if (!do_reset)
--		return -EINVAL;
-+	if (!do_reset) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
- 
- 	/* Make sure all pending I/O is finished */
- 	fsync_bdev(bdev);
-+	bdput(bdev);
- 
- 	zram_reset_device(zram, true);
- 	return len;
-+
-+out:	
-+	bdput(bdev);
-+	return ret;
- }
- 
- static void __zram_make_request(struct zram *zram, struct bio *bio, int rw)
--- 
-1.7.9.5
 
