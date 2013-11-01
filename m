@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab3KACKk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 22:10:40 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:40327 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278Ab3KACKi (ORCPT
+	id S1754907Ab3KACRA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 22:17:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46660 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752278Ab3KACQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 22:10:38 -0400
+	Thu, 31 Oct 2013 22:16:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <20131031154311.e65d16d79ba540ced736413b@linux-foundation.org>
-References: <1382975339-25831-1-git-send-email-tom.leiming@gmail.com>
-	<20131031154311.e65d16d79ba540ced736413b@linux-foundation.org>
-Date: Fri, 1 Nov 2013 10:10:37 +0800
-Message-ID: <CACVXFVMJmQJd0cFaZcmZZvFpUQUmTPJRj87QBVr0kbgZxjq8dw@mail.gmail.com>
-Subject: Re: [PATCH] scripts/kallsyms: filter symbols not in kernel address space
-From: Ming Lei <tom.leiming@gmail.com>
+In-Reply-To: <20131031144710.05c08d4a3258098af9312781@linux-foundation.org>
+References: <1383062842-28453-1-git-send-email-ming.lei@canonical.com>
+	<20131031144710.05c08d4a3258098af9312781@linux-foundation.org>
+Date: Fri, 1 Nov 2013 10:16:56 +0800
+Message-ID: <CACVXFVPVapjQu4+hzy8zTh6mbKYedpTRDCqu=MyLCy5aLNgUxw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] lib/scatterlist: export sg_miter_skip()
+From: Ming Lei <ming.lei@canonical.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Michal Marek <mmarek@suse.cz>
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,30 +30,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Andrew,
 
-Thanks for your comment.
+Thank you for the comment.
 
-On Fri, Nov 1, 2013 at 6:43 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+On Fri, Nov 1, 2013 at 5:47 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
 >
-> For a start, please describe with great precision what these excluded
-> symbols are (examples would help) and explain why no application will
-> conceivably have had any use for them.
+> Looks OK to me.  Please include this in whatever tree is used to merge
+> "[PATCH 2/2] USB: storage: use sg_miter_* APIs to access scsi buffer".
 
-Looks Russell has given the example symbols already, and all these
-symbols should be only for generating code, and they won't be run by
-kernel since kernel can't run code which isn't in kernel virtual address
-space, so there is no reason for application to use these symbols.
-
-Actually, there is already report on the problem, see below link:
-
-http://www.gossamer-threads.com/lists/linux/kernel/1808193?page=last
-
-> OK.  Do you recall which patch that was?  And is it the case that this
-> patch excludes only the symbols which that patch accidentally added?
-
-This patch excludes all kernel symbols(non-module symbols) which
-aren't in kernel virtual address space, I think it is reasonable and correct.
+Greg and Alan, would you mind reviewing & commenting on 2/2 and merge
+the two finally to usb-next tree if you are OK with it?
 
 
 Thanks,
--- 
+--
 Ming Lei
