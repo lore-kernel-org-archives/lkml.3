@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab3KAQcH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 12:32:07 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59929 "EHLO
+	id S1755257Ab3KAQcG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 12:32:06 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59918 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab3KAQcA (ORCPT
+	with ESMTP id S1752719Ab3KAQb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 12:32:00 -0400
+	Fri, 1 Nov 2013 12:31:59 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-edac@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH v3 3/6] ARM: Add Krait L2 accessor functions
-Date: Fri,  1 Nov 2013 09:31:53 -0700
-Message-Id: <1383323516-31357-4-git-send-email-sboyd@codeaurora.org>
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 1/6] edac: Don't try to cancel workqueue when it's never setup
+Date: Fri,  1 Nov 2013 09:31:51 -0700
+Message-Id: <1383323516-31357-2-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.4.2.564.g0d6cf24
 In-Reply-To: <1383323516-31357-1-git-send-email-sboyd@codeaurora.org>
 References: <1383323516-31357-1-git-send-email-sboyd@codeaurora.org>
@@ -23,143 +21,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Qualcomm's Krait CPUs have a handful of L2 cache controller
-registers that live behind a cp15 based indirection register.
-First you program the indirection register (l2cpselr) to point
-the L2 'window' register (l2cpdr) at what you want to read/write.
-Then you read/write the 'window' register to do what you want.
-The l2cpselr register is not banked per-cpu so we must lock
-around accesses to it to prevent other CPUs from re-pointing
-l2cpdr underneath us.
+We only setup a workqueue for edac devices that use the polling
+method. We still try to cancel the workqueue if an edac_device
+uses the irq method though. This causes a warning from debug
+objects when we remove an edac device:
 
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
+WARNING: CPU: 0 PID: 56 at lib/debugobjects.c:260 debug_print_object+0x98/0xc0()
+ODEBUG: assert_init not available (active state 0) object type: timer_list hint: stub_timer+0x0/0x28
+Modules linked in: krait_edac(-)
+CPU: 0 PID: 56 Comm: rmmod Not tainted 3.12.0-rc2-00035-g15292a0 #69
+(unwind_backtrace+0x0/0x144)
+(show_stack+0x20/0x24)
+(dump_stack+0x74/0xb4)
+(warn_slowpath_common+0x78/0x9c)
+(warn_slowpath_fmt+0x40/0x48)
+(debug_print_object+0x98/0xc0)
+(debug_object_assert_init+0xdc/0xec)
+(del_timer+0x24/0x7c)
+(try_to_grab_pending+0xc0/0x1b0)
+(cancel_delayed_work+0x2c/0xa0)
+(edac_device_workq_teardown+0x1c/0x38)
+(edac_device_del_device+0xb8/0xe4)
+(krait_edac_remove+0x50/0x70 [krait_edac])
+(platform_drv_remove+0x24/0x28)
+(__device_release_driver+0x68/0xc0)
+(driver_detach+0xc4/0xc8)
+(bus_remove_driver+0xac/0x114)
+(driver_unregister+0x38/0x58)
+(platform_driver_unregister+0x1c/0x20)
+(krait_edac_driver_exit+0x14/0x1c [krait_edac])
+(SyS_delete_module+0x178/0x2b4)
+
+Fix it by skipping the workqueue teardown for such devices.
+
+Acked-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/common/Kconfig                   |  3 ++
- arch/arm/common/Makefile                  |  1 +
- arch/arm/common/krait-l2-accessors.c      | 58 +++++++++++++++++++++++++++++++
- arch/arm/include/asm/krait-l2-accessors.h | 20 +++++++++++
- 4 files changed, 82 insertions(+)
- create mode 100644 arch/arm/common/krait-l2-accessors.c
- create mode 100644 arch/arm/include/asm/krait-l2-accessors.h
+ drivers/edac/edac_device.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/arm/common/Kconfig b/arch/arm/common/Kconfig
-index c3a4e9c..9da52dc 100644
---- a/arch/arm/common/Kconfig
-+++ b/arch/arm/common/Kconfig
-@@ -9,6 +9,9 @@ config DMABOUNCE
- 	bool
- 	select ZONE_DMA
+diff --git a/drivers/edac/edac_device.c b/drivers/edac/edac_device.c
+index 211021d..203561b 100644
+--- a/drivers/edac/edac_device.c
++++ b/drivers/edac/edac_device.c
+@@ -437,6 +437,9 @@ void edac_device_workq_teardown(struct edac_device_ctl_info *edac_dev)
+ {
+ 	int status;
  
-+config KRAIT_L2_ACCESSORS
-+	bool
++	if (!edac_dev->edac_check)
++		return;
 +
- config SHARP_LOCOMO
- 	bool
- 
-diff --git a/arch/arm/common/Makefile b/arch/arm/common/Makefile
-index 8c60f47..606131a 100644
---- a/arch/arm/common/Makefile
-+++ b/arch/arm/common/Makefile
-@@ -8,6 +8,7 @@ obj-$(CONFIG_ICST)		+= icst.o
- obj-$(CONFIG_SA1111)		+= sa1111.o
- obj-$(CONFIG_PCI_HOST_VIA82C505) += via82c505.o
- obj-$(CONFIG_DMABOUNCE)		+= dmabounce.o
-+obj-$(CONFIG_KRAIT_L2_ACCESSORS) += krait-l2-accessors.o
- obj-$(CONFIG_SHARP_LOCOMO)	+= locomo.o
- obj-$(CONFIG_SHARP_PARAM)	+= sharpsl_param.o
- obj-$(CONFIG_SHARP_SCOOP)	+= scoop.o
-diff --git a/arch/arm/common/krait-l2-accessors.c b/arch/arm/common/krait-l2-accessors.c
-new file mode 100644
-index 0000000..f17c361
---- /dev/null
-+++ b/arch/arm/common/krait-l2-accessors.c
-@@ -0,0 +1,58 @@
-+/*
-+ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/spinlock.h>
-+#include <linux/export.h>
-+
-+#include <asm/barrier.h>
-+#include <asm/krait-l2-accessors.h>
-+
-+static DEFINE_RAW_SPINLOCK(krait_l2_lock);
-+
-+void set_l2_indirect_reg(u32 addr, u32 val)
-+{
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&krait_l2_lock, flags);
-+	/*
-+	 * Select the L2 window by poking l2cpselr, then write to the window
-+	 * via l2cpdr.
-+	 */
-+	asm volatile ("mcr p15, 3, %0, c15, c0, 6 @ l2cpselr" : : "r" (addr));
-+	isb();
-+	asm volatile ("mcr p15, 3, %0, c15, c0, 7 @ l2cpdr" : : "r" (val));
-+	isb();
-+
-+	raw_spin_unlock_irqrestore(&krait_l2_lock, flags);
-+}
-+EXPORT_SYMBOL(set_l2_indirect_reg);
-+
-+u32 get_l2_indirect_reg(u32 addr)
-+{
-+	u32 val;
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&krait_l2_lock, flags);
-+	/*
-+	 * Select the L2 window by poking l2cpselr, then read from the window
-+	 * via l2cpdr.
-+	 */
-+	asm volatile ("mcr p15, 3, %0, c15, c0, 6 @ l2cpselr" : : "r" (addr));
-+	isb();
-+	asm volatile ("mrc p15, 3, %0, c15, c0, 7 @ l2cpdr" : "=r" (val));
-+
-+	raw_spin_unlock_irqrestore(&krait_l2_lock, flags);
-+
-+	return val;
-+}
-+EXPORT_SYMBOL(get_l2_indirect_reg);
-diff --git a/arch/arm/include/asm/krait-l2-accessors.h b/arch/arm/include/asm/krait-l2-accessors.h
-new file mode 100644
-index 0000000..d5305c4
---- /dev/null
-+++ b/arch/arm/include/asm/krait-l2-accessors.h
-@@ -0,0 +1,20 @@
-+/*
-+ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __ASMARM_KRAIT_L2_ACCESSORS_H
-+#define __ASMARM_KRAIT_L2_ACCESSORS_H
-+
-+extern void set_l2_indirect_reg(u32 addr, u32 val);
-+extern u32 get_l2_indirect_reg(u32 addr);
-+
-+#endif
+ 	status = cancel_delayed_work(&edac_dev->work);
+ 	if (status == 0) {
+ 		/* workq instance might be running, wait for it */
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
