@@ -1,109 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab3KAOHN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 10:07:13 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:52069 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752371Ab3KAOHL (ORCPT
+	id S1753243Ab3KAOIl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 10:08:41 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:43907 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552Ab3KAOIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 10:07:11 -0400
-Date: Fri, 1 Nov 2013 10:06:55 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-Message-ID: <20131101140655.GA8467@hmsreliant.think-freely.org>
-References: <20131029114907.GE24477@neilslaptop.think-freely.org>
- <20131029125233.GA17449@gmail.com>
- <20131029130712.GA25078@neilslaptop.think-freely.org>
- <20131029131149.GB20408@gmail.com>
- <20131029141706.GC25078@neilslaptop.think-freely.org>
- <20131029142716.GA28113@gmail.com>
- <20131029202644.GB32389@localhost.localdomain>
- <20131031102200.GA10098@gmail.com>
- <20131031143325.GB25894@hmsreliant.think-freely.org>
- <20131101091337.GA27063@gmail.com>
-MIME-Version: 1.0
+	Fri, 1 Nov 2013 10:08:40 -0400
+Date: Fri, 1 Nov 2013 09:08:37 -0500
+From: scameron@beardog.cce.hp.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tomas Henzl <thenzl@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        stephenmcameron@gmail.com, mikem@beardog.cce.hp.com,
+        linux-kernel@vger.kernel.org, scameron@beardog.cce.hp.com
+Subject: Re: [PATCH] cciss: return 0 from driver probe function on success, not 1
+Message-ID: <20131101140837.GO31390@beardog.cce.hp.com>
+References: <20131029184135.5505.77412.stgit@beardog.cce.hp.com> <52700541.70405@kernel.dk> <20131031144241.25090ab7a6c0b668c5c1c2b2@linux-foundation.org> <20131031215444.GN31390@beardog.cce.hp.com> <20131031150618.fa9430269e0de7a5ebad1387@linux-foundation.org> <5273A765.6080705@redhat.com> <20131101063110.6a390f48.akpm@linux-foundation.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131101091337.GA27063@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+In-Reply-To: <20131101063110.6a390f48.akpm@linux-foundation.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 01, 2013 at 10:13:37AM +0100, Ingo Molnar wrote:
+On Fri, Nov 01, 2013 at 06:31:10AM -0700, Andrew Morton wrote:
+> On Fri, 01 Nov 2013 14:06:45 +0100 Tomas Henzl <thenzl@redhat.com> wrote:
 > 
-> * Neil Horman <nhorman@tuxdriver.com> wrote:
-> 
-> > On Thu, Oct 31, 2013 at 11:22:00AM +0100, Ingo Molnar wrote:
-> > > 
-> > > * Neil Horman <nhorman@tuxdriver.com> wrote:
-> > > 
-> > > > > etc. For such short runtimes make sure the last column displays 
-> > > > > close to 100%, so that the PMU results become trustable.
-> > > > > 
-> > > > > A nehalem+ PMU will allow 2-4 events to be measured in parallel, 
-> > > > > plus generics like 'cycles', 'instructions' can be added 'for free' 
-> > > > > because they get counted in a separate (fixed purpose) PMU register.
-> > > > > 
-> > > > > The last colum tells you what percentage of the runtime that 
-> > > > > particular event was actually active. 100% (or empty last column) 
-> > > > > means it was active all the time.
-> > > > > 
-> > > > > Thanks,
-> > > > > 
-> > > > > 	Ingo
-> > > > > 
-> > > > 
-> > > > Hmm, 
-> > > > 
-> > > > I ran this test:
-> > > > 
-> > > > for i in `seq 0 1 3`
-> > > > do
-> > > > echo $i > /sys/module/csum_test/parameters/module_test_mode
-> > > > taskset -c 0 perf stat --repeat 20 -C 0 -e L1-dcache-load-misses -e L1-dcache-prefetches -e cycles -e instructions -ddd ./test.sh
-> > > > done
-> > > 
-> > > You need to remove '-ddd' which is a shortcut for a ton of useful 
-> > > events, but here you want to use fewer events, to increase the 
-> > > precision of the measurement.
-> > > 
-> > > Thanks,
-> > > 
-> > > 	Ingo
-> > > 
+> > The problem in kernel is that the error handling in local_pci_probe
+> > and  in __pci_device_probe is different for ret values > 0,
+> > so we should fix it somewhere so it is in sync.
+> > The documentation states that the probe function should return zero on success
+> > so what about this -
 > > 
-> > Thank you ingo, that fixed it.  I'm trying some other variants of 
-> > the csum algorithm that Doug and I discussed last night, but FWIW, 
-> > the relative performance of the 4 test cases 
-> > (base/prefetch/parallel/both) remains unchanged. I'm starting to 
-> > feel like at this point, theres very little point in doing 
-> > parallel alu operations (unless we can find a way to break the 
-> > dependency on the carry flag, which is what I'm tinkering with 
-> > now).
+> > This would bring the handling to sync
+> > diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+> > index 98f7b9b..200a071 100644
+> > --- a/drivers/pci/pci-driver.c
+> > +++ b/drivers/pci/pci-driver.c
+> > @@ -317,8 +317,6 @@ __pci_device_probe(struct pci_driver *drv, struct pci_dev *pci_dev)
+> >  		id = pci_match_device(drv, pci_dev);
+> >  		if (id)
+> >  			error = pci_call_probe(drv, pci_dev, id);
+> > -		if (error >= 0)
+> > -			error = 0;
+> >  	}
+> >  	return error;
+> >  }
 > 
-> I would still like to encourage you to pick up the improvements that 
-> Doug measured (mostly via prefetch tweaking?) - that looked like 
-> some significant speedups that we don't want to lose!
+> ah, there it is.
 > 
-Well, yes, I made a line item of that in my subsequent note below.  I'm going to
-repost that shortly, and I suggested that we revisit this when the AVX
-instruction extensions are available.
+> This change would turn semi-kaput drivers into kaput-kaput drivers.  It
+> would be better to add a runtime warning here so those drivers get
+> fixed.  Such a warning would need to reliably identify the offending
+> probe function so a simple WARN_ON() wouldn't be sufficient.
+> 
 
-> Also, trying to stick the in-kernel implementation into 'perf bench' 
-> would be a useful first step as well, for this and future efforts.
-> 
-> See what we do in tools/perf/bench/mem-memcpy-x86-64-asm.S to pick 
-> up the in-kernel assembly memcpy implementations:
-> 
-Yes, I'll look into adding this as well
-Regards
-Neil
+FWIW, I just booted up with the following change:
 
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index 98f7b9b..ef71bb5 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -264,9 +264,16 @@ static long local_pci_probe(void *_ddi)
+ 	pm_runtime_get_sync(dev);
+ 	pci_dev->driver = pci_drv;
+ 	rc = pci_drv->probe(pci_dev, ddi->id);
+-	if (rc) {
++	if (rc < 0) {
+ 		pci_dev->driver = NULL;
+ 		pm_runtime_put_sync(dev);
++	} else {
++		if (rc > 0) {
++			dev_warn(dev,
++				"Driver probe function returned %d, greater than 0\n", rc);
++			rc = 0;
++			
++		}
+ 	}
+ 	return rc;
+ }
+
+
+And,
+
+[scameron@localhost linux-3.12-rc6]$ dmesg | grep 'Driver probe'
+[scameron@localhost linux-3.12-rc6]$
+
+Not that it means all that much since I don't have hardware for
+the majority of drivers, obviously.
+
+I think the above should make drivers with probe functions
+returning > 0 "work" again, but with a warning.
+
+The question would be, are there drivers which return > 0 and
+by this value intend to convey that the probe function has failed?
+
+-- steve
 
