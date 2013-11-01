@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488Ab3KAGF5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 02:05:57 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44646 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab3KAGFz (ORCPT
+	id S1753079Ab3KAGGZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 02:06:25 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64297 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697Ab3KAGGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 02:05:55 -0400
-Date: Fri, 1 Nov 2013 17:05:45 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bharat Bhushan <r65777@freescale.com>,
-        Scott Wood <scottwood@freescale.com>
-Subject: linux-next: manual merge of the kvm-ppc tree with the  tree
-Message-Id: <20131101170545.380292f4ac4109b8cd3a72f0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__1_Nov_2013_17_05_45_+1100_xT1EskGmA1xRZOJO"
+	Fri, 1 Nov 2013 02:06:11 -0400
+X-AuditID: 9c93016f-b7b28ae00000111e-c9-527344d1bb5b
+From: Namhyung Kim <namhyung@kernel.org>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] perf timechart: always try to print at least 15 tasks
+References: <1382439412-23713-1-git-send-email-stfomichev@yandex-team.ru>
+	<1382439412-23713-2-git-send-email-stfomichev@yandex-team.ru>
+	<87y55c5xdt.fsf@sejong.aot.lge.com>
+	<20131029092433.GA3406@stfomichev-desktop>
+Date: Fri, 01 Nov 2013 15:06:09 +0900
+In-Reply-To: <20131029092433.GA3406@stfomichev-desktop> (Stanislav Fomichev's
+	message of "Tue, 29 Oct 2013 13:24:33 +0400")
+Message-ID: <878ux864ha.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__1_Nov_2013_17_05_45_+1100_xT1EskGmA1xRZOJO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Stanislav,
 
-Hi Alexander,
+On Tue, 29 Oct 2013 13:24:33 +0400, Stanislav Fomichev wrote:
+>> 1. introduce while loop: it's a behavioral change so that it can be a
+>> separate patch.  But it seems not checking the process filter - in that
+>> case the loop is almost useless IMHO.
+> Could you please elaborate on 'not checking the process filter'?
 
-Today's linux-next merge of the kvm-ppc tree got a conflict in
-arch/powerpc/include/asm/processor.h between commit 51ae8d4a2b9e
-("powerpc: move debug registers in a structure") from the powerpc tree
-and commit 95791988fec6 ("powerpc: move debug registers in a structure")
-from the kvm-ppc tree.
+I meant it doesn't check whether process filter is set.  If the filter
+is set calling determine_display_tasks() multiple times is meaningless
+since it doesn't check the threashold at all.
 
-Different version of the same patch.  I used the powerpc tree version
-(there wer other changes there).
+>
+> This loop is for the case when process filter is not set, but when the
+> filter is set it should also work (because determine_display_tasks calls
+> determine_display_tasks_filtered in case of process filter).
+> We just check the return value and loop while number of tasks is not
+> within the desired range (or thresh is zero).
+>
+>> 2. new -n option: it should update Documentation/perf-timechart.txt
+>> also.  And the long option name "number" is too general.
+> Does renaming "number" to "proc-num" sounds ok?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Much better.
 
---Signature=_Fri__1_Nov_2013_17_05_45_+1100_xT1EskGmA1xRZOJO
-Content-Type: application/pgp-signature
+>
+>> 3. two if(proc_num): what is this?  Is it for patch 2?
+> That's for the '-n 0' case, to completely skip tasks information.
+>
+> Thanks for your comments, I'll split this patch into two parts and
+> update the docs.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSc0S9AAoJEMDTa8Ir7ZwV2ocP/1esZbdj3gQw5B9/j6MSWs5k
-0AKBaI+/mjTx4VbxtrGKcwAcvpc7EHitdPfumlvl/oyGmaGuSCCAXm1BUElp4YIK
-kNgMSknpSQyPIaSmg2jhzHmjeCb/4uJpCSFLBRh2SPbK+8eYrJeqtjzKEsT75b97
-/ocvTtoNyUImY9KebKyFVSgDfXjQ08gkTdxhwGTeLAhLo29JrhyHh4eX4+fDaoJA
-ixpD6R9TA+9jPPP4wcvf6e01SsLi/R3EpkMbeajg8vDHXRXXDcJ2F5YKwRc2aC/T
-xUxSq00MmBdfiW1Gqad9NifNEgfabJCwr6/V3PVB3nPxccNE48StqYtplHRZeVjP
-upTQ8xTGMjfBxvHJUVglxNdqVaR0ZFas28rX2EgKc2waCtgdtL6g12lyVV5k8bfD
-nyDnZUxN4x5Kmtt6cOOtJJ+FO/N+2x+MRutnWY0RkTnUsEzg7oJpXy83SeBP2zQ9
-LvR7PmvXda63cxtj0dbDBaIfO0plz2ndOOK8Cj9BWSAA5K2+1OD9z3/pFdg7KnCy
-IRADeQ8gmL0h3wDcZLkrTnVRCq9sxJJ0k3h8iQS7UX51Bw6qIfnDbGfaBxX6rlTC
-NwZ+vumH5IApy4rNdfi3jSZ0Pz+Hv1PD8EBxICBXgQ6LNeB37YW4RUQsaq+S86K2
-RauS801JglsQShbq38hw
-=nuwj
------END PGP SIGNATURE-----
-
---Signature=_Fri__1_Nov_2013_17_05_45_+1100_xT1EskGmA1xRZOJO--
+Thanks,
+Namhyung
