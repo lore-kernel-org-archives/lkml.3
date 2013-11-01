@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719Ab3KAWU4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:20:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55411 "EHLO
+	id S1756725Ab3KAWV0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:21:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55406 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756305Ab3KAWIN (ORCPT
+	with ESMTP id S1756294Ab3KAWIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:13 -0400
+	Fri, 1 Nov 2013 18:08:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Veaceslav Falico <vfalico@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 35/66] net: dst: provide accessor function to dst->xfrm
-Date: Fri,  1 Nov 2013 15:07:11 -0700
-Message-Id: <20131101220644.431206928@linuxfoundation.org>
+Subject: [PATCH 3.11 34/66] bridge: Correctly clamp MAX forward_delay when enabling STP
+Date: Fri,  1 Nov 2013 15:07:10 -0700
+Message-Id: <20131101220644.119718099@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -28,45 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevich@gmail.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit e87b3998d795123b4139bc3f25490dd236f68212 ]
+[ Upstream commit 4b6c7879d84ad06a2ac5b964808ed599187a188d ]
 
-dst->xfrm is conditionally defined.  Provide accessor funtion that
-is always available.
+Commit be4f154d5ef0ca147ab6bcd38857a774133f5450
+	bridge: Clamp forward_delay when enabling STP
+had a typo when attempting to clamp maximum forward delay.
 
-Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+It is possible to set bridge_forward_delay to be higher then
+permitted maximum when STP is off.  When turning STP on, the
+higher then allowed delay has to be clamed down to max value.
+
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: Stephen Hemminger <shemminger@vyatta.com>
+Reviewed-by: Veaceslav Falico <vfalico@redhat.com>
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/dst.h |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ net/bridge/br_stp_if.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/net/dst.h
-+++ b/include/net/dst.h
-@@ -477,10 +477,22 @@ static inline struct dst_entry *xfrm_loo
- {
- 	return dst_orig;
- } 
-+
-+static inline struct xfrm_state *dst_xfrm(const struct dst_entry *dst)
-+{
-+	return NULL;
-+}
-+
- #else
- extern struct dst_entry *xfrm_lookup(struct net *net, struct dst_entry *dst_orig,
- 				     const struct flowi *fl, struct sock *sk,
- 				     int flags);
-+
-+/* skb attached with this dst needs transformation if dst->xfrm is valid */
-+static inline struct xfrm_state *dst_xfrm(const struct dst_entry *dst)
-+{
-+	return dst->xfrm;
-+}
- #endif
+--- a/net/bridge/br_stp_if.c
++++ b/net/bridge/br_stp_if.c
+@@ -134,7 +134,7 @@ static void br_stp_start(struct net_brid
  
- #endif /* _NET_DST_H */
+ 	if (br->bridge_forward_delay < BR_MIN_FORWARD_DELAY)
+ 		__br_set_forward_delay(br, BR_MIN_FORWARD_DELAY);
+-	else if (br->bridge_forward_delay < BR_MAX_FORWARD_DELAY)
++	else if (br->bridge_forward_delay > BR_MAX_FORWARD_DELAY)
+ 		__br_set_forward_delay(br, BR_MAX_FORWARD_DELAY);
+ 
+ 	if (r == 0) {
 
 
