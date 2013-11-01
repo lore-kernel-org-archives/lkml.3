@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab3KATq7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 15:46:59 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:46212 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754089Ab3KATq2 (ORCPT
+	id S1754014Ab3KATq0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 15:46:26 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:54471 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753784Ab3KATqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 15:46:28 -0400
+	Fri, 1 Nov 2013 15:46:18 -0400
 From: Matt Porter <matt.porter@linaro.org>
 To: Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -21,9 +21,9 @@ Cc: Linux USB List <linux-usb@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Devicetree List <devicetree@vger.kernel.org>,
         Linaro Patches <patches@linaro.org>
-Subject: [PATCH v2 8/9] phy: add Broadcom Kona USB2 PHY driver
-Date: Fri,  1 Nov 2013 15:45:57 -0400
-Message-Id: <1383335158-19730-9-git-send-email-matt.porter@linaro.org>
+Subject: [PATCH v2 3/9] usb: gadget: s3c-hsotg: enable build for other platforms
+Date: Fri,  1 Nov 2013 15:45:52 -0400
+Message-Id: <1383335158-19730-4-git-send-email-matt.porter@linaro.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1383335158-19730-1-git-send-email-matt.porter@linaro.org>
 References: <1383335158-19730-1-git-send-email-matt.porter@linaro.org>
@@ -31,209 +31,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a driver for the internal Broadcom Kona USB 2.0 PHY found
-on the BCM281xx family of SoCs.
+Remove unused Samsung-specific machine include and Kconfig
+dependency on S3C.
 
 Signed-off-by: Matt Porter <matt.porter@linaro.org>
+Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
 ---
- drivers/phy/Kconfig             |   6 ++
- drivers/phy/Makefile            |   2 +
- drivers/phy/phy-bcm-kona-usb2.c | 161 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 169 insertions(+)
- create mode 100644 drivers/phy/phy-bcm-kona-usb2.c
+ drivers/usb/gadget/Kconfig     | 7 +++----
+ drivers/usb/gadget/s3c-hsotg.c | 2 --
+ 2 files changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index 349bef2..cedada5 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -15,4 +15,10 @@ config GENERIC_PHY
- 	  phy users can obtain reference to the PHY. All the users of this
- 	  framework should select this config.
+diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+index 48cddf3..2e69fa0 100644
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -280,11 +280,10 @@ config USB_PXA27X
+ 	   gadget drivers to also be dynamically linked.
  
-+config BCM_KONA_USB2_PHY
-+	tristate "Broadcom Kona USB2 PHY Driver"
-+	depends on GENERIC_PHY
-+	help
-+	  Enable this to support the Broadcom Kona USB 2.0 PHY.
-+
- endmenu
-diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-index 9e9560f..ce83a14 100644
---- a/drivers/phy/Makefile
-+++ b/drivers/phy/Makefile
-@@ -3,3 +3,5 @@
- #
+ config USB_S3C_HSOTG
+-	tristate "S3C HS/OtG USB Device controller"
+-	depends on S3C_DEV_USB_HSOTG
++	tristate "Designware/S3C HS/OtG USB Device controller"
+ 	help
+-	  The Samsung S3C64XX USB2.0 high-speed gadget controller
+-	  integrated into the S3C64XX series SoC.
++	  The Designware USB2.0 high-speed gadget controller
++	  integrated into the S3C64XX and BCM281xx series SoC.
  
- obj-$(CONFIG_GENERIC_PHY)	+= phy-core.o
-+
-+obj-$(CONFIG_BCM_KONA_USB2_PHY)	+= phy-bcm-kona-usb2.o
-diff --git a/drivers/phy/phy-bcm-kona-usb2.c b/drivers/phy/phy-bcm-kona-usb2.c
-new file mode 100644
-index 0000000..1beea7f
---- /dev/null
-+++ b/drivers/phy/phy-bcm-kona-usb2.c
-@@ -0,0 +1,161 @@
-+/*
-+ * phy-bcm-kona-usb2.c - Broadcom Kona USB2 Phy Driver
-+ *
-+ * Copyright (C) 2013 Linaro Limited
-+ * Matt Porter <matt.porter@linaro.org>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/delay.h>
-+#include <linux/platform_device.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/clk.h>
-+#include <linux/phy/phy.h>
-+
-+#define OTGCTL_OTGSTAT2		(1 << 31)
-+#define OTGCTL_OTGSTAT1		(1 << 30)
-+#define OTGCTL_PRST_N_SW	(1 << 11)
-+#define OTGCTL_HRESET_N		(1 << 10)
-+#define OTGCTL_UTMI_LINE_STATE1	(1 << 9)
-+#define OTGCTL_UTMI_LINE_STATE0	(1 << 8)
-+
-+#define P1CTL_SOFT_RESET	(1 << 1)
-+#define P1CTL_NON_DRIVING	(1 << 0)
-+
-+struct bcm_kona_usb_phy_regs {
-+	u32 ctrl;
-+	u32 cfg;
-+	u32 p1ctl;
-+	u32 status;
-+	u32 bc_cfg;
-+	u32 tp_in;
-+	u32 tp_out;
-+	u32 phy_ctrl;
-+	u32 usbreg;
-+	u32 usbproben;
-+};
-+
-+struct bcm_kona_usb {
-+	struct bcm_kona_usb_phy_regs *regs;
-+};
-+
-+static void bcm_kona_usb_phy_power(struct bcm_kona_usb *phy, int on)
-+{
-+	u32 val;
-+
-+	val = readl(&phy->regs->ctrl);
-+	if (on) {
-+		/* Configure and power PHY */
-+		val &= ~(OTGCTL_OTGSTAT2 | OTGCTL_OTGSTAT1 |
-+			 OTGCTL_UTMI_LINE_STATE1 | OTGCTL_UTMI_LINE_STATE0);
-+		val |= OTGCTL_PRST_N_SW | OTGCTL_HRESET_N;
-+		writel(val, &phy->regs->ctrl);
-+
-+		/* Soft reset PHY */
-+		val = readl(&phy->regs->p1ctl);
-+		val &= ~P1CTL_NON_DRIVING;
-+		val |= P1CTL_SOFT_RESET;
-+		writel(val, &phy->regs->p1ctl);
-+		writel(val & ~P1CTL_SOFT_RESET, &phy->regs->p1ctl);
-+		/* Reset needs to be asserted for 2ms */
-+		mdelay(2);
-+		writel(val | P1CTL_SOFT_RESET, &phy->regs->p1ctl);
-+	} else {
-+		val &= ~(OTGCTL_PRST_N_SW | OTGCTL_HRESET_N);
-+		writel(val, &phy->regs->ctrl);
-+	}
-+}
-+
-+static int bcm_kona_usb_phy_power_on(struct phy *gphy)
-+{
-+	struct bcm_kona_usb *phy = phy_get_drvdata(gphy);
-+
-+	bcm_kona_usb_phy_power(phy, 1);
-+
-+	return 0;
-+}
-+
-+static int bcm_kona_usb_phy_power_off(struct phy *gphy)
-+{
-+	struct bcm_kona_usb *phy = phy_get_drvdata(gphy);
-+
-+	bcm_kona_usb_phy_power(phy, 0);
-+
-+	return 0;
-+}
-+
-+static struct phy_ops ops = {
-+	.power_on	= bcm_kona_usb_phy_power_on,
-+	.power_off	= bcm_kona_usb_phy_power_off,
-+	.owner = THIS_MODULE,
-+};
-+
-+static int bcm_kona_usb2_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct bcm_kona_usb *phy;
-+	struct resource *res;
-+	struct phy *gphy;
-+	struct phy_provider *phy_provider;
-+
-+	phy = devm_kzalloc(dev, sizeof(*phy), GFP_KERNEL);
-+	if (!phy)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	phy->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(phy->regs))
-+		return PTR_ERR(phy->regs);
-+
-+	platform_set_drvdata(pdev, phy);
-+
-+	phy_provider = devm_of_phy_provider_register(dev,
-+			of_phy_simple_xlate);
-+	if (IS_ERR(phy_provider))
-+		return PTR_ERR(phy_provider);
-+
-+	gphy = devm_phy_create(dev, &ops, NULL);
-+	if (IS_ERR(gphy))
-+		return PTR_ERR(gphy);
-+
-+	/* The Kona PHY supports an 8-bit wide UTMI interface */
-+	phy_set_bus_width(gphy, 8);
-+
-+	phy_set_drvdata(gphy, phy);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id bcm_kona_usb2_dt_ids[] = {
-+	{ .compatible = "brcm,kona-usb2-phy" },
-+	{ /* sentinel */ }
-+};
-+
-+MODULE_DEVICE_TABLE(of, bcm_kona_usb2_dt_ids);
-+
-+static struct platform_driver bcm_kona_usb2_driver = {
-+	.probe		= bcm_kona_usb2_probe,
-+	.driver		= {
-+		.name	= "bcm-kona-usb2",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = bcm_kona_usb2_dt_ids,
-+	},
-+};
-+
-+module_platform_driver(bcm_kona_usb2_driver);
-+
-+MODULE_ALIAS("platform:bcm-kona-usb2");
-+MODULE_AUTHOR("Matt Porter");
-+MODULE_DESCRIPTION("BCM Kona USB 2.0 PHY driver");
-+MODULE_LICENSE("GPL v2");
+ config USB_S3C2410
+ 	tristate "S3C2410 USB Device Controller"
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index a8a99e4..258bc73 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -36,8 +36,6 @@
+ #include <linux/usb/phy.h>
+ #include <linux/platform_data/s3c-hsotg.h>
+ 
+-#include <mach/map.h>
+-
+ #include "s3c-hsotg.h"
+ 
+ static const char * const s3c_hsotg_supply_names[] = {
 -- 
 1.8.4
 
