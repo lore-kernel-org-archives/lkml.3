@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab3KAPUs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 11:20:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1958 "EHLO mx1.redhat.com"
+	id S1754145Ab3KAPVL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 11:21:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34525 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752383Ab3KAPUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 11:20:47 -0400
-Date: Fri, 1 Nov 2013 16:20:00 +0100
-From: Jiri Olsa <jolsa@redhat.com>
+	id S1753397Ab3KAPVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 11:21:10 -0400
+Date: Fri, 1 Nov 2013 16:22:32 +0100
+From: Oleg Nesterov <oleg@redhat.com>
 To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 3/4] perf tools: Add call-graph option support into
- .perfconfig
-Message-ID: <20131101152000.GB5671@krava.brq.redhat.com>
-References: <20131026120336.GA24439@gmail.com>
- <1382797536-32303-1-git-send-email-jolsa@redhat.com>
- <1382797536-32303-4-git-send-email-jolsa@redhat.com>
- <87bo2995o1.fsf@sejong.aot.lge.com>
- <20131029101821.GA1093@krava.brq.redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a
+	ring buffer
+Message-ID: <20131101152232.GA2703@redhat.com>
+References: <1383029621-7384-1-git-send-email-namhyung@kernel.org> <1383029621-7384-11-git-send-email-namhyung@kernel.org> <20131101150910.GA18278@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131029101821.GA1093@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131101150910.GA18278@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 29, 2013 at 11:18:21AM +0100, Jiri Olsa wrote:
-> On Mon, Oct 28, 2013 at 05:10:54PM +0900, Namhyung Kim wrote:
-> > On Sat, 26 Oct 2013 16:25:35 +0200, Jiri Olsa wrote:
-> > > Adding call-graph option support into .perfconfig file,
-> > > so it's now possible use call-graph option like:
-> > >
-> > >   [top]
-> > >         call-graph = fp
-> > >
-> > >   [record]
-> > >         call-graph = dwarf,8192
-> > >
-> > > Above options ONLY setup the unwind method. To enable
-> > > perf record/top to actually use it the command line
-> > > option -g/-G must be specified.
-> > >
-> > > The --call-graph option overloads .perfconfig setup.
-> > >
-> > > Assuming above configuration:
-> > >
-> > >   $ perf record -g ls
-> > >   - enables dwarf unwind with user stack size dump 8192 bytes
-> > >
-> > >   $ perf top -G
-> > >   - enables frame pointer unwind
-> > >
-> > >   $ perf record --call-graph=fp ls
-> > >   - enables frame pointer unwind
-> > >
-> > >   $ perf top --call-graph=dwarf,4096 ls
-> > >   - enables dwarf unwind with user stack size dump 4096 bytes
-> > >
-> > [SNIP]
-> > > --- a/tools/perf/builtin-record.c
-> > > +++ b/tools/perf/builtin-record.c
-> > > @@ -750,6 +750,8 @@ int record_parse_callchain_opt(const struct option *opt,
-> > >  	struct perf_record_opts *opts = opt->value;
-> > >  	int ret;
-> > >  
-> > > +	opts->call_graph_enabled = !unset;
-> > > +
-> > 
-> > Why not just using symbol_conf.use_callchain?
-> > 
-> 
-> right, this way we'd be in sync with top
+On 11/01, Oleg Nesterov wrote:
+>
+> Hi Namhyung,
+>
+> Sorry if this was already discussed. But I can't really understand
+> the idea of this per-cpu buffer...
+>
+> On 10/29, Namhyung Kim wrote:
+> >
+> > Fetching from user space should be done in a non-atomic context.  So
+> > use a per-cpu buffer and copy its content to the ring buffer
+> > atomically.  Note that we can migrate during accessing user memory
+> > thus use a per-cpu mutex to protect concurrent accesses.
+>
+> And if the task migrates or just sleeps in page fault, another task
+> which hits another uprobe on the same CPU should wait.
+>
+> Why we can't simply add trace_uprobe->buffer instead? Only to save
+> some memory? But every uprobe is very expensive in this sense anyway.
 
-hum, on the other hand using symbol_conf.use_callchain within
-utils/evsel.c adds symbol object dependency to python code
-which I'm not sure is something we want ;-)
+Ah, please ignore... handler_chain() is not self-serialized, so
+tu->buffer needs locking/waiting too.
 
-I'll keep it as it is in v2
+Oleg.
 
-jirka
