@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757101Ab3KAWas (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:30:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55091 "EHLO
+	id S1757141Ab3KAWbN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:31:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55085 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755606Ab3KAWFF (ORCPT
+	with ESMTP id S1755562Ab3KAWFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:05:05 -0400
+	Fri, 1 Nov 2013 18:05:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.10 41/54] ARM: 7851/1: check for number of arguments in syscall_get/set_arguments()
-Date: Fri,  1 Nov 2013 15:04:09 -0700
-Message-Id: <20131101220215.957947330@linuxfoundation.org>
+        Roel Kluin <roel.kluin@gmail.com>, Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH 3.10 51/54] serial: vt8500: add missing braces
+Date: Fri,  1 Nov 2013 15:04:19 -0700
+Message-Id: <20131101220217.038092010@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -28,53 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+From: Roel Kluin <roel.kluin@gmail.com>
 
-commit 3c1532df5c1b54b5f6246cdef94eeb73a39fe43a upstream.
+commit d969de8d83401683420638c8107dcfedb2146f37 upstream.
 
-In ftrace_syscall_enter(),
-    syscall_get_arguments(..., 0, n, ...)
-        if (i == 0) { <handle ORIG_r0> ...; n--;}
-        memcpy(..., n * sizeof(args[0]));
-If 'number of arguments(n)' is zero and 'argument index(i)' is also zero in
-syscall_get_arguments(), none of arguments should be copied by memcpy().
-Otherwise 'n--' can be a big positive number and unexpected amount of data
-will be copied. Tracing system calls which take no argument, say sync(void),
-may hit this case and eventually make the system corrupted.
-This patch fixes the issue both in syscall_get_arguments() and
-syscall_set_arguments().
+Due to missing braces on an if statement, in presence of a device_node a
+port was always assigned -1, regardless of any alias entries in the
+device tree. Conversely, if device_node was NULL, an unitialized port
+ended up being used.
 
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+This patch adds the missing braces, fixing the issues.
+
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+Acked-by: Tony Prisk <linux@prisktech.co.nz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/syscall.h |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/tty/serial/vt8500_serial.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/arm/include/asm/syscall.h
-+++ b/arch/arm/include/asm/syscall.h
-@@ -57,6 +57,9 @@ static inline void syscall_get_arguments
- 					 unsigned int i, unsigned int n,
- 					 unsigned long *args)
- {
-+	if (n == 0)
-+		return;
-+
- 	if (i + n > SYSCALL_MAX_ARGS) {
- 		unsigned long *args_bad = args + SYSCALL_MAX_ARGS - i;
- 		unsigned int n_bad = n + i - SYSCALL_MAX_ARGS;
-@@ -81,6 +84,9 @@ static inline void syscall_set_arguments
- 					 unsigned int i, unsigned int n,
- 					 const unsigned long *args)
- {
-+	if (n == 0)
-+		return;
-+
- 	if (i + n > SYSCALL_MAX_ARGS) {
- 		pr_warning("%s called with max args %d, handling only %d\n",
- 			   __func__, i + n, SYSCALL_MAX_ARGS);
+--- a/drivers/tty/serial/vt8500_serial.c
++++ b/drivers/tty/serial/vt8500_serial.c
+@@ -559,12 +559,13 @@ static int vt8500_serial_probe(struct pl
+ 	if (!mmres || !irqres)
+ 		return -ENODEV;
+ 
+-	if (np)
++	if (np) {
+ 		port = of_alias_get_id(np, "serial");
+ 		if (port >= VT8500_MAX_PORTS)
+ 			port = -1;
+-	else
++	} else {
+ 		port = -1;
++	}
+ 
+ 	if (port < 0) {
+ 		/* calculate the port id */
 
 
