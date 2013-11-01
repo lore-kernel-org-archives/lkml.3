@@ -1,145 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194Ab3KALjt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 07:39:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15507 "EHLO mx1.redhat.com"
+	id S1753055Ab3KALmc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 07:42:32 -0400
+Received: from 8bytes.org ([85.214.48.195]:37958 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755894Ab3KALjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 07:39:47 -0400
-Message-ID: <527392E9.6080005@redhat.com>
-Date: Fri, 01 Nov 2013 07:39:21 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1750850Ab3KALma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 07:42:30 -0400
+Date: Fri, 1 Nov 2013 12:42:24 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Cho KyongHo <pullip.cho@samsung.com>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux DeviceTree <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Subash Patel <supash.ramaswamy@linaro.org>,
+        Varun Sethi <Varun.Sethi@freescale.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH v10 00/20] iommu/exynos: Fixes and Enhancements of System
+ MMU driver with DT
+Message-ID: <20131101114224.GG17455@8bytes.org>
+References: <20131007105212.1c2a9e29166ff4b4a33468f8@samsung.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Rik van Riel <riel@redhat.com>, peterz@infradead.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -tip] fix race between stop_two_cpus and stop_cpus
-References: <20131031163144.0fd27457@annuminas.surriel.com> <20131101110825.GX2400@suse.de>
-In-Reply-To: <20131101110825.GX2400@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131007105212.1c2a9e29166ff4b4a33468f8@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Nov  1 12:42:28 2013
+X-DSPAM-Confidence: 0.9992
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 527393a420861889615283
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 11/01/2013 07:08 AM, Mel Gorman wrote:
-> On Thu, Oct 31, 2013 at 04:31:44PM -0400, Rik van Riel wrote:
->> There is a race between stop_two_cpus, and the global stop_cpus.
->>
+On Mon, Oct 07, 2013 at 10:52:12AM +0900, Cho KyongHo wrote:
+> Patch summary:
+> [PATCH 01/20] iommu/exynos: do not include removed header
+> [PATCH 02/20] iommu/exynos: add missing cache flush for removed page table entries
+> [PATCH 03/20] iommu/exynos: change error handling when page table update is failed
+> [PATCH 04/20] iommu/exynos: fix L2TLB invalidation
+> [PATCH 05/20] iommu/exynos: allocate lv2 page table from own slab
+> [PATCH 06/20] iommu/exynos: always enable runtime PM
+> [PATCH 07/20] iommu/exynos: always use a single clock descriptor
+> [PATCH 08/20] iommu/exynos: remove dbgname from drvdata of a System MMU
+> [PATCH 09/20] iommu/exynos: use managed device helper functions
+> [PATCH 10/20] clk: exynos: add gate clock descriptions of System MMU
+> [PATCH 11/20] ARM: dts: Add description of System MMU of Exynos SoCs
+> [PATCH 12/20] iommu/exynos: support for device tree
+> [PATCH 13/20] iommu/exynos: gating clocks of master H/W
+> [PATCH 14/20] iommu/exynos: remove custom fault handler
+> [PATCH 15/20] iommu/exynos: remove calls to Runtime PM API functions
+> [PATCH 16/20] iommu/exynos: turn on useful configuration options
+> [PATCH 17/20] iommu/exynos: add support for power management subsystems.
+> [PATCH 18/20] iommu/exynos: change rwlock to spinlock
+> [PATCH 19/20] iommu/exynos: return 0 if iommu_attach_device() successes
+> [PATCH 20/20] iommu/exynos: add devices attached to the System MMU to an IOMMU group
 > 
-> What was the trigger for this? I want to see what was missing from my own
-> testing. I'm going to go out on a limb and guess that CPU hotplug was also
-> running in the background to specifically stress this sort of rare condition.
-> Something like running a standard test with the monitors/watch-cpuoffline.sh
-> from mmtests running in parallel.
-> 
+> Diffstats:
+>  .../devicetree/bindings/clock/exynos5250-clock.txt |   28 +
+>  .../devicetree/bindings/clock/exynos5420-clock.txt |    3 +
+>  .../bindings/iommu/samsung,exynos4210-sysmmu.txt   |   76 ++
+>  arch/arm/boot/dts/exynos4.dtsi                     |  105 ++
+>  arch/arm/boot/dts/exynos4210.dtsi                  |   21 +
+>  arch/arm/boot/dts/exynos4x12.dtsi                  |   82 ++
+>  arch/arm/boot/dts/exynos5250.dtsi                  |  262 +++++
+>  arch/arm/boot/dts/exynos5420.dtsi                  |  296 ++++++
+>  drivers/clk/samsung/clk-exynos5250.c               |   49 +-
+>  drivers/clk/samsung/clk-exynos5420.c               |   12 +-
+>  drivers/iommu/Kconfig                              |    5 +-
+>  drivers/iommu/exynos-iommu.c                       | 1033 +++++++++++++-------
+>  12 files changed, 1585 insertions(+), 387 deletions(-)
 
-I have a test that loads and unloads each module in /lib/modules/3.*/...
+What is the state of this series? It would be good to have some
+Acked-bys and/or Reviewed-bys on it.
 
-Each run typically takes a few minutes.  After running 4-5 times, the system
-issues a soft lockup warning with a CPU in multi_cpu_stop().  Unfortunately,
-kdump isn't working on this particular system (due to another bug) so I modified
-the code with (sorry for the cut-and-paste):
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 05039e3..4a8c9f9 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -323,8 +323,10 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtime
-                else
-                        dump_stack();
+	Joerg
 
--               if (softlockup_panic)
-+               if (softlockup_panic) {
-+                       show_state();
-                        panic("softlockup: hung tasks");
-+               }
-                __this_cpu_write(soft_watchdog_warn, true);
-        } else
-                __this_cpu_write(soft_watchdog_warn, false);
 
-and then 'echo 1 > /proc/sys/kernel/softlockup_panic' to get a full trace of all
-tasks.
-
-When I did this and ran the kernel module load unload test ...
-
-[prarit@prarit tmp]$ cat /tmp/intel.log | grep RIP
-[  678.081168] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
-multi_cpu_stop+0x82/0xf0
-[  678.156180] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-[  678.230190] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-[  678.244186] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-[  678.259194] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
-multi_cpu_stop+0x82/0xf0
-[  678.274192] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-[  678.288195] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-[  678.303197] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
-multi_cpu_stop+0x82/0xf0
-[  678.318200] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-[  678.333203] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-[  678.349206] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-[  678.364208] RIP: 0010:[<ffffffff810d328b>]  [<ffffffff810d328b>]
-multi_cpu_stop+0x7b/0xf0
-[  678.379211] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
-multi_cpu_stop+0x82/0xf0
-[  678.394212] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-[  678.409215] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-[  678.424217] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
-multi_cpu_stop+0x82/0xf0
-[  678.438219] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
-multi_cpu_stop+0x82/0xf0
-[  678.452221] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-[  678.466228] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
-multi_cpu_stop+0x82/0xf0
-[  678.481228] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-[  678.496230] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
-multi_cpu_stop+0x82/0xf0
-[  678.511234] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-[  678.526236] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-[  678.541238] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
-multi_cpu_stop+0x82/0xf0
-[  678.556244] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-[  678.571243] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
-multi_cpu_stop+0x82/0xf0
-[  678.586247] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-[  678.601248] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
-multi_cpu_stop+0x82/0xf0
-[  678.616251] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
-multi_cpu_stop+0x82/0xf0
-[  678.632254] RIP: 0010:[<ffffffff810d328b>]  [<ffffffff810d328b>]
-multi_cpu_stop+0x7b/0xf0
-[  678.647257] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
-multi_cpu_stop+0x82/0xf0
-[  687.570464] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
-multi_cpu_stop+0x86/0xf0
-
-and,
-
-[prarit@prarit tmp]$ cat /tmp/intel.log | grep RIP | wc -l
-32
-
-which shows all 32 cpus are "correctly" in the cpu stop threads.  After some
-investigation, Rik came up with his patch.
-
-Hope this explains things,
-
-P.
