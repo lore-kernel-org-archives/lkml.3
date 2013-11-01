@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620Ab3KAHtw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 03:49:52 -0400
-Received: from mail-db9lp0253.outbound.messaging.microsoft.com ([213.199.154.253]:29162
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755212Ab3KAHtt (ORCPT
+	id S1755781Ab3KAHuA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 03:50:00 -0400
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:35130
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755645Ab3KAHt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 03:49:49 -0400
+	Fri, 1 Nov 2013 03:49:56 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
@@ -23,9 +23,9 @@ CC: <r64188@freescale.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <alsa-devel@alsa-project.org>,
         <linuxppc-dev@lists.ozlabs.org>
-Subject: [PATCHv2 7/8] ARM: dts: Enable SGTL5000 codec based audio driver node for VF610.
-Date: Fri, 1 Nov 2013 15:04:54 +0800
-Message-ID: <1383289495-24523-8-git-send-email-Li.Xiubo@freescale.com>
+Subject: [PATCHv2 8/8] Documentation: Add device tree bindings for Freescale VF610 sound.
+Date: Fri, 1 Nov 2013 15:04:55 +0800
+Message-ID: <1383289495-24523-9-git-send-email-Li.Xiubo@freescale.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1383289495-24523-1-git-send-email-Li.Xiubo@freescale.com>
 References: <1383289495-24523-1-git-send-email-Li.Xiubo@freescale.com>
@@ -37,52 +37,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add and enable SGTL5000 codec support, and also specified
-the corresponding SAI node.
+This adds the Document for Freescale VF610 sound driver under
+Documentation/devicetree/bindings/sound/.
 
 Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-Signed-off-by: Alison Wang <b18965@freescale.com
 ---
- arch/arm/boot/dts/vf610-twr.dts | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ .../bindings/sound/fsl_audio_sgt15000_vf610.txt    | 46 ++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/sound/fsl_audio_sgt15000_vf610.txt
 
-diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
-index e4106dd..a2d9214 100644
---- a/arch/arm/boot/dts/vf610-twr.dts
-+++ b/arch/arm/boot/dts/vf610-twr.dts
-@@ -34,6 +34,19 @@
- 		};
- 	};
- 
-+	sound {
-+		compatible = "fsl,vf610-sgtl5000";
-+		model = "vf610-sgtl5000";
-+		saif-controller = <&sai2>;
-+		audio-codec = <&codec>;
-+		audio-routing =
-+			"MIC_IN", "Mic Jack",
-+			"Mic Jack", "Mic Bias",
-+			"LINE_IN", "Line In Jack",
-+			"Headphone Jack", "HP_OUT",
-+			"Ext Spk", "LINE_OUT";
-+	};
+diff --git a/Documentation/devicetree/bindings/sound/fsl_audio_sgt15000_vf610.txt b/Documentation/devicetree/bindings/sound/fsl_audio_sgt15000_vf610.txt
+new file mode 100644
+index 0000000..76ff838
+--- /dev/null
++++ b/Documentation/devicetree/bindings/sound/fsl_audio_sgt15000_vf610.txt
+@@ -0,0 +1,46 @@
++Freescale VF610 audio complex with SGTL5000 codec
 +
- };
- 
- &fec0 {
-@@ -55,6 +68,12 @@
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&pinctrl_i2c0_1>;
- 	status = "okay";
++Required properties:
++- compatible: "fsl,vf610-sgtl5000"
++- model: The user-visible name of this sound complex.
++- saif-controllers: The phandle list of the SAI controller.
++- audio-codec: The phandle of the SGTL5000 audio codec.
++- audio-routing : A list of the connections between audio components.
++  Each entry is a pair of strings, the first being the connection's sink,
++  the second being the connection's source. Valid names could be power
++  supplies, SGTL5000 pins, and the jacks on the board:
++
++  -- Power supplies:
++     * Mic Bias
++
++  -- Board connectors:
++     * Mic Jack
++     * Line In Jack
++     * Headphone Jack
++     * Line Out Jack
++     * Ext Spk
++
++Example:
++
++sound {
++	compatible = "fsl,vf610-sgtl5000";
++	model = "vf610-sgtl5000";
++	saif-controller = <&sai2>;
++	audio-codec = <&codec>;
++	audio-routing =
++		"MIC_IN", "Mic Jack",
++		"Mic Jack", "Mic Bias",
++		"LINE_IN", "Line In Jack",
++		"Headphone Jack", "HP_OUT",
++		"Ext Spk", "LINE_OUT";
++};
++
++&i2c0 {
++	...
 +
 +	codec: sgtl5000@0a {
-+		compatible = "fsl,sgtl5000";
-+		reg = <0x0a>;
-+		clocks = <&clks VF610_CLK_SAI2>;
-+	};
- };
- 
- &sai2 {
++	       compatible = "fsl,sgtl5000";
++	       reg = <0x0a>;
++	       clocks = <&clks VF610_CLK_SAI2>;
++       };
++};
 -- 
 1.8.4
 
