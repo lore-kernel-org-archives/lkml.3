@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257Ab3KAN5e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 09:57:34 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:29885 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753326Ab3KAN5c convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 09:57:32 -0400
-Date: Fri, 1 Nov 2013 09:57:31 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Uwe =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH -tip v2 3/3] [BUGFIX] kprobes: Prohibit probing on
- func_ptr_is_kernel_text
-Message-ID: <20131101095731.299070d8@gandalf.local.home>
-In-Reply-To: <20131101112537.14657.88496.stgit@kbuild-fedora.novalocal>
-References: <20131101112530.14657.87835.stgit@kbuild-fedora.novalocal>
-	<20131101112537.14657.88496.stgit@kbuild-fedora.novalocal>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	id S1754555Ab3KAN7i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 09:59:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754488Ab3KAN7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 09:59:36 -0400
+Date: Fri, 1 Nov 2013 09:59:31 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Kent Overstreet <kmo@daterainc.com>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, Alasdair Kergon <agk@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: [PATCH for-next] dm: fix missing bi_remaining accounting
+Message-ID: <20131101135931.GA22903@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 01 Nov 2013 11:25:37 +0000
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+Add the missing bi_remaining increment, required by the block layer's
+new bio-chaining code, to both the verity and old snapshot DM targets.
 
-> Prohibit probing on func_ptr_is_kernel_text().
-> Since the func_ptr_is_kernel_text() is called from
-> notifier_call_chain() which is called from int3 handler,
-> probing it may cause double int3 fault and kernel will
-> reboot.
-> 
-> This happenes when the kernel built with CONFIG_DEBUG_NOTIFIERS=y.
+Otherwise users will hit the bi_remaining <= 0 BUG_ON in bio_endio().
 
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+---
+ drivers/md/dm-snap.c   |    1 +
+ drivers/md/dm-verity.c |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
--- Steve
-
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: "Uwe Kleine-König" <u.kleine-koenig@pengutronix.de>
-> Cc: Borislav Petkov <bp@suse.de>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> ---
->  kernel/extable.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/extable.c b/kernel/extable.c
-> index 832cb28..022fb25 100644
-> --- a/kernel/extable.c
-> +++ b/kernel/extable.c
-> @@ -129,7 +129,7 @@ int kernel_text_address(unsigned long addr)
->   * pointer is part of the kernel text, we need to do some
->   * special dereferencing first.
->   */
-> -int func_ptr_is_kernel_text(void *ptr)
-> +int nokprobe func_ptr_is_kernel_text(void *ptr)
->  {
->  	unsigned long addr;
->  	addr = (unsigned long) dereference_function_descriptor(ptr);
-> 
-
+diff --git a/drivers/md/dm-snap.c b/drivers/md/dm-snap.c
+index b7a5053..1b4d22d 100644
+--- a/drivers/md/dm-snap.c
++++ b/drivers/md/dm-snap.c
+@@ -1415,6 +1415,7 @@ out:
+ 	if (full_bio) {
+ 		full_bio->bi_end_io = pe->full_bio_end_io;
+ 		full_bio->bi_private = pe->full_bio_private;
++		atomic_inc(&full_bio->bi_remaining);
+ 	}
+ 	free_pending_exception(pe);
+ 
+diff --git a/drivers/md/dm-verity.c b/drivers/md/dm-verity.c
+index ac35e95..dc15857 100644
+--- a/drivers/md/dm-verity.c
++++ b/drivers/md/dm-verity.c
+@@ -384,6 +384,7 @@ static void verity_finish_io(struct dm_verity_io *io, int error)
+ 
+ 	bio->bi_end_io = io->orig_bi_end_io;
+ 	bio->bi_private = io->orig_bi_private;
++	atomic_inc(&bio->bi_remaining);
+ 
+ 	bio_endio(bio, error);
+ }
