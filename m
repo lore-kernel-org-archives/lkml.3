@@ -1,96 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab3KAI5S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 04:57:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43387 "EHLO mx1.redhat.com"
+	id S1754734Ab3KAI6K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 04:58:10 -0400
+Received: from mga02.intel.com ([134.134.136.20]:19465 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485Ab3KAI5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 04:57:16 -0400
-Message-ID: <52736C52.8080600@redhat.com>
-Date: Fri, 01 Nov 2013 09:54:42 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Rashika Kheria <rashika.kheria@gmail.com>
-CC: opw-kernel@googlegroups.com, Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchand@redhat.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v9 2/2] Staging: zram: Fix decrement of variable by calling
- bdput()
-References: <20131019110539.GA25167@gmail.com> <4fdb273ab0b1e7514f119d7e619ac708d2277d34.1383220461.git.rashika.kheria@gmail.com>
-In-Reply-To: <4fdb273ab0b1e7514f119d7e619ac708d2277d34.1383220461.git.rashika.kheria@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752190Ab3KAI6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 04:58:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,615,1378882800"; 
+   d="scan'208";a="420753088"
+Message-ID: <1383296284.2722.73.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 1/1]  MTD: UBI:  try to avoid program data to NOR flash
+ after erasure interrupted
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Qi Wang =?UTF-8?Q?=E7=8E=8B=E8=B5=B7?= "(qiwang)" 
+	<qiwang@micron.com>
+Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 01 Nov 2013 10:58:04 +0200
+In-Reply-To: <71CF8D7F32C5C24C9CD1D0E02D52498A770B220C@NTXXIAMBX02.xacn.micron.com>
+References: <71CF8D7F32C5C24C9CD1D0E02D52498A77082AC5@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A77082DDB@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770AED11@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770AED44@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770AED67@NTXXIAMBX02.xacn.micron.com>
+	 <1382779164.5901.1.camel@karhu.quadriga.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B1B97@NTXXIAMBX02.xacn.micron.com>
+	 <1383059901.29619.52.camel@sauron.fi.intel.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B220C@NTXXIAMBX02.xacn.micron.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2013 12:58 PM, Rashika Kheria wrote:
-> As suggested by Jerome Marchand "The code in reset_store get the block device
-The credit should actually go to Minchan. He found the bug. I merely
-explained it.
+Hi,
 
-> (bdget_disk()) but it does not put it (bdput()) when it's done using it.
-> The usage count is therefore incremented but never decremented."
-> 
-> This patch also puts bdput() for all error cases.
-> 
-> Cc: stable@vger.kernel.org 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+could you please re-send your patch separately, without quoting any
+parts of this conversation, so that I could use 'git am'.
 
-This version finally looks good. Thanks for your effort.
+Your patch also contains trailing white-spaces, please, get rid of them
+in the next submission.
 
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
+Also, could you please clearly state whether you have tested this patch
+on a real NOR flash or not. If yes, then could you share the chip
+vendor/type information?
 
-> ---
+On Thu, 2013-10-31 at 04:07 +0000, Qi Wang 王起 (qiwang) wrote:
+
+> --- a/drivers/mtd/ubi/io.c
+> +++ b/drivers/mtd/ubi/io.c
+> @@ -499,59 +499,44 @@ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
+>  	size_t written;
+>  	loff_t addr;
+>  	uint32_t data = 0;
+> -	/*
+> -	 * Note, we cannot generally define VID header buffers on stack,
+> -	 * because of the way we deal with these buffers (see the header
+> -	 * comment in this file). But we know this is a NOR-specific piece of
+> -	 * code, so we can do this. But yes, this is error-prone and we should
+> -	 * (pre-)allocate VID header buffer instead.
+> -	 */
+
+Please, do not remove this comment.
+
+>  	struct ubi_vid_hdr vid_hdr;
+> +	struct ubi_ec_hdr ec_hdr;
+
+To make it obvious what the above big comment talks about, could you
+please define 'struct ubi_ec_hdr ec_hdr' above that big comment.
+
+Otherwise looks good to me, thank you!
+
+
+> My Comments for above changing:
+> 1. 
+> 	-	/*
+> 	-	 * Note, we cannot generally define VID header buffers on stack,
+> 	-	 * because of the way we deal with these buffers (see the header
+> 	-	 * comment in this file). But we know this is a NOR-specific piece of
+> 	-	 * code, so we can do this. But yes, this is error-prone and we should
+> 	-	 * (pre-)allocate VID header buffer instead.
+> 	-	 */
+> 	I remove above comment, because I pre-allocate VID header and EC header together. 
+> 	So I think no need to emphasize VID header buffers cannot be on stack.
+> 	(Maybe my understanding about this comment is error, if so, please correct me)
+
+The problem is that some functions in io.c can read or write _beyond_
+sizeof(struct ubi_vid_hdr), but this is only relevant to NAND, not for
+NOR, and the code you change is NOR-only. This is why that comment is
+there, and I'd like to keep it.
+
+> 2.
+> 	why use
+> 	"if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR && err != UBI_IO_FF)"
+> 	but not 
+> 	"if (!err)" 
+> 	to judge if need to program '0' to invalid this block.
 > 
-> This revision fixes the following issues of the previous revision-
-> Proper error handling
-> 
->  drivers/staging/zram/zram_drv.c |   19 ++++++++++++++-----
->  1 file changed, 14 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index 012ba15..a1f8b1f 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -652,21 +652,30 @@ static ssize_t reset_store(struct device *dev,
->  		return -ENOMEM;
->  
->  	/* Do not reset an active device! */
-> -	if (bdev->bd_holders)
-> -		return -EBUSY;
-> +	if (bdev->bd_holders) {
-> +		ret = -EBUSY;
-> +		goto out;
-> +	}
->  
->  	ret = kstrtou16(buf, 10, &do_reset);
->  	if (ret)
-> -		return ret;
-> +		goto out;
->  
-> -	if (!do_reset)
-> -		return -EINVAL;
-> +	if (!do_reset) {
-> +		ret = -EINVAL;
-> +		goto out;
-> +	}
->  
->  	/* Make sure all pending I/O is finished */
->  	fsync_bdev(bdev);
-> +	bdput(bdev);
->  
->  	zram_reset_device(zram, true);
->  	return len;
-> +
-> +out:	
-> +	bdput(bdev);
-> +	return ret;
->  }
->  
->  static void __zram_make_request(struct zram *zram, struct bio *bio, int rw)
-> 
+> 	In case err == UBI_IO_FF_BITFLIPS, err == UBI_IO_BITFLIPS or unexpected value return
+> 	from read function, I think UBI still need to invalid this block for above mentioned 
+> 	condition. So I use
+> 	"if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR && err != UBI_IO_FF)"
+> 	to judge. 
+
+In case of UBI_IO_FF (all FFs) UBI will erase the eraseblock before
+using it anyway, so invalidation is not necessary.
+
+Thanks!
+
+-- 
+Best Regards,
+Artem Bityutskiy
 
