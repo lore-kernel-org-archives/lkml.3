@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930Ab3KAW1Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:27:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55287 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756146Ab3KAWHw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756149Ab3KAWHw (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 1 Nov 2013 18:07:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55277 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756126Ab3KAWHt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 18:07:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 10/66] net: mv643xx_eth: update statistics timer from timer context only
-Date: Fri,  1 Nov 2013 15:06:46 -0700
-Message-Id: <20131101220637.633926411@linuxfoundation.org>
+Subject: [PATCH 3.11 06/66] net: do not call sock_put() on TIMEWAIT sockets
+Date: Fri,  1 Nov 2013 15:06:42 -0700
+Message-Id: <20131101220636.630082467@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -28,41 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 041b4ddb84989f06ff1df0ca869b950f1ee3cb1c ]
+[ Upstream commit 80ad1d61e72d626e30ebe8529a0455e660ca4693 ]
 
-Each port driver installs a periodic timer to update port statistics
-by calling mib_counters_update. As mib_counters_update is also called
-from non-timer context, we should not reschedule the timer there but
-rather move it to timer-only context.
+commit 3ab5aee7fe84 ("net: Convert TCP & DCCP hash tables to use RCU /
+hlist_nulls") incorrectly used sock_put() on TIMEWAIT sockets.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+We should instead use inet_twsk_put()
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/marvell/mv643xx_eth.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ net/ipv4/inet_hashtables.c  |    2 +-
+ net/ipv6/inet6_hashtables.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -1131,15 +1131,13 @@ static void mib_counters_update(struct m
- 	p->rx_discard += rdlp(mp, RX_DISCARD_FRAME_CNT);
- 	p->rx_overrun += rdlp(mp, RX_OVERRUN_FRAME_CNT);
- 	spin_unlock_bh(&mp->mib_counters_lock);
--
--	mod_timer(&mp->mib_counters_timer, jiffies + 30 * HZ);
- }
- 
- static void mib_counters_timer_wrapper(unsigned long _mp)
- {
- 	struct mv643xx_eth_private *mp = (void *)_mp;
--
- 	mib_counters_update(mp);
-+	mod_timer(&mp->mib_counters_timer, jiffies + 30 * HZ);
- }
- 
- 
+--- a/net/ipv4/inet_hashtables.c
++++ b/net/ipv4/inet_hashtables.c
+@@ -287,7 +287,7 @@ begintw:
+ 			if (unlikely(!INET_TW_MATCH(sk, net, acookie,
+ 						    saddr, daddr, ports,
+ 						    dif))) {
+-				sock_put(sk);
++				inet_twsk_put(inet_twsk(sk));
+ 				goto begintw;
+ 			}
+ 			goto out;
+--- a/net/ipv6/inet6_hashtables.c
++++ b/net/ipv6/inet6_hashtables.c
+@@ -116,7 +116,7 @@ begintw:
+ 			}
+ 			if (unlikely(!INET6_TW_MATCH(sk, net, saddr, daddr,
+ 						     ports, dif))) {
+-				sock_put(sk);
++				inet_twsk_put(inet_twsk(sk));
+ 				goto begintw;
+ 			}
+ 			goto out;
 
 
