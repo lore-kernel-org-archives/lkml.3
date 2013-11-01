@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab3KAM6Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 08:58:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10940 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751873Ab3KAM6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 08:58:14 -0400
-Date: Fri, 1 Nov 2013 13:57:56 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
-Subject: Re: [PATCH 08/14] perf report: Cache cumulative callchains
-Message-ID: <20131101125756.GF10041@krava.brq.redhat.com>
-References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
- <1383202576-28141-9-git-send-email-namhyung@kernel.org>
- <20131101122942.GD10041@krava.brq.redhat.com>
+	id S1752632Ab3KANBJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 09:01:09 -0400
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:44139 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751646Ab3KANBG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 09:01:06 -0400
+Message-ID: <5273A391.5000302@st.com>
+Date: Fri, 1 Nov 2013 12:50:25 +0000
+From: srinivas kandagatla <srinivas.kandagatla@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131101122942.GD10041@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: Lucas Stach <l.stach@pengutronix.de>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen GALLIMORE <stephen.gallimore@st.com>,
+        Stuart MENEFY <stuart.menefy@st.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 1/4] i2c: busses: i2c-st: Add ST I2C controller
+References: <1381754813-4679-1-git-send-email-maxime.coquelin@st.com>  <1381754813-4679-2-git-send-email-maxime.coquelin@st.com>  <20131016151419.GA14104@ns203013.ovh.net> <525F915D.9020501@st.com>  <525FAEED.7030207@st.com> <20131017141957.GE14104@ns203013.ovh.net>  <525FF498.3060202@st.com> <1382021369.4093.44.camel@weser.hi.pengutronix.de> <5260EFDC.804@st.com> <526E7C8C.8080603@st.com>
+In-Reply-To: <526E7C8C.8080603@st.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.65.51.59]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 01, 2013 at 01:29:42PM +0100, Jiri Olsa wrote:
-> On Thu, Oct 31, 2013 at 03:56:10PM +0900, Namhyung Kim wrote:
-> 
-> SNIP
-> 
-> >  	 * double accounting.
-> > @@ -501,8 +528,29 @@ iter_add_next_cumulative_entry(struct add_entry_iter *iter,
-> >  {
-> >  	struct perf_evsel *evsel = iter->evsel;
-> >  	struct perf_sample *sample = iter->sample;
-> > +	struct cumulative_cache *ccache = iter->priv;
-> >  	struct hist_entry *he;
-> >  	int err = 0;
-> > +	int i;
-> > +
-> > +	/*
-> > +	 * Check if there's duplicate entries in the callchain.
-> > +	 * It's possible that it has cycles or recursive calls.
-> > +	 */
-> > +	for (i = 0; i < iter->curr; i++) {
-> > +		if (sort__has_sym) {
-> > +			if (ccache[i].sym == al->sym)
-> > +				return 0;
-> > +		} else {
-> > +			/* Not much we can do - just compare the dso. */
-> > +			if (ccache[i].dso == al->map->dso)
-> > +				return 0;
-> > +		}
-> > +	}
-> 
-> hum, do we want to prevent recursion totaly?
-> how about intended recursion?
+On 28/10/13 15:02, Maxime Coquelin wrote:
+>>
+>> 6> IMHO, the compatible string should be "vendor,<IP-name>-<IP-version>"
+>> rather than first SoC.
+> I agree.
+> In this case, we add support to revision 4 of SSC IP.
+Its not the revision its name of the new IP which is SSC4. However  this
+driver is also compatible with old SSC IP, so It would be nice to have
+something like two compatible strings "st,comms-ssc-i2c" and
+"st,comms-ssc4-i2c"
 
-ugh... just managed to read the whole patch,
-please forget above comment ;-)
+Thanks,
+srini
+> 
+> Is "st,comms-ssc-v4" okay?
 
-> 
-> also should the dso be checked together with sym?
-> because the symbol is defined like dso::sym
-> 
-> jirka
+
+
+
