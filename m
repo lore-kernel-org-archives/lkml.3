@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab3KAMIT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 08:08:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19529 "EHLO mx1.redhat.com"
+	id S1752940Ab3KAMI2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 08:08:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10475 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752329Ab3KAMIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 08:08:16 -0400
-Date: Fri, 1 Nov 2013 13:07:35 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: Re: [PATCH 02/14] perf tools: Introduce struct add_entry_iter
-Message-ID: <20131101120735.GB10041@krava.brq.redhat.com>
-References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
- <1383202576-28141-3-git-send-email-namhyung@kernel.org>
+	id S1750799Ab3KAMI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 08:08:26 -0400
+Message-ID: <527399A0.304@redhat.com>
+Date: Fri, 01 Nov 2013 08:08:00 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383202576-28141-3-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rik van Riel <riel@redhat.com>
+CC: Mel Gorman <mgorman@suse.de>, peterz@infradead.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -tip] fix race between stop_two_cpus and stop_cpus
+References: <20131031163144.0fd27457@annuminas.surriel.com> <20131101110825.GX2400@suse.de> <52739244.3060209@redhat.com>
+In-Reply-To: <52739244.3060209@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 03:56:04PM +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
 
-SNIP
 
-> +
-> +static int
-> +perf_evsel__add_entry(struct perf_evsel *evsel, struct addr_location *al,
-> +		      struct perf_sample *sample, struct machine *machine,
-> +		      struct add_entry_iter *iter)
-> +{
-> +	int err;
-> +
-> +	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
-> +		err = machine__resolve_callchain(machine, evsel, al->thread,
-> +						 sample, &iter->parent, al,
-> +						 iter->rep->max_stack);
-> +		if (err)
-> +			return err;
-> +	}
-> +
-> +	err = iter->prepare_entry(iter, machine, evsel, al, sample);
-> +	if (err)
-> +		return err;
-> +
-> +	err = iter->add_single_entry(iter, al);
-> +	if (err)
-> +		return err;
-> +
-> +	while (iter->next_entry(iter, al)) {
-> +		err = iter->add_next_entry(iter, al);
-> +		if (err)
-> +			break;
-> +	}
-> +
-> +	err = iter->finish_entry(iter, al);
-> +
-> +	return err;
+On 11/01/2013 07:36 AM, Rik van Riel wrote:
+> On 11/01/2013 07:08 AM, Mel Gorman wrote:
+>> On Thu, Oct 31, 2013 at 04:31:44PM -0400, Rik van Riel wrote:
+>>> There is a race between stop_two_cpus, and the global stop_cpus.
+>>>
+>>
+>> What was the trigger for this? I want to see what was missing from my own
+>> testing. I'm going to go out on a limb and guess that CPU hotplug was also
+>> running in the background to specifically stress this sort of rare condition.
+>> Something like running a standard test with the monitors/watch-cpuoffline.sh
+>> from mmtests running in parallel.
+> 
+> AFAIK the trigger was a test that continuously loads and
+> unloads kernel modules, while doing other stuff.
+>
 
-	return iter->finish_entry(iter, al);  ?
+With this patch in place the module load/unload test ran for ~16 hours without
+failure.  Without the patch the test usually fails in 5-10 minutes.
 
+Tested-by: Prarit Bhargava <prarit@redhat.com>
+
+P.
