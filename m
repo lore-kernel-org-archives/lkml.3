@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab3KALgi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 07:36:38 -0400
-Received: from canardo.mork.no ([148.122.252.1]:50884 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755993Ab3KALgf convert rfc822-to-8bit (ORCPT
+	id S1756085Ab3KALgs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 07:36:48 -0400
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:31798
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755011Ab3KALgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 07:36:35 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: Enrico Mioso <mrkiko.rs@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        Robert de Vries <rhdv@xs4all.nl>, Hayes Wang <hayeswang@realtek.com>,
-        Freddy Xin <freddy@asix.com.tw>,
-        Liu Junliang <liujunliang_ljl@163.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list\:USB NETWORKING DR..." <linux-usb@vger.kernel.org>,
-        "open list\:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
-        ModemManager-devel@lists.freedesktop.org
-Subject: Re: [PATCH V5 net-next 2/3] net: huawei_cdc_ncm: Introduce the huawei_cdc_ncm driver
-Organization: m
-References: <1380516609-31242-1-git-send-email-mrkiko.rs@gmail.com>
-	<1380516609-31242-3-git-send-email-mrkiko.rs@gmail.com>
-	<1380532073.1484.15.camel@linux-fkkt.site>
-Date: Fri, 01 Nov 2013 12:35:45 +0100
-In-Reply-To: <1380532073.1484.15.camel@linux-fkkt.site> (Oliver Neukum's
-	message of "Mon, 30 Sep 2013 11:07:53 +0200")
-Message-ID: <87fvrgwe0e.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	Fri, 1 Nov 2013 07:36:45 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 6
+X-BigFish: VS6(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kz70kz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
+From: Nicolin Chen <b42378@freescale.com>
+To: <akpm@linux-foundation.org>, <joe@perches.com>, <nsekhar@ti.com>,
+        <khilman@deeprootsystems.com>, <linux@arm.linux.org.uk>,
+        <dan.j.williams@intel.com>, <vinod.koul@intel.com>,
+        <m.chehab@samsung.com>, <hjk@hansjkoch.de>,
+        <gregkh@linuxfoundation.org>, <perex@perex.cz>, <tiwai@suse.de>,
+        <lgirdwood@gmail.com>, <broonie@kernel.org>,
+        <rmk+kernel@arm.linux.org.uk>, <eric.y.miao@gmail.com>,
+        <haojian.zhuang@gmail.com>
+CC: <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <dmaengine@vger.kernel.org>,
+        <linux-media@vger.kernel.org>, <alsa-devel@alsa-project.org>
+Subject: [PATCH 4/8] [media] coda: use gen_pool_dma_alloc() to allocate iram buffer
+Date: Fri, 1 Nov 2013 19:36:02 +0800
+Message-ID: <a4cb5380b1eeb1c634cedfe05d2a7dee950742a4.1383303752.git.b42378@freescale.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <cover.1383303752.git.b42378@freescale.com>
+References: <cover.1383303752.git.b42378@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oliver Neukum <oneukum@suse.de> writes:
-> On Mon, 2013-09-30 at 04:50 +0000, Enrico Mioso wrote:
->
->> +static int huawei_cdc_ncm_manage_power(struct usbnet *usbnet_dev, int on)
->> +{
->> +	struct huawei_cdc_ncm_state *drvstate = (void *)&usbnet_dev->data;
->> +	int rv = 0;
->> +
->> +	if ((on && atomic_add_return(1, &drvstate->pmcount) == 1) ||
->> +			(!on && atomic_dec_and_test(&drvstate->pmcount))) {
->> +		rv = usb_autopm_get_interface(usbnet_dev->intf);
->> +		if (rv < 0)
->> +			goto err;
->
-> The error case corrupts drvstate->pmcount
->
->> +		usbnet_dev->intf->needs_remote_wakeup = on;
->> +		usb_autopm_put_interface(usbnet_dev->intf);
->> +	}
->> +err:
->> +	return rv;
->> +}
+Since gen_pool_dma_alloc() is introduced, we implement it to simplify code.
 
-Hello Oliver,
+Signed-off-by: Nicolin Chen <b42378@freescale.com>
+---
+ drivers/media/platform/coda.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-I finally got around to looking closer at this and you are of course
-correct.  This is all my fault when I initially wrapped the
-needs_remote_wakeup update in usb_autopm_{get,put}_interface,
-
-And the problem is not only here in this new driver, but *everywhere* I
-did this, including in cdc-wdm.  That driver doesn't have the counter to
-corrupt, but failing to update intf->needs_remote_wakeup if
-usb_autopm_get_interface fails is still wrong. The get/put were only
-added to make the change take effect immediately.  Things sort of worked
-fine before that, and ignoring a get error would only revert to that
-older behaviour.
-
-So I believe we should do the update unconditionally, and but skip
-usb_autopm_put_interface if the get failed.  Accordingly, these
-functions should always return 0 (not that there is anything currently
-checking the return anyway).
-
-I'll prepare patches for cdc-wdm, qmi_wwan and cdc_mbim.
+diff --git a/drivers/media/platform/coda.c b/drivers/media/platform/coda.c
+index ed4998c..bd72fb9 100644
+--- a/drivers/media/platform/coda.c
++++ b/drivers/media/platform/coda.c
+@@ -3298,13 +3298,12 @@ static int coda_probe(struct platform_device *pdev)
+ 		dev->iram_size = CODA7_IRAM_SIZE;
+ 		break;
+ 	}
+-	dev->iram_vaddr = gen_pool_alloc(dev->iram_pool, dev->iram_size);
++	dev->iram_vaddr = (unsigned long)gen_pool_dma_alloc(dev->iram_pool,
++			dev->iram_size, (dma_addr_t *)&dev->iram_paddr);
+ 	if (!dev->iram_vaddr) {
+ 		dev_err(&pdev->dev, "unable to alloc iram\n");
+ 		return -ENOMEM;
+ 	}
+-	dev->iram_paddr = gen_pool_virt_to_phys(dev->iram_pool,
+-						dev->iram_vaddr);
+ 
+ 	platform_set_drvdata(pdev, dev);
+ 
+-- 
+1.8.4
 
 
-Bjørn
