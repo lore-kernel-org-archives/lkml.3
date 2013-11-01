@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170Ab3KAWHx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:07:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55275 "EHLO
+	id S1754555Ab3KAWH6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:07:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55300 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756120Ab3KAWHs (ORCPT
+	with ESMTP id S1755890Ab3KAWHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:07:48 -0400
+	Fri, 1 Nov 2013 18:07:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Sterrett <michael@sterretts.net>,
-        Dormando <dormando@rydia.net>, Yuchung Cheng <ycheng@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 05/66] tcp: fix incorrect ca_state in tail loss probe
-Date: Fri,  1 Nov 2013 15:06:41 -0700
-Message-Id: <20131101220636.412663012@linuxfoundation.org>
+        Willem de Bruijn <willemb@google.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Veaceslav Falico <vfalico@redhat.com>
+Subject: [PATCH 3.11 13/66] sit: amend "allow to use rtnl ops on fb tunnel"
+Date: Fri,  1 Nov 2013 15:06:49 -0700
+Message-Id: <20131101220638.466018482@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -29,41 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yuchung Cheng <ycheng@google.com>
+From: Willem de Bruijn <willemb@google.com>
 
-[ Upstream commit 031afe4990a7c9dbff41a3a742c44d3e740ea0a1 ]
+Amend backport to 3.11.y of
 
-On receiving an ACK that covers the loss probe sequence, TLP
-immediately sets the congestion state to Open, even though some packets
-are not recovered and retransmisssion are on the way.  The later ACks
-may trigger a WARN_ON check in step D of tcp_fastretrans_alert(), e.g.,
-https://bugzilla.redhat.com/show_bug.cgi?id=989251
+ [ Upstream commit 205983c43700ac3a81e7625273a3fa83cd2759b5 ]
 
-The fix is to follow the similar procedure in recovery by calling
-tcp_try_keep_open(). The sender switches to Open state if no packets
-are retransmissted. Otherwise it goes to Disorder and let subsequent
-ACKs move the state to Recovery or Open.
+The discussion thread in the upstream commit mentions that in
+backports to stable-* branches, the line
 
-Reported-By: Michael Sterrett <michael@sterretts.net>
-Tested-By: Dormando <dormando@rydia.net>
-Signed-off-by: Yuchung Cheng <ycheng@google.com>
-Acked-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+  - unregister_netdevice_queue(sitn->fb_tunnel_dev, &list);
+
+must be omitted if that branch does not have commit 5e6700b3bf98
+("sit: add support of x-netns"). This line has correctly been omitted
+in the backport to 3.10, which indeed does not have that commit.
+
+It was also removed in the backport to 3.11.y, which does have that
+commit.
+
+This causes the following steps to hit a BUG at net/core/dev.c:5039:
+
+  `modprobe sit; rmmod sit`
+
+The bug demonstrates that it causes a device to be unregistered twice.
+The simple fix is to apply the one line in the upstream commit that
+was dropped in the backport to 3.11 (3783100374653e2e7fbdf68c710f5).
+This brings the logic in line with upstream linux, net and net-next
+branches.
+
+Signed-off-by: Willem de Bruijn <willemb@google.com>
+Acked-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reviewed-by: Veaceslav Falico <vfalico@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_input.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv6/sit.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -3284,7 +3284,7 @@ static void tcp_process_tlp_ack(struct s
- 			tcp_init_cwnd_reduction(sk, true);
- 			tcp_set_ca_state(sk, TCP_CA_CWR);
- 			tcp_end_cwnd_reduction(sk);
--			tcp_set_ca_state(sk, TCP_CA_Open);
-+			tcp_try_keep_open(sk);
- 			NET_INC_STATS_BH(sock_net(sk),
- 					 LINUX_MIB_TCPLOSSPROBERECOVERY);
- 		}
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -1708,7 +1708,6 @@ static void __net_exit sit_exit_net(stru
+ 
+ 	rtnl_lock();
+ 	sit_destroy_tunnels(sitn, &list);
+-	unregister_netdevice_queue(sitn->fb_tunnel_dev, &list);
+ 	unregister_netdevice_many(&list);
+ 	rtnl_unlock();
+ }
 
 
