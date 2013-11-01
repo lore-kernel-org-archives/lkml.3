@@ -1,46 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab3KAJb2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 05:31:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:42887 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751096Ab3KAJb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 05:31:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="428175905"
-Date: Fri, 1 Nov 2013 10:31:13 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Salil Kapur <salilkapur93@gmail.com>
-Cc: lauro.venancio@openbossa.org, aloisio.almeida@openbossa.org,
-        linux-wireless@vger.kernel.org, linux-nfc@ml01.01.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFC: mei_phy: using kfree_skb() instead of kfree()
-Message-ID: <20131101093113.GB31890@zurbaran>
-References: <1383241666-3806-1-git-send-email-salilkapur93@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383241666-3806-1-git-send-email-salilkapur93@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754519Ab3KAJgs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 05:36:48 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54801 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab3KAJgq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 05:36:46 -0400
+From: Markus Pargmann <mpa@pengutronix.de>
+To: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Wolfgang Grandegger <wg@grandegger.com>
+Cc: Joe Perches <joe@perches.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, Markus Pargmann <mpa@pengutronix.de>
+Subject: [PATCH v3] can: c_can: Speed up rx_poll function
+Date: Fri,  1 Nov 2013 10:36:36 +0100
+Message-Id: <1383298596-18385-1-git-send-email-mpa@pengutronix.de>
+X-Mailer: git-send-email 1.8.4.rc3
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: mpa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Salil,
+This patch speeds up the rx_poll function by reducing the number of
+register reads.
 
-On Thu, Oct 31, 2013 at 11:17:46PM +0530, Salil Kapur wrote:
-> using kfree_skb() instead of kfree() for struct sk_buff
-> 
-> Signed-off-by: Salil Kapur <salilkapur93@gmail.com>
-> ---
->  drivers/nfc/mei_phy.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-Applied to nfc-next, thanks.
+Replace the 32bit register read by a 16bit register read. Currently
+the 32bit register read is implemented by using 2 16bit reads. This is
+inefficient as we only use the lower 16bit in rx_poll.
 
-Cheers,
-Samuel.
+The for loop reads the pending interrupts in every iteration. This
+leads up to 16 reads of pending interrupts. The patch introduces a new
+outer loop to read the pending interrupts as long as 'quota' is above 0.
+This reduces the total number of reads.
 
+The third change is to replace the for-loop by a ffs loop.
+
+Tested on AM335x. I removed all 'static' and 'inline' from c_can.c to
+see the timings for all functions. I used the function tracer with
+trace_stats.
+
+125kbit:
+  Function                               Hit    Time            Avg             s^2
+  --------                               ---    ----            ---             ---
+  c_can_do_rx_poll                     63960    10168178 us     158.977 us      1493056 us
+With patch:
+  c_can_do_rx_poll                     63941    3764057 us      58.867 us       776162.2 us
+
+1Mbit:
+  Function                               Hit    Time            Avg             s^2
+  --------                               ---    ----            ---             ---
+  c_can_do_rx_poll                     69489    30049498 us     432.435 us      9271851 us
+With patch:
+  c_can_do_rx_poll                    207109    24322185 us     117.436 us      171469047 us
+
+Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+---
+
+Notes:
+    Changes in v3:
+     - Update commit message (measurements and ffs)
+    
+    Changes in v2:
+     - Small changes, find_next_bit -> ffs and other
+
+ drivers/net/can/c_can/c_can.c | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
+index a668cd4..428681e 100644
+--- a/drivers/net/can/c_can/c_can.c
++++ b/drivers/net/can/c_can/c_can.c
+@@ -798,17 +798,19 @@ static int c_can_do_rx_poll(struct net_device *dev, int quota)
+ 	u32 num_rx_pkts = 0;
+ 	unsigned int msg_obj, msg_ctrl_save;
+ 	struct c_can_priv *priv = netdev_priv(dev);
+-	u32 val = c_can_read_reg32(priv, C_CAN_INTPND1_REG);
++	u16 val;
++
++	/*
++	 * It is faster to read only one 16bit register. This is only possible
++	 * for a maximum number of 16 objects.
++	 */
++	BUILD_BUG_ON_MSG(C_CAN_MSG_OBJ_RX_LAST > 16,
++			"Implementation does not support more message objects than 16");
++
++	while (quota > 0 && (val = priv->read_reg(priv, C_CAN_INTPND1_REG))) {
++		while ((msg_obj = ffs(val)) && quota > 0) {
++			val &= ~BIT(msg_obj - 1);
+ 
+-	for (msg_obj = C_CAN_MSG_OBJ_RX_FIRST;
+-			msg_obj <= C_CAN_MSG_OBJ_RX_LAST && quota > 0;
+-			val = c_can_read_reg32(priv, C_CAN_INTPND1_REG),
+-			msg_obj++) {
+-		/*
+-		 * as interrupt pending register's bit n-1 corresponds to
+-		 * message object n, we need to handle the same properly.
+-		 */
+-		if (val & (1 << (msg_obj - 1))) {
+ 			c_can_object_get(dev, 0, msg_obj, IF_COMM_ALL &
+ 					~IF_COMM_TXRQST);
+ 			msg_ctrl_save = priv->read_reg(priv,
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.8.4.rc3
+
