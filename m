@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab3KAFLd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 01:11:33 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:23355 "EHLO
+	id S1753110Ab3KAFNS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 01:13:18 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:24782 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab3KAFLc (ORCPT
+	with ESMTP id S1750856Ab3KAFNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 01:11:32 -0400
-Message-ID: <527338A4.5060605@oracle.com>
-Date: Fri, 01 Nov 2013 13:14:12 +0800
+	Fri, 1 Nov 2013 01:13:16 -0400
+Message-ID: <5273391C.2010705@oracle.com>
+Date: Fri, 01 Nov 2013 13:16:12 +0800
 From: vaughan <vaughan.cao@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
@@ -16,13 +16,14 @@ To: dgilbert@interlog.com, Christoph Hellwig <hch@infradead.org>
 CC: SCSI development list <linux-scsi@vger.kernel.org>,
         James Bottomley <james.bottomley@hansenpartnership.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>
+        =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>,
+        vaughan <vaughan.cao@oracle.com>
 Subject: Re: [PATCH v2] sg: O_EXCL and other lock handling
 References: <52718713.7050906@interlog.com> <20131031155653.GA16944@infradead.org> <5272AD80.90203@interlog.com>
 In-Reply-To: <5272AD80.90203@interlog.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
