@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab3KAOMG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 10:12:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11343 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751310Ab3KAOME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 10:12:04 -0400
-Date: Fri, 1 Nov 2013 10:11:49 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: prarit@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: Allow NR_CPUS=1024
-Message-ID: <20131101141148.GH8652@hansolo.jdub.homelinux.org>
+	id S1753103Ab3KAONr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 10:13:47 -0400
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:55597 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751497Ab3KAONp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 10:13:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52736C52.8080600@redhat.com>
+References: <20131019110539.GA25167@gmail.com>
+	<4fdb273ab0b1e7514f119d7e619ac708d2277d34.1383220461.git.rashika.kheria@gmail.com>
+	<52736C52.8080600@redhat.com>
+Date: Fri, 1 Nov 2013 19:43:44 +0530
+Message-ID: <CAMpEsFEwKuTwr8DqAfa+8fbgKbnc=9BvB6s-Y=A5vS6a-BRGsA@mail.gmail.com>
+Subject: Re: [PATCH v9 2/2] Staging: zram: Fix decrement of variable by
+ calling bdput()
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: opw-kernel <opw-kernel@googlegroups.com>, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchand@redhat.com>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current range for SMP configs is 2 - 512, or a full 4096 in the case of
-MAXSMP.  There are machines that have 1024 CPUs in them today and configuring
-a kernel for that means you are forced to set MAXSMP.  This adds additional
-unnecessary overhead.  While that overhead might be considered tiny for large
-machines, it isn't necessarily so if you are building a kernel that runs
-across a wide variety of machines.  We increase the range to 1024 to help
-with this.
+On Fri, Nov 1, 2013 at 2:24 PM, Jerome Marchand <jmarchan@redhat.com> wrote:
+>
+> On 10/31/2013 12:58 PM, Rashika Kheria wrote:
+> > As suggested by Jerome Marchand "The code in reset_store get the block device
+> The credit should actually go to Minchan. He found the bug. I merely
+> explained it.
+>
+> > (bdget_disk()) but it does not put it (bdput()) when it's done using it.
+> > The usage count is therefore incremented but never decremented."
+> >
+> > This patch also puts bdput() for all error cases.
+> >
+> > Cc: stable@vger.kernel.org
+> > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+>
+> This version finally looks good. Thanks for your effort.
+>
+> Acked-by: Jerome Marchand <jmarchan@redhat.com>
+>
+>
 
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
----
- arch/x86/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hi,
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index f67e839..d726b2d 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -825,7 +825,7 @@ config MAXSMP
- config NR_CPUS
- 	int "Maximum number of CPUs" if SMP && !MAXSMP
- 	range 2 8 if SMP && X86_32 && !X86_BIGSMP
--	range 2 512 if SMP && !MAXSMP
-+	range 2 1024 if SMP && !MAXSMP
- 	default "1" if !SMP
- 	default "4096" if MAXSMP
- 	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
+Thanks Minchan and Jerome for all you support and patience.
+Your guidance helped me learn more about zram and kernel coding style
+in general. :)
+
+Thanks,
 -- 
-1.8.3.1
-
+Rashika Kheria
+B.Tech CSE
+IIIT Hyderabad
