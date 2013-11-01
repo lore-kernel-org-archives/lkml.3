@@ -1,67 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab3KAFkw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 01:40:52 -0400
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:24988
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750823Ab3KAFkv (ORCPT
+	id S1752997Ab3KAFpl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 01:45:41 -0400
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:42651 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab3KAFpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 01:40:51 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h1155h)
-Date: Fri, 1 Nov 2013 13:27:24 +0800
-From: Nicolin Chen <b42378@freescale.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <joe@perches.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][RESEND] lib/genalloc: add a helper function for DMA
- buffer allocation
-Message-ID: <20131101052723.GA28401@MrMyself>
-References: <1383210967-25804-1-git-send-email-b42378@freescale.com>
- <20131031142619.d7aed35fe536f5a177012d27@linux-foundation.org>
+	Fri, 1 Nov 2013 01:45:39 -0400
+Message-ID: <52733FEC.4010807@synopsys.com>
+Date: Fri, 1 Nov 2013 11:15:16 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20131031142619.d7aed35fe536f5a177012d27@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Chen Gang <gang.chen@asianux.com>
+CC: James Hogan <james.hogan@imgtec.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "Max Filippov" <jcmvbkbc@gmail.com>, Sam Ravnborg <sam@ravnborg.org>,
+        Tim Abbott <tabbott@ksplice.com>, Joe Perches <joe@perches.com>,
+        Michal Marek <mmarek@suse.cz>, David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH v2] arch: use ASM_NL instead of ';' for assembler new
+ line character in the macro
+References: <526E3CE2.2070405@asianux.com> <526E6A92.6090301@synopsys.com> <526F09B8.9030202@asianux.com> <526F11C0.1030809@asianux.com> <526F149A.3000306@asianux.com>
+In-Reply-To: <526F149A.3000306@asianux.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sir,
++CC Sam, Tim, Joe, Michal, David
 
-On Thu, Oct 31, 2013 at 02:26:19PM -0700, Andrew Morton wrote:
-> On Thu, 31 Oct 2013 17:16:07 +0800 Nicolin Chen <b42378@freescale.com> wrote:
+Guys can you please take a look at this patch and suggest the best way to merge.
+
+The root cause is some gas ports (including ARC) use ';' for comment (vs. newline)
+More background at https://lkml.org/lkml/2013/10/24/365
+
+
+On 10/29/2013 07:21 AM, Chen Gang wrote:
+> For some assemblers, they use another character as newline in a macro
+> (e.g. arc uses '`'), so for generic assembly code, need use ASM_NL (a
+> macro) instead of ';' for it.
 > 
-> > When using pool space for DMA buffer, there might be duplicated calling
-> > of gen_pool_alloc() and gen_pool_virt_to_phys() in each implementation.
-> > 
-> > Thus it's better to add a simple helper function, a compatible one to
-> > the common dma_alloc_coherent(), to save some code.
-> > 
+> Also need notice about code styles ('\t' for each line).
 > 
-> Well OK, but this new function doesn't have any callers.  So it
-> increases kernel size and is untestable.
 > 
-> Do you have any conversion patches which we can merge to address these
-> problems?
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  arch/arc/include/asm/linkage.h |    2 ++
+>  include/linux/linkage.h        |   19 ++++++++++++-------
+>  2 files changed, 14 insertions(+), 7 deletions(-)
 > 
->
-
-I'll later send a patch to convert all the combinations of gen_pool_alloc()
-and gen_pool_virt_to_phys(), within the entire kernel, to this helper func.
-
-This would need quite a lot people engaged to test it.
-
-If anything unexpected happens during the test, we can refine and fix it.
-Surely, if some owners of modified driver don't want their code be altered,
-I can drop those modification to their drivers.
-
-Is this okay?
-
-Thank you,
-Nicolin Chen
-
+> diff --git a/arch/arc/include/asm/linkage.h b/arch/arc/include/asm/linkage.h
+> index 0283e9e..66ee552 100644
+> --- a/arch/arc/include/asm/linkage.h
+> +++ b/arch/arc/include/asm/linkage.h
+> @@ -11,6 +11,8 @@
+>  
+>  #ifdef __ASSEMBLY__
+>  
+> +#define ASM_NL		 `	/* use '`' to mark new line in macro */
+> +
+>  /* Can't use the ENTRY macro in linux/linkage.h
+>   * gas considers ';' as comment vs. newline
+>   */
+> diff --git a/include/linux/linkage.h b/include/linux/linkage.h
+> index d3e8ad2..a6a42dd 100644
+> --- a/include/linux/linkage.h
+> +++ b/include/linux/linkage.h
+> @@ -6,6 +6,11 @@
+>  #include <linux/export.h>
+>  #include <asm/linkage.h>
+>  
+> +/* Some toolchains use other characters (e.g. '`') to mark new line in macro */
+> +#ifndef ASM_NL
+> +#define ASM_NL		 ;
+> +#endif
+> +
+>  #ifdef __cplusplus
+>  #define CPP_ASMLINKAGE extern "C"
+>  #else
+> @@ -75,21 +80,21 @@
+>  
+>  #ifndef ENTRY
+>  #define ENTRY(name) \
+> -  .globl name; \
+> -  ALIGN; \
+> -  name:
+> +	.globl name ASM_NL \
+> +	ALIGN ASM_NL \
+> +	name:
+>  #endif
+>  #endif /* LINKER_SCRIPT */
+>  
+>  #ifndef WEAK
+>  #define WEAK(name)	   \
+> -	.weak name;	   \
+> +	.weak name ASM_NL   \
+>  	name:
+>  #endif
+>  
+>  #ifndef END
+>  #define END(name) \
+> -  .size name, .-name
+> +	.size name, .-name
+>  #endif
+>  
+>  /* If symbol 'name' is treated as a subroutine (gets called, and returns)
+> @@ -98,8 +103,8 @@
+>   */
+>  #ifndef ENDPROC
+>  #define ENDPROC(name) \
+> -  .type name, @function; \
+> -  END(name)
+> +	.type name, @function ASM_NL \
+> +	END(name)
+>  #endif
+>  
+>  #endif
+> 
 
