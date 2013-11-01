@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab3KATi6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 15:38:58 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:31485 "EHLO
+	id S1753131Ab3KATo6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 15:44:58 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:34021 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872Ab3KATi4 (ORCPT
+	with ESMTP id S1751872Ab3KATo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 15:38:56 -0400
-Date: Fri, 1 Nov 2013 15:37:20 -0400
+	Fri, 1 Nov 2013 15:44:57 -0400
+Date: Fri, 1 Nov 2013 15:43:24 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Randy Dunlap <rdunlap@infradead.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
         linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
-Subject: Re: linux-next: Tree for Oct 30 (include/xen/swiotlb-xen.h)
-Message-ID: <20131101193720.GB15622@phenom.dumpdata.com>
-References: <20131030184511.c90aa7f40fec6b2e1652f394@canb.auug.org.au>
- <527153A3.5020404@infradead.org>
+Subject: Re: linux-next: Tree for Nov 1 (xen_swiotllb)
+Message-ID: <20131101194324.GC15622@phenom.dumpdata.com>
+References: <20131101191138.442028fb1f243c7f9c7f0844@canb.auug.org.au>
+ <5273EFFA.1030400@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <527153A3.5020404@infradead.org>
+In-Reply-To: <5273EFFA.1030400@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 11:44:51AM -0700, Randy Dunlap wrote:
-> On 10/30/13 00:45, Stephen Rothwell wrote:
+On Fri, Nov 01, 2013 at 11:16:26AM -0700, Randy Dunlap wrote:
+> On 11/01/13 01:11, Stephen Rothwell wrote:
 > > Hi all,
 > > 
-> > News:  I am now doing an arm multi_v7_defconfig build between each merge.
+> > Changes since 20131031:
 > > 
-> > Changes since 20131029:
+> > The squashfs tree gained a build failure so I used the version from
+> > next-20131031.
 > > 
-> > The arm defconfig build is fixed again.
+> > The block tree gained conflicts against the f2fs, aio-direct and Linus'
+> > trees and a build failure and generated several warnings so I used the
+> > version from next-20131031.
 > > 
-> > The net-next tree gained a conflict against the net tree.
+> > The dt-rh tree gained a conflict against the powerpc tree.
 > > 
-> > The xen-tip tree gained a conflict against the arm tree.
+> > The kvm-ppc tree gained a conflict against the powerpc tree.
 > > 
-> > The akpm-current tree gained a conflict against the tip tree and a build
-> > failure for which I reverted 3 commits.
+> > The leds tree gained a conflict against the powerpc tree.
 > > 
-> > Various build problems from yesterday have been resolved.
+> > The tty tree lost its build failure.
 > 
-> on x86_64:
+> 
+> on x86_64, when CONFIG_PCI is not enabled:
+> 
+> arch/x86/built-in.o: In function `pci_xen_swiotlb_init_late':
+> (.text+0x102cc): undefined reference to `pci_request_acs'
+> arch/x86/built-in.o: In function `pci_xen_swiotlb_init':
+> (.init.text+0x3f6c): undefined reference to `pci_request_acs'
 
-Stefano, please fix that.
+Stefano,
 
-> 
-> In file included from include/xen/swiotlb-xen.h:4:0,
->                  from drivers/xen/grant-table.c:52:
-> include/linux/swiotlb.h:45:13: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/linux/swiotlb.h:45:13: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
-> include/linux/swiotlb.h:49:28: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/linux/swiotlb.h:54:14: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/linux/swiotlb.h:68:15: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/linux/swiotlb.h:71:18: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/linux/swiotlb.h:75:14: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/linux/swiotlb.h:79:9: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/linux/swiotlb.h:83:44: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/linux/swiotlb.h:88:17: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/linux/swiotlb.h:92:26: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/linux/swiotlb.h:96:21: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/linux/swiotlb.h:100:29: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/linux/swiotlb.h:104:24: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> In file included from drivers/xen/grant-table.c:52:0:
-> include/xen/swiotlb-xen.h:21:19: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/xen/swiotlb-xen.h:25:15: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/xen/swiotlb-xen.h:29:12: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/xen/swiotlb-xen.h:34:14: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/xen/swiotlb-xen.h:38:23: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/xen/swiotlb-xen.h:42:25: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/xen/swiotlb-xen.h:46:26: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> include/xen/swiotlb-xen.h:50:28: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
-> 
+Please fix that. I think it is commit 83862ccfc0a03212fde43b4ac29c28381828768b
+Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Date:   Thu Oct 10 13:40:44 2013 +0000
+
+    xen/arm,arm64: enable SWIOTLB_XEN
+
+that is causing this. Is it safe to add:
+
+       depends on PCI
+
+back on it?
+
+Thanks.
+
 > 
 > 
 > -- 
