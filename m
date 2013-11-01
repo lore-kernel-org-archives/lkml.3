@@ -1,180 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab3KAKQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 06:16:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54707 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751459Ab3KAKQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 06:16:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,616,1378882800"; 
-   d="scan'208";a="420795441"
-Date: Fri, 1 Nov 2013 18:16:43 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Michel Lespinasse <walken@google.com>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Subject: Re: [PATCH 0/4] per anon_vma lock and turn anon_vma rwsem lock to
- rwlock_t
-Message-ID: <20131101101643.GC30123@yliu-dev.sh.intel.com>
-References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
- <20131101080135.GB25547@gmail.com>
- <20131101081159.GB12829@yliu-dev.sh.intel.com>
- <20131101082146.GA27021@gmail.com>
+	id S1755911Ab3KAKRD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 06:17:03 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:7396
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750733Ab3KAKQ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 06:16:59 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h1155h)
+Date: Fri, 1 Nov 2013 18:02:03 +0800
+From: Nicolin Chen <b42378@freescale.com>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+CC: <r65073@freescale.com>, <timur@tabi.org>, <lgirdwood@gmail.com>,
+        <broonie@kernel.org>, <r64188@freescale.com>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ian.campbell@citrix.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <perex@perex.cz>, <tiwai@suse.de>, <grant.likely@linaro.org>,
+        <fabio.estevam@freescale.com>, <LW@KARO-electronics.de>,
+        <oskar@scara.com>, <shawn.guo@linaro.org>, <b18965@freescale.com>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCHv2 5/8] ASoC: SGTL5000: Enhance the SGTL5000 codec driver
+ about regulator.
+Message-ID: <20131101100201.GF28401@MrMyself>
+References: <1383289495-24523-1-git-send-email-Li.Xiubo@freescale.com>
+ <1383289495-24523-6-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20131101082146.GA27021@gmail.com>
+In-Reply-To: <1383289495-24523-6-git-send-email-Li.Xiubo@freescale.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 01, 2013 at 09:21:46AM +0100, Ingo Molnar wrote:
-> 
-> * Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
-> 
-> > > Btw., another _really_ interesting comparison would be against 
-> > > the latest rwsem patches. Mind doing such a comparison?
-> > 
-> > Sure. Where can I get it? Are they on some git tree?
-> 
-> I've Cc:-ed Tim Chen who might be able to point you to the latest 
-> version.
-> 
-> The last on-lkml submission was in this thread:
-> 
->   Subject: [PATCH v8 0/9] rwsem performance optimizations
+On Fri, Nov 01, 2013 at 03:04:52PM +0800, Xiubo Li wrote:
+> On VF610 series there are no regulators used, and now whether the
+> CONFIG_REGULATOR mirco is enabled or not, for the VF610 audio
+
+micro? or macro?
+
+> patch series, the board cannot be probe successfully.
+> And this patch will solve this issue.
 > 
 
-Thanks.
+I finally got your idea about what this patch does. But it seems to
+be more likely a work around. Maybe I here can't think it through
+comprehensively, but I think you can try to add a fixed regulator to
+sgtl5000 in the devicetree, rather than disabling common functions
+even if not breaking others.
 
-I queued bunchs of tests about one hour ago, and already got some
-results(If necessary, I can add more data tomorrow when those tests are
-finished):
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>  sound/soc/codecs/sgtl5000.c | 12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+> 
+> diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
+> index 1f4093f..c2f6d86 100644
+> --- a/sound/soc/codecs/sgtl5000.c
+> +++ b/sound/soc/codecs/sgtl5000.c
+> @@ -61,6 +61,7 @@ static const struct reg_default sgtl5000_reg_defaults[] = {
+>  	{ SGTL5000_DAP_AVC_DECAY,		0x0050 },
+>  };
+>  
+> +#ifdef CONFIG_REGULATOR
+>  /* regulator supplies for sgtl5000, VDDD is an optional external supply */
+>  enum sgtl5000_regulator_supplies {
+>  	VDDA,
+> @@ -93,6 +94,9 @@ static struct regulator_init_data ldo_init_data = {
+>  	.num_consumer_supplies = 1,
+>  	.consumer_supplies = &ldo_consumer[0],
+>  };
+> +#else
+> +#define SGTL5000_SUPPLY_NUM 0
+> +#endif
+>  
+>  /*
+>   * sgtl5000 internal ldo regulator,
+> @@ -112,7 +116,9 @@ struct sgtl5000_priv {
+>  	int master;	/* i2s master or not */
+>  	int fmt;	/* i2s data format */
+>  	struct regulator_bulk_data supplies[SGTL5000_SUPPLY_NUM];
+> +#ifdef CONFIG_REGULATOR
+>  	struct ldo_regulator *ldo;
+> +#endif
+>  	struct regmap *regmap;
+>  	struct clk *mclk;
+>  };
+> @@ -879,6 +885,7 @@ static int ldo_regulator_remove(struct snd_soc_codec *codec)
+>  	return 0;
+>  }
+>  #else
+> +#ifndef CONFIG_SND_SOC_FSL_SGTL5000_VF610
 
+Checking a platform or SoC specific define here is just a bit....
 
-               v3.12-rc7      fe001e3de090e179f95d  
-------------------------  ------------------------  
-                                -9.3%               brickland1/micro/aim7/shared
-                                +4.3%               lkp-ib03/micro/aim7/fork_test
-                                +2.2%               lkp-ib03/micro/aim7/shared
-                                -2.6%               TOTAL aim7.2000.jobs-per-min
+Could you pls find a better solution? Like I said at first, use fixed regulator
+or figure out why your System would hang with current sgtl5000 driver. If it
+really has a critical bug in its regulator-related code, I think you can then
+make a greater contribution by fixing the bug rather than bypassing it.
 
-               v3.12-rc7      fe001e3de090e179f95d  
-------------------------  ------------------------  
-               204056.67       -23.5%    156082.33  brickland1/micro/aim7/shared
-                79248.00      +144.3%    193617.25  lkp-ib03/micro/aim7/fork_test
-               298355.33       -25.2%    223084.67  lkp-ib03/micro/aim7/shared
-               581660.00        -1.5%    572784.25  TOTAL time.involuntary_context_switches
+Best regards,
+Nicolin Chen
 
-               v3.12-rc7      fe001e3de090e179f95d  
-------------------------  ------------------------  
-                22487.33        -4.7%     21429.33  brickland1/micro/aim7/dbase
-                61412.67       -29.1%     43511.00  brickland1/micro/aim7/shared
-               531142.00       -27.7%    383818.75  lkp-ib03/micro/aim7/fork_test
-                20158.33       -50.9%      9899.67  lkp-ib03/micro/aim7/shared
-               635200.33       -27.8%    458658.75  TOTAL vmstat.system.in
-
-               v3.12-rc7      fe001e3de090e179f95d  
-------------------------  ------------------------  
-                 6408.67        -4.5%      6117.33  brickland1/micro/aim7/dbase
-                87856.00       -39.5%     53170.67  brickland1/micro/aim7/shared
-              1043620.00       -28.0%    751214.75  lkp-ib03/micro/aim7/fork_test
-                47152.33       -38.0%     29245.33  lkp-ib03/micro/aim7/shared
-              1185037.00       -29.1%    839748.08  TOTAL vmstat.system.cs
-
-               v3.12-rc7      fe001e3de090e179f95d  
-------------------------  ------------------------  
-                13295.00       -10.0%     11960.00  brickland1/micro/aim7/dbase
-              1901175.00       -35.5%   1226787.33  brickland1/micro/aim7/shared
-                13951.00        -6.5%     13051.00  lkp-ib03/micro/aim7/dbase
-            239773251.17       -30.9% 165727820.75  lkp-ib03/micro/aim7/fork_test
-              1014933.67       -31.1%    699259.67  lkp-ib03/micro/aim7/shared
-            242716605.83       -30.9% 167678878.75  TOTAL time.voluntary_context_switches
-
-               v3.12-rc7      fe001e3de090e179f95d  
-------------------------  ------------------------  
-                    9.56        -1.0%         9.46  brickland1/micro/aim7/dbase
-                   11.01       -10.1%         9.90  brickland1/micro/aim7/shared
-                   36.23       +15.3%        41.77  lkp-ib03/micro/aim7/fork_test
-                   10.51       -11.9%         9.26  lkp-ib03/micro/aim7/shared
-                   67.31        +4.6%        70.39  TOTAL iostat.cpu.system
-
-               v3.12-rc7      fe001e3de090e179f95d  
-------------------------  ------------------------  
-                   36.39        -3.6%        35.09  brickland1/micro/aim7/dbase
-                   34.97        -8.1%        32.13  brickland1/micro/aim7/shared
-                   20.34        +6.7%        21.70  lkp-ib03/micro/aim7/shared
-                   91.70        -3.0%        88.92  TOTAL boottime.dhcp
-
-               v3.12-rc7      fe001e3de090e179f95d  
-------------------------  ------------------------  
-                   60.00        +6.7%        64.00  brickland1/micro/aim7/shared
-                   60.83        -9.2%        55.25  lkp-ib03/micro/aim7/fork_test
-                  120.83        -1.3%       119.25  TOTAL vmstat.cpu.id
-
-               v3.12-rc7      fe001e3de090e179f95d  
-------------------------  ------------------------  
-                  345.50        -1.1%       341.73  brickland1/micro/aim7/dbase
-                 3788.80       +11.5%      4223.15  lkp-ib03/micro/aim7/fork_test
-                  108.29        -7.1%       100.62  lkp-ib03/micro/aim7/shared
-                 4242.59       +10.0%      4665.50  TOTAL time.system_time
-
-               v3.12-rc7      fe001e3de090e179f95d  
-------------------------  ------------------------  
-                 7481.33        -0.4%      7454.00  brickland1/micro/aim7/dbase
-                 4413.33        -9.4%      3999.67  brickland1/micro/aim7/shared
-                  864.83       +15.8%      1001.25  lkp-ib03/micro/aim7/fork_test
-                 2747.33        +2.2%      2807.00  lkp-ib03/micro/aim7/shared
-                15506.83        -1.6%     15261.92  TOTAL time.percent_of_cpu_this_job_got
-
-               v3.12-rc7      fe001e3de090e179f95d  
-------------------------  ------------------------  
-                   40.82        -7.0%        37.96  brickland1/micro/aim7/shared
-                   29.03        +1.2%        29.39  lkp-ib03/micro/aim7/shared
-                   69.85        -3.6%        67.35  TOTAL boottime.boot
-
-               v3.12-rc7      fe001e3de090e179f95d  
-------------------------  ------------------------  
-                   41.13        +9.8%        45.15  brickland1/micro/aim7/shared
-                  451.32        -4.1%       432.71  lkp-ib03/micro/aim7/fork_test
-                   31.94        -2.1%        31.27  lkp-ib03/micro/aim7/shared
-                  524.39        -2.9%       509.13  TOTAL time.elapsed_time
-
-               v3.12-rc7      fe001e3de090e179f95d  
-------------------------  ------------------------  
-                   41.92        +0.7%        42.21  brickland1/micro/aim7/dbase
-                   60.65        +6.1%        64.33  brickland1/micro/aim7/shared
-                   35.64        -1.9%        34.95  lkp-ib03/micro/aim7/dbase
-                   61.18        -9.3%        55.48  lkp-ib03/micro/aim7/fork_test
-                  199.39        -1.2%       196.97  TOTAL iostat.cpu.idle
-
-               v3.12-rc7      fe001e3de090e179f95d  
-------------------------  ------------------------  
-                   48.52        -0.4%        48.33  brickland1/micro/aim7/dbase
-                   54.52        +1.1%        55.12  lkp-ib03/micro/aim7/dbase
-                    2.59        +6.3%         2.76  lkp-ib03/micro/aim7/fork_test
-                   50.59        +2.6%        51.90  lkp-ib03/micro/aim7/shared
-                  156.23        +1.2%       158.10  TOTAL iostat.cpu.user
-
-               v3.12-rc7      fe001e3de090e179f95d  
-------------------------  ------------------------  
-                 1804.63        -0.4%      1797.01  brickland1/micro/aim7/dbase
-                  117.74        -7.2%       109.21  lkp-ib03/micro/aim7/fork_test
-                  769.56        +1.0%       777.37  lkp-ib03/micro/aim7/shared
-                 2691.93        -0.3%      2683.58  TOTAL time.user_time
-
-               v3.12-rc7      fe001e3de090e179f95d  
-------------------------  ------------------------  
-                   50.00        +2.0%        51.00  lkp-ib03/micro/aim7/shared
-                   50.00        +2.0%        51.00  TOTAL vmstat.cpu.us
+>  static int ldo_regulator_register(struct snd_soc_codec *codec,
+>  				struct regulator_init_data *init_data,
+>  				int voltage)
+> @@ -886,6 +893,7 @@ static int ldo_regulator_register(struct snd_soc_codec *codec,
+>  	dev_err(codec->dev, "this setup needs regulator support in the kernel\n");
+>  	return -EINVAL;
+>  }
+> +#endif
+>  
+>  static int ldo_regulator_remove(struct snd_soc_codec *codec)
+>  {
+> @@ -1137,6 +1145,7 @@ static int sgtl5000_resume(struct snd_soc_codec *codec)
+>  #define sgtl5000_resume  NULL
+>  #endif	/* CONFIG_SUSPEND */
+>  
+> +#ifdef CONFIG_REGULATOR
+>  /*
+>   * sgtl5000 has 3 internal power supplies:
+>   * 1. VAG, normally set to vdda/2
+> @@ -1373,6 +1382,7 @@ err_regulator_free:
+>  	return ret;
+>  
+>  }
+> +#endif
+>  
+>  static int sgtl5000_probe(struct snd_soc_codec *codec)
+>  {
+> @@ -1387,6 +1397,7 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
+>  		return ret;
+>  	}
+>  
+> +#ifdef CONFIG_REGULATOR
+>  	ret = sgtl5000_enable_regulators(codec);
+>  	if (ret)
+>  		return ret;
+> @@ -1395,6 +1406,7 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
+>  	ret = sgtl5000_set_power_regs(codec);
+>  	if (ret)
+>  		goto err;
+> +#endif
+>  
+>  	/* enable small pop, introduce 400ms delay in turning off */
+>  	snd_soc_update_bits(codec, SGTL5000_CHIP_REF_CTRL,
+> -- 
+> 1.8.4
+> 
 
 
-	--yliu
