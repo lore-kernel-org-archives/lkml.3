@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103Ab3KAONr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 10:13:47 -0400
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:55597 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497Ab3KAONp (ORCPT
+	id S1752090Ab3KAORK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 10:17:10 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:64022 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab3KAORJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 10:13:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <52736C52.8080600@redhat.com>
-References: <20131019110539.GA25167@gmail.com>
-	<4fdb273ab0b1e7514f119d7e619ac708d2277d34.1383220461.git.rashika.kheria@gmail.com>
-	<52736C52.8080600@redhat.com>
-Date: Fri, 1 Nov 2013 19:43:44 +0530
-Message-ID: <CAMpEsFEwKuTwr8DqAfa+8fbgKbnc=9BvB6s-Y=A5vS6a-BRGsA@mail.gmail.com>
-Subject: Re: [PATCH v9 2/2] Staging: zram: Fix decrement of variable by
- calling bdput()
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: opw-kernel <opw-kernel@googlegroups.com>, Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchand@redhat.com>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 1 Nov 2013 10:17:09 -0400
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Seth Forshee <seth.forshee@canonical.com>
+Subject: [PATCH trace-cmd] Makefile: Ensure _GNU_SOURCE really is always defined
+Date: Fri,  1 Nov 2013 09:17:00 -0500
+Message-Id: <1383315420-11690-1-git-send-email-seth.forshee@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 1, 2013 at 2:24 PM, Jerome Marchand <jmarchan@redhat.com> wrote:
->
-> On 10/31/2013 12:58 PM, Rashika Kheria wrote:
-> > As suggested by Jerome Marchand "The code in reset_store get the block device
-> The credit should actually go to Minchan. He found the bug. I merely
-> explained it.
->
-> > (bdget_disk()) but it does not put it (bdput()) when it's done using it.
-> > The usage count is therefore incremented but never decremented."
-> >
-> > This patch also puts bdput() for all error cases.
-> >
-> > Cc: stable@vger.kernel.org
-> > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
->
-> This version finally looks good. Thanks for your effort.
->
-> Acked-by: Jerome Marchand <jmarchan@redhat.com>
->
->
+When CLFAGS is set with a command argument a normal variable
+assignment is not sufficient to ensure that _GNU_SOURCE will be
+defined. Since this really is critical for building, use an
+override directive when adding it to CFLAGS to ensure that it
+really does get defined in all cases.
 
-Hi,
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks Minchan and Jerome for all you support and patience.
-Your guidance helped me learn more about zram and kernel coding style
-in general. :)
-
-Thanks,
+diff --git a/Makefile b/Makefile
+index 1d613c4..a2ba385 100644
+--- a/Makefile
++++ b/Makefile
+@@ -223,7 +223,7 @@ CFLAGS ?= -g -Wall
+ LDFLAGS ?=
+ 
+ # Required CFLAGS
+-CFLAGS += -D_GNU_SOURCE
++override CFLAGS += -D_GNU_SOURCE
+ 
+ ifndef NO_PTRACE
+ ifneq ($(call try-cc,$(SOURCE_PTRACE),),y)
 -- 
-Rashika Kheria
-B.Tech CSE
-IIIT Hyderabad
+1.8.3.2
+
