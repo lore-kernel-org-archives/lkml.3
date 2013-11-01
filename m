@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab3KACDj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 22:03:39 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:52077 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723Ab3KACDh (ORCPT
+	id S1754710Ab3KACKk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 22:10:40 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:40327 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752278Ab3KACKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 22:03:37 -0400
-Message-ID: <52730BF5.10701@hitachi.com>
-Date: Fri, 01 Nov 2013 11:03:33 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 31 Oct 2013 22:10:38 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Fenghua Yu <fenghua.yu@intel.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH -tip 1/2] [BUGFIX] kprobes/x86: Prohibit probing on debug_stack_*
-References: <20131030105334.7997.750.stgit@kbuild-fedora.novalocal> <20131030105341.7997.48258.stgit@kbuild-fedora.novalocal> <20131031082230.GA8944@gmail.com>
-In-Reply-To: <20131031082230.GA8944@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131031154311.e65d16d79ba540ced736413b@linux-foundation.org>
+References: <1382975339-25831-1-git-send-email-tom.leiming@gmail.com>
+	<20131031154311.e65d16d79ba540ced736413b@linux-foundation.org>
+Date: Fri, 1 Nov 2013 10:10:37 +0800
+Message-ID: <CACVXFVMJmQJd0cFaZcmZZvFpUQUmTPJRj87QBVr0kbgZxjq8dw@mail.gmail.com>
+Subject: Re: [PATCH] scripts/kallsyms: filter symbols not in kernel address space
+From: Ming Lei <tom.leiming@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Michal Marek <mmarek@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/31 17:22), Ingo Molnar wrote:
-> 
-> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
->> -int is_debug_stack(unsigned long addr)
->> +int __kprobes is_debug_stack(unsigned long addr)
-> 
-> _Please_ add a __noprobes method, for new annotations.
+Hi Andrew,
 
-Ah, OK. I'll send new series.
+Thanks for your comment.
 
-> Naming it '__kprobes' is actively confusing, as it suggests that the 
-> function is somehow positively involved with kprobes support. 
-> Instead it should the noinline/notrace pattern.
-> 
-> I complained about this before and not much happened on this front. 
-> We might not want to convert the whole kernel straight away, but for 
-> _new_ annotations there's no excuse not to name them properly. Lets 
-> phase out __kprobes, and use __noprobe from now on, okay?
+On Fri, Nov 1, 2013 at 6:43 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+>
+> For a start, please describe with great precision what these excluded
+> symbols are (examples would help) and explain why no application will
+> conceivably have had any use for them.
 
-I see it. :)
+Looks Russell has given the example symbols already, and all these
+symbols should be only for generating code, and they won't be run by
+kernel since kernel can't run code which isn't in kernel virtual address
+space, so there is no reason for application to use these symbols.
 
-Thank you,
+Actually, there is already report on the problem, see below link:
 
+http://www.gossamer-threads.com/lists/linux/kernel/1808193?page=last
+
+> OK.  Do you recall which patch that was?  And is it the case that this
+> patch excludes only the symbols which that patch accidentally added?
+
+This patch excludes all kernel symbols(non-module symbols) which
+aren't in kernel virtual address space, I think it is reasonable and correct.
+
+
+Thanks,
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Ming Lei
