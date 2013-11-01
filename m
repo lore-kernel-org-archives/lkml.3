@@ -1,102 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573Ab3KAQ6i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 12:58:38 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:48106 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044Ab3KAQ6g (ORCPT
+	id S1754019Ab3KAQ7e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 12:59:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51416 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752627Ab3KAQ7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 12:58:36 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Heiko Stuebner <heiko@sntech.de>,
-        Naour Romain <romain.naour@openwide.fr>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Tarek Dakhran <t.dakhran@samsung.com>
-Subject: Re: [PATCH v2 2/4] clk: exynos5410: register clocks using common clock framework
-Date: Fri, 01 Nov 2013 17:58:34 +0100
-Message-ID: <1421095.b3lQaz2kV9@flatron>
-User-Agent: KMail/4.11.2 (Linux/3.11.6-gentoo; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <1381763305-7085-3-git-send-email-v.tyrtov@samsung.com>
-References: <1381763305-7085-1-git-send-email-v.tyrtov@samsung.com> <1381763305-7085-3-git-send-email-v.tyrtov@samsung.com>
+	Fri, 1 Nov 2013 12:59:33 -0400
+Date: Fri, 1 Nov 2013 09:59:31 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [GIT PATCH] USB fixes for 3.12-final
+Message-ID: <20131101165931.GA18020@kroah.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The following changes since commit 959f58544b7f20c92d5eb43d1232c96c15c01bfb:
 
-On Monday 14 of October 2013 19:08:23 Vyacheslav Tyrtov wrote:
-> From: Tarek Dakhran <t.dakhran@samsung.com>
-> 
-> The EXYNOS5410 clocks are statically listed and registered
-> using the Samsung specific common clock helper functions.
-> 
-> Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
-> Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-> ---
->  .../devicetree/bindings/clock/exynos5410-clock.txt |  37 +++
->  drivers/clk/samsung/Makefile                       |   1 +
->  drivers/clk/samsung/clk-exynos5410.c               | 251
-> +++++++++++++++++++++ include/dt-bindings/clock/exynos5410.h           
->  | 175 ++++++++++++++ 4 files changed, 464 insertions(+)
->  create mode 100644
-> Documentation/devicetree/bindings/clock/exynos5410-clock.txt create
-> mode 100644 drivers/clk/samsung/clk-exynos5410.c
->  create mode 100644 include/dt-bindings/clock/exynos5410.h
+  Linux 3.12-rc7 (2013-10-27 16:12:03 -0700)
 
-The driver looks pretty good now, thanks for addressing my comments to 
-previous version. There are still few issues remaining, though. Please see 
-my comments inline.
+are available in the git repository at:
 
-[snip]
-> diff --git a/drivers/clk/samsung/clk-exynos5410.c
-> b/drivers/clk/samsung/clk-exynos5410.c new file mode 100644
-> index 0000000..c5eba08
-> --- /dev/null
-> +++ b/drivers/clk/samsung/clk-exynos5410.c
-[snip]
-> +static struct of_device_id ext_clk_match[] __initdata = {
-> +	{ .compatible = "samsung,clock-oscclk", .data = (void *)0, },
-> +	{ },
-> +};
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.12-rc8
 
-I don't see anything in binding documentation mentioning this compatible 
-value. Anyway, since there is already a generic binding for fixed rate 
-clocks, this shouldn't be needed at all.
+for you to fetch changes up to e1466ad5b1aeda303f9282463d55798d2eda218c:
 
-> +
-> +/* register exynos5410 clocks */
-> +static void __init exynos5410_clk_init(struct device_node *np)
-> +{
-> +	void __iomem *reg_base;
-> +
-> +	reg_base = of_iomap(np, 0);
-> +	if (!reg_base)
-> +		panic("%s: failed to map registers\n", __func__);
-> +
-> +	samsung_clk_init(np, reg_base, CLK_NR_CLKS,
-> +			exynos5410_clk_regs, 
-ARRAY_SIZE(exynos5410_clk_regs),
-> +			NULL, 0);
-> +	samsung_clk_of_register_fixed_ext(exynos5410_frt_ext_clks,
-> +			ARRAY_SIZE(exynos5410_frt_ext_clks),
-> +			ext_clk_match);
+  USB: serial: ftdi_sio: add id for Z3X Box device (2013-11-01 09:33:56 -0700)
 
-This call could be dropped after moving to generic fixed rate clock 
-bindings.
+----------------------------------------------------------------
+USB fixes for 3.12-final
 
-Best regards,
-Tomasz
+Here is a set of patches that revert all of the changes done to the
+pl2303 USB serial driver in the 3.12-rc timeframe, as it turns out they
+break some devices that work just fine on 3.11.  As it's not a good idea
+to break working systems, drop them all and they will be reworked for
+future kernel versions such that there is no breakage.
 
+I've also included a MAINTAINERS update for the USB serial subsystem and
+a new device id for the ftdi_sio driver as well.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Greg KH (1):
+      USB: Maintainers change for usb serial drivers
+
+Greg Kroah-Hartman (12):
+      Revert "USB: pl2303: distinguish between original and cloned HX chips"
+      Revert "pl2303: improve the chip type detection/distinction"
+      Revert "pl2303: improve the chip type information output on startup"
+      Revert "pl2303: simplify the else-if contruct for type_1 chips in pl2303_startup()"
+      Revert "usb: pl2303: add two comments concerning the supported baud rates with HX chips"
+      Revert "usb: pl2303: also use the divisor based baud rate encoding method for baud rates < 115200 with HX chips"
+      Revert "usb: pl2303: increase the allowed baud rate range for the divisor based encoding method"
+      Revert "usb: pl2303: move the two baud rate encoding methods to separate functions"
+      Revert "usb: pl2303: remove 500000 baud from the list of standard baud rates"
+      Revert "usb: pl2303: do not round to the next nearest standard baud rate for the divisor based baud rate encoding method"
+      Revert "usb: pl2303: fix+improve the divsor based baud rate encoding method"
+      Revert "USB: pl2303: restrict the divisor based baud rate encoding method to the "HX" chip type"
+
+Алексей Крамаренко (1):
+      USB: serial: ftdi_sio: add id for Z3X Box device
+
+ MAINTAINERS                       |  53 +-------
+ drivers/usb/serial/ftdi_sio.c     |   1 +
+ drivers/usb/serial/ftdi_sio_ids.h |   6 +
+ drivers/usb/serial/pl2303.c       | 274 ++++++++------------------------------
+ 4 files changed, 66 insertions(+), 268 deletions(-)
