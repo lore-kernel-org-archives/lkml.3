@@ -1,86 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799Ab3KAJ2F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 05:28:05 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:47904 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459Ab3KAJ2D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 05:28:03 -0400
-Date: Fri, 1 Nov 2013 10:27:59 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
+	id S1755652Ab3KAJ2Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 05:28:24 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:35631 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755085Ab3KAJ2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 05:28:22 -0400
+Date: Fri, 1 Nov 2013 02:28:14 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Victor Kaplansky <VICTORK@il.ibm.com>, Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
-Subject: Re: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist
- periods (v2)
-Message-ID: <20131101092759.GC27063@gmail.com>
-References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
- <20131031080932.GA8479@gmail.com>
- <87vc0c4ny2.fsf@sejong.aot.lge.com>
- <20131101075502.GA25547@gmail.com>
- <874n7w4gtm.fsf@sejong.aot.lge.com>
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Michael Neuling <mikey@neuling.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: perf events ring buffer memory barrier on powerpc
+Message-ID: <20131101092814.GG4067@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131028132634.GO19466@laptop.lan>
+ <20131028163418.GD4126@linux.vnet.ibm.com>
+ <20131028201735.GA15629@redhat.com>
+ <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com>
+ <20131030092725.GL4126@linux.vnet.ibm.com>
+ <OFC6B7100E.31C6B190-ON42257C14.004841C6-42257C14.004A0EA6@il.ibm.com>
+ <20131031043258.GQ4126@linux.vnet.ibm.com>
+ <20131031090457.GU19466@laptop.lan>
+ <20131031150756.GB4067@linux.vnet.ibm.com>
+ <20131031151955.GY19466@laptop.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <874n7w4gtm.fsf@sejong.aot.lge.com>
+In-Reply-To: <20131031151955.GY19466@laptop.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13110109-0320-0000-0000-000001980391
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Namhyung Kim <namhyung@kernel.org> wrote:
-
-> >> > 2)
-> >> >
-> >> > Is it possible to configure the default 'report -g' style, so that 
-> >> > people who'd like to use it all the time don't have to type '-g 
-> >> > cumulative' all the time?
-> >> 
-> >> Hmm.. maybe I can add support for the 'report.call-graph' config option.
-> >
-> > If we display your new 'total' field by default then it's not as 
-> > pressing to me :)
+On Thu, Oct 31, 2013 at 04:19:55PM +0100, Peter Zijlstra wrote:
+> On Thu, Oct 31, 2013 at 08:07:56AM -0700, Paul E. McKenney wrote:
+> > On Thu, Oct 31, 2013 at 10:04:57AM +0100, Peter Zijlstra wrote:
+> > > On Wed, Oct 30, 2013 at 09:32:58PM -0700, Paul E. McKenney wrote:
+> > > > Before C/C++11, the closest thing to such a prohibition is use of
+> > > > volatile, for example, ACCESS_ONCE().  Even in C/C++11, you have to
+> > > > use atomics to get anything resembing this prohibition.
+> > > > 
+> > > > If you just use normal variables, the compiler is within its rights
+> > > > to transform something like the following:
+> > > > 
+> > > > 	if (a)
+> > > > 		b = 1;
+> > > > 	else
+> > > > 		b = 42;
+> > > > 
+> > > > Into:
+> > > > 
+> > > > 	b = 42;
+> > > > 	if (a)
+> > > > 		b = 1;
+> > > > 
+> > > > Many other similar transformations are permitted.  Some are used to all
+> > > > vector instructions to be used -- the compiler can do a write with an
+> > > > overly wide vector instruction, then clean up the clobbered variables
+> > > > later, if it wishes.  Again, if the variables are not marked volatile,
+> > > > or, in C/C++11, atomic.
+> > > 
+> > > While I've heard you tell this story before, my mind keeps boggling how
+> > > we've been able to use shared memory at all, all these years.
+> > > 
+> > > It seems to me stuff should have broken left, right and center if
+> > > compilers were really aggressive about this.
+> > 
+> > Sometimes having stupid compilers is a good thing.  But they really are
+> > getting more aggressive.
 > 
-> Do you mean -g cumulative without 'self' column?
-
-So, if by default we display both 'self' and 'total' and sort by 
-'total', then I'm personally a happy camper: while it's a change of 
-the default perf report output, it's also a step forward.
-
-But some people might complain about it once this hits v3.13 (or 
-v3.14) and might want to hide individual columns and have different 
-sorting preferences.
-
-So out of defensive caution you might want to provide toggles for 
-such things, maybe even generalize it a bit to allow arbitrary 
-hiding/display of individual colums in perf report.
-
-That would probably also make it easier to do minimal tweaks to the 
-upstream reporting defaults.
-
-> > Btw., if anyone is interested in improving the GTK front-end, it 
-> > would be _really_ nice if it had a 'start profiling' button like 
-> > sysprof has today, with a 'samples' field showing the current 
-> > number of samples. (We could even improve upon sysprof by adding 
-> > 'stop' functionality as well ;-)
+> But surely we cannot go mark all data structures lodged in shared memory
+> as volatile, that's insane.
 > 
-> Wow, I'm impressed that the sysprof doesn't have one. :)
+> I'm sure you're quite worried about this as well. Suppose we have:
+> 
+> struct foo {
+> 	unsigned long value;
+> 	void *ptr;
+> 	unsigned long value1;
+> };
+> 
+> And our ptr member is RCU managed. Then while the assignment using:
+> rcu_assign_ptr() will use the volatile cast, what stops the compiler
+> from wrecking ptr while writing either of the value* members and
+> 'fixing' her up after?
 
-At least I haven't found it: I tried pressing 'start' once more but 
-that doesn't do it, it just keeps collecting data.
+Nothing at all!
 
-Still many developers love sysprof, so I think there would be quite 
-some plus in providing a gtk perf top version with the controls 
-Pekka and me listed.
+We can reduce the probability by putting the pointer at one end or the
+other, so that if the compiler uses (say) vector instructions to aggregate
+individual assignments to the other fields, it will be less likely to hit
+"ptr".  But yes, this is ugly and it would be really hard to get all
+this right, and would often conflict with cache-locality needs.
 
-Thanks,
+> This is a completely untenable position.
 
-	Ingo
+Indeed it is!
+
+C/C++ never was intended to be used for parallel programming, and this is
+but one of the problems that can arise when we nevertheless use it for
+parallel programming.  As compilers get smarter (for some definition of
+"smarter") and as more systems have special-purpose hardware (such as
+vector units) that are visible to the compiler, we can expect more of
+this kind of trouble.
+
+This was one of many reasons that I decided to help with the C/C++11
+effort, whatever anyone might think about the results.
+
+> How do the C/C++ people propose to deal with this?
+
+By marking "ptr" as atomic, thus telling the compiler not to mess with it.
+And thus requiring that all accesses to it be decorated, which in the
+case of RCU could be buried in the RCU accessors.
+
+							Thanx, Paul
+
