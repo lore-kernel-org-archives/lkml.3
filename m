@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab3KAWO7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:14:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55545 "EHLO
+	id S1756207Ab3KAWP0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:15:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55538 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756459Ab3KAWId (ORCPT
+	with ESMTP id S1755546Ab3KAWIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:33 -0400
+	Fri, 1 Nov 2013 18:08:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        Jan Kara <jack@suse.cz>, Richard Weinberger <richard@nod.at>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.11 59/66] writeback: fix negative bdi max pause
-Date: Fri,  1 Nov 2013 15:07:35 -0700
-Message-Id: <20131101220651.226456171@linuxfoundation.org>
+        =?UTF-8?q?Szymon=20Aceda=C5=84ski?= <accek@mimuw.edu.pl>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.11 58/66] ALSA: hda - Fix inverted internal mic not indicated on some machines
+Date: Fri,  1 Nov 2013 15:07:34 -0700
+Message-Id: <20131101220650.843448918@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -34,93 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fengguang Wu <fengguang.wu@intel.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit e3b6c655b91e01a1dade056cfa358581b47a5351 upstream.
+commit ccb041571b73888785ef7828a276e380125891a4 upstream.
 
-Toralf runs trinity on UML/i386.  After some time it hangs and the last
-message line is
+The create_bind_cap_vol_ctl does not create any control indicating
+that an inverted dmic is present. Therefore, create multiple
+capture volumes in this scenario, so we always have some indication
+that the internal mic is inverted.
 
-	BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:1521]
+This happens on the Lenovo Ideapad U310 as well as the Lenovo Yoga 13
+(both are based on the CX20590 codec), but the fix is generic and
+could be needed for other codecs/machines too.
 
-It's found that pages_dirtied becomes very large.  More than 1000000000
-pages in this case:
+Thanks to Szymon Acedański for the pointer and a draft patch.
 
-	period = HZ * pages_dirtied / task_ratelimit;
-	BUG_ON(pages_dirtied > 2000000000);
-	BUG_ON(pages_dirtied > 1000000000);      <---------
-
-UML debug printf shows that we got negative pause here:
-
-	ick: pause : -984
-	ick: pages_dirtied : 0
-	ick: task_ratelimit: 0
-
-	 pause:
-	+       if (pause < 0)  {
-	+               extern int printf(char *, ...);
-	+               printf("ick : pause : %li\n", pause);
-	+               printf("ick: pages_dirtied : %lu\n", pages_dirtied);
-	+               printf("ick: task_ratelimit: %lu\n", task_ratelimit);
-	+               BUG_ON(1);
-	+       }
-	        trace_balance_dirty_pages(bdi,
-
-Since pause is bounded by [min_pause, max_pause] where min_pause is also
-bounded by max_pause.  It's suspected and demonstrated that the
-max_pause calculation goes wrong:
-
-	ick: pause : -717
-	ick: min_pause : -177
-	ick: max_pause : -717
-	ick: pages_dirtied : 14
-	ick: task_ratelimit: 0
-
-The problem lies in the two "long = unsigned long" assignments in
-bdi_max_pause() which might go negative if the highest bit is 1, and the
-min_t(long, ...) check failed to protect it falling under 0.  Fix all of
-them by using "unsigned long" throughout the function.
-
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Tested-by: Toralf Förster <toralf.foerster@gmx.de>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+BugLink: https://bugs.launchpad.net/bugs/1239392
+BugLink: https://bugs.launchpad.net/bugs/1227491
+Reported-by: Szymon Acedański <accek@mimuw.edu.pl>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page-writeback.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ sound/pci/hda/hda_generic.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1104,11 +1104,11 @@ static unsigned long dirty_poll_interval
- 	return 1;
- }
- 
--static long bdi_max_pause(struct backing_dev_info *bdi,
--			  unsigned long bdi_dirty)
-+static unsigned long bdi_max_pause(struct backing_dev_info *bdi,
-+				   unsigned long bdi_dirty)
- {
--	long bw = bdi->avg_write_bandwidth;
--	long t;
-+	unsigned long bw = bdi->avg_write_bandwidth;
-+	unsigned long t;
- 
- 	/*
- 	 * Limit pause time for small memory systems. If sleeping for too long
-@@ -1120,7 +1120,7 @@ static long bdi_max_pause(struct backing
- 	t = bdi_dirty / (1 + bw / roundup_pow_of_two(1 + HZ / 8));
- 	t++;
- 
--	return min_t(long, t, MAX_PAUSE);
-+	return min_t(unsigned long, t, MAX_PAUSE);
- }
- 
- static long bdi_min_pause(struct backing_dev_info *bdi,
+--- a/sound/pci/hda/hda_generic.c
++++ b/sound/pci/hda/hda_generic.c
+@@ -3505,7 +3505,7 @@ static int create_capture_mixers(struct
+ 		if (!multi)
+ 			err = create_single_cap_vol_ctl(codec, n, vol, sw,
+ 							inv_dmic);
+-		else if (!multi_cap_vol)
++		else if (!multi_cap_vol && !inv_dmic)
+ 			err = create_bind_cap_vol_ctl(codec, n, vol, sw);
+ 		else
+ 			err = create_multi_cap_vol_ctl(codec);
 
 
