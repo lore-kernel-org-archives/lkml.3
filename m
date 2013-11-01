@@ -1,31 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab3KAVfr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 17:35:47 -0400
-Received: from 201-249-196-195.estatic.cantv.net ([201.249.196.195]:51570 "EHLO
-	mail.inpsasel.gob.ve" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab3KAVfq convert rfc822-to-8bit (ORCPT
+	id S1754065Ab3KAVnt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 17:43:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54484 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830Ab3KAVns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 17:35:46 -0400
-X-Greylist: delayed 7500 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Nov 2013 17:35:46 EDT
-Date: Fri, 1 Nov 2013 09:34:05 -0430 (VET)
-From: Servicio web <nelly.garcia@inpsasel.gob.ve>
-Reply-To: Servicio web <accountuserhelp@admin.in.th>
-Message-ID: <898421435.8029.1383314645948.JavaMail.root@inpsasel.gob.ve>
-Subject: Advertencia 01 de noviembre.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [41.71.186.166]
-X-Mailer: Zimbra 7.2.0_GA_2669 (zclient/7.2.0_GA_2669)
-To: undisclosed-recipients:;
+	Fri, 1 Nov 2013 17:43:48 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 03/32] net: do not call sock_put() on TIMEWAIT sockets
+Date: Fri,  1 Nov 2013 14:43:14 -0700
+Message-Id: <20131101214314.518045534@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131101214313.735463599@linuxfoundation.org>
+References: <20131101214313.735463599@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Su contraseña caducará en 3 días formulario llenar y enviar de inmediato para validar su dirección de e-mail.
-Nombre de Usuario: .................
-Contraseña anterior: .................
-Nueva Contraseña: ................
-gracias
-administrador del sistema
+3.4-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Eric Dumazet <edumazet@google.com>
+
+[ Upstream commit 80ad1d61e72d626e30ebe8529a0455e660ca4693 ]
+
+commit 3ab5aee7fe84 ("net: Convert TCP & DCCP hash tables to use RCU /
+hlist_nulls") incorrectly used sock_put() on TIMEWAIT sockets.
+
+We should instead use inet_twsk_put()
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv4/inet_hashtables.c  |    2 +-
+ net/ipv6/inet6_hashtables.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+--- a/net/ipv4/inet_hashtables.c
++++ b/net/ipv4/inet_hashtables.c
+@@ -268,7 +268,7 @@ begintw:
+ 			}
+ 			if (unlikely(!INET_TW_MATCH(sk, net, hash, acookie,
+ 				 saddr, daddr, ports, dif))) {
+-				sock_put(sk);
++				inet_twsk_put(inet_twsk(sk));
+ 				goto begintw;
+ 			}
+ 			goto out;
+--- a/net/ipv6/inet6_hashtables.c
++++ b/net/ipv6/inet6_hashtables.c
+@@ -110,7 +110,7 @@ begintw:
+ 				goto out;
+ 			}
+ 			if (!INET6_TW_MATCH(sk, net, hash, saddr, daddr, ports, dif)) {
+-				sock_put(sk);
++				inet_twsk_put(inet_twsk(sk));
+ 				goto begintw;
+ 			}
+ 			goto out;
+
+
