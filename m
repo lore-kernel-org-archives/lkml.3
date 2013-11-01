@@ -1,80 +1,333 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab3KAHdS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 03:33:18 -0400
+	id S1753489Ab3KAHdU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 03:33:20 -0400
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62010 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928Ab3KAHdR (ORCPT
+	with ESMTP id S1752104Ab3KAHdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 03:33:17 -0400
-X-AuditID: 9c930179-b7c9bae000000e4c-10-5273593ba198
+	Fri, 1 Nov 2013 03:33:18 -0400
+X-AuditID: 9c930179-b7c9bae000000e4c-24-5273593c71c2
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCHSET 0/5] perf tools: Enhance option parsing error message
-Date: Fri,  1 Nov 2013 16:33:10 +0900
-Message-Id: <1383291195-24386-1-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 1/5] perf tools: Show single option when failed to parse
+Date: Fri,  1 Nov 2013 16:33:11 +0900
+Message-Id: <1383291195-24386-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1383291195-24386-1-git-send-email-namhyung@kernel.org>
+References: <1383291195-24386-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-This patchset tries to enhance error message when perf failed to parse
-option argument.  Currently it just shows entire usage and options
-which may fill two pages of screen.  It's hard for me to say it's
-really helpful to users. ;-)
+Current option parser outputs whole option help string when it failed
+to parse an option.  However this is not good for user if the command
+has many option, she might feel hard which one is related easily.
 
-With this patch series, it changed to show only related option(s).
-There're also more points to improve yet - like auto-breaking long
-lines, dealing with UIs and so on.  But I believe this will be a good
-start.
+Fix it by just showing the help message of the given option only.
 
-  $ perf report -g help
-
-   usage: perf report [<options>]
-
-      -g, --call-graph <output_type,min_percent[,print_limit],call_order>
-                          Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). Default: fractal,0.5,callee,function
-
-  $ perf stat -Bx, ls
-  -B option not supported with -x
-
-   usage: perf stat [<options>] [<command>]
-
-      -B, --big-num         print large numbers with thousands' separators
-      -x, --field-separator <separator>
-                            print counts with custom separator
-
-
-You can get this on 'perf/option-v1' branch in my tree
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
-
-
-Thanks,
-Namhyung
-
-
-Namhyung Kim (5):
-  perf tools: Show single option when failed to parse
-  perf report: Postpone setting up browser after parsing options
-  perf report: Use parse_options_usage() for -s option failure
-  perf top: Use parse_options_usage() for -s option failure
-  perf stat: Enhance option parse error message
-
- tools/perf/builtin-report.c     |  30 +++---
- tools/perf/builtin-stat.c       |  42 +++++---
- tools/perf/builtin-top.c        |   8 +-
- tools/perf/util/parse-options.c | 218 ++++++++++++++++++++++++----------------
+Requested-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/parse-options.c | 217 ++++++++++++++++++++++++----------------
  tools/perf/util/parse-options.h |   4 +-
- 5 files changed, 181 insertions(+), 121 deletions(-)
+ 2 files changed, 132 insertions(+), 89 deletions(-)
 
+diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
+index 2bc9e70df7e2..1caf7b9a01ee 100644
+--- a/tools/perf/util/parse-options.c
++++ b/tools/perf/util/parse-options.c
+@@ -339,10 +339,10 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
+ 		if (arg[1] != '-') {
+ 			ctx->opt = arg + 1;
+ 			if (internal_help && *ctx->opt == 'h')
+-				return parse_options_usage(usagestr, options);
++				return usage_with_options_internal(usagestr, options, 0);
+ 			switch (parse_short_opt(ctx, options)) {
+ 			case -1:
+-				return parse_options_usage(usagestr, options);
++				return parse_options_usage(usagestr, options, arg + 1, 1);
+ 			case -2:
+ 				goto unknown;
+ 			default:
+@@ -352,10 +352,11 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
+ 				check_typos(arg + 1, options);
+ 			while (ctx->opt) {
+ 				if (internal_help && *ctx->opt == 'h')
+-					return parse_options_usage(usagestr, options);
++					return usage_with_options_internal(usagestr, options, 0);
++				arg = ctx->opt;
+ 				switch (parse_short_opt(ctx, options)) {
+ 				case -1:
+-					return parse_options_usage(usagestr, options);
++					return parse_options_usage(usagestr, options, arg, 1);
+ 				case -2:
+ 					/* fake a short option thing to hide the fact that we may have
+ 					 * started to parse aggregated stuff
+@@ -383,12 +384,12 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
+ 		if (internal_help && !strcmp(arg + 2, "help-all"))
+ 			return usage_with_options_internal(usagestr, options, 1);
+ 		if (internal_help && !strcmp(arg + 2, "help"))
+-			return parse_options_usage(usagestr, options);
++			return usage_with_options_internal(usagestr, options, 0);
+ 		if (!strcmp(arg + 2, "list-opts"))
+ 			return PARSE_OPT_LIST;
+ 		switch (parse_long_opt(ctx, arg + 2, options)) {
+ 		case -1:
+-			return parse_options_usage(usagestr, options);
++			return parse_options_usage(usagestr, options, arg + 2, 0);
+ 		case -2:
+ 			goto unknown;
+ 		default:
+@@ -445,6 +446,89 @@ int parse_options(int argc, const char **argv, const struct option *options,
+ #define USAGE_OPTS_WIDTH 24
+ #define USAGE_GAP         2
+ 
++static void print_option_help(const struct option *opts, int full)
++{
++	size_t pos;
++	int pad;
++
++	if (opts->type == OPTION_GROUP) {
++		fputc('\n', stderr);
++		if (*opts->help)
++			fprintf(stderr, "%s\n", opts->help);
++		return;
++	}
++	if (!full && (opts->flags & PARSE_OPT_HIDDEN))
++		return;
++
++	pos = fprintf(stderr, "    ");
++	if (opts->short_name)
++		pos += fprintf(stderr, "-%c", opts->short_name);
++	else
++		pos += fprintf(stderr, "    ");
++
++	if (opts->long_name && opts->short_name)
++		pos += fprintf(stderr, ", ");
++	if (opts->long_name)
++		pos += fprintf(stderr, "--%s", opts->long_name);
++
++	switch (opts->type) {
++	case OPTION_ARGUMENT:
++		break;
++	case OPTION_LONG:
++	case OPTION_U64:
++	case OPTION_INTEGER:
++	case OPTION_UINTEGER:
++		if (opts->flags & PARSE_OPT_OPTARG)
++			if (opts->long_name)
++				pos += fprintf(stderr, "[=<n>]");
++			else
++				pos += fprintf(stderr, "[<n>]");
++		else
++			pos += fprintf(stderr, " <n>");
++		break;
++	case OPTION_CALLBACK:
++		if (opts->flags & PARSE_OPT_NOARG)
++			break;
++		/* FALLTHROUGH */
++	case OPTION_STRING:
++		if (opts->argh) {
++			if (opts->flags & PARSE_OPT_OPTARG)
++				if (opts->long_name)
++					pos += fprintf(stderr, "[=<%s>]", opts->argh);
++				else
++					pos += fprintf(stderr, "[<%s>]", opts->argh);
++			else
++				pos += fprintf(stderr, " <%s>", opts->argh);
++		} else {
++			if (opts->flags & PARSE_OPT_OPTARG)
++				if (opts->long_name)
++					pos += fprintf(stderr, "[=...]");
++				else
++					pos += fprintf(stderr, "[...]");
++			else
++				pos += fprintf(stderr, " ...");
++		}
++		break;
++	default: /* OPTION_{BIT,BOOLEAN,SET_UINT,SET_PTR} */
++	case OPTION_END:
++	case OPTION_GROUP:
++	case OPTION_BIT:
++	case OPTION_BOOLEAN:
++	case OPTION_INCR:
++	case OPTION_SET_UINT:
++	case OPTION_SET_PTR:
++		break;
++	}
++
++	if (pos <= USAGE_OPTS_WIDTH)
++		pad = USAGE_OPTS_WIDTH - pos;
++	else {
++		fputc('\n', stderr);
++		pad = USAGE_OPTS_WIDTH;
++	}
++	fprintf(stderr, "%*s%s\n", pad + USAGE_GAP, "", opts->help);
++}
++
+ int usage_with_options_internal(const char * const *usagestr,
+ 				const struct option *opts, int full)
+ {
+@@ -464,87 +548,9 @@ int usage_with_options_internal(const char * const *usagestr,
+ 	if (opts->type != OPTION_GROUP)
+ 		fputc('\n', stderr);
+ 
+-	for (; opts->type != OPTION_END; opts++) {
+-		size_t pos;
+-		int pad;
+-
+-		if (opts->type == OPTION_GROUP) {
+-			fputc('\n', stderr);
+-			if (*opts->help)
+-				fprintf(stderr, "%s\n", opts->help);
+-			continue;
+-		}
+-		if (!full && (opts->flags & PARSE_OPT_HIDDEN))
+-			continue;
+-
+-		pos = fprintf(stderr, "    ");
+-		if (opts->short_name)
+-			pos += fprintf(stderr, "-%c", opts->short_name);
+-		else
+-			pos += fprintf(stderr, "    ");
+-
+-		if (opts->long_name && opts->short_name)
+-			pos += fprintf(stderr, ", ");
+-		if (opts->long_name)
+-			pos += fprintf(stderr, "--%s", opts->long_name);
++	for (  ; opts->type != OPTION_END; opts++)
++		print_option_help(opts, full);
+ 
+-		switch (opts->type) {
+-		case OPTION_ARGUMENT:
+-			break;
+-		case OPTION_LONG:
+-		case OPTION_U64:
+-		case OPTION_INTEGER:
+-		case OPTION_UINTEGER:
+-			if (opts->flags & PARSE_OPT_OPTARG)
+-				if (opts->long_name)
+-					pos += fprintf(stderr, "[=<n>]");
+-				else
+-					pos += fprintf(stderr, "[<n>]");
+-			else
+-				pos += fprintf(stderr, " <n>");
+-			break;
+-		case OPTION_CALLBACK:
+-			if (opts->flags & PARSE_OPT_NOARG)
+-				break;
+-			/* FALLTHROUGH */
+-		case OPTION_STRING:
+-			if (opts->argh) {
+-				if (opts->flags & PARSE_OPT_OPTARG)
+-					if (opts->long_name)
+-						pos += fprintf(stderr, "[=<%s>]", opts->argh);
+-					else
+-						pos += fprintf(stderr, "[<%s>]", opts->argh);
+-				else
+-					pos += fprintf(stderr, " <%s>", opts->argh);
+-			} else {
+-				if (opts->flags & PARSE_OPT_OPTARG)
+-					if (opts->long_name)
+-						pos += fprintf(stderr, "[=...]");
+-					else
+-						pos += fprintf(stderr, "[...]");
+-				else
+-					pos += fprintf(stderr, " ...");
+-			}
+-			break;
+-		default: /* OPTION_{BIT,BOOLEAN,SET_UINT,SET_PTR} */
+-		case OPTION_END:
+-		case OPTION_GROUP:
+-		case OPTION_BIT:
+-		case OPTION_BOOLEAN:
+-		case OPTION_INCR:
+-		case OPTION_SET_UINT:
+-		case OPTION_SET_PTR:
+-			break;
+-		}
+-
+-		if (pos <= USAGE_OPTS_WIDTH)
+-			pad = USAGE_OPTS_WIDTH - pos;
+-		else {
+-			fputc('\n', stderr);
+-			pad = USAGE_OPTS_WIDTH;
+-		}
+-		fprintf(stderr, "%*s%s\n", pad + USAGE_GAP, "", opts->help);
+-	}
+ 	fputc('\n', stderr);
+ 
+ 	return PARSE_OPT_HELP;
+@@ -559,9 +565,44 @@ void usage_with_options(const char * const *usagestr,
+ }
+ 
+ int parse_options_usage(const char * const *usagestr,
+-			const struct option *opts)
++			const struct option *opts,
++			const char *optstr, bool short_opt)
+ {
+-	return usage_with_options_internal(usagestr, opts, 0);
++	if (!usagestr)
++		return PARSE_OPT_HELP;
++
++	fprintf(stderr, "\n usage: %s\n", *usagestr++);
++	while (*usagestr && **usagestr)
++		fprintf(stderr, "    or: %s\n", *usagestr++);
++	while (*usagestr) {
++		fprintf(stderr, "%s%s\n",
++				**usagestr ? "    " : "",
++				*usagestr);
++		usagestr++;
++	}
++	fputc('\n', stderr);
++
++	for (  ; opts->type != OPTION_END; opts++) {
++		if (short_opt) {
++			if (opts->short_name == *optstr)
++				break;
++			continue;
++		}
++
++		if (opts->long_name == NULL)
++			continue;
++
++		if (!prefixcmp(optstr, opts->long_name))
++			break;
++		if (!prefixcmp(optstr, "no-") &&
++		    !prefixcmp(optstr + 3, opts->long_name))
++			break;
++	}
++
++	if (opts->type != OPTION_END)
++		print_option_help(opts, 0);
++
++	return PARSE_OPT_HELP;
+ }
+ 
+ 
+diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
+index 7bb5999940ca..b0241e28eaf7 100644
+--- a/tools/perf/util/parse-options.h
++++ b/tools/perf/util/parse-options.h
+@@ -158,7 +158,9 @@ struct parse_opt_ctx_t {
+ };
+ 
+ extern int parse_options_usage(const char * const *usagestr,
+-			       const struct option *opts);
++			       const struct option *opts,
++			       const char *optstr,
++			       bool short_opt);
+ 
+ extern void parse_options_start(struct parse_opt_ctx_t *ctx,
+ 				int argc, const char **argv, int flags);
 -- 
 1.7.11.7
 
