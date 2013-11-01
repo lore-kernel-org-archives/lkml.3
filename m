@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079Ab3KAGGZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 02:06:25 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64297 "EHLO
+	id S1754022Ab3KAGHV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 02:07:21 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:45140 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697Ab3KAGGL (ORCPT
+	with ESMTP id S1753417Ab3KAGHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 02:06:11 -0400
-X-AuditID: 9c93016f-b7b28ae00000111e-c9-527344d1bb5b
+	Fri, 1 Nov 2013 02:07:19 -0400
+X-AuditID: 9c93016f-b7b28ae00000111e-c8-5273451512f2
 From: Namhyung Kim <namhyung@kernel.org>
 To: Stanislav Fomichev <stfomichev@yandex-team.ru>
 Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
         acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] perf timechart: always try to print at least 15 tasks
+Subject: Re: [PATCH 2/6] perf timechart: use proc_num to implement --power-only
 References: <1382439412-23713-1-git-send-email-stfomichev@yandex-team.ru>
-	<1382439412-23713-2-git-send-email-stfomichev@yandex-team.ru>
-	<87y55c5xdt.fsf@sejong.aot.lge.com>
-	<20131029092433.GA3406@stfomichev-desktop>
-Date: Fri, 01 Nov 2013 15:06:09 +0900
-In-Reply-To: <20131029092433.GA3406@stfomichev-desktop> (Stanislav Fomichev's
-	message of "Tue, 29 Oct 2013 13:24:33 +0400")
-Message-ID: <878ux864ha.fsf@sejong.aot.lge.com>
+	<1382439412-23713-3-git-send-email-stfomichev@yandex-team.ru>
+	<87txg05wrc.fsf@sejong.aot.lge.com>
+	<20131029092846.GB3406@stfomichev-desktop>
+Date: Fri, 01 Nov 2013 15:07:17 +0900
+In-Reply-To: <20131029092846.GB3406@stfomichev-desktop> (Stanislav Fomichev's
+	message of "Tue, 29 Oct 2013 13:28:46 +0400")
+Message-ID: <874n7w64fe.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -29,37 +29,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stanislav,
+On Tue, 29 Oct 2013 13:28:46 +0400, Stanislav Fomichev wrote:
+>> I don't see how it does same thing.  You mean it by skipping
+>> draw_process_bars() and draw_wakeups() on patch 1?  It'd be better
+>> changelog explains the details.
+> Yes, it depends on the previous patch, I'll add more info to the
+> changelog.
 
-On Tue, 29 Oct 2013 13:24:33 +0400, Stanislav Fomichev wrote:
->> 1. introduce while loop: it's a behavioral change so that it can be a
->> separate patch.  But it seems not checking the process filter - in that
->> case the loop is almost useless IMHO.
-> Could you please elaborate on 'not checking the process filter'?
-
-I meant it doesn't check whether process filter is set.  If the filter
-is set calling determine_display_tasks() multiple times is meaningless
-since it doesn't check the threashold at all.
-
->
-> This loop is for the case when process filter is not set, but when the
-> filter is set it should also work (because determine_display_tasks calls
-> determine_display_tasks_filtered in case of process filter).
-> We just check the return value and loop while number of tasks is not
-> within the desired range (or thresh is zero).
->
->> 2. new -n option: it should update Documentation/perf-timechart.txt
->> also.  And the long option name "number" is too general.
-> Does renaming "number" to "proc-num" sounds ok?
-
-Much better.
-
->
->> 3. two if(proc_num): what is this?  Is it for patch 2?
-> That's for the '-n 0' case, to completely skip tasks information.
->
-> Thanks for your comments, I'll split this patch into two parts and
-> update the docs.
+If so, I think it'd better moving the if () parts into this patch.
 
 Thanks,
 Namhyung
+
+>
+>> And I'd like to keep it as BOOLEAN option - it's simpler and more
+>> straight-forward IMHO.
+>> 
+>> How about adding
+>> 
+>> 	if (power_only)
+>> 		proc_num = 0;
+>> 
+>> after parsing the command line options?
+> Ok, this works too.
