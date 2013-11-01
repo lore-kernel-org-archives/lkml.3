@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750856Ab3KAEPf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 00:15:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36701 "EHLO mx2.suse.de"
+	id S1751108Ab3KAEWr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 00:22:47 -0400
+Received: from gate.crashing.org ([63.228.1.57]:60372 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750710Ab3KAEPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 00:15:34 -0400
-Date: Fri, 1 Nov 2013 15:15:21 +1100
-From: NeilBrown <neilb@suse.de>
-To: Linda Walsh <lkml@tlinx.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: RFE?: why no 'bind' info in /proc/mounts?
-Message-ID: <20131101151521.2fa0b434@notabene.brown>
-In-Reply-To: <5272FE79.30801@tlinx.org>
-References: <5272FE79.30801@tlinx.org>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+	id S1750748Ab3KAEWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 00:22:45 -0400
+Message-ID: <1383279744.28909.26.camel@pasglop>
+Subject: Re: Strange location and name for platform  devices when
+ device-tree is used.
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Date: Fri, 01 Nov 2013 15:22:24 +1100
+In-Reply-To: <20131101145925.66e22f73@notabene.brown>
+References: <20131101145925.66e22f73@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/Lv6/jfWZXtD2eT.5g1zmyQs"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Lv6/jfWZXtD2eT.5g1zmyQs
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2013-11-01 at 14:59 +1100, NeilBrown wrote:
+> and I wonder how relevant it still is in this context.  As platform devices
+> are all in the root of the device-tree and hence are siblings, they must have
+> unique names in the device-tree and  so the platform devices created from
+> them will also have unique names -- won't they?
 
-On Thu, 31 Oct 2013 18:06:01 -0700 Linda Walsh <lkml@tlinx.org> wrote:
+I agree about /sys/devices -> /sys/devices/platform, that makes more
+sense
 
->=20
-> If I only mount 1 file (or a subdir) via "bind", it still shows the entire
-> device being mounted on the "bound" directory.
->=20
-> Is there anyway to get a bit more granularity as to *what* was
-> bound on a name?  (subdir/file..?)
+The problem with names is that we don't *know* that your devices are
+at the root and unique. They don't have to be. I have platforms that
+have several "chips" each containing all the same devices. They need to
+be de-duped.
 
-Take a look in /proc/self/mountinfo.  It contains more useful stuff about t=
-he
-mount table which couldn't be put in /proc/mounts without breaking
-compatibility.
+Maybe the right approach is to build the de-duplication in sysfs
+itself ?
 
-NeilBrown
+Cheers,
+Ben.
 
---Sig_/Lv6/jfWZXtD2eT.5g1zmyQs
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+> Any help understanding and/or fixing this discrepancy greatly appreciated.
+> 
+> The change of name is particularly annoying to me because one of my platform
+> devices is a pwm_bl.c backlight.  With a boardfile I
+> get /sys/class/pwm_backlight.  With devicetree the best I can get
+> is /sys/class/pwm_backlight.23 (or similar).  It would be really nice to have
+> a more stable and sensible name here.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIVAwUBUnMq2Tnsnt1WYoG5AQLOwBAAodLHU2kvmv7QYp0Hfo+Yhd9ig+EXiJXm
-1K8HMvOT9s3TL1nhl6sNMveb767zjmZzIPRADpreHXLBNkvYrLQ/JkEe+mkqfwV4
-5CY40XrMc+vZHbdbi/t/HDeLT2c5SbYAsqY1m+MX9NNxkzx76wieC1ZKAASgmASZ
-Hl+UsXqnBabc3KmKbfSf9Dvo2hvu+nFn/4hVuU2Kvx43uEK8VBw9z9SbvOEoCYLi
-1qm2/VgelxYqqNTHljx4K5CnWrHBvDy5rxN4PHUenb1L7dpK/rBv42Bu1ZMPYWbQ
-bqjFqIt+G9uSB6UV4r1OeeeDzUhfTBWo3n2LzZQuw3h4sdkpN61d8Hw0/I0NbG0/
-2OOowVNi/1wkKORNvUJ5QRk4ksyuLT8EDa/BssiiCOiPQIzlj+gnOrWFtM8xOXGS
-9WNNMumtsTx1IvOgjmZa6Pj2MDvi5LfAi62sPerIjy6Iwzx/QYqKv2skdsorcdzh
-+W9EK8GOD4J1F4lwqe0aiRyGtYISAht0pRfU1cMeGd+j9Zq24UVmWGLWcygzcEbZ
-9io3kZDkyZuqrUjpLVy4dlQIBp/i0acHzNVNsYG5hLWJb8D/3/lVloZO/Q7QTr5h
-7ZnWe7WGyQhvxWBN40fU0wlj75JeTnLro7Z91jIJqhblT7DXch9iW6rY9tM+bNJH
-pYVqN+4sqfM=
-=3Eev
------END PGP SIGNATURE-----
-
---Sig_/Lv6/jfWZXtD2eT.5g1zmyQs--
