@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab3KAU6I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 16:58:08 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:57977 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230Ab3KAU6G (ORCPT
+	id S1754014Ab3KAU6N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 16:58:13 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:10992 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753230Ab3KAU6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 16:58:06 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Richard Weinberger <richard@nod.at>
-CC: Tony Luck <tony.luck@gmail.com>, Madper Xie <cxie@redhat.com>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux EFI <linux-efi@vger.kernel.org>,
-        =?gb2312?B?0Luzyb+l?= <bbboson@gmail.com>
-Subject: RE: [PATCH] Make efi-pstore return a unique id
-Thread-Topic: [PATCH] Make efi-pstore return a unique id
-Thread-Index: AQHO1x11Ng/G6VnJcECFaGjfqkQ0X5oQ08KAgAApt4D//8FFUIAAUlQA///ElKA=
-Date: Fri, 1 Nov 2013 20:57:34 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D47F9DDA4D@USINDEM103.corp.hds.com>
-References: <87ppqk6qvx.fsf@redhat.com>
- <CAFLxGvz3pCevxE43zGnrbX4MxPmwyb=9MVNpzFRpELt1+AmtrA@mail.gmail.com>
- <CA+8MBbJefz7L-C-LnhAAXB5zf-8XoMPhESPU4yd0wnuZ_YqO1w@mail.gmail.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D47F9DD941@USINDEM103.corp.hds.com>
- <52740A3A.70202@nod.at>
-In-Reply-To: <52740A3A.70202@nod.at>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="gb2312"
+	Fri, 1 Nov 2013 16:58:09 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnoGAGoVdFJ5LOn3/2dsb2JhbABZgweDPL1AgR4XdIIlAQEFOhwjEAgDGAklDwUlAyETiAa9NRaPQgeELgOUK4NeikWHRYM6KA
+Date: Sat, 2 Nov 2013 07:58:03 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: bpm@sgi.com, elder@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH] xfs: simplify kmem_{zone_}zalloc
+Message-ID: <20131101205803.GQ4446@dastard>
+References: <52738187.1000807@cn.fujitsu.com>
 MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-11-01_05:2013-11-01,2013-11-01,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1311010179
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52738187.1000807@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rA1KwCvk002155
 
-> What about feeding the bytes of all three integers into a non-cryptographic hash function?
-> Using this way you get a cheap unique id.
+On Fri, Nov 01, 2013 at 06:25:11PM +0800, Gu Zheng wrote:
+> Introduce flag KM_ZERO which is used to alloc zeroed entry, and convert
+> kmem_{zone_}zalloc to call kmem_{zone_}alloc() with KM_ZERO directly,
+> in order to avoid the setting to zero step.
+> 
+> 
+> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> ---
+>  fs/xfs/kmem.c |   14 ++------------
+>  fs/xfs/kmem.h |    7 ++++++-
+>  2 files changed, 8 insertions(+), 13 deletions(-)
+> 
+> diff --git a/fs/xfs/kmem.c b/fs/xfs/kmem.c
+> index a02cfb9..d56fcc9 100644
+> --- a/fs/xfs/kmem.c
+> +++ b/fs/xfs/kmem.c
+> @@ -65,12 +65,7 @@ kmem_alloc(size_t size, xfs_km_flags_t flags)
+>  void *
+>  kmem_zalloc(size_t size, xfs_km_flags_t flags)
+>  {
+> -	void	*ptr;
+> -
+> -	ptr = kmem_alloc(size, flags);
+> -	if (ptr)
+> -		memset((char *)ptr, 0, (int)size);
+> -	return ptr;
+> +	return kmem_alloc(size, flags | KM_ZERO);
+>  }
+>  
+>  void *
+> @@ -132,10 +127,5 @@ kmem_zone_alloc(kmem_zone_t *zone, xfs_km_flags_t flags)
+>  void *
+>  kmem_zone_zalloc(kmem_zone_t *zone, xfs_km_flags_t flags)
+>  {
+> -	void	*ptr;
+> -
+> -	ptr = kmem_zone_alloc(zone, flags);
+> -	if (ptr)
+> -		memset((char *)ptr, 0, kmem_cache_size(zone));
+> -	return ptr;
+> +	return kmem_zone_alloc(zone, flags | KM_ZERO);
+>  }
 
-It is reasonable to me.
+These functions should be made static inline functions in kmem.h
+seeing as they are now just a simple wrapper.
 
-Seiji
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Otherwise it's a nice cleanup.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
