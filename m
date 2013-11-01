@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757141Ab3KAWbN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:31:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55085 "EHLO
+	id S1757126Ab3KAWbM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:31:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55076 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755562Ab3KAWFD (ORCPT
+	with ESMTP id S1755312Ab3KAWFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:05:03 -0400
+	Fri, 1 Nov 2013 18:05:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roel Kluin <roel.kluin@gmail.com>, Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH 3.10 51/54] serial: vt8500: add missing braces
-Date: Fri,  1 Nov 2013 15:04:19 -0700
-Message-Id: <20131101220217.038092010@linuxfoundation.org>
+        =?UTF-8?q?Diego=20Elio=20Petten=C3=B2?= <flameeyes@flameeyes.eu>
+Subject: [PATCH 3.10 52/54] USB: serial: ti_usb_3410_5052: add Abbott strip port ID to combined table as well.
+Date: Fri,  1 Nov 2013 15:04:20 -0700
+Message-Id: <20131101220217.145933835@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,42 +29,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roel Kluin <roel.kluin@gmail.com>
+From: Diego Elio Pettenò <flameeyes@flameeyes.eu>
 
-commit d969de8d83401683420638c8107dcfedb2146f37 upstream.
+commit c9d09dc7ad106492c17c587b6eeb99fe3f43e522 upstream.
 
-Due to missing braces on an if statement, in presence of a device_node a
-port was always assigned -1, regardless of any alias entries in the
-device tree. Conversely, if device_node was NULL, an unitialized port
-ended up being used.
+Without this change, the USB cable for Freestyle Option and compatible
+glucometers will not be detected by the driver.
 
-This patch adds the missing braces, fixing the issues.
-
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
-Acked-by: Tony Prisk <linux@prisktech.co.nz>
+Signed-off-by: Diego Elio Pettenò <flameeyes@flameeyes.eu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/vt8500_serial.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ti_usb_3410_5052.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/tty/serial/vt8500_serial.c
-+++ b/drivers/tty/serial/vt8500_serial.c
-@@ -559,12 +559,13 @@ static int vt8500_serial_probe(struct pl
- 	if (!mmres || !irqres)
- 		return -ENODEV;
- 
--	if (np)
-+	if (np) {
- 		port = of_alias_get_id(np, "serial");
- 		if (port >= VT8500_MAX_PORTS)
- 			port = -1;
--	else
-+	} else {
- 		port = -1;
-+	}
- 
- 	if (port < 0) {
- 		/* calculate the port id */
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -203,6 +203,7 @@ static struct usb_device_id ti_id_table_
+ 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
+ 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
+ 	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_PRODUCT_ID) },
++	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STRIP_PORT_ID) },
+ 	{ USB_DEVICE(TI_VENDOR_ID, FRI2_PRODUCT_ID) },
+ 	{ }
+ };
 
 
