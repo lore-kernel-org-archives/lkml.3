@@ -1,127 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753802Ab3KAGeI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 02:34:08 -0400
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:37142
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751951Ab3KAGeF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 02:34:05 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z551biz1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah8275dh1de097h186068hz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216hbe9i1155h)
-From: Li Xiubo <B47053@freescale.com>
-To: "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-CC: "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "t.figa@samsung.com" <t.figa@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [RFCv2][PATCHv5 0/4] Add Freescale FTM PWM driver.
-Thread-Topic: [RFCv2][PATCHv5 0/4] Add Freescale FTM PWM driver.
-Thread-Index: AQHO1T6krylUwjAGikee2OoD5TyfU5oP6xVA
-Date: Fri, 1 Nov 2013 06:34:00 +0000
-Message-ID: <1DD289F6464F0949A2FCA5AA6DC23F82871744@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1383114204-17264-1-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1383114204-17264-1-git-send-email-Li.Xiubo@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.78]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752614Ab3KAGoH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 02:44:07 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51980 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab3KAGoG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 02:44:06 -0400
+Date: Thu, 31 Oct 2013 23:42:40 -0700
+From: Mark Brown <broonie@kernel.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20131101064240.GN2493@sirena.org.uk>
+References: <20131101134833.7070a5c5@notabene.brown>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QUAc4O4i7jPlU8jt"
+Content-Disposition: inline
+In-Reply-To: <20131101134833.7070a5c5@notabene.brown>
+X-Cookie: You love peace.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 63.239.94.10
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: check for devicetree early.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Therry,
 
-The binding patch has been acked, how about the other patches ?
+--QUAc4O4i7jPlU8jt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If they are all okey, should I sent a another official version again ?
+On Fri, Nov 01, 2013 at 01:48:33PM +1100, NeilBrown wrote:
 
+> The behaviour of regulator core with respect to device-tree and
+> CONFIG_REGULATOR_DUMMY is inconsistent.
 
-Thanks.
+Wei Ni reported this issue and is working on a patch which I'm expecting
+to do this as part of device tree initialisation rather than by faffing
+around with initcall ordering; this will be simpler and more robust
+since there won't be any possibility of races being introduced.
 
+--QUAc4O4i7jPlU8jt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
---
-Xiubo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJSc01WAAoJELSic+t+oim9VdkQAJHYF/DbnsJRX/lcpflaDHUk
+jYNWDXX/F230VXvuBntV9rEwh9RDj1X50Xj2OfZm3ceTP/f6bTUT7mh46O0KKTrU
+4zp4ocHdLybvuozlyYjG0lpvroRb1jKAWQS//9rOGT0H5sJSdEUGTGXiTXt5PZeb
++35cPjUWntHnGwqEl9A7lflBwfsk7/fmcAifZjAm9Rp/byI3HQM9uZMN78aTaop8
+Au28KhtfbLBp9vQb2Cc6hxNbQN+VjtUdLjdowUVU1LCkjwAV5kg3omjLrReGjfom
+jikwHJCCRvZ+UGR1tyTtlfIrDrD5VhDPF038O4SchFkMDmEFb8nI1mjssfUNbhHk
+ZW/EYwhNsiVfSxI7bCFsSvwjqWuWhgprP/Vs5bhWyiCDXwNYKqsU8UqTDyvtW8wF
+WichPgm3Vz+q7QuasU232IrmC9Xrl/igzghGkZUAVVp8qou8r1CrzkAnUjRRtVRO
+8F92XYIMfbhmL1ybZMop46HKQV7SJ0gFwIwvctzJC8DS0j6/FybUhvjzzNH0L/W2
+ybzvCtLjqHwjW6QdpG2HMt8GwQABFQefyZP5Q62KgPGhPtHdhR5dLhvtwS0yi4Ee
+i9vXkzWaedPLh96OZhTMqxF3FviRi7LFm69D7iSgvNPnVD8+S5iJKMuV/ShSIcsN
+xVMSTMZH2Y7NjywFerEQ
+=RNMm
+-----END PGP SIGNATURE-----
 
-
-> Subject: [RFCv2][PATCHv5 0/4] Add Freescale FTM PWM driver.
-> 
-> Hello,
-> 
-> This patch series is the Freescale FTM PWM implementation. And there are
-> 8 channels most supported by the FTM PWM. This implementation is only
-> compatible with device tree definition.
-> 
-> This patch series is based on linux-next and has been tested on Vybrid
-> VF610 Tower board using device tree.
-> 
-> 
-> 
-> Changes in RFCv2 of PATVHv5:
-> - Remove "fsl,pwm-counter-clk"(all the four patches are modified).
-> 
-> Changes in v5:
-> - Remove active/idle pinctrl stuff.
-> 
-> Changes in v4:
-> - Check for the result and return an error for devm_kzalloc().
-> - Move pinmux setting from the SoC file to the board specific file.
-> - Revise the written mistake of 'ret |= FTMSC_CLKEXT;' --> 'reg |=
-> FTMSC_CLKEXT;'.
-> 
-> 
-> Changes in v3:
-> - Remove "availabe" field.
-> - Remove "fsl,pwm-avaliable-chs" property.
-> - ...
-> 
-> Changes in v2:
-> - Remove PWM CPWM/EPWM feature and sysfs.
-> - Remove some redundant code.
-> - Revise some code for more readable.
-> - Remove "fsl,pwm-clk-ps", "fsl,pwm-number", "fsl,pwm-channels",etc.
-> - Add "fsl,pwm-avaliable-chs", "fsl,pwm-counter-clk", etc.
-> - Support 8 channels default in dtsi file.
-> - Add counter clock source selection.
-> - Rename some function name, macro name, etc.
-> - Use PWM's and OF's existing function interfaces.
-> - Split clk_unprepare_enable to clk_unprepare and clk_enable,etc.
-> - ...
-> 
-> Added in v1:
-> - Add Freescale FTM PWM driver support.
-> - Add Freescale FTM PWM node for VF610.
-> - Enable Enables FTM PWM device for Vybrid VF610 TOWER.
-> - Add device tree bindings for Freescale.
-> 
-> 
-> 
-> 
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
-
+--QUAc4O4i7jPlU8jt--
