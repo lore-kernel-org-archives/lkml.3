@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579Ab3KAN32 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 09:29:28 -0400
-Received: from forward14.mail.yandex.net ([95.108.130.92]:33370 "EHLO
-	forward14.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976Ab3KAN31 (ORCPT
+	id S1753282Ab3KAN3z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 09:29:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47943 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040Ab3KAN3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 09:29:27 -0400
-X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Nov 2013 09:29:27 EDT
-Authentication-Results: smtp13.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Message-ID: <5273AC0E.3010005@yandex.ru>
-Date: Fri, 01 Nov 2013 17:26:38 +0400
-From: =?UTF-8?B?0JDQu9C10LrRgdC10Lkg0JrRgNCw0LzQsNGA0LXQvdC60L4=?= 
-	<alexeyk13@yandex.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131008 Thunderbird/17.0.9
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Fri, 1 Nov 2013 09:29:54 -0400
+Date: Fri, 1 Nov 2013 06:31:10 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tomas Henzl <thenzl@redhat.com>
+Cc: scameron@beardog.cce.hp.com, Jens Axboe <axboe@kernel.dk>,
+        stephenmcameron@gmail.com, mikem@beardog.cce.hp.com,
         linux-kernel@vger.kernel.org
-Subject: FTDI custom VID/PID patch
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH] cciss: return 0 from driver probe function on success,
+ not 1
+Message-Id: <20131101063110.6a390f48.akpm@linux-foundation.org>
+In-Reply-To: <5273A765.6080705@redhat.com>
+References: <20131029184135.5505.77412.stgit@beardog.cce.hp.com>
+	<52700541.70405@kernel.dk>
+	<20131031144241.25090ab7a6c0b668c5c1c2b2@linux-foundation.org>
+	<20131031215444.GN31390@beardog.cce.hp.com>
+	<20131031150618.fa9430269e0de7a5ebad1387@linux-foundation.org>
+	<5273A765.6080705@redhat.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg.
+On Fri, 01 Nov 2013 14:06:45 +0100 Tomas Henzl <thenzl@redhat.com> wrote:
 
-It's my first patch, sorry if something wrong.
+> The problem in kernel is that the error handling in local_pci_probe
+> and  in __pci_device_probe is different for ret values > 0,
+> so we should fix it somewhere so it is in sync.
+> The documentation states that the probe function should return zero on success
+> so what about this -
+> 
+> This would bring the handling to sync
+> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+> index 98f7b9b..200a071 100644
+> --- a/drivers/pci/pci-driver.c
+> +++ b/drivers/pci/pci-driver.c
+> @@ -317,8 +317,6 @@ __pci_device_probe(struct pci_driver *drv, struct pci_dev *pci_dev)
+>  		id = pci_match_device(drv, pci_dev);
+>  		if (id)
+>  			error = pci_call_probe(drv, pci_dev, id);
+> -		if (error >= 0)
+> -			error = 0;
+>  	}
+>  	return error;
+>  }
 
-Custom VID/PID for Z3X Box device, popular tool for cellphone flashing.
+ah, there it is.
 
-diff -uprN -X linux-3.11.6-vanilla/Documentation/dontdiff
-linux-3.11.6-vanilla/drivers/usb/serial/ftdi_sio.c
-linux-3.11.6-devel/drivers/usb/serial/ftdi_sio.c
---- linux-3.11.6-vanilla/drivers/usb/serial/ftdi_sio.c  2013-10-18
-22:24:16.000000000 +0400
-+++ linux-3.11.6-devel/drivers/usb/serial/ftdi_sio.c    2013-11-01
-16:53:25.518999202 +0400
-@@ -906,6 +906,7 @@ static struct usb_device_id id_table_com
-        { USB_DEVICE(FTDI_VID, FTDI_LUMEL_PD12_PID) },
-        /* Crucible Devices */
-        { USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
-+       { USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
-        { },                                    /* Optional parameter
-entry */
-        { }                                     /* Terminating entry */
- };
-diff -uprN -X linux-3.11.6-vanilla/Documentation/dontdiff
-linux-3.11.6-vanilla/drivers/usb/serial/ftdi_sio_ids.h
-linux-3.11.6-devel/drivers/usb/serial/ftdi_sio_ids.h
---- linux-3.11.6-vanilla/drivers/usb/serial/ftdi_sio_ids.h     
-2013-10-18 22:24:16.000000000 +0400
-+++ linux-3.11.6-devel/drivers/usb/serial/ftdi_sio_ids.h       
-2013-11-01 16:52:37.288999208 +0400
-@@ -1307,3 +1307,9 @@
-  * Manufacturer: Crucible Technologies
-  */
- #define FTDI_CT_COMET_PID      0x8e08
-+
-+/*
-+ * Product: Z3X Box
-+ * Manufacturer: Smart GSM Team
-+ */
-+#define FTDI_Z3X_PID    0x0011
+This change would turn semi-kaput drivers into kaput-kaput drivers.  It
+would be better to add a runtime warning here so those drivers get
+fixed.  Such a warning would need to reliably identify the offending
+probe function so a simple WARN_ON() wouldn't be sufficient.
 
-Signed-off-by: Alexey E. Kramarenko <alexeyk13@yandex.ru>
 
