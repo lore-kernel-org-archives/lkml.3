@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757004Ab3KAW2V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:28:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55281 "EHLO
+	id S1756118Ab3KAWHs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:07:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55263 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756127Ab3KAWHu (ORCPT
+	with ESMTP id S1754848Ab3KAWHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:07:50 -0400
+	Fri, 1 Nov 2013 18:07:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthias Schiffer <mschiffer@universe-factory.net>,
-        Marek Lindner <mareklindner@neomailbox.ch>,
-        Antonio Quartulli <antonio@meshcoding.com>
-Subject: [PATCH 3.11 07/66] batman-adv: set up network coding packet handlers during module init
-Date: Fri,  1 Nov 2013 15:06:43 -0700
-Message-Id: <20131101220636.870196713@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.11 03/66] tcp: must unclone packets before mangling them
+Date: Fri,  1 Nov 2013 15:06:39 -0700
+Message-Id: <20131101220635.931878380@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -28,156 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthias Schiffer <mschiffer@universe-factory.net>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 6c519bad7b19a2c14a075b400edabaa630330123 ]
+[ Upstream commit c52e2421f7368fd36cbe330d2cf41b10452e39a9 ]
 
-batman-adv saves its table of packet handlers as a global state, so handlers
-must be set up only once (and setting them up a second time will fail).
+TCP stack should make sure it owns skbs before mangling them.
 
-The recently-added network coding support tries to set up its handler each time
-a new softif is registered, which obviously fails when more that one softif is
-used (and in consequence, the softif creation fails).
+We had various crashes using bnx2x, and it turned out gso_size
+was cleared right before bnx2x driver was populating TC descriptor
+of the _previous_ packet send. TCP stack can sometime retransmit
+packets that are still in Qdisc.
 
-Fix this by splitting up batadv_nc_init into batadv_nc_init (which is called
-only once) and batadv_nc_mesh_init (which is called for each softif); in
-addition batadv_nc_free is renamed to batadv_nc_mesh_free to keep naming
-consistent.
+Of course we could make bnx2x driver more robust (using
+ACCESS_ONCE(shinfo->gso_size) for example), but the bug is TCP stack.
 
-Signed-off-by: Matthias Schiffer <mschiffer@universe-factory.net>
-Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
-Signed-off-by: Antonio Quartulli <antonio@meshcoding.com>
+We have identified two points where skb_unclone() was needed.
+
+This patch adds a WARN_ON_ONCE() to warn us if we missed another
+fix of this kind.
+
+Kudos to Neal for finding the root cause of this bug. Its visible
+using small MSS.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/batman-adv/main.c           |    5 +++--
- net/batman-adv/network-coding.c |   28 ++++++++++++++++++----------
- net/batman-adv/network-coding.h |   14 ++++++++++----
- 3 files changed, 31 insertions(+), 16 deletions(-)
+ net/ipv4/tcp_output.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/net/batman-adv/main.c
-+++ b/net/batman-adv/main.c
-@@ -61,6 +61,7 @@ static int __init batadv_init(void)
- 	batadv_recv_handler_init();
- 
- 	batadv_iv_init();
-+	batadv_nc_init();
- 
- 	batadv_event_workqueue = create_singlethread_workqueue("bat_events");
- 
-@@ -138,7 +139,7 @@ int batadv_mesh_init(struct net_device *
- 	if (ret < 0)
- 		goto err;
- 
--	ret = batadv_nc_init(bat_priv);
-+	ret = batadv_nc_mesh_init(bat_priv);
- 	if (ret < 0)
- 		goto err;
- 
-@@ -163,7 +164,7 @@ void batadv_mesh_free(struct net_device
- 	batadv_vis_quit(bat_priv);
- 
- 	batadv_gw_node_purge(bat_priv);
--	batadv_nc_free(bat_priv);
-+	batadv_nc_mesh_free(bat_priv);
- 	batadv_dat_free(bat_priv);
- 	batadv_bla_free(bat_priv);
- 
---- a/net/batman-adv/network-coding.c
-+++ b/net/batman-adv/network-coding.c
-@@ -35,6 +35,20 @@ static int batadv_nc_recv_coded_packet(s
- 				       struct batadv_hard_iface *recv_if);
- 
- /**
-+ * batadv_nc_init - one-time initialization for network coding
-+ */
-+int __init batadv_nc_init(void)
-+{
-+	int ret;
-+
-+	/* Register our packet type */
-+	ret = batadv_recv_handler_register(BATADV_CODED,
-+					   batadv_nc_recv_coded_packet);
-+
-+	return ret;
-+}
-+
-+/**
-  * batadv_nc_start_timer - initialise the nc periodic worker
-  * @bat_priv: the bat priv with all the soft interface information
-  */
-@@ -45,10 +59,10 @@ static void batadv_nc_start_timer(struct
- }
- 
- /**
-- * batadv_nc_init - initialise coding hash table and start house keeping
-+ * batadv_nc_mesh_init - initialise coding hash table and start house keeping
-  * @bat_priv: the bat priv with all the soft interface information
-  */
--int batadv_nc_init(struct batadv_priv *bat_priv)
-+int batadv_nc_mesh_init(struct batadv_priv *bat_priv)
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -981,6 +981,9 @@ static void tcp_queue_skb(struct sock *s
+ static void tcp_set_skb_tso_segs(const struct sock *sk, struct sk_buff *skb,
+ 				 unsigned int mss_now)
  {
- 	bat_priv->nc.timestamp_fwd_flush = jiffies;
- 	bat_priv->nc.timestamp_sniffed_purge = jiffies;
-@@ -70,11 +84,6 @@ int batadv_nc_init(struct batadv_priv *b
- 	batadv_hash_set_lock_class(bat_priv->nc.coding_hash,
- 				   &batadv_nc_decoding_hash_lock_class_key);
- 
--	/* Register our packet type */
--	if (batadv_recv_handler_register(BATADV_CODED,
--					 batadv_nc_recv_coded_packet) < 0)
--		goto err;
--
- 	INIT_DELAYED_WORK(&bat_priv->nc.work, batadv_nc_worker);
- 	batadv_nc_start_timer(bat_priv);
- 
-@@ -1721,12 +1730,11 @@ free_nc_packet:
- }
- 
- /**
-- * batadv_nc_free - clean up network coding memory
-+ * batadv_nc_mesh_free - clean up network coding memory
-  * @bat_priv: the bat priv with all the soft interface information
-  */
--void batadv_nc_free(struct batadv_priv *bat_priv)
-+void batadv_nc_mesh_free(struct batadv_priv *bat_priv)
- {
--	batadv_recv_handler_unregister(BATADV_CODED);
- 	cancel_delayed_work_sync(&bat_priv->nc.work);
- 
- 	batadv_nc_purge_paths(bat_priv, bat_priv->nc.coding_hash, NULL);
---- a/net/batman-adv/network-coding.h
-+++ b/net/batman-adv/network-coding.h
-@@ -22,8 +22,9 @@
- 
- #ifdef CONFIG_BATMAN_ADV_NC
- 
--int batadv_nc_init(struct batadv_priv *bat_priv);
--void batadv_nc_free(struct batadv_priv *bat_priv);
-+int batadv_nc_init(void);
-+int batadv_nc_mesh_init(struct batadv_priv *bat_priv);
-+void batadv_nc_mesh_free(struct batadv_priv *bat_priv);
- void batadv_nc_update_nc_node(struct batadv_priv *bat_priv,
- 			      struct batadv_orig_node *orig_node,
- 			      struct batadv_orig_node *orig_neigh_node,
-@@ -46,12 +47,17 @@ int batadv_nc_init_debugfs(struct batadv
- 
- #else /* ifdef CONFIG_BATMAN_ADV_NC */
- 
--static inline int batadv_nc_init(struct batadv_priv *bat_priv)
-+static inline int batadv_nc_init(void)
- {
- 	return 0;
- }
- 
--static inline void batadv_nc_free(struct batadv_priv *bat_priv)
-+static inline int batadv_nc_mesh_init(struct batadv_priv *bat_priv)
-+{
-+	return 0;
-+}
++	/* Make sure we own this skb before messing gso_size/gso_segs */
++	WARN_ON_ONCE(skb_cloned(skb));
 +
-+static inline void batadv_nc_mesh_free(struct batadv_priv *bat_priv)
- {
- 	return;
- }
+ 	if (skb->len <= mss_now || !sk_can_gso(sk) ||
+ 	    skb->ip_summed == CHECKSUM_NONE) {
+ 		/* Avoid the costly divide in the normal
+@@ -1062,9 +1065,7 @@ int tcp_fragment(struct sock *sk, struct
+ 	if (nsize < 0)
+ 		nsize = 0;
+ 
+-	if (skb_cloned(skb) &&
+-	    skb_is_nonlinear(skb) &&
+-	    pskb_expand_head(skb, 0, 0, GFP_ATOMIC))
++	if (skb_unclone(skb, GFP_ATOMIC))
+ 		return -ENOMEM;
+ 
+ 	/* Get a new skb... force flag on. */
+@@ -2339,6 +2340,8 @@ int __tcp_retransmit_skb(struct sock *sk
+ 		int oldpcount = tcp_skb_pcount(skb);
+ 
+ 		if (unlikely(oldpcount > 1)) {
++			if (skb_unclone(skb, GFP_ATOMIC))
++				return -ENOMEM;
+ 			tcp_init_tso_segs(sk, skb, cur_mss);
+ 			tcp_adjust_pcount(sk, skb, oldpcount - tcp_skb_pcount(skb));
+ 		}
 
 
