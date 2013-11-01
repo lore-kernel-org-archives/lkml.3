@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab3KAVs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 17:48:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54554 "EHLO
+	id S1755654Ab3KAVsl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 17:48:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54549 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754516Ab3KAVoA (ORCPT
+	with ESMTP id S1751639Ab3KAVn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 17:44:00 -0400
+	Fri, 1 Nov 2013 17:43:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Eilon Greenstein <eilong@broadcom.com>,
+        Dmitry Kravkov <dmitry@broadcom.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 18/32] net: dst: provide accessor function to dst->xfrm
-Date: Fri,  1 Nov 2013 14:43:29 -0700
-Message-Id: <20131101214317.990004865@linuxfoundation.org>
+Subject: [ 17/32] bnx2x: record rx queue for LRO packets
+Date: Fri,  1 Nov 2013 14:43:28 -0700
+Message-Id: <20131101214317.722764477@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101214313.735463599@linuxfoundation.org>
 References: <20131101214313.735463599@linuxfoundation.org>
@@ -28,45 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevich@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit e87b3998d795123b4139bc3f25490dd236f68212 ]
+[ Upstream commit 60e66fee56b2256dcb1dc2ea1b2ddcb6e273857d ]
 
-dst->xfrm is conditionally defined.  Provide accessor funtion that
-is always available.
+RPS support is kind of broken on bnx2x, because only non LRO packets
+get proper rx queue information. This triggers reorders, as it seems
+bnx2x like to generate a non LRO packet for segment including TCP PUSH
+flag : (this might be pure coincidence, but all the reorders I've
+seen involve segments with a PUSH)
 
-Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+11:13:34.335847 IP A > B: . 415808:447136(31328) ack 1 win 457 <nop,nop,timestamp 3789336 3985797>
+11:13:34.335992 IP A > B: . 447136:448560(1424) ack 1 win 457 <nop,nop,timestamp 3789336 3985797>
+11:13:34.336391 IP A > B: . 448560:479888(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985797>
+11:13:34.336425 IP A > B: P 511216:512640(1424) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+11:13:34.336423 IP A > B: . 479888:511216(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+11:13:34.336924 IP A > B: . 512640:543968(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+11:13:34.336963 IP A > B: . 543968:575296(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+
+We must call skb_record_rx_queue() to properly give to RPS (and more
+generally for TX queue selection on forward path) the receive queue
+information.
+
+Similar fix is needed for skb_mark_napi_id(), but will be handled
+in a separate patch to ease stable backports.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Willem de Bruijn <willemb@google.com>
+Cc: Eilon Greenstein <eilong@broadcom.com>
+Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/dst.h |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/include/net/dst.h
-+++ b/include/net/dst.h
-@@ -464,10 +464,22 @@ static inline struct dst_entry *xfrm_loo
- {
- 	return dst_orig;
- } 
-+
-+static inline struct xfrm_state *dst_xfrm(const struct dst_entry *dst)
-+{
-+	return NULL;
-+}
-+
- #else
- extern struct dst_entry *xfrm_lookup(struct net *net, struct dst_entry *dst_orig,
- 				     const struct flowi *fl, struct sock *sk,
- 				     int flags);
-+
-+/* skb attached with this dst needs transformation if dst->xfrm is valid */
-+static inline struct xfrm_state *dst_xfrm(const struct dst_entry *dst)
-+{
-+	return dst->xfrm;
-+}
- #endif
- 
- #endif /* _NET_DST_H */
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -547,6 +547,7 @@ static inline void bnx2x_tpa_stop(struct
+ 					 skb, cqe, cqe_idx)) {
+ 			if (tpa_info->parsing_flags & PARSING_FLAGS_VLAN)
+ 				__vlan_hwaccel_put_tag(skb, tpa_info->vlan_tag);
++			skb_record_rx_queue(skb, fp->rx_queue);
+ 			napi_gro_receive(&fp->napi, skb);
+ 		} else {
+ 			DP(NETIF_MSG_RX_STATUS,
 
 
