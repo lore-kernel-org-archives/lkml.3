@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596Ab3KAWJJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:09:09 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:48587 "EHLO
+	id S1756577Ab3KAWJI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:09:08 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48592 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756549Ab3KAWJE (ORCPT
+	with ESMTP id S1756551Ab3KAWJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Nov 2013 18:09:04 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
-Cc: David Brown <davidb@codeaurora.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>
-Subject: [PATCH 05/11] ARM: Introduce CPU_METHOD_OF_DECLARE() for cpu hotplug/smp
-Date: Fri,  1 Nov 2013 15:08:53 -0700
-Message-Id: <1383343739-23080-6-git-send-email-sboyd@codeaurora.org>
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH 06/11] ARM: msm: Remove pen_release usage
+Date: Fri,  1 Nov 2013 15:08:54 -0700
+Message-Id: <1383343739-23080-7-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.4.2.564.g0d6cf24
 In-Reply-To: <1383343739-23080-1-git-send-email-sboyd@codeaurora.org>
 References: <1383343739-23080-1-git-send-email-sboyd@codeaurora.org>
@@ -23,153 +22,209 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The goal of multi-platform kernels is to remove the need for mach
-directories and machine descriptors. To further that goal,
-introduce CPU_METHOD_OF_DECLARE() to allow cpu hotplug/smp
-support to be separated from the machine descriptors.
-Implementers should specify an enable-method property in their
-cpus node and then implement a matching set of smp_ops in their
-hotplug/smp code, wiring it up with the CPU_METHOD_OF_DECLARE()
-macro. When the kernel is compiled we'll collect all the
-enable-method smp_ops into one section for use at boot.
+From: Rohit Vaswani <rvaswani@codeaurora.org>
 
-At boot time we'll look for an enable-method in each cpu node and
-try to match that against all known CPU enable methods in the
-kernel. If there are no enable-methods in the cpu nodes we
-fallback to the cpus node and try to use any enable-method found
-there. If that doesn't work we fall back to the old way of using
-the machine descriptor.
+pen_release is no longer required as the synchronization
+is now managed by generic arm code.
+This is done as suggested in https://lkml.org/lkml/2013/6/4/184
 
-Cc: Mark Rutland <mark.rutland@arm.com>
 Cc: Russell King <linux@arm.linux.org.uk>
-Cc: <devicetree@vger.kernel.org>
+Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/include/asm/smp.h        |  9 +++++++++
- arch/arm/kernel/devtree.c         | 38 ++++++++++++++++++++++++++++++++++++++
- include/asm-generic/vmlinux.lds.h | 10 ++++++++++
- 3 files changed, 57 insertions(+)
+ arch/arm/mach-msm/Makefile  |  2 +-
+ arch/arm/mach-msm/headsmp.S | 39 ---------------------------------------
+ arch/arm/mach-msm/hotplug.c | 31 ++++---------------------------
+ arch/arm/mach-msm/platsmp.c | 35 +++--------------------------------
+ 4 files changed, 8 insertions(+), 99 deletions(-)
+ delete mode 100644 arch/arm/mach-msm/headsmp.S
 
-diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
-index a8cae71c..c27ec55 100644
---- a/arch/arm/include/asm/smp.h
-+++ b/arch/arm/include/asm/smp.h
-@@ -112,6 +112,15 @@ struct smp_operations {
- #endif
- };
+diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+index 7ed4c1b..15562cf 100644
+--- a/arch/arm/mach-msm/Makefile
++++ b/arch/arm/mach-msm/Makefile
+@@ -19,7 +19,7 @@ obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
+ CFLAGS_scm.o :=$(call as-instr,.arch_extension sec,-DREQUIRES_SEC=1)
  
-+struct of_cpu_method {
-+	const char *method;
-+	struct smp_operations *ops;
-+};
-+
-+#define CPU_METHOD_OF_DECLARE(name, _method, _ops)			\
-+	static const struct of_cpu_method __cpu_method_of_table_##name	\
-+		__used __section(__cpu_method_of_table)			\
-+		= { .method = _method, .ops = _ops }
- /*
-  * set platform specific SMP operations
-  */
-diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
-index f35906b..71a8592 100644
---- a/arch/arm/kernel/devtree.c
-+++ b/arch/arm/kernel/devtree.c
-@@ -25,6 +25,7 @@
- #include <asm/smp_plat.h>
- #include <asm/mach/arch.h>
- #include <asm/mach-types.h>
-+#include <asm/smp.h>
+ obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
+-obj-$(CONFIG_SMP) += headsmp.o platsmp.o
++obj-$(CONFIG_SMP) += platsmp.o
  
- void __init early_init_dt_add_memory_arch(u64 base, u64 size)
+ obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
+ obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o board-trout-panel.o devices-msm7x00.o
+diff --git a/arch/arm/mach-msm/headsmp.S b/arch/arm/mach-msm/headsmp.S
+deleted file mode 100644
+index 6c62c3f..0000000
+--- a/arch/arm/mach-msm/headsmp.S
++++ /dev/null
+@@ -1,39 +0,0 @@
+-/*
+- *  linux/arch/arm/mach-realview/headsmp.S
+- *
+- *  Copyright (c) 2003 ARM Limited
+- *  All Rights Reserved
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-#include <linux/linkage.h>
+-#include <linux/init.h>
+-
+-/*
+- * MSM specific entry point for secondary CPUs.  This provides
+- * a "holding pen" into which all secondary cores are held until we're
+- * ready for them to initialise.
+- */
+-ENTRY(msm_secondary_startup)
+-	mrc	p15, 0, r0, c0, c0, 5
+-	and	r0, r0, #15
+-	adr	r4, 1f
+-	ldmia	r4, {r5, r6}
+-	sub	r4, r4, r5
+-	add	r6, r6, r4
+-pen:	ldr	r7, [r6]
+-	cmp	r7, r0
+-	bne	pen
+-
+-	/*
+-	 * we've been released from the holding pen: secondary_stack
+-	 * should now contain the SVC stack for this core
+-	 */
+-	b	secondary_startup
+-ENDPROC(msm_secondary_startup)
+-
+-	.align
+-1:	.long	.
+-	.long	pen_release
+diff --git a/arch/arm/mach-msm/hotplug.c b/arch/arm/mach-msm/hotplug.c
+index 326a872..cea80fc 100644
+--- a/arch/arm/mach-msm/hotplug.c
++++ b/arch/arm/mach-msm/hotplug.c
+@@ -24,33 +24,10 @@ static inline void cpu_leave_lowpower(void)
+ 
+ static inline void platform_do_lowpower(unsigned int cpu)
  {
-@@ -63,6 +64,36 @@ void __init arm_dt_memblock_reserve(void)
- 	}
+-	/* Just enter wfi for now. TODO: Properly shut off the cpu. */
+-	for (;;) {
+-		/*
+-		 * here's the WFI
+-		 */
+-		asm("wfi"
+-		    :
+-		    :
+-		    : "memory", "cc");
+-
+-		if (pen_release == cpu_logical_map(cpu)) {
+-			/*
+-			 * OK, proper wakeup, we're done
+-			 */
+-			break;
+-		}
+-
+-		/*
+-		 * getting here, means that we have come out of WFI without
+-		 * having been woken up - this shouldn't happen
+-		 *
+-		 * The trouble is, letting people know about this is not really
+-		 * possible, since we are currently running incoherently, and
+-		 * therefore cannot safely call printk() or anything else
+-		 */
+-		pr_debug("CPU%u: spurious wakeup call\n", cpu);
+-	}
++	asm("wfi"
++	    :
++	    :
++	    : "memory", "cc");
  }
  
-+#ifdef CONFIG_SMP
-+extern struct of_cpu_method __cpu_method_of_table[];
-+
-+static const struct of_cpu_method __cpu_method_of_table_sentinel
-+	__used __section(__cpu_method_of_table_end);
-+
-+static int __init set_smp_ops_by_method(struct device_node *node)
-+{
-+	const char *method;
-+	struct of_cpu_method *m = __cpu_method_of_table;
-+
-+	if (of_property_read_string(node, "enable-method", &method))
-+		return 0;
-+
-+	for (; m != &__cpu_method_of_table_sentinel; m++)
-+		if (!strcmp(m->method, method)) {
-+			smp_set_ops(m->ops);
-+			return 1;
-+		}
-+
-+	return 0;
-+}
-+#else
-+static inline int set_smp_ops_by_method(struct device_node *node)
-+{
-+	return 1;
-+}
-+#endif
-+
-+
  /*
-  * arm_dt_init_cpu_maps - Function retrieves cpu nodes from the device tree
-  * and builds the cpu logical map array containing MPIDR values related to
-@@ -79,6 +110,7 @@ void __init arm_dt_init_cpu_maps(void)
- 	 * read as 0.
+diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
+index 3f06edc..5b481db 100644
+--- a/arch/arm/mach-msm/platsmp.c
++++ b/arch/arm/mach-msm/platsmp.c
+@@ -28,7 +28,7 @@
+ #define SCSS_CPU1CORE_RESET 0xD80
+ #define SCSS_DBG_STATUS_CORE_PWRDUP 0xE64
+ 
+-extern void msm_secondary_startup(void);
++extern void secondary_startup(void);
+ 
+ static DEFINE_SPINLOCK(boot_lock);
+ 
+@@ -41,13 +41,6 @@ static inline int get_core_count(void)
+ static void msm_secondary_init(unsigned int cpu)
+ {
+ 	/*
+-	 * let the primary processor know we're out of the
+-	 * pen, then head off into the C entry point
+-	 */
+-	pen_release = -1;
+-	smp_wmb();
+-
+-	/*
+ 	 * Synchronise with the boot thread.
  	 */
- 	struct device_node *cpu, *cpus;
-+	int found_method = 0;
- 	u32 i, j, cpuidx = 1;
- 	u32 mpidr = is_smp() ? read_cpuid_mpidr() & MPIDR_HWID_BITMASK : 0;
+ 	spin_lock(&boot_lock);
+@@ -57,7 +50,7 @@ static void msm_secondary_init(unsigned int cpu)
+ static void prepare_cold_cpu(unsigned int cpu)
+ {
+ 	int ret;
+-	ret = scm_set_boot_addr(virt_to_phys(msm_secondary_startup),
++	ret = scm_set_boot_addr(virt_to_phys(secondary_startup),
+ 				SCM_FLAG_COLDBOOT_CPU1);
+ 	if (ret == 0) {
+ 		void __iomem *sc1_base_ptr;
+@@ -75,7 +68,6 @@ static void prepare_cold_cpu(unsigned int cpu)
  
-@@ -150,8 +182,14 @@ void __init arm_dt_init_cpu_maps(void)
- 		}
+ static int msm_boot_secondary(unsigned int cpu, struct task_struct *idle)
+ {
+-	unsigned long timeout;
+ 	static int cold_boot_done;
  
- 		tmp_map[i] = hwid;
-+
-+		if (!found_method)
-+			found_method = set_smp_ops_by_method(cpu);
- 	}
+ 	/* Only need to bring cpu out of reset this way once */
+@@ -91,40 +83,19 @@ static int msm_boot_secondary(unsigned int cpu, struct task_struct *idle)
+ 	spin_lock(&boot_lock);
  
-+	if (!found_method)
-+		set_smp_ops_by_method(cpus);
-+
- 	if (!bootcpu_valid) {
- 		pr_warn("DT missing boot CPU MPIDR[23:0], fall back to default cpu_logical_map\n");
- 		return;
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 83e2c31..918b1b5 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -167,6 +167,15 @@
- #define CLK_OF_TABLES()
- #endif
+ 	/*
+-	 * The secondary processor is waiting to be released from
+-	 * the holding pen - release it, then wait for it to flag
+-	 * that it has been released by resetting pen_release.
+-	 *
+-	 * Note that "pen_release" is the hardware CPU ID, whereas
+-	 * "cpu" is Linux's internal ID.
+-	 */
+-	pen_release = cpu_logical_map(cpu);
+-	__cpuc_flush_dcache_area((void *)&pen_release, sizeof(pen_release));
+-	outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
+-
+-	/*
+ 	 * Send the secondary CPU a soft interrupt, thereby causing
+ 	 * the boot monitor to read the system wide flags register,
+ 	 * and branch to the address found there.
+ 	 */
+ 	arch_send_wakeup_ipi_mask(cpumask_of(cpu));
  
-+#ifdef CONFIG_SMP
-+#define CPU_METHOD_OF_TABLES() . = ALIGN(8);				\
-+			   VMLINUX_SYMBOL(__cpu_method_of_table) = .;	\
-+			   *(__cpu_method_of_table)			\
-+			   *(__cpu_method_of_table_end)
-+#else
-+#define CPU_METHOD_OF_TABLES()
-+#endif
-+
- #define KERNEL_DTB()							\
- 	STRUCT_ALIGN();							\
- 	VMLINUX_SYMBOL(__dtb_start) = .;				\
-@@ -490,6 +499,7 @@
- 	MEM_DISCARD(init.rodata)					\
- 	CLK_OF_TABLES()							\
- 	CLKSRC_OF_TABLES()						\
-+	CPU_METHOD_OF_TABLES()						\
- 	KERNEL_DTB()							\
- 	IRQCHIP_OF_MATCH_TABLE()
+-	timeout = jiffies + (1 * HZ);
+-	while (time_before(jiffies, timeout)) {
+-		smp_rmb();
+-		if (pen_release == -1)
+-			break;
+-
+-		udelay(10);
+-	}
+-
+ 	/*
+ 	 * now the secondary core is starting up let it run its
+ 	 * calibrations, then wait for it to finish
+ 	 */
+ 	spin_unlock(&boot_lock);
  
+-	return pen_release != -1 ? -ENOSYS : 0;
++	return 0;
+ }
+ 
+ /*
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
