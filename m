@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab3KAW17 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:27:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55286 "EHLO
+	id S1757004Ab3KAW2V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:28:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55281 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756137Ab3KAWHv (ORCPT
+	with ESMTP id S1756127Ab3KAWHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:07:51 -0400
+	Fri, 1 Nov 2013 18:07:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 09/66] l2tp: Fix build warning with ipv6 disabled.
-Date: Fri,  1 Nov 2013 15:06:45 -0700
-Message-Id: <20131101220637.355804011@linuxfoundation.org>
+        Matthias Schiffer <mschiffer@universe-factory.net>,
+        Marek Lindner <mareklindner@neomailbox.ch>,
+        Antonio Quartulli <antonio@meshcoding.com>
+Subject: [PATCH 3.11 07/66] batman-adv: set up network coding packet handlers during module init
+Date: Fri,  1 Nov 2013 15:06:43 -0700
+Message-Id: <20131101220636.870196713@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,73 +28,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Matthias Schiffer <mschiffer@universe-factory.net>
 
-[ Upstream commit 8d8a51e26a6d415e1470759f2cf5f3ee3ee86196 ]
+[ Upstream commit 6c519bad7b19a2c14a075b400edabaa630330123 ]
 
-net/l2tp/l2tp_core.c: In function ‘l2tp_verify_udp_checksum’:
-net/l2tp/l2tp_core.c:499:22: warning: unused variable ‘tunnel’ [-Wunused-variable]
+batman-adv saves its table of packet handlers as a global state, so handlers
+must be set up only once (and setting them up a second time will fail).
 
-Create a helper "l2tp_tunnel()" to facilitate this, and as a side
-effect get rid of a bunch of unnecessary void pointer casts.
+The recently-added network coding support tries to set up its handler each time
+a new softif is registered, which obviously fails when more that one softif is
+used (and in consequence, the softif creation fails).
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fix this by splitting up batadv_nc_init into batadv_nc_init (which is called
+only once) and batadv_nc_mesh_init (which is called for each softif); in
+addition batadv_nc_free is renamed to batadv_nc_mesh_free to keep naming
+consistent.
+
+Signed-off-by: Matthias Schiffer <mschiffer@universe-factory.net>
+Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
+Signed-off-by: Antonio Quartulli <antonio@meshcoding.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/l2tp/l2tp_core.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ net/batman-adv/main.c           |    5 +++--
+ net/batman-adv/network-coding.c |   28 ++++++++++++++++++----------
+ net/batman-adv/network-coding.h |   14 ++++++++++----
+ 3 files changed, 31 insertions(+), 16 deletions(-)
 
---- a/net/l2tp/l2tp_core.c
-+++ b/net/l2tp/l2tp_core.c
-@@ -115,6 +115,11 @@ struct l2tp_net {
- static void l2tp_session_set_header_len(struct l2tp_session *session, int version);
- static void l2tp_tunnel_free(struct l2tp_tunnel *tunnel);
+--- a/net/batman-adv/main.c
++++ b/net/batman-adv/main.c
+@@ -61,6 +61,7 @@ static int __init batadv_init(void)
+ 	batadv_recv_handler_init();
  
-+static inline struct l2tp_tunnel *l2tp_tunnel(struct sock *sk)
+ 	batadv_iv_init();
++	batadv_nc_init();
+ 
+ 	batadv_event_workqueue = create_singlethread_workqueue("bat_events");
+ 
+@@ -138,7 +139,7 @@ int batadv_mesh_init(struct net_device *
+ 	if (ret < 0)
+ 		goto err;
+ 
+-	ret = batadv_nc_init(bat_priv);
++	ret = batadv_nc_mesh_init(bat_priv);
+ 	if (ret < 0)
+ 		goto err;
+ 
+@@ -163,7 +164,7 @@ void batadv_mesh_free(struct net_device
+ 	batadv_vis_quit(bat_priv);
+ 
+ 	batadv_gw_node_purge(bat_priv);
+-	batadv_nc_free(bat_priv);
++	batadv_nc_mesh_free(bat_priv);
+ 	batadv_dat_free(bat_priv);
+ 	batadv_bla_free(bat_priv);
+ 
+--- a/net/batman-adv/network-coding.c
++++ b/net/batman-adv/network-coding.c
+@@ -35,6 +35,20 @@ static int batadv_nc_recv_coded_packet(s
+ 				       struct batadv_hard_iface *recv_if);
+ 
+ /**
++ * batadv_nc_init - one-time initialization for network coding
++ */
++int __init batadv_nc_init(void)
 +{
-+	return sk->sk_user_data;
++	int ret;
++
++	/* Register our packet type */
++	ret = batadv_recv_handler_register(BATADV_CODED,
++					   batadv_nc_recv_coded_packet);
++
++	return ret;
 +}
 +
- static inline struct l2tp_net *l2tp_pernet(struct net *net)
- {
- 	BUG_ON(!net);
-@@ -496,7 +501,6 @@ out:
- static inline int l2tp_verify_udp_checksum(struct sock *sk,
- 					   struct sk_buff *skb)
- {
--	struct l2tp_tunnel *tunnel = (struct l2tp_tunnel *)sk->sk_user_data;
- 	struct udphdr *uh = udp_hdr(skb);
- 	u16 ulen = ntohs(uh->len);
- 	__wsum psum;
-@@ -505,7 +509,7 @@ static inline int l2tp_verify_udp_checks
- 		return 0;
- 
- #if IS_ENABLED(CONFIG_IPV6)
--	if (sk->sk_family == PF_INET6 && !tunnel->v4mapped) {
-+	if (sk->sk_family == PF_INET6 && !l2tp_tunnel(sk)->v4mapped) {
- 		if (!uh->check) {
- 			LIMIT_NETDEBUG(KERN_INFO "L2TP: IPv6: checksum is 0\n");
- 			return 1;
-@@ -1305,10 +1309,9 @@ EXPORT_SYMBOL_GPL(l2tp_xmit_skb);
++/**
+  * batadv_nc_start_timer - initialise the nc periodic worker
+  * @bat_priv: the bat priv with all the soft interface information
   */
- static void l2tp_tunnel_destruct(struct sock *sk)
+@@ -45,10 +59,10 @@ static void batadv_nc_start_timer(struct
+ }
+ 
+ /**
+- * batadv_nc_init - initialise coding hash table and start house keeping
++ * batadv_nc_mesh_init - initialise coding hash table and start house keeping
+  * @bat_priv: the bat priv with all the soft interface information
+  */
+-int batadv_nc_init(struct batadv_priv *bat_priv)
++int batadv_nc_mesh_init(struct batadv_priv *bat_priv)
  {
--	struct l2tp_tunnel *tunnel;
-+	struct l2tp_tunnel *tunnel = l2tp_tunnel(sk);
- 	struct l2tp_net *pn;
+ 	bat_priv->nc.timestamp_fwd_flush = jiffies;
+ 	bat_priv->nc.timestamp_sniffed_purge = jiffies;
+@@ -70,11 +84,6 @@ int batadv_nc_init(struct batadv_priv *b
+ 	batadv_hash_set_lock_class(bat_priv->nc.coding_hash,
+ 				   &batadv_nc_decoding_hash_lock_class_key);
  
--	tunnel = sk->sk_user_data;
- 	if (tunnel == NULL)
- 		goto end;
+-	/* Register our packet type */
+-	if (batadv_recv_handler_register(BATADV_CODED,
+-					 batadv_nc_recv_coded_packet) < 0)
+-		goto err;
+-
+ 	INIT_DELAYED_WORK(&bat_priv->nc.work, batadv_nc_worker);
+ 	batadv_nc_start_timer(bat_priv);
  
-@@ -1676,7 +1679,7 @@ int l2tp_tunnel_create(struct net *net,
- 	}
+@@ -1721,12 +1730,11 @@ free_nc_packet:
+ }
  
- 	/* Check if this socket has already been prepped */
--	tunnel = (struct l2tp_tunnel *)sk->sk_user_data;
-+	tunnel = l2tp_tunnel(sk);
- 	if (tunnel != NULL) {
- 		/* This socket has already been prepped */
- 		err = -EBUSY;
+ /**
+- * batadv_nc_free - clean up network coding memory
++ * batadv_nc_mesh_free - clean up network coding memory
+  * @bat_priv: the bat priv with all the soft interface information
+  */
+-void batadv_nc_free(struct batadv_priv *bat_priv)
++void batadv_nc_mesh_free(struct batadv_priv *bat_priv)
+ {
+-	batadv_recv_handler_unregister(BATADV_CODED);
+ 	cancel_delayed_work_sync(&bat_priv->nc.work);
+ 
+ 	batadv_nc_purge_paths(bat_priv, bat_priv->nc.coding_hash, NULL);
+--- a/net/batman-adv/network-coding.h
++++ b/net/batman-adv/network-coding.h
+@@ -22,8 +22,9 @@
+ 
+ #ifdef CONFIG_BATMAN_ADV_NC
+ 
+-int batadv_nc_init(struct batadv_priv *bat_priv);
+-void batadv_nc_free(struct batadv_priv *bat_priv);
++int batadv_nc_init(void);
++int batadv_nc_mesh_init(struct batadv_priv *bat_priv);
++void batadv_nc_mesh_free(struct batadv_priv *bat_priv);
+ void batadv_nc_update_nc_node(struct batadv_priv *bat_priv,
+ 			      struct batadv_orig_node *orig_node,
+ 			      struct batadv_orig_node *orig_neigh_node,
+@@ -46,12 +47,17 @@ int batadv_nc_init_debugfs(struct batadv
+ 
+ #else /* ifdef CONFIG_BATMAN_ADV_NC */
+ 
+-static inline int batadv_nc_init(struct batadv_priv *bat_priv)
++static inline int batadv_nc_init(void)
+ {
+ 	return 0;
+ }
+ 
+-static inline void batadv_nc_free(struct batadv_priv *bat_priv)
++static inline int batadv_nc_mesh_init(struct batadv_priv *bat_priv)
++{
++	return 0;
++}
++
++static inline void batadv_nc_mesh_free(struct batadv_priv *bat_priv)
+ {
+ 	return;
+ }
 
 
