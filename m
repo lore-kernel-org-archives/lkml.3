@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983Ab3KAJZS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 05:25:18 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:39972 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532Ab3KAJZP (ORCPT
+	id S1754799Ab3KAJ2F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 05:28:05 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:47904 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459Ab3KAJ2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 05:25:15 -0400
-From: Chenggang Qin <chenggang.qin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Chenggang Qin <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+	Fri, 1 Nov 2013 05:28:03 -0400
+Date: Fri, 1 Nov 2013 10:27:59 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] perf tool: remove an unnecessary function call while process pipe events
-Date: Fri,  1 Nov 2013 17:25:00 +0800
-Message-Id: <1383297900-3749-1-git-send-email-chenggang.qin@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
+Subject: Re: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist
+ periods (v2)
+Message-ID: <20131101092759.GC27063@gmail.com>
+References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
+ <20131031080932.GA8479@gmail.com>
+ <87vc0c4ny2.fsf@sejong.aot.lge.com>
+ <20131101075502.GA25547@gmail.com>
+ <874n7w4gtm.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <874n7w4gtm.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chenggang Qin <chenggang.qcg@taobao.com>
 
-perf_session_free_sample_buffers() can be removed from
-__perf_session__process_pipe_events(), since the ordered_samples buffer is not
-used while samples are read from the pipe.
-__perf_session__process_pipe_events() is only used while process the events from
-pipe. While the sample are read from pipe, the ordered_samples is forbidden.
-Refer to the following code in perf_session__new():
- 150         if (tool && tool->ordering_requires_timestamps &&
- 151             tool->ordered_samples && !perf_evlist__sample_id_all(self->evlist)) {
- 152                 dump_printf("WARNING: No sample_id_all support, falling back to unordered processing\n");
- 153                 tool->ordered_samples = false;
- 154         }
-If pipe is used, perf_evlist__sample_id_all(self->evlist) always return 0. Because
-session->evlist is empty util a attr_event is read.
+* Namhyung Kim <namhyung@kernel.org> wrote:
 
-Thanks
-Chenggang Qin
+> >> > 2)
+> >> >
+> >> > Is it possible to configure the default 'report -g' style, so that 
+> >> > people who'd like to use it all the time don't have to type '-g 
+> >> > cumulative' all the time?
+> >> 
+> >> Hmm.. maybe I can add support for the 'report.call-graph' config option.
+> >
+> > If we display your new 'total' field by default then it's not as 
+> > pressing to me :)
+> 
+> Do you mean -g cumulative without 'self' column?
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Yanmin Zhang <yanmin.zhang@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
+So, if by default we display both 'self' and 'total' and sort by 
+'total', then I'm personally a happy camper: while it's a change of 
+the default perf report output, it's also a step forward.
 
----
- tools/perf/util/session.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+But some people might complain about it once this hits v3.13 (or 
+v3.14) and might want to hide individual columns and have different 
+sorting preferences.
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 568b750..b69c28a 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1251,7 +1251,6 @@ done:
- out_err:
- 	free(buf);
- 	perf_session__warn_about_errors(self, tool);
--	perf_session_free_sample_buffers(self);
- 	return err;
- }
- 
--- 
-1.7.8.rc2.5.g815b
+So out of defensive caution you might want to provide toggles for 
+such things, maybe even generalize it a bit to allow arbitrary 
+hiding/display of individual colums in perf report.
 
+That would probably also make it easier to do minimal tweaks to the 
+upstream reporting defaults.
+
+> > Btw., if anyone is interested in improving the GTK front-end, it 
+> > would be _really_ nice if it had a 'start profiling' button like 
+> > sysprof has today, with a 'samples' field showing the current 
+> > number of samples. (We could even improve upon sysprof by adding 
+> > 'stop' functionality as well ;-)
+> 
+> Wow, I'm impressed that the sysprof doesn't have one. :)
+
+At least I haven't found it: I tried pressing 'start' once more but 
+that doesn't do it, it just keeps collecting data.
+
+Still many developers love sysprof, so I think there would be quite 
+some plus in providing a gtk perf top version with the controls 
+Pekka and me listed.
+
+Thanks,
+
+	Ingo
