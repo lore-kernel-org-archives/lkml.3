@@ -1,156 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab3KAQLs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 12:11:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54549 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084Ab3KAQLr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 12:11:47 -0400
-Date: Fri, 1 Nov 2013 17:11:29 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>
-Subject: Re: perf events ring buffer memory barrier on powerpc
-Message-ID: <20131101161129.GU16117@laptop.programming.kicks-ass.net>
-References: <20131025173749.GG19466@laptop.lan>
- <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com>
- <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com>
- <20131028132634.GO19466@laptop.lan>
- <20131028163418.GD4126@linux.vnet.ibm.com>
- <20131028201735.GA15629@redhat.com>
- <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com>
- <20131030092725.GL4126@linux.vnet.ibm.com>
- <20131030112526.GI16117@laptop.programming.kicks-ass.net>
- <20131031064015.GV4126@linux.vnet.ibm.com>
+	id S1754231Ab3KAQOR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 12:14:17 -0400
+Received: from legacy.ddn.com ([64.47.133.206]:24036 "EHLO legacy.ddn.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752777Ab3KAQOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 12:14:16 -0400
+X-Greylist: delayed 317 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Nov 2013 12:14:16 EDT
+Date: Fri, 1 Nov 2013 10:08:55 -0600
+From: Greg Edwards <gedwards@ddn.com>
+To: kvm@vger.kernel.org
+CC: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] KVM: IOMMU: hva align mapping page size
+Message-ID: <20131101160855.GB5052@psuche>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20131031064015.GV4126@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 30, 2013 at 11:40:15PM -0700, Paul E. McKenney wrote:
-> > void kbuf_write(int sz, void *buf)
-> > {
-> > 	u64 tail = ACCESS_ONCE(ubuf->tail); /* last location userspace read */
-> > 	u64 offset = kbuf->head; /* we already know where we last wrote */
-> > 	u64 head = offset + sz;
-> > 
-> > 	if (!space(tail, offset, head)) {
-> > 		/* discard @buf */
-> > 		return;
-> > 	}
-> > 
-> > 	/*
-> > 	 * Ensure that if we see the userspace tail (ubuf->tail) such
-> > 	 * that there is space to write @buf without overwriting data
-> > 	 * userspace hasn't seen yet, we won't in fact store data before
-> > 	 * that read completes.
-> > 	 */
-> > 
-> > 	smp_mb(); /* A, matches with D */
-> > 
-> > 	write(kbuf->data + offset, buf, sz);
-> > 	kbuf->head = head % kbuf->size;
-> > 
-> > 	/*
-> > 	 * Ensure that we write all the @buf data before we update the
-> > 	 * userspace visible ubuf->head pointer.
-> > 	 */
-> > 	smp_wmb(); /* B, matches with C */
-> > 
-> > 	ubuf->head = kbuf->head;
-> > }
+When determining the page size we could use to map with the IOMMU, the
+page size should be aligned with the hva, not the gfn.  The gfn may not
+reflect the real alignment within the hugetlbfs file.
 
-> > Now the whole crux of the question is if we need barrier A at all, since
-> > the STORES issued by the @buf writes are dependent on the ubuf->tail
-> > read.
-> 
-> The dependency you are talking about is via the "if" statement?
-> Even C/C++11 is not required to respect control dependencies.
+Most of the time, this works fine.  However, if the hugetlbfs file is
+backed by non-contiguous huge pages, a multi-huge page memslot starts at
+an unaligned offset within the hugetlbfs file, and the gfn is aligned
+with respect to the huge page size, kvm_host_page_size() will return the
+huge page size and we will use that to map with the IOMMU.
 
-But surely we must be able to make it so; otherwise you'd never be able
-to write:
+When we later unpin that same memslot, the IOMMU returns the unmap size
+as the huge page size, and we happily unpin that many pfns in
+monotonically increasing order, not realizing we are spanning
+non-contiguous huge pages and partially unpin the wrong huge page.
 
-void *ptr = obj1;
+Instead, ensure the IOMMU mapping page size is aligned with the hva
+corresponding to the gfn, which does reflect the alignment within the
+hugetlbfs file.
 
-void foo(void)
-{
+Signed-off-by: Greg Edwards <gedwards@ddn.com>
+Cc: stable@vger.kernel.org
+---
+This resolves the bug previously reported (and misdiagnosed) here:
 
-	/* create obj2, obj3 */
+ http://www.spinics.net/lists/kvm/msg97599.html
 
-	smp_wmb(); /* ensure the objs are complete */
+ virt/kvm/iommu.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-	/* expose either obj2 or obj3 */
-	if (x)
-		ptr = obj2;
-	else
-		ptr = obj3;
-
-
-	/* free the unused one */
-	if (x)
-		free(obj3);
-	else
-		free(obj2);
-}
-
-Earlier you said that 'volatile' or '__atomic' avoids speculative
-writes; so would:
-
-volatile void *ptr = obj1;
-
-Make the compiler respect control dependencies again? If so, could we
-somehow mark that !space() condition volatile?
-
-Currently the above would be considered a valid pattern. But you're
-saying its not because the compiler is free to expose both obj2 and obj3
-(for however short a time) and thus the free of the 'unused' object is
-incorrect and can cause use-after-free.
-
-In fact; how can we be sure that:
-
-void *ptr = NULL;
-
-void bar(void)
-{
-	void *obj = malloc(...);
-
-	/* fill obj */
-
-	if (!err)
-		rcu_assign_pointer(ptr, obj);
-	else
-		free(obj);
-}
-
-Does not get 'optimized' into:
-
-void bar(void)
-{
-	void *obj = malloc(...);
-	void *old_ptr = ptr;
-
-	/* fill obj */
-
-	rcu_assign_pointer(ptr, obj);
-	if (err) { /* because runtime profile data says this is unlikely */
-		ptr = old_ptr;
-		free(obj);
-	}
-}
-
-We _MUST_ be able to rely on control flow, otherwise me might as well
-all go back to writing kernels in asm.
+diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+index 72a130b..0e2ff32 100644
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -99,8 +99,8 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
+ 		while ((gfn + (page_size >> PAGE_SHIFT)) > end_gfn)
+ 			page_size >>= 1;
+ 
+-		/* Make sure gfn is aligned to the page size we want to map */
+-		while ((gfn << PAGE_SHIFT) & (page_size - 1))
++		/* Make sure hva is aligned to the page size we want to map */
++		while (__gfn_to_hva_memslot(slot, gfn) & (page_size - 1))
+ 			page_size >>= 1;
+ 
+ 		/*
+-- 
+1.8.3.2
 
