@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799Ab3KAWEh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:04:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54944 "EHLO
+	id S1757282Ab3KAWhE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:37:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54962 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754504Ab3KAWEd (ORCPT
+	with ESMTP id S1754504Ab3KAWEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:04:33 -0400
+	Fri, 1 Nov 2013 18:04:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>,
+        Christophe Gouault <christophe.gouault@6wind.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 10/54] net: mv643xx_eth: fix orphaned statistics timer crash
-Date: Fri,  1 Nov 2013 15:03:38 -0700
-Message-Id: <20131101220212.498040302@linuxfoundation.org>
+Subject: [PATCH 3.10 18/54] vti: get rid of nf mark rule in prerouting
+Date: Fri,  1 Nov 2013 15:03:46 -0700
+Message-Id: <20131101220213.368353936@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -28,41 +27,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+From: Christophe Gouault <christophe.gouault@6wind.com>
 
-[ Upstream commit f564412c935111c583b787bcc18157377b208e2e ]
+[ Upstream commit 7263a5187f9e9de45fcb51349cf0e031142c19a1 ]
 
-The periodic statistics timer gets started at port _probe() time, but
-is stopped on _stop() only. In a modular environment, this can cause
-the timer to access already deallocated memory, if the module is unloaded
-without starting the eth device. To fix this, we add the timer right
-before the port is started, instead of at _probe() time.
+This patch fixes and improves the use of vti interfaces (while
+lightly changing the way of configuring them).
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+Currently:
+
+- it is necessary to identify and mark inbound IPsec
+  packets destined to each vti interface, via netfilter rules in
+  the mangle table at prerouting hook.
+
+- the vti module cannot retrieve the right tunnel in input since
+  commit b9959fd3: vti tunnels all have an i_key, but the tunnel lookup
+  is done with flag TUNNEL_NO_KEY, so there no chance to retrieve them.
+
+- the i_key is used by the outbound processing as a mark to lookup
+  for the right SP and SA bundle.
+
+This patch uses the o_key to store the vti mark (instead of i_key) and
+enables:
+
+- to avoid the need for previously marking the inbound skbuffs via a
+  netfilter rule.
+- to properly retrieve the right tunnel in input, only based on the IPsec
+  packet outer addresses.
+- to properly perform an inbound policy check (using the tunnel o_key
+  as a mark).
+- to properly perform an outbound SPD and SAD lookup (using the tunnel
+  o_key as a mark).
+- to keep the current mark of the skbuff. The skbuff mark is neither
+  used nor changed by the vti interface. Only the vti interface o_key
+  is used.
+
+SAs have a wildcard mark.
+SPs have a mark equal to the vti interface o_key.
+
+The vti interface must be created as follows (i_key = 0, o_key = mark):
+
+   ip link add vti1 mode vti local 1.1.1.1 remote 2.2.2.2 okey 1
+
+The SPs attached to vti1 must be created as follows (mark = vti1 o_key):
+
+   ip xfrm policy add dir out mark 1 tmpl src 1.1.1.1 dst 2.2.2.2 \
+      proto esp mode tunnel
+   ip xfrm policy add dir in  mark 1 tmpl src 2.2.2.2 dst 1.1.1.1 \
+      proto esp mode tunnel
+
+The SAs are created with the default wildcard mark. There is no
+distinction between global vs. vti SAs. Just their addresses will
+possibly link them to a vti interface:
+
+   ip xfrm state add src 1.1.1.1 dst 2.2.2.2 proto esp spi 1000 mode tunnel \
+                 enc "cbc(aes)" "azertyuiopqsdfgh"
+
+   ip xfrm state add src 2.2.2.2 dst 1.1.1.1 proto esp spi 2000 mode tunnel \
+                 enc "cbc(aes)" "sqbdhgqsdjqjsdfh"
+
+To avoid matching "global" (not vti) SPs in vti interfaces, global SPs
+should no use the default wildcard mark, but explicitly match mark 0.
+
+To avoid a double SPD lookup in input and output (in global and vti SPDs),
+the NOPOLICY and NOXFRM options should be set on the vti interfaces:
+
+   echo 1 > /proc/sys/net/ipv4/conf/vti1/disable_policy
+   echo 1 > /proc/sys/net/ipv4/conf/vti1/disable_xfrm
+
+The outgoing traffic is steered to vti1 by a route via the vti interface:
+
+   ip route add 192.168.0.0/16 dev vti1
+
+The incoming IPsec traffic is steered to vti1 because its outer addresses
+match the vti1 tunnel configuration.
+
+Signed-off-by: Christophe Gouault <christophe.gouault@6wind.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/marvell/mv643xx_eth.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/ip_vti.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -2229,6 +2229,7 @@ static int mv643xx_eth_open(struct net_d
- 		mp->int_mask |= INT_TX_END_0 << i;
- 	}
+--- a/net/ipv4/ip_vti.c
++++ b/net/ipv4/ip_vti.c
+@@ -285,8 +285,17 @@ static int vti_rcv(struct sk_buff *skb)
+ 	tunnel = vti_tunnel_lookup(dev_net(skb->dev), iph->saddr, iph->daddr);
+ 	if (tunnel != NULL) {
+ 		struct pcpu_tstats *tstats;
++		u32 oldmark = skb->mark;
++		int ret;
  
-+	add_timer(&mp->mib_counters_timer);
- 	port_start(mp);
+-		if (!xfrm4_policy_check(NULL, XFRM_POLICY_IN, skb))
++
++		/* temporarily mark the skb with the tunnel o_key, to
++		 * only match policies with this mark.
++		 */
++		skb->mark = be32_to_cpu(tunnel->parms.o_key);
++		ret = xfrm4_policy_check(NULL, XFRM_POLICY_IN, skb);
++		skb->mark = oldmark;
++		if (!ret)
+ 			return -1;
  
- 	wrlp(mp, INT_MASK_EXT, INT_EXT_LINK_PHY | INT_EXT_TX);
-@@ -2737,7 +2738,6 @@ static int mv643xx_eth_probe(struct plat
- 	mp->mib_counters_timer.data = (unsigned long)mp;
- 	mp->mib_counters_timer.function = mib_counters_timer_wrapper;
- 	mp->mib_counters_timer.expires = jiffies + 30 * HZ;
--	add_timer(&mp->mib_counters_timer);
+ 		tstats = this_cpu_ptr(tunnel->dev->tstats);
+@@ -295,7 +304,6 @@ static int vti_rcv(struct sk_buff *skb)
+ 		tstats->rx_bytes += skb->len;
+ 		u64_stats_update_end(&tstats->syncp);
  
- 	spin_lock_init(&mp->mib_counters_lock);
+-		skb->mark = 0;
+ 		secpath_reset(skb);
+ 		skb->dev = tunnel->dev;
+ 		return 1;
+@@ -327,7 +335,7 @@ static netdev_tx_t vti_tunnel_xmit(struc
  
+ 	memset(&fl4, 0, sizeof(fl4));
+ 	flowi4_init_output(&fl4, tunnel->parms.link,
+-			   be32_to_cpu(tunnel->parms.i_key), RT_TOS(tos),
++			   be32_to_cpu(tunnel->parms.o_key), RT_TOS(tos),
+ 			   RT_SCOPE_UNIVERSE,
+ 			   IPPROTO_IPIP, 0,
+ 			   dst, tiph->saddr, 0, 0);
 
 
