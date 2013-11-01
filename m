@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140Ab3KAWPu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:15:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55533 "EHLO
+	id S932157Ab3KAWQJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:16:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55528 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756446Ab3KAWIb (ORCPT
+	with ESMTP id S1756438Ab3KAWIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Nov 2013 18:08:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.11 57/66] ALSA: us122l: Fix pcm_usb_stream mmapping regression
-Date: Fri,  1 Nov 2013 15:07:33 -0700
-Message-Id: <20131101220650.562441656@linuxfoundation.org>
+        Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.11 56/66] mm: fix BUG in __split_huge_page_pmd
+Date: Fri,  1 Nov 2013 15:07:32 -0700
+Message-Id: <20131101220650.294264406@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -26,40 +32,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Hugh Dickins <hughd@google.com>
 
-commit ac536a848a1643e4b87e8fbd376a63091afc2ccc upstream.
+commit 750e8165f5e87b6a142be953640eabb13a9d350a upstream.
 
-The pcm_usb_stream plugin requires the mremap explicitly for the read
-buffer, as it expands itself once after reading the required size.
-But the commit [314e51b9: mm: kill vma flag VM_RESERVED and
-mm->reserved_vm counter] converted blindly to a combination of
-VM_DONTEXPAND | VM_DONTDUMP like other normal drivers, and this
-resulted in the failure of mremap().
+Occasionally we hit the BUG_ON(pmd_trans_huge(*pmd)) at the end of
+__split_huge_page_pmd(): seen when doing madvise(,,MADV_DONTNEED).
 
-For fixing this regression, we need to remove VM_DONTEXPAND for the
-read-buffer mmap.
+It's invalid: we don't always have down_write of mmap_sem there: a racing
+do_huge_pmd_wp_page() might have copied-on-write to another huge page
+before our split_huge_page() got the anon_vma lock.
 
-Reported-and-tested-by: James Miller <jamesstewartmiller@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Forget the BUG_ON, just go back and try again if this happens.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/usx2y/us122l.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/huge_memory.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/sound/usb/usx2y/us122l.c
-+++ b/sound/usb/usx2y/us122l.c
-@@ -262,7 +262,9 @@ static int usb_stream_hwdep_mmap(struct
- 	}
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -2709,6 +2709,7 @@ void __split_huge_page_pmd(struct vm_are
  
- 	area->vm_ops = &usb_stream_hwdep_vm_ops;
--	area->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
-+	area->vm_flags |= VM_DONTDUMP;
-+	if (!read)
-+		area->vm_flags |= VM_DONTEXPAND;
- 	area->vm_private_data = us122l;
- 	atomic_inc(&us122l->mmap_count);
- out:
+ 	mmun_start = haddr;
+ 	mmun_end   = haddr + HPAGE_PMD_SIZE;
++again:
+ 	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_trans_huge(*pmd))) {
+@@ -2731,7 +2732,14 @@ void __split_huge_page_pmd(struct vm_are
+ 	split_huge_page(page);
+ 
+ 	put_page(page);
+-	BUG_ON(pmd_trans_huge(*pmd));
++
++	/*
++	 * We don't always have down_write of mmap_sem here: a racing
++	 * do_huge_pmd_wp_page() might have copied-on-write to another
++	 * huge page before our split_huge_page() got the anon_vma lock.
++	 */
++	if (unlikely(pmd_trans_huge(*pmd)))
++		goto again;
+ }
+ 
+ void split_huge_page_pmd_mm(struct mm_struct *mm, unsigned long address,
 
 
