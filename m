@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab3KAAbm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 20:31:42 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:38241 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978Ab3KAAbl (ORCPT
+	id S1755557Ab3KAAgJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 20:36:09 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:49147 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508Ab3KAAgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 20:31:41 -0400
-Date: Fri, 1 Nov 2013 09:31:33 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: jerry.hoemann@hp.com, fengguang.wu@intel.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, bp@alien8.de,
-        ebiederm@xmission.com, akpm@linux-foundation.org, hpa@linux.intel.com,
-        jingbai.ma@hp.com
-Subject: Re: [PATCH v4 0/3] x86, apic, kexec: Add disable_cpu_apic kernel
- parameter
-Message-ID: <20131101003133.GH6818@verge.net.au>
-References: <20131022150015.24240.39686.stgit@localhost6.localdomain6>
- <20131022220803.GA32387@anatevka.fc.hp.com>
- <526712B2.7070108@jp.fujitsu.com>
- <20131031005812.GA15459@anatevka.fc.hp.com>
- <20131031132744.GB3392@redhat.com>
+	Thu, 31 Oct 2013 20:36:08 -0400
+Message-ID: <5272F766.8000804@oracle.com>
+Date: Fri, 01 Nov 2013 08:35:50 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131031132744.GB3392@redhat.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Olav Haugan <ohaugan@codeaurora.org>
+CC: Luigi Semenzato <semenzato@google.com>, Minchan Kim <minchan@kernel.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: zram/zsmalloc issues in very low memory conditions
+References: <526844E6.1080307@codeaurora.org> <52686FF4.5000303@oracle.com> <5269BCCC.6090509@codeaurora.org> <CAA25o9R_jAZyGFU3xYVjsxCCiBwiEC4gRw+JX6WG9X7G-E3LNw@mail.gmail.com> <5272E8EB.5030900@codeaurora.org>
+In-Reply-To: <5272E8EB.5030900@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 09:27:45AM -0400, Vivek Goyal wrote:
-> On Wed, Oct 30, 2013 at 06:58:13PM -0600, jerry.hoemann@hp.com wrote:
-> 
-> [..]
-> > Daisuke,
-> > 
-> > Are you planning on making changes to the kexec tools to automate
-> > the setting of disable_cpu_apic to the capture kernel? Or do you
-> > know someone who is planning this?
-> 
-> I think we should not make this change in kexec-tools and should leave
-> it to distro scripts to append disable_cpu_apic.
-> 
-> Who knows in future this restriction is not there at all and kexec-tools
-> will be stuck with always passing disable_cpu_apic. Getting rid of
-> this parameter in distro scripts will be much easier.
+Hi Olav,
 
-Hi Vivek, Hi Daisuke,
+On 11/01/2013 07:34 AM, Olav Haugan wrote:
+> Hi Luigi,
+> 
+> On 10/24/2013 6:12 PM, Luigi Semenzato wrote:
+>> On Thu, Oct 24, 2013 at 5:35 PM, Olav Haugan <ohaugan@codeaurora.org> wrote:
+>>> Hi Bob, Luigi,
+>>>
+>>> On 10/23/2013 5:55 PM, Bob Liu wrote:
+>>>>
+>>>> On 10/24/2013 05:51 AM, Olav Haugan wrote:
+>>>
+>>>> By the way, could you take a try with zswap? Which can write pages to
+>>>> real swap device if compressed pool is full.
+>>>
+>>> zswap might not be feasible in all cases if you only have flash as
+>>> backing storage.
+>>
+>> Zswap can be configured to run without a backing storage.
+>>
+> 
+> I was under the impression that zswap requires a backing storage. Can
+> you elaborate on how to configure zswap to not need a backing storage?
+> 
 
-That approach sounds reasonable to me.
+AFAIK, currently zswap can't be used without a backing storage.
+Perhaps you can take a try by creating a swap device backed by a file on
+storage.
+
+-- 
+Regards,
+-Bob
