@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab3KAXCj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 19:02:39 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:42562 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752726Ab3KAXCf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 19:02:35 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Rob Herring <robherring2@gmail.com>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>, linux-kernel@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        "arm@kernel.org" <arm@kernel.org>, linux-samsung-soc@vger.kernel.org,
-        Rob Landley <rob@landley.net>, Ben Dooks <ben-linux@fluff.org>,
-        Tarek Dakhran <t.dakhran@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Naour Romain <romain.naour@openwide.fr>,
-        Mike Turquette <mturquette@linaro.org>,
-        Heiko Stuebner <heiko@sntech.de>
-Subject: Re: [PATCH v2 1/4] ARM: EXYNOS: Add support for EXYNOS5410 SoC
-Date: Sat, 02 Nov 2013 00:02:36 +0100
-Message-ID: <2801293.Bp2raaCeuk@flatron>
-User-Agent: KMail/4.11.2 (Linux/3.11.6-gentoo; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <527422AC.1050105@gmail.com>
-References: <1381763305-7085-1-git-send-email-v.tyrtov@samsung.com> <1381763305-7085-2-git-send-email-v.tyrtov@samsung.com> <527422AC.1050105@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1753873Ab3KAXK2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 19:10:28 -0400
+Received: from gate.crashing.org ([63.228.1.57]:46091 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752689Ab3KAXK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 19:10:27 -0400
+Message-ID: <1383347399.28909.46.camel@pasglop>
+Subject: Re: Strange location and name for platform  devices when
+ device-tree is used.
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: NeilBrown <neilb@suse.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Date: Sat, 02 Nov 2013 10:09:59 +1100
+In-Reply-To: <20131101204749.GA19662@kroah.com>
+References: <20131101145925.66e22f73@notabene.brown>
+	 <1383279744.28909.26.camel@pasglop> <1383280054.28909.30.camel@pasglop>
+	 <20131101160329.37f3707b@notabene.brown>
+	 <1383282516.28909.36.camel@pasglop> <20131101204749.GA19662@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+On Fri, 2013-11-01 at 13:47 -0700, Greg Kroah-Hartman wrote:
 
-On Friday 01 of November 2013 16:52:44 Rob Herring wrote:
-> On 10/14/2013 10:08 AM, Vyacheslav Tyrtov wrote:
-> > From: Tarek Dakhran <t.dakhran@samsung.com>
+> > > On my device I seem to have some platform devices registered through
+> > > device-tree, and some registered through platform_device_add (e.g.
+> > > 'alarmtimer').  Guaranteeing they remain disjoint sets if the kernel is
+> > > allowed to evolve independently of the devicetree might be tricky....
+> > > Maybe we need "/sys/devices/platform" and "/sys/devices/dt_platform" ??
 > > 
-> > EXYNOS5410 is SoC in Samsung's Exynos5 SoC series.
-> > Add initial support for this SoC.
+> > No, I think device-tree created platform devices should go
+> > to /sys/devices/platform like the "classic" ones.
+> > 
+> > The problem is really how to deal with potential name duplication. We
+> > could try to register, if we get -EEXIST (assuming sysfs returns the
+> > right stuff), try again with ".1" etc...
 > 
-> I think this entire patch is mostly unnecessary and this information
-> should all be coming from DT. I'll leave it to arm-soc maintainers
-> whether they want to accept this addition rather than see some clean-up
-> here.
+> How can there be device name collisions?  All platform devices _should_
+> be named uniquely, if not, you have bigger problems...
 
-The clean-up here is already in plans, but this is much more than can be 
-seen just from this patch, so it needs some time.
+The problem is how to create a unique name from a platform device
+created from a device-tree node.
 
-> 
-> "samsung,exynos5410" does need to be documented though.
+Device tree nodes aren't necessarily uniquely named. They are unique
+under a given parent but that hierarchy isn't preserved when creating
+corresponding platform devices (and it would be very tricky to do so).
 
-Right.
+Currently, we simply append a number to the name when creating them,
+which is obtained from a global counter.
 
-Best regards,
-Tomasz
+Neil is unhappy about that because on his specific hardware, the device
+has a unique name and thus we introduce a naming difference between
+device-tree usage and old-style "hard coded" board file usage.
+
+It would be nice if we could do something that only appends the "global
+number" at the end of the name if the name isn't already unique. Thus my
+proposal of trying first with the base name, and trying again if that
+returns -EEXIST in some kind of loop.
+
+Do you have a better idea ?
+
+Cheers,
+Ben.
+
 
