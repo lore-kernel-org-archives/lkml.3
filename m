@@ -1,86 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826Ab3KANm7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 09:42:59 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:57132 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab3KANm5 (ORCPT
+	id S1753363Ab3KANni (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 09:43:38 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:45058 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab3KANnh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 09:42:57 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>, linux-arm-kernel@lists.infradead.org,
-        monstr@monstr.eu, Nicolas Pitre <nico@linaro.org>,
-        Vitaly Andrianov <vitalya@ti.com>, Cyril Chemparathy <cyril@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ARM: mm: Fix ECC mem policy printk
-Date: Fri,  1 Nov 2013 14:42:40 +0100
-Message-Id: <a485e15ece42ac9a9e1361ec849b4f1eb05748df.1383313334.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-12376-1383313360-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Fri, 1 Nov 2013 09:43:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACna6rw-xwQk0Ff38cY+HSEM-s7uAWgsPWk10j029jpyE6i3gQ@mail.gmail.com>
+References: <1380659456-3746-1-git-send-email-anssi.hannula@iki.fi>
+	<1380659456-3746-2-git-send-email-anssi.hannula@iki.fi>
+	<CACna6ryr37WRvKbMFmLEGt_A2zUD46rZOtJMVom+B_xK9WNLuw@mail.gmail.com>
+	<07e8973b4665cc23c3f4a77e9c7e2b7c@mail.onse.fi>
+	<CACna6ryFtmZHAhmCPEsoxZc5h4mLuM4ajnKGsp=q0jag2f_SYw@mail.gmail.com>
+	<5272BCE1.7010700@iki.fi>
+	<CACna6rzejyTOF2Fvvw1m2SAob7uU5-hJ+yRVk6HS5pDTz7+JWg@mail.gmail.com>
+	<5272E920.6030606@iki.fi>
+	<CACna6rxuSUA9_1HXnY8yPhQ8BDeEnMvoX6i0WvTtst7UTvcgHA@mail.gmail.com>
+	<5272EEAC.6020405@iki.fi>
+	<CACna6rymYy6hfpH6reknpa0QPHy31EwngOx4-d7JW4roANNQbQ@mail.gmail.com>
+	<52739B79.3030006@iki.fi>
+	<CACna6rw-xwQk0Ff38cY+HSEM-s7uAWgsPWk10j029jpyE6i3gQ@mail.gmail.com>
+Date: Fri, 1 Nov 2013 13:43:36 +0000
+Message-ID: <CACna6rxiu0QACTpvEk4QN5jauQWgRB=_M-97L7ZNhPLE99x_wQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] ALSA: hda - hdmi: Add ATI/AMD multi-channel audio support
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Anssi Hannula <anssi.hannula@iki.fi>
+Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        =?UTF-8?Q?Peter_Fr=C3=BChberger?= <fritsch@xbmc.org>,
+        Olivier Langlois <olivier@trillion01.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+2013/11/1 Rafał Miłecki <zajec5@gmail.com>:
+> 2013/11/1 Anssi Hannula <anssi.hannula@iki.fi>:
+>> Strange. One other thing to check (in addition to trying fglrx) would be
+>> to try 192kHz 8ch audio with a different (non-ATI/AMD) card altogether,
+>> to see if this is a receiver issue.
+>
+> What about this:
+> 01:00.0 VGA compatible controller [0300]: NVIDIA Corporation GF108
+> [GeForce GT 540M] [10de:0df4] (rev a1)
+> 01:00.1 Audio device [0403]: NVIDIA Corporation GF108 High Definition
+> Audio Controller [10de:0bea] (rev a1)
+> ? Chip & family:
+> [    2.738343] nouveau  [  DEVICE][0000:01:00.0] BOOT0  : 0x0c1a00a1
+> [    2.738347] nouveau  [  DEVICE][0000:01:00.0] Chipset: GF108 (NVC1)
+> [    2.738348] nouveau  [  DEVICE][0000:01:00.0] Family : NVC0
+>
+> (...)
+>
+> Unfortunately speaker-test fails :|
+>
+> linux@linux:~> speaker-test -D hdmi:CARD=NVidia,DEV=0 -c6 -r 48000 -F S16_LE
+>
+> speaker-test 1.0.26
+>
+> Playback device is hdmi:CARD=NVidia,DEV=0
+> Stream parameters are 48000Hz, S16_LE, 6 channels
+> Using 16 octaves of pink noise
+> Rate set to 48000Hz (requested 48000Hz)
+> Buffer size range from 64 to 87360
+> Period size range from 32 to 43680
+> Using max buffer size 87360
+> Periods = 4
+> was set period_size = 17472
+> was set buffer_size = 87360
+> *** Error in `speaker-test': corrupted double-linked list:
+> 0x0000000000cc48a0 ***
+> ^C
 
---=_mimegpg-monstr-desktop-12376-1383313360-0001
+So I've decided to try mplayer. List of tested cases:
 
-ECC policy can be applied to the whole system
-when this bit is implemented by SoC vendor
-(IMP - bit 9 - in L1 page table entry format).
-When this bit is not implemented by SoC vendor
-it doesn't mean that system has no other way
-how to do ECC.
-This patch ensures to show this message only when ECC
-is requested via cmd line ecc=on and runs on
-appropriate ARM core.
+mplayer -ao alsa:device=hw=1.7 Canyon-5.1-48khz-448kbit.ac3 -channels
+6 -srate 96000
+mplayer -ao alsa:device=hw=1.7 Canyon-5.1-48khz-448kbit.ac3 -channels
+6 -srate 176400
+mplayer -ao alsa:device=hw=1.7 Canyon-5.1-48khz-448kbit.ac3 -channels
+6 -srate 192000
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
-Changes in v2:
- - Show message all the time but show ECC enabled just for cases
-   where IMP bit is used.
+mplayer -ao alsa:device=hw=1.7 Broadway-5.1-48khz-448kbit.ac3
+-channels 6 -srate 96000
+mplayer -ao alsa:device=hw=1.7 Broadway-5.1-48khz-448kbit.ac3
+-channels 6 -srate 176400
+mplayer -ao alsa:device=hw=1.7 Broadway-5.1-48khz-448kbit.ac3
+-channels 6 -srate 192000
 
----
- arch/arm/mm/mmu.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Rear right and real left were always working fine.
+The rest (front  & center & front) were working for 96000 only.
 
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index b1d17ee..324fc85 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -556,8 +556,8 @@ static void __init build_mem_type_table(void)
- 		mem_types[MT_CACHECLEAN].prot_sect |= PMD_SECT_WB;
- 		break;
- 	}
--	printk("Memory policy: ECC %sabled, Data cache %s\n",
--		ecc_mask ? "en" : "dis", cp->policy);
-+	pr_info("Memory policy: %sData cache %s\n",
-+		ecc_mask ? "ECC enabled, " : "", cp->policy);
+So it seems to be some issue with my Onkyo TX-SR605 that reports
+support for 192000 but can't fully handle it. Weird :|
 
- 	for (i = 0; i < ARRAY_SIZE(mem_types); i++) {
- 		struct mem_type *t = &mem_types[i];
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-12376-1383313360-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlJzr9AACgkQykllyylKDCGkEACfeN0akS2OSeS9HpnBQBdAZWUU
-bSAAn3FhHpuLCYg8oqzBhNLAHfNal4Y2
-=7/QA
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-12376-1383313360-0001--
+-- 
+Rafał
