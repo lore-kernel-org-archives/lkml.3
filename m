@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209Ab3KAWd5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:33:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55021 "EHLO
+	id S1756275Ab3KAWeW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:34:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55015 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755266Ab3KAWEw (ORCPT
+	with ESMTP id S1755211Ab3KAWEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:04:52 -0400
+	Fri, 1 Nov 2013 18:04:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Julian Anastasov <ja@ssi.bg>,
         Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 39/54] ipv6: probe routes asynchronous in rt6_probe
-Date: Fri,  1 Nov 2013 15:04:07 -0700
-Message-Id: <20131101220215.711452038@linuxfoundation.org>
+Subject: [PATCH 3.10 38/54] netfilter: nf_conntrack: fix rt6i_gateway checks for H.323 helper
+Date: Fri,  1 Nov 2013 15:04:06 -0700
+Message-Id: <20131101220215.614972222@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -28,82 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Julian Anastasov <ja@ssi.bg>
 
-[ Upstream commit c2f17e827b419918c856131f592df9521e1a38e3 ]
+[ Upstream commit 56e42441ed54b092d6c7411138ce60d049e7c731 ]
 
-Routes need to be probed asynchronous otherwise the call stack gets
-exhausted when the kernel attemps to deliver another skb inline, like
-e.g. xt_TEE does, and we probe at the same time.
+Now when rt6_nexthop() can return nexthop address we can use it
+for proper nexthop comparison of directly connected destinations.
+For more information refer to commit bbb5823cf742a7
+("netfilter: nf_conntrack: fix rt_gateway checks for H.323 helper").
 
-We update neigh->updated still at once, otherwise we would send to
-many probes.
-
-Cc: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/route.c |   38 +++++++++++++++++++++++++++++++-------
- 1 file changed, 31 insertions(+), 7 deletions(-)
+ net/netfilter/nf_conntrack_h323_main.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -473,6 +473,24 @@ out:
- }
- 
- #ifdef CONFIG_IPV6_ROUTER_PREF
-+struct __rt6_probe_work {
-+	struct work_struct work;
-+	struct in6_addr target;
-+	struct net_device *dev;
-+};
-+
-+static void rt6_probe_deferred(struct work_struct *w)
-+{
-+	struct in6_addr mcaddr;
-+	struct __rt6_probe_work *work =
-+		container_of(w, struct __rt6_probe_work, work);
-+
-+	addrconf_addr_solict_mult(&work->target, &mcaddr);
-+	ndisc_send_ns(work->dev, NULL, &work->target, &mcaddr, NULL);
-+	dev_put(work->dev);
-+	kfree(w);
-+}
-+
- static void rt6_probe(struct rt6_info *rt)
- {
- 	struct neighbour *neigh;
-@@ -496,17 +514,23 @@ static void rt6_probe(struct rt6_info *r
- 
- 	if (!neigh ||
- 	    time_after(jiffies, neigh->updated + rt->rt6i_idev->cnf.rtr_probe_interval)) {
--		struct in6_addr mcaddr;
--		struct in6_addr *target;
-+		struct __rt6_probe_work *work;
- 
--		if (neigh) {
-+		work = kmalloc(sizeof(*work), GFP_ATOMIC);
-+
-+		if (neigh && work)
- 			neigh->updated = jiffies;
-+
-+		if (neigh)
- 			write_unlock(&neigh->lock);
--		}
- 
--		target = (struct in6_addr *)&rt->rt6i_gateway;
--		addrconf_addr_solict_mult(target, &mcaddr);
--		ndisc_send_ns(rt->dst.dev, NULL, target, &mcaddr, NULL);
-+		if (work) {
-+			INIT_WORK(&work->work, rt6_probe_deferred);
-+			work->target = rt->rt6i_gateway;
-+			dev_hold(rt->dst.dev);
-+			work->dev = rt->dst.dev;
-+			schedule_work(&work->work);
-+		}
- 	} else {
- out:
- 		write_unlock(&neigh->lock);
+--- a/net/netfilter/nf_conntrack_h323_main.c
++++ b/net/netfilter/nf_conntrack_h323_main.c
+@@ -778,8 +778,8 @@ static int callforward_do_filter(const u
+ 				   flowi6_to_flowi(&fl1), false)) {
+ 			if (!afinfo->route(&init_net, (struct dst_entry **)&rt2,
+ 					   flowi6_to_flowi(&fl2), false)) {
+-				if (!memcmp(&rt1->rt6i_gateway, &rt2->rt6i_gateway,
+-					    sizeof(rt1->rt6i_gateway)) &&
++				if (ipv6_addr_equal(rt6_nexthop(rt1),
++						    rt6_nexthop(rt2)) &&
+ 				    rt1->dst.dev == rt2->dst.dev)
+ 					ret = 1;
+ 				dst_release(&rt2->dst);
 
 
