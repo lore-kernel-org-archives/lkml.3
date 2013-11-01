@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab3KAWQz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:16:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55502 "EHLO
+	id S1756498Ab3KAWRT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:17:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55498 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756415Ab3KAWI2 (ORCPT
+	with ESMTP id S1756405Ab3KAWI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:28 -0400
+	Fri, 1 Nov 2013 18:08:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>, Jean Delvare <jdelvare@suse.de>
-Subject: [PATCH 3.11 53/66] i2c: ismt: initialize DMA buffer
-Date: Fri,  1 Nov 2013 15:07:29 -0700
-Message-Id: <20131101220649.394427047@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: [PATCH 3.11 52/66] dm snapshot: fix data corruption
+Date: Fri,  1 Nov 2013 15:07:28 -0700
+Message-Id: <20131101220649.098062654@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -27,34 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit bf4169100c909667ede6af67668b3ecce6928343 upstream.
+commit e9c6a182649f4259db704ae15a91ac820e63b0ca upstream.
 
-This patch adds code to initialize the DMA buffer to compensate for
-possible hardware data corruption.
+This patch fixes a particular type of data corruption that has been
+encountered when loading a snapshot's metadata from disk.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-[wsa: changed to use 'sizeof']
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Cc: Jean Delvare <jdelvare@suse.de>
+When we allocate a new chunk in persistent_prepare, we increment
+ps->next_free and we make sure that it doesn't point to a metadata area
+by further incrementing it if necessary.
+
+When we load metadata from disk on device activation, ps->next_free is
+positioned after the last used data chunk. However, if this last used
+data chunk is followed by a metadata area, ps->next_free is positioned
+erroneously to the metadata area. A newly-allocated chunk is placed at
+the same location as the metadata area, resulting in data or metadata
+corruption.
+
+This patch changes the code so that ps->next_free skips the metadata
+area when metadata are loaded in function read_exceptions.
+
+The patch also moves a piece of code from persistent_prepare_exception
+to a separate function skip_metadata to avoid code duplication.
+
+CVE-2013-4299
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-ismt.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/md/dm-snap-persistent.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
---- a/drivers/i2c/busses/i2c-ismt.c
-+++ b/drivers/i2c/busses/i2c-ismt.c
-@@ -393,6 +393,9 @@ static int ismt_access(struct i2c_adapte
+--- a/drivers/md/dm-snap-persistent.c
++++ b/drivers/md/dm-snap-persistent.c
+@@ -269,6 +269,14 @@ static chunk_t area_location(struct psto
+ 	return NUM_SNAPSHOT_HDR_CHUNKS + ((ps->exceptions_per_area + 1) * area);
+ }
  
- 	desc = &priv->hw[priv->head];
- 
-+	/* Initialize the DMA buffer */
-+	memset(priv->dma_buffer, 0, sizeof(priv->dma_buffer));
++static void skip_metadata(struct pstore *ps)
++{
++	uint32_t stride = ps->exceptions_per_area + 1;
++	chunk_t next_free = ps->next_free;
++	if (sector_div(next_free, stride) == NUM_SNAPSHOT_HDR_CHUNKS)
++		ps->next_free++;
++}
 +
- 	/* Initialize the descriptor */
- 	memset(desc, 0, sizeof(struct ismt_desc));
- 	desc->tgtaddr_rw = ISMT_DESC_ADDR_RW(addr, read_write);
+ /*
+  * Read or write a metadata area.  Remembering to skip the first
+  * chunk which holds the header.
+@@ -502,6 +510,8 @@ static int read_exceptions(struct pstore
+ 
+ 	ps->current_area--;
+ 
++	skip_metadata(ps);
++
+ 	return 0;
+ }
+ 
+@@ -616,8 +626,6 @@ static int persistent_prepare_exception(
+ 					struct dm_exception *e)
+ {
+ 	struct pstore *ps = get_info(store);
+-	uint32_t stride;
+-	chunk_t next_free;
+ 	sector_t size = get_dev_size(dm_snap_cow(store->snap)->bdev);
+ 
+ 	/* Is there enough room ? */
+@@ -630,10 +638,8 @@ static int persistent_prepare_exception(
+ 	 * Move onto the next free pending, making sure to take
+ 	 * into account the location of the metadata chunks.
+ 	 */
+-	stride = (ps->exceptions_per_area + 1);
+-	next_free = ++ps->next_free;
+-	if (sector_div(next_free, stride) == 1)
+-		ps->next_free++;
++	ps->next_free++;
++	skip_metadata(ps);
+ 
+ 	atomic_inc(&ps->pending_count);
+ 	return 0;
 
 
