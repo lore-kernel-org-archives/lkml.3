@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab3KAWi5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:38:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54939 "EHLO
+	id S1756748Ab3KAWjX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:39:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54937 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754065Ab3KAWEc (ORCPT
+	with ESMTP id S1754343Ab3KAWEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:04:32 -0400
+	Fri, 1 Nov 2013 18:04:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 09/54] net: mv643xx_eth: update statistics timer from timer context only
-Date: Fri,  1 Nov 2013 15:03:37 -0700
-Message-Id: <20131101220212.373302587@linuxfoundation.org>
+Subject: [PATCH 3.10 08/54] l2tp: Fix build warning with ipv6 disabled.
+Date: Fri,  1 Nov 2013 15:03:36 -0700
+Message-Id: <20131101220212.265495043@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,41 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 041b4ddb84989f06ff1df0ca869b950f1ee3cb1c ]
+[ Upstream commit 8d8a51e26a6d415e1470759f2cf5f3ee3ee86196 ]
 
-Each port driver installs a periodic timer to update port statistics
-by calling mib_counters_update. As mib_counters_update is also called
-from non-timer context, we should not reschedule the timer there but
-rather move it to timer-only context.
+net/l2tp/l2tp_core.c: In function ‘l2tp_verify_udp_checksum’:
+net/l2tp/l2tp_core.c:499:22: warning: unused variable ‘tunnel’ [-Wunused-variable]
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+Create a helper "l2tp_tunnel()" to facilitate this, and as a side
+effect get rid of a bunch of unnecessary void pointer casts.
+
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/marvell/mv643xx_eth.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ net/l2tp/l2tp_core.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -1125,15 +1125,13 @@ static void mib_counters_update(struct m
- 	p->rx_discard += rdlp(mp, RX_DISCARD_FRAME_CNT);
- 	p->rx_overrun += rdlp(mp, RX_OVERRUN_FRAME_CNT);
- 	spin_unlock_bh(&mp->mib_counters_lock);
--
--	mod_timer(&mp->mib_counters_timer, jiffies + 30 * HZ);
- }
+--- a/net/l2tp/l2tp_core.c
++++ b/net/l2tp/l2tp_core.c
+@@ -115,6 +115,11 @@ struct l2tp_net {
+ static void l2tp_session_set_header_len(struct l2tp_session *session, int version);
+ static void l2tp_tunnel_free(struct l2tp_tunnel *tunnel);
  
- static void mib_counters_timer_wrapper(unsigned long _mp)
++static inline struct l2tp_tunnel *l2tp_tunnel(struct sock *sk)
++{
++	return sk->sk_user_data;
++}
++
+ static inline struct l2tp_net *l2tp_pernet(struct net *net)
  {
- 	struct mv643xx_eth_private *mp = (void *)_mp;
--
- 	mib_counters_update(mp);
-+	mod_timer(&mp->mib_counters_timer, jiffies + 30 * HZ);
- }
+ 	BUG_ON(!net);
+@@ -499,7 +504,6 @@ out:
+ static inline int l2tp_verify_udp_checksum(struct sock *sk,
+ 					   struct sk_buff *skb)
+ {
+-	struct l2tp_tunnel *tunnel = (struct l2tp_tunnel *)sk->sk_user_data;
+ 	struct udphdr *uh = udp_hdr(skb);
+ 	u16 ulen = ntohs(uh->len);
+ 	__wsum psum;
+@@ -508,7 +512,7 @@ static inline int l2tp_verify_udp_checks
+ 		return 0;
  
+ #if IS_ENABLED(CONFIG_IPV6)
+-	if (sk->sk_family == PF_INET6 && !tunnel->v4mapped) {
++	if (sk->sk_family == PF_INET6 && !l2tp_tunnel(sk)->v4mapped) {
+ 		if (!uh->check) {
+ 			LIMIT_NETDEBUG(KERN_INFO "L2TP: IPv6: checksum is 0\n");
+ 			return 1;
+@@ -1248,10 +1252,9 @@ EXPORT_SYMBOL_GPL(l2tp_xmit_skb);
+  */
+ static void l2tp_tunnel_destruct(struct sock *sk)
+ {
+-	struct l2tp_tunnel *tunnel;
++	struct l2tp_tunnel *tunnel = l2tp_tunnel(sk);
+ 	struct l2tp_net *pn;
  
+-	tunnel = sk->sk_user_data;
+ 	if (tunnel == NULL)
+ 		goto end;
+ 
+@@ -1619,7 +1622,7 @@ int l2tp_tunnel_create(struct net *net,
+ 	}
+ 
+ 	/* Check if this socket has already been prepped */
+-	tunnel = (struct l2tp_tunnel *)sk->sk_user_data;
++	tunnel = l2tp_tunnel(sk);
+ 	if (tunnel != NULL) {
+ 		/* This socket has already been prepped */
+ 		err = -EBUSY;
 
 
