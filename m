@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab3KAWW3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:22:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55385 "EHLO
+	id S1756791Ab3KAWWp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:22:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55372 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756263Ab3KAWIJ (ORCPT
+	with ESMTP id S1756251Ab3KAWIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:09 -0400
+	Fri, 1 Nov 2013 18:08:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 30/66] connector: use nlmsg_len() to check message length
-Date: Fri,  1 Nov 2013 15:07:06 -0700
-Message-Id: <20131101220643.063821127@linuxfoundation.org>
+Subject: [PATCH 3.11 27/66] netem: free skbs in tree on reset
+Date: Fri,  1 Nov 2013 15:07:03 -0700
+Message-Id: <20131101220642.285992309@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,45 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: stephen hemminger <stephen@networkplumber.org>
 
-[ Upstream commit 162b2bedc084d2d908a04c93383ba02348b648b0 ]
+[ Upstream commit ff704050f2fc0f3382b5a70bba56a51a3feca79d ]
 
-The current code tests the length of the whole netlink message to be
-at least as long to fit a cn_msg. This is wrong as nlmsg_len includes
-the length of the netlink message header. Use nlmsg_len() instead to
-fix this "off-by-NLMSG_HDRLEN" size check.
+Netem can leak memory because packets get stored in red-black
+tree and it is not cleared on reset.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Reported by: Сергеев Сергей <adron@yapic.net>
+Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/connector/connector.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ net/sched/sch_netem.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/drivers/connector/connector.c
-+++ b/drivers/connector/connector.c
-@@ -157,17 +157,18 @@ static int cn_call_callback(struct sk_bu
- static void cn_rx_skb(struct sk_buff *__skb)
+--- a/net/sched/sch_netem.c
++++ b/net/sched/sch_netem.c
+@@ -358,6 +358,21 @@ static psched_time_t packet_len_2_sched_
+ 	return PSCHED_NS2TICKS(ticks);
+ }
+ 
++static void tfifo_reset(struct Qdisc *sch)
++{
++	struct netem_sched_data *q = qdisc_priv(sch);
++	struct rb_node *p;
++
++	while ((p = rb_first(&q->t_root))) {
++		struct sk_buff *skb = netem_rb_to_skb(p);
++
++		rb_erase(p, &q->t_root);
++		skb->next = NULL;
++		skb->prev = NULL;
++		kfree_skb(skb);
++	}
++}
++
+ static void tfifo_enqueue(struct sk_buff *nskb, struct Qdisc *sch)
  {
- 	struct nlmsghdr *nlh;
--	int err;
- 	struct sk_buff *skb;
-+	int len, err;
+ 	struct netem_sched_data *q = qdisc_priv(sch);
+@@ -613,6 +628,7 @@ static void netem_reset(struct Qdisc *sc
+ 	struct netem_sched_data *q = qdisc_priv(sch);
  
- 	skb = skb_get(__skb);
- 
- 	if (skb->len >= NLMSG_HDRLEN) {
- 		nlh = nlmsg_hdr(skb);
-+		len = nlmsg_len(nlh);
- 
--		if (nlh->nlmsg_len < sizeof(struct cn_msg) ||
-+		if (len < (int)sizeof(struct cn_msg) ||
- 		    skb->len < nlh->nlmsg_len ||
--		    nlh->nlmsg_len > CONNECTOR_MAX_MSG_SIZE) {
-+		    len > CONNECTOR_MAX_MSG_SIZE) {
- 			kfree_skb(skb);
- 			return;
- 		}
+ 	qdisc_reset_queue(sch);
++	tfifo_reset(sch);
+ 	if (q->qdisc)
+ 		qdisc_reset(q->qdisc);
+ 	qdisc_watchdog_cancel(&q->watchdog);
 
 
