@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab3KAVoE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 17:44:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54545 "EHLO
+	id S1754799Ab3KAVoG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 17:44:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54578 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab3KAVn6 (ORCPT
+	with ESMTP id S1754732Ab3KAVoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 17:43:58 -0400
+	Fri, 1 Nov 2013 17:44:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
+        Seif Mazareeb <seif@marvell.com>, Paul Moore <paul@paul-moore.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 16/32] connector: use nlmsg_len() to check message length
-Date: Fri,  1 Nov 2013 14:43:27 -0700
-Message-Id: <20131101214317.517914955@linuxfoundation.org>
+Subject: [ 23/32] net: fix cipso packet validation when !NETLABEL
+Date: Fri,  1 Nov 2013 14:43:34 -0700
+Message-Id: <20131101214319.224257156@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101214313.735463599@linuxfoundation.org>
 References: <20131101214313.735463599@linuxfoundation.org>
@@ -27,45 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Seif Mazareeb <seif@marvell.com>
 
-[ Upstream commit 162b2bedc084d2d908a04c93383ba02348b648b0 ]
+[ Upstream commit f2e5ddcc0d12f9c4c7b254358ad245c9dddce13b ]
 
-The current code tests the length of the whole netlink message to be
-at least as long to fit a cn_msg. This is wrong as nlmsg_len includes
-the length of the netlink message header. Use nlmsg_len() instead to
-fix this "off-by-NLMSG_HDRLEN" size check.
+When CONFIG_NETLABEL is disabled, the cipso_v4_validate() function could loop
+forever in the main loop if opt[opt_iter +1] == 0, this will causing a kernel
+crash in an SMP system, since the CPU executing this function will
+stall /not respond to IPIs.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+This problem can be reproduced by running the IP Stack Integrity Checker
+(http://isic.sourceforge.net) using the following command on a Linux machine
+connected to DUT:
+
+"icmpsic -s rand -d <DUT IP address> -r 123456"
+wait (1-2 min)
+
+Signed-off-by: Seif Mazareeb <seif@marvell.com>
+Acked-by: Paul Moore <paul@paul-moore.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/connector/connector.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ include/net/cipso_ipv4.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/connector/connector.c
-+++ b/drivers/connector/connector.c
-@@ -157,17 +157,18 @@ static int cn_call_callback(struct sk_bu
- static void cn_rx_skb(struct sk_buff *__skb)
- {
- 	struct nlmsghdr *nlh;
--	int err;
- 	struct sk_buff *skb;
-+	int len, err;
+--- a/include/net/cipso_ipv4.h
++++ b/include/net/cipso_ipv4.h
+@@ -290,6 +290,7 @@ static inline int cipso_v4_validate(cons
+ 	unsigned char err_offset = 0;
+ 	u8 opt_len = opt[1];
+ 	u8 opt_iter;
++	u8 tag_len;
  
- 	skb = skb_get(__skb);
+ 	if (opt_len < 8) {
+ 		err_offset = 1;
+@@ -302,11 +303,12 @@ static inline int cipso_v4_validate(cons
+ 	}
  
- 	if (skb->len >= NLMSG_SPACE(0)) {
- 		nlh = nlmsg_hdr(skb);
-+		len = nlmsg_len(nlh);
- 
--		if (nlh->nlmsg_len < sizeof(struct cn_msg) ||
-+		if (len < (int)sizeof(struct cn_msg) ||
- 		    skb->len < nlh->nlmsg_len ||
--		    nlh->nlmsg_len > CONNECTOR_MAX_MSG_SIZE) {
-+		    len > CONNECTOR_MAX_MSG_SIZE) {
- 			kfree_skb(skb);
- 			return;
+ 	for (opt_iter = 6; opt_iter < opt_len;) {
+-		if (opt[opt_iter + 1] > (opt_len - opt_iter)) {
++		tag_len = opt[opt_iter + 1];
++		if ((tag_len == 0) || (opt[opt_iter + 1] > (opt_len - opt_iter))) {
+ 			err_offset = opt_iter + 1;
+ 			goto out;
  		}
+-		opt_iter += opt[opt_iter + 1];
++		opt_iter += tag_len;
+ 	}
+ 
+ out:
 
 
