@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652Ab3KAMca (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 08:32:30 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:63804 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970Ab3KAMc2 (ORCPT
+	id S1752381Ab3KAMfx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 08:35:53 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:46857 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182Ab3KAMfw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 08:32:28 -0400
-From: Conrad Gomes <conrad.s.j.gomes@gmail.com>
-To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        gregkh@linuxfoundation.org
-Cc: joe@perches.com, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Conrad Gomes <conrad.s.j.gomes@gmail.com>
-Subject: [PATCH] Staging: comedi: fix coding style issues in unioxx5.c
-Date: Fri,  1 Nov 2013 18:01:56 +0530
-Message-Id: <1383309116-8042-1-git-send-email-conrad.s.j.gomes@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 1 Nov 2013 08:35:52 -0400
+Message-ID: <1383309354.11155.23.camel@hornet>
+Subject: Re: [PATCH] vexpress: remove declaration of vexpress_clk_of_init()
+From: Pawel Moll <pawel.moll@arm.com>
+To: Kefeng Wang <wangkefeng.wang@huawei.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>
+Date: Fri, 01 Nov 2013 12:35:54 +0000
+In-Reply-To: <1383018033-1864-1-git-send-email-wangkefeng.wang@huawei.com>
+References: <1383018033-1864-1-git-send-email-wangkefeng.wang@huawei.com>
+X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
+Mime-Version: 1.0
+X-OriginalArrivalTime: 01 Nov 2013 12:35:49.0271 (UTC) FILETIME=[E5059A70:01CED6FE]
+X-MC-Unique: 113110112354902201
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch which fixes  coding style issues in unioxx5.c found
-by checkpatch.pl
+On Tue, 2013-10-29 at 03:40 +0000, Kefeng Wang wrote:
+> After commit:6e973d2c(clk: vexpress: Add separate SP810 driver),
+> vexpress_clk_of_init() is unnecessary and removed, so kill it.
+> 
+> Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
+> ---
+>  include/linux/vexpress.h | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/include/linux/vexpress.h b/include/linux/vexpress.h
+> index 617c01b..0e65172 100644
+> --- a/include/linux/vexpress.h
+> +++ b/include/linux/vexpress.h
+> @@ -122,6 +122,5 @@ struct clk *vexpress_osc_setup(struct device *dev);
+>  void vexpress_osc_of_setup(struct device_node *node);
+>  
+>  void vexpress_clk_init(void __iomem *sp810_base);
+> -void vexpress_clk_of_init(void);
+>  
+>  #endif
 
-1) Replaced printk with pr_info and pr_err
-2) Reinitialized n_subd before for loop to fix over 80 character
-   warning
-3) Reworded comment to fix 80 character warning
+I've got this covered by some other patches, but thanks for pointing it
+out anyway.
 
-Signed-off-by: Conrad Gomes <conrad.s.j.gomes@gmail.com>
----
- drivers/staging/comedi/drivers/unioxx5.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+Cheers!
 
-diff --git a/drivers/staging/comedi/drivers/unioxx5.c b/drivers/staging/comedi/drivers/unioxx5.c
-index 93eec2f..de68e3a 100644
---- a/drivers/staging/comedi/drivers/unioxx5.c
-+++ b/drivers/staging/comedi/drivers/unioxx5.c
-@@ -96,7 +96,7 @@ static void __unioxx5_digital_config(struct unioxx5_subd_priv *usp, int mode)
- 	int i, mask;
- 
- 	mask = (mode == ALL_2_OUTPUT) ? 0xFF : 0x00;
--	printk("COMEDI: mode = %d\n", mask);
-+	pr_info("COMEDI: mode = %d\n", mask);
- 
- 	outb(1, usp->usp_iobase + 0);
- 
-@@ -185,7 +185,7 @@ static int __unioxx5_analog_read(struct unioxx5_subd_priv *usp,
- 
- 	/* if four bytes readding error occurs - return 0(false) */
- 	if ((control & Rx4CA_ERR_MASK)) {
--		printk("COMEDI: 4 bytes error\n");
-+		pr_err("COMEDI: 4 bytes error\n");
- 		return 0;
- 	}
- 
-@@ -436,8 +436,10 @@ static int unioxx5_attach(struct comedi_device *dev,
- 	dev->iobase = iobase;
- 	iobase += UNIOXX5_SUBDEV_BASE;
- 
--	/* defining number of subdevices and getting they types (it must be 'g01')  */
--	for (i = n_subd = 0, ba = iobase; i < 4; i++, ba += UNIOXX5_SUBDEV_ODDS) {
-+	n_subd = 0;
-+
-+	/* getting number of subdevices with types 'g01'*/
-+	for (i = 0, ba = iobase; i < 4; i++, ba += UNIOXX5_SUBDEV_ODDS) {
- 		id = inb(ba + 0xE);
- 		num = inb(ba + 0xF);
- 
--- 
-1.7.9.5
+Pawel
+
+
+
 
