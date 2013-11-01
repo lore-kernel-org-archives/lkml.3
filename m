@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972Ab3KAWGK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:06:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55142 "EHLO
+	id S1755986Ab3KAWGb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:06:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55138 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753766Ab3KAWFT (ORCPT
+	with ESMTP id S1755861Ab3KAWFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:05:19 -0400
+	Fri, 1 Nov 2013 18:05:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Enrico Mioso <mrkiko.rs@gmail.com>,
-        Antonella Pellizzari <anto.pellizzari83@gmail.com>,
-        Dan Williams <dcbw@redhat.com>
-Subject: [PATCH 3.10 54/54] usb: serial: option: blacklist Olivetti Olicard200
-Date: Fri,  1 Nov 2013 15:04:22 -0700
-Message-Id: <20131101220217.360086326@linuxfoundation.org>
+        Mariusz Ceier <mceier+kernel@gmail.com>,
+        Mugunthan V N <mugunthanvnm@ti.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 40/54] davinci_emac.c: Fix IFF_ALLMULTI setup
+Date: Fri,  1 Nov 2013 15:04:08 -0700
+Message-Id: <20131101220215.834726024@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -28,34 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Enrico Mioso <mrkiko.rs@gmail.com>
+From: Mariusz Ceier <mceier+kernel@gmail.com>
 
-commit fd8573f5828873343903215f203f14dc82de397c upstream.
+[ Upstream commit d69e0f7ea95fef8059251325a79c004bac01f018 ]
 
-Interface 6 of this device speaks QMI as per tests done by us.
-Credits go to Antonella for providing the hardware.
+When IFF_ALLMULTI flag is set on interface and IFF_PROMISC isn't,
+emac_dev_mcast_set should only enable RX of multicasts and reset
+MACHASH registers.
 
-Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
-Signed-off-by: Antonella Pellizzari <anto.pellizzari83@gmail.com>
-Tested-by: Dan Williams <dcbw@redhat.com>
+It does this, but afterwards it either sets up multicast MACs
+filtering or disables RX of multicasts and resets MACHASH registers
+again, rendering IFF_ALLMULTI flag useless.
+
+This patch fixes emac_dev_mcast_set, so that multicast MACs filtering and
+disabling of RX of multicasts are skipped when IFF_ALLMULTI flag is set.
+
+Tested with kernel 2.6.37.
+
+Signed-off-by: Mariusz Ceier <mceier+kernel@gmail.com>
+Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/serial/option.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/ti/davinci_emac.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1261,7 +1261,9 @@ static const struct usb_device_id option
+--- a/drivers/net/ethernet/ti/davinci_emac.c
++++ b/drivers/net/ethernet/ti/davinci_emac.c
+@@ -876,8 +876,7 @@ static void emac_dev_mcast_set(struct ne
+ 		    netdev_mc_count(ndev) > EMAC_DEF_MAX_MULTICAST_ADDRESSES) {
+ 			mbp_enable = (mbp_enable | EMAC_MBP_RXMCAST);
+ 			emac_add_mcast(priv, EMAC_ALL_MULTI_SET, NULL);
+-		}
+-		if (!netdev_mc_empty(ndev)) {
++		} else if (!netdev_mc_empty(ndev)) {
+ 			struct netdev_hw_addr *ha;
  
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD145) },
--	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200) },
-+	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200),
-+		.driver_info = (kernel_ulong_t)&net_intf6_blacklist
-+	},
- 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
- 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEM600) },
+ 			mbp_enable = (mbp_enable | EMAC_MBP_RXMCAST);
 
 
