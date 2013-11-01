@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199Ab3KARqr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 13:46:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35671 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752002Ab3KARqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 13:46:46 -0400
-Date: Fri, 1 Nov 2013 13:46:15 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>, Kent Overstreet <kmo@daterainc.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: stec skd block driver needs updating for immutable biovec
-Message-ID: <20131101174615.GC23501@redhat.com>
-References: <20131101135931.GA22903@redhat.com>
- <5273C2B8.5030608@kernel.dk>
- <20131101154338.GA23501@redhat.com>
- <20131101155027.GA5665@infradead.org>
- <5273D0B1.2030006@kernel.dk>
- <20131101162823.GB23501@redhat.com>
- <5273D80F.5070205@kernel.dk>
+	id S1752343Ab3KARrg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 13:47:36 -0400
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:55809 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab3KARrf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 13:47:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5273D80F.5070205@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131101140917.GF30123@yliu-dev.sh.intel.com>
+References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
+	<1383292467-28922-2-git-send-email-yuanhan.liu@linux.intel.com>
+	<20131101084329.GB19466@laptop.lan>
+	<20131101093844.GA30123@yliu-dev.sh.intel.com>
+	<20131101102224.GE19466@laptop.lan>
+	<20131101140917.GF30123@yliu-dev.sh.intel.com>
+Date: Fri, 1 Nov 2013 10:47:34 -0700
+X-Google-Sender-Auth: _SZYj16farK7N9P66MWHfPt0O9Q
+Message-ID: <CA+55aFxeNisBgvE9EePR9OGm_BkO7RvxbqCws04v7QTJ=bGMnw@mail.gmail.com>
+Subject: Re: [PATCH 1/4] mm/rmap: per anon_vma lock
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 01 2013 at 12:34pm -0400,
-Jens Axboe <axboe@kernel.dk> wrote:
+On Fri, Nov 1, 2013 at 7:09 AM, Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
+>
+> Sorry, I may be wrong again this time. But, isn't vma->anon_vma_chain
+> list being protect by mmap_sem & page_table_lock?
 
-> On 11/01/2013 10:28 AM, Mike Snitzer wrote:
-> > On Fri, Nov 01 2013 at 12:02pm -0400,
-> > Jens Axboe <axboe@kernel.dk> wrote:
-> > 
-> >> On 11/01/2013 09:50 AM, Christoph Hellwig wrote:
-> >>> On Fri, Nov 01, 2013 at 11:43:39AM -0400, Mike Snitzer wrote:
-> >>>> All the bi_sector ones are low hanging fruit, but the conversion for
-> >>>> skd_preop_sg_list_bio()'s bio_vec code is more involved.
-> >>>>
-> >>>> Kent, any chance you could crank through it?
-> >>>>
-> >>>> If not I can come back to trying to fix this later.. but I'm working
-> >>>> through a test merge of linux-dm.git's 'for-next' with linux-block.git's
-> >>>> 'for-next'.
-> >>>
-> >>> The right thing for 3.13 is to rip out the bio base code path, and
-> >>> for 3.14 to convert it to blk-mq.
-> >>
-> >> It is. I will kill it.
-> > 
-> > I just cranked through it.. hope this helps (think I got everything but
-> > may have missed something):
-> 
-> You lost out, I committed it 20 min ago :-0
+No.
 
-Cool, it's OK, I was still able to get the fulfilling experience of
-killing a bunch of code... made my day.
+The mmap_sem (and the page_table_lock) only protects a single VM instance.
+
+The anon_vma chains, in contrast, can span multiple VM instances,
+since it grows over fork().
+
+Now, you're right that we used to not always lock the root every time,
+but the code has changed since. We used to lock each anon_vma as we
+copied them, now we lock the root only once (see anon_vma_clone()).
+And that works exactly because they all share the same root anon_vma
+on the chain. You can't change that to just randomly lock one non-root
+vma.
+
+So I'll add my voice to the chorus that says "that's wrong", when you
+changed "anon_vma->root->lock" to "anon_vma->lock".
+
+We *may* be able to do finer-grained anon_vma locking again, but it's
+definitely not some mindless "let's just change it back" thing. It
+needs real code changes (and I bet it's not just anon_vma_clone()),
+and it needs a lot of care.
+
+               Linus
