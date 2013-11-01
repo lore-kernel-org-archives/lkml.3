@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755654Ab3KAVsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 17:48:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54549 "EHLO
+	id S1754489Ab3KAVn5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 17:43:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54500 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639Ab3KAVn7 (ORCPT
+	with ESMTP id S1751830Ab3KAVnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 17:43:59 -0400
+	Fri, 1 Nov 2013 17:43:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Eilon Greenstein <eilong@broadcom.com>,
-        Dmitry Kravkov <dmitry@broadcom.com>,
+        =?UTF-8?q?J=C3=BCri=20Aedla?= <juri.aedla@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 17/32] bnx2x: record rx queue for LRO packets
-Date: Fri,  1 Nov 2013 14:43:28 -0700
-Message-Id: <20131101214317.722764477@linuxfoundation.org>
+Subject: [ 06/32] net: heap overflow in __audit_sockaddr()
+Date: Fri,  1 Nov 2013 14:43:17 -0700
+Message-Id: <20131101214315.263294759@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101214313.735463599@linuxfoundation.org>
 References: <20131101214313.735463599@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,50 +31,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 60e66fee56b2256dcb1dc2ea1b2ddcb6e273857d ]
+[ Upstream commit 1661bf364ae9c506bc8795fef70d1532931be1e8 ]
 
-RPS support is kind of broken on bnx2x, because only non LRO packets
-get proper rx queue information. This triggers reorders, as it seems
-bnx2x like to generate a non LRO packet for segment including TCP PUSH
-flag : (this might be pure coincidence, but all the reorders I've
-seen involve segments with a PUSH)
+We need to cap ->msg_namelen or it leads to a buffer overflow when we
+to the memcpy() in __audit_sockaddr().  It requires CAP_AUDIT_CONTROL to
+exploit this bug.
 
-11:13:34.335847 IP A > B: . 415808:447136(31328) ack 1 win 457 <nop,nop,timestamp 3789336 3985797>
-11:13:34.335992 IP A > B: . 447136:448560(1424) ack 1 win 457 <nop,nop,timestamp 3789336 3985797>
-11:13:34.336391 IP A > B: . 448560:479888(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985797>
-11:13:34.336425 IP A > B: P 511216:512640(1424) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
-11:13:34.336423 IP A > B: . 479888:511216(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
-11:13:34.336924 IP A > B: . 512640:543968(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
-11:13:34.336963 IP A > B: . 543968:575296(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+The call tree is:
+___sys_recvmsg()
+  move_addr_to_user()
+    audit_sockaddr()
+      __audit_sockaddr()
 
-We must call skb_record_rx_queue() to properly give to RPS (and more
-generally for TX queue selection on forward path) the receive queue
-information.
-
-Similar fix is needed for skb_mark_napi_id(), but will be handled
-in a separate patch to ease stable backports.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Willem de Bruijn <willemb@google.com>
-Cc: Eilon Greenstein <eilong@broadcom.com>
-Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
+Reported-by: Jüri Aedla <juri.aedla@gmail.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/compat.c |    2 ++
+ net/socket.c |   24 ++++++++++++++++++++----
+ 2 files changed, 22 insertions(+), 4 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -547,6 +547,7 @@ static inline void bnx2x_tpa_stop(struct
- 					 skb, cqe, cqe_idx)) {
- 			if (tpa_info->parsing_flags & PARSING_FLAGS_VLAN)
- 				__vlan_hwaccel_put_tag(skb, tpa_info->vlan_tag);
-+			skb_record_rx_queue(skb, fp->rx_queue);
- 			napi_gro_receive(&fp->napi, skb);
- 		} else {
- 			DP(NETIF_MSG_RX_STATUS,
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -71,6 +71,8 @@ int get_compat_msghdr(struct msghdr *kms
+ 	    __get_user(kmsg->msg_controllen, &umsg->msg_controllen) ||
+ 	    __get_user(kmsg->msg_flags, &umsg->msg_flags))
+ 		return -EFAULT;
++	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
++		return -EINVAL;
+ 	kmsg->msg_name = compat_ptr(tmp1);
+ 	kmsg->msg_iov = compat_ptr(tmp2);
+ 	kmsg->msg_control = compat_ptr(tmp3);
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1899,6 +1899,16 @@ struct used_address {
+ 	unsigned int name_len;
+ };
+ 
++static int copy_msghdr_from_user(struct msghdr *kmsg,
++				 struct msghdr __user *umsg)
++{
++	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
++		return -EFAULT;
++	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
++		return -EINVAL;
++	return 0;
++}
++
+ static int ___sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
+ 			  struct msghdr *msg_sys, unsigned flags,
+ 			  struct used_address *used_address)
+@@ -1917,8 +1927,11 @@ static int ___sys_sendmsg(struct socket
+ 	if (MSG_CMSG_COMPAT & flags) {
+ 		if (get_compat_msghdr(msg_sys, msg_compat))
+ 			return -EFAULT;
+-	} else if (copy_from_user(msg_sys, msg, sizeof(struct msghdr)))
+-		return -EFAULT;
++	} else {
++		err = copy_msghdr_from_user(msg_sys, msg);
++		if (err)
++			return err;
++	}
+ 
+ 	/* do not move before msg_sys is valid */
+ 	err = -EMSGSIZE;
+@@ -2129,8 +2142,11 @@ static int ___sys_recvmsg(struct socket
+ 	if (MSG_CMSG_COMPAT & flags) {
+ 		if (get_compat_msghdr(msg_sys, msg_compat))
+ 			return -EFAULT;
+-	} else if (copy_from_user(msg_sys, msg, sizeof(struct msghdr)))
+-		return -EFAULT;
++	} else {
++		err = copy_msghdr_from_user(msg_sys, msg);
++		if (err)
++			return err;
++	}
+ 
+ 	err = -EMSGSIZE;
+ 	if (msg_sys->msg_iovlen > UIO_MAXIOV)
 
 
