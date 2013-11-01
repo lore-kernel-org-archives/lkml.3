@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237Ab3KAWID (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:08:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55327 "EHLO
+	id S1756324Ab3KAWIP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:08:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55402 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755890Ab3KAWH7 (ORCPT
+	with ESMTP id S1756286Ab3KAWIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:07:59 -0400
+	Fri, 1 Nov 2013 18:08:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Durrant <paul.durrant@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>
-Subject: [PATCH 3.11 18/66] xen-netback: Dont destroy the netdev until the vif is shut down
-Date: Fri,  1 Nov 2013 15:06:54 -0700
-Message-Id: <20131101220639.728149481@linuxfoundation.org>
+        Jason Wang <jasowang@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.11 33/66] virtio-net: refill only when device is up during setting queues
+Date: Fri,  1 Nov 2013 15:07:09 -0700
+Message-Id: <20131101220643.837035068@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -28,146 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Durrant <paul.durrant@citrix.com>
+From: Jason Wang <jasowang@redhat.com>
 
-[ upstream commit id: 279f438e36c0a70b23b86d2090aeec50155034a9 ]
+[ Upstream commit 35ed159bfd96a7547ec277ed8b550c7cbd9841b6 ]
 
-Without this patch, if a frontend cycles through states Closing
-and Closed (which Windows frontends need to do) then the netdev
-will be destroyed and requires re-invocation of hotplug scripts
-to restore state before the frontend can move to Connected. Thus
-when udev is not in use the backend gets stuck in InitWait.
+We used to schedule the refill work unconditionally after changing the
+number of queues. This may lead an issue if the device is not
+up. Since we only try to cancel the work in ndo_stop(), this may cause
+the refill work still work after removing the device. Fix this by only
+schedule the work when device is up.
 
-With this patch, the netdev is left alone whilst the backend is
-still online and is only de-registered and freed just prior to
-destroying the vif (which is also nicely symmetrical with the
-netdev allocation and registration being done during probe) so
-no re-invocation of hotplug scripts is required.
+The bug were introduce by commit 9b9cd8024a2882e896c65222aa421d461354e3f2.
+(virtio-net: fix the race between channels setting and refill)
 
-Signed-off-by: Paul Durrant <paul.durrant@citrix.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Wei Liu <wei.liu2@citrix.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/xen-netback/common.h    |    1 +
- drivers/net/xen-netback/interface.c |   23 +++++++++--------------
- drivers/net/xen-netback/xenbus.c    |   17 ++++++++++++-----
- 3 files changed, 22 insertions(+), 19 deletions(-)
+ drivers/net/virtio_net.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/net/xen-netback/common.h
-+++ b/drivers/net/xen-netback/common.h
-@@ -120,6 +120,7 @@ int xenvif_connect(struct xenvif *vif, u
- 		   unsigned long rx_ring_ref, unsigned int tx_evtchn,
- 		   unsigned int rx_evtchn);
- void xenvif_disconnect(struct xenvif *vif);
-+void xenvif_free(struct xenvif *vif);
- 
- void xenvif_get(struct xenvif *vif);
- void xenvif_put(struct xenvif *vif);
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -326,6 +326,9 @@ struct xenvif *xenvif_alloc(struct devic
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -916,7 +916,9 @@ static int virtnet_set_queues(struct vir
+ 		return -EINVAL;
+ 	} else {
+ 		vi->curr_queue_pairs = queue_pairs;
+-		schedule_delayed_work(&vi->refill, 0);
++		/* virtnet_open() will refill when device is going to up. */
++		if (dev->flags & IFF_UP)
++			schedule_delayed_work(&vi->refill, 0);
  	}
  
- 	netdev_dbg(dev, "Successfully created xenvif\n");
-+
-+	__module_get(THIS_MODULE);
-+
- 	return vif;
+ 	return 0;
+@@ -1714,7 +1716,9 @@ static int virtnet_restore(struct virtio
+ 	vi->config_enable = true;
+ 	mutex_unlock(&vi->config_lock);
+ 
++	rtnl_lock();
+ 	virtnet_set_queues(vi, vi->curr_queue_pairs);
++	rtnl_unlock();
+ 
+ 	return 0;
  }
- 
-@@ -413,12 +416,6 @@ void xenvif_carrier_off(struct xenvif *v
- 
- void xenvif_disconnect(struct xenvif *vif)
- {
--	/* Disconnect funtion might get called by generic framework
--	 * even before vif connects, so we need to check if we really
--	 * need to do a module_put.
--	 */
--	int need_module_put = 0;
--
- 	if (netif_carrier_ok(vif->dev))
- 		xenvif_carrier_off(vif);
- 
-@@ -432,18 +429,16 @@ void xenvif_disconnect(struct xenvif *vi
- 			unbind_from_irqhandler(vif->tx_irq, vif);
- 			unbind_from_irqhandler(vif->rx_irq, vif);
- 		}
--		/* vif->irq is valid, we had a module_get in
--		 * xenvif_connect.
--		 */
--		need_module_put = 1;
- 	}
- 
--	unregister_netdev(vif->dev);
--
- 	xen_netbk_unmap_frontend_rings(vif);
-+}
-+
-+void xenvif_free(struct xenvif *vif)
-+{
-+	unregister_netdev(vif->dev);
- 
- 	free_netdev(vif->dev);
- 
--	if (need_module_put)
--		module_put(THIS_MODULE);
-+	module_put(THIS_MODULE);
- }
---- a/drivers/net/xen-netback/xenbus.c
-+++ b/drivers/net/xen-netback/xenbus.c
-@@ -42,7 +42,7 @@ static int netback_remove(struct xenbus_
- 	if (be->vif) {
- 		kobject_uevent(&dev->dev.kobj, KOBJ_OFFLINE);
- 		xenbus_rm(XBT_NIL, dev->nodename, "hotplug-status");
--		xenvif_disconnect(be->vif);
-+		xenvif_free(be->vif);
- 		be->vif = NULL;
- 	}
- 	kfree(be);
-@@ -213,9 +213,18 @@ static void disconnect_backend(struct xe
- {
- 	struct backend_info *be = dev_get_drvdata(&dev->dev);
- 
-+	if (be->vif)
-+		xenvif_disconnect(be->vif);
-+}
-+
-+static void destroy_backend(struct xenbus_device *dev)
-+{
-+	struct backend_info *be = dev_get_drvdata(&dev->dev);
-+
- 	if (be->vif) {
-+		kobject_uevent(&dev->dev.kobj, KOBJ_OFFLINE);
- 		xenbus_rm(XBT_NIL, dev->nodename, "hotplug-status");
--		xenvif_disconnect(be->vif);
-+		xenvif_free(be->vif);
- 		be->vif = NULL;
- 	}
- }
-@@ -246,14 +255,11 @@ static void frontend_changed(struct xenb
- 	case XenbusStateConnected:
- 		if (dev->state == XenbusStateConnected)
- 			break;
--		backend_create_xenvif(be);
- 		if (be->vif)
- 			connect(be);
- 		break;
- 
- 	case XenbusStateClosing:
--		if (be->vif)
--			kobject_uevent(&dev->dev.kobj, KOBJ_OFFLINE);
- 		disconnect_backend(dev);
- 		xenbus_switch_state(dev, XenbusStateClosing);
- 		break;
-@@ -262,6 +268,7 @@ static void frontend_changed(struct xenb
- 		xenbus_switch_state(dev, XenbusStateClosed);
- 		if (xenbus_dev_is_online(dev))
- 			break;
-+		destroy_backend(dev);
- 		/* fall through if not online */
- 	case XenbusStateUnknown:
- 		device_unregister(&dev->dev);
 
 
