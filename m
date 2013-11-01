@@ -1,31 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab3KAVpv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 17:45:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54605 "EHLO
+	id S1755417Ab3KAVqL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 17:46:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54595 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754811Ab3KAVoI (ORCPT
+	with ESMTP id S1754732Ab3KAVoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 17:44:08 -0400
+	Fri, 1 Nov 2013 17:44:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        Jan Kara <jack@suse.cz>, Richard Weinberger <richard@nod.at>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 28/32] writeback: fix negative bdi max pause
-Date: Fri,  1 Nov 2013 14:43:39 -0700
-Message-Id: <20131101214320.450321949@linuxfoundation.org>
+        Eric Sandeen <sandeen@redhat.com>, Jan Kara <jack@suse.cz>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: [ 26/32] ext3: return 32/64-bit dir name hash according to usage type
+Date: Fri,  1 Nov 2013 14:43:37 -0700
+Message-Id: <20131101214319.993872325@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101214313.735463599@linuxfoundation.org>
 References: <20131101214313.735463599@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,93 +27,343 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fengguang Wu <fengguang.wu@intel.com>
+From: Eric Sandeen <sandeen@redhat.com>
 
-commit e3b6c655b91e01a1dade056cfa358581b47a5351 upstream.
+commit d7dab39b6e16d5eea78ed3c705d2a2d0772b4f06 upstream.
 
-Toralf runs trinity on UML/i386.  After some time it hangs and the last
-message line is
+This is based on commit d1f5273e9adb40724a85272f248f210dc4ce919a
+ext4: return 32/64-bit dir name hash according to usage type
+by Fan Yong <yong.fan@whamcloud.com>
 
-	BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:1521]
+Traditionally ext2/3/4 has returned a 32-bit hash value from llseek()
+to appease NFSv2, which can only handle a 32-bit cookie for seekdir()
+and telldir().  However, this causes problems if there are 32-bit hash
+collisions, since the NFSv2 server can get stuck resending the same
+entries from the directory repeatedly.
 
-It's found that pages_dirtied becomes very large.  More than 1000000000
-pages in this case:
+Allow ext3 to return a full 64-bit hash (both major and minor) for
+telldir to decrease the chance of hash collisions.
 
-	period = HZ * pages_dirtied / task_ratelimit;
-	BUG_ON(pages_dirtied > 2000000000);
-	BUG_ON(pages_dirtied > 1000000000);      <---------
+This patch does implement a new ext3_dir_llseek op, because with 64-bit
+hashes, nfs will attempt to seek to a hash "offset" which is much
+larger than ext3's s_maxbytes.  So for dx dirs, we call
+generic_file_llseek_size() with the appropriate max hash value as the
+maximum seekable size.  Otherwise we just pass through to
+generic_file_llseek().
 
-UML debug printf shows that we got negative pause here:
+Patch-updated-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Patch-updated-by: Eric Sandeen <sandeen@redhat.com>
+(blame us if something is not correct)
 
-	ick: pause : -984
-	ick: pages_dirtied : 0
-	ick: task_ratelimit: 0
-
-	 pause:
-	+       if (pause < 0)  {
-	+               extern int printf(char *, ...);
-	+               printf("ick : pause : %li\n", pause);
-	+               printf("ick: pages_dirtied : %lu\n", pages_dirtied);
-	+               printf("ick: task_ratelimit: %lu\n", task_ratelimit);
-	+               BUG_ON(1);
-	+       }
-	        trace_balance_dirty_pages(bdi,
-
-Since pause is bounded by [min_pause, max_pause] where min_pause is also
-bounded by max_pause.  It's suspected and demonstrated that the
-max_pause calculation goes wrong:
-
-	ick: pause : -717
-	ick: min_pause : -177
-	ick: max_pause : -717
-	ick: pages_dirtied : 14
-	ick: task_ratelimit: 0
-
-The problem lies in the two "long = unsigned long" assignments in
-bdi_max_pause() which might go negative if the highest bit is 1, and the
-min_t(long, ...) check failed to protect it falling under 0.  Fix all of
-them by using "unsigned long" throughout the function.
-
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Tested-by: Toralf Förster <toralf.foerster@gmx.de>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Benjamin LaHaise <bcrl@kvack.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page-writeback.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ fs/ext3/dir.c  |  167 +++++++++++++++++++++++++++++++++++++++++----------------
+ fs/ext3/ext3.h |    6 +-
+ fs/ext3/hash.c |    4 -
+ 3 files changed, 129 insertions(+), 48 deletions(-)
 
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1072,11 +1072,11 @@ static unsigned long dirty_poll_interval
- 	return 1;
+--- a/fs/ext3/dir.c
++++ b/fs/ext3/dir.c
+@@ -21,30 +21,15 @@
+  *
+  */
+ 
++#include <linux/compat.h>
+ #include "ext3.h"
+ 
+ static unsigned char ext3_filetype_table[] = {
+ 	DT_UNKNOWN, DT_REG, DT_DIR, DT_CHR, DT_BLK, DT_FIFO, DT_SOCK, DT_LNK
+ };
+ 
+-static int ext3_readdir(struct file *, void *, filldir_t);
+ static int ext3_dx_readdir(struct file * filp,
+ 			   void * dirent, filldir_t filldir);
+-static int ext3_release_dir (struct inode * inode,
+-				struct file * filp);
+-
+-const struct file_operations ext3_dir_operations = {
+-	.llseek		= generic_file_llseek,
+-	.read		= generic_read_dir,
+-	.readdir	= ext3_readdir,		/* we take BKL. needed?*/
+-	.unlocked_ioctl	= ext3_ioctl,
+-#ifdef CONFIG_COMPAT
+-	.compat_ioctl	= ext3_compat_ioctl,
+-#endif
+-	.fsync		= ext3_sync_file,	/* BKL held */
+-	.release	= ext3_release_dir,
+-};
+-
+ 
+ static unsigned char get_dtype(struct super_block *sb, int filetype)
+ {
+@@ -55,6 +40,25 @@ static unsigned char get_dtype(struct su
+ 	return (ext3_filetype_table[filetype]);
  }
  
--static long bdi_max_pause(struct backing_dev_info *bdi,
--			  unsigned long bdi_dirty)
-+static unsigned long bdi_max_pause(struct backing_dev_info *bdi,
-+				   unsigned long bdi_dirty)
++/**
++ * Check if the given dir-inode refers to an htree-indexed directory
++ * (or a directory which chould potentially get coverted to use htree
++ * indexing).
++ *
++ * Return 1 if it is a dx dir, 0 if not
++ */
++static int is_dx_dir(struct inode *inode)
++{
++	struct super_block *sb = inode->i_sb;
++
++	if (EXT3_HAS_COMPAT_FEATURE(inode->i_sb,
++		     EXT3_FEATURE_COMPAT_DIR_INDEX) &&
++	    ((EXT3_I(inode)->i_flags & EXT3_INDEX_FL) ||
++	     ((inode->i_size >> sb->s_blocksize_bits) == 1)))
++		return 1;
++
++	return 0;
++}
+ 
+ int ext3_check_dir_entry (const char * function, struct inode * dir,
+ 			  struct ext3_dir_entry_2 * de,
+@@ -94,18 +98,13 @@ static int ext3_readdir(struct file * fi
+ 	unsigned long offset;
+ 	int i, stored;
+ 	struct ext3_dir_entry_2 *de;
+-	struct super_block *sb;
+ 	int err;
+ 	struct inode *inode = filp->f_path.dentry->d_inode;
++	struct super_block *sb = inode->i_sb;
+ 	int ret = 0;
+ 	int dir_has_error = 0;
+ 
+-	sb = inode->i_sb;
+-
+-	if (EXT3_HAS_COMPAT_FEATURE(inode->i_sb,
+-				    EXT3_FEATURE_COMPAT_DIR_INDEX) &&
+-	    ((EXT3_I(inode)->i_flags & EXT3_INDEX_FL) ||
+-	     ((inode->i_size >> sb->s_blocksize_bits) == 1))) {
++	if (is_dx_dir(inode)) {
+ 		err = ext3_dx_readdir(filp, dirent, filldir);
+ 		if (err != ERR_BAD_DX_DIR) {
+ 			ret = err;
+@@ -227,22 +226,87 @@ out:
+ 	return ret;
+ }
+ 
++static inline int is_32bit_api(void)
++{
++#ifdef CONFIG_COMPAT
++	return is_compat_task();
++#else
++	return (BITS_PER_LONG == 32);
++#endif
++}
++
+ /*
+  * These functions convert from the major/minor hash to an f_pos
+- * value.
++ * value for dx directories
++ *
++ * Upper layer (for example NFS) should specify FMODE_32BITHASH or
++ * FMODE_64BITHASH explicitly. On the other hand, we allow ext3 to be mounted
++ * directly on both 32-bit and 64-bit nodes, under such case, neither
++ * FMODE_32BITHASH nor FMODE_64BITHASH is specified.
++ */
++static inline loff_t hash2pos(struct file *filp, __u32 major, __u32 minor)
++{
++	if ((filp->f_mode & FMODE_32BITHASH) ||
++	    (!(filp->f_mode & FMODE_64BITHASH) && is_32bit_api()))
++		return major >> 1;
++	else
++		return ((__u64)(major >> 1) << 32) | (__u64)minor;
++}
++
++static inline __u32 pos2maj_hash(struct file *filp, loff_t pos)
++{
++	if ((filp->f_mode & FMODE_32BITHASH) ||
++	    (!(filp->f_mode & FMODE_64BITHASH) && is_32bit_api()))
++		return (pos << 1) & 0xffffffff;
++	else
++		return ((pos >> 32) << 1) & 0xffffffff;
++}
++
++static inline __u32 pos2min_hash(struct file *filp, loff_t pos)
++{
++	if ((filp->f_mode & FMODE_32BITHASH) ||
++	    (!(filp->f_mode & FMODE_64BITHASH) && is_32bit_api()))
++		return 0;
++	else
++		return pos & 0xffffffff;
++}
++
++/*
++ * Return 32- or 64-bit end-of-file for dx directories
++ */
++static inline loff_t ext3_get_htree_eof(struct file *filp)
++{
++	if ((filp->f_mode & FMODE_32BITHASH) ||
++	    (!(filp->f_mode & FMODE_64BITHASH) && is_32bit_api()))
++		return EXT3_HTREE_EOF_32BIT;
++	else
++		return EXT3_HTREE_EOF_64BIT;
++}
++
++
++/*
++ * ext3_dir_llseek() calls generic_file_llseek[_size]() to handle both
++ * non-htree and htree directories, where the "offset" is in terms
++ * of the filename hash value instead of the byte offset.
+  *
+- * Currently we only use major hash numer.  This is unfortunate, but
+- * on 32-bit machines, the same VFS interface is used for lseek and
+- * llseek, so if we use the 64 bit offset, then the 32-bit versions of
+- * lseek/telldir/seekdir will blow out spectacularly, and from within
+- * the ext2 low-level routine, we don't know if we're being called by
+- * a 64-bit version of the system call or the 32-bit version of the
+- * system call.  Worse yet, NFSv2 only allows for a 32-bit readdir
+- * cookie.  Sigh.
++ * Because we may return a 64-bit hash that is well beyond s_maxbytes,
++ * we need to pass the max hash as the maximum allowable offset in
++ * the htree directory case.
++ *
++ * NOTE: offsets obtained *before* ext3_set_inode_flag(dir, EXT3_INODE_INDEX)
++ *       will be invalid once the directory was converted into a dx directory
+  */
+-#define hash2pos(major, minor)	(major >> 1)
+-#define pos2maj_hash(pos)	((pos << 1) & 0xffffffff)
+-#define pos2min_hash(pos)	(0)
++loff_t ext3_dir_llseek(struct file *file, loff_t offset, int origin)
++{
++	struct inode *inode = file->f_mapping->host;
++	int dx_dir = is_dx_dir(inode);
++
++	if (likely(dx_dir))
++		return generic_file_llseek_size(file, offset, origin,
++					        ext3_get_htree_eof(file));
++	else
++		return generic_file_llseek(file, offset, origin);
++}
+ 
+ /*
+  * This structure holds the nodes of the red-black tree used to store
+@@ -303,15 +367,16 @@ static void free_rb_tree_fname(struct rb
+ }
+ 
+ 
+-static struct dir_private_info *ext3_htree_create_dir_info(loff_t pos)
++static struct dir_private_info *ext3_htree_create_dir_info(struct file *filp,
++							   loff_t pos)
  {
--	long bw = bdi->avg_write_bandwidth;
--	long t;
-+	unsigned long bw = bdi->avg_write_bandwidth;
-+	unsigned long t;
+ 	struct dir_private_info *p;
+ 
+ 	p = kzalloc(sizeof(struct dir_private_info), GFP_KERNEL);
+ 	if (!p)
+ 		return NULL;
+-	p->curr_hash = pos2maj_hash(pos);
+-	p->curr_minor_hash = pos2min_hash(pos);
++	p->curr_hash = pos2maj_hash(filp, pos);
++	p->curr_minor_hash = pos2min_hash(filp, pos);
+ 	return p;
+ }
+ 
+@@ -401,7 +466,7 @@ static int call_filldir(struct file * fi
+ 		printk("call_filldir: called with null fname?!?\n");
+ 		return 0;
+ 	}
+-	curr_pos = hash2pos(fname->hash, fname->minor_hash);
++	curr_pos = hash2pos(filp, fname->hash, fname->minor_hash);
+ 	while (fname) {
+ 		error = filldir(dirent, fname->name,
+ 				fname->name_len, curr_pos,
+@@ -426,13 +491,13 @@ static int ext3_dx_readdir(struct file *
+ 	int	ret;
+ 
+ 	if (!info) {
+-		info = ext3_htree_create_dir_info(filp->f_pos);
++		info = ext3_htree_create_dir_info(filp, filp->f_pos);
+ 		if (!info)
+ 			return -ENOMEM;
+ 		filp->private_data = info;
+ 	}
+ 
+-	if (filp->f_pos == EXT3_HTREE_EOF)
++	if (filp->f_pos == ext3_get_htree_eof(filp))
+ 		return 0;	/* EOF */
+ 
+ 	/* Some one has messed with f_pos; reset the world */
+@@ -440,8 +505,8 @@ static int ext3_dx_readdir(struct file *
+ 		free_rb_tree_fname(&info->root);
+ 		info->curr_node = NULL;
+ 		info->extra_fname = NULL;
+-		info->curr_hash = pos2maj_hash(filp->f_pos);
+-		info->curr_minor_hash = pos2min_hash(filp->f_pos);
++		info->curr_hash = pos2maj_hash(filp, filp->f_pos);
++		info->curr_minor_hash = pos2min_hash(filp, filp->f_pos);
+ 	}
  
  	/*
- 	 * Limit pause time for small memory systems. If sleeping for too long
-@@ -1088,7 +1088,7 @@ static long bdi_max_pause(struct backing
- 	t = bdi_dirty / (1 + bw / roundup_pow_of_two(1 + HZ / 8));
- 	t++;
+@@ -473,7 +538,7 @@ static int ext3_dx_readdir(struct file *
+ 			if (ret < 0)
+ 				return ret;
+ 			if (ret == 0) {
+-				filp->f_pos = EXT3_HTREE_EOF;
++				filp->f_pos = ext3_get_htree_eof(filp);
+ 				break;
+ 			}
+ 			info->curr_node = rb_first(&info->root);
+@@ -493,7 +558,7 @@ static int ext3_dx_readdir(struct file *
+ 			info->curr_minor_hash = fname->minor_hash;
+ 		} else {
+ 			if (info->next_hash == ~0) {
+-				filp->f_pos = EXT3_HTREE_EOF;
++				filp->f_pos = ext3_get_htree_eof(filp);
+ 				break;
+ 			}
+ 			info->curr_hash = info->next_hash;
+@@ -512,3 +577,15 @@ static int ext3_release_dir (struct inod
  
--	return min_t(long, t, MAX_PAUSE);
-+	return min_t(unsigned long, t, MAX_PAUSE);
+ 	return 0;
  }
++
++const struct file_operations ext3_dir_operations = {
++	.llseek		= ext3_dir_llseek,
++	.read		= generic_read_dir,
++	.readdir	= ext3_readdir,
++	.unlocked_ioctl = ext3_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= ext3_compat_ioctl,
++#endif
++	.fsync		= ext3_sync_file,
++	.release	= ext3_release_dir,
++};
+--- a/fs/ext3/ext3.h
++++ b/fs/ext3/ext3.h
+@@ -920,7 +920,11 @@ struct dx_hash_info
+ 	u32		*seed;
+ };
  
- static long bdi_min_pause(struct backing_dev_info *bdi,
+-#define EXT3_HTREE_EOF	0x7fffffff
++
++/* 32 and 64 bit signed EOF for dx directories */
++#define EXT3_HTREE_EOF_32BIT   ((1UL  << (32 - 1)) - 1)
++#define EXT3_HTREE_EOF_64BIT   ((1ULL << (64 - 1)) - 1)
++
+ 
+ /*
+  * Control parameters used by ext3_htree_next_block
+--- a/fs/ext3/hash.c
++++ b/fs/ext3/hash.c
+@@ -198,8 +198,8 @@ int ext3fs_dirhash(const char *name, int
+ 		return -1;
+ 	}
+ 	hash = hash & ~1;
+-	if (hash == (EXT3_HTREE_EOF << 1))
+-		hash = (EXT3_HTREE_EOF-1) << 1;
++	if (hash == (EXT3_HTREE_EOF_32BIT << 1))
++		hash = (EXT3_HTREE_EOF_32BIT - 1) << 1;
+ 	hinfo->hash = hash;
+ 	hinfo->minor_hash = minor_hash;
+ 	return 0;
 
 
