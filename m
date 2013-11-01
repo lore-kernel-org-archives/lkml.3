@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab3KAWcx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:32:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55052 "EHLO
+	id S1756754Ab3KAWdV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:33:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55038 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755395Ab3KAWE5 (ORCPT
+	with ESMTP id S1755332Ab3KAWEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:04:57 -0400
+	Fri, 1 Nov 2013 18:04:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Seif Mazareeb <seif@marvell.com>, Paul Moore <paul@paul-moore.com>,
+        =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 34/54] net: fix cipso packet validation when !NETLABEL
-Date: Fri,  1 Nov 2013 15:04:02 -0700
-Message-Id: <20131101220215.152408770@linuxfoundation.org>
+Subject: [PATCH 3.10 31/54] wanxl: fix info leak in ioctl
+Date: Fri,  1 Nov 2013 15:03:59 -0700
+Message-Id: <20131101220214.808250623@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,54 +30,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seif Mazareeb <seif@marvell.com>
+From: Salva Peiró <speiro@ai2.upv.es>
 
-[ Upstream commit f2e5ddcc0d12f9c4c7b254358ad245c9dddce13b ]
+[ Upstream commit 2b13d06c9584b4eb773f1e80bbaedab9a1c344e1 ]
 
-When CONFIG_NETLABEL is disabled, the cipso_v4_validate() function could loop
-forever in the main loop if opt[opt_iter +1] == 0, this will causing a kernel
-crash in an SMP system, since the CPU executing this function will
-stall /not respond to IPIs.
+The wanxl_ioctl() code fails to initialize the two padding bytes of
+struct sync_serial_settings after the ->loopback member. Add an explicit
+memset(0) before filling the structure to avoid the info leak.
 
-This problem can be reproduced by running the IP Stack Integrity Checker
-(http://isic.sourceforge.net) using the following command on a Linux machine
-connected to DUT:
-
-"icmpsic -s rand -d <DUT IP address> -r 123456"
-wait (1-2 min)
-
-Signed-off-by: Seif Mazareeb <seif@marvell.com>
-Acked-by: Paul Moore <paul@paul-moore.com>
+Signed-off-by: Salva Peiró <speiro@ai2.upv.es>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/cipso_ipv4.h |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/wan/wanxl.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/include/net/cipso_ipv4.h
-+++ b/include/net/cipso_ipv4.h
-@@ -290,6 +290,7 @@ static inline int cipso_v4_validate(cons
- 	unsigned char err_offset = 0;
- 	u8 opt_len = opt[1];
- 	u8 opt_iter;
-+	u8 tag_len;
- 
- 	if (opt_len < 8) {
- 		err_offset = 1;
-@@ -302,11 +303,12 @@ static inline int cipso_v4_validate(cons
- 	}
- 
- 	for (opt_iter = 6; opt_iter < opt_len;) {
--		if (opt[opt_iter + 1] > (opt_len - opt_iter)) {
-+		tag_len = opt[opt_iter + 1];
-+		if ((tag_len == 0) || (opt[opt_iter + 1] > (opt_len - opt_iter))) {
- 			err_offset = opt_iter + 1;
- 			goto out;
+--- a/drivers/net/wan/wanxl.c
++++ b/drivers/net/wan/wanxl.c
+@@ -355,6 +355,7 @@ static int wanxl_ioctl(struct net_device
+ 			ifr->ifr_settings.size = size; /* data size wanted */
+ 			return -ENOBUFS;
  		}
--		opt_iter += opt[opt_iter + 1];
-+		opt_iter += tag_len;
- 	}
- 
- out:
++		memset(&line, 0, sizeof(line));
+ 		line.clock_type = get_status(port)->clocking;
+ 		line.clock_rate = 0;
+ 		line.loopback = 0;
 
 
