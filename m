@@ -1,71 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab3KALgx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 07:36:53 -0400
-Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:13232
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751792Ab3KALgu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 07:36:50 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 6
-X-BigFish: VS6(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kz70kz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
-From: Nicolin Chen <b42378@freescale.com>
-To: <akpm@linux-foundation.org>, <joe@perches.com>, <nsekhar@ti.com>,
-        <khilman@deeprootsystems.com>, <linux@arm.linux.org.uk>,
-        <dan.j.williams@intel.com>, <vinod.koul@intel.com>,
-        <m.chehab@samsung.com>, <hjk@hansjkoch.de>,
-        <gregkh@linuxfoundation.org>, <perex@perex.cz>, <tiwai@suse.de>,
-        <lgirdwood@gmail.com>, <broonie@kernel.org>,
-        <rmk+kernel@arm.linux.org.uk>, <eric.y.miao@gmail.com>,
-        <haojian.zhuang@gmail.com>
-CC: <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <dmaengine@vger.kernel.org>,
-        <linux-media@vger.kernel.org>, <alsa-devel@alsa-project.org>
-Subject: [PATCH 5/8] uio: uio_pruss: use gen_pool_dma_alloc() to allocate sram memory
-Date: Fri, 1 Nov 2013 19:36:03 +0800
-Message-ID: <f26a7fd466d22aaaeae9cf32d3c4c43c333e0b35.1383303752.git.b42378@freescale.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <cover.1383303752.git.b42378@freescale.com>
-References: <cover.1383303752.git.b42378@freescale.com>
+	id S1756162Ab3KALhJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 07:37:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56141 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756144Ab3KALhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 07:37:06 -0400
+Message-ID: <52739244.3060209@redhat.com>
+Date: Fri, 01 Nov 2013 07:36:36 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Mel Gorman <mgorman@suse.de>
+CC: peterz@infradead.org, mingo@kernel.org, prarit@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -tip] fix race between stop_two_cpus and stop_cpus
+References: <20131031163144.0fd27457@annuminas.surriel.com> <20131101110825.GX2400@suse.de>
+In-Reply-To: <20131101110825.GX2400@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since gen_pool_dma_alloc() is introduced, we implement it to simplify code.
+On 11/01/2013 07:08 AM, Mel Gorman wrote:
+> On Thu, Oct 31, 2013 at 04:31:44PM -0400, Rik van Riel wrote:
+>> There is a race between stop_two_cpus, and the global stop_cpus.
+>>
+> 
+> What was the trigger for this? I want to see what was missing from my own
+> testing. I'm going to go out on a limb and guess that CPU hotplug was also
+> running in the background to specifically stress this sort of rare condition.
+> Something like running a standard test with the monitors/watch-cpuoffline.sh
+> from mmtests running in parallel.
 
-Signed-off-by: Nicolin Chen <b42378@freescale.com>
----
- drivers/uio/uio_pruss.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+AFAIK the trigger was a test that continuously loads and
+unloads kernel modules, while doing other stuff.
 
-diff --git a/drivers/uio/uio_pruss.c b/drivers/uio/uio_pruss.c
-index f519da9..96c4a19 100644
---- a/drivers/uio/uio_pruss.c
-+++ b/drivers/uio/uio_pruss.c
-@@ -158,14 +158,12 @@ static int pruss_probe(struct platform_device *dev)
- 	if (pdata->sram_pool) {
- 		gdev->sram_pool = pdata->sram_pool;
- 		gdev->sram_vaddr =
--			gen_pool_alloc(gdev->sram_pool, sram_pool_sz);
-+			(unsigned long)gen_pool_dma_alloc(gdev->sram_pool,
-+					sram_pool_sz, &gdev->sram_paddr);
- 		if (!gdev->sram_vaddr) {
- 			dev_err(&dev->dev, "Could not allocate SRAM pool\n");
- 			goto out_free;
- 		}
--		gdev->sram_paddr =
--			gen_pool_virt_to_phys(gdev->sram_pool,
--					      gdev->sram_vaddr);
- 	}
- 
- 	gdev->ddr_vaddr = dma_alloc_coherent(&dev->dev, extram_pool_sz,
+>> It is possible for two CPUs to get their stopper functions queued
+>> "backwards" from one another, resulting in the stopper threads
+>> getting stuck, and the system hanging. This can happen because
+>> queuing up stoppers is not synchronized.
+>>
+>> This patch adds synchronization between stop_cpus (a rare operation),
+>> and stop_two_cpus.
+>>
+>> Signed-off-by: Rik van Riel <riel@redhat.com>
+>> ---
+>> Prarit is running a test with this patch. By now the kernel would have
+>> crashed already, yet it is still going. I expect Prarit will add his
+>> Tested-by: some time tomorrow morning.
+>>
+>>  kernel/stop_machine.c | 43 ++++++++++++++++++++++++++++++++++++++++++-
+>>  1 file changed, 42 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+>> index 32a6c44..46cb4c2 100644
+>> --- a/kernel/stop_machine.c
+>> +++ b/kernel/stop_machine.c
+>> @@ -40,8 +40,10 @@ struct cpu_stopper {
+>>  };
+>>  
+>>  static DEFINE_PER_CPU(struct cpu_stopper, cpu_stopper);
+>> +static DEFINE_PER_CPU(bool, stop_two_cpus_queueing);
+>>  static DEFINE_PER_CPU(struct task_struct *, cpu_stopper_task);
+>>  static bool stop_machine_initialized = false;
+>> +static bool stop_cpus_queueing = false;
+>>  
+>>  static void cpu_stop_init_done(struct cpu_stop_done *done, unsigned int nr_todo)
+>>  {
+>> @@ -261,16 +263,37 @@ int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *
+>>  	cpu_stop_init_done(&done, 2);
+>>  	set_state(&msdata, MULTI_STOP_PREPARE);
+>>  
+>> + wait_for_global:
+>> +	/* If a global stop_cpus is queuing up stoppers, wait. */
+>> +	while (unlikely(stop_cpus_queueing))
+>> +		cpu_relax();
+>> +
+> 
+> This partially serialises callers to migrate_swap() while it is checked
+> if the pair of CPUs are being affected at the moment. It's two-stage
+
+Not really. This only serializes migrate_swap if there is a global
+stop_cpus underway.
+
+If there is no global stop_cpus, migrate_swap will continue the way
+it did before, without locking.
+
+> locking. The global lock is short-lived while the per-cpu data is updated
+> and the per-cpu values allow a degree of parallelisation on call_cpu which
+> could not be done with a spinlock held anyway.  Why not make protection
+> of the initial update a normal spinlock? i.e.
+> 
+> spin_lock(&stop_cpus_queue_lock);
+> this_cpu_write(stop_two_cpus_queueing, true);
+> spin_unlock(&stop_cpus_queue_lock);
+
+Because that would result in all migrate_swap instances serializing
+with each other.
+
 -- 
-1.8.4
-
-
+All rights reversed
