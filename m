@@ -1,90 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab3KAQJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 12:09:33 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:49556 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753308Ab3KAQJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 12:09:28 -0400
-X-IronPort-AV: E=Sophos;i="4.93,618,1378857600"; 
-   d="scan'208";a="69775428"
-Message-ID: <5273D235.3060100@citrix.com>
-Date: Fri, 1 Nov 2013 16:09:25 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753841Ab3KAQLs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 12:11:48 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54549 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084Ab3KAQLr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 12:11:47 -0400
+Date: Fri, 1 Nov 2013 17:11:29 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Michael Neuling <mikey@neuling.org>
+Subject: Re: perf events ring buffer memory barrier on powerpc
+Message-ID: <20131101161129.GU16117@laptop.programming.kicks-ass.net>
+References: <20131025173749.GG19466@laptop.lan>
+ <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com>
+ <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com>
+ <20131028132634.GO19466@laptop.lan>
+ <20131028163418.GD4126@linux.vnet.ibm.com>
+ <20131028201735.GA15629@redhat.com>
+ <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com>
+ <20131030092725.GL4126@linux.vnet.ibm.com>
+ <20131030112526.GI16117@laptop.programming.kicks-ass.net>
+ <20131031064015.GV4126@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Paul Durrant <Paul.Durrant@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jonathan Davies <Jonathan.Davies@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: Re: [Xen-devel] [PATCH net-next RFC 2/5] xen-netback: Change TX path
- from grant copy to mapping
-References: <1383094220-14775-1-git-send-email-zoltan.kiss@citrix.com> <1383094220-14775-3-git-send-email-zoltan.kiss@citrix.com> <9AAE0902D5BC7E449B7C8E4E778ABCD015717A@AMSPEX01CL01.citrite.net> <527175DB.8070400@citrix.com>
-In-Reply-To: <527175DB.8070400@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131031064015.GV4126@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/10/13 21:10, Zoltan Kiss wrote:
-> On 30/10/13 09:11, Paul Durrant wrote:
->>> +    err = alloc_xenballooned_pages(MAX_PENDING_REQS,
->>> +        vif->mmap_pages,
->>> +        false);
->>
->> Since this is a per-vif allocation, is this going to scale?
-> Good question, I'll look after this.
-I've talked to David Vrabel about this: if ballooning is disabled, this 
-will reserve real memory, therefore for every VIF you allocate usually 
-1MB memory. But if you enable ballooning, it will use pages which are 
-not actually reserved, and that's fine, because we never gonna really 
-use them. The only issue is that you need to set the maximum at boot 
-time, and it will consume memory also because of the page table 
-reservations.
-The long term solution would be to just use a bunch of struct pages, 
-David said the ballooning driver has something like that, but it's 
-broken at the moment.
+On Wed, Oct 30, 2013 at 11:40:15PM -0700, Paul E. McKenney wrote:
+> > void kbuf_write(int sz, void *buf)
+> > {
+> > 	u64 tail = ACCESS_ONCE(ubuf->tail); /* last location userspace read */
+> > 	u64 offset = kbuf->head; /* we already know where we last wrote */
+> > 	u64 head = offset + sz;
+> > 
+> > 	if (!space(tail, offset, head)) {
+> > 		/* discard @buf */
+> > 		return;
+> > 	}
+> > 
+> > 	/*
+> > 	 * Ensure that if we see the userspace tail (ubuf->tail) such
+> > 	 * that there is space to write @buf without overwriting data
+> > 	 * userspace hasn't seen yet, we won't in fact store data before
+> > 	 * that read completes.
+> > 	 */
+> > 
+> > 	smp_mb(); /* A, matches with D */
+> > 
+> > 	write(kbuf->data + offset, buf, sz);
+> > 	kbuf->head = head % kbuf->size;
+> > 
+> > 	/*
+> > 	 * Ensure that we write all the @buf data before we update the
+> > 	 * userspace visible ubuf->head pointer.
+> > 	 */
+> > 	smp_wmb(); /* B, matches with C */
+> > 
+> > 	ubuf->head = kbuf->head;
+> > }
 
->>>           if (data_len < txp->size) {
->>>               /* Append the packet payload as a fragment. */
->>>               txp->offset += data_len;
->>>               txp->size -= data_len;
->>> -        } else {
->>> +            skb_shinfo(skb)->destructor_arg =
->>> +                &vif-
->>>> pending_tx_info[pending_idx].callback_struct;
->>> +        } else if (!skb_shinfo(skb)->nr_frags) {
->>>               /* Schedule a response immediately. */
->>> +            skb_shinfo(skb)->destructor_arg = NULL;
->>> +            xenvif_idx_unmap(vif, pending_idx);
->>>               xenvif_idx_release(vif, pending_idx,
->>>                          XEN_NETIF_RSP_OKAY);
->>> +        } else {
->>> +            /* FIXME: first request fits linear space, I don't know
->>> +             * if any guest would do that, but I think it's possible
->>> +             */
->>
->> The Windows frontend, because it has to parse the packet headers, will
->> coalesce everything up to the payload in a single frag and it would be
->> a good idea to copy this directly into the linear area.
-> I forgot to clarify this comment: the problem I wanted to handle here if
-> the first request's size is PKT_PROT_LEN and there is more fragments.
-> Then skb->len will be PKT_PROT_LEN as well, and the if statement falls
-> through to the else branch. That might be problematic if we release the
-> slot of the first request separately from the others. Or am I
-> overlooking something? Does that matter to netfront anyway?
-> And this problem, if it's true, applies to the previous, grant copy
-> method as well.
-> However, as I think, it might be better to change the condition to
-> (data_len <= txp->size), rather than putting an if-else statement into
-> the else branch.
-I've talked to Wei, we think this is a broken guest behaviour, and 
-therefore we shouldn't care if someone does such a stupid thing.
+> > Now the whole crux of the question is if we need barrier A at all, since
+> > the STORES issued by the @buf writes are dependent on the ubuf->tail
+> > read.
+> 
+> The dependency you are talking about is via the "if" statement?
+> Even C/C++11 is not required to respect control dependencies.
 
-Zoli
+But surely we must be able to make it so; otherwise you'd never be able
+to write:
+
+void *ptr = obj1;
+
+void foo(void)
+{
+
+	/* create obj2, obj3 */
+
+	smp_wmb(); /* ensure the objs are complete */
+
+	/* expose either obj2 or obj3 */
+	if (x)
+		ptr = obj2;
+	else
+		ptr = obj3;
+
+
+	/* free the unused one */
+	if (x)
+		free(obj3);
+	else
+		free(obj2);
+}
+
+Earlier you said that 'volatile' or '__atomic' avoids speculative
+writes; so would:
+
+volatile void *ptr = obj1;
+
+Make the compiler respect control dependencies again? If so, could we
+somehow mark that !space() condition volatile?
+
+Currently the above would be considered a valid pattern. But you're
+saying its not because the compiler is free to expose both obj2 and obj3
+(for however short a time) and thus the free of the 'unused' object is
+incorrect and can cause use-after-free.
+
+In fact; how can we be sure that:
+
+void *ptr = NULL;
+
+void bar(void)
+{
+	void *obj = malloc(...);
+
+	/* fill obj */
+
+	if (!err)
+		rcu_assign_pointer(ptr, obj);
+	else
+		free(obj);
+}
+
+Does not get 'optimized' into:
+
+void bar(void)
+{
+	void *obj = malloc(...);
+	void *old_ptr = ptr;
+
+	/* fill obj */
+
+	rcu_assign_pointer(ptr, obj);
+	if (err) { /* because runtime profile data says this is unlikely */
+		ptr = old_ptr;
+		free(obj);
+	}
+}
+
+We _MUST_ be able to rely on control flow, otherwise me might as well
+all go back to writing kernels in asm.
+
