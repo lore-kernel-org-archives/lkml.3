@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587Ab3KASMN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 14:12:13 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:46740 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab3KASMM (ORCPT
+	id S1753653Ab3KASM5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 14:12:57 -0400
+Received: from smtp151.dfw.emailsrvr.com ([67.192.241.151]:53427 "EHLO
+	smtp151.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872Ab3KASM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 14:12:12 -0400
-Date: Fri, 1 Nov 2013 11:11:59 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <b42378@freescale.com>
-Cc: lgirdwood@gmail.com, tiwai@suse.de, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20131101181159.GC2493@sirena.org.uk>
-References: <1383308175-5053-1-git-send-email-b42378@freescale.com>
+	Fri, 1 Nov 2013 14:12:56 -0400
+Message-ID: <5273EED5.409@calxeda.com>
+Date: Fri, 01 Nov 2013 13:11:33 -0500
+From: Rob Herring <rob.herring@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oMfk58fZ06Sy4zVm"
-Content-Disposition: inline
-In-Reply-To: <1383308175-5053-1-git-send-email-b42378@freescale.com>
-X-Cookie: You love peace.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 66.78.236.243
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3] ASoC: Add pinctrl PM to components of active DAIs
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] of: Add vendor prefix for Cadence
+References: <1383320524-17689-1-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1383320524-17689-1-git-send-email-soren.brinkmann@xilinx.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/01/2013 10:42 AM, Soren Brinkmann wrote:
+> Drivers like clocksource/cadence_ttc and net/macb already use the 'cdns'
+> prefix for Cadence IP.
+> 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+>  Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+>  1 file changed, 1 insertion(+)
 
---oMfk58fZ06Sy4zVm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Applied. Thanks.
 
-On Fri, Nov 01, 2013 at 08:16:15PM +0800, Nicolin Chen wrote:
-> It's quite popular that more drivers are using pinctrl PM, for example:
-> (Documentation/devicetree/bindings/arm/primecell.txt). Just like what
-> runtime PM does, it would de-active and en-active pin group depending
-> on whether it's being used or not.
+Rob
 
-Applied, thanks.
-
---oMfk58fZ06Sy4zVm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSc+7sAAoJELSic+t+oim9FcIQAIE73n/cYVLHkjzGd856TUFi
-wDAVEjA67YHt6Mm8FTwZxHudjV4wqBLKSFxaTqMmdTTXjeMxrU0Td4GYAGZMhT63
-Xkk+w1wrZbQsv4FlLGnIIjZJ3LUAzimPugQEqnA8sTEjqR/6UFQhKXTntGmwscZB
-qifvrGztT78d4mGR915sLHC3YMqALAXH9RXBW66PE5KYAcPorerUNSPXQFenWgmd
-f1JiXefPIfTFFFooMvvhvh9CbNRZu/R91jKh4i51SafQHHVN8k2cNuKjYTmeAs48
-H4L7QDO+iV4K0xXagX+lRVwVw9p/0KfjHDrN1EleHKGOcFNhWmmjzJj4fJdKfxWu
-l6coJqHSgxl0vAu3IwzRKQwHL0dSHZU9aYTIZef9WZRG6yiMF2bMAtGZyNA8mNnV
-saocQNMDsepCM5Fh1Lsp+dvJpuj89C+INH3wfGtTUXNKAXK2JX8vd3sqOtlO6MTm
-6s+gkAu8hByYpGEQtOhh5dLeEy/tbr7tKCFmUEf1JQWlnm9wPz5Zi5KYbcIbVonk
-VKrTkGviRxng7cHwsv86ZxqgOOUWlTRS7P1nfegesPIKXw/JMe/uvv8uylo63T0a
-1s0wQxuYhbiZdKlOpjBzdmHiWPzPbB5jZwyPkI/bPFcjfrZl/BGRVsTzngHC/MY3
-c+v2j8dM2bXJDWbMMsGy
-=l/tR
------END PGP SIGNATURE-----
-
---oMfk58fZ06Sy4zVm--
