@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055Ab3KALWD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 07:22:03 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:49024 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab3KALWB (ORCPT
+	id S1755557Ab3KALZh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 07:25:37 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:33596 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508Ab3KALZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 07:22:01 -0400
-X-Spam-Score: -100.8
-Message-ID: <52738E90.6040104@asianux.com>
-Date: Fri, 01 Nov 2013 19:20:48 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 1 Nov 2013 07:25:35 -0400
+Subject: [PATCH -tip v2 1/3] kprobes: Introduce nokprobe annotation for
+ non-probe-able functions
+To: Ingo Molnar <mingo@kernel.org>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: "David S. Miller" <davem@davemloft.net>, x86@kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Date: Fri, 01 Nov 2013 11:25:32 +0000
+Message-ID: <20131101112532.14657.34462.stgit@kbuild-fedora.novalocal>
+In-Reply-To: <20131101112530.14657.87835.stgit@kbuild-fedora.novalocal>
+References: <20131101112530.14657.87835.stgit@kbuild-fedora.novalocal>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [Suggestion] about latest commit for "scripts/get_maintainers.pl"
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Joe:
+Instead of __kprobes annotation, introduce 'nokprobe' new annotation
+to annotate that the function is not probed by kprobes.
 
-I meet a failure about "scripts/get_maintainers.pl", it is about the
-commit "750432d get_maintainer.pl incomplete output", if use original
-"scripts/get_maintainer.pl", it will be OK.
+Previously the '__kprobes' is used just for avoiding probes on
+kprobes-related functions which will be used from kprobes. However
+nowadays we use it for prohibiting probing the functions implicitly
+invoked from kprobes int3 handler, since that causes infinit-loop
+lockup or sudden reboot. In this case, the annotated functions are
+not limited in the kprobes-related functions, and __kprobes looks
+very confusing. (Moreover, actually, most of control-side kprobes
+functions like as register_kprobes() are safely probed by kprobes)
 
-Please help check, thanks.
+Thus, we decide to introduce 'nokprobe' new annotation. We leave
+"__kprobes" just for compatibility but it should be replaced or
+removed eventually.
 
+New commits must use 'nokprobe' for this purpose.
 
-The related information:
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+---
+ include/linux/compiler.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
--------------------------information begin---------------------------
-
-  [root@gchenlinux linux-next]# ./scripts/get_maintainer.pl /tmp/0001-hexagon-kernel-remove-useless-variables-dn-r-and-err.patch
-  Can't use string ("GitAuthor: Chen Gang <gang.chen@"...) as an ARRAY ref while "strict refs" in use at ./scripts/get_maintainer.pl line 1883.
-
-  [root@gchenlinux linux-next]# cat /tmp/0001-hexagon-kernel-remove-useless-variables-dn-r-and-err.patch
-  From ef7384078bacdc5151039ea710943e5710d7c5ed Mon Sep 17 00:00:00 2001
-  From: Chen Gang <gang.chen@asianux.com>
-  Date: Fri, 1 Nov 2013 18:58:18 +0800
-  Subject: [PATCH] hexagon: kernel: remove useless variables 'dn', 'r' and 'err' in time_init_deferred() in "time.c"
-  
-  Remove them, since they are useless. The related warnings (with allmodconfig for v4):
-  
-      CC      arch/hexagon/kernel/time.o
-    arch/hexagon/kernel/time.c: In function 'time_init_deferred':
-    arch/hexagon/kernel/time.c:196: warning: unused variable 'err'
-    arch/hexagon/kernel/time.c:195: warning: unused variable 'r'
-    arch/hexagon/kernel/time.c:194: warning: unused variable 'dn'
-  
-  
-  Signed-off-by: Chen Gang <gang.chen@asianux.com>
-  ---
-   arch/hexagon/kernel/time.c |    3 ---
-   1 files changed, 0 insertions(+), 3 deletions(-)
-  
-  diff --git a/arch/hexagon/kernel/time.c b/arch/hexagon/kernel/time.c
-  index 9903fad..d0c4f5a 100644
-  --- a/arch/hexagon/kernel/time.c
-  +++ b/arch/hexagon/kernel/time.c
-  @@ -191,9 +191,6 @@ void __init time_init_deferred(void)
-   {
-   	struct resource *resource = NULL;
-   	struct clock_event_device *ce_dev = &hexagon_clockevent_dev;
-  -	struct device_node *dn;
-  -	struct resource r;
-  -	int err;
-  
-   	ce_dev->cpumask = cpu_all_mask;
-  
-  -- 
-  1.7.7.6
-
--------------------------information end-----------------------------
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index 92669cd..173c64e 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -353,8 +353,10 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+ 
+ /* Ignore/forbid kprobes attach on very low level functions marked by this attribute: */
+ #ifdef CONFIG_KPROBES
+-# define __kprobes	__attribute__((__section__(".kprobes.text")))
++# define nokprobe	__attribute__((__section__(".kprobes.text")))
+ #else
+-# define __kprobes
++# define nokprobe
+ #endif
++#define __kprobes nokprobe
++
+ #endif /* __LINUX_COMPILER_H */
 
 
-Thanks.
--- 
-Chen Gang
