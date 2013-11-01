@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab3KAJA3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 05:00:29 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49581 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485Ab3KAJA2 (ORCPT
+	id S1754909Ab3KAJBL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 05:01:11 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41164 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736Ab3KAJBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 05:00:28 -0400
-X-AuditID: 9c93016f-b7b28ae00000111e-83-52736da9d0cd
-From: Namhyung Kim <namhyung@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a ring buffer
-References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
-	<1383029621-7384-11-git-send-email-namhyung@kernel.org>
-	<20131031181654.GA11208@redhat.com>
-Date: Fri, 01 Nov 2013 18:00:25 +0900
-In-Reply-To: <20131031181654.GA11208@redhat.com> (Oleg Nesterov's message of
-	"Thu, 31 Oct 2013 19:16:54 +0100")
-Message-ID: <878ux84hue.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 1 Nov 2013 05:01:08 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <52736DA4.8000303@jp.fujitsu.com>
+Date: Fri, 1 Nov 2013 18:00:20 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, Mel Gorman <mgorman@suse.de>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH] mm: get rid of unnecessary pageblock scanning in setup_zone_migrate_reserve
+References: <1382562092-15570-1-git-send-email-kosaki.motohiro@gmail.com> <20131030151904.GO2400@suse.de> <527169BB.8020104@gmail.com> <20131031101525.GT2400@suse.de> <52729003.1060209@gmail.com>
+In-Reply-To: <52729003.1060209@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleg,
+Hi Mel and Kosaki,
 
-Thank you for reviewing this patchset!
+Thank you for posting patches.
 
-On Thu, 31 Oct 2013 19:16:54 +0100, Oleg Nesterov wrote:
-> On 10/29, Namhyung Kim wrote:
->>
->> @@ -630,6 +653,19 @@ probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
->>  	if (trace_probe_is_enabled(&tu->p))
->>  		return -EINTR;
->>  
->> +	if (atomic_inc_return(&uprobe_buffer_ref) == 1) {
->> +		int cpu;
->> +
->> +		uprobe_cpu_buffer = __alloc_percpu(PAGE_SIZE, PAGE_SIZE);
->> +		if (uprobe_cpu_buffer == NULL) {
->> +			atomic_dec(&uprobe_buffer_ref);
->> +			return -ENOMEM;
->> +		}
->> +
->> +		for_each_possible_cpu(cpu)
->> +			mutex_init(&per_cpu(uprobe_cpu_mutex, cpu));
->> +	}
->> +
->>  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
->>  
->>  	tu->p.flags |= flag;
->> @@ -646,6 +682,11 @@ static void probe_event_disable(struct trace_uprobe *tu, int flag)
->>  	if (!trace_probe_is_enabled(&tu->p))
->>  		return;
->>  
->> +	if (atomic_dec_and_test(&uprobe_buffer_ref)) {
->> +		free_percpu(uprobe_cpu_buffer);
->> +		uprobe_cpu_buffer = NULL;
->> +	}
->> +
->>  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
->
-> Do we really need atomic_t? probe_event_enable/disable is called under
-> event_mutex and we rely on this fact anyway.
->
-> Otherwise this logic looks racy even with atomic_t, another thread could
-> use the uninitialized uprobe_cpu_buffer/mutex if it registers another probe
-> and the handler runs before we complete the initialization, no?
+I tested your patches. And following table shows time of onlining
+a memory section.
 
-It seems you're right.  I really need to have some time to look at this
-code carefully again. ;-)  So many works are going on these days...
+Amount of memory        | 128GB | 192GB | 256GB|
+------------------------------------------------
+linux-3.12-rc7          |  24.3 |  30.2 | 45.6 |
+Kosaki's first patch    |   8.3 |   8.3 |  8.6 |
+Mel + Kosaki's nit pick |  10.9 |  19.2 | 31.3 |
+------------------------------------------------
+                                    (millisecond)
+
+128GB : 4 nodes and each node has 32GB of memory
+192GB : 6 nodes and each node has 32GB of memory
+256GB : 8 nodes and each node has 32GB of memory
+
+In my result, Mel's patch does not seem to fix the problem since time
+is increasing with increasing amount of memory.
 
 Thanks,
-Namhyung
+Yasuaki Ishimatsu
+
+(2013/11/01 2:14), KOSAKI Motohiro wrote:
+>>> Nit. I would like to add following hunk. This is just nit because moving
+>>> reserve pageblock is extreme rare.
+>>>
+>>>         if (block_migratetype == MIGRATE_RESERVE) {
+>>> +                       found++;
+>>>             set_pageblock_migratetype(page, MIGRATE_MOVABLE);
+>>>             move_freepages_block(zone, page, MIGRATE_MOVABLE);
+>>>         }
+>>
+>> I don't really see the advantage but if you think it is necessary then I
+>> do not object either.
+>
+> For example, a zone has five pageblock b1,b2,b3,b4,b5 and b1 has MIGRATE_RESERVE.
+> When hotremove b1 and hotadd again, your code need to scan all of blocks. But
+> mine only need to scan b1 and b2. I mean that's a hotplug specific optimization.
+>
+>
+
+
