@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343Ab3KAMQS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 08:16:18 -0400
-Received: from sirokuusama.dnainternet.net ([83.102.40.133]:58053 "EHLO
-	sirokuusama.dnainternet.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751811Ab3KAMQO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 08:16:14 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -1
-Message-ID: <52739B79.3030006@iki.fi>
-Date: Fri, 01 Nov 2013 14:15:53 +0200
-From: Anssi Hannula <anssi.hannula@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1752239Ab3KAMa0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 08:30:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12368 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751811Ab3KAMaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 08:30:25 -0400
+Date: Fri, 1 Nov 2013 13:29:42 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
+Subject: Re: [PATCH 08/14] perf report: Cache cumulative callchains
+Message-ID: <20131101122942.GD10041@krava.brq.redhat.com>
+References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
+ <1383202576-28141-9-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-CC: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        =?UTF-8?B?UGV0ZXIgRnLDvGhiZXJnZXI=?= <fritsch@xbmc.org>,
-        Olivier Langlois <olivier@trillion01.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] ALSA: hda - hdmi: Add ATI/AMD multi-channel audio
- support
-References: <1380659456-3746-1-git-send-email-anssi.hannula@iki.fi>	<1380659456-3746-2-git-send-email-anssi.hannula@iki.fi>	<CACna6ryr37WRvKbMFmLEGt_A2zUD46rZOtJMVom+B_xK9WNLuw@mail.gmail.com>	<07e8973b4665cc23c3f4a77e9c7e2b7c@mail.onse.fi>	<CACna6ryFtmZHAhmCPEsoxZc5h4mLuM4ajnKGsp=q0jag2f_SYw@mail.gmail.com>	<5272BCE1.7010700@iki.fi>	<CACna6rzejyTOF2Fvvw1m2SAob7uU5-hJ+yRVk6HS5pDTz7+JWg@mail.gmail.com>	<5272E920.6030606@iki.fi>	<CACna6rxuSUA9_1HXnY8yPhQ8BDeEnMvoX6i0WvTtst7UTvcgHA@mail.gmail.com>	<5272EEAC.6020405@iki.fi> <CACna6rymYy6hfpH6reknpa0QPHy31EwngOx4-d7JW4roANNQbQ@mail.gmail.com>
-In-Reply-To: <CACna6rymYy6hfpH6reknpa0QPHy31EwngOx4-d7JW4roANNQbQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383202576-28141-9-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-01.11.2013 13:29, Rafał Miłecki kirjoitti:
-> 2013/11/1 Anssi Hannula <anssi.hannula@iki.fi>:
->>> Both are working for me. I've tested it using 2 movies:
->>> 1) English TrueHD.5.1 @ 1417 kbps
->>> 2) Audio
->>> Codec................: DTSHD-MA
->>> Bitrate..............: 3718 kbps
->>> kHz/bit..............: 24-bit
->>> Channels.............: 5.1
->>> Language.............: English
->>
->> Which makes it even stranger, since HBR packets look exactly like ASP
->> packets with a few flipped bits.
->>
->> Hm, the earlier non-working speaker-test commands were with -c6. What
->> about -c8?
-> 
-> Side right behaves just like rear right
-> Side left behaves just like a rear left
-> No other differences.
+On Thu, Oct 31, 2013 at 03:56:10PM +0900, Namhyung Kim wrote:
 
-Strange. One other thing to check (in addition to trying fglrx) would be
-to try 192kHz 8ch audio with a different (non-ATI/AMD) card altogether,
-to see if this is a receiver issue.
+SNIP
 
--- 
-Anssi Hannula
+>  	 * double accounting.
+> @@ -501,8 +528,29 @@ iter_add_next_cumulative_entry(struct add_entry_iter *iter,
+>  {
+>  	struct perf_evsel *evsel = iter->evsel;
+>  	struct perf_sample *sample = iter->sample;
+> +	struct cumulative_cache *ccache = iter->priv;
+>  	struct hist_entry *he;
+>  	int err = 0;
+> +	int i;
+> +
+> +	/*
+> +	 * Check if there's duplicate entries in the callchain.
+> +	 * It's possible that it has cycles or recursive calls.
+> +	 */
+> +	for (i = 0; i < iter->curr; i++) {
+> +		if (sort__has_sym) {
+> +			if (ccache[i].sym == al->sym)
+> +				return 0;
+> +		} else {
+> +			/* Not much we can do - just compare the dso. */
+> +			if (ccache[i].dso == al->map->dso)
+> +				return 0;
+> +		}
+> +	}
+
+hum, do we want to prevent recursion totaly?
+how about intended recursion?
+
+also should the dso be checked together with sym?
+because the symbol is defined like dso::sym
+
+jirka
