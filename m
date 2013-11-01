@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab3KAWEt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:04:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54992 "EHLO
+	id S1757224Ab3KAWel (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:34:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55003 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755075Ab3KAWEr (ORCPT
+	with ESMTP id S1755165Ab3KAWEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:04:47 -0400
+	Fri, 1 Nov 2013 18:04:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Wang <jasowang@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [PATCH 3.10 25/54] virtio-net: fix the race between channels setting and refill
-Date: Fri,  1 Nov 2013 15:03:53 -0700
-Message-Id: <20131101220214.144682621@linuxfoundation.org>
+        Vlad Yasevich <vyasevic@redhat.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 27/54] bridge: Correctly clamp MAX forward_delay when enabling STP
+Date: Fri,  1 Nov 2013 15:03:55 -0700
+Message-Id: <20131101220214.374893230@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -28,55 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit 9b9cd8024a2882e896c65222aa421d461354e3f2 ]
+[ Upstream commit 4b6c7879d84ad06a2ac5b964808ed599187a188d ]
 
-Commit 55257d72bd1c51f25106350f4983ec19f62ed1fa (virtio-net: fill only rx queues
-which are being used) tries to refill on demand when changing the number of
-channels by call try_refill_recv() directly, this may race:
+Commit be4f154d5ef0ca147ab6bcd38857a774133f5450
+	bridge: Clamp forward_delay when enabling STP
+had a typo when attempting to clamp maximum forward delay.
 
-- the refill work who may do the refill in the same time
-- the try_refill_recv() called in bh since napi was not disabled
+It is possible to set bridge_forward_delay to be higher then
+permitted maximum when STP is off.  When turning STP on, the
+higher then allowed delay has to be clamed down to max value.
 
-Which may led guest complain during setting channels:
-
-virtio_net virtio0: input.1:id 0 is not a head!
-
-Solve this issue by scheduling a refill work which can guarantee the
-serialization of refill.
-
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: Stephen Hemminger <shemminger@vyatta.com>
+Reviewed-by: Veaceslav Falico <vfalico@redhat.com>
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/virtio_net.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ net/bridge/br_stp_if.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -902,7 +902,6 @@ static int virtnet_set_queues(struct vir
- 	struct scatterlist sg;
- 	struct virtio_net_ctrl_mq s;
- 	struct net_device *dev = vi->dev;
--	int i;
+--- a/net/bridge/br_stp_if.c
++++ b/net/bridge/br_stp_if.c
+@@ -134,7 +134,7 @@ static void br_stp_start(struct net_brid
  
- 	if (!vi->has_cvq || !virtio_has_feature(vi->vdev, VIRTIO_NET_F_MQ))
- 		return 0;
-@@ -916,10 +915,8 @@ static int virtnet_set_queues(struct vir
- 			 queue_pairs);
- 		return -EINVAL;
- 	} else {
--		for (i = vi->curr_queue_pairs; i < queue_pairs; i++)
--			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
--				schedule_delayed_work(&vi->refill, 0);
- 		vi->curr_queue_pairs = queue_pairs;
-+		schedule_delayed_work(&vi->refill, 0);
- 	}
+ 	if (br->bridge_forward_delay < BR_MIN_FORWARD_DELAY)
+ 		__br_set_forward_delay(br, BR_MIN_FORWARD_DELAY);
+-	else if (br->bridge_forward_delay < BR_MAX_FORWARD_DELAY)
++	else if (br->bridge_forward_delay > BR_MAX_FORWARD_DELAY)
+ 		__br_set_forward_delay(br, BR_MAX_FORWARD_DELAY);
  
- 	return 0;
+ 	if (r == 0) {
 
 
