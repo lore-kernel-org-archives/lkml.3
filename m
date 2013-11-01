@@ -1,104 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781Ab3KAHuA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 03:50:00 -0400
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:35130
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755645Ab3KAHt4 (ORCPT
+	id S1755897Ab3KAHvW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 03:51:22 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:51364 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752399Ab3KAHvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 03:49:56 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <r65073@freescale.com>, <timur@tabi.org>, <lgirdwood@gmail.com>,
-        <broonie@kernel.org>
-CC: <r64188@freescale.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ian.campbell@citrix.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <perex@perex.cz>, <tiwai@suse.de>, <grant.likely@linaro.org>,
-        <fabio.estevam@freescale.com>, <LW@KARO-electronics.de>,
-        <oskar@scara.com>, <shawn.guo@linaro.org>, <b42378@freescale.com>,
-        <b18965@freescale.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <alsa-devel@alsa-project.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Subject: [PATCHv2 8/8] Documentation: Add device tree bindings for Freescale VF610 sound.
-Date: Fri, 1 Nov 2013 15:04:55 +0800
-Message-ID: <1383289495-24523-9-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1383289495-24523-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1383289495-24523-1-git-send-email-Li.Xiubo@freescale.com>
+	Fri, 1 Nov 2013 03:51:19 -0400
+X-AuditID: 9c93017d-b7cd3ae000007ab3-7d-52735d75edb2
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Michael Hudson-Doyle <michael.hudson@linaro.org>,
+        linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Will Deacon <will.deacon@arm.com>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH] perf tools: Remove cast of non-varadic function to varadic
+References: <877gctxlry.fsf@canonical.com>
+	<20131031200950.GA5949@infradead.org>
+Date: Fri, 01 Nov 2013 16:51:17 +0900
+In-Reply-To: <20131031200950.GA5949@infradead.org> (Arnaldo Carvalho de Melo's
+	message of "Thu, 31 Oct 2013 18:09:50 -0200")
+Message-ID: <87mwlo4l1m.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the Document for Freescale VF610 sound driver under
-Documentation/devicetree/bindings/sound/.
+Hi Arnaldo and Michael,
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- .../bindings/sound/fsl_audio_sgt15000_vf610.txt    | 46 ++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/sound/fsl_audio_sgt15000_vf610.txt
+On Thu, 31 Oct 2013 18:09:50 -0200, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Oct 31, 2013 at 12:50:25PM -0700, Michael Hudson-Doyle escreveu:
+>> 4fb71074a570 (perf ui/hist: Consolidate hpp helpers) introduced a cast of
+>> percent_color_snprintf to a function pointer type with varargs.  Change
+>> percent_color_snprintf to be varadic and remove the cast.
+>> 
+>> The symptom of this was all percentages being reported as 0.00% in perf
+>> report --stdio output on armhf.
+>
+> git bisect + visual inspection, right? Anyway, good catch, interesting
+> it caused problems on just one arch, or have you tested this in other
+> arches?
+>
+> Namhyung?
 
-diff --git a/Documentation/devicetree/bindings/sound/fsl_audio_sgt15000_vf610.txt b/Documentation/devicetree/bindings/sound/fsl_audio_sgt15000_vf610.txt
-new file mode 100644
-index 0000000..76ff838
---- /dev/null
-+++ b/Documentation/devicetree/bindings/sound/fsl_audio_sgt15000_vf610.txt
-@@ -0,0 +1,46 @@
-+Freescale VF610 audio complex with SGTL5000 codec
-+
-+Required properties:
-+- compatible: "fsl,vf610-sgtl5000"
-+- model: The user-visible name of this sound complex.
-+- saif-controllers: The phandle list of the SAI controller.
-+- audio-codec: The phandle of the SGTL5000 audio codec.
-+- audio-routing : A list of the connections between audio components.
-+  Each entry is a pair of strings, the first being the connection's sink,
-+  the second being the connection's source. Valid names could be power
-+  supplies, SGTL5000 pins, and the jacks on the board:
-+
-+  -- Power supplies:
-+     * Mic Bias
-+
-+  -- Board connectors:
-+     * Mic Jack
-+     * Line In Jack
-+     * Headphone Jack
-+     * Line Out Jack
-+     * Ext Spk
-+
-+Example:
-+
-+sound {
-+	compatible = "fsl,vf610-sgtl5000";
-+	model = "vf610-sgtl5000";
-+	saif-controller = <&sai2>;
-+	audio-codec = <&codec>;
-+	audio-routing =
-+		"MIC_IN", "Mic Jack",
-+		"Mic Jack", "Mic Bias",
-+		"LINE_IN", "Line In Jack",
-+		"Headphone Jack", "HP_OUT",
-+		"Ext Spk", "LINE_OUT";
-+};
-+
-+&i2c0 {
-+	...
-+
-+	codec: sgtl5000@0a {
-+	       compatible = "fsl,sgtl5000";
-+	       reg = <0x0a>;
-+	       clocks = <&clks VF610_CLK_SAI2>;
-+       };
-+};
--- 
-1.8.4
+Yes, it'll affect the way of passing parameter on some arch's -  I only
+tested it on x86_64.  So,
 
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
+Thanks,
+Namhyung
