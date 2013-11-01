@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464Ab3KAWna (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:43:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54915 "EHLO
+	id S1756702Ab3KAWns (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:43:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54904 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073Ab3KAWE1 (ORCPT
+	with ESMTP id S1752689Ab3KAWEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:04:27 -0400
+	Fri, 1 Nov 2013 18:04:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Eric Dumazet <edumazet@google.com>, Wei Liu <wei.liu2@citrix.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Yuchung Cheng <ycheng@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 14/54] can: dev: fix nlmsg size calculation in can_get_size()
-Date: Fri,  1 Nov 2013 15:03:42 -0700
-Message-Id: <20131101220212.918450876@linuxfoundation.org>
+Subject: [PATCH 3.10 02/54] tcp: TSQ can use a dynamic limit
+Date: Fri,  1 Nov 2013 15:03:30 -0700
+Message-Id: <20131101220211.591152354@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -27,41 +30,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit fe119a05f8ca481623a8d02efcc984332e612528 ]
+[ Upstream commit c9eeec26e32e087359160406f96e0949b3cc6f10 ]
 
-This patch fixes the calculation of the nlmsg size, by adding the missing
-nla_total_size().
+When TCP Small Queues was added, we used a sysctl to limit amount of
+packets queues on Qdisc/device queues for a given TCP flow.
 
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Problem is this limit is either too big for low rates, or too small
+for high rates.
+
+Now TCP stack has rate estimation in sk->sk_pacing_rate, and TSO
+auto sizing, it can better control number of packets in Qdisc/device
+queues.
+
+New limit is two packets or at least 1 to 2 ms worth of packets.
+
+Low rates flows benefit from this patch by having even smaller
+number of packets in queues, allowing for faster recovery,
+better RTT estimations.
+
+High rates flows benefit from this patch by allowing more than 2 packets
+in flight as we had reports this was a limiting factor to reach line
+rate. [ In particular if TX completion is delayed because of coalescing
+parameters ]
+
+Example for a single flow on 10Gbp link controlled by FQ/pacing
+
+14 packets in flight instead of 2
+
+$ tc -s -d qd
+qdisc fq 8001: dev eth0 root refcnt 32 limit 10000p flow_limit 100p
+buckets 1024 quantum 3028 initial_quantum 15140
+ Sent 1168459366606 bytes 771822841 pkt (dropped 0, overlimits 0
+requeues 6822476)
+ rate 9346Mbit 771713pps backlog 953820b 14p requeues 6822476
+  2047 flow, 2046 inactive, 1 throttled, delay 15673 ns
+  2372 gc, 0 highprio, 0 retrans, 9739249 throttled, 0 flows_plimit
+
+Note that sk_pacing_rate is currently set to twice the actual rate, but
+this might be refined in the future when a flow is in congestion
+avoidance.
+
+Additional change : skb->destructor should be set to tcp_wfree().
+
+A future patch (for linux 3.13+) might remove tcp_limit_output_bytes
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Wei Liu <wei.liu2@citrix.com>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/can/dev.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ net/ipv4/tcp_output.c |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
---- a/drivers/net/can/dev.c
-+++ b/drivers/net/can/dev.c
-@@ -705,14 +705,14 @@ static size_t can_get_size(const struct
- 	size_t size;
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -887,8 +887,7 @@ static int tcp_transmit_skb(struct sock
  
- 	size = nla_total_size(sizeof(u32));   /* IFLA_CAN_STATE */
--	size += sizeof(struct can_ctrlmode);  /* IFLA_CAN_CTRLMODE */
-+	size += nla_total_size(sizeof(struct can_ctrlmode));  /* IFLA_CAN_CTRLMODE */
- 	size += nla_total_size(sizeof(u32));  /* IFLA_CAN_RESTART_MS */
--	size += sizeof(struct can_bittiming); /* IFLA_CAN_BITTIMING */
--	size += sizeof(struct can_clock);     /* IFLA_CAN_CLOCK */
-+	size += nla_total_size(sizeof(struct can_bittiming)); /* IFLA_CAN_BITTIMING */
-+	size += nla_total_size(sizeof(struct can_clock));     /* IFLA_CAN_CLOCK */
- 	if (priv->do_get_berr_counter)        /* IFLA_CAN_BERR_COUNTER */
--		size += sizeof(struct can_berr_counter);
-+		size += nla_total_size(sizeof(struct can_berr_counter));
- 	if (priv->bittiming_const)	      /* IFLA_CAN_BITTIMING_CONST */
--		size += sizeof(struct can_bittiming_const);
-+		size += nla_total_size(sizeof(struct can_bittiming_const));
+ 	skb_orphan(skb);
+ 	skb->sk = sk;
+-	skb->destructor = (sysctl_tcp_limit_output_bytes > 0) ?
+-			  tcp_wfree : sock_wfree;
++	skb->destructor = tcp_wfree;
+ 	atomic_add(skb->truesize, &sk->sk_wmem_alloc);
  
- 	return size;
- }
+ 	/* Build TCP header and checksum it. */
+@@ -1832,7 +1831,6 @@ static bool tcp_write_xmit(struct sock *
+ 	while ((skb = tcp_send_head(sk))) {
+ 		unsigned int limit;
+ 
+-
+ 		tso_segs = tcp_init_tso_segs(sk, skb, mss_now);
+ 		BUG_ON(!tso_segs);
+ 
+@@ -1861,13 +1859,20 @@ static bool tcp_write_xmit(struct sock *
+ 				break;
+ 		}
+ 
+-		/* TSQ : sk_wmem_alloc accounts skb truesize,
+-		 * including skb overhead. But thats OK.
++		/* TCP Small Queues :
++		 * Control number of packets in qdisc/devices to two packets / or ~1 ms.
++		 * This allows for :
++		 *  - better RTT estimation and ACK scheduling
++		 *  - faster recovery
++		 *  - high rates
+ 		 */
+-		if (atomic_read(&sk->sk_wmem_alloc) >= sysctl_tcp_limit_output_bytes) {
++		limit = max(skb->truesize, sk->sk_pacing_rate >> 10);
++
++		if (atomic_read(&sk->sk_wmem_alloc) > limit) {
+ 			set_bit(TSQ_THROTTLED, &tp->tsq_flags);
+ 			break;
+ 		}
++
+ 		limit = mss_now;
+ 		if (tso_segs > 1 && !tcp_urg_mode(tp))
+ 			limit = tcp_mss_split_point(sk, skb, mss_now,
 
 
