@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755070Ab3KAWEp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:04:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54982 "EHLO
+	id S1755638Ab3KAWFF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:05:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55058 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754981Ab3KAWEm (ORCPT
+	with ESMTP id S1755427Ab3KAWE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:04:42 -0400
+	Fri, 1 Nov 2013 18:04:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Eilon Greenstein <eilong@broadcom.com>,
-        Dmitry Kravkov <dmitry@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 23/54] bnx2x: record rx queue for LRO packets
-Date: Fri,  1 Nov 2013 15:03:51 -0700
-Message-Id: <20131101220213.936516651@linuxfoundation.org>
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>
+Subject: [PATCH 3.10 35/54] inet: fix possible memory corruption with UDP_CORK and UFO
+Date: Fri,  1 Nov 2013 15:04:03 -0700
+Message-Id: <20131101220215.282971650@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -30,50 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 60e66fee56b2256dcb1dc2ea1b2ddcb6e273857d ]
+[ This is a simplified -stable version of a set of upstream commits. ]
 
-RPS support is kind of broken on bnx2x, because only non LRO packets
-get proper rx queue information. This triggers reorders, as it seems
-bnx2x like to generate a non LRO packet for segment including TCP PUSH
-flag : (this might be pure coincidence, but all the reorders I've
-seen involve segments with a PUSH)
+This is a replacement patch only for stable which does fix the problems
+handled by the following two commits in -net:
 
-11:13:34.335847 IP A > B: . 415808:447136(31328) ack 1 win 457 <nop,nop,timestamp 3789336 3985797>
-11:13:34.335992 IP A > B: . 447136:448560(1424) ack 1 win 457 <nop,nop,timestamp 3789336 3985797>
-11:13:34.336391 IP A > B: . 448560:479888(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985797>
-11:13:34.336425 IP A > B: P 511216:512640(1424) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
-11:13:34.336423 IP A > B: . 479888:511216(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
-11:13:34.336924 IP A > B: . 512640:543968(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
-11:13:34.336963 IP A > B: . 543968:575296(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+"ip_output: do skb ufo init for peeked non ufo skb as well" (e93b7d748be887cd7639b113ba7d7ef792a7efb9)
+"ip6_output: do skb ufo init for peeked non ufo skb as well" (c547dbf55d5f8cf615ccc0e7265e98db27d3fb8b)
 
-We must call skb_record_rx_queue() to properly give to RPS (and more
-generally for TX queue selection on forward path) the receive queue
-information.
+Three frames are written on a corked udp socket for which the output
+netdevice has UFO enabled.  If the first and third frame are smaller than
+the mtu and the second one is bigger, we enqueue the second frame with
+skb_append_datato_frags without initializing the gso fields. This leads
+to the third frame appended regulary and thus constructing an invalid skb.
 
-Similar fix is needed for skb_mark_napi_id(), but will be handled
-in a separate patch to ease stable backports.
+This fixes the problem by always using skb_append_datato_frags as soon
+as the first frag got enqueued to the skb without marking the packet
+as SKB_GSO_UDP.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Willem de Bruijn <willemb@google.com>
-Cc: Eilon Greenstein <eilong@broadcom.com>
-Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The problem with only two frames for ipv6 was fixed by "ipv6: udp
+packets following an UFO enqueued packet need also be handled by UFO"
+(2811ebac2521ceac84f2bdae402455baa6a7fb47).
+
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Jiri Pirko <jiri@resnulli.us>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/linux/skbuff.h |    5 +++++
+ net/ipv4/ip_output.c   |    2 +-
+ net/ipv6/ip6_output.c  |    2 +-
+ 3 files changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -670,6 +670,7 @@ static void bnx2x_gro_receive(struct bnx
- 		}
- 	}
- #endif
-+	skb_record_rx_queue(skb, fp->rx_queue);
- 	napi_gro_receive(&fp->napi, skb);
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1308,6 +1308,11 @@ static inline int skb_pagelen(const stru
+ 	return len + skb_headlen(skb);
  }
  
++static inline bool skb_has_frags(const struct sk_buff *skb)
++{
++	return skb_shinfo(skb)->nr_frags;
++}
++
+ /**
+  * __skb_fill_page_desc - initialise a paged fragment in an skb
+  * @skb: buffer containing fragment to be initialised
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -844,7 +844,7 @@ static int __ip_append_data(struct sock
+ 		csummode = CHECKSUM_PARTIAL;
+ 
+ 	cork->length += length;
+-	if (((length > mtu) || (skb && skb_is_gso(skb))) &&
++	if (((length > mtu) || (skb && skb_has_frags(skb))) &&
+ 	    (sk->sk_protocol == IPPROTO_UDP) &&
+ 	    (rt->dst.dev->features & NETIF_F_UFO) && !rt->dst.header_len) {
+ 		err = ip_ufo_append_data(sk, queue, getfrag, from, length,
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1250,7 +1250,7 @@ int ip6_append_data(struct sock *sk, int
+ 	skb = skb_peek_tail(&sk->sk_write_queue);
+ 	cork->length += length;
+ 	if (((length > mtu) ||
+-	     (skb && skb_is_gso(skb))) &&
++	     (skb && skb_has_frags(skb))) &&
+ 	    (sk->sk_protocol == IPPROTO_UDP) &&
+ 	    (rt->dst.dev->features & NETIF_F_UFO)) {
+ 		err = ip6_ufo_append_data(sk, getfrag, from, length,
 
 
