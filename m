@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab3KAQ3f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 12:29:35 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:43013 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755143Ab3KAQ3d (ORCPT
+	id S1755338Ab3KAQcI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 12:32:08 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59934 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752823Ab3KAQcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 12:29:33 -0400
-Message-ID: <1383323367.1737.8.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH net] net: flow_dissector: fail on evil iph->ihl
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Jason Wang <jasowang@redhat.com>
-CC: <davem@davemloft.net>, <edumazet@google.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Petr Matousek <pmatouse@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Daniel Borkmann <dborkman@redhat.com>
-Date: Fri, 1 Nov 2013 16:29:27 +0000
-In-Reply-To: <1383289270-18952-1-git-send-email-jasowang@redhat.com>
-References: <1383289270-18952-1-git-send-email-jasowang@redhat.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20260.002
-X-TM-AS-Result: No--14.901000-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Fri, 1 Nov 2013 12:32:00 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-edac@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 2/6] genirq: export percpu irq functions for module usage
+Date: Fri,  1 Nov 2013 09:31:52 -0700
+Message-Id: <1383323516-31357-3-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.4.2.564.g0d6cf24
+In-Reply-To: <1383323516-31357-1-git-send-email-sboyd@codeaurora.org>
+References: <1383323516-31357-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-11-01 at 15:01 +0800, Jason Wang wrote:
-> We don't validate iph->ihl which may lead a dead loop if we meet a IPIP
-> skb whose iph->ihl is zero. Fix this by failing immediately when iph->ihl
-> is evil (less than 5).
-> 
-> This issue were introduced by commit ec5efe7946280d1e84603389a1030ccec0a767ae
-> (rps: support IPIP encapsulation).
+In the near future we're going to use these percpu irq functions
+in the Krait CPU EDAC driver. Export them so that the EDAC driver
+can be compiled as a module.
 
-It would be helpful to include the CVE ID here:
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ kernel/irq/manage.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-CVE-2013-4348
-
-Ben.
-
-> Cc: Eric Dumazet <edumazet@google.com>
-> Cc: Petr Matousek <pmatouse@redhat.com>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: Daniel Borkmann <dborkman@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
-> This patch is needed for stable.
-> ---
->  net/core/flow_dissector.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/net/core/flow_dissector.c b/net/core/flow_dissector.c
-> index 8d7d0dd..143b6fd 100644
-> --- a/net/core/flow_dissector.c
-> +++ b/net/core/flow_dissector.c
-> @@ -40,7 +40,7 @@ again:
->  		struct iphdr _iph;
->  ip:
->  		iph = skb_header_pointer(skb, nhoff, sizeof(_iph), &_iph);
-> -		if (!iph)
-> +		if (!iph || iph->ihl < 5)
->  			return false;
->  
->  		if (ip_is_fragment(iph))
-
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 514bcfd..c6009d1 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1623,6 +1623,7 @@ void free_percpu_irq(unsigned int irq, void __percpu *dev_id)
+ 	kfree(__free_percpu_irq(irq, dev_id));
+ 	chip_bus_sync_unlock(desc);
+ }
++EXPORT_SYMBOL_GPL(free_percpu_irq);
+ 
+ /**
+  *	setup_percpu_irq - setup a per-cpu interrupt
+@@ -1693,3 +1694,4 @@ int request_percpu_irq(unsigned int irq, irq_handler_t handler,
+ 
+ 	return retval;
+ }
++EXPORT_SYMBOL_GPL(request_percpu_irq);
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
