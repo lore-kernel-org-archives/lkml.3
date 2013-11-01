@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab3KANwC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 09:52:02 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23727 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752592Ab3KANv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 09:51:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="402156911"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH V3 01/11] perf evsel: Add a debug print if perf_event_open fails
-Date: Fri,  1 Nov 2013 15:51:29 +0200
-Message-Id: <1383313899-15987-2-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1383313899-15987-1-git-send-email-adrian.hunter@intel.com>
-References: <1383313899-15987-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1754202Ab3KANzO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 09:55:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:25076 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750917Ab3KANzM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 09:55:12 -0400
+Date: Fri, 1 Nov 2013 09:55:10 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        x86@kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip v2 1/3] kprobes: Introduce nokprobe annotation for
+ non-probe-able functions
+Message-ID: <20131101095510.6b43aef5@gandalf.local.home>
+In-Reply-To: <20131101112532.14657.34462.stgit@kbuild-fedora.novalocal>
+References: <20131101112530.14657.87835.stgit@kbuild-fedora.novalocal>
+	<20131101112532.14657.34462.stgit@kbuild-fedora.novalocal>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a debug print (at verbose level 2) for each
-call to perf_event_open.  Add another debug print if
-the call fails, and print the error number.
+On Fri, 01 Nov 2013 11:25:32 +0000
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/evsel.c | 2 ++
- 1 file changed, 2 insertions(+)
+> Instead of __kprobes annotation, introduce 'nokprobe' new annotation
+> to annotate that the function is not probed by kprobes.
+> 
+> Previously the '__kprobes' is used just for avoiding probes on
+> kprobes-related functions which will be used from kprobes. However
+> nowadays we use it for prohibiting probing the functions implicitly
+> invoked from kprobes int3 handler, since that causes infinit-loop
+> lockup or sudden reboot. In this case, the annotated functions are
+> not limited in the kprobes-related functions, and __kprobes looks
+> very confusing. (Moreover, actually, most of control-side kprobes
+> functions like as register_kprobes() are safely probed by kprobes)
+> 
+> Thus, we decide to introduce 'nokprobe' new annotation. We leave
+> "__kprobes" just for compatibility but it should be replaced or
+> removed eventually.
+> 
+> New commits must use 'nokprobe' for this purpose.
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> ---
+>  include/linux/compiler.h |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+> index 92669cd..173c64e 100644
+> --- a/include/linux/compiler.h
+> +++ b/include/linux/compiler.h
+> @@ -353,8 +353,10 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+>  
+>  /* Ignore/forbid kprobes attach on very low level functions marked by this attribute: */
+>  #ifdef CONFIG_KPROBES
+> -# define __kprobes	__attribute__((__section__(".kprobes.text")))
+> +# define nokprobe	__attribute__((__section__(".kprobes.text")))
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index ec0cc1e..e09c7e6 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -1052,6 +1052,8 @@ retry_open:
- 								     group_fd, flags);
- 			if (FD(evsel, cpu, thread) < 0) {
- 				err = -errno;
-+				pr_debug2("perf_event_open failed, error %d\n",
-+					  err);
- 				goto try_fallback;
- 			}
- 			set_rlimit = NO_CHANGE;
--- 
-1.7.11.7
+I wonder if we should have both a __kprobes and nokprobe annotation,
+such that we have:
+
+# define __kprobes	__attribute__((__section__(".kprobes.text")))
+# define nokprobe	__attribute__((__section__(".nokprobes.text")))
+
+Then use __kprobes for the actual kprobes code, and nokprobe for all
+the places that must not be traced by kprobes.
+
+It just seems strange to me grouping kprobes code with non kprobes code.
+
+-- Steve
+
+
+>  #else
+> -# define __kprobes
+> +# define nokprobe
+>  #endif
+> +#define __kprobes nokprobe
+> +
+>  #endif /* __LINUX_COMPILER_H */
+> 
 
