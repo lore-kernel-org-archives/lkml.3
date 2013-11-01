@@ -1,251 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332Ab3KAWmy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:42:54 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:43996 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755798Ab3KAWkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:40:14 -0400
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Adrian Hunter <adrian.hunter@intel.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Cody P Schafer <cody@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org
-Subject: [PATCH 3/8] fs/ubifs: use rbtree postorder iteration helper instead of opencoding
-Date: Fri,  1 Nov 2013 15:38:47 -0700
-Message-Id: <1383345566-25087-3-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1383345566-25087-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1383345566-25087-1-git-send-email-cody@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110122-7182-0000-0000-000008FB5404
+	id S1756464Ab3KAWna (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:43:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54915 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073Ab3KAWE1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 18:04:27 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 14/54] can: dev: fix nlmsg size calculation in can_get_size()
+Date: Fri,  1 Nov 2013 15:03:42 -0700
+Message-Id: <20131101220212.918450876@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
+References: <20131101220211.311926234@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use rbtree_postorder_for_each_entry_safe() to destroy the rbtree instead
-of opencoding an alternate postorder iteration that modifies the tree
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+------------------
+
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+
+[ Upstream commit fe119a05f8ca481623a8d02efcc984332e612528 ]
+
+This patch fixes the calculation of the nlmsg size, by adding the missing
+nla_total_size().
+
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/ubifs/debug.c    | 22 +++-------------------
- fs/ubifs/log.c      | 21 ++-------------------
- fs/ubifs/orphan.c   | 21 ++-------------------
- fs/ubifs/recovery.c | 21 +++------------------
- fs/ubifs/super.c    | 24 ++++--------------------
- fs/ubifs/tnc.c      | 22 +++-------------------
- 6 files changed, 17 insertions(+), 114 deletions(-)
+ drivers/net/can/dev.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/fs/ubifs/debug.c b/fs/ubifs/debug.c
-index 6e025e0..378c179 100644
---- a/fs/ubifs/debug.c
-+++ b/fs/ubifs/debug.c
-@@ -2118,26 +2118,10 @@ out_free:
-  */
- static void free_inodes(struct fsck_data *fsckd)
- {
--	struct rb_node *this = fsckd->inodes.rb_node;
--	struct fsck_inode *fscki;
-+	struct fsck_inode *fscki, *n;
+--- a/drivers/net/can/dev.c
++++ b/drivers/net/can/dev.c
+@@ -705,14 +705,14 @@ static size_t can_get_size(const struct
+ 	size_t size;
  
--	while (this) {
--		if (this->rb_left)
--			this = this->rb_left;
--		else if (this->rb_right)
--			this = this->rb_right;
--		else {
--			fscki = rb_entry(this, struct fsck_inode, rb);
--			this = rb_parent(this);
--			if (this) {
--				if (this->rb_left == &fscki->rb)
--					this->rb_left = NULL;
--				else
--					this->rb_right = NULL;
--			}
--			kfree(fscki);
--		}
--	}
-+	rbtree_postorder_for_each_entry_safe(fscki, n, &fsckd->inodes, rb)
-+		kfree(fscki);
+ 	size = nla_total_size(sizeof(u32));   /* IFLA_CAN_STATE */
+-	size += sizeof(struct can_ctrlmode);  /* IFLA_CAN_CTRLMODE */
++	size += nla_total_size(sizeof(struct can_ctrlmode));  /* IFLA_CAN_CTRLMODE */
+ 	size += nla_total_size(sizeof(u32));  /* IFLA_CAN_RESTART_MS */
+-	size += sizeof(struct can_bittiming); /* IFLA_CAN_BITTIMING */
+-	size += sizeof(struct can_clock);     /* IFLA_CAN_CLOCK */
++	size += nla_total_size(sizeof(struct can_bittiming)); /* IFLA_CAN_BITTIMING */
++	size += nla_total_size(sizeof(struct can_clock));     /* IFLA_CAN_CLOCK */
+ 	if (priv->do_get_berr_counter)        /* IFLA_CAN_BERR_COUNTER */
+-		size += sizeof(struct can_berr_counter);
++		size += nla_total_size(sizeof(struct can_berr_counter));
+ 	if (priv->bittiming_const)	      /* IFLA_CAN_BITTIMING_CONST */
+-		size += sizeof(struct can_bittiming_const);
++		size += nla_total_size(sizeof(struct can_bittiming_const));
+ 
+ 	return size;
  }
- 
- /**
-diff --git a/fs/ubifs/log.c b/fs/ubifs/log.c
-index 36bd4ef..a902c59 100644
---- a/fs/ubifs/log.c
-+++ b/fs/ubifs/log.c
-@@ -574,27 +574,10 @@ static int done_already(struct rb_root *done_tree, int lnum)
-  */
- static void destroy_done_tree(struct rb_root *done_tree)
- {
--	struct rb_node *this = done_tree->rb_node;
--	struct done_ref *dr;
-+	struct done_ref *dr, *n;
- 
--	while (this) {
--		if (this->rb_left) {
--			this = this->rb_left;
--			continue;
--		} else if (this->rb_right) {
--			this = this->rb_right;
--			continue;
--		}
--		dr = rb_entry(this, struct done_ref, rb);
--		this = rb_parent(this);
--		if (this) {
--			if (this->rb_left == &dr->rb)
--				this->rb_left = NULL;
--			else
--				this->rb_right = NULL;
--		}
-+	rbtree_postorder_for_each_entry_safe(dr, n, done_tree, rb)
- 		kfree(dr);
--	}
- }
- 
- /**
-diff --git a/fs/ubifs/orphan.c b/fs/ubifs/orphan.c
-index ba32da3..f1c3e5a1 100644
---- a/fs/ubifs/orphan.c
-+++ b/fs/ubifs/orphan.c
-@@ -815,27 +815,10 @@ static int dbg_find_check_orphan(struct rb_root *root, ino_t inum)
- 
- static void dbg_free_check_tree(struct rb_root *root)
- {
--	struct rb_node *this = root->rb_node;
--	struct check_orphan *o;
-+	struct check_orphan *o, *n;
- 
--	while (this) {
--		if (this->rb_left) {
--			this = this->rb_left;
--			continue;
--		} else if (this->rb_right) {
--			this = this->rb_right;
--			continue;
--		}
--		o = rb_entry(this, struct check_orphan, rb);
--		this = rb_parent(this);
--		if (this) {
--			if (this->rb_left == &o->rb)
--				this->rb_left = NULL;
--			else
--				this->rb_right = NULL;
--		}
-+	rbtree_postorder_for_each_entry_safe(o, n, root, rb)
- 		kfree(o);
--	}
- }
- 
- static int dbg_orphan_check(struct ubifs_info *c, struct ubifs_zbranch *zbr,
-diff --git a/fs/ubifs/recovery.c b/fs/ubifs/recovery.c
-index 065096e..c14adb2 100644
---- a/fs/ubifs/recovery.c
-+++ b/fs/ubifs/recovery.c
-@@ -1335,29 +1335,14 @@ static void remove_ino(struct ubifs_info *c, ino_t inum)
-  */
- void ubifs_destroy_size_tree(struct ubifs_info *c)
- {
--	struct rb_node *this = c->size_tree.rb_node;
--	struct size_entry *e;
-+	struct size_entry *e, *n;
- 
--	while (this) {
--		if (this->rb_left) {
--			this = this->rb_left;
--			continue;
--		} else if (this->rb_right) {
--			this = this->rb_right;
--			continue;
--		}
--		e = rb_entry(this, struct size_entry, rb);
-+	rbtree_postorder_for_each_entry_safe(e, n, &c->size_tree, rb) {
- 		if (e->inode)
- 			iput(e->inode);
--		this = rb_parent(this);
--		if (this) {
--			if (this->rb_left == &e->rb)
--				this->rb_left = NULL;
--			else
--				this->rb_right = NULL;
--		}
- 		kfree(e);
- 	}
-+
- 	c->size_tree = RB_ROOT;
- }
- 
-diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
-index 3e4aa72..14a5891 100644
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -873,26 +873,10 @@ static void free_orphans(struct ubifs_info *c)
-  */
- static void free_buds(struct ubifs_info *c)
- {
--	struct rb_node *this = c->buds.rb_node;
--	struct ubifs_bud *bud;
--
--	while (this) {
--		if (this->rb_left)
--			this = this->rb_left;
--		else if (this->rb_right)
--			this = this->rb_right;
--		else {
--			bud = rb_entry(this, struct ubifs_bud, rb);
--			this = rb_parent(this);
--			if (this) {
--				if (this->rb_left == &bud->rb)
--					this->rb_left = NULL;
--				else
--					this->rb_right = NULL;
--			}
--			kfree(bud);
--		}
--	}
-+	struct ubifs_bud *bud, *n;
-+
-+	rbtree_postorder_for_each_entry_safe(bud, n, &c->buds, rb)
-+		kfree(bud);
- }
- 
- /**
-diff --git a/fs/ubifs/tnc.c b/fs/ubifs/tnc.c
-index 349f31a..9083bc7 100644
---- a/fs/ubifs/tnc.c
-+++ b/fs/ubifs/tnc.c
-@@ -178,27 +178,11 @@ static int ins_clr_old_idx_znode(struct ubifs_info *c,
-  */
- void destroy_old_idx(struct ubifs_info *c)
- {
--	struct rb_node *this = c->old_idx.rb_node;
--	struct ubifs_old_idx *old_idx;
-+	struct ubifs_old_idx *old_idx, *n;
- 
--	while (this) {
--		if (this->rb_left) {
--			this = this->rb_left;
--			continue;
--		} else if (this->rb_right) {
--			this = this->rb_right;
--			continue;
--		}
--		old_idx = rb_entry(this, struct ubifs_old_idx, rb);
--		this = rb_parent(this);
--		if (this) {
--			if (this->rb_left == &old_idx->rb)
--				this->rb_left = NULL;
--			else
--				this->rb_right = NULL;
--		}
-+	rbtree_postorder_for_each_entry_safe(old_idx, n, &c->old_idx, rb)
- 		kfree(old_idx);
--	}
-+
- 	c->old_idx = RB_ROOT;
- }
- 
--- 
-1.8.4.2
+
 
