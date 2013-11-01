@@ -1,58 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab3KATHr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 15:07:47 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44880 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381Ab3KATHq (ORCPT
+	id S1752828Ab3KATQm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 15:16:42 -0400
+Received: from a14-6.smtp-out.amazonses.com ([54.240.14.6]:42253 "EHLO
+	a14-6.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751086Ab3KATQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 15:07:46 -0400
-Message-ID: <5273FBF5.2080004@wwwdotorg.org>
-Date: Fri, 01 Nov 2013 13:07:33 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 1 Nov 2013 15:16:41 -0400
+X-Greylist: delayed 411 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Nov 2013 15:16:40 EDT
+Date: Fri, 1 Nov 2013 19:09:47 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 17/15] slab: replace non-existing 'struct freelist *'
+ with 'void *'
+In-Reply-To: <1383127441-30563-2-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <0000014215124298-73ed0d4f-b9ff-4645-87de-87a60abe4dc2-000000@email.amazonses.com>
+References: <1381913052-23875-1-git-send-email-iamjoonsoo.kim@lge.com> <1383127441-30563-1-git-send-email-iamjoonsoo.kim@lge.com> <1383127441-30563-2-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>, Olof Johansson <olof@lixom.net>
-CC: devicetree@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [RFC 4/9] of/irq: Refactor interrupt-map parsing
-References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org> <1381869563-16083-5-git-send-email-grant.likely@linaro.org> <CAOesGMj03kgJXttm80pHvPYeqg5hOaeOJAJ4DA8tf5LxqdArrQ@mail.gmail.com> <CACxGe6uE+KvycQq3XBavRcvprff6PhBaxX54W_Cb1cfuVpMXvQ@mail.gmail.com> <20131031185714.GA12646@quad.lixom.net> <20131101175317.A812AC40868@trevor.secretlab.ca>
-In-Reply-To: <20131101175317.A812AC40868@trevor.secretlab.ca>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.11.01-54.240.14.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2013 11:53 AM, Grant Likely wrote:
-> On Thu, 31 Oct 2013 11:57:14 -0700, Olof Johansson <olof@lixom.net> wrote:
->> On Wed, Oct 30, 2013 at 02:25:21PM -0700, Grant Likely wrote:
->>> (Sorry for HTML mail)
->>>
->>> Can you put #define DEBUG at the top of drivers/of/irq.c and send me the
->>> log output from before and after the commit?
->>
->> Here you go, quite verbose log below.
->>
->> Looks like we're tripping the "no reg passed in" checks, not sure if related.
-> 
-> I think I've found the bug. See if this helps...
-> 
-> From 54a6d89d63361f8117ff69e4b65efabb12b897c7 Mon Sep 17 00:00:00 2001
-> From: Grant Likely <grant.likely@linaro.org>
-> Date: Fri, 1 Nov 2013 10:50:50 -0700
-> Subject: [PATCH] of: Fixup interrupt parsing failure.
+On Wed, 30 Oct 2013, Joonsoo Kim wrote:
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
+> There is no 'strcut freelist', but codes use pointer to 'struct freelist'.
+> Although compiler doesn't complain anything about this wrong usage and
+> codes work fine, but fixing it is better.
 
-Thanks, this fixes the clocksource errors that I was seeing when
-performing CPU hotplug, as mentioned in:
+I think its better to avoid "void" when possible. struct freelist is good.
 
-https://lkml.org/lkml/2013/10/31/430
-Re: [RFC 4/9] of/irq: Refactor interrupt-map parsing [CPU hotplug
-clockevents issue]
