@@ -1,130 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881Ab3KAJNn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 05:13:43 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:33225 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554Ab3KAJNl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 05:13:41 -0400
-Date: Fri, 1 Nov 2013 10:13:37 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-Message-ID: <20131101091337.GA27063@gmail.com>
-References: <20131029113031.GA16897@gmail.com>
- <20131029114907.GE24477@neilslaptop.think-freely.org>
- <20131029125233.GA17449@gmail.com>
- <20131029130712.GA25078@neilslaptop.think-freely.org>
- <20131029131149.GB20408@gmail.com>
- <20131029141706.GC25078@neilslaptop.think-freely.org>
- <20131029142716.GA28113@gmail.com>
- <20131029202644.GB32389@localhost.localdomain>
- <20131031102200.GA10098@gmail.com>
- <20131031143325.GB25894@hmsreliant.think-freely.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131031143325.GB25894@hmsreliant.think-freely.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754917Ab3KAJPz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 05:15:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43233 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751659Ab3KAJPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 05:15:54 -0400
+Date: Fri, 1 Nov 2013 20:15:40 +1100
+From: NeilBrown <neilb@suse.de>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: check for devicetree early.
+Message-ID: <20131101201540.3686ca90@notabene.brown>
+In-Reply-To: <20131101064240.GN2493@sirena.org.uk>
+References: <20131101134833.7070a5c5@notabene.brown>
+	<20131101064240.GN2493@sirena.org.uk>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/8LORB7Fz3OkwSvLtFty8Pco"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/8LORB7Fz3OkwSvLtFty8Pco
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-* Neil Horman <nhorman@tuxdriver.com> wrote:
+On Thu, 31 Oct 2013 23:42:40 -0700 Mark Brown <broonie@kernel.org> wrote:
 
-> On Thu, Oct 31, 2013 at 11:22:00AM +0100, Ingo Molnar wrote:
-> > 
-> > * Neil Horman <nhorman@tuxdriver.com> wrote:
-> > 
-> > > > etc. For such short runtimes make sure the last column displays 
-> > > > close to 100%, so that the PMU results become trustable.
-> > > > 
-> > > > A nehalem+ PMU will allow 2-4 events to be measured in parallel, 
-> > > > plus generics like 'cycles', 'instructions' can be added 'for free' 
-> > > > because they get counted in a separate (fixed purpose) PMU register.
-> > > > 
-> > > > The last colum tells you what percentage of the runtime that 
-> > > > particular event was actually active. 100% (or empty last column) 
-> > > > means it was active all the time.
-> > > > 
-> > > > Thanks,
-> > > > 
-> > > > 	Ingo
-> > > > 
-> > > 
-> > > Hmm, 
-> > > 
-> > > I ran this test:
-> > > 
-> > > for i in `seq 0 1 3`
-> > > do
-> > > echo $i > /sys/module/csum_test/parameters/module_test_mode
-> > > taskset -c 0 perf stat --repeat 20 -C 0 -e L1-dcache-load-misses -e L1-dcache-prefetches -e cycles -e instructions -ddd ./test.sh
-> > > done
-> > 
-> > You need to remove '-ddd' which is a shortcut for a ton of useful 
-> > events, but here you want to use fewer events, to increase the 
-> > precision of the measurement.
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
-> > 
-> 
-> Thank you ingo, that fixed it.  I'm trying some other variants of 
-> the csum algorithm that Doug and I discussed last night, but FWIW, 
-> the relative performance of the 4 test cases 
-> (base/prefetch/parallel/both) remains unchanged. I'm starting to 
-> feel like at this point, theres very little point in doing 
-> parallel alu operations (unless we can find a way to break the 
-> dependency on the carry flag, which is what I'm tinkering with 
-> now).
+> On Fri, Nov 01, 2013 at 01:48:33PM +1100, NeilBrown wrote:
+>=20
+> > The behaviour of regulator core with respect to device-tree and
+> > CONFIG_REGULATOR_DUMMY is inconsistent.
+>=20
+> Wei Ni reported this issue and is working on a patch which I'm expecting
+> to do this as part of device tree initialisation rather than by faffing
+> around with initcall ordering; this will be simpler and more robust
+> since there won't be any possibility of races being introduced.
 
-I would still like to encourage you to pick up the improvements that 
-Doug measured (mostly via prefetch tweaking?) - that looked like 
-some significant speedups that we don't want to lose!
+OK, thanks.  Sounds like a better approach.
 
-Also, trying to stick the in-kernel implementation into 'perf bench' 
-would be a useful first step as well, for this and future efforts.
+NeilBrown
 
-See what we do in tools/perf/bench/mem-memcpy-x86-64-asm.S to pick 
-up the in-kernel assembly memcpy implementations:
+--Sig_/8LORB7Fz3OkwSvLtFty8Pco
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-#define memcpy MEMCPY /* don't hide glibc's memcpy() */
-#define altinstr_replacement text
-#define globl p2align 4; .globl
-#define Lmemcpy_c globl memcpy_c; memcpy_c
-#define Lmemcpy_c_e globl memcpy_c_e; memcpy_c_e
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-#include "../../../arch/x86/lib/memcpy_64.S"
+iQIVAwUBUnNxPDnsnt1WYoG5AQJ6Hw/+K0Mhr2+GJ/h6GlWBLdzww7/wzplfID7U
+I8WbGkbq4dS5cvzRQJB+hoVCgJ3r71/Jao3kl0PZmqwi949K3U37Za1n3c7j9fZT
+wOvwy1qlQoQNVFAUP6+3sJTJVQ3tW6Idh7xMcVB2PGnRLydF2X/byBAJzG7v4OFs
+U6OW78fjDq7qLvaW8mEevTIzmojGi3NR/qA7YYa5j+AouoqZDZvmBrkdo4hP2+F5
+2/OByWhK91dMzfhDHPG92dfvefUMm+rCxWOA3faQEOqb/Yr1t4bc4ZVJzpcoLqPr
+EN72/seUMvFXo16p2iNii6FoDQBaCIQHbdumFMJuGp5tFHxoRfiWFNy0Gw5raFQX
+Lu6a5TCR4bQftJ+pCe+YQ9bh7ddDmrE0pB95M9bD6G1ypJtuvsD3WwDE5NHHkFj+
+lfFzJvFPrkHrECtYLaXWpJwmNc0H+GkSH3UgMYSAGNv/jRUCLT8+1DfziO3iytgO
+p4r30ny0dhtFGPy90/2h+VXQAaKp0X6uqC5vbsi6ihE7P89JXKBCd3KR4hesKQJy
+xY4Oz0qOEvqPYeGW64ssu0u7WFYL6SAC/RjTrF3BN63TdjJ8oRNaK8umQ9Fu/TV7
+AgBJHJM/VLx6z+p+7NbUDVuEPFQIirh7DnoXiYQF0+8Qlp6dlw1d08Bu7iq4oMd5
+1SN5/Hgtd30=
+=IBZw
+-----END PGP SIGNATURE-----
 
-So it needed a bit of trickery/wrappery for 'perf bench mem memcpy', 
-but that is a one-time effort - once it's done then the current 
-in-kernel csum_partial() implementation would be easily measurable 
-(and any performance regression in it bisectable, etc.) from that 
-point on.
-
-In user-space it would also be easier to add various parameters and 
-experimental implementations and background cache-stressing 
-workloads automatically.
-
-Something similar might be possible for csum_partial(), 
-csum_partial_copy*(), etc.
-
-Note, if any of you ventures to add checksum-benchmarking to perf 
-bench, please base any patches on top of tip:perf/core:
-
-  git pull git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf/core
-
-as there are a couple of perf bench enhancements in the pipeline 
-already for v3.13.
-
-Thanks,
-
-	Ingo
+--Sig_/8LORB7Fz3OkwSvLtFty8Pco--
