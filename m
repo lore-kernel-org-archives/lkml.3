@@ -1,125 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab3KAFpl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 01:45:41 -0400
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:42651 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab3KAFpj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 01:45:39 -0400
-Message-ID: <52733FEC.4010807@synopsys.com>
-Date: Fri, 1 Nov 2013 11:15:16 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753604Ab3KAFrI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 01:47:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50426 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750823Ab3KAFrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 01:47:06 -0400
+X-IronPort-AV: E=Sophos;i="4.93,614,1378828800"; 
+   d="scan'208";a="8918695"
+Message-ID: <52733FE1.5020405@cn.fujitsu.com>
+Date: Fri, 01 Nov 2013 13:45:05 +0800
+From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>
-CC: James Hogan <james.hogan@imgtec.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "Max Filippov" <jcmvbkbc@gmail.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Tim Abbott <tabbott@ksplice.com>, Joe Perches <joe@perches.com>,
-        Michal Marek <mmarek@suse.cz>, David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH v2] arch: use ASM_NL instead of ';' for assembler new
- line character in the macro
-References: <526E3CE2.2070405@asianux.com> <526E6A92.6090301@synopsys.com> <526F09B8.9030202@asianux.com> <526F11C0.1030809@asianux.com> <526F149A.3000306@asianux.com>
-In-Reply-To: <526F149A.3000306@asianux.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="UTF-8"
+To: David Airlie <airlied@linux.ie>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+CC: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] DRM: Armada: convert to use simple_open()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/01 13:45:13,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/01 13:45:14,
+	Serialize complete at 2013/11/01 13:45:14
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.76]
+Content-Type: text/plain; charset=GB2312
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+CC Sam, Tim, Joe, Michal, David
 
-Guys can you please take a look at this patch and suggest the best way to merge.
+This removes an open coded simple_open() function and replaces file
+operations references to the function with simple_open() instead.
 
-The root cause is some gas ports (including ARC) use ';' for comment (vs. newline)
-More background at https://lkml.org/lkml/2013/10/24/365
+Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+---
+ drivers/gpu/drm/armada/armada_debugfs.c | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-
-On 10/29/2013 07:21 AM, Chen Gang wrote:
-> For some assemblers, they use another character as newline in a macro
-> (e.g. arc uses '`'), so for generic assembly code, need use ASM_NL (a
-> macro) instead of ';' for it.
-> 
-> Also need notice about code styles ('\t' for each line).
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  arch/arc/include/asm/linkage.h |    2 ++
->  include/linux/linkage.h        |   19 ++++++++++++-------
->  2 files changed, 14 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/arc/include/asm/linkage.h b/arch/arc/include/asm/linkage.h
-> index 0283e9e..66ee552 100644
-> --- a/arch/arc/include/asm/linkage.h
-> +++ b/arch/arc/include/asm/linkage.h
-> @@ -11,6 +11,8 @@
->  
->  #ifdef __ASSEMBLY__
->  
-> +#define ASM_NL		 `	/* use '`' to mark new line in macro */
-> +
->  /* Can't use the ENTRY macro in linux/linkage.h
->   * gas considers ';' as comment vs. newline
->   */
-> diff --git a/include/linux/linkage.h b/include/linux/linkage.h
-> index d3e8ad2..a6a42dd 100644
-> --- a/include/linux/linkage.h
-> +++ b/include/linux/linkage.h
-> @@ -6,6 +6,11 @@
->  #include <linux/export.h>
->  #include <asm/linkage.h>
->  
-> +/* Some toolchains use other characters (e.g. '`') to mark new line in macro */
-> +#ifndef ASM_NL
-> +#define ASM_NL		 ;
-> +#endif
-> +
->  #ifdef __cplusplus
->  #define CPP_ASMLINKAGE extern "C"
->  #else
-> @@ -75,21 +80,21 @@
->  
->  #ifndef ENTRY
->  #define ENTRY(name) \
-> -  .globl name; \
-> -  ALIGN; \
-> -  name:
-> +	.globl name ASM_NL \
-> +	ALIGN ASM_NL \
-> +	name:
->  #endif
->  #endif /* LINKER_SCRIPT */
->  
->  #ifndef WEAK
->  #define WEAK(name)	   \
-> -	.weak name;	   \
-> +	.weak name ASM_NL   \
->  	name:
->  #endif
->  
->  #ifndef END
->  #define END(name) \
-> -  .size name, .-name
-> +	.size name, .-name
->  #endif
->  
->  /* If symbol 'name' is treated as a subroutine (gets called, and returns)
-> @@ -98,8 +103,8 @@
->   */
->  #ifndef ENDPROC
->  #define ENDPROC(name) \
-> -  .type name, @function; \
-> -  END(name)
-> +	.type name, @function ASM_NL \
-> +	END(name)
->  #endif
->  
->  #endif
-> 
-
+diff --git a/drivers/gpu/drm/armada/armada_debugfs.c b/drivers/gpu/drm/armada/armada_debugfs.c
+index 612f375..471e456 100644
+--- a/drivers/gpu/drm/armada/armada_debugfs.c
++++ b/drivers/gpu/drm/armada/armada_debugfs.c
+@@ -95,15 +95,9 @@ static int armada_debugfs_write(struct file *file, const char __user *ptr,
+ 	return len;
+ }
+ 
+-static int armada_debugfs_reg_w_open(struct inode *inode, struct file *file)
+-{
+-	file->private_data = inode->i_private;
+-	return 0;
+-}
+-
+ static const struct file_operations fops_reg_w = {
+ 	.owner = THIS_MODULE,
+-	.open = armada_debugfs_reg_w_open,
++	.open = simple_open,
+ 	.write = armada_debugfs_write,
+ 	.llseek = noop_llseek,
+ };
+-- 
+1.8.3.1
