@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab3KAWk0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:40:26 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:39229 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757290Ab3KAWkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:40:21 -0400
+	id S932180Ab3KAWkQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:40:16 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:57489 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756820Ab3KAWkK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 18:40:10 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Andreas Dilger <adilger.kernel@dilger.ca>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
-Cc: Cody P Schafer <cody@linux.vnet.ibm.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/8] fs/ext3: use rbtree postorder iteration helper instead of opencoding
-Date: Fri,  1 Nov 2013 15:38:50 -0700
-Message-Id: <1383345566-25087-6-git-send-email-cody@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Cody P Schafer <cody@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/8] trace/trace_stat: use rbtree postorder iteration helper instead of opencoding
+Date: Fri,  1 Nov 2013 15:38:46 -0700
+Message-Id: <1383345566-25087-2-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1383345566-25087-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1383345566-25087-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110122-5806-0000-0000-0000234BDDD3
+x-cbid: 13110122-0928-0000-0000-0000032B5686
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,62 +29,66 @@ of opencoding an alternate postorder iteration that modifies the tree
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- fs/ext3/dir.c | 36 +++++-------------------------------
- 1 file changed, 5 insertions(+), 31 deletions(-)
+ kernel/trace/trace_stat.c | 42 ++++++------------------------------------
+ 1 file changed, 6 insertions(+), 36 deletions(-)
 
-diff --git a/fs/ext3/dir.c b/fs/ext3/dir.c
-index bafdd48..a331ad1 100644
---- a/fs/ext3/dir.c
-+++ b/fs/ext3/dir.c
-@@ -309,43 +309,17 @@ struct fname {
-  */
- static void free_rb_tree_fname(struct rb_root *root)
+diff --git a/kernel/trace/trace_stat.c b/kernel/trace/trace_stat.c
+index 847f88a..fa53acc 100644
+--- a/kernel/trace/trace_stat.c
++++ b/kernel/trace/trace_stat.c
+@@ -43,46 +43,16 @@ static DEFINE_MUTEX(all_stat_sessions_mutex);
+ /* The root directory for all stat files */
+ static struct dentry		*stat_dir;
+ 
+-/*
+- * Iterate through the rbtree using a post order traversal path
+- * to release the next node.
+- * It won't necessary release one at each iteration
+- * but it will at least advance closer to the next one
+- * to be released.
+- */
+-static struct rb_node *release_next(struct tracer_stat *ts,
+-				    struct rb_node *node)
++static void __reset_stat_session(struct stat_session *session)
  {
--	struct rb_node	*n = root->rb_node;
--	struct rb_node	*parent;
--	struct fname	*fname;
+-	struct stat_node *snode;
+-	struct rb_node *parent = rb_parent(node);
 -
--	while (n) {
--		/* Do the node's children first */
--		if (n->rb_left) {
--			n = n->rb_left;
--			continue;
--		}
--		if (n->rb_right) {
--			n = n->rb_right;
--			continue;
--		}
--		/*
--		 * The node has no children; free it, and then zero
--		 * out parent's link to it.  Finally go to the
--		 * beginning of the loop and try to free the parent
--		 * node.
--		 */
--		parent = rb_parent(n);
--		fname = rb_entry(n, struct fname, rb_hash);
-+	struct fname *fname, *next;
-+
-+	rbtree_postorder_for_each_entry_safe(fname, next, root, rb_hash)
- 		while (fname) {
- 			struct fname * old = fname;
- 			fname = fname->next;
- 			kfree (old);
- 		}
+-	if (node->rb_left)
+-		return node->rb_left;
+-	else if (node->rb_right)
+-		return node->rb_right;
+-	else {
 -		if (!parent)
--			*root = RB_ROOT;
--		else if (parent->rb_left == n)
+-			;
+-		else if (parent->rb_left == node)
 -			parent->rb_left = NULL;
--		else if (parent->rb_right == n)
+-		else
 -			parent->rb_right = NULL;
--		n = parent;
--	}
++	struct stat_node *snode, *n;
+ 
+-		snode = container_of(node, struct stat_node, node);
+-		if (ts->stat_release)
+-			ts->stat_release(snode->stat);
++	rbtree_postorder_for_each_entry_safe(snode, n, &session->stat_root,
++			node) {
++		if (session->ts->stat_release)
++			session->ts->stat_release(snode->stat);
+ 		kfree(snode);
+-
+-		return parent;
+ 	}
 -}
+-
+-static void __reset_stat_session(struct stat_session *session)
+-{
+-	struct rb_node *node = session->stat_root.rb_node;
+-
+-	while (node)
+-		node = release_next(session->ts, node);
  
-+	*root = RB_ROOT;
-+}
- 
- static struct dir_private_info *ext3_htree_create_dir_info(struct file *filp,
- 							   loff_t pos)
+ 	session->stat_root = RB_ROOT;
+ }
 -- 
 1.8.4.2
 
