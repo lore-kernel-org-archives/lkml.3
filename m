@@ -1,220 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408Ab3KAXdl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 19:33:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44394 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751825Ab3KAXdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 19:33:39 -0400
-Date: Sat, 2 Nov 2013 10:33:23 +1100
-From: NeilBrown <neilb@suse.de>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Belisko Marek <marek.belisko@gmail.com>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Subject: Re: [PATCH] extcon-gpio: add devicetree support.
-Message-ID: <20131102103323.17e208cf@notabene.brown>
-In-Reply-To: <20131101171643.GA2643@kartoffel>
-References: <20131101205005.659ba606@notabene.brown>
-	<20131101171643.GA2643@kartoffel>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/t0KgktJxF2dHTRgp11aukAA"; protocol="application/pgp-signature"
+	id S1753938Ab3KAXe4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 19:34:56 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:30689 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003Ab3KAXez (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 19:34:55 -0400
+Message-ID: <1383348890.1737.40.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [PATCH] bnx2: Use dev_kfree_skb_any() in bnx2_tx_int()
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Miller <davem@davemloft.net>
+CC: <xiyou.wangcong@gmail.com>, <mchan@broadcom.com>,
+        <tdmackey@booleanhaiku.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Fri, 1 Nov 2013 23:34:50 +0000
+In-Reply-To: <20131101.180147.629210014672277622.davem@davemloft.net>
+References: <CAM_iQpWAbSWVeAMwhQADTwO_RdYUXfog-wG9gs4+Zek0g_5Oyg@mail.gmail.com>
+	 <20131031.002602.2030884257299947291.davem@davemloft.net>
+	 <CAM_iQpXPrEj619=PRaKN4PxgOoEB96U0mLFS65AzXOezSWvhxQ@mail.gmail.com>
+	 <20131101.180147.629210014672277622.davem@davemloft.net>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20260.002
+X-TM-AS-Result: No--28.390000-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/t0KgktJxF2dHTRgp11aukAA
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2013-11-01 at 18:01 -0400, David Miller wrote:
+> From: Cong Wang <xiyou.wangcong@gmail.com>
+> Date: Thu, 31 Oct 2013 21:19:16 -0700
+> 
+> > 2013年10月30日 下午9:26于 "David Miller" <davem@davemloft.net>写道：
+> >>
+> >> We have to provide a softint compatible environment for this callback
+> >> to run in else everything is completely broken.
+> >>
+> >> All these drivers can safely assume softirq safe locking is
+> >> sufficient, you're suggesting we need to take this hardirq safety and
+> >> I'm really not willing to allow things to go that far.  A lot of
+> >> effort has been expended precisely to avoid that kind of overhead and
+> >> cost.
+> > 
+> > Alright, I am thinking to move netpoll_poll_dev() to a delayed work.
+>  
+> What if the printk is outputting a message that will help us discover
+> that work queues are deadlocked?
+> 
+> You can't delay the message, because every layer of indirection you
+> add increases the possibility that the message it never seen.  You
+> have to do it synchronously.
 
-On Fri, 1 Nov 2013 10:16:44 -0700 Mark Rutland <mark.rutland@arm.com> wrote:
+As you've said, the ndo_start_xmit and NAPI poll operations are intended
+to be called in softirq context, so everything that interlocks with them
+will use spin_lock_bh().  Calling them from hardirq context obviously
+opens the possibility of a deadlock.  How do you expect anyone to solve
+that?
 
-> Hi Neil,
->=20
-> While I'm not fundamentally opposed to this binding, I have some issues w=
-ith
-> its current form and would not want to see this version hit mainline.
->=20
+I think that most of the time netpoll doesn't actually call the NAPI
+poll function, and the driver ndo_start_xmit function doesn't take any
+locks, so we don't actually hit the deadlock in practice (on mainline
+kernels - RT is a different story).
 
-Thanks for the review.
+Obviously, the less machinery netpoll relies on continuing to work, the
+better, so it should preferably defer to sofirq context rather than
+workqueue context.  I think this means hooking queue_process() into
+net_tx_action(), and then cutting out much of the rest of netpoll.
 
-> On Fri, Nov 01, 2013 at 09:50:05AM +0000, NeilBrown wrote:
-> >=20
-> > As this device is not vendor specific, I haven't included any "vendor,"
-> > prefixes.  For my model I used "regulator-gpio" which takes a similar
-> > approach.
-> >=20
-> > Signed-off-by: NeilBrown <neilb@suse.de>
-> >=20
-> > diff --git a/Documentation/devicetree/bindings/extcon/extcon-gpio.txt b=
-/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
-> > new file mode 100644
-> > index 000000000000..2346b61cc620
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
-> > @@ -0,0 +1,26 @@
-> > +* EXTCON detector using GPIO
->=20
-> EXTCON is _extremely_ Linux-specific. The binding document needs a descri=
-ption
-> of the class of device it's inteded to describe that does not just refer =
-to
-> Linux internals.
->=20
-> I would prefer if we could have a better name for this that was not tied =
-to the
-> Linux driver name. Perhaps "gpio-presence-detector"?
+Ben.
 
-Maybe "cable-presence-detector" as in this case the GPIO is just an
-implementation detail.  Which isn't much different from "external-connector"
-which is where "extcon" comes from...
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-I propose "external-connector" if you don't like "extcon".
-
-
->=20
-> > +
-> > +Required Properties:
-> > + - compatible: "extcon-gpio"
-> > + - gpios: gpio line that detects connector
-> > + - interrupts: interrupt generated by that gpio
->=20
-> We don't need this. If we need the interrupt a gpio generates, we should =
-ask
-> the gpio controller driver to map the gpio to an interrupt.
->=20
-> We have gpiod_to_irq for this in Linux.
-
-The reason I did this was that the pre-existing platform_data wants
-'irq_flags'.  I could have an 'irq-flags' property, but it seems to make mo=
-re
-sense to use "interrupts" as that already provides a way to pass irq-flags =
-to
-a device.
-
-On reflection though, I cannot imagine why any extcon-gpio would use anythi=
-ng
-other than  IRQ_TYPE_EDGE_BOTH.  Maybe MyungJoo Ham can explain that???
-
-If there is no need for specifying irq-flags per-platform, the "interrupts"
-property can definitely go.
-
-
->=20
-> > + - debounce-delay-ms: debouncing delay
-> > +
-> > +Optional Properties:
-> > + - label: name for connector.  If not given, device name is used.
-> > + - state-on: string to report when GPIO is high (else '0')
-> > + - state-off: string to report when GPIO is low (else '1')
->=20
-> I do not like these properties, they are very much a Linux implementation
-> detail.
->=20
-> Are extcon devices ever used standalone? If so, why?
-
-I'm not sure what you mean by stand alone - it is part of a mobile-phone
-motherboard so it certainly isn't alone :-)
-
-The board has a GPS which is connected to a serial port.  So the kernel
-doesn't really need to know much about it.
-There is an internal antenna and a connector for an external antenna.  There
-is some clever electronics that detects when the external antenna is plugged
-in and re-routes the antenna power to the external (and way from the
-internal).
-A gpio can read the state of this electronic switch.  It seems sensible to
-present this to user-space as an 'extcon' device.  It is stand-alone only in
-that the kernel doesn't "know" that it is related to anything else.  I and
-the user-space software know that it isn't "alone".
-
-Given that there a two antennas, internal and external, and always one is
-connected, it seems sensible to present it that way.
-
-However I don't object to the connection being called  "external-antenna"
-which reports either "0" or "1".
-That would make "state-on" and "state-off" unnecessary and I see no
-problem with removing them.
-
-I do think it is necessary to have a "label" for the  external connector
-though.  It is a specific connector with a specific purpose and deserves to
-have a "label", in exactly the same way that "leds" devices and provide a
-label for each LED.
-
->=20
-> If not I see _no_ reason at all for the label property. If a userspace
-> application needs to detect the presence of a particular external connect=
-or, it
-> will need to know this in relation to the device the external connectors =
-are
-> attached to. In that case the application should find that device and tra=
-verse
-> its set of extcon devices. The names for the external connections will be=
- a
-> property of the device, not the extcon devices themselves (along hte same=
- lines
-> as clocks), and need not be a property of the extcon device.
-
-This sounds interesting but I don't follow exactly what you mean.
-In particular, where would an application "find that device" and how would =
-it
-"traverse the set of extcon devices"?
-And if there are multiple extcons in a parent, how can the name of the extc=
-on
-be a property of the parent?
-
-Confused... maybe I should explore the 'clocks' to which you refer...
-
->=20
-> As for state-on and state-off, we are exposing a binary property to users=
-pace,
-> the meaning of which is already dependent on the particular device the ex=
-tcon
-> devices are connected to. Given userspace already has to understand that,=
- I see
-> no value in embedding arbitrary strings in the device tree which attempt =
-to
-> replicate this knowledge. They provide no additional value and in my mind=
- make
-> the interface to userspace harder to use because you have ot handle an
-> arbitrary set of values depending on how the dt author felt one morning r=
-ather
-> than just the binary value you actually care about.
-
-I agree with this.  I think the history is that this driver was originally
-described as a "switch" which could have two states which deserved names.
-As an 'external-connector' device, that makes less sense.
-(tough it might make sense to device a "switch" device-tree type that this
-driver could also support...)
-
-Thanks,
-NeilBrown
-
---Sig_/t0KgktJxF2dHTRgp11aukAA
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUnQ6Qznsnt1WYoG5AQLdzw//ciQdrVhwAeI9tchhJananOmWqE5L8oeF
-oLBSXdQ5JvlGNELhi1ajukYN1m2S2StulsFXFoeqczgW7BEeWDe4JpPoXu3Xf0bM
-I3p2mUZAgOYoUmsVj1HcHObNQgh0Ivd8U9FWVRI0rK9x4N8XXWkaG4axys2QC0fa
-sTMy4cnDh3vJ2ZIh+ciBEdfiksubCh4m1MNmdJpPlgrcTRWQ/xVtI0ejlIXEr6L/
-ZJWcQ66NMolcD5e5Dyt6D8EJCaVbpg3gUGQyhTIu3rwzYRvz1mtul07O8rRqZ/hy
-Mgv9yXTVAlqNOImKhcNBjS3OGU+LlVjnT9iNZ1KE80GNWMupdN8S/ifJQvI7SYzM
-Gq7FKoFEQimpJA3V2BZq0EDMa5RSbY15yUc2fHV11ai6LhNF/vBq96vwAVuQ+3Bl
-tm+AHaJsVxzQ0CcSUKsz3c487fOTtN9/JQ8OLatDES49+4KrF2LPWxdD1DC4kL87
-w6wQs0j7VYAdBt8yZYN458O1t90ARAGOkxwAVWbOWFj0OhR9N3R+CSti/y+bkBc0
-jNQqmqEgw1Efxdw7jgzkxawotTF+SFWtlkFb8jnIGQ1DlRQoHiHxPcLUfhZKUblo
-WeDIB/5bq558lmRrUkgi+MMxpXYFZ/NcZTDzobttr+dL8Z7Un8whurx7xmnjZ77Z
-A9Lb0eXlg1E=
-=Wrl+
------END PGP SIGNATURE-----
-
---Sig_/t0KgktJxF2dHTRgp11aukAA--
