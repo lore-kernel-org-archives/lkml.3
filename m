@@ -1,96 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab3KAGaZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 02:30:25 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36867 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752061Ab3KAGaX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 02:30:23 -0400
-Date: Fri, 1 Nov 2013 17:30:03 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Bryan Wu <cooloney@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Subject: linux-next: manual merge of the leds tree with the powerpc tree
-Message-Id: <20131101173003.e0c6ce3749c3b6b1dd0c109e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__1_Nov_2013_17_30_03_+1100_lV_Mhy=AcuA8NU51"
+	id S1753802Ab3KAGeI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 02:34:08 -0400
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:37142
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751951Ab3KAGeF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 02:34:05 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(z551biz1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah8275dh1de097h186068hz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216hbe9i1155h)
+From: Li Xiubo <B47053@freescale.com>
+To: "thierry.reding@gmail.com" <thierry.reding@gmail.com>
+CC: "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "t.figa@samsung.com" <t.figa@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [RFCv2][PATCHv5 0/4] Add Freescale FTM PWM driver.
+Thread-Topic: [RFCv2][PATCHv5 0/4] Add Freescale FTM PWM driver.
+Thread-Index: AQHO1T6krylUwjAGikee2OoD5TyfU5oP6xVA
+Date: Fri, 1 Nov 2013 06:34:00 +0000
+Message-ID: <1DD289F6464F0949A2FCA5AA6DC23F82871744@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1383114204-17264-1-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <1383114204-17264-1-git-send-email-Li.Xiubo@freescale.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.78]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__1_Nov_2013_17_30_03_+1100_lV_Mhy=AcuA8NU51
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Therry,
 
-Hi Bryan,
+The binding patch has been acked, how about the other patches ?
 
-Today's linux-next merge of the leds tree got a conflict in
-include/linux/of.h between commit a3e31b458844 ("of: Move definition of
-of_find_next_cache_node into common code") from the powerpc tree and
-commit 954e04b9491a ("of: introduce of_get_available_child_count") from
-the leds tree.
+If they are all okey, should I sent a another official version again ?
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks.
 
-diff --cc include/linux/of.h
-index 2567ccd32482,54c25606a997..000000000000
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@@ -228,8 -226,17 +228,19 @@@ static inline int of_get_child_count(co
-  	return num;
-  }
- =20
-+ static inline int of_get_available_child_count(const struct device_node *=
-np)
-+ {
-+ 	struct device_node *child;
-+ 	int num =3D 0;
-+=20
-+ 	for_each_available_child_of_node(np, child)
-+ 		num++;
-+=20
-+ 	return num;
-+ }
-+=20
- +/* cache lookup */
- +extern struct device_node *of_find_next_cache_node(const struct device_no=
-de *);
-  extern struct device_node *of_find_node_with_property(
-  	struct device_node *from, const char *prop_name);
-  #define for_each_node_with_property(dn, prop_name) \
 
---Signature=_Fri__1_Nov_2013_17_30_03_+1100_lV_Mhy=AcuA8NU51
-Content-Type: application/pgp-signature
+--
+Xiubo
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBCAAGBQJSc0p7AAoJEMDTa8Ir7ZwVl/8QAJWtuhVg8uOAN7G7iF1eGduD
-ozXSY7MvHBARyJStAQXxh78MdtBFBO+Di1sCz3Jkw/qxQByMv9mMCzk4yt0X18nh
-HI+NGztvW1rIhv/GyWyi2KyWzBzn7ohnD5TNLHUPeyn9DU380uaN9jbRD84OBPdq
-F253svnKv2ct6O9336uFUN3H1Q53HJQoDOv2aSc/g3WXzSydBqm21g+zIV87QbyG
-fNKObJw56yBsluUk5nYo1P5cUGLAkkklafy5PVIKxyulOgro/lIC9ckrNNd8BuD0
-0Ir2PSwdCUOxHLDZgide+70LM0uF39DOCFAWBtDp0XY2bBGhkiRLOgHk7wlFC3SG
-Iy/7J/6bvrGVNu/QdNsmZi9MK7nslxYCOU14iRYEWRAoNLe9ctATz0hrOj4l037g
-Nl/IbzeBvbdb6wuE7uxLUfpbMY+7KxP9vDxDL/2OTiROz/wthHlo4KYi7ga6guen
-JoWHKBegPyBzGPclLWEpmfHfmgZ7quZHOtN5Nv8IPbbz4/N9Ci7MsipROyyIoO0m
-E7RNmuEr8b9Q7F7hYYoxLlmI3q5lHtdS7sgOkYBZ9KSsXHCCyeW5B4oQ9epeMPO9
-c+RQBPAX2vpTWrZa7Sjxr2JOKfVaG4EYyPbjyesysqcYWFCmZc3+yDQap3YuOKTn
-u+L9kywvQX7yXyfvDJ33
-=0lYh
------END PGP SIGNATURE-----
 
---Signature=_Fri__1_Nov_2013_17_30_03_+1100_lV_Mhy=AcuA8NU51--
+> Subject: [RFCv2][PATCHv5 0/4] Add Freescale FTM PWM driver.
+> 
+> Hello,
+> 
+> This patch series is the Freescale FTM PWM implementation. And there are
+> 8 channels most supported by the FTM PWM. This implementation is only
+> compatible with device tree definition.
+> 
+> This patch series is based on linux-next and has been tested on Vybrid
+> VF610 Tower board using device tree.
+> 
+> 
+> 
+> Changes in RFCv2 of PATVHv5:
+> - Remove "fsl,pwm-counter-clk"(all the four patches are modified).
+> 
+> Changes in v5:
+> - Remove active/idle pinctrl stuff.
+> 
+> Changes in v4:
+> - Check for the result and return an error for devm_kzalloc().
+> - Move pinmux setting from the SoC file to the board specific file.
+> - Revise the written mistake of 'ret |= FTMSC_CLKEXT;' --> 'reg |=
+> FTMSC_CLKEXT;'.
+> 
+> 
+> Changes in v3:
+> - Remove "availabe" field.
+> - Remove "fsl,pwm-avaliable-chs" property.
+> - ...
+> 
+> Changes in v2:
+> - Remove PWM CPWM/EPWM feature and sysfs.
+> - Remove some redundant code.
+> - Revise some code for more readable.
+> - Remove "fsl,pwm-clk-ps", "fsl,pwm-number", "fsl,pwm-channels",etc.
+> - Add "fsl,pwm-avaliable-chs", "fsl,pwm-counter-clk", etc.
+> - Support 8 channels default in dtsi file.
+> - Add counter clock source selection.
+> - Rename some function name, macro name, etc.
+> - Use PWM's and OF's existing function interfaces.
+> - Split clk_unprepare_enable to clk_unprepare and clk_enable,etc.
+> - ...
+> 
+> Added in v1:
+> - Add Freescale FTM PWM driver support.
+> - Add Freescale FTM PWM node for VF610.
+> - Enable Enables FTM PWM device for Vybrid VF610 TOWER.
+> - Add device tree bindings for Freescale.
+> 
+> 
+> 
+> 
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+
