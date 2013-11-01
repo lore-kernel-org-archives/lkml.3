@@ -1,119 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734Ab3KAI6K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 04:58:10 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19465 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752190Ab3KAI6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 04:58:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,615,1378882800"; 
-   d="scan'208";a="420753088"
-Message-ID: <1383296284.2722.73.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 1/1]  MTD: UBI:  try to avoid program data to NOR flash
- after erasure interrupted
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Qi Wang =?UTF-8?Q?=E7=8E=8B=E8=B5=B7?= "(qiwang)" 
-	<qiwang@micron.com>
-Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 01 Nov 2013 10:58:04 +0200
-In-Reply-To: <71CF8D7F32C5C24C9CD1D0E02D52498A770B220C@NTXXIAMBX02.xacn.micron.com>
-References: <71CF8D7F32C5C24C9CD1D0E02D52498A77082AC5@NTXXIAMBX02.xacn.micron.com>
-	 <71CF8D7F32C5C24C9CD1D0E02D52498A77082DDB@NTXXIAMBX02.xacn.micron.com>
-	 <71CF8D7F32C5C24C9CD1D0E02D52498A770AED11@NTXXIAMBX02.xacn.micron.com>
-	 <71CF8D7F32C5C24C9CD1D0E02D52498A770AED44@NTXXIAMBX02.xacn.micron.com>
-	 <71CF8D7F32C5C24C9CD1D0E02D52498A770AED67@NTXXIAMBX02.xacn.micron.com>
-	 <1382779164.5901.1.camel@karhu.quadriga.com>
-	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B1B97@NTXXIAMBX02.xacn.micron.com>
-	 <1383059901.29619.52.camel@sauron.fi.intel.com>
-	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B220C@NTXXIAMBX02.xacn.micron.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1754835Ab3KAJA3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 05:00:29 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49581 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab3KAJA2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 05:00:28 -0400
+X-AuditID: 9c93016f-b7b28ae00000111e-83-52736da9d0cd
+From: Namhyung Kim <namhyung@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a ring buffer
+References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
+	<1383029621-7384-11-git-send-email-namhyung@kernel.org>
+	<20131031181654.GA11208@redhat.com>
+Date: Fri, 01 Nov 2013 18:00:25 +0900
+In-Reply-To: <20131031181654.GA11208@redhat.com> (Oleg Nesterov's message of
+	"Thu, 31 Oct 2013 19:16:54 +0100")
+Message-ID: <878ux84hue.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Oleg,
 
-could you please re-send your patch separately, without quoting any
-parts of this conversation, so that I could use 'git am'.
+Thank you for reviewing this patchset!
 
-Your patch also contains trailing white-spaces, please, get rid of them
-in the next submission.
+On Thu, 31 Oct 2013 19:16:54 +0100, Oleg Nesterov wrote:
+> On 10/29, Namhyung Kim wrote:
+>>
+>> @@ -630,6 +653,19 @@ probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
+>>  	if (trace_probe_is_enabled(&tu->p))
+>>  		return -EINTR;
+>>  
+>> +	if (atomic_inc_return(&uprobe_buffer_ref) == 1) {
+>> +		int cpu;
+>> +
+>> +		uprobe_cpu_buffer = __alloc_percpu(PAGE_SIZE, PAGE_SIZE);
+>> +		if (uprobe_cpu_buffer == NULL) {
+>> +			atomic_dec(&uprobe_buffer_ref);
+>> +			return -ENOMEM;
+>> +		}
+>> +
+>> +		for_each_possible_cpu(cpu)
+>> +			mutex_init(&per_cpu(uprobe_cpu_mutex, cpu));
+>> +	}
+>> +
+>>  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+>>  
+>>  	tu->p.flags |= flag;
+>> @@ -646,6 +682,11 @@ static void probe_event_disable(struct trace_uprobe *tu, int flag)
+>>  	if (!trace_probe_is_enabled(&tu->p))
+>>  		return;
+>>  
+>> +	if (atomic_dec_and_test(&uprobe_buffer_ref)) {
+>> +		free_percpu(uprobe_cpu_buffer);
+>> +		uprobe_cpu_buffer = NULL;
+>> +	}
+>> +
+>>  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+>
+> Do we really need atomic_t? probe_event_enable/disable is called under
+> event_mutex and we rely on this fact anyway.
+>
+> Otherwise this logic looks racy even with atomic_t, another thread could
+> use the uninitialized uprobe_cpu_buffer/mutex if it registers another probe
+> and the handler runs before we complete the initialization, no?
 
-Also, could you please clearly state whether you have tested this patch
-on a real NOR flash or not. If yes, then could you share the chip
-vendor/type information?
+It seems you're right.  I really need to have some time to look at this
+code carefully again. ;-)  So many works are going on these days...
 
-On Thu, 2013-10-31 at 04:07 +0000, Qi Wang 王起 (qiwang) wrote:
-
-> --- a/drivers/mtd/ubi/io.c
-> +++ b/drivers/mtd/ubi/io.c
-> @@ -499,59 +499,44 @@ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
->  	size_t written;
->  	loff_t addr;
->  	uint32_t data = 0;
-> -	/*
-> -	 * Note, we cannot generally define VID header buffers on stack,
-> -	 * because of the way we deal with these buffers (see the header
-> -	 * comment in this file). But we know this is a NOR-specific piece of
-> -	 * code, so we can do this. But yes, this is error-prone and we should
-> -	 * (pre-)allocate VID header buffer instead.
-> -	 */
-
-Please, do not remove this comment.
-
->  	struct ubi_vid_hdr vid_hdr;
-> +	struct ubi_ec_hdr ec_hdr;
-
-To make it obvious what the above big comment talks about, could you
-please define 'struct ubi_ec_hdr ec_hdr' above that big comment.
-
-Otherwise looks good to me, thank you!
-
-
-> My Comments for above changing:
-> 1. 
-> 	-	/*
-> 	-	 * Note, we cannot generally define VID header buffers on stack,
-> 	-	 * because of the way we deal with these buffers (see the header
-> 	-	 * comment in this file). But we know this is a NOR-specific piece of
-> 	-	 * code, so we can do this. But yes, this is error-prone and we should
-> 	-	 * (pre-)allocate VID header buffer instead.
-> 	-	 */
-> 	I remove above comment, because I pre-allocate VID header and EC header together. 
-> 	So I think no need to emphasize VID header buffers cannot be on stack.
-> 	(Maybe my understanding about this comment is error, if so, please correct me)
-
-The problem is that some functions in io.c can read or write _beyond_
-sizeof(struct ubi_vid_hdr), but this is only relevant to NAND, not for
-NOR, and the code you change is NOR-only. This is why that comment is
-there, and I'd like to keep it.
-
-> 2.
-> 	why use
-> 	"if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR && err != UBI_IO_FF)"
-> 	but not 
-> 	"if (!err)" 
-> 	to judge if need to program '0' to invalid this block.
-> 
-> 	In case err == UBI_IO_FF_BITFLIPS, err == UBI_IO_BITFLIPS or unexpected value return
-> 	from read function, I think UBI still need to invalid this block for above mentioned 
-> 	condition. So I use
-> 	"if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR && err != UBI_IO_FF)"
-> 	to judge. 
-
-In case of UBI_IO_FF (all FFs) UBI will erase the eraseblock before
-using it anyway, so invalidation is not necessary.
-
-Thanks!
-
--- 
-Best Regards,
-Artem Bityutskiy
-
+Thanks,
+Namhyung
