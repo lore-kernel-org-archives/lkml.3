@@ -1,313 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab3KAURY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 16:17:24 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:25545 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab3KAURX (ORCPT
+	id S1753325Ab3KAUXI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 16:23:08 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60623 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab3KAUXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 16:17:23 -0400
-Message-ID: <1383337039.2653.18.camel@buesod1.americas.hpqcorp.net>
-Subject: [PATCH] mm: cache largest vma
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        aswin@hp.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Fri, 01 Nov 2013 13:17:19 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Fri, 1 Nov 2013 16:23:06 -0400
+Date: Sat, 2 Nov 2013 07:22:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>, Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Kent Overstreet <kmo@daterainc.com>
+Subject: Re: linux-next: manual merge of the block tree with the  tree
+Message-Id: <20131102072252.88d2380fa392705b912dbfad@canb.auug.org.au>
+In-Reply-To: <5273C473.5070803@kernel.dk>
+References: <20131101142026.10390b6e3f70de348770c137@canb.auug.org.au>
+	<5273C473.5070803@kernel.dk>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__2_Nov_2013_07_22_52_+1100_d2+_P.ARWbIEpCCt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While caching the last used vma already does a nice job avoiding
-having to iterate the rbtree in find_vma, we can improve. After
-studying the hit rate on a load of workloads and environments,
-it was seen that it was around 45-50% - constant for a standard
-desktop system (gnome3 + evolution + firefox + a few xterms),
-and multiple java related workloads (including Hadoop/terasort),
-and aim7, which indicates it's better than the 35% value documented
-in the code.
+--Signature=_Sat__2_Nov_2013_07_22_52_+1100_d2+_P.ARWbIEpCCt
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-By also caching the largest vma, that is, the one that contains
-most addresses, there is a steady 10-15% hit rate gain, putting
-it above the 60% region. This improvement comes at a very low
-overhead for a miss. Furthermore, systems with !CONFIG_MMU keep
-the current logic.
+Hi Jens,
 
-This patch introduces a second mmap_cache pointer, which is just
-as racy as the first, but as we already know, doesn't matter in
-this context. For documentation purposes, I have also added the
-ACCESS_ONCE() around mm->mmap_cache updates, keeping it consistent
-with the reads.
+On Fri, 01 Nov 2013 09:10:43 -0600 Jens Axboe <axboe@kernel.dk> wrote:
+>
+> On 10/31/2013 09:20 PM, Stephen Rothwell wrote:
+> >=20
+> > Today's linux-next merge of the block tree got a conflict in
+> > drivers/block/loop.c between commit 2486740b52fd ("loop: use aio to
+> > perform io on the underlying file") from the aio-direct tree and commit
+> > ed2d2f9a8265 ("block: Abstract out bvec iterator") from the block tree.
+> >=20
+> > I fixed it up (I think - see below - I have also attached the final
+> > resulting file) and can carry the fix as necessary (no action is
+> > required).
+> >=20
+>=20
+> What tree is this from? It'd be a lot more convenient to fold that loop
+> patch into my tree, especially since the block tree in linux-next failed
+> after this merge.
 
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
----
-Please note that nommu and unicore32 arch are *untested*.
+I can only agree with you.  It is from the aio-direct tree (probably
+misnamed by me) (git://github.com/kleikamp/linux-shaggy.git#for-next) run
+by Dave Kleikamp.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I also have a patch on top of this one that caches the most 
-used vma, which adds another 8-10% hit rate gain, However,
-since it does add a counter to the vma structure and we have
-to do more logic in find_vma to keep track, I was hesitant about
-the overhead. If folks are interested I can send that out as well.
+--Signature=_Sat__2_Nov_2013_07_22_52_+1100_d2+_P.ARWbIEpCCt
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
- Documentation/vm/locking                 |  4 +-
- arch/unicore32/include/asm/mmu_context.h |  2 +-
- include/linux/mm.h                       | 13 ++++++
- include/linux/mm_types.h                 | 15 ++++++-
- kernel/debug/debug_core.c                | 17 +++++++-
- kernel/fork.c                            |  2 +-
- mm/mmap.c                                | 68 ++++++++++++++++++++------------
- 7 files changed, 87 insertions(+), 34 deletions(-)
+iQIcBAEBCAAGBQJSdA2iAAoJEMDTa8Ir7ZwVyAEP/0g5vyTlZ1PLhLrBCsnHSt03
+nwreetoVLetnKVmmwstzwhABigKlxCYExXr1WOKjtIGR2/6x+2BU5sfceOXmKrER
+UIX41dhnx2E1awAUmljyqYbKSK1iDf34FFkPdzTO9DKsl0wO38yit7fAgOag40/e
+IkciU0t6bYpeNjiPQPO9TNyLmpwsjNy5DOht7vYDIDllwaxeoOh3xQYWfuQUuvlL
+txlyh814lXqX7krEJEHd/9DuVVI+yVjBgad+rPzXN/6dS0XAaWi7rybjblMphHph
+nm07rE6WfOZZuaRemZD98KGL5zt6J9yvKwF6qoojfPzEwZ79x4DBeZV4f1dOYZv+
+hd8utCXeC2Rxwzb7K8jSZ2HwKeacq9JDF+SmRXkxzEEaK9nChBnIFyLEGcT6XWCh
+paabjQbn4Vqn9KTUxu0J8FL/qcD/fXWf2IirDmZvO7eRgeYteNCYnIF9NU7yP3/8
+1ioEfMPRXxv7CwmSWBhdqZ4Ctncxv2M7yD4hBrvzJbC5XcFO/ZckWmJcOle00Vmd
+QKwu9CDhArT9oZXcgZ2Srp4dO5it2NZa+LNkys0oP8+YmcNywNhcAI9f5g2jsVcW
+4ZX0x3nJpW2mc7suH0j+2RNL1f7sNkufPcxXEB0K2FtTxjFpPj/L+b+Ic/7jul6S
+bNQje2OXfAfKOi+MX4SL
+=6+eX
+-----END PGP SIGNATURE-----
 
-diff --git a/Documentation/vm/locking b/Documentation/vm/locking
-index f61228b..b4e8154 100644
---- a/Documentation/vm/locking
-+++ b/Documentation/vm/locking
-@@ -42,8 +42,8 @@ The rules are:
-    for mm B.
- 
- The caveats are:
--1. find_vma() makes use of, and updates, the mmap_cache pointer hint.
--The update of mmap_cache is racy (page stealer can race with other code
-+1. find_vma() makes use of, and updates, the mmap_cache pointers hint.
-+The updates of mmap_cache is racy (page stealer can race with other code
- that invokes find_vma with mmap_sem held), but that is okay, since it 
- is a hint. This can be fixed, if desired, by having find_vma grab the
- page_table_lock.
-diff --git a/arch/unicore32/include/asm/mmu_context.h b/arch/unicore32/include/asm/mmu_context.h
-index fb5e4c6..38cc7fc 100644
---- a/arch/unicore32/include/asm/mmu_context.h
-+++ b/arch/unicore32/include/asm/mmu_context.h
-@@ -73,7 +73,7 @@ do { \
- 		else \
- 			mm->mmap = NULL; \
- 		rb_erase(&high_vma->vm_rb, &mm->mm_rb); \
--		mm->mmap_cache = NULL; \
-+		vma_clear_caches(mm);			\
- 		mm->map_count--; \
- 		remove_vma(high_vma); \
- 	} \
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 8b6e55e..2c0f8ed 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1534,8 +1534,21 @@ static inline void mm_populate(unsigned long addr, unsigned long len)
- 	/* Ignore errors */
- 	(void) __mm_populate(addr, len, 1);
- }
-+
-+static inline void vma_clear_caches(struct mm_struct *mm)
-+{
-+	int i;
-+
-+	for (i = 0; i < NR_VMA_CACHES; i++)
-+		mm->mmap_cache[i] = NULL;
-+}
- #else
- static inline void mm_populate(unsigned long addr, unsigned long len) {}
-+
-+static inline void vma_clear_caches(struct mm_struct *mm)
-+{
-+	mm->mmap_cache = NULL;
-+}
- #endif
- 
- /* These take the mm semaphore themselves */
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index d9851ee..7f92835 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -322,12 +322,23 @@ struct mm_rss_stat {
- 	atomic_long_t count[NR_MM_COUNTERS];
- };
- 
-+
-+#ifdef CONFIG_MMU
-+enum {
-+	VMA_LAST_USED, /* last find_vma result */
-+	VMA_LARGEST,   /* vma that contains most address */
-+	NR_VMA_CACHES
-+};
-+#endif
-+
- struct kioctx_table;
- struct mm_struct {
- 	struct vm_area_struct * mmap;		/* list of VMAs */
- 	struct rb_root mm_rb;
--	struct vm_area_struct * mmap_cache;	/* last find_vma result */
--#ifdef CONFIG_MMU
-+#ifndef CONFIG_MMU
-+	struct vm_area_struct *mmap_cache;      /* last find_vma result */
-+#else
-+	struct vm_area_struct *mmap_cache[NR_VMA_CACHES];
- 	unsigned long (*get_unmapped_area) (struct file *filp,
- 				unsigned long addr, unsigned long len,
- 				unsigned long pgoff, unsigned long flags);
-diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-index 0506d44..d9d72e4 100644
---- a/kernel/debug/debug_core.c
-+++ b/kernel/debug/debug_core.c
-@@ -221,13 +221,26 @@ int __weak kgdb_skipexception(int exception, struct pt_regs *regs)
-  */
- static void kgdb_flush_swbreak_addr(unsigned long addr)
- {
-+	struct mm_struct *mm = current->mm;
- 	if (!CACHE_FLUSH_IS_SAFE)
- 		return;
- 
--	if (current->mm && current->mm->mmap_cache) {
--		flush_cache_range(current->mm->mmap_cache,
-+#ifdef CONFIG_MMU
-+	if (mm) {
-+		int i;
-+
-+		for (i = 0; i < NR_VMA_CACHES; i++)
-+			if (mm->mmap_cache[i])
-+				flush_cache_range(mm->mmap_cache[i],
-+						  addr,
-+						  addr + BREAK_INSTR_SIZE);
-+	}
-+#else
-+	if (mm && mm->mmap_cache) {
-+		flush_cache_range(mm->mmap_cache,
- 				  addr, addr + BREAK_INSTR_SIZE);
- 	}
-+#endif
- 	/* Force flush instruction cache if it was outside the mm */
- 	flush_icache_range(addr, addr + BREAK_INSTR_SIZE);
- }
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 086fe73..7b92666 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -363,8 +363,8 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
- 
- 	mm->locked_vm = 0;
- 	mm->mmap = NULL;
--	mm->mmap_cache = NULL;
- 	mm->map_count = 0;
-+	vma_clear_caches(mm);
- 	cpumask_clear(mm_cpumask(mm));
- 	mm->mm_rb = RB_ROOT;
- 	rb_link = &mm->mm_rb.rb_node;
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 9d54851..29c3fc0 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -676,14 +676,17 @@ static inline void
- __vma_unlink(struct mm_struct *mm, struct vm_area_struct *vma,
- 		struct vm_area_struct *prev)
- {
-+	int i;
- 	struct vm_area_struct *next;
- 
- 	vma_rb_erase(vma, &mm->mm_rb);
- 	prev->vm_next = next = vma->vm_next;
- 	if (next)
- 		next->vm_prev = prev;
--	if (mm->mmap_cache == vma)
--		mm->mmap_cache = prev;
-+
-+	for (i = 0; i < NR_VMA_CACHES; i++)
-+		if (mm->mmap_cache[i] == vma)
-+			mm->mmap_cache[i] = prev;
- }
- 
- /*
-@@ -1972,34 +1975,47 @@ EXPORT_SYMBOL(get_unmapped_area);
- /* Look up the first VMA which satisfies  addr < vm_end,  NULL if none. */
- struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
- {
-+	unsigned long currlen = 0;
-+	struct rb_node *rb_node;
- 	struct vm_area_struct *vma = NULL;
- 
--	/* Check the cache first. */
--	/* (Cache hit rate is typically around 35%.) */
--	vma = ACCESS_ONCE(mm->mmap_cache);
--	if (!(vma && vma->vm_end > addr && vma->vm_start <= addr)) {
--		struct rb_node *rb_node;
-+	/* Check the cache first */
-+	vma = ACCESS_ONCE(mm->mmap_cache[VMA_LAST_USED]);
-+	if (vma && vma->vm_end > addr && vma->vm_start <= addr)
-+		goto ret;
- 
--		rb_node = mm->mm_rb.rb_node;
--		vma = NULL;
-+	vma = ACCESS_ONCE(mm->mmap_cache[VMA_LARGEST]);
-+	if (vma) {
-+		if (vma->vm_end > addr && vma->vm_start <= addr)
-+			goto ret;
-+		currlen = vma->vm_end - vma->vm_start;
-+	}
- 
--		while (rb_node) {
--			struct vm_area_struct *vma_tmp;
--
--			vma_tmp = rb_entry(rb_node,
--					   struct vm_area_struct, vm_rb);
--
--			if (vma_tmp->vm_end > addr) {
--				vma = vma_tmp;
--				if (vma_tmp->vm_start <= addr)
--					break;
--				rb_node = rb_node->rb_left;
--			} else
--				rb_node = rb_node->rb_right;
--		}
--		if (vma)
--			mm->mmap_cache = vma;
-+	/* Bad cache! iterate rbtree */
-+	rb_node = mm->mm_rb.rb_node;
-+	vma = NULL;
-+
-+	while (rb_node) {
-+		struct vm_area_struct *vma_tmp;
-+
-+		vma_tmp = rb_entry(rb_node,
-+				   struct vm_area_struct, vm_rb);
-+
-+		if (vma_tmp->vm_end > addr) {
-+			vma = vma_tmp;
-+			if (vma_tmp->vm_start <= addr)
-+				break;
-+			rb_node = rb_node->rb_left;
-+		} else
-+			rb_node = rb_node->rb_right;
-+	}
-+
-+	if (vma) {
-+		ACCESS_ONCE(mm->mmap_cache[VMA_LAST_USED]) = vma;
-+		if (vma->vm_end - vma->vm_start > currlen)
-+			ACCESS_ONCE(mm->mmap_cache[VMA_LARGEST]) = vma;
- 	}
-+ret:
- 	return vma;
- }
- 
-@@ -2371,7 +2387,7 @@ detach_vmas_to_be_unmapped(struct mm_struct *mm, struct vm_area_struct *vma,
- 	} else
- 		mm->highest_vm_end = prev ? prev->vm_end : 0;
- 	tail_vma->vm_next = NULL;
--	mm->mmap_cache = NULL;		/* Kill the cache. */
-+	vma_clear_caches(mm);
- }
- 
- /*
--- 
-1.8.1.4
-
-
-
+--Signature=_Sat__2_Nov_2013_07_22_52_+1100_d2+_P.ARWbIEpCCt--
