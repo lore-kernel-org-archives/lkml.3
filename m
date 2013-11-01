@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab3KAWJU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:09:20 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:48592 "EHLO
+	id S1756673Ab3KAWJS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:09:18 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48600 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756558Ab3KAWJF (ORCPT
+	with ESMTP id S1756555Ab3KAWJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Nov 2013 18:09:05 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
-Cc: David Brown <davidb@codeaurora.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org
-Subject: [PATCH 11/11] ARM: msm: Remove nr_cpus detection logic
-Date: Fri,  1 Nov 2013 15:08:59 -0700
-Message-Id: <1383343739-23080-12-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH 08/11] ARM: msm: Add SMP support for KPSSv1
+Date: Fri,  1 Nov 2013 15:08:56 -0700
+Message-Id: <1383343739-23080-9-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.4.2.564.g0d6cf24
 In-Reply-To: <1383343739-23080-1-git-send-email-sboyd@codeaurora.org>
 References: <1383343739-23080-1-git-send-email-sboyd@codeaurora.org>
@@ -22,69 +22,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the SMP supported MSM devices are using devicetree and they
-have a cpus node in DT. Given this we know that arm generic code
-detects the number of cpus from the cpus node so we can drop
-support for detecting the number of CPUs from the mpidr register
-here.
+From: Rohit Vaswani <rvaswani@codeaurora.org>
 
+Implement support for the Krait CPU release sequence when the
+CPUs are part of the first version of the krait processor
+subsystem.
+
+Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/mach-msm/platsmp.c | 27 ---------------------------
- 1 file changed, 27 deletions(-)
+ arch/arm/mach-msm/platsmp.c  | 56 ++++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-msm/scm-boot.h |  8 ++++---
+ 2 files changed, 61 insertions(+), 3 deletions(-)
 
 diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
-index 87e4fdc..36b2294 100644
+index 369d8f7..e187c6e 100644
 --- a/arch/arm/mach-msm/platsmp.c
 +++ b/arch/arm/mach-msm/platsmp.c
-@@ -41,12 +41,6 @@ extern void secondary_startup(void);
+@@ -17,6 +17,7 @@
+ #include <linux/of_address.h>
+ #include <linux/smp.h>
+ #include <linux/io.h>
++#include <linux/sizes.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/cputype.h>
+@@ -30,6 +31,10 @@
+ #define SCSS_CPU1CORE_RESET		0x2d80
+ #define SCSS_DBG_STATUS_CORE_PWRDUP	0x2e64
+ 
++#define APCS_CPU_PWR_CTL	0x04
++
++#define APCS_SAW2_VCTL		0x14
++
+ extern void secondary_startup(void);
  
  static DEFINE_SPINLOCK(boot_lock);
- 
--static inline int get_core_count(void)
--{
--	/* 1 + the PART[1:0] field of MIDR */
--	return ((read_cpuid_id() >> 4) & 3) + 1;
--}
--
- static void msm_secondary_init(unsigned int cpu)
- {
- 	/*
-@@ -268,26 +262,6 @@ static int msm_boot_secondary(unsigned int cpu, struct task_struct *idle)
+@@ -66,6 +71,54 @@ static int scss_release_secondary(struct device_node *node, unsigned int cpu)
  	return 0;
  }
  
--/*
-- * Initialise the CPU possible map early - this describes the CPUs
-- * which may be present or become present in the system. The msm8x60
-- * does not support the ARM SCU, so just set the possible cpu mask to
-- * NR_CPUS.
-- */
--static void __init msm_smp_init_cpus(void)
--{
--	unsigned int i, ncores = get_core_count();
--
--	if (ncores > nr_cpu_ids) {
--		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
--			ncores, nr_cpu_ids);
--		ncores = nr_cpu_ids;
--	}
--
--	for (i = 0; i < ncores; i++)
--		set_cpu_possible(i, true);
--}
--
- static void __init msm_smp_prepare_cpus(unsigned int max_cpus)
- {
- 	int cpu, map;
-@@ -319,7 +293,6 @@ static void __init msm_smp_prepare_cpus(unsigned int max_cpus)
- }
++static int kpssv1_release_secondary(struct device_node *node, unsigned int cpu)
++{
++	u32 off;
++	struct resource res;
++	void __iomem *reg;
++
++	if (of_property_read_u32(node, "cpu-offset", &off))
++		return -EINVAL;
++
++	if (of_address_to_resource(node, 0, &res))
++		return -EINVAL;
++
++	/* The SAW base is always next to the ACC base so just map both */
++	reg = ioremap(res.start + off + (SZ_64K * cpu),
++			resource_size(&res) + SZ_4K);
++	if (!reg)
++		return -ENOMEM;
++
++	/* Turn on CPU rail */
++	writel_relaxed(0xA4, reg + SZ_4K + APCS_SAW2_VCTL);
++	mb();
++	udelay(512);
++
++	/* Krait bring-up sequence */
++	writel_relaxed(0x109, reg + APCS_CPU_PWR_CTL);
++	writel_relaxed(0x101, reg + APCS_CPU_PWR_CTL);
++	mb();
++	ndelay(300);
++
++	writel_relaxed(0x121, reg + APCS_CPU_PWR_CTL);
++	mb();
++	udelay(2);
++
++	writel_relaxed(0x120, reg + APCS_CPU_PWR_CTL);
++	mb();
++	udelay(2);
++
++	writel_relaxed(0x100, reg + APCS_CPU_PWR_CTL);
++	mb();
++	udelay(100);
++
++	writel_relaxed(0x180, reg + APCS_CPU_PWR_CTL);
++	mb();
++
++	iounmap(reg);
++	return 0;
++}
++
+ static DEFINE_PER_CPU(int, cold_boot_done);
  
- struct smp_operations msm_smp_ops __initdata = {
--	.smp_init_cpus		= msm_smp_init_cpus,
- 	.smp_prepare_cpus	= msm_smp_prepare_cpus,
- 	.smp_secondary_init	= msm_secondary_init,
- 	.smp_boot_secondary	= msm_boot_secondary,
+ static int boot_cold_cpu(unsigned int cpu)
+@@ -77,6 +130,7 @@ static int boot_cold_cpu(unsigned int cpu)
+ #define M(c, f) { .compatible = c, .data = f }
+ 	static const struct of_device_id match_table[] = {
+ 		M("qcom,gcc-8660", scss_release_secondary),
++		M("qcom,kpss-acc-v1", kpssv1_release_secondary),
+ 	};
+ #undef M
+ 
+@@ -155,6 +209,8 @@ static void __init msm_smp_prepare_cpus(unsigned int max_cpus)
+ 	static const int cold_boot_flags[] = {
+ 		0,
+ 		SCM_FLAG_COLDBOOT_CPU1,
++		SCM_FLAG_COLDBOOT_CPU2,
++		SCM_FLAG_COLDBOOT_CPU3,
+ 	};
+ 
+ 	for_each_present_cpu(cpu) {
+diff --git a/arch/arm/mach-msm/scm-boot.h b/arch/arm/mach-msm/scm-boot.h
+index 7be32ff..6aabb24 100644
+--- a/arch/arm/mach-msm/scm-boot.h
++++ b/arch/arm/mach-msm/scm-boot.h
+@@ -13,9 +13,11 @@
+ #define __MACH_SCM_BOOT_H
+ 
+ #define SCM_BOOT_ADDR			0x1
+-#define SCM_FLAG_COLDBOOT_CPU1		0x1
+-#define SCM_FLAG_WARMBOOT_CPU1		0x2
+-#define SCM_FLAG_WARMBOOT_CPU0		0x4
++#define SCM_FLAG_COLDBOOT_CPU1		0x01
++#define SCM_FLAG_COLDBOOT_CPU2		0x08
++#define SCM_FLAG_COLDBOOT_CPU3		0x20
++#define SCM_FLAG_WARMBOOT_CPU0		0x04
++#define SCM_FLAG_WARMBOOT_CPU1		0x02
+ 
+ int scm_set_boot_addr(phys_addr_t addr, int flags);
+ 
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
