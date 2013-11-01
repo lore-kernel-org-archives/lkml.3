@@ -1,144 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab3KAFNS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 01:13:18 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:24782 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750856Ab3KAFNQ (ORCPT
+	id S1752256Ab3KAFS6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 01:18:58 -0400
+Received: from mga14.intel.com ([143.182.124.37]:27784 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750928Ab3KAFS4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 01:13:16 -0400
-Message-ID: <5273391C.2010705@oracle.com>
-Date: Fri, 01 Nov 2013 13:16:12 +0800
-From: vaughan <vaughan.cao@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 1 Nov 2013 01:18:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="383151137"
+From: "Tc, Jenny" <jenny.tc@intel.com>
+To: NeilBrown <neilb@suse.de>, Anton Vorontsov <anton@enomsg.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Kim, Milo" <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Rupesh Kumar <rupesh.kumar@stericsson.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        =?iso-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Rhyland Klein <rklein@nvidia.com>
+Subject: RE: [PATCH 1/7] power_supply: Add charger control properties
+Thread-Topic: [PATCH 1/7] power_supply: Add charger control properties
+Thread-Index: Ac7Wwc/TFHnLdfwRSr+wF45UZVRIrw==
+Date: Fri, 1 Nov 2013 05:18:50 +0000
+Message-ID: <20ADAB092842284E95860F279283C5640AAA4D36@BGSMSX104.gar.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: dgilbert@interlog.com, Christoph Hellwig <hch@infradead.org>
-CC: SCSI development list <linux-scsi@vger.kernel.org>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>,
-        vaughan <vaughan.cao@oracle.com>
-Subject: Re: [PATCH v2] sg: O_EXCL and other lock handling
-References: <52718713.7050906@interlog.com> <20131031155653.GA16944@infradead.org> <5272AD80.90203@interlog.com>
-In-Reply-To: <5272AD80.90203@interlog.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2013 03:20 AM, Douglas Gilbert wrote:
-> On 13-10-31 11:56 AM, Christoph Hellwig wrote:
->>> +    struct semaphore or_sem;  /* protect co-incident opens and
->>> releases */
->>
->> Seems like this should be a mutex.
->
-> Yes, it is being used as a mutex. However looking at
-> their semantics (mutex.h versus semaphore.h), a mutex
-> takes into account the task owner. If the user space
-> wants to pass around a sg file descriptor in a Unix
-> domain socket (see TLPI, Kerrisk) I don't see why the
-> sg driver should object (and pay the small performance
-> hit for each check).
->
-> A nasty side effect of a mutex taking into account the
-> task owner is that it can't be used in interrupt
-> context. My patch does not try to do that yet (see next
-> section) but why bother. Give me a simple mutex and
-> I'll use it.
->
->>> sfds_list_empty(Sg_device *sdp)
->>>   {
->>>       unsigned long flags;
->>>       int ret;
->>>
->>> +    spin_lock_irqsave(&sdp->sfd_lock, flags);
->>> +    ret = list_empty(&sdp->sfds);
->>> +    spin_unlock_irqrestore(&sdp->sfd_lock, flags);
->>>       return ret;
->>
->> Protecting just a list_empty check with a local will give you racy
->> results.  Seems like you should take the look over the check and the
->> resulting action that modifies the list.  That'd also mean replacing the
->> wait_event* calls with open coded prepare_wait / finish_wait loops.
->
-> Not (usually) in this case. The sdp->sfds list can only
-> be expanded by another sg_open(same_dev) but this has
-> been excluded by taking down(&sdp->or_sem) prior to that
-> call. The sdp->sfds list is only normally decreased by
-> sg_release() which is also excluded by down(&sdp->or_sem).
->
-> The abnormal case is device removal (detaching). Now an
-> open(same_dev, O_EXCL) may start waiting just after a
-> detach but miss the wake up on open_wait. That suggests
-> the wake_up(open_wait) in sg_remove() should also
-> take the sdp->or_sem semaphore.
-> Ah, and if sg_remove() can be called from an interrupt
-> context then that takes out using mutexes :-)
->
-> The two level of locks in sg_remove() is already making me
-> uncomfortable, adding the sdp->or_sem semaphore to the
-> mix calls for more analysis.
-CCed to Jörn Engel.
+> Subject: Re: [PATCH 1/7] power_supply: Add charger control properties
+> 
+> On Sun, 27 Oct 2013 23:18:08 -0700 Anton Vorontsov <anton@enomsg.org> wrote:
+> 
+> > On Mon, Oct 28, 2013 at 03:36:36AM +0000, Tc, Jenny wrote:
+> > > > But do we really want to control the chargers through the
+> > > > power_supply's user-visible interface? It makes the whole power
+> > > > supply thing so complicated that I'm already losing track of it.
+> > > > Right now I think I would prefer to move all the charger logic out of the psy class.
+> > > >
+> > >
+> > > I think exposing properties make the logic generic, otherwise it may
+> > > end up in having callback functions.
+> > >
+> > > Also there are some scenarios where the charging algorithm has to be
+> > > in the user space.
+> >
+> > Which scenarios?
 
-I feel the same regarding the many locks. After reviewing patches I
-wrote these days, I suppose the version 2
-(https://lkml.org/lkml/2013/6/17/319) may worth a re-consideration somehow.
-The purpose of or_sem is to mutex co-incident open and allow only one
-thread to be processing since it completes checking condition to really
-linking a new sfd into sfd_siblings list. My v2 re-implement a sem using
-sfd_lock and toopen. But as Jörn pointed out in the following mail, what
-I implemented is a rw_sem and that is weird and made him "having trouble
-wrapping my head around the semantics of this variable"...
-With wait_event involved, it's indeed no sense to use a rw_sem here.
-However, if we restrict toopen in [0, 1], not [0, INT_MAX] as I did in
-v2, it will act in the same way as or_sem does. Beside the same affect
-as or_sem, this implement avoids the problem using in interrupt context
-and more readable for me, rather than twisting my head among many
-spinlocks and semaphores.
-Although v2 seems attractive to me, things would be more complicated
-when detached comes in...
+Charger may be of two different path. 1) Single path 2) Dual path
 
-The following is a thought I presented previously:
-Is it possible to split the sg_add_sfp() into two
-functions, sg_init_sfp() and sg_add_sfp2(). We can do all initialize
-work in sg_init_sfp()
-without any lock and let sg_add_sfp2() only serve lock-check-add in one
-place. It is less flaky.
+With a single path charger, the charger will be having only one output
+path. This path supplies power to battery(IBAT) and to system (ISYS). With dual path
+chargers, charger will be having two separate output paths -to battery and to system .
 
->
-> Also note that sdp->detached is only protected by a
-> volatile type modifier and checks on it are sprinkled
-> around the code in a rather unscientific way.
->
-> As you are no doubt aware, handling the "surprise" device
-> removal case safely is hard, very hard. And I have tried
-> to test this, loading up 4 processes with 100 tasks each,
-> some with asynchronous queueing requests but most hanging
-> on an open_wait then remove the device. So far I have not
-> seen a hang. Again, somebody with a big machine and
-> patience might like to try a scaled up device removal test
-> to see what breaks.
->
->>> +    down(&sdp->or_sem);
->>> +    alone = sfds_list_empty(sdp);
->>> +    if ((flags & O_EXCL) && (O_RDONLY == (flags & O_ACCMODE))) {
->>> +        retval = -EPERM; /* Don't allow O_EXCL with read only
->>> access */
->>> +        goto error_out;
->>> +    }
->>
->> Seems like the pure flags check should move to the beginning of the
->> function before taking any locks.
->
-> As Vaughan pointed out, just prior to that down() is a call
-> scsi_block_when_processing_errors() for blocking open()s.
+With single path chargers, consider the scenario when system is idle and the maximum
+Allowed charge current is 1A. So the charger output can be set to 1A so that battery can
+charge with 1A. But with a varying load, this may not be good. If the platform consumes
+500mA, then the charging current would be reduced to 500mA. But increasing the output
+to 1.5A may result in high charge current if the load is reduced. 
 
-Douglas,
-What Christoph points out is a sanity check for the input parameter
-flags, not the scsi_block_when_processing_errors issue.
-I guess you misread that:)
+Identifying different use case and their power profile helps to handle this scenario.
+This can be better handled by some algorithm in user space which can monitor the
+running applications and derive average platform load. The algorithm can proactively
+decide the charge current based on the power and thermal characteristics of different
+use case. 
 
-Vaughan
+So in this scenario, there is a need to modify the charging parameters from the user space.
+
+
+> >
+> > Plus, I am more questioning if the power supply framework is the right
+> > thing to control the *chargers*. Chargers are not the power supply to
+> > the system or any device (well, except for the batteries themselves).
+> 
+> I'm not sure this is (always) true.
+> On my device (gta04.org) the battery, the USB OTG port, and a separate 5VDC input can
+> each be the power source of the whole device.
+> The USB and 5VDC cannot both be active concurrently, but either can be active together
+> with the battery.
+> 
+> The device can function without the battery, so the charger plugged into the USB-OTG
+> must be supplying power to the system (not just the battery).
+> 
+> The "charger" functionality sits between the battery and the external power supply
+> monitoring the voltage on the battery and the current from the external supply.  Based on
+> these values (and some timers and a state machine) it enabled or disables the external
+> supply and possibly imposes a current-limit on it.
+> 
+> The three power sources all have "power_supply" devices registered (though the battery
+> only does because it contains a bq27000 charger counter).
+> I've been wondering where to put sysfs attributes to control the charging.
+> I currently place them in the power_supply device for each external power source.
+> That makes some sense for the 'current limit' value, but not for the 'battery volts at which
+> to re-start charging' value.
+> There is also a setting which affects  whether the external source is switched off if the
+> voltage drops below 4.4V.  In some circumstances I want to leave the charger enabled then,
+> as it could just mean the cyclist is taking a break and there should be current again soon.
+> 
+> I think the sensible place for these tune-ables is with the battery.  i.e. the power_supply
+> that corresponds to the battery could register "min voltage" and "min current".
+> The charger driver needs to know about this battery and about any power sources that can
+> charge it, and uses the state of the battery to decide how to tune the state of the charger.
+> 
+> I note that there is already something a lot like this between
+>    88pm860x_battery.c
+> and
+>    88pm860x_charger.c
+> 
+> They manage to locate each other and the charger call get_property and set_property on the
+> battery.
+> 
+> Maybe formalising this might be a useful way forward.
+> 
+> I'm not sure that we really need a new driver-class for chargers.  Maybe just a way to link
+> external power supplies to battery power supplies, and maybe some agreement on what
+> they are allowed to say to each other.
+> 
+> Jenny: would something like that work for you??
+
+The idea of charging framework is to connect different components to setup and monitor
+charging. This includes battery identification protocols, battery driver, charger driver,
+platform thermal profile for charging, different cables (USB/AC/Wireless/MHL etc),
+different charging algorithms (PSE compliant/ruler based/pulse charging etc).
+This makes the charger driver simple. It can just act as a h/w abstraction layer
+and doesn't need to be aware of the cable types/properties/thermal/battery
+characteristics. All logic resides in the framework layer. 
+
+The proposal separates the battery characteristics (different from runtime battery
+properties) from the charger/battery driver. The battery characteristics can be
+read based on the type of battery identification interface - Analog (BSI)
+or digital. In case of Analog interface, a BSI resistance is used to identify the
+battery. Based on the BSI resistance battery charging profile and characteristics
+can be loaded. 
+
+In case of digital battery profile, a one wire protocol is used to read the battery
+properties from an EEPROM inside the Battery pack. In some  platforms to
+reduce the battery pack cost, the EEPROM may be on the board and may be
+connected using I2C lines.
+
+Separating out this logic from battery driver makes it more modular.  So the
+proposal uses a battery identification layer to read the battery profile. So the
+charger and battery drivers (fuel gauge drivers) can read the profile from
+the battery identification layer and configure the h/w register settings
+appropriately. 
+
+So the tunable attributes resides in the battery identification layer and the
+drivers reads them from this layer. 
+
+I uploaded a modified version of the Charging Framework ELCE presentation at
+https://drive.google.com/file/d/0B3urTgiXiZF6eGt4MkVZaXNlNlE/edit?usp=sharing
+Hope this would give more idea about the proposal.
+
+> 
+> 
+> 
+> >
+> > > Using the patch https://lkml.org/lkml/2013/7/25/204,
+> > > the power supply change notification can be broadcasted. We can add
+> > > notifier events for power_supply_register and thermal throttling.
+> > > This way power_supply_charger.c can be a separate driver and it can listen to psy
+> notifications to take actions.
+> >
+> > If you ever need this particular notifier, I am OK with it (but I'll
+> > consider applying it only together with some its users).
+> >
+> > Basically, I am more against these three patches:
+> >
+> > [PATCH 3/7] power_supply: add throttle state [PATCH 2/7] power_supply:
+> > add charger cable properties [PATCH 1/7] power_supply: Add charger
+> > control properties (enable_charger part)
+
+[PATCH 3/7] power_supply: add throttle state and 
+[PATCH 2/7] power_supply: add charger cable properties can be reworked
+I can move them out of power_supply.h to a new file
+include/linux/power/power_supply_charger.h
+
+But I think the control properties exposed in patch 
+" [PATCH 1/7] power_supply: Add charger control properties" qualifies
+to be part of power_supply.h
+
+INPUT_CURRENT_LIMIT - Controls the output from external supply.
+CHARGE_TERM_CUR - Decides when to stop supply to battery. When supply
+to battery is stopped, battery starts supplying power to platform. 
+
+MIN_TEMP - minimum temperature for a power supply
+MAX_TEMP - maximum temperature for a power supply
+ENABLE_CHARGING - enable/disable charging. Enable/disable supply to battery.
+ENABLE_CHARGER - enable/disable charger. Enable/disable supply to system and battery.
+CABLE_TYPE - type of a cable, helps to identify the cable type
+PRIORITY - priority for charging if multiple charger drivers are present.
+
+All attributes control the external power supply or the battery. The term charger may get
+confused as "charger IC". Do you have better suggestions?
+
+> >
+> > These three add too much "charger" specifics to the power_supply
+> > stuff. I think they deserve their own subsystem/class/whatever.
+> >
+> > Also, the battid framework is written without any notion of
+> > device/driver separation, uses global variables, and I suspect it
+> > should not exist at all (psy_get_batt_prop function makes me think
+> > that you should just register the i2c/spi/w1 battery with the
+> > power_supply and not use the ad-hoc stuff).
+
+These drivers are not power supply. They just reads the static battery profile and
+exposes to the consumers. Hope previous explanation on this would be helpful
+
+> >
+> > Anton
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe
+> > linux-kernel" in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+
