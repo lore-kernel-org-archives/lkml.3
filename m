@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664Ab3KAWTq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:19:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55443 "EHLO
+	id S1756675Ab3KAWUF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:20:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55439 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756340Ab3KAWIS (ORCPT
+	with ESMTP id S1756331Ab3KAWIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:18 -0400
+	Fri, 1 Nov 2013 18:08:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Seif Mazareeb <seif@marvell.com>, Paul Moore <paul@paul-moore.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 41/66] net: fix cipso packet validation when !NETLABEL
-Date: Fri,  1 Nov 2013 15:07:17 -0700
-Message-Id: <20131101220645.996895744@linuxfoundation.org>
+Subject: [PATCH 3.11 40/66] net: unix: inherit SOCK_PASS{CRED, SEC} flags from socket to fix race
+Date: Fri,  1 Nov 2013 15:07:16 -0700
+Message-Id: <20131101220645.687319752@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -27,54 +29,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seif Mazareeb <seif@marvell.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit f2e5ddcc0d12f9c4c7b254358ad245c9dddce13b ]
+[ Upstream commit 90c6bd34f884cd9cee21f1d152baf6c18bcac949 ]
 
-When CONFIG_NETLABEL is disabled, the cipso_v4_validate() function could loop
-forever in the main loop if opt[opt_iter +1] == 0, this will causing a kernel
-crash in an SMP system, since the CPU executing this function will
-stall /not respond to IPIs.
+In the case of credentials passing in unix stream sockets (dgram
+sockets seem not affected), we get a rather sparse race after
+commit 16e5726 ("af_unix: dont send SCM_CREDENTIALS by default").
 
-This problem can be reproduced by running the IP Stack Integrity Checker
-(http://isic.sourceforge.net) using the following command on a Linux machine
-connected to DUT:
+We have a stream server on receiver side that requests credential
+passing from senders (e.g. nc -U). Since we need to set SO_PASSCRED
+on each spawned/accepted socket on server side to 1 first (as it's
+not inherited), it can happen that in the time between accept() and
+setsockopt() we get interrupted, the sender is being scheduled and
+continues with passing data to our receiver. At that time SO_PASSCRED
+is neither set on sender nor receiver side, hence in cmsg's
+SCM_CREDENTIALS we get eventually pid:0, uid:65534, gid:65534
+(== overflow{u,g}id) instead of what we actually would like to see.
 
-"icmpsic -s rand -d <DUT IP address> -r 123456"
-wait (1-2 min)
+On the sender side, here nc -U, the tests in maybe_add_creds()
+invoked through unix_stream_sendmsg() would fail, as at that exact
+time, as mentioned, the sender has neither SO_PASSCRED on his side
+nor sees it on the server side, and we have a valid 'other' socket
+in place. Thus, sender believes it would just look like a normal
+connection, not needing/requesting SO_PASSCRED at that time.
 
-Signed-off-by: Seif Mazareeb <seif@marvell.com>
-Acked-by: Paul Moore <paul@paul-moore.com>
+As reverting 16e5726 would not be an option due to the significant
+performance regression reported when having creds always passed,
+one way/trade-off to prevent that would be to set SO_PASSCRED on
+the listener socket and allow inheriting these flags to the spawned
+socket on server side in accept(). It seems also logical to do so
+if we'd tell the listener socket to pass those flags onwards, and
+would fix the race.
+
+Before, strace:
+
+recvmsg(4, {msg_name(0)=NULL, msg_iov(1)=[{"blub\n", 4096}],
+        msg_controllen=32, {cmsg_len=28, cmsg_level=SOL_SOCKET,
+        cmsg_type=SCM_CREDENTIALS{pid=0, uid=65534, gid=65534}},
+        msg_flags=0}, 0) = 5
+
+After, strace:
+
+recvmsg(4, {msg_name(0)=NULL, msg_iov(1)=[{"blub\n", 4096}],
+        msg_controllen=32, {cmsg_len=28, cmsg_level=SOL_SOCKET,
+        cmsg_type=SCM_CREDENTIALS{pid=11580, uid=1000, gid=1000}},
+        msg_flags=0}, 0) = 5
+
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/cipso_ipv4.h |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/unix/af_unix.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/include/net/cipso_ipv4.h
-+++ b/include/net/cipso_ipv4.h
-@@ -290,6 +290,7 @@ static inline int cipso_v4_validate(cons
- 	unsigned char err_offset = 0;
- 	u8 opt_len = opt[1];
- 	u8 opt_iter;
-+	u8 tag_len;
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1246,6 +1246,15 @@ static int unix_socketpair(struct socket
+ 	return 0;
+ }
  
- 	if (opt_len < 8) {
- 		err_offset = 1;
-@@ -302,11 +303,12 @@ static inline int cipso_v4_validate(cons
- 	}
- 
- 	for (opt_iter = 6; opt_iter < opt_len;) {
--		if (opt[opt_iter + 1] > (opt_len - opt_iter)) {
-+		tag_len = opt[opt_iter + 1];
-+		if ((tag_len == 0) || (opt[opt_iter + 1] > (opt_len - opt_iter))) {
- 			err_offset = opt_iter + 1;
- 			goto out;
- 		}
--		opt_iter += opt[opt_iter + 1];
-+		opt_iter += tag_len;
- 	}
- 
- out:
++static void unix_sock_inherit_flags(const struct socket *old,
++				    struct socket *new)
++{
++	if (test_bit(SOCK_PASSCRED, &old->flags))
++		set_bit(SOCK_PASSCRED, &new->flags);
++	if (test_bit(SOCK_PASSSEC, &old->flags))
++		set_bit(SOCK_PASSSEC, &new->flags);
++}
++
+ static int unix_accept(struct socket *sock, struct socket *newsock, int flags)
+ {
+ 	struct sock *sk = sock->sk;
+@@ -1280,6 +1289,7 @@ static int unix_accept(struct socket *so
+ 	/* attach accepted sock to socket */
+ 	unix_state_lock(tsk);
+ 	newsock->state = SS_CONNECTED;
++	unix_sock_inherit_flags(sock, newsock);
+ 	sock_graft(tsk, newsock);
+ 	unix_state_unlock(tsk);
+ 	return 0;
 
 
