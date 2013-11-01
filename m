@@ -1,57 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751Ab3KAJLy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 05:11:54 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:26762
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752190Ab3KAJLv (ORCPT
+	id S1754881Ab3KAJNn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 05:13:43 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:33225 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554Ab3KAJNl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 05:11:51 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zz98dIzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 1 Nov 2013 17:11:58 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Nicolin Chen <b42378@freescale.com>, Vinod Koul <vinod.koul@intel.com>
-CC: <timur@tabi.org>, <broonie@kernel.org>, <s.hauer@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alsa-devel@alsa-project.org>, <rob.herring@calxeda.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>, <pawel.moll@arm.com>,
-        <ijc+devicetree@hellion.org.uk>
-Subject: Re: [PATCH v4 0/4] Add dual-fifo mode support of i.MX ssi
-Message-ID: <20131101091156.GC10324@S2101-09.ap.freescale.net>
-References: <cover.1383226444.git.b42378@freescale.com>
+	Fri, 1 Nov 2013 05:13:41 -0400
+Date: Fri, 1 Nov 2013 10:13:37 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Message-ID: <20131101091337.GA27063@gmail.com>
+References: <20131029113031.GA16897@gmail.com>
+ <20131029114907.GE24477@neilslaptop.think-freely.org>
+ <20131029125233.GA17449@gmail.com>
+ <20131029130712.GA25078@neilslaptop.think-freely.org>
+ <20131029131149.GB20408@gmail.com>
+ <20131029141706.GC25078@neilslaptop.think-freely.org>
+ <20131029142716.GA28113@gmail.com>
+ <20131029202644.GB32389@localhost.localdomain>
+ <20131031102200.GA10098@gmail.com>
+ <20131031143325.GB25894@hmsreliant.think-freely.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1383226444.git.b42378@freescale.com>
+In-Reply-To: <20131031143325.GB25894@hmsreliant.think-freely.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicolin,
 
-The dmaengine maintainer Vinod Koul should be copied on the series.
-(Just added).
+* Neil Horman <nhorman@tuxdriver.com> wrote:
 
-On Thu, Oct 31, 2013 at 09:44:12PM +0800, Nicolin Chen wrote:
-> Nicolin Chen (4):
->   dma: imx-sdma: Add sdma firmware version 2 support
->   dma: imx-sdma: Add new dma type for ssi dual fifo script
->   ASoC: fsl_ssi: Add dual fifo mode support
->   ARM: dts: imx: use dual-fifo sdma script for ssi
+> On Thu, Oct 31, 2013 at 11:22:00AM +0100, Ingo Molnar wrote:
+> > 
+> > * Neil Horman <nhorman@tuxdriver.com> wrote:
+> > 
+> > > > etc. For such short runtimes make sure the last column displays 
+> > > > close to 100%, so that the PMU results become trustable.
+> > > > 
+> > > > A nehalem+ PMU will allow 2-4 events to be measured in parallel, 
+> > > > plus generics like 'cycles', 'instructions' can be added 'for free' 
+> > > > because they get counted in a separate (fixed purpose) PMU register.
+> > > > 
+> > > > The last colum tells you what percentage of the runtime that 
+> > > > particular event was actually active. 100% (or empty last column) 
+> > > > means it was active all the time.
+> > > > 
+> > > > Thanks,
+> > > > 
+> > > > 	Ingo
+> > > > 
+> > > 
+> > > Hmm, 
+> > > 
+> > > I ran this test:
+> > > 
+> > > for i in `seq 0 1 3`
+> > > do
+> > > echo $i > /sys/module/csum_test/parameters/module_test_mode
+> > > taskset -c 0 perf stat --repeat 20 -C 0 -e L1-dcache-load-misses -e L1-dcache-prefetches -e cycles -e instructions -ddd ./test.sh
+> > > done
+> > 
+> > You need to remove '-ddd' which is a shortcut for a ton of useful 
+> > events, but here you want to use fewer events, to increase the 
+> > precision of the measurement.
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
+> > 
+> 
+> Thank you ingo, that fixed it.  I'm trying some other variants of 
+> the csum algorithm that Doug and I discussed last night, but FWIW, 
+> the relative performance of the 4 test cases 
+> (base/prefetch/parallel/both) remains unchanged. I'm starting to 
+> feel like at this point, theres very little point in doing 
+> parallel alu operations (unless we can find a way to break the 
+> dependency on the carry flag, which is what I'm tinkering with 
+> now).
 
-Vinod,
+I would still like to encourage you to pick up the improvements that 
+Doug measured (mostly via prefetch tweaking?) - that looked like 
+some significant speedups that we don't want to lose!
 
-To keep git bisect, the series has to be merged through single tree.
-Since Mark has ACK-ed patch #3, I think it's easier to merge the series
-through your tree, so for patch #4:
+Also, trying to stick the in-kernel implementation into 'perf bench' 
+would be a useful first step as well, for this and future efforts.
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+See what we do in tools/perf/bench/mem-memcpy-x86-64-asm.S to pick 
+up the in-kernel assembly memcpy implementations:
 
+#define memcpy MEMCPY /* don't hide glibc's memcpy() */
+#define altinstr_replacement text
+#define globl p2align 4; .globl
+#define Lmemcpy_c globl memcpy_c; memcpy_c
+#define Lmemcpy_c_e globl memcpy_c_e; memcpy_c_e
+
+#include "../../../arch/x86/lib/memcpy_64.S"
+
+So it needed a bit of trickery/wrappery for 'perf bench mem memcpy', 
+but that is a one-time effort - once it's done then the current 
+in-kernel csum_partial() implementation would be easily measurable 
+(and any performance regression in it bisectable, etc.) from that 
+point on.
+
+In user-space it would also be easier to add various parameters and 
+experimental implementations and background cache-stressing 
+workloads automatically.
+
+Something similar might be possible for csum_partial(), 
+csum_partial_copy*(), etc.
+
+Note, if any of you ventures to add checksum-benchmarking to perf 
+bench, please base any patches on top of tip:perf/core:
+
+  git pull git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf/core
+
+as there are a couple of perf bench enhancements in the pipeline 
+already for v3.13.
+
+Thanks,
+
+	Ingo
