@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756373Ab3KAWIV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:08:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55432 "EHLO
+	id S932244Ab3KAWSU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:18:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55468 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756291Ab3KAWIQ (ORCPT
+	with ESMTP id S1756372Ab3KAWIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:16 -0400
+	Fri, 1 Nov 2013 18:08:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Eilon Greenstein <eilong@broadcom.com>,
-        Dmitry Kravkov <dmitry@broadcom.com>,
+        Julian Anastasov <ja@ssi.bg>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 31/66] bnx2x: record rx queue for LRO packets
-Date: Fri,  1 Nov 2013 15:07:07 -0700
-Message-Id: <20131101220643.338036011@linuxfoundation.org>
+Subject: [PATCH 3.11 45/66] netfilter: nf_conntrack: fix rt6i_gateway checks for H.323 helper
+Date: Fri,  1 Nov 2013 15:07:21 -0700
+Message-Id: <20131101220647.130674838@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -30,50 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Julian Anastasov <ja@ssi.bg>
 
-[ Upstream commit 60e66fee56b2256dcb1dc2ea1b2ddcb6e273857d ]
+[ Upstream commit 56e42441ed54b092d6c7411138ce60d049e7c731 ]
 
-RPS support is kind of broken on bnx2x, because only non LRO packets
-get proper rx queue information. This triggers reorders, as it seems
-bnx2x like to generate a non LRO packet for segment including TCP PUSH
-flag : (this might be pure coincidence, but all the reorders I've
-seen involve segments with a PUSH)
+Now when rt6_nexthop() can return nexthop address we can use it
+for proper nexthop comparison of directly connected destinations.
+For more information refer to commit bbb5823cf742a7
+("netfilter: nf_conntrack: fix rt_gateway checks for H.323 helper").
 
-11:13:34.335847 IP A > B: . 415808:447136(31328) ack 1 win 457 <nop,nop,timestamp 3789336 3985797>
-11:13:34.335992 IP A > B: . 447136:448560(1424) ack 1 win 457 <nop,nop,timestamp 3789336 3985797>
-11:13:34.336391 IP A > B: . 448560:479888(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985797>
-11:13:34.336425 IP A > B: P 511216:512640(1424) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
-11:13:34.336423 IP A > B: . 479888:511216(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
-11:13:34.336924 IP A > B: . 512640:543968(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
-11:13:34.336963 IP A > B: . 543968:575296(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
-
-We must call skb_record_rx_queue() to properly give to RPS (and more
-generally for TX queue selection on forward path) the receive queue
-information.
-
-Similar fix is needed for skb_mark_napi_id(), but will be handled
-in a separate patch to ease stable backports.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Willem de Bruijn <willemb@google.com>
-Cc: Eilon Greenstein <eilong@broadcom.com>
-Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/netfilter/nf_conntrack_h323_main.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -676,6 +676,7 @@ static void bnx2x_gro_receive(struct bnx
- 		}
- 	}
- #endif
-+	skb_record_rx_queue(skb, fp->rx_queue);
- 	napi_gro_receive(&fp->napi, skb);
- }
- 
+--- a/net/netfilter/nf_conntrack_h323_main.c
++++ b/net/netfilter/nf_conntrack_h323_main.c
+@@ -778,8 +778,8 @@ static int callforward_do_filter(const u
+ 				   flowi6_to_flowi(&fl1), false)) {
+ 			if (!afinfo->route(&init_net, (struct dst_entry **)&rt2,
+ 					   flowi6_to_flowi(&fl2), false)) {
+-				if (!memcmp(&rt1->rt6i_gateway, &rt2->rt6i_gateway,
+-					    sizeof(rt1->rt6i_gateway)) &&
++				if (ipv6_addr_equal(rt6_nexthop(rt1),
++						    rt6_nexthop(rt2)) &&
+ 				    rt1->dst.dev == rt2->dst.dev)
+ 					ret = 1;
+ 				dst_release(&rt2->dst);
 
 
