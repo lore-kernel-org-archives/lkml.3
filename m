@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab3KAS6T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 14:58:19 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:40285 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592Ab3KAS6R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 14:58:17 -0400
+	id S1753282Ab3KATAN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 15:00:13 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:16229 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751071Ab3KATAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 15:00:11 -0400
+X-IronPort-AV: E=Sophos;i="4.93,618,1378857600"; 
+   d="scan'208";a="69836425"
+Message-ID: <5273FA37.6020903@citrix.com>
+Date: Fri, 1 Nov 2013 19:00:07 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <CAFLxGvz3pCevxE43zGnrbX4MxPmwyb=9MVNpzFRpELt1+AmtrA@mail.gmail.com>
-References: <87ppqk6qvx.fsf@redhat.com>
-	<CAFLxGvz3pCevxE43zGnrbX4MxPmwyb=9MVNpzFRpELt1+AmtrA@mail.gmail.com>
-Date: Fri, 1 Nov 2013 11:58:17 -0700
-Message-ID: <CA+8MBbJefz7L-C-LnhAAXB5zf-8XoMPhESPU4yd0wnuZ_YqO1w@mail.gmail.com>
-Subject: Re: [PATCH] Make efi-pstore return a unique id
-From: Tony Luck <tony.luck@gmail.com>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Madper Xie <cxie@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux EFI <linux-efi@vger.kernel.org>,
-        =?UTF-8?B?6LCi5oiQ6aqP?= <bbboson@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next RFC 0/5] xen-netback: TX grant mapping instead
+ of copy
+References: <1383094220-14775-1-git-send-email-zoltan.kiss@citrix.com> <1383303035.672.29.camel@kazak.uk.xensource.com>
+In-Reply-To: <1383303035.672.29.camel@kazak.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +static u64 efi_generate_id(unsigned long timestamp, unsigned int part, int count)
+On 01/11/13 10:50, Ian Campbell wrote:
+> Does this always avoid copying when bridging/openvswitching/forwarding
+> (e.g. masquerading etc)? For both domU->domU and domU->physical NIC?
+I've tested the domU->domU, domU->physical with bridge and openvswitch 
+usecase, and now I've created a new stat counter to see how often copy 
+happens (the callback's second parameter tells you whether the skb was 
+freed or copied). It doesn't do copy in all of these scenarios.
+What do you mean by forwarding? The scenario when you use bridge and 
+iptables mangling with the packet, not just filtering?
 
-I don't think the "efi_" prefix is needed here. For one thing the
-function is static, so
-no name space pollution worries. For another - it makes it look like
-this is some thing
-defined in EFI standard.  If "generate_id()" is too generic for your
-tastes ... then a
-"pstore_" prefix might be more appropriate.
+> How does it deal with broadcast traffic?
+Most of the real broadcast traffic actually small packets fit in the 
+PKT_PROT_LEN sized linear space, so it doesn't make any difference, 
+apart from doing a mapping before copy. But that will be eliminated 
+later on, I plan to add an incremental improvement to grant copy the 
+linear part.
+I haven't spent too much time on that, but I couldn't find any broadcast 
+protocol which use large enough packets and easy to test, so I'm open to 
+ideas.
+What I already know, skb_clone trigger a copy, and if the caller use the 
+original skb for every cloning, it will do several copy. I think that 
+could be fixed by using the first clone to do any further clones.
 
->> +{
->> +       char id_str[64];
->> +       u64 id = 0;
->> +
->> +       sprintf(id_str, "%lu%u%d", timestamp, part, count);
->> +       if (kstrtoull(id_str, 10, &id))
->> +               pr_warn("efi-pstore: failed to generate id\n");
->> +       return id;
->> +}
->
-> This is just odd. You make a string from three ints and then a parse
-> it to a int again.
+> Do you have any numbers for the dom0 cpu usage impact?
+DomU->NIC: the vif took 40% according to top, I guess the bottleneck 
+there is the TLB flushing.
+DomU->DomU: the vif of the RX side cause the bottleneck due to grant 
+copy to the guest
 
-Agreed.  I liked your ((timestamp * 100 + part) * 100 + count function much
-more than this.
+> Aggregate throughput for many guests would be a useful datapoint too.
+I will do measurements about that.
 
--Tony
+ >> Based on my investigations the packet get only copied if it is 
+delivered to
+ >>Dom0 stack, which is due to this patch:
+ >>https://lkml.org/lkml/2012/7/20/363
+ >>That's a bit unfortunate, but as far as I know for the huge majority 
+this use
+ >>case is not too important.
+> Likely to be true, but it would still be interesting to know how badly
+> this use case suffers with this change, and any increase in CPU usage
+> would be interesting to know about as well.
+I can't find my numbers, but as far as I remember it wasn't 
+significantly worse than grant copy. I will check that again.
+
+Zoli
