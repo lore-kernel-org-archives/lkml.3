@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940Ab3KATRQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 15:17:16 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:49472 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086Ab3KATRO (ORCPT
+	id S1752837Ab3KATWj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 15:22:39 -0400
+Received: from usindpps05.hds.com ([207.126.252.18]:47251 "EHLO
+	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab3KATWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 15:17:14 -0400
-Date: Fri, 1 Nov 2013 12:16:59 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Flavio Leitner <fbl@redhat.com>,
-        Sha Zhengju <handai.szj@taobao.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH] memcg: remove incorrect underflow check
-Message-ID: <alpine.LNX.2.00.1311011207290.2904@eggly.anvils>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 1 Nov 2013 15:22:37 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Tony Luck <tony.luck@gmail.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>
+CC: Madper Xie <cxie@redhat.com>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Linux EFI" <linux-efi@vger.kernel.org>,
+        =?gb2312?B?0Luzyb+l?= <bbboson@gmail.com>
+Subject: RE: [PATCH] Make efi-pstore return a unique id
+Thread-Topic: [PATCH] Make efi-pstore return a unique id
+Thread-Index: AQHO1x11Ng/G6VnJcECFaGjfqkQ0X5oQ08KAgAApt4D//8FFUA==
+Date: Fri, 1 Nov 2013 19:22:12 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D47F9DD941@USINDEM103.corp.hds.com>
+References: <87ppqk6qvx.fsf@redhat.com>
+	<CAFLxGvz3pCevxE43zGnrbX4MxPmwyb=9MVNpzFRpELt1+AmtrA@mail.gmail.com>
+ <CA+8MBbJefz7L-C-LnhAAXB5zf-8XoMPhESPU4yd0wnuZ_YqO1w@mail.gmail.com>
+In-Reply-To: <CA+8MBbJefz7L-C-LnhAAXB5zf-8XoMPhESPU4yd0wnuZ_YqO1w@mail.gmail.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-11-01_05:2013-11-01,2013-11-01,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1311010157
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rA1JMghl001829
 
-From: Greg Thelen <gthelen@google.com>
+> >> +{
+> >> +       char id_str[64];
+> >> +       u64 id = 0;
+> >> +
+> >> +       sprintf(id_str, "%lu%u%d", timestamp, part, count);
+> >> +       if (kstrtoull(id_str, 10, &id))
+> >> +               pr_warn("efi-pstore: failed to generate id\n");
+> >> +       return id;
+> >> +}
+> >
+> > This is just odd. You make a string from three ints and then a parse
+> > it to a int again.
+> 
+> Agreed.  I liked your ((timestamp * 100 + part) * 100 + count function much
+> more than this.
 
-When a memcg is deleted mem_cgroup_reparent_charges() moves charged
-memory to the parent memcg.  As of v3.11-9444-g3ea67d0 "memcg: add per
-cgroup writeback pages accounting" there's bad pointer read.  The goal
-was to check for counter underflow.  The counter is a per cpu counter
-and there are two problems with the code:
-(1) per cpu access function isn't used, instead a naked pointer is
-    used which easily causes oops.
-(2) the check doesn't sum all cpus
+I was worried that the part and count could be more than 100.
+If it happens, the id may not be unique...
 
-Test:
-  $ cd /sys/fs/cgroup/memory
-  $ mkdir x
-  $ echo 3 > /proc/sys/vm/drop_caches
-  $ (echo $BASHPID >> x/tasks && exec cat) &
-  [1] 7154
-  $ grep ^mapped x/memory.stat
-  mapped_file 53248
-  $ echo 7154 > tasks
-  $ rmdir x
-  <OOPS>
+But, currently, size of nvram storage is limited, so it is a corner case.
+I respect your opinion.
 
-The fix is to remove the check.  It's currently dangerous and isn't
-worth fixing it to use something expensive, such as
-percpu_counter_sum(), for each reparented page.  __this_cpu_read()
-isn't enough to fix this because there's no guarantees of the current
-cpus count.  The only guarantees is that the sum of all per-cpu
-counter is >= nr_pages.
+> @@ -125,9 +137,11 @@ static int efi_pstore_write(enum pstore_type_id type,
+>  	efi_char16_t efi_name[DUMP_NAME_LEN];
+>  	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
+>  	int i, ret = 0;
+> +	unsigned long timestamp;
+> 
+> +	timestamp = get_seconds();
+>  	sprintf(name, "dump-type%u-%u-%d-%lu-%c", type, part, count,
+> -		get_seconds(), compressed ? 'C' : 'D');
+> +		timestamp, compressed ? 'C' : 'D');
+> 
 
-Fixes: 3ea67d06e467 ("memcg: add per cgroup writeback pages accounting")
-Reported-and-tested-by: Flavio Leitner <fbl@redhat.com>
-Signed-off-by: Greg Thelen <gthelen@google.com>
-Reviewed-by: Sha Zhengju <handai.szj@taobao.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
+I don't think you need to change efi_pstore_write().
+It is just add a local timestamp variable.
 
-This patch fixes an actual crash (which I hit too this morning), so is
-more important than the accounting fix on the next line which went in on
-Wednesday.  It looks like this one got forgotten amidst discussion of the
-others: I've updated Greg's original to apply to the current tree.
+Seiji
 
- mm/memcontrol.c | 1 -
- 1 file changed, 1 deletion(-)
-
---- 3.12-rc7+/mm/memcontrol.c
-+++ linux/mm/memcontrol.c
-@@ -3782,7 +3782,6 @@ void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
- {
- 	/* Update stat data for mem_cgroup */
- 	preempt_disable();
--	WARN_ON_ONCE(from->stat->count[idx] < nr_pages);
- 	__this_cpu_sub(from->stat->count[idx], nr_pages);
- 	__this_cpu_add(to->stat->count[idx], nr_pages);
- 	preempt_enable();
+>  	for (i = 0; i < DUMP_NAME_LEN; i++)
+>  		efi_name[i] = name[i];
+> --
+> 1.8.4.2
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
