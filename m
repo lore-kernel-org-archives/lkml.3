@@ -1,113 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960Ab3KAG2f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 02:28:35 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:32191 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751682Ab3KAG2e (ORCPT
+	id S1754161Ab3KAGaZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 02:30:25 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36867 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061Ab3KAGaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 02:28:34 -0400
-From: <chenxg@marvell.com>
-To: <mturquette@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <chenxg@marvell.com>, <chenxg.marvell@gmail.com>
-Subject: [PATCH] clk: align clock rate unit to unsigned long
-Date: Fri, 1 Nov 2013 14:27:15 +0800
-Message-ID: <1383287235-19583-1-git-send-email-chenxg@marvell.com>
-X-Mailer: git-send-email 1.8.0
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-11-01_02:2013-11-01,2013-11-01,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1310310328
+	Fri, 1 Nov 2013 02:30:23 -0400
+Date: Fri, 1 Nov 2013 17:30:03 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bryan Wu <cooloney@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Subject: linux-next: manual merge of the leds tree with the powerpc tree
+Message-Id: <20131101173003.e0c6ce3749c3b6b1dd0c109e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__1_Nov_2013_17_30_03_+1100_lV_Mhy=AcuA8NU51"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiaoguang Chen <chenxg@marvell.com>
+--Signature=_Fri__1_Nov_2013_17_30_03_+1100_lV_Mhy=AcuA8NU51
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Clock rate unit should use unsigned long instead of long.
-Otherwise clock rate that is higher than 2Ghz will become negative.
-Align the unit to unsigned long to make sure no long to unsigned
-long conversion happens.
+Hi Bryan,
 
-Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
----
- drivers/clk/clk-composite.c    | 4 ++--
- drivers/clk/clk-divider.c      | 4 ++--
- drivers/clk/clk-fixed-factor.c | 4 ++--
- drivers/clk/clk.c              | 4 ++--
- 4 files changed, 8 insertions(+), 8 deletions(-)
+Today's linux-next merge of the leds tree got a conflict in
+include/linux/of.h between commit a3e31b458844 ("of: Move definition of
+of_find_next_cache_node into common code") from the powerpc tree and
+commit 954e04b9491a ("of: introduce of_get_available_child_count") from
+the leds tree.
 
-diff --git a/drivers/clk/clk-composite.c b/drivers/clk/clk-composite.c
-index a33f46f..e091b83 100644
---- a/drivers/clk/clk-composite.c
-+++ b/drivers/clk/clk-composite.c
-@@ -55,8 +55,8 @@ static unsigned long clk_composite_recalc_rate(struct clk_hw *hw,
- 	return rate_ops->recalc_rate(rate_hw, parent_rate);
- }
- 
--static long clk_composite_round_rate(struct clk_hw *hw, unsigned long rate,
--				  unsigned long *prate)
-+static unsigned long clk_composite_round_rate(struct clk_hw *hw,
-+			unsigned long rate, unsigned long *prate)
- {
- 	struct clk_composite *composite = to_clk_composite(hw);
- 	const struct clk_ops *rate_ops = composite->rate_ops;
-diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
-index 8d3009e..280fd41 100644
---- a/drivers/clk/clk-divider.c
-+++ b/drivers/clk/clk-divider.c
-@@ -201,8 +201,8 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
- 	return bestdiv;
- }
- 
--static long clk_divider_round_rate(struct clk_hw *hw, unsigned long rate,
--				unsigned long *prate)
-+static unsigned long clk_divider_round_rate(struct clk_hw *hw,
-+			unsigned long rate, unsigned long *prate)
- {
- 	int div;
- 	div = clk_divider_bestdiv(hw, rate, prate);
-diff --git a/drivers/clk/clk-fixed-factor.c b/drivers/clk/clk-fixed-factor.c
-index 0e1d89b..73b99c3 100644
---- a/drivers/clk/clk-fixed-factor.c
-+++ b/drivers/clk/clk-fixed-factor.c
-@@ -36,8 +36,8 @@ static unsigned long clk_factor_recalc_rate(struct clk_hw *hw,
- 	return (unsigned long)rate;
- }
- 
--static long clk_factor_round_rate(struct clk_hw *hw, unsigned long rate,
--				unsigned long *prate)
-+static unsigned long clk_factor_round_rate(struct clk_hw *hw,
-+			unsigned long rate, unsigned long *prate)
- {
- 	struct clk_fixed_factor *fix = to_clk_fixed_factor(hw);
- 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index a004769..4f7f6fc 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -697,7 +697,7 @@ struct clk *__clk_lookup(const char *name)
-  * directly as a determine_rate callback (e.g. for a mux), or from a more
-  * complex clock that may combine a mux with other operations.
-  */
--long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
-+unsigned long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
- 			      unsigned long *best_parent_rate,
- 			      struct clk **best_parent_p)
- {
-@@ -967,7 +967,7 @@ unsigned long __clk_round_rate(struct clk *clk, unsigned long rate)
-  * use which is then returned.  If clk doesn't support round_rate operation
-  * then the parent rate is returned.
-  */
--long clk_round_rate(struct clk *clk, unsigned long rate)
-+unsigned long clk_round_rate(struct clk *clk, unsigned long rate)
- {
- 	unsigned long ret;
- 
--- 
-1.8.0
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc include/linux/of.h
+index 2567ccd32482,54c25606a997..000000000000
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@@ -228,8 -226,17 +228,19 @@@ static inline int of_get_child_count(co
+  	return num;
+  }
+ =20
++ static inline int of_get_available_child_count(const struct device_node *=
+np)
++ {
++ 	struct device_node *child;
++ 	int num =3D 0;
++=20
++ 	for_each_available_child_of_node(np, child)
++ 		num++;
++=20
++ 	return num;
++ }
++=20
+ +/* cache lookup */
+ +extern struct device_node *of_find_next_cache_node(const struct device_no=
+de *);
+  extern struct device_node *of_find_node_with_property(
+  	struct device_node *from, const char *prop_name);
+  #define for_each_node_with_property(dn, prop_name) \
+
+--Signature=_Fri__1_Nov_2013_17_30_03_+1100_lV_Mhy=AcuA8NU51
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSc0p7AAoJEMDTa8Ir7ZwVl/8QAJWtuhVg8uOAN7G7iF1eGduD
+ozXSY7MvHBARyJStAQXxh78MdtBFBO+Di1sCz3Jkw/qxQByMv9mMCzk4yt0X18nh
+HI+NGztvW1rIhv/GyWyi2KyWzBzn7ohnD5TNLHUPeyn9DU380uaN9jbRD84OBPdq
+F253svnKv2ct6O9336uFUN3H1Q53HJQoDOv2aSc/g3WXzSydBqm21g+zIV87QbyG
+fNKObJw56yBsluUk5nYo1P5cUGLAkkklafy5PVIKxyulOgro/lIC9ckrNNd8BuD0
+0Ir2PSwdCUOxHLDZgide+70LM0uF39DOCFAWBtDp0XY2bBGhkiRLOgHk7wlFC3SG
+Iy/7J/6bvrGVNu/QdNsmZi9MK7nslxYCOU14iRYEWRAoNLe9ctATz0hrOj4l037g
+Nl/IbzeBvbdb6wuE7uxLUfpbMY+7KxP9vDxDL/2OTiROz/wthHlo4KYi7ga6guen
+JoWHKBegPyBzGPclLWEpmfHfmgZ7quZHOtN5Nv8IPbbz4/N9Ci7MsipROyyIoO0m
+E7RNmuEr8b9Q7F7hYYoxLlmI3q5lHtdS7sgOkYBZ9KSsXHCCyeW5B4oQ9epeMPO9
+c+RQBPAX2vpTWrZa7Sjxr2JOKfVaG4EYyPbjyesysqcYWFCmZc3+yDQap3YuOKTn
+u+L9kywvQX7yXyfvDJ33
+=0lYh
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__1_Nov_2013_17_30_03_+1100_lV_Mhy=AcuA8NU51--
