@@ -1,127 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652Ab3KAJ2Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 05:28:24 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:35631 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755085Ab3KAJ2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 05:28:22 -0400
-Date: Fri, 1 Nov 2013 02:28:14 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Victor Kaplansky <VICTORK@il.ibm.com>, Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: perf events ring buffer memory barrier on powerpc
-Message-ID: <20131101092814.GG4067@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131028132634.GO19466@laptop.lan>
- <20131028163418.GD4126@linux.vnet.ibm.com>
- <20131028201735.GA15629@redhat.com>
- <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com>
- <20131030092725.GL4126@linux.vnet.ibm.com>
- <OFC6B7100E.31C6B190-ON42257C14.004841C6-42257C14.004A0EA6@il.ibm.com>
- <20131031043258.GQ4126@linux.vnet.ibm.com>
- <20131031090457.GU19466@laptop.lan>
- <20131031150756.GB4067@linux.vnet.ibm.com>
- <20131031151955.GY19466@laptop.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131031151955.GY19466@laptop.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110109-0320-0000-0000-000001980391
+	id S1755766Ab3KAJ3X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 05:29:23 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:60666 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937Ab3KAJ3W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 05:29:22 -0400
+From: Chenggang Qin <chenggang.qin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Chenggang Qin <chenggang.qin@gmail.com>, David Ahern <dsahern@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Yanmin Zhang <yanmin.zhang@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chenggang Qin <chenggang.qcg@taobao.com>
+Subject: [PATCH 0/4] perf report: add parameters 'start' & 'end' to specify analysis interval
+Date: Fri,  1 Nov 2013 17:29:02 +0800
+Message-Id: <1383298146-3860-1-git-send-email-chenggang.qin@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 04:19:55PM +0100, Peter Zijlstra wrote:
-> On Thu, Oct 31, 2013 at 08:07:56AM -0700, Paul E. McKenney wrote:
-> > On Thu, Oct 31, 2013 at 10:04:57AM +0100, Peter Zijlstra wrote:
-> > > On Wed, Oct 30, 2013 at 09:32:58PM -0700, Paul E. McKenney wrote:
-> > > > Before C/C++11, the closest thing to such a prohibition is use of
-> > > > volatile, for example, ACCESS_ONCE().  Even in C/C++11, you have to
-> > > > use atomics to get anything resembing this prohibition.
-> > > > 
-> > > > If you just use normal variables, the compiler is within its rights
-> > > > to transform something like the following:
-> > > > 
-> > > > 	if (a)
-> > > > 		b = 1;
-> > > > 	else
-> > > > 		b = 42;
-> > > > 
-> > > > Into:
-> > > > 
-> > > > 	b = 42;
-> > > > 	if (a)
-> > > > 		b = 1;
-> > > > 
-> > > > Many other similar transformations are permitted.  Some are used to all
-> > > > vector instructions to be used -- the compiler can do a write with an
-> > > > overly wide vector instruction, then clean up the clobbered variables
-> > > > later, if it wishes.  Again, if the variables are not marked volatile,
-> > > > or, in C/C++11, atomic.
-> > > 
-> > > While I've heard you tell this story before, my mind keeps boggling how
-> > > we've been able to use shared memory at all, all these years.
-> > > 
-> > > It seems to me stuff should have broken left, right and center if
-> > > compilers were really aggressive about this.
-> > 
-> > Sometimes having stupid compilers is a good thing.  But they really are
-> > getting more aggressive.
-> 
-> But surely we cannot go mark all data structures lodged in shared memory
-> as volatile, that's insane.
-> 
-> I'm sure you're quite worried about this as well. Suppose we have:
-> 
-> struct foo {
-> 	unsigned long value;
-> 	void *ptr;
-> 	unsigned long value1;
-> };
-> 
-> And our ptr member is RCU managed. Then while the assignment using:
-> rcu_assign_ptr() will use the volatile cast, what stops the compiler
-> from wrecking ptr while writing either of the value* members and
-> 'fixing' her up after?
+This patch set introduced a feature to analysis the samples in a specified time
+interval.
+After perf.data file was generated by perf record, the user could want to
+analysis a sub time interval of the whole record period.
+For some functions, the percent of its samples in a certain sub time interval is
+different from the percent in the total record period. Showing the scene in a
+certain time interval could allow users to more easily troubleshoot performance
+problems. The sample's timestamp are recorded in the perf.data file. The samples
+are sorted in the ordered_samples by timestamp while perf report processed them.
+So, it is easily to search the samples whose timestamp are in a certain time
+interval.
+We add 2 paramters --start and --end to specify the time interval.
+perf report --start xxxxx --end xxxxx
+The smallest granularity of time interval is millsecond.
+For example:
+If the whole record period of a perf.data file is 10000 to 20000, we can use the
+following command to analysis the samples between [15000, 16000).
+perf report --start 15000 --end 16000
+The time is the uptime, it start timing from the system starts.
 
-Nothing at all!
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Yanmin Zhang <yanmin.zhang@intel.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
 
-We can reduce the probability by putting the pointer at one end or the
-other, so that if the compiler uses (say) vector instructions to aggregate
-individual assignments to the other fields, it will be less likely to hit
-"ptr".  But yes, this is ugly and it would be really hard to get all
-this right, and would often conflict with cache-locality needs.
+Chenggang Qin (4):
+  perf tools: add parameter 'start' & 'end' to perf report
+  perf tools: relate 'start' & 'end' to perf_session
+  perf tools: record min_timestamp of samples queue in ordered_samples
+  perf tools: add the feature to assign analysis interval to perf
+    report
 
-> This is a completely untenable position.
+ tools/perf/builtin-report.c |   14 ++++++++++++
+ tools/perf/util/session.c   |   49 +++++++++++++++++++++++++++++++++++++++++-
+ tools/perf/util/session.h   |    3 ++
+ 3 files changed, 64 insertions(+), 2 deletions(-)
 
-Indeed it is!
-
-C/C++ never was intended to be used for parallel programming, and this is
-but one of the problems that can arise when we nevertheless use it for
-parallel programming.  As compilers get smarter (for some definition of
-"smarter") and as more systems have special-purpose hardware (such as
-vector units) that are visible to the compiler, we can expect more of
-this kind of trouble.
-
-This was one of many reasons that I decided to help with the C/C++11
-effort, whatever anyone might think about the results.
-
-> How do the C/C++ people propose to deal with this?
-
-By marking "ptr" as atomic, thus telling the compiler not to mess with it.
-And thus requiring that all accesses to it be decorated, which in the
-case of RCU could be buried in the RCU accessors.
-
-							Thanx, Paul
+-- 
+1.7.8.rc2.5.g815b
 
