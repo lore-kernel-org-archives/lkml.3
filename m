@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab3KAWUl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:20:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55416 "EHLO
+	id S1756307Ab3KAWIN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:08:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55381 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756259Ab3KAWIO (ORCPT
+	with ESMTP id S1756259Ab3KAWII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:14 -0400
+	Fri, 1 Nov 2013 18:08:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fan Du <fan.du@windriver.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
+        Mathias Krause <minipli@googlemail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 36/66] sctp: Use software crc32 checksum when xfrm transform will happen.
-Date: Fri,  1 Nov 2013 15:07:12 -0700
-Message-Id: <20131101220644.658666093@linuxfoundation.org>
+Subject: [PATCH 3.11 29/66] unix_diag: fix info leak
+Date: Fri,  1 Nov 2013 15:07:05 -0700
+Message-Id: <20131101220642.826017066@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -29,38 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fan Du <fan.du@windriver.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 27127a82561a2a3ed955ce207048e1b066a80a2a ]
+[ Upstream commit 6865d1e834be84ddd5808d93d5035b492346c64a ]
 
-igb/ixgbe have hardware sctp checksum support, when this feature is enabled
-and also IPsec is armed to protect sctp traffic, ugly things happened as
-xfrm_output checks CHECKSUM_PARTIAL to do checksum operation(sum every thing
-up and pack the 16bits result in the checksum field). The result is fail
-establishment of sctp communication.
+When filling the netlink message we miss to wipe the pad field,
+therefore leak one byte of heap memory to userland. Fix this by
+setting pad to 0.
 
-Signed-off-by: Fan Du <fan.du@windriver.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/output.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/unix/diag.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/sctp/output.c
-+++ b/net/sctp/output.c
-@@ -542,7 +542,8 @@ int sctp_packet_transmit(struct sctp_pac
- 	 * by CRC32-C as described in <draft-ietf-tsvwg-sctpcsum-02.txt>.
- 	 */
- 	if (!sctp_checksum_disable) {
--		if (!(dst->dev->features & NETIF_F_SCTP_CSUM)) {
-+		if (!(dst->dev->features & NETIF_F_SCTP_CSUM) ||
-+		    (dst_xfrm(dst) != NULL)) {
- 			__u32 crc32 = sctp_start_cksum((__u8 *)sh, cksum_buf_len);
+--- a/net/unix/diag.c
++++ b/net/unix/diag.c
+@@ -124,6 +124,7 @@ static int sk_diag_fill(struct sock *sk,
+ 	rep->udiag_family = AF_UNIX;
+ 	rep->udiag_type = sk->sk_type;
+ 	rep->udiag_state = sk->sk_state;
++	rep->pad = 0;
+ 	rep->udiag_ino = sk_ino;
+ 	sock_diag_save_cookie(sk, rep->udiag_cookie);
  
- 			/* 3) Put the resultant value into the checksum field in the
 
 
