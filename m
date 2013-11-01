@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab3KAWGo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:06:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55130 "EHLO
+	id S1756047Ab3KAWHA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:07:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55116 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755675Ab3KAWFS (ORCPT
+	with ESMTP id S1755837Ab3KAWFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:05:18 -0400
+	Fri, 1 Nov 2013 18:05:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        Jan Kara <jack@suse.cz>, Richard Weinberger <richard@nod.at>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        David Rientjes <rientjes@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 49/54] writeback: fix negative bdi max pause
-Date: Fri,  1 Nov 2013 15:04:17 -0700
-Message-Id: <20131101220216.811628543@linuxfoundation.org>
+Subject: [PATCH 3.10 46/54] mm: fix BUG in __split_huge_page_pmd
+Date: Fri,  1 Nov 2013 15:04:14 -0700
+Message-Id: <20131101220216.477962839@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,93 +32,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fengguang Wu <fengguang.wu@intel.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit e3b6c655b91e01a1dade056cfa358581b47a5351 upstream.
+commit 750e8165f5e87b6a142be953640eabb13a9d350a upstream.
 
-Toralf runs trinity on UML/i386.  After some time it hangs and the last
-message line is
+Occasionally we hit the BUG_ON(pmd_trans_huge(*pmd)) at the end of
+__split_huge_page_pmd(): seen when doing madvise(,,MADV_DONTNEED).
 
-	BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:1521]
+It's invalid: we don't always have down_write of mmap_sem there: a racing
+do_huge_pmd_wp_page() might have copied-on-write to another huge page
+before our split_huge_page() got the anon_vma lock.
 
-It's found that pages_dirtied becomes very large.  More than 1000000000
-pages in this case:
+Forget the BUG_ON, just go back and try again if this happens.
 
-	period = HZ * pages_dirtied / task_ratelimit;
-	BUG_ON(pages_dirtied > 2000000000);
-	BUG_ON(pages_dirtied > 1000000000);      <---------
-
-UML debug printf shows that we got negative pause here:
-
-	ick: pause : -984
-	ick: pages_dirtied : 0
-	ick: task_ratelimit: 0
-
-	 pause:
-	+       if (pause < 0)  {
-	+               extern int printf(char *, ...);
-	+               printf("ick : pause : %li\n", pause);
-	+               printf("ick: pages_dirtied : %lu\n", pages_dirtied);
-	+               printf("ick: task_ratelimit: %lu\n", task_ratelimit);
-	+               BUG_ON(1);
-	+       }
-	        trace_balance_dirty_pages(bdi,
-
-Since pause is bounded by [min_pause, max_pause] where min_pause is also
-bounded by max_pause.  It's suspected and demonstrated that the
-max_pause calculation goes wrong:
-
-	ick: pause : -717
-	ick: min_pause : -177
-	ick: max_pause : -717
-	ick: pages_dirtied : 14
-	ick: task_ratelimit: 0
-
-The problem lies in the two "long = unsigned long" assignments in
-bdi_max_pause() which might go negative if the highest bit is 1, and the
-min_t(long, ...) check failed to protect it falling under 0.  Fix all of
-them by using "unsigned long" throughout the function.
-
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Tested-by: Toralf Förster <toralf.foerster@gmx.de>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: David Rientjes <rientjes@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page-writeback.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ mm/huge_memory.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1104,11 +1104,11 @@ static unsigned long dirty_poll_interval
- 	return 1;
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -2699,6 +2699,7 @@ void __split_huge_page_pmd(struct vm_are
+ 
+ 	mmun_start = haddr;
+ 	mmun_end   = haddr + HPAGE_PMD_SIZE;
++again:
+ 	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_trans_huge(*pmd))) {
+@@ -2721,7 +2722,14 @@ void __split_huge_page_pmd(struct vm_are
+ 	split_huge_page(page);
+ 
+ 	put_page(page);
+-	BUG_ON(pmd_trans_huge(*pmd));
++
++	/*
++	 * We don't always have down_write of mmap_sem here: a racing
++	 * do_huge_pmd_wp_page() might have copied-on-write to another
++	 * huge page before our split_huge_page() got the anon_vma lock.
++	 */
++	if (unlikely(pmd_trans_huge(*pmd)))
++		goto again;
  }
  
--static long bdi_max_pause(struct backing_dev_info *bdi,
--			  unsigned long bdi_dirty)
-+static unsigned long bdi_max_pause(struct backing_dev_info *bdi,
-+				   unsigned long bdi_dirty)
- {
--	long bw = bdi->avg_write_bandwidth;
--	long t;
-+	unsigned long bw = bdi->avg_write_bandwidth;
-+	unsigned long t;
- 
- 	/*
- 	 * Limit pause time for small memory systems. If sleeping for too long
-@@ -1120,7 +1120,7 @@ static long bdi_max_pause(struct backing
- 	t = bdi_dirty / (1 + bw / roundup_pow_of_two(1 + HZ / 8));
- 	t++;
- 
--	return min_t(long, t, MAX_PAUSE);
-+	return min_t(unsigned long, t, MAX_PAUSE);
- }
- 
- static long bdi_min_pause(struct backing_dev_info *bdi,
+ void split_huge_page_pmd_mm(struct mm_struct *mm, unsigned long address,
 
 
