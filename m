@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab3KABFU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 21:05:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:17457 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753409Ab3KABFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 21:05:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="427999990"
-Message-ID: <5272FDE7.4060000@linux.intel.com>
-Date: Thu, 31 Oct 2013 18:03:35 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	id S1754548Ab3KABMb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 21:12:31 -0400
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:43463 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006Ab3KABMa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 21:12:30 -0400
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] checkpatch: Improve "return is not a function" test
-References: <1383069950-27754-1-git-send-email-david.a.cohen@linux.intel.com>  <1383070766.12439.13.camel@joe-AO722> <526FFED4.4070902@linux.intel.com>  <1383071755.12439.17.camel@joe-AO722> <52700D4C.10008@linux.intel.com>  <1383075490.12439.26.camel@joe-AO722> <1383261164.2769.6.camel@joe-AO722>
-In-Reply-To: <1383261164.2769.6.camel@joe-AO722>
+In-Reply-To: <20131031181358.GA27027@rhlx01.hs-esslingen.de>
+References: <CAK2Ky6x+wiwa5F6+K+Ee0y_TkbG-oA3tDBWp+2wO8mPqSTyQnA@mail.gmail.com>
+	<20131031181358.GA27027@rhlx01.hs-esslingen.de>
+Date: Fri, 1 Nov 2013 09:12:29 +0800
+Message-ID: <CAK2Ky6w=TktdC9rs6spNSA+UqpBDaC=ibvEPMT=G9FwWOCkngg@mail.gmail.com>
+Subject: Re: A simple question of a linux kernel beginner
+From: =?GB2312?B?uqvA2g==?= <bonben1989@gmail.com>
+To: Andreas Mohr <andi@lisas.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2013 04:12 PM, Joe Perches wrote:
-> Find a few more cases where parentheses are used around
-> the value of a return statement.
-> 
-> This now uses the "$balanced_parens" test and also makes
-> the test depend on perl v5.10 and higher.
-> 
-> This now finds return with parenthesis uses the old code
-> did not find like:
-> 
-> ERROR: return is not a function, parentheses are not required
-> #211: FILE: arch/m68k/include/asm/sun3xflop.h:211:
-> +		return ((error == 0) ? 0 : -1);
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+Thank you! I still have a long way to go in kernel.
 
-It catches the previous false-negative I had.
 
-Acked-by: David Cohen <david.a.cohen@linux.intel.com>
+2013/11/1 Andreas Mohr <andi@lisas.de>:
+> Hi,
+>
+>> May I can use  the ''double" as a  basic variables?
+>
+> [see other replies]
+>
+>
+> Look into terminus technicus "scaling math" as a replacement technique
+> (in-kernel this is being used e.g. by clocksources/clockevents).
+>
+> HTH,
+>
+> Andreas Mohr
