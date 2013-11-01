@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab3KANit (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 09:38:49 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:53807 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752916Ab3KANir (ORCPT
+	id S1752544Ab3KANkP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 09:40:15 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:47076 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750855Ab3KANkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 09:38:47 -0400
-Message-ID: <5273AEE2.2010005@cogentembedded.com>
-Date: Fri, 01 Nov 2013 17:38:42 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Duan Jiong <duanj.fnst@cn.fujitsu.com>, acme@ghostprotocols.net
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/net: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
-References: <1383300016-5947-1-git-send-email-duanj.fnst@cn.fujitsu.com>
-In-Reply-To: <1383300016-5947-1-git-send-email-duanj.fnst@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 1 Nov 2013 09:40:13 -0400
+Date: Fri, 1 Nov 2013 09:40:06 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH trace-cmd 1/5] trace-cmd/listen: Remove use of
+ sighandler_t
+Message-ID: <20131101094006.68b43eda@gandalf.local.home>
+In-Reply-To: <20131028154541.GB18282@thinkpad-t410>
+References: <1382642074-15567-1-git-send-email-seth.forshee@canonical.com>
+	<1382642074-15567-2-git-send-email-seth.forshee@canonical.com>
+	<20131024203007.GB8006@thinkpad-t410>
+	<20131028154541.GB18282@thinkpad-t410>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, 28 Oct 2013 10:45:41 -0500
+Seth Forshee <seth.forshee@canonical.com> wrote:
 
-On 01-11-2013 14:00, Duan Jiong wrote:
+> 
+> >From 20ec8510d0ca2ac789b1ca9cf7b0a6dc2d02f14c Mon Sep 17 00:00:00 2001
+> From: Seth Forshee <seth.forshee@canonical.com>
+> Date: Mon, 28 Oct 2013 08:15:59 -0500
+> Subject: [PATCH] Makefile: Ensure _GNU_SOURCE really is always defined
+> 
+> When CLFAGS is set with a command argument a normal variable
+> assignment is not sufficient to ensure that _GNU_SOURCE will be
+> defined. Since this really is critical for building, use an
+> override directive when adding it to CFLAGS to ensure that it
+> really does get defined in all cases.
 
-> This patch fixes coccinelle error regarding usage of IS_ERR and
-> PTR_ERR instead of PTR_ERR_OR_ZERO.
+Can you send this as a separate patch please. New patches should not
+be replies. You can reply to a patch with a patch, but please change
+the subject when you do so.
 
-> Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Thanks,
+
+-- Steve
+
+> 
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 > ---
->   drivers/net/appletalk/ipddp.c | 4 +---
->   1 file changed, 1 insertion(+), 3 deletions(-)
-
-> diff --git a/drivers/net/appletalk/ipddp.c b/drivers/net/appletalk/ipddp.c
-> index 10d0dba..78f06cb 100644
-> --- a/drivers/net/appletalk/ipddp.c
-> +++ b/drivers/net/appletalk/ipddp.c
-> @@ -312,9 +312,7 @@ module_param(ipddp_mode, int, 0);
->   static int __init ipddp_init_module(void)
->   {
->   	dev_ipddp = ipddp_init();
-> -        if (IS_ERR(dev_ipddp))
-> -                return PTR_ERR(dev_ipddp);
-> -	return 0;
-> +        return PTR_ERR_OR_ZERO(dev_ipddp);
-
-    Indent with a tab, please.
-
-WBR, Sergei
+>  Makefile | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/Makefile b/Makefile
+> index 1d613c4..a2ba385 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -223,7 +223,7 @@ CFLAGS ?= -g -Wall
+>  LDFLAGS ?=
+>  
+>  # Required CFLAGS
+> -CFLAGS += -D_GNU_SOURCE
+> +override CFLAGS += -D_GNU_SOURCE
+>  
+>  ifndef NO_PTRACE
+>  ifneq ($(call try-cc,$(SOURCE_PTRACE),),y)
 
