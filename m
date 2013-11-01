@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940Ab3KAUrw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 16:47:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53944 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab3KAUru (ORCPT
+	id S1753902Ab3KAUsO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 16:48:14 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:44901 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323Ab3KAUsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 16:47:50 -0400
-Date: Fri, 1 Nov 2013 13:47:49 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: NeilBrown <neilb@suse.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Strange location and name for platform  devices when device-tree
- is used.
-Message-ID: <20131101204749.GA19662@kroah.com>
-References: <20131101145925.66e22f73@notabene.brown>
- <1383279744.28909.26.camel@pasglop>
- <1383280054.28909.30.camel@pasglop>
- <20131101160329.37f3707b@notabene.brown>
- <1383282516.28909.36.camel@pasglop>
+	Fri, 1 Nov 2013 16:48:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383282516.28909.36.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 1 Nov 2013 13:48:10 -0700
+Message-ID: <CAOMFOmWzERR7MDe65YHo--GdbO+QfnxZK=uWd7d3vCZ6ca97fw@mail.gmail.com>
+Subject: Solving M produces N consumers scalability problem
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 01, 2013 at 04:08:36PM +1100, Benjamin Herrenschmidt wrote:
-> On Fri, 2013-11-01 at 16:03 +1100, NeilBrown wrote:
-> 
-> > Do you mean we could allow multiple devices on the one bus to have the same
-> > name, but get sysfs to notice and de-duplicate by mangling one name?  I don't
-> > think I like that but I might have misunderstood.
-> 
-> What other option do we have ?
-> 
-> > On my device I seem to have some platform devices registered through
-> > device-tree, and some registered through platform_device_add (e.g.
-> > 'alarmtimer').  Guaranteeing they remain disjoint sets if the kernel is
-> > allowed to evolve independently of the devicetree might be tricky....
-> > Maybe we need "/sys/devices/platform" and "/sys/devices/dt_platform" ??
-> 
-> No, I think device-tree created platform devices should go
-> to /sys/devices/platform like the "classic" ones.
-> 
-> The problem is really how to deal with potential name duplication. We
-> could try to register, if we get -EEXIST (assuming sysfs returns the
-> right stuff), try again with ".1" etc...
+Hi,
 
-How can there be device name collisions?  All platform devices _should_
-be named uniquely, if not, you have bigger problems...
+I am looking at fuse scalabily issue that I hit recently on my
+multi-socket server machines
+http://permalink.gmane.org/gmane.comp.file-systems.fuse.devel/13490
 
-thanks,
+The short description is that we have several thousands threads that
+make filesystem access to a fuse fs. Fuse spawns several threads
+(usually 4-8) that read the requests from kernel process it and write
+response back to the kernel.
 
-greg k-h
+The problem is that fuse kernel module uses a global list where it
+keeps all active requests. But both consumers and producers are at
+different CPU's and getting lock to access the list is very expensive
+operation. I have a test case that shows ~35% of the system time is
+spent in _raw_spin_lock when accessing to this global list. I want to
+solve this scalability problem.
+
+One idea is not to use the spin_lock. It is the 'fair spin_lock' that
+has scalability problems
+http://pdos.csail.mit.edu/papers/linux:lock.pdf Maybe lockless
+datastructures can help here?
+
+Another idea is avoid global datasctructures but I have a few
+questions here. Let's say we want to use per-CPU lists. But the
+problem is that producers/consumers are not distributed across all
+CPUs. Some CPU might have too many producers, some other might not
+have consumers at all. So we need some kind of migration from hot CPU
+to the cold one. What is the best way to achieve it? Are there any
+examples how to do this? Any other ideas?
