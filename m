@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756756Ab3KAWVq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:21:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55398 "EHLO
+	id S1756771Ab3KAWWH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:22:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55390 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756277Ab3KAWIL (ORCPT
+	with ESMTP id S1756268Ab3KAWIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:11 -0400
+	Fri, 1 Nov 2013 18:08:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        Jason Wang <jasowang@redhat.com>,
+        Cong Wang <amwang@redhat.com>,
+        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
+        Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 32/66] virtio-net: dont respond to cpu hotplug notifier if were not ready
-Date: Fri,  1 Nov 2013 15:07:08 -0700
-Message-Id: <20131101220643.618047170@linuxfoundation.org>
+Subject: [PATCH 3.11 23/66] Revert "bridge: only expire the mdb entry when query is received"
+Date: Fri,  1 Nov 2013 15:06:59 -0700
+Message-Id: <20131101220641.158158095@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,56 +32,207 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Linus Lüssing <linus.luessing@web.de>
 
-[ Upstream commit 3ab098df35f8b98b6553edc2e40234af512ba877 ]
+[ Upstream commit 454594f3b93a49ef568cd190c5af31376b105a7b ]
 
-We're trying to re-configure the affinity unconditionally in cpu hotplug
-callback. This may lead the issue during resuming from s3/s4 since
+While this commit was a good attempt to fix issues occuring when no
+multicast querier is present, this commit still has two more issues:
 
-- virt queues haven't been allocated at that time.
-- it's unnecessary since thaw method will re-configure the affinity.
+1) There are cases where mdb entries do not expire even if there is a
+querier present. The bridge will unnecessarily continue flooding
+multicast packets on the according ports.
 
-Fix this issue by checking the config_enable and do nothing is we're not ready.
+2) Never removing an mdb entry could be exploited for a Denial of
+Service by an attacker on the local link, slowly, but steadily eating up
+all memory.
 
-The bug were introduced by commit 8de4b2f3ae90c8fc0f17eeaab87d5a951b66ee17
-(virtio-net: reset virtqueue affinity when doing cpu hotplug).
+Actually, this commit became obsolete with
+"bridge: disable snooping if there is no querier" (b00589af3b)
+which included fixes for a few more cases.
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+Therefore reverting the following commits (the commit stated in the
+commit message plus three of its follow up fixes):
+
+====================
+Revert "bridge: update mdb expiration timer upon reports."
+This reverts commit f144febd93d5ee534fdf23505ab091b2b9088edc.
+Revert "bridge: do not call setup_timer() multiple times"
+This reverts commit 1faabf2aab1fdaa1ace4e8c829d1b9cf7bfec2f1.
+Revert "bridge: fix some kernel warning in multicast timer"
+This reverts commit c7e8e8a8f7a70b343ca1e0f90a31e35ab2d16de1.
+Revert "bridge: only expire the mdb entry when query is received"
+This reverts commit 9f00b2e7cf241fa389733d41b615efdaa2cb0f5b.
+====================
+
+CC: Cong Wang <amwang@redhat.com>
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+Reviewed-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/virtio_net.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/bridge/br_mdb.c       |    2 -
+ net/bridge/br_multicast.c |   47 ++++++++++++++++++++++++++--------------------
+ net/bridge/br_private.h   |    1 
+ 3 files changed, 28 insertions(+), 22 deletions(-)
 
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1094,6 +1094,11 @@ static int virtnet_cpu_callback(struct n
- {
- 	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
+--- a/net/bridge/br_mdb.c
++++ b/net/bridge/br_mdb.c
+@@ -451,7 +451,7 @@ static int __br_mdb_del(struct net_bridg
+ 		call_rcu_bh(&p->rcu, br_multicast_free_pg);
+ 		err = 0;
  
-+	mutex_lock(&vi->config_lock);
-+
-+	if (!vi->config_enable)
-+		goto done;
-+
- 	switch(action & ~CPU_TASKS_FROZEN) {
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
-@@ -1106,6 +1111,9 @@ static int virtnet_cpu_callback(struct n
- 	default:
+-		if (!mp->ports && !mp->mglist && mp->timer_armed &&
++		if (!mp->ports && !mp->mglist &&
+ 		    netif_running(br->dev))
+ 			mod_timer(&mp->timer, jiffies);
  		break;
- 	}
-+
-+done:
-+	mutex_unlock(&vi->config_lock);
- 	return NOTIFY_OK;
- }
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -271,7 +271,7 @@ static void br_multicast_del_pg(struct n
+ 		del_timer(&p->timer);
+ 		call_rcu_bh(&p->rcu, br_multicast_free_pg);
  
+-		if (!mp->ports && !mp->mglist && mp->timer_armed &&
++		if (!mp->ports && !mp->mglist &&
+ 		    netif_running(br->dev))
+ 			mod_timer(&mp->timer, jiffies);
+ 
+@@ -610,9 +610,6 @@ rehash:
+ 		break;
+ 
+ 	default:
+-		/* If we have an existing entry, update it's expire timer */
+-		mod_timer(&mp->timer,
+-			  jiffies + br->multicast_membership_interval);
+ 		goto out;
+ 	}
+ 
+@@ -622,7 +619,6 @@ rehash:
+ 
+ 	mp->br = br;
+ 	mp->addr = *group;
+-
+ 	setup_timer(&mp->timer, br_multicast_group_expired,
+ 		    (unsigned long)mp);
+ 
+@@ -662,6 +658,7 @@ static int br_multicast_add_group(struct
+ 	struct net_bridge_mdb_entry *mp;
+ 	struct net_bridge_port_group *p;
+ 	struct net_bridge_port_group __rcu **pp;
++	unsigned long now = jiffies;
+ 	int err;
+ 
+ 	spin_lock(&br->multicast_lock);
+@@ -676,18 +673,15 @@ static int br_multicast_add_group(struct
+ 
+ 	if (!port) {
+ 		mp->mglist = true;
++		mod_timer(&mp->timer, now + br->multicast_membership_interval);
+ 		goto out;
+ 	}
+ 
+ 	for (pp = &mp->ports;
+ 	     (p = mlock_dereference(*pp, br)) != NULL;
+ 	     pp = &p->next) {
+-		if (p->port == port) {
+-			/* We already have a portgroup, update the timer.  */
+-			mod_timer(&p->timer,
+-				  jiffies + br->multicast_membership_interval);
+-			goto out;
+-		}
++		if (p->port == port)
++			goto found;
+ 		if ((unsigned long)p->port < (unsigned long)port)
+ 			break;
+ 	}
+@@ -698,6 +692,8 @@ static int br_multicast_add_group(struct
+ 	rcu_assign_pointer(*pp, p);
+ 	br_mdb_notify(br->dev, port, group, RTM_NEWMDB);
+ 
++found:
++	mod_timer(&p->timer, now + br->multicast_membership_interval);
+ out:
+ 	err = 0;
+ 
+@@ -1197,9 +1193,6 @@ static int br_ip4_multicast_query(struct
+ 	if (!mp)
+ 		goto out;
+ 
+-	mod_timer(&mp->timer, now + br->multicast_membership_interval);
+-	mp->timer_armed = true;
+-
+ 	max_delay *= br->multicast_last_member_count;
+ 
+ 	if (mp->mglist &&
+@@ -1276,9 +1269,6 @@ static int br_ip6_multicast_query(struct
+ 	if (!mp)
+ 		goto out;
+ 
+-	mod_timer(&mp->timer, now + br->multicast_membership_interval);
+-	mp->timer_armed = true;
+-
+ 	max_delay *= br->multicast_last_member_count;
+ 	if (mp->mglist &&
+ 	    (timer_pending(&mp->timer) ?
+@@ -1364,7 +1354,7 @@ static void br_multicast_leave_group(str
+ 			call_rcu_bh(&p->rcu, br_multicast_free_pg);
+ 			br_mdb_notify(br->dev, port, group, RTM_DELMDB);
+ 
+-			if (!mp->ports && !mp->mglist && mp->timer_armed &&
++			if (!mp->ports && !mp->mglist &&
+ 			    netif_running(br->dev))
+ 				mod_timer(&mp->timer, jiffies);
+ 		}
+@@ -1376,12 +1366,30 @@ static void br_multicast_leave_group(str
+ 		     br->multicast_last_member_interval;
+ 
+ 	if (!port) {
+-		if (mp->mglist && mp->timer_armed &&
++		if (mp->mglist &&
+ 		    (timer_pending(&mp->timer) ?
+ 		     time_after(mp->timer.expires, time) :
+ 		     try_to_del_timer_sync(&mp->timer) >= 0)) {
+ 			mod_timer(&mp->timer, time);
+ 		}
++
++		goto out;
++	}
++
++	for (p = mlock_dereference(mp->ports, br);
++	     p != NULL;
++	     p = mlock_dereference(p->next, br)) {
++		if (p->port != port)
++			continue;
++
++		if (!hlist_unhashed(&p->mglist) &&
++		    (timer_pending(&p->timer) ?
++		     time_after(p->timer.expires, time) :
++		     try_to_del_timer_sync(&p->timer) >= 0)) {
++			mod_timer(&p->timer, time);
++		}
++
++		break;
+ 	}
+ out:
+ 	spin_unlock(&br->multicast_lock);
+@@ -1798,7 +1806,6 @@ void br_multicast_stop(struct net_bridge
+ 		hlist_for_each_entry_safe(mp, n, &mdb->mhash[i],
+ 					  hlist[ver]) {
+ 			del_timer(&mp->timer);
+-			mp->timer_armed = false;
+ 			call_rcu_bh(&mp->rcu, br_multicast_free_group);
+ 		}
+ 	}
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -126,7 +126,6 @@ struct net_bridge_mdb_entry
+ 	struct timer_list		timer;
+ 	struct br_ip			addr;
+ 	bool				mglist;
+-	bool				timer_armed;
+ };
+ 
+ struct net_bridge_mdb_htable
 
 
