@@ -1,53 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab3KAQ1a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 12:27:30 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:55149 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752828Ab3KAQ13 convert rfc822-to-8bit (ORCPT
+	id S1754923Ab3KAQ2R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 12:28:17 -0400
+Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:49793 "EHLO
+	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754672Ab3KAQ2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 12:27:29 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: perf events ring buffer memory barrier on powerpc
-Date: Fri, 1 Nov 2013 16:25:29 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B73D4@saturn3.aculab.com>
-In-Reply-To: <OF3CB471BA.BACC7843-ON42257C16.0055EF23-42257C16.0058875B@il.ibm.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: perf events ring buffer memory barrier on powerpc
-Thread-Index: Ac7XHG4wfY6ad4u+TjSC18bMRKor8gAAd0vA
-References: <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com> <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com> <20131028132634.GO19466@laptop.lan> <20131028163418.GD4126@linux.vnet.ibm.com> <20131028201735.GA15629@redhat.com> <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com> <20131030092725.GL4126@linux.vnet.ibm.com> <OFC6B7100E.31C6B190-ON42257C14.004841C6-42257C14.004A0EA6@il.ibm.com> <20131031043258.GQ4126@linux.vnet.ibm.com> <OFDF23985D.1D949148-ON42257C15.002DEB25-42257C15.0036DF93@il.ibm.com> <20131031152543.GC4067@linux.vnet.ibm.com> <OF3CB471BA.BACC7843-ON42257C16.0055EF23-42257C16.0058875B@il.ibm.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Victor Kaplansky" <VICTORK@il.ibm.com>, <paulmck@linux.vnet.ibm.com>
-Cc: "Michael Neuling" <mikey@neuling.org>,
-        "Mathieu Desnoyers" <mathieu.desnoyers@polymtl.ca>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "Oleg Nesterov" <oleg@redhat.com>,
-        "Linux PPC dev" <linuxppc-dev@ozlabs.org>,
-        "Anton Blanchard" <anton@samba.org>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>
+	Fri, 1 Nov 2013 12:28:13 -0400
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@ghostprotocols.net, namhyung@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 6/7] perf timechart: add support for -P and -T in timechart recording
+Date: Fri,  1 Nov 2013 20:25:50 +0400
+Message-Id: <1383323151-19810-7-git-send-email-stfomichev@yandex-team.ru>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1383323151-19810-1-git-send-email-stfomichev@yandex-team.ru>
+References: <1383323151-19810-1-git-send-email-stfomichev@yandex-team.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> But "broken" compiler is much wider issue to be deeply discussed in this
-> thread. I'm pretty sure that kernel have tons of very subtle
-> code that actually creates locks and memory ordering. Such code
-> usually just use the "barrier()"  approach to tell gcc not to combine
-> or move memory accesses around it.
+If we don't want either power or task events we may use -T or -P
+with the `perf timechart record` command to filter out events while
+recording to keep perf.data small.
 
-gcc will do unexpected memory accesses for bit fields that are
-adjacent to volatile data.
-In particular it may generate 64bit sized (and aligned) RMW cycles
-when accessing bit fields.
-And yes, this has caused real problems.
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+---
+ tools/perf/Documentation/perf-timechart.txt |  15 ++++-
+ tools/perf/builtin-timechart.c              | 101 +++++++++++++++++++++-------
+ 2 files changed, 87 insertions(+), 29 deletions(-)
 
-	David
-
+diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
+index a79d473394f6..abfaff2707da 100644
+--- a/tools/perf/Documentation/perf-timechart.txt
++++ b/tools/perf/Documentation/perf-timechart.txt
+@@ -8,7 +8,7 @@ perf-timechart - Tool to visualize total system behavior during a workload
+ SYNOPSIS
+ --------
+ [verse]
+-'perf timechart' {record}
++'perf timechart' [<timechart options>] {record} [<record options>]
+ 
+ DESCRIPTION
+ -----------
+@@ -20,8 +20,8 @@ There are two variants of perf timechart:
+   'perf timechart' to turn a trace into a Scalable Vector Graphics file,
+   that can be viewed with popular SVG viewers such as 'Inkscape'.
+ 
+-OPTIONS
+--------
++TIMECHART OPTIONS
++-----------------
+ -o::
+ --output=::
+         Select the output file (default: output.svg)
+@@ -48,6 +48,15 @@ OPTIONS
+ --proc-num::
+         Print task info for at least given number of tasks.
+ 
++RECORD OPTIONS
++--------------
++-P::
++--power-only::
++        Record only power-related events
++-T::
++--tasks-only::
++        Record only tasks-related events
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1]
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index cab1d0fd3fc0..b5b2726d6e32 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -1034,50 +1034,81 @@ out_delete:
+ 
+ static int __cmd_record(int argc, const char **argv)
+ {
+-#ifdef SUPPORT_OLD_POWER_EVENTS
+-	const char * const record_old_args[] = {
++	unsigned int rec_argc, i, j;
++	const char **rec_argv;
++	const char **p;
++	unsigned int record_elems;
++
++	const char * const common_args[] = {
+ 		"record", "-a", "-R", "-c", "1",
++	};
++	unsigned int common_args_nr = ARRAY_SIZE(common_args);
++
++	const char * const power_args[] = {
++		"-e", "power:cpu_frequency",
++		"-e", "power:cpu_idle",
++	};
++	unsigned int power_args_nr = ARRAY_SIZE(power_args);
++
++	const char * const old_power_args[] = {
++#ifdef SUPPORT_OLD_POWER_EVENTS
+ 		"-e", "power:power_start",
+ 		"-e", "power:power_end",
+ 		"-e", "power:power_frequency",
+-		"-e", "sched:sched_wakeup",
+-		"-e", "sched:sched_switch",
+-	};
+ #endif
+-	const char * const record_new_args[] = {
+-		"record", "-a", "-R", "-c", "1",
+-		"-e", "power:cpu_frequency",
+-		"-e", "power:cpu_idle",
++	};
++	unsigned int old_power_args_nr = ARRAY_SIZE(old_power_args);
++
++	const char * const tasks_args[] = {
+ 		"-e", "sched:sched_wakeup",
+ 		"-e", "sched:sched_switch",
+ 	};
+-	unsigned int rec_argc, i, j;
+-	const char **rec_argv;
+-	const char * const *record_args = record_new_args;
+-	unsigned int record_elems = ARRAY_SIZE(record_new_args);
++	unsigned int tasks_args_nr = ARRAY_SIZE(tasks_args);
+ 
+ #ifdef SUPPORT_OLD_POWER_EVENTS
+ 	if (!is_valid_tracepoint("power:cpu_idle") &&
+ 	    is_valid_tracepoint("power:power_start")) {
+ 		use_old_power_events = 1;
+-		record_args = record_old_args;
+-		record_elems = ARRAY_SIZE(record_old_args);
++		power_args_nr = 0;
++	} else {
++		old_power_args_nr = 0;
+ 	}
+ #endif
+ 
+-	rec_argc = record_elems + argc - 1;
++	if (power_only)
++		tasks_args_nr = 0;
++
++	if (tasks_only) {
++		power_args_nr = 0;
++		old_power_args_nr = 0;
++	}
++
++	record_elems = common_args_nr + tasks_args_nr +
++		power_args_nr + old_power_args_nr;
++
++	rec_argc = record_elems + argc;
+ 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
+ 
+ 	if (rec_argv == NULL)
+ 		return -ENOMEM;
+ 
+-	for (i = 0; i < record_elems; i++)
+-		rec_argv[i] = strdup(record_args[i]);
++	p = rec_argv;
++	for (i = 0; i < common_args_nr; i++)
++		*p++ = strdup(common_args[i]);
++
++	for (i = 0; i < tasks_args_nr; i++)
++		*p++ = strdup(tasks_args[i]);
++
++	for (i = 0; i < power_args_nr; i++)
++		*p++ = strdup(power_args[i]);
+ 
+-	for (j = 1; j < (unsigned int)argc; j++, i++)
+-		rec_argv[i] = argv[j];
++	for (i = 0; i < old_power_args_nr; i++)
++		*p++ = strdup(old_power_args[i]);
+ 
+-	return cmd_record(i, rec_argv, NULL);
++	for (j = 1; j < (unsigned int)argc; j++)
++		*p++ = argv[j];
++
++	return cmd_record(rec_argc, rec_argv, NULL);
+ }
+ 
+ static int
+@@ -1093,7 +1124,7 @@ int cmd_timechart(int argc, const char **argv,
+ 		  const char *prefix __maybe_unused)
+ {
+ 	const char *output_name = "output.svg";
+-	const struct option options[] = {
++	const struct option timechart_options[] = {
+ 	OPT_STRING('i', "input", &input_name, "file", "input file name"),
+ 	OPT_STRING('o', "output", &output_name, "file", "output file name"),
+ 	OPT_INTEGER('w', "width", &svg_page_width, "page width"),
+@@ -1114,7 +1145,17 @@ int cmd_timechart(int argc, const char **argv,
+ 		NULL
+ 	};
+ 
+-	argc = parse_options(argc, argv, options, timechart_usage,
++	const struct option record_options[] = {
++	OPT_BOOLEAN('P', "power-only", &power_only, "output power data only"),
++	OPT_BOOLEAN('T', "tasks-only", &tasks_only,
++		    "output processes data only"),
++	OPT_END()
++	};
++	const char * const record_usage[] = {
++		"perf timechart record [<options>]",
++		NULL
++	};
++	argc = parse_options(argc, argv, timechart_options, timechart_usage,
+ 			PARSE_OPT_STOP_AT_NON_OPTION);
+ 
+ 	if (power_only && tasks_only) {
+@@ -1124,10 +1165,18 @@ int cmd_timechart(int argc, const char **argv,
+ 
+ 	symbol__init();
+ 
+-	if (argc && !strncmp(argv[0], "rec", 3))
++	if (argc && !strncmp(argv[0], "rec", 3)) {
++		argc = parse_options(argc, argv, record_options, record_usage,
++				     PARSE_OPT_STOP_AT_NON_OPTION);
++
++		if (power_only && tasks_only) {
++			pr_err("-P and -T options cannot be used at the same time.\n");
++			return -1;
++		}
++
+ 		return __cmd_record(argc, argv);
+-	else if (argc)
+-		usage_with_options(timechart_usage, options);
++	} else if (argc)
++		usage_with_options(timechart_usage, timechart_options);
+ 
+ 	setup_pager();
+ 
+-- 
+1.8.3.2
 
