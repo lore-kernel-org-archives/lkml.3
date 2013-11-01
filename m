@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873Ab3KAXK2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 19:10:28 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46091 "EHLO gate.crashing.org"
+	id S1754105Ab3KAXLY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 19:11:24 -0400
+Received: from gate.crashing.org ([63.228.1.57]:51059 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752689Ab3KAXK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 19:10:27 -0400
-Message-ID: <1383347399.28909.46.camel@pasglop>
+	id S1752024Ab3KAXLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 19:11:23 -0400
+Message-ID: <1383347425.28909.63.camel@pasglop>
 Subject: Re: Strange location and name for platform  devices when
  device-tree is used.
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
@@ -14,15 +14,15 @@ To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: NeilBrown <neilb@suse.de>, Grant Likely <grant.likely@linaro.org>,
         Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
         lkml <linux-kernel@vger.kernel.org>
-Date: Sat, 02 Nov 2013 10:09:59 +1100
 In-Reply-To: <20131101204749.GA19662@kroah.com>
 References: <20131101145925.66e22f73@notabene.brown>
 	 <1383279744.28909.26.camel@pasglop> <1383280054.28909.30.camel@pasglop>
 	 <20131101160329.37f3707b@notabene.brown>
 	 <1383282516.28909.36.camel@pasglop> <20131101204749.GA19662@kroah.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+Date: Sat, 02 Nov 2013 10:10:25 +1100
 Mime-Version: 1.0
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -46,8 +46,8 @@ On Fri, 2013-11-01 at 13:47 -0700, Greg Kroah-Hartman wrote:
 > How can there be device name collisions?  All platform devices _should_
 > be named uniquely, if not, you have bigger problems...
 
-The problem is how to create a unique name from a platform device
-created from a device-tree node.
+The problem is how to create a unique name for a platform device created
+from a device-tree node.
 
 Device tree nodes aren't necessarily uniquely named. They are unique
 under a given parent but that hierarchy isn't preserved when creating
