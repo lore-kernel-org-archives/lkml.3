@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab3KAJpn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 05:45:43 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:48681 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096Ab3KAJpm (ORCPT
+	id S1754852Ab3KAJqB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 05:46:01 -0400
+Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:22256
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753420Ab3KAJpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 05:45:42 -0400
-Message-ID: <1383299139.19864.2.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH net-next V3 1/2] net: introduce skb_coalesce_rx_frag()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, edumazet@google.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
-        mwdalton@google.com, virtualization@lists.linux-foundation.org,
-        kmindg@gmail.com
-Date: Fri, 01 Nov 2013 02:45:39 -0700
-In-Reply-To: <1383286068-10421-1-git-send-email-jasowang@redhat.com>
-References: <1383286068-10421-1-git-send-email-jasowang@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 1 Nov 2013 05:45:49 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275dh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h1155h)
+Date: Fri, 1 Nov 2013 17:33:27 +0800
+From: Nicolin Chen <b42378@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Vinod Koul <vinod.koul@intel.com>, <timur@tabi.org>, <broonie@kernel.org>,
+        <s.hauer@pengutronix.de>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <dmaengine@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <alsa-devel@alsa-project.org>,
+        <rob.herring@calxeda.com>, <mark.rutland@arm.com>,
+        <swarren@wwwdotorg.org>, <pawel.moll@arm.com>,
+        <ijc+devicetree@hellion.org.uk>
+Subject: Re: [PATCH v4 0/4] Add dual-fifo mode support of i.MX ssi
+Message-ID: <20131101093326.GE28401@MrMyself>
+References: <cover.1383226444.git.b42378@freescale.com>
+ <20131101091156.GC10324@S2101-09.ap.freescale.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20131101091156.GC10324@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-11-01 at 14:07 +0800, Jason Wang wrote:
-> Sometimes we need to coalesce the rx frags to avoid frag list. One example is
-> virtio-net driver which tries to use small frags for both MTU sized packet and
-> GSO packet. So this patch introduce skb_coalesce_rx_frag() to do this.
+On Fri, Nov 01, 2013 at 05:11:58PM +0800, Shawn Guo wrote:
+> Nicolin,
 > 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: Michael Dalton <mwdalton@google.com>
-> Cc: Eric Dumazet <edumazet@google.com>
-> Acked-by: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
-> Changes from V2:
-> - remove the skb_frag_unref() and let the called to put the page reference
-> Changes from V1:
-> - remove the useless off parameter.
-> ---
+> The dmaengine maintainer Vinod Koul should be copied on the series.
+> (Just added).
+>
 
-Acked-by: Eric Dumazet <edumazet@google.com>
+Ah, I was careless last night when I sent these patches. My VPN connection
+was pretty laggy :( Please forgive me, Vinod.
 
+Thank Shawn for adding for me. Much obliged.
+
+> On Thu, Oct 31, 2013 at 09:44:12PM +0800, Nicolin Chen wrote:
+> > Nicolin Chen (4):
+> >   dma: imx-sdma: Add sdma firmware version 2 support
+> >   dma: imx-sdma: Add new dma type for ssi dual fifo script
+> >   ASoC: fsl_ssi: Add dual fifo mode support
+> >   ARM: dts: imx: use dual-fifo sdma script for ssi
+> 
+> Vinod,
+> 
+> To keep git bisect, the series has to be merged through single tree.
+> Since Mark has ACK-ed patch #3, I think it's easier to merge the series
+> through your tree, so for patch #4:
+> 
+> Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
 
