@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755890Ab3KAJ3s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 05:29:48 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:40777 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab3KAJ3p (ORCPT
+	id S1755908Ab3KAJ3u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 05:29:50 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:61497 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab3KAJ3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 05:29:45 -0400
-Date: Fri, 1 Nov 2013 10:29:42 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Fri, 1 Nov 2013 05:29:48 -0400
+From: Chenggang Qin <chenggang.qin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Chenggang Qin <chenggang.qin@gmail.com>, David Ahern <dsahern@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Yanmin Zhang <yanmin.zhang@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/4] mm/rmap: per anon_vma lock
-Message-ID: <20131101092942.GD27063@gmail.com>
-References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
- <1383292467-28922-2-git-send-email-yuanhan.liu@linux.intel.com>
- <20131101084329.GB19466@laptop.lan>
- <CANN689HQUv=k4AiD+v3980AmgPXbtcs1HLD7Ec1y8dsOfa_emA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANN689HQUv=k4AiD+v3980AmgPXbtcs1HLD7Ec1y8dsOfa_emA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Chenggang Qin <chenggang.qcg@taobao.com>
+Subject: [PATCH 3/4] perf tools: record min_timestamp of samples queue in ordered_samples
+Date: Fri,  1 Nov 2013 17:29:05 +0800
+Message-Id: <1383298146-3860-4-git-send-email-chenggang.qin@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1383298146-3860-1-git-send-email-chenggang.qin@gmail.com>
+References: <1383298146-3860-1-git-send-email-chenggang.qin@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add a field 'min_timestamp' in struct ordered_samples to record the minimial
+timestamp of the samples in ordered_samples->samples.
 
-* Michel Lespinasse <walken@google.com> wrote:
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Yanmin Zhang <yanmin.zhang@intel.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
 
-> On Fri, Nov 1, 2013 at 1:43 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> > AFAICT this isn't correct at all. We used to protect the vma 
-> > interval tree with the root lock, now we don't. All we've got 
-> > left is the mmap_sem, but anon_vma chains can cross 
-> > address-spaces and thus we're up some creek without no paddle.
-> 
-> Yes, that was my first thought as well (though I wanted to double 
-> check at first).
-> 
-> I also want to point out that lately we've seen several changes 
-> sent out that relax locking with no accompanying explanation of 
-> why the relaxed locking would be safe. Please don't do that - 
-> having a lot of performance data is worthless if you can't explain 
-> why the new locking is safe. And I'm not asking to prove a 
-> negative ('lack of any possible races') there, but at least in 
-> this case one could dig out why the root anon vma locking was 
-> introduced and if they think that this reason doesn't apply 
-> anymore, explain why...
+---
+ tools/perf/util/session.c |    3 +++
+ tools/perf/util/session.h |    1 +
+ 2 files changed, 4 insertions(+), 0 deletions(-)
 
-By the looks of it it seems to be an unintentional bug, not an 
-intended feature.
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 193bb6a..4e9dd66 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -708,6 +708,9 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
+ 	new->file_offset = file_offset;
+ 	new->event = event;
+ 
++	if (list_empty(&os->samples) || os->min_timestamp > timestamp)
++		os->min_timestamp = timestamp;
++
+ 	__queue_event(new, s);
+ 
+ 	return 0;
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index c9a6c27..7d411b9 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -18,6 +18,7 @@ struct ordered_samples {
+ 	u64			last_flush;
+ 	u64			next_flush;
+ 	u64			max_timestamp;
++	u64			min_timestamp;
+ 	struct list_head	samples;
+ 	struct list_head	sample_cache;
+ 	struct list_head	to_free;
+-- 
+1.7.8.rc2.5.g815b
 
-Thanks,
-
-	Ingo
