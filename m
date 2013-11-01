@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453Ab3KAAsP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 20:48:15 -0400
-Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.100]:3559
-	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754026Ab3KAAsN convert rfc822-to-8bit (ORCPT
+	id S1755528Ab3KAAvA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 20:51:00 -0400
+Received: from science.horizon.com ([71.41.210.146]:58569 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753678Ab3KAAu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 20:48:13 -0400
-X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 Oct 2013 20:48:13 EDT
-Content-Type: text/plain; charset="iso-8859-1"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: =?utf-8?q?L=C3=A5n_tilby_uten_kredittsjekk_100=25_garantert!_For_Everyone?=
- =?utf-8?q?=2E?=
-To: Recipients <prashant4@chandran818.onmicrosoft.com>
-From: Chandran Prashant <prashant4@chandran818.onmicrosoft.com>
-Date: Fri, 1 Nov 2013 00:32:53 +0000
-Reply-To: <chand01@qq.com>
-Message-ID: <d5b446a6-f34c-4fb4-abeb-26e35ebdd009@AMSPR07MB004.eurprd07.prod.outlook.com>
-X-Originating-IP: [213.205.241.26]
-X-ClientProxiedBy: DB3PR02CA010.eurprd02.prod.outlook.com (10.242.133.148)
- To AMSPR07MB004.eurprd07.prod.outlook.com (10.242.81.25)
-X-Forefront-PRVS: 00179089FD
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(189002)(199002)(47736001)(63696002)(47976001)(51856001)(33646001)(50986001)(59766001)(77982001)(4396001)(49866001)(76576001)(74662001)(46102001)(43066001)(42186004)(47446002)(54356001)(83072001)(76176001)(74502001)(79102001)(73186002)(76796001)(53256004)(19580395003)(74706001)(19580405001)(83322001)(65816001)(74876001)(23756003)(31686002)(66066001)(81542001)(85306002)(80022001)(80976001)(76786001)(81686001)(56816003)(54316002)(47776003)(77096001)(50466002)(81816001)(76482001)(69226001)(74366001)(74316001)(87266001)(56776001)(81342001)(224313003)(224303002)(62346009)(77052003);DIR:OUT;SFP:1501;SCL:5;SRVR:AMSPR07MB004;H:[192.168.1.162];CLIP:213.205.241.26;FPR:;RD:InfoNoRecords;MX:1;A:0;LANG:nb;
-X-OriginatorOrg: chandran818.onmicrosoft.com
+	Thu, 31 Oct 2013 20:50:59 -0400
+Date: 31 Oct 2013 20:50:56 -0400
+Message-ID: <20131101005056.21134.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: jack@suse.cz, linux@horizon.com
+Subject: Re: 3.11.4: kernel BUG at fs/buffer.c:1268
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@ZenIV.linux.org.uk
+In-Reply-To: <20131031204330.GA18566@quack.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hei
+Due to wanting to stick with 3.11.x baseline, as opposed to whatever you
+based your diff on, I had to amend the last hunk slightly.  Included
+just FYI.
 
-Er du en bedrift mann eller kvinne? Er du i noen økonomisk rot eller trenger du midler til å starte opp din egen bedrift? Har du behov for lån for å gjøre opp din gjeld eller betale dine regninger eller starte en hyggelig bedrift?
+Compiled, rebooting now.  It may take some days to get a
+bug report.
 
-Har du en lav kreditt score og du finner det vanskelig å skaffe kapital lån fra lokale banker / andre finansielle institusjoner? Trenger du et lån eller finansiering eller annen grunn, for eksempel:
-
-a) personlige lån, Business Expansion,
-b) Business Start-up, utdanning,
-c) gjeld konsolidering,
-d) Hard Money Lån
-e) Venture Capital
-f) Home Loans
-g) Lån eller annen grunn!
-
-
-Vi tilbyr lån med lav rente på 2% og uten kredittsjekk, Men Vår metode, gir deg sjansen til å oppgi hvor mye lån som trengs og også varigheten du har råd til, dette gir deg en reell sjanse til å få midler du trenger! Hvis interessert, vennligst kontakt oss umiddelbart, vår e-post på: chand01@qq.com
-
-beste hilsen
-Mr Chandran Prashant
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 4bbbf13b..e6f0d6b 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4734,6 +4734,7 @@ do_more:
+ 	if (err)
+ 		goto error_return;
+ 
++	might_sleep();
+ 	if ((flags & EXT4_FREE_BLOCKS_METADATA) && ext4_handle_valid(handle)) {
+ 		struct ext4_free_data *new_entry;
+ 		/*
+@@ -4741,6 +4742,7 @@ do_more:
+ 		 * be used until this transaction is committed
+ 		 */
+ 	retry:
++		might_sleep();
+ 		new_entry = kmem_cache_alloc(ext4_free_data_cachep, GFP_NOFS);
+ 		if (!new_entry) {
+ 			/*
+@@ -4756,6 +4758,7 @@ do_more:
+ 		new_entry->efd_count = count_clusters;
+ 		new_entry->efd_tid = handle->h_transaction->t_tid;
+ 
++		might_sleep();
+ 		ext4_lock_group(sb, block_group);
+ 		mb_clear_bits(bitmap_bh->b_data, bit, count_clusters);
+ 		ext4_mb_free_metadata(handle, &e4b, new_entry);
+@@ -4773,7 +4776,7 @@ do_more:
+ 					 err);
+ 		}
+ 
+-
++		might_sleep();
+ 		ext4_lock_group(sb, block_group);
+ 		mb_clear_bits(bitmap_bh->b_data, bit, count_clusters);
+ 		mb_free_blocks(inode, &e4b, bit, count_clusters);
+@@ -4785,6 +4788,7 @@ do_more:
+ 	ext4_group_desc_csum_set(sb, block_group, gdp);
+ 	ext4_unlock_group(sb, block_group);
+ 	percpu_counter_add(&sbi->s_freeclusters_counter, count_clusters);
++	might_sleep();
+ 
+ 	if (sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
