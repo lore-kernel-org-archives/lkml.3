@@ -1,23 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068Ab3KAWNq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:13:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55562 "EHLO
+	id S1756493Ab3KAWIg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:08:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55513 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756422Ab3KAWIh (ORCPT
+	with ESMTP id S1756422Ab3KAWI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:37 -0400
+	Fri, 1 Nov 2013 18:08:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Weijie Yang <weijie.yang@samsung.com>, Bob Liu <bob.liu@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andy Lutomirski <luto@amacapital.net>, Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.11 55/66] mm/zswap: bugfix: memory leak when re-swapon
-Date: Fri,  1 Nov 2013 15:07:31 -0700
-Message-Id: <20131101220650.034216236@linuxfoundation.org>
+Subject: [PATCH 3.11 54/66] mm: migration: do not lose soft dirty bit if page is in migration state
+Date: Fri,  1 Nov 2013 15:07:30 -0700
+Message-Id: <20131101220649.696585269@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -30,66 +37,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weijie Yang <weijie.yang@samsung.com>
+From: Cyrill Gorcunov <gorcunov@gmail.com>
 
-commit aa9bca05a467c61dcea4142b2877d5392de5bdce upstream.
+commit c3d16e16522fe3fe8759735850a0676da18f4b1d upstream.
 
-zswap_tree is not freed when swapoff, and it got re-kmalloced in swapon,
-so a memory leak occurs.
+If page migration is turned on in config and the page is migrating, we
+may lose the soft dirty bit.  If fork and mprotect are called on
+migrating pages (once migration is complete) pages do not obtain the
+soft dirty bit in the correspond pte entries.  Fix it adding an
+appropriate test on swap entries.
 
-Free the memory of zswap_tree in zswap_frontswap_invalidate_area().
-
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-Reviewed-by: Bob Liu <bob.liu@oracle.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
-From: Weijie Yang <weijie.yang@samsung.com>
-Subject: [PATCH 3.11 55/66] mm/zswap: bugfix: memory leak when invalidate and reclaim occur concurrently
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-Consider the following scenario:
-thread 0: reclaim entry x (get refcount, but not call zswap_get_swap_cache_page)
-thread 1: call zswap_frontswap_invalidate_page to invalidate entry x.
-	finished, entry x and its zbud is not freed as its refcount != 0
-	now, the swap_map[x] = 0
-thread 0: now call zswap_get_swap_cache_page
-	swapcache_prepare return -ENOENT because entry x is not used any more
-	zswap_get_swap_cache_page return ZSWAP_SWAPCACHE_NOMEM
-	zswap_writeback_entry do nothing except put refcount
-Now, the memory of zswap_entry x and its zpage leak.
-
-Modify:
- - check the refcount in fail path, free memory if it is not referenced.
-
- - use ZSWAP_SWAPCACHE_FAIL instead of ZSWAP_SWAPCACHE_NOMEM as the fail path
-   can be not only caused by nomem but also by invalidate.
-
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-Reviewed-by: Bob Liu <bob.liu@oracle.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: <stable@vger.kernel.org>
-Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/zswap.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ mm/memory.c   |    2 ++
+ mm/migrate.c  |    2 ++
+ mm/mprotect.c |    7 +++++--
+ 3 files changed, 9 insertions(+), 2 deletions(-)
 
---- a/mm/zswap.c
-+++ b/mm/zswap.c
-@@ -816,6 +816,10 @@ static void zswap_frontswap_invalidate_a
- 	}
- 	tree->rbroot = RB_ROOT;
- 	spin_unlock(&tree->lock);
-+
-+	zbud_destroy_pool(tree->pool);
-+	kfree(tree);
-+	zswap_trees[type] = NULL;
- }
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -861,6 +861,8 @@ copy_one_pte(struct mm_struct *dst_mm, s
+ 					 */
+ 					make_migration_entry_read(&entry);
+ 					pte = swp_entry_to_pte(entry);
++					if (pte_swp_soft_dirty(*src_pte))
++						pte = pte_swp_mksoft_dirty(pte);
+ 					set_pte_at(src_mm, addr, src_pte, pte);
+ 				}
+ 			}
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -157,6 +157,8 @@ static int remove_migration_pte(struct p
  
- static struct zbud_ops zswap_zbud_ops = {
+ 	get_page(new);
+ 	pte = pte_mkold(mk_pte(new, vma->vm_page_prot));
++	if (pte_swp_soft_dirty(*ptep))
++		pte = pte_mksoft_dirty(pte);
+ 	if (is_write_migration_entry(entry))
+ 		pte = pte_mkwrite(pte);
+ #ifdef CONFIG_HUGETLB_PAGE
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -94,13 +94,16 @@ static unsigned long change_pte_range(st
+ 			swp_entry_t entry = pte_to_swp_entry(oldpte);
+ 
+ 			if (is_write_migration_entry(entry)) {
++				pte_t newpte;
+ 				/*
+ 				 * A protection check is difficult so
+ 				 * just be safe and disable write
+ 				 */
+ 				make_migration_entry_read(&entry);
+-				set_pte_at(mm, addr, pte,
+-					swp_entry_to_pte(entry));
++				newpte = swp_entry_to_pte(entry);
++				if (pte_swp_soft_dirty(oldpte))
++					newpte = pte_swp_mksoft_dirty(newpte);
++				set_pte_at(mm, addr, pte, newpte);
+ 			}
+ 			pages++;
+ 		}
 
 
