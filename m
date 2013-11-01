@@ -1,30 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813Ab3KAWXI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:23:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55366 "EHLO
+	id S1756505Ab3KAWXm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:23:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55353 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756242Ab3KAWIF (ORCPT
+	with ESMTP id S1756236Ab3KAWID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:05 -0400
+	Fri, 1 Nov 2013 18:08:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?=D0=A1=D0=B5=D1=80=D0=B3=D0=B5=D0=B5=D0=B2=20=D0=A1=D0=B5=D1=80=D0=B3=D0=B5=D0=B9?= 
-	<adron@yapic.net>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Eric Dumazet <edumazet@google.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 26/66] netem: update backlog after drop
-Date: Fri,  1 Nov 2013 15:07:02 -0700
-Message-Id: <20131101220642.010268933@linuxfoundation.org>
+Subject: [PATCH 3.11 16/66] can: dev: fix nlmsg size calculation in can_get_size()
+Date: Fri,  1 Nov 2013 15:06:52 -0700
+Message-Id: <20131101220639.245220160@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,31 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: stephen hemminger <stephen@networkplumber.org>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-[ Upstream commit 638a52b801e40ed276ceb69b73579ad99365361a ]
+[ Upstream commit fe119a05f8ca481623a8d02efcc984332e612528 ]
 
-When packet is dropped from rb-tree netem the backlog statistic should
-also be updated.
+This patch fixes the calculation of the nlmsg size, by adding the missing
+nla_total_size().
 
-Reported-by: Сергеев Сергей <adron@yapic.net>
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sched/sch_netem.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/can/dev.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/net/sched/sch_netem.c
-+++ b/net/sched/sch_netem.c
-@@ -523,6 +523,7 @@ static unsigned int netem_drop(struct Qd
- 			skb->next = NULL;
- 			skb->prev = NULL;
- 			len = qdisc_pkt_len(skb);
-+			sch->qstats.backlog -= len;
- 			kfree_skb(skb);
- 		}
- 	}
+--- a/drivers/net/can/dev.c
++++ b/drivers/net/can/dev.c
+@@ -705,14 +705,14 @@ static size_t can_get_size(const struct
+ 	size_t size;
+ 
+ 	size = nla_total_size(sizeof(u32));   /* IFLA_CAN_STATE */
+-	size += sizeof(struct can_ctrlmode);  /* IFLA_CAN_CTRLMODE */
++	size += nla_total_size(sizeof(struct can_ctrlmode));  /* IFLA_CAN_CTRLMODE */
+ 	size += nla_total_size(sizeof(u32));  /* IFLA_CAN_RESTART_MS */
+-	size += sizeof(struct can_bittiming); /* IFLA_CAN_BITTIMING */
+-	size += sizeof(struct can_clock);     /* IFLA_CAN_CLOCK */
++	size += nla_total_size(sizeof(struct can_bittiming)); /* IFLA_CAN_BITTIMING */
++	size += nla_total_size(sizeof(struct can_clock));     /* IFLA_CAN_CLOCK */
+ 	if (priv->do_get_berr_counter)        /* IFLA_CAN_BERR_COUNTER */
+-		size += sizeof(struct can_berr_counter);
++		size += nla_total_size(sizeof(struct can_berr_counter));
+ 	if (priv->bittiming_const)	      /* IFLA_CAN_BITTIMING_CONST */
+-		size += sizeof(struct can_bittiming_const);
++		size += nla_total_size(sizeof(struct can_bittiming_const));
+ 
+ 	return size;
+ }
 
 
