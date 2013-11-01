@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab3KAVuc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 17:50:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54514 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754170Ab3KAVnx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754173Ab3KAVnx (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 1 Nov 2013 17:43:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54496 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754014Ab3KAVnt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 17:43:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 09/32] can: dev: fix nlmsg size calculation in can_get_size()
-Date: Fri,  1 Nov 2013 14:43:20 -0700
-Message-Id: <20131101214315.927165385@linuxfoundation.org>
+Subject: [ 05/32] net: mv643xx_eth: fix orphaned statistics timer crash
+Date: Fri,  1 Nov 2013 14:43:16 -0700
+Message-Id: <20131101214315.037973569@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101214313.735463599@linuxfoundation.org>
 References: <20131101214313.735463599@linuxfoundation.org>
@@ -27,41 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
-[ Upstream commit fe119a05f8ca481623a8d02efcc984332e612528 ]
+[ Upstream commit f564412c935111c583b787bcc18157377b208e2e ]
 
-This patch fixes the calculation of the nlmsg size, by adding the missing
-nla_total_size().
+The periodic statistics timer gets started at port _probe() time, but
+is stopped on _stop() only. In a modular environment, this can cause
+the timer to access already deallocated memory, if the module is unloaded
+without starting the eth device. To fix this, we add the timer right
+before the port is started, instead of at _probe() time.
 
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/can/dev.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/marvell/mv643xx_eth.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/can/dev.c
-+++ b/drivers/net/can/dev.c
-@@ -665,14 +665,14 @@ static size_t can_get_size(const struct
- 	size_t size;
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -2368,6 +2368,7 @@ static int mv643xx_eth_open(struct net_d
+ 		mp->int_mask |= INT_TX_END_0 << i;
+ 	}
  
- 	size = nla_total_size(sizeof(u32));   /* IFLA_CAN_STATE */
--	size += sizeof(struct can_ctrlmode);  /* IFLA_CAN_CTRLMODE */
-+	size += nla_total_size(sizeof(struct can_ctrlmode));  /* IFLA_CAN_CTRLMODE */
- 	size += nla_total_size(sizeof(u32));  /* IFLA_CAN_RESTART_MS */
--	size += sizeof(struct can_bittiming); /* IFLA_CAN_BITTIMING */
--	size += sizeof(struct can_clock);     /* IFLA_CAN_CLOCK */
-+	size += nla_total_size(sizeof(struct can_bittiming)); /* IFLA_CAN_BITTIMING */
-+	size += nla_total_size(sizeof(struct can_clock));     /* IFLA_CAN_CLOCK */
- 	if (priv->do_get_berr_counter)        /* IFLA_CAN_BERR_COUNTER */
--		size += sizeof(struct can_berr_counter);
-+		size += nla_total_size(sizeof(struct can_berr_counter));
- 	if (priv->bittiming_const)	      /* IFLA_CAN_BITTIMING_CONST */
--		size += sizeof(struct can_bittiming_const);
-+		size += nla_total_size(sizeof(struct can_bittiming_const));
++	add_timer(&mp->mib_counters_timer);
+ 	port_start(mp);
  
- 	return size;
- }
+ 	wrlp(mp, INT_MASK_EXT, INT_EXT_LINK_PHY | INT_EXT_TX);
+@@ -2909,7 +2910,6 @@ static int mv643xx_eth_probe(struct plat
+ 	mp->mib_counters_timer.data = (unsigned long)mp;
+ 	mp->mib_counters_timer.function = mib_counters_timer_wrapper;
+ 	mp->mib_counters_timer.expires = jiffies + 30 * HZ;
+-	add_timer(&mp->mib_counters_timer);
+ 
+ 	spin_lock_init(&mp->mib_counters_lock);
+ 
 
 
