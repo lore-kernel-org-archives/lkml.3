@@ -1,165 +1,342 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332Ab3KAOyM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 10:54:12 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37838 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750719Ab3KAOyK (ORCPT
+	id S1753258Ab3KAOyx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 10:54:53 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:63759 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810Ab3KAOyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 10:54:10 -0400
-Date: Fri, 1 Nov 2013 10:54:09 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ming Lei <ming.lei@canonical.com>
-cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 2/2] USB: storage: use sg_miter_* APIs to access scsi
- buffer
-In-Reply-To: <1383062878-28489-1-git-send-email-ming.lei@canonical.com>
-Message-ID: <Pine.LNX.4.44L0.1311011040410.1364-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 1 Nov 2013 10:54:51 -0400
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: kishon@ti.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH] phy: Add MOXA RTL8201CP PHY support
+Date: Fri,  1 Nov 2013 15:54:33 +0100
+Message-Id: <1383317673-14704-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Oct 2013, Ming Lei wrote:
+The MOXA UC-711X hardware(s) has an ethernet controller that seem
+to be developed internally. The IC used is "RTL8201CP".
 
-> We have sg_miter_* APIs for accessing scsi sg buffer, so
-> use them to make code clean and bug free.
+This patch adds an MDIO driver and also patches realtek to include
+RTL8201CP PHY driver.
 
-Hmmm.  You could simply call sg_copy_buffer, if you didn't mind the 
-quadratic penalty for the sg_miter_skip operations.
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
 
-> --- a/drivers/usb/storage/protocol.c
-> +++ b/drivers/usb/storage/protocol.c
-> @@ -135,69 +135,43 @@ unsigned int usb_stor_access_xfer_buf(unsigned char *buffer,
->  	unsigned int buflen, struct scsi_cmnd *srb, struct scatterlist **sgptr,
->  	unsigned int *offset, enum xfer_buf_dir dir)
->  {
-> -	unsigned int cnt;
-> +	unsigned int cnt = 0;
->  	struct scatterlist *sg = *sgptr;
-> +	struct sg_mapping_iter miter;
-> +	unsigned int nents = scsi_sg_count(srb);
->  
-> -	/* We have to go through the list one entry
-> -	 * at a time.  Each s-g entry contains some number of pages, and
-> -	 * each page has to be kmap()'ed separately.  If the page is already
-> -	 * in kernel-addressable memory then kmap() will return its address.
-> -	 * If the page is not directly accessible -- such as a user buffer
-> -	 * located in high memory -- then kmap() will map it to a temporary
-> -	 * position in the kernel's virtual address space.
-> -	 */
-> -
-> -	if (!sg)
-> +	if (sg)
-> +		nents -= sg - scsi_sglist(srb);
+Notes:
+    The hardware does not use a separate IRQ for PHY.
+    
+    The link state change interrupt can instead be caught by MAC but the
+    current drivers/of/of_mdio.c does not allow it to be handled in MAC.
+    
+    Applies to next-20131031
 
-This is definitely wrong.  Scatterlist entries are not always stored in 
-a linear array.  To do this properly, you would have to make the caller 
-keep track of the current value of nents.
+ .../devicetree/bindings/net/moxa,moxart-mdio.txt   |  19 ++
+ drivers/net/phy/Kconfig                            |   7 +
+ drivers/net/phy/Makefile                           |   1 +
+ drivers/net/phy/mdio-moxart.c                      | 201 +++++++++++++++++++++
+ drivers/net/phy/realtek.c                          |  15 ++
+ 5 files changed, 243 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/net/moxa,moxart-mdio.txt
+ create mode 100644 drivers/net/phy/mdio-moxart.c
 
-Or better yet, have the caller store and pass the sg_mapping_iter 
-structure rather than sgptr and offset.
-
-> +	else
->  		sg = scsi_sglist(srb);
->  
-> -	/* This loop handles a single s-g list entry, which may
-> -	 * include multiple pages.  Find the initial page structure
-> -	 * and the starting offset within the page, and update
-> -	 * the *offset and **sgptr values for the next loop.
-> -	 */
-> -	cnt = 0;
-> -	while (cnt < buflen && sg) {
-> -		struct page *page = sg_page(sg) +
-> -				((sg->offset + *offset) >> PAGE_SHIFT);
-> -		unsigned int poff = (sg->offset + *offset) & (PAGE_SIZE-1);
-> -		unsigned int sglen = sg->length - *offset;
-> -
-> -		if (sglen > buflen - cnt) {
-> -
-> -			/* Transfer ends within this s-g entry */
-> -			sglen = buflen - cnt;
-> -			*offset += sglen;
-> -		} else {
-> +	if (dir == FROM_XFER_BUF)
-> +		sg_miter_start(&miter, sg, nents, SG_MITER_FROM_SG);
-> +	else
-> +		sg_miter_start(&miter, sg, nents, SG_MITER_TO_SG);
-
-I find this style somewhat annoying.  Maybe the compiler is smart 
-enough to optimize it, maybe not.  In any case, I would prefer to see
-
-	if (dir == FROM_XFER_BUF)
-		sgdir = SG_MITER_FROM_SG;
-	else
-		sgdir = SG_MITER_TO_SG;
-	sg_miter_start(&miter, nents, sgdir);
-
-Or even:
-
-	sg_miter_start(&miter, nents, (dir == FROM_XFER_BUF ?
-			SG_MITER_FROM_SG : SG_MITER_TO_SG));
-
-> -			/* Transfer continues to next s-g entry */
-> -			*offset = 0;
-> -			sg = sg_next(sg);
-> -		}
-> +	if (!sg_miter_skip(&miter, *offset))
-> +		return cnt;
-> +
-> +	while (sg_miter_next(&miter) && cnt < buflen) {
-> +		unsigned int len = min(miter.length, buflen - cnt);
-> +
-> +		if (dir == FROM_XFER_BUF)
-> +			memcpy(buffer + cnt, miter.addr, len);
-> +		else
-> +			memcpy(miter.addr, buffer + cnt, len);
->  
-> -		/* Transfer the data for all the pages in this
-> -			* s-g entry.  For each page: call kmap(), do the
-> -			* transfer, and call kunmap() immediately after. */
-> -		while (sglen > 0) {
-> -			unsigned int plen = min(sglen, (unsigned int)
-> -					PAGE_SIZE - poff);
-> -			unsigned char *ptr = kmap(page);
-> -
-> -			if (dir == TO_XFER_BUF)
-> -				memcpy(ptr + poff, buffer + cnt, plen);
-> -			else
-> -				memcpy(buffer + cnt, ptr + poff, plen);
-> -			kunmap(page);
-> -
-> -			/* Start at the beginning of the next page */
-> -			poff = 0;
-> -			++page;
-> -			cnt += plen;
-> -			sglen -= plen;
-> +		if (*offset + len < miter.piter.sg->length) {
-> +			*offset += len;
-> +			*sgptr = miter.piter.sg;
-> +		} else {
-> +			*offset = 0;
-> +			*sgptr = sg_next(miter.piter.sg);
->  		}
-> +		cnt += len;
->  	}
-> -	*sgptr = sg;
-> +	sg_miter_stop(&miter);
->  
-> -	/* Return the amount actually transferred */
-
-Why remove this comment?
-
->  	return cnt;
->  }
->  EXPORT_SYMBOL_GPL(usb_stor_access_xfer_buf);
-
-Alan Stern
+diff --git a/Documentation/devicetree/bindings/net/moxa,moxart-mdio.txt b/Documentation/devicetree/bindings/net/moxa,moxart-mdio.txt
+new file mode 100644
+index 0000000..de0b90c
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/moxa,moxart-mdio.txt
+@@ -0,0 +1,19 @@
++* MOXA ART MDIO Ethernet Controller interface
++
++Required properties:
++- compatible: should be "moxa,moxart-mdio".
++- reg: address and length of the register set for the device.
++
++Example:
++mdio1: mdio@92000090 {
++	compatible = "moxa,moxart-mdio";
++	reg = <0x92000090 0x8>;
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	ethphy1: ethernet-phy@1 {
++		device_type = "ethernet-phy";
++		compatible = "moxa,moxart-rtl8201cp";
++		reg = <1>;
++	};
++};
+diff --git a/drivers/net/phy/Kconfig b/drivers/net/phy/Kconfig
+index 342561a..9b5d46c 100644
+--- a/drivers/net/phy/Kconfig
++++ b/drivers/net/phy/Kconfig
+@@ -154,6 +154,13 @@ config MDIO_SUN4I
+ 	  interface units of the Allwinner SoC that have an EMAC (A10,
+ 	  A12, A10s, etc.)
+ 
++config MDIO_MOXART
++        tristate "MOXA ART MDIO interface support"
++        depends on ARCH_MOXART
++        help
++          This driver supports the MDIO interface found in the network
++          interface units of the MOXA ART SoC
++
+ config MDIO_BUS_MUX
+ 	tristate
+ 	depends on OF_MDIO
+diff --git a/drivers/net/phy/Makefile b/drivers/net/phy/Makefile
+index 23a2ab2..9013dfa 100644
+--- a/drivers/net/phy/Makefile
++++ b/drivers/net/phy/Makefile
+@@ -31,3 +31,4 @@ obj-$(CONFIG_MDIO_BUS_MUX)	+= mdio-mux.o
+ obj-$(CONFIG_MDIO_BUS_MUX_GPIO)	+= mdio-mux-gpio.o
+ obj-$(CONFIG_MDIO_BUS_MUX_MMIOREG) += mdio-mux-mmioreg.o
+ obj-$(CONFIG_MDIO_SUN4I)	+= mdio-sun4i.o
++obj-$(CONFIG_MDIO_MOXART)	+= mdio-moxart.o
+diff --git a/drivers/net/phy/mdio-moxart.c b/drivers/net/phy/mdio-moxart.c
+new file mode 100644
+index 0000000..ad5d0f8
+--- /dev/null
++++ b/drivers/net/phy/mdio-moxart.c
+@@ -0,0 +1,201 @@
++/* MOXA ART Ethernet (RTL8201CP) MDIO interface driver
++ *
++ * Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/delay.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/of_address.h>
++#include <linux/of_mdio.h>
++#include <linux/phy.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/consumer.h>
++
++#define REG_PHY_CTRL            0
++#define REG_PHY_WRITE_DATA      4
++
++/* REG_PHY_CTRL */
++#define MIIWR                   BIT(27) /* init write sequence (auto cleared)*/
++#define MIIRD                   BIT(26)
++#define REGAD_MASK              0x3e00000
++#define PHYAD_MASK              0x1f0000
++#define MIIRDATA_MASK           0xffff
++
++/* REG_PHY_WRITE_DATA */
++#define MIIWDATA_MASK           0xffff
++
++struct moxart_mdio_data {
++	void __iomem		*base;
++};
++
++static int moxart_mdio_read(struct mii_bus *bus, int mii_id, int regnum)
++{
++	struct moxart_mdio_data *data = bus->priv;
++	u32 ctrl = 0;
++	unsigned int count = 5;
++
++	dev_dbg(&bus->dev, "%s\n", __func__);
++
++	ctrl |= MIIRD | ((mii_id << 16) & PHYAD_MASK) |
++		((regnum << 21) & REGAD_MASK);
++
++	writel(ctrl, data->base + REG_PHY_CTRL);
++
++	do {
++		ctrl = readl(data->base + REG_PHY_CTRL);
++
++		if (!(ctrl & MIIRD))
++			return ctrl & MIIRDATA_MASK;
++
++		mdelay(10);
++		count--;
++	} while (count > 0);
++
++	dev_err(&bus->dev, "%s timed out\n", __func__);
++
++	return -ETIMEDOUT;
++}
++
++static int moxart_mdio_write(struct mii_bus *bus, int mii_id,
++			     int regnum, u16 value)
++{
++	struct moxart_mdio_data *data = bus->priv;
++	u32 ctrl = 0;
++	unsigned int count = 5;
++
++	dev_dbg(&bus->dev, "%s\n", __func__);
++
++	ctrl |= MIIWR | ((mii_id << 16) & PHYAD_MASK) |
++		((regnum << 21) & REGAD_MASK);
++
++	value &= MIIWDATA_MASK;
++
++	writel(value, data->base + REG_PHY_WRITE_DATA);
++	writel(ctrl, data->base + REG_PHY_CTRL);
++
++	do {
++		ctrl = readl(data->base + REG_PHY_CTRL);
++
++		if (!(ctrl & MIIWR))
++			return 0;
++
++		mdelay(10);
++		count--;
++	} while (count > 0);
++
++	dev_err(&bus->dev, "%s timed out\n", __func__);
++
++	return -ETIMEDOUT;
++}
++
++static int moxart_mdio_reset(struct mii_bus *bus)
++{
++	int data, i;
++
++	for (i = 0; i < PHY_MAX_ADDR; i++) {
++		data = moxart_mdio_read(bus, i, MII_BMCR);
++		if (data < 0)
++			continue;
++
++		data |= BMCR_RESET;
++		if (moxart_mdio_write(bus, i, MII_BMCR, data) < 0)
++			continue;
++	}
++
++	return 0;
++}
++
++static int moxart_mdio_probe(struct platform_device *pdev)
++{
++	struct device_node *np = pdev->dev.of_node;
++	struct mii_bus *bus;
++	struct moxart_mdio_data *data;
++	struct resource *res;
++	int ret, i;
++
++	bus = mdiobus_alloc_size(sizeof(*data));
++	if (!bus)
++		return -ENOMEM;
++
++	bus->name = "MOXA ART Ethernet MII";
++	bus->read = &moxart_mdio_read;
++	bus->write = &moxart_mdio_write;
++	bus->reset = &moxart_mdio_reset;
++	snprintf(bus->id, MII_BUS_ID_SIZE, "%s-mii", dev_name(&pdev->dev));
++	bus->parent = &pdev->dev;
++
++	bus->irq = devm_kzalloc(&pdev->dev, sizeof(int) * PHY_MAX_ADDR,
++			GFP_KERNEL);
++	if (!bus->irq) {
++		ret = -ENOMEM;
++		goto err_out_free_mdiobus;
++	}
++
++	/* Setting PHY_IGNORE_INTERRUPT here even if it has no effect,
++	 * of_mdiobus_register() sets these PHY_POLL.
++	 * Ideally, the interrupt from MAC controller could be used to
++	 * detect link state changes, not polling, i.e. if there was
++	 * a way phy_driver could set PHY_HAS_INTERRUPT but have that
++	 * interrupt handled in ethernet drivercode.
++	 */
++	for (i = 0; i < PHY_MAX_ADDR; i++)
++		bus->irq[i] = PHY_IGNORE_INTERRUPT;
++
++	data = bus->priv;
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	data->base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(data->base)) {
++		ret = PTR_ERR(data->base);
++		goto err_out_free_mdiobus;
++	}
++
++	ret = of_mdiobus_register(bus, np);
++	if (ret < 0)
++		return ret;
++
++	platform_set_drvdata(pdev, bus);
++
++	return 0;
++
++err_out_free_mdiobus:
++	mdiobus_free(bus);
++	return ret;
++}
++
++static int moxart_mdio_remove(struct platform_device *pdev)
++{
++	struct mii_bus *bus = platform_get_drvdata(pdev);
++
++	mdiobus_unregister(bus);
++	mdiobus_free(bus);
++
++	return 0;
++}
++
++static const struct of_device_id moxart_mdio_dt_ids[] = {
++	{ .compatible = "moxa,moxart-mdio" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, moxart_mdio_dt_ids);
++
++static struct platform_driver moxart_mdio_driver = {
++	.probe = moxart_mdio_probe,
++	.remove = moxart_mdio_remove,
++	.driver = {
++		.name = "moxart-mdio",
++		.of_match_table = moxart_mdio_dt_ids,
++	},
++};
++
++module_platform_driver(moxart_mdio_driver);
++
++MODULE_DESCRIPTION("MOXA ART MDIO interface driver");
++MODULE_AUTHOR("Jonas Jensen <jonas.jensen@gmail.com>");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/net/phy/realtek.c b/drivers/net/phy/realtek.c
+index 138de83..fa1d69a 100644
+--- a/drivers/net/phy/realtek.c
++++ b/drivers/net/phy/realtek.c
+@@ -64,6 +64,18 @@ static int rtl8211e_config_intr(struct phy_device *phydev)
+ 	return err;
+ }
+ 
++/* RTL8201CP */
++static struct phy_driver rtl8201cp_driver = {
++	.phy_id         = 0x00008201,
++	.name           = "RTL8201CP Ethernet",
++	.phy_id_mask    = 0x0000ffff,
++	.features       = PHY_BASIC_FEATURES,
++	.flags          = PHY_HAS_INTERRUPT,
++	.config_aneg    = &genphy_config_aneg,
++	.read_status    = &genphy_read_status,
++	.driver         = { .owner = THIS_MODULE,},
++};
++
+ /* RTL8211B */
+ static struct phy_driver rtl8211b_driver = {
+ 	.phy_id		= 0x001cc912,
+@@ -98,6 +110,9 @@ static int __init realtek_init(void)
+ {
+ 	int ret;
+ 
++	ret = phy_driver_register(&rtl8201cp_driver);
++	if (ret < 0)
++		return -ENODEV;
+ 	ret = phy_driver_register(&rtl8211b_driver);
+ 	if (ret < 0)
+ 		return -ENODEV;
+-- 
+1.8.2.1
 
