@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab3KAKrq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 06:47:46 -0400
-Received: from skyrme.org ([193.175.80.135]:34198 "EHLO skyrme.org"
+	id S1755905Ab3KAKuj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 06:50:39 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:55901 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796Ab3KAKrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 06:47:45 -0400
-X-Greylist: delayed 1783 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Nov 2013 06:47:45 EDT
-Date: 1 Nov 2013 10:17:50 +0000
-Message-ID: <20131101101750.GB16492@curry>
-From: "Oskar Schirmer" <oskar@scara.com>
-To: "Xiubo Li" <Li.Xiubo@freescale.com>
-Cc: r65073@freescale.com, timur@tabi.org, lgirdwood@gmail.com,
-        broonie@kernel.org, r64188@freescale.com, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ian.campbell@citrix.com, rob@landley.net, linux@arm.linux.org.uk,
-        perex@perex.cz, tiwai@suse.de, grant.likely@linaro.org,
-        fabio.estevam@freescale.com, LW@KARO-electronics.de,
-        shawn.guo@linaro.org, b42378@freescale.com, b18965@freescale.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCHv2 6/8] ASoC: fsl: add SGTL5000 based audio machine driver.
-References: <1383289495-24523-1-git-send-email-Li.Xiubo@freescale.com> <1383289495-24523-7-git-send-email-Li.Xiubo@freescale.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383289495-24523-7-git-send-email-Li.Xiubo@freescale.com>
-User-Agent: Mutt/1.4.2.3i
-Organisation: www.embedded-group.de
+	id S1751970Ab3KAKuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 06:50:37 -0400
+X-IronPort-AV: E=Sophos;i="4.93,616,1378857600"; 
+   d="scan'208";a="69667836"
+Message-ID: <1383303035.672.29.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH net-next RFC 0/5] xen-netback: TX grant mapping instead
+ of copy
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Date: Fri, 1 Nov 2013 10:50:35 +0000
+In-Reply-To: <1383094220-14775-1-git-send-email-zoltan.kiss@citrix.com>
+References: <1383094220-14775-1-git-send-email-zoltan.kiss@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.203.1]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not that it would improve functionality, but:
+On Wed, 2013-10-30 at 00:50 +0000, Zoltan Kiss wrote:
+> This patch series use SKBTX_DEV_ZEROCOPY flags to tell the stack it needs to
+> know when the skb is freed up.
 
-On Fri, Nov 01, 2013 at 15:04:53 +0800, Xiubo Li wrote:
-[...]
-> diff --git a/sound/soc/fsl/fsl-sgtl5000-vf610.c b/sound/soc/fsl/fsl-sgtl5000-vf610.c
-> new file mode 100644
-> index 0000000..f535b42
-> --- /dev/null
-> +++ b/sound/soc/fsl/fsl-sgtl5000-vf610.c
-> @@ -0,0 +1,208 @@
-> +/*
-> + * Freeacale ALSA SoC Audio using SGT1500 as codec.
-          ^                             ^   ^
-     "Freescale"                    "SGTL5000"
+Does this always avoid copying when bridging/openvswitching/forwarding
+(e.g. masquerading etc)? For both domU->domU and domU->physical NIC?
 
-regards,
-  Oskar
+How does it deal with broadcast traffic?
+
+>  That is the way KVM solved the same problem,
+> and based on my initial tests it can do the same for us. Avoiding the extra
+> copy boosted up TX throughput from 6.8 Gbps to 7.9 (I used a slower
+> Interlagos box, both Dom0 and guest on upstream kernel, on the same NUMA node,
+> running iperf 2.0.5, and the remote end was a bare metal box on the same 10Gb
+> switch)
+
+Do you have any numbers for the dom0 cpu usage impact?
+
+Aggregate throughput for many guests would be a useful datapoint too.
+
+> Based on my investigations the packet get only copied if it is delivered to
+> Dom0 stack, which is due to this patch:
+> https://lkml.org/lkml/2012/7/20/363
+> That's a bit unfortunate, but as far as I know for the huge majority this use
+> case is not too important.
+
+Likely to be true, but it would still be interesting to know how badly
+this use case suffers with this change, and any increase in CPU usage
+would be interesting to know about as well.
+
+>  There are a couple of things which need more
+> polishing, see the FIXME comments. I will run some more extensive tests, but
+> in the meantime I would like to hear comments about what I've done so far.
+> I've tried to broke it down to smaller patches, with mixed results, so I
+> welcome suggestions on that part as well:
+> 1/5: Introduce TX grant map definitions
+> 2/5: Change TX path from grant copy to mapping
+> 3/5: Remove old TX grant copy definitons
+> 4/5: Fix indentations
+> 5/5: Change RX path for mapped SKB fragments
+> 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> 
+
+
