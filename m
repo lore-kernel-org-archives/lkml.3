@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756416Ab3KAWI2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:08:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55485 "EHLO
+	id S1756218Ab3KAWQz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:16:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55502 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756332Ab3KAWIZ (ORCPT
+	with ESMTP id S1756415Ab3KAWI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:25 -0400
+	Fri, 1 Nov 2013 18:08:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH 3.11 49/66] ARM: integrator: deactivate timer0 on the Integrator/CP
-Date: Fri,  1 Nov 2013 15:07:25 -0700
-Message-Id: <20131101220648.266054655@linuxfoundation.org>
+        James Ralston <james.d.ralston@intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>, Jean Delvare <jdelvare@suse.de>
+Subject: [PATCH 3.11 53/66] i2c: ismt: initialize DMA buffer
+Date: Fri,  1 Nov 2013 15:07:29 -0700
+Message-Id: <20131101220649.394427047@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -29,78 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: James Ralston <james.d.ralston@intel.com>
 
-commit 29114fd7db2fc82a34da8340d29b8fa413e03dca upstream.
+commit bf4169100c909667ede6af67668b3ecce6928343 upstream.
 
-This fixes a long-standing Integrator/CP regression from
-commit 870e2928cf3368ca9b06bc925d0027b0a56bcd8e
-"ARM: integrator-cp: convert use CLKSRC_OF for timer init"
+This patch adds code to initialize the DMA buffer to compensate for
+possible hardware data corruption.
 
-When this code was introduced, the both aliases pointing the
-system to use timer1 as primary (clocksource) and timer2
-as secondary (clockevent) was ignored, and the system would
-simply use the first two timers found as clocksource and
-clockevent.
-
-However this made the system timeline accelerate by a
-factor x25, as it turns out that the way the clocking
-actually works (totally undocumented and found after some
-trial-and-error) is that timer0 runs @ 25MHz and timer1
-and timer2 runs @ 1MHz. Presumably this divider setting
-is a boot-on default and configurable albeit the way to
-configure it is not documented.
-
-So as a quick fix to the problem, let's mark timer0 as
-disabled, so the code will chose timer1 and timer2 as it
-used to.
-
-This also deletes the two aliases for the primary and
-secondary timer as they have been superceded by the
-auto-selection
-
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+[wsa: changed to use 'sizeof']
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Cc: Jean Delvare <jdelvare@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/integratorcp.dts |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/i2c/busses/i2c-ismt.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/arm/boot/dts/integratorcp.dts
-+++ b/arch/arm/boot/dts/integratorcp.dts
-@@ -9,11 +9,6 @@
- 	model = "ARM Integrator/CP";
- 	compatible = "arm,integrator-cp";
+--- a/drivers/i2c/busses/i2c-ismt.c
++++ b/drivers/i2c/busses/i2c-ismt.c
+@@ -393,6 +393,9 @@ static int ismt_access(struct i2c_adapte
  
--	aliases {
--		arm,timer-primary = &timer2;
--		arm,timer-secondary = &timer1;
--	};
--
- 	chosen {
- 		bootargs = "root=/dev/ram0 console=ttyAMA0,38400n8 earlyprintk";
- 	};
-@@ -24,14 +19,18 @@
- 	};
+ 	desc = &priv->hw[priv->head];
  
- 	timer0: timer@13000000 {
-+		/* TIMER0 runs @ 25MHz */
- 		compatible = "arm,integrator-cp-timer";
-+		status = "disabled";
- 	};
- 
- 	timer1: timer@13000100 {
-+		/* TIMER1 runs @ 1MHz */
- 		compatible = "arm,integrator-cp-timer";
- 	};
- 
- 	timer2: timer@13000200 {
-+		/* TIMER2 runs @ 1MHz */
- 		compatible = "arm,integrator-cp-timer";
- 	};
- 
++	/* Initialize the DMA buffer */
++	memset(priv->dma_buffer, 0, sizeof(priv->dma_buffer));
++
+ 	/* Initialize the descriptor */
+ 	memset(desc, 0, sizeof(struct ismt_desc));
+ 	desc->tgtaddr_rw = ISMT_DESC_ADDR_RW(addr, read_write);
 
 
