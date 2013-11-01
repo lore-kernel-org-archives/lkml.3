@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756354Ab3KAWIT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:08:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55429 "EHLO
+	id S1756620Ab3KAWTE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:19:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55456 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756286Ab3KAWIQ (ORCPT
+	with ESMTP id S1756286Ab3KAWIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:16 -0400
+	Fri, 1 Nov 2013 18:08:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>,
+        Phil Oester <kernel@linuxace.com>, Mark Brooks <mark@loadbalancer.org>,
+        Julian Anastasov <ja@ssi.bg>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 38/66] wanxl: fix info leak in ioctl
-Date: Fri,  1 Nov 2013 15:07:14 -0700
-Message-Id: <20131101220645.206591650@linuxfoundation.org>
+Subject: [PATCH 3.11 43/66] ipv6: always prefer rt6i_gateway if present
+Date: Fri,  1 Nov 2013 15:07:19 -0700
+Message-Id: <20131101220646.573145988@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,30 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salva Peiró <speiro@ai2.upv.es>
+From: Julian Anastasov <ja@ssi.bg>
 
-[ Upstream commit 2b13d06c9584b4eb773f1e80bbaedab9a1c344e1 ]
+[ Upstream commit 96dc809514fb2328605198a0602b67554d8cce7b ]
 
-The wanxl_ioctl() code fails to initialize the two padding bytes of
-struct sync_serial_settings after the ->loopback member. Add an explicit
-memset(0) before filling the structure to avoid the info leak.
+In v3.9 6fd6ce2056de2709 ("ipv6: Do not depend on rt->n in
+ip6_finish_output2()." changed the behaviour of ip6_finish_output2()
+such that the recently introduced rt6_nexthop() is used
+instead of an assigned neighbor.
 
-Signed-off-by: Salva Peiró <speiro@ai2.upv.es>
+As rt6_nexthop() prefers rt6i_gateway only for gatewayed
+routes this causes a problem for users like IPVS, xt_TEE and
+RAW(hdrincl) if they want to use different address for routing
+compared to the destination address.
+
+Another case is when redirect can create RTF_DYNAMIC
+route without RTF_GATEWAY flag, we ignore the rt6i_gateway
+in rt6_nexthop().
+
+Fix the above problems by considering the rt6i_gateway if
+present, so that traffic routed to address on local subnet is
+not wrongly diverted to the destination address.
+
+Thanks to Simon Horman and Phil Oester for spotting the
+problematic commit.
+
+Thanks to Hannes Frederic Sowa for his review and help in testing.
+
+Reported-by: Phil Oester <kernel@linuxace.com>
+Reported-by: Mark Brooks <mark@loadbalancer.org>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/wan/wanxl.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/net/ip6_route.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wan/wanxl.c
-+++ b/drivers/net/wan/wanxl.c
-@@ -355,6 +355,7 @@ static int wanxl_ioctl(struct net_device
- 			ifr->ifr_settings.size = size; /* data size wanted */
- 			return -ENOBUFS;
- 		}
-+		memset(&line, 0, sizeof(line));
- 		line.clock_type = get_status(port)->clocking;
- 		line.clock_rate = 0;
- 		line.loopback = 0;
+--- a/include/net/ip6_route.h
++++ b/include/net/ip6_route.h
+@@ -198,7 +198,7 @@ static inline int ip6_skb_dst_mtu(struct
+ 
+ static inline struct in6_addr *rt6_nexthop(struct rt6_info *rt, struct in6_addr *dest)
+ {
+-	if (rt->rt6i_flags & RTF_GATEWAY)
++	if (rt->rt6i_flags & RTF_GATEWAY || !ipv6_addr_any(&rt->rt6i_gateway))
+ 		return &rt->rt6i_gateway;
+ 	return dest;
+ }
 
 
