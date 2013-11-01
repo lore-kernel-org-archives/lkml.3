@@ -1,48 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab3KAQc0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 12:32:26 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:45463 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752383Ab3KAQcY (ORCPT
+	id S1755302Ab3KAQcH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 12:32:07 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59929 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab3KAQcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 12:32:24 -0400
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B73D4@saturn3.aculab.com>
-References: <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com> <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com> <20131028132634.GO19466@laptop.lan> <20131028163418.GD4126@linux.vnet.ibm.com> <20131028201735.GA15629@redhat.com> <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com> <20131030092725.GL4126@linux.vnet.ibm.com> <OFC6B7100E.31C6B190-ON42257C14.004841C6-42257C14.004A0EA6@il.ibm.com> <20131031043258.GQ4126@linux.vnet.ibm.com> <OFDF23985D.1D949148-ON42257C15.002DEB25-42257C15.0036DF93@il.ibm.com> <20131031152543.GC4067@linux.vnet.ibm.com> <OF3CB471BA.BACC7843-ON42257C16.0055EF23-42257C16.0058875B@il.ibm.com> <AE90C24D6B3A694183C094C60CF0A2F6026B73D4@saturn3.aculab.com>
-Subject: RE: perf events ring buffer memory barrier on powerpc
-X-KeepSent: 57D6EF77:CD2E45CE-42257C16:005AA6D8;
- type=4; name=$KeepSent
-To: "David Laight" <David.Laight@aculab.com>
-Cc: "Anton Blanchard" <anton@samba.org>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "Linux PPC dev" <linuxppc-dev@ozlabs.org>,
-        "Mathieu Desnoyers" <mathieu.desnoyers@polymtl.ca>,
-        "Michael Neuling" <mikey@neuling.org>,
-        "Oleg Nesterov" <oleg@redhat.com>, paulmck@linux.vnet.ibm.com,
-        "Peter Zijlstra" <peterz@infradead.org>
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-Message-ID: <OF57D6EF77.CD2E45CE-ON42257C16.005AA6D8-42257C16.005AB961@il.ibm.com>
-From: Victor Kaplansky <VICTORK@il.ibm.com>
-Date: Fri, 1 Nov 2013 18:30:56 +0200
-X-MIMETrack: Serialize by Router on D06ML319/06/M/IBM(Release 8.5.3FP5|July 31, 2013) at
- 01/11/2013 18:30:49
-MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110116-3548-0000-0000-000007047170
+	Fri, 1 Nov 2013 12:32:00 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-edac@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mark Rutland <mark.rutland@arm.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH v3 3/6] ARM: Add Krait L2 accessor functions
+Date: Fri,  1 Nov 2013 09:31:53 -0700
+Message-Id: <1383323516-31357-4-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.4.2.564.g0d6cf24
+In-Reply-To: <1383323516-31357-1-git-send-email-sboyd@codeaurora.org>
+References: <1383323516-31357-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"David Laight" <David.Laight@aculab.com> wrote on 11/01/2013 06:25:29 PM:
-> gcc will do unexpected memory accesses for bit fields that are
-> adjacent to volatile data.
-> In particular it may generate 64bit sized (and aligned) RMW cycles
-> when accessing bit fields.
-> And yes, this has caused real problems.
+Qualcomm's Krait CPUs have a handful of L2 cache controller
+registers that live behind a cp15 based indirection register.
+First you program the indirection register (l2cpselr) to point
+the L2 'window' register (l2cpdr) at what you want to read/write.
+Then you read/write the 'window' register to do what you want.
+The l2cpselr register is not banked per-cpu so we must lock
+around accesses to it to prevent other CPUs from re-pointing
+l2cpdr underneath us.
 
-Thanks, I am aware about this bug/feature in gcc.
--- Victor
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/common/Kconfig                   |  3 ++
+ arch/arm/common/Makefile                  |  1 +
+ arch/arm/common/krait-l2-accessors.c      | 58 +++++++++++++++++++++++++++++++
+ arch/arm/include/asm/krait-l2-accessors.h | 20 +++++++++++
+ 4 files changed, 82 insertions(+)
+ create mode 100644 arch/arm/common/krait-l2-accessors.c
+ create mode 100644 arch/arm/include/asm/krait-l2-accessors.h
+
+diff --git a/arch/arm/common/Kconfig b/arch/arm/common/Kconfig
+index c3a4e9c..9da52dc 100644
+--- a/arch/arm/common/Kconfig
++++ b/arch/arm/common/Kconfig
+@@ -9,6 +9,9 @@ config DMABOUNCE
+ 	bool
+ 	select ZONE_DMA
+ 
++config KRAIT_L2_ACCESSORS
++	bool
++
+ config SHARP_LOCOMO
+ 	bool
+ 
+diff --git a/arch/arm/common/Makefile b/arch/arm/common/Makefile
+index 8c60f47..606131a 100644
+--- a/arch/arm/common/Makefile
++++ b/arch/arm/common/Makefile
+@@ -8,6 +8,7 @@ obj-$(CONFIG_ICST)		+= icst.o
+ obj-$(CONFIG_SA1111)		+= sa1111.o
+ obj-$(CONFIG_PCI_HOST_VIA82C505) += via82c505.o
+ obj-$(CONFIG_DMABOUNCE)		+= dmabounce.o
++obj-$(CONFIG_KRAIT_L2_ACCESSORS) += krait-l2-accessors.o
+ obj-$(CONFIG_SHARP_LOCOMO)	+= locomo.o
+ obj-$(CONFIG_SHARP_PARAM)	+= sharpsl_param.o
+ obj-$(CONFIG_SHARP_SCOOP)	+= scoop.o
+diff --git a/arch/arm/common/krait-l2-accessors.c b/arch/arm/common/krait-l2-accessors.c
+new file mode 100644
+index 0000000..f17c361
+--- /dev/null
++++ b/arch/arm/common/krait-l2-accessors.c
+@@ -0,0 +1,58 @@
++/*
++ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/spinlock.h>
++#include <linux/export.h>
++
++#include <asm/barrier.h>
++#include <asm/krait-l2-accessors.h>
++
++static DEFINE_RAW_SPINLOCK(krait_l2_lock);
++
++void set_l2_indirect_reg(u32 addr, u32 val)
++{
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&krait_l2_lock, flags);
++	/*
++	 * Select the L2 window by poking l2cpselr, then write to the window
++	 * via l2cpdr.
++	 */
++	asm volatile ("mcr p15, 3, %0, c15, c0, 6 @ l2cpselr" : : "r" (addr));
++	isb();
++	asm volatile ("mcr p15, 3, %0, c15, c0, 7 @ l2cpdr" : : "r" (val));
++	isb();
++
++	raw_spin_unlock_irqrestore(&krait_l2_lock, flags);
++}
++EXPORT_SYMBOL(set_l2_indirect_reg);
++
++u32 get_l2_indirect_reg(u32 addr)
++{
++	u32 val;
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&krait_l2_lock, flags);
++	/*
++	 * Select the L2 window by poking l2cpselr, then read from the window
++	 * via l2cpdr.
++	 */
++	asm volatile ("mcr p15, 3, %0, c15, c0, 6 @ l2cpselr" : : "r" (addr));
++	isb();
++	asm volatile ("mrc p15, 3, %0, c15, c0, 7 @ l2cpdr" : "=r" (val));
++
++	raw_spin_unlock_irqrestore(&krait_l2_lock, flags);
++
++	return val;
++}
++EXPORT_SYMBOL(get_l2_indirect_reg);
+diff --git a/arch/arm/include/asm/krait-l2-accessors.h b/arch/arm/include/asm/krait-l2-accessors.h
+new file mode 100644
+index 0000000..d5305c4
+--- /dev/null
++++ b/arch/arm/include/asm/krait-l2-accessors.h
+@@ -0,0 +1,20 @@
++/*
++ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __ASMARM_KRAIT_L2_ACCESSORS_H
++#define __ASMARM_KRAIT_L2_ACCESSORS_H
++
++extern void set_l2_indirect_reg(u32 addr, u32 val);
++extern u32 get_l2_indirect_reg(u32 addr);
++
++#endif
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
