@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab3KAJSg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 05:18:36 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:34922 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420Ab3KAJSf (ORCPT
+	id S1755023Ab3KAJVx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 05:21:53 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:59344 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab3KAJVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 05:18:35 -0400
+	Fri, 1 Nov 2013 05:21:52 -0400
+Date: Fri, 1 Nov 2013 10:21:48 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Doug Ledford <dledford@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        David Laight <David.Laight@ACULAB.COM>
+Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Message-ID: <20131101092148.GB27063@gmail.com>
+References: <201310300525.r9U5Pdqo014902@ib.usersys.redhat.com>
+ <20131030110214.GA10220@localhost.localdomain>
+ <52710B09.6090302@redhat.com>
+ <20131031183003.GC25894@hmsreliant.think-freely.org>
 MIME-Version: 1.0
-In-Reply-To: <20131101075502.GA25547@gmail.com>
-References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
-	<20131031080932.GA8479@gmail.com>
-	<87vc0c4ny2.fsf@sejong.aot.lge.com>
-	<20131101075502.GA25547@gmail.com>
-Date: Fri, 1 Nov 2013 11:18:33 +0200
-X-Google-Sender-Auth: lKd84ipVIBe4tfbmT9iOgih4O_A
-Message-ID: <CAOJsxLF7+KZ0uVHU3mXo9z=wUMajn4OEHDcayX=D95Viu=zwzg@mail.gmail.com>
-Subject: Re: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist
- periods (v2)
-From: Pekka Enberg <penberg@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131031183003.GC25894@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 1, 2013 at 9:55 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> Btw., if anyone is interested in improving the GTK front-end, it
-> would be _really_ nice if it had a 'start profiling' button like
-> sysprof has today, with a 'samples' field showing the current number
-> of samples. (We could even improve upon sysprof by adding 'stop'
-> functionality as well ;-)
->
-> A bit like perf top, except the reporting session is hidden until
-> the user actively requests the profile.
->
-> Maybe it could even be called a gtk version of 'perf top', with a
-> button to start/stop collection, with another button to
-> activate/deactivate reporting output, and yet another button to
-> reset the profiling buffer.
->
-> With that feature set perf would be a ready sysprof workflow
-> replacement I think. (I've Cc:-ed Pekka, just in case! :-)
 
-Sure, "start/stop" button is useful for system-wide profiling but you
-also want to be able to start an application for profiling from the UI.
-I don't remember if SysProf supports that but the Shark profiler on Mac
-OS X does.
+* Neil Horman <nhorman@tuxdriver.com> wrote:
 
-Btw, to make GTK-front end even more useful, we should:
+> Prefetch and simluated adcx/adox from above:
+>  Performance counter stats for './test.sh' (20 runs):
+> 
+>         35,704,331 L1-dcache-load-misses                                         ( +-  0.07% ) [75.00%]
+>                  0 L1-dcache-prefetches                                         [75.00%]
+>     19,751,409,264 cycles                    #    0.000 GHz                      ( +-  0.59% ) [75.00%]
+>         34,850,056 branch-misses                                                 ( +-  1.29% ) [75.00%]
+> 
+>        7.768602160 seconds time elapsed                                          ( +-  1.38% )
 
-  (1) Have a drop-down for selecting a specific process from system-wide
-      profile.
+btw., you might also want to try measuring only the basics:
 
-  (2) Show 'perf annotate' from 'perf report' when a function is
-      double-clicked.
+   -e cycles -e instructions -e branches -e branch-misses
 
-                        Pekka
+that should give you 100% in the last column and should also allow 
+you to double check whether all the PMU counts are correct: is it 
+the expected number of instructions, expected number of branches, 
+expected number of branch-misses, etc.
+
+Then you can remove branch stats and add just L1-dcache stats - and 
+still be 100% covered:
+
+   -e cycles -e instructions -e L1-dcache-loads -e L1-dcache-load-misses
+
+etc.
+
+Just so that you can trust what the PMU tells you. Prefetch counts 
+are sometimes off, they might include speculative activities, etc.
+
+Thanks,
+
+	Ingo
