@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573Ab3KAUyL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 16:54:11 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59281 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab3KAUyJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 16:54:09 -0400
-Message-ID: <527414DE.9090704@kernel.dk>
-Date: Fri, 01 Nov 2013 14:53:50 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753783Ab3KAUyd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 16:54:33 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:3033 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753446Ab3KAUyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 16:54:31 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <527414F2.7090402@broadcom.com>
+Date: Fri, 1 Nov 2013 21:54:10 +0100
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.0
 MIME-Version: 1.0
-To: Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>, Kent Overstreet <kmo@daterainc.com>
-Subject: Re: linux-next: manual merge of the block tree with the  tree
-References: <20131101142026.10390b6e3f70de348770c137@canb.auug.org.au>	<5273C473.5070803@kernel.dk> <20131102072252.88d2380fa392705b912dbfad@canb.auug.org.au> <52740EB1.2070901@kernel.dk> <527411DD.7050008@oracle.com>
-In-Reply-To: <527411DD.7050008@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Matt Porter" <matt.porter@linaro.org>, "Felipe Balbi" <balbi@ti.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Kishon Vijay Abraham I" <kishon@ti.com>,
+        "Rob Herring" <rob.herring@calxeda.com>,
+        "Pawel Moll" <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        "Christian Daudt" <bcm@fixthebug.org>,
+        "Paul Zimmerman" <paulz@synopsys.com>
+cc: "Linux USB List" <linux-usb@vger.kernel.org>,
+        "Linux ARM Kernel List" <linux-arm-kernel@lists.infradead.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "Devicetree List" <devicetree@vger.kernel.org>,
+        "Linaro Patches" <patches@linaro.org>
+Subject: Re: [PATCH v2 7/9] phy: add Broadcom Kona USB2 PHY DT binding
+References: <1383335158-19730-1-git-send-email-matt.porter@linaro.org>
+ <1383335158-19730-8-git-send-email-matt.porter@linaro.org>
+In-Reply-To: <1383335158-19730-8-git-send-email-matt.porter@linaro.org>
+X-WSS-ID: 7E6ACB781503931726-02-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2013 02:41 PM, Dave Kleikamp wrote:
-> On 11/01/2013 03:27 PM, Jens Axboe wrote:
->> On 11/01/2013 02:22 PM, Stephen Rothwell wrote:
->>> Hi Jens,
->>>
->>> On Fri, 01 Nov 2013 09:10:43 -0600 Jens Axboe <axboe@kernel.dk> wrote:
->>>>
->>>> On 10/31/2013 09:20 PM, Stephen Rothwell wrote:
->>>>>
->>>>> Today's linux-next merge of the block tree got a conflict in
->>>>> drivers/block/loop.c between commit 2486740b52fd ("loop: use aio to
->>>>> perform io on the underlying file") from the aio-direct tree and commit
->>>>> ed2d2f9a8265 ("block: Abstract out bvec iterator") from the block tree.
->>>>>
->>>>> I fixed it up (I think - see below - I have also attached the final
->>>>> resulting file) and can carry the fix as necessary (no action is
->>>>> required).
->>>>>
->>>>
->>>> What tree is this from? It'd be a lot more convenient to fold that loop
->>>> patch into my tree, especially since the block tree in linux-next failed
->>>> after this merge.
->>>
->>> I can only agree with you.  It is from the aio-direct tree (probably
->>> misnamed by me) (git://github.com/kleikamp/linux-shaggy.git#for-next) run
->>> by Dave Kleikamp.
->>
->> Dave, input requested.
->>
->> In any case, I would suggest dropping the aio-direct tree instead of the
->> entire block tree for coverage purposes, if merge or build failures
->> happen because of it.
-> 
-> I've had these patches in linux-next since August, and I'd really like
-> to push them in the 3.13 merge window.
-> 
-> Are there other problems besides this merge issue? I'll take a closer
-> look at Stephen's merge patch and see if I find any other issues, but I
-> really don't want to pull these patches out of linux-next now.
+On 11/01/2013 08:45 PM, Matt Porter wrote:
+> Add a binding that describes the Broadcom Kona USB2 PHY found
+> on the BCM281xx family of SoCs.
+>
+> Signed-off-by: Matt Porter <matt.porter@linaro.org>
+> ---
+>   .../devicetree/bindings/phy/bcm-kona-usb2-phy.txt         | 15 +++++++++++++++
+>   1 file changed, 15 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/phy/bcm-kona-usb2-phy.txt
+>
+> diff --git a/Documentation/devicetree/bindings/phy/bcm-kona-usb2-phy.txt b/Documentation/devicetree/bindings/phy/bcm-kona-usb2-phy.txt
+> new file mode 100644
+> index 0000000..db309e2
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/phy/bcm-kona-usb2-phy.txt
+> @@ -0,0 +1,15 @@
+> +BROADCOM KONA USB2 PHY
+> +
+> +Required properties:
+> + - compatible: brcm,kona-usb2-phy
+> + - regs: offset and length of the PHY registers
+> + - #phy-cells: must be 0
+> +Refer to phy/phy-bindings.txt for the generic PHY binding properties
+> +
+> +Example:
+> +
+> +	usbphy: usbphy@3f130000 {
+> +		compatible = "brcm,kona-usb2-phy";
+> +		reg = <0x3f130000 0x28>;
 
-I'm not saying that the patches should be dropped or not go into 3.13.
-What I'm saying is that if the choice is between having the bio and
-blk-mq stuff in linux-next or an addon to the loop driver, the decision
-should be quite clear.
+I expect 'regs' iso 'reg' in this example.
 
-So we've three immediate options:
+Regards,
+Arend
 
-1) You base it on top of the block tree
-2) I carry the loop updates
-3) You hand Stephen a merge patch for the resulting merge of the two
+> +		#phy-cells = <0>;
+> +	};
+>
 
-It's one of the problems with too-many-tree, imho. You end up with
-dependencies that could have been solved if the work had been applied in
-the right upstream tree. Sometimes that's not even enough though, if you
-end up crossing boundaries.
-
--- 
-Jens Axboe
 
