@@ -1,101 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab3KAOIl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 10:08:41 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:43907 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab3KAOIk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 10:08:40 -0400
-Date: Fri, 1 Nov 2013 09:08:37 -0500
-From: scameron@beardog.cce.hp.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tomas Henzl <thenzl@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        stephenmcameron@gmail.com, mikem@beardog.cce.hp.com,
-        linux-kernel@vger.kernel.org, scameron@beardog.cce.hp.com
-Subject: Re: [PATCH] cciss: return 0 from driver probe function on success, not 1
-Message-ID: <20131101140837.GO31390@beardog.cce.hp.com>
-References: <20131029184135.5505.77412.stgit@beardog.cce.hp.com> <52700541.70405@kernel.dk> <20131031144241.25090ab7a6c0b668c5c1c2b2@linux-foundation.org> <20131031215444.GN31390@beardog.cce.hp.com> <20131031150618.fa9430269e0de7a5ebad1387@linux-foundation.org> <5273A765.6080705@redhat.com> <20131101063110.6a390f48.akpm@linux-foundation.org>
-Mime-Version: 1.0
+	id S1753923Ab3KAOJb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 10:09:31 -0400
+Received: from mga01.intel.com ([192.55.52.88]:53797 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753009Ab3KAOJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 10:09:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,617,1378882800"; 
+   d="scan'208";a="426489594"
+Date: Fri, 1 Nov 2013 22:09:17 +0800
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH 1/4] mm/rmap: per anon_vma lock
+Message-ID: <20131101140917.GF30123@yliu-dev.sh.intel.com>
+References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
+ <1383292467-28922-2-git-send-email-yuanhan.liu@linux.intel.com>
+ <20131101084329.GB19466@laptop.lan>
+ <20131101093844.GA30123@yliu-dev.sh.intel.com>
+ <20131101102224.GE19466@laptop.lan>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131101063110.6a390f48.akpm@linux-foundation.org>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20131101102224.GE19466@laptop.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 01, 2013 at 06:31:10AM -0700, Andrew Morton wrote:
-> On Fri, 01 Nov 2013 14:06:45 +0100 Tomas Henzl <thenzl@redhat.com> wrote:
-> 
-> > The problem in kernel is that the error handling in local_pci_probe
-> > and  in __pci_device_probe is different for ret values > 0,
-> > so we should fix it somewhere so it is in sync.
-> > The documentation states that the probe function should return zero on success
-> > so what about this -
+On Fri, Nov 01, 2013 at 11:22:24AM +0100, Peter Zijlstra wrote:
+> On Fri, Nov 01, 2013 at 05:38:44PM +0800, Yuanhan Liu wrote:
+> > On Fri, Nov 01, 2013 at 09:43:29AM +0100, Peter Zijlstra wrote:
+> > > On Fri, Nov 01, 2013 at 03:54:24PM +0800, Yuanhan Liu wrote:
+> > > > @@ -497,15 +495,20 @@ static void vma_rb_erase(struct vm_area_struct *vma, struct rb_root *root)
+> > > >   * anon_vma_interval_tree_post_update_vma().
+> > > >   *
+> > > >   * The entire update must be protected by exclusive mmap_sem and by
+> > > > - * the root anon_vma's mutex.
+> > > > + * the anon_vma's mutex.
+> > > >   */
+> > > >  static inline void
+> > > >  anon_vma_interval_tree_pre_update_vma(struct vm_area_struct *vma)
+> > > >  {
+> > > >  	struct anon_vma_chain *avc;
+> > > >  
+> > > > -	list_for_each_entry(avc, &vma->anon_vma_chain, same_vma)
+> > > > -		anon_vma_interval_tree_remove(avc, &avc->anon_vma->rb_root);
+> > > > +	list_for_each_entry(avc, &vma->anon_vma_chain, same_vma) {
+> > > > +		struct anon_vma *anon_vma = avc->anon_vma;
+> > > > +
+> > > > +		anon_vma_lock_write(anon_vma);
+> > > > +		anon_vma_interval_tree_remove(avc, &anon_vma->rb_root);
+> > > > +		anon_vma_unlock_write(anon_vma);
+> > > > +	}
+> > > >  }
+> > > >  
+> > > >  static inline void
+> > > > @@ -513,8 +516,13 @@ anon_vma_interval_tree_post_update_vma(struct vm_area_struct *vma)
+> > > >  {
+> > > >  	struct anon_vma_chain *avc;
+> > > >  
+> > > > -	list_for_each_entry(avc, &vma->anon_vma_chain, same_vma)
+> > > > -		anon_vma_interval_tree_insert(avc, &avc->anon_vma->rb_root);
+> > > > +	list_for_each_entry(avc, &vma->anon_vma_chain, same_vma) {
+> > > > +		struct anon_vma *anon_vma = avc->anon_vma;
+> > > > +
+> > > > +		anon_vma_lock_write(anon_vma);
+> > > > +		anon_vma_interval_tree_insert(avc, &anon_vma->rb_root);
+> > > > +		anon_vma_unlock_write(anon_vma);
+> > > > +	}
+> > > >  }
+> > > >  
+> > > >  static int find_vma_links(struct mm_struct *mm, unsigned long addr,
+> > > > @@ -781,7 +789,6 @@ again:			remove_next = 1 + (end > next->vm_end);
+> > > >  	if (anon_vma) {
+> > > >  		VM_BUG_ON(adjust_next && next->anon_vma &&
+> > > >  			  anon_vma != next->anon_vma);
+> > > > -		anon_vma_lock_write(anon_vma);
+> > > >  		anon_vma_interval_tree_pre_update_vma(vma);
+> > > >  		if (adjust_next)
+> > > >  			anon_vma_interval_tree_pre_update_vma(next);
+> > > > @@ -845,7 +852,6 @@ again:			remove_next = 1 + (end > next->vm_end);
+> > > >  		anon_vma_interval_tree_post_update_vma(vma);
+> > > >  		if (adjust_next)
+> > > >  			anon_vma_interval_tree_post_update_vma(next);
+> > > > -		anon_vma_unlock_write(anon_vma);
+> > > >  	}
+> > > >  	if (mapping)
+> > > >  		mutex_unlock(&mapping->i_mmap_mutex);
+> > > 
+> > > AFAICT this isn't correct at all. We used to protect the vma interval
+> > > tree with the root lock, now we don't.
 > > 
-> > This would bring the handling to sync
-> > diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-> > index 98f7b9b..200a071 100644
-> > --- a/drivers/pci/pci-driver.c
-> > +++ b/drivers/pci/pci-driver.c
-> > @@ -317,8 +317,6 @@ __pci_device_probe(struct pci_driver *drv, struct pci_dev *pci_dev)
-> >  		id = pci_match_device(drv, pci_dev);
-> >  		if (id)
-> >  			error = pci_call_probe(drv, pci_dev, id);
-> > -		if (error >= 0)
-> > -			error = 0;
-> >  	}
-> >  	return error;
-> >  }
+> > We still use lock to protect anon_vma interval tree, but we lock our own
+> > interval tree this time.
 > 
-> ah, there it is.
+> Which lock? What protects the chain you're iterating in
+> anon_vma_interval_tree_{pre,post}_update_vma() ?
+
+Sorry, I may be wrong again this time. But, isn't vma->anon_vma_chain
+list being protect by mmap_sem & page_table_lock?
+struct vm_area_struct {
+        ...
+        struct list_head anon_vma_chain; /* Serialized by mmap_sem &
+                                          * page_table_lock */
+        ...
+}
+
+So, my understanding was you don't need extra lock to iterate
+vma->anon_vma_chain list. However, you need acquire avc->anon_vma's lock
+to insert/remove avc from it.
+
+Thanks.
+
+	--yliu
 > 
-> This change would turn semi-kaput drivers into kaput-kaput drivers.  It
-> would be better to add a runtime warning here so those drivers get
-> fixed.  Such a warning would need to reliably identify the offending
-> probe function so a simple WARN_ON() wouldn't be sufficient.
+> > > All we've got left is the
+> > > mmap_sem, but anon_vma chains can cross address-spaces and thus we're up
+> > > some creek without no paddle.
+> > 
+> > Yep, however, you still need acquire the address-space crossed anon_vma's lock
+> > to modify something.
 > 
-
-FWIW, I just booted up with the following change:
-
-diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-index 98f7b9b..ef71bb5 100644
---- a/drivers/pci/pci-driver.c
-+++ b/drivers/pci/pci-driver.c
-@@ -264,9 +264,16 @@ static long local_pci_probe(void *_ddi)
- 	pm_runtime_get_sync(dev);
- 	pci_dev->driver = pci_drv;
- 	rc = pci_drv->probe(pci_dev, ddi->id);
--	if (rc) {
-+	if (rc < 0) {
- 		pci_dev->driver = NULL;
- 		pm_runtime_put_sync(dev);
-+	} else {
-+		if (rc > 0) {
-+			dev_warn(dev,
-+				"Driver probe function returned %d, greater than 0\n", rc);
-+			rc = 0;
-+			
-+		}
- 	}
- 	return rc;
- }
-
-
-And,
-
-[scameron@localhost linux-3.12-rc6]$ dmesg | grep 'Driver probe'
-[scameron@localhost linux-3.12-rc6]$
-
-Not that it means all that much since I don't have hardware for
-the majority of drivers, obviously.
-
-I think the above should make drivers with probe functions
-returning > 0 "work" again, but with a warning.
-
-The question would be, are there drivers which return > 0 and
-by this value intend to convey that the probe function has failed?
-
--- steve
-
+> -ENOPARSE.
