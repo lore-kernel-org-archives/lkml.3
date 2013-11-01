@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab3KALgs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 07:36:48 -0400
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:31798
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755011Ab3KALgp (ORCPT
+	id S1756125Ab3KALg6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 07:36:58 -0400
+Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:52799
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751792Ab3KALgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 07:36:45 -0400
+	Fri, 1 Nov 2013 07:36:55 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 6
 X-BigFish: VS6(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kz70kz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
@@ -23,9 +23,9 @@ CC: <linux-kernel@vger.kernel.org>,
         <davinci-linux-open-source@linux.davincidsp.com>,
         <linux-arm-kernel@lists.infradead.org>, <dmaengine@vger.kernel.org>,
         <linux-media@vger.kernel.org>, <alsa-devel@alsa-project.org>
-Subject: [PATCH 4/8] [media] coda: use gen_pool_dma_alloc() to allocate iram buffer
-Date: Fri, 1 Nov 2013 19:36:02 +0800
-Message-ID: <a4cb5380b1eeb1c634cedfe05d2a7dee950742a4.1383303752.git.b42378@freescale.com>
+Subject: [PATCH 6/8] ALSA: memalloc: use gen_pool_dma_alloc() to allocate iram buffer
+Date: Fri, 1 Nov 2013 19:36:04 +0800
+Message-ID: <db9e59951cdcf55b4903c0358ebe220e58155bc1.1383303752.git.b42378@freescale.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <cover.1383303752.git.b42378@freescale.com>
 References: <cover.1383303752.git.b42378@freescale.com>
@@ -41,29 +41,26 @@ Since gen_pool_dma_alloc() is introduced, we implement it to simplify code.
 
 Signed-off-by: Nicolin Chen <b42378@freescale.com>
 ---
- drivers/media/platform/coda.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ sound/core/memalloc.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/drivers/media/platform/coda.c b/drivers/media/platform/coda.c
-index ed4998c..bd72fb9 100644
---- a/drivers/media/platform/coda.c
-+++ b/drivers/media/platform/coda.c
-@@ -3298,13 +3298,12 @@ static int coda_probe(struct platform_device *pdev)
- 		dev->iram_size = CODA7_IRAM_SIZE;
- 		break;
- 	}
--	dev->iram_vaddr = gen_pool_alloc(dev->iram_pool, dev->iram_size);
-+	dev->iram_vaddr = (unsigned long)gen_pool_dma_alloc(dev->iram_pool,
-+			dev->iram_size, (dma_addr_t *)&dev->iram_paddr);
- 	if (!dev->iram_vaddr) {
- 		dev_err(&pdev->dev, "unable to alloc iram\n");
- 		return -ENOMEM;
- 	}
--	dev->iram_paddr = gen_pool_virt_to_phys(dev->iram_pool,
--						dev->iram_vaddr);
+diff --git a/sound/core/memalloc.c b/sound/core/memalloc.c
+index 9d93f02..5e1c7bc 100644
+--- a/sound/core/memalloc.c
++++ b/sound/core/memalloc.c
+@@ -184,11 +184,7 @@ static void snd_malloc_dev_iram(struct snd_dma_buffer *dmab, size_t size)
+ 	/* Assign the pool into private_data field */
+ 	dmab->private_data = pool;
  
- 	platform_set_drvdata(pdev, dev);
+-	dmab->area = (void *)gen_pool_alloc(pool, size);
+-	if (!dmab->area)
+-		return;
+-
+-	dmab->addr = gen_pool_virt_to_phys(pool, (unsigned long)dmab->area);
++	dmab->area = gen_pool_dma_alloc(pool, size, &dmab->addr);
+ }
  
+ /**
 -- 
 1.8.4
 
