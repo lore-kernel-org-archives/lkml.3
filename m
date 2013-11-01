@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab3KAB7x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 21:59:53 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53116 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723Ab3KAB7v (ORCPT
+	id S1754946Ab3KACDO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 22:03:14 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56453 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753949Ab3KACDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 21:59:51 -0400
-X-AuditID: 9c930179-b7c9bae000000e4c-b9-52730b1551be
-Date: Fri, 1 Nov 2013 11:00:04 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: opw-kernel@googlegroups.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchand@redhat.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v9 2/2] Staging: zram: Fix decrement of variable by
- calling bdput()
-Message-ID: <20131101020004.GH26080@bbox>
-References: <3d7e050910ca994862e7880b4bd3681267681b56.1383220461.git.rashika.kheria@gmail.com>
- <4fdb273ab0b1e7514f119d7e619ac708d2277d34.1383220461.git.rashika.kheria@gmail.com>
+	Thu, 31 Oct 2013 22:03:13 -0400
+Message-ID: <52730BC9.4040309@infradead.org>
+Date: Thu, 31 Oct 2013 19:02:49 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4fdb273ab0b1e7514f119d7e619ac708d2277d34.1383220461.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, akpm@toccata.ens-lyon.org
+Subject: Re: linux-next: Tree for Oct 31 (input & leds)
+References: <20131031210027.cb3604b9589e0b7a1599dbd2@canb.auug.org.au> <52729BCB.1000700@infradead.org> <20131101012129.GW7325@type.youpi.perso.aquilenet.fr>
+In-Reply-To: <20131101012129.GW7325@type.youpi.perso.aquilenet.fr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I hope subject should be "Fix memory leak by refcount mismatch"
-
-On Thu, Oct 31, 2013 at 05:28:18PM +0530, Rashika Kheria wrote:
-> As suggested by Jerome Marchand "The code in reset_store get the block device
-> (bdget_disk()) but it does not put it (bdput()) when it's done using it.
-> The usage count is therefore incremented but never decremented."
+On 10/31/13 18:21, Samuel Thibault wrote:
+> Randy Dunlap, le Thu 31 Oct 2013 11:04:59 -0700, a écrit :
+>> On 10/31/13 03:00, Stephen Rothwell wrote:
+>>> Hi all,
+>>>
+>>> Changes since 20131030:
+>>>
+>>> The net-next tree gained a conflict against the net tree.
+>>>
+>>> The devicetree tree gained a conflict against the crypto tree.
+>>>
+>>> The tty tree gained a build failure so I used the version from
+>>> next-20131030.
+>>>
+>>> The arm-soc tree gained conflicts against the devicetree tree.
+>>
+>>
+>> on i386, when both
+>> CONFIG_INPUT=m
+>> CONFIG_INPUT_LEDS=m
+>>
+>> ERROR: "input_led_disconnect" [drivers/input/input-core.ko] undefined!
+>> ERROR: "input_led_connect" [drivers/input/input-core.ko] undefined!
+>>
+>>
+>> Full randconfig file is attached.
 > 
-> This patch also puts bdput() for all error cases.
+> Ah, right, in that config an export is needed, here is a patch.
 > 
-> Cc: stable@vger.kernel.org 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> Samuel
+> 
+> 
+> 
+> Export input led symbols for input core module.
+> 
+> Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
 
-Other than that,
-Acked-by: Minchan Kim <minchan@kernel.org>
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
+Thanks.
 
-Rashika, Thanks!
+> 
+> --- drivers/input/leds.c.orig	2013-11-01 01:43:38.889584308 +0100
+> +++ drivers/input/leds.c	2013-11-01 01:44:02.060916781 +0100
+> @@ -210,6 +210,7 @@
+>  	input_led_delete(dev);
+>  	return error;
+>  }
+> +EXPORT_SYMBOL_GPL(input_led_connect);
+>  
+>  /* Disconnected input device. Clean it, and deregister now-useless VT LEDs
+>   * and triggers.  */
+> @@ -241,6 +242,7 @@
+>  	}
+>  	mutex_unlock(&vt_led_registered_lock);
+>  }
+> +EXPORT_SYMBOL_GPL(input_led_disconnect);
+>  
+>  MODULE_LICENSE("GPL");
+>  MODULE_DESCRIPTION("User LED support for input layer");
+> --
+
 
 -- 
-Kind regards,
-Minchan Kim
+~Randy
