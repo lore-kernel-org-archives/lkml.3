@@ -1,42 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab3KAIqM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 04:46:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60086 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754734Ab3KAIqK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 04:46:10 -0400
-Date: Fri, 1 Nov 2013 09:46:05 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>
-Subject: Re: [PATCH 2/4] mm/rmap: convert anon_vma rwsem to rwlock_t
-Message-ID: <20131101084605.GC19466@laptop.lan>
-References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
- <1383292467-28922-3-git-send-email-yuanhan.liu@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383292467-28922-3-git-send-email-yuanhan.liu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1754852Ab3KAIrq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 04:47:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:19633 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751937Ab3KAIro (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 04:47:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,615,1378882800"; 
+   d="scan'208";a="426324644"
+Subject: [PATCH] [extcon]:remove freed groups caused the panic or warning
+ in unregister flow
+From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+To: myungjoo.ham@samsung.com, cw00.choi@samsung.com,
+        linux-kernel@vger.kernel.org
+Cc: chuansheng.liu@intel.com, dongxing.zhang@intel.com,
+        xiaoming.wang@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Nov 2013 18:48:14 -0400
+Message-ID: <1383346094.2702.16.camel@wxm-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 01, 2013 at 03:54:25PM +0800, Yuanhan Liu wrote:
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -2955,15 +2955,15 @@ static void vm_lock_anon_vma(struct mm_struct *mm, struct anon_vma *anon_vma)
->  		 * The LSB of head.next can't change from under us
->  		 * because we hold the mm_all_locks_mutex.
->  		 */
-> -		down_write_nest_lock(&anon_vma->rwsem, &mm->mmap_sem);
-> +		write_lock(&anon_vma->rwlock);
+(edev->extcon_dev_type.groups) has been freed before device_unregister.
+extcon_dev_unregister -> kfree(edev->extcon_dev_type.groups)
+then device_unregister -> device_del -> device_remove_attrs
+-> device_remove_groups(dev, type->groups);
+panic because type->groups has been freed.
 
-You lost:
+This patch is move device_unregister ahead of groups free
+to avoid panic in extcon_dev_unregister.
 
-  http://marc.info/?l=linux-kernel&m=138054148402109
+stack
+[ 22.847226] BUG: unable to handle kernel paging request at 5f39746e
+[ 22.847234] IP: [<c1387fcd>] sysfs_remove_group+0x2d/0xd0
+[ 22.847238] *pdpt = 0000000000000000 *pde = 0000000000000000
+[ 22.847241] Oops: 0000 [#1] PREEMPT SMP
+[ 22.847244] Modules linked in:
+[ 22.847249] CPU: 0 PID: 1 Comm: swapper/0 Tainted: G W 3.10.16-261140-g6533774 #1
+[ 22.847251] task: f3078000 ti: f3072000 task.ti: f3072000
+[ 22.847254] EIP: 0060:[<c1387fcd>] EFLAGS: 00010206 CPU: 0
+[ 22.847257] EIP is at sysfs_remove_group+0x2d/0xd0
+[ 22.847259] EAX: 00000004 EBX: 5f39746e ECX: 00000000 EDX: f2773560
+[ 22.847261] ESI: f2653b80 EDI: f2773560 EBP: f3073c90 ESP: f3073c70
+[ 22.847263] DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+[ 22.847264] CR0: 8005003b CR2: 5f39746e CR3: 020e5000 CR4: 001007f0
+[ 22.847266] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[ 22.847268] DR6: ffff0ff0 DR7: 00000400
+[ 22.847269] Stack:
+[ 22.847276] c13848c9 c1ae3805 f3073c80 f24ddc4c 00000246 f2773e88 f1c44408 f2531340
+[ 22.847283] f3073ca0 c16935ca f1c44400 f27d3340 f3073cb4 c1693858 f24ddc44 f1c44400
+[ 22.847289] f1c4420c f3073cc8 c1693f76 f1c44400 00000001 00000000 f3073ce8 c1694011
+[ 22.847290] Call Trace:
+[ 22.847295] [<c13848c9>] ? sysfs_hash_and_remove+0x49/0xa0
+[ 22.847300] [<c1ae3805>] ? sub_preempt_count+0x55/0xe0
+[ 22.847306] [<c16935ca>] device_remove_groups+0x2a/0x40
+[ 22.847309] [<c1693858>] device_remove_attrs+0x38/0x60
+[ 22.847313] [<c1693f76>] device_del+0xd6/0x150
+[ 22.847316] [<c1694011>] device_unregister+0x21/0x60
+[ 22.847320] [<c13869e8>] ? sysfs_remove_link+0x18/0x30
+[ 22.847323] [<c1697d04>] ? class_compat_remove_link+0x34/0x50
+[ 22.847329] [<c18bf5d9>] extcon_dev_unregister+0xf9/0x130
+[ 22.847333] [<c18bd21f>] pwrsrc_extcon_dev_reg_callback+0x7f/0xa0
+[ 22.847337] [<c1ae36e3>] notifier_call_chain+0x43/0x60
+[ 22.847343] [<c12634e1>] __blocking_notifier_call_chain+0x41/0x80
+[ 22.847347] [<c126353f>] blocking_notifier_call_chain+0x1f/0x30
+[ 22.847351] [<c18bef39>] extcon_dev_notify_add_device+0x19/0x20
+[ 22.847354] [<c18bf074>] extcon_dev_register+0x134/0x580
+[ 22.847358] [<c1ae3805>] ? sub_preempt_count+0x55/0xe0
+[ 22.847363] [<c154b4da>] ? gpiod_request+0x6a/0x1d0
+[ 22.847368] [<c132528a>] ? kmem_cache_alloc_trace+0xaa/0x170
+[ 22.847372] [<c18c0179>] ? fsa9285_probe+0x99/0x3f0
+[ 22.847375] [<c18c00e0>] ? fsa9285_irq_handler+0xf0/0xf0
+[ 22.847379] [<c18c019f>] fsa9285_probe+0xbf/0x3f0
+[ 22.847383] [<c18c00e0>] ? fsa9285_irq_handler+0xf0/0xf0
+[ 22.847388] [<c1828d9e>] i2c_device_probe+0x7e/0xf0
+[ 22.847392] [<c1386e52>] ? sysfs_create_link+0x22/0x40
+[ 22.847395] [<c1696c62>] ? driver_sysfs_add+0x72/0xa0
+[ 22.847399] [<c1697119>] driver_probe_device+0x79/0x360
+[ 22.847403] [<c1697491>] __driver_attach+0x91/0xa0
+[ 22.847407] [<c1697400>] ? driver_probe_device+0x360/0x360
+[ 22.847410] [<c16955a2>] bus_for_each_dev+0x42/0x80
+[ 22.847414] [<c1696bee>] driver_attach+0x1e/0x20
+[ 22.847417] [<c1697400>] ? driver_probe_device+0x360/0x360
+[ 22.847420] [<c169675f>] bus_add_driver+0xef/0x270
+[ 22.847425] [<c1828e10>] ? i2c_device_probe+0xf0/0xf0
+[ 22.847428] [<c1828e10>] ? i2c_device_probe+0xf0/0xf0
+[ 22.847432] [<c1697a8a>] driver_register+0x6a/0x160
+[ 22.847436] [<c1addb3d>] ? mutex_unlock+0xd/0x10
+[ 22.847440] [<c1438ab2>] ? __create_file+0x122/0x2a0
+[ 22.847446] [<c20557d3>] ? extcon_class_init+0x15/0x15
+[ 22.847450] [<c1827cbb>] i2c_register_driver+0x2b/0xd0
+[ 22.847454] [<c1438d05>] ? debugfs_create_file+0x35/0x40
+[ 22.847458] [<c20557d3>] ? extcon_class_init+0x15/0x15
+[ 22.847461] [<c20557e4>] fsa9285_extcon_init+0x11/0x29
+[ 22.847465] [<c12001aa>] do_one_initcall+0xba/0x170
+[ 22.847471] [<c2012b4a>] kernel_init_freeable+0x119/0x1b8
+[ 22.847475] [<c20124d3>] ? do_early_param+0x7a/0x7a
+[ 22.847480] [<c1ac4090>] kernel_init+0x10/0xd0
+[ 22.847485] [<c1ae6cf7>] ret_from_kernel_thread+0x1b/0x28
+[ 22.847488] [<c1ac4080>] ? rest_init+0x80/0x80
+
+Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+---
+ drivers/extcon/extcon-class.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+index 148382f..48f4669 100644
+--- a/drivers/extcon/extcon-class.c
++++ b/drivers/extcon/extcon-class.c
+@@ -794,6 +794,8 @@ void extcon_dev_unregister(struct extcon_dev *edev)
+ 		return;
+ 	}
+ 
++	device_unregister(edev->dev);
++
+ 	if (edev->mutually_exclusive && edev->max_supported) {
+ 		for (index = 0; edev->mutually_exclusive[index];
+ 				index++)
+@@ -814,7 +816,6 @@ void extcon_dev_unregister(struct extcon_dev *edev)
+ 	if (switch_class)
+ 		class_compat_remove_link(switch_class, edev->dev, NULL);
+ #endif
+-	device_unregister(edev->dev);
+ 	put_device(edev->dev);
+ }
+ EXPORT_SYMBOL_GPL(extcon_dev_unregister);
+-- 
+1.7.1
+
+
