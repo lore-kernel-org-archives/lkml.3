@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756505Ab3KAWXm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:23:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55353 "EHLO
+	id S1756836Ab3KAWX6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:23:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55348 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756236Ab3KAWID (ORCPT
+	with ESMTP id S1756226Ab3KAWIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:03 -0400
+	Fri, 1 Nov 2013 18:08:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Stephen Hemminger <stephen@networkplumber.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 16/66] can: dev: fix nlmsg size calculation in can_get_size()
-Date: Fri,  1 Nov 2013 15:06:52 -0700
-Message-Id: <20131101220639.245220160@linuxfoundation.org>
+Subject: [PATCH 3.11 22/66] bridge: update mdb expiration timer upon reports.
+Date: Fri,  1 Nov 2013 15:06:58 -0700
+Message-Id: <20131101220640.894444390@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -27,41 +30,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit fe119a05f8ca481623a8d02efcc984332e612528 ]
+[ Upstream commit f144febd93d5ee534fdf23505ab091b2b9088edc ]
 
-This patch fixes the calculation of the nlmsg size, by adding the missing
-nla_total_size().
+commit 9f00b2e7cf241fa389733d41b615efdaa2cb0f5b
+	bridge: only expire the mdb entry when query is received
+changed the mdb expiration timer to be armed only when QUERY is
+received.  Howerver, this causes issues in an environment where
+the multicast server socket comes and goes very fast while a client
+is trying to send traffic to it.
 
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+The root cause is a race where a sequence of LEAVE followed by REPORT
+messages can race against QUERY messages generated in response to LEAVE.
+The QUERY ends up starting the expiration timer, and that timer can
+potentially expire after the new REPORT message has been received signaling
+the new join operation.  This leads to a significant drop in multicast
+traffic and possible complete stall.
+
+The solution is to have REPORT messages update the expiration timer
+on entries that already exist.
+
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+CC: Cong Wang <xiyou.wangcong@gmail.com>
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: Stephen Hemminger <stephen@networkplumber.org>
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/can/dev.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ net/bridge/br_multicast.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/net/can/dev.c
-+++ b/drivers/net/can/dev.c
-@@ -705,14 +705,14 @@ static size_t can_get_size(const struct
- 	size_t size;
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -610,6 +610,9 @@ rehash:
+ 		break;
  
- 	size = nla_total_size(sizeof(u32));   /* IFLA_CAN_STATE */
--	size += sizeof(struct can_ctrlmode);  /* IFLA_CAN_CTRLMODE */
-+	size += nla_total_size(sizeof(struct can_ctrlmode));  /* IFLA_CAN_CTRLMODE */
- 	size += nla_total_size(sizeof(u32));  /* IFLA_CAN_RESTART_MS */
--	size += sizeof(struct can_bittiming); /* IFLA_CAN_BITTIMING */
--	size += sizeof(struct can_clock);     /* IFLA_CAN_CLOCK */
-+	size += nla_total_size(sizeof(struct can_bittiming)); /* IFLA_CAN_BITTIMING */
-+	size += nla_total_size(sizeof(struct can_clock));     /* IFLA_CAN_CLOCK */
- 	if (priv->do_get_berr_counter)        /* IFLA_CAN_BERR_COUNTER */
--		size += sizeof(struct can_berr_counter);
-+		size += nla_total_size(sizeof(struct can_berr_counter));
- 	if (priv->bittiming_const)	      /* IFLA_CAN_BITTIMING_CONST */
--		size += sizeof(struct can_bittiming_const);
-+		size += nla_total_size(sizeof(struct can_bittiming_const));
+ 	default:
++		/* If we have an existing entry, update it's expire timer */
++		mod_timer(&mp->timer,
++			  jiffies + br->multicast_membership_interval);
+ 		goto out;
+ 	}
  
- 	return size;
- }
+@@ -679,8 +682,12 @@ static int br_multicast_add_group(struct
+ 	for (pp = &mp->ports;
+ 	     (p = mlock_dereference(*pp, br)) != NULL;
+ 	     pp = &p->next) {
+-		if (p->port == port)
++		if (p->port == port) {
++			/* We already have a portgroup, update the timer.  */
++			mod_timer(&p->timer,
++				  jiffies + br->multicast_membership_interval);
+ 			goto out;
++		}
+ 		if ((unsigned long)p->port < (unsigned long)port)
+ 			break;
+ 	}
 
 
