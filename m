@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab3KATe7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 15:34:59 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:8682 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086Ab3KATe5 (ORCPT
+	id S1753515Ab3KATi6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 15:38:58 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:31485 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872Ab3KATi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 15:34:57 -0400
-Subject: [PATCH] PCI: warn on driver probe return value greater than zero
-To: bhelgaas@google.com
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: axboe@kernel.dk, linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stephenmcameron@gmail.com, thenzl@redhat.com,
-        akpm@linux-foundation.org
-Date: Fri, 01 Nov 2013 14:34:55 -0500
-Message-ID: <20131101193455.18686.92302.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
+	Fri, 1 Nov 2013 15:38:56 -0400
+Date: Fri, 1 Nov 2013 15:37:20 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Subject: Re: linux-next: Tree for Oct 30 (include/xen/swiotlb-xen.h)
+Message-ID: <20131101193720.GB15622@phenom.dumpdata.com>
+References: <20131030184511.c90aa7f40fec6b2e1652f394@canb.auug.org.au>
+ <527153A3.5020404@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <527153A3.5020404@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+On Wed, Oct 30, 2013 at 11:44:51AM -0700, Randy Dunlap wrote:
+> On 10/30/13 00:45, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > News:  I am now doing an arm multi_v7_defconfig build between each merge.
+> > 
+> > Changes since 20131029:
+> > 
+> > The arm defconfig build is fixed again.
+> > 
+> > The net-next tree gained a conflict against the net tree.
+> > 
+> > The xen-tip tree gained a conflict against the arm tree.
+> > 
+> > The akpm-current tree gained a conflict against the tip tree and a build
+> > failure for which I reverted 3 commits.
+> > 
+> > Various build problems from yesterday have been resolved.
+> 
+> on x86_64:
 
-Ages ago, drivers could return values greater than zero from
-their probe function and this would be regarded as success.
-Commit f3ec4f87d607f40497 "PCI: change device runtime PM
-settings for probe and remove" slightly altered this in 2010,
-and commit 967577b062417b4e4b8e27b "PCI/PM: Keep runtime PM
-enabled for unbound PCI devices" in late 2012 altered it more
-signficantly, setting pci_dev->driver to NULL if the driver's
-probe function returned a value greater than zero, which would
-for example prevent the driver's remove function from being
-called on rmmod.
+Stefano, please fix that.
 
-Neither of those changes would necessarily make the driver fail
-in an obvious way though, and so at least a couple drivers (cciss,
-hpsa) fell into this hole since they were returning 1, and this
-situation went unnoticed for quite some time.
-
-If a driver's probe function returns a value greater than zero,
-issue a warning, but otherwise treat this as success.
-
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
----
- drivers/pci/pci-driver.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-index 98f7b9b..7fbe343 100644
---- a/drivers/pci/pci-driver.c
-+++ b/drivers/pci/pci-driver.c
-@@ -264,11 +264,19 @@ static long local_pci_probe(void *_ddi)
- 	pm_runtime_get_sync(dev);
- 	pci_dev->driver = pci_drv;
- 	rc = pci_drv->probe(pci_dev, ddi->id);
--	if (rc) {
-+	if (!rc)
-+		return rc;
-+	if (rc < 0) {
- 		pci_dev->driver = NULL;
- 		pm_runtime_put_sync(dev);
-+		return rc;
- 	}
--	return rc;
-+	/*
-+	 * Probe function should return < 0 for failure, 0 for success
-+	 * Treat values > 0 as success, but warn.
-+	 */
-+	dev_warn(dev, "Driver probe function unexpectedly returned %d\n", rc);
-+	return 0;
- }
- 
- static int pci_call_probe(struct pci_driver *drv, struct pci_dev *dev,
-
+> 
+> In file included from include/xen/swiotlb-xen.h:4:0,
+>                  from drivers/xen/grant-table.c:52:
+> include/linux/swiotlb.h:45:13: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/linux/swiotlb.h:45:13: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
+> include/linux/swiotlb.h:49:28: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/linux/swiotlb.h:54:14: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/linux/swiotlb.h:68:15: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/linux/swiotlb.h:71:18: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/linux/swiotlb.h:75:14: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/linux/swiotlb.h:79:9: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/linux/swiotlb.h:83:44: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/linux/swiotlb.h:88:17: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/linux/swiotlb.h:92:26: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/linux/swiotlb.h:96:21: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/linux/swiotlb.h:100:29: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/linux/swiotlb.h:104:24: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> In file included from drivers/xen/grant-table.c:52:0:
+> include/xen/swiotlb-xen.h:21:19: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/xen/swiotlb-xen.h:25:15: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/xen/swiotlb-xen.h:29:12: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/xen/swiotlb-xen.h:34:14: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/xen/swiotlb-xen.h:38:23: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/xen/swiotlb-xen.h:42:25: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/xen/swiotlb-xen.h:46:26: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> include/xen/swiotlb-xen.h:50:28: warning: 'enum dma_data_direction' declared inside parameter list [enabled by default]
+> 
+> 
+> 
+> -- 
+> ~Randy
