@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756577Ab3KAWJI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:09:08 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:48592 "EHLO
+	id S1755981Ab3KAWLq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:11:46 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48565 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756551Ab3KAWJE (ORCPT
+	with ESMTP id S1755372Ab3KAWJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:09:04 -0400
+	Fri, 1 Nov 2013 18:09:03 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
         David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH 06/11] ARM: msm: Remove pen_release usage
-Date: Fri,  1 Nov 2013 15:08:54 -0700
-Message-Id: <1383343739-23080-7-git-send-email-sboyd@codeaurora.org>
+        linux-arm-msm@vger.kernel.org, <devicetree@vger.kernel.org>
+Subject: [PATCH 02/11] devicetree: bindings: Document Qualcomm cpus and enable-method
+Date: Fri,  1 Nov 2013 15:08:50 -0700
+Message-Id: <1383343739-23080-3-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.4.2.564.g0d6cf24
 In-Reply-To: <1383343739-23080-1-git-send-email-sboyd@codeaurora.org>
 References: <1383343739-23080-1-git-send-email-sboyd@codeaurora.org>
@@ -24,207 +24,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rohit Vaswani <rvaswani@codeaurora.org>
 
-pen_release is no longer required as the synchronization
-is now managed by generic arm code.
-This is done as suggested in https://lkml.org/lkml/2013/6/4/184
+Scorpion and Krait are Qualcomm cpus. These cpus don't use the
+spin-table enable-method. Instead they rely on mmio register
+accesses to enable power and clocks to bring CPUs out of reset.
 
-Cc: Russell King <linux@arm.linux.org.uk>
+Cc: <devicetree@vger.kernel.org>
 Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+[sboyd: Split off into separate patch, renamed method to
+qcom,mmio]
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/mach-msm/Makefile  |  2 +-
- arch/arm/mach-msm/headsmp.S | 39 ---------------------------------------
- arch/arm/mach-msm/hotplug.c | 31 ++++---------------------------
- arch/arm/mach-msm/platsmp.c | 35 +++--------------------------------
- 4 files changed, 8 insertions(+), 99 deletions(-)
- delete mode 100644 arch/arm/mach-msm/headsmp.S
 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 7ed4c1b..15562cf 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -19,7 +19,7 @@ obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
- CFLAGS_scm.o :=$(call as-instr,.arch_extension sec,-DREQUIRES_SEC=1)
+This slightly conflicts with my krait EDAC series.
+
+ Documentation/devicetree/bindings/arm/cpus.txt | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+index 37258f9..e2969fa2 100644
+--- a/Documentation/devicetree/bindings/arm/cpus.txt
++++ b/Documentation/devicetree/bindings/arm/cpus.txt
+@@ -44,6 +44,8 @@ For the ARM architecture every CPU node must contain the following properties:
+ 		"marvell,mohawk"
+ 		"marvell,xsc3"
+ 		"marvell,xscale"
++		"qcom,scorpion"
++		"qcom,krait"
  
- obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
--obj-$(CONFIG_SMP) += headsmp.o platsmp.o
-+obj-$(CONFIG_SMP) += platsmp.o
+ And the following optional properties:
  
- obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
- obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o board-trout-panel.o devices-msm7x00.o
-diff --git a/arch/arm/mach-msm/headsmp.S b/arch/arm/mach-msm/headsmp.S
-deleted file mode 100644
-index 6c62c3f..0000000
---- a/arch/arm/mach-msm/headsmp.S
-+++ /dev/null
-@@ -1,39 +0,0 @@
--/*
-- *  linux/arch/arm/mach-realview/headsmp.S
-- *
-- *  Copyright (c) 2003 ARM Limited
-- *  All Rights Reserved
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--#include <linux/linkage.h>
--#include <linux/init.h>
--
--/*
-- * MSM specific entry point for secondary CPUs.  This provides
-- * a "holding pen" into which all secondary cores are held until we're
-- * ready for them to initialise.
-- */
--ENTRY(msm_secondary_startup)
--	mrc	p15, 0, r0, c0, c0, 5
--	and	r0, r0, #15
--	adr	r4, 1f
--	ldmia	r4, {r5, r6}
--	sub	r4, r4, r5
--	add	r6, r6, r4
--pen:	ldr	r7, [r6]
--	cmp	r7, r0
--	bne	pen
--
--	/*
--	 * we've been released from the holding pen: secondary_stack
--	 * should now contain the SVC stack for this core
--	 */
--	b	secondary_startup
--ENDPROC(msm_secondary_startup)
--
--	.align
--1:	.long	.
--	.long	pen_release
-diff --git a/arch/arm/mach-msm/hotplug.c b/arch/arm/mach-msm/hotplug.c
-index 326a872..cea80fc 100644
---- a/arch/arm/mach-msm/hotplug.c
-+++ b/arch/arm/mach-msm/hotplug.c
-@@ -24,33 +24,10 @@ static inline void cpu_leave_lowpower(void)
+@@ -52,6 +54,7 @@ And the following optional properties:
+ 		 different types of cpus.
+ 		 This should be one of:
+ 		 "spin-table"
++		 "qcom,mmio"
  
- static inline void platform_do_lowpower(unsigned int cpu)
- {
--	/* Just enter wfi for now. TODO: Properly shut off the cpu. */
--	for (;;) {
--		/*
--		 * here's the WFI
--		 */
--		asm("wfi"
--		    :
--		    :
--		    : "memory", "cc");
--
--		if (pen_release == cpu_logical_map(cpu)) {
--			/*
--			 * OK, proper wakeup, we're done
--			 */
--			break;
--		}
--
--		/*
--		 * getting here, means that we have come out of WFI without
--		 * having been woken up - this shouldn't happen
--		 *
--		 * The trouble is, letting people know about this is not really
--		 * possible, since we are currently running incoherently, and
--		 * therefore cannot safely call printk() or anything else
--		 */
--		pr_debug("CPU%u: spurious wakeup call\n", cpu);
--	}
-+	asm("wfi"
-+	    :
-+	    :
-+	    : "memory", "cc");
- }
+ Example:
  
- /*
-diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
-index 3f06edc..5b481db 100644
---- a/arch/arm/mach-msm/platsmp.c
-+++ b/arch/arm/mach-msm/platsmp.c
-@@ -28,7 +28,7 @@
- #define SCSS_CPU1CORE_RESET 0xD80
- #define SCSS_DBG_STATUS_CORE_PWRDUP 0xE64
- 
--extern void msm_secondary_startup(void);
-+extern void secondary_startup(void);
- 
- static DEFINE_SPINLOCK(boot_lock);
- 
-@@ -41,13 +41,6 @@ static inline int get_core_count(void)
- static void msm_secondary_init(unsigned int cpu)
- {
- 	/*
--	 * let the primary processor know we're out of the
--	 * pen, then head off into the C entry point
--	 */
--	pen_release = -1;
--	smp_wmb();
--
--	/*
- 	 * Synchronise with the boot thread.
- 	 */
- 	spin_lock(&boot_lock);
-@@ -57,7 +50,7 @@ static void msm_secondary_init(unsigned int cpu)
- static void prepare_cold_cpu(unsigned int cpu)
- {
- 	int ret;
--	ret = scm_set_boot_addr(virt_to_phys(msm_secondary_startup),
-+	ret = scm_set_boot_addr(virt_to_phys(secondary_startup),
- 				SCM_FLAG_COLDBOOT_CPU1);
- 	if (ret == 0) {
- 		void __iomem *sc1_base_ptr;
-@@ -75,7 +68,6 @@ static void prepare_cold_cpu(unsigned int cpu)
- 
- static int msm_boot_secondary(unsigned int cpu, struct task_struct *idle)
- {
--	unsigned long timeout;
- 	static int cold_boot_done;
- 
- 	/* Only need to bring cpu out of reset this way once */
-@@ -91,40 +83,19 @@ static int msm_boot_secondary(unsigned int cpu, struct task_struct *idle)
- 	spin_lock(&boot_lock);
- 
- 	/*
--	 * The secondary processor is waiting to be released from
--	 * the holding pen - release it, then wait for it to flag
--	 * that it has been released by resetting pen_release.
--	 *
--	 * Note that "pen_release" is the hardware CPU ID, whereas
--	 * "cpu" is Linux's internal ID.
--	 */
--	pen_release = cpu_logical_map(cpu);
--	__cpuc_flush_dcache_area((void *)&pen_release, sizeof(pen_release));
--	outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
--
--	/*
- 	 * Send the secondary CPU a soft interrupt, thereby causing
- 	 * the boot monitor to read the system wide flags register,
- 	 * and branch to the address found there.
- 	 */
- 	arch_send_wakeup_ipi_mask(cpumask_of(cpu));
- 
--	timeout = jiffies + (1 * HZ);
--	while (time_before(jiffies, timeout)) {
--		smp_rmb();
--		if (pen_release == -1)
--			break;
--
--		udelay(10);
--	}
--
- 	/*
- 	 * now the secondary core is starting up let it run its
- 	 * calibrations, then wait for it to finish
- 	 */
- 	spin_unlock(&boot_lock);
- 
--	return pen_release != -1 ? -ENOSYS : 0;
-+	return 0;
- }
- 
- /*
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
