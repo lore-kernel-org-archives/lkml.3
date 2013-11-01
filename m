@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419Ab3JaX6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 19:58:46 -0400
-Received: from sinikuusama.dnainternet.net ([83.102.40.134]:55059 "EHLO
-	sinikuusama.dnainternet.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752124Ab3JaX6p (ORCPT
+	id S1754160Ab3KAAFx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 20:05:53 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62985 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751517Ab3KAAFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 19:58:45 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -1
-Message-ID: <5272EEAC.6020405@iki.fi>
-Date: Fri, 01 Nov 2013 01:58:36 +0200
-From: Anssi Hannula <anssi.hannula@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 31 Oct 2013 20:05:52 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Stratos Karafotis <stratosk@semaphore.gr>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Henrik Nilsson <Karl.Henrik.Nilsson@gmail.com>
+Subject: Re: [PATCH] cpufreq: ondemand: Remove redundant return statement
+Date: Fri, 01 Nov 2013 01:18 +0100
+Message-ID: <7457887.jzoQrnelyS@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAKohponQ+oRYpdYrpKV3=GMh6ACQr+E+WygLHk0mdC+ivjeP_Q@mail.gmail.com>
+References: <5272A118.1090908@semaphore.gr> <CAKohponQ+oRYpdYrpKV3=GMh6ACQr+E+WygLHk0mdC+ivjeP_Q@mail.gmail.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-CC: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        =?UTF-8?B?UGV0ZXIgRnLDvGhiZXJnZXI=?= <fritsch@xbmc.org>,
-        Olivier Langlois <olivier@trillion01.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] ALSA: hda - hdmi: Add ATI/AMD multi-channel audio
- support
-References: <1380659456-3746-1-git-send-email-anssi.hannula@iki.fi>	<1380659456-3746-2-git-send-email-anssi.hannula@iki.fi>	<CACna6ryr37WRvKbMFmLEGt_A2zUD46rZOtJMVom+B_xK9WNLuw@mail.gmail.com>	<07e8973b4665cc23c3f4a77e9c7e2b7c@mail.onse.fi>	<CACna6ryFtmZHAhmCPEsoxZc5h4mLuM4ajnKGsp=q0jag2f_SYw@mail.gmail.com>	<5272BCE1.7010700@iki.fi>	<CACna6rzejyTOF2Fvvw1m2SAob7uU5-hJ+yRVk6HS5pDTz7+JWg@mail.gmail.com>	<5272E920.6030606@iki.fi> <CACna6rxuSUA9_1HXnY8yPhQ8BDeEnMvoX6i0WvTtst7UTvcgHA@mail.gmail.com>
-In-Reply-To: <CACna6rxuSUA9_1HXnY8yPhQ8BDeEnMvoX6i0WvTtst7UTvcgHA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-01.11.2013 01:51, Rafał Miłecki kirjoitti:
-> 2013/11/1 Anssi Hannula <anssi.hannula@iki.fi>:
->> Just to check, is the display mode 720p50 or higher (as per HDMI spec
->> 7.3.3)? Though I guess too small mode would cause something else, not
->> this...
+On Friday, November 01, 2013 12:09:16 AM Viresh Kumar wrote:
+> On 31 October 2013 23:57, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+> > After commit dfa5bb622555d9da0df21b50f46ebdeef390041b
+> > "cpufreq: ondemand: Change the calculation of target frequency",
+> > this return statement is no longer needed.
+> >
+> > Reported-by: Henrik Nilsson <Karl.Henrik.Nilsson@gmail.com>
+> > Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+> > ---
+> >  drivers/cpufreq/cpufreq_ondemand.c | 1 -
+> >  1 file changed, 1 deletion(-)
+> >
+> > diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+> > index 32f26f6..18d4091 100644
+> > --- a/drivers/cpufreq/cpufreq_ondemand.c
+> > +++ b/drivers/cpufreq/cpufreq_ondemand.c
+> > @@ -168,7 +168,6 @@ static void od_check_cpu(int cpu, unsigned int load)
+> >                         dbs_info->rate_mult =
+> >                                 od_tuners->sampling_down_factor;
+> >                 dbs_freq_increase(policy, policy->max);
+> > -               return;
+> >         } else {
+> >                 /* Calculate the next frequency proportional to load */
+> >                 unsigned int freq_next;
 > 
-> I'm using 1080p all the time. Do you think that
-> HDMI_AUDIO_PACKETS_PER_LINE may have anything to do with this issue
-> (see evergreen_hdmi.c)?
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Well, anything is possible, but that stuff seems unlikely here, since
-apparently some channels get through fine. In multichannel HDMI one
-sample of each channel is carried in each audio sample packet, so just
-straight "packet loss" shouldn't cause this.
-
->> Also, does DTS-HD/TrueHD work with this receiver (interesting since
->> those require 8-channel 192kHz link)?
-> 
-> Both are working for me. I've tested it using 2 movies:
-> 1) English TrueHD.5.1 @ 1417 kbps
-> 2) Audio
-> Codec................: DTSHD-MA
-> Bitrate..............: 3718 kbps
-> kHz/bit..............: 24-bit
-> Channels.............: 5.1
-> Language.............: English
-
-Which makes it even stranger, since HBR packets look exactly like ASP
-packets with a few flipped bits.
-
-Hm, the earlier non-working speaker-test commands were with -c6. What
-about -c8?
-
->> Would be interesting to check if this works in Windows I guess (or maybe
->> even just fglrx, though I can't think of a reason it'd make a difference).
-> 
-> Installing fglrx is an option, I can try that. Not a big chance for
-> Windows here.
-> 
-
+Queued up for 3.13, thanks!
 
 -- 
-Anssi Hannula
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
