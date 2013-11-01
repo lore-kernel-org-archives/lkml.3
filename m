@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab3KAWdV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:33:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55038 "EHLO
+	id S1755313Ab3KAWEw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:04:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55010 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755332Ab3KAWEy (ORCPT
+	with ESMTP id S1755075Ab3KAWEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:04:54 -0400
+	Fri, 1 Nov 2013 18:04:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 31/54] wanxl: fix info leak in ioctl
-Date: Fri,  1 Nov 2013 15:03:59 -0700
-Message-Id: <20131101220214.808250623@linuxfoundation.org>
+Subject: [PATCH 3.10 24/54] virtio-net: dont respond to cpu hotplug notifier if were not ready
+Date: Fri,  1 Nov 2013 15:03:52 -0700
+Message-Id: <20131101220214.042065189@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,30 +30,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salva Peiró <speiro@ai2.upv.es>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 2b13d06c9584b4eb773f1e80bbaedab9a1c344e1 ]
+[ Upstream commit 3ab098df35f8b98b6553edc2e40234af512ba877 ]
 
-The wanxl_ioctl() code fails to initialize the two padding bytes of
-struct sync_serial_settings after the ->loopback member. Add an explicit
-memset(0) before filling the structure to avoid the info leak.
+We're trying to re-configure the affinity unconditionally in cpu hotplug
+callback. This may lead the issue during resuming from s3/s4 since
 
-Signed-off-by: Salva Peiró <speiro@ai2.upv.es>
+- virt queues haven't been allocated at that time.
+- it's unnecessary since thaw method will re-configure the affinity.
+
+Fix this issue by checking the config_enable and do nothing is we're not ready.
+
+The bug were introduced by commit 8de4b2f3ae90c8fc0f17eeaab87d5a951b66ee17
+(virtio-net: reset virtqueue affinity when doing cpu hotplug).
+
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/wan/wanxl.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/virtio_net.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/net/wan/wanxl.c
-+++ b/drivers/net/wan/wanxl.c
-@@ -355,6 +355,7 @@ static int wanxl_ioctl(struct net_device
- 			ifr->ifr_settings.size = size; /* data size wanted */
- 			return -ENOBUFS;
- 		}
-+		memset(&line, 0, sizeof(line));
- 		line.clock_type = get_status(port)->clocking;
- 		line.clock_rate = 0;
- 		line.loopback = 0;
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1097,6 +1097,11 @@ static int virtnet_cpu_callback(struct n
+ {
+ 	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
+ 
++	mutex_lock(&vi->config_lock);
++
++	if (!vi->config_enable)
++		goto done;
++
+ 	switch(action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_ONLINE:
+ 	case CPU_DOWN_FAILED:
+@@ -1109,6 +1114,9 @@ static int virtnet_cpu_callback(struct n
+ 	default:
+ 		break;
+ 	}
++
++done:
++	mutex_unlock(&vi->config_lock);
+ 	return NOTIFY_OK;
+ }
+ 
 
 
