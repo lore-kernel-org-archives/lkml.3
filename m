@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab3KAWEk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:04:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54958 "EHLO
+	id S1755070Ab3KAWEp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:04:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54982 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754805Ab3KAWEh (ORCPT
+	with ESMTP id S1754981Ab3KAWEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:04:37 -0400
+	Fri, 1 Nov 2013 18:04:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrick McHardy <kaber@trash.net>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Eric Dumazet <edumazet@google.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Eilon Greenstein <eilong@broadcom.com>,
+        Dmitry Kravkov <dmitry@broadcom.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 17/54] net: vlan: fix nlmsg size calculation in vlan_get_size()
-Date: Fri,  1 Nov 2013 15:03:45 -0700
-Message-Id: <20131101220213.264448547@linuxfoundation.org>
+Subject: [PATCH 3.10 23/54] bnx2x: record rx queue for LRO packets
+Date: Fri,  1 Nov 2013 15:03:51 -0700
+Message-Id: <20131101220213.936516651@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -28,31 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit c33a39c575068c2ea9bffb22fd6de2df19c74b89 ]
+[ Upstream commit 60e66fee56b2256dcb1dc2ea1b2ddcb6e273857d ]
 
-This patch fixes the calculation of the nlmsg size, by adding the missing
-nla_total_size().
+RPS support is kind of broken on bnx2x, because only non LRO packets
+get proper rx queue information. This triggers reorders, as it seems
+bnx2x like to generate a non LRO packet for segment including TCP PUSH
+flag : (this might be pure coincidence, but all the reorders I've
+seen involve segments with a PUSH)
 
-Cc: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+11:13:34.335847 IP A > B: . 415808:447136(31328) ack 1 win 457 <nop,nop,timestamp 3789336 3985797>
+11:13:34.335992 IP A > B: . 447136:448560(1424) ack 1 win 457 <nop,nop,timestamp 3789336 3985797>
+11:13:34.336391 IP A > B: . 448560:479888(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985797>
+11:13:34.336425 IP A > B: P 511216:512640(1424) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+11:13:34.336423 IP A > B: . 479888:511216(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+11:13:34.336924 IP A > B: . 512640:543968(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+11:13:34.336963 IP A > B: . 543968:575296(31328) ack 1 win 457 <nop,nop,timestamp 3789337 3985798>
+
+We must call skb_record_rx_queue() to properly give to RPS (and more
+generally for TX queue selection on forward path) the receive queue
+information.
+
+Similar fix is needed for skb_mark_napi_id(), but will be handled
+in a separate patch to ease stable backports.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Willem de Bruijn <willemb@google.com>
+Cc: Eilon Greenstein <eilong@broadcom.com>
+Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/8021q/vlan_netlink.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/8021q/vlan_netlink.c
-+++ b/net/8021q/vlan_netlink.c
-@@ -171,7 +171,7 @@ static size_t vlan_get_size(const struct
- 
- 	return nla_total_size(2) +	/* IFLA_VLAN_PROTOCOL */
- 	       nla_total_size(2) +	/* IFLA_VLAN_ID */
--	       sizeof(struct ifla_vlan_flags) + /* IFLA_VLAN_FLAGS */
-+	       nla_total_size(sizeof(struct ifla_vlan_flags)) + /* IFLA_VLAN_FLAGS */
- 	       vlan_qos_map_size(vlan->nr_ingress_mappings) +
- 	       vlan_qos_map_size(vlan->nr_egress_mappings);
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -670,6 +670,7 @@ static void bnx2x_gro_receive(struct bnx
+ 		}
+ 	}
+ #endif
++	skb_record_rx_queue(skb, fp->rx_queue);
+ 	napi_gro_receive(&fp->napi, skb);
  }
+ 
 
 
