@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756771Ab3KAWWH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:22:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55390 "EHLO
+	id S1756781Ab3KAWW3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:22:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55385 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756268Ab3KAWIK (ORCPT
+	with ESMTP id S1756263Ab3KAWIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:10 -0400
+	Fri, 1 Nov 2013 18:08:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cong Wang <amwang@redhat.com>,
-        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
-        Vlad Yasevich <vyasevich@gmail.com>,
+        Mathias Krause <minipli@googlemail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 23/66] Revert "bridge: only expire the mdb entry when query is received"
-Date: Fri,  1 Nov 2013 15:06:59 -0700
-Message-Id: <20131101220641.158158095@linuxfoundation.org>
+Subject: [PATCH 3.11 30/66] connector: use nlmsg_len() to check message length
+Date: Fri,  1 Nov 2013 15:07:06 -0700
+Message-Id: <20131101220643.063821127@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,207 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Lüssing <linus.luessing@web.de>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 454594f3b93a49ef568cd190c5af31376b105a7b ]
+[ Upstream commit 162b2bedc084d2d908a04c93383ba02348b648b0 ]
 
-While this commit was a good attempt to fix issues occuring when no
-multicast querier is present, this commit still has two more issues:
+The current code tests the length of the whole netlink message to be
+at least as long to fit a cn_msg. This is wrong as nlmsg_len includes
+the length of the netlink message header. Use nlmsg_len() instead to
+fix this "off-by-NLMSG_HDRLEN" size check.
 
-1) There are cases where mdb entries do not expire even if there is a
-querier present. The bridge will unnecessarily continue flooding
-multicast packets on the according ports.
-
-2) Never removing an mdb entry could be exploited for a Denial of
-Service by an attacker on the local link, slowly, but steadily eating up
-all memory.
-
-Actually, this commit became obsolete with
-"bridge: disable snooping if there is no querier" (b00589af3b)
-which included fixes for a few more cases.
-
-Therefore reverting the following commits (the commit stated in the
-commit message plus three of its follow up fixes):
-
-====================
-Revert "bridge: update mdb expiration timer upon reports."
-This reverts commit f144febd93d5ee534fdf23505ab091b2b9088edc.
-Revert "bridge: do not call setup_timer() multiple times"
-This reverts commit 1faabf2aab1fdaa1ace4e8c829d1b9cf7bfec2f1.
-Revert "bridge: fix some kernel warning in multicast timer"
-This reverts commit c7e8e8a8f7a70b343ca1e0f90a31e35ab2d16de1.
-Revert "bridge: only expire the mdb entry when query is received"
-This reverts commit 9f00b2e7cf241fa389733d41b615efdaa2cb0f5b.
-====================
-
-CC: Cong Wang <amwang@redhat.com>
-Signed-off-by: Linus Lüssing <linus.luessing@web.de>
-Reviewed-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_mdb.c       |    2 -
- net/bridge/br_multicast.c |   47 ++++++++++++++++++++++++++--------------------
- net/bridge/br_private.h   |    1 
- 3 files changed, 28 insertions(+), 22 deletions(-)
+ drivers/connector/connector.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/net/bridge/br_mdb.c
-+++ b/net/bridge/br_mdb.c
-@@ -451,7 +451,7 @@ static int __br_mdb_del(struct net_bridg
- 		call_rcu_bh(&p->rcu, br_multicast_free_pg);
- 		err = 0;
+--- a/drivers/connector/connector.c
++++ b/drivers/connector/connector.c
+@@ -157,17 +157,18 @@ static int cn_call_callback(struct sk_bu
+ static void cn_rx_skb(struct sk_buff *__skb)
+ {
+ 	struct nlmsghdr *nlh;
+-	int err;
+ 	struct sk_buff *skb;
++	int len, err;
  
--		if (!mp->ports && !mp->mglist && mp->timer_armed &&
-+		if (!mp->ports && !mp->mglist &&
- 		    netif_running(br->dev))
- 			mod_timer(&mp->timer, jiffies);
- 		break;
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -271,7 +271,7 @@ static void br_multicast_del_pg(struct n
- 		del_timer(&p->timer);
- 		call_rcu_bh(&p->rcu, br_multicast_free_pg);
+ 	skb = skb_get(__skb);
  
--		if (!mp->ports && !mp->mglist && mp->timer_armed &&
-+		if (!mp->ports && !mp->mglist &&
- 		    netif_running(br->dev))
- 			mod_timer(&mp->timer, jiffies);
+ 	if (skb->len >= NLMSG_HDRLEN) {
+ 		nlh = nlmsg_hdr(skb);
++		len = nlmsg_len(nlh);
  
-@@ -610,9 +610,6 @@ rehash:
- 		break;
- 
- 	default:
--		/* If we have an existing entry, update it's expire timer */
--		mod_timer(&mp->timer,
--			  jiffies + br->multicast_membership_interval);
- 		goto out;
- 	}
- 
-@@ -622,7 +619,6 @@ rehash:
- 
- 	mp->br = br;
- 	mp->addr = *group;
--
- 	setup_timer(&mp->timer, br_multicast_group_expired,
- 		    (unsigned long)mp);
- 
-@@ -662,6 +658,7 @@ static int br_multicast_add_group(struct
- 	struct net_bridge_mdb_entry *mp;
- 	struct net_bridge_port_group *p;
- 	struct net_bridge_port_group __rcu **pp;
-+	unsigned long now = jiffies;
- 	int err;
- 
- 	spin_lock(&br->multicast_lock);
-@@ -676,18 +673,15 @@ static int br_multicast_add_group(struct
- 
- 	if (!port) {
- 		mp->mglist = true;
-+		mod_timer(&mp->timer, now + br->multicast_membership_interval);
- 		goto out;
- 	}
- 
- 	for (pp = &mp->ports;
- 	     (p = mlock_dereference(*pp, br)) != NULL;
- 	     pp = &p->next) {
--		if (p->port == port) {
--			/* We already have a portgroup, update the timer.  */
--			mod_timer(&p->timer,
--				  jiffies + br->multicast_membership_interval);
--			goto out;
--		}
-+		if (p->port == port)
-+			goto found;
- 		if ((unsigned long)p->port < (unsigned long)port)
- 			break;
- 	}
-@@ -698,6 +692,8 @@ static int br_multicast_add_group(struct
- 	rcu_assign_pointer(*pp, p);
- 	br_mdb_notify(br->dev, port, group, RTM_NEWMDB);
- 
-+found:
-+	mod_timer(&p->timer, now + br->multicast_membership_interval);
- out:
- 	err = 0;
- 
-@@ -1197,9 +1193,6 @@ static int br_ip4_multicast_query(struct
- 	if (!mp)
- 		goto out;
- 
--	mod_timer(&mp->timer, now + br->multicast_membership_interval);
--	mp->timer_armed = true;
--
- 	max_delay *= br->multicast_last_member_count;
- 
- 	if (mp->mglist &&
-@@ -1276,9 +1269,6 @@ static int br_ip6_multicast_query(struct
- 	if (!mp)
- 		goto out;
- 
--	mod_timer(&mp->timer, now + br->multicast_membership_interval);
--	mp->timer_armed = true;
--
- 	max_delay *= br->multicast_last_member_count;
- 	if (mp->mglist &&
- 	    (timer_pending(&mp->timer) ?
-@@ -1364,7 +1354,7 @@ static void br_multicast_leave_group(str
- 			call_rcu_bh(&p->rcu, br_multicast_free_pg);
- 			br_mdb_notify(br->dev, port, group, RTM_DELMDB);
- 
--			if (!mp->ports && !mp->mglist && mp->timer_armed &&
-+			if (!mp->ports && !mp->mglist &&
- 			    netif_running(br->dev))
- 				mod_timer(&mp->timer, jiffies);
+-		if (nlh->nlmsg_len < sizeof(struct cn_msg) ||
++		if (len < (int)sizeof(struct cn_msg) ||
+ 		    skb->len < nlh->nlmsg_len ||
+-		    nlh->nlmsg_len > CONNECTOR_MAX_MSG_SIZE) {
++		    len > CONNECTOR_MAX_MSG_SIZE) {
+ 			kfree_skb(skb);
+ 			return;
  		}
-@@ -1376,12 +1366,30 @@ static void br_multicast_leave_group(str
- 		     br->multicast_last_member_interval;
- 
- 	if (!port) {
--		if (mp->mglist && mp->timer_armed &&
-+		if (mp->mglist &&
- 		    (timer_pending(&mp->timer) ?
- 		     time_after(mp->timer.expires, time) :
- 		     try_to_del_timer_sync(&mp->timer) >= 0)) {
- 			mod_timer(&mp->timer, time);
- 		}
-+
-+		goto out;
-+	}
-+
-+	for (p = mlock_dereference(mp->ports, br);
-+	     p != NULL;
-+	     p = mlock_dereference(p->next, br)) {
-+		if (p->port != port)
-+			continue;
-+
-+		if (!hlist_unhashed(&p->mglist) &&
-+		    (timer_pending(&p->timer) ?
-+		     time_after(p->timer.expires, time) :
-+		     try_to_del_timer_sync(&p->timer) >= 0)) {
-+			mod_timer(&p->timer, time);
-+		}
-+
-+		break;
- 	}
- out:
- 	spin_unlock(&br->multicast_lock);
-@@ -1798,7 +1806,6 @@ void br_multicast_stop(struct net_bridge
- 		hlist_for_each_entry_safe(mp, n, &mdb->mhash[i],
- 					  hlist[ver]) {
- 			del_timer(&mp->timer);
--			mp->timer_armed = false;
- 			call_rcu_bh(&mp->rcu, br_multicast_free_group);
- 		}
- 	}
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -126,7 +126,6 @@ struct net_bridge_mdb_entry
- 	struct timer_list		timer;
- 	struct br_ip			addr;
- 	bool				mglist;
--	bool				timer_armed;
- };
- 
- struct net_bridge_mdb_htable
 
 
