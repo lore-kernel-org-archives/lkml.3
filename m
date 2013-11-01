@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab3KAGHV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 02:07:21 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:45140 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417Ab3KAGHT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 02:07:19 -0400
-X-AuditID: 9c93016f-b7b28ae00000111e-c8-5273451512f2
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] perf timechart: use proc_num to implement --power-only
-References: <1382439412-23713-1-git-send-email-stfomichev@yandex-team.ru>
-	<1382439412-23713-3-git-send-email-stfomichev@yandex-team.ru>
-	<87txg05wrc.fsf@sejong.aot.lge.com>
-	<20131029092846.GB3406@stfomichev-desktop>
-Date: Fri, 01 Nov 2013 15:07:17 +0900
-In-Reply-To: <20131029092846.GB3406@stfomichev-desktop> (Stanislav Fomichev's
-	message of "Tue, 29 Oct 2013 13:28:46 +0400")
-Message-ID: <874n7w64fe.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S1754331Ab3KAGIN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 02:08:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48929 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753642Ab3KAGIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 02:08:12 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, edumazet@google.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
+        mwdalton@google.com, virtualization@lists.linux-foundation.org
+Cc: kmindg@gmail.com, Jason Wang <jasowang@redhat.com>
+Subject: [PATCH net-next V3 1/2] net: introduce skb_coalesce_rx_frag()
+Date: Fri,  1 Nov 2013 14:07:47 +0800
+Message-Id: <1383286068-10421-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Oct 2013 13:28:46 +0400, Stanislav Fomichev wrote:
->> I don't see how it does same thing.  You mean it by skipping
->> draw_process_bars() and draw_wakeups() on patch 1?  It'd be better
->> changelog explains the details.
-> Yes, it depends on the previous patch, I'll add more info to the
-> changelog.
+Sometimes we need to coalesce the rx frags to avoid frag list. One example is
+virtio-net driver which tries to use small frags for both MTU sized packet and
+GSO packet. So this patch introduce skb_coalesce_rx_frag() to do this.
 
-If so, I think it'd better moving the if () parts into this patch.
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Michael Dalton <mwdalton@google.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+Changes from V2:
+- remove the skb_frag_unref() and let the called to put the page reference
+Changes from V1:
+- remove the useless off parameter.
+---
+ include/linux/skbuff.h |  3 +++
+ net/core/skbuff.c      | 12 ++++++++++++
+ 2 files changed, 15 insertions(+)
 
-Thanks,
-Namhyung
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 2c15497..fffaeaf 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1372,6 +1372,9 @@ static inline void skb_fill_page_desc(struct sk_buff *skb, int i,
+ void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page, int off,
+ 		     int size, unsigned int truesize);
+ 
++void skb_coalesce_rx_frag(struct sk_buff *skb, int i, int size,
++			  unsigned int truesize);
++
+ #define SKB_PAGE_ASSERT(skb) 	BUG_ON(skb_shinfo(skb)->nr_frags)
+ #define SKB_FRAG_ASSERT(skb) 	BUG_ON(skb_has_frag_list(skb))
+ #define SKB_LINEAR_ASSERT(skb)  BUG_ON(skb_is_nonlinear(skb))
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 0ab32fa..a729b97 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -476,6 +476,18 @@ void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page, int off,
+ }
+ EXPORT_SYMBOL(skb_add_rx_frag);
+ 
++void skb_coalesce_rx_frag(struct sk_buff *skb, int i, int size,
++			  unsigned int truesize)
++{
++	skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
++
++	skb_frag_size_add(frag, size);
++	skb->len += size;
++	skb->data_len += size;
++	skb->truesize += truesize;
++}
++EXPORT_SYMBOL(skb_coalesce_rx_frag);
++
+ static void skb_drop_list(struct sk_buff **listp)
+ {
+ 	kfree_skb_list(*listp);
+-- 
+1.8.1.2
 
->
->> And I'd like to keep it as BOOLEAN option - it's simpler and more
->> straight-forward IMHO.
->> 
->> How about adding
->> 
->> 	if (power_only)
->> 		proc_num = 0;
->> 
->> after parsing the command line options?
-> Ok, this works too.
