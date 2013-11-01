@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab3KAWTE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:19:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55456 "EHLO
+	id S1756638Ab3KAWTZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:19:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55449 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756286Ab3KAWIU (ORCPT
+	with ESMTP id S1756352Ab3KAWIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:20 -0400
+	Fri, 1 Nov 2013 18:08:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Phil Oester <kernel@linuxace.com>, Mark Brooks <mark@loadbalancer.org>,
-        Julian Anastasov <ja@ssi.bg>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 43/66] ipv6: always prefer rt6i_gateway if present
-Date: Fri,  1 Nov 2013 15:07:19 -0700
-Message-Id: <20131101220646.573145988@linuxfoundation.org>
+        Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>
+Subject: [PATCH 3.11 42/66] inet: fix possible memory corruption with UDP_CORK and UFO
+Date: Fri,  1 Nov 2013 15:07:18 -0700
+Message-Id: <20131101220646.234389557@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -29,53 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julian Anastasov <ja@ssi.bg>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 96dc809514fb2328605198a0602b67554d8cce7b ]
+[ This is a simplified -stable version of a set of upstream commits. ]
 
-In v3.9 6fd6ce2056de2709 ("ipv6: Do not depend on rt->n in
-ip6_finish_output2()." changed the behaviour of ip6_finish_output2()
-such that the recently introduced rt6_nexthop() is used
-instead of an assigned neighbor.
+This is a replacement patch only for stable which does fix the problems
+handled by the following two commits in -net:
 
-As rt6_nexthop() prefers rt6i_gateway only for gatewayed
-routes this causes a problem for users like IPVS, xt_TEE and
-RAW(hdrincl) if they want to use different address for routing
-compared to the destination address.
+"ip_output: do skb ufo init for peeked non ufo skb as well" (e93b7d748be887cd7639b113ba7d7ef792a7efb9)
+"ip6_output: do skb ufo init for peeked non ufo skb as well" (c547dbf55d5f8cf615ccc0e7265e98db27d3fb8b)
 
-Another case is when redirect can create RTF_DYNAMIC
-route without RTF_GATEWAY flag, we ignore the rt6i_gateway
-in rt6_nexthop().
+Three frames are written on a corked udp socket for which the output
+netdevice has UFO enabled.  If the first and third frame are smaller than
+the mtu and the second one is bigger, we enqueue the second frame with
+skb_append_datato_frags without initializing the gso fields. This leads
+to the third frame appended regulary and thus constructing an invalid skb.
 
-Fix the above problems by considering the rt6i_gateway if
-present, so that traffic routed to address on local subnet is
-not wrongly diverted to the destination address.
+This fixes the problem by always using skb_append_datato_frags as soon
+as the first frag got enqueued to the skb without marking the packet
+as SKB_GSO_UDP.
 
-Thanks to Simon Horman and Phil Oester for spotting the
-problematic commit.
+The problem with only two frames for ipv6 was fixed by "ipv6: udp
+packets following an UFO enqueued packet need also be handled by UFO"
+(2811ebac2521ceac84f2bdae402455baa6a7fb47).
 
-Thanks to Hannes Frederic Sowa for his review and help in testing.
-
-Reported-by: Phil Oester <kernel@linuxace.com>
-Reported-by: Mark Brooks <mark@loadbalancer.org>
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Jiri Pirko <jiri@resnulli.us>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/ip6_route.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/skbuff.h |    5 +++++
+ net/ipv4/ip_output.c   |    2 +-
+ net/ipv6/ip6_output.c  |    2 +-
+ 3 files changed, 7 insertions(+), 2 deletions(-)
 
---- a/include/net/ip6_route.h
-+++ b/include/net/ip6_route.h
-@@ -198,7 +198,7 @@ static inline int ip6_skb_dst_mtu(struct
- 
- static inline struct in6_addr *rt6_nexthop(struct rt6_info *rt, struct in6_addr *dest)
- {
--	if (rt->rt6i_flags & RTF_GATEWAY)
-+	if (rt->rt6i_flags & RTF_GATEWAY || !ipv6_addr_any(&rt->rt6i_gateway))
- 		return &rt->rt6i_gateway;
- 	return dest;
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1316,6 +1316,11 @@ static inline int skb_pagelen(const stru
+ 	return len + skb_headlen(skb);
  }
+ 
++static inline bool skb_has_frags(const struct sk_buff *skb)
++{
++	return skb_shinfo(skb)->nr_frags;
++}
++
+ /**
+  * __skb_fill_page_desc - initialise a paged fragment in an skb
+  * @skb: buffer containing fragment to be initialised
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -836,7 +836,7 @@ static int __ip_append_data(struct sock
+ 		csummode = CHECKSUM_PARTIAL;
+ 
+ 	cork->length += length;
+-	if (((length > mtu) || (skb && skb_is_gso(skb))) &&
++	if (((length > mtu) || (skb && skb_has_frags(skb))) &&
+ 	    (sk->sk_protocol == IPPROTO_UDP) &&
+ 	    (rt->dst.dev->features & NETIF_F_UFO) && !rt->dst.header_len) {
+ 		err = ip_ufo_append_data(sk, queue, getfrag, from, length,
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1252,7 +1252,7 @@ int ip6_append_data(struct sock *sk, int
+ 	skb = skb_peek_tail(&sk->sk_write_queue);
+ 	cork->length += length;
+ 	if (((length > mtu) ||
+-	     (skb && skb_is_gso(skb))) &&
++	     (skb && skb_has_frags(skb))) &&
+ 	    (sk->sk_protocol == IPPROTO_UDP) &&
+ 	    (rt->dst.dev->features & NETIF_F_UFO)) {
+ 		err = ip6_ufo_append_data(sk, getfrag, from, length,
 
 
