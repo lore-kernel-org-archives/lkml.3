@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690Ab3KATqP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 15:46:15 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:38535 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587Ab3KATqM (ORCPT
+	id S1753814Ab3KATqS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 15:46:18 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:59317 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753648Ab3KATqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 15:46:12 -0400
+	Fri, 1 Nov 2013 15:46:14 -0400
 From: Matt Porter <matt.porter@linaro.org>
 To: Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -21,72 +21,75 @@ Cc: Linux USB List <linux-usb@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Devicetree List <devicetree@vger.kernel.org>,
         Linaro Patches <patches@linaro.org>
-Subject: [PATCH v2 0/9] USB Device Controller support for BCM281xx
-Date: Fri,  1 Nov 2013 15:45:49 -0400
-Message-Id: <1383335158-19730-1-git-send-email-matt.porter@linaro.org>
+Subject: [PATCH v2 1/9] phy: add phy_get_bus_width()/phy_set_bus_width() calls
+Date: Fri,  1 Nov 2013 15:45:50 -0400
+Message-Id: <1383335158-19730-2-git-send-email-matt.porter@linaro.org>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1383335158-19730-1-git-send-email-matt.porter@linaro.org>
+References: <1383335158-19730-1-git-send-email-matt.porter@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since v1:
-	- Convert USB phy driver to generic phy subsystem
-	- Add phy bus width apis
-	- Drop dwc2 phy bus width DT property in favor of querying the
-	  phy provider for bus width
-	- Add generic phy/clock properties to dwc2 DT binding
-	- Add generic phy subsystem support to s3c-hsotg with the
-	  existing usb phy and pdata phy methods as a fallback
-	- Split bindings out to separate patches to match the latest
-	  DT binding review guidelines
+This adds a pair of APIs that allows the generic PHY subsystem to
+provide information on the PHY bus width. The PHY provider driver may
+use phy_set_bus_width() to set the bus width that the PHY supports.
+The controller driver may then use phy_get_bus_width() to fetch the
+PHY bus width in order to properly configure the controller.
 
-This series adds USB Device Controller support for the Broadcom
-BCM281xx family of parts. BCM281xx contains a DWC2 OTG block and
-s3c-hsotg is used to support UDC operation.
+Signed-off-by: Matt Porter <matt.porter@linaro.org>
+---
+ include/linux/phy/phy.h | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-Part 1 adds phy bus width support to the generic phy subsystem
-
-Parts 2-6 allows s3c-hsotg to build on non-Samsung platforms, supports
-the dwc2 binding, and enables generic phy support to support fetching
-of the phy bus width.
-
-Part 7-8 add a generic phy binding and driver for the BCM Kona USB PHY.
-
-Part 9 adds the DT nodes to enable UDC support on both BCM281xx boards
-in the kernel.
-
-This series depends on the "Update Kona drivers to use clocks" series
-(https://lkml.org/lkml/2013/10/3/645). The dependencies noted for that
-series are already queued for 3.13. It also depends on the generic PHY
-subsystem which has also been queued for 3.13.
-
-Matt Porter (9):
-  phy: add phy_get_bus_width()/phy_set_bus_width() calls
-  staging: dwc2: update DT binding to add generic clock/phy properties
-  usb: gadget: s3c-hsotg: enable build for other platforms
-  usb: gadget: s3c-hsotg: add snps,dwc2 compatible string
-  usb: gadget: s3c-hsotg: enable generic phy support
-  usb: gadget: s3c-hsotg: get phy bus width from phy subsystem
-  phy: add Broadcom Kona USB2 PHY DT binding
-  phy: add Broadcom Kona USB2 PHY driver
-  ARM: dts: add usb udc support to bcm281xx
-
- .../devicetree/bindings/phy/bcm-kona-usb2-phy.txt  |  15 ++
- Documentation/devicetree/bindings/staging/dwc2.txt |  12 ++
- arch/arm/boot/dts/bcm11351-brt.dts                 |   6 +
- arch/arm/boot/dts/bcm11351.dtsi                    |  18 +++
- arch/arm/boot/dts/bcm28155-ap.dts                  |   8 +
- drivers/phy/Kconfig                                |   6 +
- drivers/phy/Makefile                               |   2 +
- drivers/phy/phy-bcm-kona-usb2.c                    | 161 +++++++++++++++++++++
- drivers/usb/gadget/Kconfig                         |   7 +-
- drivers/usb/gadget/s3c-hsotg.c                     |  71 ++++++---
- drivers/usb/gadget/s3c-hsotg.h                     |   1 +
- include/linux/phy/phy.h                            |  16 ++
- 12 files changed, 298 insertions(+), 25 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/phy/bcm-kona-usb2-phy.txt
- create mode 100644 drivers/phy/phy-bcm-kona-usb2.c
-
+diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
+index 6d72269..e858ce1 100644
+--- a/include/linux/phy/phy.h
++++ b/include/linux/phy/phy.h
+@@ -46,6 +46,7 @@ struct phy_ops {
+  * @mutex: mutex to protect phy_ops
+  * @init_count: used to protect when the PHY is used by multiple consumers
+  * @power_count: used to protect when the PHY is used by multiple consumers
++ * @bus_width: used to specify data width of the PHY bus
+  */
+ struct phy {
+ 	struct device		dev;
+@@ -55,6 +56,7 @@ struct phy {
+ 	struct mutex		mutex;
+ 	int			init_count;
+ 	int			power_count;
++	int			bus_width;
+ };
+ 
+ /**
+@@ -127,6 +129,12 @@ int phy_init(struct phy *phy);
+ int phy_exit(struct phy *phy);
+ int phy_power_on(struct phy *phy);
+ int phy_power_off(struct phy *phy);
++static inline int phy_get_bus_width(struct phy *phy) {
++	return phy->bus_width;
++};
++static inline void phy_set_bus_width(struct phy *phy, int bus_width) {
++	phy->bus_width = bus_width;
++};
+ struct phy *phy_get(struct device *dev, const char *string);
+ struct phy *devm_phy_get(struct device *dev, const char *string);
+ void phy_put(struct phy *phy);
+@@ -199,6 +207,14 @@ static inline int phy_power_off(struct phy *phy)
+ 	return -ENOSYS;
+ }
+ 
++static inline int phy_get_bus_width(struct phy *phy) {
++	return -ENOSYS;
++};
++
++static inline void phy_set_bus_width(struct phy *phy, bus_width) {
++	return;
++};
++
+ static inline struct phy *phy_get(struct device *dev, const char *string)
+ {
+ 	return ERR_PTR(-ENOSYS);
 -- 
 1.8.4
 
