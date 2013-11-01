@@ -1,24 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853Ab3KAWFQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:05:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55107 "EHLO
+	id S1756023Ab3KAWGo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:06:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55130 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755763Ab3KAWFN (ORCPT
+	with ESMTP id S1755675Ab3KAWFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:05:13 -0400
+	Fri, 1 Nov 2013 18:05:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [PATCH 3.10 44/54] dm snapshot: fix data corruption
-Date: Fri,  1 Nov 2013 15:04:12 -0700
-Message-Id: <20131101220216.274008655@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        Jan Kara <jack@suse.cz>, Richard Weinberger <richard@nod.at>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 49/54] writeback: fix negative bdi max pause
+Date: Fri,  1 Nov 2013 15:04:17 -0700
+Message-Id: <20131101220216.811628543@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,88 +34,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Fengguang Wu <fengguang.wu@intel.com>
 
-commit e9c6a182649f4259db704ae15a91ac820e63b0ca upstream.
+commit e3b6c655b91e01a1dade056cfa358581b47a5351 upstream.
 
-This patch fixes a particular type of data corruption that has been
-encountered when loading a snapshot's metadata from disk.
+Toralf runs trinity on UML/i386.  After some time it hangs and the last
+message line is
 
-When we allocate a new chunk in persistent_prepare, we increment
-ps->next_free and we make sure that it doesn't point to a metadata area
-by further incrementing it if necessary.
+	BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:1521]
 
-When we load metadata from disk on device activation, ps->next_free is
-positioned after the last used data chunk. However, if this last used
-data chunk is followed by a metadata area, ps->next_free is positioned
-erroneously to the metadata area. A newly-allocated chunk is placed at
-the same location as the metadata area, resulting in data or metadata
-corruption.
+It's found that pages_dirtied becomes very large.  More than 1000000000
+pages in this case:
 
-This patch changes the code so that ps->next_free skips the metadata
-area when metadata are loaded in function read_exceptions.
+	period = HZ * pages_dirtied / task_ratelimit;
+	BUG_ON(pages_dirtied > 2000000000);
+	BUG_ON(pages_dirtied > 1000000000);      <---------
 
-The patch also moves a piece of code from persistent_prepare_exception
-to a separate function skip_metadata to avoid code duplication.
+UML debug printf shows that we got negative pause here:
 
-CVE-2013-4299
+	ick: pause : -984
+	ick: pages_dirtied : 0
+	ick: task_ratelimit: 0
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+	 pause:
+	+       if (pause < 0)  {
+	+               extern int printf(char *, ...);
+	+               printf("ick : pause : %li\n", pause);
+	+               printf("ick: pages_dirtied : %lu\n", pages_dirtied);
+	+               printf("ick: task_ratelimit: %lu\n", task_ratelimit);
+	+               BUG_ON(1);
+	+       }
+	        trace_balance_dirty_pages(bdi,
+
+Since pause is bounded by [min_pause, max_pause] where min_pause is also
+bounded by max_pause.  It's suspected and demonstrated that the
+max_pause calculation goes wrong:
+
+	ick: pause : -717
+	ick: min_pause : -177
+	ick: max_pause : -717
+	ick: pages_dirtied : 14
+	ick: task_ratelimit: 0
+
+The problem lies in the two "long = unsigned long" assignments in
+bdi_max_pause() which might go negative if the highest bit is 1, and the
+min_t(long, ...) check failed to protect it falling under 0.  Fix all of
+them by using "unsigned long" throughout the function.
+
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+Tested-by: Toralf Förster <toralf.foerster@gmx.de>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Cc: Richard Weinberger <richard@nod.at>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-snap-persistent.c |   18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+ mm/page-writeback.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/md/dm-snap-persistent.c
-+++ b/drivers/md/dm-snap-persistent.c
-@@ -269,6 +269,14 @@ static chunk_t area_location(struct psto
- 	return NUM_SNAPSHOT_HDR_CHUNKS + ((ps->exceptions_per_area + 1) * area);
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1104,11 +1104,11 @@ static unsigned long dirty_poll_interval
+ 	return 1;
  }
  
-+static void skip_metadata(struct pstore *ps)
-+{
-+	uint32_t stride = ps->exceptions_per_area + 1;
-+	chunk_t next_free = ps->next_free;
-+	if (sector_div(next_free, stride) == NUM_SNAPSHOT_HDR_CHUNKS)
-+		ps->next_free++;
-+}
-+
- /*
-  * Read or write a metadata area.  Remembering to skip the first
-  * chunk which holds the header.
-@@ -502,6 +510,8 @@ static int read_exceptions(struct pstore
- 
- 	ps->current_area--;
- 
-+	skip_metadata(ps);
-+
- 	return 0;
- }
- 
-@@ -616,8 +626,6 @@ static int persistent_prepare_exception(
- 					struct dm_exception *e)
+-static long bdi_max_pause(struct backing_dev_info *bdi,
+-			  unsigned long bdi_dirty)
++static unsigned long bdi_max_pause(struct backing_dev_info *bdi,
++				   unsigned long bdi_dirty)
  {
- 	struct pstore *ps = get_info(store);
--	uint32_t stride;
--	chunk_t next_free;
- 	sector_t size = get_dev_size(dm_snap_cow(store->snap)->bdev);
+-	long bw = bdi->avg_write_bandwidth;
+-	long t;
++	unsigned long bw = bdi->avg_write_bandwidth;
++	unsigned long t;
  
- 	/* Is there enough room ? */
-@@ -630,10 +638,8 @@ static int persistent_prepare_exception(
- 	 * Move onto the next free pending, making sure to take
- 	 * into account the location of the metadata chunks.
- 	 */
--	stride = (ps->exceptions_per_area + 1);
--	next_free = ++ps->next_free;
--	if (sector_div(next_free, stride) == 1)
--		ps->next_free++;
-+	ps->next_free++;
-+	skip_metadata(ps);
+ 	/*
+ 	 * Limit pause time for small memory systems. If sleeping for too long
+@@ -1120,7 +1120,7 @@ static long bdi_max_pause(struct backing
+ 	t = bdi_dirty / (1 + bw / roundup_pow_of_two(1 + HZ / 8));
+ 	t++;
  
- 	atomic_inc(&ps->pending_count);
- 	return 0;
+-	return min_t(long, t, MAX_PAUSE);
++	return min_t(unsigned long, t, MAX_PAUSE);
+ }
+ 
+ static long bdi_min_pause(struct backing_dev_info *bdi,
 
 
