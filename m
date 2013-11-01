@@ -1,48 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab3KASdA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 14:33:00 -0400
-Received: from smtprelay0241.hostedemail.com ([216.40.44.241]:44276 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752019Ab3KASdA (ORCPT
+	id S1752691Ab3KASlG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 14:41:06 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43799 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab3KASlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 14:33:00 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2693:2828:2899:3138:3139:3140:3141:3142:3622:3865:3867:3868:3871:3872:3873:3874:4321:5007:7652:10004:10400:10848:11232:11658:11914:12050:12296:12517:12519:12555:12740:13069:13071:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: force07_7140e8bc3ec08
-X-Filterd-Recvd-Size: 1254
-Message-ID: <1383330777.3042.2.camel@joe-AO722>
-Subject: Re: [Suggestion] about latest commit for
- "scripts/get_maintainers.pl"
-From: Joe Perches <joe@perches.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 01 Nov 2013 11:32:57 -0700
-In-Reply-To: <52738E90.6040104@asianux.com>
-References: <52738E90.6040104@asianux.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Nov 2013 14:41:02 -0400
+Date: Fri, 1 Nov 2013 11:40:08 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: r65073@freescale.com, timur@tabi.org, lgirdwood@gmail.com,
+        r64188@freescale.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
+        rob@landley.net, linux@arm.linux.org.uk, perex@perex.cz, tiwai@suse.de,
+        grant.likely@linaro.org, fabio.estevam@freescale.com,
+        LW@KARO-electronics.de, oskar@scara.com, shawn.guo@linaro.org,
+        b42378@freescale.com, b18965@freescale.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
+        linuxppc-dev@lists.ozlabs.org
+Message-ID: <20131101184008.GF2493@sirena.org.uk>
+References: <1383289495-24523-1-git-send-email-Li.Xiubo@freescale.com>
+ <1383289495-24523-7-git-send-email-Li.Xiubo@freescale.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1+kiJ7gFzGEgD6MU"
+Content-Disposition: inline
+In-Reply-To: <1383289495-24523-7-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: You love peace.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 66.78.236.243
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv2 6/8] ASoC: fsl: add SGTL5000 based audio machine driver.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-11-01 at 19:20 +0800, Chen Gang wrote:
-> Hello Joe:
 
-Hello Chen Gang.
+--1+kiJ7gFzGEgD6MU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> I meet a failure about "scripts/get_maintainers.pl", it is about the
-> commit "750432d get_maintainer.pl incomplete output", if use original
-> "scripts/get_maintainer.pl", it will be OK.
-> 
-> Please help check, thanks.
+On Fri, Nov 01, 2013 at 03:04:53PM +0800, Xiubo Li wrote:
 
-I don't get that effect.
-I'll look into it and see what I find next week.
-You seem to have a work-around available.
+> Conflicts:
+> 	sound/soc/fsl/Makefile
 
-Joe
+Ahem.
 
+> +	/* TODO: The SAI driver should figure this out for us */
+> +	switch (channels) {
+> +	case 2:
+> +		snd_soc_dai_set_tdm_slot(cpu_dai, 0xfffffffc, 0xfffffffc, 2, 0);
+> +		break;
+> +	case 1:
+> +		snd_soc_dai_set_tdm_slot(cpu_dai, 0xfffffffe, 0xfffffffe, 1, 0);
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+
+Yes, it should - this code should probably just be copied straight into
+the SAI driver.  If we need to support other configurations we can do
+that later.
+
+> +static int fsl_sgtl5000_remove(struct platform_device *pdev)
+> +{
+> +	snd_soc_unregister_card(&fsl_sgt1500_card);
+> +
+> +	return 0;
+> +}
+
+You're using snd_soc_unregister_card() so you don't need to do this.
+
+--1+kiJ7gFzGEgD6MU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSc/WFAAoJELSic+t+oim9Ro4P/3xf1v287JoZR9nyoMd0771B
+F1Bk7L3WgUf6Uh5CqBQP+50g1Utl3RgKxDsNKLraQcFx551slcVooB+UY2itoaVa
+aPIruEjPjezEwCufZiq4zysesLER7BxeBZNGpXU8qwALxyf/WfRQWo8pJCd4798t
+ANucUXbO2ekgHkCmdb2+f3v6Alm1s/ZiSoyDYKKcM9BJWSc3QZL3/3lxKaqeBTC/
+FS5F13y6QBjpPNQv/Js9TvvZvbO3BeBBGvrhl9mCWxI5r2xg7Ei8m+tHPsDveJBM
+Jrk/VnZ++x1/gbIx1+b8mfiClRc5gi8eZx2F+bDUqyEFfM0yXxHCtJwgYA2AuUzr
+gTwnSAUXnwUgbx+D9/Go8AReABYfZTUd9W+ojqgaZauhjegWf7qA2c1uXtuv0Uul
+s4VsUei18tbpLd1d1aiq3keCKjPExczv825fAQswyOYYK5B+1LCQBWRg0tpgkV2E
+DRyooyJPEqUvtzHjccIDZhyFpi80q28fLO0BwVdhN3biiKC0LEnRssPOzmw/DaHM
+Tcyxz51G240vXTf7yzoj+JL+wCybt73GjVke7MmNGKe4qpc1vOeo6q/8bY7eSprm
+EJ2PPtzz+3QQNSjPCVKh6i6DpfVDvfe467w8nQdQDRppMYgOZ2ZbQDiew0XdxMgn
+warO8G6CTyjEs5cC3h+0
+=Px4Z
+-----END PGP SIGNATURE-----
+
+--1+kiJ7gFzGEgD6MU--
