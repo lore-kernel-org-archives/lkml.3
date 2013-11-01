@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab3KAKCN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 06:02:13 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47291 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752372Ab3KAKCM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 06:02:12 -0400
-Date: Fri, 1 Nov 2013 10:02:10 +0000
-From: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: alsa-devel@alsa-project.org, tiwai@suse.de,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        lgirdwood@gmail.com, perex@perex.cz
-Subject: [PATCH 1/2] ASoC: wm8962: Add ALC coefficient support
-Message-ID: <20131101100210.GB1901@opensource.wolfsonmicro.com>
-References: <20131101100051.GA1901@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131101100051.GA1901@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1755803Ab3KAKCZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 06:02:25 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:28346 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755273Ab3KAKCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 06:02:23 -0400
+X-IronPort-AV: E=Sophos;i="4.93,615,1378828800"; 
+   d="scan'208";a="8921266"
+From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+To: acme@ghostprotocols.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Subject: [PATCH] drivers/net: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
+Date: Fri, 1 Nov 2013 18:00:16 +0800
+Message-Id: <1383300016-5947-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.3.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/01 18:00:35,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/01 18:00:36,
+	Serialize complete at 2013/11/01 18:00:36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch fixes coccinelle error regarding usage of IS_ERR and
+PTR_ERR instead of PTR_ERR_OR_ZERO.
 
-Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 ---
- sound/soc/codecs/wm8962.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ drivers/net/appletalk/ipddp.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8962.c b/sound/soc/codecs/wm8962.c
-index c9ff713..2b04497 100644
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -1774,6 +1774,11 @@ WM8962_DSP2_ENABLE("HPF2 Switch", WM8962_HPF2_ENA_SHIFT),
- SND_SOC_BYTES("HPF Coefficients", WM8962_LHPF2, 1),
- WM8962_DSP2_ENABLE("HD Bass Switch", WM8962_HDBASS_ENA_SHIFT),
- SND_SOC_BYTES("HD Bass Coefficients", WM8962_HDBASS_AI_1, 30),
-+
-+SOC_DOUBLE("ALC Switch", WM8962_ALC1, WM8962_ALCL_ENA_SHIFT,
-+		WM8962_ALCR_ENA_SHIFT, 1, 0),
-+SND_SOC_BYTES_MASK("ALC Coefficients", WM8962_ALC1, 4,
-+		WM8962_ALCL_ENA_MASK | WM8962_ALCR_ENA_MASK),
- };
+diff --git a/drivers/net/appletalk/ipddp.c b/drivers/net/appletalk/ipddp.c
+index 10d0dba..78f06cb 100644
+--- a/drivers/net/appletalk/ipddp.c
++++ b/drivers/net/appletalk/ipddp.c
+@@ -312,9 +312,7 @@ module_param(ipddp_mode, int, 0);
+ static int __init ipddp_init_module(void)
+ {
+ 	dev_ipddp = ipddp_init();
+-        if (IS_ERR(dev_ipddp))
+-                return PTR_ERR(dev_ipddp);
+-	return 0;
++        return PTR_ERR_OR_ZERO(dev_ipddp);
+ }
  
- static const struct snd_kcontrol_new wm8962_spk_mono_controls[] = {
+ static void __exit ipddp_cleanup_module(void)
 -- 
-1.7.2.5
+1.8.3.1
 
