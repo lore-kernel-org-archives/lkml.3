@@ -1,57 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736Ab3KASZN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 14:25:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62673 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529Ab3KASZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 14:25:12 -0400
-Message-ID: <5273F1ED.70408@redhat.com>
-Date: Fri, 01 Nov 2013 14:24:45 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1753115Ab3KAS01 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 14:26:27 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:42080 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab3KAS0Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 14:26:25 -0400
+Date: Fri, 1 Nov 2013 11:25:14 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: r65073@freescale.com, timur@tabi.org, lgirdwood@gmail.com,
+        r64188@freescale.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
+        rob@landley.net, linux@arm.linux.org.uk, perex@perex.cz, tiwai@suse.de,
+        grant.likely@linaro.org, fabio.estevam@freescale.com,
+        LW@KARO-electronics.de, oskar@scara.com, shawn.guo@linaro.org,
+        b42378@freescale.com, b18965@freescale.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
+        linuxppc-dev@lists.ozlabs.org
+Message-ID: <20131101182514.GE2493@sirena.org.uk>
+References: <1383289495-24523-1-git-send-email-Li.Xiubo@freescale.com>
+ <1383289495-24523-2-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        mingo@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -v2 -tip] fix race between stop_two_cpus and stop_cpus
-References: <20131031163144.0fd27457@annuminas.surriel.com> <20131101110825.GX2400@suse.de> <52739244.3060209@redhat.com> <20131101134424.GA32685@suse.de> <20131101142404.GG19466@laptop.lan> <5273BA58.6010404@redhat.com> <20131101104146.03d1e043@annuminas.surriel.com> <20131101144728.GY2400@suse.de>
-In-Reply-To: <20131101144728.GY2400@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hjFmXiTvfEJBEd4m"
+Content-Disposition: inline
+In-Reply-To: <1383289495-24523-2-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: You love peace.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 66.78.236.243
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv2 1/8] ALSA: Add SAI SoC Digital Audio Interface driver.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--hjFmXiTvfEJBEd4m
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On 11/01/2013 10:47 AM, Mel Gorman wrote:
-> On Fri, Nov 01, 2013 at 10:41:46AM -0400, Rik van Riel wrote:
->> Subject: fix race between stop_two_cpus and stop_cpus
->>
->> There is a race between stop_two_cpus, and the global stop_cpus.
->>
->> It is possible for two CPUs to get their stopper functions queued
->> "backwards" from one another, resulting in the stopper threads
->> getting stuck, and the system hanging. This can happen because
->> queuing up stoppers is not synchronized.
->>
->> This patch adds synchronization between stop_cpus (a rare operation),
->> and stop_two_cpus.
->>
->> Signed-off-by: Rik van Riel <riel@redhat.com>
->> ---
->> v2: use lglock, as suggested by Peter & Mel, thanks to both of you
->> for insisting on nicer code :)
->>
-> 
-> This is a tad more comprehensible :). Thanks!
-> 
-> Acked-by: Mel Gorman <mgorman@suse.de>
-> 
+On Fri, Nov 01, 2013 at 03:04:48PM +0800, Xiubo Li wrote:
 
-This ran all morning without issues.
+> +static int fsl_sai_set_dai_clkdiv(struct snd_soc_dai *cpu_dai,
+> +		int div_id, int div)
+> +{
+> +	struct fsl_sai *sai = snd_soc_dai_get_drvdata(cpu_dai);
+> +	u32 tcr2, rcr2;
+> +
+> +	if (div_id == FSL_SAI_TX_DIV) {
+> +		tcr2 = readl(sai->base + FSL_SAI_TCR2);
+> +		tcr2 &= ~FSL_SAI_CR2_DIV_MASK;
+> +		tcr2 |= FSL_SAI_CR2_DIV(div);
+> +		writel(tcr2, sai->base + FSL_SAI_TCR2);
 
-Tested-by: Prarit Bhargava <prarit@redhat.com>
+What is this divider and why does the user have to set it manually?
 
-P.
+> +	} else
+> +		return -EINVAL;
+> +
+
+Coding style?
+
+> +static int fsl_sai_dai_probe(struct snd_soc_dai *dai)
+> +{
+> +	int ret;
+> +	struct fsl_sai *sai = dev_get_drvdata(dai->dev);
+> +
+> +	ret = clk_prepare_enable(sai->clk);
+> +	if (ret)
+> +		return ret;
+
+It'd be nicer to only enable the clock while the device is in active
+use.
+
+> +	ret = snd_dmaengine_pcm_register(&pdev->dev, NULL,
+> +			SND_DMAENGINE_PCM_FLAG_NO_RESIDUE);
+> +	if (ret)
+> +		return ret;
+
+We should have a devm_ version of this.
+
+--hjFmXiTvfEJBEd4m
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSc/IHAAoJELSic+t+oim9rBkP/A0JFjGit6Y3Zo+3J28ul2QB
+PvJCI/B5f6vmMxp5NWemjLgvSf+X7Vazu/v80gBZuVFM3nei+N9ReysV0eTahsj1
+bCRpEPRkeNEl2w3S0135kF3yDUJfehrZaGRQwt8yNUh/VZA28SSA4qlMt0q5XdDd
+Dxg9aHXBqnQ1C2jVRvkqV9aN30qxJC0FsW6amVu8hd7YYBDZV4shswE27E2UevLa
+9soL8GPTjlLdntQMkaRjkuUHKhxCYfAlIB4JSL11YOKl8ZyXtNt3wcSaZZy5Rtfw
++lq5ZRLQkepfxOu9ImR98Bds+HbUAxoXQlDdBpBuSGs4icbHRISYTU4DEONN55px
+C0Y7r815ruXcjq0Hn8zLVGytgna8mb0KiwaTCvYQ7X2Mw8dp6zgMgYqNVpNPt9LF
+WA03+IGRe6+WWHeCYSYRY4fh9DFh1wQ+are8qY0tJTCoNaoVW1am3D2+0gJKECZg
+Gytfdn8UIV8RYLEuD+F1pMGu8ik9iFoCVmGFBeYDClJTGmSDAolqJr70YBs9t6S5
+CWAZvH+yZLodn6Doid6LydZLZE4A5hxZUAOW/c8m3Z75Z+nD8sbNeVPLgnQ58wai
+WSZdyFjrNh9XUbFAySSmlJ3aYA7T8fIKIHCtcPZAX5hYGpagpWG9sgVHkAKO16+v
+eGM2IulA5cJGsLmk7YAh
+=Sj0u
+-----END PGP SIGNATURE-----
+
+--hjFmXiTvfEJBEd4m--
