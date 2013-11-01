@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584Ab3KAWFu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:05:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55146 "EHLO
+	id S1755972Ab3KAWGK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:06:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55142 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755895Ab3KAWFU (ORCPT
+	with ESMTP id S1753766Ab3KAWFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:05:20 -0400
+	Fri, 1 Nov 2013 18:05:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pavel Parkhomenko <ra85551@gmail.com>
-Subject: [PATCH 3.10 53/54] USB: serial: option: add support for Inovia SEW858 device
-Date: Fri,  1 Nov 2013 15:04:21 -0700
-Message-Id: <20131101220217.245921441@linuxfoundation.org>
+        Enrico Mioso <mrkiko.rs@gmail.com>,
+        Antonella Pellizzari <anto.pellizzari83@gmail.com>,
+        Dan Williams <dcbw@redhat.com>
+Subject: [PATCH 3.10 54/54] usb: serial: option: blacklist Olivetti Olicard200
+Date: Fri,  1 Nov 2013 15:04:22 -0700
+Message-Id: <20131101220217.360086326@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -26,40 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Enrico Mioso <mrkiko.rs@gmail.com>
 
-commit f4c19b8e165cff1a6607c21f8809441d61cab7ec upstream.
+commit fd8573f5828873343903215f203f14dc82de397c upstream.
 
-This patch adds the device id for the Inovia SEW858 device to the option driver.
+Interface 6 of this device speaks QMI as per tests done by us.
+Credits go to Antonella for providing the hardware.
 
-Reported-by: Pavel Parkhomenko <ra85551@gmail.com>
-Tested-by: Pavel Parkhomenko <ra85551@gmail.com>
+Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
+Signed-off-by: Antonella Pellizzari <anto.pellizzari83@gmail.com>
+Tested-by: Dan Williams <dcbw@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/usb/serial/option.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 --- a/drivers/usb/serial/option.c
 +++ b/drivers/usb/serial/option.c
-@@ -451,6 +451,10 @@ static void option_instat_callback(struc
- #define CHANGHONG_VENDOR_ID			0x2077
- #define CHANGHONG_PRODUCT_CH690			0x7001
+@@ -1261,7 +1261,9 @@ static const struct usb_device_id option
  
-+/* Inovia */
-+#define INOVIA_VENDOR_ID			0x20a6
-+#define INOVIA_SEW858				0x1105
-+
- /* some devices interfaces need special handling due to a number of reasons */
- enum option_blacklist_reason {
- 		OPTION_BLACKLIST_NONE = 0,
-@@ -1345,6 +1349,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d03, 0xff, 0x00, 0x00) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e01, 0xff, 0xff, 0xff) }, /* D-Link DWM-152/C1 */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e02, 0xff, 0xff, 0xff) }, /* D-Link DWM-156/C1 */
-+	{ USB_DEVICE(INOVIA_VENDOR_ID, INOVIA_SEW858) },
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD145) },
+-	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200) },
++	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200),
++		.driver_info = (kernel_ulong_t)&net_intf6_blacklist
++	},
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEM600) },
 
 
