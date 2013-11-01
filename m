@@ -1,97 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab3KAFIy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 01:08:54 -0400
-Received: from gate.crashing.org ([63.228.1.57]:52059 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750818Ab3KAFIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 01:08:53 -0400
-Message-ID: <1383282516.28909.36.camel@pasglop>
-Subject: Re: Strange location and name for platform  devices when
- device-tree is used.
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Date: Fri, 01 Nov 2013 16:08:36 +1100
-In-Reply-To: <20131101160329.37f3707b@notabene.brown>
-References: <20131101145925.66e22f73@notabene.brown>
-	 <1383279744.28909.26.camel@pasglop> <1383280054.28909.30.camel@pasglop>
-	 <20131101160329.37f3707b@notabene.brown>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752453Ab3KAFLd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 01:11:33 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:23355 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab3KAFLc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 01:11:32 -0400
+Message-ID: <527338A4.5060605@oracle.com>
+Date: Fri, 01 Nov 2013 13:14:12 +0800
+From: vaughan <vaughan.cao@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: dgilbert@interlog.com, Christoph Hellwig <hch@infradead.org>
+CC: SCSI development list <linux-scsi@vger.kernel.org>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>
+Subject: Re: [PATCH v2] sg: O_EXCL and other lock handling
+References: <52718713.7050906@interlog.com> <20131031155653.GA16944@infradead.org> <5272AD80.90203@interlog.com>
+In-Reply-To: <5272AD80.90203@interlog.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-11-01 at 16:03 +1100, NeilBrown wrote:
+On 11/01/2013 03:20 AM, Douglas Gilbert wrote:
+> On 13-10-31 11:56 AM, Christoph Hellwig wrote:
+>>> +    struct semaphore or_sem;  /* protect co-incident opens and
+>>> releases */
+>>
+>> Seems like this should be a mutex.
+>
+> Yes, it is being used as a mutex. However looking at
+> their semantics (mutex.h versus semaphore.h), a mutex
+> takes into account the task owner. If the user space
+> wants to pass around a sg file descriptor in a Unix
+> domain socket (see TLPI, Kerrisk) I don't see why the
+> sg driver should object (and pay the small performance
+> hit for each check).
+>
+> A nasty side effect of a mutex taking into account the
+> task owner is that it can't be used in interrupt
+> context. My patch does not try to do that yet (see next
+> section) but why bother. Give me a simple mutex and
+> I'll use it.
+>
+>>> sfds_list_empty(Sg_device *sdp)
+>>>   {
+>>>       unsigned long flags;
+>>>       int ret;
+>>>
+>>> +    spin_lock_irqsave(&sdp->sfd_lock, flags);
+>>> +    ret = list_empty(&sdp->sfds);
+>>> +    spin_unlock_irqrestore(&sdp->sfd_lock, flags);
+>>>       return ret;
+>>
+>> Protecting just a list_empty check with a local will give you racy
+>> results.  Seems like you should take the look over the check and the
+>> resulting action that modifies the list.  That'd also mean replacing the
+>> wait_event* calls with open coded prepare_wait / finish_wait loops.
+>
+> Not (usually) in this case. The sdp->sfds list can only
+> be expanded by another sg_open(same_dev) but this has
+> been excluded by taking down(&sdp->or_sem) prior to that
+> call. The sdp->sfds list is only normally decreased by
+> sg_release() which is also excluded by down(&sdp->or_sem).
+>
+> The abnormal case is device removal (detaching). Now an
+> open(same_dev, O_EXCL) may start waiting just after a
+> detach but miss the wake up on open_wait. That suggests
+> the wake_up(open_wait) in sg_remove() should also
+> take the sdp->or_sem semaphore.
+> Ah, and if sg_remove() can be called from an interrupt
+> context then that takes out using mutexes :-)
+>
+> The two level of locks in sg_remove() is already making me
+> uncomfortable, adding the sdp->or_sem semaphore to the
+> mix calls for more analysis.
+CCed to Jörn Engel.
 
-> Do you mean we could allow multiple devices on the one bus to have the same
-> name, but get sysfs to notice and de-duplicate by mangling one name?  I don't
-> think I like that but I might have misunderstood.
+I feel the same regarding the many locks. After reviewing patches I
+wrote these days, I suppose the version 2
+(https://lkml.org/lkml/2013/6/17/319) may worth a re-consideration somehow.
+The purpose of or_sem is to mutex co-incident open and allow only one
+thread to be processing since it completes checking condition to really
+linking a new sfd into sfd_siblings list. My v2 re-implement a sem using
+sfd_lock and toopen. But as Jörn pointed out in the following mail, what
+I implemented is a rw_sem and that is weird and made him "having trouble
+wrapping my head around the semantics of this variable"...
+With wait_event involved, it's indeed no sense to use a rw_sem here.
+However, if we restrict toopen in [0, 1], not [0, INT_MAX] as I did in
+v2, it will act in the same way as or_sem does. Beside the same affect
+as or_sem, this implement avoids the problem using in interrupt context
+and more readable for me, rather than twisting my head among many
+spinlocks and semaphores.
+Although v2 seems attractive to me, things would be more complicated
+when detached comes in...
 
-What other option do we have ?
+The following is a thought I presented previously:
+Is it possible to split the sg_add_sfp() into two
+functions, sg_init_sfp() and sg_add_sfp2(). We can do all initialize
+work in sg_init_sfp()
+without any lock and let sg_add_sfp2() only serve lock-check-add in one
+place. It is less flaky.
 
-> On my device I seem to have some platform devices registered through
-> device-tree, and some registered through platform_device_add (e.g.
-> 'alarmtimer').  Guaranteeing they remain disjoint sets if the kernel is
-> allowed to evolve independently of the devicetree might be tricky....
-> Maybe we need "/sys/devices/platform" and "/sys/devices/dt_platform" ??
+>
+> Also note that sdp->detached is only protected by a
+> volatile type modifier and checks on it are sprinkled
+> around the code in a rather unscientific way.
+>
+> As you are no doubt aware, handling the "surprise" device
+> removal case safely is hard, very hard. And I have tried
+> to test this, loading up 4 processes with 100 tasks each,
+> some with asynchronous queueing requests but most hanging
+> on an open_wait then remove the device. So far I have not
+> seen a hang. Again, somebody with a big machine and
+> patience might like to try a scaled up device removal test
+> to see what breaks.
+>
+>>> +    down(&sdp->or_sem);
+>>> +    alone = sfds_list_empty(sdp);
+>>> +    if ((flags & O_EXCL) && (O_RDONLY == (flags & O_ACCMODE))) {
+>>> +        retval = -EPERM; /* Don't allow O_EXCL with read only
+>>> access */
+>>> +        goto error_out;
+>>> +    }
+>>
+>> Seems like the pure flags check should move to the beginning of the
+>> function before taking any locks.
+>
+> As Vaughan pointed out, just prior to that down() is a call
+> scsi_block_when_processing_errors() for blocking open()s.
 
-No, I think device-tree created platform devices should go
-to /sys/devices/platform like the "classic" ones.
+Douglas,
+What Christoph points out is a sanity check for the input parameter
+flags, not the scsi_block_when_processing_errors issue.
+I guess you misread that:)
 
-The problem is really how to deal with potential name duplication. We
-could try to register, if we get -EEXIST (assuming sysfs returns the
-right stuff), try again with ".1" etc...
-
-> Hoping someone who understands the device model better than me will help.
-
-Greg ? :-)
-
- .../...
-
-> The  'backlight' device is a virtual device.  It uses a 'pwm' device to
-> provide the variable brightness to the back light.
-> 
-> The 'pwm' device itself is virtual, making use of a 'dmtimer' to provide the
-> timing...  The timer device (timer11 in omap3.dtsi) has a 'reg' property.
-> 
-> A random example from current mainline is 
->   arch/arm/boot/dts/am335x-evmsk.dts
-> which has 'backlight' as a virtual device compatible with pwm-backlight.
-> It also has  'gpio-keys', 'gpio-leds', and 'regulator-fixed' compatible
-> virtual devices.  They seem fairly common.
-
-Ok.
-
-Cheers,
-Ben.
-
-> Thanks,
-> NeilBrown
-> 
-> 
-> > 
-> > Cheers,
-> > Ben.
-> > 
-> > > Cheers,
-> > > Ben.
-> > > 
-> > > > Any help understanding and/or fixing this discrepancy greatly appreciated.
-> > > > 
-> > > > The change of name is particularly annoying to me because one of my platform
-> > > > devices is a pwm_bl.c backlight.  With a boardfile I
-> > > > get /sys/class/pwm_backlight.  With devicetree the best I can get
-> > > > is /sys/class/pwm_backlight.23 (or similar).  It would be really nice to have
-> > > > a more stable and sensible name here.
-> > > 
-> > 
-> 
-
-
+Vaughan
