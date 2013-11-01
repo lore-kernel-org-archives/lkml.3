@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678Ab3KAWEf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:04:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54931 "EHLO
+	id S932112Ab3KAWh6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:37:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54954 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754205Ab3KAWE3 (ORCPT
+	with ESMTP id S1754205Ab3KAWEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:04:29 -0400
+	Fri, 1 Nov 2013 18:04:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Eric Dumazet <edumazet@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 06/54] net: do not call sock_put() on TIMEWAIT sockets
-Date: Fri,  1 Nov 2013 15:03:34 -0700
-Message-Id: <20131101220212.024676233@linuxfoundation.org>
+Subject: [PATCH 3.10 03/54] tcp: must unclone packets before mangling them
+Date: Fri,  1 Nov 2013 15:03:31 -0700
+Message-Id: <20131101220211.698187961@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -29,42 +31,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 80ad1d61e72d626e30ebe8529a0455e660ca4693 ]
+[ Upstream commit c52e2421f7368fd36cbe330d2cf41b10452e39a9 ]
 
-commit 3ab5aee7fe84 ("net: Convert TCP & DCCP hash tables to use RCU /
-hlist_nulls") incorrectly used sock_put() on TIMEWAIT sockets.
+TCP stack should make sure it owns skbs before mangling them.
 
-We should instead use inet_twsk_put()
+We had various crashes using bnx2x, and it turned out gso_size
+was cleared right before bnx2x driver was populating TC descriptor
+of the _previous_ packet send. TCP stack can sometime retransmit
+packets that are still in Qdisc.
+
+Of course we could make bnx2x driver more robust (using
+ACCESS_ONCE(shinfo->gso_size) for example), but the bug is TCP stack.
+
+We have identified two points where skb_unclone() was needed.
+
+This patch adds a WARN_ON_ONCE() to warn us if we missed another
+fix of this kind.
+
+Kudos to Neal for finding the root cause of this bug. Its visible
+using small MSS.
 
 Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/inet_hashtables.c  |    2 +-
- net/ipv6/inet6_hashtables.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/tcp_output.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/net/ipv4/inet_hashtables.c
-+++ b/net/ipv4/inet_hashtables.c
-@@ -287,7 +287,7 @@ begintw:
- 			if (unlikely(!INET_TW_MATCH(sk, net, acookie,
- 						    saddr, daddr, ports,
- 						    dif))) {
--				sock_put(sk);
-+				inet_twsk_put(inet_twsk(sk));
- 				goto begintw;
- 			}
- 			goto out;
---- a/net/ipv6/inet6_hashtables.c
-+++ b/net/ipv6/inet6_hashtables.c
-@@ -116,7 +116,7 @@ begintw:
- 			}
- 			if (unlikely(!INET6_TW_MATCH(sk, net, saddr, daddr,
- 						     ports, dif))) {
--				sock_put(sk);
-+				inet_twsk_put(inet_twsk(sk));
- 				goto begintw;
- 			}
- 			goto out;
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -976,6 +976,9 @@ static void tcp_queue_skb(struct sock *s
+ static void tcp_set_skb_tso_segs(const struct sock *sk, struct sk_buff *skb,
+ 				 unsigned int mss_now)
+ {
++	/* Make sure we own this skb before messing gso_size/gso_segs */
++	WARN_ON_ONCE(skb_cloned(skb));
++
+ 	if (skb->len <= mss_now || !sk_can_gso(sk) ||
+ 	    skb->ip_summed == CHECKSUM_NONE) {
+ 		/* Avoid the costly divide in the normal
+@@ -1057,9 +1060,7 @@ int tcp_fragment(struct sock *sk, struct
+ 	if (nsize < 0)
+ 		nsize = 0;
+ 
+-	if (skb_cloned(skb) &&
+-	    skb_is_nonlinear(skb) &&
+-	    pskb_expand_head(skb, 0, 0, GFP_ATOMIC))
++	if (skb_unclone(skb, GFP_ATOMIC))
+ 		return -ENOMEM;
+ 
+ 	/* Get a new skb... force flag on. */
+@@ -2334,6 +2335,8 @@ int __tcp_retransmit_skb(struct sock *sk
+ 		int oldpcount = tcp_skb_pcount(skb);
+ 
+ 		if (unlikely(oldpcount > 1)) {
++			if (skb_unclone(skb, GFP_ATOMIC))
++				return -ENOMEM;
+ 			tcp_init_tso_segs(sk, skb, cur_mss);
+ 			tcp_adjust_pcount(sk, skb, oldpcount - tcp_skb_pcount(skb));
+ 		}
 
 
