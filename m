@@ -1,77 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab3KATAN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 15:00:13 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:16229 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751071Ab3KATAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 15:00:11 -0400
-X-IronPort-AV: E=Sophos;i="4.93,618,1378857600"; 
-   d="scan'208";a="69836425"
-Message-ID: <5273FA37.6020903@citrix.com>
-Date: Fri, 1 Nov 2013 19:00:07 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753509Ab3KATBz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 15:01:55 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:38609 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736Ab3KATBy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 15:01:54 -0400
+Message-ID: <5273FA9D.7010006@gmail.com>
+Date: Fri, 01 Nov 2013 15:01:49 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next RFC 0/5] xen-netback: TX grant mapping instead
- of copy
-References: <1383094220-14775-1-git-send-email-zoltan.kiss@citrix.com> <1383303035.672.29.camel@kazak.uk.xensource.com>
-In-Reply-To: <1383303035.672.29.camel@kazak.uk.xensource.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>, linux-kernel@vger.kernel.org
+CC: kosaki.motohiro@gmail.com, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH 0/4] per anon_vma lock and turn anon_vma rwsem lock to
+ rwlock_t
+References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
+In-Reply-To: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/13 10:50, Ian Campbell wrote:
-> Does this always avoid copying when bridging/openvswitching/forwarding
-> (e.g. masquerading etc)? For both domU->domU and domU->physical NIC?
-I've tested the domU->domU, domU->physical with bridge and openvswitch 
-usecase, and now I've created a new stat counter to see how often copy 
-happens (the callback's second parameter tells you whether the skb was 
-freed or copied). It doesn't do copy in all of these scenarios.
-What do you mean by forwarding? The scenario when you use bridge and 
-iptables mangling with the packet, not just filtering?
+(11/1/13 3:54 AM), Yuanhan Liu wrote:
+> Patch 1 turns locking the anon_vma's root to locking itself to let it be
+> a per anon_vma lock, which would reduce contentions.
+> 
+> In the same time, lock range becomes quite small then, which is bascially
+> a call of anon_vma_interval_tree_insert(). Patch 2 turn rwsem to rwlock_t.
+> It's a patch made from Ingo, I just made some change to let it apply based on
+> patch 1.
+> 
+> Patch 3 is from Peter. It was a diff, I edited it to be a patch ;)
+> 
+> Here is the detailed changed stats with this patch applied. The test base is v3.12-rc7,
+> and 1c00bef768d4341afa7d is patch 1, e3e37183ee805f33e88f is patch 2.
+> 
+> NOTE: both commits are compared to base v3.12-rc7.
 
-> How does it deal with broadcast traffic?
-Most of the real broadcast traffic actually small packets fit in the 
-PKT_PROT_LEN sized linear space, so it doesn't make any difference, 
-apart from doing a mapping before copy. But that will be eliminated 
-later on, I plan to add an incremental improvement to grant copy the 
-linear part.
-I haven't spent too much time on that, but I couldn't find any broadcast 
-protocol which use large enough packets and easy to test, so I'm open to 
-ideas.
-What I already know, skb_clone trigger a copy, and if the caller use the 
-original skb for every cloning, it will do several copy. I think that 
-could be fixed by using the first clone to do any further clones.
+I'd suggest you CCing linux-mm when posting mm patches.
 
-> Do you have any numbers for the dom0 cpu usage impact?
-DomU->NIC: the vif took 40% according to top, I guess the bottleneck 
-there is the TLB flushing.
-DomU->DomU: the vif of the RX side cause the bottleneck due to grant 
-copy to the guest
-
-> Aggregate throughput for many guests would be a useful datapoint too.
-I will do measurements about that.
-
- >> Based on my investigations the packet get only copied if it is 
-delivered to
- >>Dom0 stack, which is due to this patch:
- >>https://lkml.org/lkml/2012/7/20/363
- >>That's a bit unfortunate, but as far as I know for the huge majority 
-this use
- >>case is not too important.
-> Likely to be true, but it would still be interesting to know how badly
-> this use case suffers with this change, and any increase in CPU usage
-> would be interesting to know about as well.
-I can't find my numbers, but as far as I remember it wasn't 
-significantly worse than grant copy. I will check that again.
-
-Zoli
