@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755106Ab3KAVoo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 17:44:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54625 "EHLO
+	id S1755266Ab3KAVpC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 17:45:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54618 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754905Ab3KAVoM (ORCPT
+	with ESMTP id S1754870Ab3KAVoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 17:44:12 -0400
+	Fri, 1 Nov 2013 17:44:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pavel Parkhomenko <ra85551@gmail.com>
-Subject: [ 31/32] USB: serial: option: add support for Inovia SEW858 device
-Date: Fri,  1 Nov 2013 14:43:42 -0700
-Message-Id: <20131101214321.208419633@linuxfoundation.org>
+        Daniel Borkmann <dborkman@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 22/32] net: unix: inherit SOCK_PASS{CRED, SEC} flags from socket to fix race
+Date: Fri,  1 Nov 2013 14:43:33 -0700
+Message-Id: <20131101214318.901862576@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101214313.735463599@linuxfoundation.org>
 References: <20131101214313.735463599@linuxfoundation.org>
@@ -26,40 +29,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit f4c19b8e165cff1a6607c21f8809441d61cab7ec upstream.
+[ Upstream commit 90c6bd34f884cd9cee21f1d152baf6c18bcac949 ]
 
-This patch adds the device id for the Inovia SEW858 device to the option driver.
+In the case of credentials passing in unix stream sockets (dgram
+sockets seem not affected), we get a rather sparse race after
+commit 16e5726 ("af_unix: dont send SCM_CREDENTIALS by default").
 
-Reported-by: Pavel Parkhomenko <ra85551@gmail.com>
-Tested-by: Pavel Parkhomenko <ra85551@gmail.com>
+We have a stream server on receiver side that requests credential
+passing from senders (e.g. nc -U). Since we need to set SO_PASSCRED
+on each spawned/accepted socket on server side to 1 first (as it's
+not inherited), it can happen that in the time between accept() and
+setsockopt() we get interrupted, the sender is being scheduled and
+continues with passing data to our receiver. At that time SO_PASSCRED
+is neither set on sender nor receiver side, hence in cmsg's
+SCM_CREDENTIALS we get eventually pid:0, uid:65534, gid:65534
+(== overflow{u,g}id) instead of what we actually would like to see.
+
+On the sender side, here nc -U, the tests in maybe_add_creds()
+invoked through unix_stream_sendmsg() would fail, as at that exact
+time, as mentioned, the sender has neither SO_PASSCRED on his side
+nor sees it on the server side, and we have a valid 'other' socket
+in place. Thus, sender believes it would just look like a normal
+connection, not needing/requesting SO_PASSCRED at that time.
+
+As reverting 16e5726 would not be an option due to the significant
+performance regression reported when having creds always passed,
+one way/trade-off to prevent that would be to set SO_PASSCRED on
+the listener socket and allow inheriting these flags to the spawned
+socket on server side in accept(). It seems also logical to do so
+if we'd tell the listener socket to pass those flags onwards, and
+would fix the race.
+
+Before, strace:
+
+recvmsg(4, {msg_name(0)=NULL, msg_iov(1)=[{"blub\n", 4096}],
+        msg_controllen=32, {cmsg_len=28, cmsg_level=SOL_SOCKET,
+        cmsg_type=SCM_CREDENTIALS{pid=0, uid=65534, gid=65534}},
+        msg_flags=0}, 0) = 5
+
+After, strace:
+
+recvmsg(4, {msg_name(0)=NULL, msg_iov(1)=[{"blub\n", 4096}],
+        msg_controllen=32, {cmsg_len=28, cmsg_level=SOL_SOCKET,
+        cmsg_type=SCM_CREDENTIALS{pid=11580, uid=1000, gid=1000}},
+        msg_flags=0}, 0) = 5
+
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/serial/option.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ net/unix/af_unix.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -457,6 +457,10 @@ static void option_instat_callback(struc
- #define CHANGHONG_VENDOR_ID			0x2077
- #define CHANGHONG_PRODUCT_CH690			0x7001
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1247,6 +1247,15 @@ static int unix_socketpair(struct socket
+ 	return 0;
+ }
  
-+/* Inovia */
-+#define INOVIA_VENDOR_ID			0x20a6
-+#define INOVIA_SEW858				0x1105
++static void unix_sock_inherit_flags(const struct socket *old,
++				    struct socket *new)
++{
++	if (test_bit(SOCK_PASSCRED, &old->flags))
++		set_bit(SOCK_PASSCRED, &new->flags);
++	if (test_bit(SOCK_PASSSEC, &old->flags))
++		set_bit(SOCK_PASSSEC, &new->flags);
++}
 +
- /* some devices interfaces need special handling due to a number of reasons */
- enum option_blacklist_reason {
- 		OPTION_BLACKLIST_NONE = 0,
-@@ -1367,6 +1371,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d03, 0xff, 0x00, 0x00) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e01, 0xff, 0xff, 0xff) }, /* D-Link DWM-152/C1 */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e02, 0xff, 0xff, 0xff) }, /* D-Link DWM-156/C1 */
-+	{ USB_DEVICE(INOVIA_VENDOR_ID, INOVIA_SEW858) },
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
+ static int unix_accept(struct socket *sock, struct socket *newsock, int flags)
+ {
+ 	struct sock *sk = sock->sk;
+@@ -1281,6 +1290,7 @@ static int unix_accept(struct socket *so
+ 	/* attach accepted sock to socket */
+ 	unix_state_lock(tsk);
+ 	newsock->state = SS_CONNECTED;
++	unix_sock_inherit_flags(sock, newsock);
+ 	sock_graft(tsk, newsock);
+ 	unix_state_unlock(tsk);
+ 	return 0;
 
 
