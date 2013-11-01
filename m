@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755844Ab3KAJ3c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 05:29:32 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:38152 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755800Ab3KAJ3a (ORCPT
+	id S1755867Ab3KAJ3m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 05:29:42 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:51495 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab3KAJ3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 05:29:30 -0400
+	Fri, 1 Nov 2013 05:29:39 -0400
 From: Chenggang Qin <chenggang.qin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Chenggang Qin <chenggang.qin@gmail.com>, David Ahern <dsahern@gmail.com>,
@@ -19,9 +19,9 @@ Cc: Chenggang Qin <chenggang.qin@gmail.com>, David Ahern <dsahern@gmail.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Chenggang Qin <chenggang.qcg@taobao.com>
-Subject: [PATCH 1/4] perf report: add parameter 'start' & 'end' to perf report
-Date: Fri,  1 Nov 2013 17:29:03 +0800
-Message-Id: <1383298146-3860-2-git-send-email-chenggang.qin@gmail.com>
+Subject: [PATCH 2/4] perf tools: relate 'start' & 'end' to perf_session
+Date: Fri,  1 Nov 2013 17:29:04 +0800
+Message-Id: <1383298146-3860-3-git-send-email-chenggang.qin@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383298146-3860-1-git-send-email-chenggang.qin@gmail.com>
 References: <1383298146-3860-1-git-send-email-chenggang.qin@gmail.com>
@@ -29,8 +29,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf report --start time1 --end time2
-The unit of time1 & time2 are millsecond.
+Copy the value to start and end to struct perf_session.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -46,43 +45,54 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
 
 ---
- tools/perf/builtin-report.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+ tools/perf/builtin-report.c |    5 +++++
+ tools/perf/util/session.c   |    3 +++
+ tools/perf/util/session.h   |    2 ++
+ 3 files changed, 10 insertions(+), 0 deletions(-)
 
 diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 72eae74..e9e9d0a 100644
+index e9e9d0a..d3c1c8a 100644
 --- a/tools/perf/builtin-report.c
 +++ b/tools/perf/builtin-report.c
-@@ -733,6 +733,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	struct perf_session *session;
- 	struct stat st;
-+	u64 tstart = 0, tend = 0;
- 	bool has_br_stack = false;
- 	int branch_mode = -1;
- 	int ret = -1;
-@@ -843,6 +844,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN(0, "mem-mode", &report.mem_mode, "mem access profile"),
- 	OPT_CALLBACK(0, "percent-limit", &report, "percent",
- 		     "Don't show entries under that percent", parse_percent_limit),
-+	OPT_U64(0, "start", &tstart, "Start time of analysis interval. (Unit: ms)"),
-+	OPT_U64(0, "end", &tend, "End time of analysis interval. (Unit: ms)"),
- 	OPT_END()
- 	};
+@@ -889,6 +889,11 @@ repeat:
+ 	if (session == NULL)
+ 		return -ENOMEM;
  
-@@ -850,6 +853,12 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 
- 	argc = parse_options(argc, argv, options, report_usage, 0);
- 
-+	if (tend && tstart >= tend) {
-+		fprintf(stderr, "start [%" PRIu64 "] is greater than end [%"
-+			PRIu64 "].\n", tstart, tend);
-+		return -1;
-+	}
++	if (tstart)
++		session->tstart = tstart * 1e6;
++	if (tend)
++		session->tend = tend * 1e6;
 +
- 	if (report.use_stdio)
- 		use_browser = 0;
- 	else if (report.use_tui)
+ 	report.session = session;
+ 
+ 	has_br_stack = perf_header__has_feat(&session->header,
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 568b750..193bb6a 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -134,6 +134,9 @@ struct perf_session *perf_session__new(const char *filename, int mode,
+ 	INIT_LIST_HEAD(&self->ordered_samples.to_free);
+ 	machines__init(&self->machines);
+ 
++	self->tstart = 0;
++	self->tend = ULLONG_MAX;
++
+ 	if (mode == O_RDONLY) {
+ 		if (perf_session__open(self, force) < 0)
+ 			goto out_delete;
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 04bf737..c9a6c27 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -37,6 +37,8 @@ struct perf_session {
+ 	int			fd;
+ 	bool			fd_pipe;
+ 	bool			repipe;
++	u64			tstart;
++	u64			tend;
+ 	struct ordered_samples	ordered_samples;
+ 	char			filename[1];
+ };
 -- 
 1.7.8.rc2.5.g815b
 
