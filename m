@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932109Ab3KAWOl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:14:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55549 "EHLO
+	id S1756458Ab3KAWId (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:08:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55475 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756463Ab3KAWIe (ORCPT
+	with ESMTP id S1756384Ab3KAWIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:34 -0400
+	Fri, 1 Nov 2013 18:08:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Evgeniy Polyakov <zbr@ioremap.net>
-Subject: [PATCH 3.11 60/66] w1 - call request_module with w1 master mutex unlocked
-Date: Fri,  1 Nov 2013 15:07:36 -0700
-Message-Id: <20131101220651.414386649@linuxfoundation.org>
+        Sathya Perla <sathya.perla@emulex.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.11 39/66] be2net: pass if_id for v1 and V2 versions of TX_CREATE cmd
+Date: Fri,  1 Nov 2013 15:07:15 -0700
+Message-Id: <20131101220645.444183670@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -26,35 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans-Frieder Vogt <hfvogt@gmx.net>
+From: Vasundhara Volam <vasundhara.volam@emulex.com>
 
-commit bc04d76d6942068f75c10790072280b847ec6f1f upstream.
+[ Upstream commit 0fb88d61bc60779dde88b0fc268da17eb81d0412 ]
 
-request_module for w1 slave modules needs to be called with the w1
-master mutex unlocked. Because w1_attach_slave_device gets always(?)
-called with mutex locked, we need to temporarily unlock the w1 master
-mutex for the loading of the w1 slave module.
+It is a required field for all TX_CREATE cmd versions > 0.
+This fixes a driver initialization failure, caused by recent SH-R Firmwares
+(versions > 10.0.639.0) failing the TX_CREATE cmd when if_id field is
+not passed.
 
-Signed-off by: Hans-Frieder Vogt <hfvogt@gmx.net>
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Signed-off-by: Sathya Perla <sathya.perla@emulex.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/w1/w1.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/ethernet/emulex/benet/be_cmds.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -680,7 +680,10 @@ static int w1_attach_slave_device(struct
- 	atomic_set(&sl->refcnt, 0);
- 	init_completion(&sl->released);
+--- a/drivers/net/ethernet/emulex/benet/be_cmds.c
++++ b/drivers/net/ethernet/emulex/benet/be_cmds.c
+@@ -1150,7 +1150,6 @@ int be_cmd_txq_create(struct be_adapter
  
-+	/* slave modules need to be loaded in a context with unlocked mutex */
-+	mutex_unlock(&dev->mutex);
- 	request_module("w1-family-0x%0x", rn->family);
-+	mutex_lock(&dev->mutex);
+ 	if (lancer_chip(adapter)) {
+ 		req->hdr.version = 1;
+-		req->if_id = cpu_to_le16(adapter->if_handle);
+ 	} else if (BEx_chip(adapter)) {
+ 		if (adapter->function_caps & BE_FUNCTION_CAPS_SUPER_NIC)
+ 			req->hdr.version = 2;
+@@ -1158,6 +1157,8 @@ int be_cmd_txq_create(struct be_adapter
+ 		req->hdr.version = 2;
+ 	}
  
- 	spin_lock(&w1_flock);
- 	f = w1_family_registered(rn->family);
++	if (req->hdr.version > 0)
++		req->if_id = cpu_to_le16(adapter->if_handle);
+ 	req->num_pages = PAGES_4K_SPANNED(q_mem->va, q_mem->size);
+ 	req->ulp_num = BE_ULP1_NUM;
+ 	req->type = BE_ETH_TX_RING_TYPE_STANDARD;
 
 
