@@ -1,103 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640Ab3KANH5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 09:07:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11569 "EHLO mx1.redhat.com"
+	id S1753031Ab3KANIn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 09:08:43 -0400
+Received: from sauhun.de ([89.238.76.85]:59226 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752328Ab3KANHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 09:07:55 -0400
-Message-ID: <5273A765.6080705@redhat.com>
-Date: Fri, 01 Nov 2013 14:06:45 +0100
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752338Ab3KANIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 09:08:41 -0400
+Date: Fri, 1 Nov 2013 14:08:35 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Christian Daudt <bcm@fixthebug.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RESEND PATCH 2/4] i2c: i2c-bcm-kona: Add support for high-speed
+ mode
+Message-ID: <20131101130835.GC6734@katana>
+References: <1381960909-1735-1-git-send-email-tim.kryger@linaro.org>
+ <1381960909-1735-3-git-send-email-tim.kryger@linaro.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, scameron@beardog.cce.hp.com
-CC: Jens Axboe <axboe@kernel.dk>, stephenmcameron@gmail.com,
-        mikem@beardog.cce.hp.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cciss: return 0 from driver probe function on success,
- not 1
-References: <20131029184135.5505.77412.stgit@beardog.cce.hp.com>	<52700541.70405@kernel.dk>	<20131031144241.25090ab7a6c0b668c5c1c2b2@linux-foundation.org>	<20131031215444.GN31390@beardog.cce.hp.com> <20131031150618.fa9430269e0de7a5ebad1387@linux-foundation.org>
-In-Reply-To: <20131031150618.fa9430269e0de7a5ebad1387@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LwW0XdcUbUexiWVK"
+Content-Disposition: inline
+In-Reply-To: <1381960909-1735-3-git-send-email-tim.kryger@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2013 11:06 PM, Andrew Morton wrote:
-> On Thu, 31 Oct 2013 16:54:44 -0500 scameron@beardog.cce.hp.com wrote:
->
->>>> How did this ever work?
->>> Beats me.  local_pci_probe() does
->>>
->>> 	rc = pci_drv->probe(pci_dev, ddi->id);
->>> 	if (rc) {
->>> 		pci_dev->driver = NULL;
->>> 		pm_runtime_put_sync(dev);
->>> 	}
->>> 	return rc;
->>>
->>> shrug, maybe this ->probe somehow has a different caller which checks
->>> for <0.
->> Older kernels (eg: http://lxr.linux.no/#linux+v2.6.32.61/drivers/pci/pci-driver.c )
->> had different code:
->>
->>  330__pci_device_probe(struct pci_driver *drv, struct pci_dev *pci_dev)
->>  331{
->>  332        const struct pci_device_id *id;
->>  333        int error = 0;
->>  334
->>  335        if (!pci_dev->driver && drv->probe) {
->>  336                error = -ENODEV;
->>  337
->>  338                id = pci_match_device(drv, pci_dev);
->>  339                if (id)
->>  340                        error = pci_call_probe(drv, pci_dev, id);
->>  341                if (error >= 0) {
->>  342                        pci_dev->driver = drv;
->>  343                        error = 0;
->>  344                }
->>  345        }
->>  346        return error;
->>  347}
-> So cciss is presently kompletely kaput?  If so, the kapputting code is
-> present in 3.9 and probably earlier, so this patch is needed in 3.12 and
-> -stable.  Or if not, what?
 
-Steve posted similar patch for hpsa too and I'm sure someone would notice
-when the hpsa driver was kaput. If I understand it correctly the driver
-works with some limitation - rmmod doesn't work for example.
+--LwW0XdcUbUexiWVK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The problem in kernel is that the error handling in local_pci_probe
-and  in __pci_device_probe is different for ret values > 0,
-so we should fix it somewhere so it is in sync.
-The documentation states that the probe function should return zero on success
-so what about this -
+On Wed, Oct 16, 2013 at 03:01:47PM -0700, Tim Kryger wrote:
+> Add support for I2C high-speed mode (3.4 MHz).
+>=20
+> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 
-This would bring the handling to sync
-diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-index 98f7b9b..200a071 100644
---- a/drivers/pci/pci-driver.c
-+++ b/drivers/pci/pci-driver.c
-@@ -317,8 +317,6 @@ __pci_device_probe(struct pci_driver *drv, struct pci_dev *pci_dev)
- 		id = pci_match_device(drv, pci_dev);
- 		if (id)
- 			error = pci_call_probe(drv, pci_dev, id);
--		if (error >= 0)
--			error = 0;
- 	}
- 	return error;
- }
+Mostly good as well:
+
+> +enum hs_bus_speed_index {
+> +	BCM_SPD_3P4MHZ =3D 0,
+> +};
+
+I just realized that you should update both patches to add the supported
+bus speeds to the binding documentation.
+
+Thanks,
+
+   Wolfram
 
 
->
-> (Playing question and answer like this is a bad way of writing a
-> changelog btw - all this stuff should have been right there in the v1
-> changelog).
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--LwW0XdcUbUexiWVK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSc6fTAAoJEBQN5MwUoCm2C+oP/01f0n7jc8cQcCU9zKRno0JT
+WeAuU3Oh/y56dMjRO0DFJaYgBKBmshWopxa4iIBfQtKfNeIuneqiVIMGSlQA/qyo
+vYuYElpAFMSZMOtJ9dEelNpyR43qyqZoOlRLouv6JmwGhoMEs2lUjBD3AfKwbDCH
+CfTFv+2KrRQMmoag6kBC55nCP47y4uKfa6B+cjIvkh++XYJShD8ZkTtZ+SXObZZ+
+GMW/nrGEtazAtyWNhwhrpMeULj9PcOmQxzsLlRU8pONhCz/KENy12aHYEuKOxQud
+UnhZcyyaMHnb6qhsQNTjmRsEDPHwca3fyVjY2KWQzjR56SxtzJz5fWnkX6Uhsr6g
+c3DVwiAOBFo8bP8bZywMXD+aqJe2Jv9dMXjGgJt+B5eoew166EcS1Ffcs3q49Ck9
+LuytP80VlhMye1hjPlFD/tBbCiOufikdZSXpFRdllQuH8SThPZiRFF4s7B1csDtP
+B6yx9ZjQSQF5U6NckCX8DMPgwB5NuOLjDhqHnEUcjajCRsH2LBGjq+PiTQH+2V2e
+KNcEgbzuwMrnBId9wk6g/nL3w8jpZGfiQdXHIh8XAosRhkOpyOL5rixhvvfOX+sG
+7WffNTUWSrlMhn0JYLAZH4J7vEBu8VxJ5bFAjrQiNqgpfFifVZXYysCPyLUfscpR
+c1dftctVWsKEJMgT3vrW
+=j+lt
+-----END PGP SIGNATURE-----
+
+--LwW0XdcUbUexiWVK--
