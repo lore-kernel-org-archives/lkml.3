@@ -1,104 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab3KALoO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 07:44:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:14804 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750787Ab3KALoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 07:44:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="428228177"
-Date: Fri, 1 Nov 2013 19:44:29 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/4] mm/rmap: per anon_vma lock
-Message-ID: <20131101114429.GD30123@yliu-dev.sh.intel.com>
-References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
- <1383292467-28922-2-git-send-email-yuanhan.liu@linux.intel.com>
- <20131101084329.GB19466@laptop.lan>
- <CANN689HQUv=k4AiD+v3980AmgPXbtcs1HLD7Ec1y8dsOfa_emA@mail.gmail.com>
- <20131101100707.GB30123@yliu-dev.sh.intel.com>
- <20131101101514.GD19466@laptop.lan>
+	id S1752587Ab3KALqU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 07:46:20 -0400
+Received: from 12.mo6.mail-out.ovh.net ([178.32.125.228]:45193 "EHLO
+	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750799Ab3KALqT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 07:46:19 -0400
+X-Greylist: delayed 109050 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Nov 2013 07:46:18 EDT
+Date: Fri, 1 Nov 2013 12:10:20 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        James Bates <james.h.bates@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        James Bates <james.h.bates@yahoo.com>
+Subject: Re: [PATCH v2] efifb: prevent null-deref when iterating dmi_list
+Message-ID: <20131101111020.GD18477@ns203013.ovh.net>
+References: <1380732056-5387-1-git-send-email-dh.herrmann@gmail.com>
+ <20131031104549.GZ18477@ns203013.ovh.net>
+ <CANq1E4QAwOG8Vdw2nCb8+LirZ278w58j+wpieeKvnNepga+baw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131101101514.GD19466@laptop.lan>
+In-Reply-To: <CANq1E4QAwOG8Vdw2nCb8+LirZ278w58j+wpieeKvnNepga+baw@mail.gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 10043308646135475149
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrgeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrgeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 01, 2013 at 11:15:14AM +0100, Peter Zijlstra wrote:
-> On Fri, Nov 01, 2013 at 06:07:07PM +0800, Yuanhan Liu wrote:
-> > > I also want to point out that lately we've seen several changes sent
-> > > out that relax locking with no accompanying explanation of why the
-> > > relaxed locking would be safe. Please don't do that - having a lot of
-> > > performance data is worthless if you can't explain why the new locking
-> > > is safe.
-> > 
-> > Agreed.
-> > 
-> > > And I'm not asking to prove a negative ('lack of any possible
-> > > races') there, but at least in this case one could dig out why the
-> > > root anon vma locking was introduced and if they think that this
-> > > reason doesn't apply anymore, explain why...
-> > 
-> > It was introduced by commit 2b575eb6(And, BTW, I'm sorry that this commit log
-> > about bb4aa39676f is wrong)
-> > 
-> >    commit 2b575eb64f7a9c701fb4bfdb12388ac547f6c2b6
-> >    Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> >    Date:   Tue May 24 17:12:11 2011 -0700
-> >    
-> >        mm: convert anon_vma->lock to a mutex
-> >    
-> >        Straightforward conversion of anon_vma->lock to a mutex.
-> >    
-> > As you can see, Peter didn't tell why before. Honestly speaking, that
-> > was my originaly concern as well. I tried to find some possible races;
-> > I guess I may miss something.
+On 17:17 Thu 31 Oct     , David Herrmann wrote:
+> Hi
 > 
-> Bullshit; I didn't change the locking. I only changed the lock primitive
-> from a spinlock to a mutex. The anon_vma->root->lock is completely
-> unrelated to this change.
+> On Thu, Oct 31, 2013 at 11:45 AM, Jean-Christophe PLAGNIOL-VILLARD
+> <plagnioj@jcrosoft.com> wrote:
+> > On 18:40 Wed 02 Oct     , David Herrmann wrote:
+> >> The dmi_list array is initialized using gnu designated initializers, and
+> >> therefore may contain fewer explicitly defined entries as there are
+> >> elements in it. This is because the enum above with M_xyz constants
+> >> contains more items than the designated initializer. Those elements not
+> >> explicitly initialized are implicitly set to 0.
+> >>
+> >> Now efifb_setup() loops through all these array elements, and performs
+> >> a strcmp on each item. For non explicitly initialized elements this will
+> >> be a null pointer:
+> >>
+> >> This patch swaps the check order in the if statement, thus checks first
+> >> whether dmi_list[i].base is null.
+> >>
+> >> Signed-off-by: James Bates <james.h.bates@yahoo.com>
+> >> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+> >
+> > with the simpleDRM arriving next merge I'm wondering if we need to keep it?
+> 
+> SimpleDRM is not coming next merge-window. It's basically finished,
+> but I'm still working on the user-space side as its KMS api is highly
+> reduced compared to fully-featured DRM/KMS drivers. Maybe 3.13 will
+> work out.
 
-Oops, sorry for that. Just made a *horrible* mistake: it was commit
-012f18004da33ba672e3c60838cc4898126174d3.
+do you have a git tree for the simpleDRM that I can pull?
+> 
+> Anyhow, this patch is still needed as it fixes a serious bug for simplefb.
 
-
-commit 012f18004da33ba672e3c60838cc4898126174d3
-Author: Rik van Riel <riel@redhat.com>
-Date:   Mon Aug 9 17:18:40 2010 -0700
-
-    mm: always lock the root (oldest) anon_vma
-
-    Always (and only) lock the root (oldest) anon_vma whenever we do something
-    in an anon_vma.  The recently introduced anon_vma scalability is due to
-    the rmap code scanning only the VMAs that need to be scanned.  Many common
-    operations still took the anon_vma lock on the root anon_vma, so always
-    taking that lock is not expected to introduce any scalability issues.
-
-    However, always taking the same lock does mean we only need to take one
-    lock, which means rmap_walk on pages from any anon_vma in the vma is
-    excluded from occurring during an munmap, expand_stack or other operation
-    that needs to exclude rmap_walk and similar functions.
-
-    Also add the proper locking to vma_adjust.
-
-    Signed-off-by: Rik van Riel <riel@redhat.com>
-    Tested-by: Larry Woodman <lwoodman@redhat.com>
-    Acked-by: Larry Woodman <lwoodman@redhat.com>
-    Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-    Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-    Acked-by: Mel Gorman <mel@csn.ul.ie>
-    Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-
+ok
+> 
+> Thanks
+> David
