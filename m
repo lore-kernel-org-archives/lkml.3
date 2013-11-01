@@ -1,62 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab3KASrV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 14:47:21 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:47413 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab3KASrU (ORCPT
+	id S1752789Ab3KASvC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 14:51:02 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:64035 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab3KASvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 14:47:20 -0400
+	Fri, 1 Nov 2013 14:51:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzzdLn1xqyGobtP2yo7es+XOgt10Kr-9FRHvg-9eE3cyg@mail.gmail.com>
-References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
-	<20131101080135.GB25547@gmail.com>
-	<1383328187.2653.5.camel@buesod1.americas.hpqcorp.net>
-	<CA+55aFzzdLn1xqyGobtP2yo7es+XOgt10Kr-9FRHvg-9eE3cyg@mail.gmail.com>
-Date: Fri, 1 Nov 2013 11:47:19 -0700
-Message-ID: <CANN689EQ9d1BubEZ9txfWfKJEZQ5_zWvV5V_CyPCP5cRUw-oAw@mail.gmail.com>
-Subject: Re: [PATCH 0/4] per anon_vma lock and turn anon_vma rwsem lock to rwlock_t
-From: Michel Lespinasse <walken@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <1381941162-72831-1-git-send-email-timg@tpi.com>
+References: <1381941162-72831-1-git-send-email-timg@tpi.com>
+Date: Fri, 1 Nov 2013 13:50:59 -0500
+Message-ID: <CAH2r5mt5kBDR1oZfDNVu+bd7-jf=zQ6tBm2YjKXKBwdYE+YG=w@mail.gmail.com>
+Subject: Re: [PATCH linux-next V2] cifs: Make big endian multiplex ID
+ sequences monotonic on the wire
+From: Steve French <smfrench@gmail.com>
+To: Tim Gardner <timg@tpi.com>
+Cc: "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
+        samba-technical <samba-technical@lists.samba.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jeff Layton <jlayton@redhat.com>,
+        Steve French <sfrench@samba.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 1, 2013 at 11:09 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Fri, Nov 1, 2013 at 10:49 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
->>
->> Andrea's last input from this kind of conversion is that it cannot be
->> done (at least yet): https://lkml.org/lkml/2013/9/30/53
->
-> No, none of the invalidate_page users really need to sleep. If doing
-> this makes some people not do stupid sh*t, then that's all good. So at
-> least _that_ worry was a false alarm. We definitely don't want to
-> support crap in the VM, and sleeping during teardown is crap.
+This has a couple of obvious endian errors.  I will correct your patch
+and remerge into cifs-2.6.git for-next
 
-Should copy Andrea on this. I talked with him during KS, and there are
-no current in-tree users who are doing such sleeping; however there
-are prospective users for networking (RDMA) or GPU stuff who want to
-use this to let hardware directly copy data into user mappings. I'm
-not too aware of the details, but my understanding is that we then
-need to send the NIC and/or GPU some commands to tear down the
-mapping, and that command is currently acknowledged with an interrupt,
-which is where the lseepability requirement comes from. Andrea was
-thinking about cooking up some scheme to dynamically change between
-sleepable and non-sleepable locks at runtime depending on when such
-drivers are used; this seems quite complicated to me but I haven't
-heard of alternative plans for RDMA usage either.
+Please always remember to run endian checks against cifs builds when
+submitting a patch (and make sure sparse is installed)
+
+e.g.
+
+make C=1 M=fs/cifs modules CF=-D__CHECK_ENDIAN__
+
+diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
+index bc7c978..1a1fdcc 100644
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -630,7 +630,7 @@ get_next_mid64(struct TCP_Server_Info *server)
+     return server->ops->get_next_mid(server);
+ }
+
+-static inline __u16
++static inline __le16
+ get_next_mid(struct TCP_Server_Info *server)
+ {
+     __u16 mid = get_next_mid64(server);
+diff --git a/fs/cifs/cifspdu.h b/fs/cifs/cifspdu.h
+index f9bb497..9e5ee34 100644
+--- a/fs/cifs/cifspdu.h
++++ b/fs/cifs/cifspdu.h
+@@ -428,7 +428,7 @@ struct smb_hdr {
+     __u16 Tid;
+     __le16 Pid;
+     __u16 Uid;
+-    __u16 Mid;
++    __le16 Mid;
+     __u8 WordCount;
+ } __attribute__((packed));
+
+On Wed, Oct 16, 2013 at 11:32 AM, Tim Gardner <timg@tpi.com> wrote:
+> The multiplex identifier (MID) in the SMB header is only
+> ever used by the client, in conjunction with PID, to match responses
+> from the server. As such, the endianess of the MID is not important.
+> However, When tracing packet sequences on the wire, protocol analyzers
+> such as wireshark display MID as little endian. It is much more informative
+> for the on-the-wire MID sequences to match debug information emitted by the
+> CIFS driver.  Therefore, one should write and read MID in the SMB header
+> assuming it is always little endian.
+>
+> Observed from wireshark during the protocol negotiation
+> and session setup:
+>
+>         Multiplex ID: 256
+>         Multiplex ID: 256
+>         Multiplex ID: 512
+>         Multiplex ID: 512
+>         Multiplex ID: 768
+>         Multiplex ID: 768
+>
+> After this patch on-the-wire MID values begin at 1 and increase monotonically.
+>
+> Introduce get_next_mid64() for the internal consumers that use the full 64 bit
+> multiplex identifier.
+>
+> Introduce the helpers get_mid() and compare_mid() to make the endian
+> translation clear.
+>
+> Cc: Jeff Layton <jlayton@redhat.com>
+> Cc: Steve French <sfrench@samba.org>
+> Signed-off-by: Tim Gardner <timg@tpi.com>
+> ---
+>
+> V2 - get an endian appropriate copy of 'mid' for debug output in checkSMB().
+>      Actually use the new helper get_mid() wherever smb->Mid is referenced.
+>
+>  fs/cifs/cifsglob.h      |   25 ++++++++++++++++++++++++-
+>  fs/cifs/misc.c          |   10 ++++++----
+>  fs/cifs/smb1ops.c       |    4 ++--
+>  fs/cifs/smb2transport.c |    2 +-
+>  fs/cifs/transport.c     |    2 +-
+>  5 files changed, 34 insertions(+), 9 deletions(-)
+>
+> diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
+> index 52b6f6c..535e324 100644
+> --- a/fs/cifs/cifsglob.h
+> +++ b/fs/cifs/cifsglob.h
+> @@ -620,11 +620,34 @@ set_credits(struct TCP_Server_Info *server, const int val)
+>  }
+>
+>  static inline __u64
+> -get_next_mid(struct TCP_Server_Info *server)
+> +get_next_mid64(struct TCP_Server_Info *server)
+>  {
+>         return server->ops->get_next_mid(server);
+>  }
+>
+> +static inline __u16
+> +get_next_mid(struct TCP_Server_Info *server)
+> +{
+> +       __u16 mid = get_next_mid64(server);
+> +       /*
+> +        * The value in the SMB header should be little endian for easy
+> +        * on-the-wire decoding.
+> +        */
+> +       return cpu_to_le16(mid);
+> +}
+> +
+> +static inline __u16
+> +get_mid(const struct smb_hdr *smb)
+> +{
+> +       return le16_to_cpu(smb->Mid);
+> +}
+> +
+> +static inline bool
+> +compare_mid(__u16 mid, const struct smb_hdr *smb)
+> +{
+> +       return mid == le16_to_cpu(smb->Mid);
+> +}
+> +
+>  /*
+>   * When the server supports very large reads and writes via POSIX extensions,
+>   * we can allow up to 2^24-1, minus the size of a READ/WRITE_AND_X header, not
+> diff --git a/fs/cifs/misc.c b/fs/cifs/misc.c
+> index 298e31e..2f9f379 100644
+> --- a/fs/cifs/misc.c
+> +++ b/fs/cifs/misc.c
+> @@ -295,7 +295,8 @@ check_smb_hdr(struct smb_hdr *smb)
+>         if (smb->Command == SMB_COM_LOCKING_ANDX)
+>                 return 0;
+>
+> -       cifs_dbg(VFS, "Server sent request, not response. mid=%u\n", smb->Mid);
+> +       cifs_dbg(VFS, "Server sent request, not response. mid=%u\n",
+> +                get_mid(smb));
+>         return 1;
+>  }
+>
+> @@ -351,6 +352,7 @@ checkSMB(char *buf, unsigned int total_read)
+>         }
+>
+>         if (4 + rfclen != clc_len) {
+> +               __u16 mid = get_mid(smb);
+>                 /* check if bcc wrapped around for large read responses */
+>                 if ((rfclen > 64 * 1024) && (rfclen > clc_len)) {
+>                         /* check if lengths match mod 64K */
+> @@ -358,11 +360,11 @@ checkSMB(char *buf, unsigned int total_read)
+>                                 return 0; /* bcc wrapped */
+>                 }
+>                 cifs_dbg(FYI, "Calculated size %u vs length %u mismatch for mid=%u\n",
+> -                        clc_len, 4 + rfclen, smb->Mid);
+> +                        clc_len, 4 + rfclen, mid);
+>
+>                 if (4 + rfclen < clc_len) {
+>                         cifs_dbg(VFS, "RFC1001 size %u smaller than SMB for mid=%u\n",
+> -                                rfclen, smb->Mid);
+> +                                rfclen, mid);
+>                         return -EIO;
+>                 } else if (rfclen > clc_len + 512) {
+>                         /*
+> @@ -375,7 +377,7 @@ checkSMB(char *buf, unsigned int total_read)
+>                          * data to 512 bytes.
+>                          */
+>                         cifs_dbg(VFS, "RFC1001 size %u more than 512 bytes larger than SMB for mid=%u\n",
+> -                                rfclen, smb->Mid);
+> +                                rfclen, mid);
+>                         return -EIO;
+>                 }
+>         }
+> diff --git a/fs/cifs/smb1ops.c b/fs/cifs/smb1ops.c
+> index 8233b17..09ef8f3 100644
+> --- a/fs/cifs/smb1ops.c
+> +++ b/fs/cifs/smb1ops.c
+> @@ -67,7 +67,7 @@ send_nt_cancel(struct TCP_Server_Info *server, void *buf,
+>         mutex_unlock(&server->srv_mutex);
+>
+>         cifs_dbg(FYI, "issued NT_CANCEL for mid %u, rc = %d\n",
+> -                in_buf->Mid, rc);
+> +                get_mid(in_buf), rc);
+>
+>         return rc;
+>  }
+> @@ -101,7 +101,7 @@ cifs_find_mid(struct TCP_Server_Info *server, char *buffer)
+>
+>         spin_lock(&GlobalMid_Lock);
+>         list_for_each_entry(mid, &server->pending_mid_q, qhead) {
+> -               if (mid->mid == buf->Mid &&
+> +               if (compare_mid(mid->mid, buf) &&
+>                     mid->mid_state == MID_REQUEST_SUBMITTED &&
+>                     le16_to_cpu(mid->command) == buf->Command) {
+>                         spin_unlock(&GlobalMid_Lock);
+> diff --git a/fs/cifs/smb2transport.c b/fs/cifs/smb2transport.c
+> index 340abca..c523617 100644
+> --- a/fs/cifs/smb2transport.c
+> +++ b/fs/cifs/smb2transport.c
+> @@ -466,7 +466,7 @@ smb2_verify_signature(struct smb_rqst *rqst, struct TCP_Server_Info *server)
+>  static inline void
+>  smb2_seq_num_into_buf(struct TCP_Server_Info *server, struct smb2_hdr *hdr)
+>  {
+> -       hdr->MessageId = get_next_mid(server);
+> +       hdr->MessageId = get_next_mid64(server);
+>  }
+>
+>  static struct mid_q_entry *
+> diff --git a/fs/cifs/transport.c b/fs/cifs/transport.c
+> index 6fdcb1b..057b2c0 100644
+> --- a/fs/cifs/transport.c
+> +++ b/fs/cifs/transport.c
+> @@ -58,7 +58,7 @@ AllocMidQEntry(const struct smb_hdr *smb_buffer, struct TCP_Server_Info *server)
+>                 return temp;
+>         else {
+>                 memset(temp, 0, sizeof(struct mid_q_entry));
+> -               temp->mid = smb_buffer->Mid;    /* always LE */
+> +               temp->mid = get_mid(smb_buffer);
+>                 temp->pid = current->pid;
+>                 temp->command = cpu_to_le16(smb_buffer->Command);
+>                 cifs_dbg(FYI, "For smb_command %d\n", smb_buffer->Command);
+> --
+> 1.7.9.5
+>
+
+
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Thanks,
+
+Steve
