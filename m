@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab3KAWEm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:04:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54974 "EHLO
+	id S1756036Ab3KAWfi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:35:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54987 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754805Ab3KAWEk (ORCPT
+	with ESMTP id S1754999Ab3KAWEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:04:40 -0400
+	Fri, 1 Nov 2013 18:04:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
+        Olof Johansson <olof@lixom.net>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 21/54] unix_diag: fix info leak
-Date: Fri,  1 Nov 2013 15:03:49 -0700
-Message-Id: <20131101220213.720971945@linuxfoundation.org>
+Subject: [PATCH 3.10 15/54] net: secure_seq: Fix warning when CONFIG_IPV6 and CONFIG_INET are not selected
+Date: Fri,  1 Nov 2013 15:03:43 -0700
+Message-Id: <20131101220213.042147900@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -27,30 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-[ Upstream commit 6865d1e834be84ddd5808d93d5035b492346c64a ]
+[ Upstream commit cb03db9d0e964568407fb08ea46cc2b6b7f67587 ]
 
-When filling the netlink message we miss to wipe the pad field,
-therefore leak one byte of heap memory to userland. Fix this by
-setting pad to 0.
+net_secret() is only used when CONFIG_IPV6 or CONFIG_INET are selected.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Building a defconfig with both of these symbols unselected (Using the ARM
+at91sam9rl_defconfig, for example) leads to the following build warning:
+
+$ make at91sam9rl_defconfig
+#
+# configuration written to .config
+#
+
+$ make net/core/secure_seq.o
+scripts/kconfig/conf --silentoldconfig Kconfig
+  CHK     include/config/kernel.release
+  CHK     include/generated/uapi/linux/version.h
+  CHK     include/generated/utsrelease.h
+make[1]: `include/generated/mach-types.h' is up to date.
+  CALL    scripts/checksyscalls.sh
+  CC      net/core/secure_seq.o
+net/core/secure_seq.c:17:13: warning: 'net_secret_init' defined but not used [-Wunused-function]
+
+Fix this warning by protecting the definition of net_secret() with these
+symbols.
+
+Reported-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/unix/diag.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/core/secure_seq.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/unix/diag.c
-+++ b/net/unix/diag.c
-@@ -124,6 +124,7 @@ static int sk_diag_fill(struct sock *sk,
- 	rep->udiag_family = AF_UNIX;
- 	rep->udiag_type = sk->sk_type;
- 	rep->udiag_state = sk->sk_state;
-+	rep->pad = 0;
- 	rep->udiag_ino = sk_ino;
- 	sock_diag_save_cookie(sk, rep->udiag_cookie);
+--- a/net/core/secure_seq.c
++++ b/net/core/secure_seq.c
+@@ -10,6 +10,7 @@
  
+ #include <net/secure_seq.h>
+ 
++#if IS_ENABLED(CONFIG_IPV6) || IS_ENABLED(CONFIG_INET)
+ #define NET_SECRET_SIZE (MD5_MESSAGE_BYTES / 4)
+ 
+ static u32 net_secret[NET_SECRET_SIZE] ____cacheline_aligned;
+@@ -29,6 +30,7 @@ static void net_secret_init(void)
+ 		cmpxchg(&net_secret[--i], 0, tmp);
+ 	}
+ }
++#endif
+ 
+ #ifdef CONFIG_INET
+ static u32 seq_scale(u32 seq)
 
 
