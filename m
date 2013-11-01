@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594Ab3KAVrf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 17:47:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54559 "EHLO
+	id S1755569Ab3KAVrd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 17:47:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54566 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574Ab3KAVoB (ORCPT
+	with ESMTP id S1754641Ab3KAVoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Nov 2013 17:44:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fan Du <fan.du@windriver.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
+        Fan Du <fan.du@windriver.com>, Vlad Yasevich <vyasevich@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 19/32] sctp: Use software crc32 checksum when xfrm transform will happen.
-Date: Fri,  1 Nov 2013 14:43:30 -0700
-Message-Id: <20131101214318.218293141@linuxfoundation.org>
+Subject: [ 20/32] sctp: Perform software checksum if packet has to be fragmented.
+Date: Fri,  1 Nov 2013 14:43:31 -0700
+Message-Id: <20131101214318.461577057@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101214313.735463599@linuxfoundation.org>
 References: <20131101214313.735463599@linuxfoundation.org>
@@ -29,36 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fan Du <fan.du@windriver.com>
+From: Vlad Yasevich <vyasevich@gmail.com>
 
-[ Upstream commit 27127a82561a2a3ed955ce207048e1b066a80a2a ]
+[ Upstream commit d2dbbba77e95dff4b4f901fee236fef6d9552072 ]
 
-igb/ixgbe have hardware sctp checksum support, when this feature is enabled
-and also IPsec is armed to protect sctp traffic, ugly things happened as
-xfrm_output checks CHECKSUM_PARTIAL to do checksum operation(sum every thing
-up and pack the 16bits result in the checksum field). The result is fail
-establishment of sctp communication.
+IP/IPv6 fragmentation knows how to compute only TCP/UDP checksum.
+This causes problems if SCTP packets has to be fragmented and
+ipsummed has been set to PARTIAL due to checksum offload support.
+This condition can happen when retransmitting after MTU discover,
+or when INIT or other control chunks are larger then MTU.
+Check for the rare fragmentation condition in SCTP and use software
+checksum calculation in this case.
 
-Signed-off-by: Fan Du <fan.du@windriver.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
+CC: Fan Du <fan.du@windriver.com>
 Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
 Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/output.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/sctp/output.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 --- a/net/sctp/output.c
 +++ b/net/sctp/output.c
-@@ -518,7 +518,8 @@ int sctp_packet_transmit(struct sctp_pac
- 	 * by CRC32-C as described in <draft-ietf-tsvwg-sctpcsum-02.txt>.
+@@ -519,7 +519,7 @@ int sctp_packet_transmit(struct sctp_pac
  	 */
  	if (!sctp_checksum_disable) {
--		if (!(dst->dev->features & NETIF_F_SCTP_CSUM)) {
-+		if (!(dst->dev->features & NETIF_F_SCTP_CSUM) ||
-+		    (dst_xfrm(dst) != NULL)) {
+ 		if (!(dst->dev->features & NETIF_F_SCTP_CSUM) ||
+-		    (dst_xfrm(dst) != NULL)) {
++		    (dst_xfrm(dst) != NULL) || packet->ipfragok) {
  			__u32 crc32 = sctp_start_cksum((__u8 *)sh, cksum_buf_len);
  
  			/* 3) Put the resultant value into the checksum field in the
