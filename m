@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab3KAPVL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 11:21:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34525 "EHLO mx1.redhat.com"
+	id S1753587Ab3KAPXo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 11:23:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28527 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753397Ab3KAPVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 11:21:10 -0400
-Date: Fri, 1 Nov 2013 16:22:32 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a
-	ring buffer
-Message-ID: <20131101152232.GA2703@redhat.com>
-References: <1383029621-7384-1-git-send-email-namhyung@kernel.org> <1383029621-7384-11-git-send-email-namhyung@kernel.org> <20131101150910.GA18278@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131101150910.GA18278@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751310Ab3KAPXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 11:23:43 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCHv2 0/3] perf tools: Fix -g option handling
+Date: Fri,  1 Nov 2013 16:23:11 +0100
+Message-Id: <1383319394-19046-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01, Oleg Nesterov wrote:
->
-> Hi Namhyung,
->
-> Sorry if this was already discussed. But I can't really understand
-> the idea of this per-cpu buffer...
->
-> On 10/29, Namhyung Kim wrote:
-> >
-> > Fetching from user space should be done in a non-atomic context.  So
-> > use a per-cpu buffer and copy its content to the ring buffer
-> > atomically.  Note that we can migrate during accessing user memory
-> > thus use a per-cpu mutex to protect concurrent accesses.
->
-> And if the task migrates or just sleeps in page fault, another task
-> which hits another uprobe on the same CPU should wait.
->
-> Why we can't simply add trace_uprobe->buffer instead? Only to save
-> some memory? But every uprobe is very expensive in this sense anyway.
+hi,
+changing the '-g/-G' options for record/top commands
+to take NO argument and enable unwind method based
+on .perfconfig setup (using FP by default).
 
-Ah, please ignore... handler_chain() is not self-serialized, so
-tu->buffer needs locking/waiting too.
+The current -g option parsing moves into the
+'--call-graph' option.
 
-Oleg.
+Examples:
+  $ cat ~/.perfconfig:
+    [top]
+          call-graph = fp
 
+    [record]
+          call-graph = dwarf,8192
+
+  $ perf record -g ls
+  - enables dwarf unwind with user stack size dump 8192 bytes
+
+  $ perf top -G
+  - enables frame pointer unwind
+
+  $ perf record --call-graph=fp ls
+  - enables frame pointer unwind
+
+  $ perf top --call-graph=dwarf,4096 ls
+  - enables dwarf unwind with user stack size dump 4096 bytes
+
+v2 changes:
+   - added -L as short option for call-graph for record/top commands
+   - updated documentation
+   - based on latest acme's perf/urgent
+
+thanks,
+jirka
+
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+---
+Jiri Olsa (3):
+      perf tools: Add call-graph option support into .perfconfig
+      perf tools: Add readable output for callchain debug
+      perf tools: Add -L as short option for call-graph for record/top commands
+
+ tools/perf/Documentation/perf-record.txt |  6 ++++++
+ tools/perf/Documentation/perf-top.txt    |  9 +++++++++
+ tools/perf/builtin-record.c              | 22 ++++++++++++++++++++--
+ tools/perf/builtin-top.c                 | 14 +++++++++++++-
+ tools/perf/perf.h                        |  4 +++-
+ tools/perf/util/evsel.c                  |  2 +-
+ 6 files changed, 52 insertions(+), 5 deletions(-)
