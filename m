@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab3KANat (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 09:30:49 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:62573 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060Ab3KANas (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 09:30:48 -0400
-Message-ID: <5273AD00.1050002@gmail.com>
-Date: Fri, 01 Nov 2013 07:30:40 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752019Ab3KANgi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 09:36:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50500 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751283Ab3KANgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 09:36:37 -0400
+Date: Fri, 1 Nov 2013 11:36:26 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Michael Hudson-Doyle <michael.hudson@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Will Deacon <will.deacon@arm.com>, Jean Pihet <jean.pihet@linaro.org>
+Subject: Re: [PATCH v2] perf tools: Remove cast of non-variadic function to
+ variadic
+Message-ID: <20131101133626.GA6409@infradead.org>
+References: <87zjppvw7y.fsf@canonical.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: perf version not set when building out of tree
-References: <5272E86B.7090003@gmail.com> <20131101070219.GA21471@gmail.com>
-In-Reply-To: <20131101070219.GA21471@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87zjppvw7y.fsf@canonical.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/1/13, 1:02 AM, Ingo Molnar wrote:
->
-> * David Ahern <dsahern@gmail.com> wrote:
->
->> When building out of tree:
->>
->> make perf-tar-src-pkg
->
-> What's the canonical way to build a perf tarball? I didn't find any
-> makefile target for that.
+Em Thu, Oct 31, 2013 at 04:47:45PM -0700, Michael Hudson-Doyle escreveu:
+> -int percent_color_snprintf(char *bf, size_t size, const char *fmt, double percent)
+> +int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...)
+>  {
+> -	const char *color = get_percent_color(percent);
+> +	va_list args;
+> +	double percent;
+> +	const char *color;
+> +
+> +	va_start(args, fmt);
+> +	percent = va_arg(args, double);
+> +	va_end(args);
+> +	color = get_percent_color(percent);
+>  	return color_snprintf(bf, size, color, fmt, percent);
+>  }
 
-Perhaps I misunderstand your question. From the top-level of a kernel tree:
-$ make help | grep perf
+As a bug fix I'm merging this now, but I wonder if, since we're doing
+the va_start/end dance here, can't we call some color_vsnprintf variant
+so as to avoid doing it twice?
 
-   perf-tar-src-pkg    - Build perf-3.12.0-rc5.tar source tarball
-   perf-targz-src-pkg  - Build perf-3.12.0-rc5.tar.gz source tarball
-   perf-tarbz2-src-pkg - Build perf-3.12.0-rc5.tar.bz2 source tarball
-   perf-tarxz-src-pkg  - Build perf-3.12.0-rc5.tar.xz source tarball
+I'll look into that after going thru more urgent stuff.
 
-David
+- Arnaldo
