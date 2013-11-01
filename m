@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833Ab3KAWFW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:05:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55122 "EHLO
+	id S1755584Ab3KAWFu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:05:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55146 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755850Ab3KAWFQ (ORCPT
+	with ESMTP id S1755895Ab3KAWFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:05:16 -0400
+	Fri, 1 Nov 2013 18:05:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 47/54] ALSA: us122l: Fix pcm_usb_stream mmapping regression
-Date: Fri,  1 Nov 2013 15:04:15 -0700
-Message-Id: <20131101220216.576348188@linuxfoundation.org>
+        Pavel Parkhomenko <ra85551@gmail.com>
+Subject: [PATCH 3.10 53/54] USB: serial: option: add support for Inovia SEW858 device
+Date: Fri,  1 Nov 2013 15:04:21 -0700
+Message-Id: <20131101220217.245921441@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -26,40 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit ac536a848a1643e4b87e8fbd376a63091afc2ccc upstream.
+commit f4c19b8e165cff1a6607c21f8809441d61cab7ec upstream.
 
-The pcm_usb_stream plugin requires the mremap explicitly for the read
-buffer, as it expands itself once after reading the required size.
-But the commit [314e51b9: mm: kill vma flag VM_RESERVED and
-mm->reserved_vm counter] converted blindly to a combination of
-VM_DONTEXPAND | VM_DONTDUMP like other normal drivers, and this
-resulted in the failure of mremap().
+This patch adds the device id for the Inovia SEW858 device to the option driver.
 
-For fixing this regression, we need to remove VM_DONTEXPAND for the
-read-buffer mmap.
-
-Reported-and-tested-by: James Miller <jamesstewartmiller@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Pavel Parkhomenko <ra85551@gmail.com>
+Tested-by: Pavel Parkhomenko <ra85551@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/usx2y/us122l.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/sound/usb/usx2y/us122l.c
-+++ b/sound/usb/usx2y/us122l.c
-@@ -262,7 +262,9 @@ static int usb_stream_hwdep_mmap(struct
- 	}
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -451,6 +451,10 @@ static void option_instat_callback(struc
+ #define CHANGHONG_VENDOR_ID			0x2077
+ #define CHANGHONG_PRODUCT_CH690			0x7001
  
- 	area->vm_ops = &usb_stream_hwdep_vm_ops;
--	area->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
-+	area->vm_flags |= VM_DONTDUMP;
-+	if (!read)
-+		area->vm_flags |= VM_DONTEXPAND;
- 	area->vm_private_data = us122l;
- 	atomic_inc(&us122l->mmap_count);
- out:
++/* Inovia */
++#define INOVIA_VENDOR_ID			0x20a6
++#define INOVIA_SEW858				0x1105
++
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_NONE = 0,
+@@ -1345,6 +1349,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d03, 0xff, 0x00, 0x00) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e01, 0xff, 0xff, 0xff) }, /* D-Link DWM-152/C1 */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e02, 0xff, 0xff, 0xff) }, /* D-Link DWM-156/C1 */
++	{ USB_DEVICE(INOVIA_VENDOR_ID, INOVIA_SEW858) },
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 
 
