@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130Ab3KAWiU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:38:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54951 "EHLO
+	id S1756274Ab3KAWil (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:38:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54947 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754663Ab3KAWEe (ORCPT
+	with ESMTP id S1754525Ab3KAWEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Nov 2013 18:04:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
+        =?UTF-8?q?J=C3=BCri=20Aedla?= <juri.aedla@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 12/54] proc connector: fix info leaks
-Date: Fri,  1 Nov 2013 15:03:40 -0700
-Message-Id: <20131101220212.703199042@linuxfoundation.org>
+Subject: [PATCH 3.10 11/54] net: heap overflow in __audit_sockaddr()
+Date: Fri,  1 Nov 2013 15:03:39 -0700
+Message-Id: <20131101220212.601492128@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,167 +31,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit e727ca82e0e9616ab4844301e6bae60ca7327682 ]
+[ Upstream commit 1661bf364ae9c506bc8795fef70d1532931be1e8 ]
 
-Initialize event_data for all possible message types to prevent leaking
-kernel stack contents to userland (up to 20 bytes). Also set the flags
-member of the connector message to 0 to prevent leaking two more stack
-bytes this way.
+We need to cap ->msg_namelen or it leads to a buffer overflow when we
+to the memcpy() in __audit_sockaddr().  It requires CAP_AUDIT_CONTROL to
+exploit this bug.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+The call tree is:
+___sys_recvmsg()
+  move_addr_to_user()
+    audit_sockaddr()
+      __audit_sockaddr()
+
+Reported-by: Jüri Aedla <juri.aedla@gmail.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/connector/cn_proc.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ net/compat.c |    2 ++
+ net/socket.c |   24 ++++++++++++++++++++----
+ 2 files changed, 22 insertions(+), 4 deletions(-)
 
---- a/drivers/connector/cn_proc.c
-+++ b/drivers/connector/cn_proc.c
-@@ -65,6 +65,7 @@ void proc_fork_connector(struct task_str
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -71,6 +71,8 @@ int get_compat_msghdr(struct msghdr *kms
+ 	    __get_user(kmsg->msg_controllen, &umsg->msg_controllen) ||
+ 	    __get_user(kmsg->msg_flags, &umsg->msg_flags))
+ 		return -EFAULT;
++	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
++		return -EINVAL;
+ 	kmsg->msg_name = compat_ptr(tmp1);
+ 	kmsg->msg_iov = compat_ptr(tmp2);
+ 	kmsg->msg_control = compat_ptr(tmp3);
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1956,6 +1956,16 @@ struct used_address {
+ 	unsigned int name_len;
+ };
  
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -80,6 +81,7 @@ void proc_fork_connector(struct task_str
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	/*  If cn_netlink_send() failed, the data is not sent */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
-@@ -96,6 +98,7 @@ void proc_exec_connector(struct task_str
++static int copy_msghdr_from_user(struct msghdr *kmsg,
++				 struct msghdr __user *umsg)
++{
++	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
++		return -EFAULT;
++	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
++		return -EINVAL;
++	return 0;
++}
++
+ static int ___sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
+ 			 struct msghdr *msg_sys, unsigned int flags,
+ 			 struct used_address *used_address)
+@@ -1974,8 +1984,11 @@ static int ___sys_sendmsg(struct socket
+ 	if (MSG_CMSG_COMPAT & flags) {
+ 		if (get_compat_msghdr(msg_sys, msg_compat))
+ 			return -EFAULT;
+-	} else if (copy_from_user(msg_sys, msg, sizeof(struct msghdr)))
+-		return -EFAULT;
++	} else {
++		err = copy_msghdr_from_user(msg_sys, msg);
++		if (err)
++			return err;
++	}
  
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -106,6 +109,7 @@ void proc_exec_connector(struct task_str
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
+ 	if (msg_sys->msg_iovlen > UIO_FASTIOV) {
+ 		err = -EMSGSIZE;
+@@ -2183,8 +2196,11 @@ static int ___sys_recvmsg(struct socket
+ 	if (MSG_CMSG_COMPAT & flags) {
+ 		if (get_compat_msghdr(msg_sys, msg_compat))
+ 			return -EFAULT;
+-	} else if (copy_from_user(msg_sys, msg, sizeof(struct msghdr)))
+-		return -EFAULT;
++	} else {
++		err = copy_msghdr_from_user(msg_sys, msg);
++		if (err)
++			return err;
++	}
  
-@@ -122,6 +126,7 @@ void proc_id_connector(struct task_struc
- 
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	ev->what = which_id;
- 	ev->event_data.id.process_pid = task->pid;
- 	ev->event_data.id.process_tgid = task->tgid;
-@@ -145,6 +150,7 @@ void proc_id_connector(struct task_struc
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
-@@ -160,6 +166,7 @@ void proc_sid_connector(struct task_stru
- 
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -170,6 +177,7 @@ void proc_sid_connector(struct task_stru
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
-@@ -185,6 +193,7 @@ void proc_ptrace_connector(struct task_s
- 
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -203,6 +212,7 @@ void proc_ptrace_connector(struct task_s
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
-@@ -218,6 +228,7 @@ void proc_comm_connector(struct task_str
- 
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -229,6 +240,7 @@ void proc_comm_connector(struct task_str
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
-@@ -244,6 +256,7 @@ void proc_coredump_connector(struct task
- 
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -254,6 +267,7 @@ void proc_coredump_connector(struct task
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
-@@ -269,6 +283,7 @@ void proc_exit_connector(struct task_str
- 
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -281,6 +296,7 @@ void proc_exit_connector(struct task_str
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
-@@ -304,6 +320,7 @@ static void cn_proc_ack(int err, int rcv
- 
- 	msg = (struct cn_msg *)buffer;
- 	ev = (struct proc_event *)msg->data;
-+	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	msg->seq = rcvd_seq;
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
- 	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-@@ -313,6 +330,7 @@ static void cn_proc_ack(int err, int rcv
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = rcvd_ack + 1;
- 	msg->len = sizeof(*ev);
-+	msg->flags = 0; /* not used */
- 	cn_netlink_send(msg, CN_IDX_PROC, GFP_KERNEL);
- }
- 
+ 	if (msg_sys->msg_iovlen > UIO_FASTIOV) {
+ 		err = -EMSGSIZE;
 
 
