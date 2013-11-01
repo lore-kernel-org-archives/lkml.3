@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab3KAWIi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:08:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55552 "EHLO
+	id S1756545Ab3KAWIn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:08:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55572 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756395Ab3KAWIf (ORCPT
+	with ESMTP id S1756512Ab3KAWIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:35 -0400
+	Fri, 1 Nov 2013 18:08:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Evan Huus <eapache@gmail.com>, Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.11 61/66] wireless: radiotap: fix parsing buffer overrun
-Date: Fri,  1 Nov 2013 15:07:37 -0700
-Message-Id: <20131101220651.666000242@linuxfoundation.org>
+        Pavel Parkhomenko <ra85551@gmail.com>
+Subject: [PATCH 3.11 65/66] USB: serial: option: add support for Inovia SEW858 device
+Date: Fri,  1 Nov 2013 15:07:41 -0700
+Message-Id: <20131101220652.634035208@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -26,54 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit f5563318ff1bde15b10e736e97ffce13be08bc1a upstream.
+commit f4c19b8e165cff1a6607c21f8809441d61cab7ec upstream.
 
-When parsing an invalid radiotap header, the parser can overrun
-the buffer that is passed in because it doesn't correctly check
- 1) the minimum radiotap header size
- 2) the space for extended bitmaps
+This patch adds the device id for the Inovia SEW858 device to the option driver.
 
-The first issue doesn't affect any in-kernel user as they all
-check the minimum size before calling the radiotap function.
-The second issue could potentially affect the kernel if an skb
-is passed in that consists only of the radiotap header with a
-lot of extended bitmaps that extend past the SKB. In that case
-a read-only buffer overrun by at most 4 bytes is possible.
-
-Fix this by adding the appropriate checks to the parser.
-
-Reported-by: Evan Huus <eapache@gmail.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-by: Pavel Parkhomenko <ra85551@gmail.com>
+Tested-by: Pavel Parkhomenko <ra85551@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/radiotap.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/net/wireless/radiotap.c
-+++ b/net/wireless/radiotap.c
-@@ -97,6 +97,10 @@ int ieee80211_radiotap_iterator_init(
- 	struct ieee80211_radiotap_header *radiotap_header,
- 	int max_length, const struct ieee80211_radiotap_vendor_namespaces *vns)
- {
-+	/* check the radiotap header can actually be present */
-+	if (max_length < sizeof(struct ieee80211_radiotap_header))
-+		return -EINVAL;
-+
- 	/* Linux only supports version 0 radiotap format */
- 	if (radiotap_header->it_version)
- 		return -EINVAL;
-@@ -131,7 +135,8 @@ int ieee80211_radiotap_iterator_init(
- 			 */
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -451,6 +451,10 @@ static void option_instat_callback(struc
+ #define CHANGHONG_VENDOR_ID			0x2077
+ #define CHANGHONG_PRODUCT_CH690			0x7001
  
- 			if ((unsigned long)iterator->_arg -
--			    (unsigned long)iterator->_rtheader >
-+			    (unsigned long)iterator->_rtheader +
-+			    sizeof(uint32_t) >
- 			    (unsigned long)iterator->_max_length)
- 				return -EINVAL;
- 		}
++/* Inovia */
++#define INOVIA_VENDOR_ID			0x20a6
++#define INOVIA_SEW858				0x1105
++
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_NONE = 0,
+@@ -1345,6 +1349,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d03, 0xff, 0x00, 0x00) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e01, 0xff, 0xff, 0xff) }, /* D-Link DWM-152/C1 */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e02, 0xff, 0xff, 0xff) }, /* D-Link DWM-156/C1 */
++	{ USB_DEVICE(INOVIA_VENDOR_ID, INOVIA_SEW858) },
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 
 
