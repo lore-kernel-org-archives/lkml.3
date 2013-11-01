@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757172Ab3KAWbt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:31:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55079 "EHLO
+	id S1756580Ab3KAWc0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:32:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55071 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755550Ab3KAWFC (ORCPT
+	with ESMTP id S1755431Ab3KAWFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:05:02 -0400
+	Fri, 1 Nov 2013 18:05:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Evan Huus <eapache@gmail.com>, Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 50/54] wireless: radiotap: fix parsing buffer overrun
-Date: Fri,  1 Nov 2013 15:04:18 -0700
-Message-Id: <20131101220216.918607254@linuxfoundation.org>
+        Julian Anastasov <ja@ssi.bg>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 37/54] ipv6: fill rt6i_gateway with nexthop address
+Date: Fri,  1 Nov 2013 15:04:05 -0700
+Message-Id: <20131101220215.510723460@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -26,54 +28,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Julian Anastasov <ja@ssi.bg>
 
-commit f5563318ff1bde15b10e736e97ffce13be08bc1a upstream.
+[ Upstream commit 550bab42f83308c9d6ab04a980cc4333cef1c8fa ]
 
-When parsing an invalid radiotap header, the parser can overrun
-the buffer that is passed in because it doesn't correctly check
- 1) the minimum radiotap header size
- 2) the space for extended bitmaps
+Make sure rt6i_gateway contains nexthop information in
+all routes returned from lookup or when routes are directly
+attached to skb for generated ICMP packets.
 
-The first issue doesn't affect any in-kernel user as they all
-check the minimum size before calling the radiotap function.
-The second issue could potentially affect the kernel if an skb
-is passed in that consists only of the radiotap header with a
-lot of extended bitmaps that extend past the SKB. In that case
-a read-only buffer overrun by at most 4 bytes is possible.
+The effect of this patch should be a faster version of
+rt6_nexthop() and the consideration of local addresses as
+nexthop.
 
-Fix this by adding the appropriate checks to the parser.
-
-Reported-by: Evan Huus <eapache@gmail.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/wireless/radiotap.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ include/net/ip6_route.h |    6 ++----
+ net/ipv6/ip6_output.c   |    4 ++--
+ net/ipv6/route.c        |    8 ++++++--
+ 3 files changed, 10 insertions(+), 8 deletions(-)
 
---- a/net/wireless/radiotap.c
-+++ b/net/wireless/radiotap.c
-@@ -97,6 +97,10 @@ int ieee80211_radiotap_iterator_init(
- 	struct ieee80211_radiotap_header *radiotap_header,
- 	int max_length, const struct ieee80211_radiotap_vendor_namespaces *vns)
- {
-+	/* check the radiotap header can actually be present */
-+	if (max_length < sizeof(struct ieee80211_radiotap_header))
-+		return -EINVAL;
-+
- 	/* Linux only supports version 0 radiotap format */
- 	if (radiotap_header->it_version)
- 		return -EINVAL;
-@@ -131,7 +135,8 @@ int ieee80211_radiotap_iterator_init(
- 			 */
+--- a/include/net/ip6_route.h
++++ b/include/net/ip6_route.h
+@@ -194,11 +194,9 @@ static inline int ip6_skb_dst_mtu(struct
+ 	       skb_dst(skb)->dev->mtu : dst_mtu(skb_dst(skb));
+ }
  
- 			if ((unsigned long)iterator->_arg -
--			    (unsigned long)iterator->_rtheader >
-+			    (unsigned long)iterator->_rtheader +
-+			    sizeof(uint32_t) >
- 			    (unsigned long)iterator->_max_length)
- 				return -EINVAL;
+-static inline struct in6_addr *rt6_nexthop(struct rt6_info *rt, struct in6_addr *dest)
++static inline struct in6_addr *rt6_nexthop(struct rt6_info *rt)
+ {
+-	if (rt->rt6i_flags & RTF_GATEWAY || !ipv6_addr_any(&rt->rt6i_gateway))
+-		return &rt->rt6i_gateway;
+-	return dest;
++	return &rt->rt6i_gateway;
+ }
+ 
+ #endif
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -130,7 +130,7 @@ static int ip6_finish_output2(struct sk_
+ 	}
+ 
+ 	rcu_read_lock_bh();
+-	nexthop = rt6_nexthop((struct rt6_info *)dst, &ipv6_hdr(skb)->daddr);
++	nexthop = rt6_nexthop((struct rt6_info *)dst);
+ 	neigh = __ipv6_neigh_lookup_noref(dst->dev, nexthop);
+ 	if (unlikely(!neigh))
+ 		neigh = __neigh_create(&nd_tbl, nexthop, dst->dev, false);
+@@ -898,7 +898,7 @@ static int ip6_dst_lookup_tail(struct so
+ 	 */
+ 	rt = (struct rt6_info *) *dst;
+ 	rcu_read_lock_bh();
+-	n = __ipv6_neigh_lookup_noref(rt->dst.dev, rt6_nexthop(rt, &fl6->daddr));
++	n = __ipv6_neigh_lookup_noref(rt->dst.dev, rt6_nexthop(rt));
+ 	err = n && !(n->nud_state & NUD_VALID) ? -EINVAL : 0;
+ 	rcu_read_unlock_bh();
+ 
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -848,7 +848,6 @@ static struct rt6_info *rt6_alloc_cow(st
+ 			if (ort->rt6i_dst.plen != 128 &&
+ 			    ipv6_addr_equal(&ort->rt6i_dst.addr, daddr))
+ 				rt->rt6i_flags |= RTF_ANYCAST;
+-			rt->rt6i_gateway = *daddr;
  		}
+ 
+ 		rt->rt6i_flags |= RTF_CACHE;
+@@ -1245,6 +1244,7 @@ struct dst_entry *icmp6_dst_alloc(struct
+ 	rt->dst.flags |= DST_HOST;
+ 	rt->dst.output  = ip6_output;
+ 	atomic_set(&rt->dst.__refcnt, 1);
++	rt->rt6i_gateway  = fl6->daddr;
+ 	rt->rt6i_dst.addr = fl6->daddr;
+ 	rt->rt6i_dst.plen = 128;
+ 	rt->rt6i_idev     = idev;
+@@ -1801,7 +1801,10 @@ static struct rt6_info *ip6_rt_copy(stru
+ 			in6_dev_hold(rt->rt6i_idev);
+ 		rt->dst.lastuse = jiffies;
+ 
+-		rt->rt6i_gateway = ort->rt6i_gateway;
++		if (ort->rt6i_flags & RTF_GATEWAY)
++			rt->rt6i_gateway = ort->rt6i_gateway;
++		else
++			rt->rt6i_gateway = *dest;
+ 		rt->rt6i_flags = ort->rt6i_flags;
+ 		if ((ort->rt6i_flags & (RTF_DEFAULT | RTF_ADDRCONF)) ==
+ 		    (RTF_DEFAULT | RTF_ADDRCONF))
+@@ -2088,6 +2091,7 @@ struct rt6_info *addrconf_dst_alloc(stru
+ 	else
+ 		rt->rt6i_flags |= RTF_LOCAL;
+ 
++	rt->rt6i_gateway  = *addr;
+ 	rt->rt6i_dst.addr = *addr;
+ 	rt->rt6i_dst.plen = 128;
+ 	rt->rt6i_table = fib6_get_table(net, RT6_TABLE_LOCAL);
 
 
