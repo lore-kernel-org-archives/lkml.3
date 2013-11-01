@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487Ab3KAWE7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:04:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55041 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372Ab3KAWE4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755381Ab3KAWE4 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 1 Nov 2013 18:04:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55026 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755312Ab3KAWEx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 18:04:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sathya Perla <sathya.perla@emulex.com>,
+        Fan Du <fan.du@windriver.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 32/54] be2net: pass if_id for v1 and V2 versions of TX_CREATE cmd
-Date: Fri,  1 Nov 2013 15:04:00 -0700
-Message-Id: <20131101220214.915743478@linuxfoundation.org>
+Subject: [PATCH 3.10 29/54] sctp: Use software crc32 checksum when xfrm transform will happen.
+Date: Fri,  1 Nov 2013 15:03:57 -0700
+Message-Id: <20131101220214.582434301@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -27,40 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasundhara Volam <vasundhara.volam@emulex.com>
+From: Fan Du <fan.du@windriver.com>
 
-[ Upstream commit 0fb88d61bc60779dde88b0fc268da17eb81d0412 ]
+[ Upstream commit 27127a82561a2a3ed955ce207048e1b066a80a2a ]
 
-It is a required field for all TX_CREATE cmd versions > 0.
-This fixes a driver initialization failure, caused by recent SH-R Firmwares
-(versions > 10.0.639.0) failing the TX_CREATE cmd when if_id field is
-not passed.
+igb/ixgbe have hardware sctp checksum support, when this feature is enabled
+and also IPsec is armed to protect sctp traffic, ugly things happened as
+xfrm_output checks CHECKSUM_PARTIAL to do checksum operation(sum every thing
+up and pack the 16bits result in the checksum field). The result is fail
+establishment of sctp communication.
 
-Signed-off-by: Sathya Perla <sathya.perla@emulex.com>
+Signed-off-by: Fan Du <fan.du@windriver.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/emulex/benet/be_cmds.c |    3 ++-
+ net/sctp/output.c |    3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/emulex/benet/be_cmds.c
-+++ b/drivers/net/ethernet/emulex/benet/be_cmds.c
-@@ -1150,7 +1150,6 @@ int be_cmd_txq_create(struct be_adapter
+--- a/net/sctp/output.c
++++ b/net/sctp/output.c
+@@ -547,7 +547,8 @@ int sctp_packet_transmit(struct sctp_pac
+ 	 * by CRC32-C as described in <draft-ietf-tsvwg-sctpcsum-02.txt>.
+ 	 */
+ 	if (!sctp_checksum_disable) {
+-		if (!(dst->dev->features & NETIF_F_SCTP_CSUM)) {
++		if (!(dst->dev->features & NETIF_F_SCTP_CSUM) ||
++		    (dst_xfrm(dst) != NULL)) {
+ 			__u32 crc32 = sctp_start_cksum((__u8 *)sh, cksum_buf_len);
  
- 	if (lancer_chip(adapter)) {
- 		req->hdr.version = 1;
--		req->if_id = cpu_to_le16(adapter->if_handle);
- 	} else if (BEx_chip(adapter)) {
- 		if (adapter->function_caps & BE_FUNCTION_CAPS_SUPER_NIC)
- 			req->hdr.version = 2;
-@@ -1158,6 +1157,8 @@ int be_cmd_txq_create(struct be_adapter
- 		req->hdr.version = 2;
- 	}
- 
-+	if (req->hdr.version > 0)
-+		req->if_id = cpu_to_le16(adapter->if_handle);
- 	req->num_pages = PAGES_4K_SPANNED(q_mem->va, q_mem->size);
- 	req->ulp_num = BE_ULP1_NUM;
- 	req->type = BE_ETH_TX_RING_TYPE_STANDARD;
+ 			/* 3) Put the resultant value into the checksum field in the
 
 
