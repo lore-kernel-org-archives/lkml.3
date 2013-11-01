@@ -1,109 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab3KAJgs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 05:36:48 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54801 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab3KAJgq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 05:36:46 -0400
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Wolfgang Grandegger <wg@grandegger.com>
-Cc: Joe Perches <joe@perches.com>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, Markus Pargmann <mpa@pengutronix.de>
-Subject: [PATCH v3] can: c_can: Speed up rx_poll function
-Date: Fri,  1 Nov 2013 10:36:36 +0100
-Message-Id: <1383298596-18385-1-git-send-email-mpa@pengutronix.de>
-X-Mailer: git-send-email 1.8.4.rc3
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1754945Ab3KAJi3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 05:38:29 -0400
+Received: from mga09.intel.com ([134.134.136.24]:39514 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751485Ab3KAJi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 05:38:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="428177879"
+Date: Fri, 1 Nov 2013 17:38:44 +0800
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH 1/4] mm/rmap: per anon_vma lock
+Message-ID: <20131101093844.GA30123@yliu-dev.sh.intel.com>
+References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
+ <1383292467-28922-2-git-send-email-yuanhan.liu@linux.intel.com>
+ <20131101084329.GB19466@laptop.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131101084329.GB19466@laptop.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch speeds up the rx_poll function by reducing the number of
-register reads.
+On Fri, Nov 01, 2013 at 09:43:29AM +0100, Peter Zijlstra wrote:
+> On Fri, Nov 01, 2013 at 03:54:24PM +0800, Yuanhan Liu wrote:
+> > @@ -497,15 +495,20 @@ static void vma_rb_erase(struct vm_area_struct *vma, struct rb_root *root)
+> >   * anon_vma_interval_tree_post_update_vma().
+> >   *
+> >   * The entire update must be protected by exclusive mmap_sem and by
+> > - * the root anon_vma's mutex.
+> > + * the anon_vma's mutex.
+> >   */
+> >  static inline void
+> >  anon_vma_interval_tree_pre_update_vma(struct vm_area_struct *vma)
+> >  {
+> >  	struct anon_vma_chain *avc;
+> >  
+> > -	list_for_each_entry(avc, &vma->anon_vma_chain, same_vma)
+> > -		anon_vma_interval_tree_remove(avc, &avc->anon_vma->rb_root);
+> > +	list_for_each_entry(avc, &vma->anon_vma_chain, same_vma) {
+> > +		struct anon_vma *anon_vma = avc->anon_vma;
+> > +
+> > +		anon_vma_lock_write(anon_vma);
+> > +		anon_vma_interval_tree_remove(avc, &anon_vma->rb_root);
+> > +		anon_vma_unlock_write(anon_vma);
+> > +	}
+> >  }
+> >  
+> >  static inline void
+> > @@ -513,8 +516,13 @@ anon_vma_interval_tree_post_update_vma(struct vm_area_struct *vma)
+> >  {
+> >  	struct anon_vma_chain *avc;
+> >  
+> > -	list_for_each_entry(avc, &vma->anon_vma_chain, same_vma)
+> > -		anon_vma_interval_tree_insert(avc, &avc->anon_vma->rb_root);
+> > +	list_for_each_entry(avc, &vma->anon_vma_chain, same_vma) {
+> > +		struct anon_vma *anon_vma = avc->anon_vma;
+> > +
+> > +		anon_vma_lock_write(anon_vma);
+> > +		anon_vma_interval_tree_insert(avc, &anon_vma->rb_root);
+> > +		anon_vma_unlock_write(anon_vma);
+> > +	}
+> >  }
+> >  
+> >  static int find_vma_links(struct mm_struct *mm, unsigned long addr,
+> > @@ -781,7 +789,6 @@ again:			remove_next = 1 + (end > next->vm_end);
+> >  	if (anon_vma) {
+> >  		VM_BUG_ON(adjust_next && next->anon_vma &&
+> >  			  anon_vma != next->anon_vma);
+> > -		anon_vma_lock_write(anon_vma);
+> >  		anon_vma_interval_tree_pre_update_vma(vma);
+> >  		if (adjust_next)
+> >  			anon_vma_interval_tree_pre_update_vma(next);
+> > @@ -845,7 +852,6 @@ again:			remove_next = 1 + (end > next->vm_end);
+> >  		anon_vma_interval_tree_post_update_vma(vma);
+> >  		if (adjust_next)
+> >  			anon_vma_interval_tree_post_update_vma(next);
+> > -		anon_vma_unlock_write(anon_vma);
+> >  	}
+> >  	if (mapping)
+> >  		mutex_unlock(&mapping->i_mmap_mutex);
+> 
+> AFAICT this isn't correct at all. We used to protect the vma interval
+> tree with the root lock, now we don't.
 
-Replace the 32bit register read by a 16bit register read. Currently
-the 32bit register read is implemented by using 2 16bit reads. This is
-inefficient as we only use the lower 16bit in rx_poll.
+We still use lock to protect anon_vma interval tree, but we lock our own
+interval tree this time.
 
-The for loop reads the pending interrupts in every iteration. This
-leads up to 16 reads of pending interrupts. The patch introduces a new
-outer loop to read the pending interrupts as long as 'quota' is above 0.
-This reduces the total number of reads.
+> All we've got left is the
+> mmap_sem, but anon_vma chains can cross address-spaces and thus we're up
+> some creek without no paddle.
 
-The third change is to replace the for-loop by a ffs loop.
+Yep, however, you still need acquire the address-space crossed anon_vma's lock
+to modify something.
 
-Tested on AM335x. I removed all 'static' and 'inline' from c_can.c to
-see the timings for all functions. I used the function tracer with
-trace_stats.
+Say, here is a chart: http://people.freedesktop.org/~yliu/anon_vma.png.
+Let's take the 3rd chart as example. And assume we will unlink vma C.
 
-125kbit:
-  Function                               Hit    Time            Avg             s^2
-  --------                               ---    ----            ---             ---
-  c_can_do_rx_poll                     63960    10168178 us     158.977 us      1493056 us
-With patch:
-  c_can_do_rx_poll                     63941    3764057 us      58.867 us       776162.2 us
+And the steps are:
+- lock c, and remove avc between c and C
+- lock b, and remove avc between b and C
+- lock a, and remove avc between a and C
 
-1Mbit:
-  Function                               Hit    Time            Avg             s^2
-  --------                               ---    ----            ---             ---
-  c_can_do_rx_poll                     69489    30049498 us     432.435 us      9271851 us
-With patch:
-  c_can_do_rx_poll                    207109    24322185 us     117.436 us      171469047 us
+Thanks.
 
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
----
-
-Notes:
-    Changes in v3:
-     - Update commit message (measurements and ffs)
-    
-    Changes in v2:
-     - Small changes, find_next_bit -> ffs and other
-
- drivers/net/can/c_can/c_can.c | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
-index a668cd4..428681e 100644
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -798,17 +798,19 @@ static int c_can_do_rx_poll(struct net_device *dev, int quota)
- 	u32 num_rx_pkts = 0;
- 	unsigned int msg_obj, msg_ctrl_save;
- 	struct c_can_priv *priv = netdev_priv(dev);
--	u32 val = c_can_read_reg32(priv, C_CAN_INTPND1_REG);
-+	u16 val;
-+
-+	/*
-+	 * It is faster to read only one 16bit register. This is only possible
-+	 * for a maximum number of 16 objects.
-+	 */
-+	BUILD_BUG_ON_MSG(C_CAN_MSG_OBJ_RX_LAST > 16,
-+			"Implementation does not support more message objects than 16");
-+
-+	while (quota > 0 && (val = priv->read_reg(priv, C_CAN_INTPND1_REG))) {
-+		while ((msg_obj = ffs(val)) && quota > 0) {
-+			val &= ~BIT(msg_obj - 1);
- 
--	for (msg_obj = C_CAN_MSG_OBJ_RX_FIRST;
--			msg_obj <= C_CAN_MSG_OBJ_RX_LAST && quota > 0;
--			val = c_can_read_reg32(priv, C_CAN_INTPND1_REG),
--			msg_obj++) {
--		/*
--		 * as interrupt pending register's bit n-1 corresponds to
--		 * message object n, we need to handle the same properly.
--		 */
--		if (val & (1 << (msg_obj - 1))) {
- 			c_can_object_get(dev, 0, msg_obj, IF_COMM_ALL &
- 					~IF_COMM_TXRQST);
- 			msg_ctrl_save = priv->read_reg(priv,
--- 
-1.8.4.rc3
+	--yliu
 
