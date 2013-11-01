@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283Ab3KAWIL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:08:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55377 "EHLO
+	id S1756756Ab3KAWVq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:21:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55398 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755890Ab3KAWIH (ORCPT
+	with ESMTP id S1756277Ab3KAWIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:07 -0400
+	Fri, 1 Nov 2013 18:08:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 28/66] farsync: fix info leak in ioctl
-Date: Fri,  1 Nov 2013 15:07:04 -0700
-Message-Id: <20131101220642.550309993@linuxfoundation.org>
+Subject: [PATCH 3.11 32/66] virtio-net: dont respond to cpu hotplug notifier if were not ready
+Date: Fri,  1 Nov 2013 15:07:08 -0700
+Message-Id: <20131101220643.618047170@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,30 +30,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salva Peiró <speiro@ai2.upv.es>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 96b340406724d87e4621284ebac5e059d67b2194 ]
+[ Upstream commit 3ab098df35f8b98b6553edc2e40234af512ba877 ]
 
-The fst_get_iface() code fails to initialize the two padding bytes of
-struct sync_serial_settings after the ->loopback member. Add an explicit
-memset(0) before filling the structure to avoid the info leak.
+We're trying to re-configure the affinity unconditionally in cpu hotplug
+callback. This may lead the issue during resuming from s3/s4 since
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+- virt queues haven't been allocated at that time.
+- it's unnecessary since thaw method will re-configure the affinity.
+
+Fix this issue by checking the config_enable and do nothing is we're not ready.
+
+The bug were introduced by commit 8de4b2f3ae90c8fc0f17eeaab87d5a951b66ee17
+(virtio-net: reset virtqueue affinity when doing cpu hotplug).
+
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/wan/farsync.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/virtio_net.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/net/wan/farsync.c
-+++ b/drivers/net/wan/farsync.c
-@@ -1972,6 +1972,7 @@ fst_get_iface(struct fst_card_info *card
- 	}
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1094,6 +1094,11 @@ static int virtnet_cpu_callback(struct n
+ {
+ 	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
  
- 	i = port->index;
-+	memset(&sync, 0, sizeof(sync));
- 	sync.clock_rate = FST_RDL(card, portConfig[i].lineSpeed);
- 	/* Lucky card and linux use same encoding here */
- 	sync.clock_type = FST_RDB(card, portConfig[i].internalClock) ==
++	mutex_lock(&vi->config_lock);
++
++	if (!vi->config_enable)
++		goto done;
++
+ 	switch(action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_ONLINE:
+ 	case CPU_DOWN_FAILED:
+@@ -1106,6 +1111,9 @@ static int virtnet_cpu_callback(struct n
+ 	default:
+ 		break;
+ 	}
++
++done:
++	mutex_unlock(&vi->config_lock);
+ 	return NOTIFY_OK;
+ }
+ 
 
 
