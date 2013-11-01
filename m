@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964Ab3KAVoP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 17:44:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54600 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754848Ab3KAVoJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754865Ab3KAVoJ (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 1 Nov 2013 17:44:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54590 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754783Ab3KAVoG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 17:44:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Evan Huus <eapache@gmail.com>, Johannes Berg <johannes.berg@intel.com>
-Subject: [ 29/32] wireless: radiotap: fix parsing buffer overrun
-Date: Fri,  1 Nov 2013 14:43:40 -0700
-Message-Id: <20131101214320.682367667@linuxfoundation.org>
+        Mariusz Ceier <mceier+kernel@gmail.com>,
+        Mugunthan V N <mugunthanvnm@ti.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 25/32] davinci_emac.c: Fix IFF_ALLMULTI setup
+Date: Fri,  1 Nov 2013 14:43:36 -0700
+Message-Id: <20131101214319.722031168@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101214313.735463599@linuxfoundation.org>
 References: <20131101214313.735463599@linuxfoundation.org>
@@ -26,54 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Mariusz Ceier <mceier+kernel@gmail.com>
 
-commit f5563318ff1bde15b10e736e97ffce13be08bc1a upstream.
+[ Upstream commit d69e0f7ea95fef8059251325a79c004bac01f018 ]
 
-When parsing an invalid radiotap header, the parser can overrun
-the buffer that is passed in because it doesn't correctly check
- 1) the minimum radiotap header size
- 2) the space for extended bitmaps
+When IFF_ALLMULTI flag is set on interface and IFF_PROMISC isn't,
+emac_dev_mcast_set should only enable RX of multicasts and reset
+MACHASH registers.
 
-The first issue doesn't affect any in-kernel user as they all
-check the minimum size before calling the radiotap function.
-The second issue could potentially affect the kernel if an skb
-is passed in that consists only of the radiotap header with a
-lot of extended bitmaps that extend past the SKB. In that case
-a read-only buffer overrun by at most 4 bytes is possible.
+It does this, but afterwards it either sets up multicast MACs
+filtering or disables RX of multicasts and resets MACHASH registers
+again, rendering IFF_ALLMULTI flag useless.
 
-Fix this by adding the appropriate checks to the parser.
+This patch fixes emac_dev_mcast_set, so that multicast MACs filtering and
+disabling of RX of multicasts are skipped when IFF_ALLMULTI flag is set.
 
-Reported-by: Evan Huus <eapache@gmail.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Tested with kernel 2.6.37.
+
+Signed-off-by: Mariusz Ceier <mceier+kernel@gmail.com>
+Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/wireless/radiotap.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/ti/davinci_emac.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/net/wireless/radiotap.c
-+++ b/net/wireless/radiotap.c
-@@ -95,6 +95,10 @@ int ieee80211_radiotap_iterator_init(
- 	struct ieee80211_radiotap_header *radiotap_header,
- 	int max_length, const struct ieee80211_radiotap_vendor_namespaces *vns)
- {
-+	/* check the radiotap header can actually be present */
-+	if (max_length < sizeof(struct ieee80211_radiotap_header))
-+		return -EINVAL;
-+
- 	/* Linux only supports version 0 radiotap format */
- 	if (radiotap_header->it_version)
- 		return -EINVAL;
-@@ -129,7 +133,8 @@ int ieee80211_radiotap_iterator_init(
- 			 */
+--- a/drivers/net/ethernet/ti/davinci_emac.c
++++ b/drivers/net/ethernet/ti/davinci_emac.c
+@@ -875,8 +875,7 @@ static void emac_dev_mcast_set(struct ne
+ 		    netdev_mc_count(ndev) > EMAC_DEF_MAX_MULTICAST_ADDRESSES) {
+ 			mbp_enable = (mbp_enable | EMAC_MBP_RXMCAST);
+ 			emac_add_mcast(priv, EMAC_ALL_MULTI_SET, NULL);
+-		}
+-		if (!netdev_mc_empty(ndev)) {
++		} else if (!netdev_mc_empty(ndev)) {
+ 			struct netdev_hw_addr *ha;
  
- 			if ((unsigned long)iterator->_arg -
--			    (unsigned long)iterator->_rtheader >
-+			    (unsigned long)iterator->_rtheader +
-+			    sizeof(uint32_t) >
- 			    (unsigned long)iterator->_max_length)
- 				return -EINVAL;
- 		}
+ 			mbp_enable = (mbp_enable | EMAC_MBP_RXMCAST);
 
 
