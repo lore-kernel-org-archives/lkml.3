@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756848Ab3KAWYW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:24:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55342 "EHLO
+	id S1756861Ab3KAWYj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:24:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55336 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756222Ab3KAWIB (ORCPT
+	with ESMTP id S1756216Ab3KAWIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:01 -0400
+	Fri, 1 Nov 2013 18:08:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrick McHardy <kaber@trash.net>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Eric Dumazet <edumazet@google.com>, Amir Vadai <amirv@mellanox.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 21/66] net: vlan: fix nlmsg size calculation in vlan_get_size()
-Date: Fri,  1 Nov 2013 15:06:57 -0700
-Message-Id: <20131101220640.622012541@linuxfoundation.org>
+Subject: [PATCH 3.11 20/66] net/mlx4_en: Fix pages never dma unmapped on rx
+Date: Fri,  1 Nov 2013 15:06:56 -0700
+Message-Id: <20131101220640.306934588@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -28,31 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Amir Vadai <amirv@mellanox.com>
 
-[ Upstream commit c33a39c575068c2ea9bffb22fd6de2df19c74b89 ]
+[ Upstream commit 021f1107ffdae7a82af6c53f4c52654062e365c6 ]
 
-This patch fixes the calculation of the nlmsg size, by adding the missing
-nla_total_size().
+This patch fixes a bug introduced by commit 51151a16 (mlx4: allow
+order-0 memory allocations in RX path).
 
-Cc: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+dma_unmap_page never reached because condition to detect last fragment
+in page is wrong. offset+frag_stride can't be greater than size, need to
+make sure no additional frag will fit in page => compare offset +
+frag_stride + next_frag_size instead.
+next_frag_size is the same as the current one, since page is shared only
+with frags of the same size.
+
+CC: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Amir Vadai <amirv@mellanox.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/8021q/vlan_netlink.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/mellanox/mlx4/en_rx.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/net/8021q/vlan_netlink.c
-+++ b/net/8021q/vlan_netlink.c
-@@ -171,7 +171,7 @@ static size_t vlan_get_size(const struct
+--- a/drivers/net/ethernet/mellanox/mlx4/en_rx.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_rx.c
+@@ -135,9 +135,10 @@ static void mlx4_en_free_frag(struct mlx
+ 			      int i)
+ {
+ 	const struct mlx4_en_frag_info *frag_info = &priv->frag_info[i];
++	u32 next_frag_end = frags[i].page_offset + 2 * frag_info->frag_stride;
  
- 	return nla_total_size(2) +	/* IFLA_VLAN_PROTOCOL */
- 	       nla_total_size(2) +	/* IFLA_VLAN_ID */
--	       sizeof(struct ifla_vlan_flags) + /* IFLA_VLAN_FLAGS */
-+	       nla_total_size(sizeof(struct ifla_vlan_flags)) + /* IFLA_VLAN_FLAGS */
- 	       vlan_qos_map_size(vlan->nr_ingress_mappings) +
- 	       vlan_qos_map_size(vlan->nr_egress_mappings);
- }
+-	if (frags[i].page_offset + frag_info->frag_stride >
+-	    frags[i].page_size)
++
++	if (next_frag_end > frags[i].page_size)
+ 		dma_unmap_page(priv->ddev, frags[i].dma, frags[i].page_size,
+ 			       PCI_DMA_FROMDEVICE);
+ 
 
 
