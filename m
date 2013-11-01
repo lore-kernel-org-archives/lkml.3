@@ -1,77 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179Ab3KALjI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 07:39:08 -0400
-Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:31023
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756001Ab3KALga (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 07:36:30 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 6
-X-BigFish: VS6(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kz70kz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h1155h)
-From: Nicolin Chen <b42378@freescale.com>
-To: <akpm@linux-foundation.org>, <joe@perches.com>, <nsekhar@ti.com>,
-        <khilman@deeprootsystems.com>, <linux@arm.linux.org.uk>,
-        <dan.j.williams@intel.com>, <vinod.koul@intel.com>,
-        <m.chehab@samsung.com>, <hjk@hansjkoch.de>,
-        <gregkh@linuxfoundation.org>, <perex@perex.cz>, <tiwai@suse.de>,
-        <lgirdwood@gmail.com>, <broonie@kernel.org>,
-        <rmk+kernel@arm.linux.org.uk>, <eric.y.miao@gmail.com>,
-        <haojian.zhuang@gmail.com>
-CC: <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <dmaengine@vger.kernel.org>,
-        <linux-media@vger.kernel.org>, <alsa-devel@alsa-project.org>
-Subject: [PATCH 2/8] ARM: davinci: use gen_pool_dma_alloc() to sram.c
-Date: Fri, 1 Nov 2013 19:36:00 +0800
-Message-ID: <9536ee2bbb1a8463ebb21068a750b61fa59900df.1383303752.git.b42378@freescale.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <cover.1383303752.git.b42378@freescale.com>
-References: <cover.1383303752.git.b42378@freescale.com>
+	id S1756194Ab3KALjt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 07:39:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15507 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755894Ab3KALjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 07:39:47 -0400
+Message-ID: <527392E9.6080005@redhat.com>
+Date: Fri, 01 Nov 2013 07:39:21 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Mel Gorman <mgorman@suse.de>
+CC: Rik van Riel <riel@redhat.com>, peterz@infradead.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -tip] fix race between stop_two_cpus and stop_cpus
+References: <20131031163144.0fd27457@annuminas.surriel.com> <20131101110825.GX2400@suse.de>
+In-Reply-To: <20131101110825.GX2400@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since gen_pool_dma_alloc() is introduced, we implement it to simplify code.
-
-Signed-off-by: Nicolin Chen <b42378@freescale.com>
----
- arch/arm/mach-davinci/sram.c | 9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
-
-diff --git a/arch/arm/mach-davinci/sram.c b/arch/arm/mach-davinci/sram.c
-index f18928b..8540ddd 100644
---- a/arch/arm/mach-davinci/sram.c
-+++ b/arch/arm/mach-davinci/sram.c
-@@ -25,7 +25,6 @@ struct gen_pool *sram_get_gen_pool(void)
- 
- void *sram_alloc(size_t len, dma_addr_t *dma)
- {
--	unsigned long vaddr;
- 	dma_addr_t dma_base = davinci_soc_info.sram_dma;
- 
- 	if (dma)
-@@ -33,13 +32,7 @@ void *sram_alloc(size_t len, dma_addr_t *dma)
- 	if (!sram_pool || (dma && !dma_base))
- 		return NULL;
- 
--	vaddr = gen_pool_alloc(sram_pool, len);
--	if (!vaddr)
--		return NULL;
--
--	if (dma)
--		*dma = gen_pool_virt_to_phys(sram_pool, vaddr);
--	return (void *)vaddr;
-+	return gen_pool_dma_alloc(sram_pool, len, dma);
- 
- }
- EXPORT_SYMBOL(sram_alloc);
--- 
-1.8.4
 
 
+On 11/01/2013 07:08 AM, Mel Gorman wrote:
+> On Thu, Oct 31, 2013 at 04:31:44PM -0400, Rik van Riel wrote:
+>> There is a race between stop_two_cpus, and the global stop_cpus.
+>>
+> 
+> What was the trigger for this? I want to see what was missing from my own
+> testing. I'm going to go out on a limb and guess that CPU hotplug was also
+> running in the background to specifically stress this sort of rare condition.
+> Something like running a standard test with the monitors/watch-cpuoffline.sh
+> from mmtests running in parallel.
+> 
+
+I have a test that loads and unloads each module in /lib/modules/3.*/...
+
+Each run typically takes a few minutes.  After running 4-5 times, the system
+issues a soft lockup warning with a CPU in multi_cpu_stop().  Unfortunately,
+kdump isn't working on this particular system (due to another bug) so I modified
+the code with (sorry for the cut-and-paste):
+
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 05039e3..4a8c9f9 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -323,8 +323,10 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtime
+                else
+                        dump_stack();
+
+-               if (softlockup_panic)
++               if (softlockup_panic) {
++                       show_state();
+                        panic("softlockup: hung tasks");
++               }
+                __this_cpu_write(soft_watchdog_warn, true);
+        } else
+                __this_cpu_write(soft_watchdog_warn, false);
+
+and then 'echo 1 > /proc/sys/kernel/softlockup_panic' to get a full trace of all
+tasks.
+
+When I did this and ran the kernel module load unload test ...
+
+[prarit@prarit tmp]$ cat /tmp/intel.log | grep RIP
+[  678.081168] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
+multi_cpu_stop+0x82/0xf0
+[  678.156180] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+[  678.230190] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+[  678.244186] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+[  678.259194] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
+multi_cpu_stop+0x82/0xf0
+[  678.274192] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+[  678.288195] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+[  678.303197] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
+multi_cpu_stop+0x82/0xf0
+[  678.318200] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+[  678.333203] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+[  678.349206] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+[  678.364208] RIP: 0010:[<ffffffff810d328b>]  [<ffffffff810d328b>]
+multi_cpu_stop+0x7b/0xf0
+[  678.379211] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
+multi_cpu_stop+0x82/0xf0
+[  678.394212] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+[  678.409215] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+[  678.424217] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
+multi_cpu_stop+0x82/0xf0
+[  678.438219] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
+multi_cpu_stop+0x82/0xf0
+[  678.452221] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+[  678.466228] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
+multi_cpu_stop+0x82/0xf0
+[  678.481228] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+[  678.496230] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
+multi_cpu_stop+0x82/0xf0
+[  678.511234] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+[  678.526236] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+[  678.541238] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
+multi_cpu_stop+0x82/0xf0
+[  678.556244] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+[  678.571243] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
+multi_cpu_stop+0x82/0xf0
+[  678.586247] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+[  678.601248] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
+multi_cpu_stop+0x82/0xf0
+[  678.616251] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
+multi_cpu_stop+0x82/0xf0
+[  678.632254] RIP: 0010:[<ffffffff810d328b>]  [<ffffffff810d328b>]
+multi_cpu_stop+0x7b/0xf0
+[  678.647257] RIP: 0010:[<ffffffff810d3292>]  [<ffffffff810d3292>]
+multi_cpu_stop+0x82/0xf0
+[  687.570464] RIP: 0010:[<ffffffff810d3296>]  [<ffffffff810d3296>]
+multi_cpu_stop+0x86/0xf0
+
+and,
+
+[prarit@prarit tmp]$ cat /tmp/intel.log | grep RIP | wc -l
+32
+
+which shows all 32 cpus are "correctly" in the cpu stop threads.  After some
+investigation, Rik came up with his patch.
+
+Hope this explains things,
+
+P.
