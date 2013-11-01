@@ -1,176 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab3KAPQv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 11:16:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50157 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401Ab3KAPQo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 11:16:44 -0400
+	id S1753984Ab3KAPUs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 11:20:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1958 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752383Ab3KAPUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 11:20:47 -0400
+Date: Fri, 1 Nov 2013 16:20:00 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH 3/4] perf tools: Add call-graph option support into
+ .perfconfig
+Message-ID: <20131101152000.GB5671@krava.brq.redhat.com>
+References: <20131026120336.GA24439@gmail.com>
+ <1382797536-32303-1-git-send-email-jolsa@redhat.com>
+ <1382797536-32303-4-git-send-email-jolsa@redhat.com>
+ <87bo2995o1.fsf@sejong.aot.lge.com>
+ <20131029101821.GA1093@krava.brq.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1311011040410.1364-100000@iolanthe.rowland.org>
-References: <1383062878-28489-1-git-send-email-ming.lei@canonical.com>
-	<Pine.LNX.4.44L0.1311011040410.1364-100000@iolanthe.rowland.org>
-Date: Fri, 1 Nov 2013 23:16:41 +0800
-Message-ID: <CACVXFVNNU0N6wqM4RF2fAOKihSoJpw24nPpXw4YJXuBR2GMnfw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] USB: storage: use sg_miter_* APIs to access scsi buffer
-From: Ming Lei <ming.lei@canonical.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131029101821.GA1093@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 1, 2013 at 10:54 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Wed, 30 Oct 2013, Ming Lei wrote:
->
->> We have sg_miter_* APIs for accessing scsi sg buffer, so
->> use them to make code clean and bug free.
->
-> Hmmm.  You could simply call sg_copy_buffer, if you didn't mind the
-> quadratic penalty for the sg_miter_skip operations.
+On Tue, Oct 29, 2013 at 11:18:21AM +0100, Jiri Olsa wrote:
+> On Mon, Oct 28, 2013 at 05:10:54PM +0900, Namhyung Kim wrote:
+> > On Sat, 26 Oct 2013 16:25:35 +0200, Jiri Olsa wrote:
+> > > Adding call-graph option support into .perfconfig file,
+> > > so it's now possible use call-graph option like:
+> > >
+> > >   [top]
+> > >         call-graph = fp
+> > >
+> > >   [record]
+> > >         call-graph = dwarf,8192
+> > >
+> > > Above options ONLY setup the unwind method. To enable
+> > > perf record/top to actually use it the command line
+> > > option -g/-G must be specified.
+> > >
+> > > The --call-graph option overloads .perfconfig setup.
+> > >
+> > > Assuming above configuration:
+> > >
+> > >   $ perf record -g ls
+> > >   - enables dwarf unwind with user stack size dump 8192 bytes
+> > >
+> > >   $ perf top -G
+> > >   - enables frame pointer unwind
+> > >
+> > >   $ perf record --call-graph=fp ls
+> > >   - enables frame pointer unwind
+> > >
+> > >   $ perf top --call-graph=dwarf,4096 ls
+> > >   - enables dwarf unwind with user stack size dump 4096 bytes
+> > >
+> > [SNIP]
+> > > --- a/tools/perf/builtin-record.c
+> > > +++ b/tools/perf/builtin-record.c
+> > > @@ -750,6 +750,8 @@ int record_parse_callchain_opt(const struct option *opt,
+> > >  	struct perf_record_opts *opts = opt->value;
+> > >  	int ret;
+> > >  
+> > > +	opts->call_graph_enabled = !unset;
+> > > +
+> > 
+> > Why not just using symbol_conf.use_callchain?
+> > 
+> 
+> right, this way we'd be in sync with top
 
-I don't want to change all current callers now.
+hum, on the other hand using symbol_conf.use_callchain within
+utils/evsel.c adds symbol object dependency to python code
+which I'm not sure is something we want ;-)
 
->
->> --- a/drivers/usb/storage/protocol.c
->> +++ b/drivers/usb/storage/protocol.c
->> @@ -135,69 +135,43 @@ unsigned int usb_stor_access_xfer_buf(unsigned char *buffer,
->>       unsigned int buflen, struct scsi_cmnd *srb, struct scatterlist **sgptr,
->>       unsigned int *offset, enum xfer_buf_dir dir)
->>  {
->> -     unsigned int cnt;
->> +     unsigned int cnt = 0;
->>       struct scatterlist *sg = *sgptr;
->> +     struct sg_mapping_iter miter;
->> +     unsigned int nents = scsi_sg_count(srb);
->>
->> -     /* We have to go through the list one entry
->> -      * at a time.  Each s-g entry contains some number of pages, and
->> -      * each page has to be kmap()'ed separately.  If the page is already
->> -      * in kernel-addressable memory then kmap() will return its address.
->> -      * If the page is not directly accessible -- such as a user buffer
->> -      * located in high memory -- then kmap() will map it to a temporary
->> -      * position in the kernel's virtual address space.
->> -      */
->> -
->> -     if (!sg)
->> +     if (sg)
->> +             nents -= sg - scsi_sglist(srb);
->
-> This is definitely wrong.  Scatterlist entries are not always stored in
-> a linear array.  To do this properly, you would have to make the caller
-> keep track of the current value of nents.
->
-> Or better yet, have the caller store and pass the sg_mapping_iter
-> structure rather than sgptr and offset.
+I'll keep it as it is in v2
 
-You are right, but looks we can use sg_nents(), which is easier, :-)
-
->
->> +     else
->>               sg = scsi_sglist(srb);
->>
->> -     /* This loop handles a single s-g list entry, which may
->> -      * include multiple pages.  Find the initial page structure
->> -      * and the starting offset within the page, and update
->> -      * the *offset and **sgptr values for the next loop.
->> -      */
->> -     cnt = 0;
->> -     while (cnt < buflen && sg) {
->> -             struct page *page = sg_page(sg) +
->> -                             ((sg->offset + *offset) >> PAGE_SHIFT);
->> -             unsigned int poff = (sg->offset + *offset) & (PAGE_SIZE-1);
->> -             unsigned int sglen = sg->length - *offset;
->> -
->> -             if (sglen > buflen - cnt) {
->> -
->> -                     /* Transfer ends within this s-g entry */
->> -                     sglen = buflen - cnt;
->> -                     *offset += sglen;
->> -             } else {
->> +     if (dir == FROM_XFER_BUF)
->> +             sg_miter_start(&miter, sg, nents, SG_MITER_FROM_SG);
->> +     else
->> +             sg_miter_start(&miter, sg, nents, SG_MITER_TO_SG);
->
-> I find this style somewhat annoying.  Maybe the compiler is smart
-> enough to optimize it, maybe not.  In any case, I would prefer to see
->
->         if (dir == FROM_XFER_BUF)
->                 sgdir = SG_MITER_FROM_SG;
->         else
->                 sgdir = SG_MITER_TO_SG;
->         sg_miter_start(&miter, nents, sgdir);
->
-> Or even:
->
->         sg_miter_start(&miter, nents, (dir == FROM_XFER_BUF ?
->                         SG_MITER_FROM_SG : SG_MITER_TO_SG));
-
-Looks the above is fine.
-
->
->> -                     /* Transfer continues to next s-g entry */
->> -                     *offset = 0;
->> -                     sg = sg_next(sg);
->> -             }
->> +     if (!sg_miter_skip(&miter, *offset))
->> +             return cnt;
->> +
->> +     while (sg_miter_next(&miter) && cnt < buflen) {
->> +             unsigned int len = min(miter.length, buflen - cnt);
->> +
->> +             if (dir == FROM_XFER_BUF)
->> +                     memcpy(buffer + cnt, miter.addr, len);
->> +             else
->> +                     memcpy(miter.addr, buffer + cnt, len);
->>
->> -             /* Transfer the data for all the pages in this
->> -                     * s-g entry.  For each page: call kmap(), do the
->> -                     * transfer, and call kunmap() immediately after. */
->> -             while (sglen > 0) {
->> -                     unsigned int plen = min(sglen, (unsigned int)
->> -                                     PAGE_SIZE - poff);
->> -                     unsigned char *ptr = kmap(page);
->> -
->> -                     if (dir == TO_XFER_BUF)
->> -                             memcpy(ptr + poff, buffer + cnt, plen);
->> -                     else
->> -                             memcpy(buffer + cnt, ptr + poff, plen);
->> -                     kunmap(page);
->> -
->> -                     /* Start at the beginning of the next page */
->> -                     poff = 0;
->> -                     ++page;
->> -                     cnt += plen;
->> -                     sglen -= plen;
->> +             if (*offset + len < miter.piter.sg->length) {
->> +                     *offset += len;
->> +                     *sgptr = miter.piter.sg;
->> +             } else {
->> +                     *offset = 0;
->> +                     *sgptr = sg_next(miter.piter.sg);
->>               }
->> +             cnt += len;
->>       }
->> -     *sgptr = sg;
->> +     sg_miter_stop(&miter);
->>
->> -     /* Return the amount actually transferred */
->
-> Why remove this comment?
-
-With this patch, the comment becomes uncessary since the code
-is very simple and it is obvious.
-
-Thanks,
---
-Ming Lei
+jirka
