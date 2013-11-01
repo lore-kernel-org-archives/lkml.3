@@ -1,159 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab3KAKRD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 06:17:03 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:7396
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750733Ab3KAKQ7 (ORCPT
+	id S1755824Ab3KAKWb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 06:22:31 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45971 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab3KAKWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 06:16:59 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h1155h)
-Date: Fri, 1 Nov 2013 18:02:03 +0800
-From: Nicolin Chen <b42378@freescale.com>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-CC: <r65073@freescale.com>, <timur@tabi.org>, <lgirdwood@gmail.com>,
-        <broonie@kernel.org>, <r64188@freescale.com>,
-        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ian.campbell@citrix.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <perex@perex.cz>, <tiwai@suse.de>, <grant.likely@linaro.org>,
-        <fabio.estevam@freescale.com>, <LW@KARO-electronics.de>,
-        <oskar@scara.com>, <shawn.guo@linaro.org>, <b18965@freescale.com>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCHv2 5/8] ASoC: SGTL5000: Enhance the SGTL5000 codec driver
- about regulator.
-Message-ID: <20131101100201.GF28401@MrMyself>
-References: <1383289495-24523-1-git-send-email-Li.Xiubo@freescale.com>
- <1383289495-24523-6-git-send-email-Li.Xiubo@freescale.com>
+	Fri, 1 Nov 2013 06:22:30 -0400
+Date: Fri, 1 Nov 2013 11:22:24 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH 1/4] mm/rmap: per anon_vma lock
+Message-ID: <20131101102224.GE19466@laptop.lan>
+References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
+ <1383292467-28922-2-git-send-email-yuanhan.liu@linux.intel.com>
+ <20131101084329.GB19466@laptop.lan>
+ <20131101093844.GA30123@yliu-dev.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383289495-24523-6-git-send-email-Li.Xiubo@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20131101093844.GA30123@yliu-dev.sh.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 01, 2013 at 03:04:52PM +0800, Xiubo Li wrote:
-> On VF610 series there are no regulators used, and now whether the
-> CONFIG_REGULATOR mirco is enabled or not, for the VF610 audio
-
-micro? or macro?
-
-> patch series, the board cannot be probe successfully.
-> And this patch will solve this issue.
+On Fri, Nov 01, 2013 at 05:38:44PM +0800, Yuanhan Liu wrote:
+> On Fri, Nov 01, 2013 at 09:43:29AM +0100, Peter Zijlstra wrote:
+> > On Fri, Nov 01, 2013 at 03:54:24PM +0800, Yuanhan Liu wrote:
+> > > @@ -497,15 +495,20 @@ static void vma_rb_erase(struct vm_area_struct *vma, struct rb_root *root)
+> > >   * anon_vma_interval_tree_post_update_vma().
+> > >   *
+> > >   * The entire update must be protected by exclusive mmap_sem and by
+> > > - * the root anon_vma's mutex.
+> > > + * the anon_vma's mutex.
+> > >   */
+> > >  static inline void
+> > >  anon_vma_interval_tree_pre_update_vma(struct vm_area_struct *vma)
+> > >  {
+> > >  	struct anon_vma_chain *avc;
+> > >  
+> > > -	list_for_each_entry(avc, &vma->anon_vma_chain, same_vma)
+> > > -		anon_vma_interval_tree_remove(avc, &avc->anon_vma->rb_root);
+> > > +	list_for_each_entry(avc, &vma->anon_vma_chain, same_vma) {
+> > > +		struct anon_vma *anon_vma = avc->anon_vma;
+> > > +
+> > > +		anon_vma_lock_write(anon_vma);
+> > > +		anon_vma_interval_tree_remove(avc, &anon_vma->rb_root);
+> > > +		anon_vma_unlock_write(anon_vma);
+> > > +	}
+> > >  }
+> > >  
+> > >  static inline void
+> > > @@ -513,8 +516,13 @@ anon_vma_interval_tree_post_update_vma(struct vm_area_struct *vma)
+> > >  {
+> > >  	struct anon_vma_chain *avc;
+> > >  
+> > > -	list_for_each_entry(avc, &vma->anon_vma_chain, same_vma)
+> > > -		anon_vma_interval_tree_insert(avc, &avc->anon_vma->rb_root);
+> > > +	list_for_each_entry(avc, &vma->anon_vma_chain, same_vma) {
+> > > +		struct anon_vma *anon_vma = avc->anon_vma;
+> > > +
+> > > +		anon_vma_lock_write(anon_vma);
+> > > +		anon_vma_interval_tree_insert(avc, &anon_vma->rb_root);
+> > > +		anon_vma_unlock_write(anon_vma);
+> > > +	}
+> > >  }
+> > >  
+> > >  static int find_vma_links(struct mm_struct *mm, unsigned long addr,
+> > > @@ -781,7 +789,6 @@ again:			remove_next = 1 + (end > next->vm_end);
+> > >  	if (anon_vma) {
+> > >  		VM_BUG_ON(adjust_next && next->anon_vma &&
+> > >  			  anon_vma != next->anon_vma);
+> > > -		anon_vma_lock_write(anon_vma);
+> > >  		anon_vma_interval_tree_pre_update_vma(vma);
+> > >  		if (adjust_next)
+> > >  			anon_vma_interval_tree_pre_update_vma(next);
+> > > @@ -845,7 +852,6 @@ again:			remove_next = 1 + (end > next->vm_end);
+> > >  		anon_vma_interval_tree_post_update_vma(vma);
+> > >  		if (adjust_next)
+> > >  			anon_vma_interval_tree_post_update_vma(next);
+> > > -		anon_vma_unlock_write(anon_vma);
+> > >  	}
+> > >  	if (mapping)
+> > >  		mutex_unlock(&mapping->i_mmap_mutex);
+> > 
+> > AFAICT this isn't correct at all. We used to protect the vma interval
+> > tree with the root lock, now we don't.
 > 
+> We still use lock to protect anon_vma interval tree, but we lock our own
+> interval tree this time.
 
-I finally got your idea about what this patch does. But it seems to
-be more likely a work around. Maybe I here can't think it through
-comprehensively, but I think you can try to add a fixed regulator to
-sgtl5000 in the devicetree, rather than disabling common functions
-even if not breaking others.
+Which lock? What protects the chain you're iterating in
+anon_vma_interval_tree_{pre,post}_update_vma() ?
 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> ---
->  sound/soc/codecs/sgtl5000.c | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
+> > All we've got left is the
+> > mmap_sem, but anon_vma chains can cross address-spaces and thus we're up
+> > some creek without no paddle.
 > 
-> diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
-> index 1f4093f..c2f6d86 100644
-> --- a/sound/soc/codecs/sgtl5000.c
-> +++ b/sound/soc/codecs/sgtl5000.c
-> @@ -61,6 +61,7 @@ static const struct reg_default sgtl5000_reg_defaults[] = {
->  	{ SGTL5000_DAP_AVC_DECAY,		0x0050 },
->  };
->  
-> +#ifdef CONFIG_REGULATOR
->  /* regulator supplies for sgtl5000, VDDD is an optional external supply */
->  enum sgtl5000_regulator_supplies {
->  	VDDA,
-> @@ -93,6 +94,9 @@ static struct regulator_init_data ldo_init_data = {
->  	.num_consumer_supplies = 1,
->  	.consumer_supplies = &ldo_consumer[0],
->  };
-> +#else
-> +#define SGTL5000_SUPPLY_NUM 0
-> +#endif
->  
->  /*
->   * sgtl5000 internal ldo regulator,
-> @@ -112,7 +116,9 @@ struct sgtl5000_priv {
->  	int master;	/* i2s master or not */
->  	int fmt;	/* i2s data format */
->  	struct regulator_bulk_data supplies[SGTL5000_SUPPLY_NUM];
-> +#ifdef CONFIG_REGULATOR
->  	struct ldo_regulator *ldo;
-> +#endif
->  	struct regmap *regmap;
->  	struct clk *mclk;
->  };
-> @@ -879,6 +885,7 @@ static int ldo_regulator_remove(struct snd_soc_codec *codec)
->  	return 0;
->  }
->  #else
-> +#ifndef CONFIG_SND_SOC_FSL_SGTL5000_VF610
+> Yep, however, you still need acquire the address-space crossed anon_vma's lock
+> to modify something.
 
-Checking a platform or SoC specific define here is just a bit....
-
-Could you pls find a better solution? Like I said at first, use fixed regulator
-or figure out why your System would hang with current sgtl5000 driver. If it
-really has a critical bug in its regulator-related code, I think you can then
-make a greater contribution by fixing the bug rather than bypassing it.
-
-Best regards,
-Nicolin Chen
-
->  static int ldo_regulator_register(struct snd_soc_codec *codec,
->  				struct regulator_init_data *init_data,
->  				int voltage)
-> @@ -886,6 +893,7 @@ static int ldo_regulator_register(struct snd_soc_codec *codec,
->  	dev_err(codec->dev, "this setup needs regulator support in the kernel\n");
->  	return -EINVAL;
->  }
-> +#endif
->  
->  static int ldo_regulator_remove(struct snd_soc_codec *codec)
->  {
-> @@ -1137,6 +1145,7 @@ static int sgtl5000_resume(struct snd_soc_codec *codec)
->  #define sgtl5000_resume  NULL
->  #endif	/* CONFIG_SUSPEND */
->  
-> +#ifdef CONFIG_REGULATOR
->  /*
->   * sgtl5000 has 3 internal power supplies:
->   * 1. VAG, normally set to vdda/2
-> @@ -1373,6 +1382,7 @@ err_regulator_free:
->  	return ret;
->  
->  }
-> +#endif
->  
->  static int sgtl5000_probe(struct snd_soc_codec *codec)
->  {
-> @@ -1387,6 +1397,7 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
->  		return ret;
->  	}
->  
-> +#ifdef CONFIG_REGULATOR
->  	ret = sgtl5000_enable_regulators(codec);
->  	if (ret)
->  		return ret;
-> @@ -1395,6 +1406,7 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
->  	ret = sgtl5000_set_power_regs(codec);
->  	if (ret)
->  		goto err;
-> +#endif
->  
->  	/* enable small pop, introduce 400ms delay in turning off */
->  	snd_soc_update_bits(codec, SGTL5000_CHIP_REF_CTRL,
-> -- 
-> 1.8.4
-> 
-
-
+-ENOPARSE.
