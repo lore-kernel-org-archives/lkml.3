@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692Ab3KAWFH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:05:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55066 "EHLO
+	id S1755163Ab3KAWFL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:05:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55102 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755498Ab3KAWE7 (ORCPT
+	with ESMTP id S1755498Ab3KAWFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:04:59 -0400
+	Fri, 1 Nov 2013 18:05:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Phil Oester <kernel@linuxace.com>, Mark Brooks <mark@loadbalancer.org>,
-        Julian Anastasov <ja@ssi.bg>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 36/54] ipv6: always prefer rt6i_gateway if present
-Date: Fri,  1 Nov 2013 15:04:04 -0700
-Message-Id: <20131101220215.384880114@linuxfoundation.org>
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.10 43/54] gpio/lynxpoint: check if the interrupt is enabled in IRQ handler
+Date: Fri,  1 Nov 2013 15:04:11 -0700
+Message-Id: <20131101220216.164381741@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -29,53 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julian Anastasov <ja@ssi.bg>
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-[ Upstream commit 96dc809514fb2328605198a0602b67554d8cce7b ]
+commit 03d152d5582abc8a1c19cb107164c3724bbd4be4 upstream.
 
-In v3.9 6fd6ce2056de2709 ("ipv6: Do not depend on rt->n in
-ip6_finish_output2()." changed the behaviour of ip6_finish_output2()
-such that the recently introduced rt6_nexthop() is used
-instead of an assigned neighbor.
+Checking LP_INT_STAT is not enough in the interrupt handler because its
+contents get updated regardless of whether the pin has interrupt enabled or
+not. This causes the driver to loop forever for GPIOs that are pulled up.
 
-As rt6_nexthop() prefers rt6i_gateway only for gatewayed
-routes this causes a problem for users like IPVS, xt_TEE and
-RAW(hdrincl) if they want to use different address for routing
-compared to the destination address.
+Fix this by checking the interrupt enable bit for the pin as well.
 
-Another case is when redirect can create RTF_DYNAMIC
-route without RTF_GATEWAY flag, we ignore the rt6i_gateway
-in rt6_nexthop().
-
-Fix the above problems by considering the rt6i_gateway if
-present, so that traffic routed to address on local subnet is
-not wrongly diverted to the destination address.
-
-Thanks to Simon Horman and Phil Oester for spotting the
-problematic commit.
-
-Thanks to Hannes Frederic Sowa for his review and help in testing.
-
-Reported-by: Phil Oester <kernel@linuxace.com>
-Reported-by: Mark Brooks <mark@loadbalancer.org>
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/ip6_route.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/net/ip6_route.h
-+++ b/include/net/ip6_route.h
-@@ -196,7 +196,7 @@ static inline int ip6_skb_dst_mtu(struct
+---
+ drivers/gpio/gpio-lynxpoint.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/drivers/gpio/gpio-lynxpoint.c
++++ b/drivers/gpio/gpio-lynxpoint.c
+@@ -248,14 +248,15 @@ static void lp_gpio_irq_handler(unsigned
+ 	struct lp_gpio *lg = irq_data_get_irq_handler_data(data);
+ 	struct irq_chip *chip = irq_data_get_irq_chip(data);
+ 	u32 base, pin, mask;
+-	unsigned long reg, pending;
++	unsigned long reg, ena, pending;
+ 	unsigned virq;
  
- static inline struct in6_addr *rt6_nexthop(struct rt6_info *rt, struct in6_addr *dest)
- {
--	if (rt->rt6i_flags & RTF_GATEWAY)
-+	if (rt->rt6i_flags & RTF_GATEWAY || !ipv6_addr_any(&rt->rt6i_gateway))
- 		return &rt->rt6i_gateway;
- 	return dest;
- }
+ 	/* check from GPIO controller which pin triggered the interrupt */
+ 	for (base = 0; base < lg->chip.ngpio; base += 32) {
+ 		reg = lp_gpio_reg(&lg->chip, base, LP_INT_STAT);
++		ena = lp_gpio_reg(&lg->chip, base, LP_INT_ENABLE);
+ 
+-		while ((pending = inl(reg))) {
++		while ((pending = (inl(reg) & inl(ena)))) {
+ 			pin = __ffs(pending);
+ 			mask = BIT(pin);
+ 			/* Clear before handling so we don't lose an edge */
 
 
