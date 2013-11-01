@@ -1,128 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab3KAC6W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 22:58:22 -0400
-Received: from mga03.intel.com ([143.182.124.21]:38589 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751978Ab3KAC6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 22:58:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="383116154"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "Moore, Robert" <robert.moore@intel.com>
-Subject: RE: [PATCH 0/4] ACPICA: Stable material of ACPI executer fixes for
- linux-3.8.
-Thread-Topic: [PATCH 0/4] ACPICA: Stable material of ACPI executer fixes for
- linux-3.8.
-Thread-Index: AQHO1dXjUZkF5USl+0y2+Rv7udewtZoOKeaAgAAIPACAAAO7gIABXvmg
-Date: Fri, 1 Nov 2013 02:58:16 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E880247A0C8@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1383181113.git.lv.zheng@intel.com>
- <2226874.g7cLvQ5SiE@vostro.rjw.lan> <20131031120850.GA17048@kroah.com>
- <18963273.JtsE7nd0JW@vostro.rjw.lan>
-In-Reply-To: <18963273.JtsE7nd0JW@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1754946Ab3KADGP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 23:06:15 -0400
+Received: from mdfmta004.mxout.tch.inty.net ([91.221.169.45]:43611 "EHLO
+	smtp.demon.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754516Ab3KADGO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 23:06:14 -0400
+Message-ID: <52731AA2.1060800@lougher.demon.co.uk>
+Date: Fri, 01 Nov 2013 03:06:10 +0000
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the squashfs tree
+References: <20131101115723.8faa858bf8a5dadf17d251fb@canb.auug.org.au>
+In-Reply-To: <20131101115723.8faa858bf8a5dadf17d251fb@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-MDF-HostID: 17
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rA12wlHw030283
 
-> From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> Sent: Thursday, October 31, 2013 8:22 PM
-> 
-> On Thursday, October 31, 2013 05:08:50 AM Greg Kroah-Hartman wrote:
-> > On Thu, Oct 31, 2013 at 12:39:21PM +0100, Rafael J. Wysocki wrote:
-> > > On Thursday, October 31, 2013 09:07:40 AM Lv Zheng wrote:
-> > > > There are bug-fixes for AML interpreter upstreamed, fixing some serious
-> > > > issues found in recent platforms.  These fixes make Linux AML interpreter
-> > > > more ACPI 2.0 ASL concept compliant.  Further AML interpreter fixes should
-> > > > be based on such improvements, thus they are good materials for stable.
-> > > >
-> > > > This patch set can be safely applied to linux-3.8:
-> > > > commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200 upstream.
-> > > >
-> > > > The patch set has passed build/boot tests on the following machines:
-> > > >   Dell Inspiron Mini 1010 (i386)
-> > > >   HP Compaq 8200 Elite SFF PC (x86-64)
-> > > >
-> > > > Bob Moore (4):
-> > > >   ACPICA: Interpreter: Fix Store() when implicit conversion is not
-> > > >     possible.
-> > > >   ACPICA: DeRefOf operator: Update to fully resolve FieldUnit and
-> > > >     BufferField refs.
-> > > >   ACPICA: Return error if DerefOf resolves to a null package element.
-> > > >   ACPICA: Fix for a Store->ArgX when ArgX contains a reference to a
-> > > >     field.
-> > >
-> > > Hi Greg,
-> > >
-> > > Please take patches [1-4/4] for stable.
-> >
-> > "Which" stable tree?
-> >
-> > I don't do 3.8, it's long been end-of-life, although one company is
-> > trying to keep it alive, but that's not me.
-> >
-> > I'm only handling 3.4, 3.10, and 3.11 stable trees right now, which
-> > one(s) should these be applied to?
-> 
-> 3.10.x and 3.11.x then.
-> 
-> Lv, do the original mainline commits apply to these kernels?
-> 
-> Rafael
+On 01/11/13 00:57, Stephen Rothwell wrote:
+> Hi Phillip,
+>
+> After merging the squashfs tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+>
+> fs/squashfs/decompressor_single.c: In function 'squashfs_decompressor_create':
+> fs/squashfs/decompressor_single.c:40:2: error: implicit declaration of function 'free' [-Werror=implicit-function-declaration]
+>    free(comp_opts);
+>    ^
 
-Hi, Rafael and Greg
+Yup, applied and pushed the wrong patch.
 
-I checked the back port dependencies since v3.8:
-1. [PATCH 1] belongs to v3.9.
-2. [PATCH 4] includes an empty line belonging to a coding style fix affecting this series (between [PATCH 3] and [PATCH 4]).
-Thus,
-1. For v3.10:
-    [PATCH 1]: It's already in the repo, so please drop it.
-    [PATCH 2-4]: They can be used directly as 3.10.x stable materials.
-2. For v3.11:
-    [PATCH 1]: It's already in the repo, so please drop it.
-    [PATCH 2-3]: They can be used directly as 3.11.x stable materials.
-    [PATCH 4]: The original commit from Linus' tree should be used instead.
+I noticed shortly afterwards, and pushed the correct patch, but you
+obviously had already done your pull.
 
- I checked the commit log since v3.4.
- There is no functional change done to the AML executer between v3.4 and v3.8.
- The problem is there is a coding style fix affecting this series (between v3.4 and [PATCH 1]).
- I generated the following diff block before applying [PATCH 1], and obtained a successful build/boot to a v3.4 kernel with these patches applied.
-Thus,
-1. For v3.4:
-    [PATCH 1]: You can merge this diff block to [PATCH 1] or simply modify the [PATCH 1] by manually adding this white space.
-    [PATCH 2-4]: They can be used directly as 3.4.x stable materials.
+Squashfs: Refactor decompressor interface and code
+committer Phillip Lougher <phillip@squashfs.org.uk> 2013-10-31 23:06:37 (GMT)
 
----
-Index: linux-acpica/drivers/acpi/acpica/exstore.c
-===================================================================
---- linux-acpica.orig/drivers/acpi/acpica/exstore.c
-+++ linux-acpica/drivers/acpi/acpica/exstore.c
-@@ -491,7 +491,7 @@ acpi_ex_store_object_to_node(union acpi_
- 				  acpi_ut_get_object_type_name(source_desc),
- 				  source_desc, node));
- 
--		/* No conversions for all other types.  Just attach the source object */
-+		/* No conversions for all other types. Just attach the source object */
- 
- 		status = acpi_ns_attach_object(node, source_desc,
- 					       source_desc->common.type);
----
+These things happen when you rush to get the patches ready for the linux-next
+tree.
 
-Thanks and best regards
--Lv
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Squashfs is spare-time work for me, which means I often have no choice to
+work on it during the night.  Previously when pushing such work for the
+linux-next tree I notice it never gets picked up until the next day, because
+a push at 4 AM is simply too late to get it into the linux-next tree for that
+day because you're in Australia.
+
+So I work out you pull around 11 PM GMT my time, and rush to get the patches
+ready for then.  Screw up and this time around the process is even more
+thankless and humiliating than normal.
+
+Why don't you holier than thou guys get off your pedestals sometime and
+see what it's like for the hobbyists who don't get paid to do the work.
+
+Yeah maybe I'm getting to the point where I considering stopping doing
+this, because it has become utterly thankless.
+
+Cheers
+
+Phillip
+
+
+> fs/squashfs/decompressor_single.c:40:2: warning: incompatible implicit declaration of built-in function 'free' [enabled by default]
+>
+> Caused by commit 99d59ddb8a06 ("Squashfs: Refactor decompressor interface
+> and code").
+>
+> I have used the squashfs tree from next-20131031 for today.
+>
+
