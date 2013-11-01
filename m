@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab3KAVoJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 17:44:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54590 "EHLO
+	id S1754931Ab3KAVoN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 17:44:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54613 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754783Ab3KAVoG (ORCPT
+	with ESMTP id S1754783Ab3KAVoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 17:44:06 -0400
+	Fri, 1 Nov 2013 17:44:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mariusz Ceier <mceier+kernel@gmail.com>,
-        Mugunthan V N <mugunthanvnm@ti.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 25/32] davinci_emac.c: Fix IFF_ALLMULTI setup
-Date: Fri,  1 Nov 2013 14:43:36 -0700
-Message-Id: <20131101214319.722031168@linuxfoundation.org>
+        =?UTF-8?q?Diego=20Elio=20Petten=C3=B2?= <flameeyes@flameeyes.eu>
+Subject: [ 30/32] USB: serial: ti_usb_3410_5052: add Abbott strip port ID to combined table as well.
+Date: Fri,  1 Nov 2013 14:43:41 -0700
+Message-Id: <20131101214320.962389925@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101214313.735463599@linuxfoundation.org>
 References: <20131101214313.735463599@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,42 +29,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mariusz Ceier <mceier+kernel@gmail.com>
+From: Diego Elio Pettenò <flameeyes@flameeyes.eu>
 
-[ Upstream commit d69e0f7ea95fef8059251325a79c004bac01f018 ]
+commit c9d09dc7ad106492c17c587b6eeb99fe3f43e522 upstream.
 
-When IFF_ALLMULTI flag is set on interface and IFF_PROMISC isn't,
-emac_dev_mcast_set should only enable RX of multicasts and reset
-MACHASH registers.
+Without this change, the USB cable for Freestyle Option and compatible
+glucometers will not be detected by the driver.
 
-It does this, but afterwards it either sets up multicast MACs
-filtering or disables RX of multicasts and resets MACHASH registers
-again, rendering IFF_ALLMULTI flag useless.
-
-This patch fixes emac_dev_mcast_set, so that multicast MACs filtering and
-disabling of RX of multicasts are skipped when IFF_ALLMULTI flag is set.
-
-Tested with kernel 2.6.37.
-
-Signed-off-by: Mariusz Ceier <mceier+kernel@gmail.com>
-Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Diego Elio Pettenò <flameeyes@flameeyes.eu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/ti/davinci_emac.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/ti/davinci_emac.c
-+++ b/drivers/net/ethernet/ti/davinci_emac.c
-@@ -875,8 +875,7 @@ static void emac_dev_mcast_set(struct ne
- 		    netdev_mc_count(ndev) > EMAC_DEF_MAX_MULTICAST_ADDRESSES) {
- 			mbp_enable = (mbp_enable | EMAC_MBP_RXMCAST);
- 			emac_add_mcast(priv, EMAC_ALL_MULTI_SET, NULL);
--		}
--		if (!netdev_mc_empty(ndev)) {
-+		} else if (!netdev_mc_empty(ndev)) {
- 			struct netdev_hw_addr *ha;
- 
- 			mbp_enable = (mbp_enable | EMAC_MBP_RXMCAST);
+---
+ drivers/usb/serial/ti_usb_3410_5052.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -210,6 +210,7 @@ static struct usb_device_id ti_id_table_
+ 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
+ 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
+ 	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_PRODUCT_ID) },
++	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_STRIP_PORT_ID) },
+ 	{ USB_DEVICE(TI_VENDOR_ID, FRI2_PRODUCT_ID) },
+ 	{ }
+ };
 
 
