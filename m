@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab3KASPt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 14:15:49 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:46198 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311Ab3KASPq (ORCPT
+	id S1754197Ab3KASQa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 14:16:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56746 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754032Ab3KASQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 14:15:46 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: Strange location and name for platform  devices when device-tree is used.
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        NeilBrown <neilb@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1383282516.28909.36.camel@pasglop>
-References: <20131101145925.66e22f73@notabene.brown> <1383279744.28909.26.camel@pasglop> <1383280054.28909.30.camel@pasglop> <20131101160329.37f3707b@notabene.brown> <1383282516.28909.36.camel@pasglop>
-Date: Fri, 01 Nov 2013 11:04:59 -0700
-Message-Id: <20131101180459.81793C40A28@trevor.secretlab.ca>
+	Fri, 1 Nov 2013 14:16:29 -0400
+Message-ID: <5273EFFA.1030400@infradead.org>
+Date: Fri, 01 Nov 2013 11:16:26 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org
+Subject: Re: linux-next: Tree for Nov 1 (xen_swiotllb)
+References: <20131101191138.442028fb1f243c7f9c7f0844@canb.auug.org.au>
+In-Reply-To: <20131101191138.442028fb1f243c7f9c7f0844@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 01 Nov 2013 16:08:36 +1100, Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
-> On Fri, 2013-11-01 at 16:03 +1100, NeilBrown wrote:
+On 11/01/13 01:11, Stephen Rothwell wrote:
+> Hi all,
 > 
-> > Do you mean we could allow multiple devices on the one bus to have the same
-> > name, but get sysfs to notice and de-duplicate by mangling one name?  I don't
-> > think I like that but I might have misunderstood.
+> Changes since 20131031:
 > 
-> What other option do we have ?
+> The squashfs tree gained a build failure so I used the version from
+> next-20131031.
 > 
-> > On my device I seem to have some platform devices registered through
-> > device-tree, and some registered through platform_device_add (e.g.
-> > 'alarmtimer').  Guaranteeing they remain disjoint sets if the kernel is
-> > allowed to evolve independently of the devicetree might be tricky....
-> > Maybe we need "/sys/devices/platform" and "/sys/devices/dt_platform" ??
+> The block tree gained conflicts against the f2fs, aio-direct and Linus'
+> trees and a build failure and generated several warnings so I used the
+> version from next-20131031.
 > 
-> No, I think device-tree created platform devices should go
-> to /sys/devices/platform like the "classic" ones.
+> The dt-rh tree gained a conflict against the powerpc tree.
 > 
-> The problem is really how to deal with potential name duplication. We
-> could try to register, if we get -EEXIST (assuming sysfs returns the
-> right stuff), try again with ".1" etc...
-
-I'd be fine with that approach. As long as the names get created
-uniquely there shouldn't be a problem.
-
-> > Hoping someone who understands the device model better than me will help.
+> The kvm-ppc tree gained a conflict against the powerpc tree.
 > 
-> Greg ? :-)
+> The leds tree gained a conflict against the powerpc tree.
+> 
+> The tty tree lost its build failure.
 
-There are two problems here. First, making the change moves all the DT
-populated devices under the /sys/devices/platform tree, not just
-platform devices.
 
-Second, I expect there is going to be userspace breakage to move them.
-I've considered moving them before, but so far have felt that being
-tidier hasn't been worth the potential breakage. Userspace /shouldn't/
-be relying on the node name, but we all know that userspace always does
-what it should, right?
+on x86_64, when CONFIG_PCI is not enabled:
 
-That said, I'm mostly concerned about breakage on Power machines, not on
-the ARM devices in this regard. If you are convinced that I'm worrying about
-nothing, then I'm fine with making the change. If anyone complains
-however then it will need to be reverted.
+arch/x86/built-in.o: In function `pci_xen_swiotlb_init_late':
+(.text+0x102cc): undefined reference to `pci_request_acs'
+arch/x86/built-in.o: In function `pci_xen_swiotlb_init':
+(.init.text+0x3f6c): undefined reference to `pci_request_acs'
 
-g.
+
+-- 
+~Randy
