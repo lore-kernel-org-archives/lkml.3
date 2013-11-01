@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750928Ab3KAEJL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 00:09:11 -0400
-Received: from mdfmta004.mxout.tch.inty.net ([91.221.169.45]:45302 "EHLO
-	smtp.demon.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750740Ab3KAEJJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 00:09:09 -0400
-Message-ID: <52732961.4030501@lougher.demon.co.uk>
-Date: Fri, 01 Nov 2013 04:09:05 +0000
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Phillip Lougher <phillip@lougher.demon.co.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the squashfs tree
-References: <20131101115723.8faa858bf8a5dadf17d251fb@canb.auug.org.au> <52731AA2.1060800@lougher.demon.co.uk>
-In-Reply-To: <52731AA2.1060800@lougher.demon.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-MDF-HostID: 17
+	id S1750856Ab3KAEPf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 00:15:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36701 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750710Ab3KAEPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 00:15:34 -0400
+Date: Fri, 1 Nov 2013 15:15:21 +1100
+From: NeilBrown <neilb@suse.de>
+To: Linda Walsh <lkml@tlinx.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: RFE?: why no 'bind' info in /proc/mounts?
+Message-ID: <20131101151521.2fa0b434@notabene.brown>
+In-Reply-To: <5272FE79.30801@tlinx.org>
+References: <5272FE79.30801@tlinx.org>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/Lv6/jfWZXtD2eT.5g1zmyQs"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/13 03:06, Phillip Lougher wrote:
-> On 01/11/13 00:57, Stephen Rothwell wrote:
->> Hi Phillip,
->>
->> After merging the squashfs tree, today's linux-next build (powerpc
->> ppc64_defconfig) failed like this:
->>
->> fs/squashfs/decompressor_single.c: In function 'squashfs_decompressor_create':
->> fs/squashfs/decompressor_single.c:40:2: error: implicit declaration of function 'free' [-Werror=implicit-function-declaration]
->>    free(comp_opts);
->>    ^
->
-> Yup, applied and pushed the wrong patch.
->
-> I noticed shortly afterwards, and pushed the correct patch, but you
-> obviously had already done your pull.
->
-> Squashfs: Refactor decompressor interface and code
-> committer Phillip Lougher <phillip@squashfs.org.uk> 2013-10-31 23:06:37 (GMT)
->
-> These things happen when you rush to get the patches ready for the linux-next
-> tree.
->
-> Squashfs is spare-time work for me, which means I often have no choice to
-> work on it during the night.  Previously when pushing such work for the
-> linux-next tree I notice it never gets picked up until the next day, because
-> a push at 4 AM is simply too late to get it into the linux-next tree for that
-> day because you're in Australia.
->
-> So I work out you pull around 11 PM GMT my time, and rush to get the patches
-> ready for then.  Screw up and this time around the process is even more
-> thankless and humiliating than normal.
->
-> Why don't you holier than thou guys get off your pedestals sometime and
-> see what it's like for the hobbyists who don't get paid to do the work.
->
-> Yeah maybe I'm getting to the point where I considering stopping doing
-> this, because it has become utterly thankless.
+--Sig_/Lv6/jfWZXtD2eT.5g1zmyQs
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Apologies.  I was annoyed at myself and let my frustration show.
+On Thu, 31 Oct 2013 18:06:01 -0700 Linda Walsh <lkml@tlinx.org> wrote:
 
-Phillip
+>=20
+> If I only mount 1 file (or a subdir) via "bind", it still shows the entire
+> device being mounted on the "bound" directory.
+>=20
+> Is there anyway to get a bit more granularity as to *what* was
+> bound on a name?  (subdir/file..?)
 
->
-> Cheers
->
-> Phillip
->
->
->> fs/squashfs/decompressor_single.c:40:2: warning: incompatible implicit declaration of built-in function 'free' [enabled by default]
->>
->> Caused by commit 99d59ddb8a06 ("Squashfs: Refactor decompressor interface
->> and code").
->>
->> I have used the squashfs tree from next-20131031 for today.
->>
->
+Take a look in /proc/self/mountinfo.  It contains more useful stuff about t=
+he
+mount table which couldn't be put in /proc/mounts without breaking
+compatibility.
 
+NeilBrown
+
+--Sig_/Lv6/jfWZXtD2eT.5g1zmyQs
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIVAwUBUnMq2Tnsnt1WYoG5AQLOwBAAodLHU2kvmv7QYp0Hfo+Yhd9ig+EXiJXm
+1K8HMvOT9s3TL1nhl6sNMveb767zjmZzIPRADpreHXLBNkvYrLQ/JkEe+mkqfwV4
+5CY40XrMc+vZHbdbi/t/HDeLT2c5SbYAsqY1m+MX9NNxkzx76wieC1ZKAASgmASZ
+Hl+UsXqnBabc3KmKbfSf9Dvo2hvu+nFn/4hVuU2Kvx43uEK8VBw9z9SbvOEoCYLi
+1qm2/VgelxYqqNTHljx4K5CnWrHBvDy5rxN4PHUenb1L7dpK/rBv42Bu1ZMPYWbQ
+bqjFqIt+G9uSB6UV4r1OeeeDzUhfTBWo3n2LzZQuw3h4sdkpN61d8Hw0/I0NbG0/
+2OOowVNi/1wkKORNvUJ5QRk4ksyuLT8EDa/BssiiCOiPQIzlj+gnOrWFtM8xOXGS
+9WNNMumtsTx1IvOgjmZa6Pj2MDvi5LfAi62sPerIjy6Iwzx/QYqKv2skdsorcdzh
++W9EK8GOD4J1F4lwqe0aiRyGtYISAht0pRfU1cMeGd+j9Zq24UVmWGLWcygzcEbZ
+9io3kZDkyZuqrUjpLVy4dlQIBp/i0acHzNVNsYG5hLWJb8D/3/lVloZO/Q7QTr5h
+7ZnWe7WGyQhvxWBN40fU0wlj75JeTnLro7Z91jIJqhblT7DXch9iW6rY9tM+bNJH
+pYVqN+4sqfM=
+=3Eev
+-----END PGP SIGNATURE-----
+
+--Sig_/Lv6/jfWZXtD2eT.5g1zmyQs--
