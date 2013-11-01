@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757253Ab3KAWf7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:35:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54978 "EHLO
+	id S1757257Ab3KAWgY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:36:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54970 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754931Ab3KAWEl (ORCPT
+	with ESMTP id S1754876Ab3KAWEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:04:41 -0400
+	Fri, 1 Nov 2013 18:04:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 22/54] connector: use nlmsg_len() to check message length
-Date: Fri,  1 Nov 2013 15:03:50 -0700
-Message-Id: <20131101220213.820268078@linuxfoundation.org>
+Subject: [PATCH 3.10 20/54] farsync: fix info leak in ioctl
+Date: Fri,  1 Nov 2013 15:03:48 -0700
+Message-Id: <20131101220213.609882191@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
 References: <20131101220211.311926234@linuxfoundation.org>
@@ -27,45 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>
 
-[ Upstream commit 162b2bedc084d2d908a04c93383ba02348b648b0 ]
+[ Upstream commit 96b340406724d87e4621284ebac5e059d67b2194 ]
 
-The current code tests the length of the whole netlink message to be
-at least as long to fit a cn_msg. This is wrong as nlmsg_len includes
-the length of the netlink message header. Use nlmsg_len() instead to
-fix this "off-by-NLMSG_HDRLEN" size check.
+The fst_get_iface() code fails to initialize the two padding bytes of
+struct sync_serial_settings after the ->loopback member. Add an explicit
+memset(0) before filling the structure to avoid the info leak.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/connector/connector.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/net/wan/farsync.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/connector/connector.c
-+++ b/drivers/connector/connector.c
-@@ -157,17 +157,18 @@ static int cn_call_callback(struct sk_bu
- static void cn_rx_skb(struct sk_buff *__skb)
- {
- 	struct nlmsghdr *nlh;
--	int err;
- 	struct sk_buff *skb;
-+	int len, err;
+--- a/drivers/net/wan/farsync.c
++++ b/drivers/net/wan/farsync.c
+@@ -1972,6 +1972,7 @@ fst_get_iface(struct fst_card_info *card
+ 	}
  
- 	skb = skb_get(__skb);
- 
- 	if (skb->len >= NLMSG_HDRLEN) {
- 		nlh = nlmsg_hdr(skb);
-+		len = nlmsg_len(nlh);
- 
--		if (nlh->nlmsg_len < sizeof(struct cn_msg) ||
-+		if (len < (int)sizeof(struct cn_msg) ||
- 		    skb->len < nlh->nlmsg_len ||
--		    nlh->nlmsg_len > CONNECTOR_MAX_MSG_SIZE) {
-+		    len > CONNECTOR_MAX_MSG_SIZE) {
- 			kfree_skb(skb);
- 			return;
- 		}
+ 	i = port->index;
++	memset(&sync, 0, sizeof(sync));
+ 	sync.clock_rate = FST_RDL(card, portConfig[i].lineSpeed);
+ 	/* Lucky card and linux use same encoding here */
+ 	sync.clock_type = FST_RDB(card, portConfig[i].internalClock) ==
 
 
