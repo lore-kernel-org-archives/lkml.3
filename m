@@ -1,330 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757048Ab3KAW3c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:29:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55252 "EHLO
+	id S1757079Ab3KAWaU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:30:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55097 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755608Ab3KAWHp (ORCPT
+	with ESMTP id S1755647Ab3KAWFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:07:45 -0400
+	Fri, 1 Nov 2013 18:05:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [PATCH 3.11 00/66] 3.11.7-stable review
-Date: Fri,  1 Nov 2013 15:06:36 -0700
-Message-Id: <20131101220634.605745564@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH 3.10 42/54] ARM: integrator: deactivate timer0 on the Integrator/CP
+Date: Fri,  1 Nov 2013 15:04:10 -0700
+Message-Id: <20131101220216.060490565@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131101220211.311926234@linuxfoundation.org>
+References: <20131101220211.311926234@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.11.7 release.
-There are 66 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
-
-Responses should be made by Sun Nov  3 22:04:49 UTC 2013.
-Anything received after that time might be too late.
-
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.11.7-rc1.gz
-and the diffstat can be found below.
-
-thanks,
-
-greg k-h
-
--------------
-Pseudo-Shortlog of commits:
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.11.7-rc1
-
-Enrico Mioso <mrkiko.rs@gmail.com>
-    usb: serial: option: blacklist Olivetti Olicard200
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    USB: serial: option: add support for Inovia SEW858 device
-
-Diego Elio Pettenò <flameeyes@flameeyes.eu>
-    USB: serial: ti_usb_3410_5052: add Abbott strip port ID to combined table as well.
-
-Roel Kluin <roel.kluin@gmail.com>
-    serial: vt8500: add missing braces
-
-Solomon Peachy <pizza@shaftnet.org>
-    wireless: cw1200: acquire hwbus lock around cw1200_irq_handler() call.
-
-Johannes Berg <johannes.berg@intel.com>
-    wireless: radiotap: fix parsing buffer overrun
-
-Hans-Frieder Vogt <hfvogt@gmx.net>
-    w1 - call request_module with w1 master mutex unlocked
-
-Fengguang Wu <fengguang.wu@intel.com>
-    writeback: fix negative bdi max pause
-
-David Henningsson <david.henningsson@canonical.com>
-    ALSA: hda - Fix inverted internal mic not indicated on some machines
-
-Takashi Iwai <tiwai@suse.de>
-    ALSA: us122l: Fix pcm_usb_stream mmapping regression
-
-Hugh Dickins <hughd@google.com>
-    mm: fix BUG in __split_huge_page_pmd
-
-Weijie Yang <weijie.yang@samsung.com>
-    mm/zswap: bugfix: memory leak when re-swapon
-
-Cyrill Gorcunov <gorcunov@gmail.com>
-    mm: migration: do not lose soft dirty bit if page is in migration state
-
-James Ralston <james.d.ralston@intel.com>
-    i2c: ismt: initialize DMA buffer
-
-Mikulas Patocka <mpatocka@redhat.com>
-    dm snapshot: fix data corruption
-
-Mika Westerberg <mika.westerberg@linux.intel.com>
-    gpio/lynxpoint: check if the interrupt is enabled in IRQ handler
-
-Miklos Szeredi <mszeredi@suse.cz>
-    ext[34]: fix double put in tmpfile
-
-Linus Walleij <linus.walleij@linaro.org>
-    ARM: integrator: deactivate timer0 on the Integrator/CP
-
-AKASHI Takahiro <takahiro.akashi@linaro.org>
-    ARM: 7851/1: check for number of arguments in syscall_get/set_arguments()
-
-Mariusz Ceier <mceier+kernel@gmail.com>
-    davinci_emac.c: Fix IFF_ALLMULTI setup
-
-Hannes Frederic Sowa <hannes@stressinduktion.org>
-    ipv6: probe routes asynchronous in rt6_probe
-
-Julian Anastasov <ja@ssi.bg>
-    netfilter: nf_conntrack: fix rt6i_gateway checks for H.323 helper
-
-Julian Anastasov <ja@ssi.bg>
-    ipv6: fill rt6i_gateway with nexthop address
-
-Julian Anastasov <ja@ssi.bg>
-    ipv6: always prefer rt6i_gateway if present
-
-Hannes Frederic Sowa <hannes@stressinduktion.org>
-    inet: fix possible memory corruption with UDP_CORK and UFO
-
-Seif Mazareeb <seif@marvell.com>
-    net: fix cipso packet validation when !NETLABEL
-
-Daniel Borkmann <dborkman@redhat.com>
-    net: unix: inherit SOCK_PASS{CRED, SEC} flags from socket to fix race
-
-Vasundhara Volam <vasundhara.volam@emulex.com>
-    be2net: pass if_id for v1 and V2 versions of TX_CREATE cmd
-
-Salva Peiró <speiro@ai2.upv.es>
-    wanxl: fix info leak in ioctl
-
-Vlad Yasevich <vyasevich@gmail.com>
-    sctp: Perform software checksum if packet has to be fragmented.
-
-Fan Du <fan.du@windriver.com>
-    sctp: Use software crc32 checksum when xfrm transform will happen.
-
-Vlad Yasevich <vyasevich@gmail.com>
-    net: dst: provide accessor function to dst->xfrm
-
-Vlad Yasevich <vyasevic@redhat.com>
-    bridge: Correctly clamp MAX forward_delay when enabling STP
-
-Jason Wang <jasowang@redhat.com>
-    virtio-net: refill only when device is up during setting queues
-
-Jason Wang <jasowang@redhat.com>
-    virtio-net: don't respond to cpu hotplug notifier if we're not ready
-
-Eric Dumazet <edumazet@google.com>
-    bnx2x: record rx queue for LRO packets
-
-Mathias Krause <minipli@googlemail.com>
-    connector: use nlmsg_len() to check message length
-
-Mathias Krause <minipli@googlemail.com>
-    unix_diag: fix info leak
-
-Salva Peiró <speiro@ai2.upv.es>
-    farsync: fix info leak in ioctl
-
-stephen hemminger <stephen@networkplumber.org>
-    netem: free skb's in tree on reset
-
-stephen hemminger <stephen@networkplumber.org>
-    netem: update backlog after drop
-
-Eric Dumazet <edumazet@google.com>
-    l2tp: must disable bh before calling l2tp_xmit_skb()
-
-Christophe Gouault <christophe.gouault@6wind.com>
-    vti: get rid of nf mark rule in prerouting
-
-Linus Lüssing <linus.luessing@web.de>
-    Revert "bridge: only expire the mdb entry when query is received"
-
-Vlad Yasevich <vyasevic@redhat.com>
-    bridge: update mdb expiration timer upon reports.
-
-Marc Kleine-Budde <mkl@pengutronix.de>
-    net: vlan: fix nlmsg size calculation in vlan_get_size()
-
-Amir Vadai <amirv@mellanox.com>
-    net/mlx4_en: Fix pages never dma unmapped on rx
-
-Amir Vadai <amirv@mellanox.com>
-    net/mlx4_en: Rename name of mlx4_en_rx_alloc members
-
-Paul Durrant <paul.durrant@citrix.com>
-    xen-netback: Don't destroy the netdev until the vif is shut down
-
-Fabio Estevam <fabio.estevam@freescale.com>
-    net: secure_seq: Fix warning when CONFIG_IPV6 and CONFIG_INET are not selected
-
-Marc Kleine-Budde <mkl@pengutronix.de>
-    can: dev: fix nlmsg size calculation in can_get_size()
-
-Jiri Benc <jbenc@redhat.com>
-    ipv4: fix ineffective source address selection
-
-Mathias Krause <minipli@googlemail.com>
-    proc connector: fix info leaks
-
-Willem de Bruijn <willemb@google.com>
-    sit: amend "allow to use rtnl ops on fb tunnel"
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    net: heap overflow in __audit_sockaddr()
-
-Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-    net: mv643xx_eth: fix orphaned statistics timer crash
-
-Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-    net: mv643xx_eth: update statistics timer from timer context only
-
-David S. Miller <davem@davemloft.net>
-    l2tp: Fix build warning with ipv6 disabled.
-
-François CACHEREUL <f.cachereul@alphalink.fr>
-    l2tp: fix kernel panic when using IPv4-mapped IPv6 addresses
-
-Matthias Schiffer <mschiffer@universe-factory.net>
-    batman-adv: set up network coding packet handlers during module init
-
-Eric Dumazet <edumazet@google.com>
-    net: do not call sock_put() on TIMEWAIT sockets
-
-Yuchung Cheng <ycheng@google.com>
-    tcp: fix incorrect ca_state in tail loss probe
-
-Eric Dumazet <edumazet@google.com>
-    tcp: do not forget FIN in tcp_shifted_skb()
-
-Eric Dumazet <edumazet@google.com>
-    tcp: must unclone packets before mangling them
-
-Eric Dumazet <edumazet@google.com>
-    tcp: TSQ can use a dynamic limit
-
-Eric Dumazet <edumazet@google.com>
-    tcp: TSO packets automatic sizing
-
-
--------------
-
-Diffstat:
-
- Documentation/networking/ip-sysctl.txt          |  9 +++++
- Makefile                                        |  4 +--
- arch/arm/boot/dts/integratorcp.dts              |  9 +++--
- arch/arm/include/asm/syscall.h                  |  6 ++++
- drivers/connector/cn_proc.c                     | 18 ++++++++++
- drivers/connector/connector.c                   |  7 ++--
- drivers/gpio/gpio-lynxpoint.c                   |  5 +--
- drivers/i2c/busses/i2c-ismt.c                   |  3 ++
- drivers/md/dm-snap-persistent.c                 | 18 ++++++----
- drivers/net/can/dev.c                           | 10 +++---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |  1 +
- drivers/net/ethernet/emulex/benet/be_cmds.c     |  3 +-
- drivers/net/ethernet/marvell/mv643xx_eth.c      |  6 ++--
- drivers/net/ethernet/mellanox/mlx4/en_rx.c      | 41 +++++++++++++---------
- drivers/net/ethernet/mellanox/mlx4/mlx4_en.h    |  4 +--
- drivers/net/ethernet/ti/davinci_emac.c          |  3 +-
- drivers/net/virtio_net.c                        | 14 +++++++-
- drivers/net/wan/farsync.c                       |  1 +
- drivers/net/wan/wanxl.c                         |  1 +
- drivers/net/wireless/cw1200/cw1200_spi.c        |  2 ++
- drivers/net/xen-netback/common.h                |  1 +
- drivers/net/xen-netback/interface.c             | 23 +++++--------
- drivers/net/xen-netback/xenbus.c                | 17 ++++++---
- drivers/tty/serial/vt8500_serial.c              |  5 +--
- drivers/usb/serial/option.c                     |  9 ++++-
- drivers/usb/serial/ti_usb_3410_5052.c           |  1 +
- drivers/w1/w1.c                                 |  3 ++
- fs/ext3/namei.c                                 |  5 ++-
- fs/ext4/namei.c                                 |  5 ++-
- include/linux/skbuff.h                          |  5 +++
- include/net/cipso_ipv4.h                        |  6 ++--
- include/net/dst.h                               | 12 +++++++
- include/net/ip6_route.h                         |  6 ++--
- include/net/sock.h                              |  2 ++
- include/net/tcp.h                               |  1 +
- mm/huge_memory.c                                | 10 +++++-
- mm/memory.c                                     |  2 ++
- mm/migrate.c                                    |  2 ++
- mm/mprotect.c                                   |  7 ++--
- mm/page-writeback.c                             | 10 +++---
- mm/zswap.c                                      |  4 +++
- net/8021q/vlan_netlink.c                        |  2 +-
- net/batman-adv/main.c                           |  5 +--
- net/batman-adv/network-coding.c                 | 28 +++++++++------
- net/batman-adv/network-coding.h                 | 14 +++++---
- net/bridge/br_mdb.c                             |  2 +-
- net/bridge/br_multicast.c                       | 38 +++++++++++++-------
- net/bridge/br_private.h                         |  1 -
- net/bridge/br_stp_if.c                          |  2 +-
- net/compat.c                                    |  2 ++
- net/core/secure_seq.c                           |  2 ++
- net/core/sock.c                                 |  1 +
- net/ipv4/inet_hashtables.c                      |  2 +-
- net/ipv4/ip_output.c                            |  2 +-
- net/ipv4/ip_vti.c                               | 14 ++++++--
- net/ipv4/route.c                                |  2 +-
- net/ipv4/sysctl_net_ipv4.c                      | 10 ++++++
- net/ipv4/tcp.c                                  | 28 ++++++++++++---
- net/ipv4/tcp_input.c                            | 41 ++++++++++++++++++++--
- net/ipv4/tcp_output.c                           | 28 +++++++++------
- net/ipv6/inet6_hashtables.c                     |  2 +-
- net/ipv6/ip6_output.c                           |  6 ++--
- net/ipv6/route.c                                | 46 ++++++++++++++++++++-----
- net/ipv6/sit.c                                  |  1 -
- net/l2tp/l2tp_core.c                            | 36 +++++++++++++++----
- net/l2tp/l2tp_core.h                            |  3 ++
- net/l2tp/l2tp_ppp.c                             |  4 +++
- net/netfilter/nf_conntrack_h323_main.c          |  4 +--
- net/sched/sch_netem.c                           | 17 +++++++++
- net/sctp/output.c                               |  3 +-
- net/socket.c                                    | 24 ++++++++++---
- net/unix/af_unix.c                              | 10 ++++++
- net/unix/diag.c                                 |  1 +
- net/wireless/radiotap.c                         |  7 +++-
- sound/pci/hda/hda_generic.c                     |  2 +-
- sound/usb/usx2y/us122l.c                        |  4 ++-
- 76 files changed, 516 insertions(+), 179 deletions(-)
+3.10-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Linus Walleij <linus.walleij@linaro.org>
+
+commit 29114fd7db2fc82a34da8340d29b8fa413e03dca upstream.
+
+This fixes a long-standing Integrator/CP regression from
+commit 870e2928cf3368ca9b06bc925d0027b0a56bcd8e
+"ARM: integrator-cp: convert use CLKSRC_OF for timer init"
+
+When this code was introduced, the both aliases pointing the
+system to use timer1 as primary (clocksource) and timer2
+as secondary (clockevent) was ignored, and the system would
+simply use the first two timers found as clocksource and
+clockevent.
+
+However this made the system timeline accelerate by a
+factor x25, as it turns out that the way the clocking
+actually works (totally undocumented and found after some
+trial-and-error) is that timer0 runs @ 25MHz and timer1
+and timer2 runs @ 1MHz. Presumably this divider setting
+is a boot-on default and configurable albeit the way to
+configure it is not documented.
+
+So as a quick fix to the problem, let's mark timer0 as
+disabled, so the code will chose timer1 and timer2 as it
+used to.
+
+This also deletes the two aliases for the primary and
+secondary timer as they have been superceded by the
+auto-selection
+
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/arm/boot/dts/integratorcp.dts |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+--- a/arch/arm/boot/dts/integratorcp.dts
++++ b/arch/arm/boot/dts/integratorcp.dts
+@@ -9,11 +9,6 @@
+ 	model = "ARM Integrator/CP";
+ 	compatible = "arm,integrator-cp";
+ 
+-	aliases {
+-		arm,timer-primary = &timer2;
+-		arm,timer-secondary = &timer1;
+-	};
+-
+ 	chosen {
+ 		bootargs = "root=/dev/ram0 console=ttyAMA0,38400n8 earlyprintk";
+ 	};
+@@ -24,14 +19,18 @@
+ 	};
+ 
+ 	timer0: timer@13000000 {
++		/* TIMER0 runs @ 25MHz */
+ 		compatible = "arm,integrator-cp-timer";
++		status = "disabled";
+ 	};
+ 
+ 	timer1: timer@13000100 {
++		/* TIMER1 runs @ 1MHz */
+ 		compatible = "arm,integrator-cp-timer";
+ 	};
+ 
+ 	timer2: timer@13000200 {
++		/* TIMER2 runs @ 1MHz */
+ 		compatible = "arm,integrator-cp-timer";
+ 	};
+ 
 
 
