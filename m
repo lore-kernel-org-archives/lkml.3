@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756952Ab3KAW1p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:27:45 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37105 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756935Ab3KAW1o (ORCPT
+	id S1756979Ab3KAW17 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:27:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55286 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756137Ab3KAWHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:27:44 -0400
-Date: Sat, 2 Nov 2013 09:27:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: linux-next: manual merge of the dt-rh tree with the powerpc
- tree
-Message-Id: <20131102092732.321ddc2823d143320b73ee45@canb.auug.org.au>
-In-Reply-To: <52742A2A.9080008@gmail.com>
-References: <20131101162002.4dd386299ec42e8d8d032be2@canb.auug.org.au>
-	<52742A2A.9080008@gmail.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sat__2_Nov_2013_09_27_32_+1100_B7RsVgMIjSmbfKzt"
+	Fri, 1 Nov 2013 18:07:51 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.11 09/66] l2tp: Fix build warning with ipv6 disabled.
+Date: Fri,  1 Nov 2013 15:06:45 -0700
+Message-Id: <20131101220637.355804011@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
+References: <20131101220634.605745564@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__2_Nov_2013_09_27_32_+1100_B7RsVgMIjSmbfKzt
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
-Hi Rob,
+------------------
 
-On Fri, 01 Nov 2013 17:24:42 -0500 Rob Herring <robherring2@gmail.com> wrot=
-e:
->
-> On 11/01/2013 12:20 AM, Stephen Rothwell wrote:
-> >=20
-> > Today's linux-next merge of the dt-rh tree got a conflict in=20
-> > arch/powerpc/include/asm/prom.h between commit a3e31b458844 ("of:
-> > Move definition of of_find_next_cache_node into common code") from
-> > the powerpc tree and commit 0c3f061c195c ("of: implement
-> > of_node_to_nid as a weak function") from the dt-rh tree.
->=20
-> Ben, I can pick these 2 patches up instead if you want to drop them
-> and avoid the conflict.
+From: "David S. Miller" <davem@davemloft.net>
 
-The conflict is pretty trivial and so should not require any action.
+[ Upstream commit 8d8a51e26a6d415e1470759f2cf5f3ee3ee86196 ]
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+net/l2tp/l2tp_core.c: In function ‘l2tp_verify_udp_checksum’:
+net/l2tp/l2tp_core.c:499:22: warning: unused variable ‘tunnel’ [-Wunused-variable]
 
---Signature=_Sat__2_Nov_2013_09_27_32_+1100_B7RsVgMIjSmbfKzt
-Content-Type: application/pgp-signature
+Create a helper "l2tp_tunnel()" to facilitate this, and as a side
+effect get rid of a bunch of unnecessary void pointer casts.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/l2tp/l2tp_core.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-iQIcBAEBCAAGBQJSdCrZAAoJEMDTa8Ir7ZwVW/0P/2YCoiVz+izf0CTSv8yrYcxa
-uWPjRDivRmFOGsAlv8/dKdrkprq6g3Ha8XXpKe8LOOVvM0k6buX2FS8MbdJWVDT0
-KvO5NsG2ls3ft2wwmkJx0SXr1J6N8naBFveDegsKjjcMvKTiB/ZKrQ0iFDHLJtKM
-XezXPEjZ7d0ZM2vf7rfuaiKIMDSB3eH9IPbuMMCXahgLkePM6ZzfiBWuUNGGan0u
-1GMvWcQ7/y1T3neGoanG33nFQoTGS2z/XYdpxO+2ug0NGXLFgCM0w6UkH4RoweLd
-gWhiK5a+HGQeOiwktEOjVJdlYngdRkMWm2zglwvQcuJXBlzWoJVU+FFWaCMY/mnq
-WMCRwy2k0yw6VEqkavQPCnOesOu6wO8+Mjo5D25i6Da0NP8K9ncMm4zJ5szdG03O
-LHzWrc2h+JTCBUw2dXAwBczj89qOu+bqLZOb75vmBLOH3QG2LsgSJZTsi2R1Vf7c
-K6CUJQz5znYVq9v7xyUcnjxYvNVmemRt7LWFVSvRx3XFbEUw8BhOz9IAfd4nHIsz
-OASw9l1VJ26Tu6vRXo4qKVaFc1YRycCxaCgSV7YSWfxwHsH5nhlOYJ95ec2BQfHr
-pWpNF30PfJN2Aalc4LjQvqYjDrwEHk+j2sDn9LGRySmu2nJvwYsPFpKKEtOADw0D
-e5uwpDOICiYpzZT0VoXq
-=uP37
------END PGP SIGNATURE-----
+--- a/net/l2tp/l2tp_core.c
++++ b/net/l2tp/l2tp_core.c
+@@ -115,6 +115,11 @@ struct l2tp_net {
+ static void l2tp_session_set_header_len(struct l2tp_session *session, int version);
+ static void l2tp_tunnel_free(struct l2tp_tunnel *tunnel);
+ 
++static inline struct l2tp_tunnel *l2tp_tunnel(struct sock *sk)
++{
++	return sk->sk_user_data;
++}
++
+ static inline struct l2tp_net *l2tp_pernet(struct net *net)
+ {
+ 	BUG_ON(!net);
+@@ -496,7 +501,6 @@ out:
+ static inline int l2tp_verify_udp_checksum(struct sock *sk,
+ 					   struct sk_buff *skb)
+ {
+-	struct l2tp_tunnel *tunnel = (struct l2tp_tunnel *)sk->sk_user_data;
+ 	struct udphdr *uh = udp_hdr(skb);
+ 	u16 ulen = ntohs(uh->len);
+ 	__wsum psum;
+@@ -505,7 +509,7 @@ static inline int l2tp_verify_udp_checks
+ 		return 0;
+ 
+ #if IS_ENABLED(CONFIG_IPV6)
+-	if (sk->sk_family == PF_INET6 && !tunnel->v4mapped) {
++	if (sk->sk_family == PF_INET6 && !l2tp_tunnel(sk)->v4mapped) {
+ 		if (!uh->check) {
+ 			LIMIT_NETDEBUG(KERN_INFO "L2TP: IPv6: checksum is 0\n");
+ 			return 1;
+@@ -1305,10 +1309,9 @@ EXPORT_SYMBOL_GPL(l2tp_xmit_skb);
+  */
+ static void l2tp_tunnel_destruct(struct sock *sk)
+ {
+-	struct l2tp_tunnel *tunnel;
++	struct l2tp_tunnel *tunnel = l2tp_tunnel(sk);
+ 	struct l2tp_net *pn;
+ 
+-	tunnel = sk->sk_user_data;
+ 	if (tunnel == NULL)
+ 		goto end;
+ 
+@@ -1676,7 +1679,7 @@ int l2tp_tunnel_create(struct net *net,
+ 	}
+ 
+ 	/* Check if this socket has already been prepped */
+-	tunnel = (struct l2tp_tunnel *)sk->sk_user_data;
++	tunnel = l2tp_tunnel(sk);
+ 	if (tunnel != NULL) {
+ 		/* This socket has already been prepped */
+ 		err = -EBUSY;
 
---Signature=_Sat__2_Nov_2013_09_27_32_+1100_B7RsVgMIjSmbfKzt--
+
