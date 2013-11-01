@@ -1,299 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab3KAHzI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 03:55:08 -0400
-Received: from mga09.intel.com ([134.134.136.24]:23700 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755296Ab3KAHzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 03:55:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,615,1378882800"; 
-   d="scan'208";a="420728639"
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
+	id S1755088Ab3KAHzu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 03:55:50 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:51649 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755114Ab3KAHzG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 03:55:06 -0400
+Date: Fri, 1 Nov 2013 08:55:02 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>, Pekka Enberg <penberg@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Michel Lespinasse <walken@google.com>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Subject: [PATCH 2/4] mm/rmap: convert anon_vma rwsem to rwlock_t
-Date: Fri,  1 Nov 2013 15:54:25 +0800
-Message-Id: <1383292467-28922-3-git-send-email-yuanhan.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
-References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
+Subject: Re: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist
+ periods (v2)
+Message-ID: <20131101075502.GA25547@gmail.com>
+References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
+ <20131031080932.GA8479@gmail.com>
+ <87vc0c4ny2.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vc0c4ny2.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
 
-This lock basically covers the insertion of avc into rb tree; turn rwsem
-to rwlock_t.
+* Namhyung Kim <namhyung@kernel.org> wrote:
 
-With the former per anon_vma lock applied, the performance is nearly
-doubled in some heavy fork workload of aim7 on some platforms.
+> > A couple of details:
+> >
+> > 1)
+> >
+> > This is pretty close to SysProf output, right? So why not use the 
+> > well-known SysProf naming and call the first column 'self' and the 
+> > second column 'total'? I think those names are pretty intuitive and 
+> > it would help people who come from SysProf over to perf.
+> 
+> Okay, I can do it. (Although sysprof seems to call it 'cumulative'
+> rather than 'total' - but I think the 'total' is better since it's
+> simpler and shorter.)
 
-aim7.2000.jobs-per-min
----------------------          ------
-lkp-ib03/aim7/shared            +2.7%
-brickland1/aim7/fork_test      +89.9%
-lkp-ib03/aim7/fork_test        +49.3%
-lkp-sb03/aim7/fork_test        +59.0%
-lkp-sb03/aim7/shared            +0.3%
+So sysprof-1.2 has the following two windows:
 
-time.voluntary_context_switches
------------------------------  ------
-brickland1/aim7/shared         -60.8%
-brickland1/aim7/fork_test      -75.8%
-brickland1/pigz/100%            +0.4%
-lkp-ib03/aim7/fork_test        -81.4%
-lkp-ib03/aim7/shared           -46.8%
-lkp-ib03/dbench/100%            -0.6%
-lkp-nex04/aim7/shared          -54.2%
-lkp-sb03/aim7/fork_test        -80.2%
-lkp-sb03/aim7/shared           -26.7%
+ 'functions',   with 'self' and 'total' fields
+ 'descendants', with 'self' and 'cumulative' fields
 
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michel Lespinasse <walken@google.com>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
----
- include/linux/mmu_notifier.h |    2 +-
- include/linux/rmap.h         |   19 +++++++++----------
- mm/huge_memory.c             |    4 ++--
- mm/mmap.c                    |   10 +++++-----
- mm/rmap.c                    |   16 ++++++++--------
- 5 files changed, 25 insertions(+), 26 deletions(-)
+'descendants' appears to be similar to the perf 'dso' concept.
 
-diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
-index deca874..628e807 100644
---- a/include/linux/mmu_notifier.h
-+++ b/include/linux/mmu_notifier.h
-@@ -151,7 +151,7 @@ struct mmu_notifier_ops {
-  * Therefore notifier chains can only be traversed when either
-  *
-  * 1. mmap_sem is held.
-- * 2. One of the reverse map locks is held (i_mmap_mutex or anon_vma->rwsem).
-+ * 2. One of the reverse map locks is held (i_mmap_mutex or anon_vma->rwlock).
-  * 3. No other concurrent thread can access the list (release)
-  */
- struct mmu_notifier {
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index f450f84..2bb0a1f 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -7,7 +7,7 @@
- #include <linux/list.h>
- #include <linux/slab.h>
- #include <linux/mm.h>
--#include <linux/rwsem.h>
-+#include <linux/rwlock.h>
- #include <linux/memcontrol.h>
- 
- /*
-@@ -26,7 +26,7 @@
-  */
- struct anon_vma {
- 	struct anon_vma *root;		/* Root of this anon_vma tree */
--	struct rw_semaphore rwsem;	/* W: modification, R: walking the list */
-+	rwlock_t rwlock;		/* W: modification, R: walking the list */
- 	/*
- 	 * The refcount is taken on an anon_vma when there is no
- 	 * guarantee that the vma of page tables will exist for
-@@ -64,7 +64,7 @@ struct anon_vma_chain {
- 	struct vm_area_struct *vma;
- 	struct anon_vma *anon_vma;
- 	struct list_head same_vma;   /* locked by mmap_sem & page_table_lock */
--	struct rb_node rb;			/* locked by anon_vma->rwsem */
-+	struct rb_node rb;			/* locked by anon_vma->rwlock */
- 	unsigned long rb_subtree_last;
- #ifdef CONFIG_DEBUG_VM_RB
- 	unsigned long cached_vma_start, cached_vma_last;
-@@ -108,37 +108,36 @@ static inline void vma_lock_anon_vma(struct vm_area_struct *vma)
- {
- 	struct anon_vma *anon_vma = vma->anon_vma;
- 	if (anon_vma)
--		down_write(&anon_vma->rwsem);
-+		write_lock(&anon_vma->rwlock);
- }
- 
- static inline void vma_unlock_anon_vma(struct vm_area_struct *vma)
- {
- 	struct anon_vma *anon_vma = vma->anon_vma;
- 	if (anon_vma)
--		up_write(&anon_vma->rwsem);
-+		write_unlock(&anon_vma->rwlock);
- }
- 
- static inline void anon_vma_lock_write(struct anon_vma *anon_vma)
- {
--	down_write(&anon_vma->rwsem);
-+	write_lock(&anon_vma->rwlock);
- }
- 
- static inline void anon_vma_unlock_write(struct anon_vma *anon_vma)
- {
--	up_write(&anon_vma->rwsem);
-+	write_unlock(&anon_vma->rwlock);
- }
- 
- static inline void anon_vma_lock_read(struct anon_vma *anon_vma)
- {
--	down_read(&anon_vma->rwsem);
-+	read_lock(&anon_vma->rwlock);
- }
- 
- static inline void anon_vma_unlock_read(struct anon_vma *anon_vma)
- {
--	up_read(&anon_vma->rwsem);
-+	read_unlock(&anon_vma->rwlock);
- }
- 
--
- /*
-  * anon_vma helper functions.
-  */
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 73cc8ef..a1e6cb2 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1542,7 +1542,7 @@ static int __split_huge_page_splitting(struct page *page,
- 		 * We can't temporarily set the pmd to null in order
- 		 * to split it, the pmd must remain marked huge at all
- 		 * times or the VM won't take the pmd_trans_huge paths
--		 * and it won't wait on the anon_vma->rwsem to
-+		 * and it won't wait on the anon_vma->rwlock to
- 		 * serialize against split_huge_page*.
- 		 */
- 		pmdp_splitting_flush(vma, address, pmd);
-@@ -1747,7 +1747,7 @@ static int __split_huge_page_map(struct page *page,
- 	return ret;
- }
- 
--/* must be called with anon_vma->rwsem held */
-+/* must be called with anon_vma->rwlock held */
- static void __split_huge_page(struct page *page,
- 			      struct anon_vma *anon_vma,
- 			      struct list_head *list)
-diff --git a/mm/mmap.c b/mm/mmap.c
-index b81d3a3..0c0f5ee 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2955,15 +2955,15 @@ static void vm_lock_anon_vma(struct mm_struct *mm, struct anon_vma *anon_vma)
- 		 * The LSB of head.next can't change from under us
- 		 * because we hold the mm_all_locks_mutex.
- 		 */
--		down_write_nest_lock(&anon_vma->rwsem, &mm->mmap_sem);
-+		write_lock(&anon_vma->rwlock);
- 		/*
- 		 * We can safely modify head.next after taking the
--		 * anon_vma->rwsem. If some other vma in this mm shares
-+		 * anon_vma->rwlock. If some other vma in this mm shares
- 		 * the same anon_vma we won't take it again.
- 		 *
- 		 * No need of atomic instructions here, head.next
- 		 * can't change from under us thanks to the
--		 * anon_vma->rwsem.
-+		 * anon_vma->rwlock.
- 		 */
- 		if (__test_and_set_bit(0, (unsigned long *)
- 				       &anon_vma->rb_root.rb_node))
-@@ -3012,7 +3012,7 @@ static void vm_lock_mapping(struct mm_struct *mm, struct address_space *mapping)
-  * vma in this mm is backed by the same anon_vma or address_space.
-  *
-  * We can take all the locks in random order because the VM code
-- * taking i_mmap_mutex or anon_vma->rwsem outside the mmap_sem never
-+ * taking i_mmap_mutex or anon_vma->rwslockoutside the mmap_sem never
-  * takes more than one of them in a row. Secondly we're protected
-  * against a concurrent mm_take_all_locks() by the mm_all_locks_mutex.
-  *
-@@ -3065,7 +3065,7 @@ static void vm_unlock_anon_vma(struct anon_vma *anon_vma)
- 		 *
- 		 * No need of atomic instructions here, head.next
- 		 * can't change from under us until we release the
--		 * anon_vma->rwsem.
-+		 * anon_vma->rwlock.
- 		 */
- 		if (!__test_and_clear_bit(0, (unsigned long *)
- 					  &anon_vma->rb_root.rb_node))
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 73377b4..22e8172 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -24,7 +24,7 @@
-  *   mm->mmap_sem
-  *     page->flags PG_locked (lock_page)
-  *       mapping->i_mmap_mutex
-- *         anon_vma->rwsem
-+ *         anon_vma->rwlock
-  *           mm->page_table_lock or pte_lock
-  *             zone->lru_lock (in mark_page_accessed, isolate_lru_page)
-  *             swap_lock (in swap_duplicate, swap_info_get)
-@@ -37,7 +37,7 @@
-  *                           in arch-dependent flush_dcache_mmap_lock,
-  *                           within bdi.wb->list_lock in __sync_single_inode)
-  *
-- * anon_vma->rwsem,mapping->i_mutex      (memory_failure, collect_procs_anon)
-+ * anon_vma->rwlock,mapping->i_mutex      (memory_failure, collect_procs_anon)
-  *   ->tasklist_lock
-  *     pte map lock
-  */
-@@ -98,12 +98,12 @@ static inline void anon_vma_free(struct anon_vma *anon_vma)
- 	 * page_lock_anon_vma_read()	VS	put_anon_vma()
- 	 *   down_read_trylock()		  atomic_dec_and_test()
- 	 *   LOCK				  MB
--	 *   atomic_read()			  rwsem_is_locked()
-+	 *   atomic_read()			  rwlock_is_locked()
- 	 *
- 	 * LOCK should suffice since the actual taking of the lock must
- 	 * happen _before_ what follows.
- 	 */
--	if (rwsem_is_locked(&anon_vma->rwsem)) {
-+	if (!write_can_lock(&anon_vma->rwlock)) {
- 		anon_vma_lock_write(anon_vma);
- 		anon_vma_unlock_write(anon_vma);
- 	}
-@@ -315,7 +315,7 @@ static void anon_vma_ctor(void *data)
- {
- 	struct anon_vma *anon_vma = data;
- 
--	init_rwsem(&anon_vma->rwsem);
-+	rwlock_init(&anon_vma->rwlock);
- 	atomic_set(&anon_vma->refcount, 0);
- 	anon_vma->rb_root = RB_ROOT;
- }
-@@ -405,14 +405,14 @@ struct anon_vma *page_lock_anon_vma_read(struct page *page)
- 		goto out;
- 
- 	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
--	if (down_read_trylock(&anon_vma->rwsem)) {
-+	if (read_trylock(&anon_vma->rwlock)) {
- 		/*
- 		 * If the page is still mapped, then this anon_vma is still
- 		 * its anon_vma, and holding the mutex ensures that it will
- 		 * not go away, see anon_vma_free().
- 		 */
- 		if (!page_mapped(page)) {
--			up_read(&anon_vma->rwsem);
-+			read_unlock(&anon_vma->rwlock);
- 			anon_vma = NULL;
- 		}
- 		goto out;
-@@ -1241,7 +1241,7 @@ out_mlock:
- 	/*
- 	 * We need mmap_sem locking, Otherwise VM_LOCKED check makes
- 	 * unstable result and race. Plus, We can't wait here because
--	 * we now hold anon_vma->rwsem or mapping->i_mmap_mutex.
-+	 * we now hold anon_vma->rwlock or mapping->i_mmap_mutex.
- 	 * if trylock failed, the page remain in evictable lru and later
- 	 * vmscan could retry to move the page to unevictable lru if the
- 	 * page is actually mlocked.
--- 
-1.7.7.6
+> > 2)
+> >
+> > Is it possible to configure the default 'report -g' style, so that 
+> > people who'd like to use it all the time don't have to type '-g 
+> > cumulative' all the time?
+> 
+> Hmm.. maybe I can add support for the 'report.call-graph' config option.
 
+If we display your new 'total' field by default then it's not as 
+pressing to me :)
+
+> > 3)
+> >
+> > I'd even argue that we enable this reporting feature by default, if 
+> > a data file includes call-chain data: the first column will still 
+> > show the well-known percentage that perf report produces today, the 
+> > second column will be a new feature in essence.
+> >
+> > The only open question would be, by which column should we sort: 
+> > 'sysprof style' sorts by 'total', 'perf style' sorts by 'self'. 
+> > Agreed?
+> 
+> Right, I defaulted to go by 'total'.  But we can add an option for 
+> it.
+
+The purpose would be to allow people to do old-style 'sort by 
+function overhead' output, while still seeing the 'total' field as 
+well.
+
+Btw., if anyone is interested in improving the GTK front-end, it 
+would be _really_ nice if it had a 'start profiling' button like 
+sysprof has today, with a 'samples' field showing the current number 
+of samples. (We could even improve upon sysprof by adding 'stop' 
+functionality as well ;-)
+
+A bit like perf top, except the reporting session is hidden until 
+the user actively requests the profile.
+
+Maybe it could even be called a gtk version of 'perf top', with a 
+button to start/stop collection, with another button to 
+activate/deactivate reporting output, and yet another button to 
+reset the profiling buffer.
+
+With that feature set perf would be a ready sysprof workflow 
+replacement I think. (I've Cc:-ed Pekka, just in case! :-)
+
+> > 4)
+> >
+> > This is not directly related to the new feature you added: 
+> > call-graph profiling still takes quite a bit of time. It might 
+> > make sense to save the ordered histogram to a perf.data.ordered 
+> > file, so that repeat invocations of 'perf report' don't have to 
+> > recalculate everything again and again?
+> >
+> > This file would be maintained transparently and would only be 
+> > re-created when the perf.data file changes, or something like 
+> > that.
+> 
+> Hmm.. good idea.  We may discuss it along with Jiri's multiple 
+> file storage patches.  I haven't had a time to review - maybe next 
+> week.
+
+So Arnaldo tells me that with your and Frederic's latest 
+callgraph-speedup patches the parsing of perf.data got _really_ 
+fast, so maybe my performance complaint is moot and we should delay 
+complicating the primary perf.data file model with a 'cache' until 
+your patches are in and we see the full impact.
+
+Thanks,
+
+	Ingo
