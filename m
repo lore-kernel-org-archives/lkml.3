@@ -1,95 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834Ab3KAQI7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 12:08:59 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:55260 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754732Ab3KAQIn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 12:08:43 -0400
-X-Nat-Received: from [202.181.97.72]:64272 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1383322084.29008
-To: jlieb@panasas.com
-Cc: luto@amacapital.net, linux-fsdevel@vger.kernel.org, ebiederm@xmission.com,
-        viro@zeniv.linux.org.uk, tytso@mit.edu, linux-kernel@vger.kernel.org,
-        bfields@redhat.com, jlayton@redhat.com
-Subject: Re: Re: Re: Re: Re: [PATCH 1/3] switch_creds: Syscall to switch creds for file server ops
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <1381960919-4542-1-git-send-email-jlieb@panasas.com>
-	<1397707.n4PsIJcfRu@jlieb-e6410>
-	<201311012224.CBG18210.StOOMLHVJOFQFF@I-love.SAKURA.ne.jp>
-	<3320616.dLyWU2ChR5@jlieb-e6410>
-In-Reply-To: <3320616.dLyWU2ChR5@jlieb-e6410>
-Message-Id: <201311020107.FDJ87003.SHJFMOOOtLVFQF@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sat, 2 Nov 2013 01:07:59 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 01112013 #10060565, status: clean
+	id S1754873Ab3KAQJd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 12:09:33 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:49556 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753308Ab3KAQJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 12:09:28 -0400
+X-IronPort-AV: E=Sophos;i="4.93,618,1378857600"; 
+   d="scan'208";a="69775428"
+Message-ID: <5273D235.3060100@citrix.com>
+Date: Fri, 1 Nov 2013 16:09:25 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Paul Durrant <Paul.Durrant@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jonathan Davies <Jonathan.Davies@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: Re: [Xen-devel] [PATCH net-next RFC 2/5] xen-netback: Change TX path
+ from grant copy to mapping
+References: <1383094220-14775-1-git-send-email-zoltan.kiss@citrix.com> <1383094220-14775-3-git-send-email-zoltan.kiss@citrix.com> <9AAE0902D5BC7E449B7C8E4E778ABCD015717A@AMSPEX01CL01.citrite.net> <527175DB.8070400@citrix.com>
+In-Reply-To: <527175DB.8070400@citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jim Lieb wrote:
-> On Friday, November 01, 2013 22:24:12 Tetsuo Handa wrote:
-> > Jim Lieb wrote:
-> > > Subsequent uses look like:
-> > > 	use_creds(cached fd);
-> > > 
-> > > followed by
-> > > 
-> > > 	open/creat/mknod/write
-> > > 
-> > > followed by
-> > > 
-> > > 	use_creds(-1);
-> > 
-> > Are you aware that calling commit_creds() is prohibitted between
-> > override_creds() and revert_creds() ?
-> > 
-> > If the caller does some operation that calls commit_creds() (like
-> > example below), the kernel triggers BUG().
-> 
-> Yes, I do.  I caught this in an early pass.  I only use override_creds() and 
-> revert_creds().  
+On 30/10/13 21:10, Zoltan Kiss wrote:
+> On 30/10/13 09:11, Paul Durrant wrote:
+>>> +    err = alloc_xenballooned_pages(MAX_PENDING_REQS,
+>>> +        vif->mmap_pages,
+>>> +        false);
+>>
+>> Since this is a per-vif allocation, is this going to scale?
+> Good question, I'll look after this.
+I've talked to David Vrabel about this: if ballooning is disabled, this 
+will reserve real memory, therefore for every VIF you allocate usually 
+1MB memory. But if you enable ballooning, it will use pages which are 
+not actually reserved, and that's fine, because we never gonna really 
+use them. The only issue is that you need to set the maximum at boot 
+time, and it will consume memory also because of the page table 
+reservations.
+The long term solution would be to just use a bunch of struct pages, 
+David said the ballooning driver has something like that, but it's 
+broken at the moment.
 
-Excuse me, but even below example will trigger BUG(). You pack
-override_creds() + open() + revert_creds() into one system call so that the
-caller of this system call shall not do something that calls commit_creds() ?
+>>>           if (data_len < txp->size) {
+>>>               /* Append the packet payload as a fragment. */
+>>>               txp->offset += data_len;
+>>>               txp->size -= data_len;
+>>> -        } else {
+>>> +            skb_shinfo(skb)->destructor_arg =
+>>> +                &vif-
+>>>> pending_tx_info[pending_idx].callback_struct;
+>>> +        } else if (!skb_shinfo(skb)->nr_frags) {
+>>>               /* Schedule a response immediately. */
+>>> +            skb_shinfo(skb)->destructor_arg = NULL;
+>>> +            xenvif_idx_unmap(vif, pending_idx);
+>>>               xenvif_idx_release(vif, pending_idx,
+>>>                          XEN_NETIF_RSP_OKAY);
+>>> +        } else {
+>>> +            /* FIXME: first request fits linear space, I don't know
+>>> +             * if any guest would do that, but I think it's possible
+>>> +             */
+>>
+>> The Windows frontend, because it has to parse the packet headers, will
+>> coalesce everything up to the payload in a single frag and it would be
+>> a good idea to copy this directly into the linear area.
+> I forgot to clarify this comment: the problem I wanted to handle here if
+> the first request's size is PKT_PROT_LEN and there is more fragments.
+> Then skb->len will be PKT_PROT_LEN as well, and the if statement falls
+> through to the else branch. That might be problematic if we release the
+> slot of the first request separately from the others. Or am I
+> overlooking something? Does that matter to netfront anyway?
+> And this problem, if it's true, applies to the previous, grant copy
+> method as well.
+> However, as I think, it might be better to change the condition to
+> (data_len <= txp->size), rather than putting an if-else statement into
+> the else branch.
+I've talked to Wei, we think this is a broken guest behaviour, and 
+therefore we shouldn't care if someone does such a stupid thing.
 
----------- example module start ----------
-#include <linux/module.h>
-#include <linux/cred.h>
-#include <linux/fs.h>
-#include <linux/file.h>
-
-static int __init test_init(void)
-{
-        const struct cred *orig;
-        { /* switch_cred() syscall */
-                struct fd f = fdget(0);
-                if (!f.file)
-                        return -EBADF;
-                orig = override_creds(f.file->f_cred);
-                fdput(f);
-        }
-        { /* something that calls commit_creds() */
-                struct cred *cred = prepare_creds();
-                if (cred)
-                        commit_creds(cred);
-        }
-        { /* restore */
-                revert_creds(orig);
-        }
-        return 0;
-}
-
-static void test_exit(void)
-{
-}
-
-module_init(test_init);
-module_exit(test_exit);
-MODULE_LICENSE("GPL");
----------- example module end ----------
+Zoli
