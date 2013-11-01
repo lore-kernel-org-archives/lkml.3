@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861Ab3KAWYj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:24:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55336 "EHLO
+	id S1756877Ab3KAWYl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:24:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55331 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756216Ab3KAWIA (ORCPT
+	with ESMTP id S1756215Ab3KAWIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Nov 2013 18:08:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Eric Dumazet <edumazet@google.com>, Amir Vadai <amirv@mellanox.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.11 20/66] net/mlx4_en: Fix pages never dma unmapped on rx
-Date: Fri,  1 Nov 2013 15:06:56 -0700
-Message-Id: <20131101220640.306934588@linuxfoundation.org>
+Subject: [PATCH 3.11 19/66] net/mlx4_en: Rename name of mlx4_en_rx_alloc members
+Date: Fri,  1 Nov 2013 15:06:55 -0700
+Message-Id: <20131101220640.046002211@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -29,17 +29,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Amir Vadai <amirv@mellanox.com>
 
-[ Upstream commit 021f1107ffdae7a82af6c53f4c52654062e365c6 ]
+[ Upstream commit 70fbe0794393829d9acd686428d87c27b6f6984b ]
 
-This patch fixes a bug introduced by commit 51151a16 (mlx4: allow
-order-0 memory allocations in RX path).
-
-dma_unmap_page never reached because condition to detect last fragment
-in page is wrong. offset+frag_stride can't be greater than size, need to
-make sure no additional frag will fit in page => compare offset +
-frag_stride + next_frag_size instead.
-next_frag_size is the same as the current one, since page is shared only
-with frags of the same size.
+Add page prefix to page related members: @size and @offset into
+@page_size and @page_offset
 
 CC: Eric Dumazet <edumazet@google.com>
 Signed-off-by: Amir Vadai <amirv@mellanox.com>
@@ -47,23 +40,140 @@ Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/mellanox/mlx4/en_rx.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/en_rx.c   |   40 +++++++++++++++------------
+ drivers/net/ethernet/mellanox/mlx4/mlx4_en.h |    4 +-
+ 2 files changed, 25 insertions(+), 19 deletions(-)
 
 --- a/drivers/net/ethernet/mellanox/mlx4/en_rx.c
 +++ b/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-@@ -135,9 +135,10 @@ static void mlx4_en_free_frag(struct mlx
- 			      int i)
+@@ -70,14 +70,15 @@ static int mlx4_alloc_pages(struct mlx4_
+ 		put_page(page);
+ 		return -ENOMEM;
+ 	}
+-	page_alloc->size = PAGE_SIZE << order;
++	page_alloc->page_size = PAGE_SIZE << order;
+ 	page_alloc->page = page;
+ 	page_alloc->dma = dma;
+-	page_alloc->offset = frag_info->frag_align;
++	page_alloc->page_offset = frag_info->frag_align;
+ 	/* Not doing get_page() for each frag is a big win
+ 	 * on asymetric workloads.
+ 	 */
+-	atomic_set(&page->_count, page_alloc->size / frag_info->frag_stride);
++	atomic_set(&page->_count,
++		   page_alloc->page_size / frag_info->frag_stride);
+ 	return 0;
+ }
+ 
+@@ -96,16 +97,19 @@ static int mlx4_en_alloc_frags(struct ml
+ 	for (i = 0; i < priv->num_frags; i++) {
+ 		frag_info = &priv->frag_info[i];
+ 		page_alloc[i] = ring_alloc[i];
+-		page_alloc[i].offset += frag_info->frag_stride;
+-		if (page_alloc[i].offset + frag_info->frag_stride <= ring_alloc[i].size)
++		page_alloc[i].page_offset += frag_info->frag_stride;
++
++		if (page_alloc[i].page_offset + frag_info->frag_stride <=
++		    ring_alloc[i].page_size)
+ 			continue;
++
+ 		if (mlx4_alloc_pages(priv, &page_alloc[i], frag_info, gfp))
+ 			goto out;
+ 	}
+ 
+ 	for (i = 0; i < priv->num_frags; i++) {
+ 		frags[i] = ring_alloc[i];
+-		dma = ring_alloc[i].dma + ring_alloc[i].offset;
++		dma = ring_alloc[i].dma + ring_alloc[i].page_offset;
+ 		ring_alloc[i] = page_alloc[i];
+ 		rx_desc->data[i].addr = cpu_to_be64(dma);
+ 	}
+@@ -117,7 +121,7 @@ out:
+ 		frag_info = &priv->frag_info[i];
+ 		if (page_alloc[i].page != ring_alloc[i].page) {
+ 			dma_unmap_page(priv->ddev, page_alloc[i].dma,
+-				page_alloc[i].size, PCI_DMA_FROMDEVICE);
++				page_alloc[i].page_size, PCI_DMA_FROMDEVICE);
+ 			page = page_alloc[i].page;
+ 			atomic_set(&page->_count, 1);
+ 			put_page(page);
+@@ -132,9 +136,10 @@ static void mlx4_en_free_frag(struct mlx
  {
  	const struct mlx4_en_frag_info *frag_info = &priv->frag_info[i];
-+	u32 next_frag_end = frags[i].page_offset + 2 * frag_info->frag_stride;
  
--	if (frags[i].page_offset + frag_info->frag_stride >
--	    frags[i].page_size)
-+
-+	if (next_frag_end > frags[i].page_size)
- 		dma_unmap_page(priv->ddev, frags[i].dma, frags[i].page_size,
- 			       PCI_DMA_FROMDEVICE);
+-	if (frags[i].offset + frag_info->frag_stride > frags[i].size)
+-		dma_unmap_page(priv->ddev, frags[i].dma, frags[i].size,
+-					 PCI_DMA_FROMDEVICE);
++	if (frags[i].page_offset + frag_info->frag_stride >
++	    frags[i].page_size)
++		dma_unmap_page(priv->ddev, frags[i].dma, frags[i].page_size,
++			       PCI_DMA_FROMDEVICE);
  
+ 	if (frags[i].page)
+ 		put_page(frags[i].page);
+@@ -161,7 +166,7 @@ out:
+ 
+ 		page_alloc = &ring->page_alloc[i];
+ 		dma_unmap_page(priv->ddev, page_alloc->dma,
+-			       page_alloc->size, PCI_DMA_FROMDEVICE);
++			       page_alloc->page_size, PCI_DMA_FROMDEVICE);
+ 		page = page_alloc->page;
+ 		atomic_set(&page->_count, 1);
+ 		put_page(page);
+@@ -184,10 +189,11 @@ static void mlx4_en_destroy_allocator(st
+ 		       i, page_count(page_alloc->page));
+ 
+ 		dma_unmap_page(priv->ddev, page_alloc->dma,
+-				page_alloc->size, PCI_DMA_FROMDEVICE);
+-		while (page_alloc->offset + frag_info->frag_stride < page_alloc->size) {
++				page_alloc->page_size, PCI_DMA_FROMDEVICE);
++		while (page_alloc->page_offset + frag_info->frag_stride <
++		       page_alloc->page_size) {
+ 			put_page(page_alloc->page);
+-			page_alloc->offset += frag_info->frag_stride;
++			page_alloc->page_offset += frag_info->frag_stride;
+ 		}
+ 		page_alloc->page = NULL;
+ 	}
+@@ -478,7 +484,7 @@ static int mlx4_en_complete_rx_desc(stru
+ 		/* Save page reference in skb */
+ 		__skb_frag_set_page(&skb_frags_rx[nr], frags[nr].page);
+ 		skb_frag_size_set(&skb_frags_rx[nr], frag_info->frag_size);
+-		skb_frags_rx[nr].page_offset = frags[nr].offset;
++		skb_frags_rx[nr].page_offset = frags[nr].page_offset;
+ 		skb->truesize += frag_info->frag_stride;
+ 		frags[nr].page = NULL;
+ 	}
+@@ -517,7 +523,7 @@ static struct sk_buff *mlx4_en_rx_skb(st
+ 
+ 	/* Get pointer to first fragment so we could copy the headers into the
+ 	 * (linear part of the) skb */
+-	va = page_address(frags[0].page) + frags[0].offset;
++	va = page_address(frags[0].page) + frags[0].page_offset;
+ 
+ 	if (length <= SMALL_PACKET_SIZE) {
+ 		/* We are copying all relevant data to the skb - temporarily
+@@ -645,7 +651,7 @@ int mlx4_en_process_rx_cq(struct net_dev
+ 			dma_sync_single_for_cpu(priv->ddev, dma, sizeof(*ethh),
+ 						DMA_FROM_DEVICE);
+ 			ethh = (struct ethhdr *)(page_address(frags[0].page) +
+-						 frags[0].offset);
++						 frags[0].page_offset);
+ 
+ 			if (is_multicast_ether_addr(ethh->h_dest)) {
+ 				struct mlx4_mac_entry *entry;
+--- a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
++++ b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
+@@ -237,8 +237,8 @@ struct mlx4_en_tx_desc {
+ struct mlx4_en_rx_alloc {
+ 	struct page	*page;
+ 	dma_addr_t	dma;
+-	u32		offset;
+-	u32		size;
++	u32		page_offset;
++	u32		page_size;
+ };
+ 
+ struct mlx4_en_tx_ring {
 
 
