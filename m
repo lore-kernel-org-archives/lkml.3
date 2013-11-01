@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab3KAPli (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 11:41:38 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:41899 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753591Ab3KAPlg (ORCPT
+	id S1754194Ab3KAPmT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 11:42:19 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:41588 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754033Ab3KAPmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 11:41:36 -0400
-Date: Fri, 1 Nov 2013 16:41:33 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: perf version not set when building out of tree
-Message-ID: <20131101154133.GA8659@gmail.com>
-References: <5272E86B.7090003@gmail.com>
- <20131101070219.GA21471@gmail.com>
- <5273AD00.1050002@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5273AD00.1050002@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 1 Nov 2013 11:42:15 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH] of: Add vendor prefix for Cadence
+Date: Fri,  1 Nov 2013 08:42:04 -0700
+Message-Id: <1383320524-17689-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.8.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Drivers like clocksource/cadence_ttc and net/macb already use the 'cdns'
+prefix for Cadence IP.
 
-* David Ahern <dsahern@gmail.com> wrote:
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+ Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+ 1 file changed, 1 insertion(+)
 
-> On 11/1/13, 1:02 AM, Ingo Molnar wrote:
-> >
-> >* David Ahern <dsahern@gmail.com> wrote:
-> >
-> >>When building out of tree:
-> >>
-> >>make perf-tar-src-pkg
-> >
-> >What's the canonical way to build a perf tarball? I didn't find any
-> >makefile target for that.
-> 
-> Perhaps I misunderstand your question. From the top-level of a kernel tree:
-> $ make help | grep perf
-> 
->   perf-tar-src-pkg    - Build perf-3.12.0-rc5.tar source tarball
->   perf-targz-src-pkg  - Build perf-3.12.0-rc5.tar.gz source tarball
->   perf-tarbz2-src-pkg - Build perf-3.12.0-rc5.tar.bz2 source tarball
->   perf-tarxz-src-pkg  - Build perf-3.12.0-rc5.tar.xz source tarball
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index 2956800f0240..1ce180ce610d 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -16,6 +16,7 @@ avago	Avago Technologies
+ bosch	Bosch Sensortec GmbH
+ brcm	Broadcom Corporation
+ cavium	Cavium, Inc.
++cdns	Cadence Design Systems Inc.
+ chrp	Common Hardware Reference Platform
+ cirrus	Cirrus Logic, Inc.
+ cortina	Cortina Systems, Inc.
+-- 
+1.8.4.1
 
-Thx - I was trying to find that within the tools/perf/ Makefiles ;-)
-
-Thanks,
-
-	Ingo
