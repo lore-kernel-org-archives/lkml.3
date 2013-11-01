@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755023Ab3KAJVx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 05:21:53 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:59344 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485Ab3KAJVw (ORCPT
+	id S1755114Ab3KAJW1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 05:22:27 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:52355 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753420Ab3KAJW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 05:21:52 -0400
-Date: Fri, 1 Nov 2013 10:21:48 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Doug Ledford <dledford@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        David Laight <David.Laight@ACULAB.COM>
-Subject: Re: [PATCH] x86: Run checksumming in parallel accross multiple alu's
-Message-ID: <20131101092148.GB27063@gmail.com>
-References: <201310300525.r9U5Pdqo014902@ib.usersys.redhat.com>
- <20131030110214.GA10220@localhost.localdomain>
- <52710B09.6090302@redhat.com>
- <20131031183003.GC25894@hmsreliant.think-freely.org>
+	Fri, 1 Nov 2013 05:22:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131031183003.GC25894@hmsreliant.think-freely.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131101084329.GB19466@laptop.lan>
+References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
+	<1383292467-28922-2-git-send-email-yuanhan.liu@linux.intel.com>
+	<20131101084329.GB19466@laptop.lan>
+Date: Fri, 1 Nov 2013 02:22:25 -0700
+Message-ID: <CANN689HQUv=k4AiD+v3980AmgPXbtcs1HLD7Ec1y8dsOfa_emA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] mm/rmap: per anon_vma lock
+From: Michel Lespinasse <walken@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 1, 2013 at 1:43 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> AFAICT this isn't correct at all. We used to protect the vma interval
+> tree with the root lock, now we don't. All we've got left is the
+> mmap_sem, but anon_vma chains can cross address-spaces and thus we're up
+> some creek without no paddle.
 
-* Neil Horman <nhorman@tuxdriver.com> wrote:
+Yes, that was my first thought as well (though I wanted to double
+check at first).
 
-> Prefetch and simluated adcx/adox from above:
->  Performance counter stats for './test.sh' (20 runs):
-> 
->         35,704,331 L1-dcache-load-misses                                         ( +-  0.07% ) [75.00%]
->                  0 L1-dcache-prefetches                                         [75.00%]
->     19,751,409,264 cycles                    #    0.000 GHz                      ( +-  0.59% ) [75.00%]
->         34,850,056 branch-misses                                                 ( +-  1.29% ) [75.00%]
-> 
->        7.768602160 seconds time elapsed                                          ( +-  1.38% )
+I also want to point out that lately we've seen several changes sent
+out that relax locking with no accompanying explanation of why the
+relaxed locking would be safe. Please don't do that - having a lot of
+performance data is worthless if you can't explain why the new locking
+is safe. And I'm not asking to prove a negative ('lack of any possible
+races') there, but at least in this case one could dig out why the
+root anon vma locking was introduced and if they think that this
+reason doesn't apply anymore, explain why...
 
-btw., you might also want to try measuring only the basics:
-
-   -e cycles -e instructions -e branches -e branch-misses
-
-that should give you 100% in the last column and should also allow 
-you to double check whether all the PMU counts are correct: is it 
-the expected number of instructions, expected number of branches, 
-expected number of branch-misses, etc.
-
-Then you can remove branch stats and add just L1-dcache stats - and 
-still be 100% covered:
-
-   -e cycles -e instructions -e L1-dcache-loads -e L1-dcache-load-misses
-
-etc.
-
-Just so that you can trust what the PMU tells you. Prefetch counts 
-are sometimes off, they might include speculative activities, etc.
-
-Thanks,
-
-	Ingo
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
