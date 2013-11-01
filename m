@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab3KAWRT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:17:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55498 "EHLO
+	id S932187Ab3KAWRk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:17:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55493 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756405Ab3KAWI1 (ORCPT
+	with ESMTP id S1755015Ab3KAWI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:08:27 -0400
+	Fri, 1 Nov 2013 18:08:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [PATCH 3.11 52/66] dm snapshot: fix data corruption
-Date: Fri,  1 Nov 2013 15:07:28 -0700
-Message-Id: <20131101220649.098062654@linuxfoundation.org>
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.11 51/66] gpio/lynxpoint: check if the interrupt is enabled in IRQ handler
+Date: Fri,  1 Nov 2013 15:07:27 -0700
+Message-Id: <20131101220648.822147782@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
 References: <20131101220634.605745564@linuxfoundation.org>
@@ -27,88 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-commit e9c6a182649f4259db704ae15a91ac820e63b0ca upstream.
+commit 03d152d5582abc8a1c19cb107164c3724bbd4be4 upstream.
 
-This patch fixes a particular type of data corruption that has been
-encountered when loading a snapshot's metadata from disk.
+Checking LP_INT_STAT is not enough in the interrupt handler because its
+contents get updated regardless of whether the pin has interrupt enabled or
+not. This causes the driver to loop forever for GPIOs that are pulled up.
 
-When we allocate a new chunk in persistent_prepare, we increment
-ps->next_free and we make sure that it doesn't point to a metadata area
-by further incrementing it if necessary.
+Fix this by checking the interrupt enable bit for the pin as well.
 
-When we load metadata from disk on device activation, ps->next_free is
-positioned after the last used data chunk. However, if this last used
-data chunk is followed by a metadata area, ps->next_free is positioned
-erroneously to the metadata area. A newly-allocated chunk is placed at
-the same location as the metadata area, resulting in data or metadata
-corruption.
-
-This patch changes the code so that ps->next_free skips the metadata
-area when metadata are loaded in function read_exceptions.
-
-The patch also moves a piece of code from persistent_prepare_exception
-to a separate function skip_metadata to avoid code duplication.
-
-CVE-2013-4299
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-snap-persistent.c |   18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+ drivers/gpio/gpio-lynxpoint.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/md/dm-snap-persistent.c
-+++ b/drivers/md/dm-snap-persistent.c
-@@ -269,6 +269,14 @@ static chunk_t area_location(struct psto
- 	return NUM_SNAPSHOT_HDR_CHUNKS + ((ps->exceptions_per_area + 1) * area);
- }
+--- a/drivers/gpio/gpio-lynxpoint.c
++++ b/drivers/gpio/gpio-lynxpoint.c
+@@ -248,14 +248,15 @@ static void lp_gpio_irq_handler(unsigned
+ 	struct lp_gpio *lg = irq_data_get_irq_handler_data(data);
+ 	struct irq_chip *chip = irq_data_get_irq_chip(data);
+ 	u32 base, pin, mask;
+-	unsigned long reg, pending;
++	unsigned long reg, ena, pending;
+ 	unsigned virq;
  
-+static void skip_metadata(struct pstore *ps)
-+{
-+	uint32_t stride = ps->exceptions_per_area + 1;
-+	chunk_t next_free = ps->next_free;
-+	if (sector_div(next_free, stride) == NUM_SNAPSHOT_HDR_CHUNKS)
-+		ps->next_free++;
-+}
-+
- /*
-  * Read or write a metadata area.  Remembering to skip the first
-  * chunk which holds the header.
-@@ -502,6 +510,8 @@ static int read_exceptions(struct pstore
+ 	/* check from GPIO controller which pin triggered the interrupt */
+ 	for (base = 0; base < lg->chip.ngpio; base += 32) {
+ 		reg = lp_gpio_reg(&lg->chip, base, LP_INT_STAT);
++		ena = lp_gpio_reg(&lg->chip, base, LP_INT_ENABLE);
  
- 	ps->current_area--;
- 
-+	skip_metadata(ps);
-+
- 	return 0;
- }
- 
-@@ -616,8 +626,6 @@ static int persistent_prepare_exception(
- 					struct dm_exception *e)
- {
- 	struct pstore *ps = get_info(store);
--	uint32_t stride;
--	chunk_t next_free;
- 	sector_t size = get_dev_size(dm_snap_cow(store->snap)->bdev);
- 
- 	/* Is there enough room ? */
-@@ -630,10 +638,8 @@ static int persistent_prepare_exception(
- 	 * Move onto the next free pending, making sure to take
- 	 * into account the location of the metadata chunks.
- 	 */
--	stride = (ps->exceptions_per_area + 1);
--	next_free = ++ps->next_free;
--	if (sector_div(next_free, stride) == 1)
--		ps->next_free++;
-+	ps->next_free++;
-+	skip_metadata(ps);
- 
- 	atomic_inc(&ps->pending_count);
- 	return 0;
+-		while ((pending = inl(reg))) {
++		while ((pending = (inl(reg) & inl(ena)))) {
+ 			pin = __ffs(pending);
+ 			mask = BIT(pin);
+ 			/* Clear before handling so we don't lose an edge */
 
 
