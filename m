@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab3KASzH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 14:55:07 -0400
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:61606 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab3KASzF (ORCPT
+	id S1753177Ab3KAS6T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 14:58:19 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:40285 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751592Ab3KAS6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 14:55:05 -0400
+	Fri, 1 Nov 2013 14:58:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <CANN689EQ9d1BubEZ9txfWfKJEZQ5_zWvV5V_CyPCP5cRUw-oAw@mail.gmail.com>
-References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
-	<20131101080135.GB25547@gmail.com>
-	<1383328187.2653.5.camel@buesod1.americas.hpqcorp.net>
-	<CA+55aFzzdLn1xqyGobtP2yo7es+XOgt10Kr-9FRHvg-9eE3cyg@mail.gmail.com>
-	<CANN689EQ9d1BubEZ9txfWfKJEZQ5_zWvV5V_CyPCP5cRUw-oAw@mail.gmail.com>
-Date: Fri, 1 Nov 2013 11:55:03 -0700
-X-Google-Sender-Auth: J4XxV0K9Nr5o2P_-38bJciW8Xgs
-Message-ID: <CA+55aFyLPpDzgYJfXFMMGaWT4JOsSN0be_ntazjzc+GEg14V2A@mail.gmail.com>
-Subject: Re: [PATCH 0/4] per anon_vma lock and turn anon_vma rwsem lock to rwlock_t
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAFLxGvz3pCevxE43zGnrbX4MxPmwyb=9MVNpzFRpELt1+AmtrA@mail.gmail.com>
+References: <87ppqk6qvx.fsf@redhat.com>
+	<CAFLxGvz3pCevxE43zGnrbX4MxPmwyb=9MVNpzFRpELt1+AmtrA@mail.gmail.com>
+Date: Fri, 1 Nov 2013 11:58:17 -0700
+Message-ID: <CA+8MBbJefz7L-C-LnhAAXB5zf-8XoMPhESPU4yd0wnuZ_YqO1w@mail.gmail.com>
+Subject: Re: [PATCH] Make efi-pstore return a unique id
+From: Tony Luck <tony.luck@gmail.com>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Madper Xie <cxie@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux EFI <linux-efi@vger.kernel.org>,
+        =?UTF-8?B?6LCi5oiQ6aqP?= <bbboson@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 1, 2013 at 11:47 AM, Michel Lespinasse <walken@google.com> wrote:
+>> +static u64 efi_generate_id(unsigned long timestamp, unsigned int part, int count)
+
+I don't think the "efi_" prefix is needed here. For one thing the
+function is static, so
+no name space pollution worries. For another - it makes it look like
+this is some thing
+defined in EFI standard.  If "generate_id()" is too generic for your
+tastes ... then a
+"pstore_" prefix might be more appropriate.
+
+>> +{
+>> +       char id_str[64];
+>> +       u64 id = 0;
+>> +
+>> +       sprintf(id_str, "%lu%u%d", timestamp, part, count);
+>> +       if (kstrtoull(id_str, 10, &id))
+>> +               pr_warn("efi-pstore: failed to generate id\n");
+>> +       return id;
+>> +}
 >
-> Should copy Andrea on this. I talked with him during KS, and there are
-> no current in-tree users who are doing such sleeping; however there
-> are prospective users for networking (RDMA) or GPU stuff who want to
-> use this to let hardware directly copy data into user mappings.
+> This is just odd. You make a string from three ints and then a parse
+> it to a int again.
 
-Tough.
+Agreed.  I liked your ((timestamp * 100 + part) * 100 + count function much
+more than this.
 
-I spoke up the first time this came up and I'll say the same thing
-again: we're not screwing over the VM subsystem because some crazy
-user might want to do crazy and stupid things that nobody sane cares
-about.
-
-The whole "somebody might want to .." argument is just irrelevant.
-Some people want to sleep in interrupt handlers too, or while holding
-random spinlocks. Too bad. They don't get to, because doing that
-results in problems for the rest of the system.
-
-Our job in the kernel is to do the best job technically that we can.
-And sometimes that very much involves saying "No, you can't do that".
-
-We have limitations in the kernel. The stack is of limited size. You
-can't allocate arbitrarily sized memory. You must follow some very
-strict rules.
-
-If people can't handle that, then they can go cry to mommy, and go
-back to writing user mode code. In the kernel, you have to live with
-certain constraints that makes the kernel better.
-
-               Linus
+-Tony
