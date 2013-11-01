@@ -1,105 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755695Ab3KACsp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 Oct 2013 22:48:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35214 "EHLO mx2.suse.de"
+	id S1754756Ab3KAC6W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 Oct 2013 22:58:22 -0400
+Received: from mga03.intel.com ([143.182.124.21]:38589 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754612Ab3KACso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 Oct 2013 22:48:44 -0400
-Date: Fri, 1 Nov 2013 13:48:33 +1100
-From: NeilBrown <neilb@suse.de>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] regulator: check for devicetree early.
-Message-ID: <20131101134833.7070a5c5@notabene.brown>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/ph.gjBA1=nHLWLNnHdHT42u"; protocol="application/pgp-signature"
+	id S1751978Ab3KAC6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 Oct 2013 22:58:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="383116154"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>
+Subject: RE: [PATCH 0/4] ACPICA: Stable material of ACPI executer fixes for
+ linux-3.8.
+Thread-Topic: [PATCH 0/4] ACPICA: Stable material of ACPI executer fixes for
+ linux-3.8.
+Thread-Index: AQHO1dXjUZkF5USl+0y2+Rv7udewtZoOKeaAgAAIPACAAAO7gIABXvmg
+Date: Fri, 1 Nov 2013 02:58:16 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E880247A0C8@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1383181113.git.lv.zheng@intel.com>
+ <2226874.g7cLvQ5SiE@vostro.rjw.lan> <20131031120850.GA17048@kroah.com>
+ <18963273.JtsE7nd0JW@vostro.rjw.lan>
+In-Reply-To: <18963273.JtsE7nd0JW@vostro.rjw.lan>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rA12wlHw030283
 
---Sig_/ph.gjBA1=nHLWLNnHdHT42u
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+> From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
+> Sent: Thursday, October 31, 2013 8:22 PM
+> 
+> On Thursday, October 31, 2013 05:08:50 AM Greg Kroah-Hartman wrote:
+> > On Thu, Oct 31, 2013 at 12:39:21PM +0100, Rafael J. Wysocki wrote:
+> > > On Thursday, October 31, 2013 09:07:40 AM Lv Zheng wrote:
+> > > > There are bug-fixes for AML interpreter upstreamed, fixing some serious
+> > > > issues found in recent platforms.  These fixes make Linux AML interpreter
+> > > > more ACPI 2.0 ASL concept compliant.  Further AML interpreter fixes should
+> > > > be based on such improvements, thus they are good materials for stable.
+> > > >
+> > > > This patch set can be safely applied to linux-3.8:
+> > > > commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200 upstream.
+> > > >
+> > > > The patch set has passed build/boot tests on the following machines:
+> > > >   Dell Inspiron Mini 1010 (i386)
+> > > >   HP Compaq 8200 Elite SFF PC (x86-64)
+> > > >
+> > > > Bob Moore (4):
+> > > >   ACPICA: Interpreter: Fix Store() when implicit conversion is not
+> > > >     possible.
+> > > >   ACPICA: DeRefOf operator: Update to fully resolve FieldUnit and
+> > > >     BufferField refs.
+> > > >   ACPICA: Return error if DerefOf resolves to a null package element.
+> > > >   ACPICA: Fix for a Store->ArgX when ArgX contains a reference to a
+> > > >     field.
+> > >
+> > > Hi Greg,
+> > >
+> > > Please take patches [1-4/4] for stable.
+> >
+> > "Which" stable tree?
+> >
+> > I don't do 3.8, it's long been end-of-life, although one company is
+> > trying to keep it alive, but that's not me.
+> >
+> > I'm only handling 3.4, 3.10, and 3.11 stable trees right now, which
+> > one(s) should these be applied to?
+> 
+> 3.10.x and 3.11.x then.
+> 
+> Lv, do the original mainline commits apply to these kernels?
+> 
+> Rafael
 
+Hi, Rafael and Greg
 
-The behaviour of regulator core with respect to device-tree and
-CONFIG_REGULATOR_DUMMY is inconsistent.
+I checked the back port dependencies since v3.8:
+1. [PATCH 1] belongs to v3.9.
+2. [PATCH 4] includes an empty line belonging to a coding style fix affecting this series (between [PATCH 3] and [PATCH 4]).
+Thus,
+1. For v3.10:
+    [PATCH 1]: It's already in the repo, so please drop it.
+    [PATCH 2-4]: They can be used directly as 3.10.x stable materials.
+2. For v3.11:
+    [PATCH 1]: It's already in the repo, so please drop it.
+    [PATCH 2-3]: They can be used directly as 3.11.x stable materials.
+    [PATCH 4]: The original commit from Linus' tree should be used instead.
 
-If there is no device-tree, then a board file can call
-regulator_has_full_constraints() and this will negate the effect of
-CONFIG_REGULATOR_DUMMY.
+ I checked the commit log since v3.4.
+ There is no functional change done to the AML executer between v3.4 and v3.8.
+ The problem is there is a coding style fix affecting this series (between v3.4 and [PATCH 1]).
+ I generated the following diff block before applying [PATCH 1], and obtained a successful build/boot to a v3.4 kernel with these patches applied.
+Thus,
+1. For v3.4:
+    [PATCH 1]: You can merge this diff block to [PATCH 1] or simply modify the [PATCH 1] by manually adding this white space.
+    [PATCH 2-4]: They can be used directly as 3.4.x stable materials.
 
-If a device-tree is given, regulator_has_full_constraints() is called
-automatically, but too late to effectively negate the effect of
-CONFIG_REGULATOR_DUMMY.
+---
+Index: linux-acpica/drivers/acpi/acpica/exstore.c
+===================================================================
+--- linux-acpica.orig/drivers/acpi/acpica/exstore.c
++++ linux-acpica/drivers/acpi/acpica/exstore.c
+@@ -491,7 +491,7 @@ acpi_ex_store_object_to_node(union acpi_
+ 				  acpi_ut_get_object_type_name(source_desc),
+ 				  source_desc, node));
+ 
+-		/* No conversions for all other types.  Just attach the source object */
++		/* No conversions for all other types. Just attach the source object */
+ 
+ 		status = acpi_ns_attach_object(node, source_desc,
+ 					       source_desc->common.type);
+---
 
-So it makes sense for regulator/core to check for devicetree earlier and ca=
-ll
-regulator_has_full_constraints() before any call to regulator_get() can trip
-up on CONFIG_REGULATOR_DUMMY.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index a01b8b3b70ca..8cd457ae66bc 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -3748,13 +3748,8 @@ static int __init regulator_init(void)
- /* init early to allow our consumers to complete system booting */
- core_initcall(regulator_init);
-=20
--static int __init regulator_init_complete(void)
-+static int __init regulator_init_early(void)
- {
--	struct regulator_dev *rdev;
--	struct regulator_ops *ops;
--	struct regulation_constraints *c;
--	int enabled, ret;
--
- 	/*
- 	 * Since DT doesn't provide an idiomatic mechanism for
- 	 * enabling full constraints and since it's much more natural
-@@ -3763,6 +3758,16 @@ static int __init regulator_init_complete(void)
- 	 */
- 	if (of_have_populated_dt())
- 		has_full_constraints =3D true;
-+	return 0;
-+}
-+early_initcall(regulator_init_early);
-+
-+static int __init regulator_init_complete(void)
-+{
-+	struct regulator_dev *rdev;
-+	struct regulator_ops *ops;
-+	struct regulation_constraints *c;
-+	int enabled, ret;
-=20
- 	mutex_lock(&regulator_list_mutex);
-=20
-
---Sig_/ph.gjBA1=nHLWLNnHdHT42u
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUnMWgTnsnt1WYoG5AQKr/A//Xx7TcwHQPsbvZSDPLmYj8M3WId1P29Vu
-YY/0LNM+TRCj3yUKHl0gMo7bwceV16dibb+H0UrAGExV7+1C4UhXKxFwWmru7r9d
-uUUsK40ut3BsTgVcGBjeG3HXAxRGpkyWugcv3Qgys+mRYTPOQ80HRbY3LeX0IyIZ
-egLQzhdKgz0hzrohaNiNe+0m/Qs8qC/8/KbuMIuphpUfBS4Fr1FzOqzCF1q3+Eox
-oRBiYcpy2ABYWBnhscGAp2F2ImAk7oQCeKqq5NRM/Xe12xiJGYpTbhS70+Koi1JO
-wOpp9y95Tuvvblr5ldbFE8GsffnJlbl5yE3v63IfThkAbIWpvHWwaaQ4mxknqlsC
-+PZjlZm9SDZZNdVD//VXGbnabMDApwLagBUAjFDe2xkdy6drVACmdV/RXfnWV8/W
-xSUIPGwFvzzBZMcwpxGuF3OqItR2t9BNvQjvW8K0S692T5uacfbxwKomUDw4ohV0
-T7zhiv1hiA7cbifAENrsX7RKDU42uG6Vx2+CE10QxcPvQTRSq3B6RoQ/VWPKqCvQ
-ukD6OcBoO7kTAsQxepLQastSc22s75R3bvnb+jTbhaq2NiFLrqhoaxf7H5hBZdmw
-uf/HKyZ2VsdJXhEJtDfmHM+b3IebnfLmIGmm5LiF4FPWztdqJsEYR+go2fpT95jp
-QwnlzuVGMfc=
-=Lsk0
------END PGP SIGNATURE-----
-
---Sig_/ph.gjBA1=nHLWLNnHdHT42u--
+Thanks and best regards
+-Lv
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
