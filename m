@@ -1,43 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab3KAWYr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 18:24:47 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:45170 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756215Ab3KAWYo (ORCPT
+	id S1756412Ab3KAWZl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 18:25:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55323 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756201Ab3KAWH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 18:24:44 -0400
-Message-ID: <52742A2A.9080008@gmail.com>
-Date: Fri, 01 Nov 2013 17:24:42 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: linux-next: manual merge of the dt-rh tree with the powerpc tree
-References: <20131101162002.4dd386299ec42e8d8d032be2@canb.auug.org.au>
-In-Reply-To: <20131101162002.4dd386299ec42e8d8d032be2@canb.auug.org.au>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Nov 2013 18:07:58 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.11 17/66] net: secure_seq: Fix warning when CONFIG_IPV6 and CONFIG_INET are not selected
+Date: Fri,  1 Nov 2013 15:06:53 -0700
+Message-Id: <20131101220639.501791502@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20131101220634.605745564@linuxfoundation.org>
+References: <20131101220634.605745564@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2013 12:20 AM, Stephen Rothwell wrote:
-> Hi Rob,
-> 
-> Today's linux-next merge of the dt-rh tree got a conflict in 
-> arch/powerpc/include/asm/prom.h between commit a3e31b458844 ("of:
-> Move definition of of_find_next_cache_node into common code") from
-> the powerpc tree and commit 0c3f061c195c ("of: implement
-> of_node_to_nid as a weak function") from the dt-rh tree.
+3.11-stable review patch.  If anyone has any objections, please let me know.
 
-Ben, I can pick these 2 patches up instead if you want to drop them
-and avoid the conflict.
+------------------
 
-Rob
+From: Fabio Estevam <fabio.estevam@freescale.com>
+
+[ Upstream commit cb03db9d0e964568407fb08ea46cc2b6b7f67587 ]
+
+net_secret() is only used when CONFIG_IPV6 or CONFIG_INET are selected.
+
+Building a defconfig with both of these symbols unselected (Using the ARM
+at91sam9rl_defconfig, for example) leads to the following build warning:
+
+$ make at91sam9rl_defconfig
+#
+# configuration written to .config
+#
+
+$ make net/core/secure_seq.o
+scripts/kconfig/conf --silentoldconfig Kconfig
+  CHK     include/config/kernel.release
+  CHK     include/generated/uapi/linux/version.h
+  CHK     include/generated/utsrelease.h
+make[1]: `include/generated/mach-types.h' is up to date.
+  CALL    scripts/checksyscalls.sh
+  CC      net/core/secure_seq.o
+net/core/secure_seq.c:17:13: warning: 'net_secret_init' defined but not used [-Wunused-function]
+
+Fix this warning by protecting the definition of net_secret() with these
+symbols.
+
+Reported-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/core/secure_seq.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/net/core/secure_seq.c
++++ b/net/core/secure_seq.c
+@@ -10,6 +10,7 @@
+ 
+ #include <net/secure_seq.h>
+ 
++#if IS_ENABLED(CONFIG_IPV6) || IS_ENABLED(CONFIG_INET)
+ #define NET_SECRET_SIZE (MD5_MESSAGE_BYTES / 4)
+ 
+ static u32 net_secret[NET_SECRET_SIZE] ____cacheline_aligned;
+@@ -29,6 +30,7 @@ static void net_secret_init(void)
+ 		cmpxchg(&net_secret[--i], 0, tmp);
+ 	}
+ }
++#endif
+ 
+ #ifdef CONFIG_INET
+ static u32 seq_scale(u32 seq)
+
 
