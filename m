@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab3KBUTl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Nov 2013 16:19:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56714 "EHLO mx1.redhat.com"
+	id S1754501Ab3KBUWg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Nov 2013 16:22:36 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39263 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751738Ab3KBUTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Nov 2013 16:19:39 -0400
-Date: Sat, 2 Nov 2013 22:22:27 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, edumazet@google.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Petr Matousek <pmatouse@redhat.com>,
-        Daniel Borkmann <dborkman@redhat.com>
-Subject: Re: [PATCH net] net: flow_dissector: fail on evil iph->ihl
-Message-ID: <20131102202227.GA31695@redhat.com>
-References: <1383289270-18952-1-git-send-email-jasowang@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383289270-18952-1-git-send-email-jasowang@redhat.com>
+	id S1752093Ab3KBUWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Nov 2013 16:22:35 -0400
+Message-ID: <1383423730.4776.16.camel@pasglop>
+Subject: Re: Strange location and name for platform  devices when
+ device-tree is used.
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: NeilBrown <neilb@suse.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Date: Sun, 03 Nov 2013 07:22:10 +1100
+In-Reply-To: <20131102155824.GG23938@kroah.com>
+References: <20131101145925.66e22f73@notabene.brown>
+	 <1383279744.28909.26.camel@pasglop> <1383280054.28909.30.camel@pasglop>
+	 <20131101160329.37f3707b@notabene.brown>
+	 <1383282516.28909.36.camel@pasglop> <20131101204749.GA19662@kroah.com>
+	 <1383347399.28909.46.camel@pasglop> <20131102155824.GG23938@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 01, 2013 at 03:01:10PM +0800, Jason Wang wrote:
-> We don't validate iph->ihl which may lead a dead loop if we meet a IPIP
-> skb whose iph->ihl is zero. Fix this by failing immediately when iph->ihl
-> is evil (less than 5).
-> 
-> This issue were introduced by commit ec5efe7946280d1e84603389a1030ccec0a767ae
-> (rps: support IPIP encapsulation).
-> 
-> Cc: Eric Dumazet <edumazet@google.com>
-> Cc: Petr Matousek <pmatouse@redhat.com>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: Daniel Borkmann <dborkman@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+On Sat, 2013-11-02 at 08:58 -0700, Greg Kroah-Hartman wrote:
+> Just loop through all the platform devices before registering it to
+> determine if you need to do this, the platform code can do this just
+> fine.  If you try to register a duplicate name with the driver core,
+> odds are it will complain loudly, so don't do that.
+
+But that loop + registration is racy ... oh well, we might do something
+better with Neil's idea of labels instead.
+
+Ben.
 
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-
-> ---
-> This patch is needed for stable.
-> ---
->  net/core/flow_dissector.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/net/core/flow_dissector.c b/net/core/flow_dissector.c
-> index 8d7d0dd..143b6fd 100644
-> --- a/net/core/flow_dissector.c
-> +++ b/net/core/flow_dissector.c
-> @@ -40,7 +40,7 @@ again:
->  		struct iphdr _iph;
->  ip:
->  		iph = skb_header_pointer(skb, nhoff, sizeof(_iph), &_iph);
-> -		if (!iph)
-> +		if (!iph || iph->ihl < 5)
->  			return false;
->  
->  		if (ip_is_fragment(iph))
-> -- 
-> 1.8.1.2
