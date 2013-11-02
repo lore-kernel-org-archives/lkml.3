@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab3KBPPK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Nov 2013 11:15:10 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:37140 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab3KBPPH (ORCPT
+	id S1752400Ab3KBPj6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Nov 2013 11:39:58 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:60621 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab3KBPjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Nov 2013 11:15:07 -0400
-X-Originating-IP: 50.43.14.201
-Date: Sat, 2 Nov 2013 08:15:01 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <nicolas.palix@imag.fr>, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org, cocci@systeme.lip6.fr
-Subject: [PATCHv2] coccinelle: Add a script to find unnecessary ifs with no
- body
-Message-ID: <20131102151500.GW15704@leaf>
-References: <20131102143236.GA18084@leaf>
- <alpine.DEB.2.02.1311021550330.2261@hadrien>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1311021550330.2261@hadrien>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 2 Nov 2013 11:39:53 -0400
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: Sekhar Nori <nsekhar@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
+        devicetree@vger.kernel.org
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alex Elder <alex.elder@linaro.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-gpio@vger.kernel.org, Lad Prabhakar <prabhakar.csengg@gmail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [PATCH v4 0/6] gpio: daVinci: Fixes and feature enhancement
+Date: Sat,  2 Nov 2013 21:09:29 +0530
+Message-Id: <1383406775-14902-1-git-send-email-prabhakar.csenng@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This script finds code like this, with an unnecessary if:
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-if (foo) {}
+Patches 1, 2 and 3 are newly added. This patch series does the following
+a> Fixes check for offset for unbanked gpios.
+b> Ports the driver to use irqdomain.
+c> Adds dt binding support for gpio-davinci.
+d> Adds DA850 dt support goio.
 
-Provides report mode only, since patching often eliminates conditionals
-that contain TODO comments or similar.
+Changes for v4:
+1: Added irqdomain support for the driver.
+2: Dropped the ACK's.
+3: Removed unnecessary DT property.
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
+This patch series has been tested on DA850 for GPIO7_4
+(ie switch 8 on SW7.). Patches can be found at [1].
 
-v2: Drop patch mode.
+[1] http://git.linuxtv.org/mhadli/v4l-dvb-davinci_devices.git/shortlog/refs/heads/davinci_gpio
 
- scripts/coccinelle/misc/unnecessary-if.cocci | 23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
- create mode 100644 scripts/coccinelle/misc/unnecessary-if.cocci
+KV Sujith (3):
+  gpio: davinci: add OF support
+  ARM: davinci: da850: add GPIO DT node
+  ARM: davinci: da850 evm: add GPIO pinumux entries DT node
 
-diff --git a/scripts/coccinelle/misc/unnecessary-if.cocci b/scripts/coccinelle/misc/unnecessary-if.cocci
-new file mode 100644
-index 0000000..28ac895
---- /dev/null
-+++ b/scripts/coccinelle/misc/unnecessary-if.cocci
-@@ -0,0 +1,23 @@
-+/// Find unnecessary ifs with no statements.
-+//
-+// Report mode only, since patch mode often deletes ifs that contain TODO
-+// comments.
-+//
-+// Confidence: High
-+// Options: --no-includes --include-headers
-+
-+virtual report
-+virtual context
-+
-+@r depends on report || context@
-+expression E;
-+position p;
-+@@
-+if@p (E) {}
-+
-+@script:python depends on report@
-+p << r.p;
-+@@
-+
-+msg = "WARNING: Unnecessary if with no body."
-+coccilib.report.print_report(p[0], msg)
+Lad, Prabhakar (3):
+  gpio: davinci: Fixed a check for unbanked gpio
+  gpio: davinci: remove unnecessary printk
+  gpio: davinci: use irqdomain
+
+ .../devicetree/bindings/gpio/gpio-davinci.txt      |   32 ++++++
+ arch/arm/boot/dts/da850-evm.dts                    |   20 ++++
+ arch/arm/boot/dts/da850.dtsi                       |   15 +++
+ arch/arm/mach-davinci/da830.c                      |    1 -
+ arch/arm/mach-davinci/da850.c                      |    1 -
+ arch/arm/mach-davinci/dm355.c                      |    1 -
+ arch/arm/mach-davinci/dm365.c                      |    1 -
+ arch/arm/mach-davinci/dm644x.c                     |    1 -
+ arch/arm/mach-davinci/dm646x.c                     |    1 -
+ drivers/gpio/gpio-davinci.c                        |  111 +++++++++++++++-----
+ include/linux/platform_data/gpio-davinci.h         |    3 +-
+ 11 files changed, 153 insertions(+), 34 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-davinci.txt
+
 -- 
-1.8.4.2
+1.7.9.5
 
