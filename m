@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab3KBDdn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 23:33:43 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:51194 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab3KBDdm (ORCPT
+	id S1750902Ab3KBEQu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Nov 2013 00:16:50 -0400
+Received: from forward12.mail.yandex.net ([95.108.130.94]:48181 "EHLO
+	forward12.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab3KBEQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 23:33:42 -0400
-Message-ID: <52747280.7040708@linaro.org>
-Date: Fri, 01 Nov 2013 23:33:20 -0400
-From: David Long <dave.long@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Sat, 2 Nov 2013 00:16:49 -0400
+X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Nov 2013 00:16:49 EDT
+From: =?koi8-r?B?8tXT1MHGwSDk1sHN1dLByM3F1M/X?= <zbr@ioremap.net>
+Envelope-From: drustafa@yandex.ru
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20131101123041.d08adc9739cf6e733d822770@linux-foundation.org>
+References: <5083d6c8452b765cb33acdf03fa9b20b1d15c452.1382788496.git.mina86@mina86.com>
+	<20131030155938.0f5416fe3c5c2cbd3f9cd319@linux-foundation.org>
+	<xa1teh71iz3a.fsf@mina86.com>
+	<212981383321699@web5m.yandex.ru> <20131101123041.d08adc9739cf6e733d822770@linux-foundation.org>
+Subject: Re: [PATCH] drivers: w1: make w1_slave::flags long to avoid casts
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 05/13] uprobes: add arch write opcode hook
-References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-6-git-send-email-dave.long@linaro.org> <20131019165051.GC7837@redhat.com> <5268137F.3030809@linaro.org> <20131028194914.GA15103@redhat.com> <20131029195920.GA4538@redhat.com>
-In-Reply-To: <20131029195920.GA4538@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-Id: <7061383365433@web15j.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Sat, 02 Nov 2013 08:10:33 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/13 15:59, Oleg Nesterov wrote:
-> On 10/28, Oleg Nesterov wrote:
->>
->> Yes, yes, sorry for confusion. What I actually tried to suggest is
->> something like the trivial patch below.
->>
->> Then arm can do:
->>
->> 	uprobe_opcode_t arch_uprobe_swbp_insn(struct arch_uprobe *auprobe)
->> 	{
->> 		return __opcode_to_mem_arm(auprobe->bpinsn);
->> 	}
->>
->> No?
->>
->>> I notice there don't seem to be any alternative set_swbp functions
->>> in the (rc6) kernel tree
->>
->> Yes... I think we should simply make it "static". And set_orig_insn()
->> too.
+Hi
+
+01.11.2013, 23:30, "Andrew Morton" <akpm@linux-foundation.org>:
+
+> set_bit() operates on longs. šSo if we do
 >
-> Or. arm can actually reimplement set_swbp(). This doesn't mean the
-> duplication of write_opcode() code, we can simply export this helper.
+> struct foo {
+> ššššššššu32 a;
+> ššššššššu32 b;
+> } f;
 >
+> šššššššš...
+> ššššššššset_bit(0, (long *)&f.a);
+> šššššššš...
+>
+> then we'll scribble on f.b on a big-endian 64-bit machine.
 
-That actually looks to me like the cleanest approach.  I have changed 
-the static write_opcode() to a global uprobe_write_opcode(), and now 
-call it from an arm set_swbp().
-
-Please do *not* make set_swbp() (and set_orig_insn()) static's.  It 
-looks like we now have a use for at least one of them.
-
-Thanks,
--dl
-
+Argh, why would we just don't do that? Its in-memory field, it can be anything,
+I wouldn't be surprised if it even can be non-atomic because of proper locks already
+being held
