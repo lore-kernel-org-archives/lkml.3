@@ -1,90 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab3KBCvM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 22:51:12 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:48486 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753759Ab3KBCvK (ORCPT
+	id S1753935Ab3KBDPT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 23:15:19 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:1742 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab3KBDPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 22:51:10 -0400
-Message-ID: <5274688D.7050902@oracle.com>
-Date: Sat, 02 Nov 2013 10:50:53 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Olav Haugan <ohaugan@codeaurora.org>
-CC: Minchan Kim <minchan@kernel.org>, sjenning@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: zram/zsmalloc issues in very low memory conditions
-References: <526844E6.1080307@codeaurora.org> <20131025091924.GA4970@gmail.com> <52744E8F.3040405@codeaurora.org>
-In-Reply-To: <52744E8F.3040405@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 1 Nov 2013 23:15:17 -0400
+Message-ID: <1383362113.2444.5.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 0/4] per anon_vma lock and turn anon_vma rwsem lock to
+ rwlock_t
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Tim Chen <tim.c.chen@linux.intel.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Michel Lespinasse <walken@google.com>
+Date: Fri, 01 Nov 2013 20:15:13 -0700
+In-Reply-To: <20131101101643.GC30123@yliu-dev.sh.intel.com>
+References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
+	 <20131101080135.GB25547@gmail.com>
+	 <20131101081159.GB12829@yliu-dev.sh.intel.com>
+	 <20131101082146.GA27021@gmail.com>
+	 <20131101101643.GC30123@yliu-dev.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Olav,
+On Fri, 2013-11-01 at 18:16 +0800, Yuanhan Liu wrote:
+> On Fri, Nov 01, 2013 at 09:21:46AM +0100, Ingo Molnar wrote:
+> > 
+> > * Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
+> > 
+> > > > Btw., another _really_ interesting comparison would be against 
+> > > > the latest rwsem patches. Mind doing such a comparison?
+> > > 
+> > > Sure. Where can I get it? Are they on some git tree?
+> > 
+> > I've Cc:-ed Tim Chen who might be able to point you to the latest 
+> > version.
+> > 
+> > The last on-lkml submission was in this thread:
+> > 
+> >   Subject: [PATCH v8 0/9] rwsem performance optimizations
+> > 
+> 
+> Thanks.
+> 
+> I queued bunchs of tests about one hour ago, and already got some
+> results(If necessary, I can add more data tomorrow when those tests are
+> finished):
 
-On 11/02/2013 08:59 AM, Olav Haugan wrote:
+What kind of system are you using to run these workloads on?
 
 > 
-> I tried the above suggestion but it does not seem to have any noticeable
-> impact. The system is still trying to swap out at a very high rate after
-> zram reported failure to swap out. The error logging is actually so much
-> that my system crashed due to excessive logging (we have a watchdog that
-> is not getting pet because the kernel is busy logging kernel messages).
+> 
+>                v3.12-rc7      fe001e3de090e179f95d  
+> ------------------------  ------------------------  
+>                                 -9.3%               brickland1/micro/aim7/shared
+>                                 +4.3%               lkp-ib03/micro/aim7/fork_test
+>                                 +2.2%               lkp-ib03/micro/aim7/shared
+>                                 -2.6%               TOTAL aim7.2000.jobs-per-min
 > 
 
-I have a question that why the low memory killer didn't get triggered in
-this situation?
-Is it possible to set the LMK a bit more aggressive?
+Sorry if I'm missing something, but could you elaborate more on what
+these percentages represent? Are they anon vma rwsem + optimistic
+spinning patches vs anon vma rwlock?
 
-> There isn't anything that can be set to tell the fs layer to back off
-> completely for a while (congestion control)?
-> 
+Also, I see your running aim7, you might be interested in some of the
+results I found when trying out Ingo's rwlock conversion patch on a
+largish 80 core system: https://lkml.org/lkml/2013/9/29/280
 
-The other way I think might fix your issue is the same as your mentioned
-in your previous email.
-Set the congested bit for swap device also.
-Like:
+Thanks,
+Davidlohr
 
-diff --git a/drivers/staging/zram/zram_drv.c
-b/drivers/staging/zram/zram_drv.c
-index 91d94b5..c4fc63e 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -474,6 +474,7 @@ static int zram_bvec_write(struct zram *zram, struct
-bio_vec *bvec, u32 index,
-        if (!handle) {
-                pr_info("Error allocating memory for compressed page:
-%u, size=%zu\n",
-                        index, clen);
-+               blk_set_queue_congested(zram->disk->queue, BLK_RW_ASYNC);
-                ret = -ENOMEM;
-                goto out;
-        }
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 8ed1b77..1c790ee 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -394,8 +394,6 @@ static inline int is_page_cache_freeable(struct page
-*page)
- static int may_write_to_queue(struct backing_dev_info *bdi,
-                              struct scan_control *sc)
- {
--       if (current->flags & PF_SWAPWRITE)
--               return 1;
-
---------------------------------------------------------------
-
-For the update of the congested state of zram, I think you can clear it
-from use space eg. after LMK triggered and reclaimed some memory.
-
-Of course this depends on zram driver to export a sysfs node like
-"/sys/block/zram0/clear_congested".
-
--- 
-Regards,
--Bob
