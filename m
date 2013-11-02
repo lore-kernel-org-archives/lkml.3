@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab3KBBEV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 21:04:21 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:34064 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438Ab3KBBEU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 21:04:20 -0400
+	id S1753619Ab3KBBO4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 21:14:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41270 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751894Ab3KBBOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Nov 2013 21:14:55 -0400
+Date: Fri, 1 Nov 2013 23:14:33 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Greg Edwards <gedwards@ddn.com>
+Cc: kvm@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: IOMMU: hva align mapping page size
+Message-ID: <20131102011433.GA30381@amt.cnet>
+References: <20131101160855.GB5052@psuche>
 MIME-Version: 1.0
-In-Reply-To: <1383343739-23080-3-git-send-email-sboyd@codeaurora.org>
-References: <1383343739-23080-1-git-send-email-sboyd@codeaurora.org>
-	<1383343739-23080-3-git-send-email-sboyd@codeaurora.org>
-Date: Fri, 1 Nov 2013 20:04:19 -0500
-Message-ID: <CAL_JsqLObXEWJJ=SuifTjpPz9qTW0n43fyQNA-vjLNeLy-7-XA@mail.gmail.com>
-Subject: Re: [PATCH 02/11] devicetree: bindings: Document Qualcomm cpus and enable-method
-From: Rob Herring <robherring2@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        David Brown <davidb@codeaurora.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131101160855.GB5052@psuche>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 1, 2013 at 5:08 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> From: Rohit Vaswani <rvaswani@codeaurora.org>
->
-> Scorpion and Krait are Qualcomm cpus. These cpus don't use the
-> spin-table enable-method. Instead they rely on mmio register
-> accesses to enable power and clocks to bring CPUs out of reset.
->
-> Cc: <devicetree@vger.kernel.org>
-> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
-> [sboyd: Split off into separate patch, renamed method to
-> qcom,mmio]
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+On Fri, Nov 01, 2013 at 10:08:55AM -0600, Greg Edwards wrote:
+> When determining the page size we could use to map with the IOMMU, the
+> page size should be aligned with the hva, not the gfn.  The gfn may not
+> reflect the real alignment within the hugetlbfs file.
+> 
+> Most of the time, this works fine.  However, if the hugetlbfs file is
+> backed by non-contiguous huge pages, a multi-huge page memslot starts at
+> an unaligned offset within the hugetlbfs file, and the gfn is aligned
+> with respect to the huge page size, kvm_host_page_size() will return the
+> huge page size and we will use that to map with the IOMMU.
+> 
+> When we later unpin that same memslot, the IOMMU returns the unmap size
+> as the huge page size, and we happily unpin that many pfns in
+> monotonically increasing order, not realizing we are spanning
+> non-contiguous huge pages and partially unpin the wrong huge page.
+> 
+> Instead, ensure the IOMMU mapping page size is aligned with the hva
+> corresponding to the gfn, which does reflect the alignment within the
+> hugetlbfs file.
+> 
+> Signed-off-by: Greg Edwards <gedwards@ddn.com>
+> Cc: stable@vger.kernel.org
 > ---
->
-> This slightly conflicts with my krait EDAC series.
->
->  Documentation/devicetree/bindings/arm/cpus.txt | 3 +++
->  1 file changed, 3 insertions(+)
->
-> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
-> index 37258f9..e2969fa2 100644
-> --- a/Documentation/devicetree/bindings/arm/cpus.txt
-> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
-> @@ -44,6 +44,8 @@ For the ARM architecture every CPU node must contain the following properties:
->                 "marvell,mohawk"
->                 "marvell,xsc3"
->                 "marvell,xscale"
-> +               "qcom,scorpion"
-> +               "qcom,krait"
->
->  And the following optional properties:
->
-> @@ -52,6 +54,7 @@ And the following optional properties:
->                  different types of cpus.
->                  This should be one of:
->                  "spin-table"
-> +                "qcom,mmio"
+> This resolves the bug previously reported (and misdiagnosed) here:
+> 
+>  http://www.spinics.net/lists/kvm/msg97599.html
+> 
+>  virt/kvm/iommu.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+> index 72a130b..0e2ff32 100644
+> --- a/virt/kvm/iommu.c
+> +++ b/virt/kvm/iommu.c
+> @@ -99,8 +99,8 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
+>  		while ((gfn + (page_size >> PAGE_SHIFT)) > end_gfn)
+>  			page_size >>= 1;
+>  
+> -		/* Make sure gfn is aligned to the page size we want to map */
+> -		while ((gfn << PAGE_SHIFT) & (page_size - 1))
+> +		/* Make sure hva is aligned to the page size we want to map */
+> +		while (__gfn_to_hva_memslot(slot, gfn) & (page_size - 1))
+>  			page_size >>= 1;
 
-Not exactly specific. How would you handle variations in the enable
-method? The mmio method to enable is tied to the core type or SOC
-type?
+gfn should be aligned to page size as well (IOMMU requirement), so don't
+drop that check.
 
-Rob
