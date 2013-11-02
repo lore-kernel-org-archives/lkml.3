@@ -1,115 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab3KBNwg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Nov 2013 09:52:36 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:13513 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311Ab3KBNsX (ORCPT
+	id S1753260Ab3KBNsU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Nov 2013 09:48:20 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:62293 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753048Ab3KBNsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Nov 2013 09:48:23 -0400
-X-Spam-Score: -100.9
-Message-ID: <52750237.5060409@asianux.com>
-Date: Sat, 02 Nov 2013 21:46:31 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs/befs/linuxvfs.c: need signed cast for variable 'block'
-References: <5271C5E5.6080606@asianux.com> <CAGXu5jLMU0+VkJ6N3NTKbEtL+9FwF2gMOTU86-GH6SSXQ0rc0w@mail.gmail.com> <20131031190608.GH13318@ZenIV.linux.org.uk> <CAGXu5jJkXj975rbpJo8pTLakPLLpVVse+ecxwQ7Ds2x-ARAOxQ@mail.gmail.com> <20131031204558.GA30290@kroah.com> <527314D5.7090004@asianux.com>
-In-Reply-To: <527314D5.7090004@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Sat, 2 Nov 2013 09:48:13 -0400
+From: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
+To: davem@davemloft.net, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
+        linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, IvDoorn@gmail.com, sbhatewara@vmware.com,
+        samuel@sortiz.org, chas@cmf.nrl.navy.mil, roland@kernel.org,
+        isdn@linux-pingi.de, jcliburn@gmail.com, benve@cisco.com,
+        ssujith@cisco.com, jeffrey.t.kirsher@intel.com,
+        jesse.brandeburg@intel.com, shahed.shaikh@qlogic.com, joe@perches.com,
+        apw@canonical.com
+Cc: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
+Subject: [PATCH net-next 02/13] driver: net: remove unnecessary skb NULL check before calling dev_kfree_skb_irq
+Date: Sat,  2 Nov 2013 19:17:43 +0530
+Message-Id: <1383400074-30555-3-git-send-email-govindarajulu90@gmail.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1383400074-30555-1-git-send-email-govindarajulu90@gmail.com>
+References: <1383400074-30555-1-git-send-email-govindarajulu90@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2013 10:41 AM, Chen Gang wrote:
-> On 11/01/2013 04:45 AM, Greg KH wrote:
->> On Thu, Oct 31, 2013 at 12:08:33PM -0700, Kees Cook wrote:
->>> On Thu, Oct 31, 2013 at 12:06 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->>>> On Thu, Oct 31, 2013 at 09:53:59AM -0700, Kees Cook wrote:
->>>>
->>>>> If block (type sector_t) is unsigned, we shouldn't cast it signed.
->>>>> This entire code path should be removed. What is BEFS's expected
->>>>> maximum block size? (Looks like even befs_blocknr_t is u64, so nothing
->>>>> seems trivially in danger of wrapping.) I would also note that all the
->>>>> format strings are wrong too (%ld instead of %lu).
->>>>
->>>> FWIW, this
->>>>         res = befs_fblock2brun(sb, ds, block, &run);
->>>>         if (res != BEFS_OK) {
->>>>                 befs_error(sb,
->>>>                            "<--- befs_get_block() for inode %lu, block "
->>>>                            "%ld ERROR", inode->i_ino, block);
->>>>                 return -EFBIG;
->>>>         }
->>>> also looks wrong - ioctl(..., FIBMAP, ...) shouldn't be able to spew
->>>> printks on a valid fs and hitting it with block number greater than
->>>> file length will, AFAICS, trigger that.
->>>>
->>>> I agree that this code needs fixing, but just making gcc STFU about the
->>>> comparison would only serve to hide the problem.  Anybody familiar with
->>>> befs or willing to learn it?
->>>
->>> Agreed. MAINTAINERS shows it as orphaned. Perhaps it should be moved
->>> into staging?
->>
->> Only if we want to delete the thing.  I'll be glad to take it there, and
->> remove it in 2 releases and then if anyone complains, we can add it back
->> easily.  Just let me know.
->>
-> 
-> Excuse me, I am not quite familiar with BEFS, I guess your meaning is:
-> 
->   "if it is no further more discussion (e.g. within 1 week, no members reply), you will remove it (take it to "drivers/staging" sub-directory)".
-> 
+dev_kfree_skb_irq is protected from NULL. No need to check for NULL
+while calling this function.
 
-Oh, for me, it is not suitable to move a file system sub-directory to
-"drivers/*/" sub-directory. And I can not find any sub-directory like
-'staging' under "fs" sub-directory, either.
+Signed-off-by: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
+---
+ drivers/net/ethernet/amd/ni65.c                   |  6 ++----
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c   | 10 ++++------
+ drivers/net/ethernet/atheros/atl1e/atl1e_main.c   |  6 ++----
+ drivers/net/ethernet/atheros/atlx/atl1.c          |  6 ++----
+ drivers/net/ethernet/icplus/ipg.c                 |  6 ++----
+ drivers/net/ethernet/intel/e1000e/netdev.c        |  3 +--
+ drivers/net/ethernet/marvell/pxa168_eth.c         |  3 +--
+ drivers/net/ethernet/xilinx/ll_temac_main.c       |  3 +--
+ drivers/net/ethernet/xilinx/xilinx_axienet_main.c |  6 ++----
+ drivers/net/hamradio/scc.c                        | 10 +++-------
+ drivers/net/vmxnet3/vmxnet3_drv.c                 |  3 +--
+ drivers/net/wireless/ath/ar5523/ar5523.c          |  6 ++----
+ 12 files changed, 23 insertions(+), 45 deletions(-)
 
-Do we have any sub-directory like "staging" in "fs" sub-directory? if
-no, do we have to create it or have to use another ways instead of?
-
-
-After reference the "drivers/staging" explanation (list below), we know
-it is only for drivers (not fs).
-
-menuconfig STAGING
-        bool "Staging drivers"
-        default n
-        ---help---
-          This option allows you to select a number of drivers that are
-          not of the "normal" Linux kernel quality level.  These drivers
-          are placed here in order to get a wider audience to make use of
-          them.  Please note that these drivers are under heavy
-          development, may or may not work, and may contain userspace
-          interfaces that most likely will be changed in the near
-          future.
-
-          Using any of these drivers will taint your kernel which might
-          affect support options from both the community, and various
-          commercial support organizations.
-
-          If you wish to work on these drivers, to help improve them, or
-          to report problems you have with them, please see the
-          driver_name.README file in the drivers/staging/ directory to
-          see what needs to be worked on, and who to contact.
-
-          If in doubt, say N here.
-
-
-Thanks.
-
-> If what I guess is correct, I support you (else, please let me know)
-> 
-> 
-> Thanks.
-> 
-
+diff --git a/drivers/net/ethernet/amd/ni65.c b/drivers/net/ethernet/amd/ni65.c
+index 1cf33ad..0695ce2 100644
+--- a/drivers/net/ethernet/amd/ni65.c
++++ b/drivers/net/ethernet/amd/ni65.c
+@@ -1030,10 +1030,8 @@ static void ni65_xmit_intr(struct net_device *dev,int csr0)
+ 		}
+ 
+ #ifdef XMT_VIA_SKB
+-		if(p->tmd_skb[p->tmdlast]) {
+-			 dev_kfree_skb_irq(p->tmd_skb[p->tmdlast]);
+-			 p->tmd_skb[p->tmdlast] = NULL;
+-		}
++		 dev_kfree_skb_irq(p->tmd_skb[p->tmdlast]);
++		 p->tmd_skb[p->tmdlast] = NULL;
+ #endif
+ 
+ 		p->tmdlast = (p->tmdlast + 1) & (TMDNUM-1);
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+index a36a760..cf89008 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+@@ -848,12 +848,10 @@ static inline void atl1c_clean_buffer(struct pci_dev *pdev,
+ 			pci_unmap_page(pdev, buffer_info->dma,
+ 					buffer_info->length, pci_driection);
+ 	}
+-	if (buffer_info->skb) {
+-		if (in_irq)
+-			dev_kfree_skb_irq(buffer_info->skb);
+-		else
+-			dev_kfree_skb(buffer_info->skb);
+-	}
++	if (in_irq)
++		dev_kfree_skb_irq(buffer_info->skb);
++	else
++		dev_kfree_skb(buffer_info->skb);
+ 	buffer_info->dma = 0;
+ 	buffer_info->skb = NULL;
+ 	ATL1C_SET_BUFFER_STATE(buffer_info, ATL1C_BUFFER_FREE);
+diff --git a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+index 7a73f3a..c3ca8c6 100644
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+@@ -1257,10 +1257,8 @@ static bool atl1e_clean_tx_irq(struct atl1e_adapter *adapter)
+ 			tx_buffer->dma = 0;
+ 		}
+ 
+-		if (tx_buffer->skb) {
+-			dev_kfree_skb_irq(tx_buffer->skb);
+-			tx_buffer->skb = NULL;
+-		}
++		dev_kfree_skb_irq(tx_buffer->skb);
++		tx_buffer->skb = NULL;
+ 
+ 		if (++next_to_clean == tx_ring->count)
+ 			next_to_clean = 0;
+diff --git a/drivers/net/ethernet/atheros/atlx/atl1.c b/drivers/net/ethernet/atheros/atlx/atl1.c
+index 538211d..b8cc654 100644
+--- a/drivers/net/ethernet/atheros/atlx/atl1.c
++++ b/drivers/net/ethernet/atheros/atlx/atl1.c
+@@ -2082,10 +2082,8 @@ static int atl1_intr_tx(struct atl1_adapter *adapter)
+ 			buffer_info->dma = 0;
+ 		}
+ 
+-		if (buffer_info->skb) {
+-			dev_kfree_skb_irq(buffer_info->skb);
+-			buffer_info->skb = NULL;
+-		}
++		dev_kfree_skb_irq(buffer_info->skb);
++		buffer_info->skb = NULL;
+ 
+ 		if (++sw_tpd_next_to_clean == tpd_ring->count)
+ 			sw_tpd_next_to_clean = 0;
+diff --git a/drivers/net/ethernet/icplus/ipg.c b/drivers/net/ethernet/icplus/ipg.c
+index 25045ae..d3a5e1f 100644
+--- a/drivers/net/ethernet/icplus/ipg.c
++++ b/drivers/net/ethernet/icplus/ipg.c
+@@ -823,10 +823,8 @@ static void init_tfdlist(struct net_device *dev)
+ 
+ 		txfd->tfc = cpu_to_le64(IPG_TFC_TFDDONE);
+ 
+-		if (sp->tx_buff[i]) {
+-			dev_kfree_skb_irq(sp->tx_buff[i]);
+-			sp->tx_buff[i] = NULL;
+-		}
++		dev_kfree_skb_irq(sp->tx_buff[i]);
++		sp->tx_buff[i] = NULL;
+ 
+ 		txfd->next_desc = cpu_to_le64(sp->txd_map +
+ 			sizeof(struct ipg_tx)*(i + 1));
+diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
+index 4ef7867..4c22a1a 100644
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -1526,8 +1526,7 @@ static bool e1000_clean_jumbo_rx_irq(struct e1000_ring *rx_ring, int *work_done,
+ 			/* recycle both page and skb */
+ 			buffer_info->skb = skb;
+ 			/* an error means any chain goes out the window too */
+-			if (rx_ring->rx_skb_top)
+-				dev_kfree_skb_irq(rx_ring->rx_skb_top);
++			dev_kfree_skb_irq(rx_ring->rx_skb_top);
+ 			rx_ring->rx_skb_top = NULL;
+ 			goto next_desc;
+ 		}
+diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
+index fff6246..7443b11 100644
+--- a/drivers/net/ethernet/marvell/pxa168_eth.c
++++ b/drivers/net/ethernet/marvell/pxa168_eth.c
+@@ -749,8 +749,7 @@ static int txq_reclaim(struct net_device *dev, int force)
+ 			dev->stats.tx_errors++;
+ 		}
+ 		dma_unmap_single(NULL, addr, count, DMA_TO_DEVICE);
+-		if (skb)
+-			dev_kfree_skb_irq(skb);
++		dev_kfree_skb_irq(skb);
+ 		released++;
+ 	}
+ txq_reclaim_end:
+diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
+index 0029148..3d21741 100644
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -629,8 +629,7 @@ static void temac_start_xmit_done(struct net_device *ndev)
+ 	while (stat & STS_CTRL_APP0_CMPLT) {
+ 		dma_unmap_single(ndev->dev.parent, cur_p->phys, cur_p->len,
+ 				 DMA_TO_DEVICE);
+-		if (cur_p->app4)
+-			dev_kfree_skb_irq((struct sk_buff *)cur_p->app4);
++		dev_kfree_skb_irq((struct sk_buff *)cur_p->app4);
+ 		cur_p->app0 = 0;
+ 		cur_p->app1 = 0;
+ 		cur_p->app2 = 0;
+diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+index b2ff038..f3bcabb 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
++++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+@@ -589,8 +589,7 @@ static void axienet_start_xmit_done(struct net_device *ndev)
+ 		dma_unmap_single(ndev->dev.parent, cur_p->phys,
+ 				(cur_p->cntrl & XAXIDMA_BD_CTRL_LENGTH_MASK),
+ 				DMA_TO_DEVICE);
+-		if (cur_p->app4)
+-			dev_kfree_skb_irq((struct sk_buff *)cur_p->app4);
++		dev_kfree_skb_irq((struct sk_buff *)cur_p->app4);
+ 		/*cur_p->phys = 0;*/
+ 		cur_p->app0 = 0;
+ 		cur_p->app1 = 0;
+@@ -1367,8 +1366,7 @@ static void axienet_dma_err_handler(unsigned long data)
+ 					 (cur_p->cntrl &
+ 					  XAXIDMA_BD_CTRL_LENGTH_MASK),
+ 					 DMA_TO_DEVICE);
+-		if (cur_p->app4)
+-			dev_kfree_skb_irq((struct sk_buff *) cur_p->app4);
++		dev_kfree_skb_irq((struct sk_buff *) cur_p->app4);
+ 		cur_p->phys = 0;
+ 		cur_p->cntrl = 0;
+ 		cur_p->status = 0;
+diff --git a/drivers/net/hamradio/scc.c b/drivers/net/hamradio/scc.c
+index 4bc6ee8..0abd1e3 100644
+--- a/drivers/net/hamradio/scc.c
++++ b/drivers/net/hamradio/scc.c
+@@ -496,11 +496,8 @@ static inline void scc_exint(struct scc_channel *scc)
+ 		scc->stat.tx_under++;	  /* oops, an underrun! count 'em */
+ 		Outb(scc->ctrl, RES_EXT_INT);	/* reset ext/status interrupts */
+ 
+-		if (scc->tx_buff != NULL)
+-		{
+-			dev_kfree_skb_irq(scc->tx_buff);
+-			scc->tx_buff = NULL;
+-		}
++		dev_kfree_skb_irq(scc->tx_buff);
++		scc->tx_buff = NULL;
+ 		
+ 		or(scc,R10,ABUNDER);
+ 		scc_start_tx_timer(scc, t_txdelay, 0);	/* restart transmission */
+@@ -577,8 +574,7 @@ static inline void scc_spint(struct scc_channel *scc)
+ 		scc->stat.rx_over++;             /* count them */
+ 		or(scc,R3,ENT_HM);               /* enter hunt mode for next flag */
+ 		
+-		if (skb != NULL) 
+-			dev_kfree_skb_irq(skb);
++		dev_kfree_skb_irq(skb);
+ 		scc->rx_buff = skb = NULL;
+ 	}
+ 
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 7e2788c..64ca248 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -1142,8 +1142,7 @@ vmxnet3_rx_error(struct vmxnet3_rx_queue *rq, struct Vmxnet3_RxCompDesc *rcd,
+ 	 * ctx->skb may be NULL if this is the first and the only one
+ 	 * desc for the pkt
+ 	 */
+-	if (ctx->skb)
+-		dev_kfree_skb_irq(ctx->skb);
++	dev_kfree_skb_irq(ctx->skb);
+ 
+ 	ctx->skb = NULL;
+ }
+diff --git a/drivers/net/wireless/ath/ar5523/ar5523.c b/drivers/net/wireless/ath/ar5523/ar5523.c
+index 280fc3d..cb0dd61 100644
+--- a/drivers/net/wireless/ath/ar5523/ar5523.c
++++ b/drivers/net/wireless/ath/ar5523/ar5523.c
+@@ -601,10 +601,8 @@ static void ar5523_data_rx_cb(struct urb *urb)
+ 	data->skb = NULL;
+ 
+ skip:
+-	if (data->skb) {
+-		dev_kfree_skb_irq(data->skb);
+-		data->skb = NULL;
+-	}
++	dev_kfree_skb_irq(data->skb);
++	data->skb = NULL;
+ 
+ 	ar5523_rx_data_put(ar, data);
+ 	if (atomic_inc_return(&ar->rx_data_free_cnt) >=
 -- 
-Chen Gang
+1.8.4.2
+
