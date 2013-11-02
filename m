@@ -1,197 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab3KBNvf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Nov 2013 09:51:35 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:65328 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822Ab3KBNsv (ORCPT
+	id S1754688Ab3KBNwg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Nov 2013 09:52:36 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:13513 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753311Ab3KBNsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Nov 2013 09:48:51 -0400
-From: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-To: davem@davemloft.net, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
-        linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, IvDoorn@gmail.com, sbhatewara@vmware.com,
-        samuel@sortiz.org, chas@cmf.nrl.navy.mil, roland@kernel.org,
-        isdn@linux-pingi.de, jcliburn@gmail.com, benve@cisco.com,
-        ssujith@cisco.com, jeffrey.t.kirsher@intel.com,
-        jesse.brandeburg@intel.com, shahed.shaikh@qlogic.com, joe@perches.com,
-        apw@canonical.com
-Cc: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-Subject: [PATCH net-next 07/13] driver: staging: remove unnecessary NULL check before dev_kfree_skb_any
-Date: Sat,  2 Nov 2013 19:17:48 +0530
-Message-Id: <1383400074-30555-8-git-send-email-govindarajulu90@gmail.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1383400074-30555-1-git-send-email-govindarajulu90@gmail.com>
-References: <1383400074-30555-1-git-send-email-govindarajulu90@gmail.com>
+	Sat, 2 Nov 2013 09:48:23 -0400
+X-Spam-Score: -100.9
+Message-ID: <52750237.5060409@asianux.com>
+Date: Sat, 02 Nov 2013 21:46:31 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs/befs/linuxvfs.c: need signed cast for variable 'block'
+References: <5271C5E5.6080606@asianux.com> <CAGXu5jLMU0+VkJ6N3NTKbEtL+9FwF2gMOTU86-GH6SSXQ0rc0w@mail.gmail.com> <20131031190608.GH13318@ZenIV.linux.org.uk> <CAGXu5jJkXj975rbpJo8pTLakPLLpVVse+ecxwQ7Ds2x-ARAOxQ@mail.gmail.com> <20131031204558.GA30290@kroah.com> <527314D5.7090004@asianux.com>
+In-Reply-To: <527314D5.7090004@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dev_kfree_skb_any is protected from NULL. No need to check for NULL while
-calling this function.
+On 11/01/2013 10:41 AM, Chen Gang wrote:
+> On 11/01/2013 04:45 AM, Greg KH wrote:
+>> On Thu, Oct 31, 2013 at 12:08:33PM -0700, Kees Cook wrote:
+>>> On Thu, Oct 31, 2013 at 12:06 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>>>> On Thu, Oct 31, 2013 at 09:53:59AM -0700, Kees Cook wrote:
+>>>>
+>>>>> If block (type sector_t) is unsigned, we shouldn't cast it signed.
+>>>>> This entire code path should be removed. What is BEFS's expected
+>>>>> maximum block size? (Looks like even befs_blocknr_t is u64, so nothing
+>>>>> seems trivially in danger of wrapping.) I would also note that all the
+>>>>> format strings are wrong too (%ld instead of %lu).
+>>>>
+>>>> FWIW, this
+>>>>         res = befs_fblock2brun(sb, ds, block, &run);
+>>>>         if (res != BEFS_OK) {
+>>>>                 befs_error(sb,
+>>>>                            "<--- befs_get_block() for inode %lu, block "
+>>>>                            "%ld ERROR", inode->i_ino, block);
+>>>>                 return -EFBIG;
+>>>>         }
+>>>> also looks wrong - ioctl(..., FIBMAP, ...) shouldn't be able to spew
+>>>> printks on a valid fs and hitting it with block number greater than
+>>>> file length will, AFAICS, trigger that.
+>>>>
+>>>> I agree that this code needs fixing, but just making gcc STFU about the
+>>>> comparison would only serve to hide the problem.  Anybody familiar with
+>>>> befs or willing to learn it?
+>>>
+>>> Agreed. MAINTAINERS shows it as orphaned. Perhaps it should be moved
+>>> into staging?
+>>
+>> Only if we want to delete the thing.  I'll be glad to take it there, and
+>> remove it in 2 releases and then if anyone complains, we can add it back
+>> easily.  Just let me know.
+>>
+> 
+> Excuse me, I am not quite familiar with BEFS, I guess your meaning is:
+> 
+>   "if it is no further more discussion (e.g. within 1 week, no members reply), you will remove it (take it to "drivers/staging" sub-directory)".
+> 
 
-Signed-off-by: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
----
- drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c |  3 +--
- drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c |  3 +--
- drivers/staging/rtl8188eu/core/rtw_recv.c          |  6 ++----
- drivers/staging/rtl8192e/rtllib_rx.c               |  3 +--
- drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c  |  3 +--
- drivers/staging/rtl8712/recv_linux.c               |  3 +--
- drivers/staging/rtl8712/rtl8712_recv.c             |  6 ++----
- drivers/staging/rtl8712/xmit_linux.c               |  3 +--
- drivers/staging/sbe-2t3e3/dc.c                     | 12 ++++--------
- 9 files changed, 14 insertions(+), 28 deletions(-)
+Oh, for me, it is not suitable to move a file system sub-directory to
+"drivers/*/" sub-directory. And I can not find any sub-directory like
+'staging' under "fs" sub-directory, either.
 
-diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c
-index 10b2210..bbafdcc 100644
---- a/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c
-+++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c
-@@ -138,8 +138,7 @@ ieee80211_frag_cache_get(struct ieee80211_device *ieee,
- 		if (ieee->frag_next_idx[tid] >= IEEE80211_FRAG_CACHE_LEN)
- 			ieee->frag_next_idx[tid] = 0;
- 
--		if (entry->skb != NULL)
--			dev_kfree_skb_any(entry->skb);
-+		dev_kfree_skb_any(entry->skb);
- 
- 		entry->first_frag_time = jiffies;
- 		entry->seq = seq;
-diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c
-index b346653..fe747b1 100644
---- a/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c
-+++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c
-@@ -234,8 +234,7 @@ void ieee80211_txb_free(struct ieee80211_txb *txb) {
- 	if (unlikely(!txb))
- 		return;
- 	for (i = 0; i < txb->nr_frags; i++)
--		if (txb->fragments[i])
--			dev_kfree_skb_any(txb->fragments[i]);
-+		dev_kfree_skb_any(txb->fragments[i]);
- 	kfree(txb);
- }
- 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_recv.c b/drivers/staging/rtl8188eu/core/rtw_recv.c
-index 2011657..93fb9ed 100644
---- a/drivers/staging/rtl8188eu/core/rtw_recv.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_recv.c
-@@ -209,10 +209,8 @@ int rtw_free_recvframe(union recv_frame *precvframe, struct __queue *pfree_recv_
- 
- _func_enter_;
- 
--	if (precvframe->u.hdr.pkt) {
--		dev_kfree_skb_any(precvframe->u.hdr.pkt);/* free skb by driver */
--		precvframe->u.hdr.pkt = NULL;
--	}
-+	dev_kfree_skb_any(precvframe->u.hdr.pkt);/* free skb by driver */
-+	precvframe->u.hdr.pkt = NULL;
- 
- 	_enter_critical_bh(&pfree_recv_queue->lock, &irqL);
- 
-diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
-index 8aeaed5..0118854 100644
---- a/drivers/staging/rtl8192e/rtllib_rx.c
-+++ b/drivers/staging/rtl8192e/rtllib_rx.c
-@@ -133,8 +133,7 @@ rtllib_frag_cache_get(struct rtllib_device *ieee,
- 		if (ieee->frag_next_idx[tid] >= RTLLIB_FRAG_CACHE_LEN)
- 			ieee->frag_next_idx[tid] = 0;
- 
--		if (entry->skb != NULL)
--			dev_kfree_skb_any(entry->skb);
-+		dev_kfree_skb_any(entry->skb);
- 
- 		entry->first_frag_time = jiffies;
- 		entry->seq = seq;
-diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
-index 59900bf..70bf7a4 100644
---- a/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
-+++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
-@@ -138,8 +138,7 @@ ieee80211_frag_cache_get(struct ieee80211_device *ieee,
- 		if (ieee->frag_next_idx[tid] >= IEEE80211_FRAG_CACHE_LEN)
- 			ieee->frag_next_idx[tid] = 0;
- 
--		if (entry->skb != NULL)
--			dev_kfree_skb_any(entry->skb);
-+		dev_kfree_skb_any(entry->skb);
- 
- 		entry->first_frag_time = jiffies;
- 		entry->seq = seq;
-diff --git a/drivers/staging/rtl8712/recv_linux.c b/drivers/staging/rtl8712/recv_linux.c
-index 495ee12..c422d1f 100644
---- a/drivers/staging/rtl8712/recv_linux.c
-+++ b/drivers/staging/rtl8712/recv_linux.c
-@@ -75,8 +75,7 @@ int r8712_os_recvbuf_resource_alloc(struct _adapter *padapter,
- int r8712_os_recvbuf_resource_free(struct _adapter *padapter,
- 			     struct recv_buf *precvbuf)
- {
--	if (precvbuf->pskb)
--		dev_kfree_skb_any(precvbuf->pskb);
-+	dev_kfree_skb_any(precvbuf->pskb);
- 	if (precvbuf->purb) {
- 		usb_kill_urb(precvbuf->purb);
- 		usb_free_urb(precvbuf->purb);
-diff --git a/drivers/staging/rtl8712/rtl8712_recv.c b/drivers/staging/rtl8712/rtl8712_recv.c
-index d59a74a..9a4e87c 100644
---- a/drivers/staging/rtl8712/rtl8712_recv.c
-+++ b/drivers/staging/rtl8712/rtl8712_recv.c
-@@ -145,10 +145,8 @@ int r8712_free_recvframe(union recv_frame *precvframe,
- 	struct _adapter *padapter = precvframe->u.hdr.adapter;
- 	struct recv_priv *precvpriv = &padapter->recvpriv;
- 
--	if (precvframe->u.hdr.pkt) {
--		dev_kfree_skb_any(precvframe->u.hdr.pkt);/*free skb by driver*/
--		precvframe->u.hdr.pkt = NULL;
--	}
-+	dev_kfree_skb_any(precvframe->u.hdr.pkt);/*free skb by driver*/
-+	precvframe->u.hdr.pkt = NULL;
- 	spin_lock_irqsave(&pfree_recv_queue->lock, irqL);
- 	list_delete(&(precvframe->u.hdr.list));
- 	list_insert_tail(&(precvframe->u.hdr.list),
-diff --git a/drivers/staging/rtl8712/xmit_linux.c b/drivers/staging/rtl8712/xmit_linux.c
-index 4d22bb7..13bb27a 100644
---- a/drivers/staging/rtl8712/xmit_linux.c
-+++ b/drivers/staging/rtl8712/xmit_linux.c
-@@ -156,8 +156,7 @@ void r8712_xmit_resource_free(struct _adapter *padapter,
- 
- void r8712_xmit_complete(struct _adapter *padapter, struct xmit_frame *pxframe)
- {
--	if (pxframe->pkt)
--		dev_kfree_skb_any(pxframe->pkt);
-+	dev_kfree_skb_any(pxframe->pkt);
- 	pxframe->pkt = NULL;
- }
- 
-diff --git a/drivers/staging/sbe-2t3e3/dc.c b/drivers/staging/sbe-2t3e3/dc.c
-index f207b9e..d8c9464 100644
---- a/drivers/staging/sbe-2t3e3/dc.c
-+++ b/drivers/staging/sbe-2t3e3/dc.c
-@@ -403,10 +403,8 @@ void dc_clear_descriptor_list(struct channel *sc)
- 
- 	/* free all data buffers on TX ring */
- 	for (i = 0; i < SBE_2T3E3_TX_DESC_RING_SIZE; i++) {
--		if (sc->ether.tx_data[i] != NULL) {
--			dev_kfree_skb_any(sc->ether.tx_data[i]);
--			sc->ether.tx_data[i] = NULL;
--		}
-+		dev_kfree_skb_any(sc->ether.tx_data[i]);
-+		sc->ether.tx_data[i] = NULL;
- 	}
- }
- 
-@@ -418,10 +416,8 @@ void dc_drop_descriptor_list(struct channel *sc)
- 
- 	/* free all data buffers on RX ring */
- 	for (i = 0; i < SBE_2T3E3_RX_DESC_RING_SIZE; i++) {
--		if (sc->ether.rx_data[i] != NULL) {
--			dev_kfree_skb_any(sc->ether.rx_data[i]);
--			sc->ether.rx_data[i] = NULL;
--		}
-+		dev_kfree_skb_any(sc->ether.rx_data[i]);
-+		sc->ether.rx_data[i] = NULL;
- 	}
- 
- 	kfree(sc->ether.rx_ring);
+Do we have any sub-directory like "staging" in "fs" sub-directory? if
+no, do we have to create it or have to use another ways instead of?
+
+
+After reference the "drivers/staging" explanation (list below), we know
+it is only for drivers (not fs).
+
+menuconfig STAGING
+        bool "Staging drivers"
+        default n
+        ---help---
+          This option allows you to select a number of drivers that are
+          not of the "normal" Linux kernel quality level.  These drivers
+          are placed here in order to get a wider audience to make use of
+          them.  Please note that these drivers are under heavy
+          development, may or may not work, and may contain userspace
+          interfaces that most likely will be changed in the near
+          future.
+
+          Using any of these drivers will taint your kernel which might
+          affect support options from both the community, and various
+          commercial support organizations.
+
+          If you wish to work on these drivers, to help improve them, or
+          to report problems you have with them, please see the
+          driver_name.README file in the drivers/staging/ directory to
+          see what needs to be worked on, and who to contact.
+
+          If in doubt, say N here.
+
+
+Thanks.
+
+> If what I guess is correct, I support you (else, please let me know)
+> 
+> 
+> Thanks.
+> 
+
 -- 
-1.8.4.2
-
+Chen Gang
