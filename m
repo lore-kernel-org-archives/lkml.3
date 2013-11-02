@@ -1,230 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692Ab3KBGF3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Nov 2013 02:05:29 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59685 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751263Ab3KBGF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Nov 2013 02:05:27 -0400
-X-IronPort-AV: E=Sophos;i="4.93,621,1378828800"; 
-   d="scan'208";a="8926268"
-Message-ID: <52749663.2000701@cn.fujitsu.com>
-Date: Sat, 02 Nov 2013 14:06:27 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Linux Containers <containers@lists.linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [REVIEW][PATCH 1/2] userns: Better restrictions on when proc
- and sysfs can be mounted
-References: <878uzmhkqg.fsf@xmission.com>
-In-Reply-To: <878uzmhkqg.fsf@xmission.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/02 14:03:37,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/02 14:03:38,
-	Serialize complete at 2013/11/02 14:03:38
+	id S1752055Ab3KBGQz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Nov 2013 02:16:55 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:34052 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558Ab3KBGQx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Nov 2013 02:16:53 -0400
+Date: Sat, 02 Nov 2013 02:16:51 -0400 (EDT)
+Message-Id: <20131102.021651.96548203258073968.davem@davemloft.net>
+To: jasowang@redhat.com
+Cc: edumazet@google.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pmatouse@redhat.com, mst@redhat.com, dborkman@redhat.com
+Subject: Re: [PATCH net] net: flow_dissector: fail on evil iph->ihl
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1383289270-18952-1-git-send-email-jasowang@redhat.com>
+References: <1383289270-18952-1-git-send-email-jasowang@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 01 Nov 2013 23:16:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+From: Jason Wang <jasowang@redhat.com>
+Date: Fri,  1 Nov 2013 15:01:10 +0800
 
-On 08/28/2013 05:44 AM, Eric W. Biederman wrote:
+> We don't validate iph->ihl which may lead a dead loop if we meet a IPIP
+> skb whose iph->ihl is zero. Fix this by failing immediately when iph->ihl
+> is evil (less than 5).
 > 
-> Rely on the fact that another flavor of the filesystem is already
-> mounted and do not rely on state in the user namespace.
+> This issue were introduced by commit ec5efe7946280d1e84603389a1030ccec0a767ae
+> (rps: support IPIP encapsulation).
 > 
-> Verify that the mounted filesystem is not covered in any significant
-> way.  I would love to verify that the previously mounted filesystem
-> has no mounts on top but there are at least the directories
-> /proc/sys/fs/binfmt_misc and /sys/fs/cgroup/ that exist explicitly
-> for other filesystems to mount on top of.
-> 
-> Refactor the test into a function named fs_fully_visible and call that
-> function from the mount routines of proc and sysfs.  This makes this
-> test local to the filesystems involved and the results current of when
-> the mounts take place, removing a weird threading of the user
-> namespace, the mount namespace and the filesystems themselves.
-> 
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ---
->  fs/namespace.c                 |   37 +++++++++++++++++++++++++------------
->  fs/proc/root.c                 |    7 +++++--
->  fs/sysfs/mount.c               |    3 ++-
->  include/linux/fs.h             |    1 +
->  include/linux/user_namespace.h |    4 ----
->  kernel/user.c                  |    2 --
->  kernel/user_namespace.c        |    2 --
->  7 files changed, 33 insertions(+), 23 deletions(-)
-> 
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index 64627f8..877e427 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -2867,25 +2867,38 @@ bool current_chrooted(void)
->  	return chrooted;
->  }
->  
-> -void update_mnt_policy(struct user_namespace *userns)
-> +bool fs_fully_visible(struct file_system_type *type)
->  {
->  	struct mnt_namespace *ns = current->nsproxy->mnt_ns;
->  	struct mount *mnt;
-> +	bool visible = false;
->  
-> -	down_read(&namespace_sem);
-> +	if (unlikely(!ns))
-> +		return false;
-> +
-> +	namespace_lock();
->  	list_for_each_entry(mnt, &ns->list, mnt_list) {
-> -		switch (mnt->mnt.mnt_sb->s_magic) {
-> -		case SYSFS_MAGIC:
-> -			userns->may_mount_sysfs = true;
-> -			break;
-> -		case PROC_SUPER_MAGIC:
-> -			userns->may_mount_proc = true;
-> -			break;
-> +		struct mount *child;
-> +		if (mnt->mnt.mnt_sb->s_type != type)
-> +			continue;
-> +
-> +		/* This mount is not fully visible if there are any child mounts
-> +		 * that cover anything except for empty directories.
-> +		 */
-> +		list_for_each_entry(child, &mnt->mnt_mounts, mnt_child) {
-> +			struct inode *inode = child->mnt_mountpoint->d_inode;
-> +			if (!S_ISDIR(inode->i_mode))
-> +				goto next;
-> +			if (inode->i_nlink != 2)
-> +				goto next;
+> Cc: Eric Dumazet <edumazet@google.com>
+> Cc: Petr Matousek <pmatouse@redhat.com>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: Daniel Borkmann <dborkman@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-
-I met a problem that proc filesystem failed to mount in user namespace,
-The problem is the i_nlink of sysctl entries under proc filesystem is not
-2. it always is 1 even it's a directory, see proc_sys_make_inode. and for
-btrfs, the i_nlink for an empty dir is 2 too. it seems like depends on the
-filesystem itself,not depends on vfs. In my system binfmt_misc is mounted
-on /proc/sys/fs/binfmt_misc, and the i_nlink of this directory's inode is
-1.
-
-btw, I'm not quite understand what's the inode->i_nlink != 2 here means?
-is this directory empty? as I know, when we create a file(not dir) under
-a dir, the i_nlink of this dir will not increase.
-
-And another question, it looks like if we don't have proc/sys fs mounted,
-then proc/sys will be failed to be mounted?
-
-Thanks!
-
->  		}
-> -		if (userns->may_mount_sysfs && userns->may_mount_proc)
-> -			break;
-> +		visible = true;
-> +		goto found;
-> +	next:	;
->  	}
-> -	up_read(&namespace_sem);
-> +found:
-> +	namespace_unlock();
-> +	return visible;
->  }
->  
->  static void *mntns_get(struct task_struct *task)
-> diff --git a/fs/proc/root.c b/fs/proc/root.c
-> index 38bd5d4..45e5fb7 100644
-> --- a/fs/proc/root.c
-> +++ b/fs/proc/root.c
-> @@ -110,8 +110,11 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
->  		ns = task_active_pid_ns(current);
->  		options = data;
->  
-> -		if (!current_user_ns()->may_mount_proc ||
-> -		    !ns_capable(ns->user_ns, CAP_SYS_ADMIN))
-> +		if (!capable(CAP_SYS_ADMIN) && !fs_fully_visible(fs_type))
-> +			return ERR_PTR(-EPERM);
-> +
-> +		/* Does the mounter have privilege over the pid namespace? */
-> +		if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN))
->  			return ERR_PTR(-EPERM);
->  	}
->  
-> diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-> index afd8327..4a2da3a 100644
-> --- a/fs/sysfs/mount.c
-> +++ b/fs/sysfs/mount.c
-> @@ -112,7 +112,8 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
->  	struct super_block *sb;
->  	int error;
->  
-> -	if (!(flags & MS_KERNMOUNT) && !current_user_ns()->may_mount_sysfs)
-> +	if (!(flags & MS_KERNMOUNT) && !capable(CAP_SYS_ADMIN) &&
-> +	    !fs_fully_visible(fs_type))
->  		return ERR_PTR(-EPERM);
->  
->  	info = kzalloc(sizeof(*info), GFP_KERNEL);
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 9818747..3050c62 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -1897,6 +1897,7 @@ extern int vfs_ustat(dev_t, struct kstatfs *);
->  extern int freeze_super(struct super_block *super);
->  extern int thaw_super(struct super_block *super);
->  extern bool our_mnt(struct vfsmount *mnt);
-> +extern bool fs_fully_visible(struct file_system_type *);
->  
->  extern int current_umask(void);
->  
-> diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
-> index b6b215f..4ce0093 100644
-> --- a/include/linux/user_namespace.h
-> +++ b/include/linux/user_namespace.h
-> @@ -26,8 +26,6 @@ struct user_namespace {
->  	kuid_t			owner;
->  	kgid_t			group;
->  	unsigned int		proc_inum;
-> -	bool			may_mount_sysfs;
-> -	bool			may_mount_proc;
->  };
->  
->  extern struct user_namespace init_user_ns;
-> @@ -84,6 +82,4 @@ static inline void put_user_ns(struct user_namespace *ns)
->  
->  #endif
->  
-> -void update_mnt_policy(struct user_namespace *userns);
-> -
->  #endif /* _LINUX_USER_H */
-> diff --git a/kernel/user.c b/kernel/user.c
-> index 69b4c3d..5bbb919 100644
-> --- a/kernel/user.c
-> +++ b/kernel/user.c
-> @@ -51,8 +51,6 @@ struct user_namespace init_user_ns = {
->  	.owner = GLOBAL_ROOT_UID,
->  	.group = GLOBAL_ROOT_GID,
->  	.proc_inum = PROC_USER_INIT_INO,
-> -	.may_mount_sysfs = true,
-> -	.may_mount_proc = true,
->  };
->  EXPORT_SYMBOL_GPL(init_user_ns);
->  
-> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-> index d8c30db..d58ad1e 100644
-> --- a/kernel/user_namespace.c
-> +++ b/kernel/user_namespace.c
-> @@ -97,8 +97,6 @@ int create_user_ns(struct cred *new)
->  
->  	set_cred_user_ns(new, ns);
->  
-> -	update_mnt_policy(ns);
-> -
->  	return 0;
->  }
->  
-> 
-
+Applied and queued up for -stable, thanks Jason.
