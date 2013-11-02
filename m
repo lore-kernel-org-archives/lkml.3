@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750965Ab3KBEnW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Nov 2013 00:43:22 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46015 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750729Ab3KBEnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Nov 2013 00:43:21 -0400
-Date: Sat, 2 Nov 2013 05:34:38 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Borislav Petkov <bp@suse.de>, suravee.suthikulpanit@amd.com,
-        mingo@kernel.org, mingo@redhat.com, jacob.w.shin@gmail.com,
-        oleg@redhat.com, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, sherry.hurwitz@amd.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/3] perf/x86/amd: AMD support for bp_len >
- HW_BREAKPOINT_LEN_8
-Message-ID: <20131102043438.GA11257@pd.tnic>
-References: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1380730268-25807-2-git-send-email-suravee.suthikulpanit@amd.com>
- <20131031095829.GE2253@localhost.localdomain>
- <20131031104836.GC10544@pd.tnic>
- <20131031112328.GF2253@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131031112328.GF2253@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751147Ab3KBFGr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Nov 2013 01:06:47 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33665 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729Ab3KBFGq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Nov 2013 01:06:46 -0400
+Date: Sat, 02 Nov 2013 01:06:42 -0400 (EDT)
+Message-Id: <20131102.010642.1846904926665537525.davem@davemloft.net>
+To: bhutchings@solarflare.com
+Cc: xiyou.wangcong@gmail.com, mchan@broadcom.com, tdmackey@booleanhaiku.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] bnx2: Use dev_kfree_skb_any() in bnx2_tx_int()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1383348890.1737.40.camel@bwh-desktop.uk.level5networks.com>
+References: <CAM_iQpXPrEj619=PRaKN4PxgOoEB96U0mLFS65AzXOezSWvhxQ@mail.gmail.com>
+	<20131101.180147.629210014672277622.davem@davemloft.net>
+	<1383348890.1737.40.camel@bwh-desktop.uk.level5networks.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 01 Nov 2013 22:06:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 12:23:30PM +0100, Frederic Weisbecker wrote:
-> Ok we can keep that naming then, at least on the feature symbol. But
-> add a comment on it.
+From: Ben Hutchings <bhutchings@solarflare.com>
+Date: Fri, 1 Nov 2013 23:34:50 +0000
 
-Great, in the latest F16h BKDG the CPUID bit is called
-"DataBreakpointExtension". So BPEXT could mean anything :)
+> As you've said, the ndo_start_xmit and NAPI poll operations are intended
+> to be called in softirq context, so everything that interlocks with them
+> will use spin_lock_bh().  Calling them from hardirq context obviously
+> opens the possibility of a deadlock.  How do you expect anyone to solve
+> that?
 
-So the comment is with the definition of the bit:
+That's not what I said.
 
-+#define X86_FEATURE_BPEXT      (6*32+26) /* data breakpoint extension */
+I did not say that it must be invoked in softirq context.
 
-Oh well...
+I said that it MUST LOOK like it is being invoked in softirq
+context as far as the ->poll() code paths can tell.
 
--- 
-Regards/Gruss,
-    Boris.
+But yes, that's hard.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+The thing is, ->poll() is atomic.  You never will have poll calls
+recurse into eachother.  This is why we strongly encourage all driver
+authors to make their ->poll() implementations lockless.
+
+And, wouldn't you know it, tg3 is a driver that does this
+properly.
+
+Therefore, there are no netpoll no locking problems, because the poll
+implementation takes no locks and therefore doesn't care.
+
+That's why tg3 doesn't have any of these netpoll issues.
