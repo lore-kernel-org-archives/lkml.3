@@ -1,109 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab3KBCpn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 22:45:43 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:8723 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753548Ab3KBCpm (ORCPT
+	id S1754143Ab3KBCvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 22:51:12 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:48486 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753759Ab3KBCvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 22:45:42 -0400
-Date: Fri, 1 Nov 2013 22:45:38 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] trace/trace_stat: use rbtree postorder iteration
- helper instead of opencoding
-Message-ID: <20131101224538.7fe04ba8@gandalf.local.home>
-In-Reply-To: <1383345566-25087-2-git-send-email-cody@linux.vnet.ibm.com>
-References: <1383345566-25087-1-git-send-email-cody@linux.vnet.ibm.com>
-	<1383345566-25087-2-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 1 Nov 2013 22:51:10 -0400
+Message-ID: <5274688D.7050902@oracle.com>
+Date: Sat, 02 Nov 2013 10:50:53 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Olav Haugan <ohaugan@codeaurora.org>
+CC: Minchan Kim <minchan@kernel.org>, sjenning@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: zram/zsmalloc issues in very low memory conditions
+References: <526844E6.1080307@codeaurora.org> <20131025091924.GA4970@gmail.com> <52744E8F.3040405@codeaurora.org>
+In-Reply-To: <52744E8F.3040405@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  1 Nov 2013 15:38:46 -0700
-Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
+Hi Olav,
 
-> Use rbtree_postorder_for_each_entry_safe() to destroy the rbtree instead
-> of opencoding an alternate postorder iteration that modifies the tree
+On 11/02/2013 08:59 AM, Olav Haugan wrote:
+
 > 
-> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-> ---
->  kernel/trace/trace_stat.c | 42 ++++++------------------------------------
->  1 file changed, 6 insertions(+), 36 deletions(-)
+> I tried the above suggestion but it does not seem to have any noticeable
+> impact. The system is still trying to swap out at a very high rate after
+> zram reported failure to swap out. The error logging is actually so much
+> that my system crashed due to excessive logging (we have a watchdog that
+> is not getting pet because the kernel is busy logging kernel messages).
 > 
-> diff --git a/kernel/trace/trace_stat.c b/kernel/trace/trace_stat.c
-> index 847f88a..fa53acc 100644
-> --- a/kernel/trace/trace_stat.c
-> +++ b/kernel/trace/trace_stat.c
-> @@ -43,46 +43,16 @@ static DEFINE_MUTEX(all_stat_sessions_mutex);
->  /* The root directory for all stat files */
->  static struct dentry		*stat_dir;
->  
-> -/*
-> - * Iterate through the rbtree using a post order traversal path
-> - * to release the next node.
-> - * It won't necessary release one at each iteration
-> - * but it will at least advance closer to the next one
-> - * to be released.
-> - */
-> -static struct rb_node *release_next(struct tracer_stat *ts,
-> -				    struct rb_node *node)
-> +static void __reset_stat_session(struct stat_session *session)
->  {
-> -	struct stat_node *snode;
-> -	struct rb_node *parent = rb_parent(node);
-> -
-> -	if (node->rb_left)
-> -		return node->rb_left;
-> -	else if (node->rb_right)
-> -		return node->rb_right;
-> -	else {
-> -		if (!parent)
-> -			;
-> -		else if (parent->rb_left == node)
-> -			parent->rb_left = NULL;
-> -		else
-> -			parent->rb_right = NULL;
-> +	struct stat_node *snode, *n;
->  
-> -		snode = container_of(node, struct stat_node, node);
-> -		if (ts->stat_release)
-> -			ts->stat_release(snode->stat);
-> +	rbtree_postorder_for_each_entry_safe(snode, n, &session->stat_root,
-> +			node) {
 
-This is one of those cases that a line break is uglier than keeping it
-on the same line. Heck, it's only 4 characters over the 80 char limit.
+I have a question that why the low memory killer didn't get triggered in
+this situation?
+Is it possible to set the LMK a bit more aggressive?
 
-Other than that, I'm fine with this patch. Want me to take this
-separately?
+> There isn't anything that can be set to tell the fs layer to back off
+> completely for a while (congestion control)?
+> 
 
--- Steve
+The other way I think might fix your issue is the same as your mentioned
+in your previous email.
+Set the congested bit for swap device also.
+Like:
 
+diff --git a/drivers/staging/zram/zram_drv.c
+b/drivers/staging/zram/zram_drv.c
+index 91d94b5..c4fc63e 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -474,6 +474,7 @@ static int zram_bvec_write(struct zram *zram, struct
+bio_vec *bvec, u32 index,
+        if (!handle) {
+                pr_info("Error allocating memory for compressed page:
+%u, size=%zu\n",
+                        index, clen);
++               blk_set_queue_congested(zram->disk->queue, BLK_RW_ASYNC);
+                ret = -ENOMEM;
+                goto out;
+        }
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 8ed1b77..1c790ee 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -394,8 +394,6 @@ static inline int is_page_cache_freeable(struct page
+*page)
+ static int may_write_to_queue(struct backing_dev_info *bdi,
+                              struct scan_control *sc)
+ {
+-       if (current->flags & PF_SWAPWRITE)
+-               return 1;
 
-> +		if (session->ts->stat_release)
-> +			session->ts->stat_release(snode->stat);
->  		kfree(snode);
-> -
-> -		return parent;
->  	}
-> -}
-> -
-> -static void __reset_stat_session(struct stat_session *session)
-> -{
-> -	struct rb_node *node = session->stat_root.rb_node;
-> -
-> -	while (node)
-> -		node = release_next(session->ts, node);
->  
->  	session->stat_root = RB_ROOT;
->  }
+--------------------------------------------------------------
 
+For the update of the congested state of zram, I think you can clear it
+from use space eg. after LMK triggered and reclaimed some memory.
+
+Of course this depends on zram driver to export a sysfs node like
+"/sys/block/zram0/clear_congested".
+
+-- 
+Regards,
+-Bob
