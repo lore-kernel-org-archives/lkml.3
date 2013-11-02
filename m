@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754429Ab3KBTp6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Nov 2013 15:45:58 -0400
-Received: from smtp106.biz.mail.gq1.yahoo.com ([98.137.12.181]:48829 "HELO
-	smtp106.biz.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752775Ab3KBTpy (ORCPT
+	id S1754323Ab3KBTzO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Nov 2013 15:55:14 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:49265 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753262Ab3KBTzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Nov 2013 15:45:54 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Nov 2013 15:45:54 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Ye9mUuYVM1ll38SG.HZ2oQEPYLy9HsUPz64db118x9vX83Z
- vY3fBcFy0EEBF4lHkAVKkM9Ky4Y2irSfEwEf8G1rScj4if5w4XEmg7k1J4rF
- oLjv35oZt0xs6NqOZHviHKZzhr0j0XX4z2drKPEsl1rj_n3iEXAGnFQCrHfO
- gX3EZwcXPUAxXG8dsRmYinPFhCIMRqBRC5z6n9jCen7xjj8qgUu1VBAW0IYP
- pE0LH_jMWmWeVODHKtBIPSgzrtTUZ2I3RryQirBCOMx1jAcOVmBizvvF.dPG
- r48_mChqLAd04gpEH53Cjaw4FY3vqQZxH3rbtWhJwyfadaXKdZfe2ymiLTmz
- _ezUg6TW92nrWk4zs.oUXOeTR97leShLFnIpM9mrzD0KSu1t0OGvhjeFRZq4
- ogm59Rq_XzzUGfbJbYqODivnygDLIEp0sMfNlYFrIzQZievVX1BOIAzVRWSJ
- A3SGM46wMbBW7dv0J0m_2sHseGUKAX_y_tqAKxzvP.WzXHCU8Zh9RiCeRqQo
- tZVH2DWaLJoo7M4.xOEXFtLrVuY1mPGlozJgxNRmwE2lO
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.0.103] (casey@67.180.103.242 with )
-        by smtp106.biz.mail.gq1.yahoo.com with SMTP; 02 Nov 2013 19:39:13 +0000 UTC
-Message-ID: <527554E2.4080806@schaufler-ca.com>
-Date: Sat, 02 Nov 2013 12:39:14 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        james.l.morris@oracle.com, jmorris@namei.org, keescook@chromium.org
-CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        rusty@rustcorp.com.au
-Subject: Re: [PATCH] LSM: ModPin LSM for module loading restrictions
-References: <20131016151831.GE5186@outflux.net>	<201310170547.EHH26015.QOtHJOLFOFVMSF@I-love.SAKURA.ne.jp>	<525F083D.8060502@schaufler-ca.com>	<CAGXu5jLSDynZ_XRZGZ+0uZTgtygO1n8+3rOnR+WonH5-tkui6A@mail.gmail.com>	<201310170037.r9H0b6jT024903@www262.sakura.ne.jp> <201310262251.IFB56202.HSFOOtFMVOFLQJ@I-love.SAKURA.ne.jp>
-In-Reply-To: <201310262251.IFB56202.HSFOOtFMVOFLQJ@I-love.SAKURA.ne.jp>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 2 Nov 2013 15:55:11 -0400
+Message-ID: <1383422109.4378.15.camel@x220.thuisdomein>
+Subject: Re: [kconfig] update: results of some syntactical checks
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Martin Walch <walch.martin@web.de>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>, linux-media@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Date: Sat, 02 Nov 2013 20:55:09 +0100
+In-Reply-To: <20131102174047.70c24ed8@samsung.com>
+References: <3513955.N5RNgL3hPx@tacticalops>
+	 <1383420054.4378.3.camel@x220.thuisdomein>
+	 <20131102174047.70c24ed8@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 02 Nov 2013 19:55:09.0808 (UTC) FILETIME=[6F8A1700:01CED805]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2013 6:51 AM, Tetsuo Handa wrote:
-> Tetsuo Handa wrote:
->> I would send another one which uses only security_file_alloc/free .
-> I sent it to James, Casey and Kees on "Fri, 18 Oct 2013 22:56:19 +0900" and
-> waiting for your response. How long are we expected to remain vulnerable due to
-> lack of multiple concurrent LSM support?
+On Sat, 2013-11-02 at 17:40 -0200, Mauro Carvalho Chehab wrote:
+> Em Sat, 02 Nov 2013 20:20:54 +0100
+> Paul Bolle <pebolle@tiscali.nl> escreveu:
+> > Those are obvious typos. Still present in v3.12-rc7. Perhaps you'd like
+> > to send the trivial patch to fix this?
+> 
+> Yes, it is a typo...
+> 
+> > > Probably, it was meant to say something like
+> > > >	depends on SMS_USB_DRV = SMS_SDIO_DRV
+> 
+> But this is not the right thing to do. The Kconfig logic here is that it
+> should depends on !SMS_SDIO_DRV or SMS_USB_DRV = SMS_SDIO_DRV.
 
-Having just spent a good chunk of the past year on the technical
-issues, and having participated in the LSM development process since
-its inception, I'd say there's at least a year before the dust settles.
-Having a wad of code that works is one thing. Breaking it into chunks
-that are both useful and small enough for the community to swallow is
-another. Transforming a collection of clever hacks into an infrastructure
-is a third. Once that's done we can deal with the naysayers.
+For the record: my reason for suggesting to Martin to send patches is
+that sending a (trivial) patch often turns out to be a quick way to get
+issues like that resolved. Maintainers seem to react quite quickly on
+patches. Perhaps even faster if a patch is not solving the issue at hand
+entirely correct! Messages like Martin's, that basically state that
+there are one or more tree-wide problems, seem to be overlooked easily.
 
-Fortunately, we have a wad of code that works. Nobody seems to
-think that taking that code as is is a great idea. Nobody has
-this as their first priority, either. We're making progress, but
-we know we need to be careful. I seriously doubt we'll get more
-than one shot at it.
+> I remember I made a patch like that while testing some things with this
+> driver, but it seems that I forgot to push. I might have it somewhere on
+> my test machine.
+
+
+Paul Bolle
 
