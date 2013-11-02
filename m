@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182Ab3KBM2z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Nov 2013 08:28:55 -0400
-Received: from usindpps05.hds.com ([207.126.252.18]:51657 "EHLO
-	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab3KBM2x (ORCPT
+	id S1752593Ab3KBNJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Nov 2013 09:09:26 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:48586 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073Ab3KBNJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Nov 2013 08:28:53 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Tony Luck <tony.luck@gmail.com>
-CC: Richard Weinberger <richard@nod.at>, Madper Xie <cxie@redhat.com>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux EFI <linux-efi@vger.kernel.org>,
-        =?gb2312?B?0Luzyb+l?= <bbboson@gmail.com>
-Subject: RE: [PATCH] Make efi-pstore return a unique id
-Thread-Topic: [PATCH] Make efi-pstore return a unique id
-Thread-Index: AQHO1x11Ng/G6VnJcECFaGjfqkQ0X5oQ08KAgAApt4D//8FFUIAAUlQA///ElKCAAIDfAIAAh0fw
-Date: Sat, 2 Nov 2013 12:28:19 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D47F9DE083@USINDEM103.corp.hds.com>
-References: <87ppqk6qvx.fsf@redhat.com>
-	<CAFLxGvz3pCevxE43zGnrbX4MxPmwyb=9MVNpzFRpELt1+AmtrA@mail.gmail.com>
-	<CA+8MBbJefz7L-C-LnhAAXB5zf-8XoMPhESPU4yd0wnuZ_YqO1w@mail.gmail.com>
-	<A5ED84D3BB3A384992CBB9C77DEDA4D47F9DD941@USINDEM103.corp.hds.com>
-	<52740A3A.70202@nod.at>
-	<A5ED84D3BB3A384992CBB9C77DEDA4D47F9DDA4D@USINDEM103.corp.hds.com>
- <CA+8MBbKMRw28Ubr5F8U=5SKuaeutR+KEVDgJC70Xebj4O5BzpA@mail.gmail.com>
-In-Reply-To: <CA+8MBbKMRw28Ubr5F8U=5SKuaeutR+KEVDgJC70Xebj4O5BzpA@mail.gmail.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="gb2312"
+	Sat, 2 Nov 2013 09:09:21 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Matt Porter <matt.porter@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: Re: [PATCH v2 5/9] usb: gadget: s3c-hsotg: enable generic phy support
+Date: Sat, 02 Nov 2013 14:09:21 +0100
+Message-ID: <1868561.m5DoOTCY2U@flatron>
+User-Agent: KMail/4.11.2 (Linux/3.11.6-gentoo; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <1383335158-19730-6-git-send-email-matt.porter@linaro.org>
+References: <1383335158-19730-1-git-send-email-matt.porter@linaro.org> <1383335158-19730-6-git-send-email-matt.porter@linaro.org>
 MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-11-02_01:2013-11-02,2013-11-02,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1311020074
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rA2CTRtV005146
 
-> How does efivars backend handle "unlink(2)" in the pstore file system.
-> pstore will call the backend->erase function passing the "id".  The
-> backend should then erase the right record from persistent storage.
+Hi Matt.
+
+On Friday 01 of November 2013 15:45:54 Matt Porter wrote:
+> Adds support for the generic PHY subsystem. Generic PHY
+> support is probed and then the driver falls back to checking
+> for an old style USB PHY and pdata if not found.
 > 
-> With the  ((timestamp * 100 + part) * 100 + count function - you can
-> easily reverse it to find timestamp, part and count - would that make life
-> easier for the backend to find the record to be erased?  If you use a
-> hash function you will need to check each record and compute the
-> hash to see if it matches (probably not a big deal because the backend
-> will generally only hold a handful of records).
+> Signed-off-by: Matt Porter <matt.porter@linaro.org>
+> ---
+>  drivers/usb/gadget/s3c-hsotg.c | 54
+> ++++++++++++++++++++++++++++-------------- 1 file changed, 36
+> insertions(+), 18 deletions(-)
 
-By generating the id in  efi_pstore_write(), and using it to a variable name,
-It works at an erasing time as well.
+Patches that convert the driver to generic PHY have been already posted by 
+Kamil Debski, as a part of a series[1] adding generic PHY drivers for S5P 
+and Exynos SoCs. After that series, there will be no need to support the 
+usb_phy subsystem in this driver anymore.
 
-The root cause of this problem is that efivars used "part" as id.
-It was a wrong way. So, we should not keep it.
+[1] http://www.mail-archive.com/linux-usb@vger.kernel.org/msg31189.html
 
-Seiji
+Best regards,
+Tomasz
 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
