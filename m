@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627Ab3KBNsd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Nov 2013 09:48:33 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:33231 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753048Ab3KBNs2 (ORCPT
+	id S1753452Ab3KBNs0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Nov 2013 09:48:26 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:53277 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753048Ab3KBNsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Nov 2013 09:48:28 -0400
+	Sat, 2 Nov 2013 09:48:21 -0400
 From: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
 To: davem@davemloft.net, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
@@ -18,9 +18,9 @@ To: davem@davemloft.net, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         jesse.brandeburg@intel.com, shahed.shaikh@qlogic.com, joe@perches.com,
         apw@canonical.com
 Cc: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-Subject: [PATCH net-next 04/13] driver: staging: remove unnecessary skb NULL check before calling dev_kfree_skb_irq
-Date: Sat,  2 Nov 2013 19:17:45 +0530
-Message-Id: <1383400074-30555-5-git-send-email-govindarajulu90@gmail.com>
+Subject: [PATCH net-next 03/13] driver: atm: remove unnecessary skb NULL check before calling dev_kfree_skb_irq
+Date: Sat,  2 Nov 2013 19:17:44 +0530
+Message-Id: <1383400074-30555-4-git-send-email-govindarajulu90@gmail.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1383400074-30555-1-git-send-email-govindarajulu90@gmail.com>
 References: <1383400074-30555-1-git-send-email-govindarajulu90@gmail.com>
@@ -33,23 +33,22 @@ calling this function.
 
 Signed-off-by: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
 ---
- drivers/staging/slicoss/slicoss.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/atm/eni.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
-index 869dcd3..1073880 100644
---- a/drivers/staging/slicoss/slicoss.c
-+++ b/drivers/staging/slicoss/slicoss.c
-@@ -2616,8 +2616,7 @@ static void slic_xmit_complete(struct adapter *adapter)
- 									address;
- /*      hcmd = (struct slic_hostcmd *) rspbuf->hosthandle; */
- 		if (hcmd->type == SLIC_CMD_DUMB) {
--			if (hcmd->skb)
--				dev_kfree_skb_irq(hcmd->skb);
-+			dev_kfree_skb_irq(hcmd->skb);
- 			slic_cmdq_putdone_irq(adapter, hcmd);
- 		}
- 		rspbuf->status = 0;
+diff --git a/drivers/atm/eni.c b/drivers/atm/eni.c
+index b1955ba..78a4445 100644
+--- a/drivers/atm/eni.c
++++ b/drivers/atm/eni.c
+@@ -481,7 +481,7 @@ trouble:
+ 	if (paddr)
+ 		pci_unmap_single(eni_dev->pci_dev,paddr,skb->len,
+ 		    PCI_DMA_FROMDEVICE);
+-	if (skb) dev_kfree_skb_irq(skb);
++	dev_kfree_skb_irq(skb);
+ 	return -1;
+ }
+ 
 -- 
 1.8.4.2
 
