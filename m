@@ -1,94 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401Ab3KBX2s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Nov 2013 19:28:48 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:50892 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563Ab3KBX2r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Nov 2013 19:28:47 -0400
-Message-ID: <1383434908.15049.10.camel@maxim-laptop>
-Subject: Re: [PATCH] memstick: fix unreachable state in h_msb_read_page() in
- ms_block.c
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: rogerable@realtek.com
-Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, oakad@yahoo.com, wei_wang@realsil.com.cn,
-        micky_ching@realsil.com.cn
-Date: Sun, 03 Nov 2013 01:28:28 +0200
-In-Reply-To: <1383119651-31317-1-git-send-email-rogerable@realtek.com>
-References: <1383119651-31317-1-git-send-email-rogerable@realtek.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752215Ab3KBXo5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Nov 2013 19:44:57 -0400
+Received: from imap.thunk.org ([74.207.234.97]:53596 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751524Ab3KBXoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Nov 2013 19:44:55 -0400
+Date: Sat, 2 Nov 2013 19:44:51 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Jason Cipriani <jason.cipriani@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, util-linux@vger.kernel.org
+Subject: Re: Correct parameter size for BLKSSZGET ioctl.
+Message-ID: <20131102234451.GA10255@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Jason Cipriani <jason.cipriani@gmail.com>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	util-linux@vger.kernel.org
+References: <CAF1GSti2xbHGtBx4Qq8Br9unEM_GE8GJ99fzoRm6qKaun7MHZw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAF1GSti2xbHGtBx4Qq8Br9unEM_GE8GJ99fzoRm6qKaun7MHZw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-10-30 at 15:54 +0800, rogerable@realtek.com wrote: 
-> From: Roger Tseng <rogerable@realtek.com>
+On Fri, Nov 01, 2013 at 08:29:26PM -0400, Jason Cipriani wrote:
+> In blkdiscard in util-linux, at least since version 2.23, the
+> following code is used to retrieve a device's physical sector size:
 > 
-> In h_msb_read_page() in ms_block.c, flow never reaches case
-> MSB_RP_RECIVE_STATUS_REG. This causes error when MEMSTICK_INT_ERR is
-> encountered and status error bits are going to be examined, but the status will
-> never be copied back.
+>   uint64_t secsize;
+>   ioctl(fd, BLKSSZGET, &secsize);
 > 
-> Fix it by transiting to MSB_RP_RECIVE_STATUS_REG right after
-> MSB_RP_SEND_READ_STATUS_REG.
-> 
-> Signed-off-by: Roger Tseng <rogerable@realtek.com>
-> ---
->  drivers/memstick/core/ms_block.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/memstick/core/ms_block.c b/drivers/memstick/core/ms_block.c
-> index 08e7023..9188ef5 100644
-> --- a/drivers/memstick/core/ms_block.c
-> +++ b/drivers/memstick/core/ms_block.c
-> @@ -401,7 +401,7 @@ again:
->  			sizeof(struct ms_status_register)))
->  			return 0;
->  
-> -		msb->state = MSB_RP_RECEIVE_OOB_READ;
-> +		msb->state = MSB_RP_RECIVE_STATUS_REG;
->  		return 0;
->  
->  	case MSB_RP_RECIVE_STATUS_REG:
+> On my machine (Ubuntu 12.04 -- 3.2.0-55-generic-pae #85-Ubuntu SMP Wed
+> Oct 2 14:03:15 UTC 2013 i686 i686 i386 GNU/Linux) this yields
+> incorrect results as it seems a 32-bit int is expected, this causes
+> subsequent sector alignment calculations in blkdiscard to be
+> incorrect, which in turn causes blkdiscards trim ioctl's to fail in
+> certain situations (or even worse, to trim the wrong blocks).
 
-This is indeed a bug here. Probably added when I converted to use
-#defines for states.
+BLKSSZGET returns an int.  If you look at the sources of util-linux
+v2.23, you'll see it passes an int to BLKSSZGET in 
 
-So,
+	sys-utils/blkdiscard.c
+	lib/blkdev.c
 
-Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+E2fsprogs also expects BLKSSZGET to return an int, and if you look at
+the kernel sources, it very clearly returns an int.
 
+The one place it doesn't is in sys-utils/blkdiscard.c, where as you
+have noted, it is passing in a uint64 to BLKSSZGET.  This looks like
+it's a bug in sys-util/blkdiscard.c.
 
-Btw, there is another  minor or major (pun inteded) bug out there in
-this driver, which I still have no time to send patch for yet :-(
+I'll send a proposed patch in the next e-mail message.
 
-I accidentally didn't set the major and minor for the disk.
-It happens to work as usually there is just one card reader out there,
-and major is allocated dynamically.
-
-The two lines in msb_init_disk,
-
-msb->disk->major = major;
-msb->disk->first_minor = disk_id << MS_BLOCK_PART_SHIFT;
-
-Somehow fell through the cracks. I had this in older revision.
-
-Feel free to add it, or maybe I find time to compile and test this and
-send a patch.
-
-You also welcome to write a driver for xD portion of the card reader
-too.
-I back then implemented all the generic support, and you only need to
-expose an NAND driver (look at r852.c for my code).
-
-
--- 
-Best regards,
-        Maxim Levitsky
-
-
+     	    	     	      	  - Ted
