@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab3KBUzj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Nov 2013 16:55:39 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:53090 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987Ab3KBUzh (ORCPT
+	id S1754499Ab3KBVEM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Nov 2013 17:04:12 -0400
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:52672 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752578Ab3KBVEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Nov 2013 16:55:37 -0400
+	Sat, 2 Nov 2013 17:04:11 -0400
 X-Originating-IP: 109.242.2.94
 From: Aldo Iljazi <mail@aldo.io>
 To: marek.belisko@gmail.com
 Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
 Subject: [PATCH] Staging: ft1000: fixed coding style issues
-Date: Sat,  2 Nov 2013 22:55:20 +0200
-Message-Id: <1383425720-24496-1-git-send-email-mail@aldo.io>
+Date: Sat,  2 Nov 2013 23:03:52 +0200
+Message-Id: <1383426232-24686-1-git-send-email-mail@aldo.io>
 X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,7 +27,7 @@ Specifically:
 1. line over 80 characters issue on the lines 9 and 10.
 2. space prohibited before open square bracket '[' issue on the lines
 31.
-3. iserted space after comma on lines to 156
+3. inserted space after comma on lines 32 to 156.
 
 Signed-off-by: Aldo Iljazi <mail@aldo.io>
 ---
