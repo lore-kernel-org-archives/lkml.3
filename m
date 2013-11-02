@@ -1,103 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290Ab3KBPsu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Nov 2013 11:48:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60804 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab3KBPsr (ORCPT
+	id S1753568Ab3KBPuZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Nov 2013 11:50:25 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:54699 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab3KBPuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Nov 2013 11:48:47 -0400
-Date: Sat, 2 Nov 2013 08:50:54 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: Re: [RFC PATCH] PCI: export MSI mode using attributes, not kobjects
-Message-ID: <20131102155054.GD23938@kroah.com>
-References: <20131029214631.GA19354@kroah.com>
- <CAErSpo5YpE-aoTbXd5=0xBDe+_aQPEO4PejrG=+JoEM=w2ZxQw@mail.gmail.com>
+	Sat, 2 Nov 2013 11:50:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAErSpo5YpE-aoTbXd5=0xBDe+_aQPEO4PejrG=+JoEM=w2ZxQw@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <525BE2B2.8020105@ti.com>
+References: <1380902596-4693-1-git-send-email-sujithkv@ti.com>
+ <1380902596-4693-2-git-send-email-sujithkv@ti.com> <CACRpkdYxegBSYXR1-98smUNnDXpyRHo_vuYdnr3r7zhawENiUA@mail.gmail.com>
+ <CA+V-a8vyPyL0j0nPOZyjxrecusFzXovFPsNBLKYXns5ASWR-wg@mail.gmail.com>
+ <CACRpkdYNexWWXuQ052xuQ4NOdXm2gt-+ByREKeGo-VAnbH4D2w@mail.gmail.com>
+ <CA+V-a8vH7VXqz=2cz-uD=YfRBRYrJ10K1Aptw28vV8gP+PiT2g@mail.gmail.com> <525BE2B2.8020105@ti.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Sat, 2 Nov 2013 21:19:59 +0530
+Message-ID: <CA+V-a8uqErBvzjnHq4yvtti4cJ1D6sXx3_r-p=E+yhMCTZ6JJw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] gpio: davinci: add OF support
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        LDOC <linux-doc@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Sekhar Nori <nsekhar@ti.com>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 01, 2013 at 05:40:02PM -0600, Bjorn Helgaas wrote:
-> On Tue, Oct 29, 2013 at 3:46 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >
-> > The PCI MSI sysfs code is a mess with kobjects for things that don't
-> > really need to be kobjects.  This patch creates attributes dynamically
-> > for the MSI interrupts instead of using kobjects.
-> >
-> > Note, this does not delete the existing sysfs MSI code, but puts the
-> > attributes under a "msi_irqs_2" directory for testing / example.
-> >
-> > Also note, this removes a directory from the current MSI interrupt sysfs
-> > code:
-> >
-> > old MSI kobjects:
-> > pci_device
-> >    └── msi_irqs
-> >        └── 40
-> >            └── mode
-> >
-> > new MSI attributes:
-> > pci_device
-> >    └── msi_irqs_2
-> >        └── 40
-> >
-> > As there was only one file "mode" with the kobject model, the interrupt
-> > number is now a file that returns the "mode" of the interrupt (msi vs.
-> > msix).
-> >
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > ---
-> >
-> > Bjorn, I can make up a patch that rips out the existing kobject code
-> > here, but I figured this patch would make things easier to follow
-> > instead of having to dig through the removed logic at the same time.
-> >
-> > I'll clean up the error handling path for the create attribute logic as
-> > well, this was just a proof of concept that this could be done.
-> >
-> > Do you think that anyone cares about the current mode files in sysfs to
-> > move things in this manner?
-> 
-> I like this a lot better than trying to fix all the holes in the
-> current kobject code.
+Hi Grygorii,
 
-Great.
+On Mon, Oct 14, 2013 at 5:55 PM, Grygorii Strashko
+<grygorii.strashko@ti.com> wrote:
+> Hi Prabhakar Lad,
+>
+> On 10/11/2013 07:18 PM, Prabhakar Lad wrote:
+>> Hi Linus,
+>>
+>> On 10/11/13, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>> On Fri, Oct 11, 2013 at 4:59 PM, Prabhakar Lad
+>>> <prabhakar.csengg@gmail.com> wrote:
+>>>> On 10/11/13, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>>>> On Fri, Oct 4, 2013 at 6:03 PM, Prabhakar Lad
+>>>>> <prabhakar.csengg@gmail.com> wrote:
+>>>
+>>>>>> +- ti,davinci-gpio-irq-base: Base from where GPIO interrupt numbering
+>>>>>> starts.
+>>>>>
+>>>>> What is this?
+>>>>>
+>>>>> If I have ever ACKed this I have been drunk. I take it back.
+>>>>>
+>>>> here is the ACK https://patchwork.kernel.org/patch/2721181/
+>>>
+>>> And as suspected that version of the patch did not contain
+>>> this strange node property.
+>>>
+>> The property did exist in the patch 'intc_irq_num', I just renamed
+>> it and gave a proper description to it.
+>>
+>>> Don't keep my ACK on patches if you change basic stuff like
+>>> that, they need to be re-acked, this runs the risk of abusing
+>>> my trust amongst other subsystem maintainers who might
+>>> go and merge this because "aha the GPIO maintainer
+>>> thinks that this is OK".
+>>>
+>> Agreed, I carry forwarded the ACK since it had minor changes.
+>>
+>>>>> This "base" is a Linux-specific thing and has no place in the
+>>>>> device tree, and shall not be there. You have to find some way to
+>>>>> avoid this, what do you think some other OS should do with
+>>>>> this value...
+>>>>>
+>>>>> All IRQs in Linux are assumed to be dynamically assigned numbers
+>>>>> nowadays, with a property like this you can never switch on
+>>>>> SPARSE_IRQ for the DaVinci.
+>>>>>
+>>>> Can you point to any alternative solution if you have any ?
+>>>
+>>> First convert this GPIO driver to use an irqdomain to map
+>>> HW IRQs to Linux IRQs, and grab a few IRQ descriptors
+>>> dynamically off the irq descriptor heap.
+>>> Example: commit
+>>> a6c45b99a658521291cfb66ecf035cc58b38f206
+>>> "pinctrl/coh901: use irqdomain, allocate irqdescs"
+>>>
+>>> Then on a longer term convert DaVinci to use dynamically
+>>> allocated IRQs for all interrupt controllers, and move it over
+>>> to SPARSE_IRQ so you know this works.
+>>>
+>> Thanks for the pointers.
+>>
+>
+> Could it be possible to use "interrupts" and "interrupt-names" to identify
+> assigned banked & unbanked IRQs?
+>
+I did give thought for it but found out its taken as a single interrupt,
+and comparing the names in the driver would be tedious. so as
+of now I have kept as is for this.
 
-> I have no idea who, if anybody, cares about the "mode" files.  I
-> assume there's a way to create the "mode" files with attributes, too?
-> If so, we could replicate the existing structure with one patch, and
-> simplify it with a second patch, so it would be easier to revert the
-> directory change while keeping the fix.
+> For example DM646x (http://www.ti.com/lit/ug/sprueq8a/sprueq8a.pdf):
+>
+> interrupts = <48 IRQ_TYPE_EDGE_BOTH>,
+>              <49 IRQ_TYPE_EDGE_BOTH>,
+>              <50 IRQ_TYPE_EDGE_BOTH>,
+>              <51 IRQ_TYPE_EDGE_BOTH>,
+>              <52 IRQ_TYPE_EDGE_BOTH>,
+>              <53 IRQ_TYPE_EDGE_BOTH>,
+>              <54 IRQ_TYPE_EDGE_BOTH>,
+>              <55 IRQ_TYPE_EDGE_BOTH>,
+>              <56 IRQ_TYPE_EDGE_BOTH>,
+>              <57 IRQ_TYPE_EDGE_BOTH>,
+>              <58 IRQ_TYPE_EDGE_BOTH>;
+> interrupt-names = "gpio0", "gpio1", "gpio2", "gpio3", "gpio4", "gpio5", "gpio6", "gpio7", "bank0", "bank1", "bank2";
+>
+> For example OMAP-L138 (http://www.ti.com/lit/ug/spruh77a/spruh77a.pdf):
+>
+> interrupts = <42 IRQ_TYPE_EDGE_BOTH>,
+>              <43 IRQ_TYPE_EDGE_BOTH>,
+>              <44 IRQ_TYPE_EDGE_BOTH>,
+>              <45 IRQ_TYPE_EDGE_BOTH>,
+>              <46 IRQ_TYPE_EDGE_BOTH>,
+>              <47 IRQ_TYPE_EDGE_BOTH>,
+>              <48 IRQ_TYPE_EDGE_BOTH>,
+>              <49 IRQ_TYPE_EDGE_BOTH>,
+>              <50 IRQ_TYPE_EDGE_BOTH>;
+>
+> interrupt-names = "bank0", "bank1", "bank2", "bank3", "bank4", "bank5", "bank6", "bank7", "bank8";
+>
+> For example Keystone 66AK2E05/02
+>  (http://www.ti.com/lit/ds/sprs865a/sprs865a.pdf and http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf):
+>
+> interrupts = <GIC_SPI 120 IRQ_TYPE_LEVEL_HIGH>,
+>              <GIC_SPI 121 IRQ_TYPE_LEVEL_HIGH>,
+> [..]
+>              <GIC_SPI 150 IRQ_TYPE_LEVEL_HIGH>,
+>              <GIC_SPI 151 IRQ_TYPE_LEVEL_HIGH>;
+>
+>
+> interrupt-names = "gpio0", "gpio1", [...], "gpio30", "gpio31";
+>
+> So then, following properties would not be needed at all, because all inf. can be
+> taken from interrupt's properties:
+> +- ti,davinci-gpio-irq-base: Base from where GPIO interrupt numbering starts.
+Yeah dropped this.
 
-No, we can't create a 2-level deep attribute at the moment, only one
-level, like the patch does.
+> +- ti,davinci-gpio-unbanked: The number of GPIOs that have an individual interrupt line to processor.
+>
+Kept as is
+> It should work good if Davinci-gpio driver will be converted to use
+> linear IRQ domains for banked irqs.
+>
+Yeah migrated it to use IRQ domains.
 
-Based on Neil's comments, I think we should be fine with this as-is as
-no one is messing with these files directly (which implies that we could
-possibly just remove them entirely to save us the overall pain...)
+I have posted the updated patch series at [1], please have a look at it.
 
-Want me to redo this in a way that is acceptable (i.e. remove the
-existing code at the same time?)
+[1] http://linux.omap.com/pipermail/davinci-linux-open-source/2013-November/028220.html
 
-thanks,
-
-greg k-h
+Regards,
+--Prabhakar Lad
