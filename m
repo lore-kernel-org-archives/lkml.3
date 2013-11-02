@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab3KBRZQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Nov 2013 13:25:16 -0400
-Received: from mout.gmx.net ([212.227.15.19]:60606 "EHLO mout.gmx.net"
+	id S1754203Ab3KBRZn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Nov 2013 13:25:43 -0400
+Received: from mout.gmx.net ([212.227.15.18]:49243 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752413Ab3KBRZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Nov 2013 13:25:13 -0400
+	id S1752817Ab3KBRZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Nov 2013 13:25:14 -0400
 From: Peter Huewe <peterhuewe@gmx.de>
 To: james.l.morris@oracle.com, tpmdd-devel@lists.sourceforge.net,
         adlai@linux.vnet.ibm.com
 Cc: linux-kernel@vger.kernel.org, Peter Huewe <PeterHuewe@gmx.de>,
         stable@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 1/6] tpm/tpm_ppi: Do not compare strcmp(a,b) == -1
-Date: Sat,  2 Nov 2013 18:24:56 +0100
-Message-Id: <1383413101-10975-1-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 2/6] tpm/tpm_ppi: Check return value of acpi_get_name
+Date: Sat,  2 Nov 2013 18:24:57 +0100
+Message-Id: <1383413101-10975-2-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <trinity-0ea948ed-45da-4711-91da-0d251d630d89-1383412993117@3capp-gmx-bs02>
+In-Reply-To: <1383413101-10975-1-git-send-email-peterhuewe@gmx.de>
 References: <trinity-0ea948ed-45da-4711-91da-0d251d630d89-1383412993117@3capp-gmx-bs02>
-X-Provags-ID: V03:K0:YNIMyDym/fiMQ+Q1OfPj1oO720vkVXt25Cy7zCziBCmLuAtsCY/
- tz4bNgV9LPa8Ks1LJBwDpmkgTe0K8518psuC4Tqyb4RkZ8sTM6ZSJBzxQJpuPSDtUs0OWAr
- afCrb2UMEiZIYRkr19zAN+CIclq4EuqDzlbdlSJ1ytAky7Fz0qJRHncqo8igiB/OOnEwCrf
- lU9LCwUkyww4zN4fu2u/Q==
+ <1383413101-10975-1-git-send-email-peterhuewe@gmx.de>
+X-Provags-ID: V03:K0:n1Gq99zMuIP4d+IXsUpWHTfqKN+o50zA49la+J2yZBZz5z8taLL
+ xuqege8eOGRoAC7ogC27CyC4VrKgRwBWFHfQmldTMIVv7+U4qvmDXeUIjBMRtaohisiT0r6
+ O3d5M1len0VRb6eJ80pyiJ1FF5GSp13bJK1ObQZlrR4EmkAvwYDWgBHSJku9y7P7sPJ3iHT
+ RAuVGlwuEsgJPhtb11sbA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Huewe <PeterHuewe@gmx.de>
 
-Depending on the implementation strcmp might return the difference between
-two strings not only -1,0,1 consequently
- if (strcmp (a,b) == -1)
-might lead to taking the wrong branch
+If
+ status = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+fails for whatever reason and does not return AE_OK
+ if (strstr(buffer.pointer, context) != NULL) {
+does dereference a null pointer.
 
--> compare with < 0  instead,
-which in any case is more canonical.
+-> Check the return value and return the status to the caller
 
+Found by coverity
 Cc: stable@vger.kernel.org
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/char/tpm/tpm_ppi.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/char/tpm/tpm_ppi.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/char/tpm/tpm_ppi.c b/drivers/char/tpm/tpm_ppi.c
-index 8e562dc..18c5810 100644
+index 18c5810..6ac9d27 100644
 --- a/drivers/char/tpm/tpm_ppi.c
 +++ b/drivers/char/tpm/tpm_ppi.c
-@@ -169,7 +169,7 @@ static ssize_t tpm_store_ppi_request(struct device *dev,
- 	 * is updated with function index from SUBREQ to SUBREQ2 since PPI
- 	 * version 1.1
- 	 */
--	if (strcmp(version, "1.1") == -1)
-+	if (strcmp(version, "1.1") < 0)
- 		params[2].integer.value = TPM_PPI_FN_SUBREQ;
- 	else
- 		params[2].integer.value = TPM_PPI_FN_SUBREQ2;
-@@ -179,7 +179,7 @@ static ssize_t tpm_store_ppi_request(struct device *dev,
- 	 * string/package type. For PPI version 1.0 and 1.1, use buffer type
- 	 * for compatibility, and use package type since 1.2 according to spec.
- 	 */
--	if (strcmp(version, "1.2") == -1) {
-+	if (strcmp(version, "1.2") < 0) {
- 		params[3].type = ACPI_TYPE_BUFFER;
- 		params[3].buffer.length = sizeof(req);
- 		sscanf(buf, "%d", &req);
-@@ -245,7 +245,7 @@ static ssize_t tpm_show_ppi_transition_action(struct device *dev,
- 	 * (e.g. Capella with PPI 1.0) need integer/string/buffer type, so for
- 	 * compatibility, define params[3].type as buffer, if PPI version < 1.2
- 	 */
--	if (strcmp(version, "1.2") == -1) {
-+	if (strcmp(version, "1.2") < 0) {
- 		params[3].type = ACPI_TYPE_BUFFER;
- 		params[3].buffer.length =  0;
- 		params[3].buffer.pointer = NULL;
-@@ -387,7 +387,7 @@ static ssize_t show_ppi_operations(char *buf, u32 start, u32 end)
- 	kfree(output.pointer);
- 	output.length = ACPI_ALLOCATE_BUFFER;
- 	output.pointer = NULL;
--	if (strcmp(version, "1.2") == -1)
-+	if (strcmp(version, "1.2") < 0)
- 		return -EPERM;
- 
- 	params[2].integer.value = TPM_PPI_FN_GETOPR;
+@@ -30,6 +30,9 @@ static acpi_status ppi_callback(acpi_handle handle, u32 level, void *context,
+ 	acpi_status status;
+ 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+ 	status = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
++	if (ACPI_FAILURE(status))
++		return status;
++
+ 	if (strstr(buffer.pointer, context) != NULL) {
+ 		*return_value = handle;
+ 		kfree(buffer.pointer);
 -- 
 1.7.5.4
 
