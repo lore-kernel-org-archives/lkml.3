@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750902Ab3KBEQu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Nov 2013 00:16:50 -0400
-Received: from forward12.mail.yandex.net ([95.108.130.94]:48181 "EHLO
-	forward12.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab3KBEQt (ORCPT
+	id S1751603Ab3KBERU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Nov 2013 00:17:20 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:46911 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975Ab3KBEQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Nov 2013 00:16:49 -0400
-X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Nov 2013 00:16:49 EDT
-From: =?koi8-r?B?8tXT1MHGwSDk1sHN1dLByM3F1M/X?= <zbr@ioremap.net>
-Envelope-From: drustafa@yandex.ru
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Nazarewicz <mina86@mina86.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20131101123041.d08adc9739cf6e733d822770@linux-foundation.org>
-References: <5083d6c8452b765cb33acdf03fa9b20b1d15c452.1382788496.git.mina86@mina86.com>
-	<20131030155938.0f5416fe3c5c2cbd3f9cd319@linux-foundation.org>
-	<xa1teh71iz3a.fsf@mina86.com>
-	<212981383321699@web5m.yandex.ru> <20131101123041.d08adc9739cf6e733d822770@linux-foundation.org>
-Subject: Re: [PATCH] drivers: w1: make w1_slave::flags long to avoid casts
+	Sat, 2 Nov 2013 00:16:57 -0400
 MIME-Version: 1.0
-Message-Id: <7061383365433@web15j.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Sat, 02 Nov 2013 08:10:33 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+In-Reply-To: <20131101185401.B298FC40868@trevor.secretlab.ca>
+References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
+	<1381869563-16083-5-git-send-email-grant.likely@linaro.org>
+	<CAOesGMj03kgJXttm80pHvPYeqg5hOaeOJAJ4DA8tf5LxqdArrQ@mail.gmail.com>
+	<CACxGe6uE+KvycQq3XBavRcvprff6PhBaxX54W_Cb1cfuVpMXvQ@mail.gmail.com>
+	<20131031185714.GA12646@quad.lixom.net>
+	<20131101175317.A812AC40868@trevor.secretlab.ca>
+	<20131101185401.B298FC40868@trevor.secretlab.ca>
+Date: Sat, 2 Nov 2013 12:16:56 +0800
+Message-ID: <CACVXFVN-Vk9k=jceT1iR2nfSNvHQR5MAtrb+vjw9QwcWnn9CVw@mail.gmail.com>
+Subject: Re: [RFC 4/9] of/irq: Refactor interrupt-map parsing
+From: Ming Lei <tom.leiming@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-01.11.2013, 23:30, "Andrew Morton" <akpm@linux-foundation.org>:
-
-> set_bit() operates on longs. šSo if we do
+On Sat, Nov 2, 2013 at 2:54 AM, Grant Likely <grant.likely@linaro.org> wrote:
 >
-> struct foo {
-> ššššššššu32 a;
-> ššššššššu32 b;
-> } f;
+> That one was broken. Try this instead.
 >
-> šššššššš...
-> ššššššššset_bit(0, (long *)&f.a);
-> šššššššš...
+> From bcbffc3d16f49451ef505dc021480aa061465a15 Mon Sep 17 00:00:00 2001
+> From: Grant Likely <grant.likely@linaro.org>
+> Date: Fri, 1 Nov 2013 10:50:50 -0700
+> Subject: [PATCH] of: Fixup interrupt parsing failure.
 >
-> then we'll scribble on f.b on a big-endian 64-bit machine.
+> Signed-off-by: Grant Likely <grant.likely@linaro.org>
+> ---
+>  drivers/of/irq.c | 24 ++++++++++++------------
+>  1 file changed, 12 insertions(+), 12 deletions(-)
 
-Argh, why would we just don't do that? Its in-memory field, it can be anything,
-I wouldn't be surprised if it even can be non-atomic because of proper locks already
-being held
+This one does fix boot hanging on Arndale board.
+
+Tested-by: Ming Lei <tom.leiming@gmail.com>
+
+Thanks,
+-- 
+Ming Lei
