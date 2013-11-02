@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751441Ab3KCEEj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 00:04:39 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:45645 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab3KCEEh (ORCPT
+	id S1752986Ab3KCEFW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 00:05:22 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:50593 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707Ab3KCEEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 00:04:37 -0400
-Date: Sat, 2 Nov 2013 10:46:45 -0700
+	Sun, 3 Nov 2013 00:04:39 -0400
+Date: Sat, 2 Nov 2013 10:32:40 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
@@ -20,7 +20,7 @@ Cc: Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
         Michael Ellerman <michael@ellerman.id.au>,
         Michael Neuling <mikey@neuling.org>
 Subject: Re: perf events ring buffer memory barrier on powerpc
-Message-ID: <20131102174645.GC3947@linux.vnet.ibm.com>
+Message-ID: <20131102173239.GB3947@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com>
  <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com>
@@ -31,170 +31,70 @@ References: <CAFTL4hxn47KFKZPLgKeBxxdaAbA4vg9QVzctuW4ZrSgmfX5bAQ@mail.gmail.com>
  <20131030092725.GL4126@linux.vnet.ibm.com>
  <20131030112526.GI16117@laptop.programming.kicks-ass.net>
  <20131031064015.GV4126@linux.vnet.ibm.com>
- <20131101161129.GU16117@laptop.programming.kicks-ass.net>
+ <20131101145634.GH19466@laptop.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131101161129.GU16117@laptop.programming.kicks-ass.net>
+In-Reply-To: <20131101145634.GH19466@laptop.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110304-6688-0000-0000-0000031E2360
+x-cbid: 13110304-0928-0000-0000-0000030A8D4E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 01, 2013 at 05:11:29PM +0100, Peter Zijlstra wrote:
+On Fri, Nov 01, 2013 at 03:56:34PM +0100, Peter Zijlstra wrote:
 > On Wed, Oct 30, 2013 at 11:40:15PM -0700, Paul E. McKenney wrote:
-> > > void kbuf_write(int sz, void *buf)
-> > > {
-> > > 	u64 tail = ACCESS_ONCE(ubuf->tail); /* last location userspace read */
-> > > 	u64 offset = kbuf->head; /* we already know where we last wrote */
-> > > 	u64 head = offset + sz;
-> > > 
-> > > 	if (!space(tail, offset, head)) {
-> > > 		/* discard @buf */
-> > > 		return;
-> > > 	}
-> > > 
-> > > 	/*
-> > > 	 * Ensure that if we see the userspace tail (ubuf->tail) such
-> > > 	 * that there is space to write @buf without overwriting data
-> > > 	 * userspace hasn't seen yet, we won't in fact store data before
-> > > 	 * that read completes.
-> > > 	 */
-> > > 
-> > > 	smp_mb(); /* A, matches with D */
-> > > 
-> > > 	write(kbuf->data + offset, buf, sz);
-> > > 	kbuf->head = head % kbuf->size;
-> > > 
-> > > 	/*
-> > > 	 * Ensure that we write all the @buf data before we update the
-> > > 	 * userspace visible ubuf->head pointer.
-> > > 	 */
-> > > 	smp_wmb(); /* B, matches with C */
-> > > 
-> > > 	ubuf->head = kbuf->head;
-> > > }
-> 
 > > > Now the whole crux of the question is if we need barrier A at all, since
 > > > the STORES issued by the @buf writes are dependent on the ubuf->tail
 > > > read.
 > > 
 > > The dependency you are talking about is via the "if" statement?
 > > Even C/C++11 is not required to respect control dependencies.
+> > 
+> > This one is a bit annoying.  The x86 TSO means that you really only
+> > need barrier(), ARM (recent ARM, anyway) and Power could use a weaker
+> > barrier, and so on -- but smp_mb() emits a full barrier.
+> > 
+> > Perhaps a new smp_tmb() for TSO semantics, where reads are ordered
+> > before reads, writes before writes, and reads before writes, but not
+> > writes before reads?  Another approach would be to define a per-arch
+> > barrier for this particular case.
 > 
-> But surely we must be able to make it so; otherwise you'd never be able
-> to write:
-> 
-> void *ptr = obj1;
-> 
-> void foo(void)
-> {
-> 
-> 	/* create obj2, obj3 */
-> 
-> 	smp_wmb(); /* ensure the objs are complete */
-> 
-> 	/* expose either obj2 or obj3 */
-> 	if (x)
-> 		ptr = obj2;
-> 	else
-> 		ptr = obj3;
+> I suppose we can only introduce new barrier primitives if there's more
+> than 1 use-case.
 
-OK, the smp_wmb() orders the creation and the exposing.  But the
-compiler can do this:
+There probably are others.
 
-	ptr = obj3;
-	if (x)
-		ptr = obj2;
-
-And that could momentarily expose obj3 to readers, and these readers
-might be fatally disappointed by the free() below.  If you instead said:
-
-	if (x)
-		ACCESS_ONCE(ptr) = obj2;
-	else
-		ACCESS_ONCE(ptr) = obj3;
-
-then the general consensus appears to be that the compiler would not
-be permitted to carry out the above optimization.  Since you have
-the smp_wmb(), readers that are properly ordered (e.g., smp_rmb() or
-rcu_dereference()) would be prevented from seeing pre-initialization
-state.
-
-> 	/* free the unused one */
-> 	if (x)
-> 		free(obj3);
-> 	else
-> 		free(obj2);
-> }
+> > > If the read shows no available space, we simply will not issue those
+> > > writes -- therefore we could argue we can avoid the memory barrier.
+> > 
+> > Proving that means iterating through the permitted combinations of
+> > compilers and architectures...  There is always hand-coded assembly
+> > language, I suppose.
 > 
-> Earlier you said that 'volatile' or '__atomic' avoids speculative
-> writes; so would:
+> I'm starting to think that while the C/C++ language spec says they can
+> wreck the world by doing these silly optimization, real world users will
+> push back for breaking their existing code.
 > 
-> volatile void *ptr = obj1;
+> I'm fairly sure the GCC people _will_ get shouted at _loudly_ when they
+> break the kernel by doing crazy shit like that.
 > 
-> Make the compiler respect control dependencies again? If so, could we
-> somehow mark that !space() condition volatile?
+> Given its near impossible to write a correct program in C/C++ and
+> tagging the entire kernel with __atomic is equally not going to happen,
+> I think we must find a practical solution.
+> 
+> Either that, or we really need to consider forking the language and
+> compiler :-(
 
-The compiler should, but the CPU is still free to ignore the control
-dependencies in the general case.
+Depends on how much benefit the optimizations provide.  If they provide
+little or no benefit, I am with you, otherwise we will need to bit some
+bullet or another.  Keep in mind that there is a lot of code in the
+kernel that runs sequentially (e.g., due to being fully protected by
+locks), and aggressive optimizations for that sort of code are harmless.
 
-We might be able to rely on weakly ordered hardware refraining
-from speculating stores, but not sure that this applies across all
-architectures of interest.  We definitely can -not- rely on weakly
-ordered hardware refraining from speculating loads.
-
-> Currently the above would be considered a valid pattern. But you're
-> saying its not because the compiler is free to expose both obj2 and obj3
-> (for however short a time) and thus the free of the 'unused' object is
-> incorrect and can cause use-after-free.
-
-Yes, it is definitely unsafe and invalid in absence of ACCESS_ONCE().
-
-> In fact; how can we be sure that:
-> 
-> void *ptr = NULL;
-> 
-> void bar(void)
-> {
-> 	void *obj = malloc(...);
-> 
-> 	/* fill obj */
-> 
-> 	if (!err)
-> 		rcu_assign_pointer(ptr, obj);
-> 	else
-> 		free(obj);
-> }
-> 
-> Does not get 'optimized' into:
-> 
-> void bar(void)
-> {
-> 	void *obj = malloc(...);
-> 	void *old_ptr = ptr;
-> 
-> 	/* fill obj */
-> 
-> 	rcu_assign_pointer(ptr, obj);
-> 	if (err) { /* because runtime profile data says this is unlikely */
-> 		ptr = old_ptr;
-> 		free(obj);
-> 	}
-> }
-
-In this particular case, the barrier() implied by the smp_wmb() in
-rcu_assign_pointer() will prevent this "optimization".  However, other
-"optimizations" are the reason why I am working to introduce ACCESS_ONCE()
-into rcu_assign_pointer.
-
-> We _MUST_ be able to rely on control flow, otherwise me might as well
-> all go back to writing kernels in asm.
-
-It isn't -that- bad!  ;-)
+Can't say I know the answer at the moment, though.
 
 							Thanx, Paul
 
