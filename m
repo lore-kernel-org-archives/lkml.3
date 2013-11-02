@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab3KBDTE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Nov 2013 23:19:04 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:17197 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971Ab3KBDTD (ORCPT
+	id S1753878Ab3KBDdn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Nov 2013 23:33:43 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:51194 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989Ab3KBDdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Nov 2013 23:19:03 -0400
-Message-ID: <1383362336.2444.8.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 0/4] per anon_vma lock and turn anon_vma rwsem lock to
- rwlock_t
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Michel Lespinasse <walken@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Fri, 01 Nov 2013 20:18:56 -0700
-In-Reply-To: <CA+55aFyLPpDzgYJfXFMMGaWT4JOsSN0be_ntazjzc+GEg14V2A@mail.gmail.com>
-References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
-	 <20131101080135.GB25547@gmail.com>
-	 <1383328187.2653.5.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFzzdLn1xqyGobtP2yo7es+XOgt10Kr-9FRHvg-9eE3cyg@mail.gmail.com>
-	 <CANN689EQ9d1BubEZ9txfWfKJEZQ5_zWvV5V_CyPCP5cRUw-oAw@mail.gmail.com>
-	 <CA+55aFyLPpDzgYJfXFMMGaWT4JOsSN0be_ntazjzc+GEg14V2A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Fri, 1 Nov 2013 23:33:42 -0400
+Message-ID: <52747280.7040708@linaro.org>
+Date: Fri, 01 Nov 2013 23:33:20 -0400
+From: David Long <dave.long@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 05/13] uprobes: add arch write opcode hook
+References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-6-git-send-email-dave.long@linaro.org> <20131019165051.GC7837@redhat.com> <5268137F.3030809@linaro.org> <20131028194914.GA15103@redhat.com> <20131029195920.GA4538@redhat.com>
+In-Reply-To: <20131029195920.GA4538@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-11-01 at 11:55 -0700, Linus Torvalds wrote:
-> On Fri, Nov 1, 2013 at 11:47 AM, Michel Lespinasse <walken@google.com> wrote:
-> >
-> > Should copy Andrea on this. I talked with him during KS, and there are
-> > no current in-tree users who are doing such sleeping; however there
-> > are prospective users for networking (RDMA) or GPU stuff who want to
-> > use this to let hardware directly copy data into user mappings.
-> 
-> Tough.
-> 
-> I spoke up the first time this came up and I'll say the same thing
-> again: we're not screwing over the VM subsystem because some crazy
-> user might want to do crazy and stupid things that nobody sane cares
-> about.
-> 
-> The whole "somebody might want to .." argument is just irrelevant.
+On 10/29/13 15:59, Oleg Nesterov wrote:
+> On 10/28, Oleg Nesterov wrote:
+>>
+>> Yes, yes, sorry for confusion. What I actually tried to suggest is
+>> something like the trivial patch below.
+>>
+>> Then arm can do:
+>>
+>> 	uprobe_opcode_t arch_uprobe_swbp_insn(struct arch_uprobe *auprobe)
+>> 	{
+>> 		return __opcode_to_mem_arm(auprobe->bpinsn);
+>> 	}
+>>
+>> No?
+>>
+>>> I notice there don't seem to be any alternative set_swbp functions
+>>> in the (rc6) kernel tree
+>>
+>> Yes... I think we should simply make it "static". And set_orig_insn()
+>> too.
+>
+> Or. arm can actually reimplement set_swbp(). This doesn't mean the
+> duplication of write_opcode() code, we can simply export this helper.
+>
 
-Ok, I was under the impression that this was something already in the
-kernel and hence "too late to go back". Based on the results I'm
-definitely in favor of the whole rwlock conversion.
+That actually looks to me like the cleanest approach.  I have changed 
+the static write_opcode() to a global uprobe_write_opcode(), and now 
+call it from an arm set_swbp().
+
+Please do *not* make set_swbp() (and set_orig_insn()) static's.  It 
+looks like we now have a use for at least one of them.
 
 Thanks,
-Davidlohr
+-dl
 
