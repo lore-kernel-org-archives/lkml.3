@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab3KCV6o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 16:58:44 -0500
-Received: from [137.117.211.52] ([137.117.211.52]:1072 "EHLO mail.mama.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754181Ab3KCV6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 16:58:43 -0500
-X-Greylist: delayed 1357 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Nov 2013 16:58:43 EST
-Message-ID: <9f9fa836f0c9ce04a3ef7e9aa43a7710.squirrel@137.117.211.52>
-Date: Sun, 3 Nov 2013 21:30:18 -0000
-Subject: =?iso-8859-1?Q?K=E6re_:_Vinder?=
-From: "Microsoft.nl" <msoftgroupp@sify.com>
-Reply-To: msoftagency@aol.com
-User-Agent: SquirrelMail/1.4.22
+	id S1754714Ab3KCWD1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 17:03:27 -0500
+Received: from mail-ea0-f196.google.com ([209.85.215.196]:48008 "EHLO
+	mail-ea0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754181Ab3KCWDZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 17:03:25 -0500
+From: andreas.thalhammer@linux.com
+Reply-To: andreas.thalhammer@linux.com
+To: "Theodore Ts'o" <tytso@mit.edu>
+Subject: [Topic closed] A Desktop Linux idea: modulized open hardware database for the linux kernel config
+Date: Sun, 3 Nov 2013 23:03:16 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.3-gentoo-6.0; KDE/4.11.2; x86_64; ; )
+References: <201311031553.26488.andreas.thalhammer@linux.com> <201311031957.29584.andreas.thalhammer@linux.com> <20131103200227.GC7376@thunk.org>
+In-Reply-To: <20131103200227.GC7376@thunk.org>
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201311032303.16938.andreas.thalhammer@linux.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kære : Vinder
+Theodore Ts'o wrote on Sunday, 03rd November 2013:
+> It's an idea that people have tossed around before, but utltimately,
+> it's far more work than it's worth, and it's a maintenance nightmare.
+> For most non-technical users, using a distro kernel is quite good
+> enough.
 
-Vi er glade for at informere dig om den endelige annoncering af Microsoft
-International salgsfremmende online programm, er din email ID opstået dig
-en vinder af 815.810.00 euro ( otte hundrede og femten tusinde , otte
-hundrede og ti euro kun ) i Microsoft salgsfremmende program , Men
-resultaterne blev frigivet, og din e-mail -id opstod vinder uden salget af
-nogen billetter .
-Din e-mail var knyttet til Ref.No : LSLUK/2031/8161/13 og Batch nr.:
-14/013/IPD . Udvælgelsesprocessen blev udført gennem en tilfældig edb
-valgrunde system fra en database på over 250,000.000 email adresser
-trukket fra alle kontinenter .
-************************************************** **
-At indsende din påstand du rådes til at kontakte vores markedsføring
-Director med nedenstående oplysninger:
-Kontaktperson: Dr. David Bengal. Tlf : +31 685 443 018 , sende dit svar
-til : msoftagency@aol.com
-************************************************** **
-Med venlig hilsen ,
-Mrs Sandra Crowford (Public Relation Officer ) sende dit svar til :
-msoftagency@aol.com
+Yes, I get it. Thanks for the honesty.
 
+> > Iâ€™m sorry, but I cannot possibly do this all by myself. I was able
+> > to help in some Wikis and in Smolt, but I cannot setup such a
+> > system. Apparently I was only able to come up with the idea...
+>
+> If you told me that you wanted to try it, I would tell you that you
+> were going to be getting into a huge amount of work, and it's not
+> obvious to me that it's worth it --- but if you are going to volunteer
+> your own time, then it's ultimately up to you.  But having you trying
+> to volunteer *other* people's time for what might be a sisyphean does
+> take a fair amount of chutzpah.
+
+I donâ€™t want other people to volunteer, I was expressing an idea, but â€“ after 
+reading your answer â€“ I do understand that the gain is not worth the effort. At 
+least now I know what you (the people making Linux) think about it.
+
+I was trying to off-load some workload from you (developers) to power-users. I 
+consider myself to be good enough to compile a kernel by myself, and to 
+install Gentoo for that matter, and Iâ€™m also willing to volunteer some of my 
+spare time to help other people who run Linux. I wrote some Wiki entries on 
+how to install Linux on a specific machine and how to get things to run. I 
+found that most of the times a new kernel was required due to some devices 
+requireing a staging driver or a deactivated feature of a driver.
+
+However, my possibilities are limited. As I wrote before, I tried some tools 
+(written by others!) that unfortunately didnâ€™t work out, like Smolt.
+
+So Iâ€™ll let go of that idea. Iâ€™m certainly glad to have proposed it, but I get 
+it that it isnâ€™t worth it.
+
+I donâ€™t think it has anything to do with chutzpah though, since the posting 
+was motivated by me being eager to help where I can, not where I cannot.
+(Although I do understand it may look different.)
+
+Thanks!
