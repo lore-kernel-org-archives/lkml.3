@@ -1,137 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab3KCLhS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 06:37:18 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:52920 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832Ab3KCLgr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 06:36:47 -0500
-From: Mathias Krause <minipli@googlemail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Pax Team <pageexec@freemail.hu>,
-        Brad Spengler <spender@grsecurity.net>, linux-kernel@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>
-Subject: [PATCHv2 2/2] ipc, msg: forbid negative values for "msg{max,mnb,mni}"
-Date: Sun,  3 Nov 2013 12:36:28 +0100
-Message-Id: <1383478588-7011-3-git-send-email-minipli@googlemail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1383478588-7011-1-git-send-email-minipli@googlemail.com>
-References: <CA+55aFxeGaZjWM37e4p1tAhjwocpv0_iU0jTYUfaAFagvCBxmQ@mail.gmail.com>
- <1383478588-7011-1-git-send-email-minipli@googlemail.com>
+	id S1753300Ab3KCMCb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 07:02:31 -0500
+Received: from mout.gmx.net ([212.227.15.15]:63783 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753182Ab3KCMCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 07:02:30 -0500
+From: Andreas Werner <wernerandy@gmx.de>
+To: tglx@linutronix.de
+Cc: mingo@redhat.com, hpa@zytor.com, x86@kernel.org, wernerandy@gmx.de,
+        linux-kernel@vger.kernel.org, bp@alien8.de
+Subject: [PATCH v2] X86: MM: Add PAT Type write-through in combination with mtrr
+Date: Sun,  3 Nov 2013 13:02:22 +0100
+Message-Id: <1383480142-5665-1-git-send-email-wernerandy@gmx.de>
+X-Mailer: git-send-email 1.8.4
+X-Provags-ID: V03:K0:oP3JP5mh4sgp9mcEHxEbCNskpLpicvb2z6prMI/FUxKDjA0bIEb
+ bkdhM5SvnOYL5NzgJCeAtzHlc8vDXY4AMpmUV3L8Wx3EcN7JlcpqILf7fUM8MrcK0MgQkc8
+ qL4ItVKpk+G+9ybWJqd4yhYqTyv5LsbeNmFWgFOhcW9OOc9Y6tIE1Uk2IQQ9Da3Pdfw/d+o
+ s8br82QuOn1quUFlcHk3g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Negative message lengths make no sense -- so don't do negative queue
-lenghts or identifier counts. Prevent them from getting negative.
+Revision 2:
+	added comment in code.
 
-Also change the underlying data types to be unsigned to avoid harry
-surprises with sign extensions in cases where those variables get
-evaluated in unsigned expressions with bigger data types, e.g size_t.
+This patch adds the Write-through memory type in combination with mtrr.
+If you call ioremap_cache to request cachable memory (write-back) the
+function tries to set the PAT to write-back only if the mtrr setting of
+the requested region is also marked as Write-Back.
 
-In case a user still wants to have "unlimited" sizes she could just use
-INT_MAX instead.
+If the mttr regions are marked e.g. as Write-through or with other
+types, the function will always return UC- memory.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+If you check the Intel document " IA-32 SDM vol 3a table Effective
+Memory Type", there
+are many other combinations possible.
+
+This patch will only add the following combination:
+PAT=Write-Back + MTRR=Write-Through.
+
+Since marking IO Memory as cachable is not valid, WT is the
+best way for caching/bursting on MMIO Devices.
+
+Tested on - Intel (R) Atom E680 (Tunnel Creek)
+          - Intel (R) Core(TM)2 Duo
+
+Signed-off-by: Andreas Werner <wernerandy@gmx.de>
 ---
-v2:
- - handle msgmnb and msgmni, too
- - make the underlying variables unsigned, as per Linus
+ arch/x86/mm/pat.c | 18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
- include/linux/ipc_namespace.h |    6 +++---
- ipc/ipc_sysctl.c              |   20 ++++++++++++--------
- 2 files changed, 15 insertions(+), 11 deletions(-)
-
-diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
-index 19c19a5..f6c82de 100644
---- a/include/linux/ipc_namespace.h
-+++ b/include/linux/ipc_namespace.h
-@@ -34,9 +34,9 @@ struct ipc_namespace {
- 	int		sem_ctls[4];
- 	int		used_sems;
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index 6574388..cf05ee6 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -149,10 +149,22 @@ static unsigned long pat_x_mtrr_type(u64 start, u64 end, unsigned long req_type)
+ 		u8 mtrr_type;
  
--	int		msg_ctlmax;
--	int		msg_ctlmnb;
--	int		msg_ctlmni;
-+	unsigned int	msg_ctlmax;
-+	unsigned int	msg_ctlmnb;
-+	unsigned int	msg_ctlmni;
- 	atomic_t	msg_bytes;
- 	atomic_t	msg_hdrs;
- 	int		auto_msgmni;
-diff --git a/ipc/ipc_sysctl.c b/ipc/ipc_sysctl.c
-index 130dfec..b0e99de 100644
---- a/ipc/ipc_sysctl.c
-+++ b/ipc/ipc_sysctl.c
-@@ -62,7 +62,7 @@ static int proc_ipc_dointvec_minmax_orphans(ctl_table *table, int write,
- 	return err;
- }
+ 		mtrr_type = mtrr_type_lookup(start, end);
+-		if (mtrr_type != MTRR_TYPE_WRBACK)
+-			return _PAGE_CACHE_UC_MINUS;
  
--static int proc_ipc_callback_dointvec(ctl_table *table, int write,
-+static int proc_ipc_callback_dointvec_minmax(ctl_table *table, int write,
- 	void __user *buffer, size_t *lenp, loff_t *ppos)
- {
- 	struct ctl_table ipc_table;
-@@ -72,7 +72,7 @@ static int proc_ipc_callback_dointvec(ctl_table *table, int write,
- 	memcpy(&ipc_table, table, sizeof(ipc_table));
- 	ipc_table.data = get_ipc(table);
+-		return _PAGE_CACHE_WB;
++		switch (mtrr_type) {
++		case MTRR_TYPE_WRBACK:
++
++		/*
++		 * Return also WB (PAT) if MTTR is set to WT.
++		 * Since marking IO Memory as cachable is not valid,
++		 * WT is the best way for caching/bursting reads
++		 * on MMIO.
++		 */
++		case MTRR_TYPE_WRTHROUGH:
++		  return _PAGE_CACHE_WB;
++
++		default:
++		  return _PAGE_CACHE_UC_MINUS;
++		}
+ 	}
  
--	rc = proc_dointvec(&ipc_table, write, buffer, lenp, ppos);
-+	rc = proc_dointvec_minmax(&ipc_table, write, buffer, lenp, ppos);
- 
- 	if (write && !rc && lenp_bef == *lenp)
- 		/*
-@@ -152,15 +152,13 @@ static int proc_ipcauto_dointvec_minmax(ctl_table *table, int write,
- #define proc_ipc_dointvec	   NULL
- #define proc_ipc_dointvec_minmax   NULL
- #define proc_ipc_dointvec_minmax_orphans   NULL
--#define proc_ipc_callback_dointvec NULL
-+#define proc_ipc_callback_dointvec_minmax  NULL
- #define proc_ipcauto_dointvec_minmax NULL
- #endif
- 
- static int zero;
- static int one = 1;
--#ifdef CONFIG_CHECKPOINT_RESTORE
- static int int_max = INT_MAX;
--#endif
- 
- static struct ctl_table ipc_kern_table[] = {
- 	{
-@@ -198,21 +196,27 @@ static struct ctl_table ipc_kern_table[] = {
- 		.data		= &init_ipc_ns.msg_ctlmax,
- 		.maxlen		= sizeof (init_ipc_ns.msg_ctlmax),
- 		.mode		= 0644,
--		.proc_handler	= proc_ipc_dointvec,
-+		.proc_handler	= proc_ipc_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &int_max,
- 	},
- 	{
- 		.procname	= "msgmni",
- 		.data		= &init_ipc_ns.msg_ctlmni,
- 		.maxlen		= sizeof (init_ipc_ns.msg_ctlmni),
- 		.mode		= 0644,
--		.proc_handler	= proc_ipc_callback_dointvec,
-+		.proc_handler	= proc_ipc_callback_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &int_max,
- 	},
- 	{
- 		.procname	=  "msgmnb",
- 		.data		= &init_ipc_ns.msg_ctlmnb,
- 		.maxlen		= sizeof (init_ipc_ns.msg_ctlmnb),
- 		.mode		= 0644,
--		.proc_handler	= proc_ipc_dointvec,
-+		.proc_handler	= proc_ipc_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &int_max,
- 	},
- 	{
- 		.procname	= "sem",
+ 	return req_type;
 -- 
-1.7.10.4
+1.8.4
 
