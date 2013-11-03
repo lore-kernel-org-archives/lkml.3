@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab3KCUBx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 15:01:53 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50346 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab3KCUBw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 15:01:52 -0500
-Date: Sun, 3 Nov 2013 21:01:24 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>
-Subject: Re: [RFC] arch: Introduce new TSO memory barrier smp_tmb()
-Message-ID: <20131103200124.GK19466@laptop.lan>
-References: <20131028201735.GA15629@redhat.com>
- <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com>
- <20131030092725.GL4126@linux.vnet.ibm.com>
- <20131030112526.GI16117@laptop.programming.kicks-ass.net>
- <20131031064015.GV4126@linux.vnet.ibm.com>
- <20131101145634.GH19466@laptop.lan>
- <20131102173239.GB3947@linux.vnet.ibm.com>
- <20131103144017.GA25118@linux.vnet.ibm.com>
- <20131103151704.GJ19466@laptop.lan>
- <CA+55aFx_kuvR-0dwJtjvnhtha5QBc5XcLZPRH=WKT+hYVAKOrw@mail.gmail.com>
+	id S1754597Ab3KCUCd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 15:02:33 -0500
+Received: from imap.thunk.org ([74.207.234.97]:53838 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754547Ab3KCUCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 15:02:32 -0500
+Date: Sun, 3 Nov 2013 15:02:27 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: andreas.thalhammer@linux.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Re for el_es: A Desktop Linux idea: modulized open hardware
+ database for the linux kernel config
+Message-ID: <20131103200227.GC7376@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	andreas.thalhammer@linux.com, linux-kernel@vger.kernel.org
+References: <201311031553.26488.andreas.thalhammer@linux.com>
+ <20131103161819.GA4983@linux>
+ <201311031743.26688.andreas.thalhammer@linux.com>
+ <201311031957.29584.andreas.thalhammer@linux.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CA+55aFx_kuvR-0dwJtjvnhtha5QBc5XcLZPRH=WKT+hYVAKOrw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201311031957.29584.andreas.thalhammer@linux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 03, 2013 at 10:08:14AM -0800, Linus Torvalds wrote:
-> On Sun, Nov 3, 2013 at 7:17 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Sun, Nov 03, 2013 at 06:40:17AM -0800, Paul E. McKenney wrote:
-> >> If there was an smp_tmb(), I would likely use it in rcu_assign_pointer().
-> >
-> > Well, I'm obviously all for introducing this new barrier, for it will
-> > reduce a full mfence on x86 to a compiler barrier. And ppc can use
-> > lwsync as opposed to sync afaict. Not sure ARM can do better.
-> >
-> > ---
-> > Subject: arch: Introduce new TSO memory barrier smp_tmb()
+On Sun, Nov 03, 2013 at 07:57:29PM +0100, andreas.thalhammer@linux.com wrote:
 > 
-> This is specialized enough that I would *really* like the name to be
-> more descriptive. Compare to the special "smp_read_barrier_depends()"
-> maco: it's unusual, and it has very specific semantics, so it gets a
-> long and descriptive name.
-> 
-> Memory ordering is subtle enough without then using names that are
-> subtle in themselves. mb/rmb/wmb are conceptually pretty simple
-> operations, and very basic when talking about memory ordering.
-> "acquire" and "release" are less simple, but have descriptive names
-> and have very specific uses in locking.
-> 
-> In contrast "smp_tmb()" is a *horrible* name, because TSO is a
-> description of the memory ordering, not of a particular barrier. It's
-> also not even clear that you can have a "tso barrier", since the
-> ordering (like acquire/release) presumably is really about one
-> particular *store*, not about some kind of barrier between different
-> operations.
-> 
-> So please describe exactly what the semantics that barrier has, and
-> then name the barrier that way.
-> 
-> I assume that in this particular case, the semantics RCU wants is
-> "write barrier, and no preceding reads can move past this point".
-> 
-> Calling that "smp_tmb()" is f*cking insane, imnsho.
+> I’m sorry, but I cannot possibly do this all by myself. I was able
+> to help in some Wikis and in Smolt, but I cannot setup such a
+> system. Apparently I was only able to come up with the idea...
 
-Fair enough; from what I could gather the proposed semantics are
-RELEASE+WMB, such that neither reads not writes can cross over, writes
-can't cross back, but reads could.
+It's an idea that people have tossed around before, but utltimately,
+it's far more work than it's worth, and it's a maintenance nightmare.
+For most non-technical users, using a distro kernel is quite good
+enough.
 
-Since both RELEASE and WMB are trivial under TSO the entire thing
-collapses.
+For power users, they have no trouble configuring their own custom
+kernel --- they can start with a full distribution kernel config, run
+"make localmodconfig" which will compile a kernel with the currently
+loaded modules (which are presumably the ones required for your
+hardware) compiled into the kernel, and then the power user can then
+disable those modules that he or she does't think they'll ever need.
 
-Now I'm currently completely confused as to what C/C++ wrecks vs actual
-proper memory order issues; let alone fully comprehend the case that
-started all this.
+The set of people who aren't willing to use a distribution kernel, but
+aren't clueful enough to figure out how to customize their own kernel,
+is a pretty small set.  And it's certainly not big enough such that
+those of us who could implement such an idea would think that it's
+worth the huge amount of effort it would require, and how to deal with
+the enusing support burden when clueless end-users try to use it, and
+then complain when the information is out of date.
+
+If you told me that you wanted to try it, I would tell you that you
+were going to be getting into a huge amount of work, and it's not
+obvious to me that it's worth it --- but if you are going to volunteer
+your own time, then it's ultimately up to you.  But having you trying
+to volunteer *other* people's time for what might be a sisyphean does
+take a fair amount of chutzpah.
+
+Regards,
+
+					- Ted
