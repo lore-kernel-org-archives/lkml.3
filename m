@@ -1,96 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab3KCMlm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 07:41:42 -0500
-Received: from imap.thunk.org ([74.207.234.97]:53755 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753400Ab3KCMlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 07:41:40 -0500
-Date: Sun, 3 Nov 2013 07:41:35 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: Pavel Machek <pavel@ucw.cz>, sandy harris <sandyinchina@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and
- /dev/random
-Message-ID: <20131103124135.GB32091@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Stephan Mueller <smueller@chronox.de>, Pavel Machek <pavel@ucw.cz>,
-	sandy harris <sandyinchina@gmail.com>, linux-kernel@vger.kernel.org,
-	linux-crypto@vger.kernel.org
-References: <2579337.FPgJGgHYdz@tauon>
- <7861469.OAmn4h8An0@tauon>
- <20131102110112.GA16231@amd.pavel.ucw.cz>
- <3537770.iLHXPOXMiU@tauon>
+	id S1753721Ab3KCMmc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 07:42:32 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:34295 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584Ab3KCMma (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 07:42:30 -0500
+X-Spam-Score: -100.9
+Message-ID: <52764475.9000205@asianux.com>
+Date: Sun, 03 Nov 2013 20:41:25 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3537770.iLHXPOXMiU@tauon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Greg KH <gregkh@linuxfoundation.org>, Kees Cook <keescook@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs/befs/linuxvfs.c: need signed cast for variable 'block'
+References: <5271C5E5.6080606@asianux.com> <CAGXu5jLMU0+VkJ6N3NTKbEtL+9FwF2gMOTU86-GH6SSXQ0rc0w@mail.gmail.com> <20131031190608.GH13318@ZenIV.linux.org.uk> <CAGXu5jJkXj975rbpJo8pTLakPLLpVVse+ecxwQ7Ds2x-ARAOxQ@mail.gmail.com> <20131031204558.GA30290@kroah.com> <527314D5.7090004@asianux.com> <52750237.5060409@asianux.com> <20131102154446.GB23938@kroah.com> <20131102162744.GJ13318@ZenIV.linux.org.uk>
+In-Reply-To: <20131102162744.GJ13318@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 03, 2013 at 08:20:34AM +0100, Stephan Mueller wrote:
-> Another friend of mine mentioned that he assumes the rise and fall times 
-> of transistors varies very slightly and could be the main reason for the 
-> jitter. I do not think that this is really the case, because our gates 
-> that form the CPU instructions comprise of many transistors. The 
-> combined raise/fall jitter should cancel each other out.
+On 11/03/2013 12:27 AM, Al Viro wrote:
+> On Sat, Nov 02, 2013 at 08:44:46AM -0700, Greg KH wrote:
+> 
+>>> Oh, for me, it is not suitable to move a file system sub-directory to
+>>> "drivers/*/" sub-directory. And I can not find any sub-directory like
+>>> 'staging' under "fs" sub-directory, either.
+>>>
+>>> Do we have any sub-directory like "staging" in "fs" sub-directory? if
+>>> no, do we have to create it or have to use another ways instead of?
+>>
+>> Just move the filesystem to drivers/staging/befs.
+> 
+> Actually, having read through that code...  It's not too scary; r/w
+> support would've been much more hairy, but this is just r/o.  We
+> probably don't need to move that sucker at all.
+> 
 
-The whole point of using a clocked architecture for digital circuitry
-is to avoid differences in the rise/fall times of transitors to lead
-to non-deterministic behavior --- which is important if you want to
-make sure that 2 * 2 == 4 and not 3.99999999.....
+After a quick look, I guess we can not remove it from Linux kernel:
 
-The one place where you might find differences is when you have
-different subsystems which are clocked using different clock sources,
-and then there's extra circuitry that has to be needed to handle
-interfacing between those differently clocked circuit areas.
+ - according to "fs/befs/Kconfig",
+   it is only for support file system from BeOS.
 
-The problem, though is that over time, these boundaries can change; it
-may be that on certain chipsets, things that had been in different
-clock circuits, have later been integrated onto a single
-system-on-chip device and all run off of a single clock source.
+ - according to "http://en.wikipedia.org/wiki/BeOS",
+   BeOS is still in use (although it is almost dead).
 
-> That said, the full root cause is is not really known at this time 
-> considering that major chip vendors have no real clue either.
+ - according to "git log -p fs/befs",
+   it is still be changed recently.
 
-I have trouble beliving that statement; they might not be willing to
-comment, since to do so would expose a internal CPU designs which they
-consider secret, or worse, it might cause people to depend on certain
-implementation details which might not be true in future chipsets ---
-which may either tie their hands, or they may even know that it won't
-be true for CPU version currently under development but not yet
-released.
+Can any members provide more proofs for it (my proofs are not enough).
+if it is still using, we have to keep it in Linux kernel, else support
+to remove it to some where firstly (but not "drivers/*").
 
-Sandy Harris pointed out a very good paper that I would definitely
-recommend that people read:
 
-http://lwn.net/images/conf/rtlws11/random-hardware.pdf
+> As for befs_get_block(), I'd suggest
+> 	* taking the range checks for block number into its ->bmap()
+> (just check against the file size and return 0 if it doesn't fit)
 
-It basically describes some efforts made in 2009 by folks to do
-exactly the sort of experiments I was advocating.  What I actually
-think is more important, though, is not the doing of the experiments,
-but the development the tools to do these experiments.  If people can
-create kernel modules (and they have to be done in the kernel, since
-you need to be able to disable interrupts, L1 caches, etc., while you
-run these tests), then it will be possible to do these experiments
-each time a new CPU comes out from Intel, or each time an ARM hardware
-vendor comes out with a new ARM SOC.
+befs_get_block() is called both by befs_bmap() and by befs_readpage(),
+and I guess Al's "->bmap()" points to befs_bmap() -- if what I guess is
+incorrect, please let me know, thanks.
 
-It's important that these tests are done all time, and not, "OK, we
-did some tests in 2009 or 2013, and things looked good, and we don't
-have to worry about this any more; CPU-generated entropy is guaranteed
-to be good!"  We need to make sure we can easily do these tests all
-the time, for every new piece of hardware out there --- and when we
-can't explain where the entropy is coming from, we need to be doubly
-on our guard.
+So for me, just remove this check "if (block < 0) { ... }" is OK which
+is Kees said.
 
-Regards,
+And for me, need use "%llu" not "%lu" instead of "%ld" (according to
+"Documentation/printk-format.txt").
 
-					- Ted
 
+> 	* turning the check for create != 0 into BUG_ON(create)
+
+Can we be sure of:
+
+ - in current case, kernel/sub-system must be continuing incorrectly.
+ - and if let it continue, it will cause critical issue.
+
+If:
+
+  can be sure of both, use BUG_ON().
+  can be sure of 1st item, use WARN_ON().
+  can be sure of neither, keep original no touch.
+
+For me, if what Kees said is correct (for "ioctl ... printks ..."), I
+support to use WARN_ON() which indicates "the sub-system is continuing
+incorrectly, although it not a critical issue".
+
+
+> 	* making the befs_fblock2brun() failure quiet - the sucker
+> will complain itself, just return that -EFBIG and be done with that.
+> 
+
+Do you mean befs_fblock2brun() must be OK (should check it previously)?
+If not, we cann't skip the failure -- next iaddr2blockno() may cause panic.
+
+And for me, use "-EFBIG" is really not quite smart.
+
+Hmm... the same reason as above (if "ioctl ... printks ..." correct),
+may we need WARN_ON(), and then still return "-EFBIG"?.
+
+
+
+BTW: the local variable 'res' can be removed.
+
+
+
+Thanks.
+-- 
+Chen Gang
