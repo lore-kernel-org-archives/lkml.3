@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab3KCJyV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 04:54:21 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:62602 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754304Ab3KCJyL (ORCPT
+	id S1754466Ab3KCJyS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 04:54:18 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:58724 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754116Ab3KCJyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 04:54:11 -0500
+	Sun, 3 Nov 2013 04:54:12 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 37/39] sysfs, kernfs: move mount core code to fs/kernfs/mount.c
-Date: Sun,  3 Nov 2013 04:53:16 -0500
-Message-Id: <1383472398-17812-38-git-send-email-tj@kernel.org>
+Subject: [PATCH 38/39] sysfs, kernfs: make sysfs_dirent definition public
+Date: Sun,  3 Nov 2013 04:53:17 -0500
+Message-Id: <1383472398-17812-39-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1383472398-17812-1-git-send-email-tj@kernel.org>
 References: <1383472398-17812-1-git-send-email-tj@kernel.org>
@@ -21,438 +21,239 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move core mount code to fs/kernfs/mount.c.  The respective
-declarations in fs/sysfs/sysfs.h are moved to
-fs/kernfs/kernfs-internal.h.
+sysfs_dirent includes some information which should be available to
+kernfs users - the type, name and parent pointer.  This patch moves
+sysfs_dirent definition from kernfs/kernfs-internal.h to
+include/linux/kernfs.h so that kernfs users can access them.
 
-This is pure relocation.
+The type part of flags is exported as enum kernfs_node_type and
+sysfs_type() is moved to include/linux/kernfs.h and updated to return
+the enum type.  sysfs_dirent->s_parent and ->s_name are marked
+explicitly as public.
+
+This patch doesn't introduce any functional changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/kernfs/kernfs-internal.h |  22 +++++++
- fs/kernfs/mount.c           | 156 ++++++++++++++++++++++++++++++++++++++++++++
- fs/sysfs/mount.c            | 152 ------------------------------------------
- fs/sysfs/sysfs.h            |  18 -----
- 4 files changed, 178 insertions(+), 170 deletions(-)
+ fs/kernfs/kernfs-internal.h | 76 +---------------------------------------
+ include/linux/kernfs.h      | 84 ++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 84 insertions(+), 76 deletions(-)
 
 diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
-index 943675e..933b7f8 100644
+index 933b7f8..ace0b81 100644
 --- a/fs/kernfs/kernfs-internal.h
 +++ b/fs/kernfs/kernfs-internal.h
-@@ -134,6 +134,28 @@ struct sysfs_addrm_cxt {
- #include "../sysfs/sysfs.h"
+@@ -13,88 +13,19 @@
  
- /*
-+ * mount.c
-+ */
-+struct sysfs_super_info {
-+	/*
-+	 * The root associated with this super_block.  Each super_block is
-+	 * identified by the root and ns it's associated with.
-+	 */
-+	struct kernfs_root	*root;
-+
-+	/*
-+	 * Each sb is associated with one namespace tag, currently the network
-+	 * namespace of the task which mounted this sysfs instance.  If multiple
-+	 * tags become necessary, make the following an array and compare
-+	 * sysfs_dirent tag against every entry.
-+	 */
-+	const void		*ns;
-+};
-+#define sysfs_info(SB) ((struct sysfs_super_info *)(SB->s_fs_info))
-+
-+extern struct kmem_cache *sysfs_dir_cachep;
-+
-+/*
-  * inode.c
-  */
- struct inode *sysfs_get_inode(struct super_block *sb, struct sysfs_dirent *sd);
-diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
-index 872e262..84c83e2 100644
---- a/fs/kernfs/mount.c
-+++ b/fs/kernfs/mount.c
-@@ -7,3 +7,159 @@
-  *
-  * This file is released under the GPLv2.
-  */
-+
-+#include <linux/fs.h>
-+#include <linux/mount.h>
-+#include <linux/init.h>
-+#include <linux/magic.h>
-+#include <linux/slab.h>
-+#include <linux/pagemap.h>
-+
-+#include "kernfs-internal.h"
-+
-+struct kmem_cache *sysfs_dir_cachep;
-+
-+static const struct super_operations sysfs_ops = {
-+	.statfs		= simple_statfs,
-+	.drop_inode	= generic_delete_inode,
-+	.evict_inode	= sysfs_evict_inode,
-+};
-+
-+static int sysfs_fill_super(struct super_block *sb)
-+{
-+	struct sysfs_super_info *info = sysfs_info(sb);
-+	struct inode *inode;
-+	struct dentry *root;
-+
-+	sb->s_blocksize = PAGE_CACHE_SIZE;
-+	sb->s_blocksize_bits = PAGE_CACHE_SHIFT;
-+	sb->s_magic = SYSFS_MAGIC;
-+	sb->s_op = &sysfs_ops;
-+	sb->s_time_gran = 1;
-+
-+	/* get root inode, initialize and unlock it */
-+	mutex_lock(&sysfs_mutex);
-+	inode = sysfs_get_inode(sb, info->root->sd);
-+	mutex_unlock(&sysfs_mutex);
-+	if (!inode) {
-+		pr_debug("sysfs: could not get root inode\n");
-+		return -ENOMEM;
-+	}
-+
-+	/* instantiate and link root dentry */
-+	root = d_make_root(inode);
-+	if (!root) {
-+		pr_debug("%s: could not get root dentry!\n", __func__);
-+		return -ENOMEM;
-+	}
-+	kernfs_get(info->root->sd);
-+	root->d_fsdata = info->root->sd;
-+	sb->s_root = root;
-+	sb->s_d_op = &sysfs_dentry_ops;
-+	return 0;
-+}
-+
-+static int sysfs_test_super(struct super_block *sb, void *data)
-+{
-+	struct sysfs_super_info *sb_info = sysfs_info(sb);
-+	struct sysfs_super_info *info = data;
-+
-+	return sb_info->root == info->root && sb_info->ns == info->ns;
-+}
-+
-+static int sysfs_set_super(struct super_block *sb, void *data)
-+{
-+	int error;
-+	error = set_anon_super(sb, data);
-+	if (!error)
-+		sb->s_fs_info = data;
-+	return error;
-+}
-+
-+/**
-+ * kernfs_super_ns - determine the namespace tag of a kernfs super_block
-+ * @sb: super_block of interest
-+ *
-+ * Return the namespace tag associated with kernfs super_block @sb.
-+ */
-+const void *kernfs_super_ns(struct super_block *sb)
-+{
-+	struct sysfs_super_info *info = sysfs_info(sb);
-+
-+	return info->ns;
-+}
-+
-+/**
-+ * kernfs_mount_ns - kernfs mount helper
-+ * @fs_type: file_system_type of the fs being mounted
-+ * @flags: mount flags specified for the mount
-+ * @root: kernfs_root of the hierarchy being mounted
-+ * @ns: optional namespace tag of the mount
-+ *
-+ * This is to be called from each kernfs user's file_system_type->mount()
-+ * implementation, which should pass through the specified @fs_type and
-+ * @flags, and specify the hierarchy and namespace tag to mount via @root
-+ * and @ns, respectively.
-+ *
-+ * The return value can be passed to the vfs layer verbatim.
-+ */
-+struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
-+			       struct kernfs_root *root, const void *ns)
-+{
-+	struct super_block *sb;
-+	struct sysfs_super_info *info;
-+	int error;
-+
-+	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	if (!info)
-+		return ERR_PTR(-ENOMEM);
-+
-+	info->root = root;
-+	info->ns = ns;
-+
-+	sb = sget(fs_type, sysfs_test_super, sysfs_set_super, flags, info);
-+	if (IS_ERR(sb) || sb->s_fs_info != info)
-+		kfree(info);
-+	if (IS_ERR(sb))
-+		return ERR_CAST(sb);
-+	if (!sb->s_root) {
-+		error = sysfs_fill_super(sb);
-+		if (error) {
-+			deactivate_locked_super(sb);
-+			return ERR_PTR(error);
-+		}
-+		sb->s_flags |= MS_ACTIVE;
-+	}
-+
-+	return dget(sb->s_root);
-+}
-+
-+/**
-+ * kernfs_kill_sb - kill_sb for kernfs
-+ * @sb: super_block being killed
-+ *
-+ * This can be used directly for file_system_type->kill_sb().  If a kernfs
-+ * user needs extra cleanup, it can implement its own kill_sb() and call
-+ * this function at the end.
-+ */
-+void kernfs_kill_sb(struct super_block *sb)
-+{
-+	struct sysfs_super_info *info = sysfs_info(sb);
-+	struct sysfs_dirent *root_sd = sb->s_root->d_fsdata;
-+
-+	/*
-+	 * Remove the superblock from fs_supers/s_instances
-+	 * so we can't find it, before freeing sysfs_super_info.
-+	 */
-+	kill_anon_super(sb);
-+	kfree(info);
-+	kernfs_put(root_sd);
-+}
-+
-+void __init kernfs_init(void)
-+{
-+	sysfs_dir_cachep = kmem_cache_create("sysfs_dir_cache",
-+					      sizeof(struct sysfs_dirent),
-+					      0, SLAB_PANIC, NULL);
-+	sysfs_inode_init();
-+}
-diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-index 5384732..e7e3aa8 100644
---- a/fs/sysfs/mount.c
-+++ b/fs/sysfs/mount.c
-@@ -14,91 +14,14 @@
- 
+ #include <linux/lockdep.h>
  #include <linux/fs.h>
- #include <linux/mount.h>
--#include <linux/pagemap.h>
- #include <linux/init.h>
--#include <linux/module.h>
--#include <linux/magic.h>
--#include <linux/slab.h>
- #include <linux/user_namespace.h>
+-#include <linux/rbtree.h>
+ #include <linux/mutex.h>
  
- #include "sysfs.h"
+ #include <linux/kernfs.h>
  
+-struct sysfs_open_dirent;
 -
--struct kmem_cache *sysfs_dir_cachep;
--
--static const struct super_operations sysfs_ops = {
--	.statfs		= simple_statfs,
--	.drop_inode	= generic_delete_inode,
--	.evict_inode	= sysfs_evict_inode,
--};
--
- static struct kernfs_root *sysfs_root;
- struct sysfs_dirent *sysfs_root_sd;
- 
--static int sysfs_fill_super(struct super_block *sb)
--{
--	struct sysfs_super_info *info = sysfs_info(sb);
--	struct inode *inode;
--	struct dentry *root;
--
--	sb->s_blocksize = PAGE_CACHE_SIZE;
--	sb->s_blocksize_bits = PAGE_CACHE_SHIFT;
--	sb->s_magic = SYSFS_MAGIC;
--	sb->s_op = &sysfs_ops;
--	sb->s_time_gran = 1;
--
--	/* get root inode, initialize and unlock it */
--	mutex_lock(&sysfs_mutex);
--	inode = sysfs_get_inode(sb, info->root->sd);
--	mutex_unlock(&sysfs_mutex);
--	if (!inode) {
--		pr_debug("sysfs: could not get root inode\n");
--		return -ENOMEM;
--	}
--
--	/* instantiate and link root dentry */
--	root = d_make_root(inode);
--	if (!root) {
--		pr_debug("%s: could not get root dentry!\n", __func__);
--		return -ENOMEM;
--	}
--	kernfs_get(info->root->sd);
--	root->d_fsdata = info->root->sd;
--	sb->s_root = root;
--	sb->s_d_op = &sysfs_dentry_ops;
--	return 0;
--}
--
--static int sysfs_test_super(struct super_block *sb, void *data)
--{
--	struct sysfs_super_info *sb_info = sysfs_info(sb);
--	struct sysfs_super_info *info = data;
--
--	return sb_info->root == info->root && sb_info->ns == info->ns;
--}
--
--static int sysfs_set_super(struct super_block *sb, void *data)
--{
--	int error;
--	error = set_anon_super(sb, data);
--	if (!error)
--		sb->s_fs_info = data;
--	return error;
--}
--
--/**
-- * kernfs_super_ns - determine the namespace tag of a kernfs super_block
-- * @sb: super_block of interest
-- *
-- * Return the namespace tag associated with kernfs super_block @sb.
-- */
--const void *kernfs_super_ns(struct super_block *sb)
--{
--	struct sysfs_super_info *info = sysfs_info(sb);
--
--	return info->ns;
--}
--
- static struct dentry *sysfs_mount(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data)
- {
-@@ -120,79 +43,12 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
- 	return root;
- }
- 
--/**
-- * kernfs_mount_ns - kernfs mount helper
-- * @fs_type: file_system_type of the fs being mounted
-- * @flags: mount flags specified for the mount
-- * @root: kernfs_root of the hierarchy being mounted
-- * @ns: optional namespace tag of the mount
-- *
-- * This is to be called from each kernfs user's file_system_type->mount()
-- * implementation, which should pass through the specified @fs_type and
-- * @flags, and specify the hierarchy and namespace tag to mount via @root
-- * and @ns, respectively.
-- *
-- * The return value can be passed to the vfs layer verbatim.
-- */
--struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
--			       struct kernfs_root *root, const void *ns)
--{
--	struct super_block *sb;
--	struct sysfs_super_info *info;
--	int error;
--
--	info = kzalloc(sizeof(*info), GFP_KERNEL);
--	if (!info)
--		return ERR_PTR(-ENOMEM);
--
--	info->root = root;
--	info->ns = ns;
--
--	sb = sget(fs_type, sysfs_test_super, sysfs_set_super, flags, info);
--	if (IS_ERR(sb) || sb->s_fs_info != info)
--		kfree(info);
--	if (IS_ERR(sb))
--		return ERR_CAST(sb);
--	if (!sb->s_root) {
--		error = sysfs_fill_super(sb);
--		if (error) {
--			deactivate_locked_super(sb);
--			return ERR_PTR(error);
--		}
--		sb->s_flags |= MS_ACTIVE;
--	}
--
--	return dget(sb->s_root);
--}
--
- static void sysfs_kill_sb(struct super_block *sb)
- {
- 	kernfs_kill_sb(sb);
- 	kobj_ns_drop(KOBJ_NS_TYPE_NET, (void *)kernfs_super_ns(sb));
- }
- 
--/**
-- * kernfs_kill_sb - kill_sb for kernfs
-- * @sb: super_block being killed
-- *
-- * This can be used directly for file_system_type->kill_sb().  If a kernfs
-- * user needs extra cleanup, it can implement its own kill_sb() and call
-- * this function at the end.
-- */
--void kernfs_kill_sb(struct super_block *sb)
--{
--	struct sysfs_super_info *info = sysfs_info(sb);
--	struct sysfs_dirent *root_sd = sb->s_root->d_fsdata;
+-/* type-specific structures for sysfs_dirent->s_* union members */
+-struct sysfs_elem_dir {
+-	unsigned long		subdirs;
+-	/* children rbtree starts here and goes through sd->s_rb */
+-	struct rb_root		children;
 -
 -	/*
--	 * Remove the superblock from fs_supers/s_instances
--	 * so we can't find it, before freeing sysfs_super_info.
--	 */
--	kill_anon_super(sb);
--	kfree(info);
--	kernfs_put(root_sd);
--}
--
- static struct file_system_type sysfs_fs_type = {
- 	.name		= "sysfs",
- 	.mount		= sysfs_mount,
-@@ -200,14 +56,6 @@ static struct file_system_type sysfs_fs_type = {
- 	.fs_flags	= FS_USERNS_MOUNT,
- };
- 
--void __init kernfs_init(void)
--{
--	sysfs_dir_cachep = kmem_cache_create("sysfs_dir_cache",
--					      sizeof(struct sysfs_dirent),
--					      0, SLAB_PANIC, NULL);
--	sysfs_inode_init();
--}
--
- int __init sysfs_init(void)
- {
- 	int err;
-diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index 93b4b68..6a82311 100644
---- a/fs/sysfs/sysfs.h
-+++ b/fs/sysfs/sysfs.h
-@@ -17,25 +17,7 @@
- /*
-  * mount.c
-  */
--
--struct sysfs_super_info {
--	/*
--	 * The root associated with this super_block.  Each super_block is
--	 * identified by the root and ns it's associated with.
+-	 * The kernfs hierarchy this directory belongs to.  This fits
+-	 * better directly in sysfs_dirent but is here to save space.
 -	 */
 -	struct kernfs_root	*root;
--
--	/*
--	 * Each sb is associated with one namespace tag, currently the network
--	 * namespace of the task which mounted this sysfs instance.  If multiple
--	 * tags become necessary, make the following an array and compare
--	 * sysfs_dirent tag against every entry.
--	 */
--	const void		*ns;
 -};
--#define sysfs_info(SB) ((struct sysfs_super_info *)(SB->s_fs_info))
- extern struct sysfs_dirent *sysfs_root_sd;
--extern struct kmem_cache *sysfs_dir_cachep;
+-
+-struct sysfs_elem_symlink {
+-	struct sysfs_dirent	*target_sd;
+-};
+-
+-struct sysfs_elem_attr {
+-	const struct kernfs_ops	*ops;
+-	struct sysfs_open_dirent *open;
+-	loff_t			size;
+-};
+-
+ struct sysfs_inode_attrs {
+ 	struct iattr	ia_iattr;
+ 	void		*ia_secdata;
+ 	u32		ia_secdata_len;
+ };
  
- /*
-  * dir.c
+-/*
+- * sysfs_dirent - the building block of sysfs hierarchy.  Each and
+- * every sysfs node is represented by single sysfs_dirent.
+- *
+- * As long as s_count reference is held, the sysfs_dirent itself is
+- * accessible.  Dereferencing s_elem or any other outer entity
+- * requires s_active reference.
+- */
+-struct sysfs_dirent {
+-	atomic_t		s_count;
+-	atomic_t		s_active;
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
+-	struct lockdep_map	dep_map;
+-#endif
+-	struct sysfs_dirent	*s_parent;
+-	const char		*s_name;
+-
+-	struct rb_node		s_rb;
+-
+-	union {
+-		struct completion	*completion;
+-		struct sysfs_dirent	*removed_list;
+-	} u;
+-
+-	const void		*s_ns; /* namespace tag */
+-	unsigned int		s_hash; /* ns + name hash */
+-	union {
+-		struct sysfs_elem_dir		s_dir;
+-		struct sysfs_elem_symlink	s_symlink;
+-		struct sysfs_elem_attr		s_attr;
+-	};
+-
+-	void			*priv;
+-
+-	unsigned short		s_flags;
+-	umode_t			s_mode;
+-	unsigned int		s_ino;
+-	struct sysfs_inode_attrs *s_iattr;
+-};
+-
+ #define SD_DEACTIVATED_BIAS		INT_MIN
+ 
+-#define SYSFS_TYPE_MASK			0x000f
+-#define SYSFS_DIR			0x0001
+-#define SYSFS_KOBJ_ATTR			0x0002
+-#define SYSFS_KOBJ_LINK			0x0004
++/* SYSFS_TYPE_MASK and types are defined in include/linux/kernfs.h */
+ #define SYSFS_COPY_NAME			(SYSFS_DIR | SYSFS_KOBJ_LINK)
+ #define SYSFS_ACTIVE_REF		SYSFS_KOBJ_ATTR
+ 
+@@ -105,11 +36,6 @@ struct sysfs_dirent {
+ #define SYSFS_FLAG_HAS_MMAP		0x0080
+ #define SYSFS_FLAG_LOCKDEP		0x0100
+ 
+-static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
+-{
+-	return sd->s_flags & SYSFS_TYPE_MASK;
+-}
+-
+ /**
+  * kernfs_root - find out the kernfs_root a sysfs_dirent belongs to
+  * @sd: sysfs_dirent of interest
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 403cbc5..3084977 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -13,6 +13,9 @@
+ #include <linux/mutex.h>
+ #include <linux/idr.h>
+ #include <linux/lockdep.h>
++#include <linux/rbtree.h>
++#include <linux/atomic.h>
++#include <linux/completion.h>
+ 
+ struct file;
+ struct iattr;
+@@ -21,7 +24,81 @@ struct vm_area_struct;
+ struct super_block;
+ struct file_system_type;
+ 
+-struct sysfs_dirent;
++struct sysfs_open_dirent;
++struct sysfs_inode_attrs;
++
++#define SYSFS_TYPE_MASK		0x000f
++
++enum kernfs_node_type {
++	SYSFS_DIR		= 0x0001,
++	SYSFS_KOBJ_ATTR		= 0x0002,
++	SYSFS_KOBJ_LINK		= 0x0004,
++};
++
++/* type-specific structures for sysfs_dirent->s_* union members */
++struct sysfs_elem_dir {
++	unsigned long		subdirs;
++	/* children rbtree starts here and goes through sd->s_rb */
++	struct rb_root		children;
++
++	/*
++	 * The kernfs hierarchy this directory belongs to.  This fits
++	 * better directly in sysfs_dirent but is here to save space.
++	 */
++	struct kernfs_root	*root;
++};
++
++struct sysfs_elem_symlink {
++	struct sysfs_dirent	*target_sd;
++};
++
++struct sysfs_elem_attr {
++	const struct kernfs_ops	*ops;
++	struct sysfs_open_dirent *open;
++	loff_t			size;
++};
++
++/*
++ * sysfs_dirent - the building block of sysfs hierarchy.  Each and every
++ * sysfs node is represented by single sysfs_dirent.  Most fields are
++ * private to kernfs and shouldn't be accessed directly by kernfs users.
++ *
++ * As long as s_count reference is held, the sysfs_dirent itself is
++ * accessible.  Dereferencing s_elem or any other outer entity
++ * requires s_active reference.
++ */
++struct sysfs_dirent {
++	atomic_t		s_count;
++	atomic_t		s_active;
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	struct lockdep_map	dep_map;
++#endif
++	/* the following two fields are published */
++	struct sysfs_dirent	*s_parent;
++	const char		*s_name;
++
++	struct rb_node		s_rb;
++
++	union {
++		struct completion	*completion;
++		struct sysfs_dirent	*removed_list;
++	} u;
++
++	const void		*s_ns; /* namespace tag */
++	unsigned int		s_hash; /* ns + name hash */
++	union {
++		struct sysfs_elem_dir		s_dir;
++		struct sysfs_elem_symlink	s_symlink;
++		struct sysfs_elem_attr		s_attr;
++	};
++
++	void			*priv;
++
++	unsigned short		s_flags;
++	umode_t			s_mode;
++	unsigned int		s_ino;
++	struct sysfs_inode_attrs *s_iattr;
++};
+ 
+ struct kernfs_root {
+ 	/* published fields */
+@@ -80,6 +157,11 @@ struct kernfs_ops {
+ #endif
+ };
+ 
++static inline enum kernfs_node_type sysfs_type(struct sysfs_dirent *sd)
++{
++	return sd->s_flags & SYSFS_TYPE_MASK;
++}
++
+ #ifdef CONFIG_SYSFS
+ 
+ struct sysfs_dirent *kernfs_find_and_get_ns(struct sysfs_dirent *parent,
 -- 
 1.8.3.1
 
