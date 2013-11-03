@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab3KCSQw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 13:16:52 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49648 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753933Ab3KCSQv (ORCPT
+	id S1754110Ab3KCSZg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 13:25:36 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:35253 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801Ab3KCSZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 13:16:51 -0500
-Date: Sun, 3 Nov 2013 11:16:39 -0700
-From: Jens Axboe <axboe@kernel.dk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Chen Gang <gang.chen@asianux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Jan Kara <jack@suse.cz>, "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: trace: blktrace: remove redundent memcpy() in
- compat_blk_trace_setup()
-Message-ID: <20131103181639.GA14163@kernel.dk>
-References: <52765C6B.7080608@asianux.com>
- <20131103123647.0bae8cf6@gandalf.local.home>
+	Sun, 3 Nov 2013 13:25:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131103123647.0bae8cf6@gandalf.local.home>
+In-Reply-To: <20131103015803.GK13318@ZenIV.linux.org.uk>
+References: <20131103015803.GK13318@ZenIV.linux.org.uk>
+Date: Sun, 3 Nov 2013 10:25:32 -0800
+X-Google-Sender-Auth: OztDisUn67cUoRj7M6F74uezqKY
+Message-ID: <CA+55aFy3tAeLYL3_+PbeD15p6PGS-P7bs8fMUaRVSC0OCzvq6w@mail.gmail.com>
+Subject: Re: [git pull] fixes for 3.12-final
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>, Bruce Fields <bfields@fieldses.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 03 2013, Steven Rostedt wrote:
-> A quick review of this patch looks fine to me.
-> 
-> Although, using ARRAY_SIZE() for a character string seems to me a bit
-> over paranoid. But I'm fine with it, as it makes sure that the string
-> is an array and not a pointer.
-> 
-> Jens,
-> 
-> Can you give me an Acked-by?
+Ugh.
 
-Thanks, but I'll just queue it up with the other block bits for 3.13.
+This is too late since I want to do 3.12 today, and it seems to not be
+a regression - from what I can tell, the problem has always existed,
+no?
 
--- 
-Jens Axboe
+So I'll consider this post-3.12. However, it also strikes me that we
+should just clean things up, and make "i_ino" be an u64, and be able
+to do this without the vfs_getattr_nosec() games.
 
+Hmm?
+
+             Linus
+
+On Sat, Nov 2, 2013 at 6:58 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>         Exportfs fix from bfields.  Please, pull from the usual place -
+> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
+>
+> Shortlog:
+> J. Bruce Fields (2):
+>       vfs: split out vfs_getattr_nosec
+>       exportfs: fix 32-bit nfsd handling of 64-bit inode numbers
+>
+> Diffstat:
+>  fs/exportfs/expfs.c |   18 ++++++++++++++++--
+>  fs/stat.c           |   31 +++++++++++++++++++++++++------
+>  include/linux/fs.h  |    1 +
+>  3 files changed, 42 insertions(+), 8 deletions(-)
