@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750Ab3KCWu3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 17:50:29 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:39920 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639Ab3KCWu2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 17:50:28 -0500
-Date: Sun, 3 Nov 2013 14:47:12 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux PPC dev <li@mx0.arm.com>
-Subject: Re: perf events ring buffer memory barrier on powerpc
-Message-ID: <20131103224712.GH3947@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com>
- <20131028132634.GO19466@laptop.lan>
- <20131028163418.GD4126@linux.vnet.ibm.com>
- <20131028201735.GA15629@redhat.com>
- <20131103144017.GA25118@linux.vnet.ibm.com>
- <20131103170759.GC6871@mudshark.cambridge.arm.com>
+	id S1753786Ab3KCXKK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 18:10:10 -0500
+Received: from imap.thunk.org ([74.207.234.97]:53860 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752439Ab3KCXKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 18:10:07 -0500
+Date: Sun, 3 Nov 2013 18:10:04 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: linux-crypto@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 1/4] random: use device attach events for entropy
+Message-ID: <20131103231004.GD7376@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+	stable@vger.kernel.org
+References: <1383485595-2020-1-git-send-email-tytso@mit.edu>
+ <1383485595-2020-2-git-send-email-tytso@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131103170759.GC6871@mudshark.cambridge.arm.com>
+In-Reply-To: <1383485595-2020-2-git-send-email-tytso@mit.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110322-6688-0000-0000-000003234F99
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 03, 2013 at 05:07:59PM +0000, Will Deacon wrote:
-> On Sun, Nov 03, 2013 at 02:40:17PM +0000, Paul E. McKenney wrote:
-> > On Sat, Nov 02, 2013 at 10:32:39AM -0700, Paul E. McKenney wrote:
-> > > On Fri, Nov 01, 2013 at 03:56:34PM +0100, Peter Zijlstra wrote:
-> > > > On Wed, Oct 30, 2013 at 11:40:15PM -0700, Paul E. McKenney wrote:
-> > > > > > Now the whole crux of the question is if we need barrier A at all, since
-> > > > > > the STORES issued by the @buf writes are dependent on the ubuf->tail
-> > > > > > read.
-> > > > > 
-> > > > > The dependency you are talking about is via the "if" statement?
-> > > > > Even C/C++11 is not required to respect control dependencies.
-> > > > > 
-> > > > > This one is a bit annoying.  The x86 TSO means that you really only
-> > > > > need barrier(), ARM (recent ARM, anyway) and Power could use a weaker
-> > > > > barrier, and so on -- but smp_mb() emits a full barrier.
-> > > > > 
-> > > > > Perhaps a new smp_tmb() for TSO semantics, where reads are ordered
-> > > > > before reads, writes before writes, and reads before writes, but not
-> > > > > writes before reads?  Another approach would be to define a per-arch
-> > > > > barrier for this particular case.
-> > > > 
-> > > > I suppose we can only introduce new barrier primitives if there's more
-> > > > than 1 use-case.
+On Sun, Nov 03, 2013 at 08:33:12AM -0500, Theodore Ts'o wrote:
+> Some investigation from FreeBSD shows that there is entropy available
+> from measuring the device attach times:
 > 
-> Which barrier did you have in mind when you refer to `recent ARM' above? It
-> seems to me like you'd need a combination if dmb ishld and dmb ishst, since
-> the former doesn't order writes before writes.
+> http://lists.randombit.net/pipermail/cryptography/2013-October/005689.html
+> 
+> This will hopefully help us more quickly initialize the entropy pools
+> while the system is booting (which is one of the times when we really
+> badly need more entropy, especially in the case of the first boot
+> after an consumer electronics device is taken out of the box).
+> 
+> Measurements indicate this makes a huge improvement in the security of
+> /dev/urandom during the boot sequence, so I'm cc'ing this to the
+> stable kernel series.  Especially for embedded systems, which use
+> flash and which don't necessarily have the network enabled when they
+> first generate ssh or x.509 keys (sigh), this can be a big deal.
+> 
+> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> Cc: stable@vger.kernel.org
 
-I heard a rumor that ARM had recently added a new dmb variant that acted
-similarly to PowerPC's lwsync, and it was on my list to follow up.
+Self-NAK.  After doing some more measurements, I'm not convinced the
+entropy estimator is working well given how we are collecting the
+device attach times.  Instead, we need to measure the delta between
+the start and the end of the device probe, which in turn will only
+work if we have a valid cycle counter.  (random_get_entropy() is not
+going to cut it.)
 
-Given your response, I am guessing that there is no truth to this rumor...
+So with some changes, this approach will improve things on x86, but on
+architectures like ARM, which generally don't have a cycle counter,
+the jiffies counter is not going to have enough resolution to do
+something useful --- and it was on platforms such as ARM and MIPS
+where I was hoping this would be most useful.   Grumble.
 
-							Thanx, Paul
+Why can't ARM and MIPS have decent cycle counters?   <Shakes fist>
 
+						- Ted
