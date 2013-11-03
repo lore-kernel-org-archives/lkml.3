@@ -1,116 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab3KCMmc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 07:42:32 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:34295 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753584Ab3KCMma (ORCPT
+	id S1753555Ab3KCN1a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 08:27:30 -0500
+Received: from toccata.ens-lyon.org ([140.77.166.68]:37003 "EHLO
+	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753014Ab3KCN13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 07:42:30 -0500
-X-Spam-Score: -100.9
-Message-ID: <52764475.9000205@asianux.com>
-Date: Sun, 03 Nov 2013 20:41:25 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sun, 3 Nov 2013 08:27:29 -0500
+Date: Sun, 3 Nov 2013 14:27:20 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Pavel Machek <pavel@ucw.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        David Herrmann <dh.herrmann@gmail.com>, akpm@linux-foundation.org,
+        jslaby@suse.cz, Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
+        Niels de Vos <devos@fedoraproject.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Steev Klimaszewski <steev@genesi-usa.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, kbuild-all@01.org
+Subject: Re: [next:master 23/358] undefined reference to
+ `input_led_disconnect'
+Message-ID: <20131103132720.GA16764@type.youpi.perso.aquilenet.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Pavel Machek <pavel@ucw.cz>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	David Herrmann <dh.herrmann@gmail.com>, akpm@linux-foundation.org,
+	jslaby@suse.cz, Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+	linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+	Arnaud Patard <arnaud.patard@rtp-net.org>,
+	Peter Korsgaard <jacmet@sunsite.dk>,
+	Sascha Hauer <s.hauer@pengutronix.de>,
+	Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
+	Niels de Vos <devos@fedoraproject.org>,
+	linux-arm-kernel@lists.infradead.org,
+	Steev Klimaszewski <steev@genesi-usa.com>,
+	Fengguang Wu <fengguang.wu@intel.com>, kbuild-all@01.org
+References: <5275bf42.KMmrPUiia86VoRbL%fengguang.wu@intel.com>
+ <20131103120853.GA1731@localhost>
+ <20131103123621.GA9756@type.youpi.perso.aquilenet.fr>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Greg KH <gregkh@linuxfoundation.org>, Kees Cook <keescook@chromium.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs/befs/linuxvfs.c: need signed cast for variable 'block'
-References: <5271C5E5.6080606@asianux.com> <CAGXu5jLMU0+VkJ6N3NTKbEtL+9FwF2gMOTU86-GH6SSXQ0rc0w@mail.gmail.com> <20131031190608.GH13318@ZenIV.linux.org.uk> <CAGXu5jJkXj975rbpJo8pTLakPLLpVVse+ecxwQ7Ds2x-ARAOxQ@mail.gmail.com> <20131031204558.GA30290@kroah.com> <527314D5.7090004@asianux.com> <52750237.5060409@asianux.com> <20131102154446.GB23938@kroah.com> <20131102162744.GJ13318@ZenIV.linux.org.uk>
-In-Reply-To: <20131102162744.GJ13318@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131103123621.GA9756@type.youpi.perso.aquilenet.fr>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2013 12:27 AM, Al Viro wrote:
-> On Sat, Nov 02, 2013 at 08:44:46AM -0700, Greg KH wrote:
-> 
->>> Oh, for me, it is not suitable to move a file system sub-directory to
->>> "drivers/*/" sub-directory. And I can not find any sub-directory like
->>> 'staging' under "fs" sub-directory, either.
->>>
->>> Do we have any sub-directory like "staging" in "fs" sub-directory? if
->>> no, do we have to create it or have to use another ways instead of?
->>
->> Just move the filesystem to drivers/staging/befs.
-> 
-> Actually, having read through that code...  It's not too scary; r/w
-> support would've been much more hairy, but this is just r/o.  We
-> probably don't need to move that sucker at all.
-> 
+Samuel Thibault, le Sun 03 Nov 2013 13:36:21 +0100, a écrit :
+> So in the end it would probably be simpler to just stuff leds.c along
+> input.c in input.ko or built-in. CONFIG_INPUT_LEDS will thus become a
+> bool.  I'm working on that now.
 
-After a quick look, I guess we can not remove it from Linux kernel:
+Here it is.  This replaces both
+input-route-kbd-leds-through-the-generic-leds-layer-fix-fix.patch
+input-route-kbd-leds-through-the-generic-leds-layer-fix-fix-fix.patch
 
- - according to "fs/befs/Kconfig",
-   it is only for support file system from BeOS.
+(input-route-kbd-leds-through-the-generic-leds-layer-fix.patch is still
+needed)
 
- - according to "http://en.wikipedia.org/wiki/BeOS",
-   BeOS is still in use (although it is almost dead).
-
- - according to "git log -p fs/befs",
-   it is still be changed recently.
-
-Can any members provide more proofs for it (my proofs are not enough).
-if it is still using, we have to keep it in Linux kernel, else support
-to remove it to some where firstly (but not "drivers/*").
-
-
-> As for befs_get_block(), I'd suggest
-> 	* taking the range checks for block number into its ->bmap()
-> (just check against the file size and return 0 if it doesn't fit)
-
-befs_get_block() is called both by befs_bmap() and by befs_readpage(),
-and I guess Al's "->bmap()" points to befs_bmap() -- if what I guess is
-incorrect, please let me know, thanks.
-
-So for me, just remove this check "if (block < 0) { ... }" is OK which
-is Kees said.
-
-And for me, need use "%llu" not "%lu" instead of "%ld" (according to
-"Documentation/printk-format.txt").
-
-
-> 	* turning the check for create != 0 into BUG_ON(create)
-
-Can we be sure of:
-
- - in current case, kernel/sub-system must be continuing incorrectly.
- - and if let it continue, it will cause critical issue.
-
-If:
-
-  can be sure of both, use BUG_ON().
-  can be sure of 1st item, use WARN_ON().
-  can be sure of neither, keep original no touch.
-
-For me, if what Kees said is correct (for "ioctl ... printks ..."), I
-support to use WARN_ON() which indicates "the sub-system is continuing
-incorrectly, although it not a critical issue".
-
-
-> 	* making the befs_fblock2brun() failure quiet - the sucker
-> will complain itself, just return that -EFBIG and be done with that.
-> 
-
-Do you mean befs_fblock2brun() must be OK (should check it previously)?
-If not, we cann't skip the failure -- next iaddr2blockno() may cause panic.
-
-And for me, use "-EFBIG" is really not quite smart.
-
-Hmm... the same reason as above (if "ioctl ... printks ..." correct),
-may we need WARN_ON(), and then still return "-EFBIG"?.
+Samuel
 
 
 
-BTW: the local variable 'res' can be removed.
+Link input/leds.c along input/input.c instead of separate module
 
+input.c needs to call leds.c and vice-versa, so it is simpler to stuff
+them together. INPUT_LEDS thus now depends on LEDS_CLASS being available
+enough for input.ko.
 
+This also documents the new leds field.
 
-Thanks.
--- 
-Chen Gang
+Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+
+diff -u a/drivers/input/Makefile b/drivers/input/Makefile
+--- a/drivers/input/Makefile
++++ b/drivers/input/Makefile
+@@ -6,6 +6,9 @@
+ 
+ obj-$(CONFIG_INPUT)		+= input-core.o
+ input-core-y := input.o input-compat.o input-mt.o ff-core.o
++ifeq ($(CONFIG_INPUT_LEDS),y)
++input-core-y += leds.o
++endif
+ 
+ obj-$(CONFIG_INPUT_FF_MEMLESS)	+= ff-memless.o
+ obj-$(CONFIG_INPUT_POLLDEV)	+= input-polldev.o
+@@ -16,7 +19,6 @@
+ obj-$(CONFIG_INPUT_JOYDEV)	+= joydev.o
+ obj-$(CONFIG_INPUT_EVDEV)	+= evdev.o
+ obj-$(CONFIG_INPUT_EVBUG)	+= evbug.o
+-obj-$(CONFIG_INPUT_LEDS)	+= leds.o
+ 
+ obj-$(CONFIG_INPUT_KEYBOARD)	+= keyboard/
+ obj-$(CONFIG_INPUT_MOUSE)	+= mouse/
+diff -u a/drivers/input/Kconfig b/drivers/input/Kconfig
+--- a/drivers/input/Kconfig
++++ b/drivers/input/Kconfig
+@@ -179,8 +179,8 @@
+ source "drivers/input/keyboard/Kconfig"
+ 
+ config INPUT_LEDS
+-	tristate "LED Support"
+-	depends on LEDS_CLASS
++	bool "LED Support"
++	depends on LEDS_CLASS = INPUT || LEDS_CLASS = y
+ 	select LEDS_TRIGGERS
+ 	default y
+ 	help
+diff -u a/include/linux/input.h b/include/linux/input.h
+--- a/include/linux/input.h
++++ b/include/linux/input.h
+@@ -79,6 +79,7 @@
+  * @led: reflects current state of device's LEDs
+  * @snd: reflects current state of sound effects
+  * @sw: reflects current state of device's switches
++ * @leds: leds objects for the device's LEDs
+  * @open: this method is called when the very first user calls
+  *	input_open_device(). The driver must prepare the device
+  *	to start generating events (start polling thread,
