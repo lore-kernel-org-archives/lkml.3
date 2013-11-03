@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347Ab3KCKVg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 05:21:36 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:35053 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab3KCKVf (ORCPT
+	id S1753096Ab3KCK35 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 05:29:57 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:62998 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752529Ab3KCK3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 05:21:35 -0500
-Date: Sun, 3 Nov 2013 11:21:32 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, prarit@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Allow NR_CPUS=1024
-Message-ID: <20131103102132.GA6807@gmail.com>
-References: <20131101141148.GH8652@hansolo.jdub.homelinux.org>
- <20131103101825.GA6605@gmail.com>
+	Sun, 3 Nov 2013 05:29:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131103101825.GA6605@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1383394669-20175-1-git-send-email-vgupta@synopsys.com>
+References: <1383394669-20175-1-git-send-email-vgupta@synopsys.com>
+Date: Sun, 3 Nov 2013 11:29:54 +0100
+X-Google-Sender-Auth: Wpg775qpT27ZOJqJ5yw_VTfL6Ys
+Message-ID: <CAMuHMdV-PXujh_vf_rwz7-bAi7wBaSL+9tWixvWnpWXr7skKZA@mail.gmail.com>
+Subject: Re: [PATCH] Critical ARC Fix for 3.12
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, Noam Camus <noamc@ezchip.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Added CC stable, so Greg will see it.
+Added commit 9c41f4eeb9d51f3ece20428d35a3ea32cf3b5622, so Greg knows
+what to cherry-pick.
 
-* Ingo Molnar <mingo@kernel.org> wrote:
+On Sat, Nov 2, 2013 at 1:17 PM, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
+> Hi Linus,
+>
+> Sorry for this extemely late patch for 3.12 but it causes a SMP build of ARC
+> to panic in boot.
+>
+> Greg, the patch as it is doesn't apply to 3.10 (but does to 3.11). So can you
+> please queue it up for 3.11 and I'll send a fixup for 3.10.
+>
+> Thx,
+> -Vineet
+>
+>
+> Vineet Gupta (1):
+>   ARC: Incorrect mm reference used in vmalloc fault handler
+>
+>  arch/arc/mm/fault.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 
-> 
-> * Josh Boyer <jwboyer@redhat.com> wrote:
-> 
-> > The current range for SMP configs is 2 - 512, or a full 4096 in the case 
-> > of MAXSMP.  There are machines that have 1024 CPUs in them today and 
-> > configuring a kernel for that means you are forced to set MAXSMP.  This 
-> > adds additional unnecessary overhead.  While that overhead might be 
-> > considered tiny for large machines, it isn't necessarily so if you are 
-> > building a kernel that runs across a wide variety of machines.  We 
-> > increase the range to 1024 to help with this.
-> >
-> > Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-> > ---
-> >  arch/x86/Kconfig | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> > index f67e839..d726b2d 100644
-> > --- a/arch/x86/Kconfig
-> > +++ b/arch/x86/Kconfig
-> > @@ -825,7 +825,7 @@ config MAXSMP
-> >  config NR_CPUS
-> >  	int "Maximum number of CPUs" if SMP && !MAXSMP
-> >  	range 2 8 if SMP && X86_32 && !X86_BIGSMP
-> > -	range 2 512 if SMP && !MAXSMP
-> > +	range 2 1024 if SMP && !MAXSMP
-> >  	default "1" if !SMP
-> >  	default "4096" if MAXSMP
-> >  	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
-> 
-> Any reason not to allow it to go up to 4096? The original concern was 
-> that CPUS=4096 wasn't working very well and you had to select MAXSMP 
-> deliberately and keep all the pieces.
+Gr{oetje,eeting}s,
 
-The other reason was CONFIG_CPUMASK_OFFSTACK: with 4096 CPUs a cpumask is 
-512 bytes, too large to be kept on the kernel stack.
+                        Geert
 
-MAXSMP forces CONFIG_CPUMASK_OFFSTACK so there's no such concern there.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-With 1024 CPUs a single cpumask is 128 bytes - rather significant as well. 
-With 512 CPUs it's 64 bytes - borderline.
-
-So I think a better solution would be to allow an increase above 512 CPUs 
-only if CONFIG_CPUMASK_OFFSTACK is also enabled.
-
-Thanks,
-
-	Ingo
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
