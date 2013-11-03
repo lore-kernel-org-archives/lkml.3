@@ -1,339 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab3KCOmS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 09:42:18 -0500
-Received: from 12.mo6.mail-out.ovh.net ([178.32.125.228]:38239 "EHLO
-	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753536Ab3KCOmR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 09:42:17 -0500
-Message-ID: <527660C3.2050509@overkiz.com>
-Date: Sun, 03 Nov 2013 15:42:11 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753954Ab3KCOmb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 09:42:31 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:51078 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753841Ab3KCOm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 09:42:29 -0500
+Date: Sun, 3 Nov 2013 08:42:27 -0600
+From: Russ Anderson <rja@sgi.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Josh Boyer <jwboyer@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Allow NR_CPUS=1024
+Message-ID: <20131103144227.GB6926@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <20131101141148.GH8652@hansolo.jdub.homelinux.org> <20131103101825.GA6605@gmail.com> <52765DBC.1090208@redhat.com>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Wim Van Sebroeck <wim@iguana.be>,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Guenter Roeck <groeck7@gmail.com>, Yang Wenyou <wenyou.yang@atmel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH] watchdog: at91sam9_wdt: various fixes
-References: <20131029075028.GF19704@spo001.leaseweb.com> <1383043053-3520-1-git-send-email-b.brezillon@overkiz.com> <20131029154519.GB9266@roeck-us.net> <526FE0DA.1020308@overkiz.com> <20131029164323.GF9266@roeck-us.net> <526FEEE7.7030708@overkiz.com>
-In-Reply-To: <526FEEE7.7030708@overkiz.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 6995216122218772495
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrhedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrhedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52765DBC.1090208@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Guenter,
+On Sun, Nov 03, 2013 at 09:29:16AM -0500, Prarit Bhargava wrote:
+> On 11/03/2013 05:18 AM, Ingo Molnar wrote:
+> > 
+> > * Josh Boyer <jwboyer@redhat.com> wrote:
+> > 
+> >> The current range for SMP configs is 2 - 512, or a full 4096 in the case 
+> >> of MAXSMP.  There are machines that have 1024 CPUs in them today and 
+> >> configuring a kernel for that means you are forced to set MAXSMP.  This 
+> >> adds additional unnecessary overhead.  While that overhead might be 
+> >> considered tiny for large machines, it isn't necessarily so if you are 
+> >> building a kernel that runs across a wide variety of machines.  We 
+> >> increase the range to 1024 to help with this.
+> >>
+> >> Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+> >> ---
+> >>  arch/x86/Kconfig | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> >> index f67e839..d726b2d 100644
+> >> --- a/arch/x86/Kconfig
+> >> +++ b/arch/x86/Kconfig
+> >> @@ -825,7 +825,7 @@ config MAXSMP
+> >>  config NR_CPUS
+> >>  	int "Maximum number of CPUs" if SMP && !MAXSMP
+> >>  	range 2 8 if SMP && X86_32 && !X86_BIGSMP
+> >> -	range 2 512 if SMP && !MAXSMP
+> >> +	range 2 1024 if SMP && !MAXSMP
+> >>  	default "1" if !SMP
+> >>  	default "4096" if MAXSMP
+> >>  	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
+> > 
+> > Any reason not to allow it to go up to 4096? The original concern was that 
+> > CPUS=4096 wasn't working very well and you had to select MAXSMP 
+> > deliberately and keep all the pieces.
+> > 
+> > But today it's all pretty robust so I see no reason why not to allow up to 
+> > 4096 CPUs.
+> 
+> Adding Russ from SGI as they are one of the consumers of a large CPU count.
+> 
+> I have no objections to raising this to 4096 FWIW.  I think it is a good idea,
+> and it is long overdue.
 
-Are you okay with the 3 fixes/improvements provided by this patch,
-and the explanation I gave regarding the reason for these changes ?
+I obviously agree with increasing to 4096.
+The bigger the better.
 
-If so, I will submit a new series splitting the patch and including your 
-suggestions.
-
-Best Regards,
-
-Boris
-
-On 29/10/2013 18:22, boris brezillon wrote:
-> On 29/10/2013 17:43, Guenter Roeck wrote:
->> On Tue, Oct 29, 2013 at 05:22:50PM +0100, boris brezillon wrote:
->>> On 29/10/2013 16:45, Guenter Roeck wrote:
->>>> On Tue, Oct 29, 2013 at 11:37:33AM +0100, Boris BREZILLON wrote:
->>>>> Fix the secs_to_ticks macro in case 0 is passed as an argument.
->>>>>
->>>>> Rework the heartbeat calculation to increase the security margin 
->>>>> of the
->>>>> watchdog reset timer.
->>>>>
->>>>> Use the min_heartbeat value instead of the calculated heartbeat 
->>>>> value for
->>>>> the first watchdog reset.
->>>>>
->>>>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->>>> Hi Boris,
->>>>
->>>> can you possibly split the three changes into separate patches ?
->>> Sure. My first idea was to split this in 3 patches, but, as the
->>> buggy at91 watchdog series was
->>> already applied to linux-watchdog-next, I thought it would be faster
->>> to only provide one
->>> patch to fix all the issues at once.
->>>
->>>> The first is a no-brainer. Gives my opinion of my code review 
->>>> capabilities
->>>> a slight damper ;-).
->>>>
->>>> For the other two problems, it might make sense to describe
->>>> the problems you are trying to solve.
->>>>
->>>> Couple of comments inline.
->>>>
->>>> Thanks,
->>>> Guenter
->>>>
->>>>
->>>>> ---
->>>>>   drivers/watchdog/at91sam9_wdt.c |   35 
->>>>> ++++++++++++++++++++++++-----------
->>>>>   1 file changed, 24 insertions(+), 11 deletions(-)
->>>>>
->>>>> diff --git a/drivers/watchdog/at91sam9_wdt.c 
->>>>> b/drivers/watchdog/at91sam9_wdt.c
->>>>> index 9bd089e..f1b59f1 100644
->>>>> --- a/drivers/watchdog/at91sam9_wdt.c
->>>>> +++ b/drivers/watchdog/at91sam9_wdt.c
->>>>> @@ -51,7 +51,7 @@
->>>>>   #define ticks_to_hz_rounddown(t)    ((((t) + 1) * HZ) >> 8)
->>>>>   #define ticks_to_hz_roundup(t)        (((((t) + 1) * HZ) + 255) 
->>>>> >> 8)
->>>>>   #define ticks_to_secs(t)        (((t) + 1) >> 8)
->>>>> -#define secs_to_ticks(s)        (((s) << 8) - 1)
->>>>> +#define secs_to_ticks(s)        (s ? (((s) << 8) - 1) : 0)
->>>>     (s)
->>>>
->>>>>   #define WDT_MR_RESET    0x3FFF2FFF
->>>>> @@ -61,6 +61,11 @@
->>>>>   /* Watchdog max delta/value in secs */
->>>>>   #define WDT_COUNTER_MAX_SECS ticks_to_secs(WDT_COUNTER_MAX_TICKS)
->>>>> +/* Watchdog heartbeat shift used for security margin:
->>>>> + * we'll try to rshift the heartbeat value with this value to secure
->>>>> + * the watchdog reset. */
->>>>> +#define WDT_HEARTBEAT_SHIFT    2
->>>>> +
->>>>>   /* Hardware timeout in seconds */
->>>>>   #define WDT_HW_TIMEOUT 2
->>>>> @@ -158,7 +163,9 @@ static int at91_wdt_init(struct 
->>>>> platform_device *pdev, struct at91wdt *wdt)
->>>>>       int err;
->>>>>       u32 mask = wdt->mr_mask;
->>>>>       unsigned long min_heartbeat = 1;
->>>>> +    unsigned long max_heartbeat;
->>>>>       struct device *dev = &pdev->dev;
->>>>> +    int shift;
->>>>>       tmp = wdt_read(wdt, AT91_WDT_MR);
->>>>>       if ((tmp & mask) != (wdt->mr & mask)) {
->>>>> @@ -181,23 +188,27 @@ static int at91_wdt_init(struct 
->>>>> platform_device *pdev, struct at91wdt *wdt)
->>>>>       if (delta < value)
->>>>>           min_heartbeat = ticks_to_hz_roundup(value - delta);
->>>>> -    wdt->heartbeat = ticks_to_hz_rounddown(value);
->>>>> -    if (!wdt->heartbeat) {
->>>>> +    max_heartbeat = ticks_to_hz_rounddown(value);
->>>>> +    if (!max_heartbeat) {
->>>>>           dev_err(dev,
->>>>>               "heartbeat is too small for the system to handle it 
->>>>> correctly\n");
->>>>>           return -EINVAL;
->>>>>       }
->>>>> -    if (wdt->heartbeat < min_heartbeat + 4) {
->>>>> +    for (shift = WDT_HEARTBEAT_SHIFT; shift > 0; shift--) {
->>>>> +        if ((max_heartbeat >> shift) < min_heartbeat)
->>>>> +            continue;
->>>>> +
->>>>> +        wdt->heartbeat = max_heartbeat >> shift;
->>>>> +        break;
->>>>> +    }
->>>>> +
->>>>> +    if (!shift)
->>>>>           wdt->heartbeat = min_heartbeat;
->>>> Correct me if I am wrong, but it seems to me that
->>>>
->>>>     if ((max_heartbeat >> 2) >= min_heartbeat)
->>>>          wdt->heartbeat = max_heartbeat >> 2;
->>>>     else if ((max_heartbeat >> 1) >= min_heartbeat)
->>>>         wdt->heartbeat = max_heartbeat >> 1;
->>>>     else
->>>>         wdt->heartbeat = min_heartbeat;
->>>>
->>>> would accomplish the same and be easier to understand.
->>> This is exactly what I'm trying to accomplish.
->>> I used the for loop in case we ever want to change the
->>> WDT_HEARTBEAT_SHIFT value
->>> (which is unlikely to happen).
->>>
->>> I'll move to your proposition.
->>>
->>>> However, given that, I wonder if it is really necessary to bail out 
->>>> above if
->>>> max_heartbeat is 0. After all, you set heartbeat to min_heartbeat 
->>>> anyway
->>>> in this case.
->>> Yes it is necessary. The max_heartbeat is a configuration that
->>> cannot be changed once configured.
->>> We have to inform the user that his max_heartbeat value is too small
->>> to be handled correctly by the Linux kernel.
->>>
->>> If we simply use the min_heartbeat value as heartbeat and ignore the
->>> wrong max_heartbeat value,
->>> the watchdog will reset the SoC before we can ever reset the
->>> watchdog counter.
->>>
->>>>> +
->>>>> +    if (max_heartbeat < min_heartbeat + 4)
->>>>>           dev_warn(dev,
->>>>>                "min heartbeat and max heartbeat might be too close 
->>>>> for the system to handle it correctly\n");
->>>>> -        if (wdt->heartbeat < 4)
->>>>> -            dev_warn(dev,
->>>>> -                 "heartbeat might be too small for the system to 
->>>>> handle it correctly\n");
->>>>> -    } else {
->>>>> -        wdt->heartbeat -= 4;
->>>>> -    }
->>>>>       if ((tmp & AT91_WDT_WDFIEN) && wdt->irq) {
->>>>>           err = request_irq(wdt->irq, wdt_interrupt,
->>>>> @@ -213,7 +224,9 @@ static int at91_wdt_init(struct 
->>>>> platform_device *pdev, struct at91wdt *wdt)
->>>>>                tmp & wdt->mr_mask, wdt->mr & wdt->mr_mask);
->>>>>       setup_timer(&wdt->timer, at91_ping, (unsigned long)wdt);
->>>>> -    mod_timer(&wdt->timer, jiffies + wdt->heartbeat);
->>>>> +    /* Use min_heartbeat the first time because the watchdog 
->>>>> timer might
->>>>> +     * be running for a long time when we reach this init 
->>>>> function. */
->>>>     /*
->>>>      * Multi-line comment style
->>>>      *
->>>>      * Not really sure I understand what this accomplishes. What 
->>>> problem
->>>>      * are you trying to solve here ?
->>>>      */
->>> Sure, I'll change the comment style.
->>>
->>> What, I'm trying to explain, is that the watchdog might (or should)
->>> have been resetted
->>> before loading the linux kernel. But loading the kernel takes some
->>> time (uncompressing,
->>> low level init, ...), and if we take the heartbeat (or max_heartbeat
->>> / 4 in the common case) value as
->>> the next trigger to reset the watchdog counter, the watchdog timer
->>> might have already expired.
->>>
->> But increasing anything in the watchdog driver itself won't help you 
->> there.
->> You can not execute any kernel code before that kernel code is running.
->
-> Of course, but you can at least try to minimize the time between the 
-> watchdog driver init
-> and the first wathdog counter reset.
->
->>> Here is an example:
->>>   - max_heartbeat configured to 8 seconds
->>>   - min_heartbeat configured to 1 second
->>>   => heartbeat = 2s
->>>   - kernel boot time (before at91 watchdog is loaded) = 6 secs
->>>
->> Guess that is where I got lost. Do you mean the time from loading the 
->> driver
->> to starting the watchdog application ? Because the init function is only
->> executed after the driver is loaded, so nothing will help you if it 
->> takes
->> too long for the driver to load.
->
-> I think there is another bug here: the driver should not be compiled 
-> as a module.
->
-> Here is why:
->
-> At POR the at91 SoC configure its watchdog with these default values:
->  - enabled
->  - min heartbeat = 0 ticks
->  - max heartbeat = 0xfff ticks <=> 16 secs
->  - some reset options
-> After a POR the watchdog can only be reconfigured once (and only once).
-> This configuration oftenly takes place in the the bootstrap (or 
-> bootloader),
-> but can eventually be done by the Linux kernel.
->
-> If the watchdog is kept enabled by the bootstrap (or bootloader), this 
-> means
-> the linux kernel will have to reset the watchdog counter as soon as 
-> possible to avoid
-> a possible watchdog reset.
->
-> => If we authorize the at91 sam9 watchdog to be compiled as a module, 
-> we're not sure
-> the module will be loaded soon enough to be able to reset the watchdog 
-> counter.
->
->>
->> You really have two times to deal with:
->> - Time from ROMMON handoff to loading the driver
->>    Nothing you can do there. If the watchdog fires before the driver 
->> is loaded,
->>    you are lost. Only way t handle this situation is to increase the 
->> timeout
->>    in the ROMMON.
->> - Time from loading driver to watchdog device open. This is really 
->> the time
->>    you are increasing with your change.
->
-> This is where it gets a bit tricky.
->
-> The heartbeat I'm talking about is not the "user space" heartbeat
-> (struct watchdog_device timeout field), it's the "hardware watchdog 
-> counter reset"
-> heartbeat (struct at91wdt heartbeat field).
->
-> Actually the at91 sam9 wdt driver does not provide a direct access to 
-> the watchdog reset
-> counter functionnality.
-> Instead, it periodically reset the watchdog counter (based on the 
-> timing config retrieved from
-> the hw registers), and eventually, if the user open a the watchdog dev 
-> file and fails to reset
-> the watchdog (using the user space API), the drivers stops resetting 
-> the hw counter, which leads
-> to a watchdog reset.
->
-> I hope I'm clear enough, cause it's quite complicated to explain.
->
-> Best Regards,
->
-> Boris
->
->> Thanks,
->> Guenter
->>
->>> If I use the heartbeat value when configuring the first expiration
->>> of the timer,
->>> it might be too late to reset the watchdog counter.
->>>
->>> I'll try to find a proper to explain this use case :-).
->>>
->>>>> +    mod_timer(&wdt->timer, jiffies + min_heartbeat);
->>>>>       /* Try to set timeout from device tree first */
->>>>>       if (watchdog_init_timeout(&wdt->wdd, 0, dev))
->>>>> -- 
->>>>> 1.7.9.5
->>>>>
->>>>> -- 
->>>>> To unsubscribe from this list: send the line "unsubscribe 
->>>>> linux-watchdog" in
->>>>> the body of a message to majordomo@vger.kernel.org
->>>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
->>>>>
->>> -- 
->>> To unsubscribe from this list: send the line "unsubscribe 
->>> linux-watchdog" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at http://vger.kernel.org/majordomo-info.html
->>>
->
-
+-- 
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
