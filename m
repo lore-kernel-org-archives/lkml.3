@@ -1,158 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab3KCJxZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 04:53:25 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:57735 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079Ab3KCJxX (ORCPT
+	id S1753642Ab3KCJxv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 04:53:51 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:53886 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab3KCJxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 04:53:23 -0500
+	Sun, 3 Nov 2013 04:53:31 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        bhelgaas@google.com
-Subject: [PATCHSET driver-core-next] sysfs: separate out kernfs, take #2
-Date: Sun,  3 Nov 2013 04:52:39 -0500
-Message-Id: <1383472398-17812-1-git-send-email-tj@kernel.org>
+        bhelgaas@google.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 07/39] sysfs, kernfs: replace sysfs_dirent->s_dir.kobj and ->s_attr.[bin_]attr with ->priv
+Date: Sun,  3 Nov 2013 04:52:46 -0500
+Message-Id: <1383472398-17812-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1383472398-17812-1-git-send-email-tj@kernel.org>
+References: <1383472398-17812-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+A directory sysfs_dirent points to the associated kobj.  A regular or
+bin file points to the associated [bin_]attribute.  This patch
+replaces sysfs_dirent->s_dir.kobj and ->s_attr.[bin_]attr with void *
+->priv.
 
-(This is for 3.14-rc1.  Posting early for review.  Will refresh and
-repost once the next driver-core-next opens.)
+This is to prepare for kernfs interface so that sysfs can specify the
+private data in the same way for directories and files.  This lower
+debuggability but not by much - the whole thing was overlaid in a
+union anyway.  If debuggability becomes an issue, we can later add
+->priv accessors which explicitly check for the sysfs_dirent type and
+performs casting.
 
-This is the second take of the patchset to separate out kernfs from
-sysfs.
+This patch doesn't introduce any behavior difference.
 
-Changes from the last take[L] are,
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ fs/sysfs/dir.c     |  2 +-
+ fs/sysfs/file.c    | 26 +++++++++++++-------------
+ fs/sysfs/inode.c   |  2 +-
+ fs/sysfs/symlink.c |  2 +-
+ fs/sysfs/sysfs.h   | 13 +++++--------
+ 5 files changed, 21 insertions(+), 24 deletions(-)
 
-* Patches applied to driver-core-next are dropped and the rest are
-  refreshed.
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index 3eb86b3..31f9311 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -676,7 +676,7 @@ static int create_dir(struct kobject *kobj, struct sysfs_dirent *parent_sd,
+ 		return -ENOMEM;
+ 
+ 	sd->s_ns = ns;
+-	sd->s_dir.kobj = kobj;
++	sd->priv = kobj;
+ 
+ 	/* link in */
+ 	sysfs_addrm_start(&acxt);
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 564abd2..77e6492 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -74,7 +74,7 @@ static struct sysfs_open_file *sysfs_of(struct file *file)
+  */
+ static const struct sysfs_ops *sysfs_file_ops(struct sysfs_dirent *sd)
+ {
+-	struct kobject *kobj = sd->s_parent->s_dir.kobj;
++	struct kobject *kobj = sd->s_parent->priv;
+ 
+ 	if (!sysfs_ignore_lockdep(sd))
+ 		lockdep_assert_held(sd);
+@@ -89,7 +89,7 @@ static const struct sysfs_ops *sysfs_file_ops(struct sysfs_dirent *sd)
+ static int sysfs_seq_show(struct seq_file *sf, void *v)
+ {
+ 	struct sysfs_open_file *of = sf->private;
+-	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
++	struct kobject *kobj = of->sd->s_parent->priv;
+ 	const struct sysfs_ops *ops;
+ 	char *buf;
+ 	ssize_t count;
+@@ -120,7 +120,7 @@ static int sysfs_seq_show(struct seq_file *sf, void *v)
+ 	 */
+ 	ops = sysfs_file_ops(of->sd);
+ 	if (ops->show)
+-		count = ops->show(kobj, of->sd->s_attr.attr, buf);
++		count = ops->show(kobj, of->sd->priv, buf);
+ 	else
+ 		count = 0;
+ 
+@@ -154,8 +154,8 @@ static ssize_t sysfs_bin_read(struct file *file, char __user *userbuf,
+ 			      size_t bytes, loff_t *off)
+ {
+ 	struct sysfs_open_file *of = sysfs_of(file);
+-	struct bin_attribute *battr = of->sd->s_attr.bin_attr;
+-	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
++	struct bin_attribute *battr = of->sd->priv;
++	struct kobject *kobj = of->sd->s_parent->priv;
+ 	loff_t size = file_inode(file)->i_size;
+ 	int count = min_t(size_t, bytes, PAGE_SIZE);
+ 	loff_t offs = *off;
+@@ -221,7 +221,7 @@ static ssize_t sysfs_bin_read(struct file *file, char __user *userbuf,
+ static int flush_write_buffer(struct sysfs_open_file *of, char *buf, loff_t off,
+ 			      size_t count)
+ {
+-	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
++	struct kobject *kobj = of->sd->s_parent->priv;
+ 	int rc = 0;
+ 
+ 	/*
+@@ -236,7 +236,7 @@ static int flush_write_buffer(struct sysfs_open_file *of, char *buf, loff_t off,
+ 	}
+ 
+ 	if (sysfs_is_bin(of->sd)) {
+-		struct bin_attribute *battr = of->sd->s_attr.bin_attr;
++		struct bin_attribute *battr = of->sd->priv;
+ 
+ 		rc = -EIO;
+ 		if (battr->write)
+@@ -245,7 +245,7 @@ static int flush_write_buffer(struct sysfs_open_file *of, char *buf, loff_t off,
+ 	} else {
+ 		const struct sysfs_ops *ops = sysfs_file_ops(of->sd);
+ 
+-		rc = ops->store(kobj, of->sd->s_attr.attr, buf, count);
++		rc = ops->store(kobj, of->sd->priv, buf, count);
+ 	}
+ 
+ 	sysfs_put_active(of->sd);
+@@ -466,8 +466,8 @@ static const struct vm_operations_struct sysfs_bin_vm_ops = {
+ static int sysfs_bin_mmap(struct file *file, struct vm_area_struct *vma)
+ {
+ 	struct sysfs_open_file *of = sysfs_of(file);
+-	struct bin_attribute *battr = of->sd->s_attr.bin_attr;
+-	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
++	struct bin_attribute *battr = of->sd->priv;
++	struct kobject *kobj = of->sd->s_parent->priv;
+ 	int rc;
+ 
+ 	mutex_lock(&of->mutex);
+@@ -607,7 +607,7 @@ static void sysfs_put_open_dirent(struct sysfs_dirent *sd,
+ static int sysfs_open_file(struct inode *inode, struct file *file)
+ {
+ 	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
+-	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
++	struct kobject *kobj = attr_sd->s_parent->priv;
+ 	struct sysfs_open_file *of;
+ 	bool has_read, has_write;
+ 	int error = -EACCES;
+@@ -617,7 +617,7 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
+ 		return -ENODEV;
+ 
+ 	if (sysfs_is_bin(attr_sd)) {
+-		struct bin_attribute *battr = attr_sd->s_attr.bin_attr;
++		struct bin_attribute *battr = attr_sd->priv;
+ 
+ 		has_read = battr->read || battr->mmap;
+ 		has_write = battr->write || battr->mmap;
+@@ -830,7 +830,7 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
+ 		return -ENOMEM;
+ 
+ 	sd->s_ns = ns;
+-	sd->s_attr.attr = (void *)attr;
++	sd->priv = (void *)attr;
+ 	sysfs_dirent_init_lockdep(sd);
+ 
+ 	sysfs_addrm_start(&acxt);
+diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
+index 5f7e2af..81cc858 100644
+--- a/fs/sysfs/inode.c
++++ b/fs/sysfs/inode.c
+@@ -275,7 +275,7 @@ static void sysfs_init_inode(struct sysfs_dirent *sd, struct inode *inode)
+ 		inode->i_fop = &sysfs_file_operations;
+ 		break;
+ 	case SYSFS_KOBJ_BIN_ATTR:
+-		bin_attr = sd->s_attr.bin_attr;
++		bin_attr = sd->priv;
+ 		inode->i_size = bin_attr->size;
+ 		inode->i_fop = &sysfs_bin_operations;
+ 		break;
+diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
+index f9d6056..82182e6 100644
+--- a/fs/sysfs/symlink.c
++++ b/fs/sysfs/symlink.c
+@@ -222,7 +222,7 @@ int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *targ,
+ 	result = -EINVAL;
+ 	if (sysfs_type(sd) != SYSFS_KOBJ_LINK)
+ 		goto out;
+-	if (sd->s_symlink.target_sd->s_dir.kobj != targ)
++	if (sd->s_symlink.target_sd->priv != targ)
+ 		goto out;
+ 
+ 	result = kernfs_rename_ns(sd, parent_sd, new, new_ns);
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index ad235b6..da65790 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -17,8 +17,6 @@ struct sysfs_open_dirent;
+ 
+ /* type-specific structures for sysfs_dirent->s_* union members */
+ struct sysfs_elem_dir {
+-	struct kobject		*kobj;
+-
+ 	unsigned long		subdirs;
+ 	/* children rbtree starts here and goes through sd->s_rb */
+ 	struct rb_root		children;
+@@ -29,10 +27,6 @@ struct sysfs_elem_symlink {
+ };
+ 
+ struct sysfs_elem_attr {
+-	union {
+-		struct attribute	*attr;
+-		struct bin_attribute	*bin_attr;
+-	};
+ 	struct sysfs_open_dirent *open;
+ };
+ 
+@@ -74,6 +68,8 @@ struct sysfs_dirent {
+ 		struct sysfs_elem_attr		s_attr;
+ 	};
+ 
++	void			*priv;
++
+ 	unsigned short		s_flags;
+ 	umode_t			s_mode;
+ 	unsigned int		s_ino;
+@@ -103,7 +99,7 @@ static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
+ 
+ #define sysfs_dirent_init_lockdep(sd)				\
+ do {								\
+-	struct attribute *attr = sd->s_attr.attr;		\
++	struct attribute *attr = sd->priv;			\
+ 	struct lock_class_key *key = attr->key;			\
+ 	if (!key)						\
+ 		key = &attr->skey;				\
+@@ -114,10 +110,11 @@ do {								\
+ /* Test for attributes that want to ignore lockdep for read-locking */
+ static inline bool sysfs_ignore_lockdep(struct sysfs_dirent *sd)
+ {
++	struct attribute *attr = sd->priv;
+ 	int type = sysfs_type(sd);
+ 
+ 	return (type == SYSFS_KOBJ_ATTR || type == SYSFS_KOBJ_BIN_ATTR) &&
+-		sd->s_attr.attr->ignore_lockdep;
++		attr->ignore_lockdep;
+ }
+ 
+ #else
+-- 
+1.8.3.1
 
-* Mount portion of kernfs implemented.  kernfs now supports multiple
-  sysfs_dirent hierarchies and sysfs is just one of them.
-
-* Dummy interface for kernfs for !CONFIG_SYSFS updated to return
-  -ENOSYS / ERR_PTR(-ENOSYS) where applicable.
-
-* Several bug fixes.
-
-This patchset contains 39 patches to separate out core sysfs features
-into kernfs.  kernfs exclusively deals with sysfs_dirent, which will
-be later renamed to kernfs_node, and kernfs_ops.  sysfs becomes a
-wrapping layer over sysfs which interfaces kobject and
-[bin_]attribute.
-
-The goal of these changes is to allow other users to make use of the
-core features of sysfs instead of rolling their own pseudo filesystem
-implementation which usually fails to deal with issues with file
-shutdowns, locking separation from vfs layer and so on.  This patchset
-refactors sysfs and separates out core functionalities to kernfs.
-After the patchset, kernfs is fully functional - multiple sysfs_dirent
-hierarchies can be created and mounted and sysfs is just one user of
-kernfs.
-
-This patchset shouldn't introduce any behavior differences and
-contains the following patches.
-
- 0001-sysfs-make-__sysfs_add_one-fail-if-the-parent-isn-t-.patch
- 0002-sysfs-kernfs-add-skeletons-for-kernfs.patch
- 0003-sysfs-kernfs-introduce-kernfs_remove-_by_name-_ns.patch
- 0004-sysfs-kernfs-introduce-kernfs_create_link.patch
- 0005-sysfs-kernfs-introduce-kernfs_rename-_ns.patch
- 0006-sysfs-kernfs-introduce-kernfs_setattr.patch
- 0007-sysfs-kernfs-replace-sysfs_dirent-s_dir.kobj-and-s_a.patch
- 0008-sysfs-kernfs-introduce-kernfs_create_dir-_ns.patch
- 0009-sysfs-kernfs-prepare-read-path-for-kernfs.patch
- 0010-sysfs-kernfs-prepare-write-path-for-kernfs.patch
- 0011-sysfs-kernfs-prepare-mmap-path-for-kernfs.patch
- 0012-sysfs-kernfs-prepare-open-release-poll-paths-for-ker.patch
- 0013-sysfs-kernfs-move-sysfs_open_file-to-include-linux-k.patch
- 0014-sysfs-kernfs-introduce-kernfs_ops.patch
- 0015-sysfs-kernfs-add-sysfs_dirent-s_attr.size.patch
- 0016-sysfs-kernfs-remove-SYSFS_KOBJ_BIN_ATTR.patch
- 0017-sysfs-kernfs-introduce-kernfs_create_file-_ns.patch
- 0018-sysfs-kernfs-remove-sysfs_add_one.patch
- 0019-sysfs-kernfs-add-kernfs_ops-seq_-start-next-stop.patch
- 0020-sysfs-kernfs-introduce-kernfs_notify.patch
- 0021-sysfs-kernfs-reorganize-SYSFS_-constants.patch
- 0022-sysfs-kernfs-revamp-sysfs_dirent-active_ref-lockdep-.patch
- 0023-sysfs-kernfs-introduce-kernfs-_find_and-_get-and-ker.patch
- 0024-sysfs-kernfs-move-internal-decls-to-fs-kernfs-kernfs.patch
- 0025-sysfs-kernfs-move-inode-code-to-fs-kernfs-inode.c.patch
- 0026-sysfs-kernfs-move-dir-core-code-to-fs-kernfs-dir.c.patch
- 0027-sysfs-kernfs-move-file-core-code-to-fs-kernfs-file.c.patch
- 0028-sysfs-kernfs-move-symlink-core-code-to-fs-kernfs-sym.patch
- 0029-sysfs-kernfs-drop-unused-params-from-sysfs_fill_supe.patch
- 0030-sysfs-kernfs-make-sysfs_super_info-ns-const.patch
- 0031-sysfs-kernfs-no-need-to-kern_mount-sysfs-from-sysfs_.patch
- 0032-sysfs-kernfs-introduce-sysfs_root_sd.patch
- 0033-sysfs-kernfs-implement-kernfs_create-destroy_root.patch
- 0034-sysfs-kernfs-make-inode-number-ida-per-kernfs_root.patch
- 0035-sysfs-kernfs-make-super_blocks-bind-to-different-ker.patch
- 0036-sysfs-kernfs-prepare-mount-path-for-kernfs.patch
- 0037-sysfs-kernfs-move-mount-core-code-to-fs-kernfs-mount.patch
- 0038-sysfs-kernfs-make-sysfs_dirent-definition-public.patch
- 0039-sysfs-kernfs-remove-cross-inclusions-of-internal-hea.patch
-
- 0001 is prep patch.
-
- 0002 preps fs/kernfs/ directory with skeleton files.
-
- 0003-0023 refactor various code paths so that all externally visible
- interfaces are split to core kernfs interface which deals with
- sysfs_dirent and kernfs_ops and sysfs wrapping it to provide the
- existing interface.
-
- 0024-0028 move kernfs part of the implementation under fs/kernfs.
-
- 0029-0035 update mount logic so that it can support multiple
- sysfs_dirent hierarchies instead of assuming single sysfs hierarchy.
-
- 0036-0037 refactor mount code path for kernfs and moves kernfs
- interface and implementation to fs/kernfs.
-
- 0038-0039 cut the remaining entanglement between sysfs and kernfs and
- make the former proper user of the latter.
-
-Multiple hierarchy support tested with the attached module (needs
-adding EXPORT_SYMBOL to kernfs interface).  Works as expected.
-
-This patchset is on top of
-
- driver-core-next 0cae60f91494 ("sysfs: rename sysfs_assoc_lock and explain what it's about")
-
-The patches are also available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-separate-out-kernfs
-
-diffstat follows.  Thanks.
-
- fs/Makefile                 |    2 
- fs/kernfs/Makefile          |    5 
- fs/kernfs/dir.c             | 1007 ++++++++++++++++++++++++++++++++++++++++++++
- fs/kernfs/file.c            |  797 ++++++++++++++++++++++++++++++++++
- fs/kernfs/inode.c           |  337 ++++++++++++++
- fs/kernfs/kernfs-internal.h |  124 +++++
- fs/kernfs/mount.c           |  165 +++++++
- fs/kernfs/symlink.c         |  148 ++++++
- fs/namespace.c              |    2 
- fs/sysfs/Makefile           |    2 
- fs/sysfs/dir.c              |  990 -------------------------------------------
- fs/sysfs/file.c             |  913 +++++++--------------------------------
- fs/sysfs/group.c            |   59 +-
- fs/sysfs/inode.c            |  331 --------------
- fs/sysfs/mount.c            |  166 -------
- fs/sysfs/symlink.c          |  162 -------
- fs/sysfs/sysfs.h            |  217 ---------
- include/linux/kernfs.h      |  311 +++++++++++++
- include/linux/sysfs.h       |   43 -
- 19 files changed, 3174 insertions(+), 2607 deletions(-)
-
---
-tejun
-
-[L] https://lkml.kernel.org/g/1382629780-10006-1-git-send-email-tj@kernel.org
