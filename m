@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653Ab3KCFZi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 01:25:38 -0400
-Received: from mail-in-09.arcor-online.net ([151.189.21.49]:55385 "EHLO
-	mail-in-09.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750885Ab3KCFZg (ORCPT
+	id S1751991Ab3KCGbL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 01:31:11 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:21313 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab3KCGbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 01:25:36 -0400
-X-Greylist: Passed host: 188.104.13.64
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-09.arcor-online.net 78C6B197937
-X-Greylist: Passed host: 188.104.13.64
-X-Greylist: Passed host: 188.104.13.64
-X-Greylist: Passed host: 188.104.13.64
-Subject: [PATCH] HID: roccat: Fixed Coverity CID 141438
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-Reply-To: erazor_de@users.sourceforge.net
-To: Stefan Achatz <erazor_de@users.sourceforge.net>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 03 Nov 2013 06:25:33 +0100
-Message-ID: <1383456333.4017.2.camel@neuromancer.tessier-ashpool>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Sun, 3 Nov 2013 01:31:08 -0500
+Date: Sun, 3 Nov 2013 09:30:49 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Aldo Iljazi <mail@aldo.io>
+Cc: marek.belisko@gmail.com, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: ft1000: fixed coding style issues
+Message-ID: <20131103063049.GI26669@mwanda>
+References: <1383426232-24686-1-git-send-email-mail@aldo.io>
+ <20131102211820.GA24821@linux>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131102211820.GA24821@linux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Nov 02, 2013 at 11:18:20PM +0200, Aldo Iljazi wrote:
+>  Aldo Iljazi wrote:
+> 
+> > Fixed a few coding style issues that checkpatch reported.
+> > 
+> > Specifically:
+> > 
+> > 1. line over 80 characters issue on the lines 9 and 10.
+> > 2. space prohibited before open square bracket '[' issue on the lines
+> > 31.
+> > 3. inserted space after comma on lines 32 to 156.
+> > 
+> > Signed-off-by: Aldo Iljazi <mail@aldo.io>
 
-Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
----
- drivers/hid/hid-roccat-kovaplus.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+This file is easy to review so you may as well fix all the issues.
 
-diff --git a/drivers/hid/hid-roccat-kovaplus.c b/drivers/hid/hid-roccat-kovaplus.c
-index 0c8e1ef..9660477 100644
---- a/drivers/hid/hid-roccat-kovaplus.c
-+++ b/drivers/hid/hid-roccat-kovaplus.c
-@@ -554,9 +554,13 @@ static void kovaplus_keep_values_up_to_date(struct kovaplus_device *kovaplus,
- 		break;
- 	case KOVAPLUS_MOUSE_REPORT_BUTTON_TYPE_CPI:
- 		kovaplus->actual_cpi = kovaplus_convert_event_cpi(button_report->data1);
-+		break;
- 	case KOVAPLUS_MOUSE_REPORT_BUTTON_TYPE_SENSITIVITY:
- 		kovaplus->actual_x_sensitivity = button_report->data1;
- 		kovaplus->actual_y_sensitivity = button_report->data2;
-+		break;
-+	default:
-+		break;
- 	}
- }
- 
--- 
-1.7.3.4
+Clean up the license block so it's in the normal format.  Put the commas
+at the end of the line instead of the beginning.
 
-
+regards,
+dan carpenter
 
