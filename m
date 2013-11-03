@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab3KCGbL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 01:31:11 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21313 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab3KCGbI (ORCPT
+	id S1752344Ab3KCGdh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 01:33:37 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:36470 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab3KCGdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 01:31:08 -0500
-Date: Sun, 3 Nov 2013 09:30:49 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Aldo Iljazi <mail@aldo.io>
-Cc: marek.belisko@gmail.com, devel@driverdev.osuosl.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: ft1000: fixed coding style issues
-Message-ID: <20131103063049.GI26669@mwanda>
-References: <1383426232-24686-1-git-send-email-mail@aldo.io>
- <20131102211820.GA24821@linux>
+	Sun, 3 Nov 2013 01:33:35 -0500
+Message-ID: <5275EE14.2000701@oracle.com>
+Date: Sun, 03 Nov 2013 14:32:52 +0800
+From: Vaughan Cao <vaughan.cao@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131102211820.GA24821@linux>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: dgilbert@interlog.com, Christoph Hellwig <hch@infradead.org>
+CC: SCSI development list <linux-scsi@vger.kernel.org>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>
+Subject: Re: [PATCH v2] sg: O_EXCL and other lock handling
+References: <52718713.7050906@interlog.com> <20131031155653.GA16944@infradead.org> <5272AD80.90203@interlog.com> <5273391C.2010705@oracle.com> <527542E3.7090809@interlog.com>
+In-Reply-To: <527542E3.7090809@interlog.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 02, 2013 at 11:18:20PM +0200, Aldo Iljazi wrote:
->  Aldo Iljazi wrote:
-> 
-> > Fixed a few coding style issues that checkpatch reported.
-> > 
-> > Specifically:
-> > 
-> > 1. line over 80 characters issue on the lines 9 and 10.
-> > 2. space prohibited before open square bracket '[' issue on the lines
-> > 31.
-> > 3. inserted space after comma on lines 32 to 156.
-> > 
-> > Signed-off-by: Aldo Iljazi <mail@aldo.io>
 
-This file is easy to review so you may as well fix all the issues.
+On 2013年11月03日 02:22, Douglas Gilbert wrote:
+> On 13-11-01 01:16 AM, vaughan wrote:
+>
+> I do not follow the last point but that is not important.
+>
+>
+> For reasons that I listed in a private post I think
+> that my patch presented in this thread is closer to
+> our goals than your patch (2013/6/17/319). Timing is
+> important as well since we are approaching the lk 3.13
+> merge window. Regressions are what will set us back.
+>
+Yes, I agree with you. My v2 patch lacks much consideration on 
+release/detach cases, which is a very significant issue we should 
+address along with o_excl bug.
 
-Clean up the license block so it's in the normal format.  Put the commas
-at the end of the line instead of the beginning.
-
-regards,
-dan carpenter
-
+Thanks,
+Vaughan
