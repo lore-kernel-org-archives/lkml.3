@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab3KCJ6u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 04:58:50 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:57212 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739Ab3KCJxy (ORCPT
+	id S1753729Ab3KCJxw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 04:53:52 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:37454 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753199Ab3KCJxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 04:53:54 -0500
+	Sun, 3 Nov 2013 04:53:33 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 24/39] sysfs, kernfs: move internal decls to fs/kernfs/kernfs-internal.h
-Date: Sun,  3 Nov 2013 04:53:03 -0500
-Message-Id: <1383472398-17812-25-git-send-email-tj@kernel.org>
+Subject: [PATCH 08/39] sysfs, kernfs: introduce kernfs_create_dir[_ns]()
+Date: Sun,  3 Nov 2013 04:52:47 -0500
+Message-Id: <1383472398-17812-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1383472398-17812-1-git-send-email-tj@kernel.org>
 References: <1383472398-17812-1-git-send-email-tj@kernel.org>
@@ -21,260 +21,190 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move data structure, constant and basic accessor declarations from
-fs/sysfs/sysfs.h to fs/kernfs/kernfs-internal.h.  The two files
-currently include each other.  Once kernfs / sysfs separation is
-complete, the cross inclusions will be removed.  Inclusion protectors
-are added to fs/sysfs/sysfs.h to allow cross-inclusion.
+Introduce kernfs interface to create a directory which takes and
+returns sysfs_dirents.
 
-This patch doesn't introduce any functional changes.
+create_dir() is renamed to kernfs_create_dir_ns() and its argumantes
+and return value are updated.  create_dir() usages are replaced with
+kernfs_create_dir_ns() and sysfs_create_subdir() usages are replaced
+with kernfs_create_dir().  Dup warnings are handled explicitly by
+sysfs users of the kernfs interface.
+
+This patch doesn't introduce any behavior changes.
+
+v2: Dummy implementation for !CONFIG_SYSFS updated to return -ENOSYS.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/kernfs/kernfs-internal.h | 115 ++++++++++++++++++++++++++++++++++++++++++++
- fs/sysfs/sysfs.h            | 102 +++------------------------------------
- 2 files changed, 121 insertions(+), 96 deletions(-)
- create mode 100644 fs/kernfs/kernfs-internal.h
+ fs/sysfs/dir.c         | 50 ++++++++++++++++++++++++++++----------------------
+ fs/sysfs/group.c       |  9 ++++++---
+ fs/sysfs/sysfs.h       |  3 ---
+ include/linux/kernfs.h | 14 ++++++++++++++
+ 4 files changed, 48 insertions(+), 28 deletions(-)
 
-diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
-new file mode 100644
-index 0000000..6bb8c12
---- /dev/null
-+++ b/fs/kernfs/kernfs-internal.h
-@@ -0,0 +1,115 @@
-+/*
-+ * fs/kernfs/kernfs-internal.h - kernfs internal header file
-+ *
-+ * Copyright (c) 2001-3 Patrick Mochel
-+ * Copyright (c) 2007 SUSE Linux Products GmbH
-+ * Copyright (c) 2007, 2013 Tejun Heo <teheo@suse.de>
-+ *
-+ * This file is released under the GPLv2.
-+ */
-+
-+#ifndef __KERNFS_INTERNAL_H
-+#define __KERNFS_INTERNAL_H
-+
-+#include <linux/lockdep.h>
-+#include <linux/fs.h>
-+#include <linux/rbtree.h>
-+
-+#include <linux/kernfs.h>
-+
-+struct sysfs_open_dirent;
-+
-+/* type-specific structures for sysfs_dirent->s_* union members */
-+struct sysfs_elem_dir {
-+	unsigned long		subdirs;
-+	/* children rbtree starts here and goes through sd->s_rb */
-+	struct rb_root		children;
-+};
-+
-+struct sysfs_elem_symlink {
-+	struct sysfs_dirent	*target_sd;
-+};
-+
-+struct sysfs_elem_attr {
-+	const struct kernfs_ops	*ops;
-+	struct sysfs_open_dirent *open;
-+	loff_t			size;
-+};
-+
-+struct sysfs_inode_attrs {
-+	struct iattr	ia_iattr;
-+	void		*ia_secdata;
-+	u32		ia_secdata_len;
-+};
-+
-+/*
-+ * sysfs_dirent - the building block of sysfs hierarchy.  Each and
-+ * every sysfs node is represented by single sysfs_dirent.
-+ *
-+ * As long as s_count reference is held, the sysfs_dirent itself is
-+ * accessible.  Dereferencing s_elem or any other outer entity
-+ * requires s_active reference.
-+ */
-+struct sysfs_dirent {
-+	atomic_t		s_count;
-+	atomic_t		s_active;
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	struct lockdep_map	dep_map;
-+#endif
-+	struct sysfs_dirent	*s_parent;
-+	const char		*s_name;
-+
-+	struct rb_node		s_rb;
-+
-+	union {
-+		struct completion	*completion;
-+		struct sysfs_dirent	*removed_list;
-+	} u;
-+
-+	const void		*s_ns; /* namespace tag */
-+	unsigned int		s_hash; /* ns + name hash */
-+	union {
-+		struct sysfs_elem_dir		s_dir;
-+		struct sysfs_elem_symlink	s_symlink;
-+		struct sysfs_elem_attr		s_attr;
-+	};
-+
-+	void			*priv;
-+
-+	unsigned short		s_flags;
-+	umode_t			s_mode;
-+	unsigned int		s_ino;
-+	struct sysfs_inode_attrs *s_iattr;
-+};
-+
-+#define SD_DEACTIVATED_BIAS		INT_MIN
-+
-+#define SYSFS_TYPE_MASK			0x000f
-+#define SYSFS_DIR			0x0001
-+#define SYSFS_KOBJ_ATTR			0x0002
-+#define SYSFS_KOBJ_LINK			0x0004
-+#define SYSFS_COPY_NAME			(SYSFS_DIR | SYSFS_KOBJ_LINK)
-+#define SYSFS_ACTIVE_REF		SYSFS_KOBJ_ATTR
-+
-+#define SYSFS_FLAG_MASK			~SYSFS_TYPE_MASK
-+#define SYSFS_FLAG_REMOVED		0x0010
-+#define SYSFS_FLAG_HAS_NS		0x0020
-+#define SYSFS_FLAG_HAS_SEQ_SHOW		0x0040
-+#define SYSFS_FLAG_HAS_MMAP		0x0080
-+#define SYSFS_FLAG_LOCKDEP		0x0100
-+
-+static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
-+{
-+	return sd->s_flags & SYSFS_TYPE_MASK;
-+}
-+
-+/*
-+ * Context structure to be used while adding/removing nodes.
-+ */
-+struct sysfs_addrm_cxt {
-+	struct sysfs_dirent	*removed;
-+};
-+
-+#include "../sysfs/sysfs.h"
-+
-+#endif	/* __KERNFS_INTERNAL_H */
-diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index 485b348..f8c936f 100644
---- a/fs/sysfs/sysfs.h
-+++ b/fs/sysfs/sysfs.h
-@@ -8,103 +8,11 @@
-  * This file is released under the GPLv2.
-  */
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index 31f9311..27822a1 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -661,9 +661,18 @@ struct sysfs_dirent *sysfs_get_dirent_ns(struct sysfs_dirent *parent_sd,
+ }
+ EXPORT_SYMBOL_GPL(sysfs_get_dirent_ns);
  
--#include <linux/lockdep.h>
--#include <linux/kobject_ns.h>
--#include <linux/fs.h>
--#include <linux/rbtree.h>
-+#ifndef __SYSFS_INTERNAL_H
-+#define __SYSFS_INTERNAL_H
+-static int create_dir(struct kobject *kobj, struct sysfs_dirent *parent_sd,
+-		      const char *name, const void *ns,
+-		      struct sysfs_dirent **p_sd)
++/**
++ * kernfs_create_dir_ns - create a directory
++ * @parent: parent in which to create a new directory
++ * @name: name of the new directory
++ * @priv: opaque data associated with the new directory
++ * @ns: optional namespace tag of the directory
++ *
++ * Returns the created node on success, ERR_PTR() value on failure.
++ */
++struct sysfs_dirent *kernfs_create_dir_ns(struct sysfs_dirent *parent,
++					  const char *name, void *priv,
++					  const void *ns)
+ {
+ 	umode_t mode = S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO;
+ 	struct sysfs_addrm_cxt acxt;
+@@ -673,28 +682,21 @@ static int create_dir(struct kobject *kobj, struct sysfs_dirent *parent_sd,
+ 	/* allocate */
+ 	sd = sysfs_new_dirent(name, mode, SYSFS_DIR);
+ 	if (!sd)
+-		return -ENOMEM;
++		return ERR_PTR(-ENOMEM);
  
--struct sysfs_open_dirent;
--
--/* type-specific structures for sysfs_dirent->s_* union members */
--struct sysfs_elem_dir {
--	unsigned long		subdirs;
--	/* children rbtree starts here and goes through sd->s_rb */
--	struct rb_root		children;
--};
--
--struct sysfs_elem_symlink {
--	struct sysfs_dirent	*target_sd;
--};
--
--struct sysfs_elem_attr {
--	const struct kernfs_ops	*ops;
--	struct sysfs_open_dirent *open;
--	loff_t			size;
--};
--
--struct sysfs_inode_attrs {
--	struct iattr	ia_iattr;
--	void		*ia_secdata;
--	u32		ia_secdata_len;
--};
--
--/*
-- * sysfs_dirent - the building block of sysfs hierarchy.  Each and
-- * every sysfs node is represented by single sysfs_dirent.
-- *
-- * As long as s_count reference is held, the sysfs_dirent itself is
-- * accessible.  Dereferencing s_elem or any other outer entity
-- * requires s_active reference.
-- */
--struct sysfs_dirent {
--	atomic_t		s_count;
--	atomic_t		s_active;
--#ifdef CONFIG_DEBUG_LOCK_ALLOC
--	struct lockdep_map	dep_map;
--#endif
--	struct sysfs_dirent	*s_parent;
--	const char		*s_name;
--
--	struct rb_node		s_rb;
--
--	union {
--		struct completion	*completion;
--		struct sysfs_dirent	*removed_list;
--	} u;
--
--	const void		*s_ns; /* namespace tag */
--	unsigned int		s_hash; /* ns + name hash */
--	union {
--		struct sysfs_elem_dir		s_dir;
--		struct sysfs_elem_symlink	s_symlink;
--		struct sysfs_elem_attr		s_attr;
--	};
--
--	void			*priv;
--
--	unsigned short		s_flags;
--	umode_t			s_mode;
--	unsigned int		s_ino;
--	struct sysfs_inode_attrs *s_iattr;
--};
--
--#define SD_DEACTIVATED_BIAS		INT_MIN
--
--#define SYSFS_TYPE_MASK			0x000f
--#define SYSFS_DIR			0x0001
--#define SYSFS_KOBJ_ATTR			0x0002
--#define SYSFS_KOBJ_LINK			0x0004
--#define SYSFS_COPY_NAME			(SYSFS_DIR | SYSFS_KOBJ_LINK)
--#define SYSFS_ACTIVE_REF		SYSFS_KOBJ_ATTR
--
--#define SYSFS_FLAG_MASK			~SYSFS_TYPE_MASK
--#define SYSFS_FLAG_REMOVED		0x0010
--#define SYSFS_FLAG_HAS_NS		0x0020
--#define SYSFS_FLAG_HAS_SEQ_SHOW		0x0040
--#define SYSFS_FLAG_HAS_MMAP		0x0080
--#define SYSFS_FLAG_LOCKDEP		0x0100
--
--static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
--{
--	return sd->s_flags & SYSFS_TYPE_MASK;
+ 	sd->s_ns = ns;
+-	sd->priv = kobj;
++	sd->priv = priv;
+ 
+ 	/* link in */
+ 	sysfs_addrm_start(&acxt);
+-	rc = sysfs_add_one(&acxt, sd, parent_sd);
++	rc = __sysfs_add_one(&acxt, sd, parent);
+ 	sysfs_addrm_finish(&acxt);
+ 
+-	if (rc == 0)
+-		*p_sd = sd;
+-	else
+-		sysfs_put(sd);
++	if (!rc)
++		return sd;
+ 
+-	return rc;
 -}
 -
--/*
-- * Context structure to be used while adding/removing nodes.
-- */
--struct sysfs_addrm_cxt {
--	struct sysfs_dirent	*removed;
--};
-+#include "../kernfs/kernfs-internal.h"
-+#include <linux/sysfs.h>
+-int sysfs_create_subdir(struct kobject *kobj, const char *name,
+-			struct sysfs_dirent **p_sd)
+-{
+-	return create_dir(kobj, kobj->sd, name, NULL, p_sd);
++	sysfs_put(sd);
++	return ERR_PTR(rc);
+ }
  
- /*
-  * mount.c
-@@ -175,3 +83,5 @@ void sysfs_unmap_bin_file(struct sysfs_dirent *sd);
- extern const struct inode_operations sysfs_symlink_inode_operations;
- int sysfs_create_link_sd(struct sysfs_dirent *sd, struct kobject *target,
- 			 const char *name);
+ /**
+@@ -705,7 +707,6 @@ int sysfs_create_subdir(struct kobject *kobj, const char *name,
+ int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
+ {
+ 	struct sysfs_dirent *parent_sd, *sd;
+-	int error = 0;
+ 
+ 	BUG_ON(!kobj);
+ 
+@@ -717,10 +718,15 @@ int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
+ 	if (!parent_sd)
+ 		return -ENOENT;
+ 
+-	error = create_dir(kobj, parent_sd, kobject_name(kobj), ns, &sd);
+-	if (!error)
+-		kobj->sd = sd;
+-	return error;
++	sd = kernfs_create_dir_ns(parent_sd, kobject_name(kobj), kobj, ns);
++	if (IS_ERR(sd)) {
++		if (PTR_ERR(sd) == -EEXIST)
++			sysfs_warn_dup(parent_sd, kobject_name(kobj));
++		return PTR_ERR(sd);
++	}
 +
-+#endif	/* __SYSFS_INTERNAL_H */
++	kobj->sd = sd;
++	return 0;
+ }
+ 
+ static struct dentry *sysfs_lookup(struct inode *dir, struct dentry *dentry,
+diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
+index 4bd9973..065689d 100644
+--- a/fs/sysfs/group.c
++++ b/fs/sysfs/group.c
+@@ -101,9 +101,12 @@ static int internal_create_group(struct kobject *kobj, int update,
+ 		return -EINVAL;
+ 	}
+ 	if (grp->name) {
+-		error = sysfs_create_subdir(kobj, grp->name, &sd);
+-		if (error)
+-			return error;
++		sd = kernfs_create_dir(kobj->sd, grp->name, kobj);
++		if (IS_ERR(sd)) {
++			if (PTR_ERR(sd) == -EEXIST)
++				sysfs_warn_dup(kobj->sd, grp->name);
++			return PTR_ERR(sd);
++		}
+ 	} else
+ 		sd = kobj->sd;
+ 	sysfs_get(sd);
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index da65790..dc3ac27 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -179,9 +179,6 @@ struct sysfs_dirent *sysfs_new_dirent(const char *name, umode_t mode, int type);
+ 
+ void release_sysfs_dirent(struct sysfs_dirent *sd);
+ 
+-int sysfs_create_subdir(struct kobject *kobj, const char *name,
+-			struct sysfs_dirent **p_sd);
+-
+ static inline struct sysfs_dirent *__sysfs_get(struct sysfs_dirent *sd)
+ {
+ 	if (sd) {
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 8cb6738..345773f 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -17,6 +17,9 @@ struct sysfs_dirent;
+ 
+ #ifdef CONFIG_SYSFS
+ 
++struct sysfs_dirent *kernfs_create_dir_ns(struct sysfs_dirent *parent,
++					  const char *name, void *priv,
++					  const void *ns);
+ struct sysfs_dirent *kernfs_create_link(struct sysfs_dirent *parent,
+ 					const char *name,
+ 					struct sysfs_dirent *target);
+@@ -30,6 +33,11 @@ int kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr);
+ #else	/* CONFIG_SYSFS */
+ 
+ static inline struct sysfs_dirent *
++kernfs_create_dir_ns(struct sysfs_dirent *parent, const char *name, void *priv,
++		     const void *ns)
++{ return ERR_PTR(-ENOSYS); }
++
++static inline struct sysfs_dirent *
+ kernfs_create_link(struct sysfs_dirent *parent, const char *name,
+ 		   struct sysfs_dirent *target)
+ { return ERR_PTR(-ENOSYS); }
+@@ -51,6 +59,12 @@ static inline int kernfs_setattr(struct sysfs_dirent *sd,
+ 
+ #endif	/* CONFIG_SYSFS */
+ 
++static inline struct sysfs_dirent *
++kernfs_create_dir(struct sysfs_dirent *parent, const char *name, void *priv)
++{
++	return kernfs_create_dir_ns(parent, name, priv, NULL);
++}
++
+ static inline int kernfs_remove_by_name(struct sysfs_dirent *parent,
+ 					const char *name)
+ {
 -- 
 1.8.3.1
 
