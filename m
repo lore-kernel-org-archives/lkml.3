@@ -1,92 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab3KCP5k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 10:57:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49869 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754057Ab3KCP5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 10:57:39 -0500
-Date: Sun, 3 Nov 2013 10:57:30 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, prarit@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Allow NR_CPUS=1024
-Message-ID: <20131103155729.GB9944@hansolo.jdub.homelinux.org>
-References: <20131101141148.GH8652@hansolo.jdub.homelinux.org>
- <20131103101825.GA6605@gmail.com>
- <20131103102132.GA6807@gmail.com>
+	id S1753910Ab3KCQEO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 11:04:14 -0500
+Received: from mail-ea0-f194.google.com ([209.85.215.194]:42577 "EHLO
+	mail-ea0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753491Ab3KCQEM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 11:04:12 -0500
+X-Greylist: delayed 3388 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Nov 2013 11:04:12 EST
+From: andreas.thalhammer@linux.com
+Reply-To: andreas.thalhammer@linux.com
+To: linux-kernel@vger.kernel.org
+Subject: A Desktop Linux idea: modulized open hardware database for the linux kernel config
+Date: Sun, 3 Nov 2013 15:53:26 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.3-gentoo-6.0; KDE/4.11.2; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131103102132.GA6807@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201311031553.26488.andreas.thalhammer@linux.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 03, 2013 at 11:21:32AM +0100, Ingo Molnar wrote:
-> 
-> * Ingo Molnar <mingo@kernel.org> wrote:
-> 
-> > 
-> > * Josh Boyer <jwboyer@redhat.com> wrote:
-> > 
-> > > The current range for SMP configs is 2 - 512, or a full 4096 in the case 
-> > > of MAXSMP.  There are machines that have 1024 CPUs in them today and 
-> > > configuring a kernel for that means you are forced to set MAXSMP.  This 
-> > > adds additional unnecessary overhead.  While that overhead might be 
-> > > considered tiny for large machines, it isn't necessarily so if you are 
-> > > building a kernel that runs across a wide variety of machines.  We 
-> > > increase the range to 1024 to help with this.
-> > >
-> > > Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-> > > ---
-> > >  arch/x86/Kconfig | 2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> > > index f67e839..d726b2d 100644
-> > > --- a/arch/x86/Kconfig
-> > > +++ b/arch/x86/Kconfig
-> > > @@ -825,7 +825,7 @@ config MAXSMP
-> > >  config NR_CPUS
-> > >  	int "Maximum number of CPUs" if SMP && !MAXSMP
-> > >  	range 2 8 if SMP && X86_32 && !X86_BIGSMP
-> > > -	range 2 512 if SMP && !MAXSMP
-> > > +	range 2 1024 if SMP && !MAXSMP
-> > >  	default "1" if !SMP
-> > >  	default "4096" if MAXSMP
-> > >  	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
-> > 
-> > Any reason not to allow it to go up to 4096? The original concern was 
-> > that CPUS=4096 wasn't working very well and you had to select MAXSMP 
-> > deliberately and keep all the pieces.
+Hello LKML!
 
-No real reason to not allow all the way to 4096, no.  I just started
-small as I wanted 1024 specifically, and this is the simplest way to
-achieve that.
+I am a Linux Desktop user since around 2001. Doing the math, that’s more than 
+a decade!
 
-> The other reason was CONFIG_CPUMASK_OFFSTACK: with 4096 CPUs a cpumask is 
-> 512 bytes, too large to be kept on the kernel stack.
-> 
-> MAXSMP forces CONFIG_CPUMASK_OFFSTACK so there's no such concern there.
-> 
-> With 1024 CPUs a single cpumask is 128 bytes - rather significant as well. 
-> With 512 CPUs it's 64 bytes - borderline.
-> 
-> So I think a better solution would be to allow an increase above 512 CPUs 
-> only if CONFIG_CPUMASK_OFFSTACK is also enabled.
+Having watched http://www.youtube.com/watch?v=jjRAKuis7T8 (LinuxCon 2013, Dirk 
+Hohndel and Linus Torvalds on stage) I decided to share an idea I had to make 
+kernel building easier for computer end-users:
 
-OK, that makes sense.  So in this scenario, we could probably either:
+How aboud a free and open hardware database for configuring Linux?
 
-a) do away with MAXSMP entirely and just depend on
-CONFIG_CPUMASK_OFFSTACK.
+My idea would make a very simple to get kernel configuration for a modulized 
+hardware and feature base. It should be some kind of open for everybody 
+database in which everyone may participate.
 
-b) make MAXSMP something even higher than 4096.  Like 5120 or 6144, etc.
+(This would off course only be of use for power users or developers. Regular 
+users will use stock kernels from their Linux distribution anyway. BTW, I use 
+Gentoo Linux.)
 
-Which would you prefer?  Either is easy enough to code up, I just need
-to know which I should shoot for.
+An example:
+My computer is a PC. The motherboard is an MSI 890FXA-GD70, it has an AMD 
+Phenom II X6 1090T in the CPU slot. So this setup would be the basic entry to 
+look for, which will provide a kernel configurtion for this specific hardware. 
+For example, the module for the Fintek F71889ED Super IO Sensor has to be 
+selected (CONFIG_SENSORS_F71882FG) as well as CONFIG_SENSORS_K10TEMP for the 
+CPU.
 
-josh
+I  know lm_sensors has a tools for that already: sensors-detect. But not 
+everything is covered there, is there?
+
+Then I would also combine this config with a config module for my graphics 
+card. It is a Radeon HD 6770, so readonkms has to be selected properly. Some 
+kernel parameters may also be wise, such as video=radeondrmfb, radeon.aspm=1 
+and radeon.dpm=1.
+
+It should also be possible to combine this config with a config module for my 
+monitor. This will show that the resolution of this monitor is 1680x1050. 
+Unfortunately this resultution is not part of the VESA BIOS, so the kernel 
+command-line parameter video=radeondrmfb will be expanded by 1680x1050-32@60.
+
+Some basic profiles may define how the PC will be used: i.e. as a file server, 
+as a Desktop conputer or as a gaming computer. A "cutting edge with all the 
+new features" profile may select everything that is usable for this computer.
+
+Every ISA/EISA/VLB/PCI/AGP/PCIe expansion card can and will add some config 
+settings to the big kernel configuration. I.e. if you had a DVB-TV card or 
+whatever.
+
+A basic "All USB-end-user-devices" config module for all possible USB devices 
+may select everything except those self-made stuff, like a thermal probe. On 
+the other hand, specific stuff should be allowed too. I.e. the Digitus 
+Cardreader All-in-one, USB 3.0 (DA-70330) – is a specific reader module 
+required (CONFIG_USB_STORAGE_*)?
+
+In the end there would be a hardware database, maybe combined with a wiki, 
+that includes developer information like hardware addresses and such as well 
+as user reports and kernel configuration modules for that hardware.
+
+Jumping to a newer kernel will automatically set the new/changed 
+CONFIG_SOMETHING for the selected profile.
+
+This would also be handy for Laptops and very narrow configured hardware such 
+as Apple computers (my Power Mac G4 for example).
+
+A tool for this could go into the kernel sources. It would detect the hardware 
+present in the system using everything that is available (e.g. lspci) and show 
+a configuration menu (make config-alike) that will enable the user to select 
+or deselect specific hardware config modules and profiles (i.e. "file 
+server").
+
+Compiling a new kernel will then not result in searching the whole kernel 
+config for new or changed options like it is now (just recently I had to 
+change video=radeonfb to video=radeonkmsfb in my GRUB config).
+
+For kernel developers this could also be a very useful tool, because users can 
+point to the specific hardware that makes troubles on Linux. And, like it is 
+in a community, developers may be able to reach users willing to participate 
+in testing new patches for fixing these troubles…
+
+This is just an idea. Now it’s out there – do with it whatever you like. The 
+idea is hereby released under the GPL-2 :-)
