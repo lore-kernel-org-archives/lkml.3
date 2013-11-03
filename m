@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab3KCJ6e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 04:58:34 -0500
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:64194 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828Ab3KCJxz (ORCPT
+	id S1753821Ab3KCJxy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 04:53:54 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:50219 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221Ab3KCJxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 04:53:55 -0500
+	Sun, 3 Nov 2013 04:53:34 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 25/39] sysfs, kernfs: move inode code to fs/kernfs/inode.c
-Date: Sun,  3 Nov 2013 04:53:04 -0500
-Message-Id: <1383472398-17812-26-git-send-email-tj@kernel.org>
+        bhelgaas@google.com, Tejun Heo <tj@kernel.org>,
+        Pavel Machek <pavel@ucw.cz>, Fengguang Wu <fengguang.wu@intel.com>
+Subject: [PATCH 09/39] sysfs, kernfs: prepare read path for kernfs
+Date: Sun,  3 Nov 2013 04:52:48 -0500
+Message-Id: <1383472398-17812-10-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1383472398-17812-1-git-send-email-tj@kernel.org>
 References: <1383472398-17812-1-git-send-email-tj@kernel.org>
@@ -21,761 +22,337 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's nothing sysfs-specific in fs/sysfs/inode.c.  Move everything
-in it to fs/kernfs/inode.c.  The respective declarations in
-fs/sysfs/sysfs.h are moved to fs/kernfs/kernfs-internal.h.
+We're in the process of separating out core sysfs functionality into
+kernfs which will deal with sysfs_dirents directly.  This patch
+rearranges read path so that the kernfs and sysfs parts are separate.
 
-This is pure relocation.
+* Regular file read path is refactored such that
+  kernfs_seq_start/next/stop/show() handle all the boilerplate work
+  including locking and updating event count for poll, while
+  sysfs_kf_seq_show() deals with interaction with kobj show method.
+
+* Bin file read path is refactored such that kernfs_file_direct_read()
+  handles all the boilerplate work including buffer management and
+  locking, while sysfs_kf_bin_read() deals with interaction with
+  bin_attribute read method.
+
+kernfs_file_read() is added.  It invokes either the seq_file or direct
+read path depending on the file type.  This will eventually allow
+using the same file_operations for both file types, which is necessary
+to separate out kernfs.
+
+While this patch changes the order of some operations, it shouldn't
+change any visible behavior.
+
+v2: Dropped unnecessary zeroing of @count from sysfs_kf_seq_show().
+    Add comments explaining single_open() behavior.  Both suggested by
+    Pavel.
+
+v3: seq_stop() is called even after seq_start() failed.
+    kernfs_seq_start() updated so that it doesn't unlock
+    sysfs_open_file->mutex on failure so that kernfs_seq_stop()
+    doesn't try to unlock an already unlocked mutex.  Reported by
+    Fengguang.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Fengguang Wu <fengguang.wu@intel.com>
 ---
- fs/kernfs/inode.c           | 327 ++++++++++++++++++++++++++++++++++++++++++
- fs/kernfs/kernfs-internal.h |  13 ++
- fs/sysfs/Makefile           |   2 +-
- fs/sysfs/inode.c            | 342 --------------------------------------------
- fs/sysfs/sysfs.h            |  13 --
- 5 files changed, 341 insertions(+), 356 deletions(-)
- delete mode 100644 fs/sysfs/inode.c
+ fs/sysfs/file.c | 191 +++++++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 126 insertions(+), 65 deletions(-)
 
-diff --git a/fs/kernfs/inode.c b/fs/kernfs/inode.c
-index 86bfeea..9d4fab4 100644
---- a/fs/kernfs/inode.c
-+++ b/fs/kernfs/inode.c
-@@ -7,3 +7,330 @@
-  *
-  * This file is released under the GPLv2.
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 77e6492..93dc54e 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -86,13 +86,13 @@ static const struct sysfs_ops *sysfs_file_ops(struct sysfs_dirent *sd)
+  * details like buffering and seeking.  The following function pipes
+  * sysfs_ops->show() result through seq_file.
   */
+-static int sysfs_seq_show(struct seq_file *sf, void *v)
++static int sysfs_kf_seq_show(struct seq_file *sf, void *v)
+ {
+ 	struct sysfs_open_file *of = sf->private;
+ 	struct kobject *kobj = of->sd->s_parent->priv;
+-	const struct sysfs_ops *ops;
+-	char *buf;
++	const struct sysfs_ops *ops = sysfs_file_ops(of->sd);
+ 	ssize_t count;
++	char *buf;
+ 
+ 	/* acquire buffer and ensure that it's >= PAGE_SIZE */
+ 	count = seq_get_buf(sf, &buf);
+@@ -102,33 +102,14 @@ static int sysfs_seq_show(struct seq_file *sf, void *v)
+ 	}
+ 
+ 	/*
+-	 * Need @of->sd for attr and ops, its parent for kobj.  @of->mutex
+-	 * nests outside active ref and is just to ensure that the ops
+-	 * aren't called concurrently for the same open file.
++	 * Invoke show().  Control may reach here via seq file lseek even
++	 * if @ops->show() isn't implemented.
+ 	 */
+-	mutex_lock(&of->mutex);
+-	if (!sysfs_get_active(of->sd)) {
+-		mutex_unlock(&of->mutex);
+-		return -ENODEV;
+-	}
+-
+-	of->event = atomic_read(&of->sd->s_attr.open->event);
+-
+-	/*
+-	 * Lookup @ops and invoke show().  Control may reach here via seq
+-	 * file lseek even if @ops->show() isn't implemented.
+-	 */
+-	ops = sysfs_file_ops(of->sd);
+-	if (ops->show)
++	if (ops->show) {
+ 		count = ops->show(kobj, of->sd->priv, buf);
+-	else
+-		count = 0;
+-
+-	sysfs_put_active(of->sd);
+-	mutex_unlock(&of->mutex);
+-
+-	if (count < 0)
+-		return count;
++		if (count < 0)
++			return count;
++	}
+ 
+ 	/*
+ 	 * The code works fine with PAGE_SIZE return but it's likely to
+@@ -144,68 +125,146 @@ static int sysfs_seq_show(struct seq_file *sf, void *v)
+ 	return 0;
+ }
+ 
+-/*
+- * Read method for bin files.  As reading a bin file can have side-effects,
+- * the exact offset and bytes specified in read(2) call should be passed to
+- * the read callback making it difficult to use seq_file.  Implement
+- * simplistic custom buffering for bin files.
+- */
+-static ssize_t sysfs_bin_read(struct file *file, char __user *userbuf,
+-			      size_t bytes, loff_t *off)
++static ssize_t sysfs_kf_bin_read(struct sysfs_open_file *of, char *buf,
++				 size_t count, loff_t pos)
+ {
+-	struct sysfs_open_file *of = sysfs_of(file);
+ 	struct bin_attribute *battr = of->sd->priv;
+ 	struct kobject *kobj = of->sd->s_parent->priv;
+-	loff_t size = file_inode(file)->i_size;
+-	int count = min_t(size_t, bytes, PAGE_SIZE);
+-	loff_t offs = *off;
+-	char *buf;
++	loff_t size = file_inode(of->file)->i_size;
+ 
+-	if (!bytes)
++	if (!count)
+ 		return 0;
+ 
+ 	if (size) {
+-		if (offs > size)
++		if (pos > size)
+ 			return 0;
+-		if (offs + count > size)
+-			count = size - offs;
++		if (pos + count > size)
++			count = size - pos;
+ 	}
+ 
+-	buf = kmalloc(count, GFP_KERNEL);
++	if (!battr->read)
++		return -EIO;
 +
-+#include <linux/pagemap.h>
-+#include <linux/backing-dev.h>
-+#include <linux/capability.h>
-+#include <linux/errno.h>
-+#include <linux/slab.h>
-+#include <linux/xattr.h>
-+#include <linux/security.h>
-+
-+#include "kernfs-internal.h"
-+
-+static const struct address_space_operations sysfs_aops = {
-+	.readpage	= simple_readpage,
-+	.write_begin	= simple_write_begin,
-+	.write_end	= simple_write_end,
-+};
-+
-+static struct backing_dev_info sysfs_backing_dev_info = {
-+	.name		= "sysfs",
-+	.ra_pages	= 0,	/* No readahead */
-+	.capabilities	= BDI_CAP_NO_ACCT_AND_WRITEBACK,
-+};
-+
-+static const struct inode_operations sysfs_inode_operations = {
-+	.permission	= sysfs_permission,
-+	.setattr	= sysfs_setattr,
-+	.getattr	= sysfs_getattr,
-+	.setxattr	= sysfs_setxattr,
-+};
-+
-+int __init sysfs_inode_init(void)
-+{
-+	return bdi_init(&sysfs_backing_dev_info);
++	return battr->read(of->file, kobj, battr, buf, pos, count);
 +}
 +
-+static struct sysfs_inode_attrs *sysfs_init_inode_attrs(struct sysfs_dirent *sd)
++static void *kernfs_seq_start(struct seq_file *sf, loff_t *ppos)
 +{
-+	struct sysfs_inode_attrs *attrs;
-+	struct iattr *iattrs;
++	struct sysfs_open_file *of = sf->private;
 +
-+	attrs = kzalloc(sizeof(struct sysfs_inode_attrs), GFP_KERNEL);
-+	if (!attrs)
-+		return NULL;
-+	iattrs = &attrs->ia_iattr;
++	/*
++	 * @of->mutex nests outside active ref and is just to ensure that
++	 * the ops aren't called concurrently for the same open file.
++	 */
++	mutex_lock(&of->mutex);
++	if (!sysfs_get_active(of->sd))
++		return ERR_PTR(-ENODEV);
 +
-+	/* assign default attributes */
-+	iattrs->ia_mode = sd->s_mode;
-+	iattrs->ia_uid = GLOBAL_ROOT_UID;
-+	iattrs->ia_gid = GLOBAL_ROOT_GID;
-+	iattrs->ia_atime = iattrs->ia_mtime = iattrs->ia_ctime = CURRENT_TIME;
-+
-+	return attrs;
++	/*
++	 * The same behavior and code as single_open().  Returns !NULL if
++	 * pos is at the beginning; otherwise, NULL.
++	 */
++	return NULL + !*ppos;
 +}
 +
-+static int __kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr)
++static void *kernfs_seq_next(struct seq_file *sf, void *v, loff_t *ppos)
 +{
-+	struct sysfs_inode_attrs *sd_attrs;
-+	struct iattr *iattrs;
-+	unsigned int ia_valid = iattr->ia_valid;
++	/*
++	 * The same behavior and code as single_open(), always terminate
++	 * after the initial read.
++	 */
++	++*ppos;
++	return NULL;
++}
 +
-+	sd_attrs = sd->s_iattr;
++static void kernfs_seq_stop(struct seq_file *sf, void *v)
++{
++	struct sysfs_open_file *of = sf->private;
 +
-+	if (!sd_attrs) {
-+		/* setting attributes for the first time, allocate now */
-+		sd_attrs = sysfs_init_inode_attrs(sd);
-+		if (!sd_attrs)
-+			return -ENOMEM;
-+		sd->s_iattr = sd_attrs;
-+	}
-+	/* attributes were changed at least once in past */
-+	iattrs = &sd_attrs->ia_iattr;
++	sysfs_put_active(of->sd);
++	mutex_unlock(&of->mutex);
++}
 +
-+	if (ia_valid & ATTR_UID)
-+		iattrs->ia_uid = iattr->ia_uid;
-+	if (ia_valid & ATTR_GID)
-+		iattrs->ia_gid = iattr->ia_gid;
-+	if (ia_valid & ATTR_ATIME)
-+		iattrs->ia_atime = iattr->ia_atime;
-+	if (ia_valid & ATTR_MTIME)
-+		iattrs->ia_mtime = iattr->ia_mtime;
-+	if (ia_valid & ATTR_CTIME)
-+		iattrs->ia_ctime = iattr->ia_ctime;
-+	if (ia_valid & ATTR_MODE) {
-+		umode_t mode = iattr->ia_mode;
-+		iattrs->ia_mode = sd->s_mode = mode;
-+	}
-+	return 0;
++static int kernfs_seq_show(struct seq_file *sf, void *v)
++{
++	struct sysfs_open_file *of = sf->private;
++
++	of->event = atomic_read(&of->sd->s_attr.open->event);
++
++	return sysfs_kf_seq_show(sf, v);
++}
++
++static const struct seq_operations kernfs_seq_ops = {
++	.start = kernfs_seq_start,
++	.next = kernfs_seq_next,
++	.stop = kernfs_seq_stop,
++	.show = kernfs_seq_show,
++};
++
++/*
++ * As reading a bin file can have side-effects, the exact offset and bytes
++ * specified in read(2) call should be passed to the read callback making
++ * it difficult to use seq_file.  Implement simplistic custom buffering for
++ * bin files.
++ */
++static ssize_t kernfs_file_direct_read(struct sysfs_open_file *of,
++				       char __user *user_buf, size_t count,
++				       loff_t *ppos)
++{
++	ssize_t len = min_t(size_t, count, PAGE_SIZE);
++	char *buf;
++
++	buf = kmalloc(len, GFP_KERNEL);
+ 	if (!buf)
+ 		return -ENOMEM;
+ 
+-	/* need of->sd for battr, its parent for kobj */
++	/*
++	 * @of->mutex nests outside active ref and is just to ensure that
++	 * the ops aren't called concurrently for the same open file.
++	 */
+ 	mutex_lock(&of->mutex);
+ 	if (!sysfs_get_active(of->sd)) {
+-		count = -ENODEV;
++		len = -ENODEV;
+ 		mutex_unlock(&of->mutex);
+ 		goto out_free;
+ 	}
+ 
+-	if (battr->read)
+-		count = battr->read(file, kobj, battr, buf, offs, count);
+-	else
+-		count = -EIO;
++	len = sysfs_kf_bin_read(of, buf, len, *ppos);
+ 
+ 	sysfs_put_active(of->sd);
+ 	mutex_unlock(&of->mutex);
+ 
+-	if (count < 0)
++	if (len < 0)
+ 		goto out_free;
+ 
+-	if (copy_to_user(userbuf, buf, count)) {
+-		count = -EFAULT;
++	if (copy_to_user(user_buf, buf, len)) {
++		len = -EFAULT;
+ 		goto out_free;
+ 	}
+ 
+-	pr_debug("offs = %lld, *off = %lld, count = %d\n", offs, *off, count);
+-
+-	*off = offs + count;
++	*ppos += len;
+ 
+  out_free:
+ 	kfree(buf);
+-	return count;
++	return len;
 +}
 +
 +/**
-+ * kernfs_setattr - set iattr on a node
-+ * @sd: target node
-+ * @iattr: iattr to set
-+ *
-+ * Returns 0 on success, -errno on failure.
++ * kernfs_file_read - kernfs vfs read callback
++ * @file: file pointer
++ * @user_buf: data to write
++ * @count: number of bytes
++ * @ppos: starting offset
 + */
-+int kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr)
++static ssize_t kernfs_file_read(struct file *file, char __user *user_buf,
++				size_t count, loff_t *ppos)
 +{
-+	int ret;
++	struct sysfs_open_file *of = sysfs_of(file);
 +
-+	mutex_lock(&sysfs_mutex);
-+	ret = __kernfs_setattr(sd, iattr);
-+	mutex_unlock(&sysfs_mutex);
-+	return ret;
-+}
-+
-+int sysfs_setattr(struct dentry *dentry, struct iattr *iattr)
-+{
-+	struct inode *inode = dentry->d_inode;
-+	struct sysfs_dirent *sd = dentry->d_fsdata;
-+	int error;
-+
-+	if (!sd)
-+		return -EINVAL;
-+
-+	mutex_lock(&sysfs_mutex);
-+	error = inode_change_ok(inode, iattr);
-+	if (error)
-+		goto out;
-+
-+	error = __kernfs_setattr(sd, iattr);
-+	if (error)
-+		goto out;
-+
-+	/* this ignores size changes */
-+	setattr_copy(inode, iattr);
-+
-+out:
-+	mutex_unlock(&sysfs_mutex);
-+	return error;
-+}
-+
-+static int sysfs_sd_setsecdata(struct sysfs_dirent *sd, void **secdata,
-+			       u32 *secdata_len)
-+{
-+	struct sysfs_inode_attrs *iattrs;
-+	void *old_secdata;
-+	size_t old_secdata_len;
-+
-+	if (!sd->s_iattr) {
-+		sd->s_iattr = sysfs_init_inode_attrs(sd);
-+		if (!sd->s_iattr)
-+			return -ENOMEM;
-+	}
-+
-+	iattrs = sd->s_iattr;
-+	old_secdata = iattrs->ia_secdata;
-+	old_secdata_len = iattrs->ia_secdata_len;
-+
-+	iattrs->ia_secdata = *secdata;
-+	iattrs->ia_secdata_len = *secdata_len;
-+
-+	*secdata = old_secdata;
-+	*secdata_len = old_secdata_len;
-+	return 0;
-+}
-+
-+int sysfs_setxattr(struct dentry *dentry, const char *name, const void *value,
-+		size_t size, int flags)
-+{
-+	struct sysfs_dirent *sd = dentry->d_fsdata;
-+	void *secdata;
-+	int error;
-+	u32 secdata_len = 0;
-+
-+	if (!sd)
-+		return -EINVAL;
-+
-+	if (!strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN)) {
-+		const char *suffix = name + XATTR_SECURITY_PREFIX_LEN;
-+		error = security_inode_setsecurity(dentry->d_inode, suffix,
-+						value, size, flags);
-+		if (error)
-+			goto out;
-+		error = security_inode_getsecctx(dentry->d_inode,
-+						&secdata, &secdata_len);
-+		if (error)
-+			goto out;
-+
-+		mutex_lock(&sysfs_mutex);
-+		error = sysfs_sd_setsecdata(sd, &secdata, &secdata_len);
-+		mutex_unlock(&sysfs_mutex);
-+
-+		if (secdata)
-+			security_release_secctx(secdata, secdata_len);
-+	} else
-+		return -EINVAL;
-+out:
-+	return error;
-+}
-+
-+static inline void set_default_inode_attr(struct inode *inode, umode_t mode)
-+{
-+	inode->i_mode = mode;
-+	inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
-+}
-+
-+static inline void set_inode_attr(struct inode *inode, struct iattr *iattr)
-+{
-+	inode->i_uid = iattr->ia_uid;
-+	inode->i_gid = iattr->ia_gid;
-+	inode->i_atime = iattr->ia_atime;
-+	inode->i_mtime = iattr->ia_mtime;
-+	inode->i_ctime = iattr->ia_ctime;
-+}
-+
-+static void sysfs_refresh_inode(struct sysfs_dirent *sd, struct inode *inode)
-+{
-+	struct sysfs_inode_attrs *iattrs = sd->s_iattr;
-+
-+	inode->i_mode = sd->s_mode;
-+	if (iattrs) {
-+		/* sysfs_dirent has non-default attributes
-+		 * get them from persistent copy in sysfs_dirent
-+		 */
-+		set_inode_attr(inode, &iattrs->ia_iattr);
-+		security_inode_notifysecctx(inode,
-+					    iattrs->ia_secdata,
-+					    iattrs->ia_secdata_len);
-+	}
-+
-+	if (sysfs_type(sd) == SYSFS_DIR)
-+		set_nlink(inode, sd->s_dir.subdirs + 2);
-+}
-+
-+int sysfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
-+		  struct kstat *stat)
-+{
-+	struct sysfs_dirent *sd = dentry->d_fsdata;
-+	struct inode *inode = dentry->d_inode;
-+
-+	mutex_lock(&sysfs_mutex);
-+	sysfs_refresh_inode(sd, inode);
-+	mutex_unlock(&sysfs_mutex);
-+
-+	generic_fillattr(inode, stat);
-+	return 0;
-+}
-+
-+static void sysfs_init_inode(struct sysfs_dirent *sd, struct inode *inode)
-+{
-+	kernfs_get(sd);
-+	inode->i_private = sd;
-+	inode->i_mapping->a_ops = &sysfs_aops;
-+	inode->i_mapping->backing_dev_info = &sysfs_backing_dev_info;
-+	inode->i_op = &sysfs_inode_operations;
-+
-+	set_default_inode_attr(inode, sd->s_mode);
-+	sysfs_refresh_inode(sd, inode);
-+
-+	/* initialize inode according to type */
-+	switch (sysfs_type(sd)) {
-+	case SYSFS_DIR:
-+		inode->i_op = &sysfs_dir_inode_operations;
-+		inode->i_fop = &sysfs_dir_operations;
-+		break;
-+	case SYSFS_KOBJ_ATTR:
-+		inode->i_size = sd->s_attr.size;
-+		inode->i_fop = &kernfs_file_operations;
-+		break;
-+	case SYSFS_KOBJ_LINK:
-+		inode->i_op = &sysfs_symlink_inode_operations;
-+		break;
-+	default:
-+		BUG();
-+	}
-+
-+	unlock_new_inode(inode);
-+}
-+
-+/**
-+ *	sysfs_get_inode - get inode for sysfs_dirent
-+ *	@sb: super block
-+ *	@sd: sysfs_dirent to allocate inode for
-+ *
-+ *	Get inode for @sd.  If such inode doesn't exist, a new inode
-+ *	is allocated and basics are initialized.  New inode is
-+ *	returned locked.
-+ *
-+ *	LOCKING:
-+ *	Kernel thread context (may sleep).
-+ *
-+ *	RETURNS:
-+ *	Pointer to allocated inode on success, NULL on failure.
-+ */
-+struct inode *sysfs_get_inode(struct super_block *sb, struct sysfs_dirent *sd)
-+{
-+	struct inode *inode;
-+
-+	inode = iget_locked(sb, sd->s_ino);
-+	if (inode && (inode->i_state & I_NEW))
-+		sysfs_init_inode(sd, inode);
-+
-+	return inode;
-+}
-+
-+/*
-+ * The sysfs_dirent serves as both an inode and a directory entry for sysfs.
-+ * To prevent the sysfs inode numbers from being freed prematurely we take a
-+ * reference to sysfs_dirent from the sysfs inode.  A
-+ * super_operations.evict_inode() implementation is needed to drop that
-+ * reference upon inode destruction.
-+ */
-+void sysfs_evict_inode(struct inode *inode)
-+{
-+	struct sysfs_dirent *sd  = inode->i_private;
-+
-+	truncate_inode_pages(&inode->i_data, 0);
-+	clear_inode(inode);
-+	kernfs_put(sd);
-+}
-+
-+int sysfs_permission(struct inode *inode, int mask)
-+{
-+	struct sysfs_dirent *sd;
-+
-+	if (mask & MAY_NOT_BLOCK)
-+		return -ECHILD;
-+
-+	sd = inode->i_private;
-+
-+	mutex_lock(&sysfs_mutex);
-+	sysfs_refresh_inode(sd, inode);
-+	mutex_unlock(&sysfs_mutex);
-+
-+	return generic_permission(inode, mask);
-+}
-diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
-index 6bb8c12..5ea2564 100644
---- a/fs/kernfs/kernfs-internal.h
-+++ b/fs/kernfs/kernfs-internal.h
-@@ -112,4 +112,17 @@ struct sysfs_addrm_cxt {
++	if (sysfs_is_bin(of->sd))
++		return kernfs_file_direct_read(of, user_buf, count, ppos);
++	else
++		return seq_read(file, user_buf, count, ppos);
+ }
  
- #include "../sysfs/sysfs.h"
+ /**
+@@ -659,12 +718,14 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
+ 	 * and readable regular files are the vast majority anyway.
+ 	 */
+ 	if (sysfs_is_bin(attr_sd))
+-		error = single_open(file, NULL, of);
++		error = seq_open(file, NULL);
+ 	else
+-		error = single_open(file, sysfs_seq_show, of);
++		error = seq_open(file, &kernfs_seq_ops);
+ 	if (error)
+ 		goto err_free;
  
-+/*
-+ * inode.c
-+ */
-+struct inode *sysfs_get_inode(struct super_block *sb, struct sysfs_dirent *sd);
-+void sysfs_evict_inode(struct inode *inode);
-+int sysfs_permission(struct inode *inode, int mask);
-+int sysfs_setattr(struct dentry *dentry, struct iattr *iattr);
-+int sysfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
-+		  struct kstat *stat);
-+int sysfs_setxattr(struct dentry *dentry, const char *name, const void *value,
-+		   size_t size, int flags);
-+int sysfs_inode_init(void);
++	((struct seq_file *)file->private_data)->private = of;
 +
- #endif	/* __KERNFS_INTERNAL_H */
-diff --git a/fs/sysfs/Makefile b/fs/sysfs/Makefile
-index 8876ac1..6eff6e1 100644
---- a/fs/sysfs/Makefile
-+++ b/fs/sysfs/Makefile
-@@ -2,4 +2,4 @@
- # Makefile for the sysfs virtual filesystem
- #
+ 	/* seq_file clears PWRITE unconditionally, restore it if WRITE */
+ 	if (file->f_mode & FMODE_WRITE)
+ 		file->f_mode |= FMODE_PWRITE;
+@@ -679,7 +740,7 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
+ 	return 0;
  
--obj-y		:= inode.o file.o dir.o symlink.o mount.o group.o
-+obj-y		:= file.o dir.o symlink.o mount.o group.o
-diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
-deleted file mode 100644
-index bfe4478..0000000
---- a/fs/sysfs/inode.c
-+++ /dev/null
-@@ -1,342 +0,0 @@
--/*
-- * fs/sysfs/inode.c - basic sysfs inode and dentry operations
-- *
-- * Copyright (c) 2001-3 Patrick Mochel
-- * Copyright (c) 2007 SUSE Linux Products GmbH
-- * Copyright (c) 2007 Tejun Heo <teheo@suse.de>
-- *
-- * This file is released under the GPLv2.
-- *
-- * Please see Documentation/filesystems/sysfs.txt for more information.
-- */
--
--#undef DEBUG
--
--#include <linux/pagemap.h>
--#include <linux/namei.h>
--#include <linux/backing-dev.h>
--#include <linux/capability.h>
--#include <linux/errno.h>
--#include <linux/sched.h>
--#include <linux/slab.h>
--#include <linux/sysfs.h>
--#include <linux/xattr.h>
--#include <linux/security.h>
--#include "sysfs.h"
--
--static const struct address_space_operations sysfs_aops = {
--	.readpage	= simple_readpage,
--	.write_begin	= simple_write_begin,
--	.write_end	= simple_write_end,
--};
--
--static struct backing_dev_info sysfs_backing_dev_info = {
--	.name		= "sysfs",
--	.ra_pages	= 0,	/* No readahead */
--	.capabilities	= BDI_CAP_NO_ACCT_AND_WRITEBACK,
--};
--
--static const struct inode_operations sysfs_inode_operations = {
--	.permission	= sysfs_permission,
--	.setattr	= sysfs_setattr,
--	.getattr	= sysfs_getattr,
--	.setxattr	= sysfs_setxattr,
--};
--
--int __init sysfs_inode_init(void)
--{
--	return bdi_init(&sysfs_backing_dev_info);
--}
--
--static struct sysfs_inode_attrs *sysfs_init_inode_attrs(struct sysfs_dirent *sd)
--{
--	struct sysfs_inode_attrs *attrs;
--	struct iattr *iattrs;
--
--	attrs = kzalloc(sizeof(struct sysfs_inode_attrs), GFP_KERNEL);
--	if (!attrs)
--		return NULL;
--	iattrs = &attrs->ia_iattr;
--
--	/* assign default attributes */
--	iattrs->ia_mode = sd->s_mode;
--	iattrs->ia_uid = GLOBAL_ROOT_UID;
--	iattrs->ia_gid = GLOBAL_ROOT_GID;
--	iattrs->ia_atime = iattrs->ia_mtime = iattrs->ia_ctime = CURRENT_TIME;
--
--	return attrs;
--}
--
--static int __kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr)
--{
--	struct sysfs_inode_attrs *sd_attrs;
--	struct iattr *iattrs;
--	unsigned int ia_valid = iattr->ia_valid;
--
--	sd_attrs = sd->s_iattr;
--
--	if (!sd_attrs) {
--		/* setting attributes for the first time, allocate now */
--		sd_attrs = sysfs_init_inode_attrs(sd);
--		if (!sd_attrs)
--			return -ENOMEM;
--		sd->s_iattr = sd_attrs;
--	}
--	/* attributes were changed at least once in past */
--	iattrs = &sd_attrs->ia_iattr;
--
--	if (ia_valid & ATTR_UID)
--		iattrs->ia_uid = iattr->ia_uid;
--	if (ia_valid & ATTR_GID)
--		iattrs->ia_gid = iattr->ia_gid;
--	if (ia_valid & ATTR_ATIME)
--		iattrs->ia_atime = iattr->ia_atime;
--	if (ia_valid & ATTR_MTIME)
--		iattrs->ia_mtime = iattr->ia_mtime;
--	if (ia_valid & ATTR_CTIME)
--		iattrs->ia_ctime = iattr->ia_ctime;
--	if (ia_valid & ATTR_MODE) {
--		umode_t mode = iattr->ia_mode;
--		iattrs->ia_mode = sd->s_mode = mode;
--	}
--	return 0;
--}
--
--/**
-- * kernfs_setattr - set iattr on a node
-- * @sd: target node
-- * @iattr: iattr to set
-- *
-- * Returns 0 on success, -errno on failure.
-- */
--int kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr)
--{
--	int ret;
--
--	mutex_lock(&sysfs_mutex);
--	ret = __kernfs_setattr(sd, iattr);
--	mutex_unlock(&sysfs_mutex);
--	return ret;
--}
--
--int sysfs_setattr(struct dentry *dentry, struct iattr *iattr)
--{
--	struct inode *inode = dentry->d_inode;
--	struct sysfs_dirent *sd = dentry->d_fsdata;
--	int error;
--
--	if (!sd)
--		return -EINVAL;
--
--	mutex_lock(&sysfs_mutex);
--	error = inode_change_ok(inode, iattr);
--	if (error)
--		goto out;
--
--	error = __kernfs_setattr(sd, iattr);
--	if (error)
--		goto out;
--
--	/* this ignores size changes */
--	setattr_copy(inode, iattr);
--
--out:
--	mutex_unlock(&sysfs_mutex);
--	return error;
--}
--
--static int sysfs_sd_setsecdata(struct sysfs_dirent *sd, void **secdata,
--			       u32 *secdata_len)
--{
--	struct sysfs_inode_attrs *iattrs;
--	void *old_secdata;
--	size_t old_secdata_len;
--
--	if (!sd->s_iattr) {
--		sd->s_iattr = sysfs_init_inode_attrs(sd);
--		if (!sd->s_iattr)
--			return -ENOMEM;
--	}
--
--	iattrs = sd->s_iattr;
--	old_secdata = iattrs->ia_secdata;
--	old_secdata_len = iattrs->ia_secdata_len;
--
--	iattrs->ia_secdata = *secdata;
--	iattrs->ia_secdata_len = *secdata_len;
--
--	*secdata = old_secdata;
--	*secdata_len = old_secdata_len;
--	return 0;
--}
--
--int sysfs_setxattr(struct dentry *dentry, const char *name, const void *value,
--		size_t size, int flags)
--{
--	struct sysfs_dirent *sd = dentry->d_fsdata;
--	void *secdata;
--	int error;
--	u32 secdata_len = 0;
--
--	if (!sd)
--		return -EINVAL;
--
--	if (!strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN)) {
--		const char *suffix = name + XATTR_SECURITY_PREFIX_LEN;
--		error = security_inode_setsecurity(dentry->d_inode, suffix,
--						value, size, flags);
--		if (error)
--			goto out;
--		error = security_inode_getsecctx(dentry->d_inode,
--						&secdata, &secdata_len);
--		if (error)
--			goto out;
--
--		mutex_lock(&sysfs_mutex);
--		error = sysfs_sd_setsecdata(sd, &secdata, &secdata_len);
--		mutex_unlock(&sysfs_mutex);
--
--		if (secdata)
--			security_release_secctx(secdata, secdata_len);
--	} else
--		return -EINVAL;
--out:
--	return error;
--}
--
--static inline void set_default_inode_attr(struct inode *inode, umode_t mode)
--{
--	inode->i_mode = mode;
--	inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
--}
--
--static inline void set_inode_attr(struct inode *inode, struct iattr *iattr)
--{
--	inode->i_uid = iattr->ia_uid;
--	inode->i_gid = iattr->ia_gid;
--	inode->i_atime = iattr->ia_atime;
--	inode->i_mtime = iattr->ia_mtime;
--	inode->i_ctime = iattr->ia_ctime;
--}
--
--static void sysfs_refresh_inode(struct sysfs_dirent *sd, struct inode *inode)
--{
--	struct sysfs_inode_attrs *iattrs = sd->s_iattr;
--
--	inode->i_mode = sd->s_mode;
--	if (iattrs) {
--		/* sysfs_dirent has non-default attributes
--		 * get them from persistent copy in sysfs_dirent
--		 */
--		set_inode_attr(inode, &iattrs->ia_iattr);
--		security_inode_notifysecctx(inode,
--					    iattrs->ia_secdata,
--					    iattrs->ia_secdata_len);
--	}
--
--	if (sysfs_type(sd) == SYSFS_DIR)
--		set_nlink(inode, sd->s_dir.subdirs + 2);
--}
--
--int sysfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
--		  struct kstat *stat)
--{
--	struct sysfs_dirent *sd = dentry->d_fsdata;
--	struct inode *inode = dentry->d_inode;
--
--	mutex_lock(&sysfs_mutex);
--	sysfs_refresh_inode(sd, inode);
--	mutex_unlock(&sysfs_mutex);
--
--	generic_fillattr(inode, stat);
--	return 0;
--}
--
--static void sysfs_init_inode(struct sysfs_dirent *sd, struct inode *inode)
--{
--	kernfs_get(sd);
--	inode->i_private = sd;
--	inode->i_mapping->a_ops = &sysfs_aops;
--	inode->i_mapping->backing_dev_info = &sysfs_backing_dev_info;
--	inode->i_op = &sysfs_inode_operations;
--
--	set_default_inode_attr(inode, sd->s_mode);
--	sysfs_refresh_inode(sd, inode);
--
--	/* initialize inode according to type */
--	switch (sysfs_type(sd)) {
--	case SYSFS_DIR:
--		inode->i_op = &sysfs_dir_inode_operations;
--		inode->i_fop = &sysfs_dir_operations;
--		break;
--	case SYSFS_KOBJ_ATTR:
--		inode->i_size = sd->s_attr.size;
--		inode->i_fop = &kernfs_file_operations;
--		break;
--	case SYSFS_KOBJ_LINK:
--		inode->i_op = &sysfs_symlink_inode_operations;
--		break;
--	default:
--		BUG();
--	}
--
--	unlock_new_inode(inode);
--}
--
--/**
-- *	sysfs_get_inode - get inode for sysfs_dirent
-- *	@sb: super block
-- *	@sd: sysfs_dirent to allocate inode for
-- *
-- *	Get inode for @sd.  If such inode doesn't exist, a new inode
-- *	is allocated and basics are initialized.  New inode is
-- *	returned locked.
-- *
-- *	LOCKING:
-- *	Kernel thread context (may sleep).
-- *
-- *	RETURNS:
-- *	Pointer to allocated inode on success, NULL on failure.
-- */
--struct inode *sysfs_get_inode(struct super_block *sb, struct sysfs_dirent *sd)
--{
--	struct inode *inode;
--
--	inode = iget_locked(sb, sd->s_ino);
--	if (inode && (inode->i_state & I_NEW))
--		sysfs_init_inode(sd, inode);
--
--	return inode;
--}
--
--/*
-- * The sysfs_dirent serves as both an inode and a directory entry for sysfs.
-- * To prevent the sysfs inode numbers from being freed prematurely we take a
-- * reference to sysfs_dirent from the sysfs inode.  A
-- * super_operations.evict_inode() implementation is needed to drop that
-- * reference upon inode destruction.
-- */
--void sysfs_evict_inode(struct inode *inode)
--{
--	struct sysfs_dirent *sd  = inode->i_private;
--
--	truncate_inode_pages(&inode->i_data, 0);
--	clear_inode(inode);
--	kernfs_put(sd);
--}
--
--int sysfs_permission(struct inode *inode, int mask)
--{
--	struct sysfs_dirent *sd;
--
--	if (mask & MAY_NOT_BLOCK)
--		return -ECHILD;
--
--	sd = inode->i_private;
--
--	mutex_lock(&sysfs_mutex);
--	sysfs_refresh_inode(sd, inode);
--	mutex_unlock(&sysfs_mutex);
--
--	return generic_permission(inode, mask);
--}
-diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index f8c936f..93c1910 100644
---- a/fs/sysfs/sysfs.h
-+++ b/fs/sysfs/sysfs.h
-@@ -52,19 +52,6 @@ void sysfs_addrm_finish(struct sysfs_addrm_cxt *acxt);
- struct sysfs_dirent *sysfs_new_dirent(const char *name, umode_t mode, int type);
+ err_close:
+-	single_release(inode, file);
++	seq_release(inode, file);
+ err_free:
+ 	kfree(of);
+ err_out:
+@@ -693,7 +754,7 @@ static int sysfs_release(struct inode *inode, struct file *filp)
+ 	struct sysfs_open_file *of = sysfs_of(filp);
  
- /*
-- * inode.c
-- */
--struct inode *sysfs_get_inode(struct super_block *sb, struct sysfs_dirent *sd);
--void sysfs_evict_inode(struct inode *inode);
--int sysfs_permission(struct inode *inode, int mask);
--int sysfs_setattr(struct dentry *dentry, struct iattr *iattr);
--int sysfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
--		  struct kstat *stat);
--int sysfs_setxattr(struct dentry *dentry, const char *name, const void *value,
--		   size_t size, int flags);
--int sysfs_inode_init(void);
--
--/*
-  * file.c
-  */
- extern const struct file_operations kernfs_file_operations;
+ 	sysfs_put_open_dirent(sd, of);
+-	single_release(inode, filp);
++	seq_release(inode, filp);
+ 	kfree(of);
+ 
+ 	return 0;
+@@ -798,7 +859,7 @@ void sysfs_notify(struct kobject *k, const char *dir, const char *attr)
+ EXPORT_SYMBOL_GPL(sysfs_notify);
+ 
+ const struct file_operations sysfs_file_operations = {
+-	.read		= seq_read,
++	.read		= kernfs_file_read,
+ 	.write		= sysfs_write_file,
+ 	.llseek		= generic_file_llseek,
+ 	.open		= sysfs_open_file,
+@@ -807,7 +868,7 @@ const struct file_operations sysfs_file_operations = {
+ };
+ 
+ const struct file_operations sysfs_bin_operations = {
+-	.read		= sysfs_bin_read,
++	.read		= kernfs_file_read,
+ 	.write		= sysfs_write_file,
+ 	.llseek		= generic_file_llseek,
+ 	.mmap		= sysfs_bin_mmap,
 -- 
 1.8.3.1
 
