@@ -1,150 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab3KCVGI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 16:06:08 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48990 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754291Ab3KCVGB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 16:06:01 -0500
-Message-ID: <5276BAAA.6020005@pengutronix.de>
-Date: Sun, 03 Nov 2013 22:05:46 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
-MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>
-CC: Markus Pargmann <mpa@pengutronix.de>, Joe Perches <joe@perches.com>,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: [PATCH v3] can: c_can: Speed up rx_poll function
-References: <1383298596-18385-1-git-send-email-mpa@pengutronix.de> <5276A1FE.7040804@grandegger.com>
-In-Reply-To: <5276A1FE.7040804@grandegger.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="4tJBKLmBLaPqLk8HoH3rhDH88D9W5I8rX"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1754712Ab3KCVJl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 16:09:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49097 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754166Ab3KCVJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 16:09:39 -0500
+Date: Mon, 4 Nov 2013 08:09:23 +1100
+From: NeilBrown <neilb@suse.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Strange location and name for platform  devices when
+ device-tree is used.
+Message-ID: <20131104080923.1ea15ebc@notabene.brown>
+In-Reply-To: <20131102155824.GG23938@kroah.com>
+References: <20131101145925.66e22f73@notabene.brown>
+	<1383279744.28909.26.camel@pasglop>
+	<1383280054.28909.30.camel@pasglop>
+	<20131101160329.37f3707b@notabene.brown>
+	<1383282516.28909.36.camel@pasglop>
+	<20131101204749.GA19662@kroah.com>
+	<1383347399.28909.46.camel@pasglop>
+	<20131102155824.GG23938@kroah.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/bu7TFMWwKBuv+tdscbup8yg"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---4tJBKLmBLaPqLk8HoH3rhDH88D9W5I8rX
-Content-Type: text/plain; charset=UTF-8
+--Sig_/bu7TFMWwKBuv+tdscbup8yg
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-On 11/03/2013 08:20 PM, Wolfgang Grandegger wrote:
-> On 11/01/2013 10:36 AM, Markus Pargmann wrote:
->> This patch speeds up the rx_poll function by reducing the number of
->> register reads.
->>
->> Replace the 32bit register read by a 16bit register read. Currently
->> the 32bit register read is implemented by using 2 16bit reads. This is=
-
->> inefficient as we only use the lower 16bit in rx_poll.
->>
->> The for loop reads the pending interrupts in every iteration. This
->> leads up to 16 reads of pending interrupts. The patch introduces a new=
-
->> outer loop to read the pending interrupts as long as 'quota' is above =
-0.
->> This reduces the total number of reads.
->>
->> The third change is to replace the for-loop by a ffs loop.
->>
->> Tested on AM335x. I removed all 'static' and 'inline' from c_can.c to
->> see the timings for all functions. I used the function tracer with
->> trace_stats.
->>
->> 125kbit:
->>   Function                               Hit    Time            Avg   =
-          s^2
->>   --------                               ---    ----            ---   =
-          ---
->>   c_can_do_rx_poll                     63960    10168178 us     158.97=
-7 us      1493056 us
->> With patch:
->>   c_can_do_rx_poll                     63941    3764057 us      58.867=
- us       776162.2 us
->>
->> 1Mbit:
->>   Function                               Hit    Time            Avg   =
-          s^2
->>   --------                               ---    ----            ---   =
-          ---
->>   c_can_do_rx_poll                     69489    30049498 us     432.43=
-5 us      9271851 us
->> With patch:
->>   c_can_do_rx_poll                    207109    24322185 us     117.43=
-6 us      171469047 us
->>
->> Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
->> ---
->>
->> Notes:
->>     Changes in v3:
->>      - Update commit message (measurements and ffs)
->>    =20
->>     Changes in v2:
->>      - Small changes, find_next_bit -> ffs and other
->>
->>  drivers/net/can/c_can/c_can.c | 22 ++++++++++++----------
->>  1 file changed, 12 insertions(+), 10 deletions(-)
->>
->> diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_c=
-an.c
->> index a668cd4..428681e 100644
->> --- a/drivers/net/can/c_can/c_can.c
->> +++ b/drivers/net/can/c_can/c_can.c
->> @@ -798,17 +798,19 @@ static int c_can_do_rx_poll(struct net_device *d=
-ev, int quota)
->>  	u32 num_rx_pkts =3D 0;
->>  	unsigned int msg_obj, msg_ctrl_save;
->>  	struct c_can_priv *priv =3D netdev_priv(dev);
->> -	u32 val =3D c_can_read_reg32(priv, C_CAN_INTPND1_REG);
->> +	u16 val;
->> +
->> +	/*
->> +	 * It is faster to read only one 16bit register. This is only possib=
-le
->> +	 * for a maximum number of 16 objects.
->> +	 */
->> +	BUILD_BUG_ON_MSG(C_CAN_MSG_OBJ_RX_LAST > 16,
->> +			"Implementation does not support more message objects than 16");
->> +
->> +	while (quota > 0 && (val =3D priv->read_reg(priv, C_CAN_INTPND1_REG)=
-)) {
->> +		while ((msg_obj =3D ffs(val)) && quota > 0) {
->> +			val &=3D ~BIT(msg_obj - 1);
->=20
-> IIRC, we should avoid assignment in if/while statements.
-
-Yes, but the code looks IMHO better this way.
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+On Sat, 2 Nov 2013 08:58:24 -0700 Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
 
 
---4tJBKLmBLaPqLk8HoH3rhDH88D9W5I8rX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+> So go blame them for this, not me, remember, I'm the one who _hates_
+> platform devices and wish they had never been created...
+
+Have you ever written up why you hate them?  I did a bit of googling and
+couldn't find anything obvious.
+
+Is it the whole concept, or the particular details that you don't like?
+
+(I find the concept seems to make perfect sense, though there are a lot of
+details that I don't know).
+
+Thanks,
+NeilBrown
+
+--Sig_/bu7TFMWwKBuv+tdscbup8yg
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-iEYEARECAAYFAlJ2uqoACgkQjTAFq1RaXHMqOQCdG3OQrv7WHJcn/STW6TFLFh/c
-eDEAoJGTv8uMCgmwBK/tptn+N5tOMnay
-=lzfS
+iQIVAwUBUna7gznsnt1WYoG5AQLochAAsLXEbdfWDIwUy2BSdXxmvD1/FujnHjYq
+TDuJVeliTQs4GFbezPNxyrAgD1pByQFfsvz1cbwg9Et5Ju80DzCyi6s2T0Z7Uwg7
+txOqWSRJyIq3looyZZZWf8lgovGxFULdl45JMy3sz0Av95YuCCTqeWE+NLPmrBdV
+SR1MsaYhkTxRPhQegfeLU8Cs/IRUC4JfNW/nRr7l5kxgMk43mOgWtn/gE0jjcvSf
+n8tglq0SB76BAA3v5K+SMCPxAXfr992RtKyMM1DHzkAyD/x9jwKTis7+5oVJssfp
+aifAiWJ8qxFXxMV1Liei1H0+Iw2yXyQUzF+xHTepuu7r1lO/2tluM482uyEuqzpb
+BeCEOBPIuOHwsICNXVR1T24U++aomn+iolaTEpzIpvS82viHyMms5M0JahdeUxjf
+M+c6LfNNbeZuw43/VcmhHy+qmgEvzi4A4B/QH+5+j0Jd5xwYat2JSpEwTA4h+baY
+f28Es2MxVcxTtdDlcQwJj9OFm5YD2TX4zN43X6VDgOmPTYJ2PMkIvSL2UCim13D/
+7SKclnTSAAq6pSVyOUuxMo8nXDD/BqomaFJuSLjGEsx307YRsT+3MJof3BQOn9AP
+oqUwyV8VHglljPWSRytiI3albfOWyc47cYOJ3hmRwXvhMoG/3S3E9dN4VFdOaEnc
+DCMR8QcmAQs=
+=aZNB
 -----END PGP SIGNATURE-----
 
---4tJBKLmBLaPqLk8HoH3rhDH88D9W5I8rX--
+--Sig_/bu7TFMWwKBuv+tdscbup8yg--
