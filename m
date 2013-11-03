@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642Ab3KCJxv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 04:53:51 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:53886 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753194Ab3KCJxb (ORCPT
+	id S1753175Ab3KCJxa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 04:53:30 -0500
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:62880 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300Ab3KCJxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 04:53:31 -0500
+	Sun, 3 Nov 2013 04:53:25 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/39] sysfs, kernfs: replace sysfs_dirent->s_dir.kobj and ->s_attr.[bin_]attr with ->priv
-Date: Sun,  3 Nov 2013 04:52:46 -0500
-Message-Id: <1383472398-17812-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 02/39] sysfs, kernfs: add skeletons for kernfs
+Date: Sun,  3 Nov 2013 04:52:41 -0500
+Message-Id: <1383472398-17812-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1383472398-17812-1-git-send-email-tj@kernel.org>
 References: <1383472398-17812-1-git-send-email-tj@kernel.org>
@@ -21,230 +21,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A directory sysfs_dirent points to the associated kobj.  A regular or
-bin file points to the associated [bin_]attribute.  This patch
-replaces sysfs_dirent->s_dir.kobj and ->s_attr.[bin_]attr with void *
-->priv.
+Core sysfs implementation will be separated into kernfs so that it can
+be used by other non-kobject users.
 
-This is to prepare for kernfs interface so that sysfs can specify the
-private data in the same way for directories and files.  This lower
-debuggability but not by much - the whole thing was overlaid in a
-union anyway.  If debuggability becomes an issue, we can later add
-->priv accessors which explicitly check for the sysfs_dirent type and
-performs casting.
+This patch creates fs/kernfs/ directory and makes boilerplate changes.
+kernfs interface will be directly based on sysfs_dirent and its
+forward declaration is moved to include/linux/kernfs.h which is
+included from include/linux/sysfs.h.  sysfs core implementation will
+be gradually separated out and moved to kernfs.
 
-This patch doesn't introduce any behavior difference.
+This patch doesn't introduce any functional changes.
+
+v2: mount.c added.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/dir.c     |  2 +-
- fs/sysfs/file.c    | 26 +++++++++++++-------------
- fs/sysfs/inode.c   |  2 +-
- fs/sysfs/symlink.c |  2 +-
- fs/sysfs/sysfs.h   | 13 +++++--------
- 5 files changed, 21 insertions(+), 24 deletions(-)
+ fs/Makefile            |  2 +-
+ fs/kernfs/Makefile     |  5 +++++
+ fs/kernfs/dir.c        |  9 +++++++++
+ fs/kernfs/file.c       |  9 +++++++++
+ fs/kernfs/inode.c      |  9 +++++++++
+ fs/kernfs/mount.c      |  9 +++++++++
+ fs/kernfs/symlink.c    |  9 +++++++++
+ include/linux/kernfs.h | 12 ++++++++++++
+ include/linux/sysfs.h  |  3 +--
+ 9 files changed, 64 insertions(+), 3 deletions(-)
+ create mode 100644 fs/kernfs/Makefile
+ create mode 100644 fs/kernfs/dir.c
+ create mode 100644 fs/kernfs/file.c
+ create mode 100644 fs/kernfs/inode.c
+ create mode 100644 fs/kernfs/mount.c
+ create mode 100644 fs/kernfs/symlink.c
+ create mode 100644 include/linux/kernfs.h
 
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index 3eb86b3..31f9311 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -676,7 +676,7 @@ static int create_dir(struct kobject *kobj, struct sysfs_dirent *parent_sd,
- 		return -ENOMEM;
+diff --git a/fs/Makefile b/fs/Makefile
+index 4fe6df3..39a824f 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -53,7 +53,7 @@ obj-$(CONFIG_FHANDLE)		+= fhandle.o
+ obj-y				+= quota/
  
- 	sd->s_ns = ns;
--	sd->s_dir.kobj = kobj;
-+	sd->priv = kobj;
+ obj-$(CONFIG_PROC_FS)		+= proc/
+-obj-$(CONFIG_SYSFS)		+= sysfs/
++obj-$(CONFIG_SYSFS)		+= sysfs/ kernfs/
+ obj-$(CONFIG_CONFIGFS_FS)	+= configfs/
+ obj-y				+= devpts/
  
- 	/* link in */
- 	sysfs_addrm_start(&acxt);
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 564abd2..77e6492 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -74,7 +74,7 @@ static struct sysfs_open_file *sysfs_of(struct file *file)
-  */
- static const struct sysfs_ops *sysfs_file_ops(struct sysfs_dirent *sd)
- {
--	struct kobject *kobj = sd->s_parent->s_dir.kobj;
-+	struct kobject *kobj = sd->s_parent->priv;
- 
- 	if (!sysfs_ignore_lockdep(sd))
- 		lockdep_assert_held(sd);
-@@ -89,7 +89,7 @@ static const struct sysfs_ops *sysfs_file_ops(struct sysfs_dirent *sd)
- static int sysfs_seq_show(struct seq_file *sf, void *v)
- {
- 	struct sysfs_open_file *of = sf->private;
--	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
-+	struct kobject *kobj = of->sd->s_parent->priv;
- 	const struct sysfs_ops *ops;
- 	char *buf;
- 	ssize_t count;
-@@ -120,7 +120,7 @@ static int sysfs_seq_show(struct seq_file *sf, void *v)
- 	 */
- 	ops = sysfs_file_ops(of->sd);
- 	if (ops->show)
--		count = ops->show(kobj, of->sd->s_attr.attr, buf);
-+		count = ops->show(kobj, of->sd->priv, buf);
- 	else
- 		count = 0;
- 
-@@ -154,8 +154,8 @@ static ssize_t sysfs_bin_read(struct file *file, char __user *userbuf,
- 			      size_t bytes, loff_t *off)
- {
- 	struct sysfs_open_file *of = sysfs_of(file);
--	struct bin_attribute *battr = of->sd->s_attr.bin_attr;
--	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
-+	struct bin_attribute *battr = of->sd->priv;
-+	struct kobject *kobj = of->sd->s_parent->priv;
- 	loff_t size = file_inode(file)->i_size;
- 	int count = min_t(size_t, bytes, PAGE_SIZE);
- 	loff_t offs = *off;
-@@ -221,7 +221,7 @@ static ssize_t sysfs_bin_read(struct file *file, char __user *userbuf,
- static int flush_write_buffer(struct sysfs_open_file *of, char *buf, loff_t off,
- 			      size_t count)
- {
--	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
-+	struct kobject *kobj = of->sd->s_parent->priv;
- 	int rc = 0;
- 
- 	/*
-@@ -236,7 +236,7 @@ static int flush_write_buffer(struct sysfs_open_file *of, char *buf, loff_t off,
- 	}
- 
- 	if (sysfs_is_bin(of->sd)) {
--		struct bin_attribute *battr = of->sd->s_attr.bin_attr;
-+		struct bin_attribute *battr = of->sd->priv;
- 
- 		rc = -EIO;
- 		if (battr->write)
-@@ -245,7 +245,7 @@ static int flush_write_buffer(struct sysfs_open_file *of, char *buf, loff_t off,
- 	} else {
- 		const struct sysfs_ops *ops = sysfs_file_ops(of->sd);
- 
--		rc = ops->store(kobj, of->sd->s_attr.attr, buf, count);
-+		rc = ops->store(kobj, of->sd->priv, buf, count);
- 	}
- 
- 	sysfs_put_active(of->sd);
-@@ -466,8 +466,8 @@ static const struct vm_operations_struct sysfs_bin_vm_ops = {
- static int sysfs_bin_mmap(struct file *file, struct vm_area_struct *vma)
- {
- 	struct sysfs_open_file *of = sysfs_of(file);
--	struct bin_attribute *battr = of->sd->s_attr.bin_attr;
--	struct kobject *kobj = of->sd->s_parent->s_dir.kobj;
-+	struct bin_attribute *battr = of->sd->priv;
-+	struct kobject *kobj = of->sd->s_parent->priv;
- 	int rc;
- 
- 	mutex_lock(&of->mutex);
-@@ -607,7 +607,7 @@ static void sysfs_put_open_dirent(struct sysfs_dirent *sd,
- static int sysfs_open_file(struct inode *inode, struct file *file)
- {
- 	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
--	struct kobject *kobj = attr_sd->s_parent->s_dir.kobj;
-+	struct kobject *kobj = attr_sd->s_parent->priv;
- 	struct sysfs_open_file *of;
- 	bool has_read, has_write;
- 	int error = -EACCES;
-@@ -617,7 +617,7 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
- 		return -ENODEV;
- 
- 	if (sysfs_is_bin(attr_sd)) {
--		struct bin_attribute *battr = attr_sd->s_attr.bin_attr;
-+		struct bin_attribute *battr = attr_sd->priv;
- 
- 		has_read = battr->read || battr->mmap;
- 		has_write = battr->write || battr->mmap;
-@@ -830,7 +830,7 @@ int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
- 		return -ENOMEM;
- 
- 	sd->s_ns = ns;
--	sd->s_attr.attr = (void *)attr;
-+	sd->priv = (void *)attr;
- 	sysfs_dirent_init_lockdep(sd);
- 
- 	sysfs_addrm_start(&acxt);
-diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
-index 5f7e2af..81cc858 100644
---- a/fs/sysfs/inode.c
-+++ b/fs/sysfs/inode.c
-@@ -275,7 +275,7 @@ static void sysfs_init_inode(struct sysfs_dirent *sd, struct inode *inode)
- 		inode->i_fop = &sysfs_file_operations;
- 		break;
- 	case SYSFS_KOBJ_BIN_ATTR:
--		bin_attr = sd->s_attr.bin_attr;
-+		bin_attr = sd->priv;
- 		inode->i_size = bin_attr->size;
- 		inode->i_fop = &sysfs_bin_operations;
- 		break;
-diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
-index f9d6056..82182e6 100644
---- a/fs/sysfs/symlink.c
-+++ b/fs/sysfs/symlink.c
-@@ -222,7 +222,7 @@ int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *targ,
- 	result = -EINVAL;
- 	if (sysfs_type(sd) != SYSFS_KOBJ_LINK)
- 		goto out;
--	if (sd->s_symlink.target_sd->s_dir.kobj != targ)
-+	if (sd->s_symlink.target_sd->priv != targ)
- 		goto out;
- 
- 	result = kernfs_rename_ns(sd, parent_sd, new, new_ns);
-diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index ad235b6..da65790 100644
---- a/fs/sysfs/sysfs.h
-+++ b/fs/sysfs/sysfs.h
-@@ -17,8 +17,6 @@ struct sysfs_open_dirent;
- 
- /* type-specific structures for sysfs_dirent->s_* union members */
- struct sysfs_elem_dir {
--	struct kobject		*kobj;
--
- 	unsigned long		subdirs;
- 	/* children rbtree starts here and goes through sd->s_rb */
- 	struct rb_root		children;
-@@ -29,10 +27,6 @@ struct sysfs_elem_symlink {
- };
- 
- struct sysfs_elem_attr {
--	union {
--		struct attribute	*attr;
--		struct bin_attribute	*bin_attr;
--	};
- 	struct sysfs_open_dirent *open;
- };
- 
-@@ -74,6 +68,8 @@ struct sysfs_dirent {
- 		struct sysfs_elem_attr		s_attr;
- 	};
- 
-+	void			*priv;
+diff --git a/fs/kernfs/Makefile b/fs/kernfs/Makefile
+new file mode 100644
+index 0000000..674337c
+--- /dev/null
++++ b/fs/kernfs/Makefile
+@@ -0,0 +1,5 @@
++#
++# Makefile for the kernfs pseudo filesystem
++#
 +
- 	unsigned short		s_flags;
- 	umode_t			s_mode;
- 	unsigned int		s_ino;
-@@ -103,7 +99,7 @@ static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
++obj-y		:= mount.o inode.o dir.o file.o symlink.o
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+new file mode 100644
+index 0000000..1061602
+--- /dev/null
++++ b/fs/kernfs/dir.c
+@@ -0,0 +1,9 @@
++/*
++ * fs/kernfs/dir.c - kernfs directory implementation
++ *
++ * Copyright (c) 2001-3 Patrick Mochel
++ * Copyright (c) 2007 SUSE Linux Products GmbH
++ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
++ *
++ * This file is released under the GPLv2.
++ */
+diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
+new file mode 100644
+index 0000000..90b1e88
+--- /dev/null
++++ b/fs/kernfs/file.c
+@@ -0,0 +1,9 @@
++/*
++ * fs/kernfs/file.c - kernfs file implementation
++ *
++ * Copyright (c) 2001-3 Patrick Mochel
++ * Copyright (c) 2007 SUSE Linux Products GmbH
++ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
++ *
++ * This file is released under the GPLv2.
++ */
+diff --git a/fs/kernfs/inode.c b/fs/kernfs/inode.c
+new file mode 100644
+index 0000000..86bfeea
+--- /dev/null
++++ b/fs/kernfs/inode.c
+@@ -0,0 +1,9 @@
++/*
++ * fs/kernfs/inode.c - kernfs inode implementation
++ *
++ * Copyright (c) 2001-3 Patrick Mochel
++ * Copyright (c) 2007 SUSE Linux Products GmbH
++ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
++ *
++ * This file is released under the GPLv2.
++ */
+diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
+new file mode 100644
+index 0000000..872e262
+--- /dev/null
++++ b/fs/kernfs/mount.c
+@@ -0,0 +1,9 @@
++/*
++ * fs/kernfs/mount.c - kernfs mount implementation
++ *
++ * Copyright (c) 2001-3 Patrick Mochel
++ * Copyright (c) 2007 SUSE Linux Products GmbH
++ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
++ *
++ * This file is released under the GPLv2.
++ */
+diff --git a/fs/kernfs/symlink.c b/fs/kernfs/symlink.c
+new file mode 100644
+index 0000000..2578715
+--- /dev/null
++++ b/fs/kernfs/symlink.c
+@@ -0,0 +1,9 @@
++/*
++ * fs/kernfs/symlink.c - kernfs symlink implementation
++ *
++ * Copyright (c) 2001-3 Patrick Mochel
++ * Copyright (c) 2007 SUSE Linux Products GmbH
++ * Copyright (c) 2007, 2013 Tejun Heo <tj@kernel.org>
++ *
++ * This file is released under the GPLv2.
++ */
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+new file mode 100644
+index 0000000..254b9e8
+--- /dev/null
++++ b/include/linux/kernfs.h
+@@ -0,0 +1,12 @@
++/*
++ * kernfs.h - pseudo filesystem decoupled from vfs locking
++ *
++ * This file is released under the GPLv2.
++ */
++
++#ifndef __LINUX_KERNFS_H
++#define __LINUX_KERNFS_H
++
++struct sysfs_dirent;
++
++#endif	/* __LINUX_KERNFS_H */
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index 6695040..2bc735d 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -12,6 +12,7 @@
+ #ifndef _SYSFS_H_
+ #define _SYSFS_H_
  
- #define sysfs_dirent_init_lockdep(sd)				\
- do {								\
--	struct attribute *attr = sd->s_attr.attr;		\
-+	struct attribute *attr = sd->priv;			\
- 	struct lock_class_key *key = attr->key;			\
- 	if (!key)						\
- 		key = &attr->skey;				\
-@@ -114,10 +110,11 @@ do {								\
- /* Test for attributes that want to ignore lockdep for read-locking */
- static inline bool sysfs_ignore_lockdep(struct sysfs_dirent *sd)
- {
-+	struct attribute *attr = sd->priv;
- 	int type = sysfs_type(sd);
++#include <linux/kernfs.h>
+ #include <linux/compiler.h>
+ #include <linux/errno.h>
+ #include <linux/list.h>
+@@ -175,8 +176,6 @@ struct sysfs_ops {
+ 	ssize_t	(*store)(struct kobject *, struct attribute *, const char *, size_t);
+ };
  
- 	return (type == SYSFS_KOBJ_ATTR || type == SYSFS_KOBJ_BIN_ATTR) &&
--		sd->s_attr.attr->ignore_lockdep;
-+		attr->ignore_lockdep;
- }
+-struct sysfs_dirent;
+-
+ #ifdef CONFIG_SYSFS
  
- #else
+ int sysfs_schedule_callback(struct kobject *kobj, void (*func)(void *),
 -- 
 1.8.3.1
 
