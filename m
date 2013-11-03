@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab3KCJyH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 04:54:07 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:65144 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232Ab3KCJyE (ORCPT
+	id S1754738Ab3KCJzi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 04:55:38 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:59535 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754223Ab3KCJyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 04:54:04 -0500
+	Sun, 3 Nov 2013 04:54:08 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 32/39] sysfs, kernfs: introduce sysfs_root_sd
-Date: Sun,  3 Nov 2013 04:53:11 -0500
-Message-Id: <1383472398-17812-33-git-send-email-tj@kernel.org>
+Subject: [PATCH 35/39] sysfs, kernfs: make super_blocks bind to different kernfs_roots
+Date: Sun,  3 Nov 2013 04:53:14 -0500
+Message-Id: <1383472398-17812-36-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1383472398-17812-1-git-send-email-tj@kernel.org>
 References: <1383472398-17812-1-git-send-email-tj@kernel.org>
@@ -21,128 +21,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, it's assumed that there's a single kernfs hierarchy in the
-system anchored at sysfs_root which is defined as a global struct.  To
-allow other users of kernfs, this will be made dynamic.  Introduce a
-new global variable sysfs_root_sd which points to &sysfs_root and
-convert all &sysfs_root users.
+kernfs is being updated to allow multiple sysfs_dirent hierarchies so
+that it can also be used by other users.  Currently, sysfs
+super_blocks are always attached to one kernfs_root - sysfs_root - and
+distinguished only by their namespace tags.
 
-This patch doesn't introduce any behavior difference.
+This patch adds sysfs_super_info->root and update
+sysfs_fill/test_super() so that super_blocks are identified by the
+combination of both the associated kernfs_root and namespace tag.
+This allows mounting different kernfs hierarchies.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/dir.c     | 4 ++--
- fs/sysfs/mount.c   | 8 +++++---
- fs/sysfs/symlink.c | 6 +++---
- fs/sysfs/sysfs.h   | 2 +-
- 4 files changed, 11 insertions(+), 9 deletions(-)
+ fs/sysfs/mount.c | 10 ++++++----
+ fs/sysfs/sysfs.h |  6 ++++++
+ 2 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index e5c4e71..2fea501 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -68,7 +68,7 @@ int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
- 	if (kobj->parent)
- 		parent_sd = kobj->parent->sd;
- 	else
--		parent_sd = &sysfs_root;
-+		parent_sd = sysfs_root_sd;
- 
- 	if (!parent_sd)
- 		return -ENOENT;
-@@ -134,7 +134,7 @@ int sysfs_move_dir_ns(struct kobject *kobj, struct kobject *new_parent_kobj,
- 
- 	BUG_ON(!sd->s_parent);
- 	new_parent_sd = new_parent_kobj && new_parent_kobj->sd ?
--		new_parent_kobj->sd : &sysfs_root;
-+		new_parent_kobj->sd : sysfs_root_sd;
- 
- 	return kernfs_rename_ns(sd, new_parent_sd, sd->s_name, new_ns);
- }
 diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-index 0c80f03..7cbd1fc 100644
+index 0b5661b..f143b20 100644
 --- a/fs/sysfs/mount.c
 +++ b/fs/sysfs/mount.c
-@@ -32,7 +32,7 @@ static const struct super_operations sysfs_ops = {
- 	.evict_inode	= sysfs_evict_inode,
- };
+@@ -37,6 +37,7 @@ struct sysfs_dirent *sysfs_root_sd;
  
--struct sysfs_dirent sysfs_root = {
-+static struct sysfs_dirent sysfs_root = {
- 	.s_name		= "",
- 	.s_count	= ATOMIC_INIT(1),
- 	.s_flags	= SYSFS_DIR,
-@@ -40,6 +40,8 @@ struct sysfs_dirent sysfs_root = {
- 	.s_ino		= 1,
- };
- 
-+struct sysfs_dirent *sysfs_root_sd = &sysfs_root;
-+
  static int sysfs_fill_super(struct super_block *sb)
  {
++	struct sysfs_super_info *info = sysfs_info(sb);
  	struct inode *inode;
-@@ -53,7 +55,7 @@ static int sysfs_fill_super(struct super_block *sb)
+ 	struct dentry *root;
+ 
+@@ -48,7 +49,7 @@ static int sysfs_fill_super(struct super_block *sb)
  
  	/* get root inode, initialize and unlock it */
  	mutex_lock(&sysfs_mutex);
--	inode = sysfs_get_inode(sb, &sysfs_root);
-+	inode = sysfs_get_inode(sb, sysfs_root_sd);
+-	inode = sysfs_get_inode(sb, sysfs_root_sd);
++	inode = sysfs_get_inode(sb, info->root->sd);
  	mutex_unlock(&sysfs_mutex);
  	if (!inode) {
  		pr_debug("sysfs: could not get root inode\n");
-@@ -66,7 +68,7 @@ static int sysfs_fill_super(struct super_block *sb)
+@@ -61,8 +62,8 @@ static int sysfs_fill_super(struct super_block *sb)
  		pr_debug("%s: could not get root dentry!\n", __func__);
  		return -ENOMEM;
  	}
--	root->d_fsdata = &sysfs_root;
-+	root->d_fsdata = sysfs_root_sd;
+-	kernfs_get(sysfs_root_sd);
+-	root->d_fsdata = sysfs_root_sd;
++	kernfs_get(info->root->sd);
++	root->d_fsdata = info->root->sd;
  	sb->s_root = root;
  	sb->s_d_op = &sysfs_dentry_ops;
  	return 0;
-diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
-index 1890394..f2f41e2 100644
---- a/fs/sysfs/symlink.c
-+++ b/fs/sysfs/symlink.c
-@@ -70,7 +70,7 @@ static int sysfs_do_create_link(struct kobject *kobj, struct kobject *target,
- 	struct sysfs_dirent *parent_sd = NULL;
+@@ -73,7 +74,7 @@ static int sysfs_test_super(struct super_block *sb, void *data)
+ 	struct sysfs_super_info *sb_info = sysfs_info(sb);
+ 	struct sysfs_super_info *info = data;
  
- 	if (!kobj)
--		parent_sd = &sysfs_root;
-+		parent_sd = sysfs_root_sd;
- 	else
- 		parent_sd = kobj->sd;
+-	return sb_info->ns == info->ns;
++	return sb_info->root == info->root && sb_info->ns == info->ns;
+ }
  
-@@ -144,7 +144,7 @@ void sysfs_remove_link(struct kobject *kobj, const char *name)
- 	struct sysfs_dirent *parent_sd = NULL;
+ static int sysfs_set_super(struct super_block *sb, void *data)
+@@ -110,6 +111,7 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
+ 	if (!info)
+ 		return ERR_PTR(-ENOMEM);
  
- 	if (!kobj)
--		parent_sd = &sysfs_root;
-+		parent_sd = sysfs_root_sd;
- 	else
- 		parent_sd = kobj->sd;
++	info->root = sysfs_root;
+ 	info->ns = kobj_ns_grab_current(KOBJ_NS_TYPE_NET);
  
-@@ -170,7 +170,7 @@ int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *targ,
- 	int result;
- 
- 	if (!kobj)
--		parent_sd = &sysfs_root;
-+		parent_sd = sysfs_root_sd;
- 	else
- 		parent_sd = kobj->sd;
- 
+ 	sb = sget(fs_type, sysfs_test_super, sysfs_set_super, flags, info);
 diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index ce97907..2b217ce 100644
+index 2b217ce..93b4b68 100644
 --- a/fs/sysfs/sysfs.h
 +++ b/fs/sysfs/sysfs.h
-@@ -28,7 +28,7 @@ struct sysfs_super_info {
- 	const void		*ns;
- };
- #define sysfs_info(SB) ((struct sysfs_super_info *)(SB->s_fs_info))
--extern struct sysfs_dirent sysfs_root;
-+extern struct sysfs_dirent *sysfs_root_sd;
- extern struct kmem_cache *sysfs_dir_cachep;
+@@ -20,6 +20,12 @@
  
- /*
+ struct sysfs_super_info {
+ 	/*
++	 * The root associated with this super_block.  Each super_block is
++	 * identified by the root and ns it's associated with.
++	 */
++	struct kernfs_root	*root;
++
++	/*
+ 	 * Each sb is associated with one namespace tag, currently the network
+ 	 * namespace of the task which mounted this sysfs instance.  If multiple
+ 	 * tags become necessary, make the following an array and compare
 -- 
 1.8.3.1
 
