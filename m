@@ -1,233 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab3KCPzc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 10:55:32 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:49376 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970Ab3KCPz3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 10:55:29 -0500
-Message-ID: <527671E9.8040704@gmail.com>
-Date: Sun, 03 Nov 2013 23:55:21 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1754144Ab3KCP5k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 10:57:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49869 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754057Ab3KCP5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 10:57:39 -0500
+Date: Sun, 3 Nov 2013 10:57:30 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, prarit@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Allow NR_CPUS=1024
+Message-ID: <20131103155729.GB9944@hansolo.jdub.homelinux.org>
+References: <20131101141148.GH8652@hansolo.jdub.homelinux.org>
+ <20131103101825.GA6605@gmail.com>
+ <20131103102132.GA6807@gmail.com>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 2/7] arm64: introduce interfaces to hotpatch kernel
- and module code
-References: <1382109602-27432-1-git-send-email-liuj97@gmail.com> <1382109602-27432-3-git-send-email-liuj97@gmail.com> <20131030001245.GB25346@mudshark.cambridge.arm.com>
-In-Reply-To: <20131030001245.GB25346@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131103102132.GA6807@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2013 08:12 AM, Will Deacon wrote:
-> Hi Jinag Liu,
+On Sun, Nov 03, 2013 at 11:21:32AM +0100, Ingo Molnar wrote:
 > 
-> Sorry for the delayed review, I've been travelling.
+> * Ingo Molnar <mingo@kernel.org> wrote:
 > 
-> On Fri, Oct 18, 2013 at 04:19:56PM +0100, Jiang Liu wrote:
->> From: Jiang Liu <jiang.liu@huawei.com>
-> 
-> If I try and email you at your Huawei address, I get a bounce from the mail
-> server. Is that expected? If so, it's not very helpful from a commit log
-> perspective if you use that address as the author on your patches.
-> 
-Hi Will,
-	Sorry for the inconvenience. I have left Huawei recently and
-have had a vacation last two weeks. I will use my gmail account next
-time.
+> > 
+> > * Josh Boyer <jwboyer@redhat.com> wrote:
+> > 
+> > > The current range for SMP configs is 2 - 512, or a full 4096 in the case 
+> > > of MAXSMP.  There are machines that have 1024 CPUs in them today and 
+> > > configuring a kernel for that means you are forced to set MAXSMP.  This 
+> > > adds additional unnecessary overhead.  While that overhead might be 
+> > > considered tiny for large machines, it isn't necessarily so if you are 
+> > > building a kernel that runs across a wide variety of machines.  We 
+> > > increase the range to 1024 to help with this.
+> > >
+> > > Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+> > > ---
+> > >  arch/x86/Kconfig | 2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> > > index f67e839..d726b2d 100644
+> > > --- a/arch/x86/Kconfig
+> > > +++ b/arch/x86/Kconfig
+> > > @@ -825,7 +825,7 @@ config MAXSMP
+> > >  config NR_CPUS
+> > >  	int "Maximum number of CPUs" if SMP && !MAXSMP
+> > >  	range 2 8 if SMP && X86_32 && !X86_BIGSMP
+> > > -	range 2 512 if SMP && !MAXSMP
+> > > +	range 2 1024 if SMP && !MAXSMP
+> > >  	default "1" if !SMP
+> > >  	default "4096" if MAXSMP
+> > >  	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
+> > 
+> > Any reason not to allow it to go up to 4096? The original concern was 
+> > that CPUS=4096 wasn't working very well and you had to select MAXSMP 
+> > deliberately and keep all the pieces.
 
->> Introduce three interfaces to patch kernel and module code:
->> aarch64_insn_patch_text_nosync():
->> 	patch code without synchronization, it's caller's responsibility
->> 	to synchronize all CPUs if needed.
->> aarch64_insn_patch_text_sync():
->> 	patch code and always synchronize with stop_machine()
->> aarch64_insn_patch_text():
->> 	patch code and synchronize with stop_machine() if needed
->>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> Cc: Jiang Liu <liuj97@gmail.com>
->> ---
->>  arch/arm64/include/asm/insn.h | 19 ++++++++-
->>  arch/arm64/kernel/insn.c      | 91 +++++++++++++++++++++++++++++++++++++++++++
->>  2 files changed, 109 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
->> index 7499490..7a69491 100644
->> --- a/arch/arm64/include/asm/insn.h
->> +++ b/arch/arm64/include/asm/insn.h
->> @@ -71,8 +71,25 @@ enum aarch64_insn_hint_op {
->>  
->>  bool aarch64_insn_is_nop(u32 insn);
->>  
->> -enum aarch64_insn_encoding_class aarch64_get_insn_class(u32 insn);
->> +/*
->> + * In ARMv8-A, A64 instructions have a fixed length of 32 bits and are always
->> + * little-endian.
->> + */
->> +static __always_inline u32 aarch64_insn_read(void *addr)
->> +{
->> +	return le32_to_cpu(*(u32 *)addr);
->> +}
->>  
->> +static __always_inline void aarch64_insn_write(void *addr, u32 insn)
->> +{
->> +	*(u32 *)addr = cpu_to_le32(insn);
->> +}
-> 
-> I wouldn't bother with these helpers. You should probably be using
-> probe_kernel_address or similar, then doing the endianness swabbing on the
-> return value in-line.
-How about keeping and refining aarch64_insn_read/write interfaces
-by using probe_kernel_address()? I think they may be used in other
-places when supporting big endian ARM64 kernel.
+No real reason to not allow all the way to 4096, no.  I just started
+small as I wanted 1024 specifically, and this is the simplest way to
+achieve that.
 
+> The other reason was CONFIG_CPUMASK_OFFSTACK: with 4096 CPUs a cpumask is 
+> 512 bytes, too large to be kept on the kernel stack.
 > 
->> +enum aarch64_insn_encoding_class aarch64_get_insn_class(u32 insn);
->>  bool aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn);
->>  
->> +int aarch64_insn_patch_text_nosync(void *addr, u32 insn);
->> +int aarch64_insn_patch_text_sync(void *addrs[], u32 insns[], int cnt);
->> +int aarch64_insn_patch_text(void *addrs[], u32 insns[], int cnt);
->> +
->>  #endif	/* __ASM_INSN_H */
->> diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
->> index f5b779f..3879db4 100644
->> --- a/arch/arm64/kernel/insn.c
->> +++ b/arch/arm64/kernel/insn.c
->> @@ -16,6 +16,9 @@
->>   */
->>  #include <linux/compiler.h>
->>  #include <linux/kernel.h>
->> +#include <linux/smp.h>
->> +#include <linux/stop_machine.h>
->> +#include <asm/cacheflush.h>
->>  #include <asm/insn.h>
->>  
->>  static int aarch64_insn_encoding_class[] = {
->> @@ -88,3 +91,91 @@ bool __kprobes aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn)
->>  	return __aarch64_insn_hotpatch_safe(old_insn) &&
->>  	       __aarch64_insn_hotpatch_safe(new_insn);
->>  }
->> +
->> +int __kprobes aarch64_insn_patch_text_nosync(void *addr, u32 insn)
->> +{
->> +	u32 *tp = addr;
->> +
->> +	/* A64 instructions must be word aligned */
->> +	if ((uintptr_t)tp & 0x3)
->> +		return -EINVAL;
->> +
->> +	aarch64_insn_write(tp, insn);
->> +	flush_icache_range((uintptr_t)tp, (uintptr_t)tp + sizeof(u32));
+> MAXSMP forces CONFIG_CPUMASK_OFFSTACK so there's no such concern there.
 > 
-> sizeof(insn) is clearer here.
+> With 1024 CPUs a single cpumask is 128 bytes - rather significant as well. 
+> With 512 CPUs it's 64 bytes - borderline.
 > 
-Will make this change in next version.
+> So I think a better solution would be to allow an increase above 512 CPUs 
+> only if CONFIG_CPUMASK_OFFSTACK is also enabled.
 
->> +
->> +	return 0;
->> +}
->> +
->> +struct aarch64_insn_patch {
->> +	void	**text_addrs;
->> +	u32	*new_insns;
->> +	int	insn_cnt;
->> +};
->> +
->> +static DEFINE_MUTEX(text_patch_lock);
->> +static atomic_t text_patch_id;
->> +
->> +static int __kprobes aarch64_insn_patch_text_cb(void *arg)
->> +{
->> +	int i, ret = 0;
->> +	struct aarch64_insn_patch *pp = arg;
->> +
->> +	if (atomic_read(&text_patch_id) == smp_processor_id()) {
-> 
-> You could actually pass in the test_patch_id as zero-initialised parameter
-> to this function (i.e. it points to something on the stack of the guy
-> issuing the stop_machine). Then you do an inc_return here. If you see zero,
-> you go ahead and do the patching.
-Good suggestion!
-Function stop_machine() already has a mutex to serialize all callers,
-so we don't need explicitly serialization here. Will simplify the
-code in next version.
+OK, that makes sense.  So in this scenario, we could probably either:
 
-> 
->> +		for (i = 0; ret == 0 && i < pp->insn_cnt; i++)
->> +			ret = aarch64_insn_patch_text_nosync(pp->text_addrs[i],
->> +							     pp->new_insns[i]);
->> +		/* Let other CPU continue */
->> +		atomic_set(&text_patch_id, -1);
-> 
-> You're relying on the barrier in flush_icache_range to order this
-> atomic_set. I think you should add a comment describing that, because it's
-> very subtle.
-How about an explicitly smp_wmb() here? That would be more
-maintainable.
+a) do away with MAXSMP entirely and just depend on
+CONFIG_CPUMASK_OFFSTACK.
 
-> 
->> +	} else {
->> +		while (atomic_read(&text_patch_id) != -1)
->> +			cpu_relax();
->> +		isb();
->> +	}
->> +
->> +	return ret;
->> +}
-> 
-> I don't think you need the isb -- the exception return should do the trick
-> (but again, a comment would be useful).
-stop_machine() is implemented by thread scheduling instead of cross CPU
-function call(IPI), so there may be no "eret" after returning from
-this callback function. So used an "isb" here.
+b) make MAXSMP something even higher than 4096.  Like 5120 or 6144, etc.
 
-> 
->> +
->> +int __kprobes aarch64_insn_patch_text_sync(void *addrs[], u32 insns[], int cnt)
->> +{
->> +	int ret;
->> +	struct aarch64_insn_patch patch = {
->> +		.text_addrs = addrs,
->> +		.new_insns = insns,
->> +		.insn_cnt = cnt,
->> +	};
->> +
->> +	if (cnt <= 0)
->> +		return -EINVAL;
->> +
->> +	mutex_lock(&text_patch_lock);
-> 
-> Again, if you use a loacl variable, I don't think you need the mutex. What
-> do you think?
-Sure, will make the change.
+Which would you prefer?  Either is easy enough to code up, I just need
+to know which I should shoot for.
 
-> 
->> +	atomic_set(&text_patch_id, smp_processor_id());
->> +	ret = stop_machine(aarch64_insn_patch_text_cb, &patch, cpu_online_mask);
-> 
-> Instead of doing this, why not instead call aarch64_insn_patch_text_nosync
-> inline, then call kick_all_cpus_sync immediately afterwards, without the
-> need to stop_machine.
-Sandeepa, who is working on kprobe for ARM64, needs the stop_machine()
-mechanism to synchronize all online CPUs, so it's a preparation for
-kprobe.
-
-Thanks!
-Gerry
-> 
-> Will
-> 
-
+josh
