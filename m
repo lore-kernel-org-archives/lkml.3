@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab3KCSOf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 13:14:35 -0500
-Received: from mout.gmx.net ([212.227.15.15]:55560 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752926Ab3KCSOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 13:14:34 -0500
-Date: Sun, 3 Nov 2013 19:14:28 +0100
-From: Andreas Werner <wernerandy@gmx.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, bp@alien8.de
-Subject: Re: [PATCH v2] X86: MM: Add PAT Type write-through in combination
- with mtrr
-Message-ID: <20131103181427.GA1346@thinkpad.fritz.box>
-References: <1383480142-5665-1-git-send-email-wernerandy@gmx.de>
- <52768B8E.1060902@zytor.com>
+	id S1754205Ab3KCSQw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 13:16:52 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49648 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753933Ab3KCSQv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 13:16:51 -0500
+Date: Sun, 3 Nov 2013 11:16:39 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Chen Gang <gang.chen@asianux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Jan Kara <jack@suse.cz>, "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: trace: blktrace: remove redundent memcpy() in
+ compat_blk_trace_setup()
+Message-ID: <20131103181639.GA14163@kernel.dk>
+References: <52765C6B.7080608@asianux.com>
+ <20131103123647.0bae8cf6@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52768B8E.1060902@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V03:K0:sXqMz1odnuUToTzKciURwFioSOGe65fyVjpja28o/9dt9qOv/6+
- 0pE2oXya/fVPrTFgPtQy16EUAembfxC7l/8SxqjcaDpeLpSag24xQ3pgeCY4L8ScTCcxEOg
- THOEHEKPe//t5HptAX/KZOy+2yjv8hcBbNVZNHN7Rs7wMY71Gkc7wxITAdAKZnbWt56neBs
- WojEBfYGEwk9khJj4a4bg==
+In-Reply-To: <20131103123647.0bae8cf6@gandalf.local.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 03, 2013 at 09:44:46AM -0800, H. Peter Anvin wrote:
-> On 11/03/2013 04:02 AM, Andreas Werner wrote:
-> > 
-> > Since marking IO Memory as cachable is not valid, WT is the
-> > best way for caching/bursting on MMIO Devices.
-> > 
+On Sun, Nov 03 2013, Steven Rostedt wrote:
+> A quick review of this patch looks fine to me.
 > 
-> Uh... WT *is* cachable...
+> Although, using ARRAY_SIZE() for a character string seems to me a bit
+> over paranoid. But I'm fine with it, as it makes sure that the string
+> is an array and not a pointer.
 > 
-> 	-hpa
+> Jens,
 > 
-> 
+> Can you give me an Acked-by?
 
-Sorry my mistake, i mean "marking IO Memory as WB is not valid"
+Thanks, but I'll just queue it up with the other block bits for 3.13.
 
-regards 
-Andy
+-- 
+Jens Axboe
+
