@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab3KCJxt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 04:53:49 -0500
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:65503 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085Ab3KCJxa (ORCPT
+	id S1754979Ab3KCKAo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 05:00:44 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:38937 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753021Ab3KCJxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 04:53:30 -0500
+	Sun, 3 Nov 2013 04:53:48 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 06/39] sysfs, kernfs: introduce kernfs_setattr()
-Date: Sun,  3 Nov 2013 04:52:45 -0500
-Message-Id: <1383472398-17812-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 20/39] sysfs, kernfs: introduce kernfs_notify()
+Date: Sun,  3 Nov 2013 04:52:59 -0500
+Message-Id: <1383472398-17812-21-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1383472398-17812-1-git-send-email-tj@kernel.org>
 References: <1383472398-17812-1-git-send-email-tj@kernel.org>
@@ -21,146 +21,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce kernfs setattr interface - kernfs_setattr().
+Introduce kernfs interface to wake up poll(2) which takes and returns
+sysfs_dirents.
 
-sysfs_sd_setattr() is renamed to __kernfs_setattr() and
-kernfs_setattr() is a simple wrapper around it with sysfs_mutex
-locking.  sysfs_chmod_file() is updated to get an explicit ref on
-kobj->sd and then invoke kernfs_setattr() so that it doesn't have to
-use internal interface.
+sysfs_notify_dirent() is renamed to kernfs_notify() and sysfs_notify()
+is updated so that it doesn't directly grab sysfs_mutex but acquires
+the target sysfs_dirents using sysfs_get_dirent().
+sysfs_notify_dirent() is reimplemented as a dumb inline wrapper around
+kernfs_notify().
 
-This patch doesn't introduce any behavior differences.
-
-v2: Dummy implementation for !CONFIG_SYSFS updated to return -ENOSYS.
+This patch doesn't introduce any behavior changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/file.c        | 13 +++++--------
- fs/sysfs/inode.c       | 21 +++++++++++++++++++--
- fs/sysfs/sysfs.h       |  1 -
- include/linux/kernfs.h |  8 ++++++++
- 4 files changed, 32 insertions(+), 11 deletions(-)
+ fs/sysfs/file.c        | 33 ++++++++++++++++++++++-----------
+ include/linux/kernfs.h |  3 +++
+ include/linux/sysfs.h  |  9 +++++----
+ 3 files changed, 30 insertions(+), 15 deletions(-)
 
 diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 5664410..564abd2 100644
+index 3d50f11..1f99fe3 100644
 --- a/fs/sysfs/file.c
 +++ b/fs/sysfs/file.c
-@@ -922,19 +922,16 @@ int sysfs_chmod_file(struct kobject *kobj, const struct attribute *attr,
- 	struct iattr newattrs;
- 	int rc;
- 
--	mutex_lock(&sysfs_mutex);
--
--	rc = -ENOENT;
--	sd = sysfs_find_dirent(kobj->sd, attr->name, NULL);
-+	sd = sysfs_get_dirent(kobj->sd, attr->name);
- 	if (!sd)
--		goto out;
-+		return -ENOENT;
- 
- 	newattrs.ia_mode = (mode & S_IALLUGO) | (sd->s_mode & ~S_IALLUGO);
- 	newattrs.ia_valid = ATTR_MODE;
--	rc = sysfs_sd_setattr(sd, &newattrs);
- 
-- out:
--	mutex_unlock(&sysfs_mutex);
-+	rc = kernfs_setattr(sd, &newattrs);
-+
-+	sysfs_put(sd);
- 	return rc;
- }
- EXPORT_SYMBOL_GPL(sysfs_chmod_file);
-diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
-index 1750f79..5f7e2af 100644
---- a/fs/sysfs/inode.c
-+++ b/fs/sysfs/inode.c
-@@ -67,7 +67,7 @@ static struct sysfs_inode_attrs *sysfs_init_inode_attrs(struct sysfs_dirent *sd)
- 	return attrs;
+@@ -834,7 +834,13 @@ static unsigned int kernfs_file_poll(struct file *filp, poll_table *wait)
+ 	return DEFAULT_POLLMASK|POLLERR|POLLPRI;
  }
  
--int sysfs_sd_setattr(struct sysfs_dirent *sd, struct iattr *iattr)
-+static int __kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr)
- {
- 	struct sysfs_inode_attrs *sd_attrs;
- 	struct iattr *iattrs;
-@@ -102,6 +102,23 @@ int sysfs_sd_setattr(struct sysfs_dirent *sd, struct iattr *iattr)
- 	return 0;
- }
- 
+-void sysfs_notify_dirent(struct sysfs_dirent *sd)
 +/**
-+ * kernfs_setattr - set iattr on a node
-+ * @sd: target node
-+ * @iattr: iattr to set
++ * kernfs_notify - notify a kernfs file
++ * @sd: file to notify
 + *
-+ * Returns 0 on success, -errno on failure.
++ * Notify @sd such that poll(2) on @sd wakes up.
 + */
-+int kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr)
-+{
-+	int ret;
-+
-+	mutex_lock(&sysfs_mutex);
-+	ret = __kernfs_setattr(sd, iattr);
-+	mutex_unlock(&sysfs_mutex);
-+	return ret;
-+}
-+
- int sysfs_setattr(struct dentry *dentry, struct iattr *iattr)
++void kernfs_notify(struct sysfs_dirent *sd)
  {
- 	struct inode *inode = dentry->d_inode;
-@@ -116,7 +133,7 @@ int sysfs_setattr(struct dentry *dentry, struct iattr *iattr)
- 	if (error)
- 		goto out;
+ 	struct sysfs_open_dirent *od;
+ 	unsigned long flags;
+@@ -851,22 +857,27 @@ void sysfs_notify_dirent(struct sysfs_dirent *sd)
  
--	error = sysfs_sd_setattr(sd, iattr);
-+	error = __kernfs_setattr(sd, iattr);
- 	if (error)
- 		goto out;
+ 	spin_unlock_irqrestore(&sysfs_open_dirent_lock, flags);
+ }
+-EXPORT_SYMBOL_GPL(sysfs_notify_dirent);
++EXPORT_SYMBOL_GPL(kernfs_notify);
  
-diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index 35561a8..ad235b6 100644
---- a/fs/sysfs/sysfs.h
-+++ b/fs/sysfs/sysfs.h
-@@ -207,7 +207,6 @@ static inline void __sysfs_put(struct sysfs_dirent *sd)
-  */
- struct inode *sysfs_get_inode(struct super_block *sb, struct sysfs_dirent *sd);
- void sysfs_evict_inode(struct inode *inode);
--int sysfs_sd_setattr(struct sysfs_dirent *sd, struct iattr *iattr);
- int sysfs_permission(struct inode *inode, int mask);
- int sysfs_setattr(struct dentry *dentry, struct iattr *iattr);
- int sysfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
+ void sysfs_notify(struct kobject *k, const char *dir, const char *attr)
+ {
+-	struct sysfs_dirent *sd = k->sd;
+-
+-	mutex_lock(&sysfs_mutex);
++	struct sysfs_dirent *sd = k->sd, *tmp;
+ 
+ 	if (sd && dir)
+-		sd = sysfs_find_dirent(sd, dir, NULL);
+-	if (sd && attr)
+-		sd = sysfs_find_dirent(sd, attr, NULL);
+-	if (sd)
+-		sysfs_notify_dirent(sd);
++		sd = sysfs_get_dirent(sd, dir);
++	else
++		sysfs_get(sd);
+ 
+-	mutex_unlock(&sysfs_mutex);
++	if (sd && attr) {
++		tmp = sysfs_get_dirent(sd, attr);
++		sysfs_put(sd);
++		sd = tmp;
++	}
++
++	if (sd) {
++		kernfs_notify(sd);
++		sysfs_put(sd);
++	}
+ }
+ EXPORT_SYMBOL_GPL(sysfs_notify);
+ 
 diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 803d960..8cb6738 100644
+index d93c5ef..53cf787 100644
 --- a/include/linux/kernfs.h
 +++ b/include/linux/kernfs.h
-@@ -10,6 +10,9 @@
- #include <linux/kernel.h>
- #include <linux/err.h>
- 
-+struct file;
-+struct iattr;
-+
- struct sysfs_dirent;
- 
- #ifdef CONFIG_SYSFS
-@@ -22,6 +25,7 @@ int kernfs_remove_by_name_ns(struct sysfs_dirent *parent, const char *name,
- 			     const void *ns);
+@@ -83,6 +83,7 @@ int kernfs_remove_by_name_ns(struct sysfs_dirent *parent, const char *name,
  int kernfs_rename_ns(struct sysfs_dirent *sd, struct sysfs_dirent *new_parent,
  		     const char *new_name, const void *new_ns);
-+int kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr);
+ int kernfs_setattr(struct sysfs_dirent *sd, const struct iattr *iattr);
++void kernfs_notify(struct sysfs_dirent *sd);
  
  #else	/* CONFIG_SYSFS */
  
-@@ -41,6 +45,10 @@ static inline int kernfs_rename_ns(struct sysfs_dirent *sd,
- 				   const char *new_name, const void *new_ns)
+@@ -117,6 +118,8 @@ static inline int kernfs_setattr(struct sysfs_dirent *sd,
+ 				 const struct iattr *iattr)
  { return -ENOSYS; }
  
-+static inline int kernfs_setattr(struct sysfs_dirent *sd,
-+				 const struct iattr *iattr)
-+{ return -ENOSYS; }
++static inline void kernfs_notify(struct sysfs_dirent *sd) { }
 +
  #endif	/* CONFIG_SYSFS */
  
- static inline int kernfs_remove_by_name(struct sysfs_dirent *parent,
+ static inline struct sysfs_dirent *
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index 2bc735d..0ab2b02 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -243,7 +243,6 @@ void sysfs_remove_link_from_group(struct kobject *kobj, const char *group_name,
+ 				  const char *link_name);
+ 
+ void sysfs_notify(struct kobject *kobj, const char *dir, const char *attr);
+-void sysfs_notify_dirent(struct sysfs_dirent *sd);
+ struct sysfs_dirent *sysfs_get_dirent_ns(struct sysfs_dirent *parent_sd,
+ 					 const unsigned char *name,
+ 					 const void *ns);
+@@ -418,9 +417,6 @@ static inline void sysfs_notify(struct kobject *kobj, const char *dir,
+ 				const char *attr)
+ {
+ }
+-static inline void sysfs_notify_dirent(struct sysfs_dirent *sd)
+-{
+-}
+ static inline struct sysfs_dirent *
+ sysfs_get_dirent_ns(struct sysfs_dirent *parent_sd, const unsigned char *name,
+ 		    const void *ns)
+@@ -466,4 +462,9 @@ sysfs_get_dirent(struct sysfs_dirent *parent_sd, const unsigned char *name)
+ 	return sysfs_get_dirent_ns(parent_sd, name, NULL);
+ }
+ 
++static inline void sysfs_notify_dirent(struct sysfs_dirent *sd)
++{
++	kernfs_notify(sd);
++}
++
+ #endif /* _SYSFS_H_ */
 -- 
 1.8.3.1
 
