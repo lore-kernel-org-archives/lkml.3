@@ -1,95 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab3KCOtM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 09:49:12 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:49605 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752431Ab3KCOtK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 09:49:10 -0500
-X-Sasl-enc: vpzIYYbcRZojcoEFd3kWevKQycwmtSnuFqIZxpfEHA3h 1383490149
-Date: Sun, 3 Nov 2013 06:51:18 -0800
-From: Greg KH <greg@kroah.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+	id S1753841Ab3KCOvB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 09:51:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14409 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752431Ab3KCOu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 09:50:59 -0500
+Date: Sun, 3 Nov 2013 16:50:57 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Michele Baldessari <michele@redhat.com>,
         stable@vger.kernel.org
-Subject: Re: [PATCH 1/4] random: use device attach events for entropy
-Message-ID: <20131103145118.GD2007@kroah.com>
-References: <1383485595-2020-1-git-send-email-tytso@mit.edu>
- <1383485595-2020-2-git-send-email-tytso@mit.edu>
+Subject: Re: [PATCH] KVM: x86: fix emulation of "movzbl %bpl, %eax"
+Message-ID: <20131103145057.GC7513@redhat.com>
+References: <1383257124-8241-1-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383485595-2020-2-git-send-email-tytso@mit.edu>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1383257124-8241-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 03, 2013 at 08:33:12AM -0500, Theodore Ts'o wrote:
-> Some investigation from FreeBSD shows that there is entropy available
-> from measuring the device attach times:
+On Thu, Oct 31, 2013 at 11:05:24PM +0100, Paolo Bonzini wrote:
+> When I was looking at RHEL5.9's failure to start with
+> unrestricted_guest=0/emulate_invalid_guest_state=1, I got it working with a
+> slightly older tree than kvm.git.  I now debugged the remaining failure,
+> which was introduced by commit 660696d1 (KVM: X86 emulator: fix
+> source operand decoding for 8bit mov[zs]x instructions, 2013-04-24)
+> introduced a similar mis-emulation to the one in commit 8acb4207 (KVM:
+> fix sil/dil/bpl/spl in the mod/rm fields, 2013-05-30).  The incorrect
+> decoding occurs in 8-bit movzx/movsx instructions whose 8-bit operand
+> is sil/dil/bpl/spl.
 > 
-> http://lists.randombit.net/pipermail/cryptography/2013-October/005689.html
+> Needless to say, "movzbl %bpl, %eax" does occur in RHEL5.9's decompression
+> prolog, just a handful of instructions before finally giving control to
+> the decompressed vmlinux and getting out of the invalid guest state.
 > 
-> This will hopefully help us more quickly initialize the entropy pools
-> while the system is booting (which is one of the times when we really
-> badly need more entropy, especially in the case of the first boot
-> after an consumer electronics device is taken out of the box).
+> Because OpMem8 bypasses decode_modrm, the same handling of the REX prefix
+> must be applied to OpMem8.
 > 
-> Measurements indicate this makes a huge improvement in the security of
-> /dev/urandom during the boot sequence, so I'm cc'ing this to the
-> stable kernel series.  Especially for embedded systems, which use
-> flash and which don't necessarily have the network enabled when they
-> first generate ssh or x.509 keys (sigh), this can be a big deal.
-> 
-> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> Reported-by: Michele Baldessari <michele@redhat.com>
 > Cc: stable@vger.kernel.org
+> Cc: Gleb Natapov <gleb@redhat.com>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Applied, thanks.
+
 > ---
->  drivers/base/core.c    | 3 +++
->  drivers/char/random.c  | 7 +++++++
->  include/linux/random.h | 2 ++
->  3 files changed, 12 insertions(+)
+>  arch/x86/kvm/emulate.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
 > 
-> diff --git a/drivers/base/core.c b/drivers/base/core.c
-> index 8856d74..5e98fc3 100644
-> --- a/drivers/base/core.c
-> +++ b/drivers/base/core.c
-> @@ -26,6 +26,7 @@
->  #include <linux/async.h>
->  #include <linux/pm_runtime.h>
->  #include <linux/netdevice.h>
-> +#include <linux/random.h>
->  
->  #include "base.h"
->  #include "power/power.h"
-> @@ -1156,6 +1157,8 @@ int device_add(struct device *dev)
->  				class_intf->add_dev(dev, class_intf);
->  		mutex_unlock(&dev->class->p->mutex);
->  	}
-> +	add_device_attach_randomness(dev);
+> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> index 16c037e7db7d..282d28cb9931 100644
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -4117,7 +4117,10 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
+>  	case OpMem8:
+>  		ctxt->memop.bytes = 1;
+>  		if (ctxt->memop.type == OP_REG) {
+> -			ctxt->memop.addr.reg = decode_register(ctxt, ctxt->modrm_rm, 1);
+> +			int highbyte_regs = ctxt->rex_prefix == 0;
 > +
->  done:
->  	put_device(dev);
->  	return error;
-> diff --git a/drivers/char/random.c b/drivers/char/random.c
-> index f126bd2..51153fe 100644
-> --- a/drivers/char/random.c
-> +++ b/drivers/char/random.c
-> @@ -829,6 +829,13 @@ void add_input_randomness(unsigned int type, unsigned int code,
->  }
->  EXPORT_SYMBOL_GPL(add_input_randomness);
->  
-> +void add_device_attach_randomness(struct device *dev)
-> +{
-> +	static struct timer_rand_state attach_state = { 0, };
-> +
-> +	add_timer_randomness(&attach_state, dev->devt);
+> +			ctxt->memop.addr.reg = decode_register(ctxt, ctxt->modrm_rm,
+> +					       highbyte_regs);
+>  			fetch_register_operand(&ctxt->memop);
+>  		}
+>  		goto mem_common;
+> -- 
+> 1.8.3.1
 
-Is it an issue that dev->devt will almost always be 0,0 for this
-function call?  Why not use the name instead here, that's more "unique"
-and every device has one, not just a tiny %.
-
-thanks,
-
-greg k-h
+--
+			Gleb.
