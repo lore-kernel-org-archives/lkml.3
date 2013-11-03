@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab3KCJxy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 04:53:54 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:50219 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221Ab3KCJxe (ORCPT
+	id S1754532Ab3KCJ6u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 04:58:50 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:57212 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739Ab3KCJxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 04:53:34 -0500
+	Sun, 3 Nov 2013 04:53:54 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
-        bhelgaas@google.com, Tejun Heo <tj@kernel.org>,
-        Pavel Machek <pavel@ucw.cz>, Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH 09/39] sysfs, kernfs: prepare read path for kernfs
-Date: Sun,  3 Nov 2013 04:52:48 -0500
-Message-Id: <1383472398-17812-10-git-send-email-tj@kernel.org>
+        bhelgaas@google.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 24/39] sysfs, kernfs: move internal decls to fs/kernfs/kernfs-internal.h
+Date: Sun,  3 Nov 2013 04:53:03 -0500
+Message-Id: <1383472398-17812-25-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1383472398-17812-1-git-send-email-tj@kernel.org>
 References: <1383472398-17812-1-git-send-email-tj@kernel.org>
@@ -22,337 +21,260 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're in the process of separating out core sysfs functionality into
-kernfs which will deal with sysfs_dirents directly.  This patch
-rearranges read path so that the kernfs and sysfs parts are separate.
+Move data structure, constant and basic accessor declarations from
+fs/sysfs/sysfs.h to fs/kernfs/kernfs-internal.h.  The two files
+currently include each other.  Once kernfs / sysfs separation is
+complete, the cross inclusions will be removed.  Inclusion protectors
+are added to fs/sysfs/sysfs.h to allow cross-inclusion.
 
-* Regular file read path is refactored such that
-  kernfs_seq_start/next/stop/show() handle all the boilerplate work
-  including locking and updating event count for poll, while
-  sysfs_kf_seq_show() deals with interaction with kobj show method.
-
-* Bin file read path is refactored such that kernfs_file_direct_read()
-  handles all the boilerplate work including buffer management and
-  locking, while sysfs_kf_bin_read() deals with interaction with
-  bin_attribute read method.
-
-kernfs_file_read() is added.  It invokes either the seq_file or direct
-read path depending on the file type.  This will eventually allow
-using the same file_operations for both file types, which is necessary
-to separate out kernfs.
-
-While this patch changes the order of some operations, it shouldn't
-change any visible behavior.
-
-v2: Dropped unnecessary zeroing of @count from sysfs_kf_seq_show().
-    Add comments explaining single_open() behavior.  Both suggested by
-    Pavel.
-
-v3: seq_stop() is called even after seq_start() failed.
-    kernfs_seq_start() updated so that it doesn't unlock
-    sysfs_open_file->mutex on failure so that kernfs_seq_stop()
-    doesn't try to unlock an already unlocked mutex.  Reported by
-    Fengguang.
+This patch doesn't introduce any functional changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Fengguang Wu <fengguang.wu@intel.com>
 ---
- fs/sysfs/file.c | 191 +++++++++++++++++++++++++++++++++++++-------------------
- 1 file changed, 126 insertions(+), 65 deletions(-)
+ fs/kernfs/kernfs-internal.h | 115 ++++++++++++++++++++++++++++++++++++++++++++
+ fs/sysfs/sysfs.h            | 102 +++------------------------------------
+ 2 files changed, 121 insertions(+), 96 deletions(-)
+ create mode 100644 fs/kernfs/kernfs-internal.h
 
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 77e6492..93dc54e 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -86,13 +86,13 @@ static const struct sysfs_ops *sysfs_file_ops(struct sysfs_dirent *sd)
-  * details like buffering and seeking.  The following function pipes
-  * sysfs_ops->show() result through seq_file.
-  */
--static int sysfs_seq_show(struct seq_file *sf, void *v)
-+static int sysfs_kf_seq_show(struct seq_file *sf, void *v)
- {
- 	struct sysfs_open_file *of = sf->private;
- 	struct kobject *kobj = of->sd->s_parent->priv;
--	const struct sysfs_ops *ops;
--	char *buf;
-+	const struct sysfs_ops *ops = sysfs_file_ops(of->sd);
- 	ssize_t count;
-+	char *buf;
- 
- 	/* acquire buffer and ensure that it's >= PAGE_SIZE */
- 	count = seq_get_buf(sf, &buf);
-@@ -102,33 +102,14 @@ static int sysfs_seq_show(struct seq_file *sf, void *v)
- 	}
- 
- 	/*
--	 * Need @of->sd for attr and ops, its parent for kobj.  @of->mutex
--	 * nests outside active ref and is just to ensure that the ops
--	 * aren't called concurrently for the same open file.
-+	 * Invoke show().  Control may reach here via seq file lseek even
-+	 * if @ops->show() isn't implemented.
- 	 */
--	mutex_lock(&of->mutex);
--	if (!sysfs_get_active(of->sd)) {
--		mutex_unlock(&of->mutex);
--		return -ENODEV;
--	}
--
--	of->event = atomic_read(&of->sd->s_attr.open->event);
--
--	/*
--	 * Lookup @ops and invoke show().  Control may reach here via seq
--	 * file lseek even if @ops->show() isn't implemented.
--	 */
--	ops = sysfs_file_ops(of->sd);
--	if (ops->show)
-+	if (ops->show) {
- 		count = ops->show(kobj, of->sd->priv, buf);
--	else
--		count = 0;
--
--	sysfs_put_active(of->sd);
--	mutex_unlock(&of->mutex);
--
--	if (count < 0)
--		return count;
-+		if (count < 0)
-+			return count;
-+	}
- 
- 	/*
- 	 * The code works fine with PAGE_SIZE return but it's likely to
-@@ -144,68 +125,146 @@ static int sysfs_seq_show(struct seq_file *sf, void *v)
- 	return 0;
- }
- 
--/*
-- * Read method for bin files.  As reading a bin file can have side-effects,
-- * the exact offset and bytes specified in read(2) call should be passed to
-- * the read callback making it difficult to use seq_file.  Implement
-- * simplistic custom buffering for bin files.
-- */
--static ssize_t sysfs_bin_read(struct file *file, char __user *userbuf,
--			      size_t bytes, loff_t *off)
-+static ssize_t sysfs_kf_bin_read(struct sysfs_open_file *of, char *buf,
-+				 size_t count, loff_t pos)
- {
--	struct sysfs_open_file *of = sysfs_of(file);
- 	struct bin_attribute *battr = of->sd->priv;
- 	struct kobject *kobj = of->sd->s_parent->priv;
--	loff_t size = file_inode(file)->i_size;
--	int count = min_t(size_t, bytes, PAGE_SIZE);
--	loff_t offs = *off;
--	char *buf;
-+	loff_t size = file_inode(of->file)->i_size;
- 
--	if (!bytes)
-+	if (!count)
- 		return 0;
- 
- 	if (size) {
--		if (offs > size)
-+		if (pos > size)
- 			return 0;
--		if (offs + count > size)
--			count = size - offs;
-+		if (pos + count > size)
-+			count = size - pos;
- 	}
- 
--	buf = kmalloc(count, GFP_KERNEL);
-+	if (!battr->read)
-+		return -EIO;
+diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
+new file mode 100644
+index 0000000..6bb8c12
+--- /dev/null
++++ b/fs/kernfs/kernfs-internal.h
+@@ -0,0 +1,115 @@
++/*
++ * fs/kernfs/kernfs-internal.h - kernfs internal header file
++ *
++ * Copyright (c) 2001-3 Patrick Mochel
++ * Copyright (c) 2007 SUSE Linux Products GmbH
++ * Copyright (c) 2007, 2013 Tejun Heo <teheo@suse.de>
++ *
++ * This file is released under the GPLv2.
++ */
 +
-+	return battr->read(of->file, kobj, battr, buf, pos, count);
-+}
++#ifndef __KERNFS_INTERNAL_H
++#define __KERNFS_INTERNAL_H
 +
-+static void *kernfs_seq_start(struct seq_file *sf, loff_t *ppos)
-+{
-+	struct sysfs_open_file *of = sf->private;
++#include <linux/lockdep.h>
++#include <linux/fs.h>
++#include <linux/rbtree.h>
 +
-+	/*
-+	 * @of->mutex nests outside active ref and is just to ensure that
-+	 * the ops aren't called concurrently for the same open file.
-+	 */
-+	mutex_lock(&of->mutex);
-+	if (!sysfs_get_active(of->sd))
-+		return ERR_PTR(-ENODEV);
++#include <linux/kernfs.h>
 +
-+	/*
-+	 * The same behavior and code as single_open().  Returns !NULL if
-+	 * pos is at the beginning; otherwise, NULL.
-+	 */
-+	return NULL + !*ppos;
-+}
++struct sysfs_open_dirent;
 +
-+static void *kernfs_seq_next(struct seq_file *sf, void *v, loff_t *ppos)
-+{
-+	/*
-+	 * The same behavior and code as single_open(), always terminate
-+	 * after the initial read.
-+	 */
-+	++*ppos;
-+	return NULL;
-+}
++/* type-specific structures for sysfs_dirent->s_* union members */
++struct sysfs_elem_dir {
++	unsigned long		subdirs;
++	/* children rbtree starts here and goes through sd->s_rb */
++	struct rb_root		children;
++};
 +
-+static void kernfs_seq_stop(struct seq_file *sf, void *v)
-+{
-+	struct sysfs_open_file *of = sf->private;
++struct sysfs_elem_symlink {
++	struct sysfs_dirent	*target_sd;
++};
 +
-+	sysfs_put_active(of->sd);
-+	mutex_unlock(&of->mutex);
-+}
++struct sysfs_elem_attr {
++	const struct kernfs_ops	*ops;
++	struct sysfs_open_dirent *open;
++	loff_t			size;
++};
 +
-+static int kernfs_seq_show(struct seq_file *sf, void *v)
-+{
-+	struct sysfs_open_file *of = sf->private;
-+
-+	of->event = atomic_read(&of->sd->s_attr.open->event);
-+
-+	return sysfs_kf_seq_show(sf, v);
-+}
-+
-+static const struct seq_operations kernfs_seq_ops = {
-+	.start = kernfs_seq_start,
-+	.next = kernfs_seq_next,
-+	.stop = kernfs_seq_stop,
-+	.show = kernfs_seq_show,
++struct sysfs_inode_attrs {
++	struct iattr	ia_iattr;
++	void		*ia_secdata;
++	u32		ia_secdata_len;
 +};
 +
 +/*
-+ * As reading a bin file can have side-effects, the exact offset and bytes
-+ * specified in read(2) call should be passed to the read callback making
-+ * it difficult to use seq_file.  Implement simplistic custom buffering for
-+ * bin files.
++ * sysfs_dirent - the building block of sysfs hierarchy.  Each and
++ * every sysfs node is represented by single sysfs_dirent.
++ *
++ * As long as s_count reference is held, the sysfs_dirent itself is
++ * accessible.  Dereferencing s_elem or any other outer entity
++ * requires s_active reference.
 + */
-+static ssize_t kernfs_file_direct_read(struct sysfs_open_file *of,
-+				       char __user *user_buf, size_t count,
-+				       loff_t *ppos)
-+{
-+	ssize_t len = min_t(size_t, count, PAGE_SIZE);
-+	char *buf;
++struct sysfs_dirent {
++	atomic_t		s_count;
++	atomic_t		s_active;
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	struct lockdep_map	dep_map;
++#endif
++	struct sysfs_dirent	*s_parent;
++	const char		*s_name;
 +
-+	buf = kmalloc(len, GFP_KERNEL);
- 	if (!buf)
- 		return -ENOMEM;
- 
--	/* need of->sd for battr, its parent for kobj */
-+	/*
-+	 * @of->mutex nests outside active ref and is just to ensure that
-+	 * the ops aren't called concurrently for the same open file.
-+	 */
- 	mutex_lock(&of->mutex);
- 	if (!sysfs_get_active(of->sd)) {
--		count = -ENODEV;
-+		len = -ENODEV;
- 		mutex_unlock(&of->mutex);
- 		goto out_free;
- 	}
- 
--	if (battr->read)
--		count = battr->read(file, kobj, battr, buf, offs, count);
--	else
--		count = -EIO;
-+	len = sysfs_kf_bin_read(of, buf, len, *ppos);
- 
- 	sysfs_put_active(of->sd);
- 	mutex_unlock(&of->mutex);
- 
--	if (count < 0)
-+	if (len < 0)
- 		goto out_free;
- 
--	if (copy_to_user(userbuf, buf, count)) {
--		count = -EFAULT;
-+	if (copy_to_user(user_buf, buf, len)) {
-+		len = -EFAULT;
- 		goto out_free;
- 	}
- 
--	pr_debug("offs = %lld, *off = %lld, count = %d\n", offs, *off, count);
--
--	*off = offs + count;
-+	*ppos += len;
- 
-  out_free:
- 	kfree(buf);
--	return count;
-+	return len;
++	struct rb_node		s_rb;
++
++	union {
++		struct completion	*completion;
++		struct sysfs_dirent	*removed_list;
++	} u;
++
++	const void		*s_ns; /* namespace tag */
++	unsigned int		s_hash; /* ns + name hash */
++	union {
++		struct sysfs_elem_dir		s_dir;
++		struct sysfs_elem_symlink	s_symlink;
++		struct sysfs_elem_attr		s_attr;
++	};
++
++	void			*priv;
++
++	unsigned short		s_flags;
++	umode_t			s_mode;
++	unsigned int		s_ino;
++	struct sysfs_inode_attrs *s_iattr;
++};
++
++#define SD_DEACTIVATED_BIAS		INT_MIN
++
++#define SYSFS_TYPE_MASK			0x000f
++#define SYSFS_DIR			0x0001
++#define SYSFS_KOBJ_ATTR			0x0002
++#define SYSFS_KOBJ_LINK			0x0004
++#define SYSFS_COPY_NAME			(SYSFS_DIR | SYSFS_KOBJ_LINK)
++#define SYSFS_ACTIVE_REF		SYSFS_KOBJ_ATTR
++
++#define SYSFS_FLAG_MASK			~SYSFS_TYPE_MASK
++#define SYSFS_FLAG_REMOVED		0x0010
++#define SYSFS_FLAG_HAS_NS		0x0020
++#define SYSFS_FLAG_HAS_SEQ_SHOW		0x0040
++#define SYSFS_FLAG_HAS_MMAP		0x0080
++#define SYSFS_FLAG_LOCKDEP		0x0100
++
++static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
++{
++	return sd->s_flags & SYSFS_TYPE_MASK;
 +}
 +
-+/**
-+ * kernfs_file_read - kernfs vfs read callback
-+ * @file: file pointer
-+ * @user_buf: data to write
-+ * @count: number of bytes
-+ * @ppos: starting offset
++/*
++ * Context structure to be used while adding/removing nodes.
 + */
-+static ssize_t kernfs_file_read(struct file *file, char __user *user_buf,
-+				size_t count, loff_t *ppos)
-+{
-+	struct sysfs_open_file *of = sysfs_of(file);
++struct sysfs_addrm_cxt {
++	struct sysfs_dirent	*removed;
++};
 +
-+	if (sysfs_is_bin(of->sd))
-+		return kernfs_file_direct_read(of, user_buf, count, ppos);
-+	else
-+		return seq_read(file, user_buf, count, ppos);
- }
- 
- /**
-@@ -659,12 +718,14 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
- 	 * and readable regular files are the vast majority anyway.
- 	 */
- 	if (sysfs_is_bin(attr_sd))
--		error = single_open(file, NULL, of);
-+		error = seq_open(file, NULL);
- 	else
--		error = single_open(file, sysfs_seq_show, of);
-+		error = seq_open(file, &kernfs_seq_ops);
- 	if (error)
- 		goto err_free;
- 
-+	((struct seq_file *)file->private_data)->private = of;
++#include "../sysfs/sysfs.h"
 +
- 	/* seq_file clears PWRITE unconditionally, restore it if WRITE */
- 	if (file->f_mode & FMODE_WRITE)
- 		file->f_mode |= FMODE_PWRITE;
-@@ -679,7 +740,7 @@ static int sysfs_open_file(struct inode *inode, struct file *file)
- 	return 0;
++#endif	/* __KERNFS_INTERNAL_H */
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index 485b348..f8c936f 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -8,103 +8,11 @@
+  * This file is released under the GPLv2.
+  */
  
- err_close:
--	single_release(inode, file);
-+	seq_release(inode, file);
- err_free:
- 	kfree(of);
- err_out:
-@@ -693,7 +754,7 @@ static int sysfs_release(struct inode *inode, struct file *filp)
- 	struct sysfs_open_file *of = sysfs_of(filp);
+-#include <linux/lockdep.h>
+-#include <linux/kobject_ns.h>
+-#include <linux/fs.h>
+-#include <linux/rbtree.h>
++#ifndef __SYSFS_INTERNAL_H
++#define __SYSFS_INTERNAL_H
  
- 	sysfs_put_open_dirent(sd, of);
--	single_release(inode, filp);
-+	seq_release(inode, filp);
- 	kfree(of);
+-struct sysfs_open_dirent;
+-
+-/* type-specific structures for sysfs_dirent->s_* union members */
+-struct sysfs_elem_dir {
+-	unsigned long		subdirs;
+-	/* children rbtree starts here and goes through sd->s_rb */
+-	struct rb_root		children;
+-};
+-
+-struct sysfs_elem_symlink {
+-	struct sysfs_dirent	*target_sd;
+-};
+-
+-struct sysfs_elem_attr {
+-	const struct kernfs_ops	*ops;
+-	struct sysfs_open_dirent *open;
+-	loff_t			size;
+-};
+-
+-struct sysfs_inode_attrs {
+-	struct iattr	ia_iattr;
+-	void		*ia_secdata;
+-	u32		ia_secdata_len;
+-};
+-
+-/*
+- * sysfs_dirent - the building block of sysfs hierarchy.  Each and
+- * every sysfs node is represented by single sysfs_dirent.
+- *
+- * As long as s_count reference is held, the sysfs_dirent itself is
+- * accessible.  Dereferencing s_elem or any other outer entity
+- * requires s_active reference.
+- */
+-struct sysfs_dirent {
+-	atomic_t		s_count;
+-	atomic_t		s_active;
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
+-	struct lockdep_map	dep_map;
+-#endif
+-	struct sysfs_dirent	*s_parent;
+-	const char		*s_name;
+-
+-	struct rb_node		s_rb;
+-
+-	union {
+-		struct completion	*completion;
+-		struct sysfs_dirent	*removed_list;
+-	} u;
+-
+-	const void		*s_ns; /* namespace tag */
+-	unsigned int		s_hash; /* ns + name hash */
+-	union {
+-		struct sysfs_elem_dir		s_dir;
+-		struct sysfs_elem_symlink	s_symlink;
+-		struct sysfs_elem_attr		s_attr;
+-	};
+-
+-	void			*priv;
+-
+-	unsigned short		s_flags;
+-	umode_t			s_mode;
+-	unsigned int		s_ino;
+-	struct sysfs_inode_attrs *s_iattr;
+-};
+-
+-#define SD_DEACTIVATED_BIAS		INT_MIN
+-
+-#define SYSFS_TYPE_MASK			0x000f
+-#define SYSFS_DIR			0x0001
+-#define SYSFS_KOBJ_ATTR			0x0002
+-#define SYSFS_KOBJ_LINK			0x0004
+-#define SYSFS_COPY_NAME			(SYSFS_DIR | SYSFS_KOBJ_LINK)
+-#define SYSFS_ACTIVE_REF		SYSFS_KOBJ_ATTR
+-
+-#define SYSFS_FLAG_MASK			~SYSFS_TYPE_MASK
+-#define SYSFS_FLAG_REMOVED		0x0010
+-#define SYSFS_FLAG_HAS_NS		0x0020
+-#define SYSFS_FLAG_HAS_SEQ_SHOW		0x0040
+-#define SYSFS_FLAG_HAS_MMAP		0x0080
+-#define SYSFS_FLAG_LOCKDEP		0x0100
+-
+-static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
+-{
+-	return sd->s_flags & SYSFS_TYPE_MASK;
+-}
+-
+-/*
+- * Context structure to be used while adding/removing nodes.
+- */
+-struct sysfs_addrm_cxt {
+-	struct sysfs_dirent	*removed;
+-};
++#include "../kernfs/kernfs-internal.h"
++#include <linux/sysfs.h>
  
- 	return 0;
-@@ -798,7 +859,7 @@ void sysfs_notify(struct kobject *k, const char *dir, const char *attr)
- EXPORT_SYMBOL_GPL(sysfs_notify);
- 
- const struct file_operations sysfs_file_operations = {
--	.read		= seq_read,
-+	.read		= kernfs_file_read,
- 	.write		= sysfs_write_file,
- 	.llseek		= generic_file_llseek,
- 	.open		= sysfs_open_file,
-@@ -807,7 +868,7 @@ const struct file_operations sysfs_file_operations = {
- };
- 
- const struct file_operations sysfs_bin_operations = {
--	.read		= sysfs_bin_read,
-+	.read		= kernfs_file_read,
- 	.write		= sysfs_write_file,
- 	.llseek		= generic_file_llseek,
- 	.mmap		= sysfs_bin_mmap,
+ /*
+  * mount.c
+@@ -175,3 +83,5 @@ void sysfs_unmap_bin_file(struct sysfs_dirent *sd);
+ extern const struct inode_operations sysfs_symlink_inode_operations;
+ int sysfs_create_link_sd(struct sysfs_dirent *sd, struct kobject *target,
+ 			 const char *name);
++
++#endif	/* __SYSFS_INTERNAL_H */
 -- 
 1.8.3.1
 
