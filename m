@@ -1,105 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab3KCAfQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Nov 2013 20:35:16 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:38181 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab3KCAfN (ORCPT
+	id S1752228Ab3KCBkz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Nov 2013 21:40:55 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:38435 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab3KCBkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Nov 2013 20:35:13 -0400
+	Sat, 2 Nov 2013 21:40:52 -0400
+Date: Sun, 3 Nov 2013 09:40:11 +0800
+From: ZHAO Gang <gamerh2o@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Einon <mark.einon@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] staging: et131x: drop packet when error occurs in
+ et131x_tx()
+Message-ID: <038fa53ab9e9336e1732f9f841c296bfcde87b0a.1383442264.git.gamerh2o@gmail.com>
+Mail-Followup-To: ZHAO Gang <gamerh2o@gmail.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Mark Einon <mark.einon@gmail.com>, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <1383427599-1980-2-git-send-email-minipli@googlemail.com>
-References: <1383427599-1980-1-git-send-email-minipli@googlemail.com>
-	<1383427599-1980-2-git-send-email-minipli@googlemail.com>
-Date: Sat, 2 Nov 2013 17:35:12 -0700
-X-Google-Sender-Auth: OM2leq2hJGZLHLnZmdck-MJQPA8
-Message-ID: <CA+55aFxeGaZjWM37e4p1tAhjwocpv0_iU0jTYUfaAFagvCBxmQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ipc, msg: fix message length check for negative values
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mathias Krause <minipli@googlemail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Pax Team <pageexec@freemail.hu>,
-        Brad Spengler <spender@grsecurity.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=047d7bd6c5d0f75e9e04ea3af81a
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7bd6c5d0f75e9e04ea3af81a
-Content-Type: text/plain; charset=UTF-8
+Drop packet instead of return NETDEV_TX_BUSY when tx failed.
 
-On Sat, Nov 2, 2013 at 2:26 PM, Mathias Krause <minipli@googlemail.com> wrote:
-> On 64 bit systems the test for negative message sizes is bogus as the
-> size, which may be positive when evaluated as a long, will get truncated
-> to an int when passed to load_msg().
+Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
+---
 
-Quite frankly, wouldn't it be much nicer to just fix "load_msg()" instead?
+move function send_packet's work directly to et131x_tx(), also make
+some changes to improve readability.
 
-Using "size_t" also gets rid of the games we play with DATALEN_MSG/SEG.
+ drivers/staging/et131x/et131x.c | 84 +++++++++++------------------------------
+ 1 file changed, 22 insertions(+), 62 deletions(-)
 
-IOW, something like the attached..
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index d9446c4..ca3332e 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -3125,55 +3125,6 @@ static int send_packet(struct sk_buff *skb, struct et131x_adapter *adapter)
+ 	return 0;
+ }
+ 
+-/* et131x_send_packets - This function is called by the OS to send packets
+- * @skb: the packet(s) to send
+- * @netdev:device on which to TX the above packet(s)
+- *
+- * Return 0 in almost all cases; non-zero value in extreme hard failure only
+- */
+-static int et131x_send_packets(struct sk_buff *skb, struct net_device *netdev)
+-{
+-	int status = 0;
+-	struct et131x_adapter *adapter = netdev_priv(netdev);
+-
+-	/* Send these packets
+-	 *
+-	 * NOTE: The Linux Tx entry point is only given one packet at a time
+-	 * to Tx, so the PacketCount and it's array used makes no sense here
+-	 */
+-
+-	/* TCB is not available */
+-	if (adapter->tx_ring.used >= NUM_TCB) {
+-		/* NOTE: If there's an error on send, no need to queue the
+-		 * packet under Linux; if we just send an error up to the
+-		 * netif layer, it will resend the skb to us.
+-		 */
+-		status = -ENOMEM;
+-	} else {
+-		/* We need to see if the link is up; if it's not, make the
+-		 * netif layer think we're good and drop the packet
+-		 */
+-		if ((adapter->flags & FMP_ADAPTER_FAIL_SEND_MASK) ||
+-					!netif_carrier_ok(netdev)) {
+-			dev_kfree_skb_any(skb);
+-			skb = NULL;
+-
+-			adapter->net_stats.tx_dropped++;
+-		} else {
+-			status = send_packet(skb, adapter);
+-			if (status != 0 && status != -ENOMEM) {
+-				/* On any other error, make netif think we're
+-				 * OK and drop the packet
+-				 */
+-				dev_kfree_skb_any(skb);
+-				skb = NULL;
+-				adapter->net_stats.tx_dropped++;
+-			}
+-		}
+-	}
+-	return status;
+-}
+-
+ /* free_send_packet - Recycle a struct tcb
+  * @adapter: pointer to our adapter
+  * @tcb: pointer to struct tcb
+@@ -4540,12 +4491,9 @@ static void et131x_multicast(struct net_device *netdev)
+ /* et131x_tx - The handler to tx a packet on the device
+  * @skb: data to be Tx'd
+  * @netdev: device on which data is to be Tx'd
+- *
+- * Returns 0 on success, errno on failure (as defined in errno.h)
+  */
+-static int et131x_tx(struct sk_buff *skb, struct net_device *netdev)
++static netdev_tx_t et131x_tx(struct sk_buff *skb, struct net_device *netdev)
+ {
+-	int status = 0;
+ 	struct et131x_adapter *adapter = netdev_priv(netdev);
+ 
+ 	/* stop the queue if it's getting full */
+@@ -4556,17 +4504,29 @@ static int et131x_tx(struct sk_buff *skb, struct net_device *netdev)
+ 	/* Save the timestamp for the TX timeout watchdog */
+ 	netdev->trans_start = jiffies;
+ 
+-	/* Call the device-specific data Tx routine */
+-	status = et131x_send_packets(skb, netdev);
++	/* TCB is not available */
++	if (adapter->tx_ring.used >= NUM_TCB)
++		goto drop;
+ 
+-	/* Check status and manage the netif queue if necessary */
+-	if (status != 0) {
+-		if (status == -ENOMEM)
+-			status = NETDEV_TX_BUSY;
+-		else
+-			status = NETDEV_TX_OK;
++	/* We need to see if the link is up; if it's not, make the
++	 * netif layer think we're good and drop the packet
++	 */
++	if ((adapter->flags & FMP_ADAPTER_FAIL_SEND_MASK) ||
++	    !netif_carrier_ok(netdev)) {
++		goto drop;
++	} else {
++		if (!send_packet(skb, adapter))
++			goto out;
++		/* On error (send_packet returns != 0), make netif
++		 * think we're OK and drop the packet
++		 */
+ 	}
+-	return status;
++
++drop:
++	dev_kfree_skb_any(skb);
++	adapter->net_stats.tx_dropped++;
++out:
++	return NETDEV_TX_OK;
+ }
+ 
+ /* et131x_tx_timeout - Timeout handler
+-- 
+1.8.3.1
 
-Of course, we *also* should fix ns->msg_ctlmax to make clear you can't
-use negative numbers there. No question about that. I think it would
-be better to even avoid INT_MAX, because there are memory use concerns
-and CPU usage ones too (we generate that list of
-smaller-than-page-size fragments).
-
-Hmm?
-
-              Linus
-
---047d7bd6c5d0f75e9e04ea3af81a
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hnjjt2d40
-
-IGluY2x1ZGUvbGludXgvaXBjX25hbWVzcGFjZS5oIHwgIDYgKysrLS0tCiBpcGMvbXNndXRpbC5j
-ICAgICAgICAgICAgICAgICB8IDE0ICsrKysrKystLS0tLS0tCiBpcGMvdXRpbC5oICAgICAgICAg
-ICAgICAgICAgICB8ICA0ICsrLS0KIDMgZmlsZXMgY2hhbmdlZCwgMTIgaW5zZXJ0aW9ucygrKSwg
-MTIgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9pcGNfbmFtZXNwYWNl
-LmggYi9pbmNsdWRlL2xpbnV4L2lwY19uYW1lc3BhY2UuaAppbmRleCAxOWMxOWE1ZWVlMjkuLmY2
-YzgyZGUxMjU0MSAxMDA2NDQKLS0tIGEvaW5jbHVkZS9saW51eC9pcGNfbmFtZXNwYWNlLmgKKysr
-IGIvaW5jbHVkZS9saW51eC9pcGNfbmFtZXNwYWNlLmgKQEAgLTM0LDkgKzM0LDkgQEAgc3RydWN0
-IGlwY19uYW1lc3BhY2UgewogCWludAkJc2VtX2N0bHNbNF07CiAJaW50CQl1c2VkX3NlbXM7CiAK
-LQlpbnQJCW1zZ19jdGxtYXg7Ci0JaW50CQltc2dfY3RsbW5iOwotCWludAkJbXNnX2N0bG1uaTsK
-Kwl1bnNpZ25lZCBpbnQJbXNnX2N0bG1heDsKKwl1bnNpZ25lZCBpbnQJbXNnX2N0bG1uYjsKKwl1
-bnNpZ25lZCBpbnQJbXNnX2N0bG1uaTsKIAlhdG9taWNfdAltc2dfYnl0ZXM7CiAJYXRvbWljX3QJ
-bXNnX2hkcnM7CiAJaW50CQlhdXRvX21zZ21uaTsKZGlmZiAtLWdpdCBhL2lwYy9tc2d1dGlsLmMg
-Yi9pcGMvbXNndXRpbC5jCmluZGV4IDQ5MWU3MWYyYTFiOC4uM2NkOWNiOTU5Yzc0IDEwMDY0NAot
-LS0gYS9pcGMvbXNndXRpbC5jCisrKyBiL2lwYy9tc2d1dGlsLmMKQEAgLTQxLDE1ICs0MSwxNSBA
-QCBzdHJ1Y3QgbXNnX21zZ3NlZyB7CiAJLyogdGhlIG5leHQgcGFydCBvZiB0aGUgbWVzc2FnZSBm
-b2xsb3dzIGltbWVkaWF0ZWx5ICovCiB9OwogCi0jZGVmaW5lIERBVEFMRU5fTVNHCShpbnQpKFBB
-R0VfU0laRS1zaXplb2Yoc3RydWN0IG1zZ19tc2cpKQotI2RlZmluZSBEQVRBTEVOX1NFRwkoaW50
-KShQQUdFX1NJWkUtc2l6ZW9mKHN0cnVjdCBtc2dfbXNnc2VnKSkKKyNkZWZpbmUgREFUQUxFTl9N
-U0cJKFBBR0VfU0laRS1zaXplb2Yoc3RydWN0IG1zZ19tc2cpKQorI2RlZmluZSBEQVRBTEVOX1NF
-RwkoUEFHRV9TSVpFLXNpemVvZihzdHJ1Y3QgbXNnX21zZ3NlZykpCiAKIAotc3RhdGljIHN0cnVj
-dCBtc2dfbXNnICphbGxvY19tc2coaW50IGxlbikKK3N0YXRpYyBzdHJ1Y3QgbXNnX21zZyAqYWxs
-b2NfbXNnKHNpemVfdCBsZW4pCiB7CiAJc3RydWN0IG1zZ19tc2cgKm1zZzsKIAlzdHJ1Y3QgbXNn
-X21zZ3NlZyAqKnBzZWc7Ci0JaW50IGFsZW47CisJc2l6ZV90IGFsZW47CiAKIAlhbGVuID0gbWlu
-KGxlbiwgREFUQUxFTl9NU0cpOwogCW1zZyA9IGttYWxsb2Moc2l6ZW9mKCptc2cpICsgYWxlbiwg
-R0ZQX0tFUk5FTCk7CkBAIC04MCw3ICs4MCw3IEBAIG91dF9lcnI6CiAJcmV0dXJuIE5VTEw7CiB9
-CiAKLXN0cnVjdCBtc2dfbXNnICpsb2FkX21zZyhjb25zdCB2b2lkIF9fdXNlciAqc3JjLCBpbnQg
-bGVuKQorc3RydWN0IG1zZ19tc2cgKmxvYWRfbXNnKGNvbnN0IHZvaWQgX191c2VyICpzcmMsIHNp
-emVfdCBsZW4pCiB7CiAJc3RydWN0IG1zZ19tc2cgKm1zZzsKIAlzdHJ1Y3QgbXNnX21zZ3NlZyAq
-c2VnOwpAQCAtMTQ3LDkgKzE0Nyw5IEBAIHN0cnVjdCBtc2dfbXNnICpjb3B5X21zZyhzdHJ1Y3Qg
-bXNnX21zZyAqc3JjLCBzdHJ1Y3QgbXNnX21zZyAqZHN0KQogCXJldHVybiBFUlJfUFRSKC1FTk9T
-WVMpOwogfQogI2VuZGlmCi1pbnQgc3RvcmVfbXNnKHZvaWQgX191c2VyICpkZXN0LCBzdHJ1Y3Qg
-bXNnX21zZyAqbXNnLCBpbnQgbGVuKQoraW50IHN0b3JlX21zZyh2b2lkIF9fdXNlciAqZGVzdCwg
-c3RydWN0IG1zZ19tc2cgKm1zZywgc2l6ZV90IGxlbikKIHsKLQlpbnQgYWxlbjsKKwlzaXplX3Qg
-YWxlbjsKIAlzdHJ1Y3QgbXNnX21zZ3NlZyAqc2VnOwogCiAJYWxlbiA9IG1pbihsZW4sIERBVEFM
-RU5fTVNHKTsKZGlmZiAtLWdpdCBhL2lwYy91dGlsLmggYi9pcGMvdXRpbC5oCmluZGV4IGYyZjUw
-MzZmMmVlZC4uNTlkNzhhYTk0OTg3IDEwMDY0NAotLS0gYS9pcGMvdXRpbC5oCisrKyBiL2lwYy91
-dGlsLmgKQEAgLTE0OCw5ICsxNDgsOSBAQCBpbnQgaXBjX3BhcnNlX3ZlcnNpb24gKGludCAqY21k
-KTsKICNlbmRpZgogCiBleHRlcm4gdm9pZCBmcmVlX21zZyhzdHJ1Y3QgbXNnX21zZyAqbXNnKTsK
-LWV4dGVybiBzdHJ1Y3QgbXNnX21zZyAqbG9hZF9tc2coY29uc3Qgdm9pZCBfX3VzZXIgKnNyYywg
-aW50IGxlbik7CitleHRlcm4gc3RydWN0IG1zZ19tc2cgKmxvYWRfbXNnKGNvbnN0IHZvaWQgX191
-c2VyICpzcmMsIHNpemVfdCBsZW4pOwogZXh0ZXJuIHN0cnVjdCBtc2dfbXNnICpjb3B5X21zZyhz
-dHJ1Y3QgbXNnX21zZyAqc3JjLCBzdHJ1Y3QgbXNnX21zZyAqZHN0KTsKLWV4dGVybiBpbnQgc3Rv
-cmVfbXNnKHZvaWQgX191c2VyICpkZXN0LCBzdHJ1Y3QgbXNnX21zZyAqbXNnLCBpbnQgbGVuKTsK
-K2V4dGVybiBpbnQgc3RvcmVfbXNnKHZvaWQgX191c2VyICpkZXN0LCBzdHJ1Y3QgbXNnX21zZyAq
-bXNnLCBzaXplX3QgbGVuKTsKIAogZXh0ZXJuIHZvaWQgcmVjb21wdXRlX21zZ21uaShzdHJ1Y3Qg
-aXBjX25hbWVzcGFjZSAqKTsKIAo=
---047d7bd6c5d0f75e9e04ea3af81a--
