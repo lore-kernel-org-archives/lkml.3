@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab3KCOmb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 09:42:31 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:51078 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753841Ab3KCOm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 09:42:29 -0500
-Date: Sun, 3 Nov 2013 08:42:27 -0600
-From: Russ Anderson <rja@sgi.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Josh Boyer <jwboyer@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Allow NR_CPUS=1024
-Message-ID: <20131103144227.GB6926@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <20131101141148.GH8652@hansolo.jdub.homelinux.org> <20131103101825.GA6605@gmail.com> <52765DBC.1090208@redhat.com>
+	id S1753612Ab3KCOtM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 09:49:12 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:49605 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752431Ab3KCOtK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 09:49:10 -0500
+X-Sasl-enc: vpzIYYbcRZojcoEFd3kWevKQycwmtSnuFqIZxpfEHA3h 1383490149
+Date: Sun, 3 Nov 2013 06:51:18 -0800
+From: Greg KH <greg@kroah.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 1/4] random: use device attach events for entropy
+Message-ID: <20131103145118.GD2007@kroah.com>
+References: <1383485595-2020-1-git-send-email-tytso@mit.edu>
+ <1383485595-2020-2-git-send-email-tytso@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52765DBC.1090208@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1383485595-2020-2-git-send-email-tytso@mit.edu>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 03, 2013 at 09:29:16AM -0500, Prarit Bhargava wrote:
-> On 11/03/2013 05:18 AM, Ingo Molnar wrote:
-> > 
-> > * Josh Boyer <jwboyer@redhat.com> wrote:
-> > 
-> >> The current range for SMP configs is 2 - 512, or a full 4096 in the case 
-> >> of MAXSMP.  There are machines that have 1024 CPUs in them today and 
-> >> configuring a kernel for that means you are forced to set MAXSMP.  This 
-> >> adds additional unnecessary overhead.  While that overhead might be 
-> >> considered tiny for large machines, it isn't necessarily so if you are 
-> >> building a kernel that runs across a wide variety of machines.  We 
-> >> increase the range to 1024 to help with this.
-> >>
-> >> Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-> >> ---
-> >>  arch/x86/Kconfig | 2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> >> index f67e839..d726b2d 100644
-> >> --- a/arch/x86/Kconfig
-> >> +++ b/arch/x86/Kconfig
-> >> @@ -825,7 +825,7 @@ config MAXSMP
-> >>  config NR_CPUS
-> >>  	int "Maximum number of CPUs" if SMP && !MAXSMP
-> >>  	range 2 8 if SMP && X86_32 && !X86_BIGSMP
-> >> -	range 2 512 if SMP && !MAXSMP
-> >> +	range 2 1024 if SMP && !MAXSMP
-> >>  	default "1" if !SMP
-> >>  	default "4096" if MAXSMP
-> >>  	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
-> > 
-> > Any reason not to allow it to go up to 4096? The original concern was that 
-> > CPUS=4096 wasn't working very well and you had to select MAXSMP 
-> > deliberately and keep all the pieces.
-> > 
-> > But today it's all pretty robust so I see no reason why not to allow up to 
-> > 4096 CPUs.
+On Sun, Nov 03, 2013 at 08:33:12AM -0500, Theodore Ts'o wrote:
+> Some investigation from FreeBSD shows that there is entropy available
+> from measuring the device attach times:
 > 
-> Adding Russ from SGI as they are one of the consumers of a large CPU count.
+> http://lists.randombit.net/pipermail/cryptography/2013-October/005689.html
 > 
-> I have no objections to raising this to 4096 FWIW.  I think it is a good idea,
-> and it is long overdue.
+> This will hopefully help us more quickly initialize the entropy pools
+> while the system is booting (which is one of the times when we really
+> badly need more entropy, especially in the case of the first boot
+> after an consumer electronics device is taken out of the box).
+> 
+> Measurements indicate this makes a huge improvement in the security of
+> /dev/urandom during the boot sequence, so I'm cc'ing this to the
+> stable kernel series.  Especially for embedded systems, which use
+> flash and which don't necessarily have the network enabled when they
+> first generate ssh or x.509 keys (sigh), this can be a big deal.
+> 
+> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/base/core.c    | 3 +++
+>  drivers/char/random.c  | 7 +++++++
+>  include/linux/random.h | 2 ++
+>  3 files changed, 12 insertions(+)
+> 
+> diff --git a/drivers/base/core.c b/drivers/base/core.c
+> index 8856d74..5e98fc3 100644
+> --- a/drivers/base/core.c
+> +++ b/drivers/base/core.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/async.h>
+>  #include <linux/pm_runtime.h>
+>  #include <linux/netdevice.h>
+> +#include <linux/random.h>
+>  
+>  #include "base.h"
+>  #include "power/power.h"
+> @@ -1156,6 +1157,8 @@ int device_add(struct device *dev)
+>  				class_intf->add_dev(dev, class_intf);
+>  		mutex_unlock(&dev->class->p->mutex);
+>  	}
+> +	add_device_attach_randomness(dev);
+> +
+>  done:
+>  	put_device(dev);
+>  	return error;
+> diff --git a/drivers/char/random.c b/drivers/char/random.c
+> index f126bd2..51153fe 100644
+> --- a/drivers/char/random.c
+> +++ b/drivers/char/random.c
+> @@ -829,6 +829,13 @@ void add_input_randomness(unsigned int type, unsigned int code,
+>  }
+>  EXPORT_SYMBOL_GPL(add_input_randomness);
+>  
+> +void add_device_attach_randomness(struct device *dev)
+> +{
+> +	static struct timer_rand_state attach_state = { 0, };
+> +
+> +	add_timer_randomness(&attach_state, dev->devt);
 
-I obviously agree with increasing to 4096.
-The bigger the better.
+Is it an issue that dev->devt will almost always be 0,0 for this
+function call?  Why not use the name instead here, that's more "unique"
+and every device has one, not just a tiny %.
 
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+thanks,
+
+greg k-h
