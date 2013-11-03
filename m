@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab3KCKTu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 05:19:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33286 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab3KCKTs (ORCPT
+	id S1753347Ab3KCKVg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 05:21:36 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:35053 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752083Ab3KCKVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 05:19:48 -0500
-Date: Sun, 3 Nov 2013 02:19:22 -0800
-From: "tip-bot for Luck, Tony" <tipbot@zytor.com>
-Message-ID: <tip-0841c04d65937ad2808f59c43cb54a92473c8f0e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tony.luck@intel.com, tglx@linutronix.de, gong.chen@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, tony.luck@intel.com, gong.chen@linux.intel.com
-In-Reply-To: <27d82dbff5be1025bf18ab88498632d36c2fcf3c.1383331440.git.tony.luck@intel.com>
-References: <27d82dbff5be1025bf18ab88498632d36c2fcf3c.1383331440.git.tony.luck@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mce] dmi:
-  Avoid unaligned memory access in save_mem_devices()
-Git-Commit-ID: 0841c04d65937ad2808f59c43cb54a92473c8f0e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 3 Nov 2013 05:21:35 -0500
+Date: Sun, 3 Nov 2013 11:21:32 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, prarit@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Allow NR_CPUS=1024
+Message-ID: <20131103102132.GA6807@gmail.com>
+References: <20131101141148.GH8652@hansolo.jdub.homelinux.org>
+ <20131103101825.GA6605@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 03 Nov 2013 02:19:33 -0800 (PST)
+In-Reply-To: <20131103101825.GA6605@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0841c04d65937ad2808f59c43cb54a92473c8f0e
-Gitweb:     http://git.kernel.org/tip/0841c04d65937ad2808f59c43cb54a92473c8f0e
-Author:     Luck, Tony <tony.luck@intel.com>
-AuthorDate: Fri, 1 Nov 2013 13:59:52 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 3 Nov 2013 10:40:12 +0100
 
-dmi: Avoid unaligned memory access in save_mem_devices()
+* Ingo Molnar <mingo@kernel.org> wrote:
 
-Firmware is not required to maintain alignment of SMBIOS
-entries, so we should take care accessing fields within these
-structures. Use "get_unaligned()" to avoid problems.
+> 
+> * Josh Boyer <jwboyer@redhat.com> wrote:
+> 
+> > The current range for SMP configs is 2 - 512, or a full 4096 in the case 
+> > of MAXSMP.  There are machines that have 1024 CPUs in them today and 
+> > configuring a kernel for that means you are forced to set MAXSMP.  This 
+> > adds additional unnecessary overhead.  While that overhead might be 
+> > considered tiny for large machines, it isn't necessarily so if you are 
+> > building a kernel that runs across a wide variety of machines.  We 
+> > increase the range to 1024 to help with this.
+> >
+> > Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+> > ---
+> >  arch/x86/Kconfig | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> > index f67e839..d726b2d 100644
+> > --- a/arch/x86/Kconfig
+> > +++ b/arch/x86/Kconfig
+> > @@ -825,7 +825,7 @@ config MAXSMP
+> >  config NR_CPUS
+> >  	int "Maximum number of CPUs" if SMP && !MAXSMP
+> >  	range 2 8 if SMP && X86_32 && !X86_BIGSMP
+> > -	range 2 512 if SMP && !MAXSMP
+> > +	range 2 1024 if SMP && !MAXSMP
+> >  	default "1" if !SMP
+> >  	default "4096" if MAXSMP
+> >  	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
+> 
+> Any reason not to allow it to go up to 4096? The original concern was 
+> that CPUS=4096 wasn't working very well and you had to select MAXSMP 
+> deliberately and keep all the pieces.
 
-[ Found on ia64 (which grumbles about unaligned access) ]
+The other reason was CONFIG_CPUMASK_OFFSTACK: with 4096 CPUs a cpumask is 
+512 bytes, too large to be kept on the kernel stack.
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Cc: Chen Gong <gong.chen@linux.intel.com>
-Link: http://lkml.kernel.org/r/27d82dbff5be1025bf18ab88498632d36c2fcf3c.1383331440.git.tony.luck@intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- drivers/firmware/dmi_scan.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+MAXSMP forces CONFIG_CPUMASK_OFFSTACK so there's no such concern there.
 
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index 59579a7..c7e81ff 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -8,6 +8,7 @@
- #include <linux/bootmem.h>
- #include <linux/random.h>
- #include <asm/dmi.h>
-+#include <asm/unaligned.h>
- 
- /*
-  * DMI stands for "Desktop Management Interface".  It is part
-@@ -347,7 +348,7 @@ static void __init save_mem_devices(const struct dmi_header *dm, void *v)
- 		pr_warn(FW_BUG "Too many DIMM entries in SMBIOS table\n");
- 		return;
- 	}
--	dmi_memdev[nr].handle = dm->handle;
-+	dmi_memdev[nr].handle = get_unaligned(&dm->handle);
- 	dmi_memdev[nr].device = dmi_string(dm, d[0x10]);
- 	dmi_memdev[nr].bank = dmi_string(dm, d[0x11]);
- 	nr++;
+With 1024 CPUs a single cpumask is 128 bytes - rather significant as well. 
+With 512 CPUs it's 64 bytes - borderline.
+
+So I think a better solution would be to allow an increase above 512 CPUs 
+only if CONFIG_CPUMASK_OFFSTACK is also enabled.
+
+Thanks,
+
+	Ingo
