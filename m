@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab3KCMgc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 07:36:32 -0500
-Received: from toccata.ens-lyon.fr ([140.77.166.68]:36702 "EHLO
-	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753705Ab3KCMga (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 07:36:30 -0500
-Date: Sun, 3 Nov 2013 13:36:21 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Pavel Machek <pavel@ucw.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        David Herrmann <dh.herrmann@gmail.com>, akpm@linux-foundation.org,
-        jslaby@suse.cz, Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
-        Niels de Vos <devos@fedoraproject.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Steev Klimaszewski <steev@genesi-usa.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, kbuild-all@01.org
-Subject: Re: [next:master 23/358] undefined reference to `i2c_add_adapter'
-Message-ID: <20131103123621.GA9756@type.youpi.perso.aquilenet.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Pavel Machek <pavel@ucw.cz>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	David Herrmann <dh.herrmann@gmail.com>, akpm@linux-foundation.org,
-	jslaby@suse.cz, Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-	linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-	Arnaud Patard <arnaud.patard@rtp-net.org>,
-	Peter Korsgaard <jacmet@sunsite.dk>,
-	Sascha Hauer <s.hauer@pengutronix.de>,
-	Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
-	Niels de Vos <devos@fedoraproject.org>,
-	linux-arm-kernel@lists.infradead.org,
-	Steev Klimaszewski <steev@genesi-usa.com>,
-	Fengguang Wu <fengguang.wu@intel.com>, kbuild-all@01.org
-References: <5275bf42.KMmrPUiia86VoRbL%fengguang.wu@intel.com>
- <20131103120853.GA1731@localhost>
+	id S1753554Ab3KCMlm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 07:41:42 -0500
+Received: from imap.thunk.org ([74.207.234.97]:53755 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753400Ab3KCMlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 07:41:40 -0500
+Date: Sun, 3 Nov 2013 07:41:35 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: Pavel Machek <pavel@ucw.cz>, sandy harris <sandyinchina@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and
+ /dev/random
+Message-ID: <20131103124135.GB32091@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Stephan Mueller <smueller@chronox.de>, Pavel Machek <pavel@ucw.cz>,
+	sandy harris <sandyinchina@gmail.com>, linux-kernel@vger.kernel.org,
+	linux-crypto@vger.kernel.org
+References: <2579337.FPgJGgHYdz@tauon>
+ <7861469.OAmn4h8An0@tauon>
+ <20131102110112.GA16231@amd.pavel.ucw.cz>
+ <3537770.iLHXPOXMiU@tauon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131103120853.GA1731@localhost>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+In-Reply-To: <3537770.iLHXPOXMiU@tauon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fengguang Wu, le Sun 03 Nov 2013 20:08:53 +0800, a écrit :
-> It's a bug fix that unveils the link errors.
-> 
->    drivers/built-in.o: In function `__input_unregister_device':
->    input.c:(.text+0xf0e55): undefined reference to `input_led_disconnect'
+On Sun, Nov 03, 2013 at 08:20:34AM +0100, Stephan Mueller wrote:
+> Another friend of mine mentioned that he assumes the rise and fall times 
+> of transistors varies very slightly and could be the main reason for the 
+> jitter. I do not think that this is really the case, because our gates 
+> that form the CPU instructions comprise of many transistors. The 
+> combined raise/fall jitter should cancel each other out.
 
-Ok, so the "something like this" in the patch review was really not so
-trivial :)
+The whole point of using a clocked architecture for digital circuitry
+is to avoid differences in the rise/fall times of transitors to lead
+to non-deterministic behavior --- which is important if you want to
+make sure that 2 * 2 == 4 and not 3.99999999.....
 
-To summarize, input.c needs to call leds.c to register its LEDs,
-and leds.c uses input.c functions, such as input_event. So in the
-all-modules case we have a circular dependency, and when one is built-in
-but not the other, we get an undefined reference.  In my original patch
-input.c would not call leds.c when built as module, and then the module
-wouldn't be useful any more.
+The one place where you might find differences is when you have
+different subsystems which are clocked using different clock sources,
+and then there's extra circuitry that has to be needed to handle
+interfacing between those differently clocked circuit areas.
 
-So in the end it would probably be simpler to just stuff leds.c along
-input.c in input.ko or built-in. CONFIG_INPUT_LEDS will thus become a
-bool.  I'm working on that now.
+The problem, though is that over time, these boundaries can change; it
+may be that on certain chipsets, things that had been in different
+clock circuits, have later been integrated onto a single
+system-on-chip device and all run off of a single clock source.
 
-Samuel
+> That said, the full root cause is is not really known at this time 
+> considering that major chip vendors have no real clue either.
+
+I have trouble beliving that statement; they might not be willing to
+comment, since to do so would expose a internal CPU designs which they
+consider secret, or worse, it might cause people to depend on certain
+implementation details which might not be true in future chipsets ---
+which may either tie their hands, or they may even know that it won't
+be true for CPU version currently under development but not yet
+released.
+
+Sandy Harris pointed out a very good paper that I would definitely
+recommend that people read:
+
+http://lwn.net/images/conf/rtlws11/random-hardware.pdf
+
+It basically describes some efforts made in 2009 by folks to do
+exactly the sort of experiments I was advocating.  What I actually
+think is more important, though, is not the doing of the experiments,
+but the development the tools to do these experiments.  If people can
+create kernel modules (and they have to be done in the kernel, since
+you need to be able to disable interrupts, L1 caches, etc., while you
+run these tests), then it will be possible to do these experiments
+each time a new CPU comes out from Intel, or each time an ARM hardware
+vendor comes out with a new ARM SOC.
+
+It's important that these tests are done all time, and not, "OK, we
+did some tests in 2009 or 2013, and things looked good, and we don't
+have to worry about this any more; CPU-generated entropy is guaranteed
+to be good!"  We need to make sure we can easily do these tests all
+the time, for every new piece of hardware out there --- and when we
+can't explain where the entropy is coming from, we need to be doubly
+on our guard.
+
+Regards,
+
+					- Ted
+
