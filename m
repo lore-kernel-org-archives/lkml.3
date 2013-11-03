@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab3KCRJQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 12:09:16 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65121 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752501Ab3KCRJP (ORCPT
+	id S1753820Ab3KCRgz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 12:36:55 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:6752 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752790Ab3KCRgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 12:09:15 -0500
-Date: Sun, 3 Nov 2013 17:07:59 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux PPC dev <li@mx0.arm.com>
-Subject: Re: perf events ring buffer memory barrier on powerpc
-Message-ID: <20131103170759.GC6871@mudshark.cambridge.arm.com>
-References: <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com>
- <20131028132634.GO19466@laptop.lan>
- <20131028163418.GD4126@linux.vnet.ibm.com>
- <20131028201735.GA15629@redhat.com>
- <20131103144017.GA25118@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131103144017.GA25118@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 3 Nov 2013 12:36:54 -0500
+Date: Sun, 3 Nov 2013 12:36:47 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: trace: blktrace: remove redundent memcpy() in
+ compat_blk_trace_setup()
+Message-ID: <20131103123647.0bae8cf6@gandalf.local.home>
+In-Reply-To: <52765C6B.7080608@asianux.com>
+References: <52765C6B.7080608@asianux.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 03, 2013 at 02:40:17PM +0000, Paul E. McKenney wrote:
-> On Sat, Nov 02, 2013 at 10:32:39AM -0700, Paul E. McKenney wrote:
-> > On Fri, Nov 01, 2013 at 03:56:34PM +0100, Peter Zijlstra wrote:
-> > > On Wed, Oct 30, 2013 at 11:40:15PM -0700, Paul E. McKenney wrote:
-> > > > > Now the whole crux of the question is if we need barrier A at all, since
-> > > > > the STORES issued by the @buf writes are dependent on the ubuf->tail
-> > > > > read.
-> > > > 
-> > > > The dependency you are talking about is via the "if" statement?
-> > > > Even C/C++11 is not required to respect control dependencies.
-> > > > 
-> > > > This one is a bit annoying.  The x86 TSO means that you really only
-> > > > need barrier(), ARM (recent ARM, anyway) and Power could use a weaker
-> > > > barrier, and so on -- but smp_mb() emits a full barrier.
-> > > > 
-> > > > Perhaps a new smp_tmb() for TSO semantics, where reads are ordered
-> > > > before reads, writes before writes, and reads before writes, but not
-> > > > writes before reads?  Another approach would be to define a per-arch
-> > > > barrier for this particular case.
-> > > 
-> > > I suppose we can only introduce new barrier primitives if there's more
-> > > than 1 use-case.
+A quick review of this patch looks fine to me.
 
-Which barrier did you have in mind when you refer to `recent ARM' above? It
-seems to me like you'd need a combination if dmb ishld and dmb ishst, since
-the former doesn't order writes before writes.
+Although, using ARRAY_SIZE() for a character string seems to me a bit
+over paranoid. But I'm fine with it, as it makes sure that the string
+is an array and not a pointer.
 
-Will
+Jens,
+
+Can you give me an Acked-by?
+
+-- Steve
+
+
+On Sun, 03 Nov 2013 22:23:39 +0800
+Chen Gang <gang.chen@asianux.com> wrote:
+
+> do_blk_trace_setup() will fully initialize 'buts.name', so can remove
+> the related memcpy(). And also use BLKTRACE_BDEV_SIZE and ARRAY_SIZE
+> instead of hard code number '32'.
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  include/linux/blktrace_api.h |    2 +-
+>  kernel/trace/blktrace.c      |    3 +--
+>  2 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/blktrace_api.h b/include/linux/blktrace_api.h
+> index a12f6ed..afc1343 100644
+> --- a/include/linux/blktrace_api.h
+> +++ b/include/linux/blktrace_api.h
+> @@ -89,7 +89,7 @@ static inline int blk_trace_init_sysfs(struct device *dev)
+>  #ifdef CONFIG_COMPAT
+>  
+>  struct compat_blk_user_trace_setup {
+> -	char name[32];
+> +	char name[BLKTRACE_BDEV_SIZE];
+>  	u16 act_mask;
+>  	u32 buf_size;
+>  	u32 buf_nr;
+> diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
+> index 7f727b3..f785aef 100644
+> --- a/kernel/trace/blktrace.c
+> +++ b/kernel/trace/blktrace.c
+> @@ -579,13 +579,12 @@ static int compat_blk_trace_setup(struct request_queue *q, char *name,
+>  		.end_lba = cbuts.end_lba,
+>  		.pid = cbuts.pid,
+>  	};
+> -	memcpy(&buts.name, &cbuts.name, 32);
+>  
+>  	ret = do_blk_trace_setup(q, name, dev, bdev, &buts);
+>  	if (ret)
+>  		return ret;
+>  
+> -	if (copy_to_user(arg, &buts.name, 32)) {
+> +	if (copy_to_user(arg, &buts.name, ARRAY_SIZE(buts.name))) {
+>  		blk_trace_remove(q);
+>  		return -EFAULT;
+>  	}
+
