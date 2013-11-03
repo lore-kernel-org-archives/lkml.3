@@ -1,60 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab3KCSv3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 13:51:29 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:56699 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216Ab3KCSv2 (ORCPT
+	id S1754398Ab3KCSxm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 13:53:42 -0500
+Received: from mail-ee0-f66.google.com ([74.125.83.66]:58586 "EHLO
+	mail-ee0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027Ab3KCSxk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 13:51:28 -0500
+	Sun, 3 Nov 2013 13:53:40 -0500
+X-Greylist: delayed 14411 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Nov 2013 13:53:40 EST
+From: andreas.thalhammer@linux.com
+Reply-To: andreas.thalhammer@linux.com
+To: el_es@mail.home.local
+Subject: Re: A Desktop Linux idea: modulized open hardware database for the linux kernel config
+Date: Sun, 3 Nov 2013 19:53:35 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.3-gentoo-6.0; KDE/4.11.2; x86_64; ; )
+References: <201311031553.26488.andreas.thalhammer@linux.com> <20131103161819.GA4983@linux> <201311031743.26688.andreas.thalhammer@linux.com>
+In-Reply-To: <201311031743.26688.andreas.thalhammer@linux.com>
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <1383337039.2653.18.camel@buesod1.americas.hpqcorp.net>
-References: <1383337039.2653.18.camel@buesod1.americas.hpqcorp.net>
-Date: Sun, 3 Nov 2013 10:51:27 -0800
-X-Google-Sender-Auth: nZ_bMKpIjSmFTTsNREBqKKddiy8
-Message-ID: <CA+55aFwrtOaFtwGc6xyZH6-1j3f--AG1JS-iZM8-pZPnwRHBow@mail.gmail.com>
-Subject: Re: [PATCH] mm: cache largest vma
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201311031953.35731.andreas.thalhammer@linux.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ugh. This patch makes me angry. It looks way too ad-hoc.
+> <andreas.thalhammer <at> linux.com> writes:
+>[cut down because of gmane's web interface quotation policy]
+>
+>> But hey, it was just an idea. A stupid one maybe. So thanks for answering 
+>> anyway.
+>> 
+>
+>
+>Uh like any great idea, you need to show the world, how
+>serious you are about it : do the first step and collect a few, 
+>then share a link, wikipedia or pastebin style maybe for starters ;)
+>
+>In other words, "let's go and you do it", doesn't sound like 
+>a good starting pitch ;)
+>
+>-L.
 
-I can well imagine that our current one-entry cache is crap and could
-be improved, but this looks too random. Different code for the
-CONFIG_MMU case? Same name, but for non-MMU it's a single entry, for
-MMU it's an array? And the whole "largest" just looks odd. Plus why do
-you set LAST_USED if you also set LARGEST?
+"If I could have, I would have" already done it. I wouldn’t know how.
+I’m sorry if this soulds like "you do it"… the intension was to see what you 
+think about it.
 
-Did you try just a two- or four-entry pseudo-LRU instead, with a
-per-thread index for "last hit"? Or even possibly a small fixed-size
-hash table (say "idx = (add >> 10) & 3" or something)?
+I was working with the hardware database from Fedora (RedHat): Smolt. But 
+Smolt was shut down: https://fedoraproject.org/wiki/Smolt_retirement
 
-And what happens for threaded models? Maybe we'd be much better off
-making the cache be per-thread, and the flushing of the cache would be
-a sequence number that has to match (so "vma_clear_cache()" ends up
-just incrementing a 64-bit sequence number in the mm)?
+When I started working with it, and with other resources of this kind, I 
+always found that it was too chaotic because there are too many ways of 
+describing how to get a Linux system running on a specific hardware. Take the 
+ThinkWiki for example. It describes how to get some specific parts of specific 
+ThinkPad series to work on Linux, but it could be the same procedure and/or 
+patch used for other Laptops or PCs.
 
-Basically, my complaints boil down to "too random" and "too
-specialized", and I can see (and you already comment on) this patch
-being grown with even *more* ad-hoc random new cases (LAST, LARGEST,
-MOST_USED - what's next?). And while I don't know if we should worry
-about the threaded case, I do get the feeling that this ad-hoc
-approach is guaranteed to never work for that, which makes me feel
-that it's not just ad-hoc, it's also fundamentally limited.
+I had my hardware added to Smolt for the reason to have other benefit from the 
+information on how to get it running (if I got it running) and which kernel 
+version is at least required and other useful information.
 
-I can see us merging this patch, but I would really like to hear that
-we do so because other cleaner approaches don't work well. In
-particular, pseudo-LRU tends to be successful (and cheap) for caches.
+During that time the idea came up that an automized configuration for a 
+specific computer would be a benefit.
 
-                 Linus
+That is: make a defconfig, not for a very generic system but for very specific 
+system parts. The example is: PC + Desktop + experimental + <My specific 
+motherboard> + AMD_K10 SMP + RadeonHD_Barts + AllStableUSB + <My specific 
+webcam> + …
+
+This "profile" would go into a global configuration file for my computer. The 
+"make defconfig" would then use this information to e.g. set this very 
+specific CONFIG_SENSORS_F71882FG, because the system now knows which specific 
+hardware it is built for. It will leave out all unnecessary stuff, unless 
+otherwise included (in the profile). The provided information could even be 
+used to tell GRUB (grub-mkconfig) for which kernel version which command line 
+options must be used.
+
+Putting all this on a server (like Smolt) and having it put together with 
+version information (like: on kernel 3.2 it is CONFIG_SOMETHING whereas 
+starting with 3.3 it is CONFIG_SOMETHINGELSE and includes 
+CONFIG_SOMETHINGELSE_WITH_AN_OPTION) and combined with a Wiki – and all of 
+that can be discussed and created online by users, would get a power-user-
+community process started. Maybe. Hopefully.
+
+With Smolt this wasn’t so. It was too limited in many ways.
+
+There are verious Wiki, Blog and Wordpress pages that describe how to compile 
+the linux kernel (and userland software) for a specific system. But there is no 
+central site for that.
+
+If Smolt had been a little "better", and more useful in the sense of "this is 
+my hardware – someone with the same, what is your kernel .config file looking 
+like?" would have helped a lot of non-power-users, that – nevertheless – like 
+to compile their own kernel, and maybe add something that was missing in the 
+distribution kernel…
+
+Giving them a "make myconfig" with some little extra information (What type of 
+use? "Desktop", how stable? "experimental", and what extra hardware? 
+"<specific>" or "very general, like a distribution kernel") would make their 
+lifes easier; also for power-users.
+
+Power-users would in addition provide the config modules (like: what is needed 
+for a specific hardware/hardware expansion) and help on a server site that 
+hosts this information.
+
+I’m sorry, but I cannot possibly do this all by myself. I was able to help in 
+some Wikis and in Smolt, but I cannot setup such a system. Apparently I was 
+only able to come up with the idea…
+
+
+(Since I am not even able to answer you, I post as a follow-up to my previous 
+post).
