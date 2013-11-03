@@ -1,80 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750929Ab3KCXcL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 18:32:11 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33327 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729Ab3KCXcJ (ORCPT
+	id S1751369Ab3KCXeD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 18:34:03 -0500
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:50078 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab3KCXeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 18:32:09 -0500
-Date: Mon, 4 Nov 2013 00:32:07 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, sandy harris <sandyinchina@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and
- /dev/random
-Message-ID: <20131103233207.GA5105@amd.pavel.ucw.cz>
-References: <2579337.FPgJGgHYdz@tauon>
- <7861469.OAmn4h8An0@tauon>
- <20131102110112.GA16231@amd.pavel.ucw.cz>
- <3537770.iLHXPOXMiU@tauon>
+	Sun, 3 Nov 2013 18:34:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3537770.iLHXPOXMiU@tauon>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131103224242.GF3947@linux.vnet.ibm.com>
+References: <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com>
+	<20131030092725.GL4126@linux.vnet.ibm.com>
+	<20131030112526.GI16117@laptop.programming.kicks-ass.net>
+	<20131031064015.GV4126@linux.vnet.ibm.com>
+	<20131101145634.GH19466@laptop.lan>
+	<20131102173239.GB3947@linux.vnet.ibm.com>
+	<20131103144017.GA25118@linux.vnet.ibm.com>
+	<20131103151704.GJ19466@laptop.lan>
+	<CA+55aFx_kuvR-0dwJtjvnhtha5QBc5XcLZPRH=WKT+hYVAKOrw@mail.gmail.com>
+	<20131103200124.GK19466@laptop.lan>
+	<20131103224242.GF3947@linux.vnet.ibm.com>
+Date: Sun, 3 Nov 2013 15:34:00 -0800
+X-Google-Sender-Auth: Ag_pZVIEfiqzmfVwysDR6VSMDZQ
+Message-ID: <CA+55aFyD_kCkAHQwHCUBrumO-pH6LaZikTNvyWDW_tWsHdqk6Q@mail.gmail.com>
+Subject: Re: [RFC] arch: Introduce new TSO memory barrier smp_tmb()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Michael Neuling <mikey@neuling.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Sun, Nov 3, 2013 at 2:42 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+>
+> smp_storebuffer_mb() -- A barrier that enforces those orderings
+>         that do not invalidate the hardware store-buffer optimization.
 
-> Another friend of mine mentioned that he assumes the rise and fall times 
-> of transistors varies very slightly and could be the main reason for the 
-> jitter. I do not think that this is really the case, because our gates 
-> that form the CPU instructions comprise of many transistors. The 
-> combined raise/fall jitter should cancel each other out.
+Ugh. Maybe. Can you guarantee that those are the correct semantics?
+And why talk about the hardware semantics, when you really want
+specific semantics for the *software*.
 
-Plus, there's clock that should make sure that this jitter does not
-matter.
+> smp_not_w_r_mb() -- A barrier that orders everything except prior
+>         writes against subsequent reads.
 
-> >There should be way to extract entropy more directly from various
-> >oscillator effects, no?
-> 
-> I am working a different way of measuring such oscillator effects by 
-> using the high-resolution timer of the CPU and measure it with a 
-> Jiffies-based snapshotting window. So, here I would combine two timers 
-> that are differently generated. If their frequencies would be relative 
-> prime to each other, we would measure a direct oscillator effect.
+Ok, that sounds more along the lines of "these are the semantics we
+want", but I have to say, it also doesn't make me go "ahh, ok".
 
-I guess main problem is machines that do not have high-resolution
-timer on the CPU (rdtsc). They do not get enough entropy during boot,
-and the hell breaks loose.
+> smp_acqrel_mb() -- A barrier that combines C/C++ acquire and release
+>         semantics.  (C/C++ "acquire" orders a specific load against
+>         subsequent loads and stores, while C/C++ "release" orders
+>         a specific store against prior loads and stores.)
 
-But they usually _do_ have RTC or other clock, not driven by CPU
-oscilator. Good.
+I don't think this is true. acquire+release is much stronger than what
+you're looking for - it doesn't allow subsequent reads to move past
+the write (because that would violate the acquire part). On x86, for
+example, you'd need to have a locked cycle for smp_acqrel_mb().
 
-What about just
+So again, what are the guarantees you actually want? Describe those.
+And then make a name.
 
-while (!enough_entropy) {
-      cur_time = read_rtc();
-      simulated_tsc = 0;
-      while (cur_time == read_rtc())
-      	    simulated_tsc++;
-      gain_entropy_from(simulated_tsc)
-}
+I _think_ the guarantees you want is:
+ - SMP write barrier
+ - *local* read barrier for reads preceding the write.
 
-(Where enough_entropy should be something like 128 bits).
+but the problem is that the "preceding reads" part is really
+specifically about the write that you had. The barrier should really
+be attached to the *particular* write operation, it cannot be a
+standalone barrier.
 
-This should work, we know why it works (drift between rtc and cpu
-clock) and it does _not_ need rdtsc-style fast source.
+So it would *kind* of act like a "smp_wmb() + smp_rmb()", but the
+problem is that a "smp_rmb()" doesn't really "attach" to the preceding
+write.
 
-Disadvantage is that it burns cpu, but, well, you only need 128
-bits. Asuming the rtc used has 100Hz resolution, enough entropy should
-be collected in under 2 seconds. That's acceptable adition to time it
-takes generating ssh keys on slow cpu.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+This is analogous to a "acquire" operation: you cannot make an
+"acquire" barrier, because it's not a barrier *between* two ops, it's
+associated with one particular op.
+
+So what I *think* you actually really really want is a "store with
+release consistency, followed by a write barrier".
+
+In TSO, afaik all stores have release consistency, and all writes are
+ordered, which is why this is a no-op in TSO. And x86 also has that
+"all stores have release consistency, and all writes are ordered"
+model, even if TSO doesn't really describe the x86 model.
+
+But on ARM64, for example, I think you'd really want the store itself
+to be done with "stlr" (store with release), and then follow up with a
+"dsb st" after that.
+
+And notice how that requires you to mark the store itself. There is no
+actual barrier *after* the store that does the optimized model.
+
+Of course, it's entirely possible that it's not worth worrying about
+this on ARM64, and that just doing it as a "normal store followed by a
+full memory barrier" is good enough. But at least in *theory* a
+microarchitecture might make it much cheaper to do a "store with
+release consistency" followed by "write barrier".
+
+Anyway, having talked exhaustively about exactly what semantics you
+are after, I *think* the best model would be to just have a
+
+  #define smp_store_with_release_semantics(x, y) ...
+
+and use that *and* a "smp_wmb()" for this (possibly a special
+"smp_wmb_after_release()" if that allows people to avoid double
+barriers). On x86 (and TSO systems), the
+smp_store_with_release_semantics() would be just a regular store, and
+the smp_wmb() is obviously a no-op. Other platforms would end up doing
+other things.
+
+Hmm?
+
+         Linus
