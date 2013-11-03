@@ -1,138 +1,339 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629Ab3KCOkZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 09:40:25 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:42740 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752603Ab3KCOkX (ORCPT
+	id S1753815Ab3KCOmS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 09:42:18 -0500
+Received: from 12.mo6.mail-out.ovh.net ([178.32.125.228]:38239 "EHLO
+	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753536Ab3KCOmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 09:40:23 -0500
-Date: Sun, 3 Nov 2013 06:40:17 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>
-Subject: Re: perf events ring buffer memory barrier on powerpc
-Message-ID: <20131103144017.GA25118@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com>
- <20131028132634.GO19466@laptop.lan>
- <20131028163418.GD4126@linux.vnet.ibm.com>
- <20131028201735.GA15629@redhat.com>
- <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com>
- <20131030092725.GL4126@linux.vnet.ibm.com>
- <20131030112526.GI16117@laptop.programming.kicks-ass.net>
- <20131031064015.GV4126@linux.vnet.ibm.com>
- <20131101145634.GH19466@laptop.lan>
- <20131102173239.GB3947@linux.vnet.ibm.com>
+	Sun, 3 Nov 2013 09:42:17 -0500
+Message-ID: <527660C3.2050509@overkiz.com>
+Date: Sun, 03 Nov 2013 15:42:11 +0100
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131102173239.GB3947@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110314-9332-0000-0000-0000020538EE
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Wim Van Sebroeck <wim@iguana.be>,
+        Fabio Porcedda <fabio.porcedda@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Guenter Roeck <groeck7@gmail.com>, Yang Wenyou <wenyou.yang@atmel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH] watchdog: at91sam9_wdt: various fixes
+References: <20131029075028.GF19704@spo001.leaseweb.com> <1383043053-3520-1-git-send-email-b.brezillon@overkiz.com> <20131029154519.GB9266@roeck-us.net> <526FE0DA.1020308@overkiz.com> <20131029164323.GF9266@roeck-us.net> <526FEEE7.7030708@overkiz.com>
+In-Reply-To: <526FEEE7.7030708@overkiz.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 6995216122218772495
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrhedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrhedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 02, 2013 at 10:32:39AM -0700, Paul E. McKenney wrote:
-> On Fri, Nov 01, 2013 at 03:56:34PM +0100, Peter Zijlstra wrote:
-> > On Wed, Oct 30, 2013 at 11:40:15PM -0700, Paul E. McKenney wrote:
-> > > > Now the whole crux of the question is if we need barrier A at all, since
-> > > > the STORES issued by the @buf writes are dependent on the ubuf->tail
-> > > > read.
-> > > 
-> > > The dependency you are talking about is via the "if" statement?
-> > > Even C/C++11 is not required to respect control dependencies.
-> > > 
-> > > This one is a bit annoying.  The x86 TSO means that you really only
-> > > need barrier(), ARM (recent ARM, anyway) and Power could use a weaker
-> > > barrier, and so on -- but smp_mb() emits a full barrier.
-> > > 
-> > > Perhaps a new smp_tmb() for TSO semantics, where reads are ordered
-> > > before reads, writes before writes, and reads before writes, but not
-> > > writes before reads?  Another approach would be to define a per-arch
-> > > barrier for this particular case.
-> > 
-> > I suppose we can only introduce new barrier primitives if there's more
-> > than 1 use-case.
-> 
-> There probably are others.
+Hello Guenter,
 
-If there was an smp_tmb(), I would likely use it in rcu_assign_pointer().
-There are some corner cases that can happen with the current smp_wmb()
-that would be prevented by smp_tmb().  These corner cases are a bit
-strange, as follows:
+Are you okay with the 3 fixes/improvements provided by this patch,
+and the explanation I gave regarding the reason for these changes ?
 
-	struct foo gp;
+If so, I will submit a new series splitting the patch and including your 
+suggestions.
 
-	void P0(void)
-	{
-		struct foo *p = kmalloc(sizeof(*p);
+Best Regards,
 
-		if (!p)
-			return;
-		ACCESS_ONCE(p->a) = 0;
-		BUG_ON(ACCESS_ONCE(p->a));
-		rcu_assign_pointer(gp, p);
-	}
+Boris
 
-	void P1(void)
-	{
-		struct foo *p = rcu_dereference(gp);
-
-		if (!p)
-			return;
-		ACCESS_ONCE(p->a) = 1;
-	}
-
-With smp_wmb(), the BUG_ON() can occur because smp_wmb() does
-not prevent CPU from reordering the read in the BUG_ON() with the
-rcu_assign_pointer().  With smp_tmb(), it could not.
-
-Now, I am not too worried about this because I cannot think of any use
-for code like that in P0() and P1().  But if there was an smp_tmb(),
-it would be cleaner to make the BUG_ON() impossible.
-
-							Thanx, Paul
-
-> > > > If the read shows no available space, we simply will not issue those
-> > > > writes -- therefore we could argue we can avoid the memory barrier.
-> > > 
-> > > Proving that means iterating through the permitted combinations of
-> > > compilers and architectures...  There is always hand-coded assembly
-> > > language, I suppose.
-> > 
-> > I'm starting to think that while the C/C++ language spec says they can
-> > wreck the world by doing these silly optimization, real world users will
-> > push back for breaking their existing code.
-> > 
-> > I'm fairly sure the GCC people _will_ get shouted at _loudly_ when they
-> > break the kernel by doing crazy shit like that.
-> > 
-> > Given its near impossible to write a correct program in C/C++ and
-> > tagging the entire kernel with __atomic is equally not going to happen,
-> > I think we must find a practical solution.
-> > 
-> > Either that, or we really need to consider forking the language and
-> > compiler :-(
-> 
-> Depends on how much benefit the optimizations provide.  If they provide
-> little or no benefit, I am with you, otherwise we will need to bit some
-> bullet or another.  Keep in mind that there is a lot of code in the
-> kernel that runs sequentially (e.g., due to being fully protected by
-> locks), and aggressive optimizations for that sort of code are harmless.
-> 
-> Can't say I know the answer at the moment, though.
-> 
-> 							Thanx, Paul
+On 29/10/2013 18:22, boris brezillon wrote:
+> On 29/10/2013 17:43, Guenter Roeck wrote:
+>> On Tue, Oct 29, 2013 at 05:22:50PM +0100, boris brezillon wrote:
+>>> On 29/10/2013 16:45, Guenter Roeck wrote:
+>>>> On Tue, Oct 29, 2013 at 11:37:33AM +0100, Boris BREZILLON wrote:
+>>>>> Fix the secs_to_ticks macro in case 0 is passed as an argument.
+>>>>>
+>>>>> Rework the heartbeat calculation to increase the security margin 
+>>>>> of the
+>>>>> watchdog reset timer.
+>>>>>
+>>>>> Use the min_heartbeat value instead of the calculated heartbeat 
+>>>>> value for
+>>>>> the first watchdog reset.
+>>>>>
+>>>>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+>>>> Hi Boris,
+>>>>
+>>>> can you possibly split the three changes into separate patches ?
+>>> Sure. My first idea was to split this in 3 patches, but, as the
+>>> buggy at91 watchdog series was
+>>> already applied to linux-watchdog-next, I thought it would be faster
+>>> to only provide one
+>>> patch to fix all the issues at once.
+>>>
+>>>> The first is a no-brainer. Gives my opinion of my code review 
+>>>> capabilities
+>>>> a slight damper ;-).
+>>>>
+>>>> For the other two problems, it might make sense to describe
+>>>> the problems you are trying to solve.
+>>>>
+>>>> Couple of comments inline.
+>>>>
+>>>> Thanks,
+>>>> Guenter
+>>>>
+>>>>
+>>>>> ---
+>>>>>   drivers/watchdog/at91sam9_wdt.c |   35 
+>>>>> ++++++++++++++++++++++++-----------
+>>>>>   1 file changed, 24 insertions(+), 11 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/watchdog/at91sam9_wdt.c 
+>>>>> b/drivers/watchdog/at91sam9_wdt.c
+>>>>> index 9bd089e..f1b59f1 100644
+>>>>> --- a/drivers/watchdog/at91sam9_wdt.c
+>>>>> +++ b/drivers/watchdog/at91sam9_wdt.c
+>>>>> @@ -51,7 +51,7 @@
+>>>>>   #define ticks_to_hz_rounddown(t)    ((((t) + 1) * HZ) >> 8)
+>>>>>   #define ticks_to_hz_roundup(t)        (((((t) + 1) * HZ) + 255) 
+>>>>> >> 8)
+>>>>>   #define ticks_to_secs(t)        (((t) + 1) >> 8)
+>>>>> -#define secs_to_ticks(s)        (((s) << 8) - 1)
+>>>>> +#define secs_to_ticks(s)        (s ? (((s) << 8) - 1) : 0)
+>>>>     (s)
+>>>>
+>>>>>   #define WDT_MR_RESET    0x3FFF2FFF
+>>>>> @@ -61,6 +61,11 @@
+>>>>>   /* Watchdog max delta/value in secs */
+>>>>>   #define WDT_COUNTER_MAX_SECS ticks_to_secs(WDT_COUNTER_MAX_TICKS)
+>>>>> +/* Watchdog heartbeat shift used for security margin:
+>>>>> + * we'll try to rshift the heartbeat value with this value to secure
+>>>>> + * the watchdog reset. */
+>>>>> +#define WDT_HEARTBEAT_SHIFT    2
+>>>>> +
+>>>>>   /* Hardware timeout in seconds */
+>>>>>   #define WDT_HW_TIMEOUT 2
+>>>>> @@ -158,7 +163,9 @@ static int at91_wdt_init(struct 
+>>>>> platform_device *pdev, struct at91wdt *wdt)
+>>>>>       int err;
+>>>>>       u32 mask = wdt->mr_mask;
+>>>>>       unsigned long min_heartbeat = 1;
+>>>>> +    unsigned long max_heartbeat;
+>>>>>       struct device *dev = &pdev->dev;
+>>>>> +    int shift;
+>>>>>       tmp = wdt_read(wdt, AT91_WDT_MR);
+>>>>>       if ((tmp & mask) != (wdt->mr & mask)) {
+>>>>> @@ -181,23 +188,27 @@ static int at91_wdt_init(struct 
+>>>>> platform_device *pdev, struct at91wdt *wdt)
+>>>>>       if (delta < value)
+>>>>>           min_heartbeat = ticks_to_hz_roundup(value - delta);
+>>>>> -    wdt->heartbeat = ticks_to_hz_rounddown(value);
+>>>>> -    if (!wdt->heartbeat) {
+>>>>> +    max_heartbeat = ticks_to_hz_rounddown(value);
+>>>>> +    if (!max_heartbeat) {
+>>>>>           dev_err(dev,
+>>>>>               "heartbeat is too small for the system to handle it 
+>>>>> correctly\n");
+>>>>>           return -EINVAL;
+>>>>>       }
+>>>>> -    if (wdt->heartbeat < min_heartbeat + 4) {
+>>>>> +    for (shift = WDT_HEARTBEAT_SHIFT; shift > 0; shift--) {
+>>>>> +        if ((max_heartbeat >> shift) < min_heartbeat)
+>>>>> +            continue;
+>>>>> +
+>>>>> +        wdt->heartbeat = max_heartbeat >> shift;
+>>>>> +        break;
+>>>>> +    }
+>>>>> +
+>>>>> +    if (!shift)
+>>>>>           wdt->heartbeat = min_heartbeat;
+>>>> Correct me if I am wrong, but it seems to me that
+>>>>
+>>>>     if ((max_heartbeat >> 2) >= min_heartbeat)
+>>>>          wdt->heartbeat = max_heartbeat >> 2;
+>>>>     else if ((max_heartbeat >> 1) >= min_heartbeat)
+>>>>         wdt->heartbeat = max_heartbeat >> 1;
+>>>>     else
+>>>>         wdt->heartbeat = min_heartbeat;
+>>>>
+>>>> would accomplish the same and be easier to understand.
+>>> This is exactly what I'm trying to accomplish.
+>>> I used the for loop in case we ever want to change the
+>>> WDT_HEARTBEAT_SHIFT value
+>>> (which is unlikely to happen).
+>>>
+>>> I'll move to your proposition.
+>>>
+>>>> However, given that, I wonder if it is really necessary to bail out 
+>>>> above if
+>>>> max_heartbeat is 0. After all, you set heartbeat to min_heartbeat 
+>>>> anyway
+>>>> in this case.
+>>> Yes it is necessary. The max_heartbeat is a configuration that
+>>> cannot be changed once configured.
+>>> We have to inform the user that his max_heartbeat value is too small
+>>> to be handled correctly by the Linux kernel.
+>>>
+>>> If we simply use the min_heartbeat value as heartbeat and ignore the
+>>> wrong max_heartbeat value,
+>>> the watchdog will reset the SoC before we can ever reset the
+>>> watchdog counter.
+>>>
+>>>>> +
+>>>>> +    if (max_heartbeat < min_heartbeat + 4)
+>>>>>           dev_warn(dev,
+>>>>>                "min heartbeat and max heartbeat might be too close 
+>>>>> for the system to handle it correctly\n");
+>>>>> -        if (wdt->heartbeat < 4)
+>>>>> -            dev_warn(dev,
+>>>>> -                 "heartbeat might be too small for the system to 
+>>>>> handle it correctly\n");
+>>>>> -    } else {
+>>>>> -        wdt->heartbeat -= 4;
+>>>>> -    }
+>>>>>       if ((tmp & AT91_WDT_WDFIEN) && wdt->irq) {
+>>>>>           err = request_irq(wdt->irq, wdt_interrupt,
+>>>>> @@ -213,7 +224,9 @@ static int at91_wdt_init(struct 
+>>>>> platform_device *pdev, struct at91wdt *wdt)
+>>>>>                tmp & wdt->mr_mask, wdt->mr & wdt->mr_mask);
+>>>>>       setup_timer(&wdt->timer, at91_ping, (unsigned long)wdt);
+>>>>> -    mod_timer(&wdt->timer, jiffies + wdt->heartbeat);
+>>>>> +    /* Use min_heartbeat the first time because the watchdog 
+>>>>> timer might
+>>>>> +     * be running for a long time when we reach this init 
+>>>>> function. */
+>>>>     /*
+>>>>      * Multi-line comment style
+>>>>      *
+>>>>      * Not really sure I understand what this accomplishes. What 
+>>>> problem
+>>>>      * are you trying to solve here ?
+>>>>      */
+>>> Sure, I'll change the comment style.
+>>>
+>>> What, I'm trying to explain, is that the watchdog might (or should)
+>>> have been resetted
+>>> before loading the linux kernel. But loading the kernel takes some
+>>> time (uncompressing,
+>>> low level init, ...), and if we take the heartbeat (or max_heartbeat
+>>> / 4 in the common case) value as
+>>> the next trigger to reset the watchdog counter, the watchdog timer
+>>> might have already expired.
+>>>
+>> But increasing anything in the watchdog driver itself won't help you 
+>> there.
+>> You can not execute any kernel code before that kernel code is running.
+>
+> Of course, but you can at least try to minimize the time between the 
+> watchdog driver init
+> and the first wathdog counter reset.
+>
+>>> Here is an example:
+>>>   - max_heartbeat configured to 8 seconds
+>>>   - min_heartbeat configured to 1 second
+>>>   => heartbeat = 2s
+>>>   - kernel boot time (before at91 watchdog is loaded) = 6 secs
+>>>
+>> Guess that is where I got lost. Do you mean the time from loading the 
+>> driver
+>> to starting the watchdog application ? Because the init function is only
+>> executed after the driver is loaded, so nothing will help you if it 
+>> takes
+>> too long for the driver to load.
+>
+> I think there is another bug here: the driver should not be compiled 
+> as a module.
+>
+> Here is why:
+>
+> At POR the at91 SoC configure its watchdog with these default values:
+>  - enabled
+>  - min heartbeat = 0 ticks
+>  - max heartbeat = 0xfff ticks <=> 16 secs
+>  - some reset options
+> After a POR the watchdog can only be reconfigured once (and only once).
+> This configuration oftenly takes place in the the bootstrap (or 
+> bootloader),
+> but can eventually be done by the Linux kernel.
+>
+> If the watchdog is kept enabled by the bootstrap (or bootloader), this 
+> means
+> the linux kernel will have to reset the watchdog counter as soon as 
+> possible to avoid
+> a possible watchdog reset.
+>
+> => If we authorize the at91 sam9 watchdog to be compiled as a module, 
+> we're not sure
+> the module will be loaded soon enough to be able to reset the watchdog 
+> counter.
+>
+>>
+>> You really have two times to deal with:
+>> - Time from ROMMON handoff to loading the driver
+>>    Nothing you can do there. If the watchdog fires before the driver 
+>> is loaded,
+>>    you are lost. Only way t handle this situation is to increase the 
+>> timeout
+>>    in the ROMMON.
+>> - Time from loading driver to watchdog device open. This is really 
+>> the time
+>>    you are increasing with your change.
+>
+> This is where it gets a bit tricky.
+>
+> The heartbeat I'm talking about is not the "user space" heartbeat
+> (struct watchdog_device timeout field), it's the "hardware watchdog 
+> counter reset"
+> heartbeat (struct at91wdt heartbeat field).
+>
+> Actually the at91 sam9 wdt driver does not provide a direct access to 
+> the watchdog reset
+> counter functionnality.
+> Instead, it periodically reset the watchdog counter (based on the 
+> timing config retrieved from
+> the hw registers), and eventually, if the user open a the watchdog dev 
+> file and fails to reset
+> the watchdog (using the user space API), the drivers stops resetting 
+> the hw counter, which leads
+> to a watchdog reset.
+>
+> I hope I'm clear enough, cause it's quite complicated to explain.
+>
+> Best Regards,
+>
+> Boris
+>
+>> Thanks,
+>> Guenter
+>>
+>>> If I use the heartbeat value when configuring the first expiration
+>>> of the timer,
+>>> it might be too late to reset the watchdog counter.
+>>>
+>>> I'll try to find a proper to explain this use case :-).
+>>>
+>>>>> +    mod_timer(&wdt->timer, jiffies + min_heartbeat);
+>>>>>       /* Try to set timeout from device tree first */
+>>>>>       if (watchdog_init_timeout(&wdt->wdd, 0, dev))
+>>>>> -- 
+>>>>> 1.7.9.5
+>>>>>
+>>>>> -- 
+>>>>> To unsubscribe from this list: send the line "unsubscribe 
+>>>>> linux-watchdog" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>>>>
+>>> -- 
+>>> To unsubscribe from this list: send the line "unsubscribe 
+>>> linux-watchdog" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>>
+>
 
