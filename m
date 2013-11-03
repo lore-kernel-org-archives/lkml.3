@@ -1,76 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab3KCTI3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 14:08:29 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:38080 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216Ab3KCTI2 (ORCPT
+	id S1754311Ab3KCT1W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 14:27:22 -0500
+Received: from ngcobalt02.manitu.net ([217.11.48.102]:42003 "EHLO
+	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801Ab3KCT1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 14:08:28 -0500
+	Sun, 3 Nov 2013 14:27:21 -0500
+X-Greylist: delayed 406 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Nov 2013 14:27:20 EST
+Message-ID: <5276A1FE.7040804@grandegger.com>
+Date: Sun, 03 Nov 2013 20:20:30 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <20131102234451.GA10255@thunk.org>
-References: <CAF1GSti2xbHGtBx4Qq8Br9unEM_GE8GJ99fzoRm6qKaun7MHZw@mail.gmail.com>
- <20131102234451.GA10255@thunk.org>
-From: Jason Cipriani <jason.cipriani@gmail.com>
-Date: Sun, 3 Nov 2013 14:07:56 -0500
-Message-ID: <CAF1GStjMyDW0tTBPtXLnDSYrQtNiL8FxNCDzM3yNYrLSRX6AhQ@mail.gmail.com>
-Subject: Re: Correct parameter size for BLKSSZGET ioctl.
-To: "Theodore Ts'o" <tytso@mit.edu>, Jason Cipriani <jason.cipriani@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+To: Markus Pargmann <mpa@pengutronix.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+CC: Joe Perches <joe@perches.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH v3] can: c_can: Speed up rx_poll function
+References: <1383298596-18385-1-git-send-email-mpa@pengutronix.de>
+In-Reply-To: <1383298596-18385-1-git-send-email-mpa@pengutronix.de>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 2, 2013 at 7:44 PM, Theodore Ts'o <tytso@mit.edu> wrote:
->
-> On Fri, Nov 01, 2013 at 08:29:26PM -0400, Jason Cipriani wrote:
-> > In blkdiscard in util-linux, at least since version 2.23, the
-> > following code is used to retrieve a device's physical sector size:
-> >
-> >   uint64_t secsize;
-> >   ioctl(fd, BLKSSZGET, &secsize);
-> >
-> > On my machine (Ubuntu 12.04 -- 3.2.0-55-generic-pae #85-Ubuntu SMP Wed
-> > Oct 2 14:03:15 UTC 2013 i686 i686 i386 GNU/Linux) this yields
-> > incorrect results as it seems a 32-bit int is expected, this causes
-> > subsequent sector alignment calculations in blkdiscard to be
-> > incorrect, which in turn causes blkdiscards trim ioctl's to fail in
-> > certain situations (or even worse, to trim the wrong blocks).
->
-> BLKSSZGET returns an int.  If you look at the sources of util-linux
-> v2.23, you'll see it passes an int to BLKSSZGET in
->
->         sys-utils/blkdiscard.c
->         lib/blkdev.c
->
-> E2fsprogs also expects BLKSSZGET to return an int, and if you look at
-> the kernel sources, it very clearly returns an int.
->
-> The one place it doesn't is in sys-utils/blkdiscard.c, where as you
-> have noted, it is passing in a uint64 to BLKSSZGET.  This looks like
-> it's a bug in sys-util/blkdiscard.c.
->
-> I'll send a proposed patch in the next e-mail message.
+On 11/01/2013 10:36 AM, Markus Pargmann wrote:
+> This patch speeds up the rx_poll function by reducing the number of
+> register reads.
+> 
+> Replace the 32bit register read by a 16bit register read. Currently
+> the 32bit register read is implemented by using 2 16bit reads. This is
+> inefficient as we only use the lower 16bit in rx_poll.
+> 
+> The for loop reads the pending interrupts in every iteration. This
+> leads up to 16 reads of pending interrupts. The patch introduces a new
+> outer loop to read the pending interrupts as long as 'quota' is above 0.
+> This reduces the total number of reads.
+> 
+> The third change is to replace the for-loop by a ffs loop.
+> 
+> Tested on AM335x. I removed all 'static' and 'inline' from c_can.c to
+> see the timings for all functions. I used the function tracer with
+> trace_stats.
+> 
+> 125kbit:
+>   Function                               Hit    Time            Avg             s^2
+>   --------                               ---    ----            ---             ---
+>   c_can_do_rx_poll                     63960    10168178 us     158.977 us      1493056 us
+> With patch:
+>   c_can_do_rx_poll                     63941    3764057 us      58.867 us       776162.2 us
+> 
+> 1Mbit:
+>   Function                               Hit    Time            Avg             s^2
+>   --------                               ---    ----            ---             ---
+>   c_can_do_rx_poll                     69489    30049498 us     432.435 us      9271851 us
+> With patch:
+>   c_can_do_rx_poll                    207109    24322185 us     117.436 us      171469047 us
+> 
+> Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+> ---
+> 
+> Notes:
+>     Changes in v3:
+>      - Update commit message (measurements and ffs)
+>     
+>     Changes in v2:
+>      - Small changes, find_next_bit -> ffs and other
+> 
+>  drivers/net/can/c_can/c_can.c | 22 ++++++++++++----------
+>  1 file changed, 12 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
+> index a668cd4..428681e 100644
+> --- a/drivers/net/can/c_can/c_can.c
+> +++ b/drivers/net/can/c_can/c_can.c
+> @@ -798,17 +798,19 @@ static int c_can_do_rx_poll(struct net_device *dev, int quota)
+>  	u32 num_rx_pkts = 0;
+>  	unsigned int msg_obj, msg_ctrl_save;
+>  	struct c_can_priv *priv = netdev_priv(dev);
+> -	u32 val = c_can_read_reg32(priv, C_CAN_INTPND1_REG);
+> +	u16 val;
+> +
+> +	/*
+> +	 * It is faster to read only one 16bit register. This is only possible
+> +	 * for a maximum number of 16 objects.
+> +	 */
+> +	BUILD_BUG_ON_MSG(C_CAN_MSG_OBJ_RX_LAST > 16,
+> +			"Implementation does not support more message objects than 16");
+> +
+> +	while (quota > 0 && (val = priv->read_reg(priv, C_CAN_INTPND1_REG))) {
+> +		while ((msg_obj = ffs(val)) && quota > 0) {
+> +			val &= ~BIT(msg_obj - 1);
 
-Thank you for submitting that patch.
+IIRC, we should avoid assignment in if/while statements.
 
-There was a bigger question hidden behind the context there that I'm
-still wondering about: Are these ioctl interfaces specified and
-documented somewhere? From what I've seen, and from your response, the
-implication is that the kernel source *is* the specification, and not
-document exists that the kernel is expected to comply with; is this
-the case?
+Wolfgang.
 
-Secondly, would it not make sense to change all ints in all public
-kernel interfaces to data types with a well-defined, machine- and
-(mostly) compiler-independent size, e.g. int32_t (or whatever)? On one
-hand, nothing seems particularly broken, per se, but on the other,
-"int" is vaguely defined and it is arguably only by chance (albeit a
-strong chance) that everything works (e.g. compilers used to build
-applications agree with compilers used to build the kernel).
-
-Please CC me on replies, I am not subscribed to this list.
-
-Thanks again,
-Jason
