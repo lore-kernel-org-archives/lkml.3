@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab3KCJyA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 04:54:00 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:45325 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab3KCJxi (ORCPT
+	id S1754839Ab3KCJ4z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 04:56:55 -0500
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:52477 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754063Ab3KCJyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 04:53:38 -0500
+	Sun, 3 Nov 2013 04:54:00 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
         bhelgaas@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 12/39] sysfs, kernfs: prepare open, release, poll paths for kernfs
-Date: Sun,  3 Nov 2013 04:52:51 -0500
-Message-Id: <1383472398-17812-13-git-send-email-tj@kernel.org>
+Subject: [PATCH 29/39] sysfs, kernfs: drop unused params from sysfs_fill_super()
+Date: Sun,  3 Nov 2013 04:53:08 -0500
+Message-Id: <1383472398-17812-30-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1383472398-17812-1-git-send-email-tj@kernel.org>
 References: <1383472398-17812-1-git-send-email-tj@kernel.org>
@@ -21,115 +21,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're in the process of separating out core sysfs functionality into
-kernfs which will deal with sysfs_dirents directly.  This patch
-prepares the rest - open, release and poll.  There isn't much to do.
-Just renaming is enough.  As sysfs_file_operations and
-sysfs_bin_operations are identical now, use the same file_operations
-for both - kernfs_file_operations.
-
-This patch doesn't introduce any behavior changes.
+sysfs_fill_super() takes three params - @sb, @data and @silent - but
+uses only @sb.  Drop the latter two.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/sysfs/file.c  | 24 +++++++-----------------
- fs/sysfs/inode.c |  4 ++--
- fs/sysfs/sysfs.h |  3 +--
- 3 files changed, 10 insertions(+), 21 deletions(-)
+ fs/sysfs/mount.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index b9d56a9..7f0b38b 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -668,7 +668,7 @@ static void sysfs_put_open_dirent(struct sysfs_dirent *sd,
- 	kfree(od);
- }
- 
--static int sysfs_open_file(struct inode *inode, struct file *file)
-+static int kernfs_file_open(struct inode *inode, struct file *file)
- {
- 	struct sysfs_dirent *attr_sd = file->f_path.dentry->d_fsdata;
- 	struct kobject *kobj = attr_sd->s_parent->priv;
-@@ -753,7 +753,7 @@ err_out:
- 	return error;
- }
- 
--static int sysfs_release(struct inode *inode, struct file *filp)
-+static int kernfs_file_release(struct inode *inode, struct file *filp)
- {
- 	struct sysfs_dirent *sd = filp->f_path.dentry->d_fsdata;
- 	struct sysfs_open_file *of = sysfs_of(filp);
-@@ -804,7 +804,7 @@ void sysfs_unmap_bin_file(struct sysfs_dirent *sd)
-  * to see if it supports poll (Neither 'poll' nor 'select' return
-  * an appropriate error code).  When in doubt, set a suitable timeout value.
-  */
--static unsigned int sysfs_poll(struct file *filp, poll_table *wait)
-+static unsigned int kernfs_file_poll(struct file *filp, poll_table *wait)
- {
- 	struct sysfs_open_file *of = sysfs_of(filp);
- 	struct sysfs_dirent *attr_sd = filp->f_path.dentry->d_fsdata;
-@@ -863,24 +863,14 @@ void sysfs_notify(struct kobject *k, const char *dir, const char *attr)
- }
- EXPORT_SYMBOL_GPL(sysfs_notify);
- 
--const struct file_operations sysfs_file_operations = {
-+const struct file_operations kernfs_file_operations = {
- 	.read		= kernfs_file_read,
- 	.write		= kernfs_file_write,
- 	.llseek		= generic_file_llseek,
- 	.mmap		= kernfs_file_mmap,
--	.open		= sysfs_open_file,
--	.release	= sysfs_release,
--	.poll		= sysfs_poll,
--};
--
--const struct file_operations sysfs_bin_operations = {
--	.read		= kernfs_file_read,
--	.write		= kernfs_file_write,
--	.llseek		= generic_file_llseek,
--	.mmap		= kernfs_file_mmap,
--	.open		= sysfs_open_file,
--	.release	= sysfs_release,
--	.poll		= sysfs_poll,
-+	.open		= kernfs_file_open,
-+	.release	= kernfs_file_release,
-+	.poll		= kernfs_file_poll,
+diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+index 852d115..21070c2 100644
+--- a/fs/sysfs/mount.c
++++ b/fs/sysfs/mount.c
+@@ -41,7 +41,7 @@ struct sysfs_dirent sysfs_root = {
+ 	.s_ino		= 1,
  };
  
- int sysfs_add_file_mode_ns(struct sysfs_dirent *dir_sd,
-diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
-index 81cc858..4c463da 100644
---- a/fs/sysfs/inode.c
-+++ b/fs/sysfs/inode.c
-@@ -272,12 +272,12 @@ static void sysfs_init_inode(struct sysfs_dirent *sd, struct inode *inode)
- 		break;
- 	case SYSFS_KOBJ_ATTR:
- 		inode->i_size = PAGE_SIZE;
--		inode->i_fop = &sysfs_file_operations;
-+		inode->i_fop = &kernfs_file_operations;
- 		break;
- 	case SYSFS_KOBJ_BIN_ATTR:
- 		bin_attr = sd->priv;
- 		inode->i_size = bin_attr->size;
--		inode->i_fop = &sysfs_bin_operations;
-+		inode->i_fop = &kernfs_file_operations;
- 		break;
- 	case SYSFS_KOBJ_LINK:
- 		inode->i_op = &sysfs_symlink_inode_operations;
-diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index dc3ac27..8514a530 100644
---- a/fs/sysfs/sysfs.h
-+++ b/fs/sysfs/sysfs.h
-@@ -212,8 +212,7 @@ int sysfs_inode_init(void);
- /*
-  * file.c
-  */
--extern const struct file_operations sysfs_file_operations;
--extern const struct file_operations sysfs_bin_operations;
-+extern const struct file_operations kernfs_file_operations;
- 
- int sysfs_add_file(struct sysfs_dirent *dir_sd,
- 		   const struct attribute *attr, int type);
+-static int sysfs_fill_super(struct super_block *sb, void *data, int silent)
++static int sysfs_fill_super(struct super_block *sb)
+ {
+ 	struct inode *inode;
+ 	struct dentry *root;
+@@ -123,7 +123,7 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
+ 	if (IS_ERR(sb))
+ 		return ERR_CAST(sb);
+ 	if (!sb->s_root) {
+-		error = sysfs_fill_super(sb, data, flags & MS_SILENT ? 1 : 0);
++		error = sysfs_fill_super(sb);
+ 		if (error) {
+ 			deactivate_locked_super(sb);
+ 			return ERR_PTR(error);
 -- 
 1.8.3.1
 
