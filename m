@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398Ab3KCSxm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 13:53:42 -0500
-Received: from mail-ee0-f66.google.com ([74.125.83.66]:58586 "EHLO
-	mail-ee0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027Ab3KCSxk convert rfc822-to-8bit (ORCPT
+	id S1754390Ab3KCS5d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 13:57:33 -0500
+Received: from mail-ee0-f68.google.com ([74.125.83.68]:48271 "EHLO
+	mail-ee0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685Ab3KCS5c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 13:53:40 -0500
-X-Greylist: delayed 14411 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Nov 2013 13:53:40 EST
+	Sun, 3 Nov 2013 13:57:32 -0500
 From: andreas.thalhammer@linux.com
 Reply-To: andreas.thalhammer@linux.com
-To: el_es@mail.home.local
-Subject: Re: A Desktop Linux idea: modulized open hardware database for the linux kernel config
-Date: Sun, 3 Nov 2013 19:53:35 +0100
+To: linux-kernel@vger.kernel.org
+Subject: Re for el_es: A Desktop Linux idea: modulized open hardware database for the linux kernel config
+Date: Sun, 3 Nov 2013 19:57:29 +0100
 User-Agent: KMail/1.13.7 (Linux/3.11.3-gentoo-6.0; KDE/4.11.2; x86_64; ; )
 References: <201311031553.26488.andreas.thalhammer@linux.com> <20131103161819.GA4983@linux> <201311031743.26688.andreas.thalhammer@linux.com>
 In-Reply-To: <201311031743.26688.andreas.thalhammer@linux.com>
-Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
+Message-Id: <201311031957.29584.andreas.thalhammer@linux.com>
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201311031953.35731.andreas.thalhammer@linux.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
