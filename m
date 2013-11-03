@@ -1,78 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab3KCO33 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 09:29:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34369 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753448Ab3KCO32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 09:29:28 -0500
-Message-ID: <52765DBC.1090208@redhat.com>
-Date: Sun, 03 Nov 2013 09:29:16 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1753629Ab3KCOkZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 09:40:25 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:42740 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752603Ab3KCOkX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 09:40:23 -0500
+Date: Sun, 3 Nov 2013 06:40:17 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Michael Neuling <mikey@neuling.org>
+Subject: Re: perf events ring buffer memory barrier on powerpc
+Message-ID: <20131103144017.GA25118@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <OFB9096CCA.68AAFFFB-ON42257C12.0044F107-42257C12.00457129@il.ibm.com>
+ <20131028132634.GO19466@laptop.lan>
+ <20131028163418.GD4126@linux.vnet.ibm.com>
+ <20131028201735.GA15629@redhat.com>
+ <OF58D85F5A.03E37A80-ON42257C12.0070E552-42257C12.00734308@il.ibm.com>
+ <20131030092725.GL4126@linux.vnet.ibm.com>
+ <20131030112526.GI16117@laptop.programming.kicks-ass.net>
+ <20131031064015.GV4126@linux.vnet.ibm.com>
+ <20131101145634.GH19466@laptop.lan>
+ <20131102173239.GB3947@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Josh Boyer <jwboyer@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Russ Anderson <rja@sgi.com>
-Subject: Re: [PATCH] x86: Allow NR_CPUS=1024
-References: <20131101141148.GH8652@hansolo.jdub.homelinux.org> <20131103101825.GA6605@gmail.com>
-In-Reply-To: <20131103101825.GA6605@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131102173239.GB3947@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13110314-9332-0000-0000-0000020538EE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 11/03/2013 05:18 AM, Ingo Molnar wrote:
+On Sat, Nov 02, 2013 at 10:32:39AM -0700, Paul E. McKenney wrote:
+> On Fri, Nov 01, 2013 at 03:56:34PM +0100, Peter Zijlstra wrote:
+> > On Wed, Oct 30, 2013 at 11:40:15PM -0700, Paul E. McKenney wrote:
+> > > > Now the whole crux of the question is if we need barrier A at all, since
+> > > > the STORES issued by the @buf writes are dependent on the ubuf->tail
+> > > > read.
+> > > 
+> > > The dependency you are talking about is via the "if" statement?
+> > > Even C/C++11 is not required to respect control dependencies.
+> > > 
+> > > This one is a bit annoying.  The x86 TSO means that you really only
+> > > need barrier(), ARM (recent ARM, anyway) and Power could use a weaker
+> > > barrier, and so on -- but smp_mb() emits a full barrier.
+> > > 
+> > > Perhaps a new smp_tmb() for TSO semantics, where reads are ordered
+> > > before reads, writes before writes, and reads before writes, but not
+> > > writes before reads?  Another approach would be to define a per-arch
+> > > barrier for this particular case.
+> > 
+> > I suppose we can only introduce new barrier primitives if there's more
+> > than 1 use-case.
 > 
-> * Josh Boyer <jwboyer@redhat.com> wrote:
-> 
->> The current range for SMP configs is 2 - 512, or a full 4096 in the case 
->> of MAXSMP.  There are machines that have 1024 CPUs in them today and 
->> configuring a kernel for that means you are forced to set MAXSMP.  This 
->> adds additional unnecessary overhead.  While that overhead might be 
->> considered tiny for large machines, it isn't necessarily so if you are 
->> building a kernel that runs across a wide variety of machines.  We 
->> increase the range to 1024 to help with this.
->>
->> Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
->> ---
->>  arch/x86/Kconfig | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
->> index f67e839..d726b2d 100644
->> --- a/arch/x86/Kconfig
->> +++ b/arch/x86/Kconfig
->> @@ -825,7 +825,7 @@ config MAXSMP
->>  config NR_CPUS
->>  	int "Maximum number of CPUs" if SMP && !MAXSMP
->>  	range 2 8 if SMP && X86_32 && !X86_BIGSMP
->> -	range 2 512 if SMP && !MAXSMP
->> +	range 2 1024 if SMP && !MAXSMP
->>  	default "1" if !SMP
->>  	default "4096" if MAXSMP
->>  	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
-> 
-> Any reason not to allow it to go up to 4096? The original concern was that 
-> CPUS=4096 wasn't working very well and you had to select MAXSMP 
-> deliberately and keep all the pieces.
-> 
-> But today it's all pretty robust so I see no reason why not to allow up to 
-> 4096 CPUs.
+> There probably are others.
 
-Adding Russ from SGI as they are one of the consumers of a large CPU count.
+If there was an smp_tmb(), I would likely use it in rcu_assign_pointer().
+There are some corner cases that can happen with the current smp_wmb()
+that would be prevented by smp_tmb().  These corner cases are a bit
+strange, as follows:
 
-I have no objections to raising this to 4096 FWIW.  I think it is a good idea,
-and it is long overdue.
+	struct foo gp;
 
-P.
+	void P0(void)
+	{
+		struct foo *p = kmalloc(sizeof(*p);
 
+		if (!p)
+			return;
+		ACCESS_ONCE(p->a) = 0;
+		BUG_ON(ACCESS_ONCE(p->a));
+		rcu_assign_pointer(gp, p);
+	}
+
+	void P1(void)
+	{
+		struct foo *p = rcu_dereference(gp);
+
+		if (!p)
+			return;
+		ACCESS_ONCE(p->a) = 1;
+	}
+
+With smp_wmb(), the BUG_ON() can occur because smp_wmb() does
+not prevent CPU from reordering the read in the BUG_ON() with the
+rcu_assign_pointer().  With smp_tmb(), it could not.
+
+Now, I am not too worried about this because I cannot think of any use
+for code like that in P0() and P1().  But if there was an smp_tmb(),
+it would be cleaner to make the BUG_ON() impossible.
+
+							Thanx, Paul
+
+> > > > If the read shows no available space, we simply will not issue those
+> > > > writes -- therefore we could argue we can avoid the memory barrier.
+> > > 
+> > > Proving that means iterating through the permitted combinations of
+> > > compilers and architectures...  There is always hand-coded assembly
+> > > language, I suppose.
+> > 
+> > I'm starting to think that while the C/C++ language spec says they can
+> > wreck the world by doing these silly optimization, real world users will
+> > push back for breaking their existing code.
+> > 
+> > I'm fairly sure the GCC people _will_ get shouted at _loudly_ when they
+> > break the kernel by doing crazy shit like that.
+> > 
+> > Given its near impossible to write a correct program in C/C++ and
+> > tagging the entire kernel with __atomic is equally not going to happen,
+> > I think we must find a practical solution.
+> > 
+> > Either that, or we really need to consider forking the language and
+> > compiler :-(
 > 
-> Thanks,
+> Depends on how much benefit the optimizations provide.  If they provide
+> little or no benefit, I am with you, otherwise we will need to bit some
+> bullet or another.  Keep in mind that there is a lot of code in the
+> kernel that runs sequentially (e.g., due to being fully protected by
+> locks), and aggressive optimizations for that sort of code are harmless.
 > 
-> 	Ingo
+> Can't say I know the answer at the moment, though.
+> 
+> 							Thanx, Paul
+
