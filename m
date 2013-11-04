@@ -1,126 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002Ab3KDBQT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 20:16:19 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:60984 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab3KDBQS (ORCPT
+	id S1751576Ab3KDBnT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 20:43:19 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:33114 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab3KDBnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 20:16:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <1381763305-7085-1-git-send-email-v.tyrtov@samsung.com>
-References: <1381763305-7085-1-git-send-email-v.tyrtov@samsung.com>
-From: caglar sayin <caglar@hotmail.com.tr>
-Date: Mon, 4 Nov 2013 02:15:57 +0100
-X-Google-Sender-Auth: M1IKJCniLO-miXaDbMLjomQdWkw
-Message-ID: <CABG2-1qnG8Vxy7RTE522Rq56kBfsHeAtMFbDPW2D-8yt3U+VVg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/4] Exynos 5410 Dual cluster support
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 3 Nov 2013 20:43:18 -0500
+X-AuditID: cbfee68d-b7fa16d0000029b0-9d-5276fbb43f17
+Message-id: <5276FBB5.1020506@samsung.com>
+Date: Mon, 04 Nov 2013 10:43:17 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+Cc: myungjoo.ham@samsung.com, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com, dongxing.zhang@intel.com
+Subject: Re: [PATCH] [extcon]:remove freed groups caused the panic or warning
+ in unregister flow
+References: <1383346094.2702.16.camel@wxm-ubuntu>
+In-reply-to: <1383346094.2702.16.camel@wxm-ubuntu>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOIsWRmVeSWpSXmKPExsWyRsSkWHfL77Igg8u7JCymf9nHbLH42xRm
+	i8u75rBZ3G5cwWZxuf0dmwOrx+I9L5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK+Pdpv+s
+	BSd5Kg68EmpgbOTqYuTkkBAwkbj67iIbhC0mceHeeiCbi0NIYCmjxItDS5hhiq5cmckEYgsJ
+	LGKUOP/CAKLoFaPEom3nwbp5BbQkLgGtB7FZBFQlvi9cywhiswHF97+4AVYjKhAmsXL6FRaI
+	ekGJH5PvgdkiAnoSS97cBqrh4GAWKJC48z0YJCwskCQx7eszFoi9hhI/rq5jAinhFDCSOHLZ
+	CCTMLKAuMWneImYIW15i85q3zCCnSQisY5e49vEUO8Q5AhLfJh9iAemVEJCV2HQA6i1JiYMr
+	brBMYBSbheSgWUjGzkIydgEj8ypG0dSC5ILipPQiQ73ixNzi0rx0veT83E2MwEg6/e9Z7w7G
+	2wesDzEmA62cyCwlmpwPjMS8knhDYzMjC1MTU2Mjc0sz0oSVxHmTHiYFCQmkJ5akZqemFqQW
+	xReV5qQWH2Jk4uCUamBUUj2bw8x34BN3rmVLIJPXv+rTtqmvr/Km/E/oKDyj1sbe+KWy78Hv
+	dY/T9bYaOL/cl9AYrpKrp7r/CQ+HD9sj86jfppV+y5L2JVbKzpcJXLjd7JXB9St/X4TEanI+
+	4/TQ/idgN8d55//96i/vVuYnLSxe+GmKieDV4532c35tv79IPUbj8RElluKMREMt5qLiRAAY
+	rsiXugIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphleLIzCtJLcpLzFFi42I5/e+xgO6W32VBBh/vC1pM/7KP2WLxtynM
+	Fpd3zWGzuN24gs3icvs7NgdWj8V7XjJ59G1ZxejxeZNcAHNUA6NNRmpiSmqRQmpecn5KZl66
+	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBOJYWyxJxSoFBAYnGxkr4dpgmhIW66
+	FjCNEbq+IUFwPUYGaCBhDWPGu03/WQtO8lQceCXUwNjI1cXIySEhYCJx5cpMJghbTOLCvfVs
+	ILaQwCJGifMvDLoYuYDsV4wSi7adB0vwCmhJXAL6DsRmEVCV+L5wLSOIzQYU3//iBliNqECY
+	xMrpV1gg6gUlfky+B2aLCOhJLHlzG6iGg4NZoEDizvdgkLCwQJLEtK/PWCD2Gkr8uLqOCaSE
+	U8BI4shlI5Aws4C6xKR5i5ghbHmJzWveMk9gFJiFZMEsJGWzkJQtYGRexSiaWpBcUJyUnmuo
+	V5yYW1yal66XnJ+7iREcp8+kdjCubLA4xCjAwajEwytxuSxIiDWxrLgy9xCjBAezkgiv8zmg
+	EG9KYmVValF+fFFpTmrxIcZkoP8nMkuJJucDU0heSbyhsYmZkaWRuaGFkbE5acJK4rwHWq0D
+	hQTSE0tSs1NTC1KLYLYwcXBKNTC69S7kWvjJR+n24d5Tq02WVTstP/r0WOcyyf03Od9+W8Kv
+	c53R/Gn4jpM3H02+PstJ/1LTld+2igqfFDgy3nlX3b3JcE6zk32yr/2NWwFthl+KlWYdWXL2
+	6AlhWdZkwyddfqEicr3Gh4LPXSqeNJv7jZPOx9Y5f247O6ysZjXSO5jhsTVeyfy1EktxRqKh
+	FnNRcSIA3cE0sxcDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today, I checked 3.12 but I could not find this patch. Is it dead or
-under development? If it is under development, any external link?
+Hi Wang,
 
-Thanks
-with sincerely respects...
+>  drivers/extcon/extcon-class.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+> index 148382f..48f4669 100644
+> --- a/drivers/extcon/extcon-class.c
+> +++ b/drivers/extcon/extcon-class.c
+> @@ -794,6 +794,8 @@ void extcon_dev_unregister(struct extcon_dev *edev)
+>  		return;
+>  	}
+>  
+> +	device_unregister(edev->dev);
+> +
+>  	if (edev->mutually_exclusive && edev->max_supported) {
+>  		for (index = 0; edev->mutually_exclusive[index];
+>  				index++)
+> @@ -814,7 +816,6 @@ void extcon_dev_unregister(struct extcon_dev *edev)
+>  	if (switch_class)
+>  		class_compat_remove_link(switch_class, edev->dev, NULL);
+>  #endif
+> -	device_unregister(edev->dev);
+>  	put_device(edev->dev);
+>  }
+>  EXPORT_SYMBOL_GPL(extcon_dev_unregister);
+> 
 
-On Mon, Oct 14, 2013 at 5:08 PM, Vyacheslav Tyrtov <v.tyrtov@samsung.com> wrote:
-> The series of patches represent support of Exynos 5410 SoC
->
-> The Exynos 5410 is the first Samsung SoC based on bigLITTLE architecture.
-> Patches allow all 8 CPU cores (4 x A7 and 4 x A15) to run at the same time
->
-> Patches add new platform description, support of clock controller,
-> dual cluster support and device tree for Exynos 5410
->
-> Has been build on v3.12-rc5.
-> Has been tested on Exynos 5410 reference board (exynos_defconfig).
->
-> Thanks,
->         Vyacheslav.
->
->
-> Changelog:
->
-> v2:
->         In drivers/clk/samsung/clk-exynos5410.c
-> 1. Clock driver converted to use preprocessor macros instead of enums.
->    Clock IDs now defined in include/dt-bindings/clock/exynos5410.h.
-> 2. Unused spinlock removed.
-> 3. Function exynos5410_clk_init defined as static.
->    Struct exynos5410_fixed_rate_ext_clks defined as static.
->    Struct exynos5410_mux_clks defined as static.
->    Struct exynos5410_div_clks defined as static.
->    Struct exynos5410_gate_clks defined as static.
-> 4. Removed aliases.
-> 5. Pll's magic register offsets defined as preprocessor macros.
-> 6. Redundant check of device_node pointer removed.
->
->         In arch/arm/boot/dts/exynos5410.dtsi
-> 1. dwmmcX nodes renamed to mmc.
->    dwmmc_X renamed to mmc_X.
->    dwmmc status="disabled" field added.
->    fifo-depth field moved from arch/arm/boot/dts/exynos5410-smdk5410.dts
-> 2. Blank lines added where necessary.
-> 3. cpu@ suffixes corrected.
-> 4. edcs node removed.
-> 5. Hexadecimal characters case corrected.
-> 6. Clock IDs replaced with preprocessor macros.
->
->         In arch/arm/boot/dts/exynos5410-smdk5410.dts
-> 1. status = "okay" field added to mmc nodes.
->
->         In arch/arm/mach-exynos/edcs.c
-> 1. "kfs_" prefix replaced with "edcs_"
-> 2. EDCS_CPUS_PER_CLUSTER and EDCS_CLUSTERS defined instead of MCPM's values.
-> 3. Cache handling sequence borrowed from arch/arm/mach-vexpress/tc2_pm.c
-> 4. mcpm_sync_init() call added.
-> 5. power management functions reworked.
->
->         Other
-> 1. Documentation/devicetree/bindings/clock/exynos5410-clock.txt corrected.
-> 2. Removed smdk5410_defconfig. Instead SOC_EXYNOS5410 now selects MCPM and
->    ARM_CCI in arch/arm/mach-exynos/Kconfig.
-> 3. edcs_status driver removed.
->
-> Tarek Dakhran (4):
->   ARM: EXYNOS: Add support for EXYNOS5410 SoC
->   clk: exynos5410: register clocks using common clock framework
->   ARM: EXYNOS: add Exynos Dual Cluster Support
->   ARM: dts: Add initial device tree support for EXYNOS5410
->
->  .../devicetree/bindings/clock/exynos5410-clock.txt |  37 +++
->  arch/arm/boot/dts/Makefile                         |   1 +
->  arch/arm/boot/dts/exynos5410-smdk5410.dts          |  65 +++++
->  arch/arm/boot/dts/exynos5410.dtsi                  | 209 ++++++++++++++++
->  arch/arm/mach-exynos/Kconfig                       |  12 +
->  arch/arm/mach-exynos/Makefile                      |   2 +
->  arch/arm/mach-exynos/common.c                      |  18 ++
->  arch/arm/mach-exynos/edcs.c                        | 270 +++++++++++++++++++++
->  arch/arm/mach-exynos/include/mach/map.h            |   1 +
->  arch/arm/mach-exynos/mach-exynos5-dt.c             |   1 +
->  arch/arm/plat-samsung/include/plat/cpu.h           |   8 +
->  drivers/clk/samsung/Makefile                       |   1 +
->  drivers/clk/samsung/clk-exynos5410.c               | 251 +++++++++++++++++++
->  include/dt-bindings/clock/exynos5410.h             | 175 +++++++++++++
->  14 files changed, 1051 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/clock/exynos5410-clock.txt
->  create mode 100644 arch/arm/boot/dts/exynos5410-smdk5410.dts
->  create mode 100644 arch/arm/boot/dts/exynos5410.dtsi
->  create mode 100644 arch/arm/mach-exynos/edcs.c
->  create mode 100644 drivers/clk/samsung/clk-exynos5410.c
->  create mode 100644 include/dt-bindings/clock/exynos5410.h
->
-> --
-> 1.8.1.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+I think we could only apply following patch instead of moving the position of device_unregister().
+
+diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+index 148382f..ff27b19 100644
+--- a/drivers/extcon/extcon-class.c
++++ b/drivers/extcon/extcon-class.c
+@@ -805,10 +805,8 @@ void extcon_dev_unregister(struct extcon_dev *edev)
+        for (index = 0; index < edev->max_supported; index++)
+                kfree(edev->cables[index].attr_g.name);
+ 
+-       if (edev->max_supported) {
+-               kfree(edev->extcon_dev_type.groups);
++       if (edev->max_supported)
+                kfree(edev->cables);
+-       }
+ 
+ #if defined(CONFIG_ANDROID)
+        if (switch_class)
+
+Thanks,
+Chanwoo Choi
+
