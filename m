@@ -1,59 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab3KDWaU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 17:30:20 -0500
-Received: from fieldses.org ([174.143.236.118]:58479 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750957Ab3KDWaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 17:30:16 -0500
-Date: Mon, 4 Nov 2013 17:30:14 -0500
-From: Bruce Fields <bfields@fieldses.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [git pull] fixes for 3.12-final
-Message-ID: <20131104223014.GA8828@fieldses.org>
-References: <20131103015803.GK13318@ZenIV.linux.org.uk>
- <CA+55aFy3tAeLYL3_+PbeD15p6PGS-P7bs8fMUaRVSC0OCzvq6w@mail.gmail.com>
- <20131103195452.GL13318@ZenIV.linux.org.uk>
- <CA+55aFwW9s3GCa+zNTMg7m44-cj2RdJp7wRpCnPUvQHm9xYnFg@mail.gmail.com>
+	id S1753945Ab3KDWbh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 17:31:37 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:34398 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749Ab3KDWbf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 17:31:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwW9s3GCa+zNTMg7m44-cj2RdJp7wRpCnPUvQHm9xYnFg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 4 Nov 2013 14:31:34 -0800
+Message-ID: <CAOvWMLZ-ezykR6TkFAoZ1UW20QF6XMOKeZH8R-FdFJkXjAP9nA@mail.gmail.com>
+Subject: [BUG][ext2] XIP does not work on ext2
+From: Andiry Xu <andiry@gmail.com>
+To: Wang Shilong <wangsl-fnst@cn.fujitsu.com>, Jan Kara <jack@suse.cz>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Andiry Xu <andiry.xu@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 03, 2013 at 03:39:14PM -0800, Linus Torvalds wrote:
-> On Sun, Nov 3, 2013 at 11:54 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > IIRC, at some point such an attempt has seriously hurt iget() on 32bit
-> > boxen, so we ended up deciding not to go there.  Had been years ago,
-> > though...
-> 
-> Yeah, I think the circumstances have changed. 32-bit is less
-> important, and iget() is much less critical than it used to be (all
-> *normal* inode lookups are through the direct dentry pointer).
-> 
-> Sure, ARM is a few years away from 64-bit being common, but it's
-> happening. And I suspect even 32-bit ARM doesn't have the annoying
-> issues that x86-32 had with 64-bit values (namely using up a lot of
-> the register space).
-> 
-> So unless there's something hidden that makes it really nasty, I do
-> suspect that a "u64 i_ino" would just be the right thing to do. Rather
-> than adding workarounds for our current odd situation on 32-bit
-> kernels (and just wasting time on 64-bit kernels).
+Hi,
 
-I'm all for it, though I'm worried about:
+When I'm trying XIP on ext2, I find that xip does not work on ext2
+with latest kernel.
 
-	$ git grep '\bi_ino\b'|wc -l
-	1746
+Reproduce steps:
+Compile kernel with following configs:
+CONFIG_BLK_DEV_XIP=y
+CONFIG_EXT2_FS_XIP=y
 
-so would prefer a more modest (and possibly stable-appropriate) fix for
-3.13 while we sort out what i_ino's being used for.
+And run following commands:
+# mke2fs -b 4096 /dev/ram0
+# mount -t ext2 -o xip /dev/ram0 /mnt/ramdisk/
+# dd if=/dev/zero of=/mnt/ramdisk/test1 bs=1M count=16
 
---b.
+And it shows:
+dd: writing `/mnt/ramdisk/test1': No space left on device
+
+df also shows /mnt/ramdisk is 100% full. Its default size is 64MB so a
+16MB write should only occupy 1/4 capacity.
+
+Criminal commit:
+After git bisect, it points to the following commit:
+8e3dffc651cb668e1ff4d8b89cc1c3dde7540d3b
+Ext2: mark inode dirty after the function dquot_free_block_nodirty is called
+
+Particularly, the following code:
+@@ -1412,9 +1415,11 @@ allocated:
+*errp = 0;
+brelse(bitmap_bh);
+-    dquot_free_block_nodirty(inode, *count-num);
+-    mark_inode_dirty(inode);
+-    *count = num;
++    if (num < *count) {
++        dquot_free_block_nodirty(inode, *count-num);
++        mark_inode_dirty(inode);
++        *count = num;
++    }
+      return ret_block;
+
+Not mark_inode_dirty() is called only when num is less than *count.
+However, I've seen
+with the dd command, there is case where num >= *count.
+
+Fix:
+I've verified that the following patch fixes the issue:
+diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
+index 9f9992b..5446a52 100644
+--- a/fs/ext2/balloc.c
++++ b/fs/ext2/balloc.c
+@@ -1406,11 +1406,10 @@ allocated:
+
+        *errp = 0;
+        brelse(bitmap_bh);
+-       if (num < *count) {
++       if (num <= *count)
+                dquot_free_block_nodirty(inode, *count-num);
+-               mark_inode_dirty(inode);
+-               *count = num;
+-       }
++       mark_inode_dirty(inode);
++       *count = num;
+        return ret_block;
+
+ io_error:
+
+However, I'm not familiar with ext2 source code and cannot tell if
+this is the correct fix. At least it fixes my issue.
+
+Thanks,
+Andiry
