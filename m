@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab3KDJSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 04:18:10 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:47066 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753174Ab3KDJSH (ORCPT
+	id S1753106Ab3KDJVF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 04:21:05 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42208 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752592Ab3KDJVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 04:18:07 -0500
-Date: Mon, 4 Nov 2013 09:18:00 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>, Linux EFI <linux-efi@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Vivek Goyal <vgoyal@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 ML <x86@kernel.org>
-Subject: Re: [PATCH 10/11] EFI: Runtime services virtual mapping
-Message-ID: <20131104091800.GB21688@console-pimps.org>
-References: <1383236709-19716-1-git-send-email-bp@alien8.de>
- <1383236709-19716-11-git-send-email-bp@alien8.de>
- <20131101032551.GC4378@dhcp-16-126.nay.redhat.com>
- <20131103123115.GA5313@dhcp-16-126.nay.redhat.com>
+	Mon, 4 Nov 2013 04:21:03 -0500
+Date: Mon, 4 Nov 2013 09:21:02 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: myungjoo.ham@samsung.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] extcon: arizona: Fix reset of HPDET after race
+	with removal
+Message-ID: <20131104092102.GC30879@opensource.wolfsonmicro.com>
+References: <1382890752-30970-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <5276EB32.9060803@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131103123115.GA5313@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5276EB32.9060803@samsung.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 03 Nov, at 08:31:15PM, Dave Young wrote:
-> Hi, Matt
+On Mon, Nov 04, 2013 at 09:32:50AM +0900, Chanwoo Choi wrote:
+> The arizona_hpdet_do_id() return only either -EAGIN or 0(zero).
+> extcon-arizona driver could never execute 'goto done;' statement.
 > 
-> How should I handle this problem, would you take above commit or rebase efi
-> next branch?
+> 	ret = arizona_hpdet_do_id(info, &reading, &mic);
+> 	if (ret == -EAGAIN) {
+> 		goto out;
+> 	} else if (ret < 0) {
+> 		goto done;
+> 	}
 
-Dave, could you base your patches against the EFI 'master' branch? I've
-rebased that branch on v3.12, which includes commit 700870119f49 ("x86,
-efi: Don't map Boot Services on i386"), and merged everything from
-'next'. Just note in the patch description which branch you've based
-your work on and why in case I forget ;-)
+True that else if is redundant at the moment, but personally I
+would be inclined to leave it in, it feels safer against possible
+future edits of arizona_hpdet_do_id. It would be reasonable for
+someone to assume that other return values are acceptable whilst
+editing it but they would then not be handled.
 
-Let me know if this causes any issues.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+Thanks,
+Charles
