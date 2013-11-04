@@ -1,87 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab3KDDcY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 22:32:24 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:52870 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab3KDDcX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 22:32:23 -0500
-Date: Sun, 3 Nov 2013 20:32:19 -0700
-From: Jens Axboe <axboe@kernel.dk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>
-Subject: Re: linux-next: build failure after merge of the block tree
-Message-ID: <20131104033219.GE14163@kernel.dk>
-References: <20131104141345.b2699b2cc7cdc347c5735c5a@canb.auug.org.au>
- <20131104032341.GD14163@kernel.dk>
+	id S1752803Ab3KDDhi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 22:37:38 -0500
+Received: from mga02.intel.com ([134.134.136.20]:11216 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752432Ab3KDDhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 22:37:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="429272512"
+Date: Mon, 4 Nov 2013 11:37:49 +0800
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH 4/4] mm/rmap.c: move anon_vma initialization code into
+ anon_vma_ctor
+Message-ID: <20131104033749.GG30123@yliu-dev.sh.intel.com>
+References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
+ <1383292467-28922-5-git-send-email-yuanhan.liu@linux.intel.com>
+ <CA+55aFzAxnP0R8LrO9d1MzjCs8LxKXGwxadnUtoKeXhAh3Mzqw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131104032341.GD14163@kernel.dk>
+In-Reply-To: <CA+55aFzAxnP0R8LrO9d1MzjCs8LxKXGwxadnUtoKeXhAh3Mzqw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 03 2013, Jens Axboe wrote:
-> On Mon, Nov 04 2013, Stephen Rothwell wrote:
-> > Hi Jens,
-> > 
-> > [I merged the block tree *before* the aio-direct tree today ...]
-> > 
-> > After merging the block tree, today's linux-next build (powerpc
-> > ppc64_defconfig) failed like this:
-> > 
-> > In file included from include/linux/blkdev.h:18:0,
-> >                  from drivers/block/ps3disk.c:22:
-> > drivers/block/ps3disk.c: In function 'ps3disk_scatter_gather':
-> > include/linux/bio.h:239:9: error: incompatible types when assigning to type 'struct bio_vec *' from type 'struct bio_vec'
-> >    ((bvl = bio_iter_iovec((bio), (iter))), 1);  \
-> >          ^
-> > include/linux/bio.h:243:2: note: in expansion of macro '__bio_for_each_segment'
-> >   __bio_for_each_segment(bvl, bio, iter, (bio)->bi_iter)
-> >   ^
-> > include/linux/blkdev.h:748:3: note: in expansion of macro 'bio_for_each_segment'
-> >    bio_for_each_segment(bvl, _iter.bio, _iter.iter)
-> >    ^
-> > drivers/block/ps3disk.c:102:2: note: in expansion of macro 'rq_for_each_segment'
-> >   rq_for_each_segment(bvec, req, iter) {
-> >   ^
-> > include/linux/bio.h:239:41: warning: left-hand operand of comma expression has no effect [-Wunused-value]
-> >    ((bvl = bio_iter_iovec((bio), (iter))), 1);  \
-> >                                          ^
-> > include/linux/bio.h:243:2: note: in expansion of macro '__bio_for_each_segment'
-> >   __bio_for_each_segment(bvl, bio, iter, (bio)->bi_iter)
-> >   ^
-> > include/linux/blkdev.h:748:3: note: in expansion of macro 'bio_for_each_segment'
-> >    bio_for_each_segment(bvl, _iter.bio, _iter.iter)
-> >    ^
-> > drivers/block/ps3disk.c:102:2: note: in expansion of macro 'rq_for_each_segment'
-> >   rq_for_each_segment(bvec, req, iter) {
-> >   ^
-> > include/linux/bio.h:240:45: error: request for member 'bv_len' in something not a structure or union
-> >        bio_advance_iter((bio), &(iter), (bvl).bv_len))
-> >                                              ^
-> > include/linux/bio.h:243:2: note: in expansion of macro '__bio_for_each_segment'
-> >   __bio_for_each_segment(bvl, bio, iter, (bio)->bi_iter)
-> >   ^
-> > include/linux/blkdev.h:748:3: note: in expansion of macro 'bio_for_each_segment'
-> >    bio_for_each_segment(bvl, _iter.bio, _iter.iter)
-> >    ^
-> > drivers/block/ps3disk.c:102:2: note: in expansion of macro 'rq_for_each_segment'
-> >   rq_for_each_segment(bvec, req, iter) {
-> >   ^
-> > 
-> > I am not quite sure which commit caused this (maybe ed2d2f9a8265 ("block:
-> > Abstract out bvec iterator")?).  I have used the block tree from
-> > next-20131031 again for today.
+On Fri, Nov 01, 2013 at 11:04:40AM -0700, Linus Torvalds wrote:
+> On Fri, Nov 1, 2013 at 12:54 AM, Yuanhan Liu
+> <yuanhan.liu@linux.intel.com> wrote:
+> > @@ -67,19 +67,7 @@ static struct kmem_cache *anon_vma_chain_cachep;
+> >
+> >  static inline struct anon_vma *anon_vma_alloc(void)
+> >  {
+> > -       struct anon_vma *anon_vma;
+> > -
+> > -       anon_vma = kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
+> > -       if (anon_vma) {
+> > -               atomic_set(&anon_vma->refcount, 1);
+> > -               /*
+> > -                * Initialise the anon_vma root to point to itself. If called
+> > -                * from fork, the root will be reset to the parents anon_vma.
+> > -                */
+> > -               anon_vma->root = anon_vma;
+> > -       }
+> > -
+> > -       return anon_vma;
+> > +       return kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
+> >  }
+> >
+> >  static inline void anon_vma_free(struct anon_vma *anon_vma)
+> > @@ -293,8 +281,15 @@ static void anon_vma_ctor(void *data)
+> >         struct anon_vma *anon_vma = data;
+> >
+> >         rwlock_init(&anon_vma->rwlock);
+> > -       atomic_set(&anon_vma->refcount, 0);
+> >         anon_vma->rb_root = RB_ROOT;
+> > +
+> > +       atomic_set(&anon_vma->refcount, 1);
+> > +       /*
+> > +        * Initialise the anon_vma root to point to itself. If called
+> > +        * from fork, the root will be reset to the parents anon_vma.
+> > +        */
+> > +       anon_vma->root = anon_vma;
+> > +
+> >  }
 > 
-> Don't have ppc64 cross compiling handy, but the below should do the
-> trick.
+> This looks totally invalid.
+> 
+> The slab constructor is *not* called on every allocation.
 
-Checked, works for me. Committed and for-next branch updated.
+Sorry, I didn't know that :(
 
--- 
-Jens Axboe
+And thanks for the detailed info very much!
 
+	--yliu
+
+> Quite the
+> reverse. Constructors are called when the underlying allocation is
+> initially done, and then *not* done again, even if that particular
+> object may be allocated and free'd many times.
+> 
+> So the reason we can do
+> 
+>     atomic_set(&anon_vma->refcount, 0);
+> 
+> in a constructor is that anybody who frees that allocation will do so
+> only when the refcount goes back down to zero, so zero is "valid
+> state" while the slab entry stays on some percpu freelist.
+> 
+> But the same is ABSOLUTELY NOT TRUE of the value "1", nor is it true
+> of the anon_vma->root. When the anonvma gets free'd, those values will
+> *not* be the same (the refcount has been decremented to zero, and the
+> root will have been set to whatever the root was.
+> 
+> So the rule about constructors is that the values they construct
+> absolutely *have* to be the ones they get free'd with. With one
+> special case.
+> 
+> Using slab constructors is almost always a mistake. The original
+> Sun/Solaris argument for them was to avoid initialization costs in
+> allocators, and that was pure and utter bullshit (initializing a whole
+> cacheline is generally cheaper than not initializing it and having to
+> fetch it from L3 caches, but it does hide the cost so that it is now
+> spread out in the users rather than in the allocator).
+> 
+> So the _original_ reason for slab is pure and utter BS, and we've
+> removed pretty much all uses of the constructors.
+> 
+> In fact, the only valid reason for using them any more is the special
+> case: locks and RCU.
+> 
+> The reason we still have constructors is that sometimes we want to
+> keep certain data structures "alive" across allocations together with
+> SLAB_DESTROY_BY_RCU (which delays the actual *page* destroying by RCU,
+> but the allocation can go to the free-list and get re-allocated
+> without a RCU grace-period).
+> 
+> But because allocations can now "stay active" over a
+> alloc/free/alloc-again sequence, that means that the allocation
+> sequence MUST NOT re-initialize the lock, because some RCU user may
+> still be looking at those fields (and in particular, unlocking an
+> allocation that in the meantime got free'd and re-allocated).
+> 
+> So these days, the *only* valid pattern for slab constructors is
+> together with SLAB_DESTROY_BY_RCU, and making sure that the fields
+> that RCU readers look at (and in particular, change) are "stable" over
+> such re-allocations.
+> 
+> Your patch is horribly wrong.
+> 
+>                   Linus
