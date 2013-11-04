@@ -1,149 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab3KDK1Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 05:27:16 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:24882 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752288Ab3KDK1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 05:27:15 -0500
-X-IronPort-AV: E=Sophos;i="4.93,631,1378828800"; 
-   d="scan'208";a="8941638"
-Message-ID: <52777511.1020605@cn.fujitsu.com>
-Date: Mon, 04 Nov 2013 18:21:05 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1752336Ab3KDKhr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 05:37:47 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:50987 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750718Ab3KDKhq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 05:37:46 -0500
+Date: Mon, 4 Nov 2013 10:37:39 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: matt.fleming@intel.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] efi earlyprintk fix
+Message-ID: <20131104103739.GD21688@console-pimps.org>
+References: <20131103121647.GA4770@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-To: bpm@sgi.com, elder@kernel.org
-CC: xfs@oss.sgi.com, linux-kernel <linux-kernel@vger.kernel.org>,
-        guz.fnst@cn.fujitsu.com, Dave Chinner <david@fromorbit.com>
-Subject: [PATCH V2] xfs: simplify kmem_{zone_}zalloc
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/04 18:25:21,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/04 18:25:23,
-	Serialize complete at 2013/11/04 18:25:23
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131103121647.GA4770@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce flag KM_ZERO which is used to alloc zeroed entry, and convert
-kmem_{zone_}zalloc to call kmem_{zone_}alloc() with KM_ZERO directly,
-in order to avoid the setting to zero step. 
-And following Dave's suggestion, make kmem_{zone_}zalloc static inline
-into kmem.h as they're now just a simple wrapper.
+On Sun, 03 Nov, at 08:16:47PM, Dave Young wrote:
+> 
+> there's below one line shift problem:
+> 
+>                      ACPI=0xdabfe000  ACPI 2.0=0xdabfe014  SMBIOS=0xdaa9e000
+> [    0.000000] efi:  
+> 
+> In fact check efi_y and the lfb_height should be compared at the begin of the
+> loop of early_efi_write
+ 
+Hmm... this is interesting. I can't produce this on any of my machines.
+Where did you see this? What hardware?
 
-V2:
-  Make kmem_{zone_}zalloc static inline into kmem.h as Dave suggested.
+> Signed-off-by: Dave Young <dyoung@redhat.com>
+> ---
+>  arch/x86/platform/efi/early_printk.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- linux-2.6.orig/arch/x86/platform/efi/early_printk.c
+> +++ linux-2.6/arch/x86/platform/efi/early_printk.c
+> @@ -106,6 +106,15 @@ early_efi_write(struct console *con, con
+>  		if (count > linemax)
+>  			count = linemax;
+>  
+> +		if (efi_y + font->height >= si->lfb_height) {
+> +			u32 i;
+> +
+> +			efi_y -= font->height;
+> +			early_efi_scroll_up();
+> +
+> +			for (i = 0; i < font->height; i++)
+> +				early_efi_clear_scanline(efi_y + i);
+> +		}
+>  		for (h = 0; h < font->height; h++) {
+>  			unsigned int n, x;
+>  
+> @@ -142,15 +151,6 @@ early_efi_write(struct console *con, con
+>  			efi_y += font->height;
+>  		}
+>  
+> -		if (efi_y + font->height >= si->lfb_height) {
+> -			u32 i;
+> -
+> -			efi_y -= font->height;
+> -			early_efi_scroll_up();
+> -
+> -			for (i = 0; i < font->height; i++)
+> -				early_efi_clear_scanline(efi_y + i);
+> -		}
+>  	}
+>  }
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- fs/xfs/kmem.c |   22 ----------------------
- fs/xfs/kmem.h |   21 ++++++++++++++++++---
- 2 files changed, 18 insertions(+), 25 deletions(-)
+Notice how we figure out the initial value of efi_y...
 
-diff --git a/fs/xfs/kmem.c b/fs/xfs/kmem.c
-index a02cfb9..66a36be 100644
---- a/fs/xfs/kmem.c
-+++ b/fs/xfs/kmem.c
-@@ -63,17 +63,6 @@ kmem_alloc(size_t size, xfs_km_flags_t flags)
- }
- 
- void *
--kmem_zalloc(size_t size, xfs_km_flags_t flags)
--{
--	void	*ptr;
--
--	ptr = kmem_alloc(size, flags);
--	if (ptr)
--		memset((char *)ptr, 0, (int)size);
--	return ptr;
--}
--
--void *
- kmem_zalloc_large(size_t size, xfs_km_flags_t flags)
- {
- 	void	*ptr;
-@@ -128,14 +117,3 @@ kmem_zone_alloc(kmem_zone_t *zone, xfs_km_flags_t flags)
- 		congestion_wait(BLK_RW_ASYNC, HZ/50);
- 	} while (1);
- }
--
--void *
--kmem_zone_zalloc(kmem_zone_t *zone, xfs_km_flags_t flags)
--{
--	void	*ptr;
--
--	ptr = kmem_zone_alloc(zone, flags);
--	if (ptr)
--		memset((char *)ptr, 0, kmem_cache_size(zone));
--	return ptr;
--}
-diff --git a/fs/xfs/kmem.h b/fs/xfs/kmem.h
-index 3a7371c..64db0e5 100644
---- a/fs/xfs/kmem.h
-+++ b/fs/xfs/kmem.h
-@@ -32,6 +32,7 @@ typedef unsigned __bitwise xfs_km_flags_t;
- #define KM_NOSLEEP	((__force xfs_km_flags_t)0x0002u)
- #define KM_NOFS		((__force xfs_km_flags_t)0x0004u)
- #define KM_MAYFAIL	((__force xfs_km_flags_t)0x0008u)
-+#define KM_ZERO		((__force xfs_km_flags_t)0x0010u)
- 
- /*
-  * We use a special process flag to avoid recursive callbacks into
-@@ -43,7 +44,7 @@ kmem_flags_convert(xfs_km_flags_t flags)
- {
- 	gfp_t	lflags;
- 
--	BUG_ON(flags & ~(KM_SLEEP|KM_NOSLEEP|KM_NOFS|KM_MAYFAIL));
-+	BUG_ON(flags & ~(KM_SLEEP|KM_NOSLEEP|KM_NOFS|KM_MAYFAIL|KM_ZERO));
- 
- 	if (flags & KM_NOSLEEP) {
- 		lflags = GFP_ATOMIC | __GFP_NOWARN;
-@@ -52,11 +53,14 @@ kmem_flags_convert(xfs_km_flags_t flags)
- 		if ((current->flags & PF_FSTRANS) || (flags & KM_NOFS))
- 			lflags &= ~__GFP_FS;
- 	}
-+
-+	if (flags & KM_ZERO)
-+		lflags |= __GFP_ZERO;
-+
- 	return lflags;
- }
- 
- extern void *kmem_alloc(size_t, xfs_km_flags_t);
--extern void *kmem_zalloc(size_t, xfs_km_flags_t);
- extern void *kmem_zalloc_large(size_t size, xfs_km_flags_t);
- extern void *kmem_realloc(const void *, size_t, size_t, xfs_km_flags_t);
- extern void  kmem_free(const void *);
-@@ -64,6 +68,12 @@ extern void  kmem_free(const void *);
- 
- extern void *kmem_zalloc_greedy(size_t *, size_t, size_t);
- 
-+static inline void *
-+kmem_zalloc(size_t size, xfs_km_flags_t flags)
-+{
-+	return kmem_alloc(size, flags | KM_ZERO);
-+}
-+
- /*
-  * Zone interfaces
-  */
-@@ -102,6 +112,11 @@ kmem_zone_destroy(kmem_zone_t *zone)
- }
- 
- extern void *kmem_zone_alloc(kmem_zone_t *, xfs_km_flags_t);
--extern void *kmem_zone_zalloc(kmem_zone_t *, xfs_km_flags_t);
-+
-+static inline void *
-+kmem_zone_zalloc(kmem_zone_t *zone, xfs_km_flags_t flags)
-+{
-+	return kmem_zone_alloc(zone, flags | KM_ZERO);
-+}
- 
- #endif /* __XFS_SUPPORT_KMEM_H__ */
+static __init int early_efi_setup(struct console *con, char *options)
+{
+	struct screen_info *si;
+	u16 xres, yres;
+	u32 i;
+
+	si = &boot_params.screen_info;
+	xres = si->lfb_width;
+	yres = si->lfb_height;
+
+	....
+
+	efi_y = rounddown(yres, font->height) - font->height;
+
+Every time we enter early_efi_write(), we should have enough space to
+write one line, so I'm not at all sure what's going wrong with your
+display.
+
 -- 
-1.7.7
-
-
+Matt Fleming, Intel Open Source Technology Center
