@@ -1,103 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab3KDHAj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 02:00:39 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:61198 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975Ab3KDHAi (ORCPT
+	id S1752371Ab3KDHDv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 02:03:51 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:37578 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab3KDHDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 02:00:38 -0500
-Date: Mon, 4 Nov 2013 08:00:34 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+	Mon, 4 Nov 2013 02:03:50 -0500
+Date: Sun, 3 Nov 2013 23:03:28 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
         Rik van Riel <riel@redhat.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        aswin@hp.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Dave Chinner <dchinner@redhat.com>
 Subject: Re: [PATCH] mm: cache largest vma
-Message-ID: <20131104070034.GD13030@gmail.com>
+Message-ID: <20131104070328.GA17995@infradead.org>
 References: <1383337039.2653.18.camel@buesod1.americas.hpqcorp.net>
- <20131103101234.GB5330@gmail.com>
- <1383538810.2373.22.camel@buesod1.americas.hpqcorp.net>
+ <CA+55aFwrtOaFtwGc6xyZH6-1j3f--AG1JS-iZM8-pZPnwRHBow@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383538810.2373.22.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <CA+55aFwrtOaFtwGc6xyZH6-1j3f--AG1JS-iZM8-pZPnwRHBow@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Davidlohr Bueso <davidlohr@hp.com> wrote:
-
-> On Sun, 2013-11-03 at 11:12 +0100, Ingo Molnar wrote:
-> > * Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > 
-> > > While caching the last used vma already does a nice job avoiding
-> > > having to iterate the rbtree in find_vma, we can improve. After
-> > > studying the hit rate on a load of workloads and environments,
-> > > it was seen that it was around 45-50% - constant for a standard
-> > > desktop system (gnome3 + evolution + firefox + a few xterms),
-> > > and multiple java related workloads (including Hadoop/terasort),
-> > > and aim7, which indicates it's better than the 35% value documented
-> > > in the code.
-> > > 
-> > > By also caching the largest vma, that is, the one that contains
-> > > most addresses, there is a steady 10-15% hit rate gain, putting
-> > > it above the 60% region. This improvement comes at a very low
-> > > overhead for a miss. Furthermore, systems with !CONFIG_MMU keep
-> > > the current logic.
-> > > 
-> > > This patch introduces a second mmap_cache pointer, which is just
-> > > as racy as the first, but as we already know, doesn't matter in
-> > > this context. For documentation purposes, I have also added the
-> > > ACCESS_ONCE() around mm->mmap_cache updates, keeping it consistent
-> > > with the reads.
-> > > 
-> > > Cc: Hugh Dickins <hughd@google.com>
-> > > Cc: Michel Lespinasse <walken@google.com>
-> > > Cc: Ingo Molnar <mingo@kernel.org>
-> > > Cc: Mel Gorman <mgorman@suse.de>
-> > > Cc: Rik van Riel <riel@redhat.com>
-> > > Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> > > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> > > ---
-> > > Please note that nommu and unicore32 arch are *untested*.
-> > > 
-> > > I also have a patch on top of this one that caches the most 
-> > > used vma, which adds another 8-10% hit rate gain, However,
-> > > since it does add a counter to the vma structure and we have
-> > > to do more logic in find_vma to keep track, I was hesitant about
-> > > the overhead. If folks are interested I can send that out as well.
-> > 
-> > Would be interesting to see.
-> > 
-> > Btw., roughly how many cycles/instructions do we save by increasing 
-> > the hit rate, in the typical case (for example during a kernel build)?
+On Sun, Nov 03, 2013 at 10:51:27AM -0800, Linus Torvalds wrote:
+> Ugh. This patch makes me angry. It looks way too ad-hoc.
 > 
-> Good point. The IPC from perf stat doesn't show any difference with or 
-> without the patch -- note that this is probably the least interesting 
-> one as we already get a really nice hit rate with the single mmap_cache. 
-> I have yet to try it on the other workloads.
+> I can well imagine that our current one-entry cache is crap and could
+> be improved, but this looks too random. Different code for the
+> CONFIG_MMU case? Same name, but for non-MMU it's a single entry, for
+> MMU it's an array? And the whole "largest" just looks odd. Plus why do
+> you set LAST_USED if you also set LARGEST?
+> 
+> Did you try just a two- or four-entry pseudo-LRU instead, with a
+> per-thread index for "last hit"? Or even possibly a small fixed-size
+> hash table (say "idx = (add >> 10) & 3" or something)?
 
-I'd be surprised if this was measureable via perf stat, unless you do the 
-measurement in a really, really careful way - and even then it's easy to 
-make a hard to detect mistake larger in magnitude than the measured effect 
-...
+Btw, Dave Chiner has recently implemented a simple look aside cache for
+the buffer cache, which also uses a rbtree.  Might beworth into making
+that into a generic library and use it here:
 
-An easier and more reliable measurement would be to stick 2-3 get_cycles() 
-calls into the affected code and save the pure timestamps into 
-task.se.statistics, and extract the timestamps via /proc/sched_debug by 
-adding matching seq_printf()s to kernel/sched/debug.c. (You can clear the 
-statistics by echoing 0 to /proc/<PID>/sched_debug, see 
-proc_sched_set_task().)
-
-That measurement is still subject to skid and other artifacts but 
-hopefully the effect is larger than cycles fuzz - and we are interested in 
-a ballpark figure in any case.
-
-Thanks,
-
-	Ingo
+	http://thread.gmane.org/gmane.comp.file-systems.xfs.general/56220
