@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab3KDMhE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 07:37:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43896 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab3KDMhC (ORCPT
+	id S1752874Ab3KDMjj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 07:39:39 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:54884 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab3KDMji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 07:37:02 -0500
-Date: Mon, 4 Nov 2013 04:39:12 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the random tree with Linus' tree
-Message-ID: <20131104123912.GA22288@kroah.com>
-References: <20131104170411.ccd38895fb4cdc347f9cf912@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131104170411.ccd38895fb4cdc347f9cf912@canb.auug.org.au>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Mon, 4 Nov 2013 07:39:38 -0500
+From: Bob Liu <lliubbo@gmail.com>
+To: konrad.wilk@oracle.com
+Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        Bob Liu <bob.liu@oracle.com>
+Subject: [PATCH] drivers: xen-selfballoon: consider slab pages
+Date: Mon,  4 Nov 2013 20:39:24 +0800
+Message-Id: <1383568764-30478-1-git-send-email-bob.liu@oracle.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04, 2013 at 05:04:11PM +1100, Stephen Rothwell wrote:
-> Hi Ted,
-> 
-> Today's linux-next merge of the random tree got a conflict in
-> drivers/base/core.c between commit 63967685605b ("driver core: add
-> #include <linux/sysfs.h> to core files") from Linus' tree and commit
-> f0ed2b943a53 ("random: use device attach events for entropy") from the
-> random tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+Currently the goal_page in xen-selfballon doesn't consider much about pages used
+in kernel space.
+A typical usage is slab pages, without consider slab pages the goal_page result
+may be too rough and lead extra memory pressure to guest os.
 
-I think Ted is going to drop this patch from his tree as it didn't work
-properly, right Ted?
+Signed-off-by: Bob Liu <bob.liu@oracle.com>
+---
+ drivers/xen/xen-selfballoon.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-thanks,
+diff --git a/drivers/xen/xen-selfballoon.c b/drivers/xen/xen-selfballoon.c
+index 21e18c1..4814759 100644
+--- a/drivers/xen/xen-selfballoon.c
++++ b/drivers/xen/xen-selfballoon.c
+@@ -191,6 +191,8 @@ static void selfballoon_process(struct work_struct *work)
+ 		tgt_pages = cur_pages; /* default is no change */
+ 		goal_pages = vm_memory_committed() +
+ 				totalreserve_pages +
++				global_page_state(NR_SLAB_RECLAIMABLE) +
++				global_page_state(NR_SLAB_UNRECLAIMABLE) +
+ 				MB2PAGES(selfballoon_reserved_mb);
+ #ifdef CONFIG_FRONTSWAP
+ 		/* allow space for frontswap pages to be repatriated */
+-- 
+1.7.10.4
 
-greg k-h
