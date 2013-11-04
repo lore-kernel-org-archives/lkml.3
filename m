@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab3KDDjB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 22:39:01 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:40842 "EHLO quartz.orcorp.ca"
+	id S1752894Ab3KDDjA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 22:39:00 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:55343 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752258Ab3KDDi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752160Ab3KDDi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 3 Nov 2013 22:38:57 -0500
 From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 To: tpmdd-devel@lists.sourceforge.net, Peter Huewe <peterhuewe@gmx.de>
 Cc: linux-kernel@vger.kernel.org, Ashley Lai <ashley@ashleylai.com>
-Subject: [PATCH 4/5 v2] tpm: Use the ops structure instead of a copy in tpm_vendor_specific
-Date: Sun,  3 Nov 2013 20:38:45 -0700
-Message-Id: <1383536326-28772-5-git-send-email-jgunthorpe@obsidianresearch.com>
+Subject: [PATCH 3/5 v2] tpm: Create a tpm_class_ops structure and use it in the drivers
+Date: Sun,  3 Nov 2013 20:38:44 -0700
+Message-Id: <1383536326-28772-4-git-send-email-jgunthorpe@obsidianresearch.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1383536326-28772-1-git-send-email-jgunthorpe@obsidianresearch.com>
 References: <1383536326-28772-1-git-send-email-jgunthorpe@obsidianresearch.com>
@@ -20,192 +20,233 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This builds on the last commit to use the ops structure in the core
-and reduce the size of tpm_vendor_specific.
+This replaces the static initialization of a tpm_vendor_specific
+structure in the drivers with the standard Linux idiom of providing
+a const structure of function pointers.
 
 Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 Reviewed-by: Joel Schopp <jschopp@linux.vnet.ibm.com>
 ---
- drivers/char/tpm/tpm-interface.c    | 34 ++++++++++++----------------------
- drivers/char/tpm/tpm-sysfs.c        |  2 +-
- drivers/char/tpm/tpm.h              |  9 +--------
- drivers/char/tpm/tpm_i2c_stm_st33.c |  4 ++--
- 4 files changed, 16 insertions(+), 33 deletions(-)
+ drivers/char/tpm/tpm-interface.c    | 10 ++++++++--
+ drivers/char/tpm/tpm.h              |  6 +++---
+ drivers/char/tpm/tpm_atmel.c        |  2 +-
+ drivers/char/tpm/tpm_i2c_atmel.c    |  2 +-
+ drivers/char/tpm/tpm_i2c_infineon.c |  2 +-
+ drivers/char/tpm/tpm_i2c_nuvoton.c  |  2 +-
+ drivers/char/tpm/tpm_i2c_stm_st33.c |  2 +-
+ drivers/char/tpm/tpm_ibmvtpm.c      |  2 +-
+ drivers/char/tpm/tpm_infineon.c     |  2 +-
+ drivers/char/tpm/tpm_nsc.c          |  2 +-
+ drivers/char/tpm/tpm_tis.c          |  2 +-
+ drivers/char/tpm/xen-tpmfront.c     |  2 +-
+ include/linux/tpm.h                 | 12 ++++++++++++
+ 13 files changed, 33 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-index 0662b70..5a2807c 100644
+index 5ab3caa..0662b70 100644
 --- a/drivers/char/tpm/tpm-interface.c
 +++ b/drivers/char/tpm/tpm-interface.c
-@@ -353,7 +353,7 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
- 
- 	mutex_lock(&chip->tpm_mutex);
- 
--	rc = chip->vendor.send(chip, (u8 *) buf, count);
-+	rc = chip->ops->send(chip, (u8 *) buf, count);
- 	if (rc < 0) {
- 		dev_err(chip->dev,
- 			"tpm_transmit: tpm_send: error %zd\n", rc);
-@@ -365,12 +365,12 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
- 
- 	stop = jiffies + tpm_calc_ordinal_duration(chip, ordinal);
- 	do {
--		u8 status = chip->vendor.status(chip);
--		if ((status & chip->vendor.req_complete_mask) ==
--		    chip->vendor.req_complete_val)
-+		u8 status = chip->ops->status(chip);
-+		if ((status & chip->ops->req_complete_mask) ==
-+		    chip->ops->req_complete_val)
- 			goto out_recv;
- 
--		if (chip->vendor.req_canceled(chip, status)) {
-+		if (chip->ops->req_canceled(chip, status)) {
- 			dev_err(chip->dev, "Operation Canceled\n");
- 			rc = -ECANCELED;
- 			goto out;
-@@ -380,13 +380,13 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
- 		rmb();
- 	} while (time_before(jiffies, stop));
- 
--	chip->vendor.cancel(chip);
-+	chip->ops->cancel(chip);
- 	dev_err(chip->dev, "Operation Timed out\n");
- 	rc = -ETIME;
- 	goto out;
- 
- out_recv:
--	rc = chip->vendor.recv(chip, (u8 *) buf, bufsiz);
-+	rc = chip->ops->recv(chip, (u8 *) buf, bufsiz);
- 	if (rc < 0)
- 		dev_err(chip->dev,
- 			"tpm_transmit: tpm_recv: error %zd\n", rc);
-@@ -807,12 +807,12 @@ EXPORT_SYMBOL_GPL(tpm_send);
- static bool wait_for_tpm_stat_cond(struct tpm_chip *chip, u8 mask,
- 				   bool check_cancel, bool *canceled)
+@@ -1061,7 +1061,7 @@ EXPORT_SYMBOL_GPL(tpm_dev_release);
+  * pci_disable_device
+  */
+ struct tpm_chip *tpm_register_hardware(struct device *dev,
+-					const struct tpm_vendor_specific *entry)
++				       const struct tpm_class_ops *ops)
  {
--	u8 status = chip->vendor.status(chip);
-+	u8 status = chip->ops->status(chip);
+ 	struct tpm_chip *chip;
  
- 	*canceled = false;
- 	if ((status & mask) == mask)
- 		return true;
--	if (check_cancel && chip->vendor.req_canceled(chip, status)) {
-+	if (check_cancel && chip->ops->req_canceled(chip, status)) {
- 		*canceled = true;
- 		return true;
- 	}
-@@ -828,7 +828,7 @@ int wait_for_tpm_stat(struct tpm_chip *chip, u8 mask, unsigned long timeout,
- 	bool canceled = false;
- 
- 	/* check current status */
--	status = chip->vendor.status(chip);
-+	status = chip->ops->status(chip);
- 	if ((status & mask) == mask)
- 		return 0;
- 
-@@ -855,7 +855,7 @@ again:
- 	} else {
- 		do {
- 			msleep(TPM_TIMEOUT);
--			status = chip->vendor.status(chip);
-+			status = chip->ops->status(chip);
- 			if ((status & mask) == mask)
- 				return 0;
- 		} while (time_before(jiffies, stop));
-@@ -1027,9 +1027,6 @@ void tpm_dev_vendor_release(struct tpm_chip *chip)
- 	if (!chip)
- 		return;
- 
--	if (chip->vendor.release)
--		chip->vendor.release(chip->dev);
--
- 	clear_bit(chip->dev_num, dev_mask);
- }
- EXPORT_SYMBOL_GPL(tpm_dev_vendor_release);
-@@ -1074,14 +1071,7 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
+@@ -1074,7 +1074,13 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
  	mutex_init(&chip->tpm_mutex);
  	INIT_LIST_HEAD(&chip->list);
  
--	chip->vendor.req_complete_mask = ops->req_complete_mask;
--	chip->vendor.req_complete_val = ops->req_complete_val;
--	chip->vendor.req_canceled = ops->req_canceled;
--	chip->vendor.recv = ops->recv;
--	chip->vendor.send = ops->send;
--	chip->vendor.cancel = ops->cancel;
--	chip->vendor.status = ops->status;
--
-+	chip->ops = ops;
+-	memcpy(&chip->vendor, entry, sizeof(struct tpm_vendor_specific));
++	chip->vendor.req_complete_mask = ops->req_complete_mask;
++	chip->vendor.req_complete_val = ops->req_complete_val;
++	chip->vendor.req_canceled = ops->req_canceled;
++	chip->vendor.recv = ops->recv;
++	chip->vendor.send = ops->send;
++	chip->vendor.cancel = ops->cancel;
++	chip->vendor.status = ops->status;
+ 
  	chip->dev_num = find_first_zero_bit(dev_mask, TPM_NUM_DEVICES);
  
- 	if (chip->dev_num >= TPM_NUM_DEVICES) {
-diff --git a/drivers/char/tpm/tpm-sysfs.c b/drivers/char/tpm/tpm-sysfs.c
-index 3bcfed0..d2a8bca 100644
---- a/drivers/char/tpm/tpm-sysfs.c
-+++ b/drivers/char/tpm/tpm-sysfs.c
-@@ -245,7 +245,7 @@ static ssize_t cancel_store(struct device *dev, struct device_attribute *attr,
- 	if (chip == NULL)
- 		return 0;
- 
--	chip->vendor.cancel(chip);
-+	chip->ops->cancel(chip);
- 	return count;
- }
- static DEVICE_ATTR_WO(cancel);
 diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index a56af2c..7b0a46e 100644
+index 14ba162..a56af2c 100644
 --- a/drivers/char/tpm/tpm.h
 +++ b/drivers/char/tpm/tpm.h
-@@ -64,9 +64,6 @@ enum tpm_duration {
+@@ -64,8 +64,8 @@ enum tpm_duration {
  struct tpm_chip;
  
  struct tpm_vendor_specific {
--	u8 req_complete_mask;
--	u8 req_complete_val;
--	bool (*req_canceled)(struct tpm_chip *chip, u8 status);
+-	const u8 req_complete_mask;
+-	const u8 req_complete_val;
++	u8 req_complete_mask;
++	u8 req_complete_val;
+ 	bool (*req_canceled)(struct tpm_chip *chip, u8 status);
  	void __iomem *iobase;		/* ioremapped address */
  	unsigned long base;		/* TPM base address */
+@@ -336,7 +336,7 @@ extern void tpm_gen_interrupt(struct tpm_chip *);
+ extern int tpm_do_selftest(struct tpm_chip *);
+ extern unsigned long tpm_calc_ordinal_duration(struct tpm_chip *, u32);
+ extern struct tpm_chip* tpm_register_hardware(struct device *,
+-				 const struct tpm_vendor_specific *);
++					      const struct tpm_class_ops *ops);
+ extern void tpm_dev_vendor_release(struct tpm_chip *);
+ extern void tpm_remove_hardware(struct device *);
+ extern int tpm_pm_suspend(struct device *);
+diff --git a/drivers/char/tpm/tpm_atmel.c b/drivers/char/tpm/tpm_atmel.c
+index 7e665d0..6069d13 100644
+--- a/drivers/char/tpm/tpm_atmel.c
++++ b/drivers/char/tpm/tpm_atmel.c
+@@ -121,7 +121,7 @@ static bool tpm_atml_req_canceled(struct tpm_chip *chip, u8 status)
+ 	return (status == ATML_STATUS_READY);
+ }
  
-@@ -76,11 +73,6 @@ struct tpm_vendor_specific {
- 	int region_size;
- 	int have_region;
+-static const struct tpm_vendor_specific tpm_atmel = {
++static const struct tpm_class_ops tpm_atmel = {
+ 	.recv = tpm_atml_recv,
+ 	.send = tpm_atml_send,
+ 	.cancel = tpm_atml_cancel,
+diff --git a/drivers/char/tpm/tpm_i2c_atmel.c b/drivers/char/tpm/tpm_i2c_atmel.c
+index fe8bdce..7727292 100644
+--- a/drivers/char/tpm/tpm_i2c_atmel.c
++++ b/drivers/char/tpm/tpm_i2c_atmel.c
+@@ -140,7 +140,7 @@ static bool i2c_atmel_req_canceled(struct tpm_chip *chip, u8 status)
+ 	return false;
+ }
  
--	int (*recv) (struct tpm_chip *, u8 *, size_t);
--	int (*send) (struct tpm_chip *, u8 *, size_t);
--	void (*cancel) (struct tpm_chip *);
--	u8 (*status) (struct tpm_chip *);
--	void (*release) (struct device *);
- 	struct miscdevice miscdev;
- 	struct list_head list;
- 	int locality;
-@@ -104,6 +96,7 @@ struct tpm_vendor_specific {
+-static const struct tpm_vendor_specific i2c_atmel = {
++static const struct tpm_class_ops i2c_atmel = {
+ 	.status = i2c_atmel_read_status,
+ 	.recv = i2c_atmel_recv,
+ 	.send = i2c_atmel_send,
+diff --git a/drivers/char/tpm/tpm_i2c_infineon.c b/drivers/char/tpm/tpm_i2c_infineon.c
+index ac1218f..52b9b2b 100644
+--- a/drivers/char/tpm/tpm_i2c_infineon.c
++++ b/drivers/char/tpm/tpm_i2c_infineon.c
+@@ -566,7 +566,7 @@ static bool tpm_tis_i2c_req_canceled(struct tpm_chip *chip, u8 status)
+ 	return (status == TPM_STS_COMMAND_READY);
+ }
  
- struct tpm_chip {
- 	struct device *dev;	/* Device stuff */
-+	const struct tpm_class_ops *ops;
+-static struct tpm_vendor_specific tpm_tis_i2c = {
++static const struct tpm_class_ops tpm_tis_i2c = {
+ 	.status = tpm_tis_i2c_status,
+ 	.recv = tpm_tis_i2c_recv,
+ 	.send = tpm_tis_i2c_send,
+diff --git a/drivers/char/tpm/tpm_i2c_nuvoton.c b/drivers/char/tpm/tpm_i2c_nuvoton.c
+index 5cb9670..ea60aa3 100644
+--- a/drivers/char/tpm/tpm_i2c_nuvoton.c
++++ b/drivers/char/tpm/tpm_i2c_nuvoton.c
+@@ -456,7 +456,7 @@ static bool i2c_nuvoton_req_canceled(struct tpm_chip *chip, u8 status)
+ 	return (status == TPM_STS_COMMAND_READY);
+ }
  
- 	int dev_num;		/* /dev/tpm# */
- 	char devname[7];
+-static const struct tpm_vendor_specific tpm_i2c = {
++static const struct tpm_class_ops tpm_i2c = {
+ 	.status = i2c_nuvoton_read_status,
+ 	.recv = i2c_nuvoton_recv,
+ 	.send = i2c_nuvoton_send,
 diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
-index 874b3be..5b0dd8e 100644
+index 6902f7b..874b3be 100644
 --- a/drivers/char/tpm/tpm_i2c_stm_st33.c
 +++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-@@ -564,7 +564,7 @@ static int tpm_stm_i2c_recv(struct tpm_chip *chip, unsigned char *buf,
- 	}
- 
- out:
--	chip->vendor.cancel(chip);
-+	chip->ops->cancel(chip);
- 	release_locality(chip);
- 	return size;
+@@ -574,7 +574,7 @@ static bool tpm_st33_i2c_req_canceled(struct tpm_chip *chip, u8 status)
+ 	return (status == TPM_STS_COMMAND_READY);
  }
-@@ -807,7 +807,7 @@ static int tpm_st33_i2c_pm_resume(struct device *dev)
- 	if (power_mgt) {
- 		gpio_set_value(pin_infos->io_lpcpd, 1);
- 		ret = wait_for_serirq_timeout(chip,
--					  (chip->vendor.status(chip) &
-+					  (chip->ops->status(chip) &
- 					  TPM_STS_VALID) == TPM_STS_VALID,
- 					  chip->vendor.timeout_b);
- 	} else {
+ 
+-static struct tpm_vendor_specific st_i2c_tpm = {
++static const struct tpm_class_ops st_i2c_tpm = {
+ 	.send = tpm_stm_i2c_send,
+ 	.recv = tpm_stm_i2c_recv,
+ 	.cancel = tpm_stm_i2c_cancel,
+diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
+index 1300e38..3341410 100644
+--- a/drivers/char/tpm/tpm_ibmvtpm.c
++++ b/drivers/char/tpm/tpm_ibmvtpm.c
+@@ -404,7 +404,7 @@ static bool tpm_ibmvtpm_req_canceled(struct tpm_chip *chip, u8 status)
+ 	return (status == 0);
+ }
+ 
+-static const struct tpm_vendor_specific tpm_ibmvtpm = {
++static const struct tpm_class_ops tpm_ibmvtpm = {
+ 	.recv = tpm_ibmvtpm_recv,
+ 	.send = tpm_ibmvtpm_send,
+ 	.cancel = tpm_ibmvtpm_cancel,
+diff --git a/drivers/char/tpm/tpm_infineon.c b/drivers/char/tpm/tpm_infineon.c
+index 9525be5..dc0a255 100644
+--- a/drivers/char/tpm/tpm_infineon.c
++++ b/drivers/char/tpm/tpm_infineon.c
+@@ -371,7 +371,7 @@ static u8 tpm_inf_status(struct tpm_chip *chip)
+ 	return tpm_data_in(STAT);
+ }
+ 
+-static const struct tpm_vendor_specific tpm_inf = {
++static const struct tpm_class_ops tpm_inf = {
+ 	.recv = tpm_inf_recv,
+ 	.send = tpm_inf_send,
+ 	.cancel = tpm_inf_cancel,
+diff --git a/drivers/char/tpm/tpm_nsc.c b/drivers/char/tpm/tpm_nsc.c
+index ad980be..3179ec9 100644
+--- a/drivers/char/tpm/tpm_nsc.c
++++ b/drivers/char/tpm/tpm_nsc.c
+@@ -232,7 +232,7 @@ static bool tpm_nsc_req_canceled(struct tpm_chip *chip, u8 status)
+ 	return (status == NSC_STATUS_RDY);
+ }
+ 
+-static const struct tpm_vendor_specific tpm_nsc = {
++static const struct tpm_class_ops tpm_nsc = {
+ 	.recv = tpm_nsc_recv,
+ 	.send = tpm_nsc_send,
+ 	.cancel = tpm_nsc_cancel,
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index b5d876b..a9ed227 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -432,7 +432,7 @@ static bool tpm_tis_req_canceled(struct tpm_chip *chip, u8 status)
+ 	}
+ }
+ 
+-static struct tpm_vendor_specific tpm_tis = {
++static const struct tpm_class_ops tpm_tis = {
+ 	.status = tpm_tis_status,
+ 	.recv = tpm_tis_recv,
+ 	.send = tpm_tis_send,
+diff --git a/drivers/char/tpm/xen-tpmfront.c b/drivers/char/tpm/xen-tpmfront.c
+index d4f6b521..92b0970 100644
+--- a/drivers/char/tpm/xen-tpmfront.c
++++ b/drivers/char/tpm/xen-tpmfront.c
+@@ -143,7 +143,7 @@ static int vtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
+ 	return length;
+ }
+ 
+-static const struct tpm_vendor_specific tpm_vtpm = {
++static const struct tpm_class_ops tpm_vtpm = {
+ 	.status = vtpm_status,
+ 	.recv = vtpm_recv,
+ 	.send = vtpm_send,
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index 9a9051b..fff1d09 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -29,6 +29,18 @@
+  */
+ #define	TPM_ANY_NUM 0xFFFF
+ 
++struct tpm_chip;
++
++struct tpm_class_ops {
++	const u8 req_complete_mask;
++	const u8 req_complete_val;
++	bool (*req_canceled)(struct tpm_chip *chip, u8 status);
++	int (*recv) (struct tpm_chip *chip, u8 *buf, size_t len);
++	int (*send) (struct tpm_chip *chip, u8 *buf, size_t len);
++	void (*cancel) (struct tpm_chip *chip);
++	u8 (*status) (struct tpm_chip *chip);
++};
++
+ #if defined(CONFIG_TCG_TPM) || defined(CONFIG_TCG_TPM_MODULE)
+ 
+ extern int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf);
 -- 
 1.8.1.2
 
