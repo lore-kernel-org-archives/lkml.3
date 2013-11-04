@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab3KDWaD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 17:30:03 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43068 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957Ab3KDWaA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 17:30:00 -0500
-Message-ID: <52781FD7.9050507@kernel.dk>
-Date: Mon, 04 Nov 2013 15:29:43 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753752Ab3KDWaU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 17:30:20 -0500
+Received: from fieldses.org ([174.143.236.118]:58479 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750957Ab3KDWaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 17:30:16 -0500
+Date: Mon, 4 Nov 2013 17:30:14 -0500
+From: Bruce Fields <bfields@fieldses.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [git pull] fixes for 3.12-final
+Message-ID: <20131104223014.GA8828@fieldses.org>
+References: <20131103015803.GK13318@ZenIV.linux.org.uk>
+ <CA+55aFy3tAeLYL3_+PbeD15p6PGS-P7bs8fMUaRVSC0OCzvq6w@mail.gmail.com>
+ <20131103195452.GL13318@ZenIV.linux.org.uk>
+ <CA+55aFwW9s3GCa+zNTMg7m44-cj2RdJp7wRpCnPUvQHm9xYnFg@mail.gmail.com>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: Do not call sector_div() with a 64-bit divisor
-References: <1383570006-4605-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1383570006-4605-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwW9s3GCa+zNTMg7m44-cj2RdJp7wRpCnPUvQHm9xYnFg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2013 06:00 AM, Geert Uytterhoeven wrote:
-> do_div() (called by sector_div() if CONFIG_LBDAF=y) is meant for divisions
-> of 64-bit number by 32-bit numbers.  Passing 64-bit divisor types caused
-> issues in the past on 32-bit platforms, cfr. commit
-> ea077b1b96e073eac5c3c5590529e964767fc5f7 ("m68k: Truncate base in
-> do_div()").
+On Sun, Nov 03, 2013 at 03:39:14PM -0800, Linus Torvalds wrote:
+> On Sun, Nov 3, 2013 at 11:54 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > IIRC, at some point such an attempt has seriously hurt iget() on 32bit
+> > boxen, so we ended up deciding not to go there.  Had been years ago,
+> > though...
 > 
-> As queue_limits.max_discard_sectors and .discard_granularity are unsigned
-> int, max_discard_sectors and granularity should be unsigned int.
-> As bdev_discard_alignment() returns int, alignment should be int.
-> Now 2 calls to sector_div() can be replaced by 32-bit arithmetic:
->   - The 64-bit modulo operation can become a 32-bit modulo operation,
->   - The 64-bit division and multiplication can be replaced by a 32-bit
->     modulo operation and a subtraction.
+> Yeah, I think the circumstances have changed. 32-bit is less
+> important, and iget() is much less critical than it used to be (all
+> *normal* inode lookups are through the direct dentry pointer).
+> 
+> Sure, ARM is a few years away from 64-bit being common, but it's
+> happening. And I suspect even 32-bit ARM doesn't have the annoying
+> issues that x86-32 had with 64-bit values (namely using up a lot of
+> the register space).
+> 
+> So unless there's something hidden that makes it really nasty, I do
+> suspect that a "u64 i_ino" would just be the right thing to do. Rather
+> than adding workarounds for our current odd situation on 32-bit
+> kernels (and just wasting time on 64-bit kernels).
 
-Thanks Geert, applied.
+I'm all for it, though I'm worried about:
 
--- 
-Jens Axboe
+	$ git grep '\bi_ino\b'|wc -l
+	1746
 
+so would prefer a more modest (and possibly stable-appropriate) fix for
+3.13 while we sort out what i_ino's being used for.
+
+--b.
