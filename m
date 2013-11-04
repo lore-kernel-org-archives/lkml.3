@@ -1,68 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab3KDHJv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 02:09:51 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36532 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231Ab3KDHJu (ORCPT
+	id S1752109Ab3KDHbN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 02:31:13 -0500
+Received: from gw19.lax01.mailroute.net ([199.89.0.119]:32537 "EHLO
+	outbound.mailroute.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751242Ab3KDHbM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 02:09:50 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <527747E2.3070405@jp.fujitsu.com>
-Date: Mon, 04 Nov 2013 16:08:18 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 4 Nov 2013 02:31:12 -0500
+X-Greylist: delayed 589 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Nov 2013 02:31:12 EST
+From: "Vick, Daisy" <Daisy.Vick@wdt.edu>
+Date: Mon, 4 Nov 2013 00:00:13 -0700
+Subject: service desk
+Thread-Topic: service desk
+Thread-Index: AQHO2SuClQ6k2foBxEWkegjs4HbHeA==
+Message-ID: <9AC009668A47E04E96C9A9A11CDA0EB71275A93CCA@rome.wdti.tec.sd.us>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: jerry.hoemann@hp.com, hpa@linux.intel.com, ebiederm@xmission.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org, bp@alien8.de,
-        akpm@linux-foundation.org, fengguang.wu@intel.com, jingbai.ma@hp.com,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH v4 0/3] x86, apic, kexec: Add disable_cpu_apic kernel
- parameter
-References: <20131022150015.24240.39686.stgit@localhost6.localdomain6> <20131022220803.GA32387@anatevka.fc.hp.com> <526712B2.7070108@jp.fujitsu.com> <20131031005812.GA15459@anatevka.fc.hp.com> <20131031132744.GB3392@redhat.com>
-In-Reply-To: <20131031132744.GB3392@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/10/31 22:27), Vivek Goyal wrote:
-> On Wed, Oct 30, 2013 at 06:58:13PM -0600, jerry.hoemann@hp.com wrote:
->
-> [..]
->> Daisuke,
->>
->> Are you planning on making changes to the kexec tools to automate
->> the setting of disable_cpu_apic to the capture kernel? Or do you
->> know someone who is planning this?
->
-> I think we should not make this change in kexec-tools and should leave
-> it to distro scripts to append disable_cpu_apic.
->
-> Who knows in future this restriction is not there at all and kexec-tools
-> will be stuck with always passing disable_cpu_apic. Getting rid of
-> this parameter in distro scripts will be much easier.
->
-> Thanks
-> Vivek
->
+Mailbox is full, 00.1 GB, Please reduce your mailbox size. Delete any items you don't need from your mailbox and expand your email quota (size) with the below web links:
 
-Yes, I'll post the patch to distribution's kexec-tools. ``kexec-tools''
-seems a little ambiguous; the users scripts on fedora are contained
-in the same package.
+HERE: http://actlogistic.co.uk/
 
-I don't know things on other distributions mostly at all; I've read
-Ubuntu's scripts really a little bit only. I'd like anyone to post patches
-if necessary...
+Thank you for your understanding.
 
-BTW, what's the status of this patch set? I've redesigned this so as to
-be done with kernel parameter in order not to depend on platform specific
-BIOS table. Due to the redesign, I think now ACK is needed again.
-
--- 
-Thanks.
-HATAYAMA, Daisuke
-
+©2013 Helpdesk
