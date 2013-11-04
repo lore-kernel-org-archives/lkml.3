@@ -1,147 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab3KDILe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 03:11:34 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:52698 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113Ab3KDILd (ORCPT
+	id S1752831Ab3KDIMx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 03:12:53 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:58289 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756Ab3KDIMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 03:11:33 -0500
-X-AuditID: 9c93017d-b7cbaae00000368f-18-527756b313fe
-From: Namhyung Kim <namhyung@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a ring buffer
-References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
-	<1383029621-7384-11-git-send-email-namhyung@kernel.org>
-	<20131101150910.GA18278@redhat.com> <20131101152232.GA2703@redhat.com>
-	<20131103202037.GA2785@redhat.com>
-Date: Mon, 04 Nov 2013 17:11:29 +0900
-In-Reply-To: <20131103202037.GA2785@redhat.com> (Oleg Nesterov's message of
-	"Sun, 3 Nov 2013 21:20:37 +0100")
-Message-ID: <87txfs37ta.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 4 Nov 2013 03:12:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1383223953-28803-1-git-send-email-zwu.kernel@gmail.com>
+References: <1383223953-28803-1-git-send-email-zwu.kernel@gmail.com>
+Date: Mon, 4 Nov 2013 16:12:51 +0800
+Message-ID: <CAEH94LiCWH3EKohx7FqY9C10mB=ocjEkJt9ZBeX1X15XOoMCrQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mm: fix the incorrect function name in alloc_low_pages()
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>, akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 3 Nov 2013 21:20:37 +0100, Oleg Nesterov wrote:
-> On 11/01, Oleg Nesterov wrote:
->>
->> Ah, please ignore... handler_chain() is not self-serialized, so
->> tu->buffer needs locking/waiting too.
+CCed Andrew Morton
+
+On Thu, Oct 31, 2013 at 8:52 PM, Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 >
-> Still I have to admit that I strongly dislike this yet another
-> (and imho strange) memory pool. However, I am not going to argue
-> because I can't suggest something better right now.
-
-Okay.
-
+> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> ---
+>  arch/x86/mm/init.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 >
-> But. Perhaps it makes sense to at least add a couple of trivial
-> helpers in 10/13? Something like arg_buf_get/put/init, just to
-> simplify the potential changes.
-
-Good idea.  How about something like below?
-
-
-struct uprobe_cpu_buffer {
-	struct mutex mutex;
-	void *buf;
-};
-static struct uprobe_cpu_buffer __percpu *uprobe_cpu_buffer;
-static DEFINE_MUTEX(uprobe_buffer_mutex);
-static int uprobe_buffer_refcnt;
-
-static int uprobe_buffer_init(void)
-{
-	int cpu, err_cpu;
-
-	uprobe_cpu_buffer = alloc_percpu(struct uprobe_cpu_buffer);
-	if (uprobe_cpu_buffer == NULL)
-		return -ENOMEM;
-
-	for_each_possible_cpu(cpu) {
-		struct page *p = alloc_pages_node(cpu_to_node(cpu),
-						  GFP_KERNEL, 0);
-		if (p == NULL) {
-			err_cpu = cpu;
-			goto err;
-		}
-		per_cpu_ptr(uprobe_cpu_buffer, cpu)->buf = page_address(p);
-		mutex_init(&per_cpu_ptr(uprobe_cpu_buffer, cpu)->mutex);
-	}
-
-	return 0;
-
-err:
-	for_each_possible_cpu(cpu) {
-		if (cpu == err_cpu)
-			break;
-		free_page((unsigned long)per_cpu_ptr(uprobe_cpu_buffer, cpu)->buf);
-	}
-
-	free_percpu(uprobe_cpu_buffer);
-	return -ENOMEM;
-}
-
-static int uprobe_buffer_enable(void)
-{
-	int ret = 0;
-
-	mutex_lock(&uprobe_buffer_mutex);
-	if (uprobe_buffer_refcnt++ == 0) {
-		ret = uprobe_buffer_init();
-		if (ret < 0)
-			uprobe_buffer_refcnt--;
-	}
-	mutex_unlock(&uprobe_buffer_mutex);
-
-	return ret;
-}
-
-static void uprobe_buffer_disable(void)
-{
-	mutex_lock(&uprobe_buffer_mutex);
-	if (--uprobe_buffer_refcnt == 0) {
-		free_percpu(uprobe_cpu_buffer);
-		uprobe_cpu_buffer = NULL;
-	}
-	mutex_unlock(&uprobe_buffer_mutex);
-}
-
-static struct uprobe_cpu_buffer *uprobe_buffer_get(void)
-{
-	struct uprobe_cpu_buffer *ucb;
-	int cpu;
-
-	cpu = raw_smp_processor_id();
-	ucb = per_cpu_ptr(uprobe_cpu_buffer, cpu);
-
-	/*
-	 * Use per-cpu buffers for fastest access, but we might migrate
-	 * so the mutex makes sure we have sole access to it.
-	 */
-	mutex_lock(&ucb->mutex);
-
-	return ucb;
-}
-
-static void uprobe_buffer_put(struct uprobe_cpu_buffer *ucb)
-{
-	mutex_unlock(&ucb->mutex);
-}
+> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> index 04664cd..64d860f 100644
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -53,12 +53,12 @@ __ref void *alloc_low_pages(unsigned int num)
+>         if ((pgt_buf_end + num) > pgt_buf_top || !can_use_brk_pgt) {
+>                 unsigned long ret;
+>                 if (min_pfn_mapped >= max_pfn_mapped)
+> -                       panic("alloc_low_page: ran out of memory");
+> +                       panic("alloc_low_pages: ran out of memory");
+>                 ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
+>                                         max_pfn_mapped << PAGE_SHIFT,
+>                                         PAGE_SIZE * num , PAGE_SIZE);
+>                 if (!ret)
+> -                       panic("alloc_low_page: can not alloc memory");
+> +                       panic("alloc_low_pages: can not alloc memory");
+>                 memblock_reserve(ret, PAGE_SIZE * num);
+>                 pfn = ret >> PAGE_SHIFT;
+>         } else {
+> --
+> 1.7.11.7
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 
-Thanks,
-Namhyung
+
+-- 
+Regards,
+
+Zhi Yong Wu
