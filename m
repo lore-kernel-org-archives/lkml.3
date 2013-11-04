@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab3KDB4o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 20:56:44 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:35671 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031Ab3KDB4L (ORCPT
+	id S1752323Ab3KDB4j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 20:56:39 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:12982 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab3KDB4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 20:56:11 -0500
-X-AuditID: cbfee68e-b7f416d0000020d6-ba-5276feb466b0
+	Sun, 3 Nov 2013 20:56:08 -0500
+X-AuditID: cbfee691-b7f866d000001b8c-48-5276feb6e74b
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: kgene.kim@samsung.com, t.figa@samsung.com
 Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -15,37 +15,39 @@ Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         kyungmin.park@samsung.com, rob.herring@calxeda.com, pawel.moll@arm.com,
         mark.rutland@arm.com, swarren@wwwdotorg.org,
         ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv3 0/3] ARM: dts: exynos: Add missing dt data to bring up kernel
- featurea
-Date: Mon, 04 Nov 2013 10:55:58 +0900
-Message-id: <1383530161-24080-1-git-send-email-cw00.choi@samsung.com>
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCHv3 2/3] ARM: dts: exynos4212: Add missing clock for multi core
+ timer
+Date: Mon, 04 Nov 2013 10:56:00 +0900
+Message-id: <1383530161-24080-3-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphkeLIzCtJLcpLzFFi42JZI2JSrLvlX1mQQV+7nMX1L89ZLeYfOcdq
-	ce7VSkaL3gVX2SzONr1ht9j0+BqrxeVdc9gsZpzfx2Rx+zKvxdLrF5ksJkxfy2JxeMUBJotX
-	B9tYLNbPeM3iwOexZt4aRo+W5h42jwWfr7B7rFz+hc1j85J6j74tqxg9Pm+S89g4NzSAI4rL
-	JiU1J7MstUjfLoEr48mMsoIvLBXL+3qZGxjfMXcxcnJICJhInFywkA3CFpO4cG89kM3FISSw
-	lFHiz/IrTDBFm1/9YoRITGeUeHFhNTuE08gk0fT3LFgVm4CWxP4XN8BGiQjoSkyZeYcVpIhZ
-	4D6TxI/jq8ASwgJREqdnHgFq4OBgEVCV+P8zEcTkFXCVuHBFEWKZnMSHPY/A5ksInGKXmH31
-	MyNIgkVAQOLb5EMsIPUSArISmw5AfSApcXDFDZYJjIILGBlWMYqmFiQXFCelFxnpFSfmFpfm
-	pesl5+duYgTGxOl/z/p2MN48YH2IMRlo3ERmKdHkfGBM5ZXEGxqbGVmYmpgaG5lbmpEmrCTO
-	u+hhUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxnVTfDXu1ieEGPJveXjq2/b9O3+J7BJT
-	ib9wc03v38yX7FLes5WDLi1kfPltklHloRt9P6dY31ZZPe1TiBqLZD7zVKb/djfYO+/tFuc4
-	bLDsU2VuRaiPFO+U58ez4yyvmQQwrlovPzEheXcnX+D8E55BHoJXXPewMnxlb9i4uPrImyId
-	Ea/WE0osxRmJhlrMRcWJAOoDl4efAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsVy+t9jQd0t/8qCDO61iFpc//Kc1WL+kXOs
-	FuderWS06F1wlc3ibNMbdotNj6+xWlzeNYfNYsb5fUwWty/zWiy9fpHJYsL0tSwWh1ccYLJ4
+In-reply-to: <1383530161-24080-1-git-send-email-cw00.choi@samsung.com>
+References: <1383530161-24080-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGIsWRmVeSWpSXmKPExsWyRsSkUHfbv7Igg/9tRhbzj5xjtTj3aiWj
+	Re+Cq2wWZ5vesFtsenyN1eLyrjlsFjPO72OyuH2Z12LtkbvsFkuvX2SymDB9LYvF4RUHmCxe
+	HWxjsVg/4zWLA5/HmnlrGD1amnvYPBZ8vsLusXL5FzaPzUvqPfq2rGL0+LxJzmPj3NAAjigu
+	m5TUnMyy1CJ9uwSujEe/TrMUnGet2Lv/DXsD41mWLkZODgkBE4ktL1ZA2WISF+6tZ+ti5OIQ
+	EljKKDGro50Zpujq3O+sEInpjBK/Z89jgXAamSQWn57FClLFJqAlsf/FDTYQW0RAV2LKzDtg
+	HcwCz5gkVnw6zwiSEBYIleiYtoMJxGYRUJXYdvcvexcjBwevgKvEjgsZENvkJD7secQOYnMK
+	uEn8O38AzBYCKrnbfI0RZKaEwEt2iR3f5zFDzBGQ+Db5EAvIHAkBWYlNB6CulpQ4uOIGywRG
+	4QWMDKsYRVMLkguKk9KLTPWKE3OLS/PS9ZLzczcxAuPo9L9nE3cw3j9gfYgxGWjcRGYp0eR8
+	YBzmlcQbGpsZWZiamBobmVuakSasJM6b/igpSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAOj
+	TTzvUvb2QL8917fwLvyeN4PTytZi5rRP51xY2Q5MUwlP2vFfKl+67NXRT9PmLJwdrZFjfMOt
+	djPLlEPTzHTereu0lbfxm3XhYsnNPRffr70YlyR8zMtULPuSSxVfJN+Xpm3Fu9j9GcU5p92x
+	v7fn6dw/my2PpC0L3Wif1st2LHin8B+vzUf7lFiKMxINtZiLihMBsOz5oLkCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmleLIzCtJLcpLzFFi42I5/e+xoO62f2VBBv9nalrMP3KO1eLcq5WM
+	Fr0LrrJZnG16w26x6fE1VovLu+awWcw4v4/J4vZlXou1R+6yWyy9fpHJYsL0tSwWh1ccYLJ4
 	dbCNxWL9jNcsDnwea+atYfRoae5h81jw+Qq7x8rlX9g8Ni+p9+jbsorR4/MmOY+Nc0MDOKIa
 	GG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgM5WUihL
-	zCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMGY8mVFW8IWlYnlfL3MD4zvmLkZO
-	DgkBE4nNr34xQthiEhfurWfrYuTiEBKYzijx4sJqdginkUmi6e9ZJpAqNgEtif0vbrCB2CIC
-	uhJTZt5hBSliFrjPJPHj+CqwhLBAlMTpmUeAGjg4WARUJf7/TAQxeQVcJS5cUYRYJifxYc8j
-	9gmM3AsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBEfcM6kdjCsbLA4xCnAwKvHwSlwu
-	CxJiTSwrrsw9xCjBwawkwut8DijEm5JYWZValB9fVJqTWnyIMRlo90RmKdHkfGAyyCuJNzQ2
-	MTOyNDI3tDAyNidNWEmc90CrdaCQQHpiSWp2ampBahHMFiYOTqkGxlObThnN+1jWmH3VocIn
-	dx8P00bX8i3tsxecs9V8a2hdmxG/aO0Kly8JbM+6Du1k8jf+z3T0wCHjiesERI/7Ha7Yf6Ts
-	3Yq9Jft6Dzz/uFs4d6PXBYkXe4qOV5ooXpZYV/nvl3+fd+7/82uf7/Mu6SqzyZ15+u6N/ldi
-	RrfXKV1TfBmz3Yz/mJsSS3FGoqEWc1FxIgD9XD05/AIAAA==
+	zCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMGY8+nWapeA8a8Xe/W/YGxjPsnQx
+	cnJICJhIXJ37nRXCFpO4cG89WxcjF4eQwHRGid+z57FAOI1MEotPzwKrYhPQktj/4gYbiC0i
+	oCsxZeYdVpAiZoFnTBIrPp1nBEkIC4RKdEzbwQRiswioSmy7+5e9i5GDg1fAVWLHhQyIbXIS
+	H/Y8YgexOQXcJP6dPwBmCwGV3G2+xjiBkXcBI8MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxN
+	jOAofSa9g3FVg8UhRgEORiUeXonLZUFCrIllxZW5hxglOJiVRHidzwGFeFMSK6tSi/Lji0pz
+	UosPMSYDHTWRWUo0OR+YQPJK4g2NTcyMLI3MDS2MjM1JE1YS5z3Yah0oJJCeWJKanZpakFoE
+	s4WJg1OqgTHzhX2A6Ny00zecui+fvH3WlfP5/CXLdjgqzFm/4/51k4um61Qq/k9c0Lry0HOH
+	/R95Z3OrJZfs+Cbu8jMrmNNX69LZrVODLGedrZwZGKL/tufpMb8tAvLs2V6tptlM/Xp12w7e
+	8r76/pz3n0he6YdRYRsivJyna558fGCFlnVydb71rkNP8sqUWIozEg21mIuKEwGhmLArFgMA	AA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,28 +55,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset add missing dt data to bring up kernel feature
-- GPS_ALIVE power domain
-- PMU
-- Clock data for Multi core timer
+From: Marek Szyprowski <m.szyprowski@samsung.com>
 
-Changes since v2:
-- Delete MAUDIO power domain
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ arch/arm/boot/dts/exynos4212.dtsi | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Changes since v1:
-- Fix wrong address of GPS_ALIVE power domain
-
-Chanwoo Choi (2):
-  ARM: dts: exynos4212: Add PMU dt data for pmu-irq
-  ARM: dts: exynos4x12: Add gps_alive power domain for exynos4x12
-
-Marek Szyprowski (1):
-  ARM: dts: exynos4212: Add missing clock for multi core timer
-
- arch/arm/boot/dts/exynos4212.dtsi | 8 ++++++++
- arch/arm/boot/dts/exynos4x12.dtsi | 5 +++++
- 2 files changed, 13 insertions(+)
-
+diff --git a/arch/arm/boot/dts/exynos4212.dtsi b/arch/arm/boot/dts/exynos4212.dtsi
+index 3081bae..d7a3fbc 100644
+--- a/arch/arm/boot/dts/exynos4212.dtsi
++++ b/arch/arm/boot/dts/exynos4212.dtsi
+@@ -43,6 +43,8 @@
+ 		interrupt-parent = <&mct_map>;
+ 		interrupts = <0 0>, <1 0>, <2 0>, <3 0>,
+ 			     <4 0>, <5 0>;
++		clocks = <&clock 3>, <&clock 344>;
++		clock-names = "fin_pll", "mct";
+ 
+ 		mct_map: mct-map {
+ 			#interrupt-cells = <2>;
 -- 
 1.8.0
 
