@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab3KDSCW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 13:02:22 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37923 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753813Ab3KDR71 (ORCPT
+	id S1754543Ab3KDSCd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 13:02:33 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:27702 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754496Ab3KDSC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 12:59:27 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 14/29] perf evsel: Add missing overflow check for TRANSACTION
-Date: Mon,  4 Nov 2013 14:58:52 -0300
-Message-Id: <1383587947-17419-15-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1383587947-17419-1-git-send-email-acme@infradead.org>
-References: <1383587947-17419-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 4 Nov 2013 13:02:29 -0500
+Date: Mon, 4 Nov 2013 13:02:18 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com
+Subject: Re: [GIT PULL] (xen) stable/for-jens-3.12 for Jens Axboe
+Message-ID: <20131104180218.GA7137@phenom.dumpdata.com>
+References: <20130906202551.GA20743@phenom.dumpdata.com>
+ <522A3A7A.8030408@kernel.dk>
+ <20131104173711.GA7116@phenom.dumpdata.com>
+ <5277DBF2.8030209@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5277DBF2.8030209@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+On Mon, Nov 04, 2013 at 10:40:02AM -0700, Jens Axboe wrote:
+> On 11/04/2013 10:37 AM, Konrad Rzeszutek Wilk wrote:
+> > On Fri, Sep 06, 2013 at 02:26:34PM -0600, Jens Axboe wrote:
+> >> On 09/06/2013 02:25 PM, Konrad Rzeszutek Wilk wrote:
+> >>> Hey Jens,
+> >>>
+> >>> I sent you a git pull a couple of weeks ago but I am not sure if
+> >>> you pulled it. It does not look like it, so here it is again along
+> >>> with an extra bug-fix.
+> >>>
+> >>> Please git pull:
+> >>>
+> >>>  git pull git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-jens-3.12
+> >>>
+> >>> which will give you bug-fixes to Xen blkfront and backend driver:
+> >>
+> >> Thanks, I'll get the 3.12 branch set up and pulled in. I'm behind on a
+> >> lot of other drivers, too.
+> > 
+> > Hm, looks like you never pulled that for v3.12.
+> 
+> It is in:
+> 
+> axboe@axboe ~/git/linux-block $ git pull
+> git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git
+> stable/for-jens-3.12
+> >From git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip
+>  * branch            stable/for-jens-3.12 -> FETCH_HEAD
+> Merge made by the 'recursive' strategy.
+> axboe@axboe ~/git/linux-block $
 
-Add missing overflow check for PERF_SAMPLE_TRANSACTION in
-perf_evsel__parse_sample().
+My apologies! I should have of course checked your tree more carefully.
+> 
+> > There is one more patch that Roger has provided. Do you want to pull
+> > this branch for v3.13 nowish or wait until I put in Roger's patch?
+> 
+> You'll need to queue that up or send as a patch separately.--
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1383313899-15987-9-git-send-email-adrian.hunter@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/evsel.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 47bbf03aa7ef..b121717ce42a 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -1481,6 +1481,7 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- 
- 	data->transaction = 0;
- 	if (type & PERF_SAMPLE_TRANSACTION) {
-+		OVERFLOW_CHECK_u64(array);
- 		data->transaction = *array;
- 		array++;
- 	}
--- 
-1.8.1.4
-
+OK.
+> Jens Axboe
+> 
