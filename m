@@ -1,190 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652Ab3KDN1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 08:27:40 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:58841 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752971Ab3KDN0B (ORCPT
+	id S1753722Ab3KDN1v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 08:27:51 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:61404 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685Ab3KDN1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 08:26:01 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [Update][PATCH 4/6] ACPI / hotplug: Simplify device ejection routines
-Date: Mon, 04 Nov 2013 14:36:44 +0100
-Message-ID: <1602442.26cFiMyQkW@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <2970389.SeMGM45Qln@vostro.rjw.lan>
-References: <5839747.7HXXGHmMBd@vostro.rjw.lan> <2970389.SeMGM45Qln@vostro.rjw.lan>
+	Mon, 4 Nov 2013 08:27:49 -0500
+Date: Mon, 4 Nov 2013 14:27:38 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
+Subject: Re: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist
+ periods (v2)
+Message-ID: <20131104132737.GC9299@localhost.localdomain>
+References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
+ <20131031080932.GA8479@gmail.com>
+ <87vc0c4ny2.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vc0c4ny2.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Fri, Nov 01, 2013 at 03:48:37PM +0900, Namhyung Kim wrote:
+> Hi Ingo,
+> 
+> On Thu, 31 Oct 2013 09:09:32 +0100, Ingo Molnar wrote:
+> > * Namhyung Kim <namhyung@kernel.org> wrote:
+> >
+> >> When the -g cumulative option is given, it'll be shown like this:
+> >> 
+> >>   $ perf report -g cumulative --stdio
+> >> 
+> >>   # Overhead  Overhead (Acc)  Command      Shared Object                   Symbol
+> >>   # ........  ..............  .......  .................  .......................
+> >>   #
+> >>        0.00%          88.29%      abc  libc-2.17.so       [.] __libc_start_main  
+> >>        0.00%          88.29%      abc  abc                [.] main               
+> >>        0.00%          88.29%      abc  abc                [.] c                  
+> >>        0.00%          88.29%      abc  abc                [.] b                  
+> >>       88.29%          88.29%      abc  abc                [.] a                  
+> >>        0.00%          11.61%      abc  ld-2.17.so         [k] _dl_sysdep_start   
+> >>        0.00%           9.43%      abc  ld-2.17.so         [.] dl_main            
+> >>        9.43%           9.43%      abc  ld-2.17.so         [.] _dl_relocate_object
+> >>        2.27%           2.27%      abc  [kernel.kallsyms]  [k] page_fault         
+> >>        0.00%           2.18%      abc  ld-2.17.so         [k] _dl_start_user     
+> >>        0.00%           0.10%      abc  ld-2.17.so         [.] _start             
+> >> 
+> >> As you can see __libc_start_main -> main -> c -> b -> a callchain 
+> >> show up in the output.
+> >
+> > This looks really useful!
+> 
+> Thanks! :)
+> 
+> >
+> > A couple of details:
+> >
+> > 1)
+> >
+> > This is pretty close to SysProf output, right? So why not use the 
+> > well-known SysProf naming and call the first column 'self' and the 
+> > second column 'total'? I think those names are pretty intuitive and 
+> > it would help people who come from SysProf over to perf.
+> 
+> Okay, I can do it. (Although sysprof seems to call it 'cumulative'
+> rather than 'total' - but I think the 'total' is better since it's
+> simpler and shorter.)
 
-Simplify handle_root_bridge_removal() and acpi_eject_store() by
-getting rid of struct acpi_eject_event and passing device objects
-directly to async routines executed via acpi_os_hotplug_execute().
+OTOH cumulative probably express better what it is about. Or branch cumulative
+may be.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/pci_root.c |   20 ++------------------
- drivers/acpi/scan.c     |   46 ++++++++++++++++++----------------------------
- include/acpi/acpi_bus.h |    5 -----
- 3 files changed, 20 insertions(+), 51 deletions(-)
-
-Index: linux-pm/drivers/acpi/pci_root.c
-===================================================================
---- linux-pm.orig/drivers/acpi/pci_root.c
-+++ linux-pm/drivers/acpi/pci_root.c
-@@ -593,27 +593,11 @@ static void handle_root_bridge_insertion
- static void handle_root_bridge_removal(struct acpi_device *device)
- {
- 	acpi_status status;
--	struct acpi_eject_event *ej_event;
--
--	ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
--	if (!ej_event) {
--		/* Inform firmware the hot-remove operation has error */
--		(void) acpi_evaluate_hotplug_ost(device->handle,
--					ACPI_NOTIFY_EJECT_REQUEST,
--					ACPI_OST_SC_NON_SPECIFIC_FAILURE,
--					NULL);
--		return;
--	}
--
--	ej_event->device = device;
--	ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
- 
- 	get_device(&device->dev);
--	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, ej_event);
--	if (ACPI_FAILURE(status)) {
-+	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, device);
-+	if (ACPI_FAILURE(status))
- 		put_device(&device->dev);
--		kfree(ej_event);
--	}
- }
- 
- static void _handle_hotplug_event_root(struct work_struct *work)
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -441,18 +441,8 @@ static void acpi_hotplug_notify_cb(acpi_
- 					  NULL);
- }
- 
--/**
-- * acpi_bus_hot_remove_device: hot-remove a device and its children
-- * @context: struct acpi_eject_event pointer (freed in this func)
-- *
-- * Hot-remove a device and its children. This function frees up the
-- * memory space passed by arg context, so that the caller may call
-- * this function asynchronously through acpi_os_hotplug_execute().
-- */
--void acpi_bus_hot_remove_device(void *context)
-+void __acpi_bus_hot_remove_device(struct acpi_device *device, u32 ost_src)
- {
--	struct acpi_eject_event *ej_event = context;
--	struct acpi_device *device = ej_event->device;
- 	acpi_handle handle = device->handle;
- 	int error;
- 
-@@ -461,13 +451,21 @@ void acpi_bus_hot_remove_device(void *co
- 
- 	error = acpi_scan_hot_remove(device);
- 	if (error && handle)
--		acpi_evaluate_hotplug_ost(handle, ej_event->event,
-+		acpi_evaluate_hotplug_ost(handle, ost_src,
- 					  ACPI_OST_SC_NON_SPECIFIC_FAILURE,
- 					  NULL);
- 
- 	mutex_unlock(&acpi_scan_lock);
- 	unlock_device_hotplug();
--	kfree(context);
-+}
-+
-+/**
-+ * acpi_bus_hot_remove_device: Hot-remove a device and its children.
-+ * @context: Address of the ACPI device object to hot-remove.
-+ */
-+void acpi_bus_hot_remove_device(void *context)
-+{
-+	__acpi_bus_hot_remove_device(context, ACPI_NOTIFY_EJECT_REQUEST);
- }
- EXPORT_SYMBOL(acpi_bus_hot_remove_device);
- 
-@@ -497,15 +495,18 @@ static ssize_t power_state_show(struct d
- 
- static DEVICE_ATTR(power_state, 0444, power_state_show, NULL);
- 
-+static void acpi_eject_store_work(void *context)
-+{
-+	__acpi_bus_hot_remove_device(context, ACPI_OST_EC_OSPM_EJECT);
-+}
-+
- static ssize_t
- acpi_eject_store(struct device *d, struct device_attribute *attr,
- 		const char *buf, size_t count)
- {
- 	struct acpi_device *acpi_device = to_acpi_device(d);
--	struct acpi_eject_event *ej_event;
- 	acpi_object_type not_used;
- 	acpi_status status;
--	int ret;
- 
- 	if (!count || buf[0] != '1')
- 		return -EINVAL;
-@@ -518,28 +519,17 @@ acpi_eject_store(struct device *d, struc
- 	if (ACPI_FAILURE(status) || !acpi_device->flags.ejectable)
- 		return -ENODEV;
- 
--	ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
--	if (!ej_event) {
--		ret = -ENOMEM;
--		goto err_out;
--	}
- 	acpi_evaluate_hotplug_ost(acpi_device->handle, ACPI_OST_EC_OSPM_EJECT,
- 				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
--	ej_event->device = acpi_device;
--	ej_event->event = ACPI_OST_EC_OSPM_EJECT;
- 	get_device(&acpi_device->dev);
--	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, ej_event);
-+	status = acpi_os_hotplug_execute(acpi_eject_store_work, acpi_device);
- 	if (ACPI_SUCCESS(status))
- 		return count;
- 
- 	put_device(&acpi_device->dev);
--	kfree(ej_event);
--	ret = status == AE_NO_MEMORY ? -ENOMEM : -EAGAIN;
--
-- err_out:
- 	acpi_evaluate_hotplug_ost(acpi_device->handle, ACPI_OST_EC_OSPM_EJECT,
- 				  ACPI_OST_SC_NON_SPECIFIC_FAILURE, NULL);
--	return ret;
-+	return -EAGAIN;
- }
- 
- static DEVICE_ATTR(eject, 0200, NULL, acpi_eject_store);
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -339,11 +339,6 @@ struct acpi_bus_event {
- 	u32 data;
- };
- 
--struct acpi_eject_event {
--	struct acpi_device	*device;
--	u32		event;
--};
--
- struct acpi_hp_work {
- 	struct work_struct work;
- 	acpi_handle handle;
+Total is confusing because we don't know against what it is.
