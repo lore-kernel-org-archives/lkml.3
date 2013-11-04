@@ -1,101 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032Ab3KDSYY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 13:24:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29086 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752861Ab3KDSYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 13:24:22 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 3/9] KEYS: struct key_preparsed_payload should have two
- payload pointers
-To: d.kasatkin@samsung.com, zohar@us.ibm.com
-From: David Howells <dhowells@redhat.com>
-Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 04 Nov 2013 16:22:39 +0000
-Message-ID: <20131104162239.10177.74733.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20131104162216.10177.98067.stgit@warthog.procyon.org.uk>
-References: <20131104162216.10177.98067.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.16
+	id S1752755Ab3KDS1K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 13:27:10 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:41847 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749Ab3KDS1H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 13:27:07 -0500
+Date: Mon, 4 Nov 2013 13:25:32 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Subject: Re: linux-next: Tree for Nov 1 (xen_swiotllb)
+Message-ID: <20131104182532.GA7345@phenom.dumpdata.com>
+References: <20131101191138.442028fb1f243c7f9c7f0844@canb.auug.org.au>
+ <5273EFFA.1030400@infradead.org>
+ <20131101194324.GC15622@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1311041800540.26077@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1311041800540.26077@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct key_preparsed_payload should have two payload pointers to correspond
-with those in struct key.
+On Mon, Nov 04, 2013 at 06:20:42PM +0000, Stefano Stabellini wrote:
+> On Fri, 1 Nov 2013, Konrad Rzeszutek Wilk wrote:
+> > On Fri, Nov 01, 2013 at 11:16:26AM -0700, Randy Dunlap wrote:
+> > > On 11/01/13 01:11, Stephen Rothwell wrote:
+> > > > Hi all,
+> > > > 
+> > > > Changes since 20131031:
+> > > > 
+> > > > The squashfs tree gained a build failure so I used the version from
+> > > > next-20131031.
+> > > > 
+> > > > The block tree gained conflicts against the f2fs, aio-direct and Linus'
+> > > > trees and a build failure and generated several warnings so I used the
+> > > > version from next-20131031.
+> > > > 
+> > > > The dt-rh tree gained a conflict against the powerpc tree.
+> > > > 
+> > > > The kvm-ppc tree gained a conflict against the powerpc tree.
+> > > > 
+> > > > The leds tree gained a conflict against the powerpc tree.
+> > > > 
+> > > > The tty tree lost its build failure.
+> > > 
+> > > 
+> > > on x86_64, when CONFIG_PCI is not enabled:
+> > > 
+> > > arch/x86/built-in.o: In function `pci_xen_swiotlb_init_late':
+> > > (.text+0x102cc): undefined reference to `pci_request_acs'
+> > > arch/x86/built-in.o: In function `pci_xen_swiotlb_init':
+> > > (.init.text+0x3f6c): undefined reference to `pci_request_acs'
+> > 
+> > Stefano,
+> > 
+> > Please fix that. I think it is commit 83862ccfc0a03212fde43b4ac29c28381828768b
+> > Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > Date:   Thu Oct 10 13:40:44 2013 +0000
+> > 
+> >     xen/arm,arm64: enable SWIOTLB_XEN
+> > 
+> > that is causing this. Is it safe to add:
+> > 
+> >        depends on PCI
+> > 
+> > back on it?
+>  
+> On ARM it is possible to use the swiotlb without PCI support.
+> Ideally we wouldn't even build arch/x86/xen/pci-swiotlb-xen.c if
+> CONFIG_PCI was missing. However other core x86 kernel stuff seem to have
+> similar issues, for example arch/x86/kernel/pci-swiotlb.c build with or
+> without CONFIG_PCI and references pci_xen_swiotlb_detect.
+> I think that the right solution would be to completely disentangle
+> CONFIG_PCI from swiotlb related stuff, but for the moment I went for the
+> easy fix:
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- crypto/asymmetric_keys/asymmetric_type.c |    2 +-
- crypto/asymmetric_keys/x509_public_key.c |    2 +-
- include/linux/key-type.h                 |    2 +-
- security/keys/key.c                      |    6 ++++--
- 4 files changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
-index c1fe0fcee8e3..21960a4e74e8 100644
---- a/crypto/asymmetric_keys/asymmetric_type.c
-+++ b/crypto/asymmetric_keys/asymmetric_type.c
-@@ -156,7 +156,7 @@ static void asymmetric_key_free_preparse(struct key_preparsed_payload *prep)
- 	pr_devel("==>%s()\n", __func__);
- 
- 	if (subtype) {
--		subtype->destroy(prep->payload);
-+		subtype->destroy(prep->payload[0]);
- 		module_put(subtype->owner);
- 	}
- 	kfree(prep->type_data[1]);
-diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-index f83300b6e8c1..ae3de8bfaa70 100644
---- a/crypto/asymmetric_keys/x509_public_key.c
-+++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -256,7 +256,7 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
- 	__module_get(public_key_subtype.owner);
- 	prep->type_data[0] = &public_key_subtype;
- 	prep->type_data[1] = cert->fingerprint;
--	prep->payload = cert->pub;
-+	prep->payload[0] = cert->pub;
- 	prep->description = desc;
- 	prep->quotalen = 100;
- 
-diff --git a/include/linux/key-type.h b/include/linux/key-type.h
-index 88503dca2a57..d2b4845d74bf 100644
---- a/include/linux/key-type.h
-+++ b/include/linux/key-type.h
-@@ -41,7 +41,7 @@ struct key_construction {
- struct key_preparsed_payload {
- 	char		*description;	/* Proposed key description (or NULL) */
- 	void		*type_data[2];	/* Private key-type data */
--	void		*payload;	/* Proposed payload */
-+	void		*payload[2];	/* Proposed payload */
- 	const void	*data;		/* Raw data */
- 	size_t		datalen;	/* Raw datalen */
- 	size_t		quotalen;	/* Quota length for proposed payload */
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 4ea216652d52..64dc9cf6848e 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -1049,10 +1049,12 @@ int generic_key_instantiate(struct key *key, struct key_preparsed_payload *prep)
- 	if (ret == 0) {
- 		key->type_data.p[0] = prep->type_data[0];
- 		key->type_data.p[1] = prep->type_data[1];
--		rcu_assign_keypointer(key, prep->payload);
-+		rcu_assign_keypointer(key, prep->payload[0]);
-+		key->payload.data2[1] = prep->payload[1];
- 		prep->type_data[0] = NULL;
- 		prep->type_data[1] = NULL;
--		prep->payload = NULL;
-+		prep->payload[0] = NULL;
-+		prep->payload[1] = NULL;
- 	}
- 	pr_devel("<==%s() = %d\n", __func__, ret);
- 	return ret;
-
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+> 
+> commit 1e6d541cc26683d0f347e1cedfee1bc57e3f8875
+> Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Date:   Mon Nov 4 18:11:54 2013 +0000
+> 
+>     pci-swiotlb-xen: call pci_request_acs only ifdef CONFIG_PCI
+>     
+>     Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> 
+> diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
+> index 9695704..0e98e5d 100644
+> --- a/arch/x86/xen/pci-swiotlb-xen.c
+> +++ b/arch/x86/xen/pci-swiotlb-xen.c
+> @@ -75,8 +75,10 @@ void __init pci_xen_swiotlb_init(void)
+>  		xen_swiotlb_init(1, true /* early */);
+>  		dma_ops = &xen_swiotlb_dma_ops;
+>  
+> +#ifdef CONFIG_PCI
+>  		/* Make sure ACS will be enabled */
+>  		pci_request_acs();
+> +#endif
+>  	}
+>  }
+>  
+> @@ -92,8 +94,10 @@ int pci_xen_swiotlb_init_late(void)
+>  		return rc;
+>  
+>  	dma_ops = &xen_swiotlb_dma_ops;
+> +#ifdef CONFIG_PCI
+>  	/* Make sure ACS will be enabled */
+>  	pci_request_acs();
+> +#endif
+>  
+>  	return 0;
+>  }
