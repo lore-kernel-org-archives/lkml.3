@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab3KDIjA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 03:39:00 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:60989 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751519Ab3KDIi7 (ORCPT
+	id S1752782Ab3KDIkd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 03:40:33 -0500
+Received: from juliette.telenet-ops.be ([195.130.137.74]:41033 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488Ab3KDIkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 03:38:59 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: benh@kernel.crashing.org, paulus@samba.org, galak@kernel.crashing.org,
-        vitb@kernel.crashing.org, marcelo@kvack.org
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] powerpc: remove unused REDBOOT Kconfig parameter
-Date: Mon,  4 Nov 2013 09:38:56 +0100
-Message-Id: <1383554336-3829-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	Mon, 4 Nov 2013 03:40:33 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] init/main.c: Remove prototype for softirq_init()
+Date: Mon,  4 Nov 2013 09:40:12 +0100
+Message-Id: <1383554412-13529-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes the REDBOOT Kconfig parameter,
-which was no longer used anywhere in the source code
-and Makefiles.
+It's already available in <linux/interrupt.h>
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- arch/powerpc/Kconfig                | 3 ---
- arch/powerpc/platforms/83xx/Kconfig | 1 -
- arch/powerpc/platforms/8xx/Kconfig  | 1 -
- 3 files changed, 5 deletions(-)
+ init/main.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 38f3b7e47ec5..f02a41935c95 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -205,9 +205,6 @@ config DEFAULT_UIMAGE
- 	  Used to allow a board to specify it wants a uImage built by default
- 	default n
+diff --git a/init/main.c b/init/main.c
+index 63d3e8f2970c..7e89f7cc2ac5 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -124,7 +124,6 @@ EXPORT_SYMBOL(system_state);
+ extern void time_init(void);
+ /* Default late time init is NULL. archs can override this later. */
+ void (*__initdata late_time_init)(void);
+-extern void softirq_init(void);
  
--config REDBOOT
--	bool
--
- config ARCH_HIBERNATION_POSSIBLE
- 	bool
- 	default y
-diff --git a/arch/powerpc/platforms/83xx/Kconfig b/arch/powerpc/platforms/83xx/Kconfig
-index 670a033264c0..2bdc8c862c46 100644
---- a/arch/powerpc/platforms/83xx/Kconfig
-+++ b/arch/powerpc/platforms/83xx/Kconfig
-@@ -99,7 +99,6 @@ config SBC834x
- config ASP834x
- 	bool "Analogue & Micro ASP 834x"
- 	select PPC_MPC834x
--	select REDBOOT
- 	help
- 	  This enables support for the Analogue & Micro ASP 83xx
- 	  board.
-diff --git a/arch/powerpc/platforms/8xx/Kconfig b/arch/powerpc/platforms/8xx/Kconfig
-index 8dec3c0911ad..bd6f1a1cf922 100644
---- a/arch/powerpc/platforms/8xx/Kconfig
-+++ b/arch/powerpc/platforms/8xx/Kconfig
-@@ -45,7 +45,6 @@ config PPC_EP88XC
- config PPC_ADDER875
- 	bool "Analogue & Micro Adder 875"
- 	select CPM1
--	select REDBOOT
- 	help
- 	  This enables support for the Analogue & Micro Adder 875
- 	  board.
+ /* Untouched command line saved by arch-specific code. */
+ char __initdata boot_command_line[COMMAND_LINE_SIZE];
 -- 
-1.8.1.2
+1.7.9.5
 
