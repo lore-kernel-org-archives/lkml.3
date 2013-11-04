@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab3KDOXF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 09:23:05 -0500
-Received: from smtprelay0234.hostedemail.com ([216.40.44.234]:45420 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753407Ab3KDOXD (ORCPT
+	id S1753735Ab3KDOXV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 09:23:21 -0500
+Received: from [107.14.166.225] ([107.14.166.225]:62518 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753699Ab3KDOXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 09:23:03 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::::::::apw@cano
-X-HE-Tag: sea94_8de2fc3c4cb04
-X-Filterd-Recvd-Size: 2213
-Message-ID: <1383525449.3042.27.camel@joe-AO722>
-Subject: Re: [PATCH net-next 13/13] scripts/checkpatch.pl: Add
- dev_kfree_skb*(NULL) check to checkpatch
-From: Joe Perches <joe@perches.com>
-To: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-Cc: davem@davemloft.net, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
-        linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, IvDoorn@gmail.com, sbhatewara@vmware.com,
-        samuel@sortiz.org, chas@cmf.nrl.navy.mil, roland@kernel.org,
-        isdn@linux-pingi.de, jcliburn@gmail.com, benve@cisco.com,
-        ssujith@cisco.com, jeffrey.t.kirsher@intel.com,
-        jesse.brandeburg@intel.com, shahed.shaikh@qlogic.com,
-        apw@canonical.com
-In-Reply-To: <1383400074-30555-14-git-send-email-govindarajulu90@gmail.com>
-References: <1383400074-30555-1-git-send-email-govindarajulu90@gmail.com>
-	 <1383400074-30555-14-git-send-email-govindarajulu90@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Sun, 03 Nov 2013 16:37:29 -0800
+	Mon, 4 Nov 2013 09:23:18 -0500
+Date: Mon, 4 Nov 2013 09:22:35 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/8] trace/trace_stat: use rbtree postorder iteration
+ helper instead of opencoding
+Message-ID: <20131104092235.5109bd94@gandalf.local.home>
+In-Reply-To: <52775F91.5070305@linux.vnet.ibm.com>
+References: <1383345566-25087-1-git-send-email-cody@linux.vnet.ibm.com>
+	<1383345566-25087-2-git-send-email-cody@linux.vnet.ibm.com>
+	<20131101224538.7fe04ba8@gandalf.local.home>
+	<52775F91.5070305@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 3.8.4-0ubuntu1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-11-02 at 19:17 +0530, Govindarajulu Varadarajan wrote:
-> Signed-off-by: Govindarajulu Varadarajan <govindarajulu90@gmail.com>
-[]
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> @@ -3719,7 +3719,7 @@ sub process {
->  # check for needless "if (<foo>) fn(<foo>)" uses
->  		if ($prevline =~ /\bif\s*\(\s*($Lval)\s*\)/) {
->  			my $expr = '\s*\(\s*' . quotemeta($1) . '\s*\)\s*;';
-> -			if ($line =~ /\b(kfree|usb_free_urb|debugfs_remove(?:_recursive)?)$expr/) {
-> +			if ($line =~ /\b(kfree|dev_kfree_skb|dev_kfree_skb_any|dev_kfree_skb_irq|usb_free_urb|debugfs_remove(?:_recursive)?)$expr/) {
->  				WARN('NEEDLESS_IF',
->  				     "$1(NULL) is safe this check is probably not required\n" . $hereprev);
->  			}
+On Mon, 04 Nov 2013 00:49:21 -0800
+Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
 
-OK, but I think this is easier to read as
+> On 11/01/2013 07:45 PM, Steven Rostedt wrote:
+> > On Fri,  1 Nov 2013 15:38:46 -0700
+> > Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
+> >
+> >> Use rbtree_postorder_for_each_entry_safe() to destroy the rbtree instead
+> >> of opencoding an alternate postorder iteration that modifies the tree
+> >>
+> >> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+> >> ---
+> >>   kernel/trace/trace_stat.c | 42 ++++++------------------------------------
+> >>   1 file changed, 6 insertions(+), 36 deletions(-)
+> >>
+> 
+> >> +	rbtree_postorder_for_each_entry_safe(snode, n, &session->stat_root,
+> >> +			node) {
+> >
+> > This is one of those cases that a line break is uglier than keeping it
+> > on the same line. Heck, it's only 4 characters over the 80 char limit.
+> >
+> 
+> I'm fine with that being tweaked.
+> 
+> > Other than that, I'm fine with this patch. Want me to take this
+> > separately?
+> >
+> 
+> The patches in this patchset are all independent (they just happen to be 
+> making nearly identical changes throughout the tree), so feel free.
+> 
 
-	dev_kfree_skb(?:_skb|_any|_irq)?
+OK, I'll pull it in and modify the above change too.
 
+Thanks,
 
+-- Steve
