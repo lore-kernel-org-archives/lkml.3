@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab3KDRIZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 12:08:25 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:44473 "EHLO
+	id S1753320Ab3KDRJI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 12:09:08 -0500
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:44514 "EHLO
 	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819Ab3KDRIW (ORCPT
+	with ESMTP id S1752527Ab3KDRI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 12:08:22 -0500
+	Mon, 4 Nov 2013 12:08:26 -0500
 From: Frank Haverkamp <haver@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
@@ -14,66 +14,39 @@ Cc: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
         rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
         cascardo@linux.vnet.ibm.com, michael@ibmra.de,
         haver@linux.vnet.ibm.com
-Subject: [PATCH 2/9] GenWQE: Remove option to select name
-Date: Mon,  4 Nov 2013 18:08:02 +0100
-Message-Id: <1383584889-21594-3-git-send-email-haver@linux.vnet.ibm.com>
+Subject: [PATCH 9/9] GenWQE: Increment driver internal version number
+Date: Mon,  4 Nov 2013 18:08:09 +0100
+Message-Id: <1383584889-21594-10-git-send-email-haver@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1383584889-21594-1-git-send-email-haver@linux.vnet.ibm.com>
 References: <1383584889-21594-1-git-send-email-haver@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110417-2966-0000-0000-0000093F3191
+x-cbid: 13110417-2966-0000-0000-0000093F31B4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Selecting interface names via configuration option is obsolete.
+New version for this release.
 
 Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
 ---
- drivers/misc/genwqe/Kconfig        |   14 ++------------
- include/linux/genwqe/genwqe_card.h |    6 +-----
- 2 files changed, 3 insertions(+), 17 deletions(-)
+ drivers/misc/genwqe/genwqe_driver.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/misc/genwqe/Kconfig b/drivers/misc/genwqe/Kconfig
-index bbf137d..6069d8c 100644
---- a/drivers/misc/genwqe/Kconfig
-+++ b/drivers/misc/genwqe/Kconfig
-@@ -9,15 +9,5 @@ menuconfig GENWQE
- 	default n
- 	help
- 	  Enables PCIe card driver for IBM GenWQE accelerators.
--          The user-space interface is described in
--          include/linux/genwqe/genwqe_card.h.
--
--if GENWQE
--
--config GENWQE_DEVNAME
--        string "Name for sysfs and device nodes"
--	default "genwqe"
--        help
--          Select alternate name for sysfs and device nodes.
--
--endif
-+	  The user-space interface is described in
-+	  include/linux/genwqe/genwqe_card.h.
-diff --git a/include/linux/genwqe/genwqe_card.h b/include/linux/genwqe/genwqe_card.h
-index 2c33db1..ffed142 100644
---- a/include/linux/genwqe/genwqe_card.h
-+++ b/include/linux/genwqe/genwqe_card.h
-@@ -41,11 +41,7 @@
- #endif
+diff --git a/drivers/misc/genwqe/genwqe_driver.h b/drivers/misc/genwqe/genwqe_driver.h
+index c8601c9..b8df630 100644
+--- a/drivers/misc/genwqe/genwqe_driver.h
++++ b/drivers/misc/genwqe/genwqe_driver.h
+@@ -35,7 +35,7 @@
  
- /* Basename of sysfs, debugfs and /dev interfaces */
--#if defined(CONFIG_GENWQE_DEVNAME)
--#  define GENWQE_DEVNAME CONFIG_GENWQE_DEVNAME
--#else
--#  define GENWQE_DEVNAME "genwqe"
--#endif
-+#define GENWQE_DEVNAME "genwqe"
+ #include <linux/genwqe/genwqe_card.h>
  
- #define GENWQE_TYPE_ALTERA_230		0x00 /* GenWQE4 Stratix-IV-230 */
- #define GENWQE_TYPE_ALTERA_530		0x01 /* GenWQE4 Stratix-IV-530 */
+-#define DRV_VERS_STRING		"1.1.35"
++#define DRV_VERS_STRING		"2.0.0"
+ 
+ /*
+  * Static minor number assignement, until we decide/implement
 -- 
 1.7.1
 
