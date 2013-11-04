@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab3KDUoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 15:44:16 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:30207 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab3KDUoO (ORCPT
+	id S1752799Ab3KDUxZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 15:53:25 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:54277 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab3KDUxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 15:44:14 -0500
-Date: Mon, 4 Nov 2013 15:43:04 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, ian.campbell@citrix.com
-Cc: George Dunlap <george.dunlap@eu.citrix.com>,
-        xen-devel <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH] xen/pci: Deal with toolstack missing an
- 'XenbusStateClosing'.
-Message-ID: <20131104204304.GA18492@phenom.dumpdata.com>
-References: <20130610202456.GA17822@phenom.dumpdata.com>
- <1370898399-20968-1-git-send-email-konrad.wilk@oracle.com>
- <1370898399-20968-2-git-send-email-konrad.wilk@oracle.com>
- <51B743EA.5020800@eu.citrix.com>
- <51B74B77.1000806@oracle.com>
- <51B74DA9.7060509@eu.citrix.com>
- <20130612134504.GG2918@phenom.dumpdata.com>
- <CAErSpo7zw3MSNzdjRcZuy44uOGT_GZ8T4vaqgkd1fvWG4fadTA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo7zw3MSNzdjRcZuy44uOGT_GZ8T4vaqgkd1fvWG4fadTA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 4 Nov 2013 15:53:23 -0500
+Date: Mon, 04 Nov 2013 15:53:20 -0500 (EST)
+Message-Id: <20131104.155320.2172500441669637943.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net v2 2/3] r8152: modify the tx flow
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <3FC2D94481C34A40A55B033CB9CFA9FB@realtek.com.tw>
+References: <1383117220-893-3-git-send-email-hayeswang@realtek.com>
+	<20131030.170441.2031802071448773661.davem@davemloft.net>
+	<3FC2D94481C34A40A55B033CB9CFA9FB@realtek.com.tw>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 04 Nov 2013 12:53:22 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: hayeswang <hayeswang@realtek.com>
+Date: Thu, 31 Oct 2013 13:52:38 +0800
 
-> Sure; this is your baby :)  Why don't you handle it via your tree,
-> since it's more related to xen than any PCI core stuff.
+> From: David Miller [mailto:davem@davemloft.net] 
+> Sent: Thursday, October 31, 2013 5:05 AM
+>> 
+>> From: Hayes Wang <hayeswang@realtek.com>
+>> Date: Wed, 30 Oct 2013 15:13:39 +0800
+> [...]
+>> Basically, your driver will now queue up to 1,000 packets onto
+>> this tx_queue list, because that is what tx_queue_len will be
+>> for alloc_etherdev() allocated network devices.
+>> 
+>> In my previous reply to you about this patch, I asked you to
+>> quantify and study the effects of using a limit of 60.  I said
+>> that 60 might be too large.
+>> 
+>> You've responded by removing the limit completely, which is exactly
+>> the opposite of what I've asked you to do.  Why did you do this?
 > 
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+> Excuse me. My question is that the original code doesn't stop the tx queue
+> either, so I don't understand why it is necessary for this patch.
+> 
+> I don't say I wouldn't find the suitable value for the tx queue length.
+> I feel I need some time to think how to find the reasonable value. And
+> I don't hope it influences the submission of the other patches, so I
+> remove it first. Or, may I submit the other two patches first?
 
-Definitly fixed in v3.12. Just tested it and it works.
+The more TX work you push into the workqueue handler, the longer the
+latency for releasing the SKB and releasing all the queues that are
+waiting for release of that packet.
 
-George, Ian, how do I "close" a bug in http://bugs.xenproject.org/xen/bug/12 ?
+Do you know that sockets, queueing discplines, etc. all rely upon
+there being a timely release of SKBs once they are successfully
+transmitted?  It must happen at the earliest moment possible that
+can be reasonable obtained.
+
