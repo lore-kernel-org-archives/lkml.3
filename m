@@ -1,125 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524Ab3KDDXs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 22:23:48 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:52812 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963Ab3KDDXq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 22:23:46 -0500
-Date: Sun, 3 Nov 2013 20:23:41 -0700
-From: Jens Axboe <axboe@kernel.dk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>
-Subject: Re: linux-next: build failure after merge of the block tree
-Message-ID: <20131104032341.GD14163@kernel.dk>
-References: <20131104141345.b2699b2cc7cdc347c5735c5a@canb.auug.org.au>
+	id S1752730Ab3KDDYK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 22:24:10 -0500
+Received: from mga11.intel.com ([192.55.52.93]:18603 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752587Ab3KDDYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 22:24:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,629,1378882800"; 
+   d="scan'208";a="421774663"
+Message-ID: <527710C8.8020908@intel.com>
+Date: Mon, 04 Nov 2013 11:13:12 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131104141345.b2699b2cc7cdc347c5735c5a@canb.auug.org.au>
+To: paulmck@linux.vnet.ibm.com
+CC: rjw@rjwysocki.net, viresh.kumar@linaro.org, dipankar@in.ibm.com,
+        fweisbec@gmail.com, youquan.song@intel.com, riel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Tick: Introduce tick_nohz_check() to check nohz enable
+ status
+References: <1383036537-30362-1-git-send-email-tianyu.lan@intel.com> <20131029095135.GH4126@linux.vnet.ibm.com> <526F8E21.1030702@intel.com>
+In-Reply-To: <526F8E21.1030702@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04 2013, Stephen Rothwell wrote:
-> Hi Jens,
+On 2013年10月29日 18:29, Lan Tianyu wrote:
+> On 10/29/2013 05:51 PM, Paul E. McKenney wrote:
+>> On Tue, Oct 29, 2013 at 04:48:56PM +0800, Lan Tianyu wrote:
+>>> In some cases, nohz enable status needs to be checked. E.G, in RCU
+>>> and cpufreq
+>>> ondemand governor. So add tick_nohz_check() to return
+>>> tick_nohz_enabled value
+>>> And use tick_nohz_check() instead of referencing tick_nohz_enabled in
+>>> the rcutree_plugin.h.
+>>>
+>>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+>>
+>> NACK on the rcutree change unless you put the ACCESS_ONCE() in.
+>>
+>> Or is there some reason that ACCESS_ONCE() is not needed?  If so, what
+>> is that reason?
 > 
-> [I merged the block tree *before* the aio-direct tree today ...]
+> Hi Paul:
 > 
-> After merging the block tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> In file included from include/linux/blkdev.h:18:0,
->                  from drivers/block/ps3disk.c:22:
-> drivers/block/ps3disk.c: In function 'ps3disk_scatter_gather':
-> include/linux/bio.h:239:9: error: incompatible types when assigning to type 'struct bio_vec *' from type 'struct bio_vec'
->    ((bvl = bio_iter_iovec((bio), (iter))), 1);  \
->          ^
-> include/linux/bio.h:243:2: note: in expansion of macro '__bio_for_each_segment'
->   __bio_for_each_segment(bvl, bio, iter, (bio)->bi_iter)
->   ^
-> include/linux/blkdev.h:748:3: note: in expansion of macro 'bio_for_each_segment'
->    bio_for_each_segment(bvl, _iter.bio, _iter.iter)
->    ^
-> drivers/block/ps3disk.c:102:2: note: in expansion of macro 'rq_for_each_segment'
->   rq_for_each_segment(bvec, req, iter) {
->   ^
-> include/linux/bio.h:239:41: warning: left-hand operand of comma expression has no effect [-Wunused-value]
->    ((bvl = bio_iter_iovec((bio), (iter))), 1);  \
->                                          ^
-> include/linux/bio.h:243:2: note: in expansion of macro '__bio_for_each_segment'
->   __bio_for_each_segment(bvl, bio, iter, (bio)->bi_iter)
->   ^
-> include/linux/blkdev.h:748:3: note: in expansion of macro 'bio_for_each_segment'
->    bio_for_each_segment(bvl, _iter.bio, _iter.iter)
->    ^
-> drivers/block/ps3disk.c:102:2: note: in expansion of macro 'rq_for_each_segment'
->   rq_for_each_segment(bvec, req, iter) {
->   ^
-> include/linux/bio.h:240:45: error: request for member 'bv_len' in something not a structure or union
->        bio_advance_iter((bio), &(iter), (bvl).bv_len))
->                                              ^
-> include/linux/bio.h:243:2: note: in expansion of macro '__bio_for_each_segment'
->   __bio_for_each_segment(bvl, bio, iter, (bio)->bi_iter)
->   ^
-> include/linux/blkdev.h:748:3: note: in expansion of macro 'bio_for_each_segment'
->    bio_for_each_segment(bvl, _iter.bio, _iter.iter)
->    ^
-> drivers/block/ps3disk.c:102:2: note: in expansion of macro 'rq_for_each_segment'
->   rq_for_each_segment(bvec, req, iter) {
->   ^
-> 
-> I am not quite sure which commit caused this (maybe ed2d2f9a8265 ("block:
-> Abstract out bvec iterator")?).  I have used the block tree from
-> next-20131031 again for today.
+> Thanks for review. When I change this code, I find the tick_nohz_enabled
+> isn't changed dynamically. It's only changed during parsing kernel
+> params when "nohz=off/on" is set. Except this, it will not be changed.
+> So I ignored ACCESS_ONCE(). If necessary, I can add it back.
 
-Don't have ppc64 cross compiling handy, but the below should do the
-trick.
+Hi Paul:
+	Does this reason make sense to you? Or you still prefer to add
+ACCESS_ONCE() in the new tick_nohz_check()?
 
+> 
+>>
+>>                             Thanx, Paul
+>>
+>>> ---
+>>>   include/linux/tick.h     | 2 ++
+>>>   kernel/rcutree_plugin.h  | 4 +---
+>>>   kernel/time/tick-sched.c | 8 +++++++-
+>>>   3 files changed, 10 insertions(+), 4 deletions(-)
+>>>
+>>> diff --git a/include/linux/tick.h b/include/linux/tick.h
+>>> index 5128d33..a9c5374 100644
+>>> --- a/include/linux/tick.h
+>>> +++ b/include/linux/tick.h
+>>> @@ -136,6 +136,7 @@ static inline int tick_nohz_tick_stopped(void)
+>>>   extern void tick_nohz_idle_enter(void);
+>>>   extern void tick_nohz_idle_exit(void);
+>>>   extern void tick_nohz_irq_exit(void);
+>>> +extern int tick_nohz_check(void);
+>>>   extern ktime_t tick_nohz_get_sleep_length(void);
+>>>   extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
+>>>   extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+>>> @@ -155,6 +156,7 @@ static inline ktime_t
+>>> tick_nohz_get_sleep_length(void)
+>>>
+>>>       return len;
+>>>   }
+>>> +static inline int tick_nohz_check(void) { return 0; }
+>>>   static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) {
+>>> return -1; }
+>>>   static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) {
+>>> return -1; }
+>>>   # endif /* !CONFIG_NO_HZ_COMMON */
+>>> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+>>> index 130c97b..af167ec 100644
+>>> --- a/kernel/rcutree_plugin.h
+>>> +++ b/kernel/rcutree_plugin.h
+>>> @@ -1627,8 +1627,6 @@ module_param(rcu_idle_gp_delay, int, 0644);
+>>>   static int rcu_idle_lazy_gp_delay = RCU_IDLE_LAZY_GP_DELAY;
+>>>   module_param(rcu_idle_lazy_gp_delay, int, 0644);
+>>>
+>>> -extern int tick_nohz_enabled;
+>>> -
+>>>   /*
+>>>    * Try to advance callbacks for all flavors of RCU on the current CPU.
+>>>    * Afterwards, if there are any callbacks ready for immediate
+>>> invocation,
+>>> @@ -1718,7 +1716,7 @@ static void rcu_prepare_for_idle(int cpu)
+>>>       int tne;
+>>>
+>>>       /* Handle nohz enablement switches conservatively. */
+>>> -    tne = ACCESS_ONCE(tick_nohz_enabled);
+>>> +    tne = tick_nohz_check();
+>>>       if (tne != rdtp->tick_nohz_enabled_snap) {
+>>>           if (rcu_cpu_has_callbacks(cpu, NULL))
+>>>               invoke_rcu_core(); /* force nohz to see update. */
+>>> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+>>> index 3612fc7..d381a22 100644
+>>> --- a/kernel/time/tick-sched.c
+>>> +++ b/kernel/time/tick-sched.c
+>>> @@ -361,7 +361,13 @@ void __init tick_nohz_init(void)
+>>>   /*
+>>>    * NO HZ enabled ?
+>>>    */
+>>> -int tick_nohz_enabled __read_mostly  = 1;
+>>> +static int tick_nohz_enabled __read_mostly  = 1;
+>>> +
+>>> +int tick_nohz_check(void)
+>>> +{
+>>> +    return    tick_nohz_enabled;
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(tick_nohz_check);
+>>>
+>>>   /*
+>>>    * Enable / Disable tickless mode
+>>> -- 
+>>> 1.8.4.rc0.1.g8f6a3e5.dirty
+>>>
+>>
+> 
 
-diff --git a/drivers/block/ps3disk.c b/drivers/block/ps3disk.c
-index 8d1a19ccff0a..c120d70d3fb3 100644
---- a/drivers/block/ps3disk.c
-+++ b/drivers/block/ps3disk.c
-@@ -94,7 +94,7 @@ static void ps3disk_scatter_gather(struct ps3_storage_device *dev,
- {
- 	unsigned int offset = 0;
- 	struct req_iterator iter;
--	struct bio_vec *bvec;
-+	struct bio_vec bvec;
- 	unsigned int i = 0;
- 	size_t size;
- 	void *buf;
-@@ -105,14 +105,14 @@ static void ps3disk_scatter_gather(struct ps3_storage_device *dev,
- 			__func__, __LINE__, i, bio_sectors(iter.bio),
- 			iter.bio->bi_iter.bi_sector);
- 
--		size = bvec->bv_len;
--		buf = bvec_kmap_irq(bvec, &flags);
-+		size = bvec.bv_len;
-+		buf = bvec_kmap_irq(&bvec, &flags);
- 		if (gather)
- 			memcpy(dev->bounce_buf+offset, buf, size);
- 		else
- 			memcpy(buf, dev->bounce_buf+offset, size);
- 		offset += size;
--		flush_kernel_dcache_page(bvec->bv_page);
-+		flush_kernel_dcache_page(bvec.bv_page);
- 		bvec_kunmap_irq(buf, &flags);
- 		i++;
- 	}
-@@ -129,7 +129,7 @@ static int ps3disk_submit_request_sg(struct ps3_storage_device *dev,
- 
- #ifdef DEBUG
- 	unsigned int n = 0;
--	struct bio_vec *bv;
-+	struct bio_vec bv;
- 	struct req_iterator iter;
- 
- 	rq_for_each_segment(bv, req, iter)
 
 -- 
-Jens Axboe
-
+Best regards
+Tianyu Lan
