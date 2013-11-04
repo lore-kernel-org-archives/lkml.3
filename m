@@ -1,70 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958Ab3KDRIc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 12:08:32 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:47049 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854Ab3KDRI3 (ORCPT
+	id S1752711Ab3KDRI1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 12:08:27 -0500
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:44504 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519Ab3KDRIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 12:08:29 -0500
-Date: Mon, 4 Nov 2013 09:06:17 -0800
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nicolin Chen <b42378@freescale.com>
-Message-ID: <20131104170617.GN2493@sirena.org.uk>
-References: <20131104175251.817bdd5b55652625b2b6e0ed@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nc/lueCMLdgjBWoP"
-Content-Disposition: inline
-In-Reply-To: <20131104175251.817bdd5b55652625b2b6e0ed@canb.auug.org.au>
-X-Cookie: You love peace.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 209.49.225.226
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: build failure after merge of the final tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Mon, 4 Nov 2013 12:08:25 -0500
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
+        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
+        cascardo@linux.vnet.ibm.com, michael@ibmra.de,
+        haver@linux.vnet.ibm.com
+Subject: [PATCH 8/9] GenWQE: Simplify sysfs buffer printouts
+Date: Mon,  4 Nov 2013 18:08:08 +0100
+Message-Id: <1383584889-21594-9-git-send-email-haver@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1383584889-21594-1-git-send-email-haver@linux.vnet.ibm.com>
+References: <1383584889-21594-1-git-send-email-haver@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13110417-2966-0000-0000-0000093F31AD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Rework code which was inteneded to print out multiple lines via sysfs
+attributes. This is not needed anymore. We just print one item.
 
---nc/lueCMLdgjBWoP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
+---
+ drivers/misc/genwqe/card_sysfs.c |   59 +++++++++-----------------------------
+ 1 files changed, 14 insertions(+), 45 deletions(-)
 
-On Mon, Nov 04, 2013 at 05:52:51PM +1100, Stephen Rothwell wrote:
+diff --git a/drivers/misc/genwqe/card_sysfs.c b/drivers/misc/genwqe/card_sysfs.c
+index 6a51ad7..f29ce55 100644
+--- a/drivers/misc/genwqe/card_sysfs.c
++++ b/drivers/misc/genwqe/card_sysfs.c
+@@ -48,82 +48,65 @@ static const char * const genwqe_types[] = {
+ static ssize_t status_show(struct device *dev, struct device_attribute *attr,
+ 			   char *buf)
+ {
+-	ssize_t len = 0;
+ 	struct genwqe_dev *cd = dev_get_drvdata(dev);
+ 	const char *cs[GENWQE_CARD_STATE_MAX] = { "unused", "used", "error" };
+ 
+-	len += scnprintf(&buf[len], PAGE_SIZE - len,
+-			 "%s\n", cs[cd->card_state]);
+-	return len;
++	return scnprintf(buf, PAGE_SIZE, "%s\n", cs[cd->card_state]);
+ }
+ static DEVICE_ATTR_RO(status);
+ 
+ static ssize_t appid_show(struct device *dev, struct device_attribute *attr,
+ 			  char *buf)
+ {
+-	ssize_t len = 0;
+ 	char app_name[5];
+ 	struct genwqe_dev *cd = dev_get_drvdata(dev);
+ 
+ 	genwqe_read_app_id(cd, app_name, sizeof(app_name));
+-	len += scnprintf(&buf[len], PAGE_SIZE - len,
+-			 "%s\n", app_name);
+-	return len;
++	return scnprintf(buf, PAGE_SIZE, "%s\n", app_name);
+ }
+ static DEVICE_ATTR_RO(appid);
+ 
+ static ssize_t version_show(struct device *dev, struct device_attribute *attr,
+ 			    char *buf)
+ {
+-	ssize_t len = 0;
+ 	u64 slu_id, app_id;
+ 	struct genwqe_dev *cd = dev_get_drvdata(dev);
+ 
+ 	slu_id = __genwqe_readq(cd, IO_SLU_UNITCFG);
+ 	app_id = __genwqe_readq(cd, IO_APP_UNITCFG);
+ 
+-	len += scnprintf(&buf[len], PAGE_SIZE - len,
+-			 "%016llx.%016llx\n", slu_id, app_id);
+-	return len;
++	return scnprintf(buf, PAGE_SIZE, "%016llx.%016llx\n", slu_id, app_id);
+ }
+ static DEVICE_ATTR_RO(version);
+ 
+ static ssize_t type_show(struct device *dev, struct device_attribute *attr,
+ 			 char *buf)
+ {
+-	ssize_t len = 0;
+ 	u8 card_type;
+ 	struct genwqe_dev *cd = dev_get_drvdata(dev);
+ 
+ 	card_type = genwqe_card_type(cd);
+-	len += scnprintf(&buf[len], PAGE_SIZE - len,
+-			 "%s\n", (card_type >= ARRAY_SIZE(genwqe_types)) ?
++	return scnprintf(buf, PAGE_SIZE, "%s\n",
++			 (card_type >= ARRAY_SIZE(genwqe_types)) ?
+ 			 "invalid" : genwqe_types[card_type]);
+-	return len;
+ }
+ static DEVICE_ATTR_RO(type);
+ 
+ static ssize_t driver_show(struct device *dev, struct device_attribute *attr,
+ 			   char *buf)
+ {
+-	ssize_t len = 0;
+-	len += scnprintf(&buf[len], PAGE_SIZE - len,
+-			 "%s\n", DRV_VERS_STRING);
+-	return len;
++	return scnprintf(buf, PAGE_SIZE, "%s\n", DRV_VERS_STRING);
+ }
+ static DEVICE_ATTR_RO(driver);
+ 
+ static ssize_t tempsens_show(struct device *dev, struct device_attribute *attr,
+ 			     char *buf)
+ {
+-	ssize_t len = 0;
+ 	u64 tempsens;
+ 	struct genwqe_dev *cd = dev_get_drvdata(dev);
+ 
+ 	tempsens = __genwqe_readq(cd, IO_SLU_TEMPERATURE_SENSOR);
+-	len += scnprintf(&buf[len], PAGE_SIZE - len,
+-			 "%016llx\n", tempsens);
+-	return len;
++	return scnprintf(buf, PAGE_SIZE, "%016llx\n", tempsens);
+ }
+ static DEVICE_ATTR_RO(tempsens);
+ 
+@@ -131,14 +114,11 @@ static ssize_t base_clock_show(struct device *dev,
+ 			       struct device_attribute *attr,
+ 			       char *buf)
+ {
+-	ssize_t len = 0;
+ 	u64 base_clock;
+ 	struct genwqe_dev *cd = dev_get_drvdata(dev);
+ 
+ 	base_clock = genwqe_base_clock_frequency(cd);
+-	len += scnprintf(&buf[len], PAGE_SIZE - len,
+-			 "%lld\n", base_clock);
+-	return len;
++	return scnprintf(buf, PAGE_SIZE, "%lld\n", base_clock);
+ }
+ static DEVICE_ATTR_RO(base_clock);
+ 
+@@ -160,17 +140,13 @@ static DEVICE_ATTR_RO(base_clock);
+  * image.
+  */
+ static ssize_t curr_bitstream_show(struct device *dev,
+-				   struct device_attribute *attr,
+-				   char *buf)
++				   struct device_attribute *attr, char *buf)
+ {
+-	ssize_t len = 0;
+ 	int curr_bitstream;
+ 	struct genwqe_dev *cd = dev_get_drvdata(dev);
+ 
+ 	curr_bitstream = __genwqe_readq(cd, IO_SLU_BITSTREAM) & 0x1;
+-	len += scnprintf(&buf[len], PAGE_SIZE - len,
+-			 "%d\n", curr_bitstream);
+-	return len;
++	return scnprintf(buf, PAGE_SIZE, "%d\n", curr_bitstream);
+ }
+ static DEVICE_ATTR_RO(curr_bitstream);
+ 
+@@ -180,10 +156,8 @@ static DEVICE_ATTR_RO(curr_bitstream);
+  * IO_SLC_CFGREG_SOFTRESET: This register can only be accessed by the PF.
+  */
+ static ssize_t next_bitstream_show(struct device *dev,
+-				   struct device_attribute *attr,
+-				   char *buf)
++				   struct device_attribute *attr, char *buf)
+ {
+-	ssize_t len = 0;
+ 	int next_bitstream;
+ 	struct genwqe_dev *cd = dev_get_drvdata(dev);
+ 
+@@ -198,9 +172,7 @@ static ssize_t next_bitstream_show(struct device *dev,
+ 		next_bitstream = -1;
+ 		break;		/* error */
+ 	}
+-	len += scnprintf(&buf[len], PAGE_SIZE - len,
+-			 "%d\n", next_bitstream);
+-	return len;
++	return scnprintf(buf, PAGE_SIZE, "%d\n", next_bitstream);
+ }
+ 
+ static ssize_t next_bitstream_store(struct device *dev,
+@@ -233,12 +205,9 @@ static DEVICE_ATTR_RW(next_bitstream);
+  * FIXME Implement me!
+  */
+ static ssize_t cpld_version_show(struct device *dev,
+-				 struct device_attribute *attr,
+-				 char *buf)
++				 struct device_attribute *attr, char *buf)
+ {
+-	ssize_t len = 0;
+-	len += scnprintf(&buf[len], PAGE_SIZE - len, "unknown (FIXME)\n");
+-	return len;
++	return scnprintf(buf, PAGE_SIZE, "unknown (FIXME)\n");
+ }
+ static DEVICE_ATTR_RO(cpld_version);
+ 
+-- 
+1.7.1
 
-> Caused by commit fc1a38653793 ("ASoC: Add pinctrl PM to components of
-> active DAIs") from the sound-asoc tree.
-
-> I have reverted that commit for today.
-
-Thanks, I'd already reverted it in my tree after a report from Fengguang
-but that must've been after you fetched the trees for today.
-
---nc/lueCMLdgjBWoP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSd9QFAAoJELSic+t+oim9aTUP/0VmpzdrH7cP6+60PQQda7Ac
-zwhpieTtEeFSWQMCLocYn7wn39irhazerLy9NWYguGadjkcNFA0vOhynFCU45CF8
-FzcUUvWD35YWB/8SATba7icqh0VyqhjMVHP3Vib7XGo1Pre8pNidG3LfQAr75fjz
-6J2Z0vsFrLyY+u555A/FlG1N0BTSxJUfnYTcJxZ8kfgNVmLRTHOqnRDZ7WYFdESE
-AUJCz2WOFDXTInNKG0MvxgRmmNcuay1aINr9Kfe5SzsRvT8QG6SxwjMcImkFELam
-yCVJuWRRud1SfS5sdBXtexZYXrxuAE38cSga2E+ZoX9GK0Mcn+L+5oZP2i5wjcPq
-BGTUyukEd4SAmJORylaGMEYi4uLqgA0noQmrBe0phWC8w/fB6eVspJCnE+LnaemD
-4+vf+/uwNwNXcAB+BwOBY5t8G+1wF94Jt2+aNZDOrg4JIFJpbYhESH5JB2rkmlVR
-jvAdj56DCOxtgQYHRsfao54WIBSHBCCzRqDeAcVTYDpn4T30fWJwdwOWpXbuwXL1
-+pPPPNfGBhNvACcILkYrEPK3w4alT/DmtQibccaJ+AuuEYTiR621ETG3m8d06YDZ
-MeTfcb7X+MKViOabI83U6QdIHvrC2LcGRMy7RWTJwJVa01tgeFwalHsaVfSJGyv/
-F1pFRJkaDbe9YB3/Kw9z
-=zmjQ
------END PGP SIGNATURE-----
-
---nc/lueCMLdgjBWoP--
