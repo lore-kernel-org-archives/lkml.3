@@ -1,99 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888Ab3KDLkq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 06:40:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9195 "EHLO mx1.redhat.com"
+	id S1751819Ab3KDLtE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 06:49:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59328 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752207Ab3KDLgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 06:36:33 -0500
+	id S1750789Ab3KDLtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 06:49:02 -0500
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 10/19] GFS2: Speed up starting point selection for block allocation
-Date: Mon,  4 Nov 2013 11:09:33 +0000
-Message-Id: <1383563382-8535-11-git-send-email-swhiteho@redhat.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>, Abhijith Das <adas@redhat.com>
+Subject: [PATCH 17/19] GFS2: Use reflink for quota data cache
+Date: Mon,  4 Nov 2013 11:22:28 +0000
+Message-Id: <1383564150-8975-1-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1383563382-8535-1-git-send-email-swhiteho@redhat.com>
 References: <1383563382-8535-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When setting the starting point for block allocation, there were calls
-to both gfs2_rbm_to_block() and gfs2_rbm_from_block() in the common case
-of there being an active reservation. The gfs2_rbm_from_block() function
-can be quite slow, and since the two conversions were effectively a
-no-op, it makes sense to avoid them entirely in this case.
+This patch adds reflink support to the quota data cache. It
+looks a bit strange because we still don't have a sensible
+split in the lookup by id and the lru list. That is coming in
+later patches though.
 
-There is no functional change here, but the code should be a bit more
-efficient after this patch.
+The intent here is just to swap the current ref count for
+reflinks in all cases with as little as possible other change.
 
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+Signed-off-by: Abhijith Das <adas@redhat.com>
+Tested-by: Abhijith Das <adas@redhat.com>
 
-diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-index 4f0984a..4d83abd 100644
---- a/fs/gfs2/rgrp.c
-+++ b/fs/gfs2/rgrp.c
-@@ -2134,6 +2134,35 @@ out:
+diff --git a/fs/gfs2/incore.h b/fs/gfs2/incore.h
+index bb88e41..9d77804 100644
+--- a/fs/gfs2/incore.h
++++ b/fs/gfs2/incore.h
+@@ -422,7 +422,7 @@ struct gfs2_quota_data {
+ 	struct list_head qd_list;
+ 	struct list_head qd_reclaim;
+ 
+-	atomic_t qd_count;
++	struct lockref qd_lockref;
+ 
+ 	struct kqid qd_id;
+ 	unsigned long qd_flags;		/* QDF_... */
+diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
+index 4a9726a..ed08911 100644
+--- a/fs/gfs2/quota.c
++++ b/fs/gfs2/quota.c
+@@ -50,6 +50,7 @@
+ #include <linux/freezer.h>
+ #include <linux/quota.h>
+ #include <linux/dqblk_xfs.h>
++#include <linux/lockref.h>
+ 
+ #include "gfs2.h"
+ #include "incore.h"
+@@ -148,7 +149,8 @@ static int qd_alloc(struct gfs2_sbd *sdp, struct kqid qid,
+ 	if (!qd)
+ 		return -ENOMEM;
+ 
+-	atomic_set(&qd->qd_count, 1);
++	qd->qd_lockref.count = 1;
++	spin_lock_init(&qd->qd_lockref.lock);
+ 	qd->qd_id = qid;
+ 	qd->qd_slot = -1;
+ 	INIT_LIST_HEAD(&qd->qd_reclaim);
+@@ -180,13 +182,12 @@ static int qd_get(struct gfs2_sbd *sdp, struct kqid qid,
+ 		spin_lock(&qd_lru_lock);
+ 		list_for_each_entry(qd, &sdp->sd_quota_list, qd_list) {
+ 			if (qid_eq(qd->qd_id, qid)) {
+-				if (!atomic_read(&qd->qd_count) &&
+-				    !list_empty(&qd->qd_reclaim)) {
++				lockref_get(&qd->qd_lockref);
++				if (!list_empty(&qd->qd_reclaim)) {
+ 					/* Remove it from reclaim list */
+ 					list_del_init(&qd->qd_reclaim);
+ 					atomic_dec(&qd_lru_count);
+ 				}
+-				atomic_inc(&qd->qd_count);
+ 				found = 1;
+ 				break;
+ 			}
+@@ -222,18 +223,24 @@ static int qd_get(struct gfs2_sbd *sdp, struct kqid qid,
+ static void qd_hold(struct gfs2_quota_data *qd)
+ {
+ 	struct gfs2_sbd *sdp = qd->qd_gl->gl_sbd;
+-	gfs2_assert(sdp, atomic_read(&qd->qd_count));
+-	atomic_inc(&qd->qd_count);
++	gfs2_assert(sdp, !__lockref_is_dead(&qd->qd_lockref));
++	lockref_get(&qd->qd_lockref);
  }
  
- /**
-+ * gfs2_set_alloc_start - Set starting point for block allocation
-+ * @rbm: The rbm which will be set to the required location
-+ * @ip: The gfs2 inode
-+ * @dinode: Flag to say if allocation includes a new inode
-+ *
-+ * This sets the starting point from the reservation if one is active
-+ * otherwise it falls back to guessing a start point based on the
-+ * inode's goal block or the last allocation point in the rgrp.
-+ */
+ static void qd_put(struct gfs2_quota_data *qd)
+ {
+-	if (atomic_dec_and_lock(&qd->qd_count, &qd_lru_lock)) {
++	spin_lock(&qd_lru_lock);
 +
-+static void gfs2_set_alloc_start(struct gfs2_rbm *rbm,
-+				 const struct gfs2_inode *ip, bool dinode)
-+{
-+	u64 goal;
++	if (!lockref_put_or_lock(&qd->qd_lockref)) {
 +
-+	if (gfs2_rs_active(ip->i_res)) {
-+		*rbm = ip->i_res->rs_rbm;
-+		return;
-+	}
+ 		/* Add to the reclaim list */
+ 		list_add_tail(&qd->qd_reclaim, &qd_lru_list);
+ 		atomic_inc(&qd_lru_count);
+-		spin_unlock(&qd_lru_lock);
 +
-+	if (!dinode && rgrp_contains_block(rbm->rgd, ip->i_goal))
-+		goal = ip->i_goal;
-+	else
-+		goal = rbm->rgd->rd_last_alloc + rbm->rgd->rd_data0;
-+
-+	gfs2_rbm_from_block(rbm, goal);
-+}
-+
-+/**
-  * gfs2_alloc_blocks - Allocate one or more blocks of data and/or a dinode
-  * @ip: the inode to allocate the block for
-  * @bn: Used to return the starting block number
-@@ -2151,22 +2180,14 @@ int gfs2_alloc_blocks(struct gfs2_inode *ip, u64 *bn, unsigned int *nblocks,
- 	struct buffer_head *dibh;
- 	struct gfs2_rbm rbm = { .rgd = ip->i_rgd, };
- 	unsigned int ndata;
--	u64 goal;
- 	u64 block; /* block, within the file system scope */
- 	int error;
- 
--	if (gfs2_rs_active(ip->i_res))
--		goal = gfs2_rbm_to_block(&ip->i_res->rs_rbm);
--	else if (!dinode && rgrp_contains_block(rbm.rgd, ip->i_goal))
--		goal = ip->i_goal;
--	else
--		goal = rbm.rgd->rd_last_alloc + rbm.rgd->rd_data0;
--
--	gfs2_rbm_from_block(&rbm, goal);
-+	gfs2_set_alloc_start(&rbm, ip, dinode);
- 	error = gfs2_rbm_find(&rbm, GFS2_BLKST_FREE, 0, ip, false);
- 
- 	if (error == -ENOSPC) {
--		gfs2_rbm_from_block(&rbm, goal);
-+		gfs2_set_alloc_start(&rbm, ip, dinode);
- 		error = gfs2_rbm_find(&rbm, GFS2_BLKST_FREE, 0, NULL, false);
++		spin_unlock(&qd->qd_lockref.lock);
  	}
++
++	spin_unlock(&qd_lru_lock);
+ }
  
+ static int slot_get(struct gfs2_quota_data *qd)
+@@ -394,8 +401,8 @@ static int qd_check_sync(struct gfs2_sbd *sdp, struct gfs2_quota_data *qd,
+ 	list_move_tail(&qd->qd_list, &sdp->sd_quota_list);
+ 
+ 	set_bit(QDF_LOCKED, &qd->qd_flags);
+-	gfs2_assert_warn(sdp, atomic_read(&qd->qd_count));
+-	atomic_inc(&qd->qd_count);
++	gfs2_assert_warn(sdp, !__lockref_is_dead(&qd->qd_lockref));
++	lockref_get(&qd->qd_lockref);
+ 	qd->qd_change_sync = qd->qd_change;
+ 	gfs2_assert_warn(sdp, qd->qd_slot_count);
+ 	qd->qd_slot_count++;
+@@ -1303,15 +1310,22 @@ void gfs2_quota_cleanup(struct gfs2_sbd *sdp)
+ 	while (!list_empty(head)) {
+ 		qd = list_entry(head->prev, struct gfs2_quota_data, qd_list);
+ 
+-		if (atomic_read(&qd->qd_count) > 1 ||
+-		    (atomic_read(&qd->qd_count) &&
+-		     !test_bit(QDF_CHANGE, &qd->qd_flags))) {
++		/*
++		 * To be removed in due course... we should be able to
++		 * ensure that all refs to the qd have done by this point
++		 * so that this rather odd test is not required
++		 */
++		spin_lock(&qd->qd_lockref.lock);
++		if (qd->qd_lockref.count > 1 ||
++		    (qd->qd_lockref.count && !test_bit(QDF_CHANGE, &qd->qd_flags))) {
++			spin_unlock(&qd->qd_lockref.lock);
+ 			list_move(&qd->qd_list, head);
+ 			spin_unlock(&qd_lru_lock);
+ 			schedule();
+ 			spin_lock(&qd_lru_lock);
+ 			continue;
+ 		}
++		spin_unlock(&qd->qd_lockref.lock);
+ 
+ 		list_del(&qd->qd_list);
+ 		/* Also remove if this qd exists in the reclaim list */
+@@ -1322,7 +1336,7 @@ void gfs2_quota_cleanup(struct gfs2_sbd *sdp)
+ 		atomic_dec(&sdp->sd_quota_count);
+ 		spin_unlock(&qd_lru_lock);
+ 
+-		if (!atomic_read(&qd->qd_count)) {
++		if (!qd->qd_lockref.count) {
+ 			gfs2_assert_warn(sdp, !qd->qd_change);
+ 			gfs2_assert_warn(sdp, !qd->qd_slot_count);
+ 		} else
 -- 
 1.7.4.4
 
