@@ -1,138 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab3KDQi7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 11:38:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21296 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752607Ab3KDQi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 11:38:57 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 2/9] KEYS: Provide a generic instantiation function
-To: d.kasatkin@samsung.com, zohar@us.ibm.com
-From: David Howells <dhowells@redhat.com>
-Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 04 Nov 2013 16:22:31 +0000
-Message-ID: <20131104162231.10177.84539.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20131104162216.10177.98067.stgit@warthog.procyon.org.uk>
-References: <20131104162216.10177.98067.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1753566Ab3KDQmx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 11:42:53 -0500
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:38886 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab3KDQmw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 11:42:52 -0500
+Subject: Re: [PATCH] Generic WorkQueue Engine (GenWQE) device driver (v4)
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Reply-To: haver@linux.vnet.ibm.com
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
+        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
+        cascardo@linux.vnet.ibm.com, michael@ibmra.de,
+        Frank Haverkamp <haver@vnet.ibm.com>
+In-Reply-To: <20131030174403.GF20147@kroah.com>
+References: <1383125578-26202-1-git-send-email-haver@linux.vnet.ibm.com>
+	 <1383125578-26202-2-git-send-email-haver@linux.vnet.ibm.com>
+	 <20131030174403.GF20147@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Mon, 04 Nov 2013 17:41:27 +0100
+Message-ID: <1383583287.15642.29.camel@oc7383187364.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13110416-3548-0000-0000-0000070AC386
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a generic instantiation function for key types that use the preparse
-hook.  This makes it easier to prereserve key quota before keyrings get locked
-to retain the new key.
+Hi Greg,
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Am Mittwoch, den 30.10.2013, 10:44 -0700 schrieb Greg KH:
+> On Wed, Oct 30, 2013 at 10:32:58AM +0100, Frank Haverkamp wrote:
+> > +/*
+> > + * Create device_attribute structures / params: name, mode, show, store
+> > + * additional flag if valid in VF
+> > + */
+> > +struct genwqe_dev_attrib {
+> > +	struct device_attribute att;	/* sysfs entry attributes */
+> > +	int vf;				/* may exist in VF or not */
+> > +};
+> 
+> Why do you need your own structure?  Use the is_visible() callback to
+> create or not, the individual attributes for a specific device, don't
+> roll your own logic for something the driver core already supports.
+> 
+> > +static struct genwqe_dev_attrib dev_attr_tab[] = {
+> > +	{__ATTR(tempsens,       S_IRUGO, show_card_tempsens, NULL), 0},
+> > +	{__ATTR(next_bitstream, (S_IRUGO | S_IWUSR),
+> > +		show_card_next_bitstream, store_card_next_bitstream), 0},
+> > +	{__ATTR(curr_bitstream, S_IRUGO, show_card_curr_bitstream, NULL), 0},
+> > +	{__ATTR(cpld_version,   S_IRUGO, show_cpld_version, NULL), 0},
+> > +	{__ATTR(base_clock,	S_IRUGO, show_card_base_clock, NULL), 0},
+> > +
+> > +	{__ATTR(driver,		S_IRUGO, show_card_driver, NULL), 1},
+> > +	{__ATTR(type,		S_IRUGO, show_card_type, NULL), 1},
+> > +	{__ATTR(version,	S_IRUGO, show_card_version, NULL), 1},
+> > +	{__ATTR(appid,		S_IRUGO, show_card_appid, NULL), 1},
+> > +	{__ATTR(status,		S_IRUGO, show_card_status, NULL), 1},
+> > +};
+> > +
+> > +/**
+> > + * create_card_sysfs() - Setup sysfs entries of the card device
+> > + *
+> > + * VFs have restricted mmio capabilities, so not all sysfs entries
+> > + * are allowed in VFs.
+> > + */
+> > +int create_card_sysfs(struct genwqe_dev *cd)
+> > +{
+> > +	int rc, priv;
+> > +	unsigned int i;
+> > +
+> > +	priv = genwqe_is_privileged(cd);
+> > +	for (i = 0; i < ARRAY_SIZE(dev_attr_tab); i++) {
+> > +		struct genwqe_dev_attrib *dev_attr = &dev_attr_tab[i];
+> > +		if (dev_attr->vf || priv) {
+> > +			rc = device_create_file(cd->dev, &dev_attr->att);
+> 
+> No, you just raced with userspace, creating the sysfs files _after_ it
+> was told to userspace that the driver was bound to the device.
 
- crypto/asymmetric_keys/asymmetric_type.c |   25 +------------------------
- include/linux/key-type.h                 |    2 ++
- security/keys/key.c                      |   30 ++++++++++++++++++++++++++++++
- 3 files changed, 33 insertions(+), 24 deletions(-)
+> Please use the attribute groups for this driver to have the driver core
+> create the files before it it told to userspace.
 
-diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
-index b77eb5304788..c1fe0fcee8e3 100644
---- a/crypto/asymmetric_keys/asymmetric_type.c
-+++ b/crypto/asymmetric_keys/asymmetric_type.c
-@@ -164,29 +164,6 @@ static void asymmetric_key_free_preparse(struct key_preparsed_payload *prep)
- }
- 
- /*
-- * Instantiate a asymmetric_key defined key.  The key was preparsed, so we just
-- * have to transfer the data here.
-- */
--static int asymmetric_key_instantiate(struct key *key, struct key_preparsed_payload *prep)
--{
--	int ret;
--
--	pr_devel("==>%s()\n", __func__);
--
--	ret = key_payload_reserve(key, prep->quotalen);
--	if (ret == 0) {
--		key->type_data.p[0] = prep->type_data[0];
--		key->type_data.p[1] = prep->type_data[1];
--		key->payload.data = prep->payload;
--		prep->type_data[0] = NULL;
--		prep->type_data[1] = NULL;
--		prep->payload = NULL;
--	}
--	pr_devel("<==%s() = %d\n", __func__, ret);
--	return ret;
--}
--
--/*
-  * dispose of the data dangling from the corpse of a asymmetric key
-  */
- static void asymmetric_key_destroy(struct key *key)
-@@ -205,7 +182,7 @@ struct key_type key_type_asymmetric = {
- 	.name		= "asymmetric",
- 	.preparse	= asymmetric_key_preparse,
- 	.free_preparse	= asymmetric_key_free_preparse,
--	.instantiate	= asymmetric_key_instantiate,
-+	.instantiate	= generic_key_instantiate,
- 	.match		= asymmetric_key_match,
- 	.destroy	= asymmetric_key_destroy,
- 	.describe	= asymmetric_key_describe,
-diff --git a/include/linux/key-type.h b/include/linux/key-type.h
-index a74c3a84dfdd..88503dca2a57 100644
---- a/include/linux/key-type.h
-+++ b/include/linux/key-type.h
-@@ -159,5 +159,7 @@ static inline int key_negate_and_link(struct key *key,
- 	return key_reject_and_link(key, timeout, ENOKEY, keyring, instkey);
- }
- 
-+extern int generic_key_instantiate(struct key *key, struct key_preparsed_payload *prep);
-+
- #endif /* CONFIG_KEYS */
- #endif /* _LINUX_KEY_TYPE_H */
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 55d110f0aced..4ea216652d52 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -1030,6 +1030,36 @@ void key_invalidate(struct key *key)
- EXPORT_SYMBOL(key_invalidate);
- 
- /**
-+ * generic_key_instantiate - Simple instantiation of a key from preparsed data
-+ * @key: The key to be instantiated
-+ * @prep: The preparsed data to load.
-+ *
-+ * Instantiate a key from preparsed data.  We assume we can just copy the data
-+ * in directly and clear the old pointers.
-+ *
-+ * This can be pointed to directly by the key type instantiate op pointer.
-+ */
-+int generic_key_instantiate(struct key *key, struct key_preparsed_payload *prep)
-+{
-+	int ret;
-+
-+	pr_devel("==>%s()\n", __func__);
-+
-+	ret = key_payload_reserve(key, prep->quotalen);
-+	if (ret == 0) {
-+		key->type_data.p[0] = prep->type_data[0];
-+		key->type_data.p[1] = prep->type_data[1];
-+		rcu_assign_keypointer(key, prep->payload);
-+		prep->type_data[0] = NULL;
-+		prep->type_data[1] = NULL;
-+		prep->payload = NULL;
-+	}
-+	pr_devel("<==%s() = %d\n", __func__, ret);
-+	return ret;
-+}
-+EXPORT_SYMBOL(generic_key_instantiate);
-+
-+/**
-  * register_key_type - Register a type of key.
-  * @ktype: The new key type.
-  *
+The code got a little smaller now, which is good. I introduced the usage
+of is_visible(), but wondered if it really makes sense for my driver.
+Alternatively I thought I could use something like this:
+
+if (genwqe_is_privileged(cd))
+        sysfs_create_group(&cd->dev->kobj, &genwqe_attribute_group);
+else
+        sysfs_create_group(&cd->dev->kobj,
+                           &genwqe_normal_attribute_group);
+
+
+
+> Also, instead of using __ATTR(), please use DEVICE_ATTR_RO(), it makes
+> things easier to audit and saves me from having to change it later on
+> (I'm doing a tree-wide change of this type of thing...)
+
+Ok.
+
+I stumbled across your article:
+http://kroah.com/log/blog/2013/06/26/how-to-create-a-sysfs-file-correctly/
+
+I am using sysfs_create_group() now, but do I understand you correctly
+that setting the const struct attribute_group **groups; in my device
+(where in my struct pci_device.dev?) is an even better way to establish
+my sysfs attributes? Is there a function which I could call rather than
+trying to find the right pointer?
+
+> thanks,
+> 
+> greg k-h
+> 
+Regards
+
+Frank
 
