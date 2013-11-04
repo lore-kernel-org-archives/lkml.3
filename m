@@ -1,194 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637Ab3KDLXa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 06:23:30 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:58112 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab3KDLX3 (ORCPT
+	id S1751971Ab3KDLZj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 06:25:39 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:18380 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946Ab3KDLZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 06:23:29 -0500
-Date: Mon, 4 Nov 2013 12:22:54 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>
-Subject: Re: [RFC] arch: Introduce new TSO memory barrier smp_tmb()
-Message-ID: <20131104112254.GK28601@twins.programming.kicks-ass.net>
-References: <20131031064015.GV4126@linux.vnet.ibm.com>
- <20131101145634.GH19466@laptop.lan>
- <20131102173239.GB3947@linux.vnet.ibm.com>
- <20131103144017.GA25118@linux.vnet.ibm.com>
- <20131103151704.GJ19466@laptop.lan>
- <CA+55aFx_kuvR-0dwJtjvnhtha5QBc5XcLZPRH=WKT+hYVAKOrw@mail.gmail.com>
- <20131103200124.GK19466@laptop.lan>
- <20131103224242.GF3947@linux.vnet.ibm.com>
- <CA+55aFyD_kCkAHQwHCUBrumO-pH6LaZikTNvyWDW_tWsHdqk6Q@mail.gmail.com>
- <20131104105059.GL3947@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131104105059.GL3947@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 4 Nov 2013 06:25:38 -0500
+X-AuditID: cbfee61b-b7fd56d000001fc6-8b-527784311e3c
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Mike Snitzer <snitzer@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Kent Overstreet <kmo@daterainc.com>, linux-kernel@vger.kernel.org
+Subject: Re: stec skd block driver needs updating for immutable biovec
+Date: Mon, 04 Nov 2013 12:25:28 +0100
+Message-id: <6263345.NhfL3kvMZj@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <5273D80F.5070205@kernel.dk>
+References: <20131101135931.GA22903@redhat.com>
+ <20131101162823.GB23501@redhat.com> <5273D80F.5070205@kernel.dk>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t9jAV3DlvIgg19PpC1W3+1nszg9YRGT
+	xfxJTSwWl3fNYbNo2/iV0YHVY+mHVcwem1doeVw+W+rxft9VNo/Pm+QCWKO4bFJSczLLUov0
+	7RK4MrYf5yv4y1Px4utBlgbGNVxdjJwcEgImEs1z1jJB2GISF+6tZ+ti5OIQEljEKLGkeT4b
+	SEJIoIVJYvtJFhCbTcBKYmL7KkYQW0RAQaLn90qwBmaBiYwS7TdeghUJC7hJXN3ykhnEZhFQ
+	lVh7+jSYzSugKbF8zRewGlEBT4kd21eCLeAEir/9NZkRYlmRRN/tKawQ9YISPybfA6tnFpCX
+	2Ld/KiuErSOxv3Ua2wRGgVlIymYhKZuFpGwBI/MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxN
+	jOBgfia9g3FVg8UhRgEORiUeXonLZUFCrIllxZW5hxglOJiVRHhXFJUHCfGmJFZWpRblxxeV
+	5qQWH2KU5mBREuc92GodKCSQnliSmp2aWpBaBJNl4uCUamBc67T5PevbM2mCjG/llVbWVJov
+	VjnHq3xVQaM0qaDexbG/1JPptmlHYMSZLg3n2zlKWud7Nq89uJGpU8p0fv5XH2+TpeemMN7j
+	Xdq6L4bT0OjS7fkXFFpia2bYJDbdm9xzTCHf/uqTiW9fvpo5uz+2zEU0nm/i/NDVxypSjjCn
+	Z7qIijPLpyuxFGckGmoxFxUnAgApkkawYgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04, 2013 at 02:51:00AM -0800, Paul E. McKenney wrote:
-> OK, something like this for the definitions (though PowerPC might want
-> to locally abstract the lwsync expansion):
+
+Hi,
+
+On Friday, November 01, 2013 10:34:23 AM Jens Axboe wrote:
+> On 11/01/2013 10:28 AM, Mike Snitzer wrote:
+> > On Fri, Nov 01 2013 at 12:02pm -0400,
+> > Jens Axboe <axboe@kernel.dk> wrote:
+> > 
+> >> On 11/01/2013 09:50 AM, Christoph Hellwig wrote:
+> >>> On Fri, Nov 01, 2013 at 11:43:39AM -0400, Mike Snitzer wrote:
+> >>>> All the bi_sector ones are low hanging fruit, but the conversion for
+> >>>> skd_preop_sg_list_bio()'s bio_vec code is more involved.
+> >>>>
+> >>>> Kent, any chance you could crank through it?
+> >>>>
+> >>>> If not I can come back to trying to fix this later.. but I'm working
+> >>>> through a test merge of linux-dm.git's 'for-next' with linux-block.git's
+> >>>> 'for-next'.
+> >>>
+> >>> The right thing for 3.13 is to rip out the bio base code path, and
+> >>> for 3.14 to convert it to blk-mq.
+> >>
+> >> It is. I will kill it.
+> > 
+> > I just cranked through it.. hope this helps (think I got everything but
+> > may have missed something):
 > 
-> 	#define smp_store_with_release_semantics(p, v) /* x86, s390, etc. */ \
-> 	do { \
-> 		barrier(); \
-> 		ACCESS_ONCE(p) = (v); \
-> 	} while (0)
+> You lost out, I committed it 20 min ago :-0
 > 
-> 	#define smp_store_with_release_semantics(p, v) /* PowerPC. */ \
-> 	do { \
-> 		__asm__ __volatile__ (stringify_in_c(LWSYNC) : : :"memory"); \
-> 		ACCESS_ONCE(p) = (v); \
-> 	} while (0)
-> 
-> 	#define smp_load_with_acquire_semantics(p) /* x86, s390, etc. */ \
-> 	({ \
-> 		typeof(*p) *_________p1 = ACCESS_ONCE(p); \
-> 		barrier(); \
-> 		_________p1; \
-> 	})
-> 
-> 	#define smp_load_with_acquire_semantics(p) /* PowerPC. */ \
-> 	({ \
-> 		typeof(*p) *_________p1 = ACCESS_ONCE(p); \
-> 		__asm__ __volatile__ (stringify_in_c(LWSYNC) : : :"memory"); \
-> 		_________p1; \
-> 	})
-> 
-> For ARM, smp_load_with_acquire_semantics() is a wrapper around the ARM
-> "ldar" instruction and smp_store_with_release_semantics() is a wrapper
-> around the ARM "stlr" instruction.
+> http://git.kernel.dk/?p=linux-block.git;a=commit;h=1d36f7a5fb577afaaead6c5e2fc8e01e0c95235d
 
-This still leaves me confused as to what to do with my case :/
+I did the complete bio path removal a month ago in my skd patchset:
 
-Slightly modified since last time -- as the simplified version was maybe
-simplified too far.
+	https://lkml.org/lkml/2013/9/30/279
 
-To recap, I'd like to get rid of barrier A where possible, since that's
-now a full barrier for every event written.
+and the change has been agreed on by Ramprasad C from STEC:
 
-However, there's no immediate store I can attach it to; the obvious one
-would be the kbuf->head store, but that's complicated by the
-local_cmpxchg() thing.
+	https://lkml.org/lkml/2013/10/3/339
 
-And we need that cmpxchg loop because a hardware NMI event can
-interleave with a software event.
+> Looks like you missed some of the skd_device removal, while I neglected
+> killing bio/start_time in the skd_request_context.
 
-And to be honest, I'm still totally confused about memory barriers vs
-control flow vs C/C++. The only way we're ever getting to that memcpy is
-if we've already observed ubuf->tail, so that LOAD has to be fully
-processes and completed.
+Could you please apply my patchset before doing new work on skd driver?
 
-I'm really not seeing how a STORE from the memcpy() could possibly go
-wrong; and if C/C++ can hoist the memcpy() over a compiler barrier()
-then I suppose we should all just go home.
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
-/me who wants A to be a barrier() but is terminally confused.
-
----
-
-
-/*
- * One important detail is that the kbuf part and the kbuf_writer() are
- * strictly per cpu and we can thus rely on program order for those.
- *
- * Only the userspace consumer can possibly run on another cpu, and thus we
- * need to ensure data consistency for those.
- */
-
-struct buffer {
-        u64 size;
-        u64 tail;
-        u64 head;
-        void *data;
-};
-
-struct buffer *kbuf, *ubuf;
-
-/*
- * If there's space in the buffer; store the data @buf; otherwise
- * discard it.
- */
-void kbuf_write(int sz, void *buf)
-{
-	u64 tail, head, offset;
-
-	do {
-		tail = ACCESS_ONCE(ubuf->tail);
-		offset = head = kbuf->head;
-		if (CIRC_SPACE(head, tail, kbuf->size) < sz) {
-			/* discard @buf */
-			return;
-		}
-		head += sz;
-	} while (local_cmpxchg(&kbuf->head, offset, head) != offset)
-
-        /*
-         * Ensure that if we see the userspace tail (ubuf->tail) such
-         * that there is space to write @buf without overwriting data
-         * userspace hasn't seen yet, we won't in fact store data before
-         * that read completes.
-         */
-
-        smp_mb(); /* A, matches with D */
-
-        memcpy(kbuf->data + offset, buf, sz);
-
-        /*
-         * Ensure that we write all the @buf data before we update the
-         * userspace visible ubuf->head pointer.
-         */
-        smp_wmb(); /* B, matches with C */
-
-        ubuf->head = kbuf->head;
-}
-
-/*
- * Consume the buffer data and update the tail pointer to indicate to
- * kernel space there's 'free' space.
- */
-void ubuf_read(void)
-{
-        u64 head, tail;
-
-        tail = ACCESS_ONCE(ubuf->tail);
-        head = ACCESS_ONCE(ubuf->head);
-
-        /*
-         * Ensure we read the buffer boundaries before the actual buffer
-         * data...
-         */
-        smp_rmb(); /* C, matches with B */
-
-        while (tail != head) {
-                obj = ubuf->data + tail;
-                /* process obj */
-                tail += obj->size;
-                tail %= ubuf->size;
-        }
-
-        /*
-         * Ensure all data reads are complete before we issue the
-         * ubuf->tail update; once that update hits, kbuf_write() can
-         * observe and overwrite data.
-         */
-        smp_mb(); /* D, matches with A */
-
-        ubuf->tail = tail;
-}
