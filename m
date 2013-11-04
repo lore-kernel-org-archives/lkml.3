@@ -1,237 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab3KDPHJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 10:07:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7739 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753631Ab3KDPHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 10:07:07 -0500
-Date: Mon, 4 Nov 2013 16:01:12 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch
-	methods (v6)
-Message-ID: <20131104150112.GC4440@redhat.com>
-References: <1383029621-7384-1-git-send-email-namhyung@kernel.org> <20131102155458.GA6981@redhat.com> <87ob60366m.fsf@sejong.aot.lge.com>
+	id S1753899Ab3KDPNA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 10:13:00 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:56872 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753827Ab3KDPM6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 10:12:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ob60366m.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <527671E9.8040704@gmail.com>
+References: <1382109602-27432-1-git-send-email-liuj97@gmail.com>
+	<1382109602-27432-3-git-send-email-liuj97@gmail.com>
+	<20131030001245.GB25346@mudshark.cambridge.arm.com>
+	<527671E9.8040704@gmail.com>
+Date: Mon, 4 Nov 2013 23:12:56 +0800
+Message-ID: <CA+b37P2WU74NU7wG_H+KfmL6Y-fdhipsuOruU-z=wv=8ENwrfQ@mail.gmail.com>
+Subject: Re: [PATCH v5 2/7] arm64: introduce interfaces to hotpatch kernel and
+ module code
+From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Will Deacon <will.deacon@arm.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04, Namhyung Kim wrote:
+On 3 November 2013 23:55, Jiang Liu <liuj97@gmail.com> wrote:
+> On 10/30/2013 08:12 AM, Will Deacon wrote:
+>> Hi Jinag Liu,
+>>
+>> Sorry for the delayed review, I've been travelling.
+>>
+>> On Fri, Oct 18, 2013 at 04:19:56PM +0100, Jiang Liu wrote:
+>>> From: Jiang Liu <jiang.liu@huawei.com>
+>>
+>> If I try and email you at your Huawei address, I get a bounce from the mail
+>> server. Is that expected? If so, it's not very helpful from a commit log
+>> perspective if you use that address as the author on your patches.
+>>
+> Hi Will,
+>         Sorry for the inconvenience. I have left Huawei recently and
+> have had a vacation last two weeks. I will use my gmail account next
+> time.
 >
-> On Sat, 2 Nov 2013 16:54:58 +0100, Oleg Nesterov wrote:
-> >
-> > This does not look right to me.
-> >
-> > - get_user_vaddr() is costly, it does vma_interval_tree_foreach() under
-> >   ->i_mmap_mutex.
+>>> Introduce three interfaces to patch kernel and module code:
+>>> aarch64_insn_patch_text_nosync():
+>>>      patch code without synchronization, it's caller's responsibility
+>>>      to synchronize all CPUs if needed.
+>>> aarch64_insn_patch_text_sync():
+>>>      patch code and always synchronize with stop_machine()
+>>> aarch64_insn_patch_text():
+>>>      patch code and synchronize with stop_machine() if needed
+>>>
+>>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>>> Cc: Jiang Liu <liuj97@gmail.com>
+>>> ---
+>>>  arch/arm64/include/asm/insn.h | 19 ++++++++-
+>>>  arch/arm64/kernel/insn.c      | 91 +++++++++++++++++++++++++++++++++++++++++++
+>>>  2 files changed, 109 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
+>>> index 7499490..7a69491 100644
+>>> --- a/arch/arm64/include/asm/insn.h
+>>> +++ b/arch/arm64/include/asm/insn.h
+>>> @@ -71,8 +71,25 @@ enum aarch64_insn_hint_op {
+>>>
+>>>  bool aarch64_insn_is_nop(u32 insn);
+>>>
+>>> -enum aarch64_insn_encoding_class aarch64_get_insn_class(u32 insn);
+>>> +/*
+>>> + * In ARMv8-A, A64 instructions have a fixed length of 32 bits and are always
+>>> + * little-endian.
+>>> + */
+>>> +static __always_inline u32 aarch64_insn_read(void *addr)
+>>> +{
+>>> +    return le32_to_cpu(*(u32 *)addr);
+>>> +}
+>>>
+>>> +static __always_inline void aarch64_insn_write(void *addr, u32 insn)
+>>> +{
+>>> +    *(u32 *)addr = cpu_to_le32(insn);
+>>> +}
+>>
+>> I wouldn't bother with these helpers. You should probably be using
+>> probe_kernel_address or similar, then doing the endianness swabbing on the
+>> return value in-line.
+> How about keeping and refining aarch64_insn_read/write interfaces
+> by using probe_kernel_address()? I think they may be used in other
+> places when supporting big endian ARM64 kernel.
 >
-> Hmm.. yes, I think this is not needed.  I guess it should lookup a
-> proper vma in current->mm with mmap_sem read-locked.
+>>
+>>> +enum aarch64_insn_encoding_class aarch64_get_insn_class(u32 insn);
+>>>  bool aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn);
+>>>
+>>> +int aarch64_insn_patch_text_nosync(void *addr, u32 insn);
+>>> +int aarch64_insn_patch_text_sync(void *addrs[], u32 insns[], int cnt);
+>>> +int aarch64_insn_patch_text(void *addrs[], u32 insns[], int cnt);
+>>> +
+>>>  #endif      /* __ASM_INSN_H */
+>>> diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
+>>> index f5b779f..3879db4 100644
+>>> --- a/arch/arm64/kernel/insn.c
+>>> +++ b/arch/arm64/kernel/insn.c
+>>> @@ -16,6 +16,9 @@
+>>>   */
+>>>  #include <linux/compiler.h>
+>>>  #include <linux/kernel.h>
+>>> +#include <linux/smp.h>
+>>> +#include <linux/stop_machine.h>
+>>> +#include <asm/cacheflush.h>
+>>>  #include <asm/insn.h>
+>>>
+>>>  static int aarch64_insn_encoding_class[] = {
+>>> @@ -88,3 +91,91 @@ bool __kprobes aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn)
+>>>      return __aarch64_insn_hotpatch_safe(old_insn) &&
+>>>             __aarch64_insn_hotpatch_safe(new_insn);
+>>>  }
+>>> +
+>>> +int __kprobes aarch64_insn_patch_text_nosync(void *addr, u32 insn)
+>>> +{
+>>> +    u32 *tp = addr;
+>>> +
+>>> +    /* A64 instructions must be word aligned */
+>>> +    if ((uintptr_t)tp & 0x3)
+>>> +            return -EINVAL;
+>>> +
+>>> +    aarch64_insn_write(tp, insn);
+>>> +    flush_icache_range((uintptr_t)tp, (uintptr_t)tp + sizeof(u32));
+>>
+>> sizeof(insn) is clearer here.
+>>
+> Will make this change in next version.
 >
-> >
-> > - this only allows to read the data from the same binary.
+>>> +
+>>> +    return 0;
+>>> +}
+>>> +
+>>> +struct aarch64_insn_patch {
+>>> +    void    **text_addrs;
+>>> +    u32     *new_insns;
+>>> +    int     insn_cnt;
+>>> +};
+>>> +
+>>> +static DEFINE_MUTEX(text_patch_lock);
+>>> +static atomic_t text_patch_id;
+>>> +
+>>> +static int __kprobes aarch64_insn_patch_text_cb(void *arg)
+>>> +{
+>>> +    int i, ret = 0;
+>>> +    struct aarch64_insn_patch *pp = arg;
+>>> +
+>>> +    if (atomic_read(&text_patch_id) == smp_processor_id()) {
+>>
+>> You could actually pass in the test_patch_id as zero-initialised parameter
+>> to this function (i.e. it points to something on the stack of the guy
+>> issuing the stop_machine). Then you do an inc_return here. If you see zero,
+>> you go ahead and do the patching.
+> Good suggestion!
+> Function stop_machine() already has a mutex to serialize all callers,
+> so we don't need explicitly serialization here. Will simplify the
+> code in next version.
 >
-> Right.  This is also an unnecessary restriction.  We should be able to
-> access data in other binary.
-
-Yes... but this needs another discussion. In general, we simply can not
-do this with the suggested syntax.
-
-Say you want to probe this "foo" binary and dump "stdin" from libc.so.
-You can't do this. You simply can't know where libc.so will be mmaped.
-
-But: if we attach the event to the already running process, or if we
-disable the randomization, then we can probably do this, see below.
-
-Or the syntax should be "name=probe @file/addr" or something like this.
-
-> > - in particular, you can't read the data from bss
+>>
+>>> +            for (i = 0; ret == 0 && i < pp->insn_cnt; i++)
+>>> +                    ret = aarch64_insn_patch_text_nosync(pp->text_addrs[i],
+>>> +                                                         pp->new_insns[i]);
+>>> +            /* Let other CPU continue */
+>>> +            atomic_set(&text_patch_id, -1);
+>>
+>> You're relying on the barrier in flush_icache_range to order this
+>> atomic_set. I think you should add a comment describing that, because it's
+>> very subtle.
+> How about an explicitly smp_wmb() here? That would be more
+> maintainable.
 >
-> I can't understand why..  The bss region should also be in a same vma of
-> normal data, no?
-
-No, no. bss is mmaped anonymously, at least in general. See set_brk() in
-load_elf().
-
-> > 	#include <stdio.h>
-> > 	#include <stdlib.h>
-> > 	#include <unistd.h>
-> >
-> > 	unsigned int global = 0x1234;
-> >
-> > 	void func(void)
-> > 	{
-> > 	}
-> >
-> > 	int main(void)
-> > 	{
-> > 		char cmd[64];
-> >
-> > 		global = 0x4321;
-> > 		func();
-> >
-> > 		printf("addr = %p\n", &global);
-> >
-> > 		sprintf(cmd, "cat /proc/%d/maps", getpid());
-> > 		system(cmd);
-> >
-> > 		return 0;
-> > 	}
-> >
-> > 	# nm foo | grep -w global
-> > 	0000000000600a04 D global
-> >
-> > 	# perf probe -x ./foo -a "func var=@0xa04:u32"
-> > 	# perf record -e probe_foo:func ./foo
-> > 	addr = 0x600a04
-> > 	00400000-00401000 r-xp 00000000 fe:01 20958                              /root/foo
-> > 	00600000-00601000 rw-p 00000000 fe:01 20958                              /root/foo
-> > 	...
-> >
-> > 	# perf script | tail -1
-> > 		foo   555 [000]  1302.345642: probe_foo:func: (40059c) var=1234
-> >
-> > 	Note that it reports "1234", not "4321". This is because
-> > 	get_user_vaddr() finds another (1st) read-only mapping, and
-> > 	prints the initial value of "global".
-> >
-> > 	IOW, it reads the memory from 0x400a04, not from 0x600a04.
+>>
+>>> +    } else {
+>>> +            while (atomic_read(&text_patch_id) != -1)
+>>> +                    cpu_relax();
+>>> +            isb();
+>>> +    }
+>>> +
+>>> +    return ret;
+>>> +}
+>>
+>> I don't think you need the isb -- the exception return should do the trick
+>> (but again, a comment would be useful).
+> stop_machine() is implemented by thread scheduling instead of cross CPU
+> function call(IPI), so there may be no "eret" after returning from
+> this callback function. So used an "isb" here.
 >
-> Argh..  This is a problem.
+>>
+>>> +
+>>> +int __kprobes aarch64_insn_patch_text_sync(void *addrs[], u32 insns[], int cnt)
+>>> +{
+>>> +    int ret;
+>>> +    struct aarch64_insn_patch patch = {
+>>> +            .text_addrs = addrs,
+>>> +            .new_insns = insns,
+>>> +            .insn_cnt = cnt,
+>>> +    };
+>>> +
+>>> +    if (cnt <= 0)
+>>> +            return -EINVAL;
+>>> +
+>>> +    mutex_lock(&text_patch_lock);
+>>
+>> Again, if you use a loacl variable, I don't think you need the mutex. What
+>> do you think?
+> Sure, will make the change.
 >
-> I thought the gcc somehow aligns data to next page boundary.
+>>
+>>> +    atomic_set(&text_patch_id, smp_processor_id());
+>>> +    ret = stop_machine(aarch64_insn_patch_text_cb, &patch, cpu_online_mask);
+>>
+>> Instead of doing this, why not instead call aarch64_insn_patch_text_nosync
+>> inline, then call kick_all_cpus_sync immediately afterwards, without the
+>> need to stop_machine.
+> Sandeepa, who is working on kprobe for ARM64, needs the stop_machine()
+> mechanism to synchronize all online CPUs, so it's a preparation for
+> kprobe.
+Hi Gerry,
 
-And perhaps it even should, my system is old. But this doesn't really
-matter, the process itself can create another mapping.
+I had published kprobes patches for ARM64:
+http://lwn.net/Articles/570648/  and using your patcset (v3) for
+patching support, it works so far.
+I CCed you on my RFC but unfortunately to your huawei email not the gmail.
 
-> But if
-> it's not the case, we need to recognize which is the proper one..
+I can give a try with kick_all_cpus_sync but wanted to understand this
+a bit  detail on hows different from stop_machine and how this work.
+
+Thanks,
+Sandeepa
+
 >
-> Simply preferring a writable vma to a read-only vma is what's came to my
-> head now.  Do you have an idea?
-
-So far I think that trace_uprobes.c should not play games with vma. At all.
-
-> > -------------------------------------------------------------------------------
-> > Can't we simply implement get_user_vaddr() as
-> >
-> > 	static void __user *get_user_vaddr(unsigned long addr, struct trace_uprobe *tu)
-> > 	{
-> > 		void __user *vaddr = (void __force __user *)addr;
-> >
-> > 		/* A NULL tu means that we already got the vaddr */
-> > 		if (tu)
-> > 			vaddr += (current->mm->start_data & PAGE_MASK);
-> >
-> > 		return vaddr;
-> > 	}
-> >
-> > ?
-> >
-> > I did this change, and now the test-case above works. And it also works
-> > with "cc -pie -fPIC",
-> >
-> > 	# nm foo | grep -w global
-> > 	0000000000200c9c D global
-> >
-> > 	# perf probe -x ./foo -a "func var=@0xc9c:u32"
-> > 	# perf record -e probe_foo:func ./foo
-> > 	...
-> > 	# perf script | tail -1
-> > 		foo   576 [001]   475.519940: probe_foo:func: (7ffe95ca3814) var=4321
-> >
-> > What do you think?
+> Thanks!
+> Gerry
+>>
+>> Will
+>>
 >
-> This can only work with the probes fetching data from the executable,
-> right?  But as I said it should support any other binaries too.
-
-See above, we can't in general read other binaries.
-
-But: if we know know where it is mmapped we can do this, just we need
-to calculate the right addr passed to trace_uprobes.
-
-Or: we should support both absolute and relative addresses, this is what
-I was going to discuss later.
-
-> static void __user *get_user_vaddr(unsigned long addr, struct trace_uprobe *tu)
-> {
-> 	unsigned long pgoff = addr >> PAGE_SHIFT;
-> 	struct vm_area_struct *vma, *orig_vma = NULL;
-> 	unsigned long vaddr = 0;
->
-> 	if (tu == NULL) {
-> 		/* A NULL tu means that we already got the vaddr */
-> 		return (void __force __user *) addr;
-> 	}
->
-> 	down_read(&current->mm->mmap_sem);
->
-> 	vma = current->mm->mmap;
-
-Cough, it can be null if another thread does munmap(0, TASK_SIZE) ;)
-
-But this doesn't matter.
-
-> 	do {
-> 		if (!vma->vm_file || vma->vm_file->f_inode != tu->inode) {
-> 			/*
-> 			 * We found read-only mapping for this inode.
-> 			 * (provided that all mappings for this inode
-> 			 * have consecutive addresses)
-> 			 */
-> 			if (orig_vma)
-> 				break;
-> 			continue;
-> 		}
->
-> 		if (vma->vm_pgoff > pgoff ||
-> 		    (vma->vm_pgoff + vma_pages(vma) <= pgoff))
-> 			continue;
->
-> 		orig_vma = vma;
->
-> 		/*
-> 		 * We prefer writable mapping over read-only since
-> 		 * data is usually in read/write memory region.  But
-> 		 * in case of read-only data, it only can be found in
-> 		 * read-only mapping so we save orig_vma and check
-> 		 * whether it also has writable mapping.
-> 		 */
-> 		if (vma->vm_flags & VM_WRITE)
-> 			break;
-> 	} while ((vma = vma->vm_next) != NULL);
->
-> 	if (orig_vma)
-> 		vaddr = offset_to_vaddr(orig_vma, addr);
->
-> 	up_read(&current->mm->mmap_sem);
->
-> 	return (void __force __user *) vaddr;
-> }
-
-For what? Why it is better then my suggestion?
-
-How it can read bss? How it can read the data from other binaries?
-
-How we can trust the result? This code relies on some guesses and
-none of them are "strict".
-
-If nothing else, elf can have the arbitrary number of mmaped sections,
-this can't work in general?
-
-Oleg.
-
