@@ -1,104 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab3KDCHh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 21:07:37 -0500
-Received: from mga03.intel.com ([143.182.124.21]:3882 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751269Ab3KDCHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 21:07:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="384165785"
-From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "Zhang, Dongxing" <dongxing.zhang@intel.com>
-Subject: RE: [PATCH] [extcon]:remove freed groups caused the panic or
- warning in unregister flow
-Thread-Topic: [PATCH] [extcon]:remove freed groups caused the panic or
- warning in unregister flow
-Thread-Index: AQHO1t8Uf2o3S/2AC0Kjuan0TdIQzZoTypyAgACJ85A=
-Date: Mon, 4 Nov 2013 02:07:32 +0000
-Message-ID: <FA47D36D6EC9FE4CB463299737C09B9901B6467C@SHSMSX102.ccr.corp.intel.com>
-References: <1383346094.2702.16.camel@wxm-ubuntu>
- <5276FBB5.1020506@samsung.com>
-In-Reply-To: <5276FBB5.1020506@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1752118Ab3KDCaL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 21:30:11 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:58454 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269Ab3KDCaJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 21:30:09 -0500
+X-AuditID: cbfee61b-b7fd56d000001fc6-3b-527706afe6c9
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jaegeuk Kim'" <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
+Subject: [f2fs-dev] [PATCH] f2fs: remove unnecessary TestClearPageError when
+ wait pages writeback
+Date: Mon, 04 Nov 2013 10:28:33 +0800
+Message-id: <000001ced905$c49eac00$4ddc0400$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=gb2312
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac7XlEwB9Xz7GigZRU+F4tz+grChWQ==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jAd0NbOVBBofTLK7v+stkcWmRu8We
+	vSdZLC7vmsNm0brwPLMDq8fuBZ+ZPPq2rGL0+LxJLoA5issmJTUnsyy1SN8ugStjdsdL5oIv
+	bBVNN76wNDBuZe1i5OSQEDCRWHD0DDOELSZx4d56ti5GLg4hgUWMEqubJ7FDOD8YJX6c+csC
+	UsUmoCKxvOM/E4gtIqAt8XNuK1gRs8AMRonDc/+BjRUWSJZYdnMZmM0ioCrxe80PdhCbV8BS
+	4vHNOywQtqDEj8n3wGxmAQ2J/kUb2CBseYnNa95CnaQgsePsa8YuRg6gZXoS55dIQJSIS2w8
+	cotlAqPALCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECA7pZ9I7
+	GFc1WBxiFOBgVOLhlbhcFiTEmlhWXJl7iFGCg1lJhNf5HFCINyWxsiq1KD++qDQntfgQozQH
+	i5I478FW60AhgfTEktTs1NSC1CKYLBMHp1QDY1PctG0nMvIkfxbOPVKY96zwy4SjSk8PyvhN
+	2VLn/PHP14Ldlq8af6y/9d159yu5jFDXjw/bp3HJcb6f+TXZReSjAXdFpLvmrpMqjOUR85Xn
+	Tgn/evVc9+Ug0Vdf1lv63og+aaxhypcU9oJlyyO+uydfrT/UPu1Ytxz7+5MzSuoOz1hblb68
+	iVeJpTgj0VCLuag4EQBnYzf5ZQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rA4286G1008850
 
-Dear Choi
+In wait_on_node_pages_writeback we will test and clear error flag for all pages in radix tree, but not necessary.
+So we only do this for pages belong to the specified inode.
 
------Original Message-----
-From: Chanwoo Choi [mailto:cw00.choi@samsung.com] 
-Sent: Monday, November 04, 2013 9:43 AM
-To: Wang, Xiaoming
-Cc: myungjoo.ham@samsung.com; linux-kernel@vger.kernel.org; Liu, Chuansheng; Zhang, Dongxing
-Subject: Re: [PATCH] [extcon]:remove freed groups caused the panic or warning in unregister flow
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/node.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-Hi Wang,
-
->  drivers/extcon/extcon-class.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/extcon/extcon-class.c 
-> b/drivers/extcon/extcon-class.c index 148382f..48f4669 100644
-> --- a/drivers/extcon/extcon-class.c
-> +++ b/drivers/extcon/extcon-class.c
-> @@ -794,6 +794,8 @@ void extcon_dev_unregister(struct extcon_dev *edev)
->  		return;
->  	}
->  
-> +	device_unregister(edev->dev);
-> +
->  	if (edev->mutually_exclusive && edev->max_supported) {
->  		for (index = 0; edev->mutually_exclusive[index];
->  				index++)
-> @@ -814,7 +816,6 @@ void extcon_dev_unregister(struct extcon_dev *edev)
->  	if (switch_class)
->  		class_compat_remove_link(switch_class, edev->dev, NULL);  #endif
-> -	device_unregister(edev->dev);
->  	put_device(edev->dev);
->  }
->  EXPORT_SYMBOL_GPL(extcon_dev_unregister);
-> 
-
-I think we could only apply following patch instead of moving the position of device_unregister().
-
-diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c index 148382f..ff27b19 100644
---- a/drivers/extcon/extcon-class.c
-+++ b/drivers/extcon/extcon-class.c
-@@ -805,10 +805,8 @@ void extcon_dev_unregister(struct extcon_dev *edev)
-        for (index = 0; index < edev->max_supported; index++)
-                kfree(edev->cables[index].attr_g.name);
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index b527ed4..4ac4150 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -1170,10 +1170,11 @@ int wait_on_node_pages_writeback(struct f2fs_sb_info *sbi, nid_t ino)
+ 			if (page->index > end)
+ 				continue;
  
--       if (edev->max_supported) {
--               kfree(edev->extcon_dev_type.groups);
-+       if (edev->max_supported)
-                kfree(edev->cables);
--       }
- 
- #if defined(CONFIG_ANDROID)
-        if (switch_class)
+-			if (ino && ino_of_node(page) == ino)
++			if (ino && ino_of_node(page) == ino) {
+ 				wait_on_page_writeback(page);
+-			if (TestClearPageError(page))
+-				ret = -EIO;
++				if (TestClearPageError(page))
++					ret = -EIO;
++			}
+ 		}
+ 		pagevec_release(&pvec);
+ 		cond_resched();
+-- 
+1.7.9.5
 
-Thanks,
-Chanwoo Choi
-
-	I don't agree with you.
-	Why do not you want moving the position of device_unregister()?
-	It will cause the memory leak if has not kfree edev->extcon_dev_type.groups as your patch do firstly. And if you think kfree edev->extcon_dev_type.groups is meaningless well then kfree edev->extcon_dev_type.groups in function exton_dev_register (line 756)also should be removed I think. What do you think?
-
-Thanks
-Xiaoming.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
