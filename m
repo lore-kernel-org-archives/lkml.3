@@ -1,99 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab3KDJes (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 04:34:48 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:11517 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753120Ab3KDJeq (ORCPT
+	id S1753061Ab3KDJlm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 04:41:42 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:39047 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752410Ab3KDJll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 04:34:46 -0500
-Date: Mon, 4 Nov 2013 10:34:34 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Wei Ni <wni@nvidia.com>
-Cc: <linux@roeck-us.net>, <lm-sensors@lm-sensors.org>,
-        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v4 2/3] hwmon: (lm90) add support to handle IRQ
-Message-ID: <20131104103434.5a085e27@endymion.delvare>
-In-Reply-To: <1375856306-14415-3-git-send-email-wni@nvidia.com>
-References: <1375856306-14415-1-git-send-email-wni@nvidia.com>
-	<1375856306-14415-3-git-send-email-wni@nvidia.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Nov 2013 04:41:41 -0500
+X-AuditID: cbfee691-b7f866d000001b8c-6b-52776bd304af
+Message-id: <52776BD5.7080607@samsung.com>
+Date: Mon, 04 Nov 2013 18:41:41 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: myungjoo.ham@samsung.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] extcon: arizona: Fix reset of HPDET after race with
+ removal
+References: <1382890752-30970-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <5276EB32.9060803@samsung.com>
+ <20131104092102.GC30879@opensource.wolfsonmicro.com>
+In-reply-to: <20131104092102.GC30879@opensource.wolfsonmicro.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsWyRsSkQPdydnmQwe1XVhb/ptxgt7i8aw6b
+	xe3GFWwWy9/+Z3Ng8Xg58TebR9+WVYwenzfJBTBHcdmkpOZklqUW6dslcGUc2biVteAoe8WB
+	Fe9YGhjfs3YxcnJICJhInH93kx3CFpO4cG89WxcjF4eQwFJGiauztjDBFO06v5IJIjGdUeLp
+	+q1gHUICrxgl2icHgNi8AloSR5ZOApvKIqAq0TJxAlgzG1B8/4sbbCC2qECYxMrpV1gg6gUl
+	fky+B2aLCFhITFlyixnEZhZIlJhz7gvYfGGBSInf71+yQOxayygxc0EhiM0p4Cix9vQVJoh6
+	HYn9rdPYIGx5ic1r3jKDHCohsIpd4vivR4wQBwlIfJt8CGgQB1BCVmLTAWaIxyQlDq64wTKB
+	UWwWkpNmIRk7C8nYBYzMqxhFUwuSC4qT0otM9YoTc4tL89L1kvNzNzECo+j0v2cTdzDeP2B9
+	iDEZaOVEZinR5HxgFOaVxBsamxlZmJqYGhuZW5qRJqwkzpv+KClISCA9sSQ1OzW1ILUovqg0
+	J7X4ECMTB6dUA+M8h+2bfvZWaq4Wy9K2Oa62XXPWrrlcp/j25c1x33tlW7Tp+7OhBvs2zmjm
+	5Jj5aA6TWnNl9po8f84yk4Mhs+zCJ1tO/7llUl70g0Be4Y8H7dT8339prZizNN+iVivFd8eL
+	pgVHuxkMDT1flhzRkeJxXDPpjofY5sLEeQv4o8RKbc58afTtSVdiKc5INNRiLipOBADnhwHo
+	uAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42I5/e+xoO7l7PIgg7YOU4t/U26wW1zeNYfN
+	4nbjCjaL5W//szmweLyc+JvNo2/LKkaPz5vkApijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od
+	403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4DWKSmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1
+	DQmC6zEyQAMJaxgzjmzcylpwlL3iwIp3LA2M71m7GDk5JARMJHadX8kEYYtJXLi3nq2LkYtD
+	SGA6o8TT9VvZQRJCAq8YJdonB4DYvAJaEkeWTgJrZhFQlWiZOAGsmQ0ovv/FDTYQW1QgTGLl
+	9CssEPWCEj8m3wOzRQQsJKYsucUMYjMLJErMOfcFbL6wQKTE7/cvWSB2rWWUmLmgEMTmFHCU
+	WHv6ChNEvY7E/tZpbBC2vMTmNW+ZJzAKzEKyYhaSsllIyhYwMq9iFE0tSC4oTkrPNdQrTswt
+	Ls1L10vOz93ECI7RZ1I7GFc2WBxiFOBgVOLhlbhcFiTEmlhWXJl7iFGCg1lJhJchrDxIiDcl
+	sbIqtSg/vqg0J7X4EGMyMAQmMkuJJucD00deSbyhsYmZkaWRuaGFkbE5acJK4rwHWq0DhQTS
+	E0tSs1NTC1KLYLYwcXBKNTCmdD3yLlu87sLmM54tr4wTHgbqrxBqFBadpFEnrGP5z8boYxOD
+	+Lrr8S/nGb0/cKFsyQyldrvJxdXH72+VYzBvakrgWssnasBz8u/82P0pvZuK61ke+VYfN1Sz
+	nuq+ZPXxOW9OvlVt/J9vcYRh7/Z9Qp2vlx46djh69/LVlX97JBLfvHfLY1mrxFKckWioxVxU
+	nAgAV9dQXRUDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wei,
-
-I'm hitting a problem with that patch now...
-
-On Wed, 7 Aug 2013 14:18:25 +0800, Wei Ni wrote:
-> When the temperature exceed the limit range value,
-> the driver can handle the interrupt.
+On 11/04/2013 06:21 PM, Charles Keepax wrote:
+> On Mon, Nov 04, 2013 at 09:32:50AM +0900, Chanwoo Choi wrote:
+>> The arizona_hpdet_do_id() return only either -EAGIN or 0(zero).
+>> extcon-arizona driver could never execute 'goto done;' statement.
+>>
+>> 	ret = arizona_hpdet_do_id(info, &reading, &mic);
+>> 	if (ret == -EAGAIN) {
+>> 		goto out;
+>> 	} else if (ret < 0) {
+>> 		goto done;
+>> 	}
 > 
-> Signed-off-by: Wei Ni <wni@nvidia.com>
-> ---
->  drivers/hwmon/lm90.c |   23 +++++++++++++++++++++++
->  1 file changed, 23 insertions(+)
-> 
-> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
-> index 1da2eff..2e68773 100644
-> --- a/drivers/hwmon/lm90.c
-> +++ b/drivers/hwmon/lm90.c
-> @@ -89,6 +89,7 @@
->  #include <linux/err.h>
->  #include <linux/mutex.h>
->  #include <linux/sysfs.h>
-> +#include <linux/interrupt.h>
->  
->  /*
->   * Addresses to scan
-> @@ -1433,6 +1434,16 @@ static bool lm90_is_tripped(struct i2c_client *client)
->  	return true;
->  }
->  
-> +static irqreturn_t lm90_irq_thread(int irq, void *dev_id)
-> +{
-> +	struct i2c_client *client = dev_id;
-> +
-> +	if (lm90_is_tripped(client))
+> True that else if is redundant at the moment, but personally I
+> would be inclined to leave it in, it feels safer against possible
+> future edits of arizona_hpdet_do_id. It would be reasonable for
+> someone to assume that other return values are acceptable whilst
+> editing it but they would then not be handled.
 
-Did you really send the latest version of the patch? lm90_is_tripped()
-takes two arguments now, but here you only pass one.
+I know your intention. But, I cannot apply this patch for potential issue.
+Also, we have to fix below dead code after returning arizona_hpdet_do_id()
 
-If you have a more up-to-date version of this patch, please send it
-over quickly.
-
-> +		return IRQ_HANDLED;
-> +	else
-> +		return IRQ_NONE;
-> +}
-> +
->  static int lm90_probe(struct i2c_client *client,
->  		      const struct i2c_device_id *id)
->  {
-> @@ -1509,6 +1520,18 @@ static int lm90_probe(struct i2c_client *client,
->  		goto exit_remove_files;
->  	}
->  
-> +	if (client->irq) {
-> +		dev_dbg(dev, "IRQ: %d\n", client->irq);
-> +		err = devm_request_threaded_irq(dev, client->irq,
-> +						NULL, lm90_irq_thread,
-> +						IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> +						"lm90", client);
-> +		if (err < 0) {
-> +			dev_err(dev, "cannot request IRQ: %d\n", client->irq);
-> +			goto exit_remove_files;
-> +		}
-> +	}
-> +
->  	return 0;
->  
->  exit_remove_files:
+	>> 	} else if (ret < 0) {
+	>> 		goto done;
+	>> 	}
 
 
--- 
-Jean Delvare
+Thanks,
+Chanwoo Choi
+
