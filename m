@@ -1,120 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab3KDRI3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 12:08:29 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:58182 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854Ab3KDRIZ (ORCPT
+	id S1752958Ab3KDRIc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 12:08:32 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:47049 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751854Ab3KDRI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 12:08:25 -0500
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
-        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
-        cascardo@linux.vnet.ibm.com, michael@ibmra.de,
-        haver@linux.vnet.ibm.com
-Subject: [PATCH 4/9] GenWQE: Rework comments
-Date: Mon,  4 Nov 2013 18:08:04 +0100
-Message-Id: <1383584889-21594-5-git-send-email-haver@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1383584889-21594-1-git-send-email-haver@linux.vnet.ibm.com>
-References: <1383584889-21594-1-git-send-email-haver@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110417-8372-0000-0000-000007A9DB68
+	Mon, 4 Nov 2013 12:08:29 -0500
+Date: Mon, 4 Nov 2013 09:06:17 -0800
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nicolin Chen <b42378@freescale.com>
+Message-ID: <20131104170617.GN2493@sirena.org.uk>
+References: <20131104175251.817bdd5b55652625b2b6e0ed@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nc/lueCMLdgjBWoP"
+Content-Disposition: inline
+In-Reply-To: <20131104175251.817bdd5b55652625b2b6e0ed@canb.auug.org.au>
+X-Cookie: You love peace.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 209.49.225.226
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: linux-next: build failure after merge of the final tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some leftovers from the comment cleanup. Fix them up such that
-they match the requested format.
 
-Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
----
- include/linux/genwqe/genwqe_card.h |   40 +++++++++++++++++++----------------
- 1 files changed, 22 insertions(+), 18 deletions(-)
+--nc/lueCMLdgjBWoP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/include/linux/genwqe/genwqe_card.h b/include/linux/genwqe/genwqe_card.h
-index aa3f1b9..5a75147 100644
---- a/include/linux/genwqe/genwqe_card.h
-+++ b/include/linux/genwqe/genwqe_card.h
-@@ -383,7 +383,7 @@ struct chip_bitstream {
- 	uint32_t progress;		/* progress code from processing  */
- };
- 
--/* issuing a specific DDCB command */
-+/* Issuing a specific DDCB command */
- #define DDCB_LENGTH			256 /* for debug data */
- #define DDCB_ASIV_LENGTH		104 /* len of the DDCB ASIV array */
- #define DDCB_ASIV_LENGTH_ATS		96  /* ASIV in ATS architecture */
-@@ -427,10 +427,12 @@ struct genwqe_debug_data {
- #define ATS_GET_FLAGS(_ats, _byte_offs)					\
- 	(((_ats)	  >> (44 - (4 * ((_byte_offs) / 8)))) & 0xf)
- 
--/*
-- * User parameter for generic DDCB commands. On the way into the
-- * kernel the driver will read the whole data structure. On the way
-- * out the driver will not copy the ASIV data back to userland.
-+/**
-+ * struct genwqe_ddcb_cmd - User parameter for generic DDCB commands
-+ *
-+ * On the way into the kernel the driver will read the whole data
-+ * structure. On the way out the driver will not copy the ASIV data
-+ * back to user-space.
-  */
- struct genwqe_ddcb_cmd {
- 	/* ------ START of data copied to/from driver ---------------------- */
-@@ -495,7 +497,12 @@ static inline void genwqe_ddcb_cmd_init(struct genwqe_ddcb_cmd *cmd)
- #define GENWQE_GET_CARD_STATE _IOR(GENWQE_IOC_CODE, 36,		\
- 				   enum genwqe_card_state *)
- 
--/*
-+/**
-+ * struct genwqe_mem - Memory pinning/unpinning information
-+ * @addr:          virtual user space address
-+ * @size:          size of the area pin/dma-map/unmap
-+ * direction:      0: read/1: read and write
-+ *
-  * Avoid pinning and unpinning of memory pages dynamically. Instead
-  * the idea is to pin the whole buffer space required for DDCB
-  * opertionas in advance. The driver will reuse this pinning and the
-@@ -509,26 +516,23 @@ static inline void genwqe_ddcb_cmd_init(struct genwqe_ddcb_cmd *cmd)
-  * memory.
-  */
- struct genwqe_mem {
--	unsigned long addr;	/* virtual user space address */
--	unsigned long size;	/* size of the area pin/dma-map/unmap */
--	int direction;		/* 0: read/1: read and write */
-+	unsigned long addr;
-+	unsigned long size;
-+	int direction;
- };
- 
- #define GENWQE_PIN_MEM	      _IOWR(GENWQE_IOC_CODE, 40, struct genwqe_mem *)
- #define GENWQE_UNPIN_MEM      _IOWR(GENWQE_IOC_CODE, 41, struct genwqe_mem *)
- 
- /*
-- * @brief Generic synchronous DDCB execution interface.
-+ * Generic synchronous DDCB execution interface.
-  * Synchronously execute a DDCB.
-  *
-- * @param [in] fd        open file descriptor to the genwqe_card device.
-- * @param [inout] cmd    DDCB execution request
-- * @return               0 on success or negative error code.
-- *              -EINVAL: Invalid parameters (ASIV_LEN, ASV_LEN, illegal fixups
-- *                       no mappings found/could not create mappings.
-- *              -EFAULT: illegal addresses in fixups.
-- *                       purging failed.
-- *             -EBADMSG: enqueing failed, retc != DDCB_RETC_COMPLETE.
-+ * Return: 0 on success or negative error code.
-+ *         -EINVAL: Invalid parameters (ASIV_LEN, ASV_LEN, illegal fixups
-+ *                  no mappings found/could not create mappings
-+ *         -EFAULT: illegal addresses in fixups, purging failed
-+ *         -EBADMSG: enqueing failed, retc != DDCB_RETC_COMPLETE
-  */
- #define GENWQE_EXECUTE_DDCB					\
- 	_IOWR(GENWQE_IOC_CODE, 50, struct genwqe_ddcb_cmd *)
--- 
-1.7.1
+On Mon, Nov 04, 2013 at 05:52:51PM +1100, Stephen Rothwell wrote:
 
+> Caused by commit fc1a38653793 ("ASoC: Add pinctrl PM to components of
+> active DAIs") from the sound-asoc tree.
+
+> I have reverted that commit for today.
+
+Thanks, I'd already reverted it in my tree after a report from Fengguang
+but that must've been after you fetched the trees for today.
+
+--nc/lueCMLdgjBWoP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSd9QFAAoJELSic+t+oim9aTUP/0VmpzdrH7cP6+60PQQda7Ac
+zwhpieTtEeFSWQMCLocYn7wn39irhazerLy9NWYguGadjkcNFA0vOhynFCU45CF8
+FzcUUvWD35YWB/8SATba7icqh0VyqhjMVHP3Vib7XGo1Pre8pNidG3LfQAr75fjz
+6J2Z0vsFrLyY+u555A/FlG1N0BTSxJUfnYTcJxZ8kfgNVmLRTHOqnRDZ7WYFdESE
+AUJCz2WOFDXTInNKG0MvxgRmmNcuay1aINr9Kfe5SzsRvT8QG6SxwjMcImkFELam
+yCVJuWRRud1SfS5sdBXtexZYXrxuAE38cSga2E+ZoX9GK0Mcn+L+5oZP2i5wjcPq
+BGTUyukEd4SAmJORylaGMEYi4uLqgA0noQmrBe0phWC8w/fB6eVspJCnE+LnaemD
+4+vf+/uwNwNXcAB+BwOBY5t8G+1wF94Jt2+aNZDOrg4JIFJpbYhESH5JB2rkmlVR
+jvAdj56DCOxtgQYHRsfao54WIBSHBCCzRqDeAcVTYDpn4T30fWJwdwOWpXbuwXL1
++pPPPNfGBhNvACcILkYrEPK3w4alT/DmtQibccaJ+AuuEYTiR621ETG3m8d06YDZ
+MeTfcb7X+MKViOabI83U6QdIHvrC2LcGRMy7RWTJwJVa01tgeFwalHsaVfSJGyv/
+F1pFRJkaDbe9YB3/Kw9z
+=zmjQ
+-----END PGP SIGNATURE-----
+
+--nc/lueCMLdgjBWoP--
