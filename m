@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab3KDTJR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 14:09:17 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49110 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750719Ab3KDTI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 14:08:58 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20131104174841.GA19498@gmail.com>
-References: <20131101141148.GH8652@hansolo.jdub.homelinux.org> <20131103101825.GA6605@gmail.com> <20131103102132.GA6807@gmail.com> <20131103155729.GB9944@hansolo.jdub.homelinux.org> <20131104065343.GC13030@gmail.com> <20131104140141.GC9944@hansolo.jdub.homelinux.org> <20131104141051.GA19355@gmail.com> <20131104141615.GD9944@hansolo.jdub.homelinux.org> <20131104155624.GA31656@sgi.com> <20131104174841.GA19498@gmail.com>
+	id S1751899Ab3KDTI5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 14:08:57 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:63982 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719Ab3KDTIz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 14:08:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] x86: Allow NR_CPUS=1024
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 04 Nov 2013 11:08:38 -0800
-To: Ingo Molnar <mingo@kernel.org>, Russ Anderson <rja@sgi.com>
-CC: Josh Boyer <jwboyer@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, prarit@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <ec38985e-ab71-464a-9565-e56b99d34a05@email.android.com>
+In-Reply-To: <20131104062540.GA12149@gmail.com>
+References: <CA+55aFwLkvSkparyvekdmMyvr6Srw1KkzTBp=_w0oQRWnPpJug@mail.gmail.com>
+	<20131104062540.GA12149@gmail.com>
+Date: Mon, 4 Nov 2013 14:08:55 -0500
+X-Google-Sender-Auth: bbr6lbZOAJa4SYplO6F1cNcKpS8
+Message-ID: <CA+5PVA47mQcKf0D5vNpQrt-9cQWMUMPRS0kZybmJzrnwdNPC-Q@mail.gmail.com>
+Subject: Re: Linux 3.12 released .. and no merge window yet .. and 4.0 plans?
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-8192 maybe?
+On Mon, Nov 4, 2013 at 1:25 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>
+>> So I may be pessimistic, but I'd expect many developers would go "Let's
+>> hunt bugs.. Wait. Oooh, shiny" and go off doing some new feature after
+>> all instead. Or just take that release off.
+>>
+>> But I do wonder.. Maybe it would be possible, and I'm just unfairly
+>> projecting my own inner squirrel onto other kernel developers. If we
+>> have enough heads-up that people *know* that for one release (and
+>> companies/managers know that too) the only patches that get accepted are
+>> the kind that fix bugs, maybe people really would have sufficient
+>> attention span that it could work.
+>>
+>> And the reason I mention "4.0" is that it would be a lovely time to do
+>> that. Roughly a years heads-up that "ok, after 3.19 (or whatever), we're
+>> doing a release with *just* fixes, and then that becomes 4.0".
+>>
+>> Comments?
+>
+> I think the biggest problem wouldn't even be the enforcement of
+> bugfixes-only during that 2.5 months period, or kernel developers
+> surviving such a long streak of boredom, but v3.19 would also probably be
+> a super-stressful release to maintainers, as everyone would try to cram
+> their feature in there. And if anything important misses that window then
+> it's a +5 months wait...
 
-Ingo Molnar <mingo@kernel.org> wrote:
->
->* Russ Anderson <rja@sgi.com> wrote:
->
->> > Russ, does SGI (or anyone else that you know of) have x86 hardware 
->> > with more than 4096 CPUs?
->> 
->> Yes.  We have a system in the lab with 254 12-core IVB sockets for a 
->> total of 3048 cores.  With HT is it 6096 cpus.
->
->It would then be nice to up MAXSMP to 6144 or so.
->
->Thanks,
->
->	Ingo
+I'd agree with that, but it wouldn't be limited to just the final
+non-bugfix release.  It would be a year-long "shove as much as we can
+in" push, and I'd be fearful of doing any distro kernel based on any
+one of those releases.  Clearly the subsystem maintainers would still
+be fighting the good fight, but I'm concerned they'd be overwhelmed
+and/or burnt out by the time 4.0 came around.
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+> The other problem is that kernel developers who do development typically
+> fix their own bugs within a week or two. It's not developers that
+> typically determine the stability of a subsystem but _maintainers_, and
+> the primary method of stabilization is, beyond being careful when merging
+> a patch, is to remember/monitor breakages and not merge new feature
+> patches from a developer until fixable bugs are fixed by the developer.
+
+Right.
+
+josh
