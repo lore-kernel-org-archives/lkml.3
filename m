@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752323Ab3KDB4j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 20:56:39 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:12982 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751280Ab3KDB4I (ORCPT
+	id S1752779Ab3KDB6W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 20:58:22 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:15606 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269Ab3KDB6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 20:56:08 -0500
-X-AuditID: cbfee691-b7f866d000001b8c-48-5276feb6e74b
+	Sun, 3 Nov 2013 20:58:20 -0500
+X-AuditID: cbfee68f-b7f836d000001b39-ed-5276ff3b30b7
+Message-id: <5276FF3C.9050304@samsung.com>
+Date: Mon, 04 Nov 2013 10:58:20 +0900
 From: Chanwoo Choi <cw00.choi@samsung.com>
-To: kgene.kim@samsung.com, t.figa@samsung.com
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCHv3 2/3] ARM: dts: exynos4212: Add missing clock for multi core
- timer
-Date: Mon, 04 Nov 2013 10:56:00 +0900
-Message-id: <1383530161-24080-3-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-In-reply-to: <1383530161-24080-1-git-send-email-cw00.choi@samsung.com>
-References: <1383530161-24080-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGIsWRmVeSWpSXmKPExsWyRsSkUHfbv7Igg/9tRhbzj5xjtTj3aiWj
-	Re+Cq2wWZ5vesFtsenyN1eLyrjlsFjPO72OyuH2Z12LtkbvsFkuvX2SymDB9LYvF4RUHmCxe
-	HWxjsVg/4zWLA5/HmnlrGD1amnvYPBZ8vsLusXL5FzaPzUvqPfq2rGL0+LxJzmPj3NAAjigu
-	m5TUnMyy1CJ9uwSujEe/TrMUnGet2Lv/DXsD41mWLkZODgkBE4ktL1ZA2WISF+6tZ+ti5OIQ
-	EljKKDGro50Zpujq3O+sEInpjBK/Z89jgXAamSQWn57FClLFJqAlsf/FDTYQW0RAV2LKzDtg
-	HcwCz5gkVnw6zwiSEBYIleiYtoMJxGYRUJXYdvcvexcjBwevgKvEjgsZENvkJD7secQOYnMK
-	uEn8O38AzBYCKrnbfI0RZKaEwEt2iR3f5zFDzBGQ+Db5EAvIHAkBWYlNB6CulpQ4uOIGywRG
-	4QWMDKsYRVMLkguKk9KLTPWKE3OLS/PS9ZLzczcxAuPo9L9nE3cw3j9gfYgxGWjcRGYp0eR8
-	YBzmlcQbGpsZWZiamBobmVuakSasJM6b/igpSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAOj
-	TTzvUvb2QL8917fwLvyeN4PTytZi5rRP51xY2Q5MUwlP2vFfKl+67NXRT9PmLJwdrZFjfMOt
-	djPLlEPTzHTereu0lbfxm3XhYsnNPRffr70YlyR8zMtULPuSSxVfJN+Xpm3Fu9j9GcU5p92x
-	v7fn6dw/my2PpC0L3Wif1st2LHin8B+vzUf7lFiKMxINtZiLihMBsOz5oLkCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmleLIzCtJLcpLzFFi42I5/e+xoO62f2VBBv9nalrMP3KO1eLcq5WM
-	Fr0LrrJZnG16w26x6fE1VovLu+awWcw4v4/J4vZlXou1R+6yWyy9fpHJYsL0tSwWh1ccYLJ4
-	dbCNxWL9jNcsDnwea+atYfRoae5h81jw+Qq7x8rlX9g8Ni+p9+jbsorR4/MmOY+Nc0MDOKIa
-	GG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgM5WUihL
-	zCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMGY8+nWapeA8a8Xe/W/YGxjPsnQx
-	cnJICJhIXJ37nRXCFpO4cG89WxcjF4eQwHRGid+z57FAOI1MEotPzwKrYhPQktj/4gYbiC0i
-	oCsxZeYdVpAiZoFnTBIrPp1nBEkIC4RKdEzbwQRiswioSmy7+5e9i5GDg1fAVWLHhQyIbXIS
-	H/Y8YgexOQXcJP6dPwBmCwGV3G2+xjiBkXcBI8MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxN
-	jOAofSa9g3FVg8UhRgEORiUeXonLZUFCrIllxZW5hxglOJiVRHidzwGFeFMSK6tSi/Lji0pz
-	UosPMSYDHTWRWUo0OR+YQPJK4g2NTcyMLI3MDS2MjM1JE1YS5z3Yah0oJJCeWJKanZpakFoE
-	s4WJg1OqgTHzhX2A6Ny00zecui+fvH3WlfP5/CXLdjgqzFm/4/51k4um61Qq/k9c0Lry0HOH
-	/R95Z3OrJZfs+Cbu8jMrmNNX69LZrVODLGedrZwZGKL/tufpMb8tAvLs2V6tptlM/Xp12w7e
-	8r76/pz3n0he6YdRYRsivJyna558fGCFlnVydb71rkNP8sqUWIozEg21mIuKEwGhmLArFgMA	AA==
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com
+Subject: Re: [PATCH] mfd: max77693: Fix up bug of wrong interrupt number
+References: <1381367155-4888-1-git-send-email-cw00.choi@samsung.com>
+In-reply-to: <1381367155-4888-1-git-send-email-cw00.choi@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsWyRsSkUNf6f1mQwczPGhbXvzxntTjb9Ibd
+	4v7Xo4wWl3fNYbM43c3qwOpx59oeNo95JwM9+rasYvT4vEkugCWKyyYlNSezLLVI3y6BK+PP
+	y3WsBV84KjZf/sfewLiFvYuRk0NCwETi9pOnrBC2mMSFe+vZQGwhgaWMEj23c7sYOcBqmrp5
+	IMKLGCWaXtV0MXIB2a8YJXr3zGQBSfAKaEms730CZrMIqEr0n5kONp8NKL7/xQ2wmaICYRIr
+	p1+BqheU+DH5HpgtIqAhMfPvFUYQm1kgS+L3y0VgvcICHhLXZ51gh1jsIjFh1yl2kHs4BVwl
+	/jU7QJTrSOxvncYGYctLbF7zlhnkNgmBdewSN3+uYYa4R0Di2+RDLBC/yEpsOsAM8a6kxMEV
+	N1gmMIrNQnLRLCRjZyEZu4CReRWjaGpBckFxUnqRsV5xYm5xaV66XnJ+7iZGYDyd/vesfwfj
+	3QPWhxiTgVZOZJYSTc4HxmNeSbyhsZmRhamJqbGRuaUZacJK4rz3HyYFCQmkJ5akZqemFqQW
+	xReV5qQWH2Jk4uCUamAs2XZKQGKXbO7dnHTXpT36zpm8pRsqUy7Za99bu+ODR6THWjmjZJUX
+	/0sn7WfPMvTeMy10h51fubH8+uQ5dTGbFVzjre7td2uXUJE/a9rLsUvXPa3Az/fNXuOnmic2
+	+/DLcJ1mttxaoPP43PbXErMSl4tkbvJKW9ozNetlX1fIs28brXLPz1NiKc5INNRiLipOBAAw
+	CiIOvQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgleLIzCtJLcpLzFFi42I5/e+xgK71/7Igg69LlSyuf3nOanG26Q27
+	xf2vRxktLu+aw2ZxupvVgdXjzrU9bB7zTgZ69G1ZxejxeZNcAEtUA6NNRmpiSmqRQmpecn5K
+	Zl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBaJYWyxJxSoFBAYnGxkr4dpgmh
+	IW66FjCNEbq+IUFwPUYGaCBhDWPGn5frWAu+cFRsvvyPvYFxC3sXIweHhICJRFM3TxcjJ5Ap
+	JnHh3no2EFtIYBGjRNOrmi5GLiD7FaNE756ZLCAJXgEtifW9T8BsFgFVif4z09lBbDag+P4X
+	N8CaRQXCJFZOvwJVLyjxY/I9MFtEQENi5t8rjCA2s0CWxO+Xi8B6hQU8JK7POsEOsdhFYsKu
+	U2C3cQq4SvxrdoAo15HY3zqNDcKWl9i85i3zBEaBWUg2zEJSNgtJ2QJG5lWMoqkFyQXFSem5
+	hnrFibnFpXnpesn5uZsYwfH6TGoH48oGi0OMAhyMSjy8EpfLgoRYE8uKK3MPMUpwMCuJ8Dqf
+	AwrxpiRWVqUW5ccXleakFh9iTAYGwERmKdHkfGAqySuJNzQ2MTOyNDI3tDAyNidNWEmc90Cr
+	daCQQHpiSWp2ampBahHMFiYOTqkGxompHM3maoxK3XUns18462n7zly86fGGrX+V9LWrSlv8
+	w0T446/nWk27n9nK0nzx9H6rWbVyrlxyxbkT43jTnTfP/Df11+Wao5NTdmp9lZj3OLZNWclZ
+	XmiihZbnt4/LpOdkWi9qW/7vzp19nnf+n2l4+Zzz+oX6/atOTuBuEGnbZXLrXb7gbCWW4oxE
+	Qy3mouJEAMlzUfobAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -55,27 +54,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+Ping!
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/arm/boot/dts/exynos4212.dtsi | 2 ++
- 1 file changed, 2 insertions(+)
+Thanks,
+Chanwoo Choi
 
-diff --git a/arch/arm/boot/dts/exynos4212.dtsi b/arch/arm/boot/dts/exynos4212.dtsi
-index 3081bae..d7a3fbc 100644
---- a/arch/arm/boot/dts/exynos4212.dtsi
-+++ b/arch/arm/boot/dts/exynos4212.dtsi
-@@ -43,6 +43,8 @@
- 		interrupt-parent = <&mct_map>;
- 		interrupts = <0 0>, <1 0>, <2 0>, <3 0>,
- 			     <4 0>, <5 0>;
-+		clocks = <&clock 3>, <&clock 344>;
-+		clock-names = "fin_pll", "mct";
- 
- 		mct_map: mct-map {
- 			#interrupt-cells = <2>;
--- 
-1.8.0
+On 10/10/2013 10:05 AM, Chanwoo Choi wrote:
+> The max77693 MFD device use irq domain method which has hardware interrupt number
+> and virtual interrupt number getting through irq domain mapping. This patch
+> use hardware interrupt number instead of virtual interrupt number to get
+> struct irq_data.
+> 
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  drivers/mfd/max77693-irq.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/mfd/max77693-irq.c b/drivers/mfd/max77693-irq.c
+> index 1029d01..66b58fe 100644
+> --- a/drivers/mfd/max77693-irq.c
+> +++ b/drivers/mfd/max77693-irq.c
+> @@ -128,7 +128,8 @@ static void max77693_irq_sync_unlock(struct irq_data *data)
+>  static const inline struct max77693_irq_data *
+>  irq_to_max77693_irq(struct max77693_dev *max77693, int irq)
+>  {
+> -	return &max77693_irqs[irq];
+> +	struct irq_data *data = irq_get_irq_data(irq);
+> +	return &max77693_irqs[data->hwirq];
+>  }
+>  
+>  static void max77693_irq_mask(struct irq_data *data)
+> 
 
