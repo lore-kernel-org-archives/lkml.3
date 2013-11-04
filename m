@@ -1,89 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab3KDE1u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 23:27:50 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:33763 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab3KDE1t (ORCPT
+	id S1752503Ab3KDEtE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 23:49:04 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44778 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415Ab3KDEtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 23:27:49 -0500
-Date: Mon, 4 Nov 2013 15:27:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rostislav Lisovy <lisovy@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Silvio F <silvio.fricke@gmail.com>
-Subject: linux-next: manual merge of the dt-rh tree with the imx-mxs tree
-Message-Id: <20131104152739.92ae486e7d418221c6a48a1e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__4_Nov_2013_15_27_39_+1100_TfUPVhByj_trYU6_"
+	Sun, 3 Nov 2013 23:49:01 -0500
+Date: Mon, 4 Nov 2013 04:48:44 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, aswin@hp.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: converting unicore32 to gate_vma as done for arm (was Re: [PATCH]
+ mm: cache largest vma)
+Message-ID: <20131104044844.GN13318@ZenIV.linux.org.uk>
+References: <1383337039.2653.18.camel@buesod1.americas.hpqcorp.net>
+ <20131103101234.GB5330@gmail.com>
+ <1383538810.2373.22.camel@buesod1.americas.hpqcorp.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383538810.2373.22.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__4_Nov_2013_15_27_39_+1100_TfUPVhByj_trYU6_
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Nov 03, 2013 at 08:20:10PM -0800, Davidlohr Bueso wrote:
+> > > diff --git a/arch/unicore32/include/asm/mmu_context.h b/arch/unicore32/include/asm/mmu_context.h
+> > > index fb5e4c6..38cc7fc 100644
+> > > --- a/arch/unicore32/include/asm/mmu_context.h
+> > > +++ b/arch/unicore32/include/asm/mmu_context.h
+> > > @@ -73,7 +73,7 @@ do { \
+> > >  		else \
+> > >  			mm->mmap = NULL; \
+> > >  		rb_erase(&high_vma->vm_rb, &mm->mm_rb); \
+> > > -		mm->mmap_cache = NULL; \
+> > > +		vma_clear_caches(mm);			\
+> > >  		mm->map_count--; \
+> > >  		remove_vma(high_vma); \
+> > >  	} \
 
-Hi Rob,
+BTW, this one needs an analog of
+commit f9d4861fc32b995b1616775614459b8f266c803c
+Author: Will Deacon <will.deacon@arm.com>
+Date:   Fri Jan 20 12:01:13 2012 +0100
 
-Today's linux-next merge of the dt-rh tree got a conflict in
-Documentation/devicetree/bindings/vendor-prefixes.txt between commit
-064d7f6c985a ("ARM: dts: Add vendor prefix for Voipac Technologies
-s.r.o") from the imx-mxs tree and commit d6c3073e7fb5 ("DT: sort
-vendor-prefixes.txt") from the dt-rh tree.
+    ARM: 7294/1: vectors: use gate_vma for vectors user mapping
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+This code is a copy of older arm logics rewritten in that commit; unicore32
+never got its counterpart.  I have a [completely untested] variant sitting
+in vfs.git#vm^; it's probably worth testing - if it works, we'll get rid
+of one more place that needs to be aware of MM guts and unicore32 folks
+will have fewer potential headache sources...
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+FWIW, after porting to the current tree it becomes the following; I'm not
+sure whether we want VM_DONTEXPAND | VM_DONTDUMP set for this one, though...
 
-diff --cc Documentation/devicetree/bindings/vendor-prefixes.txt
-index 8319844fb68d,640e86dc0ae7..000000000000
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@@ -65,13 -66,12 +67,13 @@@ snps 	Synopsys, Inc
-  st	STMicroelectronics
-  ste	ST-Ericsson
-  stericsson	ST-Ericsson
-- toumaz	Toumaz
-  ti	Texas Instruments
-  toshiba	Toshiba Corporation
-+ toumaz	Toumaz
-  v3	V3 Semiconductor
-  via	VIA Technologies, Inc.
- +voipac	Voipac Technologies s.r.o.
-+ winbond Winbond Electronics corp.
-  wlf	Wolfson Microelectronics
-  wm	Wondermedia Technologies, Inc.
-- winbond Winbond Electronics corp.
-  xlnx	Xilinx
-
---Signature=_Mon__4_Nov_2013_15_27_39_+1100_TfUPVhByj_trYU6_
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSdyI/AAoJEMDTa8Ir7ZwVvFoP/jHzUFShfhpRkm7bIP+yD5ce
-XzpRJcanNAe4qsRwMU6yrBDcKWoxgRnvYlCv9ZbVzJ6oPGcycXL1q94eVM0VlAHu
-l97Phdeyk0biawmQR2HzHLakV4Wk99yG1ci2h56rZscfa4iSEfdiV+gWmgpz4SmA
-S5fWcrEdXSWcXoHrAAJeSohNYUk2eELMjP4iy/+4LRQPhoosQ4FRSiBUFxqNE6RX
-c1sunqgWg23yjlYwwjQm1fGDzBWgtm9UgX73IXdSp/xGxfwwPTC+znL0bfd/koho
-Jn1PhnbermhP/SpJHWt5uY86H8HGESjf29hDIOiCl0LrGJS2/LGYbc88DfnmelqH
-P8zTmFs3PokaFq5COwCP7aI1RRgdaCwxrRxrfGjWTN9qSQUAxjv44MVC/0KACi5r
-8mfmT3KUPPGPZVr70KrfrTWI6tYzgHtQVidIXy5PPu8dPTRHK6j+FqjhEbyzLA28
-zFRY4TdchkdlyNVH3y5cRD78PlsXdpSQjucuYbCi1CoEvczmT05BdjFqHzGMKG1B
-2kDUxdJro9EXC8lMZw/4gI0GdQ6v72ao8YEE6jCrM2fcsHAtBccOBHEPb35RORba
-vEVAAno2xZi2a09IOwudCfVWkIoykU+oN5MIc7zDFLi8DtUFJfIi85JXOjAF62PJ
-flkDsr9Q51jdAgfPZnLo
-=fLpF
------END PGP SIGNATURE-----
-
---Signature=_Mon__4_Nov_2013_15_27_39_+1100_TfUPVhByj_trYU6_--
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+diff --git a/arch/unicore32/include/asm/elf.h b/arch/unicore32/include/asm/elf.h
+index 829042d..eeba258 100644
+--- a/arch/unicore32/include/asm/elf.h
++++ b/arch/unicore32/include/asm/elf.h
+@@ -87,8 +87,4 @@ struct mm_struct;
+ extern unsigned long arch_randomize_brk(struct mm_struct *mm);
+ #define arch_randomize_brk arch_randomize_brk
+ 
+-extern int vectors_user_mapping(void);
+-#define arch_setup_additional_pages(bprm, uses_interp) vectors_user_mapping()
+-#define ARCH_HAS_SETUP_ADDITIONAL_PAGES
+-
+ #endif
+diff --git a/arch/unicore32/include/asm/mmu_context.h b/arch/unicore32/include/asm/mmu_context.h
+index fb5e4c6..600b1b8 100644
+--- a/arch/unicore32/include/asm/mmu_context.h
++++ b/arch/unicore32/include/asm/mmu_context.h
+@@ -18,6 +18,7 @@
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/cpu-single.h>
++#include <asm-generic/mm_hooks.h>
+ 
+ #define init_new_context(tsk, mm)	0
+ 
+@@ -56,32 +57,4 @@ switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ #define deactivate_mm(tsk, mm)	do { } while (0)
+ #define activate_mm(prev, next)	switch_mm(prev, next, NULL)
+ 
+-/*
+- * We are inserting a "fake" vma for the user-accessible vector page so
+- * gdb and friends can get to it through ptrace and /proc/<pid>/mem.
+- * But we also want to remove it before the generic code gets to see it
+- * during process exit or the unmapping of it would  cause total havoc.
+- * (the macro is used as remove_vma() is static to mm/mmap.c)
+- */
+-#define arch_exit_mmap(mm) \
+-do { \
+-	struct vm_area_struct *high_vma = find_vma(mm, 0xffff0000); \
+-	if (high_vma) { \
+-		BUG_ON(high_vma->vm_next);  /* it should be last */ \
+-		if (high_vma->vm_prev) \
+-			high_vma->vm_prev->vm_next = NULL; \
+-		else \
+-			mm->mmap = NULL; \
+-		rb_erase(&high_vma->vm_rb, &mm->mm_rb); \
+-		mm->mmap_cache = NULL; \
+-		mm->map_count--; \
+-		remove_vma(high_vma); \
+-	} \
+-} while (0)
+-
+-static inline void arch_dup_mmap(struct mm_struct *oldmm,
+-				 struct mm_struct *mm)
+-{
+-}
+-
+ #endif
+diff --git a/arch/unicore32/include/asm/page.h b/arch/unicore32/include/asm/page.h
+index 594b322..e79da8b 100644
+--- a/arch/unicore32/include/asm/page.h
++++ b/arch/unicore32/include/asm/page.h
+@@ -28,6 +28,8 @@ extern void copy_page(void *to, const void *from);
+ #define clear_user_page(page, vaddr, pg)	clear_page(page)
+ #define copy_user_page(to, from, vaddr, pg)	copy_page(to, from)
+ 
++#define __HAVE_ARCH_GATE_AREA 1
++
+ #undef STRICT_MM_TYPECHECKS
+ 
+ #ifdef STRICT_MM_TYPECHECKS
+diff --git a/arch/unicore32/kernel/process.c b/arch/unicore32/kernel/process.c
+index 778ebba..51d129e 100644
+--- a/arch/unicore32/kernel/process.c
++++ b/arch/unicore32/kernel/process.c
+@@ -307,21 +307,39 @@ unsigned long arch_randomize_brk(struct mm_struct *mm)
+ 
+ /*
+  * The vectors page is always readable from user space for the
+- * atomic helpers and the signal restart code.  Let's declare a mapping
+- * for it so it is visible through ptrace and /proc/<pid>/mem.
++ * atomic helpers and the signal restart code. Insert it into the
++ * gate_vma so that it is visible through ptrace and /proc/<pid>/mem.
+  */
++static struct vm_area_struct gate_vma = {
++	.vm_start	= 0xffff0000,
++	.vm_end		= 0xffff0000 + PAGE_SIZE,
++	.vm_flags	= VM_READ | VM_EXEC | VM_MAYREAD | VM_MAYEXEC |
++			  VM_DONTEXPAND | VM_DONTDUMP,
++};
++
++static int __init gate_vma_init(void)
++{
++	gate_vma.vm_page_prot	= PAGE_READONLY_EXEC;
++	return 0;
++}
++arch_initcall(gate_vma_init);
++
++struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
++{
++	return &gate_vma;
++}
++
++int in_gate_area(struct mm_struct *mm, unsigned long addr)
++{
++	return (addr >= gate_vma.vm_start) && (addr < gate_vma.vm_end);
++}
+ 
+-int vectors_user_mapping(void)
++int in_gate_area_no_mm(unsigned long addr)
+ {
+-	struct mm_struct *mm = current->mm;
+-	return install_special_mapping(mm, 0xffff0000, PAGE_SIZE,
+-				       VM_READ | VM_EXEC |
+-				       VM_MAYREAD | VM_MAYEXEC |
+-				       VM_DONTEXPAND | VM_DONTDUMP,
+-				       NULL);
++	return in_gate_area(NULL, addr);
+ }
+ 
+ const char *arch_vma_name(struct vm_area_struct *vma)
+ {
+-	return (vma->vm_start == 0xffff0000) ? "[vectors]" : NULL;
++	return (vma == &gate_vma) ? "[vectors]" : NULL;
+ }
