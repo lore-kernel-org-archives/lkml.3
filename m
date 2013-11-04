@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609Ab3KDDrs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 22:47:48 -0500
-Received: from mga09.intel.com ([134.134.136.24]:51819 "EHLO mga09.intel.com"
+	id S1752870Ab3KDDs0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 22:48:26 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:40663 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751556Ab3KDDrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 22:47:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="429275711"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>,
-        "Wang, Xiaoming" <xiaoming.wang@intel.com>
-CC: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Zhang, Dongxing" <dongxing.zhang@intel.com>
-Subject: RE: [PATCH] [extcon]:remove freed groups caused the panic or
- warning in unregister flow
-Thread-Topic: [PATCH] [extcon]:remove freed groups caused the panic or
- warning in unregister flow
-Thread-Index: AQHO2Qa/FC79w5BC9EuJcTvsrXRjPJoUbjFg
-Date: Mon, 4 Nov 2013 03:47:39 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01B806F5@SHSMSX101.ccr.corp.intel.com>
-References: <1383346094.2702.16.camel@wxm-ubuntu>
- <5276FBB5.1020506@samsung.com>
- <FA47D36D6EC9FE4CB463299737C09B9901B6467C@SHSMSX102.ccr.corp.intel.com>
- <52770837.5000901@samsung.com>
-In-Reply-To: <52770837.5000901@samsung.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1752707Ab3KDDsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 22:48:25 -0500
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: tpmdd-devel@lists.sourceforge.net, Peter Huewe <peterhuewe@gmx.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] tpm: tpm_tis: Fix compile problems with CONFIG_PM_SLEEP/CONFIG_PNP
+Date: Sun,  3 Nov 2013 20:48:18 -0700
+Message-Id: <1383536898-29116-1-git-send-email-jgunthorpe@obsidianresearch.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rA43ltvb009224
 
+If CONFIG_PM_SLEEP=n, CONFIG_PNP=y we get this warning:
 
+drivers/char/tpm/tpm_tis.c:706:13: warning: 'tpm_tis_reenable_interrupts' defined but not used [-Wunused-function]
 
-> -----Original Message-----
-> From: Chanwoo Choi [mailto:cw00.choi@samsung.com]
-> Sent: Monday, November 04, 2013 10:37 AM
-> To: Wang, Xiaoming
-> Cc: myungjoo.ham@samsung.com; linux-kernel@vger.kernel.org; Liu,
-> Chuansheng; Zhang, Dongxing
-> Subject: Re: [PATCH] [extcon]:remove freed groups caused the panic or warning
-> in unregister flow
+This seems to have been introduced in a2fa3fb0d 'tpm: convert tpm_tis driver
+to use dev_pm_ops from legacy pm_ops'
 
+Also, unpon reviewing, the #ifdefs around tpm_tis_pm are not right, the first
+reference is protected, the second is not. tpm_tis_pm is always defined so we can drop
+the #ifdef.
 
-> As you comment, my opinion has memory leak problem. My mistake.
-> But, I prefer to call 'device_unregister' at the end of extcon_dev_unregister().
-> To resolve kernel panic, I think we could use 'devm_kzalloc' instead of
-> kzalloc/kfree.
-> What is your opinion about my approach?
-> 
-That sounds good.
-But in function extcon_dev_register(), the device attributes are allocated before device_register(),
-and before device_register(), the function devm_kzalloc() can not be used.
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+---
+ drivers/char/tpm/tpm_tis.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index 1b74459..0732a1e 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -743,7 +743,7 @@ out_err:
+ 	return rc;
+ }
+ 
+-#if defined(CONFIG_PNP) || defined(CONFIG_PM_SLEEP)
++#ifdef CONFIG_PM_SLEEP
+ static void tpm_tis_reenable_interrupts(struct tpm_chip *chip)
+ {
+ 	u32 intmask;
+@@ -764,9 +764,7 @@ static void tpm_tis_reenable_interrupts(struct tpm_chip *chip)
+ 	iowrite32(intmask,
+ 		  chip->vendor.iobase + TPM_INT_ENABLE(chip->vendor.locality));
+ }
+-#endif
+ 
+-#ifdef CONFIG_PM_SLEEP
+ static int tpm_tis_resume(struct device *dev)
+ {
+ 	struct tpm_chip *chip = dev_get_drvdata(dev);
+@@ -835,11 +833,9 @@ static struct pnp_driver tis_pnp_driver = {
+ 	.id_table = tpm_pnp_tbl,
+ 	.probe = tpm_tis_pnp_init,
+ 	.remove = tpm_tis_pnp_remove,
+-#ifdef CONFIG_PM_SLEEP
+ 	.driver	= {
+ 		.pm = &tpm_tis_pm,
+ 	},
+-#endif
+ };
+ 
+ #define TIS_HID_USR_IDX sizeof(tpm_pnp_tbl)/sizeof(struct pnp_device_id) -2
+-- 
+1.8.1.2
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
