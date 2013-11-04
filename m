@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab3KDSCb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 13:02:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4292 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753813Ab3KDSC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 13:02:28 -0500
-Date: Mon, 4 Nov 2013 15:56:13 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 3/3] perf tools: Check maximum frequency rate for
- record/top
-Message-ID: <20131104175613.GA20505@infradead.org>
-References: <1383563173-17466-1-git-send-email-jolsa@redhat.com>
- <1383563173-17466-4-git-send-email-jolsa@redhat.com>
- <5277BA84.1090208@gmail.com>
- <20131104153216.GC2805@krava.brq.redhat.com>
+	id S1754571Ab3KDSDE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 13:03:04 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:36850 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151Ab3KDSDB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 13:03:01 -0500
+Date: Mon, 4 Nov 2013 10:03:00 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Janakiram Sistla <janakiram.sistla@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Rohit Vaswani <rvaswani@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        List Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 09/11] ARM: msm: Add SMP support for KPSSv2
+Message-ID: <20131104180300.GM21983@codeaurora.org>
+References: <1383343739-23080-1-git-send-email-sboyd@codeaurora.org>
+ <1383343739-23080-10-git-send-email-sboyd@codeaurora.org>
+ <CACqS6krDt=zDWNXKTu2PvCkMXQbbf-4G2RZtuCt1deU6H2SUxQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131104153216.GC2805@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <CACqS6krDt=zDWNXKTu2PvCkMXQbbf-4G2RZtuCt1deU6H2SUxQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Nov 04, 2013 at 04:32:16PM +0100, Jiri Olsa escreveu:
-> On Mon, Nov 04, 2013 at 08:17:24AM -0700, David Ahern wrote:
-> > On 11/4/13, 4:06 AM, Jiri Olsa wrote:
-> > >Adding the check for maximum allowed frequency rate
-> > >defined in following file:
-> > >   /proc/sys/kernel/perf_event_max_sample_rate
-> > >
-> > >When we cross the maximum value we fail and display
-> > >detailed error message with advise.
-> > 
-> > perf commands should automatically adjust the default frequency too.
-> > If the user did not specify a frequency then this message is going
-> > to be confusing.
+On 11/01, Janakiram Sistla wrote:
+> On 1 November 2013 15:08, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> > +               err = -ENOMEM;
+> > +               goto err_map;
+> > +       }
+> > +
+> > +       l2_saw_base = of_iomap(l2_node, 0);
+> > +       if (!l2_saw_base) {
+> > +               err = -ENOMEM;
+> > +               goto err_l2_map;
+> > +       }
+> > +
+> > +       /* Turn on the BHS, turn off LDO Bypass and power down LDO */
+> > +       reg_val =  0x403f0001;
+> >
+> I think patch looks more nice if this hard coding is defined in terms of
+> macros
 > 
-> ok, I'll add that check and probably some warning
-> if we are force to go below the default rate.
-
-I think we should just make it clear the frequency used and pick the
-best according to the hardware.
-
-And we are not doing gthat at all, at least in the TUI, need to change
-that.
-
-Only in the stdio, with that long list of commented lines, that should
-as well be hidden, too verbose.
-
-And here we also see the frequency used:
-
-[root@zoo linux]# perf evlist -v
-cycles: sample_freq=4000, size: 96, sample_type: IP|TID|TIME|PERIOD,
-disabled: 1, inherit: 1, mmap: 1, comm: 1, freq: 1, enable_on_exec: 1,
-sample_id_all: 1, exclude_guest: 1
-[root@zoo linux]#
- 
- > 
-> > Though the algorithm that keeps lowering the rate should be tweaked as well.
+> > +       writel_relaxed(reg_val, reg + APC_PWR_GATE_CTL);
+> > +
+> > +       /* complete the above write before the delay */
+> > +       mb();
+> > +       /* wait for the bhs to settle */
+> > +       udelay(1);
+> > +
+> > +       /* Turn on BHS segments */
+> > +       reg_val |= 0x3f << 1;
+> >
+> same as above
 > 
-> yea.. I was thinking putting the max rate back up after
-> some sane period
-> 
-> or/plus having 'echo 0 > /proc/sys/kernel/perf_event_max_sample_rate' to
-> disable it completely
-> 
-> jirka
+
+Ok. I'll see what I can do.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
