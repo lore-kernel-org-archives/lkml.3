@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751170Ab3KCX5g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 18:57:36 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:64930 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819Ab3KCX5f (ORCPT
+	id S1752359Ab3KDAKJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 19:10:09 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:57016 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751980Ab3KDAKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 18:57:35 -0500
+	Sun, 3 Nov 2013 19:10:03 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 1/3] ACPI / scan: Start matching drivers after trying scan handlers
+Date: Mon, 04 Nov 2013 01:18:50 +0100
+Message-ID: <3869743.TuXYQ2ebr5@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <5839747.7HXXGHmMBd@vostro.rjw.lan>
+References: <5839747.7HXXGHmMBd@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <1383340291.2653.33.camel@buesod1.americas.hpqcorp.net>
-References: <1383337039.2653.18.camel@buesod1.americas.hpqcorp.net>
- <5274114B.7010302@gmail.com> <1383340291.2653.33.camel@buesod1.americas.hpqcorp.net>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Sun, 3 Nov 2013 18:57:14 -0500
-Message-ID: <CAHGf_=okr7mFx3j=gRfkETS21KZXkdo4XevF1KQM+gbXkTabgg@mail.gmail.com>
-Subject: Re: [PATCH] mm: cache largest vma
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, aswin@hp.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> I'm slightly surprised this cache makes 15% hit. Which application
->> get a benefit? You listed a lot of applications, but I'm not sure
->> which is highly depending on largest vma.
->
-> Well I chose the largest vma because it gives us a greater chance of
-> being already cached when we do the lookup for the faulted address.
->
-> The 15% improvement was with Hadoop. According to my notes it was at
-> ~48% with the baseline kernel and increased to ~63% with this patch.
->
-> In any case I didn't measure the rates on a per-task granularity, but at
-> a general system level. When a system is first booted I can see that the
-> mmap_cache access rate becomes the determinant factor and when adding a
-> workload it doesn't change much. One exception to this was a kernel
-> build, where we go from ~50% to ~89% hit rate on a vanilla kernel.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-I looked at this patch a bit. The worth of this is to improve the
-cache hit ratio
-of heap.
+ACPI scan handlers should always be attached to struct acpi_device
+objects before any ACPI drivers, but there is a window during which
+a driver may be attached to a struct acpi_device before checking if
+there is a matching scan handler.  Namely, that will happen if an
+ACPI driver module is loaded during acpi_bus_scan() right after
+the first namespace walk is complete and before the given device
+is processed by the second namespace walk.
 
-1) For single thread applications, heap is frequently largest mapping
-in the process.
-2) For java VM, "java -Xms1000m -Xmx1000m HelloWorld" makes following
-/proc/<pid>/smaps entry. That said, JVM allocate single heap even if
-applications are multi threaded.
+To prevent that from happening, set the match_driver flags of
+struct acpi_device objects right before running device_attach()
+for them in acpi_bus_device_attach().
 
-c1800000-100000000 rw-p 00000000 00:00 0
-Size:            1024000 kB
-Rss:                 244 kB
-Pss:                 244 kB
-Shared_Clean:          0 kB
-Shared_Dirty:          0 kB
-Private_Clean:         0 kB
-Private_Dirty:       244 kB
-Referenced:          244 kB
-Anonymous:           244 kB
-AnonHugePages:         0 kB
-Swap:                  0 kB
-KernelPageSize:        4 kB
-MMUPageSize:           4 kB
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/scan.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-That's good.
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -1676,7 +1676,6 @@ void acpi_init_device_object(struct acpi
+ 
+ void acpi_device_add_finalize(struct acpi_device *device)
+ {
+-	device->flags.match_driver = true;
+ 	dev_set_uevent_suppress(&device->dev, false);
+ 	kobject_uevent(&device->dev.kobj, KOBJ_ADD);
+ }
+@@ -1915,8 +1914,12 @@ static acpi_status acpi_bus_device_attac
+ 		return AE_OK;
+ 
+ 	ret = acpi_scan_attach_handler(device);
+-	if (ret)
+-		return ret > 0 ? AE_OK : AE_CTRL_DEPTH;
++	if (ret < 0)
++		return AE_CTRL_DEPTH;
++
++	device->flags.match_driver = true;
++	if (ret > 0)
++		return AE_OK;
+ 
+ 	ret = device_attach(&device->dev);
+ 	return ret >= 0 ? AE_OK : AE_CTRL_DEPTH;
 
-However, we know there is a situation that this patch doesn't work.
-glibc makes per thread heap (arena) by default. So, it is not to be
-expected works well on glibc multi threaded programs. That's a
-slightly big limitation.
-
-Anyway, I haven't observed real performance difference because most
-big penalty of find_vma come from taking mmap_sem, not rb-tree search.
-
-Another and additional input are welcome. But I myself haven't convinced
-this patch works everywhere.
