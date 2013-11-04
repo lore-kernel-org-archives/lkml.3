@@ -1,136 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759Ab3KDRe2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 12:34:28 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:56338 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab3KDRe1 (ORCPT
+	id S1752391Ab3KDRgK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 12:36:10 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:35336 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719Ab3KDRgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 12:34:27 -0500
-Date: Mon, 4 Nov 2013 18:34:23 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 4/5] sched: Refactor iowait accounting
-Message-ID: <20131104173421.GH9299@localhost.localdomain>
-References: <1382195841-6558-5-git-send-email-fweisbec@gmail.com>
- <20131020111006.GA26671@rhlx01.hs-esslingen.de>
+	Mon, 4 Nov 2013 12:36:08 -0500
+Date: Mon, 4 Nov 2013 09:36:06 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        David Brown <davidb@codeaurora.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/11] devicetree: bindings: Document Qualcomm cpus and
+ enable-method
+Message-ID: <20131104173606.GL21983@codeaurora.org>
+References: <1383343739-23080-1-git-send-email-sboyd@codeaurora.org>
+ <1383343739-23080-3-git-send-email-sboyd@codeaurora.org>
+ <CAL_JsqLObXEWJJ=SuifTjpPz9qTW0n43fyQNA-vjLNeLy-7-XA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131020111006.GA26671@rhlx01.hs-esslingen.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAL_JsqLObXEWJJ=SuifTjpPz9qTW0n43fyQNA-vjLNeLy-7-XA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 20, 2013 at 01:10:06PM +0200, Andreas Mohr wrote:
-> Hi,
+On 11/01, Rob Herring wrote:
+> On Fri, Nov 1, 2013 at 5:08 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> > From: Rohit Vaswani <rvaswani@codeaurora.org>
+> >
+> > Scorpion and Krait are Qualcomm cpus. These cpus don't use the
+> > spin-table enable-method. Instead they rely on mmio register
+> > accesses to enable power and clocks to bring CPUs out of reset.
+> >
+> > Cc: <devicetree@vger.kernel.org>
+> > Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+> > [sboyd: Split off into separate patch, renamed method to
+> > qcom,mmio]
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > ---
+> >
+> > This slightly conflicts with my krait EDAC series.
+> >
+> >  Documentation/devicetree/bindings/arm/cpus.txt | 3 +++
+> >  1 file changed, 3 insertions(+)
+> >
+> > diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+> > index 37258f9..e2969fa2 100644
+> > --- a/Documentation/devicetree/bindings/arm/cpus.txt
+> > +++ b/Documentation/devicetree/bindings/arm/cpus.txt
+> > @@ -44,6 +44,8 @@ For the ARM architecture every CPU node must contain the following properties:
+> >                 "marvell,mohawk"
+> >                 "marvell,xsc3"
+> >                 "marvell,xscale"
+> > +               "qcom,scorpion"
+> > +               "qcom,krait"
+> >
+> >  And the following optional properties:
+> >
+> > @@ -52,6 +54,7 @@ And the following optional properties:
+> >                  different types of cpus.
+> >                  This should be one of:
+> >                  "spin-table"
+> > +                "qcom,mmio"
 > 
-> 
-> +u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
-> +{
-> +	ktime_t iowait, delta = { .tv64 = 0 };
-> +	struct rq *rq = cpu_rq(cpu);
-> +	ktime_t now = ktime_get();
-> +	unsigned int seq;
-> +
-> +	do {
-> +		seq = read_seqbegin(&rq->iowait_lock);
-> +		if (rq->nr_iowait)
-> +			delta = ktime_sub(now, rq->iowait_start);
-> +		iowait = ktime_add(rq->iowait_time, delta);
-> +	} while (read_seqretry(&rq->iowait_lock, seq));
-> 
-> 
-> AFAICS that's slightly buggy, in light of:
-> 
-> 
-> +static void cpu_iowait_end(struct rq *rq)
-> +{
-> +	ktime_t delta;
-> +	write_seqlock(&rq->iowait_lock);
-> +	if (!--rq->nr_iowait) {
-> +		delta = ktime_sub(ktime_get(), rq->iowait_start);
-> +		rq->iowait_time = ktime_add(rq->iowait_time, delta);
-> +	}
-> +	write_sequnlock(&rq->iowait_lock);
-> +}
-> 
-> get_cpu_iowait_time_us() loops until update is consistent,
-> yet its "delta" will have been assigned previously
-> (*and potentially not updated*),
-> yet then a subsequent cpu_iowait_end() does provide a final consistent
-> update (by updating that very iowait_time base value taking the current delta
-> [destructively] into account!!)
-> and the other get_cpu_iowait_time_us's delta value remained stale
-> (iff nr_iowait now back to zero!).
-> 
-> IOW, newly updated iowait_time base value already (and re-evaluated),
-> yet *old* delta still being added to this *new* base value.
+> Not exactly specific. How would you handle variations in the enable
+> method? The mmio method to enable is tied to the core type or SOC
+> type?
 
-Good point! We indeed want to properly update delta in get_cpu_iowait_time_us()
-for each loop. I'll fix that.
+Variations in the enable method are handled by searching for
+another node with different compatible strings. Later on in this
+series you'll see that we search for gcc-8660, kpss-acc-v1, or
+kpps-acc-v2. Once we find one of these nodes we perform the
+correct cold boot routine.
 
-> 
-> 
-> 
-> Further thoughts:
-> 
-> Janitorial: cpu_iowait_end(): might be useful to move ktime_t delta
-> into local scope.
+I'm actually considering renaming this to "qcom,cold-boot". We
+could further extend the enable-metho property to allow
+"qcom,warm-boot" and then for cases like kexec we could make the
+enable method be warm boot and our smp code could be smart enough
+to know to skip the whole cold boot sequence.
 
-Makes sense.
-
-> 
-> Would be nice to move inner handling of get_cpu_iowait_time_us()
-> into an rq-focussed properly named helper function (to reflect the fact that
-> while this is stored in rq it's merely being used to derive CPU-side status
-> values from it), but it seems "ktime_t now" would then have to be
-> grabbed multiple times, which would be a complication.
-
-Right, we want to minimize the calls to ktime_get(). In fact I'll try to convert
-that to local_clok()/cpu_clock(), which should be cheaper, as Peter suggested.
-Lets hope that won't break the user ABI on /proc/stat.
-
-> 
-> In case of high update traffic of parts guarded by rq->iowait_lock
-> (is that a relevant case?),
->
-> it might be useful to merely grab all relevant values into helper vars
-> (i.e., establish a consistent "view" on things), now, start, nr_iowait etc. -
-> this would enable us to do ktime_sub(), ktime_add() calculations
-> *once*, after the fact. Drawback would be that this reduces seqlock
-> guard scope (would not be active any more during runtime spent for calculations,
-> i.e. another update may happen during that calculation time),
-> but then that function's purpose merely is to provide a *consistent
-> one-time probe* of a continually updated value anyway, so it does not
-> matter if we happen to return values of one update less
-> than is already available.
-
-I'm not sure I really understand what you mean here. But I don't think we can do the
-iowait_start/iowait_time probe only once. The retry part is necessary to make
-sure that we have coherent results against a given update sequence. Otherwise we
-need to use pure exclusive locks, like spinlocks. If we find out that there are issues
-wrt. readers starvations or livelocks, may be we'll do this but I believe that won't
-be needed.
-
-
-> 
-> 
-> Thank you very much for working on improving this important infrastructure code!
-
-Thanks for your review!
-
-I think I'm going to respin this series but move back the iowait time update part to
-the idle code. The update made in io_schedule() doesn't work since we really need it
-to account iowait time when the CPU is idle only: idle time accounting itself depend
-on it, and the callers of get_...time_us() rely on that too. Plus doing the update
-only when the CPU is idle will result in less overhead.
-
-> 
-> Andreas Mohr
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
