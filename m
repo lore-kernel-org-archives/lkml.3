@@ -1,120 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644Ab3KDSit (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 13:38:49 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:55474 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab3KDSis convert rfc822-to-8bit (ORCPT
+	id S1752710Ab3KDSjX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 13:39:23 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:23961 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791Ab3KDSjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 13:38:48 -0500
-Date: Mon, 4 Nov 2013 19:38:46 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andreas Mohr <andi@lisas.de>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 4/5] sched: Refactor iowait accounting
-Message-ID: <20131104183846.GA24826@rhlx01.hs-esslingen.de>
-References: <1382195841-6558-5-git-send-email-fweisbec@gmail.com>
- <20131020111006.GA26671@rhlx01.hs-esslingen.de>
- <20131104173421.GH9299@localhost.localdomain>
+	Mon, 4 Nov 2013 13:39:22 -0500
+X-IronPort-AV: E=Sophos;i="4.93,634,1378857600"; 
+   d="scan'208";a="67843095"
+Date: Mon, 4 Nov 2013 18:38:05 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: <linux@arm.linux.org.uk>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>, <will.deacon@arm.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [PATCH v9 01/18] arm: make SWIOTLB available
+In-Reply-To: <alpine.DEB.2.02.1310300112520.26077@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1311041837430.26077@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com> <1382698313-13161-1-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1310251206450.26077@kaball.uk.xensource.com> <alpine.DEB.2.02.1310290441260.26077@kaball.uk.xensource.com>
+ <20131029142023.GE20487@phenom.dumpdata.com> <20131029142626.GQ16735@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1310291716120.26077@kaball.uk.xensource.com> <20131029180105.GR16735@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.02.1310300112520.26077@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20131104173421.GH9299@localhost.localdomain>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04, 2013 at 06:34:23PM +0100, Frederic Weisbecker wrote:
-> On Sun, Oct 20, 2013 at 01:10:06PM +0200, Andreas Mohr wrote:
-> > In case of high update traffic of parts guarded by rq->iowait_lock
-> > (is that a relevant case?),
-> >
-> > it might be useful to merely grab all relevant values into helper vars
-> > (i.e., establish a consistent "view" on things), now, start, nr_iowait etc. -
-> > this would enable us to do ktime_sub(), ktime_add() calculations
-> > *once*, after the fact. Drawback would be that this reduces seqlock
-> > guard scope (would not be active any more during runtime spent for calculations,
-> > i.e. another update may happen during that calculation time),
-> > but then that function's purpose merely is to provide a *consistent
-> > one-time probe* of a continually updated value anyway, so it does not
-> > matter if we happen to return values of one update less
-> > than is already available.
+On Wed, 30 Oct 2013, Stefano Stabellini wrote:
+> On Tue, 29 Oct 2013, Russell King - ARM Linux wrote:
+> > So... what I'm saying is please fix xgmac to use the DMA API properly
+> > rather than working around such problems. :)
+>  
+> OK.
+> Would the appended patch fix your concerns?
+
+ping?
+
+> ---
 > 
-> I'm not sure I really understand what you mean here. But I don't think we can do the
-> iowait_start/iowait_time probe only once. The retry part is necessary to make
-> sure that we have coherent results against a given update sequence. Otherwise we
-> need to use pure exclusive locks, like spinlocks. If we find out that there are issues
-> wrt. readers starvations or livelocks, may be we'll do this but I believe that won't
-> be needed.
-
-Seqlocks are of course a good way to properly guard consistency
-while updates ongoing, and such handling *is* required like is being
-done here (or, alternatively similar to that).
-
-I was just indicating that it might make sense to draw a minimalist-data
-watch "view" from some updated-values area, to enable then doing the final
-(and a possibly expensive!) calculation *post-seqlock*, i.e. processing these
-stack-local helpers only once values consistency was successfully verified.
-
-In your case here, the extraneous inner-seqlock handling merely consists
-of few subtractions/additions, so it quite likely does not make sense
-to actively move those values over into stack-local *copies*
-(especially since having ongoing update activity occurring
-probably won't be a hotpath case),
-but for some other cases of seqlock use that might be useful, to minimize
-within-seqlock handling overhead.
-
-
-> I think I'm going to respin this series but move back the iowait time update part to
-> the idle code. The update made in io_schedule() doesn't work since we really need it
-> to account iowait time when the CPU is idle only: idle time accounting itself depend
-> on it, and the callers of get_...time_us() rely on that too. Plus doing the update
-> only when the CPU is idle will result in less overhead.
-
-OK, probably (I haven't quite fully analyzed it).
-But it would be good to achieve rectifying handling
-to make calculation of cumulative I/O wait time of a runqueue element
-properly account for the asymmetric case (this-initiating-cpu that-ending-cpu).
-And frankly I'm still confused about what kind of valuable property
-exactly it is that we're measuring here... (I/O wait time while CPU idle,
-especially in the distributed-SMP case). The criteria seem murky.
-
-Hmm, unless... we're talking a truly properly CPU-agnostic "global" accounting
-which properly registers the delta which extends
-from start-I/O with *all CPUs now idle*
-to that I/O being finished (on *whichever* CPU!!),
-*and with all intermediate time periods of _any_ CPUs non-idle properly excluded*.
-
-So, from my limited analysis/understanding, a precise implementation of
-that accounting
-to me seems to have (at least?) the following responsibilities:
-- ensure properly isolated *per-runqueue-element attribution*
-  of I/O-while-CPUs-fully-idle cumulative time, belonging to *that*
-  runqueue element
-- ensure an accounting which properly starts attributing *any* ongoing I/O
-  activities to idle-time I/O once all CPUs went idle
-- ensure an accounting which does proper *exclusion*
-  of any intermediate *non-idle* periods (i.e., whenever *even a single CPU*
-  exited idle state)
-
-That AFAICS is the only way that this accounting would make sense on a non-UP
-system.
-
-Right? Or what exactly would the purpose/justification/implementation
-of such idle-CPU I/O wait time accounting be, especially on SMP?
-
-And try to view it in that light:
-1. what is the maximally correct way to implement such accounting?
-2. how to do that maximally efficiently?
-3. with in-kernel handling now perfect,
-   how to accommodate existing (potentially mal-defined) user-side APIs?
-
-Andreas Mohr
+> arm: make SWIOTLB available
+> 
+> IOMMU_HELPER is needed because SWIOTLB calls iommu_is_span_boundary,
+> provided by lib/iommu_helper.c.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+> Changes in v9:
+> - remove uneeded include asm/cacheflush.h;
+> - just return 0 if !dev->dma_mask in dma_capable.
+> 
+> ---
+>  arch/arm/Kconfig                   |    6 ++++++
+>  arch/arm/include/asm/dma-mapping.h |   33 +++++++++++++++++++++++++++++++++
+>  2 files changed, 39 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 1ad6fb6..b08374f 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -1872,6 +1872,12 @@ config CC_STACKPROTECTOR
+>  	  neutralized via a kernel panic.
+>  	  This feature requires gcc version 4.2 or above.
+>  
+> +config SWIOTLB
+> +	def_bool y
+> +
+> +config IOMMU_HELPER
+> +	def_bool SWIOTLB
+> +
+>  config XEN_DOM0
+>  	def_bool y
+>  	depends on XEN
+> diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+> index 5b579b9..1ad2c17 100644
+> --- a/arch/arm/include/asm/dma-mapping.h
+> +++ b/arch/arm/include/asm/dma-mapping.h
+> @@ -86,6 +86,39 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
+>  }
+>  #endif
+>  
+> +static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+> +{
+> +	unsigned int offset = paddr & ~PAGE_MASK;
+> +	return pfn_to_dma(dev, __phys_to_pfn(paddr)) + offset;
+> +}
+> +
+> +static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
+> +{
+> +	unsigned int offset = dev_addr & ~PAGE_MASK;
+> +	return __pfn_to_phys(dma_to_pfn(dev, dev_addr)) + offset;
+> +}
+> +
+> +static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
+> +{
+> +	u64 limit, mask;
+> +
+> +	if (!dev->dma_mask)
+> +		return 0;
+> +
+> +	mask = *dev->dma_mask;
+> +
+> +	limit = (mask + 1) & ~mask;
+> +	if (limit && size > limit)
+> +		return 0;
+> +
+> +	if ((addr | (addr + size - 1)) & ~mask)
+> +		return 0;
+> +
+> +	return 1;
+> +}
+> +
+> +static inline void dma_mark_clean(void *addr, size_t size) { }
+> +
+>  /*
+>   * DMA errors are defined by all-bits-set in the DMA address.
+>   */
+> -- 
+> 1.7.2.5
+> 
