@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab3KDRwv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 12:52:51 -0500
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:40651 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753386Ab3KDRwt (ORCPT
+	id S1753753Ab3KDR71 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 12:59:27 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37895 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751854Ab3KDR7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 12:52:49 -0500
-Date: Mon, 4 Nov 2013 18:52:45 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, Davidlohr Bueso <davidlohr@hp.com>,
+	Mon, 4 Nov 2013 12:59:25 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, aswin@hp.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH] mm: cache largest vma
-Message-ID: <20131104175245.GA19517@gmail.com>
-References: <1383337039.2653.18.camel@buesod1.americas.hpqcorp.net>
- <20131103101234.GB5330@gmail.com>
- <1383538810.2373.22.camel@buesod1.americas.hpqcorp.net>
- <20131104070500.GE13030@gmail.com>
- <20131104142001.GE9299@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131104142001.GE9299@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Xenia Ragiadakou <burzalodowa@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 27/29] tools lib traceevent: Check for spaces in character array
+Date: Mon,  4 Nov 2013 14:59:05 -0300
+Message-Id: <1383587947-17419-28-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1383587947-17419-1-git-send-email-acme@infradead.org>
+References: <1383587947-17419-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Currently when using the raw format for fields, when looking at a
+character array, to determine if it is a string or not, we make sure all
+characters are "isprint()". If not, then we consider it a numeric array,
+and print the hex numbers of the characters instead.
 
-> On Mon, Nov 04, 2013 at 08:05:00AM +0100, Ingo Molnar wrote:
-> > 
-> > * Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > 
-> > > Btw, do you suggest using a high level tool such as perf for getting 
-> > > this data or sprinkling get_cycles() in find_vma() -- I'd think that the 
-> > > first isn't fine grained enough, while the later will probably variate a 
-> > > lot from run to run but the ratio should be rather constant.
-> > 
-> > LOL - I guess I should have read your mail before replying to it ;-)
-> > 
-> > Yes, I think get_cycles() works better in this case - not due to 
-> > granularity (perf stat will report cycle granular just fine), but due 
-> > to the size of the critical path you'll be measuring. You really want 
-> > to extract the delta, because it's probably so much smaller than the 
-> > overhead of the workload itself.
-> > 
-> > [ We still don't have good 'measure overhead from instruction X to 
-> >   instruction Y' delta measurement infrastructure in perf yet, 
-> >   although Frederic is working on such a trigger/delta facility AFAIK. 
-> >   ]
-> 
-> Yep, in fact Jiri took it over and he's still working on it. But yeah, 
-> once that get merged, we should be able to measure instructions or 
-> cycles inside any user or kernel function through kprobes/uprobes or 
-> function graph tracer.
+But it seems that '\n' fails the isprint() check! Add isspace() to the
+check as well, such that if all characters pass isprint() or isspace()
+it will assume the character array is a string.
 
-So, what would be nice is to actually make use of it: one very nice 
-usecase I'd love to see is to have the capability within the 'perf top' 
-TUI annotated assembly output to mark specific instructions as 'start' and 
-'end' markers, and measure the overhead between them.
+Reported-by: Xenia Ragiadakou <burzalodowa@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Xenia Ragiadakou <burzalodowa@gmail.com>
+Link: http://lkml.kernel.org/r/20131101215501.465091682@goodmis.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/lib/traceevent/event-parse.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I.e. allow perf top / perf report to manage probes into interesting 
-functions - or create a similar TUI for 'perf probe' to allow easy live 
-marking/probing of various kernel functionality.
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index e1c743c52834..85cbbddb6880 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -3981,7 +3981,7 @@ static int is_printable_array(char *p, unsigned int len)
+ 	unsigned int i;
+ 
+ 	for (i = 0; i < len && p[i]; i++)
+-		if (!isprint(p[i]))
++		if (!isprint(p[i]) && !isspace(p[i]))
+ 		    return 0;
+ 	return 1;
+ }
+-- 
+1.8.1.4
 
-Thanks,
-
-	Ingo
