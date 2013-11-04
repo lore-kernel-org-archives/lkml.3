@@ -1,101 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336Ab3KDKhr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 05:37:47 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:50987 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750718Ab3KDKhq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 05:37:46 -0500
-Date: Mon, 4 Nov 2013 10:37:39 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: matt.fleming@intel.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] efi earlyprintk fix
-Message-ID: <20131104103739.GD21688@console-pimps.org>
-References: <20131103121647.GA4770@dhcp-16-126.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131103121647.GA4770@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752770Ab3KDKl6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 05:41:58 -0500
+Received: from mga14.intel.com ([143.182.124.37]:64446 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750829Ab3KDKl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 05:41:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="384327126"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Nadia Yvette Chambers <nyc@holomorphy.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>
+In-Reply-To: <1382449940-24357-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1382449940-24357-1-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: RE: [PATCH] x86, mm: get ASLR work for hugetlb mappings
+Content-Transfer-Encoding: 7bit
+Message-Id: <20131104104152.72F91E0090@blue.fi.intel.com>
+Date: Mon,  4 Nov 2013 12:41:52 +0200 (EET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 03 Nov, at 08:16:47PM, Dave Young wrote:
+Kirill A. Shutemov wrote:
+> Matthew noticed that hugetlb doesn't participate in ASLR on x86-64.
+> The reason is genereic hugetlb_get_unmapped_area() which is used on
+> x86-64. It doesn't support randomization and use bottom-up unmapped area
+> lookup, instead of usual top-down on x86-64.
 > 
-> there's below one line shift problem:
+> x86 has arch-specific hugetlb_get_unmapped_area(), but it's used only on
+> x86-32.
 > 
->                      ACPI=0xdabfe000  ACPI 2.0=0xdabfe014  SMBIOS=0xdaa9e000
-> [    0.000000] efi:  
+> Let's use arch-specific hugetlb_get_unmapped_area() on x86-64 too.
+> It fixes the issue and make hugetlb use top-down unmapped area lookup.
 > 
-> In fact check efi_y and the lfb_height should be compared at the begin of the
-> loop of early_efi_write
- 
-Hmm... this is interesting. I can't produce this on any of my machines.
-Where did you see this? What hardware?
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Cc: Matthew Wilcox <willy@linux.intel.com>
 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
-> ---
->  arch/x86/platform/efi/early_printk.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- linux-2.6.orig/arch/x86/platform/efi/early_printk.c
-> +++ linux-2.6/arch/x86/platform/efi/early_printk.c
-> @@ -106,6 +106,15 @@ early_efi_write(struct console *con, con
->  		if (count > linemax)
->  			count = linemax;
->  
-> +		if (efi_y + font->height >= si->lfb_height) {
-> +			u32 i;
-> +
-> +			efi_y -= font->height;
-> +			early_efi_scroll_up();
-> +
-> +			for (i = 0; i < font->height; i++)
-> +				early_efi_clear_scanline(efi_y + i);
-> +		}
->  		for (h = 0; h < font->height; h++) {
->  			unsigned int n, x;
->  
-> @@ -142,15 +151,6 @@ early_efi_write(struct console *con, con
->  			efi_y += font->height;
->  		}
->  
-> -		if (efi_y + font->height >= si->lfb_height) {
-> -			u32 i;
-> -
-> -			efi_y -= font->height;
-> -			early_efi_scroll_up();
-> -
-> -			for (i = 0; i < font->height; i++)
-> -				early_efi_clear_scanline(efi_y + i);
-> -		}
->  	}
->  }
-
-Notice how we figure out the initial value of efi_y...
-
-static __init int early_efi_setup(struct console *con, char *options)
-{
-	struct screen_info *si;
-	u16 xres, yres;
-	u32 i;
-
-	si = &boot_params.screen_info;
-	xres = si->lfb_width;
-	yres = si->lfb_height;
-
-	....
-
-	efi_y = rounddown(yres, font->height) - font->height;
-
-Every time we enter early_efi_write(), we should have enough space to
-write one line, so I'm not at all sure what's going wrong with your
-display.
+Andrew, any comments?
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+ Kirill A. Shutemov
