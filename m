@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab3KDI77 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 03:59:59 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:55292 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932Ab3KDI76 (ORCPT
+	id S1753073Ab3KDJAl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 04:00:41 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:32967 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752209Ab3KDJAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 03:59:58 -0500
-X-AuditID: 9c93017d-b7bc7ae000000533-3c-5277620cecd4
-From: Namhyung Kim <namhyung@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch methods (v6)
-References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
-	<20131102155458.GA6981@redhat.com> <87ob60366m.fsf@sejong.aot.lge.com>
-Date: Mon, 04 Nov 2013 17:59:56 +0900
-In-Reply-To: <87ob60366m.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
-	"Mon, 04 Nov 2013 17:46:41 +0900")
-Message-ID: <87fvrc35kj.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 4 Nov 2013 04:00:41 -0500
+Message-ID: <52776234.7030901@free-electrons.com>
+Date: Mon, 04 Nov 2013 10:00:36 +0100
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: kernel@pengutronix.de, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: imx: removed unused MACH_MXLADS Kconfig parameter
+References: <1383542366-6270-1-git-send-email-michael.opdenacker@free-electrons.com> <20131104085146.GT24559@pengutronix.de>
+In-Reply-To: <20131104085146.GT24559@pengutronix.de>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 04 Nov 2013 17:46:41 +0900, Namhyung Kim wrote:
-> On Sat, 2 Nov 2013 16:54:58 +0100, Oleg Nesterov wrote:
->> - this only allows to read the data from the same binary.
+Hi Sascha,
+
+On 11/04/2013 09:51 AM, Sascha Hauer wrote:
+> On Mon, Nov 04, 2013 at 06:19:26AM +0100, Michael Opdenacker wrote:
+>> This removes the MACH_MXLADS Kconfig parameter,
+>> which was no longer used anywhere in the source code
+>> and Makefiles.
+> Hehe, this one is a bit tricky. Indeed MACH_MXLADS isn't used directly
+> anywhere. Nevertheless having CONFIG_MACH_MXLADS defined makes
+> machine_is_mxlads() become true when the kernel is started with a
+> machine id of 1851.
+Oops, that's right, got it! Thanks!
 >
-> Right.  This is also an unnecessary restriction.  We should be able to
-> access data in other binary.
+> machine_is_mxlads() is unused in the kernel, so this patch indeed
+> doesn't hurt. Anyway, the code is correct currently, so I suggest
+> keeping it until the mx[1l]ads is either removed or converted to
+> devicetree.
+Sounds good to me.
 
-Hmm.. I guess this gonna be not simple - perhaps it can only be
-supported for per-process uprobe with known virtual addresses?
+Thanks for your review!
 
-Thanks,
-Namhyung
+Cheers,
+
+Michael.
+
+-- 
+Michael Opdenacker, CEO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
+
