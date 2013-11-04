@@ -1,127 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab3KDSjX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 13:39:23 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:23961 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab3KDSjW (ORCPT
+	id S1752940Ab3KDSk6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 13:40:58 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57318 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849Ab3KDSk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 13:39:22 -0500
-X-IronPort-AV: E=Sophos;i="4.93,634,1378857600"; 
-   d="scan'208";a="67843095"
-Date: Mon, 4 Nov 2013 18:38:05 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: <linux@arm.linux.org.uk>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>, <will.deacon@arm.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: Re: [PATCH v9 01/18] arm: make SWIOTLB available
-In-Reply-To: <alpine.DEB.2.02.1310300112520.26077@kaball.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1311041837430.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com> <1382698313-13161-1-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1310251206450.26077@kaball.uk.xensource.com> <alpine.DEB.2.02.1310290441260.26077@kaball.uk.xensource.com>
- <20131029142023.GE20487@phenom.dumpdata.com> <20131029142626.GQ16735@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1310291716120.26077@kaball.uk.xensource.com> <20131029180105.GR16735@n2100.arm.linux.org.uk>
- <alpine.DEB.2.02.1310300112520.26077@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 4 Nov 2013 13:40:56 -0500
+Date: Mon, 4 Nov 2013 10:39:32 -0800
+From: Mark Brown <broonie@kernel.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: NeilBrown <neilb@suse.de>, MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Belisko Marek <marek.belisko@gmail.com>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Message-ID: <20131104183932.GQ2493@sirena.org.uk>
+References: <20131101205005.659ba606@notabene.brown>
+ <20131101171643.GA2643@kartoffel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Uc2nn8srCdMFAHlk"
+Content-Disposition: inline
+In-Reply-To: <20131101171643.GA2643@kartoffel>
+X-Cookie: You love peace.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 209.49.225.226
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] extcon-gpio: add devicetree support.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Oct 2013, Stefano Stabellini wrote:
-> On Tue, 29 Oct 2013, Russell King - ARM Linux wrote:
-> > So... what I'm saying is please fix xgmac to use the DMA API properly
-> > rather than working around such problems. :)
->  
-> OK.
-> Would the appended patch fix your concerns?
 
-ping?
+--Uc2nn8srCdMFAHlk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> ---
-> 
-> arm: make SWIOTLB available
-> 
-> IOMMU_HELPER is needed because SWIOTLB calls iommu_is_span_boundary,
-> provided by lib/iommu_helper.c.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> Changes in v9:
-> - remove uneeded include asm/cacheflush.h;
-> - just return 0 if !dev->dma_mask in dma_capable.
-> 
-> ---
->  arch/arm/Kconfig                   |    6 ++++++
->  arch/arm/include/asm/dma-mapping.h |   33 +++++++++++++++++++++++++++++++++
->  2 files changed, 39 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 1ad6fb6..b08374f 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1872,6 +1872,12 @@ config CC_STACKPROTECTOR
->  	  neutralized via a kernel panic.
->  	  This feature requires gcc version 4.2 or above.
->  
-> +config SWIOTLB
-> +	def_bool y
-> +
-> +config IOMMU_HELPER
-> +	def_bool SWIOTLB
-> +
->  config XEN_DOM0
->  	def_bool y
->  	depends on XEN
-> diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-> index 5b579b9..1ad2c17 100644
-> --- a/arch/arm/include/asm/dma-mapping.h
-> +++ b/arch/arm/include/asm/dma-mapping.h
-> @@ -86,6 +86,39 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
->  }
->  #endif
->  
-> +static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
-> +{
-> +	unsigned int offset = paddr & ~PAGE_MASK;
-> +	return pfn_to_dma(dev, __phys_to_pfn(paddr)) + offset;
-> +}
-> +
-> +static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
-> +{
-> +	unsigned int offset = dev_addr & ~PAGE_MASK;
-> +	return __pfn_to_phys(dma_to_pfn(dev, dev_addr)) + offset;
-> +}
-> +
-> +static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
-> +{
-> +	u64 limit, mask;
-> +
-> +	if (!dev->dma_mask)
-> +		return 0;
-> +
-> +	mask = *dev->dma_mask;
-> +
-> +	limit = (mask + 1) & ~mask;
-> +	if (limit && size > limit)
-> +		return 0;
-> +
-> +	if ((addr | (addr + size - 1)) & ~mask)
-> +		return 0;
-> +
-> +	return 1;
-> +}
-> +
-> +static inline void dma_mark_clean(void *addr, size_t size) { }
-> +
->  /*
->   * DMA errors are defined by all-bits-set in the DMA address.
->   */
-> -- 
-> 1.7.2.5
-> 
+On Fri, Nov 01, 2013 at 10:16:44AM -0700, Mark Rutland wrote:
+> On Fri, Nov 01, 2013 at 09:50:05AM +0000, NeilBrown wrote:
+
+> > + - label: name for connector.  If not given, device name is used.
+
+> Are extcon devices ever used standalone? If so, why?
+
+They are sometimes used for things that don't have/need any other
+software representation in the system like detection of attachment of
+covers or as bundles for other connectors (like the Apple 30 pin cables,
+they have the base connector with multiple possible things connected on
+it).
+
+> If not I see _no_ reason at all for the label property. If a userspace
+> application needs to detect the presence of a particular external connector, it
+> will need to know this in relation to the device the external connectors are
+> attached to. In that case the application should find that device and traverse
+> its set of extcon devices. The names for the external connections will be a
+> property of the device, not the extcon devices themselves (along hte same lines
+> as clocks), and need not be a property of the extcon device.
+
+This is often done for user display purposes rather than for the
+application and is sometimes done from the perspective of "what's
+plugged into my system" (eg, helping someone cable up their system)
+rather than from the point of view of using an individual device.
+
+For example the HDA spec connector objects include information like the
+connector label (ie, writing on the case) and colour as part of the
+object for the connector and DMI does similar things for PCI slots.
+
+--Uc2nn8srCdMFAHlk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSd+naAAoJELSic+t+oim9dJQP/i8dJjYJQCSQD1mqGhxWqy9U
+3wNdJyFp1l2Y9P1GIMPhbc+NEhkf4oXl3INdq2eKy9puMIslJV3wyyHSGSWcjXkF
+gxfn82FnjV5uwZOS1IqNEUqqt2NJ8l7gYV7yWy1V751UYO1eg58FBfkr6tTPw6tK
+6CJr9RVln08WSVh4kybtucGrQhWRF2hhBdzHsQFfbJuufJv0IzpfdQ3X2qC0vzUE
+ttINznW8lOhV60kylD4rwjOtWPBCsvHIJWsh3gWAWqpgcag3gMgEmc/Hb2U8cQ3b
+sQ+JYLW5/KMvyDtG1DR2zo6X2CrRZ0t8GDLKNfbJmiNgFiABbO+jPyKYJs9TZcV1
+eHxzfoaxO683xAl86LXlS+0OHa8iHdDi8gsmnXrJUA5uFwzGNXvJtmpdDgP+fPxr
+a2DWtA543S871gUYcWnzGgXiYXxrOYZUebHifU3BIEhc0XgAtNgotBf3QPPHFZwp
+8RP6JDoZX6lBFBuxjJingHWND4faAhc6BfuOoFrcsKevYG5UhQTjYPdjBw5lR1eD
+1MrvJRb1jvWOi6yJdXOIBsDwBAusVRJh3Q9NO1Vi3mv90vca2Jj+5ArHSDwoymP2
+9So0N03S5JzPxWNFas5y4Gk3JfjSeTOV0Izemnew7Nya+07ltmhD66OY+NA9I2Q4
+w+I36qbXe8fvgbDYpldR
+=jiya
+-----END PGP SIGNATURE-----
+
+--Uc2nn8srCdMFAHlk--
