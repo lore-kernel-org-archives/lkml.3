@@ -1,97 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319Ab3KDCdV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 21:33:21 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:59013 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751269Ab3KDCdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 21:33:20 -0500
-X-IronPort-AV: E=Sophos;i="4.93,629,1378828800"; 
-   d="scan'208";a="8937031"
-Message-ID: <527705F3.50407@cn.fujitsu.com>
-Date: Mon, 04 Nov 2013 10:26:59 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: bpm@sgi.com, elder@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH] xfs: simplify kmem_{zone_}zalloc
-References: <52738187.1000807@cn.fujitsu.com> <20131101205803.GQ4446@dastard>
-In-Reply-To: <20131101205803.GQ4446@dastard>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/04 10:31:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/04 10:31:17,
-	Serialize complete at 2013/11/04 10:31:17
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751317Ab3KDCgq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 21:36:46 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:44317 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab3KDCgo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 21:36:44 -0500
+X-AuditID: cbfee68e-b7f416d0000020d6-fd-52770835ae72
+Message-id: <52770837.5000901@samsung.com>
+Date: Mon, 04 Nov 2013 11:36:39 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+Cc: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        "Zhang, Dongxing" <dongxing.zhang@intel.com>
+Subject: Re: [PATCH] [extcon]:remove freed groups caused the panic or warning
+ in unregister flow
+References: <1383346094.2702.16.camel@wxm-ubuntu>
+ <5276FBB5.1020506@samsung.com>
+ <FA47D36D6EC9FE4CB463299737C09B9901B6467C@SHSMSX102.ccr.corp.intel.com>
+In-reply-to: <FA47D36D6EC9FE4CB463299737C09B9901B6467C@SHSMSX102.ccr.corp.intel.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsWyRsSkUNeMozzI4EoDq8X0L/uYLRZ/m8Js
+	cXnXHDaL240r2Cwut79jc2D1WLznJZNH35ZVjB6fN8kFMEdx2aSk5mSWpRbp2yVwZXSvOMlU
+	8E204treT0wNjNcEuxg5OSQETCROn9/NCGGLSVy4t56ti5GLQ0hgKaPE2ZnzWWCKfj9bwAqR
+	WMQoMffJI2YI5xWjxNqmY8wgVbwCWhLbtz1jA7FZBFQlps1ZAGazAcX3v7gBZosKhEmsnH6F
+	BaJeUOLH5HtgtoiAnsSSN7fBVjML3GKU2NkylR0kISyQJDHt6zOwIiGBOYwS/2ZUgNicQIP6
+	dm8FizMLqEtMmreIGcKWl9i85i0zxNmb2CWO7Q6COEhA4tvkQ0D1HEBxWYlNB6BKJCUOrrjB
+	MoFRbBaSk2YhmToLydQFjMyrGEVTC5ILipPSi4z0ihNzi0vz0vWS83M3MQIj6vS/Z307GG8e
+	sD7EmAy0ciKzlGhyPjAi80riDY3NjCxMTUyNjcwtzUgTVhLnXfQwKUhIID2xJDU7NbUgtSi+
+	qDQntfgQIxMHp1QDY/GZprMilTlT92jNu/Fv1uy2lWqPVzaaVT0/ZcObar353HtOd8P3hgnr
+	4pc9CBEwldgnoxY36fHkHxsOvrj/ymCx1sdG8YqOd6nmG2yW5x4Wt9ip0N4j6n5jzSnd7a8v
+	GjruPX6gr3XG2+RendkCpqfuWjf5hhhH7LvXPpulWJd5peKlxvOxb5RYijMSDbWYi4oTAWMp
+	6UG+AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkleLIzCtJLcpLzFFi42I5/e+xgK4pR3mQwZ85VhbTv+xjtlj8bQqz
+	xeVdc9gsbjeuYLO43P6OzYHVY/Gel0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZdu
+	q+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RTSaEsMacUKBSQWFyspG+HaUJoiJuu
+	BUxjhK5vSBBcj5EBGkhYw5jRveIkU8E30Yprez8xNTBeE+xi5OSQEDCR+P1sASuELSZx4d56
+	ti5GLg4hgUWMEnOfPGKGcF4xSqxtOsYMUsUroCWxfdszNhCbRUBVYtqcBWA2G1B8/4sbYLao
+	QJjEyulXWCDqBSV+TL4HZosI6EkseXMbbAOzwC1GiZ0tU9lBEsICSRLTvj4DKxISmMMo8W9G
+	BYjNCTSob/dWsDizgLrEpHmLmCFseYnNa94yT2AUmIVkxywkZbOQlC1gZF7FKJpakFxQnJSe
+	a6hXnJhbXJqXrpecn7uJERyxz6R2MK5ssDjEKMDBqMTDK3G5LEiINbGsuDL3EKMEB7OSCK/z
+	OaAQb0piZVVqUX58UWlOavEhxmRgEExklhJNzgcmk7ySeENjEzMjSyNzQwsjY3PShJXEeQ+0
+	WgcKCaQnlqRmp6YWpBbBbGHi4JRqYJw2gS9bkSHNjMn32MnrF6bNnXzQNdbWK6VVXZq9ReDD
+	rF2L/nY8lT70XD+rPWfuzJLyZxM/CstvOmn3UEby0ZHdnssZtxzuX1ys9Tz3rP2K9ep75nq4
+	fVi650FTjcqjD4x73yyqfcoV4T390Z0zE0pS+4yW6u+YvkTvjZ+LsRv76qsbAvb8q/2jxFKc
+	kWioxVxUnAgAcCTNWRwDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
-On 11/02/2013 04:58 AM, Dave Chinner wrote:
-
-> On Fri, Nov 01, 2013 at 06:25:11PM +0800, Gu Zheng wrote:
->> Introduce flag KM_ZERO which is used to alloc zeroed entry, and convert
->> kmem_{zone_}zalloc to call kmem_{zone_}alloc() with KM_ZERO directly,
->> in order to avoid the setting to zero step.
+On 11/04/2013 11:07 AM, Wang, Xiaoming wrote:
+> Dear Choi
+> 
+> -----Original Message-----
+> From: Chanwoo Choi [mailto:cw00.choi@samsung.com] 
+> Sent: Monday, November 04, 2013 9:43 AM
+> To: Wang, Xiaoming
+> Cc: myungjoo.ham@samsung.com; linux-kernel@vger.kernel.org; Liu, Chuansheng; Zhang, Dongxing
+> Subject: Re: [PATCH] [extcon]:remove freed groups caused the panic or warning in unregister flow
+> 
+> Hi Wang,
+> 
+>>  drivers/extcon/extcon-class.c |    3 ++-
+>>  1 files changed, 2 insertions(+), 1 deletions(-)
 >>
->>
->> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
->> ---
->>  fs/xfs/kmem.c |   14 ++------------
->>  fs/xfs/kmem.h |    7 ++++++-
->>  2 files changed, 8 insertions(+), 13 deletions(-)
->>
->> diff --git a/fs/xfs/kmem.c b/fs/xfs/kmem.c
->> index a02cfb9..d56fcc9 100644
->> --- a/fs/xfs/kmem.c
->> +++ b/fs/xfs/kmem.c
->> @@ -65,12 +65,7 @@ kmem_alloc(size_t size, xfs_km_flags_t flags)
->>  void *
->>  kmem_zalloc(size_t size, xfs_km_flags_t flags)
->>  {
->> -	void	*ptr;
->> -
->> -	ptr = kmem_alloc(size, flags);
->> -	if (ptr)
->> -		memset((char *)ptr, 0, (int)size);
->> -	return ptr;
->> +	return kmem_alloc(size, flags | KM_ZERO);
->>  }
+>> diff --git a/drivers/extcon/extcon-class.c 
+>> b/drivers/extcon/extcon-class.c index 148382f..48f4669 100644
+>> --- a/drivers/extcon/extcon-class.c
+>> +++ b/drivers/extcon/extcon-class.c
+>> @@ -794,6 +794,8 @@ void extcon_dev_unregister(struct extcon_dev *edev)
+>>  		return;
+>>  	}
 >>  
->>  void *
->> @@ -132,10 +127,5 @@ kmem_zone_alloc(kmem_zone_t *zone, xfs_km_flags_t flags)
->>  void *
->>  kmem_zone_zalloc(kmem_zone_t *zone, xfs_km_flags_t flags)
->>  {
->> -	void	*ptr;
->> -
->> -	ptr = kmem_zone_alloc(zone, flags);
->> -	if (ptr)
->> -		memset((char *)ptr, 0, kmem_cache_size(zone));
->> -	return ptr;
->> +	return kmem_zone_alloc(zone, flags | KM_ZERO);
+>> +	device_unregister(edev->dev);
+>> +
+>>  	if (edev->mutually_exclusive && edev->max_supported) {
+>>  		for (index = 0; edev->mutually_exclusive[index];
+>>  				index++)
+>> @@ -814,7 +816,6 @@ void extcon_dev_unregister(struct extcon_dev *edev)
+>>  	if (switch_class)
+>>  		class_compat_remove_link(switch_class, edev->dev, NULL);  #endif
+>> -	device_unregister(edev->dev);
+>>  	put_device(edev->dev);
 >>  }
+>>  EXPORT_SYMBOL_GPL(extcon_dev_unregister);
+>>
 > 
-> These functions should be made static inline functions in kmem.h
-> seeing as they are now just a simple wrapper.
-
-Agree. Thanks for your suggestion, I'll follow it.
-
+> I think we could only apply following patch instead of moving the position of device_unregister().
 > 
-> Otherwise it's a nice cleanup.
-
-Thanks:)
-
-Regards,
-Gu
-
+> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c index 148382f..ff27b19 100644
+> --- a/drivers/extcon/extcon-class.c
+> +++ b/drivers/extcon/extcon-class.c
+> @@ -805,10 +805,8 @@ void extcon_dev_unregister(struct extcon_dev *edev)
+>         for (index = 0; index < edev->max_supported; index++)
+>                 kfree(edev->cables[index].attr_g.name);
+>  
+> -       if (edev->max_supported) {
+> -               kfree(edev->extcon_dev_type.groups);
+> +       if (edev->max_supported)
+>                 kfree(edev->cables);
+> -       }
+>  
+>  #if defined(CONFIG_ANDROID)
+>         if (switch_class)
 > 
-> Cheers,
+> Thanks,
+> Chanwoo Choi
 > 
-> Dave.
+> 	I don't agree with you.
+> 	Why do not you want moving the position of device_unregister()?
+> 	It will cause the memory leak if has not kfree edev->extcon_dev_type.groups as your patch do firstly. And if you think kfree edev->extcon_dev_type.groups is meaningless well then kfree edev->extcon_dev_type.groups in function exton_dev_register (line 756)also should be removed I think. What do you think?
+> 
+
+As you comment, my opinion has memory leak problem. My mistake.
+But, I prefer to call 'device_unregister' at the end of extcon_dev_unregister().
+To resolve kernel panic, I think we could use 'devm_kzalloc' instead of kzalloc/kfree.
+What is your opinion about my approach?
+
+Thanks,
+Chanwoo Choi
 
 
