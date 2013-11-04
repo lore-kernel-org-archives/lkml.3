@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab3KDHgp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 02:36:45 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:36682 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242Ab3KDHgo (ORCPT
+	id S1752329Ab3KDIGJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 03:06:09 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49852 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751519Ab3KDIGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 02:36:44 -0500
-Date: Mon, 4 Nov 2013 08:36:40 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: cache largest vma
-Message-ID: <20131104073640.GF13030@gmail.com>
-References: <1383337039.2653.18.camel@buesod1.americas.hpqcorp.net>
- <CA+55aFwrtOaFtwGc6xyZH6-1j3f--AG1JS-iZM8-pZPnwRHBow@mail.gmail.com>
- <1383537862.2373.14.camel@buesod1.americas.hpqcorp.net>
+	Mon, 4 Nov 2013 03:06:07 -0500
+X-AuditID: 9c930179-b7b8dae000001b3d-54-5277556d2a93
+From: Namhyung Kim <namhyung@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a ring buffer
+References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
+	<1383029621-7384-11-git-send-email-namhyung@kernel.org>
+	<20131031181654.GA11208@redhat.com>
+Date: Mon, 04 Nov 2013 17:06:05 +0900
+In-Reply-To: <20131031181654.GA11208@redhat.com> (Oleg Nesterov's message of
+	"Thu, 31 Oct 2013 19:16:54 +0100")
+Message-ID: <87y554382a.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383537862.2373.14.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Oleg,
 
-* Davidlohr Bueso <davidlohr@hp.com> wrote:
+On Thu, 31 Oct 2013 19:16:54 +0100, Oleg Nesterov wrote:
+> On 10/29, Namhyung Kim wrote:
+>>
+>> @@ -630,6 +653,19 @@ probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
+>>  	if (trace_probe_is_enabled(&tu->p))
+>>  		return -EINTR;
+>>  
+>> +	if (atomic_inc_return(&uprobe_buffer_ref) == 1) {
+>> +		int cpu;
+>> +
+>> +		uprobe_cpu_buffer = __alloc_percpu(PAGE_SIZE, PAGE_SIZE);
+>> +		if (uprobe_cpu_buffer == NULL) {
+>> +			atomic_dec(&uprobe_buffer_ref);
+>> +			return -ENOMEM;
+>> +		}
+>> +
+>> +		for_each_possible_cpu(cpu)
+>> +			mutex_init(&per_cpu(uprobe_cpu_mutex, cpu));
+>> +	}
+>> +
+>>  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+>>  
+>>  	tu->p.flags |= flag;
+>> @@ -646,6 +682,11 @@ static void probe_event_disable(struct trace_uprobe *tu, int flag)
+>>  	if (!trace_probe_is_enabled(&tu->p))
+>>  		return;
+>>  
+>> +	if (atomic_dec_and_test(&uprobe_buffer_ref)) {
+>> +		free_percpu(uprobe_cpu_buffer);
+>> +		uprobe_cpu_buffer = NULL;
+>> +	}
+>> +
+>>  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+>
+> Do we really need atomic_t? probe_event_enable/disable is called under
+> event_mutex and we rely on this fact anyway.
 
-> I will look into doing the vma cache per thread instead of mm (I hadn't 
-> really looked at the problem like this) as well as Ingo's suggestion on 
-> the weighted LRU approach. However, having seen that we can cheaply and 
-> easily reach around ~70% hit rate in a lot of workloads, makes me wonder 
-> how good is good enough?
+Looking at the code, it seems probe_event_enable/disable() is called
+without event_mutex when it called from sys_perf_event_open().  So we
+still need to protect refcount from concurrent accesses.
 
-So I think it all really depends on the hit/miss cost difference. It makes 
-little sense to add a more complex scheme if it washes out most of the 
-benefits!
+>
+> Otherwise this logic looks racy even with atomic_t, another thread could
+> use the uninitialized uprobe_cpu_buffer/mutex if it registers another probe
+> and the handler runs before we complete the initialization, no?
 
-Also note the historic context: the _original_ mmap_cache, that I 
-implemented 16 years ago, was a front-line cache to a linear list walk 
-over all vmas (!).
-
-This is the relevant 2.1.37pre1 code in include/linux/mm.h:
-
-/* Look up the first VMA which satisfies  addr < vm_end,  NULL if none. */
-static inline struct vm_area_struct * find_vma(struct mm_struct * mm, unsigned long addr)
-{
-        struct vm_area_struct *vma = NULL;
-
-        if (mm) {
-                /* Check the cache first. */
-                vma = mm->mmap_cache;
-                if(!vma || (vma->vm_end <= addr) || (vma->vm_start > addr)) {
-                        vma = mm->mmap;
-                        while(vma && vma->vm_end <= addr)
-                                vma = vma->vm_next;
-                        mm->mmap_cache = vma;
-                }
-        }
-        return vma;
-}
-
-See that vma->vm_next iteration? It was awful - but back then most of us 
-had at most a couple of megs of RAM with just a few vmas. No RAM, no SMP, 
-no worries - the mm was really simple back then.
-
-Today we have the vma rbtree, which is self-balancing and a lot faster 
-than your typical linear list walk search ;-)
-
-So I'd _really_ suggest to first examine the assumptions behind the cache, 
-it being named 'cache' and it having a hit rate does in itself not 
-guarantee that it gives us any worthwile cost savings when put in front of 
-an rbtree ...
+But yeah, this is indeed a problem.  Thanks for pointing it out.  I'll
+put a mutex to prevent such cases.
 
 Thanks,
-
-	Ingo
+Namhyung
