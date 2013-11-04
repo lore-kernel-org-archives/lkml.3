@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331Ab3KDMoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 07:44:12 -0500
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:61112 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751311Ab3KDMoL (ORCPT
+	id S1752773Ab3KDMwE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 07:52:04 -0500
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:45795 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751929Ab3KDMwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 07:44:11 -0500
-Message-ID: <1383569048.9623.16.camel@x220.thuisdomein>
-Subject: Re: [PATCH] PCI: Workaround missing pci_set_master in pci drivers
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 04 Nov 2013 13:44:08 +0100
-In-Reply-To: <CAErSpo79xHn7RNNrbQBa49M464xryqjwi_iTPjTCnhEphkCvEg@mail.gmail.com>
-References: <CAE9FiQV8ipnQ_vV68S-QHMrUrQTWQT_XObxyBeR=dOuw6fG1eg@mail.gmail.com>
-	 <1380399187-4962-1-git-send-email-yinghai@kernel.org>
-	 <20131003220628.GA14835@google.com>
-	 <CAE9FiQVYZ2pRTs5Xsc2MKgUiWfLbSExLA-vF0HK2iy=tVw2OHA@mail.gmail.com>
-	 <CAErSpo79xHn7RNNrbQBa49M464xryqjwi_iTPjTCnhEphkCvEg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 04 Nov 2013 12:44:08.0644 (UTC) FILETIME=[8DE92040:01CED95B]
-X-RcptDomain: vger.kernel.org
+	Mon, 4 Nov 2013 07:52:01 -0500
+Date: Mon, 4 Nov 2013 13:51:53 +0100
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Olof Johansson <olof@lixom.net>, Joel Fernandes <joelf@ti.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Dan Williams <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Sekhar Nori <nsekhar@ti.com>, Matt Porter <matt.porter@linaro.org>
+Subject: Re: [PATCH 01/28] dmaengine: use DMA_COMPLETE for dma completion
+ status
+Message-ID: <20131104125152.GA27260@breakpoint.cc>
+References: <20131017020745.GA14013@intel.com>
+ <20131017142755.GA4477@breakpoint.cc>
+ <20131017134846.GG14013@intel.com>
+ <Pine.LNX.4.64.1310242326500.2900@axis700.grange>
+ <20131025042310.GC21230@intel.com>
+ <Pine.LNX.4.64.1310250813370.6186@axis700.grange>
+ <20131025054321.GD21230@intel.com>
+ <Pine.LNX.4.64.1310250840350.6186@axis700.grange>
+ <CAOesGMivD_3zSL503R0OaqyGv4Rj8qJqnbM2TdmjtxR2U63ztw@mail.gmail.com>
+ <20131030130325.GA18788@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131030130325.GA18788@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-04 at 09:55 -0600, Bjorn Helgaas wrote:
-> On Thu, Oct 3, 2013 at 5:35 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> > On Thu, Oct 3, 2013 at 3:06 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> >> On Sat, Sep 28, 2013 at 01:13:07PM -0700, Yinghai Lu wrote:
-> >>> @@ -1156,8 +1156,14 @@ static void pci_enable_bridge(struct pci
-> >>>
-> >>>       pci_enable_bridge(dev->bus->self);
-> >>>
-> >>> -     if (pci_is_enabled(dev))
-> >>> +     if (pci_is_enabled(dev)) {
-> >>> +             if (!dev->is_busmaster) {
-> >>> +                     dev_warn(&dev->dev, "driver skip pci_set_master, fix it!\n");
-> >>
-> >> I know this is already in Linus' tree, but if we're going to enable
-> >> bus mastering here, what's the point of the warning?  If somebody
-> >> fixes the driver by adding a pci_set_master() call there, does that
-> >> improve something?
-> >
-> > Help us to catch other offender and fix them.
-> 
-> What is improved by doing it in the driver instead of here?
+On 30.10.13, Vinod Koul wrote:
+> I fixed up the error with below, can you pls verify. Pls note this is compile
+> tested only!
 
-After booting v3.12 for the first time on a laptop I noticed two new
-warnings: 
-    <4>[    4.427959] pcieport 0000:00:1c.4: driver skip pci_set_master, fix it!
-    <4>[    4.448630] pcieport 0000:00:1c.1: driver skip pci_set_master, fix it!
+I tested this and my mmc driver using edma via drivers/dma seems to
+work.
+Tested-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-These warnings aren't entirely clear, but luckily they are easily
-greppable. It turns out they can be traced back to this patch.
+However you missed one piece:
 
-So some further grepping, looking at the code, etc. suggests these
-warnings could be silenced by calling pci_set_master() before calling
-pci_enable_device(). Ie, reverse the current order of those calls in
-drivers/pci/pcie/portdrv_core.c:pcie_port_device_register(). Is that
-correct? But what should then be done if pci_enable_device() fails?
+  CC [M]  sound/soc/davinci/davinci-pcm.o
+sound/soc/davinci/davinci-pcm.c: In function ‘davinci_pcm_dma_irq’:
+sound/soc/davinci/davinci-pcm.c:241: error: ‘DMA_COMPLETE’ undeclared (first use in this function)
+sound/soc/davinci/davinci-pcm.c:241: error: (Each undeclared identifier is reported only once
+sound/soc/davinci/davinci-pcm.c:241: error: for each function it appears in.)
 
-And Bjorn's question - what's the point of this warning if
-pci_set_master() will be called anyway - also came up when I looked at
-that code segment for the first time. But I'm not familiar with the PCI
-code.
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ sound/soc/davinci/davinci-pcm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/sound/soc/davinci/davinci-pcm.c b/sound/soc/davinci/davinci-pcm.c
+index 8460edc..e68ba31 100644
+--- a/sound/soc/davinci/davinci-pcm.c
++++ b/sound/soc/davinci/davinci-pcm.c
+@@ -238,7 +238,7 @@ static void davinci_pcm_dma_irq(unsigned link, u16 ch_status, void *data)
+ 	print_buf_info(prtd->ram_channel, "i ram_channel");
+ 	pr_debug("davinci_pcm: link=%d, status=0x%x\n", link, ch_status);
+ 
+-	if (unlikely(ch_status != DMA_COMPLETE))
++	if (unlikely(ch_status != EDMA_DMA_COMPLETE))
+ 		return;
+ 
+ 	if (snd_pcm_running(substream)) {
+-- 
+1.8.4.rc3
 
-Paul Bolle
-
+Sebastian
