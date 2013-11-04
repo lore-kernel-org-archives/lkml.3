@@ -1,77 +1,470 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab3KDU0d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 15:26:33 -0500
-Received: from smtp2.ispfabriek.nl ([37.251.0.169]:47152 "EHLO
-	smtp2.ispfabriek.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753425Ab3KDUVR (ORCPT
+	id S1753397Ab3KDUUA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 15:20:00 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49866 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab3KDUT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 15:21:17 -0500
-X-Greylist: delayed 490 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Nov 2013 15:21:16 EST
-Message-ID: <5277FFC5.4040204@xmsnet.nl>
-Date: Mon, 04 Nov 2013 21:12:53 +0100
-From: Hans de Bruin <jmdebruin@xmsnet.nl>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130807 Thunderbird/17.0.8
+	Mon, 4 Nov 2013 15:19:57 -0500
+Date: Mon, 4 Nov 2013 12:19:30 -0800
+From: tip-bot for Frederic Weisbecker <tipbot@zytor.com>
+Message-ID: <tip-6tyow99vgmmtt9qwr2u2lqd7@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Add time argument on COMM setting
+Git-Commit-ID: 162f0befda3becc2cc9f44075fccc030e55baec1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.12 released .. and no merge window yet .. and 4.0 plans?
-References: <CA+55aFwLkvSkparyvekdmMyvr6Srw1KkzTBp=_w0oQRWnPpJug@mail.gmail.com>
-In-Reply-To: <CA+55aFwLkvSkparyvekdmMyvr6Srw1KkzTBp=_w0oQRWnPpJug@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 04 Nov 2013 12:19:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2013 01:10 AM, Linus Torvalds wrote:
- >
-...
->
-> Anyway..
->
-> Onto a totally different topic: we're getting to release numbers where
-> I have to take off my socks to count that high again. I'm ok with
-> 3.<low teens>, but I don't want us to get to the kinds of crazy
-> numbers we had in the 2.x series, so at some point we're going to cut
-> over from 3.x to 4.x, just to keep the numbers small and easy to
-> remember. We're not there yet, but I would actually prefer to not go
-> into the twenties, so I can see it happening in a year or so, and
-> we'll have 4.0 follow 3.19 or something like that.
->
-> Now, it's just a number (since we've long since given up on
-> feature-related releases), and it's at least a year away, so why do I
-> even mention it at all?
->
-> The reason I mention it is because I've been mulling over something
-> Dirk Hohndel said during LinuxCon EU and the kernel summit. He asked
-> at the Q&A session whether we could do a release with just stability
-> and bug-fixes, and I pooh-poohed it because I didn't see most of us
-> having the attention span required for that
-> (cough*cough*moronic*woodland creature*cough*cough).
+Commit-ID:  162f0befda3becc2cc9f44075fccc030e55baec1
+Gitweb:     http://git.kernel.org/tip/162f0befda3becc2cc9f44075fccc030e55baec1
+Author:     Frederic Weisbecker <fweisbec@gmail.com>
+AuthorDate: Wed, 11 Sep 2013 16:18:24 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 4 Nov 2013 11:57:06 -0300
 
-I would not trust 4.0 as a bug free and stable kernel. Now 4.0.99 I 
-would trust. Almost that is. because some developer would have asked the 
-4.0.y maintainer to commit his one day old 4.x bugfix to the 4.0.y tree 
-before lots of people would have tested it.
+perf tools: Add time argument on COMM setting
 
-The 4.0 would only force a stable kernel maintainer to choose that 
-kernel as his next stable tree. If he does not 4.0 has no meaning at all.
+This way we can later delimit a lifecycle for the COMM and map a hist to
+a precise COMM:timeslice couple.
 
-The 4.0 also does not solve another problem. Since the regression team 
-stopped tracking bugs nobody really knows how many bugs have been 
-forgotten or ignored. There needs to be some sort of feedback-loop to 
-force people to fix problems before they invent new ones. I do not think 
-a bug-fix round once every 20 releases will accomplice that
+PERF_RECORD_COMM and PERF_RECORD_FORK events that don't have
+PERF_SAMPLE_TIME samples can only send 0 value as a timestamp and thus
+should overwrite any previous COMM on a given thread because there is no
+sensible way to keep track of all the comms lifecycles in a thread
+without time informations.
 
--- 
-Hans
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Tested-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-6tyow99vgmmtt9qwr2u2lqd7@git.kernel.org
+[ Made it cope with PERF_RECORD_MMAP2 ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-top.c        |  2 +-
+ tools/perf/builtin-trace.c      | 12 ++++++------
+ tools/perf/tests/code-reading.c |  2 +-
+ tools/perf/tests/hists_link.c   |  4 ++--
+ tools/perf/util/event.c         | 28 ++++++++++++++--------------
+ tools/perf/util/machine.c       | 39 ++++++++++++++++++++++-----------------
+ tools/perf/util/machine.h       | 21 ++++++++++++++-------
+ tools/perf/util/session.c       |  2 +-
+ tools/perf/util/thread.c        |  6 ++++--
+ tools/perf/util/thread.h        |  4 ++--
+ 10 files changed, 67 insertions(+), 53 deletions(-)
 
-
-
-
-
-
-
-
-
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index a6ea956..21db76d 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -856,7 +856,7 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
+ 						   &sample, machine);
+ 		} else if (event->header.type < PERF_RECORD_MAX) {
+ 			hists__inc_nr_events(&evsel->hists, event->header.type);
+-			machine__process_event(machine, event);
++			machine__process_event(machine, event, &sample);
+ 		} else
+ 			++session->stats.nr_unknown_events;
+ next_event:
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index dc3da65..95d6392 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -1122,7 +1122,7 @@ static size_t trace__fprintf_entry_head(struct trace *trace, struct thread *thre
+ }
+ 
+ static int trace__process_event(struct trace *trace, struct machine *machine,
+-				union perf_event *event)
++				union perf_event *event, struct perf_sample *sample)
+ {
+ 	int ret = 0;
+ 
+@@ -1130,9 +1130,9 @@ static int trace__process_event(struct trace *trace, struct machine *machine,
+ 	case PERF_RECORD_LOST:
+ 		color_fprintf(trace->output, PERF_COLOR_RED,
+ 			      "LOST %" PRIu64 " events!\n", event->lost.lost);
+-		ret = machine__process_lost_event(machine, event);
++		ret = machine__process_lost_event(machine, event, sample);
+ 	default:
+-		ret = machine__process_event(machine, event);
++		ret = machine__process_event(machine, event, sample);
+ 		break;
+ 	}
+ 
+@@ -1141,11 +1141,11 @@ static int trace__process_event(struct trace *trace, struct machine *machine,
+ 
+ static int trace__tool_process(struct perf_tool *tool,
+ 			       union perf_event *event,
+-			       struct perf_sample *sample __maybe_unused,
++			       struct perf_sample *sample,
+ 			       struct machine *machine)
+ {
+ 	struct trace *trace = container_of(tool, struct trace, tool);
+-	return trace__process_event(trace, machine, event);
++	return trace__process_event(trace, machine, event, sample);
+ }
+ 
+ static int trace__symbols_init(struct trace *trace, struct perf_evlist *evlist)
+@@ -1751,7 +1751,7 @@ again:
+ 				trace->base_time = sample.time;
+ 
+ 			if (type != PERF_RECORD_SAMPLE) {
+-				trace__process_event(trace, trace->host, event);
++				trace__process_event(trace, trace->host, event, &sample);
+ 				continue;
+ 			}
+ 
+diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
+index e3fedfa..49ccc3b 100644
+--- a/tools/perf/tests/code-reading.c
++++ b/tools/perf/tests/code-reading.c
+@@ -276,7 +276,7 @@ static int process_event(struct machine *machine, struct perf_evlist *evlist,
+ 		return process_sample_event(machine, evlist, event, state);
+ 
+ 	if (event->header.type < PERF_RECORD_MAX)
+-		return machine__process_event(machine, event);
++		return machine__process_event(machine, event, NULL);
+ 
+ 	return 0;
+ }
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index 4475b0f..6c337e6 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -93,7 +93,7 @@ static struct machine *setup_fake_machine(struct machines *machines)
+ 		if (thread == NULL)
+ 			goto out;
+ 
+-		thread__set_comm(thread, fake_threads[i].comm);
++		thread__set_comm(thread, fake_threads[i].comm, 0);
+ 	}
+ 
+ 	for (i = 0; i < ARRAY_SIZE(fake_mmap_info); i++) {
+@@ -110,7 +110,7 @@ static struct machine *setup_fake_machine(struct machines *machines)
+ 		strcpy(fake_mmap_event.mmap.filename,
+ 		       fake_mmap_info[i].filename);
+ 
+-		machine__process_mmap_event(machine, &fake_mmap_event);
++		machine__process_mmap_event(machine, &fake_mmap_event, NULL);
+ 	}
+ 
+ 	for (i = 0; i < ARRAY_SIZE(fake_symbols); i++) {
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 7a2842e..c26b353 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -512,18 +512,18 @@ size_t perf_event__fprintf_comm(union perf_event *event, FILE *fp)
+ 
+ int perf_event__process_comm(struct perf_tool *tool __maybe_unused,
+ 			     union perf_event *event,
+-			     struct perf_sample *sample __maybe_unused,
++			     struct perf_sample *sample,
+ 			     struct machine *machine)
+ {
+-	return machine__process_comm_event(machine, event);
++	return machine__process_comm_event(machine, event, sample);
+ }
+ 
+ int perf_event__process_lost(struct perf_tool *tool __maybe_unused,
+ 			     union perf_event *event,
+-			     struct perf_sample *sample __maybe_unused,
++			     struct perf_sample *sample,
+ 			     struct machine *machine)
+ {
+-	return machine__process_lost_event(machine, event);
++	return machine__process_lost_event(machine, event, sample);
+ }
+ 
+ size_t perf_event__fprintf_mmap(union perf_event *event, FILE *fp)
+@@ -546,18 +546,18 @@ size_t perf_event__fprintf_mmap2(union perf_event *event, FILE *fp)
+ 
+ int perf_event__process_mmap(struct perf_tool *tool __maybe_unused,
+ 			     union perf_event *event,
+-			     struct perf_sample *sample __maybe_unused,
++			     struct perf_sample *sample,
+ 			     struct machine *machine)
+ {
+-	return machine__process_mmap_event(machine, event);
++	return machine__process_mmap_event(machine, event, sample);
+ }
+ 
+ int perf_event__process_mmap2(struct perf_tool *tool __maybe_unused,
+ 			     union perf_event *event,
+-			     struct perf_sample *sample __maybe_unused,
++			     struct perf_sample *sample,
+ 			     struct machine *machine)
+ {
+-	return machine__process_mmap2_event(machine, event);
++	return machine__process_mmap2_event(machine, event, sample);
+ }
+ 
+ size_t perf_event__fprintf_task(union perf_event *event, FILE *fp)
+@@ -569,18 +569,18 @@ size_t perf_event__fprintf_task(union perf_event *event, FILE *fp)
+ 
+ int perf_event__process_fork(struct perf_tool *tool __maybe_unused,
+ 			     union perf_event *event,
+-			     struct perf_sample *sample __maybe_unused,
++			     struct perf_sample *sample,
+ 			     struct machine *machine)
+ {
+-	return machine__process_fork_event(machine, event);
++	return machine__process_fork_event(machine, event, sample);
+ }
+ 
+ int perf_event__process_exit(struct perf_tool *tool __maybe_unused,
+ 			     union perf_event *event,
+-			     struct perf_sample *sample __maybe_unused,
++			     struct perf_sample *sample,
+ 			     struct machine *machine)
+ {
+-	return machine__process_exit_event(machine, event);
++	return machine__process_exit_event(machine, event, sample);
+ }
+ 
+ size_t perf_event__fprintf(union perf_event *event, FILE *fp)
+@@ -611,10 +611,10 @@ size_t perf_event__fprintf(union perf_event *event, FILE *fp)
+ 
+ int perf_event__process(struct perf_tool *tool __maybe_unused,
+ 			union perf_event *event,
+-			struct perf_sample *sample __maybe_unused,
++			struct perf_sample *sample,
+ 			struct machine *machine)
+ {
+-	return machine__process_event(machine, event);
++	return machine__process_event(machine, event, sample);
+ }
+ 
+ void thread__find_addr_map(struct thread *self,
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index ea93425..ce034c1 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -40,7 +40,7 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+ 			return -ENOMEM;
+ 
+ 		snprintf(comm, sizeof(comm), "[guest/%d]", pid);
+-		thread__set_comm(thread, comm);
++		thread__set_comm(thread, comm, 0);
+ 	}
+ 
+ 	return 0;
+@@ -331,7 +331,8 @@ struct thread *machine__find_thread(struct machine *machine, pid_t tid)
+ 	return __machine__findnew_thread(machine, 0, tid, false);
+ }
+ 
+-int machine__process_comm_event(struct machine *machine, union perf_event *event)
++int machine__process_comm_event(struct machine *machine, union perf_event *event,
++				struct perf_sample *sample)
+ {
+ 	struct thread *thread = machine__findnew_thread(machine,
+ 							event->comm.pid,
+@@ -340,7 +341,7 @@ int machine__process_comm_event(struct machine *machine, union perf_event *event
+ 	if (dump_trace)
+ 		perf_event__fprintf_comm(event, stdout);
+ 
+-	if (thread == NULL || thread__set_comm(thread, event->comm.comm)) {
++	if (thread == NULL || thread__set_comm(thread, event->comm.comm, sample->time)) {
+ 		dump_printf("problem processing PERF_RECORD_COMM, skipping event.\n");
+ 		return -1;
+ 	}
+@@ -349,7 +350,7 @@ int machine__process_comm_event(struct machine *machine, union perf_event *event
+ }
+ 
+ int machine__process_lost_event(struct machine *machine __maybe_unused,
+-				union perf_event *event)
++				union perf_event *event, struct perf_sample *sample __maybe_unused)
+ {
+ 	dump_printf(": id:%" PRIu64 ": lost:%" PRIu64 "\n",
+ 		    event->lost.id, event->lost.lost);
+@@ -984,7 +985,8 @@ out_problem:
+ }
+ 
+ int machine__process_mmap2_event(struct machine *machine,
+-				 union perf_event *event)
++				 union perf_event *event,
++				 struct perf_sample *sample __maybe_unused)
+ {
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 	struct thread *thread;
+@@ -1031,7 +1033,8 @@ out_problem:
+ 	return 0;
+ }
+ 
+-int machine__process_mmap_event(struct machine *machine, union perf_event *event)
++int machine__process_mmap_event(struct machine *machine, union perf_event *event,
++				struct perf_sample *sample __maybe_unused)
+ {
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 	struct thread *thread;
+@@ -1088,7 +1091,8 @@ static void machine__remove_thread(struct machine *machine, struct thread *th)
+ 	list_add_tail(&th->node, &machine->dead_threads);
+ }
+ 
+-int machine__process_fork_event(struct machine *machine, union perf_event *event)
++int machine__process_fork_event(struct machine *machine, union perf_event *event,
++				struct perf_sample *sample)
+ {
+ 	struct thread *thread = machine__find_thread(machine, event->fork.tid);
+ 	struct thread *parent = machine__findnew_thread(machine,
+@@ -1105,7 +1109,7 @@ int machine__process_fork_event(struct machine *machine, union perf_event *event
+ 		perf_event__fprintf_task(event, stdout);
+ 
+ 	if (thread == NULL || parent == NULL ||
+-	    thread__fork(thread, parent) < 0) {
++	    thread__fork(thread, parent, sample->time) < 0) {
+ 		dump_printf("problem processing PERF_RECORD_FORK, skipping event.\n");
+ 		return -1;
+ 	}
+@@ -1113,8 +1117,8 @@ int machine__process_fork_event(struct machine *machine, union perf_event *event
+ 	return 0;
+ }
+ 
+-int machine__process_exit_event(struct machine *machine __maybe_unused,
+-				union perf_event *event)
++int machine__process_exit_event(struct machine *machine, union perf_event *event,
++				struct perf_sample *sample __maybe_unused)
+ {
+ 	struct thread *thread = machine__find_thread(machine, event->fork.tid);
+ 
+@@ -1127,23 +1131,24 @@ int machine__process_exit_event(struct machine *machine __maybe_unused,
+ 	return 0;
+ }
+ 
+-int machine__process_event(struct machine *machine, union perf_event *event)
++int machine__process_event(struct machine *machine, union perf_event *event,
++			   struct perf_sample *sample)
+ {
+ 	int ret;
+ 
+ 	switch (event->header.type) {
+ 	case PERF_RECORD_COMM:
+-		ret = machine__process_comm_event(machine, event); break;
++		ret = machine__process_comm_event(machine, event, sample); break;
+ 	case PERF_RECORD_MMAP:
+-		ret = machine__process_mmap_event(machine, event); break;
++		ret = machine__process_mmap_event(machine, event, sample); break;
+ 	case PERF_RECORD_MMAP2:
+-		ret = machine__process_mmap2_event(machine, event); break;
++		ret = machine__process_mmap2_event(machine, event, sample); break;
+ 	case PERF_RECORD_FORK:
+-		ret = machine__process_fork_event(machine, event); break;
++		ret = machine__process_fork_event(machine, event, sample); break;
+ 	case PERF_RECORD_EXIT:
+-		ret = machine__process_exit_event(machine, event); break;
++		ret = machine__process_exit_event(machine, event, sample); break;
+ 	case PERF_RECORD_LOST:
+-		ret = machine__process_lost_event(machine, event); break;
++		ret = machine__process_lost_event(machine, event, sample); break;
+ 	default:
+ 		ret = -1;
+ 		break;
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index 4c1f5d5..2389ba8 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -40,13 +40,20 @@ struct map *machine__kernel_map(struct machine *machine, enum map_type type)
+ 
+ struct thread *machine__find_thread(struct machine *machine, pid_t tid);
+ 
+-int machine__process_comm_event(struct machine *machine, union perf_event *event);
+-int machine__process_exit_event(struct machine *machine, union perf_event *event);
+-int machine__process_fork_event(struct machine *machine, union perf_event *event);
+-int machine__process_lost_event(struct machine *machine, union perf_event *event);
+-int machine__process_mmap_event(struct machine *machine, union perf_event *event);
+-int machine__process_mmap2_event(struct machine *machine, union perf_event *event);
+-int machine__process_event(struct machine *machine, union perf_event *event);
++int machine__process_comm_event(struct machine *machine, union perf_event *event,
++				struct perf_sample *sample);
++int machine__process_exit_event(struct machine *machine, union perf_event *event,
++				struct perf_sample *sample);
++int machine__process_fork_event(struct machine *machine, union perf_event *event,
++				struct perf_sample *sample);
++int machine__process_lost_event(struct machine *machine, union perf_event *event,
++				struct perf_sample *sample);
++int machine__process_mmap_event(struct machine *machine, union perf_event *event,
++				struct perf_sample *sample);
++int machine__process_mmap2_event(struct machine *machine, union perf_event *event,
++				 struct perf_sample *sample);
++int machine__process_event(struct machine *machine, union perf_event *event,
++				struct perf_sample *sample);
+ 
+ typedef void (*machine__process_t)(struct machine *machine, void *data);
+ 
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 4ba7b54..3c1b301 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1100,7 +1100,7 @@ static struct thread *perf_session__register_idle_thread(struct perf_session *se
+ {
+ 	struct thread *thread = perf_session__findnew(self, 0);
+ 
+-	if (thread == NULL || thread__set_comm(thread, "swapper")) {
++	if (thread == NULL || thread__set_comm(thread, "swapper", 0)) {
+ 		pr_err("problem inserting idle task.\n");
+ 		thread = NULL;
+ 	}
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index 5676007..0ea73fe 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -31,7 +31,8 @@ void thread__delete(struct thread *thread)
+ 	free(thread);
+ }
+ 
+-int thread__set_comm(struct thread *thread, const char *comm)
++int thread__set_comm(struct thread *thread, const char *comm,
++		     u64 timestamp __maybe_unused)
+ {
+ 	int err;
+ 
+@@ -73,7 +74,8 @@ void thread__insert_map(struct thread *thread, struct map *map)
+ 	map_groups__insert(&thread->mg, map);
+ }
+ 
+-int thread__fork(struct thread *thread, struct thread *parent)
++int thread__fork(struct thread *thread, struct thread *parent,
++		 u64 timestamp __maybe_unused)
+ {
+ 	int i;
+ 
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index 6561ad2..4e97242 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -33,11 +33,11 @@ static inline void thread__exited(struct thread *thread)
+ 	thread->dead = true;
+ }
+ 
+-int thread__set_comm(struct thread *self, const char *comm);
++int thread__set_comm(struct thread *thread, const char *comm, u64 timestamp);
+ int thread__comm_len(struct thread *self);
+ const char *thread__comm_str(const struct thread *thread);
+ void thread__insert_map(struct thread *self, struct map *map);
+-int thread__fork(struct thread *self, struct thread *parent);
++int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp);
+ size_t thread__fprintf(struct thread *thread, FILE *fp);
+ 
+ static inline struct map *thread__find_map(struct thread *self,
