@@ -1,95 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab3KDSKV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 13:10:21 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:39161 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719Ab3KDSKU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 13:10:20 -0500
-Date: Mon, 4 Nov 2013 19:10:14 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, aswin@hp.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH] mm: cache largest vma
-Message-ID: <20131104181012.GK9299@localhost.localdomain>
-References: <1383337039.2653.18.camel@buesod1.americas.hpqcorp.net>
- <20131103101234.GB5330@gmail.com>
- <1383538810.2373.22.camel@buesod1.americas.hpqcorp.net>
- <20131104070500.GE13030@gmail.com>
- <20131104142001.GE9299@localhost.localdomain>
- <20131104175245.GA19517@gmail.com>
+	id S1752631Ab3KDSOY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 13:14:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61647 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750849Ab3KDSOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 13:14:23 -0500
+Subject: [RFC][PATCH 0/9] encrypted keys & key control op
+To: d.kasatkin@samsung.com, zohar@us.ibm.com
+From: David Howells <dhowells@redhat.com>
+Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 04 Nov 2013 16:22:16 +0000
+Message-ID: <20131104162216.10177.98067.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131104175245.GA19517@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04, 2013 at 06:52:45PM +0100, Ingo Molnar wrote:
-> 
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > On Mon, Nov 04, 2013 at 08:05:00AM +0100, Ingo Molnar wrote:
-> > > 
-> > > * Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > > 
-> > > > Btw, do you suggest using a high level tool such as perf for getting 
-> > > > this data or sprinkling get_cycles() in find_vma() -- I'd think that the 
-> > > > first isn't fine grained enough, while the later will probably variate a 
-> > > > lot from run to run but the ratio should be rather constant.
-> > > 
-> > > LOL - I guess I should have read your mail before replying to it ;-)
-> > > 
-> > > Yes, I think get_cycles() works better in this case - not due to 
-> > > granularity (perf stat will report cycle granular just fine), but due 
-> > > to the size of the critical path you'll be measuring. You really want 
-> > > to extract the delta, because it's probably so much smaller than the 
-> > > overhead of the workload itself.
-> > > 
-> > > [ We still don't have good 'measure overhead from instruction X to 
-> > >   instruction Y' delta measurement infrastructure in perf yet, 
-> > >   although Frederic is working on such a trigger/delta facility AFAIK. 
-> > >   ]
-> > 
-> > Yep, in fact Jiri took it over and he's still working on it. But yeah, 
-> > once that get merged, we should be able to measure instructions or 
-> > cycles inside any user or kernel function through kprobes/uprobes or 
-> > function graph tracer.
-> 
-> So, what would be nice is to actually make use of it: one very nice 
-> usecase I'd love to see is to have the capability within the 'perf top' 
-> TUI annotated assembly output to mark specific instructions as 'start' and 
-> 'end' markers, and measure the overhead between them.
 
-Yeah that would be a nice interface. Speaking about that, it would be nice to get your input
-on the proposed interface for toggle events.
+Hi Mimi, Dmitry,
 
-It's still in an RFC state, although it's getting quite elaborated, and I believe we haven't
-yet found a real direction to take for the tooling interface IIRC. For example the perf record
-cmdline used to state toggle events based contexts was one of the parts we were not that confident about.
-And we really don't want to take a wrong direction for that as it's going to be complicated
-to handle in any case.
+Here's a series of patches, the last three of which attempt to fix up a
+problem with encrypted keys update method.  The preceding patches are fixes or
+are preparatory for other changes that I want to put underneath.
 
-See this thread:
-https://lwn.net/Articles/568602/
+I really want to make all key types use ->preparse() to avoid a deadlock in
+the garbage collector with quota recycling, but encrypted_update() requires
+access to the old key - which you can't have in ->preparse() because the
+keyring isn't locked (and this lock is the root of the gc deadlock anyway).
 
-thanks.
+Further, the existence of encrypted_update() means that add_key() will
+sometimes get things wrong with encrypted keys (add_key() will call ->update()
+if a matching key already exists rather than creating a new key).  But you
+can't pre-search for the existence of a key and mould the payload accordingly
+because that means you can race against both add_key() and keyctl_unlink().
 
-> 
-> I.e. allow perf top / perf report to manage probes into interesting 
-> functions - or create a similar TUI for 'perf probe' to allow easy live 
-> marking/probing of various kernel functionality.
-> 
-> Thanks,
-> 
-> 	Ingo
+My solution is to add a new keyctl function that allows the caller to perform
+a type-specific operation on a key:
+
+	long keyctl_control(key_serial_t key_id,
+			    const char *command,
+			    char *reply_buffer,
+			    size_t reply_size);
+
+This would then take a NUL-terminated string indicating the command and
+arguments and potentially return a reply up to the buffer length.
+
+For instance:
+
+	keyctl_control(1234, "encrypted change-master-key fred's key", NULL, 0);
+
+or, from the shell:
+
+	keyctl control 1234 "encrypted change-master-key fred's key"
+
+(I think that requiring the command string to be prefixed with the expected
+key type is probably a good idea).
+
+The control op could also be used for other things like pushing a key into a
+TPM.
+
+What do you think?
+
+David
+---
+David Howells (9):
+      KEYS: The RSA public key algorithm needs to select MPILIB
+      KEYS: Provide a generic instantiation function
+      KEYS: struct key_preparsed_payload should have two payload pointers
+      KEYS: Allow expiry time to be set when preparsing a key
+      KEYS: Call ->free_preparse() even after ->preparse() returns an error
+      KEYS: Trusted: Use key preparsing
+      KEYS: Add a keyctl function to alter/control a key in type-dependent way
+      KEYS: Implement keyctl control for encrypted keys
+      KEYS: Fix encrypted key type update method
+
+
+ Documentation/security/keys.txt          |   48 +++++++-
+ crypto/asymmetric_keys/Kconfig           |    1 
+ crypto/asymmetric_keys/asymmetric_type.c |   27 ----
+ crypto/asymmetric_keys/x509_public_key.c |    2 
+ include/linux/key-type.h                 |   11 ++
+ include/uapi/linux/keyctl.h              |    1 
+ security/keys/compat.c                   |    6 +
+ security/keys/encrypted-keys/encrypted.c |  111 +++++++++++++-----
+ security/keys/internal.h                 |    2 
+ security/keys/key.c                      |   49 +++++++-
+ security/keys/keyctl.c                   |  104 ++++++++++++++++
+ security/keys/trusted.c                  |  190 ++++++++++++++----------------
+ 12 files changed, 385 insertions(+), 167 deletions(-)
+
