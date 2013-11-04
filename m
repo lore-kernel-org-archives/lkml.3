@@ -1,143 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730Ab3KDDYK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 22:24:10 -0500
-Received: from mga11.intel.com ([192.55.52.93]:18603 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752587Ab3KDDYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 22:24:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,629,1378882800"; 
-   d="scan'208";a="421774663"
-Message-ID: <527710C8.8020908@intel.com>
-Date: Mon, 04 Nov 2013 11:13:12 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1752784Ab3KDDYy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 22:24:54 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:37923 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415Ab3KDDYx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 22:24:53 -0500
+Message-ID: <52771383.5090907@linaro.org>
+Date: Sun, 03 Nov 2013 22:24:51 -0500
+From: David Long <dave.long@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: rjw@rjwysocki.net, viresh.kumar@linaro.org, dipankar@in.ibm.com,
-        fweisbec@gmail.com, youquan.song@intel.com, riel@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Tick: Introduce tick_nohz_check() to check nohz enable
- status
-References: <1383036537-30362-1-git-send-email-tianyu.lan@intel.com> <20131029095135.GH4126@linux.vnet.ibm.com> <526F8E21.1030702@intel.com>
-In-Reply-To: <526F8E21.1030702@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 04/13] uprobes: allow arch-specific initialization
+References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-5-git-send-email-dave.long@linaro.org> <20131019164223.GB7837@redhat.com> <52672484.9010201@linaro.org> <20131028185818.GB12863@redhat.com> <5272A45B.20507@linaro.org> <20131101135247.GA16509@redhat.com>
+In-Reply-To: <20131101135247.GA16509@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年10月29日 18:29, Lan Tianyu wrote:
-> On 10/29/2013 05:51 PM, Paul E. McKenney wrote:
->> On Tue, Oct 29, 2013 at 04:48:56PM +0800, Lan Tianyu wrote:
->>> In some cases, nohz enable status needs to be checked. E.G, in RCU
->>> and cpufreq
->>> ondemand governor. So add tick_nohz_check() to return
->>> tick_nohz_enabled value
->>> And use tick_nohz_check() instead of referencing tick_nohz_enabled in
->>> the rcutree_plugin.h.
+On 11/01/13 09:52, Oleg Nesterov wrote:
+> On 10/31, David Long wrote:
+>> On 10/28/13 14:58, Oleg Nesterov wrote:
+>>> On 10/22, David Long wrote:
+>>> I simply do not understand why uprobes.c uses module_init/module_exit,
+>>> it can't be compiled as a module.
+>>
+>> I guess that makes sense, assuming it can never be made a module.  I saw
+>> you recent commit for this.
+>>
+>>> I think that module_exit/exit_uprobes should be killed, and module_init()
+>>> should be turned into __initcall(). uprobes-arm.c can have another one.
 >>>
->>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 >>
->> NACK on the rcutree change unless you put the ACCESS_ONCE() in.
->>
->> Or is there some reason that ACCESS_ONCE() is not needed?  If so, what
->> is that reason?
-> 
-> Hi Paul:
-> 
-> Thanks for review. When I change this code, I find the tick_nohz_enabled
-> isn't changed dynamically. It's only changed during parsing kernel
-> params when "nohz=off/on" is set. Except this, it will not be changed.
-> So I ignored ACCESS_ONCE(). If necessary, I can add it back.
+>> I will see if I can make this work.
+>
+> If this can't work, then we need the new hook (this patch). But in this
+> case please update the changelog to explain the reason.
+>
+>> Right now the arch-specific
+>> initialization call is done in the middle of the generic initialization
+>> code, but I don't know that it *has* to be that way.  I have some
+>> concern too about getting the order right, since these are built from
+>> different makefiles.
+>
+> Not sure I understand... But grep shows a lot of core_initcall()'s in
+> arch/arm/ which do register_undef_hook(). And I guess you can use any
+> initcall level.
 
-Hi Paul:
-	Does this reason make sense to you? Or you still prefer to add
-ACCESS_ONCE() in the new tick_nohz_check()?
+Just to close on this, I implemented your suggested __initcall change 
+and it tested out fine.
 
-> 
->>
->>                             Thanx, Paul
->>
->>> ---
->>>   include/linux/tick.h     | 2 ++
->>>   kernel/rcutree_plugin.h  | 4 +---
->>>   kernel/time/tick-sched.c | 8 +++++++-
->>>   3 files changed, 10 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/include/linux/tick.h b/include/linux/tick.h
->>> index 5128d33..a9c5374 100644
->>> --- a/include/linux/tick.h
->>> +++ b/include/linux/tick.h
->>> @@ -136,6 +136,7 @@ static inline int tick_nohz_tick_stopped(void)
->>>   extern void tick_nohz_idle_enter(void);
->>>   extern void tick_nohz_idle_exit(void);
->>>   extern void tick_nohz_irq_exit(void);
->>> +extern int tick_nohz_check(void);
->>>   extern ktime_t tick_nohz_get_sleep_length(void);
->>>   extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
->>>   extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
->>> @@ -155,6 +156,7 @@ static inline ktime_t
->>> tick_nohz_get_sleep_length(void)
->>>
->>>       return len;
->>>   }
->>> +static inline int tick_nohz_check(void) { return 0; }
->>>   static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) {
->>> return -1; }
->>>   static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) {
->>> return -1; }
->>>   # endif /* !CONFIG_NO_HZ_COMMON */
->>> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
->>> index 130c97b..af167ec 100644
->>> --- a/kernel/rcutree_plugin.h
->>> +++ b/kernel/rcutree_plugin.h
->>> @@ -1627,8 +1627,6 @@ module_param(rcu_idle_gp_delay, int, 0644);
->>>   static int rcu_idle_lazy_gp_delay = RCU_IDLE_LAZY_GP_DELAY;
->>>   module_param(rcu_idle_lazy_gp_delay, int, 0644);
->>>
->>> -extern int tick_nohz_enabled;
->>> -
->>>   /*
->>>    * Try to advance callbacks for all flavors of RCU on the current CPU.
->>>    * Afterwards, if there are any callbacks ready for immediate
->>> invocation,
->>> @@ -1718,7 +1716,7 @@ static void rcu_prepare_for_idle(int cpu)
->>>       int tne;
->>>
->>>       /* Handle nohz enablement switches conservatively. */
->>> -    tne = ACCESS_ONCE(tick_nohz_enabled);
->>> +    tne = tick_nohz_check();
->>>       if (tne != rdtp->tick_nohz_enabled_snap) {
->>>           if (rcu_cpu_has_callbacks(cpu, NULL))
->>>               invoke_rcu_core(); /* force nohz to see update. */
->>> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
->>> index 3612fc7..d381a22 100644
->>> --- a/kernel/time/tick-sched.c
->>> +++ b/kernel/time/tick-sched.c
->>> @@ -361,7 +361,13 @@ void __init tick_nohz_init(void)
->>>   /*
->>>    * NO HZ enabled ?
->>>    */
->>> -int tick_nohz_enabled __read_mostly  = 1;
->>> +static int tick_nohz_enabled __read_mostly  = 1;
->>> +
->>> +int tick_nohz_check(void)
->>> +{
->>> +    return    tick_nohz_enabled;
->>> +}
->>> +EXPORT_SYMBOL_GPL(tick_nohz_check);
->>>
->>>   /*
->>>    * Enable / Disable tickless mode
->>> -- 
->>> 1.8.4.rc0.1.g8f6a3e5.dirty
->>>
->>
-> 
+-dl
 
 
--- 
-Best regards
-Tianyu Lan
