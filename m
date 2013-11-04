@@ -1,153 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab3KDJxJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 04:53:09 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:45670 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887Ab3KDJxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 04:53:07 -0500
-Date: Mon, 4 Nov 2013 01:52:58 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: rjw@rjwysocki.net, viresh.kumar@linaro.org, dipankar@in.ibm.com,
-        fweisbec@gmail.com, youquan.song@intel.com, riel@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Tick: Introduce tick_nohz_check() to check nohz
- enable status
-Message-ID: <20131104095258.GI3947@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1383036537-30362-1-git-send-email-tianyu.lan@intel.com>
- <20131029095135.GH4126@linux.vnet.ibm.com>
- <526F8E21.1030702@intel.com>
- <527710C8.8020908@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <527710C8.8020908@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110409-7182-0000-0000-000008FDFC25
+	id S1752034Ab3KDJ5B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 04:57:01 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:65175 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab3KDJ47 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 04:56:59 -0500
+X-AuditID: cbfee691-b7f866d000001b8c-38-52776f6af792
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Michael Opdenacker'" <michael.opdenacker@free-electrons.com>
+Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux@arm.linux.org.uk, "'Ben Dooks'" <ben-linux@fluff.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1383558685-5343-1-git-send-email-michael.opdenacker@free-electrons.com>
+In-reply-to: <1383558685-5343-1-git-send-email-michael.opdenacker@free-electrons.com>
+Subject: Re: [PATCH] ARM: SAMSUNG: remove unused SAMSUNG_GPIOLIB_4BIT Kconfig
+ parameter
+Date: Mon, 04 Nov 2013 18:56:57 +0900
+Message-id: <000001ced944$33386320$99a92960$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7ZQ3zKWiJDrGp+TRyvibs27yfMkQAAFa4g
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsVy+t8zI92s/PIgg33f+C0mrTvAZHF54SVW
+	i94FV9ksNj2+xmpxedccNosZ5/cxWdy+zGvxYMIqNgcOj5bmHjaPv6teMHs82XSR0WPzknqP
+	vi2rGD0+b5ILYIvisklJzcksSy3St0vgylh59iZbQQNLxc1LU9kaGKcwdzFyckgImEj8/HmN
+	EcIWk7hwbz1bFyMXh5DAMkaJc3d+MMEULf/bCNYgJLCIUWLr5XqIol+MEutmXwXrZhNQk/jy
+	5TB7FyMHh4iAg8T/DyYgNcwCXxglNm2ZzgYSFxIIk3h1qgqknFMgXOLA2iOsILawQKTErwPP
+	wcawCKhKLF66kR3E5hWwlbi/7zqULSjxY/I9FhCbWUBLYv3O40wQtrzE5jVvmUHGSwioSzz6
+	qwsSFhEwknh48ykrRImIxL4X7xhBzpEQaOSQ+HF5PwvELgGJb5MPsUD0ykpsOgANE0mJgytu
+	sExglJiFZPMsJJtnIdk8C8mKBYwsqxhFUwuSC4qT0otM9YoTc4tL89L1kvNzNzFCYnniDsb7
+	B6wPMSYDrZ/ILCWanA9MBXkl8YbGZkYWpiamxkbmlmakCSuJ86Y/SgoSEkhPLEnNTk0tSC2K
+	LyrNSS0+xMjEwSnVwGivcrrrSa1zd0bQ5TbbdTrn+GdXSqvGtHrtPuP6erPPAeM4VmvVNO3M
+	Q/F7Vt2P391zyvZrp39YTP4F2y1bq/WZNV4qFmzL5Jy9bOPrNabflAxSLtWVv19geSyCoafk
+	djVfaNDDiT2tS9zETv8966Zb23JIK+lyWdKuwk+SCSf+s7nzNMu3KLEUZyQaajEXFScCAPWb
+	Oxj7AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKKsWRmVeSWpSXmKPExsVy+t9jAd2s/PIgg9Yb3BaT1h1gsri88BKr
+	Re+Cq2wWmx5fY7W4vGsOm8WM8/uYLG5f5rV4MGEVmwOHR0tzD5vH31UvmD2ebLrI6LF5Sb1H
+	35ZVjB6fN8kFsEU1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5
+	+AToumXmAN2jpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsY8xYefYmW0ED
+	S8XNS1PZGhinMHcxcnJICJhILP/bCGWLSVy4t54NxBYSWMQosfVyfRcjF5D9i1Fi3eyrjCAJ
+	NgE1iS9fDrN3MXJwiAg4SPz/YAJSwyzwhVFi05bpbCBxIYEwiVenqkDKOQXCJQ6sPcIKYgsL
+	REr8OvAcbAyLgKrE4qUb2UFsXgFbifv7rkPZghI/Jt9jAbGZBbQk1u88zgRhy0tsXvOWGWS8
+	hIC6xKO/uiBhEQEjiYc3n7JClIhI7HvxjnECo9AsJJNmIZk0C8mkWUhaFjCyrGIUTS1ILihO
+	Ss811CtOzC0uzUvXS87P3cQIThTPpHYwrmywOMQowMGoxMMrcbksSIg1say4MvcQowQHs5II
+	L0NYeZAQb0piZVVqUX58UWlOavEhxmSgRycyS4km5wOTWF5JvKGxiZmRpZGZhZGJuTlpwkri
+	vAdarQOFBNITS1KzU1MLUotgtjBxcEo1MNZcCL978NyCh5I8EyeetAx+1i8W/f7EoYk/3qgs
+	+xmrwGyUUzsz0t+P/fMKZve12asOWHyPOiCh1brXdkNMuaRL+dKyjhX8LFKCH52/hovXPN4h
+	5Jt656d+4JvCxo8dswTWXZ214ec7txuS17ZLJfHwrvqnGjFvb03+K/mCYD2TT17rD+6ZHafE
+	UpyRaKjFXFScCADqfYSBWAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04, 2013 at 11:13:12AM +0800, Lan Tianyu wrote:
-> On 2013年10月29日 18:29, Lan Tianyu wrote:
-> > On 10/29/2013 05:51 PM, Paul E. McKenney wrote:
-> >> On Tue, Oct 29, 2013 at 04:48:56PM +0800, Lan Tianyu wrote:
-> >>> In some cases, nohz enable status needs to be checked. E.G, in RCU
-> >>> and cpufreq
-> >>> ondemand governor. So add tick_nohz_check() to return
-> >>> tick_nohz_enabled value
-> >>> And use tick_nohz_check() instead of referencing tick_nohz_enabled in
-> >>> the rcutree_plugin.h.
-> >>>
-> >>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-> >>
-> >> NACK on the rcutree change unless you put the ACCESS_ONCE() in.
-> >>
-> >> Or is there some reason that ACCESS_ONCE() is not needed?  If so, what
-> >> is that reason?
-> > 
-> > Hi Paul:
-> > 
-> > Thanks for review. When I change this code, I find the tick_nohz_enabled
-> > isn't changed dynamically. It's only changed during parsing kernel
-> > params when "nohz=off/on" is set. Except this, it will not be changed.
-> > So I ignored ACCESS_ONCE(). If necessary, I can add it back.
+On Monday, November 04, 2013 6:51 PM, Michael Opdenacker wrote:
 > 
-> Hi Paul:
-> 	Does this reason make sense to you? Or you still prefer to add
-> ACCESS_ONCE() in the new tick_nohz_check()?
+> This removes the SAMSUNG_GPIOLIB_4BIT Kconfig parameter,
+> which was no longer used anywhere in the source code
+> and Makefiles.
+> 
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 
-I prefer the ACCESS_ONCE().  It adds little or no overhead, and Frederic
-has been heard to say that he mkight allow tick_nohz_check() to change
-in the future.
+It looks good.
+Reviewed-by: Jingoo Han <jg1.han@samsung.com>
 
-							Thanx, Paul
+Best regards,
+Jingoo Han
 
-> >>> ---
-> >>>   include/linux/tick.h     | 2 ++
-> >>>   kernel/rcutree_plugin.h  | 4 +---
-> >>>   kernel/time/tick-sched.c | 8 +++++++-
-> >>>   3 files changed, 10 insertions(+), 4 deletions(-)
-> >>>
-> >>> diff --git a/include/linux/tick.h b/include/linux/tick.h
-> >>> index 5128d33..a9c5374 100644
-> >>> --- a/include/linux/tick.h
-> >>> +++ b/include/linux/tick.h
-> >>> @@ -136,6 +136,7 @@ static inline int tick_nohz_tick_stopped(void)
-> >>>   extern void tick_nohz_idle_enter(void);
-> >>>   extern void tick_nohz_idle_exit(void);
-> >>>   extern void tick_nohz_irq_exit(void);
-> >>> +extern int tick_nohz_check(void);
-> >>>   extern ktime_t tick_nohz_get_sleep_length(void);
-> >>>   extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
-> >>>   extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
-> >>> @@ -155,6 +156,7 @@ static inline ktime_t
-> >>> tick_nohz_get_sleep_length(void)
-> >>>
-> >>>       return len;
-> >>>   }
-> >>> +static inline int tick_nohz_check(void) { return 0; }
-> >>>   static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) {
-> >>> return -1; }
-> >>>   static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) {
-> >>> return -1; }
-> >>>   # endif /* !CONFIG_NO_HZ_COMMON */
-> >>> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> >>> index 130c97b..af167ec 100644
-> >>> --- a/kernel/rcutree_plugin.h
-> >>> +++ b/kernel/rcutree_plugin.h
-> >>> @@ -1627,8 +1627,6 @@ module_param(rcu_idle_gp_delay, int, 0644);
-> >>>   static int rcu_idle_lazy_gp_delay = RCU_IDLE_LAZY_GP_DELAY;
-> >>>   module_param(rcu_idle_lazy_gp_delay, int, 0644);
-> >>>
-> >>> -extern int tick_nohz_enabled;
-> >>> -
-> >>>   /*
-> >>>    * Try to advance callbacks for all flavors of RCU on the current CPU.
-> >>>    * Afterwards, if there are any callbacks ready for immediate
-> >>> invocation,
-> >>> @@ -1718,7 +1716,7 @@ static void rcu_prepare_for_idle(int cpu)
-> >>>       int tne;
-> >>>
-> >>>       /* Handle nohz enablement switches conservatively. */
-> >>> -    tne = ACCESS_ONCE(tick_nohz_enabled);
-> >>> +    tne = tick_nohz_check();
-> >>>       if (tne != rdtp->tick_nohz_enabled_snap) {
-> >>>           if (rcu_cpu_has_callbacks(cpu, NULL))
-> >>>               invoke_rcu_core(); /* force nohz to see update. */
-> >>> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> >>> index 3612fc7..d381a22 100644
-> >>> --- a/kernel/time/tick-sched.c
-> >>> +++ b/kernel/time/tick-sched.c
-> >>> @@ -361,7 +361,13 @@ void __init tick_nohz_init(void)
-> >>>   /*
-> >>>    * NO HZ enabled ?
-> >>>    */
-> >>> -int tick_nohz_enabled __read_mostly  = 1;
-> >>> +static int tick_nohz_enabled __read_mostly  = 1;
-> >>> +
-> >>> +int tick_nohz_check(void)
-> >>> +{
-> >>> +    return    tick_nohz_enabled;
-> >>> +}
-> >>> +EXPORT_SYMBOL_GPL(tick_nohz_check);
-> >>>
-> >>>   /*
-> >>>    * Enable / Disable tickless mode
-> >>> -- 
-> >>> 1.8.4.rc0.1.g8f6a3e5.dirty
-> >>>
-> >>
-> > 
-> 
-> 
-> -- 
-> Best regards
-> Tianyu Lan
-> 
+> ---
+>  arch/arm/Kconfig              | 1 -
+>  arch/arm/plat-samsung/Kconfig | 8 --------
+>  2 files changed, 9 deletions(-)
 
