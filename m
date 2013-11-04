@@ -1,95 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256Ab3KDMYN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 07:24:13 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:62417 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497Ab3KDMYL (ORCPT
+	id S1752692Ab3KDM0Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 07:26:16 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:48566 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949Ab3KDM0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 07:24:11 -0500
+	Mon, 4 Nov 2013 07:26:15 -0500
+Date: Mon, 4 Nov 2013 13:26:13 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "Artem S. Tashkinov" <t.artem@lycos.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Maxim Patlasov <mpatlasov@parallels.com>
+Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
+Message-ID: <20131104122613.GB24407@amd.pavel.ucw.cz>
+References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
+ <CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
+ <1814253454.3449.1382689853825.JavaMail.mail@webmail07>
+ <20131025091842.GA28681@thunk.org>
+ <20131025022937.12623dcd.akpm@linux-foundation.org>
+ <CA+55aFzq4-wsErRO56gW6gj3Q91QtvvaGQPdUV2JkSs-B1PCAQ@mail.gmail.com>
+ <20131029205756.GH9568@quack.suse.cz>
+ <CA+55aFyS1oTF2LKSgmm_TnnKm18CfVZEaue8-EnPQWOikAUWOA@mail.gmail.com>
+ <20131029221324.GC12814@quack.suse.cz>
+ <CA+55aFw_jjB687nJKuVdjPM6BicF-+0da-wSYHLBqdx0ZfVrGw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <051069C10411E24D9749790C498526FA1BE0B7D7@SJEXCHMB12.corp.ad.broadcom.com>
-References: <1380846199-12829-1-git-send-email-syin@broadcom.com>
-	<1380846199-12829-4-git-send-email-syin@broadcom.com>
-	<CACRpkdZah4fFuJL2Vh5JmbBCgnekg8MKqMWHzeheOx3N1Kzwng@mail.gmail.com>
-	<051069C10411E24D9749790C498526FA1BE027EA@SJEXCHMB12.corp.ad.broadcom.com>
-	<CACRpkdarPC+LxAAezT2LRiz=Y2RduUsb75YYHUgq7HqePzkD3Q@mail.gmail.com>
-	<051069C10411E24D9749790C498526FA1BE03D43@SJEXCHMB12.corp.ad.broadcom.com>
-	<051069C10411E24D9749790C498526FA1BE0841D@SJEXCHMB12.corp.ad.broadcom.com>
-	<051069C10411E24D9749790C498526FA1BE0B7D7@SJEXCHMB12.corp.ad.broadcom.com>
-Date: Mon, 4 Nov 2013 13:24:10 +0100
-Message-ID: <CACRpkdYSLxp2M4HghcUdjEYGh-UQ+DaiCGp6yee+Qds6DR9poA@mail.gmail.com>
-Subject: Re: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sherman Yin <syin@broadcom.com>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFw_jjB687nJKuVdjPM6BicF-+0da-wSYHLBqdx0ZfVrGw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 26, 2013 at 12:48 AM, Sherman Yin <syin@broadcom.com> wrote:
+Hi!
 
-> So I will go ahead and make the change in pinconf-generic.c and pinctrl-bindings.txt
-> to include parsing of the "slew-rate" property and submit it as part of my pinctrl
-> changes.
+> >>  - temp-files may not be written out at all.
+> >>
+> >>    Quite frankly, if you have multi-hundred-megabyte temptiles, you've
+> >> got issues
+> >   Actually people do stuff like this e.g. when generating ISO images before
+> > burning them.
+> 
+> Yes, but then the temp-file is long-lived enough that it *will* hit
+> the disk anyway. So it's only the "create temporary file and pretty
+> much immediately delete it" case that changes behavior (ie compiler
+> assembly files etc).
+> 
+> If the temp-file is for something like burning an ISO image, the
+> burning part is slow enough that the temp-file will hit the disk
+> regardless of when we start writing it.
 
-OK, good.
+It will hit the disk, but with proposed change, burning still will be
+slower.
 
-> Question regarding pinctrl-generic: in pinctrl-bindings.txt, this is said about the
-> "function" property:
->
-> 169- function takes a list of function names/IDs as a required argument. The
-> 170  specific binding for the hardware defines:
-> 171  - Whether the entries are integers or strings, and their meaning.
-> 172  - Whether only a single entry is allowed (which is applied to all entries
-> 173    in the pins property), or whether there may alternatively be one entry per
-> 174    entry in the pins property, in which case the list lengths must match, and
-> 175    for each list index i, the function at list index i is applied to the pin
-> 176    at list index i.
->
-> (Although it looks like pinconf_generic_dt_subnode_to_map() does not support
-> the "one entry per pin feature" for the "function" property yet.)
->
-> In my driver, I have the "one entry per pin" support for all my properties instead
-> of just the function property, like the "drive_str" property below:
->
-> +               grp_1 {
-> +                       brcm,pins       = "pin1", "pin2", "pin3";
-> +                       brcm,function   = "alt1", "alt2", "alt1";
-> +                       brcm,drive_str  = <2 4 6>;
-> +                       brcm,slew       = <1>;
-> +               };
+Before:
 
-OK.
+create 700MB iso
+burn the CD, at the same time writing the iso to disk
 
-> I thought that would be convenient and allow users to group pins together based
-> on functionality and without the restriction that the pins must have the same
-> properties.  Do you think that's a good idea and are there plans to support that in
-> the generic pinconfig?  If so, I can look into porting my implementation to
-> pinconf-generic.c - but first I have to figure out how some of the properties would
-> work if more than one value could be specified (eg. "bias-disable" which takes no
-> values)
+After:
 
-Hm I don't quite get it I think. It depends on the old bindings still working
-and full compatibility with old device trees. It might be a bit confusing.
+create 700MB iso and write most of it to disk
+burn the CD, writing the rest.
 
-I need help from Heiko on this I think.
+But yes, limiting dirty ammounts is good idea.
 
-Yours,
-Linus Walleij
+> That said, I'd certainly like it even *more* if the limits really were
+> per-BDI, and the global limit was in addition to the per-bdi ones.
+> Because when you have a USB device that gets maybe 10MB/s on
+> contiguous writes, and 100kB/s on random 4k writes, I think it would
+> make more sense to make the "start writeout" limits be 1MB/2MB, not
+
+Actually I believe I seen 10kB/sec on an SD card... would expect that
+from USB sticks, too.
+
+And yes, there are actually real problems with this at least on N900.
+
+You do apt-get install <big package>. apt internally does fsyncs. It
+results in big enough latencies that watchdogs kick in and kill the
+machine.
+
+http://pavelmachek.livejournal.com/117089.html
+
+People are doing 
+
+ echo 3 > /proc/sys/vm/dirty_ratio
+    echo 3 > /proc/sys/vm/dirty_background_ratio
+    echo 100 > /proc/sys/vm/dirty_writeback_centisecs 
+    echo 100 > /proc/sys/vm/dirty_expire_centisecs 
+    echo 4096 > /proc/sys/vm/min_free_kbytes 
+    echo 50 > /proc/sys/vm/swappiness 
+    echo 200 > /proc/sys/vm/vfs_cache_pressure 
+    echo 8 > /proc/sys/vm/page-cluster
+    echo 4 > /sys/block/mmcblk0/queue/nr_requests
+    echo 4 > /sys/block/mmcblk1/queue/nr_requests
+
+.. to avoid it, but IIRC it only makes the watchdog reset less likely
+:-(.
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
