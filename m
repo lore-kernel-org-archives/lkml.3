@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab3KDRkX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 12:40:23 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37477 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854Ab3KDRkW (ORCPT
+	id S1752044Ab3KDRps (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 12:45:48 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:46900 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719Ab3KDRpr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 12:40:22 -0500
-Message-ID: <5277DBF2.8030209@kernel.dk>
-Date: Mon, 04 Nov 2013 10:40:02 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 4 Nov 2013 12:45:47 -0500
+Message-ID: <5277D2C3.3020203@ahsoftware.de>
+Date: Mon, 04 Nov 2013 18:00:51 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com
-Subject: Re: [GIT PULL] (xen) stable/for-jens-3.12 for Jens Axboe
-References: <20130906202551.GA20743@phenom.dumpdata.com> <522A3A7A.8030408@kernel.dk> <20131104173711.GA7116@phenom.dumpdata.com>
-In-Reply-To: <20131104173711.GA7116@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.12 released .. and no merge window yet .. and 4.0 plans?
+References: <CA+55aFwLkvSkparyvekdmMyvr6Srw1KkzTBp=_w0oQRWnPpJug@mail.gmail.com>
+In-Reply-To: <CA+55aFwLkvSkparyvekdmMyvr6Srw1KkzTBp=_w0oQRWnPpJug@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2013 10:37 AM, Konrad Rzeszutek Wilk wrote:
-> On Fri, Sep 06, 2013 at 02:26:34PM -0600, Jens Axboe wrote:
->> On 09/06/2013 02:25 PM, Konrad Rzeszutek Wilk wrote:
->>> Hey Jens,
->>>
->>> I sent you a git pull a couple of weeks ago but I am not sure if
->>> you pulled it. It does not look like it, so here it is again along
->>> with an extra bug-fix.
->>>
->>> Please git pull:
->>>
->>>  git pull git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-jens-3.12
->>>
->>> which will give you bug-fixes to Xen blkfront and backend driver:
->>
->> Thanks, I'll get the 3.12 branch set up and pulled in. I'm behind on a
->> lot of other drivers, too.
-> 
-> Hm, looks like you never pulled that for v3.12.
+Am 04.11.2013 01:10, schrieb Linus Torvalds:
 
-It is in:
+(...)
+> Onto a totally different topic: we're getting to release numbers where
+> I have to take off my socks to count that high again. I'm ok with
+> 3.<low teens>, but I don't want us to get to the kinds of crazy
+> numbers we had in the 2.x series, so at some point we're going to cut
+> over from 3.x to 4.x, just to keep the numbers small and easy to
+> remember. We're not there yet, but I would actually prefer to not go
+> into the twenties, so I can see it happening in a year or so, and
+> we'll have 4.0 follow 3.19 or something like that.
+>
+> Now, it's just a number (since we've long since given up on
+> feature-related releases), and it's at least a year away, so why do I
+> even mention it at all?
+(...)
+> Comments?
 
-axboe@axboe ~/git/linux-block $ git pull
-git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git
-stable/for-jens-3.12
->From git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip
- * branch            stable/for-jens-3.12 -> FETCH_HEAD
-Merge made by the 'recursive' strategy.
-axboe@axboe ~/git/linux-block $
+You could go towards the lovely number Pi (π):
 
-> There is one more patch that Roger has provided. Do you want to pull
-> this branch for v3.13 nowish or wait until I put in Roger's patch?
+3.12
+3.13
+3.14
+3.141
+3.1415
+3.14159
+3.141592
+3.1415926
+(...)
+4.0
 
-You'll need to queue that up or send as a patch separately.--
-Jens Axboe
+That would
+
+- not be crazy numbers,
+- make some math loving people happy,
+- make people remembering that number,
+- be a test for broken version number parsers,
+- not as boring as usual version numbers,
+- be in good tradition (e.g. TeX),
+- make some maintainers hate me for that suggestion, ;)
+- ...
+
+Regards,
+
+Alexander Holler
+
 
