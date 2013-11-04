@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab3KDSq0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 13:46:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27121 "EHLO mx1.redhat.com"
+	id S1751583Ab3KDSyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 13:54:01 -0500
+Received: from mga11.intel.com ([192.55.52.93]:10944 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750719Ab3KDSqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 13:46:25 -0500
-Date: Mon, 4 Nov 2013 19:47:41 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch
-	methods (v6)
-Message-ID: <20131104184741.GA15945@redhat.com>
-References: <1383029621-7384-1-git-send-email-namhyung@kernel.org> <20131102155458.GA6981@redhat.com> <87ob60366m.fsf@sejong.aot.lge.com> <87fvrc35kj.fsf@sejong.aot.lge.com> <20131104155131.GD4440@redhat.com> <20131104162229.GA8921@redhat.com>
+	id S1750719Ab3KDSyA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 13:54:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,634,1378882800"; 
+   d="scan'208";a="427775070"
+From: Andi Kleen <andi@firstfloor.org>
+To: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Solving M produces N consumers scalability problem
+References: <CAOMFOmWzERR7MDe65YHo--GdbO+QfnxZK=uWd7d3vCZ6ca97fw@mail.gmail.com>
+Date: Mon, 04 Nov 2013 10:53:59 -0800
+In-Reply-To: <CAOMFOmWzERR7MDe65YHo--GdbO+QfnxZK=uWd7d3vCZ6ca97fw@mail.gmail.com>
+	(Anatol Pomozov's message of "Fri, 1 Nov 2013 13:48:10 -0700")
+Message-ID: <87wqkovvzs.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131104162229.GA8921@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04, Oleg Nesterov wrote:
+Anatol Pomozov <anatol.pomozov@gmail.com> writes:
 >
-> On 11/04, Oleg Nesterov wrote:
-> >
-> > But in any case, I strongly believe that it doesn't make any sense to
-> > rely on tu->inode in get_user_vaddr().
+> One idea is not to use the spin_lock. It is the 'fair spin_lock' that
+> has scalability problems
+> http://pdos.csail.mit.edu/papers/linux:lock.pdf Maybe lockless
+> datastructures can help here?
+
+The standard spin lock is already improved.
+But better locks just give you a small advantage, they don't
+solve the real scaling problem.
+
 >
-> Hmm. But I forgot about the case when you probe the function in libc
-> and want to dump the variable in libc...
->
-> So probably I was wrong and this all needs more thinking. Damn.
-> Perhaps we really need to pass @file/offset, but it is not clear what
-> we can do with bss/anon-mapping.
+> Another idea is avoid global datasctructures but I have a few
+> questions here. Let's say we want to use per-CPU lists. But the
+> problem is that producers/consumers are not distributed across all
+> CPUs. Some CPU might have too many producers, some other might not
+> have consumers at all. So we need some kind of migration from hot CPU
+> to the cold one. What is the best way to achieve it? Are there any
+> examples how to do this? Any other ideas?
 
-Or. Not that I really like this, but just for discussion...
+per cpu is the standard approach, but usually overkill. Also
+requires complex code to drain etc.
 
-How about
+Some older patches also use per node, but that works very poorly 
+these days (nodes are far too big) 
 
-	static void __user *get_user_vaddr(struct pt_regs *regs, unsigned long addr)
-	{
-		return (void __force __user *)addr + instruction_pointer(regs);
-	}
+One way I like is to simply use a global (allocated) array of queues,
+sized by total number of possible cpus (but significantly smaller) and
+use the cpu number as a hash into the array.
 
-?
+-Andi
 
-This should solve the problems with relocations/randomization/bss.
-
-The obvious disadvantage is that it is not easy to calculate the
-offset we need to pass as an argument, it depends on the probed
-function.
-
-And this still doesn't allow to, say, probe the executable but read
-the data from libc. Unless, again, we attach to the running process
-or randomize_va_space = 0, so we can know it in advance. But otherwise
-I do not think there is any solution.
-
-Oleg.
-
+-- 
+ak@linux.intel.com -- Speaking for myself only
