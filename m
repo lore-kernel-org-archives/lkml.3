@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753106Ab3KDJVF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 04:21:05 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42208 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752592Ab3KDJVD (ORCPT
+	id S1753327Ab3KDJVW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 04:21:22 -0500
+Received: from georges.telenet-ops.be ([195.130.137.68]:47464 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251Ab3KDJVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 04:21:03 -0500
-Date: Mon, 4 Nov 2013 09:21:02 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: myungjoo.ham@samsung.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] extcon: arizona: Fix reset of HPDET after race
-	with removal
-Message-ID: <20131104092102.GC30879@opensource.wolfsonmicro.com>
-References: <1382890752-30970-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <5276EB32.9060803@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5276EB32.9060803@samsung.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Mon, 4 Nov 2013 04:21:20 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] scsi: Do not call do_div() with a 64-bit divisor
+Date: Mon,  4 Nov 2013 10:21:05 +0100
+Message-Id: <1383556865-7031-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04, 2013 at 09:32:50AM +0900, Chanwoo Choi wrote:
-> The arizona_hpdet_do_id() return only either -EAGIN or 0(zero).
-> extcon-arizona driver could never execute 'goto done;' statement.
-> 
-> 	ret = arizona_hpdet_do_id(info, &reading, &mic);
-> 	if (ret == -EAGAIN) {
-> 		goto out;
-> 	} else if (ret < 0) {
-> 		goto done;
-> 	}
+do_div() is meant for divisions of 64-bit number by 32-bit numbers.
+Passing 64-bit divisor types caused issues in the past on 32-bit platforms,
+cfr. commit ea077b1b96e073eac5c3c5590529e964767fc5f7 ("m68k: Truncate base
+in do_div()").
 
-True that else if is redundant at the moment, but personally I
-would be inclined to leave it in, it feels safer against possible
-future edits of arizona_hpdet_do_id. It would be reasonable for
-someone to assume that other return values are acceptable whilst
-editing it but they would then not be handled.
+As scsi_device.sector_size is unsigned (int), factor should be unsigned
+int, too.
 
-Thanks,
-Charles
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/scsi/sd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 5693f6d7eddb..d6645c70cceb 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1607,7 +1607,7 @@ static unsigned int sd_completed_bytes(struct scsi_cmnd *scmd)
+ 		end_lba <<= 1;
+ 	} else {
+ 		/* be careful ... don't want any overflows */
+-		u64 factor = scmd->device->sector_size / 512;
++		unsigned int factor = scmd->device->sector_size / 512;
+ 		do_div(start_lba, factor);
+ 		do_div(end_lba, factor);
+ 	}
+-- 
+1.7.9.5
+
