@@ -1,99 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573Ab3KDPGA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 10:06:00 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:58715 "EHLO smtp1-g21.free.fr"
+	id S1753751Ab3KDPGJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 10:06:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24803 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753401Ab3KDPF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 10:05:58 -0500
-Message-ID: <1383577538.18301.28.camel@localhost.localdomain>
-Subject: Re: [PATCH] events: add a flag to perf_event_open() to set O_CLOEXEC
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        Yann Droneaud <ydroneaud@opteya.com>
-Date: Mon, 04 Nov 2013 16:05:38 +0100
-In-Reply-To: <20131031181202.GA19466@laptop.lan>
-References: <cover.1383121137.git.ydroneaud@opteya.com>
-	 <3b0bc009ff1410d04f8a1e71bfae0d27e1254b90.1383121137.git.ydroneaud@opteya.com>
-	 <20131030202041.GS16117@laptop.programming.kicks-ass.net>
-	 <94b641a81a06ba4943cf77e80bc271c8@meuh.org>
-	 <1383168950-8933-1-git-send-email-ydroneaud@opteya.com>
-	 <20131031181202.GA19466@laptop.lan>
-Organization: OPTEYA
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1753640Ab3KDPGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 10:06:07 -0500
+Date: Mon, 4 Nov 2013 10:06:00 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Jens Axboe <axboe@kernel.dk>
+cc: Mike Snitzer <snitzer@redhat.com>, Kent Overstreet <kmo@daterainc.com>,
+        dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        Alasdair Kergon <agk@redhat.com>
+Subject: Re: [PATCH for-next] dm: fix missing bi_remaining accounting
+In-Reply-To: <5273C2B8.5030608@kernel.dk>
+Message-ID: <alpine.LRH.2.02.1311041003400.4548@file01.intranet.prod.int.rdu2.redhat.com>
+References: <20131101135931.GA22903@redhat.com> <5273C2B8.5030608@kernel.dk>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-Le jeudi 31 octobre 2013 à 19:12 +0100, Peter Zijlstra a écrit :
-> On Wed, Oct 30, 2013 at 10:35:50PM +0100, Yann Droneaud wrote:
-> > This patch adds PERF_FLAG_FD_CLOEXEC flag for
-> > perf_event_open() syscall.
+
+On Fri, 1 Nov 2013, Jens Axboe wrote:
+
+> On 11/01/2013 07:59 AM, Mike Snitzer wrote:
+> > Add the missing bi_remaining increment, required by the block layer's
+> > new bio-chaining code, to both the verity and old snapshot DM targets.
 > > 
-> > perf_event_open() creates a new file descriptor,
-> > but unlike open() syscall, it lack a flag to atomicaly
-> > set close-on-exec (O_CLOEXEC).
-> > 
-> > Not using O_CLOEXEC by default and not letting userspace
-> > provide the "open" flags should be avoided: in most case
-> > O_CLOEXEC must be used to not leak file descriptor across
-> > exec().
-> > 
-> > Using O_CLOEXEC when creating a file descriptor allows
-> > userspace to set latter, using fcntl(), without any risk
-> > of race, if the file descriptor is going to be inherited
-> > or not across exec().
-> > 
-> > Link: http://lkml.kernel.org/r/94b641a81a06ba4943cf77e80bc271c8@meuh.org
-> > Link: http://lkml.kernel.org/r/cover.1383121137.git.ydroneaud@opteya.com
-> > Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-> > ---
-> > 
-> > Hi Peter,
-> > 
-> > This patch should replaces
-> > "[PATCH v4 6/7] events: use get_unused_fd_flags(0) instead of get_unused_fd()"
-> > 
-> > Please have a look.
+> > Otherwise users will hit the bi_remaining <= 0 BUG_ON in bio_endio().
 > 
-> I'm still terminally confused as to all of this... Why does it matter
-> what the default is if you can change it with fcntl() ?
-
-There's a possible race between open() and fcntl()in multi-threaded
-program, that's why O_CLOEXEC was added to open(), and then added to
-many other system calls.
-
->  Also, how can you tell nobody relies on the current behaviour and its therefore safe
-> to change?
+> Thanks Mike, added to the mix.
 > 
+> -- 
+> Jens Axboe
 
-If *you* cannot tell, then no one could tell, thus the default *must*
-not be changed because no one could ever be sure that no application
-rely on the current behavior.
+Hi
 
-But it's rather pointless to change the default, since the caller of
-get_unused_fd(), eg. syscall perf_event_open(), has a flags argument
-that can be used to ask for O_CLOEXEC. Just like other syscall extended
-to support O_CLOEXEC.
-
-You might want to read "Secure File Descriptor Handling" by 
-Ulrich Drepper [1] who is responsible to adding O_CLOEXEC on open,
-and probably other syscalls
-
-[1] http://udrepper.livejournal.com/20407.html
-
-Regards.
-
--- 
-Yann Droneaud
-OPTEYA
+This improves a little bit on the previous patch, by replacing costly 
+atomic_inc with cheap atomic_set.
 
 
+From: Mikulas Patocka <mpatocka@redhat.com>
+
+dm: change atomic_inc to atomic_set(1)
+
+There are places in dm where we save bi_endio and bi_private, set them to
+target's routine, submit the bio, from the target's bi_endio routine we
+restore bi_endio and bi_private and end the bio with bi_endio.
+
+This causes underflow of bi_remaining, so we must restore bi_remaining
+before ending the bio from the target bi_endio routine.
+
+The code uses atomic_inc for restoration of bi_remaining. This patch
+changes it to atomic_set(1) to avoid an interlocked instruction. In the
+target's bi_endio routine we are sure that bi_remaining is zero
+(otherwise, the bi_endio routine wouldn't be called) and there are no
+concurrent users of the bio, so we can replace atomic_inc with
+atomic_set(1).
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+
+---
+ drivers/md/dm-cache-target.c |    2 +-
+ drivers/md/dm-snap.c         |    2 +-
+ drivers/md/dm-thin.c         |    4 ++--
+ drivers/md/dm-verity.c       |    2 +-
+ 4 files changed, 5 insertions(+), 5 deletions(-)
+
+Index: linux-block/drivers/md/dm-cache-target.c
+===================================================================
+--- linux-block.orig/drivers/md/dm-cache-target.c	2013-11-01 17:21:11.000000000 +0100
++++ linux-block/drivers/md/dm-cache-target.c	2013-11-04 13:59:13.000000000 +0100
+@@ -670,7 +670,7 @@ static void writethrough_endio(struct bi
+ 	 * Must bump bi_remaining to allow bio to complete with
+ 	 * restored bi_end_io.
+ 	 */
+-	atomic_inc(&bio->bi_remaining);
++	atomic_set(&bio->bi_remaining, 1);
+ 
+ 	if (err) {
+ 		bio_endio(bio, err);
+Index: linux-block/drivers/md/dm-snap.c
+===================================================================
+--- linux-block.orig/drivers/md/dm-snap.c	2013-11-01 17:21:11.000000000 +0100
++++ linux-block/drivers/md/dm-snap.c	2013-11-04 13:59:56.000000000 +0100
+@@ -1415,7 +1415,7 @@ out:
+ 	if (full_bio) {
+ 		full_bio->bi_end_io = pe->full_bio_end_io;
+ 		full_bio->bi_private = pe->full_bio_private;
+-		atomic_inc(&full_bio->bi_remaining);
++		atomic_set(&full_bio->bi_remaining, 1);
+ 	}
+ 	free_pending_exception(pe);
+ 
+Index: linux-block/drivers/md/dm-thin.c
+===================================================================
+--- linux-block.orig/drivers/md/dm-thin.c	2013-11-01 17:21:11.000000000 +0100
++++ linux-block/drivers/md/dm-thin.c	2013-11-04 14:00:19.000000000 +0100
+@@ -613,7 +613,7 @@ static void process_prepared_mapping_fai
+ {
+ 	if (m->bio) {
+ 		m->bio->bi_end_io = m->saved_bi_end_io;
+-		atomic_inc(&m->bio->bi_remaining);
++		atomic_set(&m->bio->bi_remaining, 1);
+ 	}
+ 	cell_error(m->tc->pool, m->cell);
+ 	list_del(&m->list);
+@@ -630,7 +630,7 @@ static void process_prepared_mapping(str
+ 	bio = m->bio;
+ 	if (bio) {
+ 		bio->bi_end_io = m->saved_bi_end_io;
+-		atomic_inc(&bio->bi_remaining);
++		atomic_set(&bio->bi_remaining, 1);
+ 	}
+ 
+ 	if (m->err) {
+Index: linux-block/drivers/md/dm-verity.c
+===================================================================
+--- linux-block.orig/drivers/md/dm-verity.c	2013-11-01 17:21:11.000000000 +0100
++++ linux-block/drivers/md/dm-verity.c	2013-11-04 13:59:28.000000000 +0100
+@@ -384,7 +384,7 @@ static void verity_finish_io(struct dm_v
+ 
+ 	bio->bi_end_io = io->orig_bi_end_io;
+ 	bio->bi_private = io->orig_bi_private;
+-	atomic_inc(&bio->bi_remaining);
++	atomic_set(&bio->bi_remaining, 1);
+ 
+ 	bio_endio(bio, error);
+ }
