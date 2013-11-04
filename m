@@ -1,91 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563Ab3KDA3Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 19:29:16 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:49549 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750907Ab3KDA3P (ORCPT
+	id S1752053Ab3KDAcw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 19:32:52 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:32379 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225Ab3KDAcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 19:29:15 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH on top of 3/3] ACPI / hotplug: Remove unnecessary get_device() and put_device()
-Date: Mon, 04 Nov 2013 01:41:30 +0100
-Message-ID: <4764721.0I4yXO61da@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <5913958.7oJcoqqQ9l@vostro.rjw.lan>
-References: <5839747.7HXXGHmMBd@vostro.rjw.lan> <5913958.7oJcoqqQ9l@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Sun, 3 Nov 2013 19:32:51 -0500
+X-AuditID: cbfee691-b7f866d000001b8c-fa-5276eb310234
+Message-id: <5276EB32.9060803@samsung.com>
+Date: Mon, 04 Nov 2013 09:32:50 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: myungjoo.ham@samsung.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] extcon: arizona: Fix reset of HPDET after race with
+ removal
+References: <1382890752-30970-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+In-reply-to: <1382890752-30970-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsWyRsSkRNfwdVmQwY4+VYt/U26wW1zeNYfN
+	4nbjCjaL5W//szmweLyc+JvNo2/LKkaPz5vkApijuGxSUnMyy1KL9O0SuDIWvexnKXjIVXFx
+	+l6mBsaTHF2MnBwSAiYSJ6feY4KwxSQu3FvP1sXIxSEksJRR4sSZL+wwRZPvP2cDsYUEFjFK
+	zPusAFH0ilFi19MnYN28AloSt9pnMILYLAKqEvd/LgGLswHF97+4AdYsKhAmsXL6FRaIekGJ
+	H5PvgdkiAhYSU5bcYgaxmQUSJeacg1gsLBAp8fv9SxaIxaESKycvZu1i5ODgBJpz/kcKRLmO
+	xP7WaWwQtrzE5jVvmSFuXsYuMf1gJcQ5AhLfJh9iAWmVEJCV2HQAqkRS4uCKGywTGMVmITlo
+	FpKps5BMXcDIvIpRNLUguaA4Kb3IVK84Mbe4NC9dLzk/dxMjMIJO/3s2cQfj/QPWhxiTgVZO
+	ZJYSTc4HRmBeSbyhsZmRhamJqbGRuaUZacJK4rzpj5KChATSE0tSs1NTC1KL4otKc1KLDzEy
+	cXBKNTAK/YtfZLJSdNml+zHrzqt/2Pvi44WefNb/ec/cQgSWudqq+zjOtmPxmiInVZjxmqVm
+	6oGcybtuHg7dn/ZIKaAu5ajrIsHCIzMn+D41D9jLa7Ls+Bl75iCn6y4eL5mb5bPZ355oONXb
+	+51zmtf5a2/DpQtzN87mUSxqjtP4sq45dbqX/Y+jmRlKLMUZiYZazEXFiQBDMFYctgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+xgK7h67Igg5cvZC3+TbnBbnF51xw2
+	i9uNK9gslr/9z+bA4vFy4m82j74tqxg9Pm+SC2COamC0yUhNTEktUkjNS85PycxLt1XyDo53
+	jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAFap6RQlphTChQKSCwuVtK3wzQhNMRN1wKmMULX
+	NyQIrsfIAA0krGHMWPSyn6XgIVfFxel7mRoYT3J0MXJySAiYSEy+/5wNwhaTuHBvPZgtJLCI
+	UWLeZ4UuRi4g+xWjxK6nT5hAErwCWhK32mcwgtgsAqoS938uAYuzAcX3v7gB1iwqECaxcvoV
+	Foh6QYkfk++B2SICFhJTltxiBrGZBRIl5pz7wg5iCwtESvx+/5IFYnGoxMrJi1m7GDk4OIHm
+	nP+RAlGuI7G/dRobhC0vsXnNW+YJjAKzkGyYhaRsFpKyBYzMqxhFUwuSC4qT0nMN9YoTc4tL
+	89L1kvNzNzGCI/SZ1A7GlQ0WhxgFOBiVeHglLpcFCbEmlhVX5h5ilOBgVhLhdT4HFOJNSays
+	Si3Kjy8qzUktPsSYDAyAicxSosn5wOSRVxJvaGxiZmRpZG5oYWRsTpqwkjjvgVbrQCGB9MSS
+	1OzU1ILUIpgtTBycUg2MEZLzOh77G8c4zNJJS5X/058cesYkofWT6syyrU+qu2a8VfusorN+
+	1ZeZ2z+sZMhaecwg7JvMdp60r7e/vF1+iWUqb/6pqxa/i98yZpRfvjLvQYyp1v9TjpktE54u
+	4Rb9KSDgM2+l7ecb+nGtUpcmPn8y83188uSqX1P7wiaeWdTwz+FR4CJbUyWW4oxEQy3mouJE
+	APncVQsUAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi Charles,
 
-The get_device() and put_device() calls made by acpi_bus_device_eject()
-and acpi_scan_hot_remove(), respectively, are not necessary any more,
-so remove them.
+On 10/28/2013 01:19 AM, Charles Keepax wrote:
+> We need to make sure we reset back to our starting state, especially
+> making sure that we have disabled poll in the register cache.
+> 
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> ---
+>  drivers/extcon/extcon-arizona.c |    8 +++++++-
+>  1 files changed, 7 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+> index ec9a14e..dac8ba0 100644
+> --- a/drivers/extcon/extcon-arizona.c
+> +++ b/drivers/extcon/extcon-arizona.c
+> @@ -596,9 +596,15 @@ static irqreturn_t arizona_hpdet_irq(int irq, void *data)
+>  		dev_err(arizona->dev, "Failed to report HP/line: %d\n",
+>  			ret);
+>  
+> +done:
+> +	/* Reset back to starting range */
+> +	regmap_update_bits(arizona->regmap,
+> +			   ARIZONA_HEADPHONE_DETECT_1,
+> +			   ARIZONA_HP_IMPEDANCE_RANGE_MASK | ARIZONA_HP_POLL,
+> +			   0);
+> +
+>  	arizona_extcon_do_magic(info, 0);
+>  
+> -done:
+>  	if (id_gpio)
+>  		gpio_set_value_cansleep(id_gpio, 0);
+>  
+> 
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+The arizona_hpdet_do_id() return only either -EAGIN or 0(zero).
+extcon-arizona driver could never execute 'goto done;' statement.
 
-Actually, after https://patchwork.kernel.org/patch/3134091/ the
-get_device() and put_device() calls may be dropped just fine.
+	ret = arizona_hpdet_do_id(info, &reading, &mic);
+	if (ret == -EAGAIN) {
+		goto out;
+	} else if (ret < 0) {
+		goto done;
+	}
 
 Thanks,
-Rafael
+Chanwoo Choi
 
----
- drivers/acpi/scan.c |    5 -----
- 1 file changed, 5 deletions(-)
-
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -205,7 +205,6 @@ static int acpi_scan_hot_remove(struct a
- 	/* If there is no handle, the device node has been unregistered. */
- 	if (!handle) {
- 		dev_dbg(&device->dev, "ACPI handle missing\n");
--		put_device(&device->dev);
- 		return -EINVAL;
- 	}
- 
-@@ -226,7 +225,6 @@ static int acpi_scan_hot_remove(struct a
- 		dev_warn(errdev, "Offline disabled.\n");
- 		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
- 				    acpi_bus_online, NULL, NULL, NULL);
--		put_device(&device->dev);
- 		return -EPERM;
- 	}
- 	acpi_bus_offline(handle, 0, (void *)false, (void **)&errdev);
-@@ -245,7 +243,6 @@ static int acpi_scan_hot_remove(struct a
- 			acpi_walk_namespace(ACPI_TYPE_ANY, handle,
- 					    ACPI_UINT32_MAX, acpi_bus_online,
- 					    NULL, NULL, NULL);
--			put_device(&device->dev);
- 			return -EBUSY;
- 		}
- 	}
-@@ -256,7 +253,6 @@ static int acpi_scan_hot_remove(struct a
- 	acpi_bus_trim(device);
- 
- 	/* Device node has been unregistered. */
--	put_device(&device->dev);
- 	device = NULL;
- 
- 	acpi_evaluate_lck(handle, 0);
-@@ -310,7 +306,6 @@ static void acpi_bus_device_eject(acpi_h
- 	if (handler->hotplug.mode == AHM_CONTAINER)
- 		kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
- 
--	get_device(&device->dev);
- 	error = acpi_scan_hot_remove(device);
- 	if (error == -EPERM) {
- 		goto err_support;
 
