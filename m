@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab3KDNAb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 08:00:31 -0500
-Received: from jacques.telenet-ops.be ([195.130.132.50]:45423 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab3KDNAa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 08:00:30 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jens Axboe <axboe@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] block: Do not call sector_div() with a 64-bit divisor
-Date: Mon,  4 Nov 2013 14:00:06 +0100
-Message-Id: <1383570006-4605-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752793Ab3KDNJi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 08:09:38 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:48112 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751632Ab3KDNJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 08:09:36 -0500
+Message-ID: <52779C6C.1090603@ti.com>
+Date: Mon, 4 Nov 2013 18:39:00 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Tomasz Figa <t.figa@samsung.com>
+CC: Vivek Gautam <gautam.vivek@samsung.com>, <linux-usb@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-doc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <kgene.kim@samsung.com>, <k.debski@samsung.com>,
+        <s.nawrocki@samsung.com>, <balbi@ti.com>, <jwerner@chromium.org>,
+        <jg1.han@samsung.com>
+Subject: Re: [PATCH RFC 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
+References: <1383205544-32244-1-git-send-email-gautam.vivek@samsung.com> <1383205544-32244-2-git-send-email-gautam.vivek@samsung.com> <527744B2.4090303@ti.com> <1539581.zprt32081v@amdc1227>
+In-Reply-To: <1539581.zprt32081v@amdc1227>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-do_div() (called by sector_div() if CONFIG_LBDAF=y) is meant for divisions
-of 64-bit number by 32-bit numbers.  Passing 64-bit divisor types caused
-issues in the past on 32-bit platforms, cfr. commit
-ea077b1b96e073eac5c3c5590529e964767fc5f7 ("m68k: Truncate base in
-do_div()").
+On Monday 04 November 2013 05:56 PM, Tomasz Figa wrote:
+> Hi Kishon,
+>
+> On Monday 04 of November 2013 12:24:42 Kishon Vijay Abraham I wrote:
+>> Hi Vivek,
+>>
+>> On Thursday 31 October 2013 01:15 PM, Vivek Gautam wrote:
+>>> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
+>>> The new driver uses the generic PHY framework and will interact
+>>> with DWC3 controller present on Exynos5 series of SoCs.
+>>
+>> In Exynos, you have a single IP that supports both USB3 and USB2 PHY
+>> right? I think that needs to be mentioned here.
+>
+> Nope. There are two separate, different IPs.
 
-As queue_limits.max_discard_sectors and .discard_granularity are unsigned
-int, max_discard_sectors and granularity should be unsigned int.
-As bdev_discard_alignment() returns int, alignment should be int.
-Now 2 calls to sector_div() can be replaced by 32-bit arithmetic:
-  - The 64-bit modulo operation can become a 32-bit modulo operation,
-  - The 64-bit division and multiplication can be replaced by a 32-bit
-    modulo operation and a subtraction.
+Alright. Thanks for the clarification.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-Please review!
+Cheers
+Kishon
 
- block/blk-lib.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index d6f50d572565..9b5b561cb928 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -43,8 +43,8 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 	DECLARE_COMPLETION_ONSTACK(wait);
- 	struct request_queue *q = bdev_get_queue(bdev);
- 	int type = REQ_WRITE | REQ_DISCARD;
--	sector_t max_discard_sectors;
--	sector_t granularity, alignment;
-+	unsigned int max_discard_sectors, granularity;
-+	int alignment;
- 	struct bio_batch bb;
- 	struct bio *bio;
- 	int ret = 0;
-@@ -58,16 +58,14 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 
- 	/* Zero-sector (unknown) and one-sector granularities are the same.  */
- 	granularity = max(q->limits.discard_granularity >> 9, 1U);
--	alignment = bdev_discard_alignment(bdev) >> 9;
--	alignment = sector_div(alignment, granularity);
-+	alignment = (bdev_discard_alignment(bdev) >> 9) % granularity;
- 
- 	/*
- 	 * Ensure that max_discard_sectors is of the proper
- 	 * granularity, so that requests stay aligned after a split.
- 	 */
- 	max_discard_sectors = min(q->limits.max_discard_sectors, UINT_MAX >> 9);
--	sector_div(max_discard_sectors, granularity);
--	max_discard_sectors *= granularity;
-+	max_discard_sectors -= max_discard_sectors % granularity;
- 	if (unlikely(!max_discard_sectors)) {
- 		/* Avoid infinite loop below. Being cautious never hurts. */
- 		return -EOPNOTSUPP;
--- 
-1.7.9.5
+>
+>> Do you have separate registers that should be used for
+>> initializing/powerin_on/powering_off etc.. for usb2 phy and usb3 phy? If
+>> so, then you should model this driver as a single driver that supports
+>> two PHYs similar to what Sylwester has done before?
+>
+> Sylwester's MIPI PHY uses such model because it has a single register
+> that controls both PHYs.
+>
+> Best regards,
+> Tomasz
+>
 
