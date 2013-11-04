@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab3KDQEg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 11:04:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10405 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887Ab3KDQEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 11:04:34 -0500
-Date: Mon, 4 Nov 2013 11:04:30 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: axboe@kernel.dk, kmo@daterainc.com, dm-devel@redhat.com, agk@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH for-next] dm: fix missing bi_remaining accounting
-Message-ID: <20131104160336.GB12398@redhat.com>
-References: <20131101135931.GA22903@redhat.com>
- <5273C2B8.5030608@kernel.dk>
- <alpine.LRH.2.02.1311041003400.4548@file01.intranet.prod.int.rdu2.redhat.com>
- <20131104152001.GA12398@redhat.com>
- <alpine.LRH.2.02.1311041023090.4548@file01.intranet.prod.int.rdu2.redhat.com>
+	id S1753477Ab3KDQGV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 11:06:21 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35384 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526Ab3KDQGT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 11:06:19 -0500
+Message-ID: <5277C5F8.3080609@infradead.org>
+Date: Mon, 04 Nov 2013 08:06:16 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1311041023090.4548@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Kees Cook <keescook@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH -next] random: needs linux/device.h for struct device
+References: <20131104175916.763e3c0cf001b9f948f2baa7@canb.auug.org.au>
+In-Reply-To: <20131104175916.763e3c0cf001b9f948f2baa7@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04 2013 at 10:25am -0500,
-Mikulas Patocka <mpatocka@redhat.com> wrote:
+on x86_64:
 
-> 
-> 
-> On Mon, 4 Nov 2013, Mike Snitzer wrote:
-> 
-> > On Mon, Nov 04 2013 at 10:06am -0500,
-> > Mikulas Patocka <mpatocka@redhat.com> wrote:
-> > > 
-> > > The code uses atomic_inc for restoration of bi_remaining. This patch
-> > > changes it to atomic_set(1) to avoid an interlocked instruction. In the
-> > > target's bi_endio routine we are sure that bi_remaining is zero
-> > > (otherwise, the bi_endio routine wouldn't be called) and there are no
-> > > concurrent users of the bio, so we can replace atomic_inc with
-> > > atomic_set(1).
-> > 
-> > This isn't DM-specific.  Shouldn't the other places in the tree that use
-> > atomic_inc on bi_remaining should really be converted at the same time?
-> 
-> There is no 'atomic_inc.*bi_remaining' in other drivers.
+drivers/char/random.c: In function 'add_device_attach_randomness':
+drivers/char/random.c:837:41: error: dereferencing pointer to incomplete type
 
-Wrong.  I know btrfs has at least one.  As does bcache afaik.
+
+need to #include <linux/device.h> for struct device, I think.
+Yes, that works.
+
+---
+From: Randy Dunlap <rdunlap@infradead.org>
+
+Fix struct device build failure on x86_64 by including <linux/device.h>:
+
+drivers/char/random.c: In function 'add_device_attach_randomness':
+drivers/char/random.c:837:41: error: dereferencing pointer to incomplete type
+
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+---
+ drivers/char/random.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- linux-next-20131104.orig/drivers/char/random.c
++++ linux-next-20131104/drivers/char/random.c
+@@ -240,6 +240,7 @@
+ #include <linux/kernel.h>
+ #include <linux/major.h>
+ #include <linux/string.h>
++#include <linux/device.h>
+ #include <linux/fcntl.h>
+ #include <linux/slab.h>
+ #include <linux/random.h>
+
+
+
+
+---
