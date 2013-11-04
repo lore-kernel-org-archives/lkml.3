@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607Ab3KDN1W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 08:27:22 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:49709 "HELO
+	id S1753652Ab3KDN1k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 08:27:40 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:58841 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753236Ab3KDN0C (ORCPT
+	with SMTP id S1752971Ab3KDN0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 08:26:02 -0500
+	Mon, 4 Nov 2013 08:26:01 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
         Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [Update][PATCH 3/6] ACPI / hotplug: Fix handle_root_bridge_removal()
-Date: Mon, 04 Nov 2013 14:33:09 +0100
-Message-ID: <6808835.gmCqHn1NaE@vostro.rjw.lan>
+Subject: [Update][PATCH 4/6] ACPI / hotplug: Simplify device ejection routines
+Date: Mon, 04 Nov 2013 14:36:44 +0100
+Message-ID: <1602442.26cFiMyQkW@vostro.rjw.lan>
 User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
 In-Reply-To: <2970389.SeMGM45Qln@vostro.rjw.lan>
 References: <5839747.7HXXGHmMBd@vostro.rjw.lan> <2970389.SeMGM45Qln@vostro.rjw.lan>
@@ -27,41 +27,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-It is required to do get_device() on the struct acpi_device in
-question before passing it to acpi_bus_hot_remove_device() through
-acpi_os_hotplug_execute(), because acpi_bus_hot_remove_device()
-calls acpi_scan_hot_remove() that does put_device() on that
-object.
-
-The ACPI PCI root removal routine, handle_root_bridge_removal(),
-doesn't do that, which may lead to premature freeing of the
-device object or to executing put_device() on an object that
-has been freed already.
-
-Fix this problem by making handle_root_bridge_removal() use
-get_device() as appropriate.
+Simplify handle_root_bridge_removal() and acpi_eject_store() by
+getting rid of struct acpi_eject_event and passing device objects
+directly to async routines executed via acpi_os_hotplug_execute().
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/acpi/pci_root.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/acpi/pci_root.c |   20 ++------------------
+ drivers/acpi/scan.c     |   46 ++++++++++++++++++----------------------------
+ include/acpi/acpi_bus.h |    5 -----
+ 3 files changed, 20 insertions(+), 51 deletions(-)
 
 Index: linux-pm/drivers/acpi/pci_root.c
 ===================================================================
 --- linux-pm.orig/drivers/acpi/pci_root.c
 +++ linux-pm/drivers/acpi/pci_root.c
-@@ -608,9 +608,12 @@ static void handle_root_bridge_removal(s
- 	ej_event->device = device;
- 	ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
+@@ -593,27 +593,11 @@ static void handle_root_bridge_insertion
+ static void handle_root_bridge_removal(struct acpi_device *device)
+ {
+ 	acpi_status status;
+-	struct acpi_eject_event *ej_event;
+-
+-	ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
+-	if (!ej_event) {
+-		/* Inform firmware the hot-remove operation has error */
+-		(void) acpi_evaluate_hotplug_ost(device->handle,
+-					ACPI_NOTIFY_EJECT_REQUEST,
+-					ACPI_OST_SC_NON_SPECIFIC_FAILURE,
+-					NULL);
+-		return;
+-	}
+-
+-	ej_event->device = device;
+-	ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
  
-+	get_device(&device->dev);
- 	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, ej_event);
--	if (ACPI_FAILURE(status))
-+	if (ACPI_FAILURE(status)) {
-+		put_device(&device->dev);
- 		kfree(ej_event);
-+	}
+ 	get_device(&device->dev);
+-	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, ej_event);
+-	if (ACPI_FAILURE(status)) {
++	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, device);
++	if (ACPI_FAILURE(status))
+ 		put_device(&device->dev);
+-		kfree(ej_event);
+-	}
  }
  
  static void _handle_hotplug_event_root(struct work_struct *work)
-
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -441,18 +441,8 @@ static void acpi_hotplug_notify_cb(acpi_
+ 					  NULL);
+ }
+ 
+-/**
+- * acpi_bus_hot_remove_device: hot-remove a device and its children
+- * @context: struct acpi_eject_event pointer (freed in this func)
+- *
+- * Hot-remove a device and its children. This function frees up the
+- * memory space passed by arg context, so that the caller may call
+- * this function asynchronously through acpi_os_hotplug_execute().
+- */
+-void acpi_bus_hot_remove_device(void *context)
++void __acpi_bus_hot_remove_device(struct acpi_device *device, u32 ost_src)
+ {
+-	struct acpi_eject_event *ej_event = context;
+-	struct acpi_device *device = ej_event->device;
+ 	acpi_handle handle = device->handle;
+ 	int error;
+ 
+@@ -461,13 +451,21 @@ void acpi_bus_hot_remove_device(void *co
+ 
+ 	error = acpi_scan_hot_remove(device);
+ 	if (error && handle)
+-		acpi_evaluate_hotplug_ost(handle, ej_event->event,
++		acpi_evaluate_hotplug_ost(handle, ost_src,
+ 					  ACPI_OST_SC_NON_SPECIFIC_FAILURE,
+ 					  NULL);
+ 
+ 	mutex_unlock(&acpi_scan_lock);
+ 	unlock_device_hotplug();
+-	kfree(context);
++}
++
++/**
++ * acpi_bus_hot_remove_device: Hot-remove a device and its children.
++ * @context: Address of the ACPI device object to hot-remove.
++ */
++void acpi_bus_hot_remove_device(void *context)
++{
++	__acpi_bus_hot_remove_device(context, ACPI_NOTIFY_EJECT_REQUEST);
+ }
+ EXPORT_SYMBOL(acpi_bus_hot_remove_device);
+ 
+@@ -497,15 +495,18 @@ static ssize_t power_state_show(struct d
+ 
+ static DEVICE_ATTR(power_state, 0444, power_state_show, NULL);
+ 
++static void acpi_eject_store_work(void *context)
++{
++	__acpi_bus_hot_remove_device(context, ACPI_OST_EC_OSPM_EJECT);
++}
++
+ static ssize_t
+ acpi_eject_store(struct device *d, struct device_attribute *attr,
+ 		const char *buf, size_t count)
+ {
+ 	struct acpi_device *acpi_device = to_acpi_device(d);
+-	struct acpi_eject_event *ej_event;
+ 	acpi_object_type not_used;
+ 	acpi_status status;
+-	int ret;
+ 
+ 	if (!count || buf[0] != '1')
+ 		return -EINVAL;
+@@ -518,28 +519,17 @@ acpi_eject_store(struct device *d, struc
+ 	if (ACPI_FAILURE(status) || !acpi_device->flags.ejectable)
+ 		return -ENODEV;
+ 
+-	ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
+-	if (!ej_event) {
+-		ret = -ENOMEM;
+-		goto err_out;
+-	}
+ 	acpi_evaluate_hotplug_ost(acpi_device->handle, ACPI_OST_EC_OSPM_EJECT,
+ 				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+-	ej_event->device = acpi_device;
+-	ej_event->event = ACPI_OST_EC_OSPM_EJECT;
+ 	get_device(&acpi_device->dev);
+-	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, ej_event);
++	status = acpi_os_hotplug_execute(acpi_eject_store_work, acpi_device);
+ 	if (ACPI_SUCCESS(status))
+ 		return count;
+ 
+ 	put_device(&acpi_device->dev);
+-	kfree(ej_event);
+-	ret = status == AE_NO_MEMORY ? -ENOMEM : -EAGAIN;
+-
+- err_out:
+ 	acpi_evaluate_hotplug_ost(acpi_device->handle, ACPI_OST_EC_OSPM_EJECT,
+ 				  ACPI_OST_SC_NON_SPECIFIC_FAILURE, NULL);
+-	return ret;
++	return -EAGAIN;
+ }
+ 
+ static DEVICE_ATTR(eject, 0200, NULL, acpi_eject_store);
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -339,11 +339,6 @@ struct acpi_bus_event {
+ 	u32 data;
+ };
+ 
+-struct acpi_eject_event {
+-	struct acpi_device	*device;
+-	u32		event;
+-};
+-
+ struct acpi_hp_work {
+ 	struct work_struct work;
+ 	acpi_handle handle;
