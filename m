@@ -1,270 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab3KDScm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 13:32:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64726 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753013Ab3KDScY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 13:32:24 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
+	id S1751644Ab3KDSit (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 13:38:49 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:55474 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760Ab3KDSis convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 13:38:48 -0500
+Date: Mon, 4 Nov 2013 19:38:46 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andreas Mohr <andi@lisas.de>, Oleg Nesterov <oleg@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH 2/2] perf tools: Add perf_data_file__write mmap support
-Date: Mon,  4 Nov 2013 19:31:45 +0100
-Message-Id: <1383589905-10208-3-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1383589905-10208-1-git-send-email-jolsa@redhat.com>
-References: <1383589905-10208-1-git-send-email-jolsa@redhat.com>
+        LKML <linux-kernel@vger.kernel.org>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 4/5] sched: Refactor iowait accounting
+Message-ID: <20131104183846.GA24826@rhlx01.hs-esslingen.de>
+References: <1382195841-6558-5-git-send-email-fweisbec@gmail.com>
+ <20131020111006.GA26671@rhlx01.hs-esslingen.de>
+ <20131104173421.GH9299@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20131104173421.GH9299@localhost.localdomain>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When recording raw_syscalls for the entire system, e.g.,
-  perf record -e raw_syscalls:*,sched:sched_switch -a -- sleep 10
+On Mon, Nov 04, 2013 at 06:34:23PM +0100, Frederic Weisbecker wrote:
+> On Sun, Oct 20, 2013 at 01:10:06PM +0200, Andreas Mohr wrote:
+> > In case of high update traffic of parts guarded by rq->iowait_lock
+> > (is that a relevant case?),
+> >
+> > it might be useful to merely grab all relevant values into helper vars
+> > (i.e., establish a consistent "view" on things), now, start, nr_iowait etc. -
+> > this would enable us to do ktime_sub(), ktime_add() calculations
+> > *once*, after the fact. Drawback would be that this reduces seqlock
+> > guard scope (would not be active any more during runtime spent for calculations,
+> > i.e. another update may happen during that calculation time),
+> > but then that function's purpose merely is to provide a *consistent
+> > one-time probe* of a continually updated value anyway, so it does not
+> > matter if we happen to return values of one update less
+> > than is already available.
+> 
+> I'm not sure I really understand what you mean here. But I don't think we can do the
+> iowait_start/iowait_time probe only once. The retry part is necessary to make
+> sure that we have coherent results against a given update sequence. Otherwise we
+> need to use pure exclusive locks, like spinlocks. If we find out that there are issues
+> wrt. readers starvations or livelocks, may be we'll do this but I believe that won't
+> be needed.
 
-you end up with a negative feedback loop as perf itself calls
-write() fairly often. This patch handles the problem by mmap'ing the
-file in chunks of 64M at a time and copies events from the event buffers
-to the file avoiding write system calls.
+Seqlocks are of course a good way to properly guard consistency
+while updates ongoing, and such handling *is* required like is being
+done here (or, alternatively similar to that).
 
-Before (with write syscall):
-  # time ./perf.old record -e raw_syscalls:*,sched:sched_switch -a -- sleep 10
-  [ perf record: Woken up 0 times to write data ]
-  [ perf record: Captured and wrote 914.717 MB perf.data (~39964591 samples) ]
+I was just indicating that it might make sense to draw a minimalist-data
+watch "view" from some updated-values area, to enable then doing the final
+(and a possibly expensive!) calculation *post-seqlock*, i.e. processing these
+stack-local helpers only once values consistency was successfully verified.
 
-  real    0m11.390s
-  user    0m2.029s
-  sys     0m9.311s
+In your case here, the extraneous inner-seqlock handling merely consists
+of few subtractions/additions, so it quite likely does not make sense
+to actively move those values over into stack-local *copies*
+(especially since having ongoing update activity occurring
+probably won't be a hotpath case),
+but for some other cases of seqlock use that might be useful, to minimize
+within-seqlock handling overhead.
 
-After (using mmap):
-  # time ./perf record -e raw_syscalls:*,sched:sched_switch -a -- sleep 10
-  [ perf record: Woken up 74 times to write data ]
-  [ perf record: Captured and wrote 19.231 MB perf.data (~840219 samples) ]
 
-  real    0m10.182s
-  user    0m0.067s
-  sys     0m0.121s
+> I think I'm going to respin this series but move back the iowait time update part to
+> the idle code. The update made in io_schedule() doesn't work since we really need it
+> to account iowait time when the CPU is idle only: idle time accounting itself depend
+> on it, and the callers of get_...time_us() rely on that too. Plus doing the update
+> only when the CPU is idle will result in less overhead.
 
-In addition to perf-trace benefits using mmap lowers the overhead of
-perf-record.
+OK, probably (I haven't quite fully analyzed it).
+But it would be good to achieve rectifying handling
+to make calculation of cumulative I/O wait time of a runqueue element
+properly account for the asymmetric case (this-initiating-cpu that-ending-cpu).
+And frankly I'm still confused about what kind of valuable property
+exactly it is that we're measuring here... (I/O wait time while CPU idle,
+especially in the distributed-SMP case). The criteria seem murky.
 
-v3: moved David's code into perf_data_file object, also used
-    most of his changelog
+Hmm, unless... we're talking a truly properly CPU-agnostic "global" accounting
+which properly registers the delta which extends
+from start-I/O with *all CPUs now idle*
+to that I/O being finished (on *whichever* CPU!!),
+*and with all intermediate time periods of _any_ CPUs non-idle properly excluded*.
 
-Original-patch-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/builtin-record.c |  11 ++---
- tools/perf/util/data.c      | 100 +++++++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/data.h      |   8 ++++
- 3 files changed, 112 insertions(+), 7 deletions(-)
+So, from my limited analysis/understanding, a precise implementation of
+that accounting
+to me seems to have (at least?) the following responsibilities:
+- ensure properly isolated *per-runqueue-element attribution*
+  of I/O-while-CPUs-fully-idle cumulative time, belonging to *that*
+  runqueue element
+- ensure an accounting which properly starts attributing *any* ongoing I/O
+  activities to idle-time I/O once all CPUs went idle
+- ensure an accounting which does proper *exclusion*
+  of any intermediate *non-idle* periods (i.e., whenever *even a single CPU*
+  exited idle state)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 5201677..45722fc 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -240,12 +240,8 @@ out:
- 
- static int process_buildids(struct perf_record *rec)
- {
--	struct perf_data_file *file  = &rec->file;
- 	struct perf_session *session = rec->session;
--
--	u64 size = lseek(file->fd, 0, SEEK_CUR);
--	if (size == 0)
--		return 0;
-+	u64 size = perf_data_file__size(&rec->file);
- 
- 	return __perf_session__process_events(session, rec->post_processing_offset,
- 					      size - rec->post_processing_offset,
-@@ -535,6 +531,11 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 	if (quiet || signr == SIGUSR1)
- 		return 0;
- 
-+	if (perf_data_file__munmap(file)) {
-+		pr_err("data file unmap failed\n");
-+		goto out_delete_session;
-+	}
-+
- 	fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
- 
- 	/*
-diff --git a/tools/perf/util/data.c b/tools/perf/util/data.c
-index cce1256..af5d644 100644
---- a/tools/perf/util/data.c
-+++ b/tools/perf/util/data.c
-@@ -4,10 +4,13 @@
- #include <sys/stat.h>
- #include <unistd.h>
- #include <string.h>
-+#include <sys/mman.h>
- 
- #include "data.h"
- #include "util.h"
- 
-+#define MMAP_WRITE_SIZE   (64*1024*1024)
-+
- static bool check_pipe(struct perf_data_file *file)
- {
- 	struct stat st;
-@@ -111,6 +114,9 @@ int perf_data_file__open(struct perf_data_file *file)
- 	if (!file->path)
- 		file->path = "perf.data";
- 
-+	if (!file->mmap_size)
-+		file->mmap_size = MMAP_WRITE_SIZE;
-+
- 	return open_file(file);
- }
- 
-@@ -119,8 +125,70 @@ void perf_data_file__close(struct perf_data_file *file)
- 	close(file->fd);
- }
- 
--ssize_t perf_data_file__write(struct perf_data_file *file,
--			      void *buf, size_t size)
-+static int do_mmap(struct perf_data_file *file, u64 offset)
-+{
-+	u64 mmap_size = file->mmap_size;
-+
-+	file->mmap_off  = offset % mmap_size;
-+	file->mmap_foff = (offset / mmap_size) * mmap_size;
-+
-+	file->mmap_addr = mmap(NULL, mmap_size,
-+			       PROT_WRITE | PROT_READ,
-+			       MAP_SHARED,
-+			       file->fd,
-+			       file->mmap_foff);
-+
-+	if (file->mmap_addr == MAP_FAILED) {
-+		pr_err("mmap failed: %d: %s\n", errno, strerror(errno));
-+		return -1;
-+	}
-+
-+	/* Expand file to include this mmap segment. */
-+	if (ftruncate(file->fd, file->mmap_foff + file->mmap_size) != 0) {
-+		pr_err("ftruncate failed: %d: %s\n", errno, strerror(errno));
-+		return -1;
-+	}
-+
-+	return 0;
-+}
-+
-+static ssize_t write_mmap(struct perf_data_file *file,
-+			  void *buf, size_t size)
-+{
-+	ssize_t total = size;
-+
-+	if (!file->mmap_addr) {
-+		off_t offset = lseek(file->fd, 0, SEEK_CUR);
-+		if (offset < 0)
-+			return -1;
-+
-+		if (do_mmap(file, offset))
-+			return -1;
-+	}
-+
-+	while (size) {
-+		u64 remain = file->mmap_size - file->mmap_off;
-+
-+		if (size > remain) {
-+			memcpy(file->mmap_addr + file->mmap_off, buf, remain);
-+			size -= remain;
-+			buf  += remain;
-+
-+			munmap(file->mmap_addr, file->mmap_size);
-+			if (do_mmap(file, file->mmap_foff + file->mmap_size))
-+				return -1;
-+		} else {
-+			memcpy(file->mmap_addr + file->mmap_off, buf, size);
-+			file->mmap_off += size;
-+			size = 0;
-+		}
-+	}
-+
-+	return total;
-+}
-+
-+static ssize_t write_raw(struct perf_data_file *file,
-+			 void *buf, size_t size)
- {
- 	ssize_t total = size;
- 
-@@ -138,3 +206,31 @@ ssize_t perf_data_file__write(struct perf_data_file *file,
- 
- 	return total;
- }
-+
-+ssize_t perf_data_file__write(struct perf_data_file *file,
-+			      void *buf, size_t size)
-+{
-+	return file->is_pipe ? write_raw(file, buf, size) :
-+			       write_mmap(file, buf, size);
-+}
-+
-+int perf_data_file__munmap(struct perf_data_file *file)
-+{
-+	if (file->mmap_addr) {
-+		int ret;
-+
-+		munmap(file->mmap_addr, file->mmap_size);
-+
-+		file->mmap_addr = NULL;
-+		file->size = file->mmap_foff + file->mmap_off;
-+
-+		ret = ftruncate(file->fd, file->size);
-+		if (ret)
-+			pr_err("ftruncate failed: %d: %s\n", errno,
-+			       strerror(errno));
-+
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/data.h b/tools/perf/util/data.h
-index 02c53dc..de59ee0 100644
---- a/tools/perf/util/data.h
-+++ b/tools/perf/util/data.h
-@@ -2,6 +2,7 @@
- #define __PERF_DATA_H
- 
- #include <stdbool.h>
-+#include "types.h"
- 
- enum perf_data_mode {
- 	PERF_DATA_MODE_WRITE,
-@@ -15,6 +16,12 @@ struct perf_data_file {
- 	bool			 force;
- 	unsigned long		 size;
- 	enum perf_data_mode	 mode;
-+
-+	/* for MMAP based file writes */
-+	void			*mmap_addr;
-+	u64			 mmap_off;
-+	u64			 mmap_foff;
-+	u64			 mmap_size;
- };
- 
- static inline bool perf_data_file__is_read(struct perf_data_file *file)
-@@ -46,4 +53,5 @@ int perf_data_file__open(struct perf_data_file *file);
- void perf_data_file__close(struct perf_data_file *file);
- ssize_t perf_data_file__write(struct perf_data_file *file,
- 			      void *buf, size_t size);
-+int perf_data_file__munmap(struct perf_data_file *file);
- #endif /* __PERF_DATA_H */
--- 
-1.7.11.7
+That AFAICS is the only way that this accounting would make sense on a non-UP
+system.
 
+Right? Or what exactly would the purpose/justification/implementation
+of such idle-CPU I/O wait time accounting be, especially on SMP?
+
+And try to view it in that light:
+1. what is the maximally correct way to implement such accounting?
+2. how to do that maximally efficiently?
+3. with in-kernel handling now perfect,
+   how to accommodate existing (potentially mal-defined) user-side APIs?
+
+Andreas Mohr
