@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab3KDRJj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 12:09:39 -0500
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:58408 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751842Ab3KDRIY (ORCPT
+	id S1753747Ab3KDRJq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 12:09:46 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:44234 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842Ab3KDRJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 12:08:24 -0500
+	Mon, 4 Nov 2013 12:09:40 -0500
 From: Frank Haverkamp <haver@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
@@ -14,418 +14,288 @@ Cc: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
         rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
         cascardo@linux.vnet.ibm.com, michael@ibmra.de,
         haver@linux.vnet.ibm.com
-Subject: [PATCH 7/9] GenWQE: Start using sysfs attribute groups
-Date: Mon,  4 Nov 2013 18:08:07 +0100
-Message-Id: <1383584889-21594-8-git-send-email-haver@linux.vnet.ibm.com>
+Subject: [PATCH 6/9] GenWQE: Remove/rework module parameters
+Date: Mon,  4 Nov 2013 18:08:06 +0100
+Message-Id: <1383584889-21594-7-git-send-email-haver@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1383584889-21594-1-git-send-email-haver@linux.vnet.ibm.com>
 References: <1383584889-21594-1-git-send-email-haver@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110417-6892-0000-0000-000006CCDA36
+x-cbid: 13110417-1948-0000-0000-000006C9391C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the existing sysfs infrastructure to create multiple attributes
-instead of doing things manually. Use the is_visible callback now
-to determine if an attribute is visible or not.
+The module parameter genwqe_vf_jobtimeout_msec is changed into
+a debugfs interface:
+  /sys/kernel/debug/genwqe/genwqe<n>_card/vf<0..14>_jobtimeout_msec
+The setting is applied when the virtual functions are enabled.
+Switching during operation is not allowed.
+
+The following thow former module parameters are now constants:
+  genwqe_pf_jobtimeout_msec
+  genwqe_health_check_interval
 
 Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
 ---
- drivers/misc/genwqe/card_base.h  |    6 +-
- drivers/misc/genwqe/card_dev.c   |    6 +-
- drivers/misc/genwqe/card_sysfs.c |  199 ++++++++++++++++++++------------------
- 3 files changed, 113 insertions(+), 98 deletions(-)
+ Documentation/ABI/testing/debugfs-driver-genwqe |   13 +++
+ drivers/misc/genwqe/card_base.c                 |   93 ++++++++++-------------
+ drivers/misc/genwqe/card_base.h                 |    9 +-
+ drivers/misc/genwqe/card_debugfs.c              |   15 ++++-
+ 4 files changed, 71 insertions(+), 59 deletions(-)
 
+diff --git a/Documentation/ABI/testing/debugfs-driver-genwqe b/Documentation/ABI/testing/debugfs-driver-genwqe
+index c3503a4..548883a 100644
+--- a/Documentation/ABI/testing/debugfs-driver-genwqe
++++ b/Documentation/ABI/testing/debugfs-driver-genwqe
+@@ -55,3 +55,16 @@ Date:           Oct 2013
+ Contact:        haver@linux.vnet.ibm.com
+ Description:    Possibility to inject error cases to ensure that the drivers
+                 error handling code works well.
++
++What:           /sys/kernel/debug/genwqe/genwqe<n>_card/vf<0..14>_jobtimeout_msec
++Date:           Oct 2013
++Contact:        haver@linux.vnet.ibm.com
++Description:    Default VF timeout 250ms. Testing might require 1000ms.
++                Using 0 will use the cards default value (whatever that is).
++
++                The timeout depends on the max number of available cards
++                in the system and the maximum allowed queue size.
++
++                The driver ensures that the settings are done just before
++                the VFs get enabled. Changing the timeouts in flight is not
++                possible.
+diff --git a/drivers/misc/genwqe/card_base.c b/drivers/misc/genwqe/card_base.c
+index c649ef7..67ca5bc 100644
+--- a/drivers/misc/genwqe/card_base.c
++++ b/drivers/misc/genwqe/card_base.c
+@@ -52,40 +52,6 @@ MODULE_DESCRIPTION("GenWQE Card");
+ MODULE_VERSION(DRV_VERS_STRING);
+ MODULE_LICENSE("GPL");
+ 
+-/*
+- * We like to be able to disable the health checking entirely in some
+- * cases e.g. if a card is broken and needs to be analyzed. I
+- * considered using debugfs/sysfs attributes, but I did not see a way
+- * to prevent the thread from being started at driver load time other
+- * than starting it later manually, what I did not like either
+- * in this case (e.g. like the new SRIOV enablement).
+- */
+-static int genwqe_health_check_interval = 4;   /* <= 0: disabled */
+-module_param(genwqe_health_check_interval, int, 0644);  /* read/writeable */
+-MODULE_PARM_DESC(genwqe_health_check_interval,
+-		 "check card health every N seconds (0 = disabled)");
+-
+-/*
+- * GenWQE Driver: Need SLC timeout set to 250ms (temporary setting for
+- * testing of 1000ms due to decompressor testcase failing)
+- *
+- * There is a requirement by the card users that the timeout must not
+- * exceed the 250ms.
+- *
+- * In this case the settings must be done before any interaction to
+- * the device can be done, since we cannot change the settings without
+- * stopping the queues.
+- */
+-int genwqe_vf_jobtimeout_msec = 250;
+-module_param(genwqe_vf_jobtimeout_msec, int, 0444); /* readable */
+-MODULE_PARM_DESC(genwqe_vf_jobtimeout_msec,
+-		 "Job timeout for virtual functions");
+-
+-int genwqe_pf_jobtimeout_msec = 8000;	/* 8sec should be ok */
+-module_param(genwqe_pf_jobtimeout_msec, int, 0444); /* readable */
+-MODULE_PARM_DESC(genwqe_pf_jobtimeout_msec,
+-		 "Job timeout for physical function");
+-
+ static char genwqe_driver_name[] = GENWQE_DEVNAME;
+ static struct class *class_genwqe;
+ static struct dentry *debugfs_genwqe;
+@@ -156,7 +122,7 @@ MODULE_DEVICE_TABLE(pci, genwqe_device_table);
+  */
+ static struct genwqe_dev *genwqe_dev_alloc(void)
+ {
+-	int i = 0;
++	unsigned int i = 0, j;
+ 	struct genwqe_dev *cd;
+ 
+ 	for (i = 0; i < GENWQE_CARD_NO_MAX; i++) {
+@@ -185,6 +151,9 @@ static struct genwqe_dev *genwqe_dev_alloc(void)
+ 	cd->ddcb_software_timeout = genwqe_ddcb_software_timeout;
+ 	cd->kill_timeout = genwqe_kill_timeout;
+ 
++	for (j = 0; j < GENWQE_MAX_VFS; j++)
++		cd->vf_jobtimeout_msec[j] = genwqe_vf_jobtimeout_msec;
++
+ 	genwqe_devices[i] = cd;
+ 	return cd;
+ }
+@@ -338,7 +307,7 @@ static int genwqe_T_psec(struct genwqe_dev *cd)
+ }
+ 
+ /**
+- * genwqe_setup_jtimer() - Setup PF/VF hardware timeouts for DDCB execution
++ * genwqe_setup_pf_jtimer() - Setup PF hardware timeouts for DDCB execution
+  *
+  * Do this _after_ card_reset() is called. Otherwise the values will
+  * vanish. The settings need to be done when the queues are inactive.
+@@ -346,32 +315,43 @@ static int genwqe_T_psec(struct genwqe_dev *cd)
+  * The max. timeout value is 2^(10+x) * T (6ns for 166MHz) * 15/16.
+  * The min. timeout value is 2^(10+x) * T (6ns for 166MHz) * 14/16.
+  */
+-static int genwqe_setup_jtimer(struct genwqe_dev *cd)
++static bool genwqe_setup_pf_jtimer(struct genwqe_dev *cd)
+ {
+-	int vf;
+ 	u32 T = genwqe_T_psec(cd);
+ 	u64 x;
+ 
+-	if (genwqe_pf_jobtimeout_msec != -1) {
+-		/* PF: large value needed, due to flash update 2sec
+-		   per block */
+-		x = ilog2(genwqe_pf_jobtimeout_msec *
+-			  16000000000uL/(T * 15)) - 10;
+-		genwqe_write_jtimer(cd, 0, (0xff00 | (x & 0xff)));
+-	}
++	if (genwqe_pf_jobtimeout_msec == 0)
++		return false;
++
++	/* PF: large value needed, flash update 2sec per block */
++	x = ilog2(genwqe_pf_jobtimeout_msec *
++		  16000000000uL/(T * 15)) - 10;
+ 
+-	if (genwqe_vf_jobtimeout_msec != -1) {
+-		if (cd->num_vfs < 0)
+-			return cd->num_vfs;
++	genwqe_write_jtimer(cd, 0, (0xff00 | (x & 0xff)));
++	return true;
++}
+ 
+-		x = ilog2(genwqe_vf_jobtimeout_msec *
++/**
++ * genwqe_setup_vf_jtimer() - Setup VF hardware timeouts for DDCB execution
++ */
++static bool genwqe_setup_vf_jtimer(struct genwqe_dev *cd)
++{
++	struct pci_dev *pci_dev = cd->pci_dev;
++	unsigned int vf;
++	u32 T = genwqe_T_psec(cd);
++	u64 x;
++
++	for (vf = 0; vf < pci_sriov_get_totalvfs(pci_dev); vf++) {
++
++		if (cd->vf_jobtimeout_msec[vf] == 0)
++			continue;
++
++		x = ilog2(cd->vf_jobtimeout_msec[vf] *
+ 			  16000000000uL/(T * 15)) - 10;
+ 
+-		for (vf = 0; vf < cd->num_vfs; vf++)
+-			genwqe_write_jtimer(cd, vf + 1, (0xff00 | (x & 0xff)));
++		genwqe_write_jtimer(cd, vf + 1, (0xff00 | (x & 0xff)));
+ 	}
+-
+-	return 0;
++	return true;
+ }
+ 
+ static int genwqe_ffdc_buffs_alloc(struct genwqe_dev *cd)
+@@ -537,7 +517,9 @@ static int genwqe_start(struct genwqe_dev *cd)
+ 
+ 	if (genwqe_is_privileged(cd)) {	 /* code is running _after_ reset */
+ 		genwqe_tweak_hardware(cd);
+-		genwqe_setup_jtimer(cd);	 /* queues must not run */
++
++		genwqe_setup_pf_jtimer(cd);
++		genwqe_setup_vf_jtimer(cd);
+ 	}
+ 
+ 	err = genwqe_device_create(cd);
+@@ -1142,7 +1124,10 @@ static void genwqe_err_resume(struct pci_dev *dev)
+ 
+ static int genwqe_sriov_configure(struct pci_dev *dev, int numvfs)
+ {
++	struct genwqe_dev *cd = dev_get_drvdata(&dev->dev);
++
+ 	if (numvfs > 0) {
++		genwqe_setup_vf_jtimer(cd);
+ 		pci_enable_sriov(dev, numvfs);
+ 		return numvfs;
+ 	}
 diff --git a/drivers/misc/genwqe/card_base.h b/drivers/misc/genwqe/card_base.h
-index 21cef33..76ebfca 100644
+index 62c2356..21cef33 100644
 --- a/drivers/misc/genwqe/card_base.h
 +++ b/drivers/misc/genwqe/card_base.h
-@@ -416,11 +416,11 @@ int  genwqe_device_create(struct genwqe_dev *cd);
- int  genwqe_device_remove(struct genwqe_dev *cd);
+@@ -43,6 +43,7 @@
+ #define GENWQE_MSI_IRQS			4  /* Just one supported, no MSIx */
+ #define GENWQE_FLAG_MSI_ENABLED		(1 << 0)
  
- /* sysfs */
--int  create_card_sysfs(struct genwqe_dev *cd);
--void remove_card_sysfs(struct genwqe_dev *cd);
-+int  genwqe_init_sysfs(struct genwqe_dev *cd);
-+void genwqe_exit_sysfs(struct genwqe_dev *cd);
++#define GENWQE_MAX_VFS			15 /* maximum 15 VFs are possible */
+ #define GENWQE_MAX_FUNCS		16 /* 1 PF and 15 VFs */
+ #define GENWQE_CARD_NO_MAX		(16 * GENWQE_MAX_FUNCS)
  
- /* debugfs */
--int genwqe_init_debugfs(struct genwqe_dev *cd);
-+int  genwqe_init_debugfs(struct genwqe_dev *cd);
- void genqwe_exit_debugfs(struct genwqe_dev *cd);
- 
- int  genwqe_read_softreset(struct genwqe_dev *cd);
-diff --git a/drivers/misc/genwqe/card_dev.c b/drivers/misc/genwqe/card_dev.c
-index 9faab2b..fabf749 100644
---- a/drivers/misc/genwqe/card_dev.c
-+++ b/drivers/misc/genwqe/card_dev.c
-@@ -1389,7 +1389,7 @@ int genwqe_device_create(struct genwqe_dev *cd)
- 	}
- 	dev_set_drvdata(cd->dev, cd);
- 
--	rc = create_card_sysfs(cd);
-+	rc = genwqe_init_sysfs(cd);
- 	if (rc != 0)
- 		goto err_sysfs;
- 
-@@ -1400,7 +1400,7 @@ int genwqe_device_create(struct genwqe_dev *cd)
- 	return 0;
- 
-  err_debugfs:
--	remove_card_sysfs(cd);
-+	genwqe_exit_sysfs(cd);
-  err_sysfs:
- 	device_destroy(cd->class_genwqe, cd->devnum_genwqe);
-  err_cdev:
-@@ -1489,7 +1489,7 @@ int genwqe_device_remove(struct genwqe_dev *cd)
- 	}
- 
- 	genqwe_exit_debugfs(cd);
--	remove_card_sysfs(cd);
-+	genwqe_exit_sysfs(cd);
- 	device_destroy(cd->class_genwqe, cd->devnum_genwqe);
- 	cdev_del(&cd->cdev_genwqe);
- 	unregister_chrdev_region(cd->devnum_genwqe, GENWQE_MAX_MINOR);
-diff --git a/drivers/misc/genwqe/card_sysfs.c b/drivers/misc/genwqe/card_sysfs.c
-index cac2e06..6a51ad7 100644
---- a/drivers/misc/genwqe/card_sysfs.c
-+++ b/drivers/misc/genwqe/card_sysfs.c
-@@ -20,9 +20,8 @@
+@@ -51,10 +52,9 @@
+ #define genwqe_polling_enabled		0  /* in case of irqs not working */
+ #define genwqe_ddcb_software_timeout	10 /* timeout per DDCB in seconds */
+ #define genwqe_kill_timeout		8  /* time until process gets killed */
+-
+-/* Module parameters */
+-extern int genwqe_pf_jobtimeout_msec;
+-extern int genwqe_vf_jobtimeout_msec;
++#define genwqe_vf_jobtimeout_msec	250  /* 250 msec */
++#define genwqe_pf_jobtimeout_msec	8000 /* 8 sec should be ok */
++#define genwqe_health_check_interval	4 /* <= 0: disabled */
  
  /*
-  * Sysfs interfaces for the GenWQE card. There are attributes to query
-- * the version of the bitstream as well as some for the
-- * driver. Additionally there are some attributes which help to debug
-- * potential problems.
-+ * the version of the bitstream as well as some for the driver. For
-+ * debugging, please also see the debugfs interfaces of this driver.
-  */
+  * Config space for Genwqe5 A7:
+@@ -318,6 +318,7 @@ struct genwqe_dev {
+ 	void __iomem *mmio;		/* BAR-0 MMIO start */
+ 	unsigned long mmio_len;
+ 	u16 num_vfs;
++	u32 vf_jobtimeout_msec[GENWQE_MAX_VFS];
+ 	int is_privileged;		/* access to all regs possible */
  
- #include <linux/version.h>
-@@ -34,6 +33,7 @@
- #include <linux/fs.h>
- #include <linux/sysfs.h>
- #include <linux/ctype.h>
-+#include <linux/device.h>
- 
- #include "card_base.h"
- #include "card_ddcb.h"
-@@ -45,9 +45,8 @@ static const char * const genwqe_types[] = {
- 	[GENWQE_TYPE_ALTERA_A7]  = "GenWQE5-A7",
- };
- 
--static ssize_t show_card_status(struct device *dev,
--				struct device_attribute *attr,
--				char *buf)
-+static ssize_t status_show(struct device *dev, struct device_attribute *attr,
-+			   char *buf)
- {
- 	ssize_t len = 0;
- 	struct genwqe_dev *cd = dev_get_drvdata(dev);
-@@ -57,10 +56,10 @@ static ssize_t show_card_status(struct device *dev,
- 			 "%s\n", cs[cd->card_state]);
- 	return len;
- }
-+static DEVICE_ATTR_RO(status);
- 
--static ssize_t show_card_appid(struct device *dev,
--			       struct device_attribute *attr,
--			       char *buf)
-+static ssize_t appid_show(struct device *dev, struct device_attribute *attr,
-+			  char *buf)
- {
- 	ssize_t len = 0;
- 	char app_name[5];
-@@ -71,10 +70,10 @@ static ssize_t show_card_appid(struct device *dev,
- 			 "%s\n", app_name);
- 	return len;
- }
-+static DEVICE_ATTR_RO(appid);
- 
--static ssize_t show_card_version(struct device *dev,
--				 struct device_attribute *attr,
--				 char *buf)
-+static ssize_t version_show(struct device *dev, struct device_attribute *attr,
-+			    char *buf)
- {
- 	ssize_t len = 0;
- 	u64 slu_id, app_id;
-@@ -87,23 +86,10 @@ static ssize_t show_card_version(struct device *dev,
- 			 "%016llx.%016llx\n", slu_id, app_id);
- 	return len;
- }
-+static DEVICE_ATTR_RO(version);
- 
--/**
-- * FIXME Implement me!
-- */
--static ssize_t show_cpld_version(struct device *dev,
--				 struct device_attribute *attr,
--				 char *buf)
--{
--	ssize_t len = 0;
--	len += scnprintf(&buf[len], PAGE_SIZE - len,
--			 "unknown (FIXME)\n");
--	return len;
--}
--
--static ssize_t show_card_type(struct device *dev,
--			      struct device_attribute *attr,
--			      char *buf)
-+static ssize_t type_show(struct device *dev, struct device_attribute *attr,
-+			 char *buf)
- {
- 	ssize_t len = 0;
- 	u8 card_type;
-@@ -115,20 +101,20 @@ static ssize_t show_card_type(struct device *dev,
- 			 "invalid" : genwqe_types[card_type]);
- 	return len;
- }
-+static DEVICE_ATTR_RO(type);
- 
--static ssize_t show_card_driver(struct device *dev,
--				struct device_attribute *attr,
--				char *buf)
-+static ssize_t driver_show(struct device *dev, struct device_attribute *attr,
-+			   char *buf)
- {
- 	ssize_t len = 0;
- 	len += scnprintf(&buf[len], PAGE_SIZE - len,
- 			 "%s\n", DRV_VERS_STRING);
- 	return len;
- }
-+static DEVICE_ATTR_RO(driver);
- 
--static ssize_t show_card_tempsens(struct device *dev,
--				  struct device_attribute *attr,
--				  char *buf)
-+static ssize_t tempsens_show(struct device *dev, struct device_attribute *attr,
-+			     char *buf)
- {
- 	ssize_t len = 0;
- 	u64 tempsens;
-@@ -139,10 +125,11 @@ static ssize_t show_card_tempsens(struct device *dev,
- 			 "%016llx\n", tempsens);
- 	return len;
- }
-+static DEVICE_ATTR_RO(tempsens);
- 
--static ssize_t show_card_base_clock(struct device *dev,
--				    struct device_attribute *attr,
--				    char *buf)
-+static ssize_t base_clock_show(struct device *dev,
-+			       struct device_attribute *attr,
-+			       char *buf)
- {
- 	ssize_t len = 0;
- 	u64 base_clock;
-@@ -153,9 +140,10 @@ static ssize_t show_card_base_clock(struct device *dev,
- 			 "%lld\n", base_clock);
- 	return len;
- }
-+static DEVICE_ATTR_RO(base_clock);
- 
- /**
-- * show_card_curr_bitstream() - Show the current bitstream id
-+ * curr_bitstream_show() - Show the current bitstream id
-  *
-  * There is a bug in some old versions of the CPLD which selects the
-  * bitstream, which causes the IO_SLU_BITSTREAM register to report
-@@ -171,9 +159,9 @@ static ssize_t show_card_base_clock(struct device *dev,
-  * on the backup partition (0) to identify problems while loading the
-  * image.
-  */
--static ssize_t show_card_curr_bitstream(struct device *dev,
--					struct device_attribute *attr,
--					char *buf)
-+static ssize_t curr_bitstream_show(struct device *dev,
-+				   struct device_attribute *attr,
-+				   char *buf)
- {
- 	ssize_t len = 0;
- 	int curr_bitstream;
-@@ -184,21 +172,22 @@ static ssize_t show_card_curr_bitstream(struct device *dev,
- 			 "%d\n", curr_bitstream);
- 	return len;
- }
-+static DEVICE_ATTR_RO(curr_bitstream);
- 
- /**
-- * show_card_next_bitstream() - Show the next activated bitstream
-+ * next_bitstream_show() - Show the next activated bitstream
-  *
-  * IO_SLC_CFGREG_SOFTRESET: This register can only be accessed by the PF.
-  */
--static ssize_t show_card_next_bitstream(struct device *dev,
--					struct device_attribute *attr,
--					char *buf)
-+static ssize_t next_bitstream_show(struct device *dev,
-+				   struct device_attribute *attr,
-+				   char *buf)
- {
- 	ssize_t len = 0;
- 	int next_bitstream;
- 	struct genwqe_dev *cd = dev_get_drvdata(dev);
- 
--	switch ((cd->softreset & 0xCull) >> 2) {
-+	switch ((cd->softreset & 0xcull) >> 2) {
- 	case 0x2:
- 		next_bitstream =  0;
- 		break;
-@@ -214,9 +203,9 @@ static ssize_t show_card_next_bitstream(struct device *dev,
- 	return len;
- }
- 
--static ssize_t store_card_next_bitstream(struct device *dev,
--					 struct device_attribute *attr,
--					 const char *buf, size_t count)
-+static ssize_t next_bitstream_store(struct device *dev,
-+				    struct device_attribute *attr,
-+				    const char *buf, size_t count)
- {
- 	u64 partition;
- 	struct genwqe_dev *cd = dev_get_drvdata(dev);
-@@ -238,69 +227,95 @@ static ssize_t store_card_next_bitstream(struct device *dev,
- 	__genwqe_writeq(cd, IO_SLC_CFGREG_SOFTRESET, cd->softreset);
- 	return count;
- }
-+static DEVICE_ATTR_RW(next_bitstream);
-+
-+/**
-+ * FIXME Implement me!
-+ */
-+static ssize_t cpld_version_show(struct device *dev,
-+				 struct device_attribute *attr,
-+				 char *buf)
-+{
-+	ssize_t len = 0;
-+	len += scnprintf(&buf[len], PAGE_SIZE - len, "unknown (FIXME)\n");
-+	return len;
-+}
-+static DEVICE_ATTR_RO(cpld_version);
- 
- /*
-  * Create device_attribute structures / params: name, mode, show, store
-  * additional flag if valid in VF
-  */
--struct genwqe_dev_attrib {
--	struct device_attribute att;	/* sysfs entry attributes */
--	int vf;				/* may exist in VF or not */
-+static struct attribute *genwqe_attributes[] = {
-+	&dev_attr_tempsens.attr,
-+	&dev_attr_next_bitstream.attr,
-+	&dev_attr_curr_bitstream.attr,
-+	&dev_attr_base_clock.attr,
-+	&dev_attr_driver.attr,
-+	&dev_attr_type.attr,
-+	&dev_attr_version.attr,
-+	&dev_attr_appid.attr,
-+	&dev_attr_status.attr,
-+	&dev_attr_cpld_version.attr,
-+	NULL,
- };
- 
--static struct genwqe_dev_attrib dev_attr_tab[] = {
--	{__ATTR(tempsens,       S_IRUGO, show_card_tempsens, NULL), 0},
--	{__ATTR(next_bitstream, (S_IRUGO | S_IWUSR),
--		show_card_next_bitstream, store_card_next_bitstream), 0},
--	{__ATTR(curr_bitstream, S_IRUGO, show_card_curr_bitstream, NULL), 0},
--	{__ATTR(cpld_version,   S_IRUGO, show_cpld_version, NULL), 0},
--	{__ATTR(base_clock,	S_IRUGO, show_card_base_clock, NULL), 0},
--
--	{__ATTR(driver,		S_IRUGO, show_card_driver, NULL), 1},
--	{__ATTR(type,		S_IRUGO, show_card_type, NULL), 1},
--	{__ATTR(version,	S_IRUGO, show_card_version, NULL), 1},
--	{__ATTR(appid,		S_IRUGO, show_card_appid, NULL), 1},
--	{__ATTR(status,		S_IRUGO, show_card_status, NULL), 1},
-+static struct attribute *genwqe_normal_attributes[] = {
-+	&dev_attr_driver.attr,
-+	&dev_attr_type.attr,
-+	&dev_attr_version.attr,
-+	&dev_attr_appid.attr,
-+	&dev_attr_status.attr,
-+	NULL,
- };
- 
- /**
-- * create_card_sysfs() - Setup sysfs entries of the card device
-+ * genwqe_is_visible() - Determine if sysfs attribute should be visible or not
-  *
-  * VFs have restricted mmio capabilities, so not all sysfs entries
-  * are allowed in VFs.
-  */
--int create_card_sysfs(struct genwqe_dev *cd)
-+static umode_t genwqe_is_visible(struct kobject *kobj,
-+				 struct attribute *attr, int n)
- {
--	int rc, priv;
--	unsigned int i;
--
--	priv = genwqe_is_privileged(cd);
--	for (i = 0; i < ARRAY_SIZE(dev_attr_tab); i++) {
--		struct genwqe_dev_attrib *dev_attr = &dev_attr_tab[i];
--		if (dev_attr->vf || priv) {
--			rc = device_create_file(cd->dev, &dev_attr->att);
--			if (rc != 0)
--				goto err_exit;
--		}
--	}
-+	unsigned int j;
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct genwqe_dev *cd = dev_get_drvdata(dev);
-+	umode_t mode = attr->mode;
-+
-+	if (genwqe_is_privileged(cd))
-+		return mode;
-+
-+	for (j = 0; genwqe_normal_attributes[j] != NULL;  j++)
-+		if (genwqe_normal_attributes[j] == attr)
-+			return mode;
-+
+ 	/* config regs which we need often */
+diff --git a/drivers/misc/genwqe/card_debugfs.c b/drivers/misc/genwqe/card_debugfs.c
+index 6a048a1..ebf2f93 100644
+--- a/drivers/misc/genwqe/card_debugfs.c
++++ b/drivers/misc/genwqe/card_debugfs.c
+@@ -271,7 +271,7 @@ static int genwqe_jtimer_show(struct seq_file *s, void *unused)
+ 	for (vf_num = 0; vf_num < cd->num_vfs; vf_num++) {
+ 		jtimer = genwqe_read_jtimer(cd, vf_num + 1);
+ 		seq_printf(s, "  VF%-2d 0x%016llx %d msec\n", vf_num, jtimer,
+-			   genwqe_vf_jobtimeout_msec);
++			   cd->vf_jobtimeout_msec[vf_num]);
+ 	}
  	return 0;
-+}
-+
-+static struct attribute_group genwqe_attribute_group = {
-+	.is_visible = genwqe_is_visible,
-+	.attrs      = genwqe_attributes,
-+};
- 
-- err_exit:
--	return -ENXIO;
-+/**
-+ * genwqe_init_sysfs() - Setup sysfs entries of the card device
-+ */
-+int genwqe_init_sysfs(struct genwqe_dev *cd)
-+{
-+	int rc;
-+
-+	rc = sysfs_create_group(&cd->dev->kobj, &genwqe_attribute_group);
-+	if (rc)
-+		return -ENXIO;
-+
-+	return 0;
  }
+@@ -425,6 +425,8 @@ int genwqe_init_debugfs(struct genwqe_dev *cd)
+ 	struct dentry *file;
+ 	int ret, priv;
+ 	char card_name[64];
++	char name[64];
++	unsigned int i;
  
- /**
-- * remove_card_sysfs() - Remove sysfs entries
-+ * genwqe_exit_sysfs() - Remove sysfs entries
-  */
--void remove_card_sysfs(struct genwqe_dev *cd)
-+void genwqe_exit_sysfs(struct genwqe_dev *cd)
- {
--	int priv;
--	unsigned int i;
--
--	priv = genwqe_is_privileged(cd);
--	for (i = 0; i < ARRAY_SIZE(dev_attr_tab); i++) {
--		struct genwqe_dev_attrib *dev_attr = &dev_attr_tab[i];
--		if (dev_attr->vf || priv)
--			device_remove_file(cd->dev, &dev_attr->att);
--	}
-+	sysfs_remove_group(&cd->dev->kobj, &genwqe_attribute_group);
- }
+ 	sprintf(card_name, "%s%u_card", GENWQE_DEVNAME, cd->card_idx);
+ 
+@@ -538,6 +540,17 @@ int genwqe_init_debugfs(struct genwqe_dev *cd)
+ 		goto err1;
+ 	}
+ 
++	for (i = 0; i <  GENWQE_MAX_VFS; i++) {
++		sprintf(name, "vf%d_jobtimeout_msec", i);
++
++		file = debugfs_create_u32(name, 0666, root,
++					  &cd->vf_jobtimeout_msec[i]);
++		if (!file) {
++			ret = -ENOMEM;
++			goto err1;
++		}
++	}
++
+ 	file = debugfs_create_file("jobtimer", S_IRUGO, root, cd,
+ 				   &genwqe_jtimer_fops);
+ 	if (!file) {
 -- 
 1.7.1
 
