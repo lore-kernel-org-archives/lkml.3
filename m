@@ -1,421 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801Ab3KDSHb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 13:07:31 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37872 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723Ab3KDR7Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 12:59:24 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 05/29] perf tools: Add new COMM infrastructure
-Date: Mon,  4 Nov 2013 14:58:43 -0300
-Message-Id: <1383587947-17419-6-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1383587947-17419-1-git-send-email-acme@infradead.org>
-References: <1383587947-17419-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1754809Ab3KDSHz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 13:07:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14091 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754187Ab3KDSHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 13:07:53 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH 7/9] KEYS: Add a keyctl function to alter/control a key in
+ type-dependent way
+To: d.kasatkin@samsung.com, zohar@us.ibm.com
+From: David Howells <dhowells@redhat.com>
+Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 04 Nov 2013 16:23:07 +0000
+Message-ID: <20131104162307.10177.70090.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20131104162216.10177.98067.stgit@warthog.procyon.org.uk>
+References: <20131104162216.10177.98067.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+Add a function to permit a key to be altered or controlled in a type-dependent
+way.  This is given text strings as its command and argument parameters and is
+permitted to return a string to a maximum buffer size (including NUL):
 
-This new COMM infrastructure provides two features:
+	long keyctl_control(key_serial_t keyid,
+			    const char *command,
+			    char *reply_buffer,
+			    size_t reply_size);
 
-1) It keeps track of all comms lifecycle for a given thread. This way we
-can associate a timeframe to any thread COMM, as long as
-PERF_SAMPLE_TIME samples are joined to COMM and fork events.
+The caller must have WRITE permission on a key to be able to perform this
+function.  The type is not required to implement this, but if it does, it must
+perform its own locking against other 'writes' using the key semaphore.
 
-As a result we should have more precise COMM sorted hists with seperated
-entries for pre and post exec time after a fork.
+The command string must begin with the type name and a space so that the method
+can check that the command is from its expected set (it is permitted, however,
+to honour commands from another type's set).  This should be followed by the
+command name and then, optionally, another space and whatever arguments are
+required.  The command can be up to 1MB in size including the NUL terminator.
 
-2) It also makes sure that a given COMM string is not duplicated but
-rather shared among the threads that refer to it. This way the threads
-COMM can be compared against pointer values from the sort
-infrastructure.
+The reply buffer is optional and can be up to 1MB in size.  The actual size of
+the reply will be returned and, if necessary, the reply will be truncated to
+reply_size.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Tested-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-hwjf70b2wve9m2kosxiq8bb3@git.kernel.org
-[ Rename some accessor functions ]
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-[ Use __ as separator for class__method for private comm_str methods ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+This can be invoked from the keyctl command in userspace.  One example would be
+to use this to change the master key used by an encrypted key:
+
+	keyctl control 1234 "encrypted change-master-key 6789"
+
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- tools/perf/Makefile.perf   |   2 +
- tools/perf/builtin-trace.c |   4 +-
- tools/perf/util/comm.c     | 106 +++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/comm.h     |  20 +++++++++
- tools/perf/util/thread.c   |  92 +++++++++++++++++++++++++++++----------
- tools/perf/util/thread.h   |   3 +-
- 6 files changed, 200 insertions(+), 27 deletions(-)
- create mode 100644 tools/perf/util/comm.c
- create mode 100644 tools/perf/util/comm.h
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index bc7cfa18a1e3..cb52bdb755c7 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -273,6 +273,7 @@ LIB_H += util/color.h
- LIB_H += util/values.h
- LIB_H += util/sort.h
- LIB_H += util/hist.h
-+LIB_H += util/comm.h
- LIB_H += util/thread.h
- LIB_H += util/thread_map.h
- LIB_H += util/trace-event.h
-@@ -341,6 +342,7 @@ LIB_OBJS += $(OUTPUT)util/machine.o
- LIB_OBJS += $(OUTPUT)util/map.o
- LIB_OBJS += $(OUTPUT)util/pstack.o
- LIB_OBJS += $(OUTPUT)util/session.o
-+LIB_OBJS += $(OUTPUT)util/comm.o
- LIB_OBJS += $(OUTPUT)util/thread.o
- LIB_OBJS += $(OUTPUT)util/thread_map.o
- LIB_OBJS += $(OUTPUT)util/trace-event-parse.o
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 95d639212d98..b3e57dc64546 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1114,7 +1114,7 @@ static size_t trace__fprintf_entry_head(struct trace *trace, struct thread *thre
+ Documentation/security/keys.txt |   34 +++++++++++++
+ include/linux/key-type.h        |    6 ++
+ include/uapi/linux/keyctl.h     |    1 
+ security/keys/compat.c          |    6 ++
+ security/keys/internal.h        |    2 +
+ security/keys/keyctl.c          |  104 +++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 153 insertions(+)
+
+diff --git a/Documentation/security/keys.txt b/Documentation/security/keys.txt
+index 3bbec087fc5f..a5792bcb64b2 100644
+--- a/Documentation/security/keys.txt
++++ b/Documentation/security/keys.txt
+@@ -1331,6 +1331,40 @@ The structure has a number of fields, some of which are mandatory:
+      	 The authorisation key.
  
- 	if (trace->multiple_threads) {
- 		if (trace->show_comm)
--			printed += fprintf(fp, "%.14s/", thread->comm);
-+			printed += fprintf(fp, "%.14s/", thread__comm_str(thread));
- 		printed += fprintf(fp, "%d ", thread->tid);
+ 
++ (*) long (*control)(struct key *key, char *command, char *reply,
++		     size_t reply_size);
++
++     This method is optional.  If provided, keyctl_control() can be invoked
++     from userspace to perform some type-specific operation upon the key.  If
++     the method is not implemented then error EOPNOTSUPP will be returned.
++
++     The method must provide its own locking against other 'writes' using the
++     key semaphore.
++
++     The command argument will point to a NUL-terminated string up to 1MB in
++     size, including the NUL terminator.  The method may modify the command
++     buffer (eg. with strsep()).
++
++     The command should begin with the type name and a space so that the method
++     can check that the command is from its expected set.  It is permitted,
++     however, to honour commands from another type's set.  This should be
++     followed by the command name and then, optionally, another space and
++     whatever arguments are required.
++
++     The reply buffer will be NULL if userspace didn't ask for a reply.
++     Otherwise it will be a kernel-space buffer the size of which was specified
++     by userspace (max 1MB).  The actual size of the reply should be returned
++     (and can be larger than reply_size).  The caller will copy back the
++     contents of the reply buffer up to reply_size.
++
++     An example might be:
++
++	encrypted change-master-key <key-id>
++
++     The return value is the reply size, 0 (if no reply) or a negative error
++     code.
++
++
+ ============================
+ REQUEST-KEY CALLBACK SERVICE
+ ============================
+diff --git a/include/linux/key-type.h b/include/linux/key-type.h
+index 44792ee649de..610669c780f7 100644
+--- a/include/linux/key-type.h
++++ b/include/linux/key-type.h
+@@ -129,6 +129,12 @@ struct key_type {
+ 	 */
+ 	request_key_actor_t request_key;
+ 
++	/* Control or alter a key (optional)
++	 * - The command string can be modified (eg. with strsep()).
++	 */
++	long (*control)(struct key *key, char *command,
++			char *reply, size_t reply_size);
++
+ 	/* internal fields */
+ 	struct list_head	link;		/* link in types list */
+ 	struct lock_class_key	lock_class;	/* key->sem lock class */
+diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
+index 840cb990abe2..9687b9c726b2 100644
+--- a/include/uapi/linux/keyctl.h
++++ b/include/uapi/linux/keyctl.h
+@@ -57,5 +57,6 @@
+ #define KEYCTL_INSTANTIATE_IOV		20	/* instantiate a partially constructed key */
+ #define KEYCTL_INVALIDATE		21	/* invalidate a key */
+ #define KEYCTL_GET_PERSISTENT		22	/* get a user's persistent keyring */
++#define KEYCTL_CONTROL			23	/* control/alter a key */
+ 
+ #endif /*  _LINUX_KEYCTL_H */
+diff --git a/security/keys/compat.c b/security/keys/compat.c
+index bbd32c729dbb..78d82d86471f 100644
+--- a/security/keys/compat.c
++++ b/security/keys/compat.c
+@@ -141,6 +141,12 @@ asmlinkage long compat_sys_keyctl(u32 option,
+ 	case KEYCTL_GET_PERSISTENT:
+ 		return keyctl_get_persistent(arg2, arg3);
+ 
++	case KEYCTL_CONTROL:
++		return keyctl_control_key(arg2,
++					  compat_ptr(arg3),
++					  compat_ptr(arg4),
++					  arg5);
++
+ 	default:
+ 		return -EOPNOTSUPP;
  	}
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 80b2aac4f50c..4a6944374b0c 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -264,6 +264,8 @@ static inline long keyctl_get_persistent(uid_t uid, key_serial_t destring)
+ 	return -EOPNOTSUPP;
+ }
+ #endif
++extern long keyctl_control_key(key_serial_t, const char __user *,
++			       char __user *, size_t);
  
-@@ -1986,7 +1986,7 @@ static int trace__fprintf_one_thread(struct thread *thread, void *priv)
- 	else if (ratio > 5.0)
- 		color = PERF_COLOR_YELLOW;
- 
--	printed += color_fprintf(fp, color, "%20s", thread->comm);
-+	printed += color_fprintf(fp, color, "%20s", thread__comm_str(thread));
- 	printed += fprintf(fp, " - %-5d :%11lu   [", thread->tid, ttrace->nr_events);
- 	printed += color_fprintf(fp, color, "%5.1f%%", ratio);
- 	printed += fprintf(fp, " ] %10.3f ms\n", ttrace->runtime_ms);
-diff --git a/tools/perf/util/comm.c b/tools/perf/util/comm.c
-new file mode 100644
-index 000000000000..8b3ac9f0207f
---- /dev/null
-+++ b/tools/perf/util/comm.c
-@@ -0,0 +1,106 @@
-+#include "comm.h"
-+#include "util.h"
-+#include <stdlib.h>
-+#include <stdio.h>
-+
-+struct comm_str {
-+	char *str;
-+	struct rb_node rb_node;
-+	int ref;
-+};
-+
-+/* Should perhaps be moved to struct machine */
-+static struct rb_root comm_str_root;
-+
-+static void comm_str__get(struct comm_str *cs)
-+{
-+	cs->ref++;
-+}
-+
-+static void comm_str__put(struct comm_str *cs)
-+{
-+	if (!--cs->ref) {
-+		rb_erase(&cs->rb_node, &comm_str_root);
-+		free(cs->str);
-+		free(cs);
-+	}
-+}
-+
-+static struct comm_str *comm_str__alloc(const char *str)
-+{
-+	struct comm_str *cs;
-+
-+	cs = zalloc(sizeof(*cs));
-+	if (!cs)
-+		return NULL;
-+
-+	cs->str = strdup(str);
-+	if (!cs->str) {
-+		free(cs);
-+		return NULL;
-+	}
-+
-+	return cs;
-+}
-+
-+static struct comm_str *comm_str__findnew(const char *str, struct rb_root *root)
-+{
-+	struct rb_node **p = &root->rb_node;
-+	struct rb_node *parent = NULL;
-+	struct comm_str *iter, *new;
-+	int cmp;
-+
-+	while (*p != NULL) {
-+		parent = *p;
-+		iter = rb_entry(parent, struct comm_str, rb_node);
-+
-+		cmp = strcmp(str, iter->str);
-+		if (!cmp)
-+			return iter;
-+
-+		if (cmp < 0)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+
-+	new = comm_str__alloc(str);
-+	if (!new)
-+		return NULL;
-+
-+	rb_link_node(&new->rb_node, parent, p);
-+	rb_insert_color(&new->rb_node, root);
-+
-+	return new;
-+}
-+
-+struct comm *comm__new(const char *str, u64 timestamp)
-+{
-+	struct comm *comm = zalloc(sizeof(*comm));
-+
-+	if (!comm)
-+		return NULL;
-+
-+	comm->start = timestamp;
-+
-+	comm->comm_str = comm_str__findnew(str, &comm_str_root);
-+	if (!comm->comm_str) {
-+		free(comm);
-+		return NULL;
-+	}
-+
-+	comm_str__get(comm->comm_str);
-+
-+	return comm;
-+}
-+
-+void comm__free(struct comm *comm)
-+{
-+	comm_str__put(comm->comm_str);
-+	free(comm);
-+}
-+
-+const char *comm__str(const struct comm *comm)
-+{
-+	return comm->comm_str->str;
-+}
-diff --git a/tools/perf/util/comm.h b/tools/perf/util/comm.h
-new file mode 100644
-index 000000000000..f62d215bede2
---- /dev/null
-+++ b/tools/perf/util/comm.h
-@@ -0,0 +1,20 @@
-+#ifndef __PERF_COMM_H
-+#define __PERF_COMM_H
-+
-+#include "../perf.h"
-+#include <linux/rbtree.h>
-+#include <linux/list.h>
-+
-+struct comm_str;
-+
-+struct comm {
-+	struct comm_str *comm_str;
-+	u64 start;
-+	struct list_head list;
-+};
-+
-+void comm__free(struct comm *comm);
-+struct comm *comm__new(const char *str, u64 timestamp);
-+const char *comm__str(const struct comm *comm);
-+
-+#endif  /* __PERF_COMM_H */
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 0ea73fe383f5..15c53c2e109e 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -6,9 +6,12 @@
- #include "thread.h"
- #include "util.h"
- #include "debug.h"
-+#include "comm.h"
- 
- struct thread *thread__new(pid_t pid, pid_t tid)
- {
-+	char *comm_str;
-+	struct comm *comm;
- 	struct thread *thread = zalloc(sizeof(*thread));
- 
- 	if (thread != NULL) {
-@@ -16,47 +19,88 @@ struct thread *thread__new(pid_t pid, pid_t tid)
- 		thread->pid_ = pid;
- 		thread->tid = tid;
- 		thread->ppid = -1;
--		thread->comm = malloc(32);
--		if (thread->comm)
--			snprintf(thread->comm, 32, ":%d", thread->tid);
-+		INIT_LIST_HEAD(&thread->comm_list);
-+
-+		comm_str = malloc(32);
-+		if (!comm_str)
-+			goto err_thread;
-+
-+		snprintf(comm_str, 32, ":%d", tid);
-+		comm = comm__new(comm_str, 0);
-+		free(comm_str);
-+		if (!comm)
-+			goto err_thread;
-+
-+		list_add(&comm->list, &thread->comm_list);
- 	}
- 
- 	return thread;
-+
-+err_thread:
-+	free(thread);
-+	return NULL;
+ /*
+  * Debugging key validation
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index cee72ce64222..46fe18fe6d16 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1565,6 +1565,104 @@ error_keyring:
  }
  
- void thread__delete(struct thread *thread)
- {
-+	struct comm *comm, *tmp;
+ /*
++ * Control or alter a key in a type-dependent way.
++ *
++ * The key must grant the caller Write permission and the key type must support
++ * the control op for this to work.
++ *
++ * If successful, the full reply size will be returned.  If the key type does
++ * not support the control op, then -EOPNOTSUPP will be returned.
++ */
++long keyctl_control_key(key_serial_t id,
++			const char __user *_command,
++			char __user *_reply_buffer,
++			size_t reply_size)
++{
++	struct key *key;
++	key_ref_t key_ref;
++	char *command, *reply_buffer = NULL;
++	long cmd_size, ret;
 +
- 	map_groups__exit(&thread->mg);
--	free(thread->comm);
-+	list_for_each_entry_safe(comm, tmp, &thread->comm_list, list) {
-+		list_del(&comm->list);
-+		comm__free(comm);
++	ret = -EINVAL;
++	if (!_command || reply_size > 1024 * 1024)
++		goto error;
++
++	cmd_size = strnlen_user(_command, 1024 * 1024);
++	if (cmd_size < 0) {
++		ret = cmd_size;
++		goto error;
 +	}
 +
- 	free(thread);
- }
- 
--int thread__set_comm(struct thread *thread, const char *comm,
--		     u64 timestamp __maybe_unused)
-+static struct comm *thread__comm(const struct thread *thread)
- {
--	int err;
-+	if (list_empty(&thread->comm_list))
-+		return NULL;
- 
--	if (thread->comm)
--		free(thread->comm);
--	thread->comm = strdup(comm);
--	err = thread->comm == NULL ? -ENOMEM : 0;
--	if (!err) {
--		thread->comm_set = true;
-+	return list_first_entry(&thread->comm_list, struct comm, list);
++	if (cmd_size > 1024 * 1024 - 1)
++		goto error;
++
++	command = vmalloc(cmd_size + 1);
++	if (!command) {
++		ret = -ENOMEM;
++		goto error;
++	}
++
++	if (copy_from_user(command, _command, cmd_size) != 0) {
++		ret = -EFAULT;
++		goto error_cmd;
++	}
++	if (command[0] == '\0')
++		goto error_cmd;
++
++	if (_reply_buffer) {
++		if (reply_size <= 0)
++			goto error_cmd;
++		if (!access_ok(VERIFY_WRITE, _reply_buffer, reply_size)) {
++			ret = -EFAULT;
++			goto error_cmd;
++		}
++		reply_buffer = vmalloc(reply_size);
++		if (!reply_buffer)
++			goto error_cmd;
++	}
++
++	/* find the target key (which must be writable) */
++	key_ref = lookup_user_key(id, 0, KEY_WRITE);
++	if (IS_ERR(key_ref)) {
++		ret = PTR_ERR(key_ref);
++		goto error_reply;
++	}
++	key = key_ref_to_ptr(key_ref);
++
++	/* call the control function if available */
++	ret = -EOPNOTSUPP;
++	if (!key->type->control)
++		goto error_key;
++
++	ret = key->type->control(key, command, reply_buffer, reply_size);
++	if (ret < 0)
++		goto error_key;
++
++	/* Return the reply.  It's possible that the available reply would have
++	 * exceeded the buffer size, so we return the ideal size but truncate
++	 * if we would otherwise overrun the buffer.
++	 */
++	if (reply_buffer) {
++		if (ret < reply_size)
++			reply_size = ret;
++		if (reply_size > 0 &&
++		    copy_to_user(_reply_buffer, reply_buffer, reply_size) != 0) {
++			ret = -EFAULT;
++			goto error_key;
++		}
++	}
++
++error_key:
++	key_put(key);
++error_reply:
++	vfree(reply_buffer);
++error_cmd:
++	vfree(command);
++error:
++	return ret;
 +}
 +
-+/* CHECKME: time should always be 0 if event aren't ordered */
-+int thread__set_comm(struct thread *thread, const char *str, u64 timestamp)
-+{
-+	struct comm *new, *curr = thread__comm(thread);
++/*
+  * The key control system call
+  */
+ SYSCALL_DEFINE5(keyctl, int, option, unsigned long, arg2, unsigned long, arg3,
+@@ -1670,6 +1768,12 @@ SYSCALL_DEFINE5(keyctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 	case KEYCTL_GET_PERSISTENT:
+ 		return keyctl_get_persistent((uid_t)arg2, (key_serial_t)arg3);
+ 
++	case KEYCTL_CONTROL:
++		return keyctl_control_key((key_serial_t)arg2,
++					  (const char __user *)arg3,
++					  (char __user *)arg4,
++					  (size_t)arg5);
 +
-+	/* Override latest entry if it had no specific time coverage */
-+	if (!curr->start) {
-+		list_del(&curr->list);
-+		comm__free(curr);
+ 	default:
+ 		return -EOPNOTSUPP;
  	}
--	return err;
-+
-+	new = comm__new(str, timestamp);
-+	if (!new)
-+		return -ENOMEM;
-+
-+	list_add(&new->list, &thread->comm_list);
-+	thread->comm_set = true;
-+
-+	return 0;
- }
- 
- const char *thread__comm_str(const struct thread *thread)
- {
--	return thread->comm;
-+	const struct comm *comm = thread__comm(thread);
-+
-+	if (!comm)
-+		return NULL;
-+
-+	return comm__str(comm);
- }
- 
-+/* CHECKME: it should probably better return the max comm len from its comm list */
- int thread__comm_len(struct thread *thread)
- {
- 	if (!thread->comm_len) {
--		if (!thread->comm)
-+		const char *comm = thread__comm_str(thread);
-+		if (!comm)
- 			return 0;
--		thread->comm_len = strlen(thread->comm);
-+		thread->comm_len = strlen(comm);
- 	}
- 
- 	return thread->comm_len;
-@@ -74,17 +118,17 @@ void thread__insert_map(struct thread *thread, struct map *map)
- 	map_groups__insert(&thread->mg, map);
- }
- 
--int thread__fork(struct thread *thread, struct thread *parent,
--		 u64 timestamp __maybe_unused)
-+int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
- {
--	int i;
-+	int i, err;
- 
- 	if (parent->comm_set) {
--		if (thread->comm)
--			free(thread->comm);
--		thread->comm = strdup(parent->comm);
--		if (!thread->comm)
-+		const char *comm = thread__comm_str(parent);
-+		if (!comm)
- 			return -ENOMEM;
-+		err = thread__set_comm(thread, comm, timestamp);
-+		if (!err)
-+			return err;
- 		thread->comm_set = true;
- 	}
- 
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 4e9724270a64..8702c6b4163a 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -2,6 +2,7 @@
- #define __PERF_THREAD_H
- 
- #include <linux/rbtree.h>
-+#include <linux/list.h>
- #include <unistd.h>
- #include <sys/types.h>
- #include "symbol.h"
-@@ -18,7 +19,7 @@ struct thread {
- 	char			shortname[3];
- 	bool			comm_set;
- 	bool			dead; /* if set thread has exited */
--	char			*comm;
-+	struct list_head	comm_list;
- 	int			comm_len;
- 
- 	void			*priv;
--- 
-1.8.1.4
 
