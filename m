@@ -1,81 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab3KDPZX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 10:25:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45745 "EHLO mx1.redhat.com"
+	id S1751959Ab3KDPeM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 10:34:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56099 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752785Ab3KDPZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 10:25:19 -0500
-Date: Mon, 4 Nov 2013 10:25:16 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Mike Snitzer <snitzer@redhat.com>
-cc: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
-        dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        Alasdair Kergon <agk@redhat.com>
-Subject: Re: [PATCH for-next] dm: fix missing bi_remaining accounting
-In-Reply-To: <20131104152001.GA12398@redhat.com>
-Message-ID: <alpine.LRH.2.02.1311041023090.4548@file01.intranet.prod.int.rdu2.redhat.com>
-References: <20131101135931.GA22903@redhat.com> <5273C2B8.5030608@kernel.dk> <alpine.LRH.2.02.1311041003400.4548@file01.intranet.prod.int.rdu2.redhat.com> <20131104152001.GA12398@redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1750789Ab3KDPeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 10:34:11 -0500
+Message-ID: <5277BE6D.1040002@suse.cz>
+Date: Mon, 04 Nov 2013 16:34:05 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Robert Jennings <rcj@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave@sr71.net>, Matt Helsley <matt.helsley@gmail.com>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Michael Roth <mdroth@linux.vnet.ibm.com>,
+        Lei Li <lilei@linux.vnet.ibm.com>,
+        Leonardo Garcia <lagarcia@linux.vnet.ibm.com>,
+        Simon Jin <simonjin@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 0/2] vmpslice support for zero-copy gifting of pages
+References: <1382715984-10558-1-git-send-email-rcj@linux.vnet.ibm.com>
+In-Reply-To: <1382715984-10558-1-git-send-email-rcj@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Mon, 4 Nov 2013, Mike Snitzer wrote:
-
-> On Mon, Nov 04 2013 at 10:06am -0500,
-> Mikulas Patocka <mpatocka@redhat.com> wrote:
+On 10/25/2013 05:46 PM, Robert Jennings wrote:
+> From: Robert C Jennings <rcj@linux.vnet.ibm.com>
 > 
-> > 
-> > 
-> > On Fri, 1 Nov 2013, Jens Axboe wrote:
-> > 
-> > > On 11/01/2013 07:59 AM, Mike Snitzer wrote:
-> > > > Add the missing bi_remaining increment, required by the block layer's
-> > > > new bio-chaining code, to both the verity and old snapshot DM targets.
-> > > > 
-> > > > Otherwise users will hit the bi_remaining <= 0 BUG_ON in bio_endio().
-> > > 
-> > > Thanks Mike, added to the mix.
-> > > 
-> > > -- 
-> > > Jens Axboe
-> > 
-> > Hi
-> > 
-> > This improves a little bit on the previous patch, by replacing costly 
-> > atomic_inc with cheap atomic_set.
-> > 
-> > 
-> > From: Mikulas Patocka <mpatocka@redhat.com>
-> > 
-> > dm: change atomic_inc to atomic_set(1)
-> > 
-> > There are places in dm where we save bi_endio and bi_private, set them to
-> > target's routine, submit the bio, from the target's bi_endio routine we
-> > restore bi_endio and bi_private and end the bio with bi_endio.
-> > 
-> > This causes underflow of bi_remaining, so we must restore bi_remaining
-> > before ending the bio from the target bi_endio routine.
-> > 
-> > The code uses atomic_inc for restoration of bi_remaining. This patch
-> > changes it to atomic_set(1) to avoid an interlocked instruction. In the
-> > target's bi_endio routine we are sure that bi_remaining is zero
-> > (otherwise, the bi_endio routine wouldn't be called) and there are no
-> > concurrent users of the bio, so we can replace atomic_inc with
-> > atomic_set(1).
+> This patch set would add the ability to move anonymous user pages from one
+> process to another through vmsplice without copying data.  Moving pages
+> rather than copying is implemented for a narrow case in this RFC to meet
+> the needs of QEMU's usage (below).
 > 
-> This isn't DM-specific.  Shouldn't the other places in the tree that use
-> atomic_inc on bi_remaining should really be converted at the same time?
+> Among the restrictions the source address and destination addresses must
+> be page aligned, the size argument must be a multiple of page size,
+> and by the time the reader calls vmsplice, the page must no longer be
+> mapped in the source.  If a move is not possible the code transparently
+> falls back to copying data.
+> 
+> This comes from work in QEMU[1] to migrate a VM from one QEMU instance
+> to another with minimal down-time for the VM.  This would allow for an
+> update of the QEMU executable under the VM.
 
-There is no 'atomic_inc.*bi_remaining' in other drivers.
+Hello,
 
-It is just in fs/bio.c in bio_chain and bio_endio_nodec where it's 
-probably needed.
+since this seems somewhat narrow use case for a syscall change, it would
+be helpful if you included a larger discussion of considered existing
+alternatives, with benchmark results justifying the changed syscall. E.g.:
+- Cross Memory Attach comes to mind as one alternative to vmsplice.
+Although it does perform a single copy, there are results suggesting
+zero-copy doesn't necessarily add that much gain:
+  http://marc.info/?l=linux-mm&m=130105930902915&w=2
+- Would it be possible for QEMU to use shared memory to begin with?
+Since you are already restricting this to page-aligned regions.
 
-Mikulas
+Ideally the benchmark results would also include the THP support when
+complete.
+
+Thanks,
+Vlastimil
+
+> New flag usage
+> This introduces use of the SPLICE_F_MOVE flag for vmsplice, previously
+> unused.  Proposed usage is as follows:
+> 
+>  Writer gifts pages to pipe, can not access original contents after gift:
+>     vmsplice(fd, iov, nr_segs, (SPLICE_F_GIFT | SPLICE_F_MOVE);
+>  Reader asks kernel to move pages from pipe to memory described by iovec:
+>     vmsplice(fd, iov, nr_segs, SPLICE_F_MOVE);
+> 
+> Moving pages rather than copying is implemented for a narrow case in
+> this RFC to meet the needs of QEMU's usage.  If a move is not possible
+> the code transparently falls back to copying data.
+> 
+> For older kernels the SPLICE_F_MOVE would be ignored and a copy would occur.
+> 
+> [1] QEMU localhost live migration:
+> http://lists.gnu.org/archive/html/qemu-devel/2013-10/msg02787.html
+> 
+> Changes from V1:
+>  - Cleanup zap coalescing in splice_to_pipe for readability
+>  - Field added to struct partial_page in v1 was unnecessary, using
+>    private field instead.
+>  - Read-side code in pipe_to_user pulled out into a new function
+>  - Improved documentation of read-side flipping code
+>  - Fixed locking issue in read-size flipping code found by sparse
+>  - Updated vmsplice comments for vmsplice_to_user(),
+>    vmsplice_to_pipe, and vmsplice syscall
+> _______________________________________________________
+> 
+>   vmsplice: unmap gifted pages for recipient
+>   vmsplice: Add limited zero copy to vmsplice
+> 
+>  fs/splice.c | 159 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++----
+>  1 file changed, 150 insertions(+), 9 deletions(-)
+> 
+
