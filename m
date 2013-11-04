@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab3KDQGV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 11:06:21 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35384 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751526Ab3KDQGT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 11:06:19 -0500
-Message-ID: <5277C5F8.3080609@infradead.org>
-Date: Mon, 04 Nov 2013 08:06:16 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753200Ab3KDQH7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 11:07:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53577 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751451Ab3KDQH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 11:07:58 -0500
+Date: Mon, 4 Nov 2013 17:09:14 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 11/13] tracing/kprobes: Add priv argument to fetch
+	functions
+Message-ID: <20131104160914.GA8595@redhat.com>
+References: <1383029621-7384-1-git-send-email-namhyung@kernel.org> <1383029621-7384-12-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Kees Cook <keescook@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH -next] random: needs linux/device.h for struct device
-References: <20131104175916.763e3c0cf001b9f948f2baa7@canb.auug.org.au>
-In-Reply-To: <20131104175916.763e3c0cf001b9f948f2baa7@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383029621-7384-12-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on x86_64:
+See my replies to 0/13. Lets assume that you agree that get_user_vaddr()
+doesn't need tu->inode.
 
-drivers/char/random.c: In function 'add_device_attach_randomness':
-drivers/char/random.c:837:41: error: dereferencing pointer to incomplete type
+On 10/29, Namhyung Kim wrote:
+>
+> This argument is for passing private data structure to each fetch
+> function and will be used by uprobes.
 
+In this case, why do we need this "void *priv"? It actually becomes
+"bool need_addr_translation".
 
-need to #include <linux/device.h> for struct device, I think.
-Yes, that works.
+Can't we avoid it? Can't we just add FETCH_MTD_memory_notranslate ?
+kprobes should use the same methods for FETCH_MTD_memory*, uprobes
+should obviously adjust the addr in FETCH_MTD_memory.
 
----
-From: Randy Dunlap <rdunlap@infradead.org>
+Then (afaics) we need a single change in parse_probe_arg(),
 
-Fix struct device build failure on x86_64 by including <linux/device.h>:
+	-	dprm->fetch = t->fetch[FETCH_MTD_memory];
+	+	dprm->fetch = t->fetch[FETCH_MTD_memory_notranslate];
 
-drivers/char/random.c: In function 'add_device_attach_randomness':
-drivers/char/random.c:837:41: error: dereferencing pointer to incomplete type
+Yes, this will blow *probes_fetch_type_table[], but looks simpler.
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
----
- drivers/char/random.c |    1 +
- 1 file changed, 1 insertion(+)
+And. This way it would be simple to teach parse_probe_arg('@') to use
+_notranslate, say, "@=addr" or whatever.
 
---- linux-next-20131104.orig/drivers/char/random.c
-+++ linux-next-20131104/drivers/char/random.c
-@@ -240,6 +240,7 @@
- #include <linux/kernel.h>
- #include <linux/major.h>
- #include <linux/string.h>
-+#include <linux/device.h>
- #include <linux/fcntl.h>
- #include <linux/slab.h>
- #include <linux/random.h>
+Oleg.
 
-
-
-
----
