@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697Ab3KDWHI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 17:07:08 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:65233 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752187Ab3KDWHG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 17:07:06 -0500
-Date: Tue, 5 Nov 2013 07:06:59 +0900
-From: Tejun Heo <tj@kernel.org>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Victor Marmol <vmarmol@google.com>,
-        =?iso-8859-1?Q?St=E9phane?= Graber <stgraber@ubuntu.com>,
-        Rohit Jnagal <jnagal@google.com>
-Subject: Re: [RFC PATCH 1/2] devices cgroup: allow can_attach() if ns_capable
-Message-ID: <20131104220659.GB24165@mtj.dyndns.org>
-References: <20130723181606.GA6342@sergelap>
- <20130723183018.GF21100@mtj.dyndns.org>
- <20130723183841.GA9021@tp>
- <CAOS58YPynQ-QBx5nZEnYrP5kGTVvv9VAj0cV0aYeikTitvTQbA@mail.gmail.com>
- <20130723190426.GA9577@tp>
- <20130723191245.GI21100@mtj.dyndns.org>
- <20130723192801.GA9923@tp>
- <CAOS58YPEKtEiZWsn-8u6OPr-UsyQp=XR+ecGmXyOdT0JnYAmsA@mail.gmail.com>
- <20131104215135.GA26190@mail.hallyn.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131104215135.GA26190@mail.hallyn.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753943Ab3KDWIg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 17:08:36 -0500
+Received: from mga02.intel.com ([134.134.136.20]:50701 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753758Ab3KDWIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 17:08:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="429741873"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: [PATCH v4 1/4] usb: gadget: move bitflags to the end of usb_gadget struct
+Date: Mon,  4 Nov 2013 14:12:54 -0800
+Message-Id: <1383603177-4624-2-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1383603177-4624-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1383603177-4624-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch moves all bitflags to the end of usb_gadget struct in order
+to improve readability.
 
-On Mon, Nov 04, 2013 at 09:51:35PM +0000, Serge E. Hallyn wrote:
-> Do you have a list of such issues which you see with delegation?  That is,
-> cases where, if ownership of a subtree is granted to a non-root user,
-> that user can affect tasks owned by other users who are in other
-> cgroups?
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+---
+ include/linux/usb/gadget.h | 19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
-A lot of security is about logistics and cgroup simply doesn't have
-them - depth, number of cgroups quota, even config changes or
-subdirectory operations which involve RCU operations can easily be
-used for DoS attacks.  Just think about how much complexity and effort
-need to be spent on making and maintaining anything properly
-delegatable to !priv users.  cgroup has never spent such design or
-implementation effort - e.g. take a look at how event_control thing is
-implemented, it's extremely easy to trigger OOM if you give that out
-to !priv users.
-
-cgroup has *never* been safe to give out to !priv users and it is
-highly unlikely to be in any foreseeable future.  It will be a big new
-giant feature which I frankly don't think is worth the risk or effort.
-Think of it as giving out sysctl or firewall rule control to !priv
-users.  Giving out subset of those controls do make sense in terms of
-function but we don't do that and don't have infrastructure to support
-such usage.  cgroup at this stage isn't that different.  If you insist
-on doing that, you can but it is severely compromising in terms of
-security and it'll stay that way for the foreseeable future.
-
-Thanks.
-
+diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
+index 942ef5e053bf..23b3bfd0a842 100644
+--- a/include/linux/usb/gadget.h
++++ b/include/linux/usb/gadget.h
+@@ -485,6 +485,11 @@ struct usb_gadget_ops {
+  * @max_speed: Maximal speed the UDC can handle.  UDC must support this
+  *      and all slower speeds.
+  * @state: the state we are now (attached, suspended, configured, etc)
++ * @name: Identifies the controller hardware type.  Used in diagnostics
++ *	and sometimes configuration.
++ * @dev: Driver model state for this abstract device.
++ * @out_epnum: last used out ep number
++ * @in_epnum: last used in ep number
+  * @sg_supported: true if we can handle scatter-gather
+  * @is_otg: True if the USB device port uses a Mini-AB jack, so that the
+  *	gadget driver must provide a USB OTG descriptor.
+@@ -497,11 +502,6 @@ struct usb_gadget_ops {
+  *	only supports HNP on a different root port.
+  * @b_hnp_enable: OTG device feature flag, indicating that the A-Host
+  *	enabled HNP support.
+- * @name: Identifies the controller hardware type.  Used in diagnostics
+- *	and sometimes configuration.
+- * @dev: Driver model state for this abstract device.
+- * @out_epnum: last used out ep number
+- * @in_epnum: last used in ep number
+  *
+  * Gadgets have a mostly-portable "gadget driver" implementing device
+  * functions, handling all usb configurations and interfaces.  Gadget
+@@ -530,16 +530,17 @@ struct usb_gadget {
+ 	enum usb_device_speed		speed;
+ 	enum usb_device_speed		max_speed;
+ 	enum usb_device_state		state;
++	const char			*name;
++	struct device			dev;
++	unsigned			out_epnum;
++	unsigned			in_epnum;
++
+ 	unsigned			sg_supported:1;
+ 	unsigned			is_otg:1;
+ 	unsigned			is_a_peripheral:1;
+ 	unsigned			b_hnp_enable:1;
+ 	unsigned			a_hnp_support:1;
+ 	unsigned			a_alt_hnp_support:1;
+-	const char			*name;
+-	struct device			dev;
+-	unsigned			out_epnum;
+-	unsigned			in_epnum;
+ };
+ #define work_to_gadget(w)	(container_of((w), struct usb_gadget, work))
+ 
 -- 
-tejun
+1.8.4.rc3
+
