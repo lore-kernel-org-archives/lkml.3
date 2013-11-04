@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab3KDTxQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 14:53:16 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:60391 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab3KDTxP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 14:53:15 -0500
+	id S1751484Ab3KDUDs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 15:03:48 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:59743 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750746Ab3KDUDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 15:03:47 -0500
+Date: Mon, 4 Nov 2013 14:03:46 -0600
+From: Alex Thorlton <athorlton@sgi.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: BUG: mm, numa: test segfaults, only when NUMA balancing is on
+Message-ID: <20131104200346.GA3066@sgi.com>
+References: <20131016155429.GP25735@sgi.com>
+ <20131104145828.GA1218@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <CA+5PVA47mQcKf0D5vNpQrt-9cQWMUMPRS0kZybmJzrnwdNPC-Q@mail.gmail.com>
-References: <CA+55aFwLkvSkparyvekdmMyvr6Srw1KkzTBp=_w0oQRWnPpJug@mail.gmail.com>
-	<20131104062540.GA12149@gmail.com>
-	<CA+5PVA47mQcKf0D5vNpQrt-9cQWMUMPRS0kZybmJzrnwdNPC-Q@mail.gmail.com>
-Date: Mon, 4 Nov 2013 20:53:15 +0100
-X-Google-Sender-Auth: 3M_l3QqRHOS6sZ3EY0WAqKingTQ
-Message-ID: <CAMuHMdU42shGH8WurDr6BkOwW0KNh-rF2EjgjepDozLr_=VDEA@mail.gmail.com>
-Subject: Re: Linux 3.12 released .. and no merge window yet .. and 4.0 plans?
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131104145828.GA1218@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 4, 2013 at 8:08 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
->>> So I may be pessimistic, but I'd expect many developers would go "Let's
->>> hunt bugs.. Wait. Oooh, shiny" and go off doing some new feature after
->>> all instead. Or just take that release off.
->>>
->>> But I do wonder.. Maybe it would be possible, and I'm just unfairly
->>> projecting my own inner squirrel onto other kernel developers. If we
->>> have enough heads-up that people *know* that for one release (and
->>> companies/managers know that too) the only patches that get accepted are
->>> the kind that fix bugs, maybe people really would have sufficient
->>> attention span that it could work.
->>>
->>> And the reason I mention "4.0" is that it would be a lovely time to do
->>> that. Roughly a years heads-up that "ok, after 3.19 (or whatever), we're
->>> doing a release with *just* fixes, and then that becomes 4.0".
->>>
->>> Comments?
->>
->> I think the biggest problem wouldn't even be the enforcement of
->> bugfixes-only during that 2.5 months period, or kernel developers
->> surviving such a long streak of boredom, but v3.19 would also probably be
->> a super-stressful release to maintainers, as everyone would try to cram
->> their feature in there. And if anything important misses that window then
->> it's a +5 months wait...
->
-> I'd agree with that, but it wouldn't be limited to just the final
-> non-bugfix release.  It would be a year-long "shove as much as we can
-> in" push, and I'd be fearful of doing any distro kernel based on any
-> one of those releases.  Clearly the subsystem maintainers would still
-> be fighting the good fight, but I'm concerned they'd be overwhelmed
-> and/or burnt out by the time 4.0 came around.
+On Mon, Nov 04, 2013 at 02:58:28PM +0000, Mel Gorman wrote:
+> On Wed, Oct 16, 2013 at 10:54:29AM -0500, Alex Thorlton wrote:
+> > Hi guys,
+> > 
+> > I ran into a bug a week or so ago, that I believe has something to do
+> > with NUMA balancing, but I'm having a tough time tracking down exactly
+> > what is causing it.  When running with the following configuration
+> > options set:
+> > 
+> 
+> Can you test with patches
+> cd65718712469ad844467250e8fad20a5838baae..0255d491848032f6c601b6410c3b8ebded3a37b1
+> applied? They fix some known memory corruption problems, were merged for
+> 3.12 (so alternatively just test 3.12) and have been tagged for -stable.
 
-I'm afraid to avoid that, you have to do the bug-fixing release *now*,
-without early warning...
+I just finished testing with 3.12, and I'm still seeing the same issue.
+This is actually a bit strange to me, because, when I tested with
+3.12-rc5 a while back, everything seemed to be ok (see previoues e-mail
+in this thread, to Bob Liu).  I guess, embarrasingly enough, I must have
+been playing with a screwed up config that day, and managed to somehow
+avoid the problem...  Either way, it appears that we still have a
+problem here.
 
-Yes, it screws all short-term planning, but it relieves the stress from all
-maintainters, and puts the stress/blame on a single person, of which we
-all know he can handle it and say "no".
+I'll poke around a bit more on this in the next few days and see if I
+can come up with any more information.  In the meantime, let me know if
+you have any other suggestions.
 
-Gr{oetje,eeting}s,
+Thanks,
 
-                        Geert
+- Alex
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> 
+> Thanks.
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
