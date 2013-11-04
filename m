@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685Ab3KDGy6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 01:54:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42438 "EHLO
+	id S1752366Ab3KDGzQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 01:55:16 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42440 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab3KDGy4 (ORCPT
+	with ESMTP id S1750829Ab3KDGy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 01:54:56 -0500
-Date: Sun, 3 Nov 2013 22:54:32 -0800
-From: tip-bot for Michael Hudson-Doyle <tipbot@zytor.com>
-Message-ID: <tip-53805eca3d89b095062c11a6798689bb0af09216@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, will.deacon@arm.com, jean.pihet@linaro.org,
-        namhyung@kernel.org, jolsa@redhat.com, tglx@linutronix.de,
-        michael.hudson@linaro.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, will.deacon@arm.com, jean.pihet@linaro.org,
-        namhyung@kernel.org, jolsa@redhat.com, michael.hudson@linaro.org,
+	Mon, 4 Nov 2013 01:54:57 -0500
+Date: Sun, 3 Nov 2013 22:54:41 -0800
+From: tip-bot for Wei Yang <tipbot@zytor.com>
+Message-ID: <tip-32bf5bd181026fc99c0e15045abe409167285ba8@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        hpa@zytor.com, mingo@kernel.org, weiyang@linux.vnet.ibm.com,
         tglx@linutronix.de
-In-Reply-To: <87zjppvw7y.fsf@canonical.com>
-References: <87zjppvw7y.fsf@canonical.com>
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com,
+        weiyang@linux.vnet.ibm.com, tglx@linutronix.de
+In-Reply-To: <1379839764-9245-1-git-send-email-weiyang@linux.vnet.ibm.com>
+References: <1379839764-9245-1-git-send-email-weiyang@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Remove cast of non-variadic function to variadic
-Git-Commit-ID: 53805eca3d89b095062c11a6798689bb0af09216
+Subject: [tip:perf/core] perf bench: Fix two warnings
+Git-Commit-ID: 32bf5bd181026fc99c0e15045abe409167285ba8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,88 +29,58 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 03 Nov 2013 22:54:38 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 03 Nov 2013 22:54:46 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  53805eca3d89b095062c11a6798689bb0af09216
-Gitweb:     http://git.kernel.org/tip/53805eca3d89b095062c11a6798689bb0af09216
-Author:     Michael Hudson-Doyle <michael.hudson@linaro.org>
-AuthorDate: Thu, 31 Oct 2013 16:47:45 -0700
+Commit-ID:  32bf5bd181026fc99c0e15045abe409167285ba8
+Gitweb:     http://git.kernel.org/tip/32bf5bd181026fc99c0e15045abe409167285ba8
+Author:     Wei Yang <weiyang@linux.vnet.ibm.com>
+AuthorDate: Sun, 22 Sep 2013 16:49:24 +0800
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 1 Nov 2013 10:40:51 -0300
+CommitDate: Fri, 1 Nov 2013 10:41:54 -0300
 
-perf tools: Remove cast of non-variadic function to variadic
+perf bench: Fix two warnings
 
-The 4fb71074a570 (perf ui/hist: Consolidate hpp helpers) cset introduced
-a cast of percent_color_snprintf to a function pointer type with
-varargs.  Change percent_color_snprintf to be variadic and remove the
-cast.
+There are two warnings in bench/numa, when building this on 32-bit
+machine.
 
-The symptom of this was all percentages being reported as 0.00% in perf
-report --stdio output on the armhf arch.
+The warning output is attached:
 
-Signed-off-by: Michael Hudson-Doyle <michael.hudson@linaro.org>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/87zjppvw7y.fsf@canonical.com
+bench/numa.c:1113:20: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
+bench/numa.c:1161:6: error: format ‘%lx’ expects argument of t'long unsigned int’, but argument 5 has type ‘u64’ [-Werror=format]
+
+This patch fixes these two warnings.
+
+Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Link: http://lkml.kernel.org/r/1379839764-9245-1-git-send-email-weiyang@linux.vnet.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/hist.c    |  2 +-
- tools/perf/util/color.c | 11 +++++++++--
- tools/perf/util/color.h |  2 +-
- 3 files changed, 11 insertions(+), 4 deletions(-)
+ tools/perf/bench/numa.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 0a19328..78f4c92 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -117,7 +117,7 @@ static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
- 	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
--			  (hpp_snprint_fn)percent_color_snprintf, true);	\
-+			  percent_color_snprintf, true);			\
- }
+diff --git a/tools/perf/bench/numa.c b/tools/perf/bench/numa.c
+index 30d1c32..a73c4ed 100644
+--- a/tools/perf/bench/numa.c
++++ b/tools/perf/bench/numa.c
+@@ -1110,7 +1110,7 @@ static void *worker_thread(void *__tdata)
+ 		/* Check whether our max runtime timed out: */
+ 		if (g->p.nr_secs) {
+ 			timersub(&stop, &start0, &diff);
+-			if (diff.tv_sec >= g->p.nr_secs) {
++			if (diff.tv_sec >= (time_t)g->p.nr_secs) {
+ 				g->stop_work = true;
+ 				break;
+ 			}
+@@ -1157,7 +1157,7 @@ static void *worker_thread(void *__tdata)
+ 			runtime_ns_max += diff.tv_usec * 1000;
  
- #define __HPP_ENTRY_PERCENT_FN(_type, _field)					\
-diff --git a/tools/perf/util/color.c b/tools/perf/util/color.c
-index 11e46da..66e44a5 100644
---- a/tools/perf/util/color.c
-+++ b/tools/perf/util/color.c
-@@ -318,8 +318,15 @@ int percent_color_fprintf(FILE *fp, const char *fmt, double percent)
- 	return r;
- }
- 
--int percent_color_snprintf(char *bf, size_t size, const char *fmt, double percent)
-+int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...)
- {
--	const char *color = get_percent_color(percent);
-+	va_list args;
-+	double percent;
-+	const char *color;
-+
-+	va_start(args, fmt);
-+	percent = va_arg(args, double);
-+	va_end(args);
-+	color = get_percent_color(percent);
- 	return color_snprintf(bf, size, color, fmt, percent);
- }
-diff --git a/tools/perf/util/color.h b/tools/perf/util/color.h
-index dea082b..fced384 100644
---- a/tools/perf/util/color.h
-+++ b/tools/perf/util/color.h
-@@ -39,7 +39,7 @@ int color_fprintf(FILE *fp, const char *color, const char *fmt, ...);
- int color_snprintf(char *bf, size_t size, const char *color, const char *fmt, ...);
- int color_fprintf_ln(FILE *fp, const char *color, const char *fmt, ...);
- int color_fwrite_lines(FILE *fp, const char *color, size_t count, const char *buf);
--int percent_color_snprintf(char *bf, size_t size, const char *fmt, double percent);
-+int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...);
- int percent_color_fprintf(FILE *fp, const char *fmt, double percent);
- const char *get_percent_color(double percent);
- 
+ 			if (details >= 0) {
+-				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016lx]\n",
++				printf(" #%2d / %2d: %14.2lf nsecs/op [val: %016"PRIu64"]\n",
+ 					process_nr, thread_nr, runtime_ns_max / bytes_done, val);
+ 			}
+ 			fflush(stdout);
