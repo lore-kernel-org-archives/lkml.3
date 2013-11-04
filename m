@@ -1,123 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab3KDVzE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 16:55:04 -0500
-Received: from smtprelay0094.hostedemail.com ([216.40.44.94]:48704 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751056Ab3KDVzC (ORCPT
+	id S1754003Ab3KDVzg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 16:55:36 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:64275 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753697Ab3KDVze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 16:55:02 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:69:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3354:3653:3865:3867:3868:3870:3871:3872:3874:5007:6119:7652:7903:8957:9545:10004:10400:10848:11026:11658:11914:12043:12438:12517:12519:12555:13161:13229,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: women73_e4363c3c832a
-X-Filterd-Recvd-Size: 4394
-Message-ID: <1383602096.28651.8.camel@joe-AO722>
-Subject: [PATCH -next] get_maintainer: Improve "Author:" rolestats
-From: Joe Perches <joe@perches.com>
-To: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-Cc: Chen Gang <gang.chen@asianux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 04 Nov 2013 13:54:56 -0800
-In-Reply-To: <52750739.6040706@gmail.com>
-References: <52738E90.6040104@asianux.com>
-	 <1383330777.3042.2.camel@joe-AO722> <52750739.6040706@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Mon, 4 Nov 2013 16:55:34 -0500
+Message-ID: <527817CF.7020304@gmail.com>
+Date: Tue, 05 Nov 2013 08:55:27 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Frank Haverkamp <haver@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+CC: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
+        jsvogt@de.ibm.com, MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com,
+        michael@ibmra.de
+Subject: Re: [PATCH 2/9] GenWQE: Remove option to select name
+References: <1383584889-21594-1-git-send-email-haver@linux.vnet.ibm.com> <1383584889-21594-3-git-send-email-haver@linux.vnet.ibm.com>
+In-Reply-To: <1383584889-21594-3-git-send-email-haver@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add this to "try this"...
+On 05/11/13 04:08, Frank Haverkamp wrote:
+> Selecting interface names via configuration option is obsolete.
 
-Chen Gang's defect is because his git repository branch
-had a commit he authored but where did not add his signature.
+Don't do this. You are adding completely new code, so there is no reason
+to post a patch full of code that is known to be incorrect, followed by
+a set of patches fixing things. Just post the correct code to start
+with. This makes the git history cleaner, and makes the code easier to
+review.
 
-Also, there's a defect in function vcs_find_signers.
-It should only return the commit count and array references.
+You can use tools like git interactive rebase to split your work into
+multiple patches. It should be quite easy for this because you mostly
+just want to break down things to the file level, so even:
 
-If there are no signers in the commit history interval specified,
-then the "authors" array is added to the "signers" array and
-returned as a single array.
+  git reset --soft <your-first-commit>
 
-Use references instead.
+and then manually staging and commiting things from there would probably
+be enough. You can use git add --interactive to stage individual file
+hunks if you want to break things down further.
 
-Make sure that references are defined in the places
-that vcs_find_signers is called.
+~Ryan
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/get_maintainer.pl | 21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
-
-diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index ee9adb8..9c3986f 100755
---- a/scripts/get_maintainer.pl
-+++ b/scripts/get_maintainer.pl
-@@ -128,7 +128,7 @@ my %VCS_cmds_git = (
-     "blame_commit_pattern" => "^([0-9a-f]+) ",
-     "author_pattern" => "^GitAuthor: (.*)",
-     "subject_pattern" => "^GitSubject: (.*)",
--    "stat_pattern" => "(\\d+)\\t(\\d+)\\t\$file",
-+    "stat_pattern" => "^(\\d+)\\t(\\d+)\\t\$file\$",
- );
- 
- my %VCS_cmds_hg = (
-@@ -156,7 +156,7 @@ my %VCS_cmds_hg = (
-     "blame_commit_pattern" => "^([ 0-9a-f]+):",
-     "author_pattern" => "^HgAuthor: (.*)",
-     "subject_pattern" => "^HgSubject: (.*)",
--    "stat_pattern" => "(\\d+)\t(\\d+)\t\$file",
-+    "stat_pattern" => "^(\\d+)\t(\\d+)\t\$file\$",
- );
- 
- my $conf = which_conf(".get_maintainer.conf");
-@@ -1297,7 +1297,7 @@ sub vcs_find_signers {
- 
- #    print("stats: <@stats>\n");
- 
--    return (0, @signatures, @authors) if !@signatures;
-+    return (0, \@signatures, \@authors, \@stats) if !@signatures;
- 
-     save_commits_by_author(@lines) if ($interactive);
-     save_commits_by_signer(@lines) if ($interactive);
-@@ -1880,9 +1880,10 @@ sub vcs_file_signoffs {
-     $cmd =~ s/(\$\w+)/$1/eeg;		# interpolate $cmd
- 
-     ($commits, $signers_ref, $authors_ref, $stats_ref) = vcs_find_signers($cmd, $file);
--    @signers = @{$signers_ref};
--    @authors = @{$authors_ref};
--    @stats = @{$stats_ref};
-+
-+    @signers = @{$signers_ref} if defined $signers_ref;
-+    @authors = @{$authors_ref} if defined $authors_ref;
-+    @stats = @{$stats_ref} if defined $stats_ref;
- 
- #    print("commits: <$commits>\nsigners:<@signers>\nauthors: <@authors>\nstats: <@stats>\n");
- 
-@@ -1965,8 +1966,8 @@ sub vcs_file_blame {
- 	    $cmd =~ s/(\$\w+)/$1/eeg;	#substitute variables in $cmd
- 
- 	    ($commit_count, $commit_signers_ref, $commit_authors_ref, $stats_ref) = vcs_find_signers($cmd, $file);
--	    @commit_authors = @{$commit_authors_ref};
--	    @commit_signers = @{$commit_signers_ref};
-+	    @commit_authors = @{$commit_authors_ref} if defined $commit_authors_ref;
-+	    @commit_signers = @{$commit_signers_ref} if defined $commit_signers_ref;
- 
- 	    push(@signers, @commit_signers);
- 	} else {
-@@ -1983,8 +1984,8 @@ sub vcs_file_blame {
- 		$cmd =~ s/(\$\w+)/$1/eeg;	#substitute variables in $cmd
- 
- 		($commit_count, $commit_signers_ref, $commit_authors_ref, $stats_ref) = vcs_find_signers($cmd, $file);
--		@commit_authors = @{$commit_authors_ref};
--		@commit_signers = @{$commit_signers_ref};
-+		@commit_authors = @{$commit_authors_ref} if defined $commit_authors_ref;
-+		@commit_signers = @{$commit_signers_ref} if defined $commit_signers_ref;
- 
- 		push(@signers, @commit_signers);
- 	    }
-
+> 
+> Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
+> ---
+>  drivers/misc/genwqe/Kconfig        |   14 ++------------
+>  include/linux/genwqe/genwqe_card.h |    6 +-----
+>  2 files changed, 3 insertions(+), 17 deletions(-)
+> 
+> diff --git a/drivers/misc/genwqe/Kconfig b/drivers/misc/genwqe/Kconfig
+> index bbf137d..6069d8c 100644
+> --- a/drivers/misc/genwqe/Kconfig
+> +++ b/drivers/misc/genwqe/Kconfig
+> @@ -9,15 +9,5 @@ menuconfig GENWQE
+>  	default n
+>  	help
+>  	  Enables PCIe card driver for IBM GenWQE accelerators.
+> -          The user-space interface is described in
+> -          include/linux/genwqe/genwqe_card.h.
+> -
+> -if GENWQE
+> -
+> -config GENWQE_DEVNAME
+> -        string "Name for sysfs and device nodes"
+> -	default "genwqe"
+> -        help
+> -          Select alternate name for sysfs and device nodes.
+> -
+> -endif
+> +	  The user-space interface is described in
+> +	  include/linux/genwqe/genwqe_card.h.
+> diff --git a/include/linux/genwqe/genwqe_card.h b/include/linux/genwqe/genwqe_card.h
+> index 2c33db1..ffed142 100644
+> --- a/include/linux/genwqe/genwqe_card.h
+> +++ b/include/linux/genwqe/genwqe_card.h
+> @@ -41,11 +41,7 @@
+>  #endif
+>  
+>  /* Basename of sysfs, debugfs and /dev interfaces */
+> -#if defined(CONFIG_GENWQE_DEVNAME)
+> -#  define GENWQE_DEVNAME CONFIG_GENWQE_DEVNAME
+> -#else
+> -#  define GENWQE_DEVNAME "genwqe"
+> -#endif
+> +#define GENWQE_DEVNAME "genwqe"
+>  
+>  #define GENWQE_TYPE_ALTERA_230		0x00 /* GenWQE4 Stratix-IV-230 */
+>  #define GENWQE_TYPE_ALTERA_530		0x01 /* GenWQE4 Stratix-IV-530 */
+> 
 
