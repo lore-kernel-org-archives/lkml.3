@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab3KDJnu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 04:43:50 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:33196 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752488Ab3KDJnr (ORCPT
+	id S1751176Ab3KDJu7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 04:50:59 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:45237 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750718Ab3KDJu5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 04:43:47 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com
-Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] s390: remove unused Kconfig parameters
-Date: Mon,  4 Nov 2013 10:43:39 +0100
-Message-Id: <1383558219-5223-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	Mon, 4 Nov 2013 04:50:57 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Date: Mon, 4 Nov 2013 09:47:35 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B73D7@saturn3.aculab.com>
+In-Reply-To: <20131101173701.GC8467@hmsreliant.think-freely.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] x86: Run checksumming in parallel accross multiple alu's
+Thread-Index: Ac7XKMPt0FXQ0fiOQSqZgcKSr6UL8QCFt5WQ
+References: <201310300525.r9U5Pdqo014902@ib.usersys.redhat.com> <20131030110214.GA10220@localhost.localdomain> <52710B09.6090302@redhat.com> <20131031183003.GC25894@hmsreliant.think-freely.org> <1383320566.1737.0.camel@bwh-desktop.uk.level5networks.com> <20131101160802.GB8467@hmsreliant.think-freely.org> <AE90C24D6B3A694183C094C60CF0A2F6026B73D3@saturn3.aculab.com> <20131101173701.GC8467@hmsreliant.think-freely.org>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Neil Horman" <nhorman@tuxdriver.com>
+Cc: "Ben Hutchings" <bhutchings@solarflare.com>,
+        "Doug Ledford" <dledford@redhat.com>, "Ingo Molnar" <mingo@kernel.org>,
+        "Eric Dumazet" <eric.dumazet@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes the HAVE_MARCH_Z900_FEATURES and
-HAVE_MARCH_Z990_FEATURES Kconfig parameters,
-which were no longer used anywhere in the source code
-and Makefiles.
+> > I think you need 3 instructions, move a 0, conditionally move a 1
+> > then add. I suspect it won't be a win!
 
-Actually, HAVE_MARCH_Z990_FEATURES is no longer used
-after removing HAVE_MARCH_Z900_FEATURES.
+Or, with an appropriately unrolled loop, for each word:
+	zero %eax, cmove a 1 to %al
+	cmove a 1 to %ah
+	shift %eax left, cmove a 1 to %al
+	cmove a 1 to %ah, add %eax onto somewhere.
+However the 2nd instruction stream would have to use a different
+register (IIRC 8bit updates depend on the entire register).
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- arch/s390/Kconfig | 10 ----------
- 1 file changed, 10 deletions(-)
+> I agree, that sounds interesting, but very cpu dependent.  Thanks for the
+> suggestion, Ben, but I think it would be better if we just did the prefetch here
+> and re-addressed this area when AVX (or addcx/addox) instructions were available
+> for testing on hardware.
 
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index 7143793859fa..df2182d35376 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -153,16 +153,8 @@ source "kernel/Kconfig.freezer"
- 
- menu "Processor type and features"
- 
--config HAVE_MARCH_Z900_FEATURES
--	def_bool n
--
--config HAVE_MARCH_Z990_FEATURES
--	def_bool n
--	select HAVE_MARCH_Z900_FEATURES
--
- config HAVE_MARCH_Z9_109_FEATURES
- 	def_bool n
--	select HAVE_MARCH_Z990_FEATURES
- 
- config HAVE_MARCH_Z10_FEATURES
- 	def_bool n
-@@ -189,7 +181,6 @@ config MARCH_G5
- 
- config MARCH_Z900
- 	bool "IBM zSeries model z800 and z900"
--	select HAVE_MARCH_Z900_FEATURES if 64BIT
- 	help
- 	  Select this to enable optimizations for model z800/z900 (2064 and
- 	  2066 series). This will enable some optimizations that are not
-@@ -197,7 +188,6 @@ config MARCH_Z900
- 
- config MARCH_Z990
- 	bool "IBM zSeries model z890 and z990"
--	select HAVE_MARCH_Z990_FEATURES if 64BIT
- 	help
- 	  Select this to enable optimizations for model z890/z990 (2084 and
- 	  2086 series). The kernel will be slightly faster but will not work
--- 
-1.8.1.2
+I didn't look too closely at the original figures.
+With a simple loop you need 4 instructions per iteration (load, adc, inc, branch).
+How close to one iteration per clock do you get?
+I thought x86 hardware prefetch would load the cache lines for sequential
+accesses - so any prefetch instructions are rather pointless.
+However reading the value in the previous loop iteration should help.
+
+I've just realised that there is a problem with the loop termination
+condition also needing the flags register:-(
+I don't remember the 'loop' instruction ever being added to any of the
+fast path instruction decodes - so it won't help.
+
+So I suspect the best you'll get is an interleaved sequence of load and adc
+with an lea and inc (both to adjust the index) and a bne back to the top.
+(the lea wants to be in the middle somewhere).
+That might manage 1 clock per word + 1 clock per loop iteration (if the inc
+and bne can be 'fused').
+
+	David
+
+
+
 
