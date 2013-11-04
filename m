@@ -1,140 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab3KDDhi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 22:37:38 -0500
-Received: from mga02.intel.com ([134.134.136.20]:11216 "EHLO mga02.intel.com"
+	id S1752941Ab3KDDjB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 22:39:01 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:40842 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752432Ab3KDDhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Nov 2013 22:37:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="429272512"
-Date: Mon, 4 Nov 2013 11:37:49 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Michel Lespinasse <walken@google.com>
-Subject: Re: [PATCH 4/4] mm/rmap.c: move anon_vma initialization code into
- anon_vma_ctor
-Message-ID: <20131104033749.GG30123@yliu-dev.sh.intel.com>
-References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
- <1383292467-28922-5-git-send-email-yuanhan.liu@linux.intel.com>
- <CA+55aFzAxnP0R8LrO9d1MzjCs8LxKXGwxadnUtoKeXhAh3Mzqw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzAxnP0R8LrO9d1MzjCs8LxKXGwxadnUtoKeXhAh3Mzqw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752258Ab3KDDi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Nov 2013 22:38:57 -0500
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: tpmdd-devel@lists.sourceforge.net, Peter Huewe <peterhuewe@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Ashley Lai <ashley@ashleylai.com>
+Subject: [PATCH 4/5 v2] tpm: Use the ops structure instead of a copy in tpm_vendor_specific
+Date: Sun,  3 Nov 2013 20:38:45 -0700
+Message-Id: <1383536326-28772-5-git-send-email-jgunthorpe@obsidianresearch.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1383536326-28772-1-git-send-email-jgunthorpe@obsidianresearch.com>
+References: <1383536326-28772-1-git-send-email-jgunthorpe@obsidianresearch.com>
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 01, 2013 at 11:04:40AM -0700, Linus Torvalds wrote:
-> On Fri, Nov 1, 2013 at 12:54 AM, Yuanhan Liu
-> <yuanhan.liu@linux.intel.com> wrote:
-> > @@ -67,19 +67,7 @@ static struct kmem_cache *anon_vma_chain_cachep;
-> >
-> >  static inline struct anon_vma *anon_vma_alloc(void)
-> >  {
-> > -       struct anon_vma *anon_vma;
-> > -
-> > -       anon_vma = kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
-> > -       if (anon_vma) {
-> > -               atomic_set(&anon_vma->refcount, 1);
-> > -               /*
-> > -                * Initialise the anon_vma root to point to itself. If called
-> > -                * from fork, the root will be reset to the parents anon_vma.
-> > -                */
-> > -               anon_vma->root = anon_vma;
-> > -       }
-> > -
-> > -       return anon_vma;
-> > +       return kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
-> >  }
-> >
-> >  static inline void anon_vma_free(struct anon_vma *anon_vma)
-> > @@ -293,8 +281,15 @@ static void anon_vma_ctor(void *data)
-> >         struct anon_vma *anon_vma = data;
-> >
-> >         rwlock_init(&anon_vma->rwlock);
-> > -       atomic_set(&anon_vma->refcount, 0);
-> >         anon_vma->rb_root = RB_ROOT;
-> > +
-> > +       atomic_set(&anon_vma->refcount, 1);
-> > +       /*
-> > +        * Initialise the anon_vma root to point to itself. If called
-> > +        * from fork, the root will be reset to the parents anon_vma.
-> > +        */
-> > +       anon_vma->root = anon_vma;
-> > +
-> >  }
-> 
-> This looks totally invalid.
-> 
-> The slab constructor is *not* called on every allocation.
+This builds on the last commit to use the ops structure in the core
+and reduce the size of tpm_vendor_specific.
 
-Sorry, I didn't know that :(
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Reviewed-by: Joel Schopp <jschopp@linux.vnet.ibm.com>
+---
+ drivers/char/tpm/tpm-interface.c    | 34 ++++++++++++----------------------
+ drivers/char/tpm/tpm-sysfs.c        |  2 +-
+ drivers/char/tpm/tpm.h              |  9 +--------
+ drivers/char/tpm/tpm_i2c_stm_st33.c |  4 ++--
+ 4 files changed, 16 insertions(+), 33 deletions(-)
 
-And thanks for the detailed info very much!
+diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
+index 0662b70..5a2807c 100644
+--- a/drivers/char/tpm/tpm-interface.c
++++ b/drivers/char/tpm/tpm-interface.c
+@@ -353,7 +353,7 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
+ 
+ 	mutex_lock(&chip->tpm_mutex);
+ 
+-	rc = chip->vendor.send(chip, (u8 *) buf, count);
++	rc = chip->ops->send(chip, (u8 *) buf, count);
+ 	if (rc < 0) {
+ 		dev_err(chip->dev,
+ 			"tpm_transmit: tpm_send: error %zd\n", rc);
+@@ -365,12 +365,12 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
+ 
+ 	stop = jiffies + tpm_calc_ordinal_duration(chip, ordinal);
+ 	do {
+-		u8 status = chip->vendor.status(chip);
+-		if ((status & chip->vendor.req_complete_mask) ==
+-		    chip->vendor.req_complete_val)
++		u8 status = chip->ops->status(chip);
++		if ((status & chip->ops->req_complete_mask) ==
++		    chip->ops->req_complete_val)
+ 			goto out_recv;
+ 
+-		if (chip->vendor.req_canceled(chip, status)) {
++		if (chip->ops->req_canceled(chip, status)) {
+ 			dev_err(chip->dev, "Operation Canceled\n");
+ 			rc = -ECANCELED;
+ 			goto out;
+@@ -380,13 +380,13 @@ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
+ 		rmb();
+ 	} while (time_before(jiffies, stop));
+ 
+-	chip->vendor.cancel(chip);
++	chip->ops->cancel(chip);
+ 	dev_err(chip->dev, "Operation Timed out\n");
+ 	rc = -ETIME;
+ 	goto out;
+ 
+ out_recv:
+-	rc = chip->vendor.recv(chip, (u8 *) buf, bufsiz);
++	rc = chip->ops->recv(chip, (u8 *) buf, bufsiz);
+ 	if (rc < 0)
+ 		dev_err(chip->dev,
+ 			"tpm_transmit: tpm_recv: error %zd\n", rc);
+@@ -807,12 +807,12 @@ EXPORT_SYMBOL_GPL(tpm_send);
+ static bool wait_for_tpm_stat_cond(struct tpm_chip *chip, u8 mask,
+ 				   bool check_cancel, bool *canceled)
+ {
+-	u8 status = chip->vendor.status(chip);
++	u8 status = chip->ops->status(chip);
+ 
+ 	*canceled = false;
+ 	if ((status & mask) == mask)
+ 		return true;
+-	if (check_cancel && chip->vendor.req_canceled(chip, status)) {
++	if (check_cancel && chip->ops->req_canceled(chip, status)) {
+ 		*canceled = true;
+ 		return true;
+ 	}
+@@ -828,7 +828,7 @@ int wait_for_tpm_stat(struct tpm_chip *chip, u8 mask, unsigned long timeout,
+ 	bool canceled = false;
+ 
+ 	/* check current status */
+-	status = chip->vendor.status(chip);
++	status = chip->ops->status(chip);
+ 	if ((status & mask) == mask)
+ 		return 0;
+ 
+@@ -855,7 +855,7 @@ again:
+ 	} else {
+ 		do {
+ 			msleep(TPM_TIMEOUT);
+-			status = chip->vendor.status(chip);
++			status = chip->ops->status(chip);
+ 			if ((status & mask) == mask)
+ 				return 0;
+ 		} while (time_before(jiffies, stop));
+@@ -1027,9 +1027,6 @@ void tpm_dev_vendor_release(struct tpm_chip *chip)
+ 	if (!chip)
+ 		return;
+ 
+-	if (chip->vendor.release)
+-		chip->vendor.release(chip->dev);
+-
+ 	clear_bit(chip->dev_num, dev_mask);
+ }
+ EXPORT_SYMBOL_GPL(tpm_dev_vendor_release);
+@@ -1074,14 +1071,7 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
+ 	mutex_init(&chip->tpm_mutex);
+ 	INIT_LIST_HEAD(&chip->list);
+ 
+-	chip->vendor.req_complete_mask = ops->req_complete_mask;
+-	chip->vendor.req_complete_val = ops->req_complete_val;
+-	chip->vendor.req_canceled = ops->req_canceled;
+-	chip->vendor.recv = ops->recv;
+-	chip->vendor.send = ops->send;
+-	chip->vendor.cancel = ops->cancel;
+-	chip->vendor.status = ops->status;
+-
++	chip->ops = ops;
+ 	chip->dev_num = find_first_zero_bit(dev_mask, TPM_NUM_DEVICES);
+ 
+ 	if (chip->dev_num >= TPM_NUM_DEVICES) {
+diff --git a/drivers/char/tpm/tpm-sysfs.c b/drivers/char/tpm/tpm-sysfs.c
+index 3bcfed0..d2a8bca 100644
+--- a/drivers/char/tpm/tpm-sysfs.c
++++ b/drivers/char/tpm/tpm-sysfs.c
+@@ -245,7 +245,7 @@ static ssize_t cancel_store(struct device *dev, struct device_attribute *attr,
+ 	if (chip == NULL)
+ 		return 0;
+ 
+-	chip->vendor.cancel(chip);
++	chip->ops->cancel(chip);
+ 	return count;
+ }
+ static DEVICE_ATTR_WO(cancel);
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index a56af2c..7b0a46e 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -64,9 +64,6 @@ enum tpm_duration {
+ struct tpm_chip;
+ 
+ struct tpm_vendor_specific {
+-	u8 req_complete_mask;
+-	u8 req_complete_val;
+-	bool (*req_canceled)(struct tpm_chip *chip, u8 status);
+ 	void __iomem *iobase;		/* ioremapped address */
+ 	unsigned long base;		/* TPM base address */
+ 
+@@ -76,11 +73,6 @@ struct tpm_vendor_specific {
+ 	int region_size;
+ 	int have_region;
+ 
+-	int (*recv) (struct tpm_chip *, u8 *, size_t);
+-	int (*send) (struct tpm_chip *, u8 *, size_t);
+-	void (*cancel) (struct tpm_chip *);
+-	u8 (*status) (struct tpm_chip *);
+-	void (*release) (struct device *);
+ 	struct miscdevice miscdev;
+ 	struct list_head list;
+ 	int locality;
+@@ -104,6 +96,7 @@ struct tpm_vendor_specific {
+ 
+ struct tpm_chip {
+ 	struct device *dev;	/* Device stuff */
++	const struct tpm_class_ops *ops;
+ 
+ 	int dev_num;		/* /dev/tpm# */
+ 	char devname[7];
+diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
+index 874b3be..5b0dd8e 100644
+--- a/drivers/char/tpm/tpm_i2c_stm_st33.c
++++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
+@@ -564,7 +564,7 @@ static int tpm_stm_i2c_recv(struct tpm_chip *chip, unsigned char *buf,
+ 	}
+ 
+ out:
+-	chip->vendor.cancel(chip);
++	chip->ops->cancel(chip);
+ 	release_locality(chip);
+ 	return size;
+ }
+@@ -807,7 +807,7 @@ static int tpm_st33_i2c_pm_resume(struct device *dev)
+ 	if (power_mgt) {
+ 		gpio_set_value(pin_infos->io_lpcpd, 1);
+ 		ret = wait_for_serirq_timeout(chip,
+-					  (chip->vendor.status(chip) &
++					  (chip->ops->status(chip) &
+ 					  TPM_STS_VALID) == TPM_STS_VALID,
+ 					  chip->vendor.timeout_b);
+ 	} else {
+-- 
+1.8.1.2
 
-	--yliu
-
-> Quite the
-> reverse. Constructors are called when the underlying allocation is
-> initially done, and then *not* done again, even if that particular
-> object may be allocated and free'd many times.
-> 
-> So the reason we can do
-> 
->     atomic_set(&anon_vma->refcount, 0);
-> 
-> in a constructor is that anybody who frees that allocation will do so
-> only when the refcount goes back down to zero, so zero is "valid
-> state" while the slab entry stays on some percpu freelist.
-> 
-> But the same is ABSOLUTELY NOT TRUE of the value "1", nor is it true
-> of the anon_vma->root. When the anonvma gets free'd, those values will
-> *not* be the same (the refcount has been decremented to zero, and the
-> root will have been set to whatever the root was.
-> 
-> So the rule about constructors is that the values they construct
-> absolutely *have* to be the ones they get free'd with. With one
-> special case.
-> 
-> Using slab constructors is almost always a mistake. The original
-> Sun/Solaris argument for them was to avoid initialization costs in
-> allocators, and that was pure and utter bullshit (initializing a whole
-> cacheline is generally cheaper than not initializing it and having to
-> fetch it from L3 caches, but it does hide the cost so that it is now
-> spread out in the users rather than in the allocator).
-> 
-> So the _original_ reason for slab is pure and utter BS, and we've
-> removed pretty much all uses of the constructors.
-> 
-> In fact, the only valid reason for using them any more is the special
-> case: locks and RCU.
-> 
-> The reason we still have constructors is that sometimes we want to
-> keep certain data structures "alive" across allocations together with
-> SLAB_DESTROY_BY_RCU (which delays the actual *page* destroying by RCU,
-> but the allocation can go to the free-list and get re-allocated
-> without a RCU grace-period).
-> 
-> But because allocations can now "stay active" over a
-> alloc/free/alloc-again sequence, that means that the allocation
-> sequence MUST NOT re-initialize the lock, because some RCU user may
-> still be looking at those fields (and in particular, unlocking an
-> allocation that in the meantime got free'd and re-allocated).
-> 
-> So these days, the *only* valid pattern for slab constructors is
-> together with SLAB_DESTROY_BY_RCU, and making sure that the fields
-> that RCU readers look at (and in particular, change) are "stable" over
-> such re-allocations.
-> 
-> Your patch is horribly wrong.
-> 
->                   Linus
