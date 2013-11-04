@@ -1,61 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab3KDP42 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 10:56:28 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:48437 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751936Ab3KDP41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 10:56:27 -0500
-Date: Mon, 4 Nov 2013 09:56:24 -0600
-From: Russ Anderson <rja@sgi.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        prarit@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Allow NR_CPUS=1024
-Message-ID: <20131104155624.GA31656@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <20131101141148.GH8652@hansolo.jdub.homelinux.org> <20131103101825.GA6605@gmail.com> <20131103102132.GA6807@gmail.com> <20131103155729.GB9944@hansolo.jdub.homelinux.org> <20131104065343.GC13030@gmail.com> <20131104140141.GC9944@hansolo.jdub.homelinux.org> <20131104141051.GA19355@gmail.com> <20131104141615.GD9944@hansolo.jdub.homelinux.org>
+	id S1753343Ab3KDQAM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 11:00:12 -0500
+Received: from mail-oa0-f65.google.com ([209.85.219.65]:51310 "EHLO
+	mail-oa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659Ab3KDQAL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 11:00:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131104141615.GD9944@hansolo.jdub.homelinux.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Date: Tue, 5 Nov 2013 00:00:10 +0800
+Message-ID: <CAP+bzvVjW-AbFrHmQ0mqQZ9bn8yfrR4D3FGzovtbEcspGRsVxg@mail.gmail.com>
+Subject: [PATCH] arm: add save_stack_trace_regs() support
+From: ivan lam <ivan.lam2014@gmail.com>
+To: linux@arm.linux.org.uk
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04, 2013 at 09:16:16AM -0500, Josh Boyer wrote:
-> On Mon, Nov 04, 2013 at 03:10:51PM +0100, Ingo Molnar wrote:
-> > * Josh Boyer <jwboyer@redhat.com> wrote:
-> > 
-> > > > Why touch MAXSMP at all? It's really just a shortcut for 'configure 
-> > > > the kernel silly large', via a single option, nothing else. You are 
-> > > > not forced to use it and it should not affect configurability of 
-> > > > NR_CPUS.
-> > > >
-> > > > What we _really_ want here is to fix NR_CPUS setting: to extend its 
-> > > > range and to enforce that NR_CPUS cannot be set larger than 512 
-> > > > without setting CONFIG_CPUMASK_OFFSTACK.
-> > > 
-> > > OK.  I was just thinking that if we've come to the conclusion that 4096 
-> > > CPUs isn't silly large anymore, we should make MAXSMP be something we 
-> > > consider silly large. [...]
-> > 
-> > MAXSMP is also supposed to track the real hardware max as well on x86 - 
-> > i.e. we should only increase it to 8192 etc. if such hardware exists.
-> 
-> Russ, does SGI (or anyone else that you know of) have x86 hardware with
-> more than 4096 CPUs?
+From: ivan lam <ivan.lam2014@gmail.com>
+Date: Mon, 4 Nov 2013 23:35:55 +0800
+Subject: [PATCH] arm: add save_stack_trace_regs() support
 
-Yes.  We have a system in the lab with 254 12-core IVB sockets for
-a total of 3048 cores.  With HT is it 6096 cpus.
+When configure kprobe events of ftrace with stacktrace option enabled
+in arm, not stacktrace was recorded after the kprobe was triggered.
 
+Implement the save_stack_trace_regs() function in arm.
 
-> If so, I can actually make a bump to the MAXSMP count a separate patch.
-> 
-> josh
+After this fix, stacktrace can be recorded, for example:
 
+# mount -t debugfs nodev /sys/kernel/debug
+# echo "p:netrx net_rx_action" >> /sys/kernel/debug/tracing/kprobe_events
+# echo 1 > /sys/kernel/debug/tracing/events/kprobes/netrx/enable
+# echo 1 > /sys/kernel/debug/tracing/options/stacktrace
+# echo 1 > /sys/kernel/debug/tracing/tracing_on
+# ping 127.0.0.1 -c 1
+# echo 0 > /sys/kernel/debug/tracing/tracing_on
+
+# cat /sys/kernel/debug/tracing/trace
+# tracer: nop
+#
+# entries-in-buffer/entries-written: 12/12   #P:1
+#
+#                              _-----=> irqs-off
+#                             / _----=> need-resched
+#                            | / _---=> hardirq/softirq
+#                            || / _--=> preempt-depth
+#                            ||| /     delay
+#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+#              | |       |   ||||       |         |
+            ping-1200  [000] dNs1   667.603250: netrx: (net_rx_action+0x0/0x1f8)
+            ping-1200  [000] dNs1   667.604738: <stack trace>
+ => net_rx_action
+ => do_softirq
+ => local_bh_enable
+ => ip_finish_output
+ => ip_output
+ => ip_local_out
+ => ip_send_skb
+ => ip_push_pending_frames
+ => raw_sendmsg
+ => inet_sendmsg
+ => sock_sendmsg
+ => SyS_sendto
+ => ret_fast_syscall
+
+Signed-off-by: ivan lam <ivan.lam2014@gmail.com>
+---
+ arch/arm/kernel/stacktrace.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/arch/arm/kernel/stacktrace.c b/arch/arm/kernel/stacktrace.c
+index 00f79e5..2b52fac0 100644
+--- a/arch/arm/kernel/stacktrace.c
++++ b/arch/arm/kernel/stacktrace.c
+@@ -123,6 +123,25 @@ void save_stack_trace_tsk(struct task_struct
+*tsk, struct stack_trace *trace)
+         trace->entries[trace->nr_entries++] = ULONG_MAX;
+ }
+
++void save_stack_trace_regs(struct pt_regs *regs, struct stack_trace *trace)
++{
++    struct stack_trace_data data;
++    struct stackframe frame;
++
++    data.trace = trace;
++    data.skip = trace->skip;
++    data.no_sched_functions = 1;
++
++    frame.fp = regs->ARM_fp;
++    frame.sp = regs->ARM_sp;
++    frame.lr = regs->ARM_lr;
++    frame.pc = regs->ARM_pc;
++
++    walk_stackframe(&frame, save_trace, &data);
++    if (trace->nr_entries < trace->max_entries)
++        trace->entries[trace->nr_entries++] = ULONG_MAX;
++}
++
+ void save_stack_trace(struct stack_trace *trace)
+ {
+     save_stack_trace_tsk(current, trace);
 -- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+1.7.9.5
