@@ -1,75 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab3KDGxF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 01:53:05 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:46465 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900Ab3KDGxD (ORCPT
+	id S1753088Ab3KDGxs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 01:53:48 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:46086 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753033Ab3KDGxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 01:53:03 -0500
-Date: Mon, 4 Nov 2013 17:52:51 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nicolin Chen <b42378@freescale.com>
-Subject: linux-next: build failure after merge of the final tree
-Message-Id: <20131104175251.817bdd5b55652625b2b6e0ed@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__4_Nov_2013_17_52_51_+1100_8tOFGPiURo_Wm4+u"
+	Mon, 4 Nov 2013 01:53:47 -0500
+Date: Mon, 4 Nov 2013 07:53:43 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, prarit@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Allow NR_CPUS=1024
+Message-ID: <20131104065343.GC13030@gmail.com>
+References: <20131101141148.GH8652@hansolo.jdub.homelinux.org>
+ <20131103101825.GA6605@gmail.com>
+ <20131103102132.GA6807@gmail.com>
+ <20131103155729.GB9944@hansolo.jdub.homelinux.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131103155729.GB9944@hansolo.jdub.homelinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__4_Nov_2013_17_52_51_+1100_8tOFGPiURo_Wm4+u
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+* Josh Boyer <jwboyer@redhat.com> wrote:
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+> On Sun, Nov 03, 2013 at 11:21:32AM +0100, Ingo Molnar wrote:
+> > 
+> > * Ingo Molnar <mingo@kernel.org> wrote:
+> > 
+> > > 
+> > > * Josh Boyer <jwboyer@redhat.com> wrote:
+> > > 
+> > > > The current range for SMP configs is 2 - 512, or a full 4096 in the case 
+> > > > of MAXSMP.  There are machines that have 1024 CPUs in them today and 
+> > > > configuring a kernel for that means you are forced to set MAXSMP.  This 
+> > > > adds additional unnecessary overhead.  While that overhead might be 
+> > > > considered tiny for large machines, it isn't necessarily so if you are 
+> > > > building a kernel that runs across a wide variety of machines.  We 
+> > > > increase the range to 1024 to help with this.
+> > > >
+> > > > Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+> > > > ---
+> > > >  arch/x86/Kconfig | 2 +-
+> > > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > > 
+> > > > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> > > > index f67e839..d726b2d 100644
+> > > > --- a/arch/x86/Kconfig
+> > > > +++ b/arch/x86/Kconfig
+> > > > @@ -825,7 +825,7 @@ config MAXSMP
+> > > >  config NR_CPUS
+> > > >  	int "Maximum number of CPUs" if SMP && !MAXSMP
+> > > >  	range 2 8 if SMP && X86_32 && !X86_BIGSMP
+> > > > -	range 2 512 if SMP && !MAXSMP
+> > > > +	range 2 1024 if SMP && !MAXSMP
+> > > >  	default "1" if !SMP
+> > > >  	default "4096" if MAXSMP
+> > > >  	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
+> > > 
+> > > Any reason not to allow it to go up to 4096? The original concern was 
+> > > that CPUS=4096 wasn't working very well and you had to select MAXSMP 
+> > > deliberately and keep all the pieces.
+> 
+> No real reason to not allow all the way to 4096, no.  I just started
+> small as I wanted 1024 specifically, and this is the simplest way to
+> achieve that.
+> 
+> > The other reason was CONFIG_CPUMASK_OFFSTACK: with 4096 CPUs a cpumask is 
+> > 512 bytes, too large to be kept on the kernel stack.
+> > 
+> > MAXSMP forces CONFIG_CPUMASK_OFFSTACK so there's no such concern there.
+> > 
+> > With 1024 CPUs a single cpumask is 128 bytes - rather significant as well. 
+> > With 512 CPUs it's 64 bytes - borderline.
+> > 
+> > So I think a better solution would be to allow an increase above 512 CPUs 
+> > only if CONFIG_CPUMASK_OFFSTACK is also enabled.
+> 
+> OK, that makes sense.  So in this scenario, we could probably either:
+> 
+> a) do away with MAXSMP entirely and just depend on 
+> CONFIG_CPUMASK_OFFSTACK.
+> 
+> b) make MAXSMP something even higher than 4096.  Like 5120 or 6144, etc.
+> 
+> Which would you prefer?  Either is easy enough to code up, I just need 
+> to know which I should shoot for.
 
-sound/soc/soc-pcm.c: In function 'soc_pcm_open':
-sound/soc/soc-pcm.c:186:2: error: implicit declaration of function 'pinctrl=
-_pm_select_default_state' [-Werror=3Dimplicit-function-declaration]
-  pinctrl_pm_select_default_state(cpu_dai->dev);
-  ^
-sound/soc/soc-pcm.c:323:3: error: implicit declaration of function 'pinctrl=
-_pm_select_sleep_state' [-Werror=3Dimplicit-function-declaration]
-   pinctrl_pm_select_sleep_state(codec_dai->dev);
-   ^
+Why touch MAXSMP at all? It's really just a shortcut for 'configure the 
+kernel silly large', via a single option, nothing else. You are not forced 
+to use it and it should not affect configurability of NR_CPUS.
 
-Caused by commit fc1a38653793 ("ASoC: Add pinctrl PM to components of
-active DAIs") from the sound-asoc tree.
+What we _really_ want here is to fix NR_CPUS setting: to extend its range 
+and to enforce that NR_CPUS cannot be set larger than 512 without setting 
+CONFIG_CPUMASK_OFFSTACK.
 
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks,
 
---Signature=_Mon__4_Nov_2013_17_52_51_+1100_8tOFGPiURo_Wm4+u
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSd0RIAAoJEMDTa8Ir7ZwVcZUP/220tpFTjMI4/l7kX0DvYBib
-OURhZXSY+CsPBjrH7yrpH3JkO96eDyjAK0Q5HPEL6dP/IeN5Fwjon6bLhvwlw0pS
-YFWU8xyynURyR2hALig6hM8tts9wJ/PzGcJoSEtRRA1JyGNgFkzMFqpUY9S2HrwW
-mRZP+j6COm/qvORxx1e4XTSHTpPjcivVJAOLl7/bLPvd38cVXvb8JsKQ9UokNUsN
-ClGn/+PhoaCaqrLtlKalFYTyyHpkLTHKQ0SsoTtoL5bN2M3EFPEYHV1JM0rqCHmD
-kDFZTA9zU2udXBXbZi5JpuJUD+HOBs19UZsZcmlPMJeWuoKITmRoC5pr+vHRIOC2
-U1Zs/yOuNw1O5w/TgP/ZL+/wv91ibMi6iHKV6kpqr0zC6in/FLcvVWfRmRCmvKUp
-cmqLduEFQ3JyJ2/XCc5CQbVQ00EnX0BO4Fi8vNcPQqiWk60821DRaSCdpPiqk3tA
-gMlD4kee0SHJrts/fc3ljhrMok1HYbXvqH5liB2WD565pWs6Q7Q9M6LSQUETdZKP
-IuXeVpCYBwfftCcTblnTElypZBbqThii2/NtF4IpD9+pUifSJSa/KdusxY4GEUtz
-z+Ri2mpE9fgzJN21yw+uZyiE8ixJo3VSwfQ4ifepzXCEYE8dl6hSpw2qoqsY4t8n
-kZY/fcFXeAD4mfRMYU+I
-=Kawf
------END PGP SIGNATURE-----
-
---Signature=_Mon__4_Nov_2013_17_52_51_+1100_8tOFGPiURo_Wm4+u--
+	Ingo
