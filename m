@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453Ab3KDSCV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 13:02:21 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37922 "EHLO
+	id S1754420Ab3KDSCT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 13:02:19 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37924 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753800Ab3KDR71 (ORCPT
+	with ESMTP id S1753814Ab3KDR71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Nov 2013 12:59:27 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 17/29] perf tools: Show single option when failed to parse
-Date: Mon,  4 Nov 2013 14:58:55 -0300
-Message-Id: <1383587947-17419-18-git-send-email-acme@infradead.org>
+Subject: [PATCH 08/29] perf evsel: Add a debug print if perf_event_open fails
+Date: Mon,  4 Nov 2013 14:58:46 -0300
+Message-Id: <1383587947-17419-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1383587947-17419-1-git-send-email-acme@infradead.org>
 References: <1383587947-17419-1-git-send-email-acme@infradead.org>
@@ -26,319 +30,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-Current option parser outputs whole option help string when it failed to
-parse an option.  However this is not good for user if the command has
-many option, she might feel hard which one is related easily.
+There is a debug print (at verbose level 2) for each call to
+perf_event_open.  Add another debug print if the call fails, and print
+the error number.
 
-Fix it by just showing the help message of the given option only.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Requested-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Enthusiastically-Supported-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1383291195-24386-2-git-send-email-namhyung@kernel.org
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1383313899-15987-2-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-options.c | 217 ++++++++++++++++++++++++----------------
- tools/perf/util/parse-options.h |   4 +-
- 2 files changed, 132 insertions(+), 89 deletions(-)
+ tools/perf/util/evsel.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
-index 2bc9e70df7e2..1caf7b9a01ee 100644
---- a/tools/perf/util/parse-options.c
-+++ b/tools/perf/util/parse-options.c
-@@ -339,10 +339,10 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
- 		if (arg[1] != '-') {
- 			ctx->opt = arg + 1;
- 			if (internal_help && *ctx->opt == 'h')
--				return parse_options_usage(usagestr, options);
-+				return usage_with_options_internal(usagestr, options, 0);
- 			switch (parse_short_opt(ctx, options)) {
- 			case -1:
--				return parse_options_usage(usagestr, options);
-+				return parse_options_usage(usagestr, options, arg + 1, 1);
- 			case -2:
- 				goto unknown;
- 			default:
-@@ -352,10 +352,11 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
- 				check_typos(arg + 1, options);
- 			while (ctx->opt) {
- 				if (internal_help && *ctx->opt == 'h')
--					return parse_options_usage(usagestr, options);
-+					return usage_with_options_internal(usagestr, options, 0);
-+				arg = ctx->opt;
- 				switch (parse_short_opt(ctx, options)) {
- 				case -1:
--					return parse_options_usage(usagestr, options);
-+					return parse_options_usage(usagestr, options, arg, 1);
- 				case -2:
- 					/* fake a short option thing to hide the fact that we may have
- 					 * started to parse aggregated stuff
-@@ -383,12 +384,12 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
- 		if (internal_help && !strcmp(arg + 2, "help-all"))
- 			return usage_with_options_internal(usagestr, options, 1);
- 		if (internal_help && !strcmp(arg + 2, "help"))
--			return parse_options_usage(usagestr, options);
-+			return usage_with_options_internal(usagestr, options, 0);
- 		if (!strcmp(arg + 2, "list-opts"))
- 			return PARSE_OPT_LIST;
- 		switch (parse_long_opt(ctx, arg + 2, options)) {
- 		case -1:
--			return parse_options_usage(usagestr, options);
-+			return parse_options_usage(usagestr, options, arg + 2, 0);
- 		case -2:
- 			goto unknown;
- 		default:
-@@ -445,6 +446,89 @@ int parse_options(int argc, const char **argv, const struct option *options,
- #define USAGE_OPTS_WIDTH 24
- #define USAGE_GAP         2
- 
-+static void print_option_help(const struct option *opts, int full)
-+{
-+	size_t pos;
-+	int pad;
-+
-+	if (opts->type == OPTION_GROUP) {
-+		fputc('\n', stderr);
-+		if (*opts->help)
-+			fprintf(stderr, "%s\n", opts->help);
-+		return;
-+	}
-+	if (!full && (opts->flags & PARSE_OPT_HIDDEN))
-+		return;
-+
-+	pos = fprintf(stderr, "    ");
-+	if (opts->short_name)
-+		pos += fprintf(stderr, "-%c", opts->short_name);
-+	else
-+		pos += fprintf(stderr, "    ");
-+
-+	if (opts->long_name && opts->short_name)
-+		pos += fprintf(stderr, ", ");
-+	if (opts->long_name)
-+		pos += fprintf(stderr, "--%s", opts->long_name);
-+
-+	switch (opts->type) {
-+	case OPTION_ARGUMENT:
-+		break;
-+	case OPTION_LONG:
-+	case OPTION_U64:
-+	case OPTION_INTEGER:
-+	case OPTION_UINTEGER:
-+		if (opts->flags & PARSE_OPT_OPTARG)
-+			if (opts->long_name)
-+				pos += fprintf(stderr, "[=<n>]");
-+			else
-+				pos += fprintf(stderr, "[<n>]");
-+		else
-+			pos += fprintf(stderr, " <n>");
-+		break;
-+	case OPTION_CALLBACK:
-+		if (opts->flags & PARSE_OPT_NOARG)
-+			break;
-+		/* FALLTHROUGH */
-+	case OPTION_STRING:
-+		if (opts->argh) {
-+			if (opts->flags & PARSE_OPT_OPTARG)
-+				if (opts->long_name)
-+					pos += fprintf(stderr, "[=<%s>]", opts->argh);
-+				else
-+					pos += fprintf(stderr, "[<%s>]", opts->argh);
-+			else
-+				pos += fprintf(stderr, " <%s>", opts->argh);
-+		} else {
-+			if (opts->flags & PARSE_OPT_OPTARG)
-+				if (opts->long_name)
-+					pos += fprintf(stderr, "[=...]");
-+				else
-+					pos += fprintf(stderr, "[...]");
-+			else
-+				pos += fprintf(stderr, " ...");
-+		}
-+		break;
-+	default: /* OPTION_{BIT,BOOLEAN,SET_UINT,SET_PTR} */
-+	case OPTION_END:
-+	case OPTION_GROUP:
-+	case OPTION_BIT:
-+	case OPTION_BOOLEAN:
-+	case OPTION_INCR:
-+	case OPTION_SET_UINT:
-+	case OPTION_SET_PTR:
-+		break;
-+	}
-+
-+	if (pos <= USAGE_OPTS_WIDTH)
-+		pad = USAGE_OPTS_WIDTH - pos;
-+	else {
-+		fputc('\n', stderr);
-+		pad = USAGE_OPTS_WIDTH;
-+	}
-+	fprintf(stderr, "%*s%s\n", pad + USAGE_GAP, "", opts->help);
-+}
-+
- int usage_with_options_internal(const char * const *usagestr,
- 				const struct option *opts, int full)
- {
-@@ -464,87 +548,9 @@ int usage_with_options_internal(const char * const *usagestr,
- 	if (opts->type != OPTION_GROUP)
- 		fputc('\n', stderr);
- 
--	for (; opts->type != OPTION_END; opts++) {
--		size_t pos;
--		int pad;
--
--		if (opts->type == OPTION_GROUP) {
--			fputc('\n', stderr);
--			if (*opts->help)
--				fprintf(stderr, "%s\n", opts->help);
--			continue;
--		}
--		if (!full && (opts->flags & PARSE_OPT_HIDDEN))
--			continue;
--
--		pos = fprintf(stderr, "    ");
--		if (opts->short_name)
--			pos += fprintf(stderr, "-%c", opts->short_name);
--		else
--			pos += fprintf(stderr, "    ");
--
--		if (opts->long_name && opts->short_name)
--			pos += fprintf(stderr, ", ");
--		if (opts->long_name)
--			pos += fprintf(stderr, "--%s", opts->long_name);
-+	for (  ; opts->type != OPTION_END; opts++)
-+		print_option_help(opts, full);
- 
--		switch (opts->type) {
--		case OPTION_ARGUMENT:
--			break;
--		case OPTION_LONG:
--		case OPTION_U64:
--		case OPTION_INTEGER:
--		case OPTION_UINTEGER:
--			if (opts->flags & PARSE_OPT_OPTARG)
--				if (opts->long_name)
--					pos += fprintf(stderr, "[=<n>]");
--				else
--					pos += fprintf(stderr, "[<n>]");
--			else
--				pos += fprintf(stderr, " <n>");
--			break;
--		case OPTION_CALLBACK:
--			if (opts->flags & PARSE_OPT_NOARG)
--				break;
--			/* FALLTHROUGH */
--		case OPTION_STRING:
--			if (opts->argh) {
--				if (opts->flags & PARSE_OPT_OPTARG)
--					if (opts->long_name)
--						pos += fprintf(stderr, "[=<%s>]", opts->argh);
--					else
--						pos += fprintf(stderr, "[<%s>]", opts->argh);
--				else
--					pos += fprintf(stderr, " <%s>", opts->argh);
--			} else {
--				if (opts->flags & PARSE_OPT_OPTARG)
--					if (opts->long_name)
--						pos += fprintf(stderr, "[=...]");
--					else
--						pos += fprintf(stderr, "[...]");
--				else
--					pos += fprintf(stderr, " ...");
--			}
--			break;
--		default: /* OPTION_{BIT,BOOLEAN,SET_UINT,SET_PTR} */
--		case OPTION_END:
--		case OPTION_GROUP:
--		case OPTION_BIT:
--		case OPTION_BOOLEAN:
--		case OPTION_INCR:
--		case OPTION_SET_UINT:
--		case OPTION_SET_PTR:
--			break;
--		}
--
--		if (pos <= USAGE_OPTS_WIDTH)
--			pad = USAGE_OPTS_WIDTH - pos;
--		else {
--			fputc('\n', stderr);
--			pad = USAGE_OPTS_WIDTH;
--		}
--		fprintf(stderr, "%*s%s\n", pad + USAGE_GAP, "", opts->help);
--	}
- 	fputc('\n', stderr);
- 
- 	return PARSE_OPT_HELP;
-@@ -559,9 +565,44 @@ void usage_with_options(const char * const *usagestr,
- }
- 
- int parse_options_usage(const char * const *usagestr,
--			const struct option *opts)
-+			const struct option *opts,
-+			const char *optstr, bool short_opt)
- {
--	return usage_with_options_internal(usagestr, opts, 0);
-+	if (!usagestr)
-+		return PARSE_OPT_HELP;
-+
-+	fprintf(stderr, "\n usage: %s\n", *usagestr++);
-+	while (*usagestr && **usagestr)
-+		fprintf(stderr, "    or: %s\n", *usagestr++);
-+	while (*usagestr) {
-+		fprintf(stderr, "%s%s\n",
-+				**usagestr ? "    " : "",
-+				*usagestr);
-+		usagestr++;
-+	}
-+	fputc('\n', stderr);
-+
-+	for (  ; opts->type != OPTION_END; opts++) {
-+		if (short_opt) {
-+			if (opts->short_name == *optstr)
-+				break;
-+			continue;
-+		}
-+
-+		if (opts->long_name == NULL)
-+			continue;
-+
-+		if (!prefixcmp(optstr, opts->long_name))
-+			break;
-+		if (!prefixcmp(optstr, "no-") &&
-+		    !prefixcmp(optstr + 3, opts->long_name))
-+			break;
-+	}
-+
-+	if (opts->type != OPTION_END)
-+		print_option_help(opts, 0);
-+
-+	return PARSE_OPT_HELP;
- }
- 
- 
-diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
-index 7bb5999940ca..b0241e28eaf7 100644
---- a/tools/perf/util/parse-options.h
-+++ b/tools/perf/util/parse-options.h
-@@ -158,7 +158,9 @@ struct parse_opt_ctx_t {
- };
- 
- extern int parse_options_usage(const char * const *usagestr,
--			       const struct option *opts);
-+			       const struct option *opts,
-+			       const char *optstr,
-+			       bool short_opt);
- 
- extern void parse_options_start(struct parse_opt_ctx_t *ctx,
- 				int argc, const char **argv, int flags);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 3a334f001997..f0e65dec66a5 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1051,6 +1051,8 @@ retry_open:
+ 								     group_fd, flags);
+ 			if (FD(evsel, cpu, thread) < 0) {
+ 				err = -errno;
++				pr_debug2("perf_event_open failed, error %d\n",
++					  err);
+ 				goto try_fallback;
+ 			}
+ 			set_rlimit = NO_CHANGE;
 -- 
 1.8.1.4
 
