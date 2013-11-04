@@ -1,76 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951Ab3KDS5k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 13:57:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63320 "EHLO mx1.redhat.com"
+	id S1753407Ab3KDS6A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 13:58:00 -0500
+Received: from mga03.intel.com ([143.182.124.21]:15012 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752720Ab3KDS5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 13:57:39 -0500
-Date: Mon, 4 Nov 2013 19:57:54 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch
-	methods (v6)
-Message-ID: <20131104185754.GA16428@redhat.com>
-References: <1383029621-7384-1-git-send-email-namhyung@kernel.org> <20131102155458.GA6981@redhat.com> <87ob60366m.fsf@sejong.aot.lge.com> <87fvrc35kj.fsf@sejong.aot.lge.com> <20131104155131.GD4440@redhat.com> <20131104162229.GA8921@redhat.com> <20131104184741.GA15945@redhat.com>
+	id S1753079Ab3KDS57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 13:57:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="316869760"
+Message-ID: <5277EF3E.1000109@linux.intel.com>
+Date: Mon, 04 Nov 2013 11:02:22 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131104184741.GA15945@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Paul.Zimmerman@synopsys.com
+Subject: Re: [PATCH v3 2/3] usb: ffs: check quirk to pad epout buf size when
+ not aligned to maxpacketsize
+References: <Pine.LNX.4.44L0.1310301331580.1312-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1310301331580.1312-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04, Oleg Nesterov wrote:
->
-> On 11/04, Oleg Nesterov wrote:
-> >
-> > On 11/04, Oleg Nesterov wrote:
-> > >
-> > > But in any case, I strongly believe that it doesn't make any sense to
-> > > rely on tu->inode in get_user_vaddr().
-> >
-> > Hmm. But I forgot about the case when you probe the function in libc
-> > and want to dump the variable in libc...
-> >
-> > So probably I was wrong and this all needs more thinking. Damn.
-> > Perhaps we really need to pass @file/offset, but it is not clear what
-> > we can do with bss/anon-mapping.
->
-> Or. Not that I really like this, but just for discussion...
->
-> How about
->
-> 	static void __user *get_user_vaddr(struct pt_regs *regs, unsigned long addr)
-> 	{
-> 		return (void __force __user *)addr + instruction_pointer(regs);
-> 	}
->
-> ?
->
-> This should solve the problems with relocations/randomization/bss.
->
-> The obvious disadvantage is that it is not easy to calculate the
-> offset we need to pass as an argument, it depends on the probed
-> function.
+Hi Alan,
 
-forgot to mention... and instruction_pointer() can't work in ret-probe,
-we need to pass the "unsigned long func" arg somehow...
+Appreciate your comments. Please, see my reply.
+
+On 10/30/2013 10:35 AM, Alan Stern wrote:
+> On Wed, 30 Oct 2013, David Cohen wrote:
+>
+>> Check gadget.quirk_ep_out_aligned_size to decide if buffer size requires
+>> to be aligned to maxpacketsize of an out endpoint. ffs_epfile_io() needs
+>> to pad epout buffer to match above condition if quirk is found.
+>>
+>> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+>> ---
+>>   drivers/usb/gadget/f_fs.c | 17 +++++++++++++++++
+>>   1 file changed, 17 insertions(+)
+>>
+>> diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+>> index 75e4b78..b49dd55 100644
+>> --- a/drivers/usb/gadget/f_fs.c
+>> +++ b/drivers/usb/gadget/f_fs.c
+>> @@ -755,10 +755,12 @@ static ssize_t ffs_epfile_io(struct file *file,
+>>   			     char __user *buf, size_t len, int read)
+>>   {
+>>   	struct ffs_epfile *epfile = file->private_data;
+>> +	struct usb_gadget *gadget = epfile->ffs->gadget;
+>>   	struct ffs_ep *ep;
+>>   	char *data = NULL;
+>>   	ssize_t ret;
+>>   	int halt;
+>> +	size_t orig_len = len;
+>>
+>>   	goto first_try;
+>>   	do {
+>> @@ -794,6 +796,21 @@ first_try:
+>>   			goto error;
+>>   		}
+>>
+>> +		/*
+>> +		 * Controller requires buffer size to be aligned to
+>> +		 * maxpacketsize of an out endpoint.
+>> +		 */
+>> +		if (gadget->quirk_ep_out_aligned_size && read &&
+>> +		    !IS_ALIGNED(len, ep->ep->desc->wMaxPacketSize)) {
+>
+> IS_ALIGNED works only when the second argument is a power of 2.
+>
+> Interrupt endpoints are not required to have maxpacket sizes that are
+> powers of 2.  Does this code ever get used for an interrupt endpoint?
+
+That's a good point. It won't use interrupt ep on the case I am working
+on, but f_fs allows it. I'll cover both cases in next patchset.
 
 >
-> And this still doesn't allow to, say, probe the executable but read
-> the data from libc. Unless, again, we attach to the running process
-> or randomize_va_space = 0, so we can know it in advance. But otherwise
-> I do not think there is any solution.
+>> +			size_t old_len = len;
 >
-> Oleg.
+> Why add old_len here when you added orig_len above?
 
+See below.
+
+>
+>> +			len = roundup(orig_len,
+>> +				      (size_t)ep->ep->desc->wMaxPacketSize);
+>> +			if (unlikely(data) && len > old_len) {
+>
+> If the original value wasn't aligned, how can len fail to be > old_len?
+
+This code is inside a loop. There is an unlikely case explained in the
+end to loop again if ep got disabled or changed while acquiring mutex.
+If that happens, I want to avoid to re-allocate buffer if previous size
+was already enough. Since 'len' gets updated when aligning buf size, we
+need to keep track of 'orig_len' to do only minimum necessary pad on
+new alignment. 'old_len' is used to save previous value to decide for
+new allocation or not. But maybe I should change it to something more
+accurate like 'buf_size' or 'alloc_size'.
+
+Br, David Cohen
