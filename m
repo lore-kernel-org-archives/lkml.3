@@ -1,95 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752257Ab3KDLHA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 06:07:00 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48316 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751263Ab3KDLG5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 06:06:57 -0500
-Date: Mon, 4 Nov 2013 11:05:53 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>
-Subject: Re: [RFC] arch: Introduce new TSO memory barrier smp_tmb()
-Message-ID: <20131104110553.GA8595@mudshark.cambridge.arm.com>
-References: <20131030112526.GI16117@laptop.programming.kicks-ass.net>
- <20131031064015.GV4126@linux.vnet.ibm.com>
- <20131101145634.GH19466@laptop.lan>
- <20131102173239.GB3947@linux.vnet.ibm.com>
- <20131103144017.GA25118@linux.vnet.ibm.com>
- <20131103151704.GJ19466@laptop.lan>
- <CA+55aFx_kuvR-0dwJtjvnhtha5QBc5XcLZPRH=WKT+hYVAKOrw@mail.gmail.com>
- <20131103200124.GK19466@laptop.lan>
- <20131103224242.GF3947@linux.vnet.ibm.com>
- <CA+55aFyD_kCkAHQwHCUBrumO-pH6LaZikTNvyWDW_tWsHdqk6Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyD_kCkAHQwHCUBrumO-pH6LaZikTNvyWDW_tWsHdqk6Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751740Ab3KDLGi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 06:06:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36948 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750975Ab3KDLGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 06:06:37 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Joe Mario <jmario@redhat.com>, Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 0/3] perf tools: Add perf_event_max_sample_rate freq check
+Date: Mon,  4 Nov 2013 12:06:10 +0100
+Message-Id: <1383563173-17466-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 03, 2013 at 11:34:00PM +0000, Linus Torvalds wrote:
-> So it would *kind* of act like a "smp_wmb() + smp_rmb()", but the
-> problem is that a "smp_rmb()" doesn't really "attach" to the preceding
-> write.
+hi,
+adding the check for maximum allowed frequency rate
+defined in perf_event_max_sample_rate.
 
-Agreed.
+Plus procfs mountpoint reading code. Reachable here:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+  perf/cc
 
-> This is analogous to a "acquire" operation: you cannot make an
-> "acquire" barrier, because it's not a barrier *between* two ops, it's
-> associated with one particular op.
-> 
-> So what I *think* you actually really really want is a "store with
-> release consistency, followed by a write barrier".
+jirka   
 
-How does that order reads against reads? (Paul mentioned this as a
-requirement). I not clear about the use case for this, so perhaps there is a
-dependency that I'm not aware of.
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Joe Mario <jmario@redhat.com>
+Cc: Don Zickus <dzickus@redhat.com>
+---
+Jiri Olsa (3):
+      perf tools: Factor sysfs code into generic fs object
+      perf tools: Add procfs support into fs object
+      perf tools: Check maximum frequency rate for record/top
 
-> In TSO, afaik all stores have release consistency, and all writes are
-> ordered, which is why this is a no-op in TSO. And x86 also has that
-> "all stores have release consistency, and all writes are ordered"
-> model, even if TSO doesn't really describe the x86 model.
-> 
-> But on ARM64, for example, I think you'd really want the store itself
-> to be done with "stlr" (store with release), and then follow up with a
-> "dsb st" after that.
-
-So a dsb is pretty heavyweight here (it prevents execution of *any* further
-instructions until all preceeding stores have completed, as well as
-ensuring completion of any ongoing cache flushes). In conjunction with the
-store-release, that's going to hold everything up until the store-release
-(and therefore any preceeding memory accesses) have completed. Granted, I
-think that gives Paul his read/read ordering, but it's a lot heavier than
-what's required.
-
-> And notice how that requires you to mark the store itself. There is no
-> actual barrier *after* the store that does the optimized model.
-> 
-> Of course, it's entirely possible that it's not worth worrying about
-> this on ARM64, and that just doing it as a "normal store followed by a
-> full memory barrier" is good enough. But at least in *theory* a
-> microarchitecture might make it much cheaper to do a "store with
-> release consistency" followed by "write barrier".
-
-I agree with the sentiment but, given that this stuff is so heavily
-microarchitecture-dependent (and not simple to probe), a simple dmb ish
-might be the best option after all. That's especially true if the
-microarchitecture decided to ignore the barrier options and treat everything
-as `all accesses, full system' in order to keep the hardware design simple.
-
-Will
+ tools/perf/Makefile.perf              |   4 ++--
+ tools/perf/builtin-record.c           |   3 +++
+ tools/perf/builtin-top.c              |   3 +++
+ tools/perf/tests/parse-events.c       |   2 +-
+ tools/perf/util/cpumap.c              |   2 +-
+ tools/perf/util/evlist.h              |   1 +
+ tools/perf/util/fs.c                  | 119 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/fs.h                  |   7 ++++++
+ tools/perf/util/include/linux/magic.h |   4 ++++
+ tools/perf/util/pmu.c                 |   2 +-
+ tools/perf/util/python-ext-sources    |   2 +-
+ tools/perf/util/record.c              |  35 ++++++++++++++++++++++++++++
+ tools/perf/util/sysfs.c               |  60 -----------------------------------------------
+ tools/perf/util/sysfs.h               |   6 -----
+ 14 files changed, 178 insertions(+), 72 deletions(-)
+ create mode 100644 tools/perf/util/fs.c
+ create mode 100644 tools/perf/util/fs.h
+ delete mode 100644 tools/perf/util/sysfs.c
+ delete mode 100644 tools/perf/util/sysfs.h
