@@ -1,854 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab3KDNzL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 08:55:11 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:63645 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab3KDNzJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 08:55:09 -0500
-Message-ID: <5277A737.5080705@atmel.com>
-Date: Mon, 4 Nov 2013 14:55:03 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753366Ab3KDOB5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 09:01:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55903 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751984Ab3KDOBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 09:01:55 -0500
+Date: Mon, 4 Nov 2013 09:01:42 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, prarit@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Allow NR_CPUS=1024
+Message-ID: <20131104140141.GC9944@hansolo.jdub.homelinux.org>
+References: <20131101141148.GH8652@hansolo.jdub.homelinux.org>
+ <20131103101825.GA6605@gmail.com>
+ <20131103102132.GA6807@gmail.com>
+ <20131103155729.GB9944@hansolo.jdub.homelinux.org>
+ <20131104065343.GC13030@gmail.com>
 MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Victor <linux@maxim.org.za>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Mike Turquette <mturquette@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 4/7] ARM: at91/dt: define sama5d3 clocks
-References: <5260F959.2090705@atmel.com> <1382132907-30198-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1382132907-30198-1-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131104065343.GC13030@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/10/2013 23:48, Boris BREZILLON :
-> Define sama5d3 clocks in sama5d3 device tree.
-> Add references to the appropriate clocks in each peripheral.
+On Mon, Nov 04, 2013 at 07:53:43AM +0100, Ingo Molnar wrote:
+> 
+> * Josh Boyer <jwboyer@redhat.com> wrote:
+> 
+> > On Sun, Nov 03, 2013 at 11:21:32AM +0100, Ingo Molnar wrote:
+> > > 
+> > > * Ingo Molnar <mingo@kernel.org> wrote:
+> > > 
+> > > > 
+> > > > * Josh Boyer <jwboyer@redhat.com> wrote:
+> > > > 
+> > > > > The current range for SMP configs is 2 - 512, or a full 4096 in the case 
+> > > > > of MAXSMP.  There are machines that have 1024 CPUs in them today and 
+> > > > > configuring a kernel for that means you are forced to set MAXSMP.  This 
+> > > > > adds additional unnecessary overhead.  While that overhead might be 
+> > > > > considered tiny for large machines, it isn't necessarily so if you are 
+> > > > > building a kernel that runs across a wide variety of machines.  We 
+> > > > > increase the range to 1024 to help with this.
+> > > > >
+> > > > > Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+> > > > > ---
+> > > > >  arch/x86/Kconfig | 2 +-
+> > > > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > > > 
+> > > > > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> > > > > index f67e839..d726b2d 100644
+> > > > > --- a/arch/x86/Kconfig
+> > > > > +++ b/arch/x86/Kconfig
+> > > > > @@ -825,7 +825,7 @@ config MAXSMP
+> > > > >  config NR_CPUS
+> > > > >  	int "Maximum number of CPUs" if SMP && !MAXSMP
+> > > > >  	range 2 8 if SMP && X86_32 && !X86_BIGSMP
+> > > > > -	range 2 512 if SMP && !MAXSMP
+> > > > > +	range 2 1024 if SMP && !MAXSMP
+> > > > >  	default "1" if !SMP
+> > > > >  	default "4096" if MAXSMP
+> > > > >  	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
+> > > > 
+> > > > Any reason not to allow it to go up to 4096? The original concern was 
+> > > > that CPUS=4096 wasn't working very well and you had to select MAXSMP 
+> > > > deliberately and keep all the pieces.
+> > 
+> > No real reason to not allow all the way to 4096, no.  I just started
+> > small as I wanted 1024 specifically, and this is the simplest way to
+> > achieve that.
+> > 
+> > > The other reason was CONFIG_CPUMASK_OFFSTACK: with 4096 CPUs a cpumask is 
+> > > 512 bytes, too large to be kept on the kernel stack.
+> > > 
+> > > MAXSMP forces CONFIG_CPUMASK_OFFSTACK so there's no such concern there.
+> > > 
+> > > With 1024 CPUs a single cpumask is 128 bytes - rather significant as well. 
+> > > With 512 CPUs it's 64 bytes - borderline.
+> > > 
+> > > So I think a better solution would be to allow an increase above 512 CPUs 
+> > > only if CONFIG_CPUMASK_OFFSTACK is also enabled.
+> > 
+> > OK, that makes sense.  So in this scenario, we could probably either:
+> > 
+> > a) do away with MAXSMP entirely and just depend on 
+> > CONFIG_CPUMASK_OFFSTACK.
+> > 
+> > b) make MAXSMP something even higher than 4096.  Like 5120 or 6144, etc.
+> > 
+> > Which would you prefer?  Either is easy enough to code up, I just need 
+> > to know which I should shoot for.
+> 
+> Why touch MAXSMP at all? It's really just a shortcut for 'configure the 
+> kernel silly large', via a single option, nothing else. You are not forced 
+> to use it and it should not affect configurability of NR_CPUS.
 >
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> ---
-> Changes since v2:
->   - add usb_clk to usb ehci controller node
+> What we _really_ want here is to fix NR_CPUS setting: to extend its range 
+> and to enforce that NR_CPUS cannot be set larger than 512 without setting 
+> CONFIG_CPUMASK_OFFSTACK.
 
-Yes. Tested and it works okay.
+OK.  I was just thinking that if we've come to the conclusion that 4096
+CPUs isn't silly large anymore, we should make MAXSMP be something we
+consider silly large.  Anyway, I'm fine with leaving MAXSMP as it is.
+I'll work on the rest today.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-Bye,
-
-> This new version (and the associated patch
-> "USB: ehci-atmel: add usb_clk for transition to CCF") fixes a bug in ehci clk
-> initialization.
->
->   arch/arm/boot/dts/sama5d3.dtsi      |  331 ++++++++++++++++++++++++++++++++++-
->   arch/arm/boot/dts/sama5d3_can.dtsi  |   18 ++
->   arch/arm/boot/dts/sama5d3_emac.dtsi |   10 ++
->   arch/arm/boot/dts/sama5d3_gmac.dtsi |   10 ++
->   arch/arm/boot/dts/sama5d3_lcd.dtsi  |   15 ++
->   arch/arm/boot/dts/sama5d3_mci2.dtsi |   11 ++
->   arch/arm/boot/dts/sama5d3_tcb1.dtsi |   12 ++
->   arch/arm/boot/dts/sama5d3_uart.dtsi |   19 ++
->   8 files changed, 425 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
-> index 5cdaba4..20a6e4e 100644
-> --- a/arch/arm/boot/dts/sama5d3.dtsi
-> +++ b/arch/arm/boot/dts/sama5d3.dtsi
-> @@ -13,6 +13,7 @@
->   #include <dt-bindings/pinctrl/at91.h>
->   #include <dt-bindings/interrupt-controller/irq.h>
->   #include <dt-bindings/gpio/gpio.h>
-> +#include <dt-bindings/clk/at91.h>
->
->   / {
->   	model = "Atmel SAMA5D3 family SoC";
-> @@ -56,6 +57,14 @@
->   		reg = <0x20000000 0x8000000>;
->   	};
->
-> +	clocks {
-> +		adc_op_clk: adc_op_clk{
-> +			compatible = "fixed-clock";
-> +			#clock-cells = <0>;
-> +			clock-frequency = <20000000>;
-> +		};
-> +	};
-> +
->   	ahb {
->   		compatible = "simple-bus";
->   		#address-cells = <1>;
-> @@ -79,6 +88,8 @@
->   				status = "disabled";
->   				#address-cells = <1>;
->   				#size-cells = <0>;
-> +				clocks = <&periph 21>;
-> +				clock-names = "mci_clk";
->   			};
->
->   			spi0: spi@f0004000 {
-> @@ -92,6 +103,8 @@
->   				dma-names = "tx", "rx";
->   				pinctrl-names = "default";
->   				pinctrl-0 = <&pinctrl_spi0>;
-> +				clocks = <&periph 24>;
-> +				clock-names = "spi_clk";
->   				status = "disabled";
->   			};
->
-> @@ -101,6 +114,8 @@
->   				interrupts = <38 IRQ_TYPE_LEVEL_HIGH 4>;
->   				pinctrl-names = "default";
->   				pinctrl-0 = <&pinctrl_ssc0_tx &pinctrl_ssc0_rx>;
-> +				clocks = <&periph 38>;
-> +				clock-names = "pclk";
->   				status = "disabled";
->   			};
->
-> @@ -108,6 +123,8 @@
->   				compatible = "atmel,at91sam9x5-tcb";
->   				reg = <0xf0010000 0x100>;
->   				interrupts = <26 IRQ_TYPE_LEVEL_HIGH 0>;
-> +				clocks = <&periph 26>;
-> +				clock-names = "t0_clk";
->   			};
->
->   			i2c0: i2c@f0014000 {
-> @@ -121,6 +138,7 @@
->   				pinctrl-0 = <&pinctrl_i2c0>;
->   				#address-cells = <1>;
->   				#size-cells = <0>;
-> +				clocks = <&periph 18>;
->   				status = "disabled";
->   			};
->
-> @@ -135,6 +153,7 @@
->   				pinctrl-0 = <&pinctrl_i2c1>;
->   				#address-cells = <1>;
->   				#size-cells = <0>;
-> +				clocks = <&periph 19>;
->   				status = "disabled";
->   			};
->
-> @@ -144,6 +163,8 @@
->   				interrupts = <12 IRQ_TYPE_LEVEL_HIGH 5>;
->   				pinctrl-names = "default";
->   				pinctrl-0 = <&pinctrl_usart0>;
-> +				clocks = <&periph 12>;
-> +				clock-names = "usart";
->   				status = "disabled";
->   			};
->
-> @@ -153,6 +174,8 @@
->   				interrupts = <13 IRQ_TYPE_LEVEL_HIGH 5>;
->   				pinctrl-names = "default";
->   				pinctrl-0 = <&pinctrl_usart1>;
-> +				clocks = <&periph 13>;
-> +				clock-names = "usart";
->   				status = "disabled";
->   			};
->
-> @@ -174,6 +197,8 @@
->   				status = "disabled";
->   				#address-cells = <1>;
->   				#size-cells = <0>;
-> +				clocks = <&periph 22>;
-> +				clock-names = "mci_clk";
->   			};
->
->   			spi1: spi@f8008000 {
-> @@ -187,6 +212,8 @@
->   				dma-names = "tx", "rx";
->   				pinctrl-names = "default";
->   				pinctrl-0 = <&pinctrl_spi1>;
-> +				clocks = <&periph 25>;
-> +				clock-names = "spi_clk";
->   				status = "disabled";
->   			};
->
-> @@ -196,6 +223,8 @@
->   				interrupts = <39 IRQ_TYPE_LEVEL_HIGH 4>;
->   				pinctrl-names = "default";
->   				pinctrl-0 = <&pinctrl_ssc1_tx &pinctrl_ssc1_rx>;
-> +				clocks = <&periph 39>;
-> +				clock-names = "pclk";
->   				status = "disabled";
->   			};
->
-> @@ -219,6 +248,9 @@
->   					&pinctrl_adc0_ad10
->   					&pinctrl_adc0_ad11
->   					>;
-> +				clocks = <&periph 29>,
-> +					 <&adc_op_clk>;
-> +				clock-names = "adc_clk", "adc_op_clk";
->   				atmel,adc-channel-base = <0x50>;
->   				atmel,adc-channels-used = <0xfff>;
->   				atmel,adc-drdy-mask = <0x1000000>;
-> @@ -274,6 +306,7 @@
->   				dma-names = "tx", "rx";
->   				#address-cells = <1>;
->   				#size-cells = <0>;
-> +				clocks = <&periph 20>;
->   				status = "disabled";
->   			};
->
-> @@ -283,6 +316,8 @@
->   				interrupts = <14 IRQ_TYPE_LEVEL_HIGH 5>;
->   				pinctrl-names = "default";
->   				pinctrl-0 = <&pinctrl_usart2>;
-> +				clocks = <&periph 14>;
-> +				clock-names = "usart";
->   				status = "disabled";
->   			};
->
-> @@ -292,6 +327,8 @@
->   				interrupts = <15 IRQ_TYPE_LEVEL_HIGH 5>;
->   				pinctrl-names = "default";
->   				pinctrl-0 = <&pinctrl_usart3>;
-> +				clocks = <&periph 15>;
-> +				clock-names = "usart";
->   				status = "disabled";
->   			};
->
-> @@ -318,6 +355,8 @@
->   				reg = <0xffffe600 0x200>;
->   				interrupts = <30 IRQ_TYPE_LEVEL_HIGH 0>;
->   				#dma-cells = <2>;
-> +				clocks = <&periph 30>;
-> +				clock-names = "dma_clk";
->   			};
->
->   			dma1: dma-controller@ffffe800 {
-> @@ -325,6 +364,8 @@
->   				reg = <0xffffe800 0x200>;
->   				interrupts = <31 IRQ_TYPE_LEVEL_HIGH 0>;
->   				#dma-cells = <2>;
-> +				clocks = <&periph 31>;
-> +				clock-names = "dma_clk";
->   			};
->
->   			ramc0: ramc@ffffea00 {
-> @@ -338,6 +379,8 @@
->   				interrupts = <2 IRQ_TYPE_LEVEL_HIGH 7>;
->   				pinctrl-names = "default";
->   				pinctrl-0 = <&pinctrl_dbgu>;
-> +				clocks = <&periph 2>;
-> +				clock-names = "usart";
->   				status = "disabled";
->   			};
->
-> @@ -626,6 +669,7 @@
->   					gpio-controller;
->   					interrupt-controller;
->   					#interrupt-cells = <2>;
-> +					clocks = <&periph 6>;
->   				};
->
->   				pioB: gpio@fffff400 {
-> @@ -636,6 +680,7 @@
->   					gpio-controller;
->   					interrupt-controller;
->   					#interrupt-cells = <2>;
-> +					clocks = <&periph 7>;
->   				};
->
->   				pioC: gpio@fffff600 {
-> @@ -646,6 +691,7 @@
->   					gpio-controller;
->   					interrupt-controller;
->   					#interrupt-cells = <2>;
-> +					clocks = <&periph 8>;
->   				};
->
->   				pioD: gpio@fffff800 {
-> @@ -656,6 +702,7 @@
->   					gpio-controller;
->   					interrupt-controller;
->   					#interrupt-cells = <2>;
-> +					clocks = <&periph 9>;
->   				};
->
->   				pioE: gpio@fffffa00 {
-> @@ -666,12 +713,286 @@
->   					gpio-controller;
->   					interrupt-controller;
->   					#interrupt-cells = <2>;
-> +					clocks = <&periph 10>;
->   				};
->   			};
->
->   			pmc: pmc@fffffc00 {
-> -				compatible = "atmel,at91rm9200-pmc";
-> +				compatible = "atmel,sama5d3-pmc";
->   				reg = <0xfffffc00 0x120>;
-> +				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-> +				interrupt-controller;
-> +				#interrupt-cells = <1>;
-> +
-> +				clk32k: slck {
-> +					compatible = "fixed-clock";
-> +					#clock-cells = <0>;
-> +					clock-frequency = <32768>;
-> +				};
-> +
-> +				main: mainck {
-> +					compatible = "atmel,at91rm9200-clk-main";
-> +					interrupt-parent = <&pmc>;
-> +					interrupts = <AT91_PMC_MOSCS>;
-> +					#clock-cells = <0>;
-> +					clocks = <&clk32k>;
-> +				};
-> +
-> +				plla: pllack {
-> +					compatible = "atmel,sama5d3-clk-pll";
-> +					interrupt-parent = <&pmc>;
-> +					interrupts = <AT91_PMC_LOCKA>;
-> +					#clock-cells = <0>;
-> +					clocks = <&main>;
-> +					atmel,clk-id = <0>;
-> +					atmel,clk-input-range = <8000000 50000000>;
-> +					#atmel,pll-clk-output-range-cells = <4>;
-> +					atmel,pll-clk-output-ranges = <400000000 1000000000 0 0>;
-> +				};
-> +
-> +				plladiv: plladivck {
-> +					compatible = "atmel,at91sam9x5-clk-plldiv";
-> +					#clock-cells = <0>;
-> +					clocks = <&plla>;
-> +				};
-> +
-> +				utmi: utmick {
-> +					compatible = "atmel,at91sam9x5-clk-utmi";
-> +					interrupt-parent = <&pmc>;
-> +					interrupts = <AT91_PMC_LOCKU>;
-> +					#clock-cells = <0>;
-> +					clocks = <&main>;
-> +				};
-> +
-> +				mck: masterck {
-> +					compatible = "atmel,at91sam9x5-clk-master";
-> +					interrupt-parent = <&pmc>;
-> +					interrupts = <AT91_PMC_MCKRDY>;
-> +					#clock-cells = <0>;
-> +					clocks = <&clk32k>, <&main>, <&plladiv>, <&utmi>;
-> +					atmel,clk-output-range = <0 166000000>;
-> +					atmel,clk-divisors = <1 2 4 3>;
-> +				};
-> +
-> +				usb: usbck {
-> +					compatible = "atmel,at91sam9x5-clk-usb";
-> +					#clock-cells = <0>;
-> +					clocks = <&plladiv>, <&utmi>;
-> +				};
-> +
-> +				prog: progck {
-> +					compatible = "atmel,at91sam9x5-clk-programmable";
-> +					interrupt-parent = <&pmc>;
-> +					#clock-cells = <1>;
-> +					clocks = <&clk32k>, <&main>, <&plladiv>, <&utmi>, <&mck>;
-> +
-> +					prog0 {
-> +						atmel,clk-id = <0>;
-> +						interrupts = <AT91_PMC_PCKRDY(0)>;
-> +					};
-> +
-> +					prog1 {
-> +						atmel,clk-id = <1>;
-> +						interrupts = <AT91_PMC_PCKRDY(1)>;
-> +					};
-> +
-> +					prog2 {
-> +						atmel,clk-id = <2>;
-> +						interrupts = <AT91_PMC_PCKRDY(2)>;
-> +					};
-> +				};
-> +
-> +				smd: smdclk {
-> +					compatible = "atmel,at91sam9x5-clk-smd";
-> +					#clock-cells = <0>;
-> +					clocks = <&plladiv>, <&utmi>;
-> +				};
-> +
-> +				system: systemck {
-> +					compatible = "atmel,at91rm9200-clk-system";
-> +					#clock-cells = <1>;
-> +
-> +					ddrck {
-> +						atmel,clk-id = <2>;
-> +						clocks = <&mck>;
-> +					};
-> +
-> +					smdck {
-> +						atmel,clk-id = <4>;
-> +						clocks = <&smd>;
-> +					};
-> +
-> +					uhpck {
-> +						atmel,clk-id = <6>;
-> +						clocks = <&usb>;
-> +					};
-> +
-> +					udpck {
-> +						atmel,clk-id = <7>;
-> +						clocks = <&usb>;
-> +					};
-> +
-> +					pck0 {
-> +						atmel,clk-id = <8>;
-> +						clocks = <&prog 0>;
-> +					};
-> +
-> +					pck1 {
-> +						atmel,clk-id = <9>;
-> +						clocks = <&prog 1>;
-> +					};
-> +
-> +					pck2 {
-> +						atmel,clk-id = <10>;
-> +						clocks = <&prog 2>;
-> +					};
-> +				};
-> +
-> +				periph: periphck {
-> +					compatible = "atmel,at91sam9x5-clk-peripheral";
-> +					#clock-cells = <1>;
-> +					clocks = <&mck>;
-> +
-> +					dbgu_clk {
-> +						atmel,clk-id = <2>;
-> +					};
-> +
-> +					pioA_clk {
-> +						atmel,clk-id = <6>;
-> +					};
-> +
-> +					pioB_clk {
-> +						atmel,clk-id = <7>;
-> +					};
-> +
-> +					pioC_clk {
-> +						atmel,clk-id = <8>;
-> +					};
-> +
-> +					pioD_clk {
-> +						atmel,clk-id = <9>;
-> +					};
-> +
-> +					pioE_clk {
-> +						atmel,clk-id = <10>;
-> +					};
-> +
-> +					usart0_clk {
-> +						atmel,clk-id = <12>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV2>;
-> +					};
-> +
-> +					usart1_clk {
-> +						atmel,clk-id = <13>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV2>;
-> +					};
-> +
-> +					usart2_clk {
-> +						atmel,clk-id = <14>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV2>;
-> +					};
-> +
-> +					usart3_clk {
-> +						atmel,clk-id = <15>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV2>;
-> +					};
-> +
-> +					twi0_clk {
-> +						atmel,clk-id = <18>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV2>;
-> +					};
-> +
-> +					twi1_clk {
-> +						atmel,clk-id = <19>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV2>;
-> +					};
-> +
-> +					twi2_clk {
-> +						atmel,clk-id = <20>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV2>;
-> +					};
-> +
-> +					mci0_clk {
-> +						atmel,clk-id = <21>;
-> +					};
-> +
-> +					mci1_clk {
-> +						atmel,clk-id = <22>;
-> +					};
-> +
-> +					spi0_clk {
-> +						atmel,clk-id = <24>;
-> +					};
-> +
-> +					spi1_clk {
-> +						atmel,clk-id = <25>;
-> +					};
-> +
-> +					tcb0_clk {
-> +						atmel,clk-id = <26>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV2>;
-> +					};
-> +
-> +					pwm_clk {
-> +						atmel,clk-id = <28>;
-> +					};
-> +
-> +					adc_clk {
-> +						atmel,clk-id = <29>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV2>;
-> +					};
-> +
-> +					dma0_clk {
-> +						atmel,clk-id = <30>;
-> +					};
-> +
-> +					dma1_clk {
-> +						atmel,clk-id = <31>;
-> +					};
-> +
-> +					uhphs_clk {
-> +						atmel,clk-id = <32>;
-> +					};
-> +
-> +					udphs_clk {
-> +						atmel,clk-id = <33>;
-> +					};
-> +
-> +					isi_clk {
-> +						atmel,clk-id = <37>;
-> +					};
-> +
-> +					ssc0_clk {
-> +						atmel,clk-id = <38>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV2>;
-> +					};
-> +
-> +					ssc1_clk {
-> +						atmel,clk-id = <39>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV2>;
-> +					};
-> +
-> +					sha_clk {
-> +						atmel,clk-id = <42>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV8>;
-> +					};
-> +
-> +					aes_clk {
-> +						atmel,clk-id = <43>;
-> +					};
-> +
-> +					tdes_clk {
-> +						atmel,clk-id = <44>;
-> +					};
-> +
-> +					trng_clk {
-> +						atmel,clk-id = <45>;
-> +					};
-> +
-> +					fuse_clk {
-> +						atmel,clk-id = <48>;
-> +					};
-> +				};
->   			};
->
->   			rstc@fffffe00 {
-> @@ -683,6 +1004,7 @@
->   				compatible = "atmel,at91sam9260-pit";
->   				reg = <0xfffffe30 0xf>;
->   				interrupts = <3 IRQ_TYPE_LEVEL_HIGH 5>;
-> +				clocks = <&mck>;
->   			};
->
->   			watchdog@fffffe40 {
-> @@ -705,6 +1027,8 @@
->   			reg = <0x00500000 0x100000
->   			       0xf8030000 0x4000>;
->   			interrupts = <33 IRQ_TYPE_LEVEL_HIGH 2>;
-> +			clocks = <&periph 33>, <&utmi>;
-> +			clock-names = "pclk", "hclk";
->   			status = "disabled";
->
->   			ep0 {
-> @@ -817,6 +1141,9 @@
->   			compatible = "atmel,at91rm9200-ohci", "usb-ohci";
->   			reg = <0x00600000 0x100000>;
->   			interrupts = <32 IRQ_TYPE_LEVEL_HIGH 2>;
-> +			clocks = <&usb>, <&periph 32>, <&periph 32>,
-> +				 <&system 6>;
-> +			clock-names = "usb_clk", "ohci_clk", "hclk", "uhpck";
->   			status = "disabled";
->   		};
->
-> @@ -824,6 +1151,8 @@
->   			compatible = "atmel,at91sam9g45-ehci", "usb-ehci";
->   			reg = <0x00700000 0x100000>;
->   			interrupts = <32 IRQ_TYPE_LEVEL_HIGH 2>;
-> +			clocks = <&usb>, <&periph 32>, <&system 6>;
-> +			clock-names = "usb_clk", "ehci_clk", "uhpck";
->   			status = "disabled";
->   		};
->
-> diff --git a/arch/arm/boot/dts/sama5d3_can.dtsi b/arch/arm/boot/dts/sama5d3_can.dtsi
-> index 8ed3260..019a0d5 100644
-> --- a/arch/arm/boot/dts/sama5d3_can.dtsi
-> +++ b/arch/arm/boot/dts/sama5d3_can.dtsi
-> @@ -32,12 +32,28 @@
->
->   			};
->
-> +			pmc: pmc@fffffc00 {
-> +				periph: periphck {
-> +					can0_clk {
-> +						atmel,clk-id = <40>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV2>;
-> +					};
-> +
-> +					can1_clk {
-> +						atmel,clk-id = <41>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV2>;
-> +					};
-> +				};
-> +			};
-> +
->   			can0: can@f000c000 {
->   				compatible = "atmel,at91sam9x5-can";
->   				reg = <0xf000c000 0x300>;
->   				interrupts = <40 IRQ_TYPE_LEVEL_HIGH 3>;
->   				pinctrl-names = "default";
->   				pinctrl-0 = <&pinctrl_can0_rx_tx>;
-> +				clocks = <&periph 40>;
-> +				clock-names = "can_clk";
->   				status = "disabled";
->   			};
->
-> @@ -47,6 +63,8 @@
->   				interrupts = <41 IRQ_TYPE_LEVEL_HIGH 3>;
->   				pinctrl-names = "default";
->   				pinctrl-0 = <&pinctrl_can1_rx_tx>;
-> +				clocks = <&periph 41>;
-> +				clock-names = "can_clk";
->   				status = "disabled";
->   			};
->   		};
-> diff --git a/arch/arm/boot/dts/sama5d3_emac.dtsi b/arch/arm/boot/dts/sama5d3_emac.dtsi
-> index 4d4f351..15f00e5 100644
-> --- a/arch/arm/boot/dts/sama5d3_emac.dtsi
-> +++ b/arch/arm/boot/dts/sama5d3_emac.dtsi
-> @@ -31,12 +31,22 @@
->   				};
->   			};
->
-> +			pmc: pmc@fffffc00 {
-> +				periph: periphck {
-> +					macb1_clk {
-> +						atmel,clk-id = <35>;
-> +					};
-> +				};
-> +			};
-> +
->   			macb1: ethernet@f802c000 {
->   				compatible = "cdns,at32ap7000-macb", "cdns,macb";
->   				reg = <0xf802c000 0x100>;
->   				interrupts = <35 IRQ_TYPE_LEVEL_HIGH 3>;
->   				pinctrl-names = "default";
->   				pinctrl-0 = <&pinctrl_macb1_rmii>;
-> +				clocks = <&periph 35>, <&periph 35>;
-> +				clock-names = "hclk", "pclk";
->   				status = "disabled";
->   			};
->   		};
-> diff --git a/arch/arm/boot/dts/sama5d3_gmac.dtsi b/arch/arm/boot/dts/sama5d3_gmac.dtsi
-> index 0ba8be3..04f8a80 100644
-> --- a/arch/arm/boot/dts/sama5d3_gmac.dtsi
-> +++ b/arch/arm/boot/dts/sama5d3_gmac.dtsi
-> @@ -64,12 +64,22 @@
->   				};
->   			};
->
-> +			pmc: pmc@fffffc00 {
-> +				periph: periphck {
-> +					macb0_clk {
-> +						atmel,clk-id = <34>;
-> +					};
-> +				};
-> +			};
-> +
->   			macb0: ethernet@f0028000 {
->   				compatible = "cdns,pc302-gem", "cdns,gem";
->   				reg = <0xf0028000 0x100>;
->   				interrupts = <34 IRQ_TYPE_LEVEL_HIGH 3>;
->   				pinctrl-names = "default";
->   				pinctrl-0 = <&pinctrl_macb0_data_rgmii &pinctrl_macb0_signal_rgmii>;
-> +				clocks = <&periph 34>, <&periph 34>;
-> +				clock-names = "hclk", "pclk";
->   				status = "disabled";
->   			};
->   		};
-> diff --git a/arch/arm/boot/dts/sama5d3_lcd.dtsi b/arch/arm/boot/dts/sama5d3_lcd.dtsi
-> index 01f52a7..bcb0e47 100644
-> --- a/arch/arm/boot/dts/sama5d3_lcd.dtsi
-> +++ b/arch/arm/boot/dts/sama5d3_lcd.dtsi
-> @@ -50,6 +50,21 @@
->   					};
->   				};
->   			};
-> +
-> +			pmc: pmc@fffffc00 {
-> +				periph: periphck {
-> +					lcdc_clk {
-> +						atmel,clk-id = <36>;
-> +					};
-> +				};
-> +
-> +				system: systemck {
-> +					lcdck {
-> +						atmel,clk-id = <3>;
-> +						clocks = <&mck>;
-> +					};
-> +				};
-> +			};
->   		};
->   	};
->   };
-> diff --git a/arch/arm/boot/dts/sama5d3_mci2.dtsi b/arch/arm/boot/dts/sama5d3_mci2.dtsi
-> index 38e88e3..72b0d00 100644
-> --- a/arch/arm/boot/dts/sama5d3_mci2.dtsi
-> +++ b/arch/arm/boot/dts/sama5d3_mci2.dtsi
-> @@ -9,6 +9,7 @@
->
->   #include <dt-bindings/pinctrl/at91.h>
->   #include <dt-bindings/interrupt-controller/irq.h>
-> +#include <dt-bindings/clk/at91.h>
->
->   / {
->   	ahb {
-> @@ -30,6 +31,14 @@
->   				};
->   			};
->
-> +			pmc: pmc@fffffc00 {
-> +				periph: periphck {
-> +					mci2_clk {
-> +						atmel,clk-id = <23>;
-> +					};
-> +				};
-> +			};
-> +
->   			mmc2: mmc@f8004000 {
->   				compatible = "atmel,hsmci";
->   				reg = <0xf8004000 0x600>;
-> @@ -38,6 +47,8 @@
->   				dma-names = "rxtx";
->   				pinctrl-names = "default";
->   				pinctrl-0 = <&pinctrl_mmc2_clk_cmd_dat0 &pinctrl_mmc2_dat1_3>;
-> +				clocks = <&periph 23>;
-> +				clock-names = "mci_clk";
->   				status = "disabled";
->   				#address-cells = <1>;
->   				#size-cells = <0>;
-> diff --git a/arch/arm/boot/dts/sama5d3_tcb1.dtsi b/arch/arm/boot/dts/sama5d3_tcb1.dtsi
-> index 5264bb4..de1c7b6 100644
-> --- a/arch/arm/boot/dts/sama5d3_tcb1.dtsi
-> +++ b/arch/arm/boot/dts/sama5d3_tcb1.dtsi
-> @@ -9,6 +9,7 @@
->
->   #include <dt-bindings/pinctrl/at91.h>
->   #include <dt-bindings/interrupt-controller/irq.h>
-> +#include <dt-bindings/clk/at91.h>
->
->   / {
->   	aliases {
-> @@ -17,10 +18,21 @@
->
->   	ahb {
->   		apb {
-> +			pmc: pmc@fffffc00 {
-> +				periph: periphck {
-> +					tcb1_clk {
-> +						atmel,clk-id = <27>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV2>;
-> +					};
-> +				};
-> +			};
-> +
->   			tcb1: timer@f8014000 {
->   				compatible = "atmel,at91sam9x5-tcb";
->   				reg = <0xf8014000 0x100>;
->   				interrupts = <27 IRQ_TYPE_LEVEL_HIGH 0>;
-> +				clocks = <&periph 27>;
-> +				clock-names = "t0_clk";
->   			};
->   		};
->   	};
-> diff --git a/arch/arm/boot/dts/sama5d3_uart.dtsi b/arch/arm/boot/dts/sama5d3_uart.dtsi
-> index 98fcb2d..483705e 100644
-> --- a/arch/arm/boot/dts/sama5d3_uart.dtsi
-> +++ b/arch/arm/boot/dts/sama5d3_uart.dtsi
-> @@ -9,6 +9,7 @@
->
->   #include <dt-bindings/pinctrl/at91.h>
->   #include <dt-bindings/interrupt-controller/irq.h>
-> +#include <dt-bindings/clk/at91.h>
->
->   / {
->   	ahb {
-> @@ -31,12 +32,28 @@
->   				};
->   			};
->
-> +			pmc: pmc@fffffc00 {
-> +				periph: periphck {
-> +					uart0_clk {
-> +						atmel,clk-id = <16>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV2>;
-> +					};
-> +
-> +					uart1_clk {
-> +						atmel,clk-id = <17>;
-> +						atmel,clk-default-divisor = <AT91SAM9X5_PERIPH_CLK_DIV2>;
-> +					};
-> +				};
-> +			};
-> +
->   			uart0: serial@f0024000 {
->   				compatible = "atmel,at91sam9260-usart";
->   				reg = <0xf0024000 0x200>;
->   				interrupts = <16 IRQ_TYPE_LEVEL_HIGH 5>;
->   				pinctrl-names = "default";
->   				pinctrl-0 = <&pinctrl_uart0>;
-> +				clocks = <&periph 16>;
-> +				clock-names = "usart";
->   				status = "disabled";
->   			};
->
-> @@ -46,6 +63,8 @@
->   				interrupts = <17 IRQ_TYPE_LEVEL_HIGH 5>;
->   				pinctrl-names = "default";
->   				pinctrl-0 = <&pinctrl_uart1>;
-> +				clocks = <&periph 17>;
-> +				clock-names = "usart";
->   				status = "disabled";
->   			};
->   		};
->
-
-
--- 
-Nicolas Ferre
+josh
