@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969Ab3KDUPm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 15:15:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34688 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748Ab3KDUPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 15:15:41 -0500
-Date: Mon, 4 Nov 2013 18:14:03 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Greg Edwards <gedwards@ddn.com>
-Cc: kvm@vger.kernel.org,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] KVM: IOMMU: hva align mapping page size
-Message-ID: <20131104201403.GA15044@amt.cnet>
-References: <20131101160855.GB5052@psuche>
- <20131102011433.GA30381@amt.cnet>
- <20131104160812.GA6026@psuche>
+	id S1753512Ab3KDUQR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 15:16:17 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:48328 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752661Ab3KDUQQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 15:16:16 -0500
+Date: Mon, 4 Nov 2013 12:16:11 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
+Subject: Re: [GIT PULL] bcache changes for 3.13
+Message-ID: <20131104201611.GB27733@kmo>
+References: <20131104200747.GD27129@kmo>
+ <5277FFA1.6060001@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131104160812.GA6026@psuche>
+In-Reply-To: <5277FFA1.6060001@kernel.dk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04, 2013 at 09:08:12AM -0700, Greg Edwards wrote:
-> When determining the page size we could use to map with the IOMMU, the
-> page size should also be aligned with the hva, not just the gfn.  The
-> gfn may not reflect the real alignment within the hugetlbfs file.
+On Mon, Nov 04, 2013 at 01:12:17PM -0700, Jens Axboe wrote:
+> On 11/04/2013 01:07 PM, Kent Overstreet wrote:
+> > Hey Jens, sorry for being late with this - anyways, it's roughly the same set of
+> > patches you had queued up before plus a few minor fixes, but it's been rebased
+> > onto your for-3.13/core branch.
 > 
-> Signed-off-by: Greg Edwards <gedwards@ddn.com>
-> Cc: stable@vger.kernel.org
-> ---
->  virt/kvm/iommu.c | 4 ++++
->  1 file changed, 4 insertions(+)
+> Merge window is a little later this time, and since it was already in
+> for the previous release, we can make it happen.
 > 
-> diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-> index 72a130b..c329c8f 100644
-> --- a/virt/kvm/iommu.c
-> +++ b/virt/kvm/iommu.c
-> @@ -103,6 +103,10 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
->  		while ((gfn << PAGE_SHIFT) & (page_size - 1))
->  			page_size >>= 1;
->  
-> +		/* Make sure hva is aligned to the page size we want to map */
-> +		while (__gfn_to_hva_memslot(slot, gfn) & (page_size - 1))
-> +			page_size >>= 1;
-> +
->  		/*
->  		 * Pin all pages we are about to map in memory. This is
->  		 * important because we unmap and unpin in 4kb steps later.
-> -- 
-> 1.8.3.2
+> But can you please base it on for-3.13/drivers however? That's where I'd
+> like to pull in the driver bits, and if I pull this one, then things get
+> even more tangled since for-3.13/core is holding the blk-mq changes too.
 
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
-
+I'd like to do the merge with immutable biovecs myself though - there's some
+tricky bits in there. How will that work?
