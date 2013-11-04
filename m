@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359Ab3KDAKJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Nov 2013 19:10:09 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:57016 "HELO
+	id S1752239Ab3KDAKH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Nov 2013 19:10:07 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:49423 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751980Ab3KDAKD (ORCPT
+	with SMTP id S1751305Ab3KDAKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 3 Nov 2013 19:10:03 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
@@ -12,9 +12,9 @@ To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
         Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 1/3] ACPI / scan: Start matching drivers after trying scan handlers
-Date: Mon, 04 Nov 2013 01:18:50 +0100
-Message-ID: <3869743.TuXYQ2ebr5@vostro.rjw.lan>
+Subject: [PATCH 2/3] ACPI / hotplug: Refuse to hot-remove all objects with disabled hotplug
+Date: Mon, 04 Nov 2013 01:21:07 +0100
+Message-ID: <1637242.tvhoOdo7F4@vostro.rjw.lan>
 User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
 In-Reply-To: <5839747.7HXXGHmMBd@vostro.rjw.lan>
 References: <5839747.7HXXGHmMBd@vostro.rjw.lan>
@@ -27,48 +27,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-ACPI scan handlers should always be attached to struct acpi_device
-objects before any ACPI drivers, but there is a window during which
-a driver may be attached to a struct acpi_device before checking if
-there is a matching scan handler.  Namely, that will happen if an
-ACPI driver module is loaded during acpi_bus_scan() right after
-the first namespace walk is complete and before the given device
-is processed by the second namespace walk.
+In theory, an ACPI device object may be the parent of another
+device object whose hotplug is disabled by user space thorugh its
+scan handler.  In that case, the eject operation targeting the
+parent should fail as though the parent's own hotplug was disabled,
+but currently this is not the case, because acpi_scan_hot_remove()
+doesn't check the disable/enable hotplug status of the children
+of the top-most object passed to it.
 
-To prevent that from happening, set the match_driver flags of
-struct acpi_device objects right before running device_attach()
-for them in acpi_bus_device_attach().
+To fix this, modify acpi_bus_offline_companions() to return an
+error code if hotplug is disabled for the given device object.
+[Also change the name of the function to acpi_bus_offline(),
+because it is not only about companions any more, and change
+the name of acpi_bus_online_companions() accordingly.]  Make
+acpi_scan_hot_remove() propagate that error to its callers.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/acpi/scan.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/acpi/scan.c |   57 ++++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 36 insertions(+), 21 deletions(-)
 
 Index: linux-pm/drivers/acpi/scan.c
 ===================================================================
 --- linux-pm.orig/drivers/acpi/scan.c
 +++ linux-pm/drivers/acpi/scan.c
-@@ -1676,7 +1676,6 @@ void acpi_init_device_object(struct acpi
- 
- void acpi_device_add_finalize(struct acpi_device *device)
- {
--	device->flags.match_driver = true;
- 	dev_set_uevent_suppress(&device->dev, false);
- 	kobject_uevent(&device->dev.kobj, KOBJ_ADD);
+@@ -125,8 +125,8 @@ acpi_device_modalias_show(struct device
  }
-@@ -1915,8 +1914,12 @@ static acpi_status acpi_bus_device_attac
+ static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
+ 
+-static acpi_status acpi_bus_offline_companions(acpi_handle handle, u32 lvl,
+-					       void *data, void **ret_p)
++static acpi_status acpi_bus_offline(acpi_handle handle, u32 lvl, void *data,
++				    void **ret_p)
+ {
+ 	struct acpi_device *device = NULL;
+ 	struct acpi_device_physical_node *pn;
+@@ -136,6 +136,11 @@ static acpi_status acpi_bus_offline_comp
+ 	if (acpi_bus_get_device(handle, &device))
  		return AE_OK;
  
- 	ret = acpi_scan_attach_handler(device);
--	if (ret)
--		return ret > 0 ? AE_OK : AE_CTRL_DEPTH;
-+	if (ret < 0)
-+		return AE_CTRL_DEPTH;
++	if (device->handler && !device->handler->hotplug.enabled) {
++		*ret_p = &device->dev;
++		return AE_SUPPORT;
++	}
 +
-+	device->flags.match_driver = true;
-+	if (ret > 0)
-+		return AE_OK;
+ 	mutex_lock(&device->physical_node_lock);
  
- 	ret = device_attach(&device->dev);
- 	return ret >= 0 ? AE_OK : AE_CTRL_DEPTH;
+ 	list_for_each_entry(pn, &device->physical_node_list, node) {
+@@ -168,8 +173,8 @@ static acpi_status acpi_bus_offline_comp
+ 	return status;
+ }
+ 
+-static acpi_status acpi_bus_online_companions(acpi_handle handle, u32 lvl,
+-					      void *data, void **ret_p)
++static acpi_status acpi_bus_online(acpi_handle handle, u32 lvl, void *data,
++				   void **ret_p)
+ {
+ 	struct acpi_device *device = NULL;
+ 	struct acpi_device_physical_node *pn;
+@@ -214,26 +219,32 @@ static int acpi_scan_hot_remove(struct a
+ 	 * If the first pass is successful, the second one isn't needed, though.
+ 	 */
+ 	errdev = NULL;
+-	acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+-			    NULL, acpi_bus_offline_companions,
+-			    (void *)false, (void **)&errdev);
+-	acpi_bus_offline_companions(handle, 0, (void *)false, (void **)&errdev);
++	status = acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
++				     NULL, acpi_bus_offline, (void *)false,
++				     (void **)&errdev);
++	if (status == AE_SUPPORT) {
++		dev_warn(errdev, "Offline disabled.\n");
++		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
++				    acpi_bus_online, NULL, NULL, NULL);
++		put_device(&device->dev);
++		return -EPERM;
++	}
++	acpi_bus_offline(handle, 0, (void *)false, (void **)&errdev);
+ 	if (errdev) {
+ 		errdev = NULL;
+ 		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+-				    NULL, acpi_bus_offline_companions,
+-				    (void *)true , (void **)&errdev);
++				    NULL, acpi_bus_offline, (void *)true,
++				    (void **)&errdev);
+ 		if (!errdev || acpi_force_hot_remove)
+-			acpi_bus_offline_companions(handle, 0, (void *)true,
+-						    (void **)&errdev);
++			acpi_bus_offline(handle, 0, (void *)true,
++					 (void **)&errdev);
+ 
+ 		if (errdev && !acpi_force_hot_remove) {
+ 			dev_warn(errdev, "Offline failed.\n");
+-			acpi_bus_online_companions(handle, 0, NULL, NULL);
++			acpi_bus_online(handle, 0, NULL, NULL);
+ 			acpi_walk_namespace(ACPI_TYPE_ANY, handle,
+-					    ACPI_UINT32_MAX,
+-					    acpi_bus_online_companions, NULL,
+-					    NULL, NULL);
++					    ACPI_UINT32_MAX, acpi_bus_online,
++					    NULL, NULL, NULL);
+ 			put_device(&device->dev);
+ 			return -EBUSY;
+ 		}
+@@ -290,10 +301,9 @@ static void acpi_bus_device_eject(void *
+ 		goto err_out;
+ 
+ 	handler = device->handler;
+-	if (!handler || !handler->hotplug.enabled) {
+-		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+-		goto err_out;
+-	}
++	if (!handler || !handler->hotplug.enabled)
++		goto err_support;
++
+ 	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
+ 				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+ 	if (handler->hotplug.mode == AHM_CONTAINER)
+@@ -301,14 +311,19 @@ static void acpi_bus_device_eject(void *
+ 
+ 	get_device(&device->dev);
+ 	error = acpi_scan_hot_remove(device);
+-	if (error)
++	if (error == -EPERM) {
++		goto err_support;
++	} else if (error) {
+ 		goto err_out;
++	}
+ 
+  out:
+ 	mutex_unlock(&acpi_scan_lock);
+ 	unlock_device_hotplug();
+ 	return;
+ 
++ err_support:
++	ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+  err_out:
+ 	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST, ost_code,
+ 				  NULL);
 
