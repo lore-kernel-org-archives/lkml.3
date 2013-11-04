@@ -1,359 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab3KDUV5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 15:21:57 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50042 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752721Ab3KDUVz (ORCPT
+	id S1754370Ab3KDU0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 15:26:33 -0500
+Received: from smtp2.ispfabriek.nl ([37.251.0.169]:47152 "EHLO
+	smtp2.ispfabriek.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753425Ab3KDUVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 15:21:55 -0500
-Date: Mon, 4 Nov 2013 12:21:38 -0800
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-ac6976255076d4bf761abfbecb19d46af5b88046@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1383291195-24386-2-git-send-email-namhyung@kernel.org>
-References: <1383291195-24386-2-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Show single option when failed to parse
-Git-Commit-ID: ac6976255076d4bf761abfbecb19d46af5b88046
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 4 Nov 2013 15:21:17 -0500
+X-Greylist: delayed 490 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Nov 2013 15:21:16 EST
+Message-ID: <5277FFC5.4040204@xmsnet.nl>
+Date: Mon, 04 Nov 2013 21:12:53 +0100
+From: Hans de Bruin <jmdebruin@xmsnet.nl>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130807 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 04 Nov 2013 12:21:44 -0800 (PST)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.12 released .. and no merge window yet .. and 4.0 plans?
+References: <CA+55aFwLkvSkparyvekdmMyvr6Srw1KkzTBp=_w0oQRWnPpJug@mail.gmail.com>
+In-Reply-To: <CA+55aFwLkvSkparyvekdmMyvr6Srw1KkzTBp=_w0oQRWnPpJug@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ac6976255076d4bf761abfbecb19d46af5b88046
-Gitweb:     http://git.kernel.org/tip/ac6976255076d4bf761abfbecb19d46af5b88046
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Fri, 1 Nov 2013 16:33:11 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 4 Nov 2013 12:51:45 -0300
+On 11/04/2013 01:10 AM, Linus Torvalds wrote:
+ >
+...
+>
+> Anyway..
+>
+> Onto a totally different topic: we're getting to release numbers where
+> I have to take off my socks to count that high again. I'm ok with
+> 3.<low teens>, but I don't want us to get to the kinds of crazy
+> numbers we had in the 2.x series, so at some point we're going to cut
+> over from 3.x to 4.x, just to keep the numbers small and easy to
+> remember. We're not there yet, but I would actually prefer to not go
+> into the twenties, so I can see it happening in a year or so, and
+> we'll have 4.0 follow 3.19 or something like that.
+>
+> Now, it's just a number (since we've long since given up on
+> feature-related releases), and it's at least a year away, so why do I
+> even mention it at all?
+>
+> The reason I mention it is because I've been mulling over something
+> Dirk Hohndel said during LinuxCon EU and the kernel summit. He asked
+> at the Q&A session whether we could do a release with just stability
+> and bug-fixes, and I pooh-poohed it because I didn't see most of us
+> having the attention span required for that
+> (cough*cough*moronic*woodland creature*cough*cough).
 
-perf tools: Show single option when failed to parse
+I would not trust 4.0 as a bug free and stable kernel. Now 4.0.99 I 
+would trust. Almost that is. because some developer would have asked the 
+4.0.y maintainer to commit his one day old 4.x bugfix to the 4.0.y tree 
+before lots of people would have tested it.
 
-Current option parser outputs whole option help string when it failed to
-parse an option.  However this is not good for user if the command has
-many option, she might feel hard which one is related easily.
+The 4.0 would only force a stable kernel maintainer to choose that 
+kernel as his next stable tree. If he does not 4.0 has no meaning at all.
 
-Fix it by just showing the help message of the given option only.
+The 4.0 also does not solve another problem. Since the regression team 
+stopped tracking bugs nobody really knows how many bugs have been 
+forgotten or ignored. There needs to be some sort of feedback-loop to 
+force people to fix problems before they invent new ones. I do not think 
+a bug-fix round once every 20 releases will accomplice that
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Requested-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
-Enthusiastically-Supported-by: Ingo Molnar <mingo@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1383291195-24386-2-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/parse-options.c | 217 ++++++++++++++++++++++++----------------
- tools/perf/util/parse-options.h |   4 +-
- 2 files changed, 132 insertions(+), 89 deletions(-)
+-- 
+Hans
 
-diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
-index 2bc9e70..1caf7b9 100644
---- a/tools/perf/util/parse-options.c
-+++ b/tools/perf/util/parse-options.c
-@@ -339,10 +339,10 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
- 		if (arg[1] != '-') {
- 			ctx->opt = arg + 1;
- 			if (internal_help && *ctx->opt == 'h')
--				return parse_options_usage(usagestr, options);
-+				return usage_with_options_internal(usagestr, options, 0);
- 			switch (parse_short_opt(ctx, options)) {
- 			case -1:
--				return parse_options_usage(usagestr, options);
-+				return parse_options_usage(usagestr, options, arg + 1, 1);
- 			case -2:
- 				goto unknown;
- 			default:
-@@ -352,10 +352,11 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
- 				check_typos(arg + 1, options);
- 			while (ctx->opt) {
- 				if (internal_help && *ctx->opt == 'h')
--					return parse_options_usage(usagestr, options);
-+					return usage_with_options_internal(usagestr, options, 0);
-+				arg = ctx->opt;
- 				switch (parse_short_opt(ctx, options)) {
- 				case -1:
--					return parse_options_usage(usagestr, options);
-+					return parse_options_usage(usagestr, options, arg, 1);
- 				case -2:
- 					/* fake a short option thing to hide the fact that we may have
- 					 * started to parse aggregated stuff
-@@ -383,12 +384,12 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
- 		if (internal_help && !strcmp(arg + 2, "help-all"))
- 			return usage_with_options_internal(usagestr, options, 1);
- 		if (internal_help && !strcmp(arg + 2, "help"))
--			return parse_options_usage(usagestr, options);
-+			return usage_with_options_internal(usagestr, options, 0);
- 		if (!strcmp(arg + 2, "list-opts"))
- 			return PARSE_OPT_LIST;
- 		switch (parse_long_opt(ctx, arg + 2, options)) {
- 		case -1:
--			return parse_options_usage(usagestr, options);
-+			return parse_options_usage(usagestr, options, arg + 2, 0);
- 		case -2:
- 			goto unknown;
- 		default:
-@@ -445,6 +446,89 @@ int parse_options(int argc, const char **argv, const struct option *options,
- #define USAGE_OPTS_WIDTH 24
- #define USAGE_GAP         2
- 
-+static void print_option_help(const struct option *opts, int full)
-+{
-+	size_t pos;
-+	int pad;
-+
-+	if (opts->type == OPTION_GROUP) {
-+		fputc('\n', stderr);
-+		if (*opts->help)
-+			fprintf(stderr, "%s\n", opts->help);
-+		return;
-+	}
-+	if (!full && (opts->flags & PARSE_OPT_HIDDEN))
-+		return;
-+
-+	pos = fprintf(stderr, "    ");
-+	if (opts->short_name)
-+		pos += fprintf(stderr, "-%c", opts->short_name);
-+	else
-+		pos += fprintf(stderr, "    ");
-+
-+	if (opts->long_name && opts->short_name)
-+		pos += fprintf(stderr, ", ");
-+	if (opts->long_name)
-+		pos += fprintf(stderr, "--%s", opts->long_name);
-+
-+	switch (opts->type) {
-+	case OPTION_ARGUMENT:
-+		break;
-+	case OPTION_LONG:
-+	case OPTION_U64:
-+	case OPTION_INTEGER:
-+	case OPTION_UINTEGER:
-+		if (opts->flags & PARSE_OPT_OPTARG)
-+			if (opts->long_name)
-+				pos += fprintf(stderr, "[=<n>]");
-+			else
-+				pos += fprintf(stderr, "[<n>]");
-+		else
-+			pos += fprintf(stderr, " <n>");
-+		break;
-+	case OPTION_CALLBACK:
-+		if (opts->flags & PARSE_OPT_NOARG)
-+			break;
-+		/* FALLTHROUGH */
-+	case OPTION_STRING:
-+		if (opts->argh) {
-+			if (opts->flags & PARSE_OPT_OPTARG)
-+				if (opts->long_name)
-+					pos += fprintf(stderr, "[=<%s>]", opts->argh);
-+				else
-+					pos += fprintf(stderr, "[<%s>]", opts->argh);
-+			else
-+				pos += fprintf(stderr, " <%s>", opts->argh);
-+		} else {
-+			if (opts->flags & PARSE_OPT_OPTARG)
-+				if (opts->long_name)
-+					pos += fprintf(stderr, "[=...]");
-+				else
-+					pos += fprintf(stderr, "[...]");
-+			else
-+				pos += fprintf(stderr, " ...");
-+		}
-+		break;
-+	default: /* OPTION_{BIT,BOOLEAN,SET_UINT,SET_PTR} */
-+	case OPTION_END:
-+	case OPTION_GROUP:
-+	case OPTION_BIT:
-+	case OPTION_BOOLEAN:
-+	case OPTION_INCR:
-+	case OPTION_SET_UINT:
-+	case OPTION_SET_PTR:
-+		break;
-+	}
-+
-+	if (pos <= USAGE_OPTS_WIDTH)
-+		pad = USAGE_OPTS_WIDTH - pos;
-+	else {
-+		fputc('\n', stderr);
-+		pad = USAGE_OPTS_WIDTH;
-+	}
-+	fprintf(stderr, "%*s%s\n", pad + USAGE_GAP, "", opts->help);
-+}
-+
- int usage_with_options_internal(const char * const *usagestr,
- 				const struct option *opts, int full)
- {
-@@ -464,87 +548,9 @@ int usage_with_options_internal(const char * const *usagestr,
- 	if (opts->type != OPTION_GROUP)
- 		fputc('\n', stderr);
- 
--	for (; opts->type != OPTION_END; opts++) {
--		size_t pos;
--		int pad;
--
--		if (opts->type == OPTION_GROUP) {
--			fputc('\n', stderr);
--			if (*opts->help)
--				fprintf(stderr, "%s\n", opts->help);
--			continue;
--		}
--		if (!full && (opts->flags & PARSE_OPT_HIDDEN))
--			continue;
--
--		pos = fprintf(stderr, "    ");
--		if (opts->short_name)
--			pos += fprintf(stderr, "-%c", opts->short_name);
--		else
--			pos += fprintf(stderr, "    ");
--
--		if (opts->long_name && opts->short_name)
--			pos += fprintf(stderr, ", ");
--		if (opts->long_name)
--			pos += fprintf(stderr, "--%s", opts->long_name);
-+	for (  ; opts->type != OPTION_END; opts++)
-+		print_option_help(opts, full);
- 
--		switch (opts->type) {
--		case OPTION_ARGUMENT:
--			break;
--		case OPTION_LONG:
--		case OPTION_U64:
--		case OPTION_INTEGER:
--		case OPTION_UINTEGER:
--			if (opts->flags & PARSE_OPT_OPTARG)
--				if (opts->long_name)
--					pos += fprintf(stderr, "[=<n>]");
--				else
--					pos += fprintf(stderr, "[<n>]");
--			else
--				pos += fprintf(stderr, " <n>");
--			break;
--		case OPTION_CALLBACK:
--			if (opts->flags & PARSE_OPT_NOARG)
--				break;
--			/* FALLTHROUGH */
--		case OPTION_STRING:
--			if (opts->argh) {
--				if (opts->flags & PARSE_OPT_OPTARG)
--					if (opts->long_name)
--						pos += fprintf(stderr, "[=<%s>]", opts->argh);
--					else
--						pos += fprintf(stderr, "[<%s>]", opts->argh);
--				else
--					pos += fprintf(stderr, " <%s>", opts->argh);
--			} else {
--				if (opts->flags & PARSE_OPT_OPTARG)
--					if (opts->long_name)
--						pos += fprintf(stderr, "[=...]");
--					else
--						pos += fprintf(stderr, "[...]");
--				else
--					pos += fprintf(stderr, " ...");
--			}
--			break;
--		default: /* OPTION_{BIT,BOOLEAN,SET_UINT,SET_PTR} */
--		case OPTION_END:
--		case OPTION_GROUP:
--		case OPTION_BIT:
--		case OPTION_BOOLEAN:
--		case OPTION_INCR:
--		case OPTION_SET_UINT:
--		case OPTION_SET_PTR:
--			break;
--		}
--
--		if (pos <= USAGE_OPTS_WIDTH)
--			pad = USAGE_OPTS_WIDTH - pos;
--		else {
--			fputc('\n', stderr);
--			pad = USAGE_OPTS_WIDTH;
--		}
--		fprintf(stderr, "%*s%s\n", pad + USAGE_GAP, "", opts->help);
--	}
- 	fputc('\n', stderr);
- 
- 	return PARSE_OPT_HELP;
-@@ -559,9 +565,44 @@ void usage_with_options(const char * const *usagestr,
- }
- 
- int parse_options_usage(const char * const *usagestr,
--			const struct option *opts)
-+			const struct option *opts,
-+			const char *optstr, bool short_opt)
- {
--	return usage_with_options_internal(usagestr, opts, 0);
-+	if (!usagestr)
-+		return PARSE_OPT_HELP;
-+
-+	fprintf(stderr, "\n usage: %s\n", *usagestr++);
-+	while (*usagestr && **usagestr)
-+		fprintf(stderr, "    or: %s\n", *usagestr++);
-+	while (*usagestr) {
-+		fprintf(stderr, "%s%s\n",
-+				**usagestr ? "    " : "",
-+				*usagestr);
-+		usagestr++;
-+	}
-+	fputc('\n', stderr);
-+
-+	for (  ; opts->type != OPTION_END; opts++) {
-+		if (short_opt) {
-+			if (opts->short_name == *optstr)
-+				break;
-+			continue;
-+		}
-+
-+		if (opts->long_name == NULL)
-+			continue;
-+
-+		if (!prefixcmp(optstr, opts->long_name))
-+			break;
-+		if (!prefixcmp(optstr, "no-") &&
-+		    !prefixcmp(optstr + 3, opts->long_name))
-+			break;
-+	}
-+
-+	if (opts->type != OPTION_END)
-+		print_option_help(opts, 0);
-+
-+	return PARSE_OPT_HELP;
- }
- 
- 
-diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
-index 7bb5999..b0241e2 100644
---- a/tools/perf/util/parse-options.h
-+++ b/tools/perf/util/parse-options.h
-@@ -158,7 +158,9 @@ struct parse_opt_ctx_t {
- };
- 
- extern int parse_options_usage(const char * const *usagestr,
--			       const struct option *opts);
-+			       const struct option *opts,
-+			       const char *optstr,
-+			       bool short_opt);
- 
- extern void parse_options_start(struct parse_opt_ctx_t *ctx,
- 				int argc, const char **argv, int flags);
+
+
+
+
+
+
+
+
