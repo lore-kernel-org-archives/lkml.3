@@ -1,92 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641Ab3KDRQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 12:16:33 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38248 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab3KDRQb (ORCPT
+	id S1752800Ab3KDRRM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 12:17:12 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:34272 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751902Ab3KDRRL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 12:16:31 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <5277D644.4090707@jp.fujitsu.com>
-Date: Tue, 05 Nov 2013 02:15:48 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, mingo@redhat.com,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: [RESEND][PATCH] x86, procfs: always print MP information in /proc/cpuinfo
-Content-Type: text/plain; charset=ISO-2022-JP
+	Mon, 4 Nov 2013 12:17:11 -0500
+Date: Mon, 4 Nov 2013 12:17:06 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 12/13] tracing/uprobes: Add more fetch functions
+Message-ID: <20131104121706.5c51a74e@gandalf.local.home>
+In-Reply-To: <20131104164431.GA10053@redhat.com>
+References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
+	<1383029621-7384-13-git-send-email-namhyung@kernel.org>
+	<20131031182218.GB11208@redhat.com>
+	<87k3go35zm.fsf@sejong.aot.lge.com>
+	<20131104164431.GA10053@redhat.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-show_cpuinfo_core() has displayed cpu core information only if the
-number of threads per a whole cores is strictly larger than 1.
+On Mon, 4 Nov 2013 17:44:31 +0100
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-However, this condition doesn't care about the number of sockets. For
-example, this condition doesn't hold on the system with two logical
-cpus consisting of two sockets and a single core on each socket.
+> On 11/04, Namhyung Kim wrote:
+> >
+> > On Thu, 31 Oct 2013 19:22:18 +0100, Oleg Nesterov wrote:
+> > > On 10/29, Namhyung Kim wrote:
+> > >>
+> > >> +static void __user *get_user_vaddr(unsigned long addr, struct trace_uprobe *tu)
+> > >> +{
+> > >> +	unsigned long pgoff = addr >> PAGE_SHIFT;
+> > >> +	struct vm_area_struct *vma;
+> > >> +	struct address_space *mapping;
+> > >> +	unsigned long vaddr = 0;
+> > >> +
+> > >> +	if (tu == NULL) {
+> > >> +		/* A NULL tu means that we already got the vaddr */
+> > >> +		return (void __force __user *) addr;
+> > >> +	}
+> > >> +
+> > >> +	mapping = tu->inode->i_mapping;
+> > >> +
+> > >> +	mutex_lock(&mapping->i_mmap_mutex);
+> > >> +	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
+> > >> +		if (vma->vm_mm != current->mm)
+> > >> +			continue;
+> > >> +		if (!(vma->vm_flags & VM_READ))
+> > >> +			continue;
+> > >> +
+> > >> +		vaddr = offset_to_vaddr(vma, addr);
+> > >> +		break;
+> > >> +	}
+> > >> +	mutex_unlock(&mapping->i_mmap_mutex);
+> > >> +
+> > >> +	WARN_ON_ONCE(vaddr == 0);
+> > >
+> > > Hmm. But unless I missed something this "addr" passed as an argument can
+> > > be wrong? And if nothing else this or another thread can unmap the vma?
+> >
+> > You mean WARN_ON_ONCE here is superfluous?  I admit that it should
+> > protect concurrent vma [un]mappings.  Please see my reply in other
+> > thread for a new approach.
+> 
+> Whatever we do this address can be unmapped. For example, just because of
+> @invalid_address passed to trace_uprobe.c.
+> 
+> We do not really care, copy_from_user() should fail. But we should not
+> WARN() in this case.
+> 
 
-I don't know whether or not there are processors in real world by
-which such configurations are possible, but at least on vitual machine
-environments, such configuration can occur, typically when no explicit
-SMP information is provided in advance.
+I agree, the WARN_ON_ONCE() above looks like it's uncalled for.
+WARN()ings should only be used when an anomaly in the kernel logic is
+detected. Can this trigger on bad input from user space, or something
+else that userspace does? (a race with unmapping memory?). If so, error
+out to the user process, but do not call any of the WARN() functions.
 
-For example, on qemu/KVM, SMP information is specified via -smp
-command-line option, more specifically, its syntax is:
-
-  -smp n[,cores=cores][,threads=threads][,sockets=sockets][,maxcpus=maxcpus]
-
-If this is not specified, qemu tells configuration with n-sockets,
-1-core and 1-thread to the guest machine, on which guest, MP
-information is not displayed in /proc/cpuinfo.
-
-I saw this situation on VMWare guest environment, too.
-
-To fix this issue, this patch simply removes the condition because
-this information is useful even if there's only 1 thread.
-
-Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
----
- arch/x86/kernel/cpu/proc.c | 15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
-index aee6317..06fe3ed 100644
---- a/arch/x86/kernel/cpu/proc.c
-+++ b/arch/x86/kernel/cpu/proc.c
-@@ -11,15 +11,12 @@ static void show_cpuinfo_core(struct seq_file *m, struct cpuinfo_x86 *c,
- 			      unsigned int cpu)
- {
- #ifdef CONFIG_SMP
--	if (c->x86_max_cores * smp_num_siblings > 1) {
--		seq_printf(m, "physical id\t: %d\n", c->phys_proc_id);
--		seq_printf(m, "siblings\t: %d\n",
--			   cpumask_weight(cpu_core_mask(cpu)));
--		seq_printf(m, "core id\t\t: %d\n", c->cpu_core_id);
--		seq_printf(m, "cpu cores\t: %d\n", c->booted_cores);
--		seq_printf(m, "apicid\t\t: %d\n", c->apicid);
--		seq_printf(m, "initial apicid\t: %d\n", c->initial_apicid);
--	}
-+	seq_printf(m, "physical id\t: %d\n", c->phys_proc_id);
-+	seq_printf(m, "siblings\t: %d\n", cpumask_weight(cpu_core_mask(cpu)));
-+	seq_printf(m, "core id\t\t: %d\n", c->cpu_core_id);
-+	seq_printf(m, "cpu cores\t: %d\n", c->booted_cores);
-+	seq_printf(m, "apicid\t\t: %d\n", c->apicid);
-+	seq_printf(m, "initial apicid\t: %d\n", c->initial_apicid);
- #endif
- }
- 
--- 
-1.8.3.1
-
--- 
-Thanks.
-HATAYAMA, Daisuke
-
+-- Steve
