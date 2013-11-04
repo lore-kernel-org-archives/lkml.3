@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab3KDWJi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 17:09:38 -0500
-Received: from mga02.intel.com ([134.134.136.20]:50701 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753816Ab3KDWIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 17:08:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="429741872"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH v4 0/4] add gadget quirk to adapt f_fs for DWC3
-Date: Mon,  4 Nov 2013 14:12:53 -0800
-Message-Id: <1383603177-4624-1-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.rc3
+	id S1754097Ab3KDWKf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 17:10:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48734 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996Ab3KDWKe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 17:10:34 -0500
+Date: Mon, 4 Nov 2013 14:12:46 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
+        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
+        cascardo@linux.vnet.ibm.com, michael@ibmra.de
+Subject: Re: [PATCH 1/9] Generic WorkQueue Engine (GenWQE) device driver (v4)
+Message-ID: <20131104221246.GC14141@kroah.com>
+References: <1383584889-21594-1-git-send-email-haver@linux.vnet.ibm.com>
+ <1383584889-21594-2-git-send-email-haver@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383584889-21594-2-git-send-email-haver@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Nov 04, 2013 at 06:08:01PM +0100, Frank Haverkamp wrote:
+> +if GENWQE
+> +
+> +config GENWQE_DEVNAME
+> +        string "Name for sysfs and device nodes"
+> +	default "genwqe"
+> +        help
+> +          Select alternate name for sysfs and device nodes.
+> +
+> +endif
 
-These patches are a proposal to add gadget quirks in an immediate objective to
-adapt f_fs when using DWC3 controller. But the quirk solution is generic and
-can be used by other controllers to adapt gadget functions to their
-non-standard restrictions.
-
-This change is necessary to make Android's adbd service to work on Intel
-Merrifield with f_fs instead of out-of-tree android gadget.
-
-Changes from v3 to v4:
- - replace u32 quirk flags by single unsigned:1 flag for ep out aligned size
-   quirk on usb_gadget
- - add static inline helper to align ep out buf size
-
----
-David Cohen (4):
-  usb: gadget: move bitflags to the end of usb_gadget struct
-  usb: gadget: add quirk_ep_out_aligned_size field to struct usb_gadget
-  usb: ffs: check quirk to pad epout buf size when not aligned to
-    maxpacketsize
-  usb: dwc3: add quirk USB_GADGET_QUIRK_EP_OUT_ALIGNED_SIZE to gadget
-    driver
-
- drivers/usb/dwc3/gadget.c  |  6 ++++++
- drivers/usb/gadget/f_fs.c  | 22 ++++++++++++++++++++++
- include/linux/usb/gadget.h | 38 +++++++++++++++++++++++++++++---------
- 3 files changed, 57 insertions(+), 9 deletions(-)
-
--- 
-1.8.4.rc3
+Why is this still here?  I thought you said you had removed this?
 
