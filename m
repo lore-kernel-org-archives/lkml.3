@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab3KLNt2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 08:49:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59681 "EHLO mx2.suse.de"
+	id S1755340Ab3KLNuB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 08:50:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59704 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753879Ab3KLNt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 08:49:26 -0500
-Date: Tue, 5 Nov 2013 10:43:54 +0100
+	id S1753516Ab3KLNt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 08:49:59 -0500
+Date: Mon, 4 Nov 2013 16:16:20 +0100
 From: David Sterba <dsterba@suse.cz>
 To: Aldo Iljazi <mail@aldo.io>
 Cc: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] BTRFS: fixed coding style issues
-Message-ID: <20131105094354.GD16999@twin.jikos.cz>
+Subject: Re: [PATCH] FS: BTRFS: fixed coding style issues
+Message-ID: <20131104151619.GB16999@twin.jikos.cz>
 Reply-To: dsterba@suse.cz
 Mail-Followup-To: dsterba@suse.cz, Aldo Iljazi <mail@aldo.io>,
 	chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
 	linux-kernel@vger.kernel.org
-References: <1383634921-4271-1-git-send-email-mail@aldo.io>
+References: <1383571658-7440-1-git-send-email-mail@aldo.io>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383634921-4271-1-git-send-email-mail@aldo.io>
+In-Reply-To: <1383571658-7440-1-git-send-email-mail@aldo.io>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 05, 2013 at 09:02:01AM +0200, Aldo Iljazi wrote:
-> Line 4989: Inserted a space after the comma.
-> Lines 7986 and 8274: Inserted a space before the open parenthesis.
+On Mon, Nov 04, 2013 at 03:27:38PM +0200, Aldo Iljazi wrote:
+> Fixed three coding style issues. Replaced spaces with tabs.
+> 
+> Signed-off-by: Aldo Iljazi <mail@aldo.io>
+> ---
+>  fs/btrfs/dev-replace.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/btrfs/dev-replace.c b/fs/btrfs/dev-replace.c
+> index 9efb94e..b2fe609 100644
+> --- a/fs/btrfs/dev-replace.c
+> +++ b/fs/btrfs/dev-replace.c
+> @@ -377,7 +377,7 @@ int btrfs_dev_replace_start(struct btrfs_root *root,
+>  	printk_in_rcu(KERN_INFO
+>  		      "btrfs: dev_replace from %s (devid %llu) to %s) started\n",
+>  		      src_device->missing ? "<missing disk>" :
+> -		        rcu_str_deref(src_device->name),
+> +			rcu_str_deref(src_device->name),
 
-Hm, I don't know why my message from yesterday did not make it to the
-list, but I'm objecting against flow of such changes that are not always
-actual changes (replacing spaces by tabs). We don't really need them at
-this point of development phase of btrfs.
+What's the change here? I don't think we need to fix whitespace, this
+makes searching in patch history more boring, namely in case where the
+code looks exactly the same before and after the patch.
 
-The style issues should be fixed when a patch is being merged, doing it
-afterwards increases patch history and makes digging in history
-unnecessarily tedious.
+The style issues should be best fixed when the patch is about to be
+merged, doing it later like this is kind of not welcome, speaking for
+myself. There are lots of opportunities to do real code cleanups.
 
-There are lots of opportunities to do actual code cleanup, whitespaces
-are just noise.
 
 david
