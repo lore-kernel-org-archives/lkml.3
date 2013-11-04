@@ -1,247 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab3KDPNA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 10:13:00 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:56872 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753827Ab3KDPM6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 10:12:58 -0500
+	id S1753937Ab3KDPNX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 10:13:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54650 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753804Ab3KDPNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 10:13:20 -0500
+Date: Mon, 4 Nov 2013 15:13:17 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Don Morris <don.morris@hp.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: soft lockup - CPU#8 stuck for 22s!
+Message-ID: <20131104151317.GA6653@suse.de>
+References: <5266B5F2.5070102@hp.com>
 MIME-Version: 1.0
-In-Reply-To: <527671E9.8040704@gmail.com>
-References: <1382109602-27432-1-git-send-email-liuj97@gmail.com>
-	<1382109602-27432-3-git-send-email-liuj97@gmail.com>
-	<20131030001245.GB25346@mudshark.cambridge.arm.com>
-	<527671E9.8040704@gmail.com>
-Date: Mon, 4 Nov 2013 23:12:56 +0800
-Message-ID: <CA+b37P2WU74NU7wG_H+KfmL6Y-fdhipsuOruU-z=wv=8ENwrfQ@mail.gmail.com>
-Subject: Re: [PATCH v5 2/7] arm64: introduce interfaces to hotpatch kernel and
- module code
-From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <5266B5F2.5070102@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 November 2013 23:55, Jiang Liu <liuj97@gmail.com> wrote:
-> On 10/30/2013 08:12 AM, Will Deacon wrote:
->> Hi Jinag Liu,
->>
->> Sorry for the delayed review, I've been travelling.
->>
->> On Fri, Oct 18, 2013 at 04:19:56PM +0100, Jiang Liu wrote:
->>> From: Jiang Liu <jiang.liu@huawei.com>
->>
->> If I try and email you at your Huawei address, I get a bounce from the mail
->> server. Is that expected? If so, it's not very helpful from a commit log
->> perspective if you use that address as the author on your patches.
->>
-> Hi Will,
->         Sorry for the inconvenience. I have left Huawei recently and
-> have had a vacation last two weeks. I will use my gmail account next
-> time.
->
->>> Introduce three interfaces to patch kernel and module code:
->>> aarch64_insn_patch_text_nosync():
->>>      patch code without synchronization, it's caller's responsibility
->>>      to synchronize all CPUs if needed.
->>> aarch64_insn_patch_text_sync():
->>>      patch code and always synchronize with stop_machine()
->>> aarch64_insn_patch_text():
->>>      patch code and synchronize with stop_machine() if needed
->>>
->>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->>> Cc: Jiang Liu <liuj97@gmail.com>
->>> ---
->>>  arch/arm64/include/asm/insn.h | 19 ++++++++-
->>>  arch/arm64/kernel/insn.c      | 91 +++++++++++++++++++++++++++++++++++++++++++
->>>  2 files changed, 109 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
->>> index 7499490..7a69491 100644
->>> --- a/arch/arm64/include/asm/insn.h
->>> +++ b/arch/arm64/include/asm/insn.h
->>> @@ -71,8 +71,25 @@ enum aarch64_insn_hint_op {
->>>
->>>  bool aarch64_insn_is_nop(u32 insn);
->>>
->>> -enum aarch64_insn_encoding_class aarch64_get_insn_class(u32 insn);
->>> +/*
->>> + * In ARMv8-A, A64 instructions have a fixed length of 32 bits and are always
->>> + * little-endian.
->>> + */
->>> +static __always_inline u32 aarch64_insn_read(void *addr)
->>> +{
->>> +    return le32_to_cpu(*(u32 *)addr);
->>> +}
->>>
->>> +static __always_inline void aarch64_insn_write(void *addr, u32 insn)
->>> +{
->>> +    *(u32 *)addr = cpu_to_le32(insn);
->>> +}
->>
->> I wouldn't bother with these helpers. You should probably be using
->> probe_kernel_address or similar, then doing the endianness swabbing on the
->> return value in-line.
-> How about keeping and refining aarch64_insn_read/write interfaces
-> by using probe_kernel_address()? I think they may be used in other
-> places when supporting big endian ARM64 kernel.
->
->>
->>> +enum aarch64_insn_encoding_class aarch64_get_insn_class(u32 insn);
->>>  bool aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn);
->>>
->>> +int aarch64_insn_patch_text_nosync(void *addr, u32 insn);
->>> +int aarch64_insn_patch_text_sync(void *addrs[], u32 insns[], int cnt);
->>> +int aarch64_insn_patch_text(void *addrs[], u32 insns[], int cnt);
->>> +
->>>  #endif      /* __ASM_INSN_H */
->>> diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
->>> index f5b779f..3879db4 100644
->>> --- a/arch/arm64/kernel/insn.c
->>> +++ b/arch/arm64/kernel/insn.c
->>> @@ -16,6 +16,9 @@
->>>   */
->>>  #include <linux/compiler.h>
->>>  #include <linux/kernel.h>
->>> +#include <linux/smp.h>
->>> +#include <linux/stop_machine.h>
->>> +#include <asm/cacheflush.h>
->>>  #include <asm/insn.h>
->>>
->>>  static int aarch64_insn_encoding_class[] = {
->>> @@ -88,3 +91,91 @@ bool __kprobes aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn)
->>>      return __aarch64_insn_hotpatch_safe(old_insn) &&
->>>             __aarch64_insn_hotpatch_safe(new_insn);
->>>  }
->>> +
->>> +int __kprobes aarch64_insn_patch_text_nosync(void *addr, u32 insn)
->>> +{
->>> +    u32 *tp = addr;
->>> +
->>> +    /* A64 instructions must be word aligned */
->>> +    if ((uintptr_t)tp & 0x3)
->>> +            return -EINVAL;
->>> +
->>> +    aarch64_insn_write(tp, insn);
->>> +    flush_icache_range((uintptr_t)tp, (uintptr_t)tp + sizeof(u32));
->>
->> sizeof(insn) is clearer here.
->>
-> Will make this change in next version.
->
->>> +
->>> +    return 0;
->>> +}
->>> +
->>> +struct aarch64_insn_patch {
->>> +    void    **text_addrs;
->>> +    u32     *new_insns;
->>> +    int     insn_cnt;
->>> +};
->>> +
->>> +static DEFINE_MUTEX(text_patch_lock);
->>> +static atomic_t text_patch_id;
->>> +
->>> +static int __kprobes aarch64_insn_patch_text_cb(void *arg)
->>> +{
->>> +    int i, ret = 0;
->>> +    struct aarch64_insn_patch *pp = arg;
->>> +
->>> +    if (atomic_read(&text_patch_id) == smp_processor_id()) {
->>
->> You could actually pass in the test_patch_id as zero-initialised parameter
->> to this function (i.e. it points to something on the stack of the guy
->> issuing the stop_machine). Then you do an inc_return here. If you see zero,
->> you go ahead and do the patching.
-> Good suggestion!
-> Function stop_machine() already has a mutex to serialize all callers,
-> so we don't need explicitly serialization here. Will simplify the
-> code in next version.
->
->>
->>> +            for (i = 0; ret == 0 && i < pp->insn_cnt; i++)
->>> +                    ret = aarch64_insn_patch_text_nosync(pp->text_addrs[i],
->>> +                                                         pp->new_insns[i]);
->>> +            /* Let other CPU continue */
->>> +            atomic_set(&text_patch_id, -1);
->>
->> You're relying on the barrier in flush_icache_range to order this
->> atomic_set. I think you should add a comment describing that, because it's
->> very subtle.
-> How about an explicitly smp_wmb() here? That would be more
-> maintainable.
->
->>
->>> +    } else {
->>> +            while (atomic_read(&text_patch_id) != -1)
->>> +                    cpu_relax();
->>> +            isb();
->>> +    }
->>> +
->>> +    return ret;
->>> +}
->>
->> I don't think you need the isb -- the exception return should do the trick
->> (but again, a comment would be useful).
-> stop_machine() is implemented by thread scheduling instead of cross CPU
-> function call(IPI), so there may be no "eret" after returning from
-> this callback function. So used an "isb" here.
->
->>
->>> +
->>> +int __kprobes aarch64_insn_patch_text_sync(void *addrs[], u32 insns[], int cnt)
->>> +{
->>> +    int ret;
->>> +    struct aarch64_insn_patch patch = {
->>> +            .text_addrs = addrs,
->>> +            .new_insns = insns,
->>> +            .insn_cnt = cnt,
->>> +    };
->>> +
->>> +    if (cnt <= 0)
->>> +            return -EINVAL;
->>> +
->>> +    mutex_lock(&text_patch_lock);
->>
->> Again, if you use a loacl variable, I don't think you need the mutex. What
->> do you think?
-> Sure, will make the change.
->
->>
->>> +    atomic_set(&text_patch_id, smp_processor_id());
->>> +    ret = stop_machine(aarch64_insn_patch_text_cb, &patch, cpu_online_mask);
->>
->> Instead of doing this, why not instead call aarch64_insn_patch_text_nosync
->> inline, then call kick_all_cpus_sync immediately afterwards, without the
->> need to stop_machine.
-> Sandeepa, who is working on kprobe for ARM64, needs the stop_machine()
-> mechanism to synchronize all online CPUs, so it's a preparation for
-> kprobe.
-Hi Gerry,
+On Tue, Oct 22, 2013 at 01:29:22PM -0400, Don Morris wrote:
+> Greetings, all.
+> 
+> Just wanted to drop this out there to see if it rang any bells.
+> I've been getting a soft lockup (numad thread stuck on a cpu
+> while attempting to attach a task to a cgroup) for a while now,
+> but I thought it was only happening when I applied Mel Gorman's
+> set of AutoNUMA patches. Today, however, it happened on a stock
+> 3.12rc3 kernel as well, so it is in the baseline. And before
+> anyone asks, I wanted to make sure directed numa activities
+> such as numad would do interacted safely with the AutoNUMA
+> stuff so that's why I was running with both enabled.
+> 
+> I believe this started in the 3.11 timeframe (and I'll try to
+> bisect to narrow things down).
+> 
+> The problem/reproduction environment is:
+> 	+ Centos 6.4
+> 	/* The next three lines are to get numad running */
+> 	+ mkdir /cgroup/cpuset
+> 	+ mount cgroup -t cgroup -o cpuset /cgroup/cpuset
+> 	+ service numad start
+> 	+ loop running the AutoNUMA tests available at:
+> 	git://gitorious.org/autonuma-benchmark/autonuma-benchmark.git
+> 
+> How long it takes to hit this varies -- since it looks like it
+> is not due to Mel's changes at all, a stress test for cgroup
+> interactions would likely kick it faster (anyone care to point
+> me at one?).
+> 
 
-I had published kprobes patches for ARM64:
-http://lwn.net/Articles/570648/  and using your patcset (v3) for
-patching support, it works so far.
-I CCed you on my RFC but unfortunately to your huawei email not the gmail.
+I ran this a few times in different configurations and was unable to
+reproduce the problem. numad is certainly runnign because I can see
+its effect.
 
-I can give a try with kick_all_cpus_sync but wanted to understand this
-a bit  detail on hows different from stop_machine and how this work.
+> /var/log/messages output attached, trimmed to just one boot+instance
+> of the problem.
+> 
+> Oct 22 11:05:10 hornet2 kernel: BUG: soft lockup - CPU#8 stuck for 22s!
+> [numad:27384]
+> Oct 22 11:05:10 hornet2 kernel: Modules linked in: ebtable_nat ebtables
+> xt_CHECKSUM iptable_mangle bridge autofs4 sunrpc 8021q garp stp llc
+> ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables
+> ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack
+> ip6table_filter ip6_tables ipv6 ext2 vhost_net macvtap macvlan vhost tun
+> kvm_intel kvm uinput hp_wmi sparse_keymap rfkill snd_usb_audio
+> snd_usbmidi_lib snd_rawmidi acpi_cpufreq freq_table iTCO_wdt
+> iTCO_vendor_support sg microcode serio_raw pcspkr sb_edac edac_core wmi
+> i2c_i801 lpc_ich mfd_core xhci_hcd e1000e ptp pps_core ioatdma dca
+> snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec
+> snd_hwdep snd_seq snd_seq_device snd_pcm snd_timer snd soundcore
+> snd_page_alloc ext4 jbd2 mbcache sr_mod cdrom sd_mod crc_t10dif
+> crct10dif_common firewire_ohci firewire_core crc_itu_t ahci libahci
+> pata_acpi ata_generic isci libsas scsi_transport_sas radeon ttm
+> drm_kms_helper drm i2c_algo_bit i2c_core dm_mirror dm_region_hash dm_log
+> dm_mod
+> Oct 22 11:05:10 hornet2 kernel: CPU: 8 PID: 27384 Comm: numad Not
+> tainted 3.12.0-rc3+ #1
+> Oct 22 11:05:10 hornet2 kernel: Hardware name: Hewlett-Packard HP Z620
+> Workstation/158A, BIOS J61 v03.15 05/09/2013
+> Oct 22 11:05:10 hornet2 kernel: task: ffff88070e9c60c0 ti:
+> ffff88070e520000 task.ti: ffff88070e520000
+> Oct 22 11:05:10 hornet2 kernel: RIP: 0010:[<ffffffff8154256c>]
+> [<ffffffff8154256c>] _raw_read_lock+0xc/0x20
 
-Thanks,
-Sandeepa
+I assume it's the css_set_lock that is causing the problem. Someone
+somewhere has gone to sleep forever holding that lock or there is an
+error path that is not releasing it. Does sysrq-t reveal what might have
+gone asleep with the lock held? None of the processes currently running
+looked liks obvious candidates.
 
->
-> Thanks!
-> Gerry
->>
->> Will
->>
->
+-- 
+Mel Gorman
+SUSE Labs
