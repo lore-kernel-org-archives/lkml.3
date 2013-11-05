@@ -1,116 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113Ab3KECDS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 21:03:18 -0500
-Received: from mga09.intel.com ([134.134.136.24]:5305 "EHLO mga09.intel.com"
+	id S1754016Ab3KECIe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 21:08:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49847 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750997Ab3KECDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 21:03:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="403654512"
-Subject: Re: [PATCH 0/4] per anon_vma lock and turn anon_vma rwsem lock to
- rwlock_t
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-kernel@vger.kernel.org,
+	id S1753447Ab3KECId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 21:08:33 -0500
+Date: Tue, 5 Nov 2013 13:08:14 +1100
+From: NeilBrown <neilb@suse.de>
+To: "Figo.zhang" <figo1802@gmail.com>
+Cc: "Artem S. Tashkinov" <t.artem@lycos.com>, david@lang.hm,
+        lkml <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Michel Lespinasse <walken@google.com>
-In-Reply-To: <1383615840.11046.265.camel@schen9-DESK>
-References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
-	 <20131101080135.GB25547@gmail.com>
-	 <20131101081159.GB12829@yliu-dev.sh.intel.com>
-	 <20131101082146.GA27021@gmail.com>
-	 <20131101101643.GC30123@yliu-dev.sh.intel.com>
-	 <1383362113.2444.5.camel@buesod1.americas.hpqcorp.net>
-	 <20131104035920.GH30123@yliu-dev.sh.intel.com>
-	 <1383615840.11046.265.camel@schen9-DESK>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Nov 2013 18:03:12 -0800
-Message-ID: <1383616992.11046.271.camel@schen9-DESK>
+        linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
+        Linux-MM <linux-mm@kvack.org>
+Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
+Message-ID: <20131105130814.7127298d@notabene.brown>
+In-Reply-To: <CAF7GXvpJVLYDS5NfH-NVuN9bOJjAS5c1MQqSTjoiVBHJt6bWcw@mail.gmail.com>
+References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
+	<20131025214952.3eb41201@notabene.brown>
+	<alpine.DEB.2.02.1310250425270.22538@nftneq.ynat.uz>
+	<154617470.12445.1382725583671.JavaMail.mail@webmail11>
+	<20131026074349.0adc9646@notabene.brown>
+	<476525596.14731.1382735024280.JavaMail.mail@webmail11>
+	<20131026091112.241da260@notabene.brown>
+	<CAF7GXvpJVLYDS5NfH-NVuN9bOJjAS5c1MQqSTjoiVBHJt6bWcw@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/gVWr30a.5_RNZoFmDoCa/kl"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-11-04 at 17:44 -0800, Tim Chen wrote:
-> On Mon, 2013-11-04 at 11:59 +0800, Yuanhan Liu wrote:
-> > On Fri, Nov 01, 2013 at 08:15:13PM -0700, Davidlohr Bueso wrote:
-> > > On Fri, 2013-11-01 at 18:16 +0800, Yuanhan Liu wrote:
-> > > > On Fri, Nov 01, 2013 at 09:21:46AM +0100, Ingo Molnar wrote:
-> > > > > 
-> > > > > * Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
-> > > > > 
-> > > > > > > Btw., another _really_ interesting comparison would be against 
-> > > > > > > the latest rwsem patches. Mind doing such a comparison?
-> > > > > > 
-> > > > > > Sure. Where can I get it? Are they on some git tree?
-> > > > > 
-> > > > > I've Cc:-ed Tim Chen who might be able to point you to the latest 
-> > > > > version.
-> > > > > 
-> > > > > The last on-lkml submission was in this thread:
-> > > > > 
-> > > > >   Subject: [PATCH v8 0/9] rwsem performance optimizations
-> > > > > 
-> > > > 
-> > > > Thanks.
-> > > > 
-> > > > I queued bunchs of tests about one hour ago, and already got some
-> > > > results(If necessary, I can add more data tomorrow when those tests are
-> > > > finished):
-> > > 
-> > > What kind of system are you using to run these workloads on?
-> > 
-> > I queued jobs on 5 testboxes:
-> >   - brickland1: 120 core Ivybridge server
-> >   - lkp-ib03:   48 core Ivybridge server
-> >   - lkp-sb03:   32 core Sandybridge server
-> >   - lkp-nex04:  64 core NHM server
-> >   - lkp-a04:    Atom server
-> > > 
-> > > > 
-> > > > 
-> > > >                v3.12-rc7      fe001e3de090e179f95d  
-> > > > ------------------------  ------------------------  
-> > > >                                 -9.3%               brickland1/micro/aim7/shared
-> > > >                                 +4.3%               lkp-ib03/micro/aim7/fork_test
-> > > >                                 +2.2%               lkp-ib03/micro/aim7/shared
-> > > >                                 -2.6%               TOTAL aim7.2000.jobs-per-min
-> > > > 
-> > > 
-> > > Sorry if I'm missing something, but could you elaborate more on what
-> > > these percentages represent?
-> > 
-> >                v3.12-rc7      fe001e3de090e179f95d  
-> > ------------------------  ------------------------  
-> >                                 -9.3%               brickland1/micro/aim7/shared
-> > ....
-> > ....
-> >                                 -2.6%               TOTAL aim7.2000.jobs-per-min
-> > 
-> > The comparation base is v3.12-rc7, and we got 9.3 performance regression
-> > at commit fe001e3de090e179f95d, which is the head of rwsem performance
-> > optimizations patch set.
-> 
-> Yunahan, thanks for the data.  This I assume is with the entire rwsem
-> v8 patchset. Any idea of the run variation on the workload?
+--Sig_/gVWr30a.5_RNZoFmDoCa/kl
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yunhan,
+On Tue, 5 Nov 2013 09:40:55 +0800 "Figo.zhang" <figo1802@gmail.com> wrote:
 
-I haven't got a chance to make multiple runs to check the standard
-deviation.  From the few runs I did, I got a 5.1% increase in
-performance for aim7 shared workload for the complete rwsem patchset
-on a similar machine that you are using.  The patches are applied
-to the 3.12-rc7 and compared to the vanilla kernel.
+> > >
+> > > Of course, if you don't use Linux on the desktop you don't really car=
+e -
+> > well, I do. Also
+> > > not everyone in this world has an UPS - which means such a huge buffer
+> > can lead to a
+> > > serious data loss in case of a power blackout.
+> >
+> > I don't have a desk (just a lap), but I use Linux on all my computers a=
+nd
+> > I've never really noticed the problem.  Maybe I'm just very patient, or
+> > maybe
+> > I don't work with large data sets and slow devices.
+> >
+> > However I don't think data-loss is really a related issue.  Any process
+> > that
+> > cares about data safety *must* use fsync at appropriate places.  This h=
+as
+> > always been true.
+> >
+> > =3D>May i ask question that, some like ext4 filesystem, if some app mot=
+ify
+> the files, it create some dirty data. if some meta-data writing to the
+> journal disk when a power backout,
+> it will be lose some serious data and the the file will damage?
 
-Thanks.
+If you modify a file, then you must take care that you can recover from a
+crash at any point in the process.
 
-Tim
+If the file is small, the usual approach is to create a copy of the file wi=
+th
+the appropriate changes made, then 'fsync' the file and rename the new file
+over the old file.
 
+If the file is large you might need some sort of update log (in a small fil=
+e)
+so you can replay recent updates after a crash.
+
+The  journalling that the filesystem provides only protects the filesystem
+metadata.  It does not protect the consistency of the data in your file.
+
+I hope  that helps.
+
+NeilBrown
+
+--Sig_/gVWr30a.5_RNZoFmDoCa/kl
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIVAwUBUnhTDjnsnt1WYoG5AQL8UhAAsymCSPXOccBun3EqBLddwOqwUyyiZq2l
+WxRF5e8qbj1r48FPPDVzVPxDwu91n0Er+QC1D/tC2NUxwC4rx0LNqigGAcI2l3Ic
+JUeNfZfaO3Gm1KcNqqdk25qOa+7mJoMakkIuQ6GQX5DtefeMiUEW6svTXsKt0nGW
+3qOudkFCf3hyux/NQBNKvlsk4ljbfKyaVrOCIoxmT4js/BzxHOlkB7Vj7cnRM/Q0
+DasihAIzIWKFTCqQCKhB0xMwD53XjurYGKIdMfPhmjUYOh4c42wF/Hy2h9vFm9Px
+6jK+LS/XCxHt/+EiAj4LEBEeyCbfKCgOabV+qsgH+qP8yR89I/k5iGTaq4+I2rib
+lko5VSqUdnGvUt/GbubbCAf5DvH/dcZM1sddT+/iqI9XyA9+vvVTFOHJUW1E2ZSX
+jYpuZiTabCcSNZQeBFrwMzxtjj0m102mLW1jbyesIGtBbR8ozDqxplZqeyMKblMH
+2yLTkv7hjANpayAiBHWB1bHHrH2GjxAf/iYToeBqB4gt45+FQIjwkcUzdUFMU/bP
+iPnvtflafvHGaQWI99rkrN5Kaoi9UcPlKxUd+xA9EJOpFgyZGAwFvge8QzlxH5up
+Pxtk2RCYVWaTznzRT40qVe/2CBzwPbH2XyAWcTdQBGLFj7TzqKEp38bnakG3mB9e
+nq8sQ97WdMs=
+=PdUs
+-----END PGP SIGNATURE-----
+
+--Sig_/gVWr30a.5_RNZoFmDoCa/kl--
