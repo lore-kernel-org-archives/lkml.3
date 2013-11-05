@@ -1,109 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab3KEAqF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 19:46:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48216 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751517Ab3KEAqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 19:46:03 -0500
-Date: Tue, 5 Nov 2013 01:45:59 +0100
-From: Jan Kara <jack@suse.cz>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/8] fs/ext3: use rbtree postorder iteration helper
- instead of opencoding
-Message-ID: <20131105004559.GB24531@quack.suse.cz>
-References: <1383345566-25087-1-git-send-email-cody@linux.vnet.ibm.com>
- <1383345566-25087-6-git-send-email-cody@linux.vnet.ibm.com>
- <20131104142638.GD8566@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131104142638.GD8566@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753837Ab3KEAuT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 19:50:19 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:60881 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753309Ab3KEAuR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 19:50:17 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1816\))
+Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
+Date: Mon, 4 Nov 2013 17:50:13 -0700
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, linux-mm <linux-mm@kvack.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <89AE8FE8-5B15-41DB-B9CE-DFF73531D821@dilger.ca>
+References: <160824051.3072.1382685914055.JavaMail.mail@webmail07> <CA+55aFxj81TRhe1+FJWqER7VVH_z_Sk0+hwtHvniA0ATsF_eKw@mail.gmail.com>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+X-Mailer: Apple Mail (2.1816)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 04-11-13 15:26:38, Jan Kara wrote:
-> On Fri 01-11-13 15:38:50, Cody P Schafer wrote:
-> > Use rbtree_postorder_for_each_entry_safe() to destroy the rbtree instead
-> > of opencoding an alternate postorder iteration that modifies the tree
->   Thanks. I've merged the patch into my tree.
-  Hum, except that the kernel oopses with this patch. And I think the
-problem is in rbtree_postorder_for_each_entry_safe(). How are those tests
-for NULL supposed to work? For example if the tree is empty, 'pos' will be
-NULL and you'll call rb_next_postorder(&NULL->field) which is pretty much
-guaranteed to oops if 'field' doesn't have offset 0 in the structure...
-	
-								Honza
 
-> > Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-> > ---
-> >  fs/ext3/dir.c | 36 +++++-------------------------------
-> >  1 file changed, 5 insertions(+), 31 deletions(-)
-> > 
-> > diff --git a/fs/ext3/dir.c b/fs/ext3/dir.c
-> > index bafdd48..a331ad1 100644
-> > --- a/fs/ext3/dir.c
-> > +++ b/fs/ext3/dir.c
-> > @@ -309,43 +309,17 @@ struct fname {
-> >   */
-> >  static void free_rb_tree_fname(struct rb_root *root)
-> >  {
-> > -	struct rb_node	*n = root->rb_node;
-> > -	struct rb_node	*parent;
-> > -	struct fname	*fname;
-> > -
-> > -	while (n) {
-> > -		/* Do the node's children first */
-> > -		if (n->rb_left) {
-> > -			n = n->rb_left;
-> > -			continue;
-> > -		}
-> > -		if (n->rb_right) {
-> > -			n = n->rb_right;
-> > -			continue;
-> > -		}
-> > -		/*
-> > -		 * The node has no children; free it, and then zero
-> > -		 * out parent's link to it.  Finally go to the
-> > -		 * beginning of the loop and try to free the parent
-> > -		 * node.
-> > -		 */
-> > -		parent = rb_parent(n);
-> > -		fname = rb_entry(n, struct fname, rb_hash);
-> > +	struct fname *fname, *next;
-> > +
-> > +	rbtree_postorder_for_each_entry_safe(fname, next, root, rb_hash)
-> >  		while (fname) {
-> >  			struct fname * old = fname;
-> >  			fname = fname->next;
-> >  			kfree (old);
-> >  		}
-> > -		if (!parent)
-> > -			*root = RB_ROOT;
-> > -		else if (parent->rb_left == n)
-> > -			parent->rb_left = NULL;
-> > -		else if (parent->rb_right == n)
-> > -			parent->rb_right = NULL;
-> > -		n = parent;
-> > -	}
-> > -}
-> >  
-> > +	*root = RB_ROOT;
-> > +}
-> >  
-> >  static struct dir_private_info *ext3_htree_create_dir_info(struct file *filp,
-> >  							   loff_t pos)
-> > -- 
-> > 1.8.4.2
-> > 
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+On Oct 25, 2013, at 2:18 AM, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Fri, Oct 25, 2013 at 8:25 AM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
+>> 
+>> On my x86-64 PC (Intel Core i5 2500, 16GB RAM), I have the same 3.11
+>> kernel built for the i686 (with PAE) and x86-64 architectures. What’s
+>> really troubling me is that the x86-64 kernel has the following problem:
+>> 
+>> When I copy large files to any storage device, be it my HDD with ext4
+>> partitions or flash drive with FAT32 partitions, the kernel first
+>> caches them in memory entirely then flushes them some time later
+>> (quite unpredictably though) or immediately upon invoking "sync".
+> 
+> Yeah, I think we default to a 10% "dirty background memory" (and
+> allows up to 20% dirty), so on your 16GB machine, we allow up to 1.6GB
+> of dirty memory for writeout before we even start writing, and twice
+> that before we start *waiting* for it.
+> 
+> On 32-bit x86, we only count the memory in the low 1GB (really
+> actually up to about 890MB), so "10% dirty" really means just about
+> 90MB of buffering (and a "hard limit" of ~180MB of dirty).
+> 
+> And that "up to 3.2GB of dirty memory" is just crazy. Our defaults
+> come from the old days of less memory (and perhaps servers that don't
+> much care), and the fact that x86-32 ends up having much lower limits
+> even if you end up having more memory.
+
+I think the “delay writes for a long time” is a holdover from the
+days when e.g. /tmp was on a disk and compilers had lousy IO
+patterns, then they deleted the file.  Today, /tmp is always in
+RAM, and IMHO the “write and delete” workload tested by dbench
+is not worthwhile optimizing for.
+
+With Lustre, we’ve long taken the approach that if there is enough
+dirty data on a file to make a decent write (which is around 8MB
+today even for very fast storage) then there isn’t much point to
+hold back for more data before starting the IO.
+
+Any decent allocator will be able to grow allocated extents to
+handle following data, or allocate a new extent.  At 4-8MB extents,
+even very seek-impaired media could do 400-800MB/s (likely much
+faster than the underlying storage anyway).
+
+This also avoids wasting (tens of?) seconds of idle disk bandwidth.
+If the disk is already busy, then the IO will be delayed anyway.
+If it is not busy, then why aggregate GB of dirty data in memory
+before flushing it?
+
+Something simple like “start writing at 16MB dirty on a single file”
+would probably avoid a lot of complexity at little real-world cost.
+That shouldn’t throttle dirtying memory above 16MB, but just start
+writeout much earlier than it does today.
+
+Cheers, Andreas
+
+
+
+
+
