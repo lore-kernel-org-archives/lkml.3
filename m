@@ -1,93 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447Ab3KEVlJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 16:41:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39720 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754728Ab3KEVlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 16:41:07 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20131105202855.GD4598@redhat.com>
-References: <1383642967-12595-1-git-send-email-bhe@redhat.com> <20131105202855.GD4598@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] x86: make reboot task only run on the appropriate processor
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 05 Nov 2013 13:39:49 -0800
-To: Vivek Goyal <vgoyal@redhat.com>, Baoquan He <bhe@redhat.com>
-CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        x86@kernel.org, akpm@linux-foundation.org, holt@sgi.com,
-        davej@fedoraproject.org, rmk+kernel@arm.linux.org.uk,
-        chaowang@redhat.com, mwhitehe@redhat.com, kexec@lists.infradead.org
-Message-ID: <6b2e54d6-effa-4884-b674-2692a67e5cbc@email.android.com>
+	id S1755553Ab3KEVov (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 16:44:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58514 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754865Ab3KEVou (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 16:44:50 -0500
+Date: Tue, 5 Nov 2013 13:44:48 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: zhang.mingjun@linaro.org, minchan@kernel.org, m.szyprowski@samsung.com,
+        haojian.zhuang@linaro.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Mingjun Zhang <troy.zhangmingjun@linaro.org>
+Subject: Re: [PATCH] mm: cma: free cma page to buddy instead of being cpu
+ hot page
+Message-Id: <20131105134448.7677d6febbfff4721373be4b@linux-foundation.org>
+In-Reply-To: <20131029093322.GA2400@suse.de>
+References: <1382960569-6564-1-git-send-email-zhang.mingjun@linaro.org>
+	<20131029093322.GA2400@suse.de>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should, yes, if cpu 0 is available.
+On Tue, 29 Oct 2013 09:33:23 +0000 Mel Gorman <mgorman@suse.de> wrote:
 
-Vivek Goyal <vgoyal@redhat.com> wrote:
->On Tue, Nov 05, 2013 at 05:16:07PM +0800, Baoquan He wrote:
->> Currently system always reboot after below message when execute
->"kexec -e".
->> 
->> [    0.572119] smpboot: Booting Node   0, Processors  #   1 OK
->> 
->
->So is it same problem were we reboot on non-boot cpu and sending INIT
->to boot cpu in second kernel brings down the machine?
->
->I think for x86, it makes sense to reboot on boot cpu.
->
->Thanks
->Vivek
->
->> In commit 1b3a5d02ee070c8f9943333b9b6370f486601e0f, reboot= handling
->was
->> moved to kerne/reboot.c. However, the code to migrate current thread
->to
->> reboot cpu was removed. That cause this incorrect kexec behavior.
->> 
->> Now add that code block back.
->> 
->> Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
->> Reported-by: Dave Young <dyoung@redhat.com>
->> Tested-by: WANG Chao <chaowang@redhat.com>
->> Signed-off-by: Baoquan He <bhe@redhat.com>
->> ---
->>  arch/x86/kernel/reboot.c | 15 +++++++++++++++
->>  1 file changed, 15 insertions(+)
->> 
->> diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
->> index 7e920bf..3049de9 100644
->> --- a/arch/x86/kernel/reboot.c
->> +++ b/arch/x86/kernel/reboot.c
->> @@ -551,6 +551,21 @@ void native_machine_shutdown(void)
->>  {
->>  	/* Stop the cpus and apics */
->>  #ifdef CONFIG_SMP
->> +       /* The boot cpu is always logical cpu 0 */
->> +       int reboot_cpu_id = 0;
->> +
->> +       /* See if there has been given a command line override */
->> +       if ((reboot_cpu != -1) && (reboot_cpu < nr_cpu_ids) &&
->> +               cpu_online(reboot_cpu))
->> +               reboot_cpu_id = reboot_cpu;
->> +
->> +       /* Make certain the cpu I'm about to reboot on is online */
->> +       if (!cpu_online(reboot_cpu_id))
->> +               reboot_cpu_id = smp_processor_id();
->> +
->> +       /* Make certain I only run on the appropriate processor */
->> +       set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
->> +
->>  	/*
->>  	 * Stop all of the others. Also disable the local irq to
->>  	 * not receive the per-cpu timer interrupt which may trigger
->> -- 
->> 1.8.3.1
+> On Mon, Oct 28, 2013 at 07:42:49PM +0800, zhang.mingjun@linaro.org wrote:
+> > From: Mingjun Zhang <troy.zhangmingjun@linaro.org>
+> > 
+> > free_contig_range frees cma pages one by one and MIGRATE_CMA pages will be
+> > used as MIGRATE_MOVEABLE pages in the pcp list, it causes unnecessary
+> > migration action when these pages reused by CMA.
+> > 
+> > Signed-off-by: Mingjun Zhang <troy.zhangmingjun@linaro.org>
+> > ---
+> >  mm/page_alloc.c |    3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 0ee638f..84b9d84 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -1362,7 +1362,8 @@ void free_hot_cold_page(struct page *page, int cold)
+> >  	 * excessively into the page allocator
+> >  	 */
+> >  	if (migratetype >= MIGRATE_PCPTYPES) {
+> > -		if (unlikely(is_migrate_isolate(migratetype))) {
+> > +		if (unlikely(is_migrate_isolate(migratetype))
+> > +			|| is_migrate_cma(migratetype))
+> >  			free_one_page(zone, page, 0, migratetype);
+> >  			goto out;
+> 
+> This slightly impacts the page allocator free path for a marginal gain
+> on CMA which are relatively rare allocations. There is no obvious
+> benefit to this patch as I expect CMA allocations to flush the PCP lists
+> when a range of pages have been isolated and migrated. Is there any
+> measurable benefit to this patch?
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+The added overhead is pretty small - just a comparison of a local with
+a constant.  And that cost is not incurred for MIGRATE_UNMOVABLE,
+MIGRATE_RECLAIMABLE and MIGRATE_MOVABLE, which are the common cases
+(yes?).
+
+This thread is a bit straggly and inconclusive, but it sounds to me
+that the benefit to CMA users is quite large and the cost to others is
+small, so I'm inclined to run with the original patch.  Someone stop me
+if that's wrong.
+
+(we could speed up some of the migratetype tests if the MIGRATE_foo
+constants were converted to bitfields.  The above test becomes "if
+(migratetype & (MIGRATE_CMA|MIGRATE_ISOLATE))").
+
+(why is is_migrate_cma() implemented as a macro in mmzone.h while
+is_migrate_isolate() is an inline in page-isolation.h?)
+
