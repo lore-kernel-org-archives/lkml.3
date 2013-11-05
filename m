@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab3KEKFy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 05:05:54 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:44316 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab3KEKFv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 05:05:51 -0500
-Message-ID: <5278C2F8.3050805@linux.vnet.ibm.com>
-Date: Tue, 05 Nov 2013 02:05:44 -0800
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1754065Ab3KEKHN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 05:07:13 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:29051 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752839Ab3KEKHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 05:07:10 -0500
+X-IronPort-AV: E=Sophos;i="4.93,638,1378828800"; 
+   d="scan'208";a="8951778"
+Message-ID: <5278C1DC.9000609@cn.fujitsu.com>
+Date: Tue, 05 Nov 2013 18:01:00 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
-CC: Andreas Dilger <adilger.kernel@dilger.ca>,
-        LKML <linux-kernel@vger.kernel.org>, EXT4 <linux-ext4@vger.kernel.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/2] rbtree: fix postorder iteration when the rb_node
- is not the first element in an entry
-References: <52784ADF.1040104@linux.vnet.ibm.com> <1383615602-1784-1-git-send-email-cody@linux.vnet.ibm.com>
-In-Reply-To: <1383615602-1784-1-git-send-email-cody@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: jfrederich@gmail.com, dsd@laptop.org, jon.nettleton@gmail.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: devel@driverdev.osuosl.org, Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [RESEND PATCH 2/2] staging/olpc_docn: reorder the lock sequence to
+ avoid potential dead lock
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/05 18:05:16,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/05 18:05:17,
+	Serialize complete at 2013/11/05 18:05:17
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110510-8236-0000-0000-0000036EAE0E
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2013 05:40 PM, Cody P Schafer wrote:
-> Provide a new helper called rb_next_postorder_entry() to perform NULL
-> checks and container_of() coversions and use it in
-> rbtree_for_each_entry_safe() to fix oopses that occur when rb_node is
-> not the first element in the entry.
+The lock sequence of dcon_blank_fb(fb_info->lock ---> console_lock) is against
+with the one of console_callback(console_lock ---> fb_info->lock), it'll
+lead to a potential dead lock, so reorder the lock sequence of dcon_blank_fb
+to avoid the potential dead lock.
 
-On second thought, it appears I was a bit to hasty with this, and this patch actually breaks things.
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ drivers/staging/olpc_dcon/olpc_dcon.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-On 11/04/2013 04:45 PM, Jan Kara wrote:> On Mon 04-11-13 15:26:38, Jan Kara wrote:
->> On Fri 01-11-13 15:38:50, Cody P Schafer wrote:
->>> Use rbtree_postorder_for_each_entry_safe() to destroy the rbtree instead
->>> of opencoding an alternate postorder iteration that modifies the tree
->>    Thanks. I've merged the patch into my tree.
->    Hum, except that the kernel oopses with this patch. And I think the
-> problem is in rbtree_postorder_for_each_entry_safe(). How are those tests
-> for NULL supposed to work? For example if the tree is empty, 'pos' will be
-> NULL and you'll call rb_next_postorder(&NULL->field) which is pretty much
-> guaranteed to oops if 'field' doesn't have offset 0 in the structure...
-
-No, it shouldn't oops because pos won't be NULL, &pos->field will be.
-
-pos is only assigned via an rb_entry(rb_first_postorder()) or rb_entry(rb_next_postorder()). rb_next_postorder() and rb_first_postorder() can return NULL. That NULL then is munged by rb_entry to be (NULL - offset_of_field). Causing (&pos->field == NULL == (pos + offset_of_field)).
-
-That is, unless I've screwed something up (very possible, as this overly hurried patchset shows).
-
-I expect it's more likely that my adaptation of this to ext3's usage is buggy. Could you tell me what you did to cause the oops? And/Or post it?
+diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
+index 198595e..9db88d9 100644
+--- a/drivers/staging/olpc_dcon/olpc_dcon.c
++++ b/drivers/staging/olpc_dcon/olpc_dcon.c
+@@ -255,17 +255,19 @@ static bool dcon_blank_fb(struct dcon_priv *dcon, bool blank)
+ {
+ 	int err;
+ 
++	console_lock();
+ 	if (!lock_fb_info(dcon->fbinfo)) {
++		console_unlock();
+ 		dev_err(&dcon->client->dev, "unable to lock framebuffer\n");
+ 		return false;
+ 	}
+-	console_lock();
++
+ 	dcon->ignore_fb_events = true;
+ 	err = fb_blank(dcon->fbinfo,
+ 			blank ? FB_BLANK_POWERDOWN : FB_BLANK_UNBLANK);
+ 	dcon->ignore_fb_events = false;
+-	console_unlock();
+ 	unlock_fb_info(dcon->fbinfo);
++	console_unlock();
+ 
+ 	if (err) {
+ 		dev_err(&dcon->client->dev, "couldn't %sblank framebuffer\n",
+-- 
+1.7.7
 
