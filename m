@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab3KEI10 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 03:27:26 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:12717 "EHLO
+	id S1753484Ab3KEI1h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 03:27:37 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:12722 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750849Ab3KEI1Y (ORCPT
+	with ESMTP id S1750864Ab3KEI1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 03:27:24 -0500
+	Tue, 5 Nov 2013 03:27:25 -0500
 From: Yijing Wang <wangyijing@huawei.com>
 To: Joerg Roedel <joro@8bytes.org>
 CC: <linux-pci@vger.kernel.org>, David Woodhouse <dwmw2@infradead.org>,
@@ -15,12 +15,10 @@ CC: <linux-pci@vger.kernel.org>, David Woodhouse <dwmw2@infradead.org>,
         <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
         Yijing Wang <wangyijing@huawei.com>,
         "Hanjun Guo" <guohanjun@huawei.com>
-Subject: [PATCH 1/1] IOMMU: Save pci device id instead of pci_dev* pointer for DMAR devices
-Date: Tue, 5 Nov 2013 16:24:58 +0800
-Message-ID: <1383639898-48776-2-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH 0/1] IOMMU: Enhance IOMMU to support device hotplug
+Date: Tue, 5 Nov 2013 16:24:57 +0800
+Message-ID: <1383639898-48776-1-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.11.msysgit.1
-In-Reply-To: <1383639898-48776-1-git-send-email-wangyijing@huawei.com>
-References: <1383639898-48776-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.135.76.69]
@@ -29,18 +27,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, DMAR driver save target pci devices pointers for drhd/rmrr/atsr
-in (pci_dev *) array. This is not safe, because pci devices maybe
-hot added or removed during system running. They will have new pci_dev *
-pointer. So if there have two IOMMUs or more in system, these devices
-will find a wrong drhd during DMA mapping. And DMAR faults will occur.
-This patch save pci device id insted of (pci_dev *) to fix this issue,
-Because DMAR table just provide pci device id under a specific IOMMU,
-so there is no reason to bind IOMMU with the (pci_dev *). Other, here
-use list to manage devices' id for IOMMU, we can easily use list helper
-to manage device id.
+This cover letter help to find the issue and review the patch.
 
-after remove and rescan a pci device
+Reproduce the issue:
+linux-rh5885:~ # echo 1 > /sys/bus/pci/devices/0000\:80\:05.0/remove ----> I remove this device because 80:05.0 device pointer saved in drhd->devices[index]
+linux-rh5885:~ # echo 1 > /sys/bus/pci/rescan
+linux-rh5885:~ # dmesg
+...[snip]...
 [  611.857095] dmar: DRHD: handling fault status reg 2
 [  611.857109] dmar: DMAR:[DMA Read] Request device [86:00.3] fault addr ffff7000
 [  611.857109] DMAR:[fault reason 02] Present bit in context entry is clear
@@ -58,541 +51,268 @@ after remove and rescan a pci device
 [  611.860995] dmar: INTR-REMAP: Request device [[86:00.3] fault index a4
 [  611.860995] INTR-REMAP:[fault reason 34] Present field in the IRTE entry is clear
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
+This patch tested in huawei RH5885 4P server.
+
+Following is DMAR talbe and lspci info.
+
+My DMAR Table info:
+--------------------------------------------------------------
+/*
+ * Intel ACPI Component Architecture
+ * AML Disassembler version 20081031
+ *
+ * Disassembly of DMAR.dat, Wed Oct 23 09:46:44 2013
+ *
+ * ACPI Data Table [DMAR]
+ *
+ * Format: [HexOffset DecimalOffset ByteLength]  FieldName : FieldValue
+ */
+
+[000h 000  4]                    Signature : "DMAR"    /* DMA Remapping table */
+[004h 004  4]                 Table Length : 00000198
+[008h 008  1]                     Revision : 01
+[009h 009  1]                     Checksum : 47
+[00Ah 010  6]                       Oem ID : "A M I "
+[010h 016  8]                 Oem Table ID : "OEMDMAR "
+[018h 024  4]                 Oem Revision : 00000001
+[01Ch 028  4]              Asl Compiler ID : "INTL"
+[020h 032  4]        Asl Compiler Revision : 00000001
+
+[024h 036  1]           Host Address Width : 2B
+[025h 037  1]                        Flags : 01
+
+[030h 048  2]                Subtable Type : 0000 <Hardware Unit Definition>
+[032h 050  2]                       Length : 0068
+[034h 052  1]                        Flags : 00
+[035h 053  1]                     Reserved : 00
+[036h 054  2]           PCI Segment Number : 0000
+[038h 056  8]        Register Base Address : 00000000FD800000
+
+[040h 064  1]      Device Scope Entry Type : 03
+[041h 065  1]                 Entry Length : 08
+[042h 066  2]                     Reserved : 0000
+[044h 068  1]               Enumeration ID : 03
+[045h 069  1]               PCI Bus Number : 80
+[046h 070  2]                     PCI Path : [13, 00]
+
+[048h 072  1]      Device Scope Entry Type : 01
+[049h 073  1]                 Entry Length : 08
+[04Ah 074  2]                     Reserved : 0000
+[04Ch 076  1]               Enumeration ID : 00
+[04Dh 077  1]               PCI Bus Number : 80
+[04Eh 078  2]                     PCI Path : [14, 00]
+
+[050h 080  1]      Device Scope Entry Type : 01
+[051h 081  1]                 Entry Length : 08
+[052h 082  2]                     Reserved : 0000
+[054h 084  1]               Enumeration ID : 00
+[055h 085  1]               PCI Bus Number : 80
+[056h 086  2]                     PCI Path : [14, 01]
+
+[058h 088  1]      Device Scope Entry Type : 01
+[059h 089  1]                 Entry Length : 08
+[05Ah 090  2]                     Reserved : 0000
+[05Ch 092  1]               Enumeration ID : 00
+[05Dh 093  1]               PCI Bus Number : 80
+[05Eh 094  2]                     PCI Path : [14, 02]
+
+[060h 096  1]      Device Scope Entry Type : 01
+[061h 097  1]                 Entry Length : 08
+[062h 098  2]                     Reserved : 0000
+[064h 100  1]               Enumeration ID : 00
+[065h 101  1]               PCI Bus Number : 80
+[066h 102  2]                     PCI Path : [14, 03]
+
+[068h 104  1]      Device Scope Entry Type : 02
+[069h 105  1]                 Entry Length : 08
+[06Ah 106  2]                     Reserved : 0000
+[06Ch 108  1]               Enumeration ID : 00
+[06Dh 109  1]               PCI Bus Number : 80
+[06Eh 110  2]                     PCI Path : [00, 00]
+
+[070h 112  1]      Device Scope Entry Type : 02
+[071h 113  1]                 Entry Length : 08
+[072h 114  2]                     Reserved : 0000
+[074h 116  1]               Enumeration ID : 00
+[075h 117  1]               PCI Bus Number : 80
+[076h 118  2]                     PCI Path : [01, 00]
+
+[078h 120  1]      Device Scope Entry Type : 02
+[079h 121  1]                 Entry Length : 08
+[07Ah 122  2]                     Reserved : 0000
+[07Ch 124  1]               Enumeration ID : 00
+[07Dh 125  1]               PCI Bus Number : 80
+[07Eh 126  2]                     PCI Path : [03, 00]
+
+[080h 128  1]      Device Scope Entry Type : 02
+[081h 129  1]                 Entry Length : 08
+[082h 130  2]                     Reserved : 0000
+[084h 132  1]               Enumeration ID : 00
+[085h 133  1]               PCI Bus Number : 80
+[086h 134  2]                     PCI Path : [05, 00]
+
+[088h 136  1]      Device Scope Entry Type : 02
+[089h 137  1]                 Entry Length : 08
+[08Ah 138  2]                     Reserved : 0000
+[08Ch 140  1]               Enumeration ID : 00
+[08Dh 141  1]               PCI Bus Number : 80
+[08Eh 142  2]                     PCI Path : [07, 00]
+
+[090h 144  1]      Device Scope Entry Type : 02
+[091h 145  1]                 Entry Length : 08
+[092h 146  2]                     Reserved : 0000
+[094h 148  1]               Enumeration ID : 00
+[095h 149  1]               PCI Bus Number : 80
+[096h 150  2]                     PCI Path : [09, 00]
+
+[098h 152  2]                Subtable Type : 0000 <Hardware Unit Definition>
+[09Ah 154  2]                       Length : 0020
+[09Ch 156  1]                        Flags : 01
+[09Dh 157  1]                     Reserved : 00
+[09Eh 158  2]           PCI Segment Number : 0000
+[0A0h 160  8]        Register Base Address : 00000000FD000000
+
+[0A8h 168  1]      Device Scope Entry Type : 03
+[0A9h 169  1]                 Entry Length : 08
+[0AAh 170  2]                     Reserved : 0000
+[0ACh 172  1]               Enumeration ID : 00
+[0ADh 173  1]               PCI Bus Number : 00
+[0AEh 174  2]                     PCI Path : [1F, 07]
+
+[0B0h 176  1]      Device Scope Entry Type : 03
+[0B1h 177  1]                 Entry Length : 08
+[0B2h 178  2]                     Reserved : 0000
+[0B4h 180  1]               Enumeration ID : 02
+[0B5h 181  1]               PCI Bus Number : 00
+[0B6h 182  2]                     PCI Path : [13, 00]
+
+[0B8h 184  2]                Subtable Type : 0001 <Reserved Memory Region>
+[0BAh 186  2]                       Length : 0058
+[0BCh 188  2]                     Reserved : 0000
+[0BEh 190  2]           PCI Segment Number : 0000
+[0C0h 192  8]                 Base Address : 0000000079B45000
+[0C8h 200  8]          End Address (limit) : 0000000079B5AFFF
+
+[0D0h 208  1]      Device Scope Entry Type : 01
+[0D1h 209  1]                 Entry Length : 08
+[0D2h 210  2]                     Reserved : 0000
+[0D4h 212  1]               Enumeration ID : 00
+[0D5h 213  1]               PCI Bus Number : 00
+[0D6h 214  2]                     PCI Path : [1D, 00]
+
+[0D8h 216  1]      Device Scope Entry Type : 01
+[0D9h 217  1]                 Entry Length : 08
+[0DAh 218  2]                     Reserved : 0000
+[0DCh 220  1]               Enumeration ID : 00
+[0DDh 221  1]               PCI Bus Number : 00
+[0DEh 222  2]                     PCI Path : [1D, 01]
+
+[0E0h 224  1]      Device Scope Entry Type : 01
+[0E1h 225  1]                 Entry Length : 08
+[0E2h 226  2]                     Reserved : 0000
+[0E4h 228  1]               Enumeration ID : 00
+[0E5h 229  1]               PCI Bus Number : 00
+[0E6h 230  2]                     PCI Path : [1D, 02]
+
+[0E8h 232  1]      Device Scope Entry Type : 01
+[0E9h 233  1]                 Entry Length : 08
+[0EAh 234  2]                     Reserved : 0000
+[0ECh 236  1]               Enumeration ID : 00
+[0EDh 237  1]               PCI Bus Number : 00
+[0EEh 238  2]                     PCI Path : [1D, 07]
+
+[0F0h 240  1]      Device Scope Entry Type : 01
+[0F1h 241  1]                 Entry Length : 08
+[0F2h 242  2]                     Reserved : 0000
+[0F4h 244  1]               Enumeration ID : 00
+[0F5h 245  1]               PCI Bus Number : 00
+[0F6h 246  2]                     PCI Path : [1A, 00]
+
+[0F8h 248  1]      Device Scope Entry Type : 01
+[0F9h 249  1]                 Entry Length : 08
+[0FAh 250  2]                     Reserved : 0000
+[0FCh 252  1]               Enumeration ID : 00
+[0FDh 253  1]               PCI Bus Number : 00
+[0FEh 254  2]                     PCI Path : [1A, 01]
+
+[100h 256  1]      Device Scope Entry Type : 01
+[101h 257  1]                 Entry Length : 08
+[102h 258  2]                     Reserved : 0000
+[104h 260  1]               Enumeration ID : 00
+[105h 261  1]               PCI Bus Number : 00
+[106h 262  2]                     PCI Path : [1A, 02]
+
+[108h 264  1]      Device Scope Entry Type : 01
+[109h 265  1]                 Entry Length : 08
+[10Ah 266  2]                     Reserved : 0000
+[10Ch 268  1]               Enumeration ID : 00
+[10Dh 269  1]               PCI Bus Number : 00
+[10Eh 270  2]                     PCI Path : [1A, 07]
+
+[110h 272  2]                Subtable Type : 0002 <Root Port ATS Capability>
+[112h 274  2]                       Length : 0060
+[114h 276  1]                        Flags : 00
+[115h 277  1]                     Reserved : 00
+[116h 278  2]           PCI Segment Number : 0000
+
+[114h 276  1]      Device Scope Entry Type : 00
+[115h 277  1]                 Entry Length : 00
+[116h 278  2]                     Reserved : 0000
+[118h 280  1]               Enumeration ID : 02
+[119h 281  1]               PCI Bus Number : 08
+Invalid zero length subtable
+-------------------------------------------------------------------
+...[snip]...
++-[0000:80]-+-00.0-[0000:81]--
+ |           +-01.0-[0000:82-83]--
+ |           +-03.0-[0000:84-85]--
+ |           +-05.0-[0000:86]--+-00.0  Intel Corporation 82580 Gigabit Network Connection
+ |           |                 +-00.1  Intel Corporation 82580 Gigabit Network Connection
+ |           |                 +-00.2  Intel Corporation 82580 Gigabit Network Connection
+ |           |                 \-00.3  Intel Corporation 82580 Gigabit Network Connection
+ |           +-07.0-[0000:87-88]--
+ |           +-09.0-[0000:89-8a]--
+ |           +-13.0  Intel Corporation 5520/5500/X58 I/O Hub I/OxAPIC Interrupt Controller
+ |           +-14.0  Intel Corporation 5520/5500/X58 I/O Hub System Management Registers
+ |           +-14.1  Intel Corporation 5520/5500/X58 I/O Hub GPIO and Scratch Pad Registers
+ |           +-14.2  Intel Corporation 5520/5500/X58 I/O Hub Control Status and RAS Registers
+ |           \-14.3  Intel Corporation 5520/5500/X58 I/O Hub Throttle Registers
+ \-[0000:00]-+-00.0  Intel Corporation 5520/5500/X58 I/O Hub to ESI Port
+             +-01.0-[0000:01-02]--+-00.0  Intel Corporation 82576 Gigabit Network Connection
+             |                    \-00.1  Intel Corporation 82576 Gigabit Network Connection
+             +-03.0-[0000:03-04]--
+             +-05.0-[0000:05]----00.0  LSI Logic / Symbios Logic MegaRAID SAS 2208 [Thunderbolt]
+             +-07.0-[0000:06-07]--
+             +-09.0-[0000:08-09]--
+             +-13.0  Intel Corporation 5520/5500/X58 I/O Hub I/OxAPIC Interrupt Controller
+             +-14.0  Intel Corporation 5520/5500/X58 I/O Hub System Management Registers
+             +-14.1  Intel Corporation 5520/5500/X58 I/O Hub GPIO and Scratch Pad Registers
+             +-14.2  Intel Corporation 5520/5500/X58 I/O Hub Control Status and RAS Registers
+             +-14.3  Intel Corporation 5520/5500/X58 I/O Hub Throttle Registers
+             +-15.0  Intel Corporation 5520/5500/X58 Trusted Execution Technology Registers
+             +-1a.0  Intel Corporation 82801JI (ICH10 Family) USB UHCI Controller #4
+             +-1a.1  Intel Corporation 82801JI (ICH10 Family) USB UHCI Controller #5
+             +-1a.2  Intel Corporation 82801JI (ICH10 Family) USB UHCI Controller #6
+             +-1a.7  Intel Corporation 82801JI (ICH10 Family) USB2 EHCI Controller #2
+             +-1c.0-[0000:0a]--
+             +-1c.4-[0000:0b]----00.0  XGI Technology Inc. (eXtreme Graphics Innovation) Z11/Z11M
+             +-1d.0  Intel Corporation 82801JI (ICH10 Family) USB UHCI Controller #1
+             +-1d.1  Intel Corporation 82801JI (ICH10 Family) USB UHCI Controller #2
+             +-1d.2  Intel Corporation 82801JI (ICH10 Family) USB UHCI Controller #3
+             +-1d.7  Intel Corporation 82801JI (ICH10 Family) USB2 EHCI Controller #1
+             +-1e.0-[0000:0c]--
+             +-1f.0  Intel Corporation 82801JIB (ICH10) LPC Interface Controller
+             +-1f.2  Intel Corporation 82801JI (ICH10 Family) SATA AHCI Controller
+             \-1f.3  Intel Corporation 82801JI (ICH10 Family) SMBus Controller
+
+
+Yijing Wang (1):
+  IOMMU: Save pci device id instead of pci_dev* pointer for DMAR
+    devices
+
  drivers/iommu/dmar.c        |   93 +++++++++++++-------------
  drivers/iommu/intel-iommu.c |  155 ++++++++++++++++++++++++++++---------------
  include/linux/dmar.h        |   20 ++++--
  3 files changed, 159 insertions(+), 109 deletions(-)
-
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 785675a..9aa65a3 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -65,12 +65,13 @@ static void __init dmar_register_drhd_unit(struct dmar_drhd_unit *drhd)
- }
- 
- static int __init dmar_parse_one_dev_scope(struct acpi_dmar_device_scope *scope,
--					   struct pci_dev **dev, u16 segment)
-+					    u16 segment, struct list_head *head)
- {
- 	struct pci_bus *bus;
- 	struct pci_dev *pdev = NULL;
- 	struct acpi_dmar_pci_path *path;
- 	int count;
-+	struct dmar_device *dmar_dev;
- 
- 	bus = pci_find_bus(segment, scope->bus);
- 	path = (struct acpi_dmar_pci_path *)(scope + 1);
-@@ -100,7 +101,6 @@ static int __init dmar_parse_one_dev_scope(struct acpi_dmar_device_scope *scope,
- 	if (!pdev) {
- 		pr_warn("Device scope device [%04x:%02x:%02x.%02x] not found\n",
- 			segment, scope->bus, path->dev, path->fn);
--		*dev = NULL;
- 		return 0;
- 	}
- 	if ((scope->entry_type == ACPI_DMAR_SCOPE_TYPE_ENDPOINT && \
-@@ -111,54 +111,39 @@ static int __init dmar_parse_one_dev_scope(struct acpi_dmar_device_scope *scope,
- 			pci_name(pdev));
- 		return -EINVAL;
- 	}
--	*dev = pdev;
-+
-+	dmar_dev = kzalloc(sizeof(struct dmar_device), GFP_KERNEL);
-+	if (!dmar_dev) {
-+		pci_dev_put(pdev);
-+		return -ENOMEM;
-+	}
-+
-+	dmar_dev->segment = segment;
-+	dmar_dev->bus = pdev->bus->number;
-+	dmar_dev->devfn = pdev->devfn;
-+	list_add_tail(&dmar_dev->list, head);
-+
-+	pci_dev_put(pdev);
- 	return 0;
- }
- 
--int __init dmar_parse_dev_scope(void *start, void *end, int *cnt,
--				struct pci_dev ***devices, u16 segment)
-+int __init dmar_parse_dev_scope(void *start, void *end, u16 segment, 
-+	struct list_head *head)
- {
- 	struct acpi_dmar_device_scope *scope;
--	void * tmp = start;
--	int index;
- 	int ret;
- 
--	*cnt = 0;
--	while (start < end) {
--		scope = start;
--		if (scope->entry_type == ACPI_DMAR_SCOPE_TYPE_ENDPOINT ||
--		    scope->entry_type == ACPI_DMAR_SCOPE_TYPE_BRIDGE)
--			(*cnt)++;
--		else if (scope->entry_type != ACPI_DMAR_SCOPE_TYPE_IOAPIC &&
--			scope->entry_type != ACPI_DMAR_SCOPE_TYPE_HPET) {
--			pr_warn("Unsupported device scope\n");
--		}
--		start += scope->length;
--	}
--	if (*cnt == 0)
--		return 0;
--
--	*devices = kcalloc(*cnt, sizeof(struct pci_dev *), GFP_KERNEL);
--	if (!*devices)
--		return -ENOMEM;
--
--	start = tmp;
--	index = 0;
- 	while (start < end) {
- 		scope = start;
- 		if (scope->entry_type == ACPI_DMAR_SCOPE_TYPE_ENDPOINT ||
- 		    scope->entry_type == ACPI_DMAR_SCOPE_TYPE_BRIDGE) {
--			ret = dmar_parse_one_dev_scope(scope,
--				&(*devices)[index], segment);
--			if (ret) {
--				kfree(*devices);
-+			ret = dmar_parse_one_dev_scope(scope, segment, head);
-+			if (ret)
- 				return ret;
--			}
--			index ++;
- 		}
- 		start += scope->length;
- 	}
--
-+    
- 	return 0;
- }
- 
-@@ -183,6 +168,7 @@ dmar_parse_one_drhd(struct acpi_dmar_header *header)
- 	dmaru->reg_base_addr = drhd->address;
- 	dmaru->segment = drhd->segment;
- 	dmaru->include_all = drhd->flags & 0x1; /* BIT0: INCLUDE_ALL */
-+	INIT_LIST_HEAD(&dmaru->head);
- 
- 	ret = alloc_iommu(dmaru);
- 	if (ret) {
-@@ -193,6 +179,19 @@ dmar_parse_one_drhd(struct acpi_dmar_header *header)
- 	return 0;
- }
- 
-+static void drhd_free(struct dmar_drhd_unit *dmaru)
-+{
-+	struct dmar_device *dev, *tmp;
-+
-+	list_for_each_entry_safe(dev, tmp, &dmaru->head,
-+	    list) {
-+		list_del(&dev->list);
-+		kfree(dev);
-+	}
-+
-+	kfree(dmaru);
-+}
-+
- static int __init dmar_parse_dev(struct dmar_drhd_unit *dmaru)
- {
- 	struct acpi_dmar_hardware_unit *drhd;
-@@ -205,11 +204,10 @@ static int __init dmar_parse_dev(struct dmar_drhd_unit *dmaru)
- 
- 	ret = dmar_parse_dev_scope((void *)(drhd + 1),
- 				((void *)drhd) + drhd->header.length,
--				&dmaru->devices_cnt, &dmaru->devices,
--				drhd->segment);
-+				drhd->segment, &dmaru->head);
- 	if (ret) {
- 		list_del(&dmaru->list);
--		kfree(dmaru);
-+		drhd_free(dmaru);
- 	}
- 	return ret;
- }
-@@ -378,16 +376,18 @@ parse_dmar_table(void)
- 	return ret;
- }
- 
--static int dmar_pci_device_match(struct pci_dev *devices[], int cnt,
--			  struct pci_dev *dev)
-+static int dmar_pci_device_match(struct pci_dev *dev, 
-+	struct list_head *head)
- {
--	int index;
-+	struct dmar_device *dmar_dev;
- 
- 	while (dev) {
--		for (index = 0; index < cnt; index++)
--			if (dev == devices[index])
--				return 1;
--
-+		list_for_each_entry(dmar_dev, head, list)
-+		    if (dmar_dev->segment == pci_domain_nr(dev->bus)
-+			    && dmar_dev->bus == dev->bus->number
-+			    && dmar_dev->devfn == dev->devfn)
-+			return 1;
-+		
- 		/* Check our parent */
- 		dev = dev->bus->self;
- 	}
-@@ -412,8 +412,7 @@ dmar_find_matched_drhd_unit(struct pci_dev *dev)
- 		    drhd->segment == pci_domain_nr(dev->bus))
- 			return dmaru;
- 
--		if (dmar_pci_device_match(dmaru->devices,
--					  dmaru->devices_cnt, dev))
-+		if (dmar_pci_device_match(dev, &dmaru->head))
- 			return dmaru;
- 	}
- 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 15e9b57..b33fe0e 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -650,7 +650,8 @@ static void domain_update_iommu_cap(struct dmar_domain *domain)
- static struct intel_iommu *device_to_iommu(int segment, u8 bus, u8 devfn)
- {
- 	struct dmar_drhd_unit *drhd = NULL;
--	int i;
-+	struct dmar_device *dmar_dev;
-+	struct pci_dev *pdev;
- 
- 	for_each_drhd_unit(drhd) {
- 		if (drhd->ignored)
-@@ -658,16 +659,22 @@ static struct intel_iommu *device_to_iommu(int segment, u8 bus, u8 devfn)
- 		if (segment != drhd->segment)
- 			continue;
- 
--		for (i = 0; i < drhd->devices_cnt; i++) {
--			if (drhd->devices[i] &&
--			    drhd->devices[i]->bus->number == bus &&
--			    drhd->devices[i]->devfn == devfn)
--				return drhd->iommu;
--			if (drhd->devices[i] &&
--			    drhd->devices[i]->subordinate &&
--			    drhd->devices[i]->subordinate->number <= bus &&
--			    drhd->devices[i]->subordinate->busn_res.end >= bus)
--				return drhd->iommu;
-+		list_for_each_entry(dmar_dev, &drhd->head, list) {
-+		    if (dmar_dev->bus == bus && 
-+			    dmar_dev->devfn == devfn)
-+			return drhd->iommu;
-+
-+		    pdev = pci_get_domain_bus_and_slot(dmar_dev->segment, 
-+			    dmar_dev->bus, dmar_dev->devfn);
-+		    if (pdev->subordinate && 
-+			    pdev->subordinate->number <= bus &&
-+			    pdev->subordinate->busn_res.end >= bus) {
-+			pci_dev_put(pdev);
-+			return drhd->iommu;
-+		    }
-+
-+		    if (pdev)
-+			pci_dev_put(pdev);
- 		}
- 
- 		if (drhd->include_all)
-@@ -2331,18 +2338,20 @@ static int domain_add_dev_info(struct dmar_domain *domain,
- static bool device_has_rmrr(struct pci_dev *dev)
- {
- 	struct dmar_rmrr_unit *rmrr;
--	int i;
-+	struct dmar_device *dmar_dev;
- 
- 	for_each_rmrr_units(rmrr) {
--		for (i = 0; i < rmrr->devices_cnt; i++) {
--			/*
--			 * Return TRUE if this RMRR contains the device that
--			 * is passed in.
--			 */
--			if (rmrr->devices[i] == dev)
--				return true;
--		}
-+	    list_for_each_entry(dmar_dev, &rmrr->head, list)
-+		/*
-+		 * Return TRUE if this RMRR contains the device that
-+		 * is passed in.
-+		 */
-+	if (dmar_dev->segment == pci_domain_nr(dev->bus) && 
-+			dmar_dev->bus == dev->bus->number && 
-+			dmar_dev->devfn == dev->devfn)
-+		return true;
- 	}
-+	
- 	return false;
- }
- 
-@@ -2451,7 +2460,7 @@ static int __init init_dmars(void)
- 	struct dmar_rmrr_unit *rmrr;
- 	struct pci_dev *pdev;
- 	struct intel_iommu *iommu;
--	int i, ret;
-+	int ret;
- 
- 	/*
- 	 * for each drhd
-@@ -2605,8 +2614,10 @@ static int __init init_dmars(void)
- 	 */
- 	printk(KERN_INFO "IOMMU: Setting RMRR:\n");
- 	for_each_rmrr_units(rmrr) {
--		for (i = 0; i < rmrr->devices_cnt; i++) {
--			pdev = rmrr->devices[i];
-+		struct dmar_device *dmar_dev;
-+	    list_for_each_entry(dmar_dev, &rmrr->head, list) {
-+			pdev = pci_get_domain_bus_and_slot(dmar_dev->segment, 
-+					dmar_dev->bus, dmar_dev->devfn);
- 			/*
- 			 * some BIOS lists non-exist devices in DMAR
- 			 * table.
-@@ -2615,9 +2626,11 @@ static int __init init_dmars(void)
- 				continue;
- 			ret = iommu_prepare_rmrr_dev(rmrr, pdev);
- 			if (ret)
--				printk(KERN_ERR
--				       "IOMMU: mapping reserved region failed\n");
--		}
-+				printk(KERN_ERR 
-+					"IOMMU: mapping reserved region failed\n");
-+		
-+			pci_dev_put(pdev);
-+	    }
- 	}
- 
- 	iommu_prepare_isa();
-@@ -3301,30 +3314,30 @@ DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IOAT_SNB, quir
- static void __init init_no_remapping_devices(void)
- {
- 	struct dmar_drhd_unit *drhd;
-+	struct dmar_device *dmar_dev;
-+	struct pci_dev *pdev = NULL;
- 
--	for_each_drhd_unit(drhd) {
--		if (!drhd->include_all) {
--			int i;
--			for (i = 0; i < drhd->devices_cnt; i++)
--				if (drhd->devices[i] != NULL)
--					break;
-+	for_each_drhd_unit(drhd) 
-+		if (!drhd->include_all) 
- 			/* ignore DMAR unit if no pci devices exist */
--			if (i == drhd->devices_cnt)
-+			if (list_empty(&drhd->head))
- 				drhd->ignored = 1;
--		}
--	}
--
-+	
- 	for_each_drhd_unit(drhd) {
--		int i;
- 		if (drhd->ignored || drhd->include_all)
- 			continue;
- 
--		for (i = 0; i < drhd->devices_cnt; i++)
--			if (drhd->devices[i] &&
--			    !IS_GFX_DEVICE(drhd->devices[i]))
-+		list_for_each_entry(dmar_dev, &drhd->head, list) {
-+			pdev = pci_get_domain_bus_and_slot(dmar_dev->segment,
-+				dmar_dev->bus, dmar_dev->devfn);
-+			if (!IS_GFX_DEVICE(pdev)) {
-+				pci_dev_put(pdev);
- 				break;
-+			}
-+			pci_dev_put(pdev);
-+		}
- 
--		if (i < drhd->devices_cnt)
-+		if (!IS_GFX_DEVICE(pdev))
- 			continue;
- 
- 		/* This IOMMU has *only* gfx devices. Either bypass it or
-@@ -3333,10 +3346,15 @@ static void __init init_no_remapping_devices(void)
- 			intel_iommu_gfx_mapped = 1;
- 		} else {
- 			drhd->ignored = 1;
--			for (i = 0; i < drhd->devices_cnt; i++) {
--				if (!drhd->devices[i])
-+			list_for_each_entry(dmar_dev, &drhd->head, list) {
-+				pdev = pci_get_domain_bus_and_slot(
-+						dmar_dev->segment, 
-+						dmar_dev->bus, 
-+						dmar_dev->devfn);
-+				if (!pdev)
- 					continue;
--				drhd->devices[i]->dev.archdata.iommu = DUMMY_DEVICE_DOMAIN_INFO;
-+				pdev->dev.archdata.iommu = DUMMY_DEVICE_DOMAIN_INFO;
-+				pci_dev_put(pdev);
- 			}
- 		}
- 	}
-@@ -3501,11 +3519,25 @@ int __init dmar_parse_one_rmrr(struct acpi_dmar_header *header)
- 	rmrr = (struct acpi_dmar_reserved_memory *)header;
- 	rmrru->base_address = rmrr->base_address;
- 	rmrru->end_address = rmrr->end_address;
-+	INIT_LIST_HEAD(&rmrru->head);
- 
- 	dmar_register_rmrr_unit(rmrru);
- 	return 0;
- }
- 
-+static void rmrr_free(struct dmar_rmrr_unit *rmrru) 
-+{
-+	struct dmar_device *dev, *tmp;
-+
-+	list_for_each_entry_safe(dev, tmp, &rmrru->head,
-+	    list) {
-+		list_del(&dev->list);
-+		kfree(dev);
-+	}
-+    
-+	kfree(rmrru);
-+}
-+
- static int __init
- rmrr_parse_dev(struct dmar_rmrr_unit *rmrru)
- {
-@@ -3515,11 +3547,11 @@ rmrr_parse_dev(struct dmar_rmrr_unit *rmrru)
- 	rmrr = (struct acpi_dmar_reserved_memory *) rmrru->hdr;
- 	ret = dmar_parse_dev_scope((void *)(rmrr + 1),
- 		((void *)rmrr) + rmrr->header.length,
--		&rmrru->devices_cnt, &rmrru->devices, rmrr->segment);
-+		rmrr->segment, &rmrru->head);
- 
--	if (ret || (rmrru->devices_cnt == 0)) {
-+	if (ret || list_empty(&rmrru->head)) {
- 		list_del(&rmrru->list);
--		kfree(rmrru);
-+		rmrr_free(rmrru);
- 	}
- 	return ret;
- }
-@@ -3538,12 +3570,25 @@ int __init dmar_parse_one_atsr(struct acpi_dmar_header *hdr)
- 
- 	atsru->hdr = hdr;
- 	atsru->include_all = atsr->flags & 0x1;
-+	INIT_LIST_HEAD(&atsru->head);
- 
- 	list_add(&atsru->list, &dmar_atsr_units);
- 
- 	return 0;
- }
- 
-+static void atsr_free(struct dmar_atsr_unit *atsr) 
-+{
-+	struct dmar_device *dev, *tmp;
-+    
-+	list_for_each_entry_safe(dev, tmp, &atsr->head, list) {
-+		list_del(&dev->list);
-+		kfree(dev);
-+	}
-+
-+	kfree(atsr);
-+}
-+
- static int __init atsr_parse_dev(struct dmar_atsr_unit *atsru)
- {
- 	int rc;
-@@ -3555,11 +3600,10 @@ static int __init atsr_parse_dev(struct dmar_atsr_unit *atsru)
- 	atsr = container_of(atsru->hdr, struct acpi_dmar_atsr, header);
- 	rc = dmar_parse_dev_scope((void *)(atsr + 1),
- 				(void *)atsr + atsr->header.length,
--				&atsru->devices_cnt, &atsru->devices,
--				atsr->segment);
--	if (rc || !atsru->devices_cnt) {
-+				atsr->segment, &atsru->head);
-+	if (rc || list_empty(&atsru->head)) {
- 		list_del(&atsru->list);
--		kfree(atsru);
-+		atsr_free(atsru);
- 	}
- 
- 	return rc;
-@@ -3567,7 +3611,6 @@ static int __init atsr_parse_dev(struct dmar_atsr_unit *atsru)
- 
- int dmar_find_matched_atsr_unit(struct pci_dev *dev)
- {
--	int i;
- 	struct pci_bus *bus;
- 	struct acpi_dmar_atsr *atsr;
- 	struct dmar_atsr_unit *atsru;
-@@ -3584,6 +3627,7 @@ int dmar_find_matched_atsr_unit(struct pci_dev *dev)
- 
- found:
- 	for (bus = dev->bus; bus; bus = bus->parent) {
-+		struct dmar_device *dmar_dev;
- 		struct pci_dev *bridge = bus->self;
- 
- 		if (!bridge || !pci_is_pcie(bridge) ||
-@@ -3591,8 +3635,11 @@ found:
- 			return 0;
- 
- 		if (pci_pcie_type(bridge) == PCI_EXP_TYPE_ROOT_PORT) {
--			for (i = 0; i < atsru->devices_cnt; i++)
--				if (atsru->devices[i] == bridge)
-+			list_for_each_entry(dmar_dev, &atsru->head, list)
-+				if (dmar_dev->segment == 
-+					pci_domain_nr(bridge->bus) && 
-+					dmar_dev->bus == bridge->bus->number &&
-+					dmar_dev->devfn == bridge->devfn)
- 					return 1;
- 			break;
- 		}
-diff --git a/include/linux/dmar.h b/include/linux/dmar.h
-index b029d1a..5317cb0 100644
---- a/include/linux/dmar.h
-+++ b/include/linux/dmar.h
-@@ -32,6 +32,13 @@ struct acpi_dmar_header;
- #define DMAR_INTR_REMAP		0x1
- #define DMAR_X2APIC_OPT_OUT	0x2
- 
-+struct dmar_device {
-+	struct list_head list;
-+	u8 segment;
-+	u8 bus;
-+	u8 devfn;
-+};
-+
- struct intel_iommu;
- #ifdef CONFIG_DMAR_TABLE
- extern struct acpi_table_header *dmar_tbl;
-@@ -39,8 +46,7 @@ struct dmar_drhd_unit {
- 	struct list_head list;		/* list of drhd units	*/
- 	struct  acpi_dmar_header *hdr;	/* ACPI header		*/
- 	u64	reg_base_addr;		/* register base address*/
--	struct	pci_dev **devices; 	/* target device array	*/
--	int	devices_cnt;		/* target device count	*/
-+	struct list_head head;	/* target devices' list */
- 	u16	segment;		/* PCI domain		*/
- 	u8	ignored:1; 		/* ignore drhd		*/
- 	u8	include_all:1;
-@@ -139,8 +145,7 @@ struct dmar_rmrr_unit {
- 	struct acpi_dmar_header *hdr;	/* ACPI header		*/
- 	u64	base_address;		/* reserved base address*/
- 	u64	end_address;		/* reserved end address */
--	struct pci_dev **devices;	/* target devices */
--	int	devices_cnt;		/* target device count */
-+	struct list_head head;	/* target devices' list */
- };
- 
- #define for_each_rmrr_units(rmrr) \
-@@ -149,16 +154,15 @@ struct dmar_rmrr_unit {
- struct dmar_atsr_unit {
- 	struct list_head list;		/* list of ATSR units */
- 	struct acpi_dmar_header *hdr;	/* ACPI header */
--	struct pci_dev **devices;	/* target devices */
--	int devices_cnt;		/* target device count */
- 	u8 include_all:1;		/* include all ports */
-+	struct list_head head;	/* target devices' list */
- };
- 
- int dmar_parse_rmrr_atsr_dev(void);
- extern int dmar_parse_one_rmrr(struct acpi_dmar_header *header);
- extern int dmar_parse_one_atsr(struct acpi_dmar_header *header);
--extern int dmar_parse_dev_scope(void *start, void *end, int *cnt,
--				struct pci_dev ***devices, u16 segment);
-+extern int dmar_parse_dev_scope(void *start, void *end, u16 segment, 
-+				struct list_head *head);
- extern int intel_iommu_init(void);
- #else /* !CONFIG_INTEL_IOMMU: */
- static inline int intel_iommu_init(void) { return -ENODEV; }
--- 
-1.7.1
 
 
