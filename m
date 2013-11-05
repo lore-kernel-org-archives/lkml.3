@@ -1,71 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab3KEO3n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 09:29:43 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:46653 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755346Ab3KEO3l (ORCPT
+	id S1755277Ab3KEO27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 09:28:59 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:38259 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754892Ab3KEO2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 09:29:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131105125228.GB18093@kroah.com>
-References: <1383641987-4403-1-git-send-email-felipe.contreras@gmail.com>
-	<20131105125228.GB18093@kroah.com>
-Date: Tue, 5 Nov 2013 08:29:40 -0600
-Message-ID: <CAMP44s0i-xCNHW_PPyO57p9yt0X_9OaYSQDkVPoNKum=nEHQbw@mail.gmail.com>
-Subject: Re: [PATCH] staging: new asus fan driver
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 5 Nov 2013 09:28:55 -0500
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Rob Landley <rob@landley.net>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Kevin Hilman <khilman@kernel.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/9] ARM: Initial support for Marvell Berlin SoCs
+Date: Tue,  5 Nov 2013 15:28:34 +0100
+Message-Id: <1383661723-17956-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 5, 2013 at 6:52 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Tue, Nov 05, 2013 at 02:59:47AM -0600, Felipe Contreras wrote:
->> Simple driver to enable control of the fan in ASUS laptops. So far this
->> has only been tested in ASUS Zenbook Prime UX31A, but according to some
->> online reference [1], it should work in other models as well.
->>
->> The implementation is very straight-forward, the only caveat is that the
->> fan speed needs to be saved after it has been manually changed because
->> it won't be reported properly until it goes back to 'auto' mode.
->>
->> [1] http://forum.notebookreview.com/asus/705656-fan-control-asus-prime-ux31-ux31a-ux32a-ux32vd.html
->>
->> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
->> ---
->>
->> Two incarnations of this code exists [1][2], one that used ACPI methods
->> directly, and one through WMI. Unfortunately the WMI version needs us to pass
->> physicall addresses which is not exactly clean, and that's the only reason the
->> code is proposed for staging.
->>
->> Most likely this cannot graduate until acpica gets support to receive virtual
->> addresses.
->
-> When is that going to happen?
+Another kernel release, another Berlin SoC patch set...
 
-I don't know. Presumably when I get it done, which might be never, or
-a few days from now. Most likely it will take some time.
+This patch set add initial support for Marvell Berlin SoCs, e.g.
+Armada 1000, Armada 1500, Armada 1500-mini.
 
->>  [1] http://article.gmane.org/gmane.linux.power-management.general/36774
->>  [2] http://article.gmane.org/gmane.linux.kernel/1576463
->>
->>  drivers/staging/Kconfig                     |   2 +
->>  drivers/staging/Makefile                    |   1 +
->>  drivers/staging/asus-thermal/Kconfig        |   7 ++
->>  drivers/staging/asus-thermal/asus_thermal.c | 166 ++++++++++++++++++++++++++++
->
-> I need a TODO file for a staging driver listing who is responsible for
-> it, and what is needed to be done to it in order to get it out of
-> staging.
+Currently, initial support just means that the kernel boots on one
+CPU, sets up irq, timers, and UART. As Berlin SoCs share some amount
+of IP with Marvell PXA/MMP[23] SoCs plus some Synopsys DW IP, I expect
+functionality to grow quite quickly. I do have further patches for
+SMP but do not want to stall this patch set even further.
 
-Done.
+Compared to last version sent, this patch set adds additional support
+for the Armada 1500-mini and the Google Chromecast. It is based on
+v3.12 and still depends on on ARM's arch-wide call to of_clk_init [3]
+plus some fixes for Synopsys DWtimers [4]. 
 
+This patch set is indended for v3.13. I hope to the last Acks required
+from Thomas Gleixner and the DT maintainers, rebase on v3.13-rc1 and
+send the pull request.
+
+I also prepared a branch for those able to test with open boot loader
+on GoogleTV or Chromecast at
+https://github.com/shesselba/linux-berlin.git topic/initial
+
+[1] https://lkml.org/lkml/2013/8/16/626
+[2] https://lkml.org/lkml/2013/8/27/608
+[3] http://www.spinics.net/lists/arm-kernel/msg276175.html
+[4] http://www.spinics.net/lists/arm-kernel/msg277763.html
+
+Sebastian Hesselbarth (9):
+  irqchip: add DesignWare APB ICTL interrupt controller
+  MAINTAINERS: add ARM Marvell Berlin SoC
+  ARM: l2x0: add Marvell Tauros3 support
+  ARM: add Marvell Berlin SoC familiy to Marvell doc
+  ARM: add Marvell Berlin SoCs to multi_v7_defconfig
+  ARM: add Marvell Berlin UART0 lowlevel debug
+  ARM: add Armada 1500 and Sony NSZ-GS7 device tree files
+  ARM: add Armada 1500-mini and Chromecast device tree files
+  ARM: add initial support for Marvell Berlin SoCs
+
+ Documentation/arm/Marvell/README                   |   29 +++
+ Documentation/devicetree/bindings/arm/l2cc.txt     |   23 +-
+ .../devicetree/bindings/arm/marvell,berlin.txt     |   24 +++
+ .../interrupt-controller/snps,dw-apb-ictl.txt      |   32 +++
+ MAINTAINERS                                        |    6 +
+ arch/arm/Kconfig                                   |    2 +
+ arch/arm/Kconfig.debug                             |   10 +
+ arch/arm/Makefile                                  |    1 +
+ arch/arm/boot/dts/Makefile                         |    3 +
+ arch/arm/boot/dts/berlin2-sony-nsz-gs7.dts         |   29 +++
+ arch/arm/boot/dts/berlin2.dtsi                     |  227 ++++++++++++++++++++
+ arch/arm/boot/dts/berlin2cd-google-chromecast.dts  |   29 +++
+ arch/arm/boot/dts/berlin2cd.dtsi                   |  212 ++++++++++++++++++
+ arch/arm/configs/multi_v7_defconfig                |    3 +
+ arch/arm/include/asm/hardware/cache-l2x0.h         |    1 +
+ arch/arm/mach-berlin/Kconfig                       |   30 +++
+ arch/arm/mach-berlin/Makefile                      |    1 +
+ arch/arm/mach-berlin/berlin.c                      |   39 ++++
+ arch/arm/mm/cache-l2x0.c                           |   49 ++++-
+ arch/arm/mm/cache-tauros3.h                        |   41 ++++
+ drivers/irqchip/Kconfig                            |    4 +
+ drivers/irqchip/Makefile                           |    1 +
+ drivers/irqchip/irq-dw-apb-ictl.c                  |  150 +++++++++++++
+ 23 files changed, 927 insertions(+), 19 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/marvell,berlin.txt
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/snps,dw-apb-ictl.txt
+ create mode 100644 arch/arm/boot/dts/berlin2-sony-nsz-gs7.dts
+ create mode 100644 arch/arm/boot/dts/berlin2.dtsi
+ create mode 100644 arch/arm/boot/dts/berlin2cd-google-chromecast.dts
+ create mode 100644 arch/arm/boot/dts/berlin2cd.dtsi
+ create mode 100644 arch/arm/mach-berlin/Kconfig
+ create mode 100644 arch/arm/mach-berlin/Makefile
+ create mode 100644 arch/arm/mach-berlin/berlin.c
+ create mode 100644 arch/arm/mm/cache-tauros3.h
+ create mode 100644 drivers/irqchip/irq-dw-apb-ictl.c
+
+---
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Rob Landley <rob@landley.net>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Kevin Hilman <khilman@kernel.org>
+Cc: devicetree@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
 -- 
-Felipe Contreras
+1.7.10.4
+
