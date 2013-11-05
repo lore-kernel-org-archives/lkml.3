@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab3KEQBn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 11:01:43 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38918 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754999Ab3KEQBl (ORCPT
+	id S1754786Ab3KEQEJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 11:04:09 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:50687 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263Ab3KEQEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 11:01:41 -0500
-Message-ID: <1383667293.6753.35.camel@polaris.local>
-Subject: Re: [PATCH] typo fixes (coordiante -> coordinate) in am335x
-From: Jan =?ISO-8859-1?Q?L=FCbbe?= <jlu@pengutronix.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-input@vger.kernel.org
-Date: Tue, 05 Nov 2013 17:01:33 +0100
-In-Reply-To: <20131022090552.GE19112@lee--X1>
-References: <1373901928-19605-1-git-send-email-zubair.lutfullah@gmail.com>
-	 <20130821075828.GZ7656@atomide.com>
-	 <1382198544.22609.8.camel@polaris.local> <20131022090552.GE19112@lee--X1>
-Organization: Pengutronix
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2 
-Mime-Version: 1.0
+	Tue, 5 Nov 2013 11:04:07 -0500
+Message-ID: <527916F4.1010805@linaro.org>
+Date: Tue, 05 Nov 2013 11:04:04 -0500
+From: David Long <dave.long@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: [PATCH] uprobes: introduce arch_uprobe->ixol
+References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-4-git-send-email-dave.long@linaro.org> <20131019163627.GA7837@redhat.com> <52671265.2020107@linaro.org> <20131029154006.GA22344@redhat.com> <20131104194901.GA28022@redhat.com>
+In-Reply-To: <20131104194901.GA28022@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: jlu@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-10-22 at 10:05 +0100, Lee Jones wrote:
-> This is the first time this patch has been sent to me.
-> 
-> I need Dmitry's input (no pun intended) on how he's like to deal with
-> this. At a bare minimum I'd like his Ack.
+On 11/04/13 14:49, Oleg Nesterov wrote:
+> On 10/29, Oleg Nesterov wrote:
+>>
+>> David. Perhaps we can avoid the new hook altogether? What if we do
+>> the simple change below (it ignores powerpc) ?
+>>
+>> Then arm can add "unsigned long ixol[2]" into its arch_uprobe, and
+>> arch_uprobe_analyze_insn() can initialize this member correctly.
+>>
+>> What do you think?
+>
+> Seriouly, how about the patch below?
+>
+> In fact, given that you are going to reimplement set_swbp/orig_insn,
+> the new member is not strictly needed (afaics). But it looks more
+> clear this way, and we need s/MAX_UINSN_BYTES/sizeof()/ anyway.
+>
+> Oleg.
+> ---
 
-Is there anything I can do to push this forward? The earlier we get the
-typo fixed in the documentation, the less chance that someone will use
-it that way.
+I agree that this is cleaner than another weak callout.  I have it 
+working for ARM now.
 
-Regards,
-Jan
+Thanks,
+-dl
 
