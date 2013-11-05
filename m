@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab3KERNv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 12:13:51 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:58684 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab3KERNt convert rfc822-to-8bit (ORCPT
+	id S1755063Ab3KERQB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 12:16:01 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:53600 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab3KERP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 12:13:49 -0500
-Subject: Re: [PATCH 03/11] devicetree: bindings: Document qcom,kpss-acc
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1383343739-23080-4-git-send-email-sboyd@codeaurora.org>
-Date: Tue, 5 Nov 2013 11:13:47 -0600
-Cc: linux-arm-kernel@lists.infradead.org, David Brown <davidb@codeaurora.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, <devicetree@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <EA8C3C10-2AD6-4179-A785-12001E439364@codeaurora.org>
-References: <1383343739-23080-1-git-send-email-sboyd@codeaurora.org> <1383343739-23080-4-git-send-email-sboyd@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-X-Mailer: Apple Mail (2.1283)
+	Tue, 5 Nov 2013 12:15:58 -0500
+Date: Tue, 5 Nov 2013 17:15:53 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jan =?iso-8859-1?Q?L=FCbbe?= <jlu@pengutronix.de>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH] typo fixes (coordiante -> coordinate) in am335x
+Message-ID: <20131105171553.GB30901@lee--X1>
+References: <1373901928-19605-1-git-send-email-zubair.lutfullah@gmail.com>
+ <20130821075828.GZ7656@atomide.com>
+ <1382198544.22609.8.camel@polaris.local>
+ <20131022090552.GE19112@lee--X1>
+ <1383667293.6753.35.camel@polaris.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1383667293.6753.35.camel@polaris.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 05 Nov 2013, Jan Lübbe wrote:
 
-On Nov 1, 2013, at 5:08 PM, Stephen Boyd wrote:
-
-> The kpss acc binding describes the clock, reset, and power domain
-> controller for a Krait CPU.
+> On Tue, 2013-10-22 at 10:05 +0100, Lee Jones wrote:
+> > This is the first time this patch has been sent to me.
+> > 
+> > I need Dmitry's input (no pun intended) on how he's like to deal with
+> > this. At a bare minimum I'd like his Ack.
 > 
-> Cc: <devicetree@vger.kernel.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
-> .../devicetree/bindings/arm/msm/qcom,kpss-acc.txt   | 21 +++++++++++++++++++++
-> 1 file changed, 21 insertions(+)
-> create mode 100644 Documentation/devicetree/bindings/arm/msm/qcom,kpss-acc.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/msm/qcom,kpss-acc.txt b/Documentation/devicetree/bindings/arm/msm/qcom,kpss-acc.txt
-> new file mode 100644
-> index 0000000..ed4a9c8
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/msm/qcom,kpss-acc.txt
-> @@ -0,0 +1,21 @@
-> +* Krait Processor Sub-system (KPSS) Application Clock Controller (ACC)
-> +
-> +The KPSS ACC provides clock, power domain, and reset control to a Krait CPU.
-> +There is one ACC register region per CPU within the KPSS remaped region as
-> +well as an alias register region that remaps accesses to the ACC associated
-> +with the CPU accessing the region.
-> +
-> +Required Properties:
-> +
-> +- compatible : Shall contain "qcom,kpss-acc-v1" or "qcom,kpss-acc-v2".
-> +- reg: Specifies the base address and size of the banked register region.
-> +- cpu-offset : per-cpu offset used when the device is accessed without the
-> +		CPU remapping facilities.
-> +		The offset is cpu-offset + (0x10000 * cpu-nr).
-> +
-> +Example:
-> +
-> +	clock-controller@2008000 {
-> +		compatible = "qcom,kpss-acc-v2";
-> +		reg = <0x02008000 0x1000>;
-> +	};
-> -- 
+> Is there anything I can do to push this forward? The earlier we get the
+> typo fixed in the documentation, the less chance that someone will use
+> it that way.
 
-I don't get the cpu-offset business, shouldn't this just be:
-	reg = <0x02008000 0x1000>, <0x02018000 0x1000>, <0x02028000 0x1000>, <0x02038000 0x1000>;
-
-- k
+I think you should sent it again, but this time Cc the Device Tree
+list, Dmitry and myself when you submit.
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
