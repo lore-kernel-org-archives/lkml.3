@@ -1,81 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab3KEB1l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 20:27:41 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:44433 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750798Ab3KEB1k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 20:27:40 -0500
-Date: Mon, 4 Nov 2013 20:27:36 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] rcu: Do not trace rcu_is_watching() functions
-Message-ID: <20131104202736.72dd8e45@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753917Ab3KEBdZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 20:33:25 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:46646 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751451Ab3KEBdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 20:33:24 -0500
+Message-ID: <52784ADF.1040104@linux.vnet.ibm.com>
+Date: Mon, 04 Nov 2013 17:33:19 -0800
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Jan Kara <jack@suse.cz>
+CC: Andreas Dilger <adilger.kernel@dilger.ca>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/8] fs/ext3: use rbtree postorder iteration helper instead
+ of opencoding
+References: <1383345566-25087-1-git-send-email-cody@linux.vnet.ibm.com> <1383345566-25087-6-git-send-email-cody@linux.vnet.ibm.com> <20131104142638.GD8566@quack.suse.cz> <20131105004559.GB24531@quack.suse.cz>
+In-Reply-To: <20131105004559.GB24531@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13110501-7182-0000-0000-0000090085C6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/04/2013 04:45 PM, Jan Kara wrote:
+> On Mon 04-11-13 15:26:38, Jan Kara wrote:
+>> On Fri 01-11-13 15:38:50, Cody P Schafer wrote:
+>>> Use rbtree_postorder_for_each_entry_safe() to destroy the rbtree instead
+>>> of opencoding an alternate postorder iteration that modifies the tree
+>>    Thanks. I've merged the patch into my tree.
+>    Hum, except that the kernel oopses with this patch. And I think the
+> problem is in rbtree_postorder_for_each_entry_safe(). How are those tests
+> for NULL supposed to work? For example if the tree is empty, 'pos' will be
+> NULL and you'll call rb_next_postorder(&NULL->field) which is pretty much
+> guaranteed to oops if 'field' doesn't have offset 0 in the structure...
+> 	
 
-Paul,
+You're absolutely right, those NULL checks are wrong when the rb_node 
+isn't the first element. Fix incoming shortly.
 
-As I added the rcu_is_watching() to the ftrace code to prevent perf
-from tracing functions where RCU is not watching, I noticed that the
-rcu_is_watching() functions can themselves be traced. I would say this
-is a helper function and not something that we need to trace, as it can
-cause a slowdown in function tracing (any recursion is detected, so it
-only affects performance).
-
-I marked the functions with notrace. You can take this patch and push
-it for 3.13 or I can take it if you give me an "Acked-by". As it only
-affects performance and does not crash the code it's not a must have in
-my tree.
-
-If you take it, I can write up a better change log too.
-
--- Steve
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 0fa061d..590c8a8 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -179,7 +179,7 @@ EXPORT_SYMBOL_GPL(rcu_irq_enter);
- /*
-  * Test whether RCU thinks that the current CPU is idle.
-  */
--bool __rcu_is_watching(void)
-+bool notrace __rcu_is_watching(void)
- {
- 	return rcu_dynticks_nesting;
- }
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 981d0c1..499bb2b 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -662,7 +662,7 @@ void rcu_nmi_exit(void)
-  * rcu_is_watching(), the caller of __rcu_is_watching() must have at
-  * least disabled preemption.
-  */
--bool __rcu_is_watching(void)
-+bool notrace __rcu_is_watching(void)
- {
- 	return atomic_read(this_cpu_ptr(&rcu_dynticks.dynticks)) & 0x1;
- }
-@@ -673,7 +673,7 @@ bool __rcu_is_watching(void)
-  * If the current CPU is in its idle loop and is neither in an interrupt
-  * or NMI handler, return true.
-  */
--bool rcu_is_watching(void)
-+bool notrace rcu_is_watching(void)
- {
- 	int ret;
- 
