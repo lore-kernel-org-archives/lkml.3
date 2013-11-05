@@ -1,176 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870Ab3KEXPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 18:15:13 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:53631 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755563Ab3KEXPI (ORCPT
+	id S1755675Ab3KEX0E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 18:26:04 -0500
+Received: from ihemail2.lucent.com ([135.245.0.35]:50199 "EHLO
+	ihemail2.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755494Ab3KEX0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 18:15:08 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [fixup][PATCH 2/6] ACPI / hotplug: Refuse to hot-remove all objects with disabled hotplug
-Date: Wed, 06 Nov 2013 00:27:26 +0100
-Message-ID: <5195965.AgE9G8aXP3@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1842331.UHR0XPv1jo@vostro.rjw.lan>
-References: <5839747.7HXXGHmMBd@vostro.rjw.lan> <2970389.SeMGM45Qln@vostro.rjw.lan> <1842331.UHR0XPv1jo@vostro.rjw.lan>
+	Tue, 5 Nov 2013 18:26:02 -0500
+From: James Solner <solner@alcatel-lucent.com>
+To: jwboyer@fedoraproject.org
+Cc: dhowells@redhat.com, rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Subject: [PATCH v1] Add Documentation/module-signing.txt file
+Date: Tue, 05 Nov 2013 17:25:48 -0600
+Message-ID: <2796832.O3WlZ61LSy@cmlinux10.ih.lucent.com>
+User-Agent: KMail/4.11.2 (Linux/3.11.6-PRV02+; KDE/4.11.2; x86_64; ; )
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+This patch adds the Documentation/module-signing.txt file that is
+currently missing from the Documentation directory. The init/Kconfig
+file references the Documentation/module-signing.txt file to explain
+how kernel module signing works. This patch supplies this documentation. 
 
-In theory, an ACPI device object may be the parent of another
-device object whose hotplug is disabled by user space through its
-scan handler.  In that case, the eject operation targeting the
-parent should fail as though the parent's own hotplug was disabled,
-but currently this is not the case, because acpi_scan_hot_remove()
-doesn't check the disable/enable hotplug status of the children
-of the top-most object passed to it.
+The initial version of this patch provided old documentation
+that used that was a mix of the old RHEL style GPG signing. 
+This new version, version 1, is updated to the current appended-signature 
+x509 certificate signing. 
 
-To fix this, modify acpi_bus_offline_companions() to return an
-error code if hotplug is disabled for the given device object.
-[Also change the name of the function to acpi_bus_offline(),
-because it is not only about companions any more, and change
-the name of acpi_bus_online_companions() accordingly.]  Make
-acpi_scan_hot_remove() propagate that error to its callers.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
-
-acpi_force_hot_remove has to be honored by the new code.
-
-Thanks,
-Rafael
+Signed-off-by: James Solner <solner@alcatel-lucent.com>
 
 ---
- drivers/acpi/scan.c |   58 +++++++++++++++++++++++++++++++++-------------------
- 1 file changed, 37 insertions(+), 21 deletions(-)
+ Documentation/module-signing.txt | 117 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 117 insertions(+)
+ create mode 100644 Documentation/module-signing.txt
 
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -125,8 +125,8 @@ acpi_device_modalias_show(struct device
- }
- static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
- 
--static acpi_status acpi_bus_offline_companions(acpi_handle handle, u32 lvl,
--					       void *data, void **ret_p)
-+static acpi_status acpi_bus_offline(acpi_handle handle, u32 lvl, void *data,
-+				    void **ret_p)
- {
- 	struct acpi_device *device = NULL;
- 	struct acpi_device_physical_node *pn;
-@@ -136,6 +136,12 @@ static acpi_status acpi_bus_offline_comp
- 	if (acpi_bus_get_device(handle, &device))
- 		return AE_OK;
- 
-+	if (device->handler && !device->handler->hotplug.enabled
-+	    && !acpi_force_hot_remove) {
-+		*ret_p = &device->dev;
-+		return AE_SUPPORT;
-+	}
+diff --git a/Documentation/module-signing.txt b/Documentation/module-signing.txt
+new file mode 100644
+index 0000000..fdae5b2
+--- /dev/null
++++ b/Documentation/module-signing.txt
+@@ -0,0 +1,117 @@
++		==============================
++		KERNEL MODULE SIGNING FACILITY
++		==============================
 +
- 	mutex_lock(&device->physical_node_lock);
- 
- 	list_for_each_entry(pn, &device->physical_node_list, node) {
-@@ -168,8 +174,8 @@ static acpi_status acpi_bus_offline_comp
- 	return status;
- }
- 
--static acpi_status acpi_bus_online_companions(acpi_handle handle, u32 lvl,
--					      void *data, void **ret_p)
-+static acpi_status acpi_bus_online(acpi_handle handle, u32 lvl, void *data,
-+				   void **ret_p)
- {
- 	struct acpi_device *device = NULL;
- 	struct acpi_device_physical_node *pn;
-@@ -214,26 +220,32 @@ static int acpi_scan_hot_remove(struct a
- 	 * If the first pass is successful, the second one isn't needed, though.
- 	 */
- 	errdev = NULL;
--	acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
--			    NULL, acpi_bus_offline_companions,
--			    (void *)false, (void **)&errdev);
--	acpi_bus_offline_companions(handle, 0, (void *)false, (void **)&errdev);
-+	status = acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
-+				     NULL, acpi_bus_offline, (void *)false,
-+				     (void **)&errdev);
-+	if (status == AE_SUPPORT) {
-+		dev_warn(errdev, "Offline disabled.\n");
-+		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
-+				    acpi_bus_online, NULL, NULL, NULL);
-+		put_device(&device->dev);
-+		return -EPERM;
-+	}
-+	acpi_bus_offline(handle, 0, (void *)false, (void **)&errdev);
- 	if (errdev) {
- 		errdev = NULL;
- 		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
--				    NULL, acpi_bus_offline_companions,
--				    (void *)true , (void **)&errdev);
-+				    NULL, acpi_bus_offline, (void *)true,
-+				    (void **)&errdev);
- 		if (!errdev || acpi_force_hot_remove)
--			acpi_bus_offline_companions(handle, 0, (void *)true,
--						    (void **)&errdev);
-+			acpi_bus_offline(handle, 0, (void *)true,
-+					 (void **)&errdev);
- 
- 		if (errdev && !acpi_force_hot_remove) {
- 			dev_warn(errdev, "Offline failed.\n");
--			acpi_bus_online_companions(handle, 0, NULL, NULL);
-+			acpi_bus_online(handle, 0, NULL, NULL);
- 			acpi_walk_namespace(ACPI_TYPE_ANY, handle,
--					    ACPI_UINT32_MAX,
--					    acpi_bus_online_companions, NULL,
--					    NULL, NULL);
-+					    ACPI_UINT32_MAX, acpi_bus_online,
-+					    NULL, NULL, NULL);
- 			put_device(&device->dev);
- 			return -EBUSY;
- 		}
-@@ -290,10 +302,9 @@ static void acpi_bus_device_eject(void *
- 		goto err_out;
- 
- 	handler = device->handler;
--	if (!handler || !handler->hotplug.enabled) {
--		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
--		goto err_out;
--	}
-+	if (!handler || !handler->hotplug.enabled)
-+		goto err_support;
++The module signing facility applies cryptographic signature checking 
++when loading modules by checking its signature against a public key. 
++This allows increased kernel security by disallowing loading unsigned 
++modules or modules signed with an invalid key. Module signing increases 
++the kernel security and reduces the odds of malicious modules being 
++loading into Linux operating system.
 +
- 	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
- 				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
- 	if (handler->hotplug.mode == AHM_CONTAINER)
-@@ -301,14 +312,19 @@ static void acpi_bus_device_eject(void *
- 
- 	get_device(&device->dev);
- 	error = acpi_scan_hot_remove(device);
--	if (error)
-+	if (error == -EPERM) {
-+		goto err_support;
-+	} else if (error) {
- 		goto err_out;
-+	}
- 
-  out:
- 	mutex_unlock(&acpi_scan_lock);
- 	unlock_device_hotplug();
- 	return;
- 
-+ err_support:
-+	ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
-  err_out:
- 	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST, ost_code,
- 				  NULL);
++This facility uses X.509 ITU-T standard to perform the cryptographic 
++work and determines the format of the signatures and key data. The 
++key type used is RSA and the possible hash algorithms that can be 
++used  are SHA-1, SHA-224, SHA-256, SHA-384, and SHA-512. Provided 
++the requisite algorithms are configured and compiled into the 
++kernel. The following hash algorithms can be selected during the kernel 
++configuration build:
++
++	CONFIG_SIG_SHA1
++	CONFIG_SIG_SHA224
++	CONFIG_SIG_SHA256
++	CONFIG_SIG_SHA384
++	CONFIG_SIG_SHA512
++	
++The module signing facility is a kernel feature and is enabled through the 
++Linux kernel configuration builder. In the "Enable Loadable Module Support"
++section of the kernel configuration, the CONFIG_MODULE_SIG define is enabled 
++to activate this feature. This feature supports two options for signed 
++module support: "permissive" and "restrictive".  The default is the 
++"permissive" option and allows a module with a valid signature to be loaded. 
++If the signature is invalid, the module is still loaded, but the kernel is 
++marked as "tainted". The "restrictive" option (CONFIG_MODULE_SIG_FORCE) 
++requires a valid signature before the module can be loaded.
++
++There are two ways to signed modules: "automatically" or "manually". 
++The CONFIG_MODULE_SIG_ALL define will automatically signed the modules 
++during the "modules_install" part of the kernel build. A module can also 
++be signed manually using the scripts/sign-file tool.
++
++================================================
++AUTOMATICALLY GENERATING PUBLIC AND PUBLIC KEYS
++================================================
++As part of "modules_install" kernel build, the Linux kernel build 
++infrastructure will automatically create two files in the root node 
++of the Linux kernel source tree. These files contain the public/private 
++keys and are called "signing_key.x509" and "signing_key.priv". 
++The public key is built into to the kernel and used to verify modules 
++signatures when the modules are loaded. 
++
++=================================================
++MANUALLY GENERATING PUBLIC AND PRIVATE KEYS
++=================================================
++To manually generate the key private/public files, use the x509.genkey key 
++generation configuration file in the root mode of the Linux kernel 
++sources tree and the openssl command. The following is an example to 
++generate the public/private key files:
++
++	openssl req -new -nodes -utf8 -sha256 -days 36500 -batch -x509 \
++	   -config x509.genkey -outform DER -out signing_key.x509 \
++	   -keyout signing_key.priv
++
++=========================
++MANUALLY SIGNING MODULES
++=========================
++To manually sign a module, use the scripts/sign-file tool available in 
++the Linux kernel source tree. The script requires 4 arguments: 
++
++	1. The hash algorithm (e.g., sha256)
++	2. The private key 
++	3. The public key
++	4. The kernel module to be signed
++	
++The following is an example to sign a kernel module: 
++
++	scripts/sign-file sha512 kernel-signkey.priv \
++	    kernel-signkey.x509 module.ko
++
++============================
++SIGNED MODULES AND STRIPPING
++============================
++
++A signed modules has a digital signature appended at the end. The string 
++"~Module signature appended~." at the end of the module's file confirms 
++that a signature is present. But, it does not confirm that the 
++signature is valid!
++
++Signed modules are BRITTLE as the signature is outside of the defined
++ELF container.  Thus they MAY NOT be stripped once the signature is computed
++and attached. Note the entire module is the signed payload, including 
++all the debug information present at the time of signing.
++
++======================
++LOADING SIGNED MODULES
++======================
++
++Modules are loaded with insmod, exactly as for unsigned modules.  
++The signature checker checks at the end of the file for the signature 
++marker and apply signature checking. 
++
++=========================================
++NON-VALID SIGNATURES AND UNSIGNED MODULES
++=========================================
++
++If CONFIG_MODULE_SIG_FORCE is enabled or enforcemodulesig=1 is supplied on
++the kernel command line, the kernel will only load validly signed modules
++for which it has a public key.  Otherwise, it will also load modules that are
++unsigned.  Any module for which the kernel has a key, but which proves to have
++a signature mismatch will not be permitted to load.
++
++=========================================
++ADMINISTERING/PROTECTING THE PRIVATE KEY
++=========================================
++Since the private key is used to signed modules, malware can use 
++the private key to signed modules and compromise the operating system. 
++The private key must be moved to secure location and not keep in 
++the root node of the kernel source tree. 
+-- 
+1.7.12.4
+---
 
