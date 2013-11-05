@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab3KESpT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 13:45:19 -0500
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:35900 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754660Ab3KESpR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 13:45:17 -0500
-Message-ID: <52793CBB.5030808@linaro.org>
-Date: Tue, 05 Nov 2013 13:45:15 -0500
-From: David Long <dave.long@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1755204Ab3KESrx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 13:47:53 -0500
+Received: from www.sr71.net ([198.145.64.142]:50180 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750925Ab3KESrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 13:47:52 -0500
+Message-ID: <52793D27.8050607@sr71.net>
+Date: Tue, 05 Nov 2013 10:47:03 -0800
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [PATCH] uprobes: introduce arch_uprobe->ixol
-References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-4-git-send-email-dave.long@linaro.org> <20131019163627.GA7837@redhat.com> <52671265.2020107@linaro.org> <20131029154006.GA22344@redhat.com> <20131104194901.GA28022@redhat.com> <527916F4.1010805@linaro.org> <20131105180110.GA6943@redhat.com>
-In-Reply-To: <20131105180110.GA6943@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, dave.jiang@intel.com,
+        Mel Gorman <mgorman@suse.de>, akpm@linux-foundation.org,
+        dhillf@gmail.com
+Subject: Re: [PATCH 2/2] mm: thp: give transparent hugepage code a separate
+ copy_page
+References: <20131028221618.4078637F@viggo.jf.intel.com> <20131028221620.042323B3@viggo.jf.intel.com> <20131028221126.GA29431@shutemov.name>
+In-Reply-To: <20131028221126.GA29431@shutemov.name>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/13 13:01, Oleg Nesterov wrote:
-> On 11/05, David Long wrote:
+On 10/28/2013 03:11 PM, Kirill A. Shutemov wrote:
+> On Mon, Oct 28, 2013 at 03:16:20PM -0700, Dave Hansen wrote:
+>> void copy_huge_page(struct page *dst, struct page *src)
+>> {
+>>         struct hstate *h = page_hstate(src);
+>>         if (unlikely(pages_per_huge_page(h) > MAX_ORDER_NR_PAGES)) {
+>> ...
 >>
->> On 11/04/13 14:49, Oleg Nesterov wrote:
->>> On 10/29, Oleg Nesterov wrote:
->>>>
->>> Seriouly, how about the patch below?
->>>
->>> In fact, given that you are going to reimplement set_swbp/orig_insn,
->>> the new member is not strictly needed (afaics). But it looks more
->>> clear this way, and we need s/MAX_UINSN_BYTES/sizeof()/ anyway.
->>>
->>> Oleg.
->>> ---
->>
->> I agree that this is cleaner than another weak callout.  I have it
->> working for ARM now.
->
-> OK, I am going to add this patch to my tree, thanks. Can I add your
-> acked-by ?
->
-> Oleg.
->
+>> This patch creates a copy_high_order_page() which can
+>> be used on THP pages.
+> 
+> We already have copy_user_huge_page() and copy_user_gigantic_page() in
+> generic code (mm/memory.c). I think copy_gigantic_page() and
+> copy_huge_page() should be moved there too.
 
+That would be fine I guesss... in another patch. :)
 
-yes.
+> BTW, I think pages_per_huge_page in copy_user_huge_page() is redunand:
+> compound_order(page) should be enough, right?
 
--dl
+The way it is now, the compiler can optimize for the !HUGETLBFS case.
+Also, pages_per_huge_page() works for gigantic pages.  compound_order()
+wouldn't work for those.
 
