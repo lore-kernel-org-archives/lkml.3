@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393Ab3KETP3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 14:15:29 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:44358 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755346Ab3KETPY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 14:15:24 -0500
-Date: Tue, 5 Nov 2013 20:15:28 +0100
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: The development of GNU GRUB <grub-devel@gnu.org>
-Cc: Daniel Kiper <daniel.kiper@oracle.com>, david.woodhouse@intel.com,
-        arvidjaar@gmail.com, mchang@suse.com, Jan Beulich <JBeulich@suse.com>,
-        keir@xen.org, shidokht.yadegari@oracle.com, seth.goldberg@oracle.com,
-        ross.philipson@citrix.com, grant.likely@linaro.org,
-        mchang.novell@gmail.com, mjg59@srcf.ucam.org,
-        andre.przywara@calxeda.com, Ian Campbell <ian.campbell@citrix.com>,
-        stefano.stabellini@eu.citrix.com,
-        "Vladimir =?utf-8?Q?'=CF=86-coder=2Fphcoder'?= Serbinenko" 
-	<phcoder@gmail.com>,
-        boris.ostrovsky@oracle.com, richard.l.maliszewski@intel.com,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xen.org,
-        neal.pollack@oracle.com
-Subject: Re: Is: Wrap-up Was: Re: EFI and multiboot2 devlopment work for Xen
-Message-ID: <20131105191528.GN1557@rocoto.smurfnet.nu>
-References: <20131021125756.GA3626@debian70-amd64.local.net-space.pl>
- <526599A8.9090501@gmail.com>
- <52663D54.2020800@gmail.com>
- <20131028162603.GA4716@phenom.dumpdata.com>
- <526EA686.70008@gmail.com>
- <526F7FC402000078000FD7BA@nat28.tlf.novell.com>
- <20131030111924.GE3425@debian70-amd64.local.net-space.pl>
- <alpine.DEB.2.02.1311042027420.26077@kaball.uk.xensource.com>
+	id S1755288Ab3KETWn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 14:22:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34355 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754378Ab3KETWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 14:22:41 -0500
+Date: Tue, 5 Nov 2013 20:24:01 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch
+	methods (v6)
+Message-ID: <20131105192401.GA772@redhat.com>
+References: <1383029621-7384-1-git-send-email-namhyung@kernel.org> <20131102155458.GA6981@redhat.com> <87ob60366m.fsf@sejong.aot.lge.com> <87fvrc35kj.fsf@sejong.aot.lge.com> <20131104155131.GD4440@redhat.com> <20131104162229.GA8921@redhat.com> <20131104184741.GA15945@redhat.com> <87sivbz65t.fsf@sejong.aot.lge.com> <20131105174535.GA6385@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1311042027420.26077@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131105174535.GA6385@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04, 2013 at 08:41:11PM +0000, Stefano Stabellini wrote:
-> > 
-> > multiboot2 protocol requires some more changes. However, about 80% of code
-> > is ready. In this case Xen and modules are loaded by GRUB2 itself. It means
-> > that all images could be placed on any filesystem recognized by GRUB2. Options
-> > for Xen and modules are passed separately which simplifies command line editing
-> > in boot loader and parsing. multiboot2 protocol is very flexible and could be
-> > easily extended in the future if a need arises. Support for secure boot and
-> > shim loader could be added. However, it was not implemented yet. Probably
-> > linuxefi module could be used as a reference or even as a base for development.
-> > However, I do not know are there plans to support such solution by GRUB2
-> > community. Currently, support for native PE images signatures and GPG signatures
-> > is under development for GRUB2 upstream.
-> 
-> FYI on ARM it is possible to load a kernel as PE but at the same time
-> passing additional info as where the initrd or other additional binaries
-> have been loaded or even command line arguments. These info are passed
-> from the bootloader to the kernel via Device Tree.  Grant (CC'ed) might
-> be able to add additional details on where the code actually lives.
- 
-The code currently lives in unclean form in my development tree on
-git.linaro.org. We had a few items on the kernel boot protocol to sort
-out at last week's Linaro Connect, and if I hadn't been struck down
-with conference flu, I would probably have sent out the basic arm64
-support by now.
+On 11/05, Oleg Nesterov wrote:
+>
+> As for "-= tu->offset"... Can't we avoid it? User-space needs to calculate
+> the "@" argument anyway, why it can't also substruct this offset?
+>
+> Or perhaps we can change parse_probe_arg("@") to update "param" ? Yes,
+> in this case it needs another argument, not sure...
 
-The method used (for the curious) is to simply register an FDT as a
-configuration table, and then look for that in the stub.
+Or,
 
-That code should be trivially portable to 32-bit ARM.
+> 	+	if (is_ret_probe(tu)) {
+> 	+		saved_ip = instruction_pointer(regs);
+> 	+		instruction_pointer_set(func);
+> 	+	}
+> 		store_trace_args(...);
+> 	+	if (is_ret_probe(tu))
+> 	+		instruction_pointer_set(saved_ip);
 
-I did start out from the linuxefi code, but that was quite x86 specific,
-and was also dependent on the shim, so I ended up changing most of it
-(for now). I would still like to see a unified (upstream) linuxefi
-module for loading the kernel as the UEFI stub
-(with architecture-specific bits extracted out under loader/<arch>).
+we can put "-= tu->offset" here.
 
-The UEFI stub loader will then call ExitBootServices(), not GRUB.
+> although not pretty.
 
-/
-    Leif
+Yes.
+
+Or. Perhaps we can leave "case '@'" in parse_probe_arg() and
+FETCH_MTD_memory alone. You seem to agree that "absolute address"
+can be useful anyway.
+
+Instead, perhaps we can add FETCH_MTD_memory_do_fancy_addr_translation,
+and, say, the new "case '*'" in parse_probe_arg() should add all the
+neccessary info as f->data (like, say, FETCH_MTD_symbol).
+
+But, just in case, I do not have a strong opinion. Just I think it
+is better to discuss every choice we have.
+
+Oleg.
+
