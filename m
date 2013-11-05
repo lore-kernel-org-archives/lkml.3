@@ -1,71 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819Ab3KEPN6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 10:13:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55729 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752906Ab3KEPN5 (ORCPT
+	id S1754395Ab3KEPPr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 10:15:47 -0500
+Received: from mga03.intel.com ([143.182.124.21]:42231 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750775Ab3KEPPp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 10:13:57 -0500
-Date: Tue, 5 Nov 2013 07:16:09 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH] staging: new asus fan driver
-Message-ID: <20131105151609.GA20950@kroah.com>
-References: <1383641987-4403-1-git-send-email-felipe.contreras@gmail.com>
- <20131105125228.GB18093@kroah.com>
- <CAMP44s0i-xCNHW_PPyO57p9yt0X_9OaYSQDkVPoNKum=nEHQbw@mail.gmail.com>
+	Tue, 5 Nov 2013 10:15:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="384930770"
+From: "Cohen, David A" <david.a.cohen@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3/4] usb: ffs: check quirk to pad epout buf size when
+ not aligned to maxpacketsize
+Thread-Topic: [PATCH v4 3/4] usb: ffs: check quirk to pad epout buf size
+ when not aligned to maxpacketsize
+Thread-Index: AQHO2jnjXiO3HvkZPkSLoIdur8UPnA==
+Date: Tue, 5 Nov 2013 15:15:39 +0000
+Message-ID: <52790B35.1080305@intel.com>
+References: <Pine.LNX.4.44L0.1311050950260.1360-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1311050950260.1360-100000@iolanthe.rowland.org>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005
+ Icedove/17.0.9
+x-originating-ip: [172.28.128.180]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <B5DE50E09768034C9655D755B9661492@intel.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMP44s0i-xCNHW_PPyO57p9yt0X_9OaYSQDkVPoNKum=nEHQbw@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 05, 2013 at 08:29:40AM -0600, Felipe Contreras wrote:
-> On Tue, Nov 5, 2013 at 6:52 AM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Tue, Nov 05, 2013 at 02:59:47AM -0600, Felipe Contreras wrote:
-> >> Simple driver to enable control of the fan in ASUS laptops. So far this
-> >> has only been tested in ASUS Zenbook Prime UX31A, but according to some
-> >> online reference [1], it should work in other models as well.
-> >>
-> >> The implementation is very straight-forward, the only caveat is that the
-> >> fan speed needs to be saved after it has been manually changed because
-> >> it won't be reported properly until it goes back to 'auto' mode.
-> >>
-> >> [1] http://forum.notebookreview.com/asus/705656-fan-control-asus-prime-ux31-ux31a-ux32a-ux32vd.html
-> >>
-> >> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-> >> ---
-> >>
-> >> Two incarnations of this code exists [1][2], one that used ACPI methods
-> >> directly, and one through WMI. Unfortunately the WMI version needs us to pass
-> >> physicall addresses which is not exactly clean, and that's the only reason the
-> >> code is proposed for staging.
-> >>
-> >> Most likely this cannot graduate until acpica gets support to receive virtual
-> >> addresses.
-> >
-> > When is that going to happen?
+On 11/05/2013 06:52 AM, Alan Stern wrote:
+> On Mon, 4 Nov 2013, David Cohen wrote:
 > 
-> I don't know. Presumably when I get it done, which might be never, or
-> a few days from now. Most likely it will take some time.
+>> Check gadget.quirk_ep_out_aligned_size to decide if buffer size requires
+>> to be aligned to maxpacketsize of an out endpoint. ffs_epfile_io() needs
+>> to pad epout buffer to match above condition if quirk is found.
+>>
+>> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+>> ---
+>>  drivers/usb/gadget/f_fs.c | 22 ++++++++++++++++++++++
+>>  1 file changed, 22 insertions(+)
+>>
+>> diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+>> index 75e4b7846a8d..e7c3c3119552 100644
+>> --- a/drivers/usb/gadget/f_fs.c
+>> +++ b/drivers/usb/gadget/f_fs.c
+>> @@ -755,10 +755,13 @@ static ssize_t ffs_epfile_io(struct file *file,
+>>  			     char __user *buf, size_t len, int read)
+>>  {
+>>  	struct ffs_epfile *epfile = file->private_data;
+>> +	struct usb_gadget *gadget = epfile->ffs->gadget;
+>>  	struct ffs_ep *ep;
+>>  	char *data = NULL;
+>> +	size_t data_len = 0;
+>>  	ssize_t ret;
+>>  	int halt;
+>> +	size_t orig_len = len;
+>>  
+>>  	goto first_try;
+>>  	do {
+>> @@ -794,11 +797,30 @@ first_try:
+>>  			goto error;
+>>  		}
+>>  
+>> +		/*
+>> +		 * Controller requires buffer size to be aligned to
+>> +		 * maxpacketsize of an out endpoint.
+>> +		 */
+>> +		if (gadget->quirk_ep_out_aligned_size && read) {
+>> +			/*
+>> +			 * We pass 'orig_len' to usp_ep_align_maxpacketsize()
+>> +			 * due to we're in a loop and 'len' may have been
+>> +			 * changed.
+>> +			 */
+>> +			len = usb_ep_align_maxpacketsize(ep->ep, orig_len);
+>> +			if (data && len > data_len) {
+>> +				kfree(data);
+>> +				data = NULL;
+>> +				data_len = 0;
+>> +			}
+>> +		}
+> 
+> Since the value of orig_len never changes, there's no point calling 
+> usb_ep_align_maxpacketsize() inside the loop.  You should call it only 
+> once, before the loop starts.  Once you do that, you won't need 
+> orig_len at all.
 
-Then why not just merge this to the proper place, instead of relying on
-staging?  I don't want to have to have a staging driver that is waiting
-on external things to get it merged, instead of issues with the driver
-itself, as you are now putting the burden of maintenance on me, for no
-good reason other than you being too "lazy" to get other stuff done :)
+orig_len doesn't change but ep->ep does. If USB specs say max packet
+size won't change even if ep does, than we can call it from outside the
+loop.
 
-So, I really don't want this driver, sorry, please merge it to the
-"proper" place in the kernel itself, fixing up the ACPI core to do so,
-or just living with the driver as-is if you don't want to do that
-work...
-
-greg k-h
+Br, David
