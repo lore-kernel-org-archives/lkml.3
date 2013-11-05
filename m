@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab3KEUKN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 15:10:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38804 "EHLO
+	id S1755625Ab3KEUKW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 15:10:22 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38837 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754644Ab3KEUKK (ORCPT
+	with ESMTP id S1755581Ab3KEUKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 15:10:10 -0500
+	Tue, 5 Nov 2013 15:10:18 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/10] tools/perf/build: Fix detection of non-core features
-Date: Tue,  5 Nov 2013 17:09:54 -0300
-Message-Id: <1383682201-19399-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 08/10] perf fs: Add procfs support
+Date: Tue,  5 Nov 2013 17:09:59 -0300
+Message-Id: <1383682201-19399-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1383682201-19399-1-git-send-email-acme@infradead.org>
 References: <1383682201-19399-1-git-send-email-acme@infradead.org>
@@ -25,70 +29,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-feature_check needs to be invoked through call, and LDFLAGS may not be
-set so quotes are needed.
+Adding procfs support into fs class.
 
-Thanks to Jiri for spotting the quotes around LDFLAGS; that one was
-driving me nuts with the upcoming timerfd feature detection.
+The interface function:
+  const char *procfs__mountpoint(void);
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Reviewed-by: Jiri Olsa <jolsa@redhat.com>
-Tested-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
+provides existing mountpoint path for procfs.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1383064996-20933-1-git-send-email-dsahern@gmail.com
-[ Fixed conflict with 8a0c4c2843d3 ("perf tools: Fix libunwind build and feature detection for 32-bit build") ]
+Link: http://lkml.kernel.org/r/1383660887-1734-3-git-send-email-jolsa@redhat.com
+[ Fixup namespace ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/config/Makefile | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ tools/perf/util/fs.c                  | 16 ++++++++++++++--
+ tools/perf/util/fs.h                  |  1 +
+ tools/perf/util/include/linux/magic.h |  4 ++++
+ 3 files changed, 19 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index be8bb9a77287..58b2d37ae23a 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -98,7 +98,7 @@ endif
+diff --git a/tools/perf/util/fs.c b/tools/perf/util/fs.c
+index 77bac4e4c115..f5be1f26e724 100644
+--- a/tools/perf/util/fs.c
++++ b/tools/perf/util/fs.c
+@@ -9,6 +9,11 @@ static const char * const sysfs__fs_known_mountpoints[] = {
+ 	0,
+ };
  
- feature_check = $(eval $(feature_check_code))
- define feature_check_code
--  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS=$(LDFLAGS) LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
-+  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS="$(LDFLAGS)" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
- endef
++static const char * const procfs__known_mountpoints[] = {
++	"/proc",
++	0,
++};
++
+ struct fs {
+ 	const char		*name;
+ 	const char * const	*mounts;
+@@ -18,7 +23,8 @@ struct fs {
+ };
  
- feature_set = $(eval $(feature_set_code))
-@@ -235,7 +235,7 @@ CFLAGS += -I$(LIB_INCLUDE)
- CFLAGS += -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ enum {
+-	FS__SYSFS = 0,
++	FS__SYSFS  = 0,
++	FS__PROCFS = 1,
+ };
  
- ifndef NO_BIONIC
--  $(feature_check,bionic)
-+  $(call feature_check,bionic)
-   ifeq ($(feature-bionic), 1)
-     BIONIC := 1
-     EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
-@@ -479,15 +479,15 @@ else
-     CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
-   else
-     ifneq ($(feature-libbfd), 1)
--      $(feature_check,liberty)
-+      $(call feature_check,liberty)
-       ifeq ($(feature-liberty), 1)
-         EXTLIBS += -lbfd -liberty
-       else
--        $(feature_check,liberty-z)
-+        $(call feature_check,liberty-z)
-         ifeq ($(feature-liberty-z), 1)
-           EXTLIBS += -lbfd -liberty -lz
-         else
--          $(feature_check,cplus-demangle)
-+          $(call feature_check,cplus-demangle)
-           ifeq ($(feature-cplus-demangle), 1)
-             EXTLIBS += -liberty
-             CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
+ static struct fs fs__entries[] = {
+@@ -27,6 +33,11 @@ static struct fs fs__entries[] = {
+ 		.mounts	= sysfs__fs_known_mountpoints,
+ 		.magic	= SYSFS_MAGIC,
+ 	},
++	[FS__PROCFS] = {
++		.name	= "proc",
++		.mounts	= procfs__known_mountpoints,
++		.magic	= PROC_SUPER_MAGIC,
++	},
+ };
+ 
+ static bool fs__read_mounts(struct fs *fs)
+@@ -104,4 +115,5 @@ const char *name##__mountpoint(void)	\
+ 	return fs__mountpoint(idx);	\
+ }
+ 
+-FS__MOUNTPOINT(sysfs, FS__SYSFS);
++FS__MOUNTPOINT(sysfs,  FS__SYSFS);
++FS__MOUNTPOINT(procfs, FS__PROCFS);
+diff --git a/tools/perf/util/fs.h b/tools/perf/util/fs.h
+index a7561c83c33c..5e09ce1bab0e 100644
+--- a/tools/perf/util/fs.h
++++ b/tools/perf/util/fs.h
+@@ -2,5 +2,6 @@
+ #define __PERF_FS
+ 
+ const char *sysfs__mountpoint(void);
++const char *procfs__mountpoint(void);
+ 
+ #endif /* __PERF_FS */
+diff --git a/tools/perf/util/include/linux/magic.h b/tools/perf/util/include/linux/magic.h
+index 58b64ed4da12..07d63cf3e0f6 100644
+--- a/tools/perf/util/include/linux/magic.h
++++ b/tools/perf/util/include/linux/magic.h
+@@ -9,4 +9,8 @@
+ #define SYSFS_MAGIC            0x62656572
+ #endif
+ 
++#ifndef PROC_SUPER_MAGIC
++#define PROC_SUPER_MAGIC       0x9fa0
++#endif
++
+ #endif
 -- 
 1.8.1.4
 
