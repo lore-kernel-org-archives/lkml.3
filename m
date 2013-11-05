@@ -1,479 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab3KEVcT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 16:32:19 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:51164 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755713Ab3KEVcP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 16:32:15 -0500
-Message-ID: <527963D9.1070007@gmail.com>
-Date: Tue, 05 Nov 2013 22:32:09 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-To: Alan Tull <delicious.quinoa@gmail.com>, linux-kernel@vger.kernel.org
-CC: linux-doc@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jamie Iles <jamie@jamieiles.com>, Heiko Stuebner <heiko@sntech.de>,
-        Alan Tull <atull@altera.com>, Dinh Nguyen <dinguyen@altera.com>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>
-Subject: Re: [PATCH 3/3] use linear irq domain in gpio-dwapb
-References: <1383670552-17566-1-git-send-email-delicious.quinoa@gmail.com> <1383670552-17566-4-git-send-email-delicious.quinoa@gmail.com>
-In-Reply-To: <1383670552-17566-4-git-send-email-delicious.quinoa@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755789Ab3KEVcw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 16:32:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26859 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755765Ab3KEVct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 16:32:49 -0500
+Message-ID: <1383687150.21055.165.camel@ul30vt.home>
+Subject: Re: [RFC PATCH v2] KVM: PPC: vfio kvm device: support spapr tce
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: linuxppc-dev@lists.ozlabs.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
+        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        kvm-ppc@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 05 Nov 2013 14:32:30 -0700
+In-Reply-To: <1383638731-13467-1-git-send-email-aik@ozlabs.ru>
+References: <20131030165234.31949.70266.stgit@bling.home>
+	 <1383638731-13467-1-git-send-email-aik@ozlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2013 05:55 PM, Alan Tull wrote:
-> From: Alan Tull <atull@altera.com>
->
->   * Changes to get gpio-dwapb (originally v3.2-rc7) driver building and
->     working on current kernel.
->   * Use linear irq domain.
->   * Fix setting irq edge type for 'rising' and 'both'.
->   * Support as a loadable module.
->   * Use bgpio_chip's spinlock during register access.
-
-As this patch is basically messing what I have commented before,
-I really lost interest in reviewing this again. Please just squash
-them into one.
-
-BTW, I do have a driver for dw-apb-gpio that almost looks feature
-equivalent to this one. I am not ready for testing on Berlin SoCs,
-so I haven't posted it. After the review, I somehow think I should
-post it, especially because I see no point in port child nodes.
-
-Anyway, some remarks below.
-
-> Signed-off-by: Alan Tull <atull@altera.com>
+On Tue, 2013-11-05 at 19:05 +1100, Alexey Kardashevskiy wrote:
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 > ---
->   drivers/gpio/Kconfig      |    2 +-
->   drivers/gpio/gpio-dwapb.c |  235 ++++++++++++++++++++++++++++++---------------
->   2 files changed, 160 insertions(+), 77 deletions(-)
->
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index 4cc26ed..5fc674a 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -122,7 +122,7 @@ config GPIO_GENERIC_PLATFORM
->   	  Say yes here to support basic platform_device memory-mapped GPIO controllers.
->
->   config GPIO_DWAPB
-> -	bool "Synopsys DesignWare APB GPIO driver"
-> +	tristate "Synopsys DesignWare APB GPIO driver"
->   	select GPIO_GENERIC
->   	select GENERIC_IRQ_CHIP
->   	depends on OF_GPIO && IRQ_DOMAIN
-> diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
-> index 64c7183..cca97e3 100644
-> --- a/drivers/gpio/gpio-dwapb.c
-> +++ b/drivers/gpio/gpio-dwapb.c
-> @@ -18,6 +18,7 @@
->   #include <linux/of_address.h>
->   #include <linux/of_irq.h>
->   #include <linux/platform_device.h>
-> +#include <linux/spinlock.h>
->
->   #define INT_EN_REG_OFFS		0x30
->   #define INT_MASK_REG_OFFS	0x34
-> @@ -30,7 +31,6 @@ struct dwapb_gpio;
->
->   struct dwapb_gpio_bank {
->   	struct bgpio_chip	bgc;
-> -	unsigned int		bank_idx;
->   	bool			is_registered;
->   	struct dwapb_gpio	*gpio;
->   };
-> @@ -41,8 +41,9 @@ struct dwapb_gpio {
->   	void __iomem		*regs;
->   	struct dwapb_gpio_bank	*banks;
->   	unsigned int		nr_banks;
-> -	struct irq_chip_generic	*irq_gc;
->   	unsigned long		toggle_edge;
-> +	struct irq_domain	*domain;
-> +	int			hwirq;
->   };
->
->   static unsigned int dwapb_gpio_nr_banks(struct device_node *of_node)
-> @@ -63,29 +64,30 @@ static int dwapb_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
->   						    dwapb_gpio_bank, bgc);
->   	struct dwapb_gpio *gpio = bank->gpio;
->
-> -	return irq_domain_to_irq(&gpio->irq_gc->domain, offset);
-> +	return irq_create_mapping(gpio->domain, offset);
->   }
->
->   static void dwapb_toggle_trigger(struct dwapb_gpio *gpio, unsigned int offs)
->   {
-> -	u32 v = readl(gpio->regs + INT_TYPE_REG_OFFS);
-> +	u32 v = readl(gpio->regs + INT_POLARITY_REG_OFFS);
->
->   	if (gpio_get_value(gpio->banks[0].bgc.gc.base + offs))
->   		v &= ~BIT(offs);
->   	else
->   		v |= BIT(offs);
->
-> -	writel(v, gpio->regs + INT_TYPE_REG_OFFS);
-> +	writel(v, gpio->regs + INT_POLARITY_REG_OFFS);
->   }
->
->   static void dwapb_irq_handler(u32 irq, struct irq_desc *desc)
->   {
->   	struct dwapb_gpio *gpio = irq_get_handler_data(irq);
-> +	struct irq_chip *chip = irq_desc_get_chip(desc);
->   	u32 irq_status = readl(gpio->regs + INT_STATUS_REG_OFFS);
->
->   	while (irq_status) {
->   		int irqoffset = fls(irq_status) - 1;
-> -		int irq = irq_domain_to_irq(&gpio->irq_gc->domain, irqoffset);
-> +		int irq = irq_linear_revmap(gpio->domain, irqoffset);
->
->   		generic_handle_irq(irq);
->   		irq_status &= ~(1 << irqoffset);
-> @@ -93,44 +95,56 @@ static void dwapb_irq_handler(u32 irq, struct irq_desc *desc)
->   		if (gpio->toggle_edge & BIT(irqoffset))
->   			dwapb_toggle_trigger(gpio, irqoffset);
->   	}
-> +
-> +	if (chip->irq_eoi)
-> +		chip->irq_eoi(irq_desc_get_irq_data(desc));
->   }
->
->   static void dwapb_irq_enable(struct irq_data *d)
->   {
-> -	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-> -	struct dwapb_gpio *gpio = gc->private;
-> +	struct dwapb_gpio *gpio = irq_data_get_irq_chip_data(d);
-> +	struct bgpio_chip *bgc = &gpio->banks[0].bgc;
-> +	unsigned long flags;
-> +	u32 val;
->
-> -	u32 val = readl(gpio->regs + INT_EN_REG_OFFS);
-> +	spin_lock_irqsave(&bgc->lock, flags);
-> +	val = readl(gpio->regs + INT_EN_REG_OFFS);
->   	val |= 1 << d->hwirq;
->   	writel(val, gpio->regs + INT_EN_REG_OFFS);
-> +	spin_unlock_irqrestore(&bgc->lock, flags);
->   }
->
->   static void dwapb_irq_disable(struct irq_data *d)
->   {
-> -	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-> -	struct dwapb_gpio *gpio = gc->private;
-> +	struct dwapb_gpio *gpio = irq_data_get_irq_chip_data(d);
-> +	struct bgpio_chip *bgc = &gpio->banks[0].bgc;
-> +	unsigned long flags;
-> +	u32 val;
->
-> -	u32 val = readl(gpio->regs + INT_EN_REG_OFFS);
-> +	spin_lock_irqsave(&bgc->lock, flags);
-> +	val = readl(gpio->regs + INT_EN_REG_OFFS);
->   	val &= ~(1 << d->hwirq);
->   	writel(val, gpio->regs + INT_EN_REG_OFFS);
-> +	spin_unlock_irqrestore(&bgc->lock, flags);
->   }
->
->   static int dwapb_irq_set_type(struct irq_data *d, u32 type)
->   {
-> -	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-> -	struct dwapb_gpio *gpio = gc->private;
-> +	struct dwapb_gpio *gpio = irq_data_get_irq_chip_data(d);
-> +	struct bgpio_chip *bgc = &gpio->banks[0].bgc;
->   	int bit = d->hwirq;
-> -	unsigned long level, polarity;
-> +	unsigned long level, polarity, flags;
->
->   	if (type & ~(IRQ_TYPE_EDGE_RISING | IRQ_TYPE_EDGE_FALLING |
->   		     IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_LEVEL_LOW))
->   		return -EINVAL;
->
-> +	spin_lock_irqsave(&bgc->lock, flags);
->   	level = readl(gpio->regs + INT_TYPE_REG_OFFS);
->   	polarity = readl(gpio->regs + INT_POLARITY_REG_OFFS);
->
->   	gpio->toggle_edge &= ~BIT(bit);
-> -	if (type & IRQ_TYPE_EDGE_BOTH) {
-> +	if (type == IRQ_TYPE_EDGE_BOTH) {
->   		gpio->toggle_edge |= BIT(bit);
->   		level |= (1 << bit);
->   		dwapb_toggle_trigger(gpio, bit);
-> @@ -150,72 +164,102 @@ static int dwapb_irq_set_type(struct irq_data *d, u32 type)
->
->   	writel(level, gpio->regs + INT_TYPE_REG_OFFS);
->   	writel(polarity, gpio->regs + INT_POLARITY_REG_OFFS);
-> +	spin_unlock_irqrestore(&bgc->lock, flags);
->
->   	return 0;
->   }
->
-> -static int dwapb_create_irqchip(struct dwapb_gpio *gpio,
-> -				struct dwapb_gpio_bank *bank,
-> -				unsigned int irq_base)
-> +static void dwapb_irq_ack(struct irq_data *d)
->   {
-> -	struct irq_chip_type *ct;
-> -
-> -	gpio->irq_gc = irq_alloc_generic_chip("gpio-dwapb", 1, irq_base,
-> -					      gpio->regs, handle_level_irq);
-> -	if (!gpio->irq_gc)
-> -		return -EIO;
-> -
-> -	gpio->irq_gc->domain.of_node = of_node_get(bank->bgc.gc.of_node);
-> -	gpio->irq_gc->private = gpio;
-> -	ct = gpio->irq_gc->chip_types;
-> -	ct->chip.irq_ack = irq_gc_ack_set_bit;
-> -	ct->chip.irq_mask = irq_gc_mask_set_bit;
-> -	ct->chip.irq_unmask = irq_gc_mask_clr_bit;
-> -	ct->chip.irq_set_type = dwapb_irq_set_type;
-> -	ct->chip.irq_enable = dwapb_irq_enable;
-> -	ct->chip.irq_disable = dwapb_irq_disable;
-> -	ct->regs.ack = EOI_REG_OFFS;
-> -	ct->regs.mask = INT_MASK_REG_OFFS;
-> -	irq_setup_generic_chip(gpio->irq_gc, IRQ_MSK(bank->bgc.gc.ngpio),
-> -			       IRQ_GC_INIT_NESTED_LOCK, IRQ_NOREQUEST, 0);
-> +	struct dwapb_gpio *gpio = irq_data_get_irq_chip_data(d);
-> +	struct bgpio_chip *bgc = &gpio->banks[0].bgc;
-> +	unsigned long flags;
->
-> -	return 0;
-> +	spin_lock_irqsave(&bgc->lock, flags);
-> +	writel(1 << d->hwirq, gpio->regs + EOI_REG_OFFS);
-> +	spin_unlock_irqrestore(&bgc->lock, flags);
->   }
->
-> -static int dwapb_configure_irqs(struct dwapb_gpio *gpio,
-> -				struct dwapb_gpio_bank *bank)
-> +static void dwapb_irq_mask(struct irq_data *d)
->   {
-> -	unsigned int m, irq, ngpio = bank->bgc.gc.ngpio;
-> -	int irq_base;
-> -
-> -	for (m = 0; m < ngpio; ++m) {
-> -		irq = irq_of_parse_and_map(bank->bgc.gc.of_node, m);
-> -		if (!irq && m == 0) {
-> -			dev_warn(gpio->dev, "no irq for bank %s\n",
-> -				 bank->bgc.gc.of_node->full_name);
-> -			return -ENXIO;
-> -		} else if (!irq) {
-> -			break;
-> -		}
-> -
-> -		irq_set_chained_handler(irq, dwapb_irq_handler);
-> -		irq_set_handler_data(irq, gpio);
-> -	}
-> -	bank->bgc.gc.to_irq = dwapb_gpio_to_irq;
-> +	struct dwapb_gpio *gpio = irq_data_get_irq_chip_data(d);
-> +	struct bgpio_chip *bgc = &gpio->banks[0].bgc;
-> +	unsigned long value, flags;
-> +
-> +	spin_lock_irqsave(&bgc->lock, flags);
-> +	value = readl(gpio->regs + INT_MASK_REG_OFFS);
-> +	value |= 1 << d->hwirq;
-> +	writel(value, gpio->regs + INT_MASK_REG_OFFS);
-> +	spin_unlock_irqrestore(&bgc->lock, flags);
-> +}
->
-> -	irq_base = irq_alloc_descs(-1, 0, ngpio, NUMA_NO_NODE);
-> -	if (irq_base < 0)
-> -		return irq_base;
-> +static void dwapb_irq_unmask(struct irq_data *d)
-> +{
-> +	struct dwapb_gpio *gpio = irq_data_get_irq_chip_data(d);
-> +	struct bgpio_chip *bgc = &gpio->banks[0].bgc;
-> +	unsigned long value, flags;
-> +
-> +	spin_lock_irqsave(&bgc->lock, flags);
-> +	value = readl(gpio->regs + INT_MASK_REG_OFFS);
-> +	value &= ~(1 << d->hwirq);
-> +	writel(value, gpio->regs + INT_MASK_REG_OFFS);
-> +	spin_unlock_irqrestore(&bgc->lock, flags);
-> +}
->
-> -	if (dwapb_create_irqchip(gpio, bank, irq_base))
-> -		goto out_free_descs;
-> +static struct irq_chip dwapb_irq_chip = {
-> +	.name = "gpio-dwapb",
-> +	.irq_ack = dwapb_irq_ack,
-> +	.irq_mask = dwapb_irq_mask,
-> +	.irq_unmask = dwapb_irq_unmask,
-> +	.irq_set_type = dwapb_irq_set_type,
-> +	.irq_enable = dwapb_irq_enable,
-> +	.irq_disable = dwapb_irq_disable,
-> +};
-> +
-> +static int dwapb_gpio_irq_map(struct irq_domain *domain,
-> +			      unsigned int irq,
-> +			      irq_hw_number_t hwirq)
-> +{
-> +	struct dwapb_gpio *gpio = domain->host_data;
-> +
-> +	irq_set_chip_data(irq, gpio);
-> +	irq_set_chip_and_handler(irq, &dwapb_irq_chip, handle_level_irq);
-> +	irq_set_irq_type(irq, IRQ_TYPE_NONE);
-> +	irq_set_handler_data(irq, gpio);
->
->   	return 0;
-> +}
->
-> -out_free_descs:
-> -	irq_free_descs(irq_base, ngpio);
-> +static struct irq_domain_ops dwapb_gpio_irq_ops = {
-> +	.map = dwapb_gpio_irq_map,
-> +	.xlate = irq_domain_xlate_twocell,
-> +};
->
-> -	return -EIO;
-> +static void dwapb_configure_irqs(struct dwapb_gpio *gpio,
-> +				 struct dwapb_gpio_bank *bank)
-> +{
-> +	struct gpio_chip *gc = &bank->bgc.gc;
-> +	struct device_node *node =  gc->of_node;
-> +	unsigned int ngpio = gc->ngpio;
-> +	int reg;
-> +
-> +	if (of_get_property(node, "interrupts", &reg) == NULL)
-> +		return;
-> +
-> +	gpio->hwirq = irq_of_parse_and_map(node, 0);
-> +	if (gpio->hwirq == NO_IRQ)
-> +		return;
-> +
-> +	gpio->domain = irq_domain_add_linear(node, ngpio, &dwapb_gpio_irq_ops,
-> +					     gpio);
-> +	if (!gpio->domain) {
-> +		irq_dispose_mapping(gpio->hwirq);
-> +		return;
-> +	}
-> +
-> +	irq_set_handler_data(gpio->hwirq, gpio);
-> +	irq_set_chained_handler(gpio->hwirq, dwapb_irq_handler);
-> +	bank->bgc.gc.to_irq = dwapb_gpio_to_irq;
->   }
->
->   static int dwapb_gpio_add_bank(struct dwapb_gpio *gpio,
-> @@ -240,7 +284,6 @@ static int dwapb_gpio_add_bank(struct dwapb_gpio *gpio,
->   		return -EINVAL;
->   	}
->
-> -	bank->bank_idx = bank_idx;
->   	err = bgpio_init(&bank->bgc, gpio->dev, 4,
->   			 gpio->regs + 0x50 + (bank_idx * 0x4),
->   			 gpio->regs + 0x00 + (bank_idx * 0xc),
-> @@ -282,7 +325,7 @@ static void dwapb_gpio_unregister(struct dwapb_gpio *gpio)
->   	of_node_put(gpio->of_node);
->   }
->
-> -static int __devinit dwapb_gpio_probe(struct platform_device *pdev)
-> +static int dwapb_gpio_probe(struct platform_device *pdev)
->   {
->   	struct resource *res;
->   	struct dwapb_gpio *gpio;
-> @@ -296,21 +339,29 @@ static int __devinit dwapb_gpio_probe(struct platform_device *pdev)
->   	gpio->dev = &pdev->dev;
->
->   	gpio->nr_banks = dwapb_gpio_nr_banks(pdev->dev.of_node);
-> -	if (!gpio->nr_banks)
-> -		return -EINVAL;
-> +	if (!gpio->nr_banks) {
-> +		err = -EINVAL;
-> +		goto out_err;
-> +	}
->   	gpio->banks = devm_kzalloc(&pdev->dev, gpio->nr_banks *
->   				   sizeof(*gpio->banks), GFP_KERNEL);
-> -	if (!gpio->banks)
-> -		return -ENOMEM;
-> +	if (!gpio->banks) {
-> +		err = -ENOMEM;
-> +		goto out_err;
-> +	}
->
->   	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->   	if (!res) {
->   		dev_err(&pdev->dev, "failed to get iomem\n");
-> -		return -ENXIO;
-> +		err = -ENXIO;
-> +		goto out_free_banks;
->   	}
-> +
->   	gpio->regs = devm_ioremap(&pdev->dev, res->start, resource_size(res));
-> -	if (!gpio->regs)
-> -		return -ENOMEM;
-> +	if (!gpio->regs) {
-> +		err = -ENOMEM;
-> +		goto out_free_banks;
-> +	}
->
->   	gpio->of_node = of_node_get(pdev->dev.of_node);
->   	for_each_child_of_node(pdev->dev.of_node, np) {
-> @@ -325,9 +376,34 @@ static int __devinit dwapb_gpio_probe(struct platform_device *pdev)
->   out_unregister:
->   	dwapb_gpio_unregister(gpio);
->
-> +	if (gpio->domain) {
-> +		irq_dispose_mapping(gpio->hwirq);
-> +		irq_domain_remove(gpio->domain);
-> +	}
-> +
-> +out_free_banks:
-> +	devm_kfree(&pdev->dev, gpio->banks);
-> +
-> +out_err:
-> +	devm_kfree(&pdev->dev, gpio);
+> 
+> Changes:
+> v2:
+> * it does not try to introduce a realmode search function.
+> Instead, liobn-to-iommu-group lookup is done by VFIO KVM device
+> in virtual mode and the result (iommu_group pointer) is cached
+> in kvm_arch so the realmode handlers do not use VFIO KVM device for that.
+> And the iommu groups get released on KVM termination.
+> 
+> I tried this, seems viable.
+> 
+> Did not I miss anything? Thanks.
 
-devm_ will take care of kfree for you.
+A commit message ;)
 
->   	return err;
->   }
->
-> +static int dwapb_gpio_remove(struct platform_device *pdev)
-> +{
-> +	struct dwapb_gpio *gpio = platform_get_drvdata(pdev);
+> ---
+>  arch/powerpc/include/asm/kvm_host.h |  3 ++
+>  arch/powerpc/kvm/Kconfig            |  1 +
+>  arch/powerpc/kvm/Makefile           |  3 ++
+>  include/linux/vfio.h                |  3 ++
+>  include/uapi/linux/kvm.h            |  1 +
+>  virt/kvm/vfio.c                     | 74 +++++++++++++++++++++++++++++++++++++
+>  6 files changed, 85 insertions(+)
+> 
+> diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
+> index 48dbe8b..e1163d7 100644
+> --- a/arch/powerpc/include/asm/kvm_host.h
+> +++ b/arch/powerpc/include/asm/kvm_host.h
+> @@ -293,6 +293,9 @@ struct kvm_arch {
+>  #ifdef CONFIG_KVM_XICS
+>  	struct kvmppc_xics *xics;
+>  #endif
+> +#ifdef CONFIG_KVM_VFIO
+> +	struct kvm_vfio *vfio;
+> +#endif
+>  };
+>  
+>  /*
+> diff --git a/arch/powerpc/kvm/Kconfig b/arch/powerpc/kvm/Kconfig
+> index 61b3535..d1b7f64 100644
+> --- a/arch/powerpc/kvm/Kconfig
+> +++ b/arch/powerpc/kvm/Kconfig
+> @@ -60,6 +60,7 @@ config KVM_BOOK3S_64
+>  	select KVM_BOOK3S_64_HANDLER
+>  	select KVM
+>  	select SPAPR_TCE_IOMMU
+> +	select KVM_VFIO
+>  	---help---
+>  	  Support running unmodified book3s_64 and book3s_32 guest kernels
+>  	  in virtual machines on book3s_64 host processors.
+> diff --git a/arch/powerpc/kvm/Makefile b/arch/powerpc/kvm/Makefile
+> index 6646c95..2438d2e 100644
+> --- a/arch/powerpc/kvm/Makefile
+> +++ b/arch/powerpc/kvm/Makefile
+> @@ -87,6 +87,9 @@ kvm-book3s_64-builtin-objs-$(CONFIG_KVM_BOOK3S_64_HV) := \
+>  kvm-book3s_64-objs-$(CONFIG_KVM_XICS) += \
+>  	book3s_xics.o
+>  
+> +kvm-book3s_64-objs-$(CONFIG_KVM_VFIO) += \
+> +	$(KVM)/vfio.o \
 > +
-> +	dwapb_gpio_unregister(gpio);
-> +	if (gpio->domain) {
-> +		irq_dispose_mapping(gpio->hwirq);
-> +		irq_domain_remove(gpio->domain);
-> +	}
-> +	devm_kfree(&pdev->dev, gpio->banks);
-> +	devm_kfree(&pdev->dev, gpio);
+>  kvm-book3s_64-module-objs := \
+>  	$(KVM)/kvm_main.o \
+>  	$(KVM)/eventfd.o \
+> diff --git a/include/linux/vfio.h b/include/linux/vfio.h
+> index 24579a0..681e19b 100644
+> --- a/include/linux/vfio.h
+> +++ b/include/linux/vfio.h
+> @@ -97,4 +97,7 @@ extern struct vfio_group *vfio_group_get_external_user(struct file *filep);
+>  extern void vfio_group_put_external_user(struct vfio_group *group);
+>  extern int vfio_external_user_iommu_id(struct vfio_group *group);
+>  
+> +extern struct iommu_group *vfio_find_group_by_liobn(struct kvm *kvm,
+> +		unsigned long liobn);
+> +
 
-ditto.
+Nope, this doesn't go in vfio.h, it's a function provided by kvm.  It
+should be named as such too, kvm_vfio_...  It also depends on both
+CONFIG_KVM_VFIO and CONFIG_SPAPR_TCE_IOMMU and needs stub version
+otherwise.  Is just _liobn specific enough or does it need a spapr_tce
+thrown in to avoid confusion with embedded ppc folks?
+
+>  #endif /* VFIO_H */
+> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+> index 7c1a349..a74ad16 100644
+> --- a/include/uapi/linux/kvm.h
+> +++ b/include/uapi/linux/kvm.h
+> @@ -847,6 +847,7 @@ struct kvm_device_attr {
+>  #define  KVM_DEV_VFIO_GROUP			1
+>  #define   KVM_DEV_VFIO_GROUP_ADD			1
+>  #define   KVM_DEV_VFIO_GROUP_DEL			2
+> +#define  KVM_DEV_VFIO_SPAPR_TCE_LIOBN		2
+
+I wonder if it would be better architecturally if this was an attribute
+rather than a new group, ex:
+
+#define   KVM_DEV_VFIO_GROUP_SET_SPAPR_TCE_LIOBN   3
+
+It's a mouthful, but we are setting an attribute of a VFIO group, so it
+makes sense.  kvm_device_attr.addr would then need to point to a struct
+containing both the fd and liobn.
+
+Whatever we come up with need a documentation addition in
+Documentation/virtual/kvm/devices/vfio.txt.
+
+>  
+>  /*
+>   * ioctls for VM fds
+> diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
+> index ca4260e..f9271d5 100644
+> --- a/virt/kvm/vfio.c
+> +++ b/virt/kvm/vfio.c
+> @@ -22,6 +22,9 @@
+>  struct kvm_vfio_group {
+>  	struct list_head node;
+>  	struct vfio_group *vfio_group;
+> +#ifdef CONFIG_SPAPR_TCE_IOMMU
+> +	uint64_t liobn;
+
+Why is liobn an unsigned long in the exported function but a uint64_t
+here?
+
+> +#endif
+>  };
+>  
+>  struct kvm_vfio {
+> @@ -188,12 +191,76 @@ static int kvm_vfio_set_group(struct kvm_device *dev, long attr, u64 arg)
+>  	return -ENXIO;
+>  }
+>  
+> +#ifdef CONFIG_SPAPR_TCE_IOMMU
+> +static int kvm_vfio_set_spapr_tce_liobn(struct kvm_device *dev,
+> +		long attr, u64 arg)
+> +{
+> +	struct kvm_vfio *kv = dev->private;
+> +	struct vfio_group *vfio_group;
+> +	struct kvm_vfio_group *kvg;
+> +	void __user *argp = (void __user *)arg;
+> +	struct fd f;
+> +	int32_t fd;
+> +	uint64_t liobn = attr;
+> +
+> +	if (get_user(fd, (int32_t __user *)argp))
+> +		return -EFAULT;
+> +
+> +	f = fdget(fd);
+> +	if (!f.file)
+> +		return -EBADF;
+> +
+> +	vfio_group = kvm_vfio_group_get_external_user(f.file);
+> +	fdput(f);
+
+
+Not sure why you dropped this from the example of kvm_vfio_set_group:
+
+        if (IS_ERR(vfio_group))
+                return PTR_ERR(vfio_group);
+
+You're also ignoring kv->lock.
 
 > +
-> +	return 0;
+> +	list_for_each_entry(kvg, &kv->group_list, node) {
+> +		if (kvg->vfio_group == vfio_group) {
+> +			WARN_ON(kvg->liobn);
+
+Userspace should not be able to trigger a WARN this easily.  Return
+EBUSY if it's an error, otherwise let it go.
+
+> +			kvg->liobn = liobn;
+> +			kvm_vfio_group_put_external_user(vfio_group);
+> +			return 0;
+> +		}
+> +	}
+> +
+> +	kvm_vfio_group_put_external_user(vfio_group);
+> +
+> +	return -ENXIO;
 > +}
 > +
->   static const struct of_device_id dwapb_of_match_table[] = {
->   	{ .compatible = "snps,dw-apb-gpio" },
->   	{ /* Sentinel */ }
-> @@ -340,6 +416,7 @@ static struct platform_driver dwapb_gpio_driver = {
->   		.of_match_table = dwapb_of_match_table,
->   	},
->   	.probe		= dwapb_gpio_probe,
-> +	.remove		= dwapb_gpio_remove,
->   };
->
->   static int __init dwapb_gpio_init(void)
-> @@ -348,6 +425,12 @@ static int __init dwapb_gpio_init(void)
->   }
->   postcore_initcall(dwapb_gpio_init);
->
-> +static void __exit dwapb_gpio_exit(void)
+> +struct iommu_group *vfio_find_group_by_liobn(struct kvm *kvm,
+> +		unsigned long liobn)
+
+As mentioned, kvm_vfio_...
+
 > +{
-> +	platform_driver_unregister(&dwapb_gpio_driver);
+> +	struct kvm_vfio_group *kvg;
+> +
+> +	if (!kvm->arch.vfio)
+> +		return NULL;
+
+If this is already a slow path you can avoid stashing this pointer and
+search kvm->devices for the matching ops struct.
+
+
+kv->lock...
+
+> +
+> +	list_for_each_entry(kvg, &kvm->arch.vfio->group_list, node) {
+> +		if (kvg->liobn == liobn) {
+> +			int group_id = vfio_external_user_iommu_id(
+> +					kvg->vfio_group);
+> +			struct iommu_group *grp =
+> +					iommu_group_get_by_id(group_id);
+
+nit, ugly line wrapping.  Where's the iommu_group_put() done?
+
+> +			return grp;
+
+So you've now got an liobn to iommu_group mapping cached away somewhere,
+what happens when a group is removed?  Would it be invalid for userspace
+to re-use the liobn?  Do we need a way to invalidate your cached entry
+and perhaps do an iommu_group_put()?
+
+This version is actually plausible, so big improvement from v1!  Thanks,
+
+Alex
+
+> +		}
+> +	}
+> +
+> +	return NULL;
 > +}
-> +module_exit(dwapb_gpio_exit);
+> +EXPORT_SYMBOL_GPL(vfio_find_group_by_liobn);
+> +#endif
+> +
+>  static int kvm_vfio_set_attr(struct kvm_device *dev,
+>  			     struct kvm_device_attr *attr)
+>  {
+>  	switch (attr->group) {
+>  	case KVM_DEV_VFIO_GROUP:
+>  		return kvm_vfio_set_group(dev, attr->attr, attr->addr);
+> +#ifdef CONFIG_SPAPR_TCE_IOMMU
+> +	case KVM_DEV_VFIO_SPAPR_TCE_LIOBN:
+> +		return kvm_vfio_set_spapr_tce_liobn(dev, attr->attr,
+> +				attr->addr);
+> +#endif
+>  	}
+>  
+>  	return -ENXIO;
+> @@ -211,6 +278,10 @@ static int kvm_vfio_has_attr(struct kvm_device *dev,
+>  		}
+>  
+>  		break;
+> +#ifdef CONFIG_SPAPR_TCE_IOMMU
+> +	case KVM_DEV_VFIO_SPAPR_TCE_LIOBN:
+> +		return 0;
+> +#endif
+>  	}
+>  
+>  	return -ENXIO;
+> @@ -251,6 +322,9 @@ static int kvm_vfio_create(struct kvm_device *dev, u32 type)
+>  	mutex_init(&kv->lock);
+>  
+>  	dev->private = kv;
+> +#ifdef CONFIG_SPAPR_TCE_IOMMU
+> +	dev->kvm->arch.vfio = kv;
+> +#endif
+>  
+>  	return 0;
+>  }
 
-module_platform_driver() for _init and _exit above and get rid
-of postcore_initcall?
 
->   MODULE_LICENSE("GPL");
->   MODULE_AUTHOR("Jamie Iles");
->   MODULE_DESCRIPTION("Synopsys DesignWare APB GPIO driver");
->
 
