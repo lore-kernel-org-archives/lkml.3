@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab3KED13 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 22:27:29 -0500
-Received: from ozlabs.org ([203.10.76.45]:60762 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750819Ab3KED12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 22:27:28 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, <linux-kbuild@vger.kernel.org>
-Subject: Re: linux-next: build warnings after merge of the modules tree
-In-Reply-To: <20131104134134.48665968dd006e3310333993@canb.auug.org.au>
-References: <20131104134134.48665968dd006e3310333993@canb.auug.org.au>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Tue, 05 Nov 2013 12:50:33 +1030
-Message-ID: <87fvrba8su.fsf@rustcorp.com.au>
+	id S1754234Ab3KEDaW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 22:30:22 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:41123 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819Ab3KEDaV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 22:30:21 -0500
+Message-ID: <52786640.90403@oracle.com>
+Date: Tue, 05 Nov 2013 11:30:08 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Bob Liu <lliubbo@gmail.com>, konrad.wilk@oracle.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] drivers: xen-selfballoon: consider slab pages
+References: <1383568764-30478-1-git-send-email-bob.liu@oracle.com> <5277D7EA.9000801@citrix.com>
+In-Reply-To: <5277D7EA.9000801@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell <sfr@canb.auug.org.au> writes:
-> Hi Rusty,
->
-> After merging the modules tree, today's linux-next build (x86_64
-> allmodconfig) produced these warning:
->
-> WARNING: vmlinux: 'pci_restore_msi_state' exported twice. Previous export was in vmlinux
-> WARNING: vmlinux: '__mod_zone_page_state' exported twice. Previous export was in vmlinux
-> WARNING: vmlinux: 'scsi_prep_return' exported twice. Previous export was in vmlinux
-> WARNING: vmlinux: 'hvc_poll' exported twice. Previous export was in vmlinux
-> WARNING: vmlinux: 'nfs_clear_inode' exported twice. Previous export was in vmlinux
->
-> (just some samples ... it scrolled off my scrollback :-()
->
-> Presumably caused by commit e0f244c63fc9 ("asmlinkage, module: Make
-> ksymtab and kcrctab symbols and __this_module __visible").  (reverting
-> that commit makes the warnings go away.)
 
-This works for me.... feedback please!
+On 11/05/2013 01:22 AM, David Vrabel wrote:
+> On 04/11/13 12:39, Bob Liu wrote:
+>> Currently the goal_page in xen-selfballon doesn't consider much about pages used
+>> in kernel space.
+>> A typical usage is slab pages, without consider slab pages the goal_page result
+>> may be too rough and lead extra memory pressure to guest os.
+> 
+> Can you provide some real world figures where the calculatation got it
+> wrong? What was the resultant behavior?  Swap death? OOM killer?
+> 
 
-Cheers,
-Rusty.
+Sorry, I didn't run any testing I just think it's unreasonable while
+reading the source code.
 
-modpost: fix bogus 'exported twice' warnings.
+vm_memory_committed() only calculate pages which mapped to process
+address space, but the kernel itself(like block, fs and network
+subsystem) may occupy some memory. And it's possible that those
+subsystem may occupy a significant amount of memory in some situation.
 
-Andi's change in e0f244c63fc9 ("asmlinkage, module: Make ksymtab and
-kcrctab symbols and __this_module __visible") make the crc appear
-first in the symbol table.
+I'm afraid if we don't consider those kernel memory while calculating
+goal_pages, guest memory will be set lower than guest really needs.
 
-modpost creates an entry when it sees the CRC, then when it sees the
-actual symbol, it complains that it's seen it before.  The preloaded
-flag already exists for the equivalent case where we loaded from
-Module.symvers, so use that.
+>> Signed-off-by: Bob Liu <bob.liu@oracle.com>
+>> ---
+>>  drivers/xen/xen-selfballoon.c |    2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/drivers/xen/xen-selfballoon.c b/drivers/xen/xen-selfballoon.c
+>> index 21e18c1..4814759 100644
+>> --- a/drivers/xen/xen-selfballoon.c
+>> +++ b/drivers/xen/xen-selfballoon.c
+>> @@ -191,6 +191,8 @@ static void selfballoon_process(struct work_struct *work)
+>>  		tgt_pages = cur_pages; /* default is no change */
+>>  		goal_pages = vm_memory_committed() +
+>>  				totalreserve_pages +
+>> +				global_page_state(NR_SLAB_RECLAIMABLE) +
+> 
+> Does SLAB_RECLAIMABLE want to be included here?  Unless I'm
+> misunderstanding here, SLAB_RECLAIMABLE is effectively free.
+> 
 
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+SLAB_RECLAIMABLE isn't effectively free, it means the slab page is in
+used but can be reclaimed(freed) during memory pressure.
 
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-index 9b873ac6ed7b..5c677a3e7487 100644
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -164,7 +164,7 @@ struct symbol {
- 	unsigned int vmlinux:1;    /* 1 if symbol is defined in vmlinux */
- 	unsigned int kernel:1;     /* 1 if symbol is from kernel
- 				    *  (only for external modules) **/
--	unsigned int preloaded:1;  /* 1 if symbol from Module.symvers */
-+	unsigned int preloaded:1;  /* 1 if symbol from Module.symvers, or crc */
- 	enum export  export;       /* Type of export */
- 	char name[0];
- };
-@@ -332,8 +332,11 @@ static void sym_update_crc(const char *name, struct module *mod,
- {
- 	struct symbol *s = find_symbol(name);
- 
--	if (!s)
-+	if (!s) {
- 		s = new_symbol(name, mod, export);
-+		/* Don't complain when we find it later. */
-+		s->preloaded = 1;
-+	}
- 	s->crc = crc;
- 	s->crc_valid = 1;
- }
+>> +				global_page_state(NR_SLAB_UNRECLAIMABLE) +
+> 
+> This bit looks fine to me.
+> 
+>>  				MB2PAGES(selfballoon_reserved_mb);
+>>  #ifdef CONFIG_FRONTSWAP
+>>  		/* allow space for frontswap pages to be repatriated */
+> 
+> David
+> 
+
+Thanks for your review.
+
+-- 
+Regards,
+-Bob
