@@ -1,211 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab3KERus (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 12:50:48 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:40877 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755384Ab3KERup (ORCPT
+	id S1755481Ab3KERvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 12:51:12 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:33373 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755174Ab3KERvJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 12:50:45 -0500
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH 4/5] OF: Export all DT proc update functions
-Date: Tue,  5 Nov 2013 19:50:15 +0200
-Message-Id: <1383673816-29293-5-git-send-email-panto@antoniou-consulting.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com>
-References: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com>
+	Tue, 5 Nov 2013 12:51:09 -0500
+Subject: Re: [PATCH 03/11] devicetree: bindings: Document qcom,kpss-acc
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=US-ASCII
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <52792E78.4060600@codeaurora.org>
+Date: Tue, 5 Nov 2013 11:51:07 -0600
+Cc: linux-arm-kernel@lists.infradead.org, David Brown <davidb@codeaurora.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, devicetree@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <E034522B-A62C-40A4-800C-00D592AAEF47@codeaurora.org>
+References: <1383343739-23080-1-git-send-email-sboyd@codeaurora.org> <1383343739-23080-4-git-send-email-sboyd@codeaurora.org> <EA8C3C10-2AD6-4179-A785-12001E439364@codeaurora.org> <52792E78.4060600@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are other users for the proc DT functions.
-Export them.
 
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
----
- drivers/of/base.c  | 70 ++++++++++++++++++++++++++++++------------------------
- include/linux/of.h | 29 ++++++++++++++++++++++
- 2 files changed, 68 insertions(+), 31 deletions(-)
+On Nov 5, 2013, at 11:44 AM, Stephen Boyd wrote:
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 0ffc5a9..c3c5391 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -1435,6 +1435,40 @@ int of_property_notify(int action, struct device_node *np,
- }
- #endif
- 
-+#ifdef CONFIG_PROC_DEVICETREE
-+
-+void of_add_proc_dt_entry(struct device_node *dn)
-+{
-+	struct proc_dir_entry *ent;
-+
-+	ent = proc_mkdir(strrchr(dn->full_name, '/') + 1, dn->parent->pde);
-+	if (ent)
-+		proc_device_tree_add_node(dn, ent);
-+}
-+
-+void of_add_proc_dt_prop_entry(struct device_node *np,
-+		struct property *prop)
-+{
-+	if (np && prop && np->pde)
-+		proc_device_tree_add_prop(np->pde, prop);
-+}
-+
-+void of_remove_proc_dt_prop_entry(struct device_node *np,
-+		struct property *prop)
-+{
-+	if (np && prop && np->pde)
-+		proc_device_tree_remove_prop(np->pde, prop);
-+}
-+
-+void of_update_proc_dt_prop_entry(struct device_node *np,
-+		struct property *newprop, struct property *oldprop)
-+{
-+	if (np && newprop && oldprop && np->pde)
-+		proc_device_tree_update_prop(np->pde, newprop, oldprop);
-+}
-+
-+#endif /* CONFIG_PROC_DEVICETREE */
-+
- /**
-  * of_add_property - Add a property to a node
-  */
-@@ -1462,11 +1496,8 @@ int of_add_property(struct device_node *np, struct property *prop)
- 	*next = prop;
- 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
- 
--#ifdef CONFIG_PROC_DEVICETREE
- 	/* try to add to proc as well if it was initialized */
--	if (np->pde)
--		proc_device_tree_add_prop(np->pde, prop);
--#endif /* CONFIG_PROC_DEVICETREE */
-+	of_add_proc_dt_prop_entry(np, prop);
- 
- 	return 0;
- }
-@@ -1508,11 +1539,7 @@ int of_remove_property(struct device_node *np, struct property *prop)
- 	if (!found)
- 		return -ENODEV;
- 
--#ifdef CONFIG_PROC_DEVICETREE
--	/* try to remove the proc node as well */
--	if (np->pde)
--		proc_device_tree_remove_prop(np->pde, prop);
--#endif /* CONFIG_PROC_DEVICETREE */
-+	of_remove_proc_dt_prop_entry(np, prop);
- 
- 	return 0;
- }
-@@ -1562,11 +1589,8 @@ int of_update_property(struct device_node *np, struct property *newprop)
- 	if (!found)
- 		return -ENODEV;
- 
--#ifdef CONFIG_PROC_DEVICETREE
- 	/* try to add to proc as well if it was initialized */
--	if (np->pde)
--		proc_device_tree_update_prop(np->pde, newprop, oldprop);
--#endif /* CONFIG_PROC_DEVICETREE */
-+	of_update_proc_dt_prop_entry(np, newprop, oldprop);
- 
- 	return 0;
- }
-@@ -1602,22 +1626,6 @@ int of_reconfig_notify(unsigned long action, void *p)
- 	return notifier_to_errno(rc);
- }
- 
--#ifdef CONFIG_PROC_DEVICETREE
--static void of_add_proc_dt_entry(struct device_node *dn)
--{
--	struct proc_dir_entry *ent;
--
--	ent = proc_mkdir(strrchr(dn->full_name, '/') + 1, dn->parent->pde);
--	if (ent)
--		proc_device_tree_add_node(dn, ent);
--}
--#else
--static void of_add_proc_dt_entry(struct device_node *dn)
--{
--	return;
--}
--#endif
--
- /**
-  * of_attach_node - Plug a device node into the tree and global list.
-  */
-@@ -1643,12 +1651,12 @@ int of_attach_node(struct device_node *np)
- }
- 
- #ifdef CONFIG_PROC_DEVICETREE
--static void of_remove_proc_dt_entry(struct device_node *dn)
-+void of_remove_proc_dt_entry(struct device_node *dn)
- {
- 	proc_remove(dn->pde);
- }
- #else
--static void of_remove_proc_dt_entry(struct device_node *dn)
-+void of_remove_proc_dt_entry(struct device_node *dn)
- {
- 	return;
- }
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 6fec255..a56c450 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -318,6 +318,35 @@ static inline int of_property_notify(int action, struct device_node *np,
- }
- #endif
- 
-+#ifdef CONFIG_PROC_DEVICETREE
-+
-+extern void of_add_proc_dt_entry(struct device_node *dn);
-+extern void of_remove_proc_dt_entry(struct device_node *dn);
-+
-+extern void of_add_proc_dt_prop_entry(struct device_node *np,
-+		struct property *prop);
-+
-+extern void of_remove_proc_dt_prop_entry(struct device_node *np,
-+		struct property *prop);
-+
-+extern void of_update_proc_dt_prop_entry(struct device_node *np,
-+		struct property *newprop, struct property *oldprop);
-+#else
-+
-+static inline void of_add_proc_dt_entry(struct device_node *dn) { }
-+static inline void of_remove_proc_dt_entry(struct device_node *dn) { }
-+
-+static inline void of_add_proc_dt_prop_entry(struct device_node *np,
-+		struct property *prop) { }
-+
-+static inline void of_remove_proc_dt_prop_entry(struct device_node *np,
-+		struct property *prop) { }
-+
-+static inline void of_update_proc_dt_prop_entry(struct device_node *np,
-+		struct property *newprop, struct property *oldprop) { }
-+
-+#endif
-+
- extern void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align));
- extern int of_alias_get_id(struct device_node *np, const char *stem);
- 
+> On 11/05/13 09:13, Kumar Gala wrote:
+>> On Nov 1, 2013, at 5:08 PM, Stephen Boyd wrote:
+>> 
+>>> diff --git a/Documentation/devicetree/bindings/arm/msm/qcom,kpss-acc.txt b/Documentation/devicetree/bindings/arm/msm/qcom,kpss-acc.txt
+>>> new file mode 100644
+>>> index 0000000..ed4a9c8
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/arm/msm/qcom,kpss-acc.txt
+>>> @@ -0,0 +1,21 @@
+>>> +* Krait Processor Sub-system (KPSS) Application Clock Controller (ACC)
+>>> +
+>>> +The KPSS ACC provides clock, power domain, and reset control to a Krait CPU.
+>>> +There is one ACC register region per CPU within the KPSS remaped region as
+>>> +well as an alias register region that remaps accesses to the ACC associated
+>>> +with the CPU accessing the region.
+>>> +
+>>> +Required Properties:
+>>> +
+>>> +- compatible : Shall contain "qcom,kpss-acc-v1" or "qcom,kpss-acc-v2".
+>>> +- reg: Specifies the base address and size of the banked register region.
+>>> +- cpu-offset : per-cpu offset used when the device is accessed without the
+>>> +		CPU remapping facilities.
+>>> +		The offset is cpu-offset + (0x10000 * cpu-nr).
+>>> +
+>>> +Example:
+>>> +
+>>> +	clock-controller@2008000 {
+>>> +		compatible = "qcom,kpss-acc-v2";
+>>> +		reg = <0x02008000 0x1000>;
+>>> +	};
+>>> -- 
+>> I don't get the cpu-offset business, shouldn't this just be:
+>> 	reg = <0x02008000 0x1000>, <0x02018000 0x1000>, <0x02028000 0x1000>, <0x02038000 0x1000>;
+>> 
+> 
+> (Sorry I forgot to add the cpu-offset to the example.)
+> 
+> Your reg property is one way to do it. I was following the example of
+> the GIC binding which just specifies the alias region of the GIC's CPU
+> registers and then has a cpu-offset property to describe how to reach a
+> specific CPU's region.
+
+Even in the gic's case I think we should have the reg property cover the memory map.
+
+- k
+
 -- 
-1.7.12
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
