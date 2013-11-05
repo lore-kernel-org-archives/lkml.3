@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab3KEAGs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 19:06:48 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:5013 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753901Ab3KEAGr (ORCPT
+	id S1754019Ab3KEAJV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 19:09:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49444 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151Ab3KEAJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 19:06:47 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 04 Nov 2013 16:01:31 -0800
-From: Eric Miao <eric.miao@nvidia.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Eric Miao <eric.miao@nvidia.com>, David Howells <dhowells@redhat.com>,
-        "Dan Willemsen" <dwillemsen@nvidia.com>
-Subject: [PATCH 2/2] MODSIG: use pre-generated X.509 key by MODPUBKEY
-Date: Mon, 4 Nov 2013 16:06:35 -0800
-Message-ID: <1383609995-8251-2-git-send-email-eric.miao@nvidia.com>
-X-Mailer: git-send-email 1.8.4.1
-In-Reply-To: <1383609995-8251-1-git-send-email-eric.miao@nvidia.com>
-References: <1383609995-8251-1-git-send-email-eric.miao@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 4 Nov 2013 19:09:19 -0500
+Date: Mon, 4 Nov 2013 16:09:18 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg Thelen <gthelen@google.com>
+Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        handai.szj@taobao.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v2 1/3] percpu: add test module for various percpu
+ operations
+Message-Id: <20131104160918.0c571b410cf165e9c4b4a502@linux-foundation.org>
+In-Reply-To: <1382895017-19067-2-git-send-email-gthelen@google.com>
+References: <1382895017-19067-1-git-send-email-gthelen@google.com>
+	<1382895017-19067-2-git-send-email-gthelen@google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If MODPUBKEY is specified and other than default ./signing_key.x509, use
-that key instead of generating one on-the-fly.
+On Sun, 27 Oct 2013 10:30:15 -0700 Greg Thelen <gthelen@google.com> wrote:
 
-Signed-off-by: Eric Miao <eric.miao@nvidia.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Dan Willemsen <dwillemsen@nvidia.com>
----
- kernel/Makefile | 8 ++++++++
- 1 file changed, 8 insertions(+)
+> Tests various percpu operations.
 
-diff --git a/kernel/Makefile b/kernel/Makefile
-index 1ce4755..66c7c32 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -165,6 +165,13 @@ ifndef CONFIG_MODULE_SIG_HASH
- $(error Could not determine digest type to use from kernel config)
- endif
- 
-+ifneq ($(MODPUBKEY),./signing_key.x509)
-+signing_key.x509: $(MODPUBKEY)
-+	@echo "###"
-+	@echo "### Use pre-generated X.509 key pair for signing modules."
-+	@echo "###"
-+	cp -f $< $@
-+else
- signing_key.priv signing_key.x509: x509.genkey
- 	@echo "###"
- 	@echo "### Now generating an X.509 key pair to be used for signing modules."
-@@ -202,3 +209,4 @@ x509.genkey:
- 	@echo >>x509.genkey "subjectKeyIdentifier=hash"
- 	@echo >>x509.genkey "authorityKeyIdentifier=keyid"
- endif
-+endif
--- 
-1.8.4.1
+Could you please take a look at the 32-bit build (this is i386):
 
+lib/percpu_test.c: In function 'percpu_test_init':
+lib/percpu_test.c:61: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:61: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:61: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:61: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:61: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:61: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:70: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:70: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:70: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:70: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:70: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:70: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:89: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:89: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:89: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:89: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:89: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:89: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:97: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:97: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:97: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:97: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:97: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:97: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:112: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:112: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:112: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:112: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:112: warning: integer constant is too large for 'long' type
+lib/percpu_test.c:112: warning: integer constant is too large for 'long' type
