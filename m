@@ -1,127 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304Ab3KEJPw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 04:15:52 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:59738 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab3KEJPr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 04:15:47 -0500
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-4f-5278b741c142
-Message-id: <5278B73F.1090508@samsung.com>
-Date: Tue, 05 Nov 2013 13:15:43 +0400
-From: Tarek Dakhran <t.dakhran@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.0
-MIME-version: 1.0
-To: Tomasz Figa <tomasz.figa@gmail.com>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Heiko Stuebner <heiko@sntech.de>,
-        Naour Romain <romain.naour@openwide.fr>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] clk: exynos5410: register clocks using common clock
- framework
-References: <1381763305-7085-1-git-send-email-v.tyrtov@samsung.com>
- <1381763305-7085-3-git-send-email-v.tyrtov@samsung.com>
- <1421095.b3lQaz2kV9@flatron>
-In-reply-to: <1421095.b3lQaz2kV9@flatron>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIIsWRmVeSWpSXmKPExsVy+t/xK7qO2yuCDFb18FlMWneAyWLeZ1mL
-	+UfOsVr8f/Sa1eLcq5WMFr0LrrJZbHp8jdViYdsSFovLu+awWcw4v4/J4vZlXoul1y8yWTyd
-	cJHNYsL0tSwWh1cAzVj3cjqLxZafHYwWrw62sVhs3jSV2WLVrj+MFlNn/GB3EPVYM28No0dL
-	cw+bx4LPV9g9/q56weyxc9Zddo+Vy7+webxaPZPV4861PWwe786dY/fYvKTe49U1Fo++LasY
-	PbZfm8fs8XmTnMfGuaEB/FFcNimpOZllqUX6dglcGZ93v2Ir2Ctc8eHtM+YGxs/8XYycHBIC
-	JhJ/V35lg7DFJC7cWw9kc3EICSxllJj26T4rhPOeUeLBh+UsIFW8AloSZ2dvYASxWQRUJa5+
-	fcnexcjBwSagLbFlhxdIWFQgTOJo009WiHJBiR+T74G1iggES+zYuYoZZCazwHFWiUedz9lA
-	eoUFoiXm3OCG2DWHUWL3io9MIA2cApoSiw/uYQexmQWsJVZO2sYIYctLbF7zlnkCo8AsJDtm
-	ISmbhaRsASPzKkbR1NLkguKk9FxDveLE3OLSvHS95PzcTYyQaP6yg3HxMatDjAIcjEo8vA/O
-	lgcJsSaWFVfmHmKU4GBWEuGtqawIEuJNSaysSi3Kjy8qzUktPsTIxMEp1cAobfp1zvurLF77
-	C7/qOfGdetGtuHfqRee1WUfDk24e87yflMAXZi0d92FWys+ow9pTqgKcw9Ln3nT0zKpfsHbD
-	6QNbds6rfFku8E6m5SyT2qInn0OLuReeP+LguO7hBct9WwUua+qziv56nNF6RWhDIu+hLc+d
-	Jr+06PON+Hg7wbTU4OXfkDe7lFiKMxINtZiLihMBhKTU0MQCAAA=
+	id S1753575Ab3KEJRo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 04:17:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56287 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750719Ab3KEJRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 04:17:42 -0500
+From: Baoquan He <bhe@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        akpm@linux-foundation.org, holt@sgi.com, davej@fedoraproject.org,
+        rmk+kernel@arm.linux.org.uk, vgoyal@redhat.com, chaowang@redhat.com,
+        mwhitehe@redhat.com, kexec@lists.infradead.org,
+        Baoquan He <bhe@redhat.com>
+Subject: [PATCH] x86: make reboot task only run on the appropriate processor
+Date: Tue,  5 Nov 2013 17:16:07 +0800
+Message-Id: <1383642967-12595-1-git-send-email-bhe@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Currently system always reboot after below message when execute "kexec -e".
 
-On 01.11.2013 20:58, Tomasz Figa wrote:
-> Hi,
->
-> On Monday 14 of October 2013 19:08:23 Vyacheslav Tyrtov wrote:
->> From: Tarek Dakhran <t.dakhran@samsung.com>
->>
->> The EXYNOS5410 clocks are statically listed and registered
->> using the Samsung specific common clock helper functions.
->>
->> Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
->> Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
->> ---
->>   .../devicetree/bindings/clock/exynos5410-clock.txt |  37 +++
->>   drivers/clk/samsung/Makefile                       |   1 +
->>   drivers/clk/samsung/clk-exynos5410.c               | 251
->> +++++++++++++++++++++ include/dt-bindings/clock/exynos5410.h
->>   | 175 ++++++++++++++ 4 files changed, 464 insertions(+)
->>   create mode 100644
->> Documentation/devicetree/bindings/clock/exynos5410-clock.txt create
->> mode 100644 drivers/clk/samsung/clk-exynos5410.c
->>   create mode 100644 include/dt-bindings/clock/exynos5410.h
-> The driver looks pretty good now, thanks for addressing my comments to
-> previous version. There are still few issues remaining, though. Please see
-> my comments inline.
->
-> [snip]
->> diff --git a/drivers/clk/samsung/clk-exynos5410.c
->> b/drivers/clk/samsung/clk-exynos5410.c new file mode 100644
->> index 0000000..c5eba08
->> --- /dev/null
->> +++ b/drivers/clk/samsung/clk-exynos5410.c
-> [snip]
->> +static struct of_device_id ext_clk_match[] __initdata = {
->> +	{ .compatible = "samsung,clock-oscclk", .data = (void *)0, },
->> +	{ },
->> +};
-> I don't see anything in binding documentation mentioning this compatible
-> value. Anyway, since there is already a generic binding for fixed rate
-> clocks, this shouldn't be needed at all.
->
->> +
->> +/* register exynos5410 clocks */
->> +static void __init exynos5410_clk_init(struct device_node *np)
->> +{
->> +	void __iomem *reg_base;
->> +
->> +	reg_base = of_iomap(np, 0);
->> +	if (!reg_base)
->> +		panic("%s: failed to map registers\n", __func__);
->> +
->> +	samsung_clk_init(np, reg_base, CLK_NR_CLKS,
->> +			exynos5410_clk_regs,
-> ARRAY_SIZE(exynos5410_clk_regs),
->> +			NULL, 0);
->> +	samsung_clk_of_register_fixed_ext(exynos5410_frt_ext_clks,
->> +			ARRAY_SIZE(exynos5410_frt_ext_clks),
->> +			ext_clk_match);
-> This call could be dropped after moving to generic fixed rate clock
-> bindings.
->
-> Best regards,
-> Tomasz
+[    0.572119] smpboot: Booting Node   0, Processors  #   1 OK
 
-Already done. Will be added in patch v3.
+In commit 1b3a5d02ee070c8f9943333b9b6370f486601e0f, reboot= handling was
+moved to kerne/reboot.c. However, the code to migrate current thread to
+reboot cpu was removed. That cause this incorrect kexec behavior.
 
+Now add that code block back.
 
-Thank you for comments, Tomasz.
+Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
+Reported-by: Dave Young <dyoung@redhat.com>
+Tested-by: WANG Chao <chaowang@redhat.com>
+Signed-off-by: Baoquan He <bhe@redhat.com>
+---
+ arch/x86/kernel/reboot.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-Best regards,
-     Tarek Dakhran
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 7e920bf..3049de9 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -551,6 +551,21 @@ void native_machine_shutdown(void)
+ {
+ 	/* Stop the cpus and apics */
+ #ifdef CONFIG_SMP
++       /* The boot cpu is always logical cpu 0 */
++       int reboot_cpu_id = 0;
++
++       /* See if there has been given a command line override */
++       if ((reboot_cpu != -1) && (reboot_cpu < nr_cpu_ids) &&
++               cpu_online(reboot_cpu))
++               reboot_cpu_id = reboot_cpu;
++
++       /* Make certain the cpu I'm about to reboot on is online */
++       if (!cpu_online(reboot_cpu_id))
++               reboot_cpu_id = smp_processor_id();
++
++       /* Make certain I only run on the appropriate processor */
++       set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
++
+ 	/*
+ 	 * Stop all of the others. Also disable the local irq to
+ 	 * not receive the per-cpu timer interrupt which may trigger
+-- 
+1.8.3.1
+
