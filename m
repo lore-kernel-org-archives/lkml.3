@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab3KEHCP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 02:02:15 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:55155 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759Ab3KEHCO (ORCPT
+	id S1753163Ab3KEHDj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 02:03:39 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:60390 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704Ab3KEHDi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 02:02:14 -0500
-X-Originating-IP: 109.242.2.94
-From: Aldo Iljazi <mail@aldo.io>
-To: chris.mason@fusionio.com
-Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] BTRFS: fixed coding style issues
-Date: Tue,  5 Nov 2013 09:02:01 +0200
-Message-Id: <1383634921-4271-1-git-send-email-mail@aldo.io>
-X-Mailer: git-send-email 1.8.3.2
+	Tue, 5 Nov 2013 02:03:38 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, Noam Camus <noamc@ezchip.com>,
+        greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] Critical ARC Fix for 3.12
+Thread-Topic: [PATCH] Critical ARC Fix for 3.12
+Thread-Index: AQHO18WbsuskSvVT90u/qJDX934fQg==
+Date: Tue, 5 Nov 2013 07:03:33 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA23075155522@IN01WEMBXA.internal.synopsys.com>
+References: <1383394669-20175-1-git-send-email-vgupta@synopsys.com>
+ <CAMuHMdV-PXujh_vf_rwz7-bAi7wBaSL+9tWixvWnpWXr7skKZA@mail.gmail.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.239.237]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Line 4989: Inserted a space after the comma.
-Lines 7986 and 8274: Inserted a space before the open parenthesis.
+On 11/03/2013 03:59 PM, Geert Uytterhoeven wrote:
+> Added CC stable, so Greg will see it.
+> Added commit 9c41f4eeb9d51f3ece20428d35a3ea32cf3b5622, so Greg knows
+> what to cherry-pick.
 
-Signed-off-by: Aldo Iljazi <mail@aldo.io>
----
- fs/btrfs/extent-tree.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Thanks Geert. While cover-letter was not, the patch itself was CC'ed to stable -
+this cover letter, with PATCH prefix has caused enough confusion already :-(
 
-diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-index d58bef1..3bcd7c0 100644
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -4986,7 +4986,7 @@ int btrfs_delalloc_reserve_metadata(struct inode *inode, u64 num_bytes)
- 		mutex_unlock(&BTRFS_I(inode)->delalloc_mutex);
- 
- 	if (to_reserve)
--		trace_btrfs_space_reservation(root->fs_info,"delalloc",
-+		trace_btrfs_space_reservation(root->fs_info, "delalloc",
- 					      btrfs_ino(inode), to_reserve, 1);
- 	block_rsv_add_bytes(block_rsv, to_reserve, 1);
- 
-@@ -7983,7 +7983,7 @@ u64 btrfs_account_ro_block_groups_free_space(struct btrfs_space_info *sinfo)
- 
- 	spin_lock(&sinfo->lock);
- 
--	for(i = 0; i < BTRFS_NR_RAID_TYPES; i++)
-+	for (i = 0; i < BTRFS_NR_RAID_TYPES; i++)
- 		if (!list_empty(&sinfo->block_groups[i]))
- 			free_bytes += __btrfs_get_ro_block_group_free_space(
- 						&sinfo->block_groups[i]);
-@@ -8271,7 +8271,7 @@ int btrfs_free_block_groups(struct btrfs_fs_info *info)
- 
- 	release_global_block_rsv(info);
- 
--	while(!list_empty(&info->space_info)) {
-+	while (!list_empty(&info->space_info)) {
- 		space_info = list_entry(info->space_info.next,
- 					struct btrfs_space_info,
- 					list);
--- 
-1.8.3.2
+Greg, I have verified that patch builds fine with 3.10 and 3.11. Please take it.
 
+-Vineet
