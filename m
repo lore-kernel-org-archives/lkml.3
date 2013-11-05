@@ -1,68 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab3KEOZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 09:25:53 -0500
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:36059 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755166Ab3KEOZv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 09:25:51 -0500
-Date: Tue, 5 Nov 2013 11:25:45 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+	id S1755207Ab3KEO1j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 09:27:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20727 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754638Ab3KEO1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 09:27:37 -0500
+Date: Tue, 5 Nov 2013 15:27:07 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, aswin@hp.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V3 06/11] perf record: Add an option to force per-cpu
- mmaps
-Message-ID: <20131105142545.GD22912@ghostprotocols.net>
-References: <1383313899-15987-1-git-send-email-adrian.hunter@intel.com>
- <1383313899-15987-7-git-send-email-adrian.hunter@intel.com>
- <20131104152942.GA4004@krava.brq.redhat.com>
- <5278AC36.1020702@intel.com>
- <20131105094220.GA1071@krava.brq.redhat.com>
- <5278EE0A.1080108@intel.com>
- <20131105133024.GE1071@krava.brq.redhat.com>
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH] mm: cache largest vma
+Message-ID: <20131105142707.GC30283@krava.brq.redhat.com>
+References: <1383337039.2653.18.camel@buesod1.americas.hpqcorp.net>
+ <20131103101234.GB5330@gmail.com>
+ <1383538810.2373.22.camel@buesod1.americas.hpqcorp.net>
+ <20131104070500.GE13030@gmail.com>
+ <20131104142001.GE9299@localhost.localdomain>
+ <20131104175245.GA19517@gmail.com>
+ <20131104181012.GK9299@localhost.localdomain>
+ <20131105082450.GA10127@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131105133024.GE1071@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <20131105082450.GA10127@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Nov 05, 2013 at 02:30:24PM +0100, Jiri Olsa escreveu:
-> On Tue, Nov 05, 2013 at 03:09:30PM +0200, Adrian Hunter wrote:
-> > > right, I haven't considered the hundreds CPU machine.. I just
-> > > saw that it disables inherited events in my test ;-) maybe we
-> > > could mentioned that somewhere, because it's not clear
-> > 
-> > How about this:
-> > 
-> > From: Adrian Hunter <adrian.hunter@intel.com>
-> > 
-> > By default, when tasks are specified (i.e. -p, -t
-> > or -u options) per-thread mmaps are created.  Add
-> > an option to override that and force per-cpu mmaps.
-> > 
-> > Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> 
-> seems ok, thanks
+On Tue, Nov 05, 2013 at 09:24:51AM +0100, Ingo Molnar wrote:
 
-Much better, but may I ask that the explanation in the man pages be
-present in the changeset commit as well? So that by just looking at 'git
-log' we can more readily get the whole picture, i.e. scalability versus
-wanting to have inherit.
+SNIP
 
-- Arnaldo
- 
-> Acked-by: Jiri Olsa <jolsa@redhat.com>
+> > 
+> > Yeah that would be a nice interface. Speaking about that, it would be nice to get your input
+> > on the proposed interface for toggle events.
+> > 
+> > It's still in an RFC state, although it's getting quite elaborated, and I believe we haven't
+> > yet found a real direction to take for the tooling interface IIRC. For example the perf record
+> > cmdline used to state toggle events based contexts was one of the parts we were not that confident about.
+> > And we really don't want to take a wrong direction for that as it's going to be complicated
+> > to handle in any case.
+> > 
+> > See this thread:
+> > https://lwn.net/Articles/568602/
 > 
-> jirka
+> At the risk of hijacking this discussion, here's my take on triggers:
+> 
+> I think the primary interface should be to allow the disabling/enabling of 
+> a specific event from other events.
+> 
+> From user-space it would be fd driven: add a perf attribute to allow a 
+> specific event to set the state of another event if it triggers. The 
+> 'other event' would be an fd, similar to how group events are specified.
+> 
+> An 'off' trigger sets the state to 0 (disabled).
+> An 'on' trigger sets the state to 1 (enabled).
+> 
+> Using such a facility the measurement of deltas would need 3 events:
+> 
+>  - fd1: a cycles event that is created disabled
+> 
+>  - fd2: a kprobes event at the 'start' RIP, set to counting only,
+>         connected to fd1, setting state to '1'
+> 
+>  - fd3: a kprobes event at the 'stop' RIP, set to counting only,
+>         connected to fd1, setting state to '0'.
+> 
+> This way every time the (fd2) start-RIP kprobes event executes, the 
+> trigger code sees that it's supposed to enable the (fd1) cycles event. 
+> Every time the (fd3) stop-RIP kprobes event executes, the trigger code 
+> sees that it's set to disable the (fd1) cycles event.
+
+that's more or less how the current code works,
+you can check this wiki for details:
+https://perf.wiki.kernel.org/index.php/Jolsa_Features_Togle_Event
+
+> 
+> Instead of 'cycles event', it could count instructions, or pagefaults, or 
+> cachemisses.
+
+we made it general for any kind of event
+
+> 
+> ( If the (fd1) cycles event is a sampling event then this would allow nice 
+>   things like the profiling of individual functions within the context of 
+>   a specific system call, driven by triggers. )
+> 
+> In theory we could allow self-referential triggers as well: the first 
+> execution of the trigger would disable itself. If the trigger state is not 
+> on/off but a counter then this would allow 'take 100 samples then shut 
+> off' type of functionality as well.
+
+ok, there's something similar in ftrace and we already
+discussed this for perf.. I'll check
+
+> 
+> But success primarily depends on how useful the tooling UI turns out to 
+> be: create a nice Slang or GTK UI for kprobes and triggers, and/or turn it 
+> into a really intuitive command line UI, and people will use it.
+> 
+> I think annotated assembly/source output is a really nice match for 
+> triggers and kprobes, so I'd suggest the Slang TUI route ...
+
+yep, current toggling command line UI is not much user friendly
+
+but perhaps we should leave it there (because it seems it wont
+get much better anyway) and focus more on Slang UI as the
+target one..
+
+CCing Arnaldo ;-)
+
+thanks,
+jirka
