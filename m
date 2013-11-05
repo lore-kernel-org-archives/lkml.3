@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab3KER1y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 12:27:54 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:60106 "EHLO
+	id S1755418Ab3KER1n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 12:27:43 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:60028 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372Ab3KER1v (ORCPT
+	with ESMTP id S1755372Ab3KER1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 12:27:51 -0500
-X-AuditID: cbfee61a-b7f836d0000025d7-c1-52792a96e179
+	Tue, 5 Nov 2013 12:27:40 -0500
+X-AuditID: cbfee61a-b7f836d0000025d7-8d-52792a8bf545
 From: Lukasz Majewski <l.majewski@samsung.com>
 To: Viresh Kumar <viresh.kumar@linaro.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -22,33 +22,30 @@ Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com,
         Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: [PATCH v10 6/7] cpufreq:exynos4x12: Change L0 driver data to
- CPUFREQ_BOOST_FREQ
-Date: Tue, 05 Nov 2013 18:26:50 +0100
-Message-id: <1383672411-26324-7-git-send-email-l.majewski@samsung.com>
+Subject: [PATCH v10 5/7] Documentation:cpufreq:boost: Update BOOST documentation
+Date: Tue, 05 Nov 2013 18:26:49 +0100
+Message-id: <1383672411-26324-6-git-send-email-l.majewski@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1383672411-26324-1-git-send-email-l.majewski@samsung.com>
 References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
  <1383672411-26324-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t9jQd1pWpVBBjPuGVg0XA2x2DhjPavF
-	06Yf7BZ9P68wW6zZ/5PJovPsE2aLN4+4Ld483MxocXnXHDaLz71HGC1uN65gszhz+hKrxZOH
-	fWwWG796OPB5LN7zksnjzrU9bB7rpr1l9thytZ3Fo2/LKkaP4ze2M3l83iQXwB7FZZOSmpNZ
-	llqkb5fAlbFtxT6Wgj8cFbOXTGVpYFzP3sXIySEhYCIx+fZVRghbTOLCvfVsXYxcHEIC0xkl
-	5nTMZIRwupgklu77A1bFJqAn8fnuUyaQhIjAEkaJ100LWEEcZoG9zBKT/qwFcjg4hAWiJFou
-	yoM0sAioSlzd/J0ZxOYVcJM4unAmK8Q6eYmn9/vYQGxOAXeJHbP2Qq1uYpR4c3sC0wRG3gWM
-	DKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgsP1mdQOxpUNFocYBTgYlXh4E+Qrg4RYE8uK
-	K3MPMUpwMCuJ8B77XxEkxJuSWFmVWpQfX1Sak1p8iFGag0VJnPdAq3WgkEB6YklqdmpqQWoR
-	TJaJg1OqgZF985VzkxR25xsGRUoabZ2r4btoq5RQf0/IzoNnRR3PKseF3Pv0snZueuX2yWfE
-	mlYmr9R9Y/3x5HK2+baFPyXm/nFkVJNLrtn7/piBbdyCfe2SE+1UxaP0WeWl68yNN0cbMc7b
-	Vr2k5sDi+DmdS5avKg49fP+P22u1BcyexaltMq/ni54TYlRiKc5INNRiLipOBACTFtlZUwIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHLMWRmVeSWpSXmKPExsVy+t9jQd1urcogg2PX2S0aroZYbJyxntXi
+	adMPdou+n1eYLdbs/8lk0Xn2CbPFm0fcFm8ebma0uLxrDpvF594jjBa3G1ewWZw5fYnV4snD
+	PjaLjV89HPg8Fu95yeRx59oeNo91094ye2y52s7i0bdlFaPH8RvbmTw+b5ILYI/isklJzcks
+	Sy3St0vgyrhxeApLwQ7Jii/zpBsYX4p0MXJySAiYSJzpW8QMYYtJXLi3ng3EFhKYzigxsVm+
+	i5ELyO5ikvh0cBkTSIJNQE/i892nTCAJEYEljBKvmxawgjjMAnuZJSb9WQvkcHAICwRIXPnq
+	DNLAIqAq8WXRe0YQm1fATeLyh63sENvkJZ7e7wPbxingLrFj1l42iG1NjBJvbk9gmsDIu4CR
+	YRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcKg+k9rBuLLB4hCjAAejEg9vgnxlkBBrYllx
+	Ze4hRgkOZiUR3mP/K4KEeFMSK6tSi/Lji0pzUosPMUpzsCiJ8x5otQ4UEkhPLEnNTk0tSC2C
+	yTJxcEo1MEbWz3jME6LYEpQzOcvylTzzGYZJ0ypYTNMn/F9+4eDMr/9v6nknSDstYJrRtPbP
+	G++TjM1r3/Mbtwoc8HyypuMsV+3ET853ds5TeSnl+u1npFyMXeibW3dqw3/dtmFmS+dI/eyg
+	3WN84IpF19/ZS64n30jiZVZ1/RWZdXe6rs6ujmyDuZVFIUosxRmJhlrMRcWJAHzFeM5RAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Special driver data flag (CPUFREQ_BOOST_FREQ) has been added to indicate
-frequency, which can be only enabled for BOOST mode.
-This frequency shall be used only for limited time, since it might cause
-target device to overheat.
+Since the support for software and hardware controlled boosting has been
+added, the corresponding Documentation entry had been updated.
 
 Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
 Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
@@ -68,24 +65,65 @@ Changes for v7:
 - None
 
 Changes for v6:
+- None
+
+Changes for v5:
 - New patch
 
- drivers/cpufreq/exynos4x12-cpufreq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/cpu-freq/boost.txt |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/cpufreq/exynos4x12-cpufreq.c b/drivers/cpufreq/exynos4x12-cpufreq.c
-index 8683304..b2d3a6b1 100644
---- a/drivers/cpufreq/exynos4x12-cpufreq.c
-+++ b/drivers/cpufreq/exynos4x12-cpufreq.c
-@@ -32,7 +32,7 @@ static unsigned int exynos4x12_volt_table[] = {
- };
+diff --git a/Documentation/cpu-freq/boost.txt b/Documentation/cpu-freq/boost.txt
+index 9b4edfc..dd62e13 100644
+--- a/Documentation/cpu-freq/boost.txt
++++ b/Documentation/cpu-freq/boost.txt
+@@ -17,8 +17,8 @@ Introduction
+ Some CPUs support a functionality to raise the operating frequency of
+ some cores in a multi-core package if certain conditions apply, mostly
+ if the whole chip is not fully utilized and below it's intended thermal
+-budget. This is done without operating system control by a combination
+-of hardware and firmware.
++budget. The decision about boost disable/enable is made either at hardware
++(e.g. x86) or software (e.g ARM).
+ On Intel CPUs this is called "Turbo Boost", AMD calls it "Turbo-Core",
+ in technical documentation "Core performance boost". In Linux we use
+ the term "boost" for convenience.
+@@ -48,24 +48,24 @@ be desirable:
+ User controlled switch
+ ----------------------
  
- static struct cpufreq_frequency_table exynos4x12_freq_table[] = {
--	{L0, CPUFREQ_ENTRY_INVALID},
-+	{CPUFREQ_BOOST_FREQ, 1500 * 1000},
- 	{L1, 1400 * 1000},
- 	{L2, 1300 * 1000},
- 	{L3, 1200 * 1000},
+-To allow the user to toggle the boosting functionality, the acpi-cpufreq
+-driver exports a sysfs knob to disable it. There is a file:
++To allow the user to toggle the boosting functionality, the cpufreq core
++driver exports a sysfs knob to enable or disable it. There is a file:
+ /sys/devices/system/cpu/cpufreq/boost
+ which can either read "0" (boosting disabled) or "1" (boosting enabled).
+-Reading the file is always supported, even if the processor does not
+-support boosting. In this case the file will be read-only and always
+-reads as "0". Explicitly changing the permissions and writing to that
+-file anyway will return EINVAL.
++The file is exported only when cpufreq driver supports boosting.
++Explicitly changing the permissions and writing to that file anyway will
++return EINVAL.
+ 
+ On supported CPUs one can write either a "0" or a "1" into this file.
+ This will either disable the boost functionality on all cores in the
+-whole system (0) or will allow the hardware to boost at will (1).
++whole system (0) or will allow the software or hardware to boost at will
++(1).
+ 
+ Writing a "1" does not explicitly boost the system, but just allows the
+-CPU (and the firmware) to boost at their discretion. Some implementations
+-take external factors like the chip's temperature into account, so
+-boosting once does not necessarily mean that it will occur every time
+-even using the exact same software setup.
++CPU to boost at their discretion. Some implementations take external
++factors like the chip's temperature into account, so boosting once does
++not necessarily mean that it will occur every time even using the exact
++same software setup.
+ 
+ 
+ AMD legacy cpb switch
 -- 
 1.7.10.4
 
