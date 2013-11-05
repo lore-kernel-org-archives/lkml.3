@@ -1,104 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab3KEPPr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 10:15:47 -0500
-Received: from mga03.intel.com ([143.182.124.21]:42231 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750775Ab3KEPPp convert rfc822-to-8bit (ORCPT
+	id S1754689Ab3KEPSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 10:18:17 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:26569 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab3KEPSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 10:15:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="384930770"
-From: "Cohen, David A" <david.a.cohen@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3/4] usb: ffs: check quirk to pad epout buf size when
- not aligned to maxpacketsize
-Thread-Topic: [PATCH v4 3/4] usb: ffs: check quirk to pad epout buf size
- when not aligned to maxpacketsize
-Thread-Index: AQHO2jnjXiO3HvkZPkSLoIdur8UPnA==
-Date: Tue, 5 Nov 2013 15:15:39 +0000
-Message-ID: <52790B35.1080305@intel.com>
-References: <Pine.LNX.4.44L0.1311050950260.1360-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1311050950260.1360-100000@iolanthe.rowland.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005
- Icedove/17.0.9
-x-originating-ip: [172.28.128.180]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <B5DE50E09768034C9655D755B9661492@intel.com>
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Tue, 5 Nov 2013 10:18:15 -0500
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-c4-52790c35d117
+From: Tomasz Figa <t.figa@samsung.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [RFC 4/9] of/irq: Refactor interrupt-map parsing
+Date: Tue, 05 Nov 2013 16:18:08 +0100
+Message-id: <2177804.l4VGDTRFDu@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.11.2 (Linux/3.11.5-gentoo; KDE/4.11.2; x86_64; ; )
+In-reply-to: <20131104050455.GA3651@quad.lixom.net>
+References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
+ <20131101185401.B298FC40868@trevor.secretlab.ca>
+ <20131104050455.GA3651@quad.lixom.net>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t/xa7qmPJVBBld6+Sw+NLUyW8w/co7V
+	4sCfHYwWXw+vYLS4vGsOm8Wp65/ZHNg8et60sHrcubaHzePKiSZWj8+b5AJYorhsUlJzMstS
+	i/TtErgyrp2dyFxwnbniastDlgbGL0xdjJwcEgImEp8617NA2GISF+6tZ+ti5OIQEljKKLHu
+	WjszhNPFJDHtZycrSBWbgJrE54ZHbCC2iICyxJO2S8wgNrPAHUaJBYezQGxhAVuJadMngMVZ
+	BFQlJi//ClbPK6ApsWDrR7A4v4C6xLttT8GuEBVwk5j+4yBYnFPAWGLy/B1QixczSqyae4kR
+	ollQ4sfkeywQy+Ql9u2fygpha0ms33mcaQKj4CwkZbOQlM1CUraAkXkVo2hqaXJBcVJ6rqFe
+	cWJucWleul5yfu4mRkiwf9nBuPiY1SFGAQ5GJR7eB2fLg4RYE8uKK3MPMUpwMCuJ8B77XxEk
+	xJuSWFmVWpQfX1Sak1p8iJGJg1OqgTF0wkTdf+t7cv8brWjqmGU6MT/esWtVaKyH/fdTxYfn
+	KbrumpfT8WS/qu2SFPY638qF7+22m67riZlw2u3fweK2PRXTN6bwsU9x6oy/bDdpM+NEb9uI
+	xZoLa/1lc+W5Yh5rdRusv5romXv0eGLnqTtXzPk291mH8OR8l0iWaQh8O+3a4sLpK5VYijMS
+	DbWYi4oTAXeyp8dUAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2013 06:52 AM, Alan Stern wrote:
-> On Mon, 4 Nov 2013, David Cohen wrote:
-> 
->> Check gadget.quirk_ep_out_aligned_size to decide if buffer size requires
->> to be aligned to maxpacketsize of an out endpoint. ffs_epfile_io() needs
->> to pad epout buffer to match above condition if quirk is found.
->>
->> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
->> ---
->>  drivers/usb/gadget/f_fs.c | 22 ++++++++++++++++++++++
->>  1 file changed, 22 insertions(+)
->>
->> diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
->> index 75e4b7846a8d..e7c3c3119552 100644
->> --- a/drivers/usb/gadget/f_fs.c
->> +++ b/drivers/usb/gadget/f_fs.c
->> @@ -755,10 +755,13 @@ static ssize_t ffs_epfile_io(struct file *file,
->>  			     char __user *buf, size_t len, int read)
->>  {
->>  	struct ffs_epfile *epfile = file->private_data;
->> +	struct usb_gadget *gadget = epfile->ffs->gadget;
->>  	struct ffs_ep *ep;
->>  	char *data = NULL;
->> +	size_t data_len = 0;
->>  	ssize_t ret;
->>  	int halt;
->> +	size_t orig_len = len;
->>  
->>  	goto first_try;
->>  	do {
->> @@ -794,11 +797,30 @@ first_try:
->>  			goto error;
->>  		}
->>  
->> +		/*
->> +		 * Controller requires buffer size to be aligned to
->> +		 * maxpacketsize of an out endpoint.
->> +		 */
->> +		if (gadget->quirk_ep_out_aligned_size && read) {
->> +			/*
->> +			 * We pass 'orig_len' to usp_ep_align_maxpacketsize()
->> +			 * due to we're in a loop and 'len' may have been
->> +			 * changed.
->> +			 */
->> +			len = usb_ep_align_maxpacketsize(ep->ep, orig_len);
->> +			if (data && len > data_len) {
->> +				kfree(data);
->> +				data = NULL;
->> +				data_len = 0;
->> +			}
->> +		}
-> 
-> Since the value of orig_len never changes, there's no point calling 
-> usb_ep_align_maxpacketsize() inside the loop.  You should call it only 
-> once, before the loop starts.  Once you do that, you won't need 
-> orig_len at all.
+Following two patches seem to fully fix interrupt parsing issues,
+at least on Exynos 4210 Trats board. They must be applied without
+Grant's fixup patch, as it doesn't seem to fully solve the problem.
 
-orig_len doesn't change but ep->ep does. If USB specs say max packet
-size won't change even if ep does, than we can call it from outside the
-loop.
+Tomasz Figa (2):
+  of: irq: Fix interrupt-map entry matching
+  of: irq: Check for reg property presence only when parsing
+    interrupt-map
 
-Br, David
+ drivers/of/irq.c | 23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
+
+-- 
+1.8.4.2
+
+
