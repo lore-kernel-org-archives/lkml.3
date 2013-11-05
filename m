@@ -1,91 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542Ab3KEVYO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 16:24:14 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:54124 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755388Ab3KEVYM (ORCPT
+	id S1755579Ab3KEVYq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 16:24:46 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:48531 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755270Ab3KEVYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 16:24:12 -0500
-Date: Tue, 5 Nov 2013 16:24:07 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Dave Jones <davej@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        stable <stable@vger.kernel.org>, Kees Cook <keescook@google.com>
-Subject: [GIT PULL][PATCH] perf/ftrace: Fix paranoid level for enabling
- function tracer
-Message-ID: <20131105162407.59393ee1@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Tue, 5 Nov 2013 16:24:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131105212029.GT28601@twins.programming.kicks-ass.net>
+References: <20131105105244.666320103@infradead.org>
+	<20131105110026.878790658@infradead.org>
+	<CANN689EVEQUXUm9Nwu=-Gzr85tkMPVOEFWX=8dQQ3WbqfyZy5w@mail.gmail.com>
+	<20131105212029.GT28601@twins.programming.kicks-ass.net>
+Date: Tue, 5 Nov 2013 13:24:44 -0800
+Message-ID: <CANN689FKEy3cc9EGOViY-kev1hJ-8DR1RB_4hya0jkJfahSQug@mail.gmail.com>
+Subject: Re: [RFC 1/8] locking: Move mutex into kernel/locking/
+From: Michel Lespinasse <walken@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, oleg@redhat.com, dhowells@redhat.com,
+        willy@linux.intel.com, tglx@linutronix.de, rostedt@goodmis.org,
+        airlied@gmail.com, maarten.lankhorst@canonical.com,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 5, 2013 at 1:20 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> This is probably a stupid question, but I haven't been able to find
+>> one kernel version that this applies cleanly over ???
+>
+> Oh my bad, it appears I made it against a working tree, not an actual
+> published tree. That said, I don't think the rejects should be super
+> hard to fix.
+>
+> If people don't object to the idea I'll respin against something
+> published and testable.
 
-Linus,
+Yes please.
 
-Please pull the latest ftrace/urgent tree, which can be found at:
+The reason I want to apply this is because code moves cause noisy
+patches, and the easiest way I know to fully figure them out is to
+diff them against a private tree where I have moved the same files
+(yeah, there really ought to be a better way, ....)
 
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-ftrace/urgent
-
-Head SHA1: d1356abac98cce8e7765186f8093da1442d74d1d
-
-
-Steven Rostedt (1):
-      perf/ftrace: Fix paranoid level for enabling function tracer
-
-----
- kernel/trace/trace_event_perf.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
----------------------------
-commit d1356abac98cce8e7765186f8093da1442d74d1d
-Author: Steven Rostedt <rostedt@goodmis.org>
-Date:   Tue Nov 5 12:51:11 2013 -0500
-
-    perf/ftrace: Fix paranoid level for enabling function tracer
-    
-    The current default perf paranoid level is "1" which has
-    "perf_paranoid_kernel()" return false, and giving any operations that
-    use it, access to normal users. Unfortunately, this includes function
-    tracing and normal users should not be allowed to enable function
-    tracing by default.
-    
-    The proper level is defined at "-1" (full perf access), which
-    "perf_paranoid_tracepoint_raw()" will only give access to. Use that
-    check instead for enabling function tracing.
-    
-    Reported-by: Dave Jones <davej@redhat.com>
-    Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-    Cc: Peter Zijlstra <peterz@infradead.org>
-    Cc: Ingo Molnar <mingo@kernel.org>
-    Cc: Jiri Olsa <jolsa@redhat.com>
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    Cc: stable@vger.kernel.org # 3.4+
-    CVE: CVE-2013-2930
-    Fixes: ced39002f5ea ("ftrace, perf: Add support to use function tracepoint in perf")
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 80c36bc..78e27e3 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -26,7 +26,7 @@ static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
- {
- 	/* The ftrace function trace is allowed only for root. */
- 	if (ftrace_event_is_function(tp_event) &&
--	    perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-+	    perf_paranoid_tracepoint_raw() && !capable(CAP_SYS_ADMIN))
- 		return -EPERM;
- 
- 	/* No tracing, just counting, so no obvious leak */
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
