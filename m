@@ -1,206 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab3KEQpg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 11:45:36 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:48505 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753140Ab3KEQpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 11:45:35 -0500
-Date: Tue, 5 Nov 2013 08:25:08 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: Tibor Billes <tbilles@gmx.com>, Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel@vger.kernel.org
-Subject: Re: rcu: Throttle rcu_try_advance_all_cbs() execution causes visible
- slowdown in ftrace switching
-Message-ID: <20131105162508.GB18245@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1383326384.6788.49.camel@pathway.suse.cz>
- <20131104170232.GS3947@linux.vnet.ibm.com>
- <1383666186.27527.57.camel@pathway.suse.cz>
+	id S1754855Ab3KEQ4m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 11:56:42 -0500
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:39910
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754593Ab3KEQ4k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 11:56:40 -0500
+X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VS4(zzzz1f42h2148h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6h1082kzz1de098h8275bh1de097hz31h87h2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h129fi1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: Alan Tull <delicious.quinoa@gmail.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jamie Iles <jamie@jamieiles.com>,
+        delicious quinoa <delicious.quinoa@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+Subject: [PATCH 2/3] gpio: dwapb: add support for GPIO interrupts
+Date: Tue, 5 Nov 2013 10:55:51 -0600
+Message-ID: <1383670552-17566-3-git-send-email-delicious.quinoa@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1383670552-17566-1-git-send-email-delicious.quinoa@gmail.com>
+References: <1383670552-17566-1-git-send-email-delicious.quinoa@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1383666186.27527.57.camel@pathway.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110516-7182-0000-0000-000009022194
+Content-Type: text/plain
+X-OriginatorOrg: altera.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 05, 2013 at 04:43:06PM +0100, Petr Mladek wrote:
-> Hello Paul,
-> 
-> Paul E. McKenney píše v Po 04. 11. 2013 v 09:02 -0800:
-> > On Fri, Nov 01, 2013 at 06:19:44PM +0100, Petr Mladek wrote:
-> > > Hi,
-> > > 
-> > > I am doing some clean up in x86 ftrace code. I check the performance by
-> > > switching between different tracers and by enabling and disabling them.
-> > > 
-> > > The operation has started to be much slower after rebasing on the
-> > > kernel tip tree. Bisecting has shown that the difference was caused by
-> > > the commit c229828ca6bc62d6c654 (rcu: Throttle
-> > > rcu_try_advance_all_cbs() execution)
-> 
-> > This is a slowpath, and that commit did fix a real bug, so I am OK with
-> > this modest slowdown.
-> > 
-> > That said, if you have a workload where this is a problem, please try
-> > building with CONFIG_RCU_FAST_NO_HZ=n.  The fact that this commit had any
-> > effect at all leads me to believe that you used CONFIG_RCU_FAST_NO_HZ=y.
-> 
-> Yes, I used CONFIG_RCU_FAST_NO_HZ=y.
-> 
-> I am not aware of any other workload with this problem. I tried few
-> benchmarks: dbench, unixbench, and aim. They did not show any
-> considerable difference with and without the commit. If you are
-> interested you might find more details in the attached logs.
-> 
-> Just for record, I also checked how the ftrace test was affected by the
-> commit under various system load. The speed difference was there if at
-> least one CPU was idle. But the test was slower on idle system even
-> without the patch. Hence this is not the only change that causes some
-> difference. See the attached "ftrace" file for more details.
+From: Jamie Iles <jamie@jamieiles.com>
 
-Ah, the joys of energy efficiency!  ;-)
+The controller supports interrupts on bank A (up to 8 interrupt
+sources).  Use the generic IRQ chip to implement interrupt support for
+this bank.
 
-If the system is entirely non-idle, each CPU will respond to RCU in a
-timely fashion.  However, RCU cannot be permitted to interrupt or in any
-way disturb an idle CPU, most especially on a battery-powered system.
-To do so would completely destroy energy efficiency and battery lifetime.
-Instead, idle CPUs leave evidence of their idleness in per-CPU variables,
-and RCU must check these variables for any CPUs that do not respond in
-a timely fashion.
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@stericsson.com>
+Acked-by: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+---
+ drivers/gpio/Kconfig      |    2 +-
+ drivers/gpio/gpio-dwapb.c |  181 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 182 insertions(+), 1 deletion(-)
 
-Of course, it would not do for RCU to be in a busy-waiting loop
-continuously checking these variables.  Instead, RCU checks them
-after a three-jiffy delay, which can be tuned if desired using the
-rcutree.jiffies_till_first_fqs kernel boot parameter.  You can even set it
-to zero if you like, which should speed up your ftrace test significantly
-on idle systems.  You might also tune the rcutree.jiffies_till_next_fqs
-kernel boot parameter, which governs the time delay until the second
-and subsequent checks for a given RCU grace period.
-
-The reason that the change mostly affected idle systems is that
-CONFIG_RCU_FAST_NO_HZ=y (and thus the change to its code) affects
-the transitions to and from idle.  If your system is never idle,
-then CONFIG_RCU_FAST_NO_HZ=y will have no effect whatsoever.
-
-> I am still a bit curious why ftrace code is so special here and why it
-> does not affect the other benchmarks. Anyway, I agree that ftrace
-> change/start/stop operations are not time critical and the extra delay
-> might be worth fixing the other bug. I am fine with it :-)
-
-The ftrace code makes heavy use of RCU updates when enabling and disabling
-things, which makes its performance quite sensitive to grace-period
-duration, and (as you saw) grace-period duration is increased somewhat
-by CONFIG_RCU_FAST_NO_HZ=y.  This trade of increased energy efficiency
-for longer grace-period duration is the right trade for most systems.
-
-Other systems can use CONFIG_RCU_FAST_NO_HZ=n and/or tune the
-rcutree.jiffies_till_first_fqs and rcutree.jiffies_till_next_fqs
-kernel boot parameters.
-
-Hey, you asked!  ;-)
-
-							Thanx, Paul
-
-> Best Regards,
-> Petr
-
-
-
-> test: ftrace
-> CPU: Intel(R) Core(TM)2 Duo CPU     E8400  @ 3.00GHz
-> RAM: 4GB
-> 
-> Started using the command:
-> 
-> 	time ./test-ftrace
-> 
-> Where test-ftrace is:
-> 
-> --- cut ---
-> #!/bin/bash
-> 
-> echo "Testing ftrace - begin"
-> cd /sys/kernel/debug/tracing
-> 
-> count=0
-> while test $count -lt 100 ; do
->     for tracer in function nop ; do
-> 	echo $tracer >current_tracer
-> 	echo 1 >tracing_on
-> 	echo 0 >tracing_on
->     done
->     count=$(($count + 1))
-> done
-> 
-> cd -
-> echo "Testing ftrace - end"
-> --- cut ---
-> 
-> and the load was generated using the script make-load:
-> 
-> --- cut ---
-> #!/bin/bash
-> 
-> a=1
-> while true ; do
->     a=$(($a+1))
-> done
-> --- cut ---
-> 
-> Now, results with no load on the system; with the commit c229828ca6bc62d
-> (rcu: Throttle rcu_try_advance_all_cbs() execution)
-> 
-> real    0m49.393s    0m49.632s    0m49.359
-> user    0m0.004s     0m0.000s	  0m0.004s
-> sys     0m0.996s     0m0.880s	  0m0.892s
-> 
-> and with reverted c229828ca6bc62d (rcu: Throttle rcu_try_advance_all_cbs()
-> execution)
-> 
-> real    0m35.320s    0m35.687s    0m35.920s
-> user    0m0.004s     0m0.004s	  0m0.000s
-> sys     0m1.140s     0m1.208s	  0m1.152s
-> 
-> ---
-> 
-> Results with 100% load on one CPU and no load on 2nd CPU (started the script
-> make-load once) with c229828ca6bc62d (rcu: Throttle rcu_try_advance_all_cbs()
-> execution)
-> 
-> real    0m44.964s    0m45.083s    0m45.171s
-> user    0m0.000s     0m0.000s	  0m0.004s
-> sys     0m1.580s     0m1.612s	  0m1.576s
-> 
-> and with reverted c229828ca6bc62d (rcu: Throttle rcu_try_advance_all_cbs()
-> execution)
-> 
-> real    0m30.816s    0m31.326s    0m31.191s
-> user    0m0.004s     0m0.004s	  0m0.008s
-> sys     0m1.240s     0m1.248s	  0m1.232s
-> 
-> ---
-> 
-> Results with 100% load on both CPUs (started script make-load twice)
-> with c229828ca6bc62d (rcu: Throttle rcu_try_advance_all_cbs() execution)
-> 
-> real    0m20.294s    0m20.538s    0m20.470s
-> user    0m0.004s     0m0.000s	  0m0.000s
-> sys     0m1.284s     0m1.388s	  0m1.612s
-> 
-> and with reverted c229828ca6bc62d (rcu: Throttle rcu_try_advance_all_cbs()
-> execution)
-> 
-> real    0m20.305s    0m20.056s    0m20.259
-> user    0m0.000s     0m0.000s	  0m0.000s
-> sys     0m1.416s     0m1.452s	  0m1.560s
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index c5e7868..4cc26ed 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -125,7 +125,7 @@ config GPIO_DWAPB
+ 	bool "Synopsys DesignWare APB GPIO driver"
+ 	select GPIO_GENERIC
+ 	select GENERIC_IRQ_CHIP
+-	depends on OF_GPIO
++	depends on OF_GPIO && IRQ_DOMAIN
+ 	help
+ 	  Say Y or M here to build support for the Synopsys DesignWare APB
+ 	  GPIO block.  This requires device tree support.
+diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
+index 3a28697..64c7183 100644
+--- a/drivers/gpio/gpio-dwapb.c
++++ b/drivers/gpio/gpio-dwapb.c
+@@ -10,12 +10,22 @@
+ #include <linux/init.h>
+ #include <linux/io.h>
+ #include <linux/ioport.h>
++#include <linux/irq.h>
++#include <linux/irqdomain.h>
+ #include <linux/module.h>
+ #include <linux/basic_mmio_gpio.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
++#include <linux/of_irq.h>
+ #include <linux/platform_device.h>
+ 
++#define INT_EN_REG_OFFS		0x30
++#define INT_MASK_REG_OFFS	0x34
++#define INT_TYPE_REG_OFFS	0x38
++#define INT_POLARITY_REG_OFFS	0x3c
++#define INT_STATUS_REG_OFFS	0x40
++#define EOI_REG_OFFS		0x4c
++
+ struct dwapb_gpio;
+ 
+ struct dwapb_gpio_bank {
+@@ -31,6 +41,8 @@ struct dwapb_gpio {
+ 	void __iomem		*regs;
+ 	struct dwapb_gpio_bank	*banks;
+ 	unsigned int		nr_banks;
++	struct irq_chip_generic	*irq_gc;
++	unsigned long		toggle_edge;
+ };
+ 
+ static unsigned int dwapb_gpio_nr_banks(struct device_node *of_node)
+@@ -44,6 +56,168 @@ static unsigned int dwapb_gpio_nr_banks(struct device_node *of_node)
+ 	return nr_banks;
+ }
+ 
++static int dwapb_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
++{
++	struct bgpio_chip *bgc = to_bgpio_chip(gc);
++	struct dwapb_gpio_bank *bank = container_of(bgc, struct
++						    dwapb_gpio_bank, bgc);
++	struct dwapb_gpio *gpio = bank->gpio;
++
++	return irq_domain_to_irq(&gpio->irq_gc->domain, offset);
++}
++
++static void dwapb_toggle_trigger(struct dwapb_gpio *gpio, unsigned int offs)
++{
++	u32 v = readl(gpio->regs + INT_TYPE_REG_OFFS);
++
++	if (gpio_get_value(gpio->banks[0].bgc.gc.base + offs))
++		v &= ~BIT(offs);
++	else
++		v |= BIT(offs);
++
++	writel(v, gpio->regs + INT_TYPE_REG_OFFS);
++}
++
++static void dwapb_irq_handler(u32 irq, struct irq_desc *desc)
++{
++	struct dwapb_gpio *gpio = irq_get_handler_data(irq);
++	u32 irq_status = readl(gpio->regs + INT_STATUS_REG_OFFS);
++
++	while (irq_status) {
++		int irqoffset = fls(irq_status) - 1;
++		int irq = irq_domain_to_irq(&gpio->irq_gc->domain, irqoffset);
++
++		generic_handle_irq(irq);
++		irq_status &= ~(1 << irqoffset);
++
++		if (gpio->toggle_edge & BIT(irqoffset))
++			dwapb_toggle_trigger(gpio, irqoffset);
++	}
++}
++
++static void dwapb_irq_enable(struct irq_data *d)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	struct dwapb_gpio *gpio = gc->private;
++
++	u32 val = readl(gpio->regs + INT_EN_REG_OFFS);
++	val |= 1 << d->hwirq;
++	writel(val, gpio->regs + INT_EN_REG_OFFS);
++}
++
++static void dwapb_irq_disable(struct irq_data *d)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	struct dwapb_gpio *gpio = gc->private;
++
++	u32 val = readl(gpio->regs + INT_EN_REG_OFFS);
++	val &= ~(1 << d->hwirq);
++	writel(val, gpio->regs + INT_EN_REG_OFFS);
++}
++
++static int dwapb_irq_set_type(struct irq_data *d, u32 type)
++{
++	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
++	struct dwapb_gpio *gpio = gc->private;
++	int bit = d->hwirq;
++	unsigned long level, polarity;
++
++	if (type & ~(IRQ_TYPE_EDGE_RISING | IRQ_TYPE_EDGE_FALLING |
++		     IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_LEVEL_LOW))
++		return -EINVAL;
++
++	level = readl(gpio->regs + INT_TYPE_REG_OFFS);
++	polarity = readl(gpio->regs + INT_POLARITY_REG_OFFS);
++
++	gpio->toggle_edge &= ~BIT(bit);
++	if (type & IRQ_TYPE_EDGE_BOTH) {
++		gpio->toggle_edge |= BIT(bit);
++		level |= (1 << bit);
++		dwapb_toggle_trigger(gpio, bit);
++	} else if (type & IRQ_TYPE_EDGE_RISING) {
++		level |= (1 << bit);
++		polarity |= (1 << bit);
++	} else if (type & IRQ_TYPE_EDGE_FALLING) {
++		level |= (1 << bit);
++		polarity &= ~(1 << bit);
++	} else if (type & IRQ_TYPE_LEVEL_HIGH) {
++		level &= ~(1 << bit);
++		polarity |= (1 << bit);
++	} else if (type & IRQ_TYPE_LEVEL_LOW) {
++		level &= ~(1 << bit);
++		polarity &= ~(1 << bit);
++	}
++
++	writel(level, gpio->regs + INT_TYPE_REG_OFFS);
++	writel(polarity, gpio->regs + INT_POLARITY_REG_OFFS);
++
++	return 0;
++}
++
++static int dwapb_create_irqchip(struct dwapb_gpio *gpio,
++				struct dwapb_gpio_bank *bank,
++				unsigned int irq_base)
++{
++	struct irq_chip_type *ct;
++
++	gpio->irq_gc = irq_alloc_generic_chip("gpio-dwapb", 1, irq_base,
++					      gpio->regs, handle_level_irq);
++	if (!gpio->irq_gc)
++		return -EIO;
++
++	gpio->irq_gc->domain.of_node = of_node_get(bank->bgc.gc.of_node);
++	gpio->irq_gc->private = gpio;
++	ct = gpio->irq_gc->chip_types;
++	ct->chip.irq_ack = irq_gc_ack_set_bit;
++	ct->chip.irq_mask = irq_gc_mask_set_bit;
++	ct->chip.irq_unmask = irq_gc_mask_clr_bit;
++	ct->chip.irq_set_type = dwapb_irq_set_type;
++	ct->chip.irq_enable = dwapb_irq_enable;
++	ct->chip.irq_disable = dwapb_irq_disable;
++	ct->regs.ack = EOI_REG_OFFS;
++	ct->regs.mask = INT_MASK_REG_OFFS;
++	irq_setup_generic_chip(gpio->irq_gc, IRQ_MSK(bank->bgc.gc.ngpio),
++			       IRQ_GC_INIT_NESTED_LOCK, IRQ_NOREQUEST, 0);
++
++	return 0;
++}
++
++static int dwapb_configure_irqs(struct dwapb_gpio *gpio,
++				struct dwapb_gpio_bank *bank)
++{
++	unsigned int m, irq, ngpio = bank->bgc.gc.ngpio;
++	int irq_base;
++
++	for (m = 0; m < ngpio; ++m) {
++		irq = irq_of_parse_and_map(bank->bgc.gc.of_node, m);
++		if (!irq && m == 0) {
++			dev_warn(gpio->dev, "no irq for bank %s\n",
++				 bank->bgc.gc.of_node->full_name);
++			return -ENXIO;
++		} else if (!irq) {
++			break;
++		}
++
++		irq_set_chained_handler(irq, dwapb_irq_handler);
++		irq_set_handler_data(irq, gpio);
++	}
++	bank->bgc.gc.to_irq = dwapb_gpio_to_irq;
++
++	irq_base = irq_alloc_descs(-1, 0, ngpio, NUMA_NO_NODE);
++	if (irq_base < 0)
++		return irq_base;
++
++	if (dwapb_create_irqchip(gpio, bank, irq_base))
++		goto out_free_descs;
++
++	return 0;
++
++out_free_descs:
++	irq_free_descs(irq_base, ngpio);
++
++	return -EIO;
++}
++
+ static int dwapb_gpio_add_bank(struct dwapb_gpio *gpio,
+ 			       struct device_node *bank_np,
+ 			       unsigned int offs)
+@@ -81,6 +255,13 @@ static int dwapb_gpio_add_bank(struct dwapb_gpio *gpio,
+ 	bank->bgc.gc.ngpio = ngpio;
+ 	bank->bgc.gc.of_node = bank_np;
+ 
++	/*
++	 * Only bank A can provide interrupts in all configurations of the IP.
++	 */
++	if (bank_idx == 0 &&
++	    of_get_property(bank_np, "interrupt-controller", NULL))
++		dwapb_configure_irqs(gpio, bank);
++
+ 	err = gpiochip_add(&bank->bgc.gc);
+ 	if (err)
+ 		dev_err(gpio->dev, "failed to register gpiochip for %s\n",
+-- 
+1.7.9.5
 
 
