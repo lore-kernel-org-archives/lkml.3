@@ -1,130 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab3KEUXy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 15:23:54 -0500
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:55923 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403Ab3KEUXw (ORCPT
+	id S1755455Ab3KEU0l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 15:26:41 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:50822 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755255Ab3KEU0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 15:23:52 -0500
+	Tue, 5 Nov 2013 15:26:39 -0500
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <52794823.7080503@kernel.dk>
-References: <CAHbNUh1Cw3bc4WR0VcD1H_eKYqGBtv_215_euh6mwTbZ41ejUw@mail.gmail.com>
-	<52794823.7080503@kernel.dk>
-Date: Tue, 5 Nov 2013 12:23:51 -0800
-Message-ID: <CAOesGMj1xXXM-gNgWQwBKOczpJtM7CobYy4h7Fe=4W3U43EJGQ@mail.gmail.com>
-Subject: Re: Boot failure on Arndale with next-20131105
-From: Olof Johansson <olof@lixom.net>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Tushar Behera <tushar.behera@linaro.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@fusionio.com>
+In-Reply-To: <20131105110026.878790658@infradead.org>
+References: <20131105105244.666320103@infradead.org>
+	<20131105110026.878790658@infradead.org>
+Date: Tue, 5 Nov 2013 12:26:38 -0800
+Message-ID: <CANN689EVEQUXUm9Nwu=-Gzr85tkMPVOEFWX=8dQQ3WbqfyZy5w@mail.gmail.com>
+Subject: Re: [RFC 1/8] locking: Move mutex into kernel/locking/
+From: Michel Lespinasse <walken@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, oleg@redhat.com, dhowells@redhat.com,
+        willy@linux.intel.com, tglx@linutronix.de, rostedt@goodmis.org,
+        airlied@gmail.com, maarten.lankhorst@canonical.com,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 5, 2013 at 11:33 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 11/05/2013 04:49 AM, Tushar Behera wrote:
->> Hi,
->>
->> We are having a boot-time kernel panic on Samsung's Exynos5250-based
->> Arndale board with next-20131105. Bisect points to following commit.
->>
->> <<<
->> commit febca1baea1cfe2d7a0271385d89b03d5fb34f94
->> Author: Chris Mason <chris.mason@fusionio.com>
->> Date:   Thu Oct 31 13:32:42 2013 -0600
->>
->>     block: setup bi_vcnt on clones
->>
->>     commit 9fc6286f347d changed the cloning code to make clones cheaper for
->>     the case where we don't need to clone the iovec array.  But,
->>     the new clone needs the bi_vnct from the original.
->>
->>     Signed-off-by: Chris Mason <chris.mason@fusionio.com>
->>     Signed-off-by: Jens Axboe <axboe@kernel.dk>
->>>>>
->>
->> Reverting above commit, Arndale is able to boot again.
->>
->> Excerpts from the boot log (just in case, it helps in debugging).
->>
->> [    1.972062] Unable to handle kernel paging request at virtual
->> address 025e63a0
->> [    1.981164] pgd = c0004000
->> [    1.982375] [025e63a0] *pgd=00000000
->> [    1.985875] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
->> [    1.991086] Modules linked in:
->> [    1.994076] CPU: 0 PID: 1178 Comm: mmcqd/0 Not tainted
->> 3.12.0-rc5-00051-gfebca1b #21
->> [    2.001683] task: ef3530c0 ti: ee82e000 task.ti: ee82e000
->> [    2.006981] PC is at dma_cache_maint_page+0x84/0x174
->> [    2.011842] LR is at 0x6
->>
->> [    2.043532] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM
->> Segment kernel
->> [    2.050708] Control: 10c5387d  Table: 4000406a  DAC: 00000015
->> [    2.056342] Process mmcqd/0 (pid: 1178, stack limit = 0xee82e240)
->> [    2.062321] Stack: (0xee82fd58 to 0xee830000)
->>
->> [ ... ]
->>
->> [    2.275352] [<c0015768>] (dma_cache_maint_page+0x84/0x174) from
->> [<c0015880>] (__dma_page_cpu_to_dev+0x28/0xa0)
->> [    2.285170] [<c0015880>] (__dma_page_cpu_to_dev+0x28/0xa0) from
->> [<c00159a4>] (arm_dma_map_page+0x6c/0x70)
->> [    2.294565] [<c00159a4>] (arm_dma_map_page+0x6c/0x70) from
->> [<c0015d28>] (arm_dma_map_sg+0x74/0xec)
->> [    2.303366] [<c0015d28>] (arm_dma_map_sg+0x74/0xec) from
->> [<c02bf534>] (dw_mci_pre_dma_transfer.isra.16+0x124/0x15c)
->> [    2.313614] [<c02bf534>]
->> (dw_mci_pre_dma_transfer.isra.16+0x124/0x15c) from [<c02bf8d4>]
->> (dw_mci_pre_req+0x44/0x50)
->> [    2.323863] [<c02bf8d4>] (dw_mci_pre_req+0x44/0x50) from
->> [<c02a8970>] (mmc_start_req+0x3c/0x39c)
->> [    2.332486] [<c02a8970>] (mmc_start_req+0x3c/0x39c) from
->> [<c02b606c>] (mmc_blk_issue_rw_rq+0xbc/0xa9c)
->> [    2.341625] [<c02b606c>] (mmc_blk_issue_rw_rq+0xbc/0xa9c) from
->> [<c02b6c14>] (mmc_blk_issue_rq+0x1c8/0x498)
->> [    2.351106] [<c02b6c14>] (mmc_blk_issue_rq+0x1c8/0x498) from
->> [<c02b75d4>] (mmc_queue_thread+0xa4/0x144)
->> [    2.360331] [<c02b75d4>] (mmc_queue_thread+0xa4/0x144) from
->> [<c0038614>] (kthread+0xb4/0xb8)
->> [    2.368616] [<c0038614>] (kthread+0xb4/0xb8) from [<c000e2f8>]
->> (ret_from_fork+0x14/0x3c)
->> [    2.376556] Code: 17e81051 10822181 e592c000 e3ccc003 (e79c2007)
->> [    2.382570] ---[ end trace df06b64b1b7fa443 ]---
->>
->> [ ... ]
->>
->> Begin: Mounting root file system ... Begin: Running /scripts/local-top ... done.
->> Gave up waiting for root device.  Common problems:
->>  - Boot args (cat /proc/cmdline)
->>    - Check rootdelay= (did the system wait long enough?)
->>    - Check root= (did the system wait for the right device?)
->>  - Missing modules (cat /proc/modules; ls /dev)
->> ALERT!  /dev/mmcblk1p3 does not exist.  Dropping to a shell!
->> FATAL: Could not load
->> /lib/modules/3.12.0-rc5-00051-gfebca1b/modules.dep: No such file or
->> directory
->> FATAL: Could not load
->> /lib/modules/3.12.0-rc5-00051-gfebca1b/modules.dep: No such file or
->> directory
->
-> Very weird! What file system is being used?
+On Tue, Nov 5, 2013 at 4:10 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> Index: linux-2.6/kernel/Makefile
+> ===================================================================
+> --- linux-2.6.orig/kernel/Makefile
+> +++ linux-2.6/kernel/Makefile
+> @@ -7,7 +7,7 @@ obj-y     = fork.o exec_domain.o panic.o
+>             sysctl.o sysctl_binary.o capability.o ptrace.o timer.o user.o \
+>             signal.o sys.o kmod.o workqueue.o pid.o task_work.o \
+>             extable.o params.o posix-timers.o \
+> -           kthread.o sys_ni.o posix-cpu-timers.o mutex.o \
+> +           kthread.o sys_ni.o posix-cpu-timers.o \
+>             hrtimer.o rwsem.o nsproxy.o semaphore.o \
+>             notifier.o ksysfs.o cred.o reboot.o \
+>             async.o range.o groups.o lglock.o smpboot.o
 
-Most of my failures have happened on regular MMC cards with ext4
-filesystems on them.
+This is probably a stupid question, but I haven't been able to find
+one kernel version that this applies cleanly over ???
 
-Note that the panic happens during device probe / partition table
-scanning, not after mounting the filesystem.
-
-Giving your patch a go now across the board. I'm very concerned about
-the reports of bisectability, build failures and heaps of warnings
-though. Did the 0-day builder pick up any of those? :-/
-
-
--Olof
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
