@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab3KEIpC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 03:45:02 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:43451 "EHLO
+	id S1754193Ab3KEIph (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 03:45:37 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:43397 "EHLO
 	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391Ab3KEIo5 (ORCPT
+	with ESMTP id S1753895Ab3KEIov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 03:44:57 -0500
+	Tue, 5 Nov 2013 03:44:51 -0500
 From: Frank Haverkamp <haver@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
@@ -14,58 +14,36 @@ Cc: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
         rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
         cascardo@linux.vnet.ibm.com, michael@ibmra.de,
         haver@linux.vnet.ibm.com
-Subject: [PATCH 2/6] GenWQE Character device and DDCB queue
-Date: Tue,  5 Nov 2013 09:44:30 +0100
-Message-Id: <1383641074-13710-3-git-send-email-haver@linux.vnet.ibm.com>
+Subject: [PATCH 3/6] GenWQE Utility functions
+Date: Tue,  5 Nov 2013 09:44:31 +0100
+Message-Id: <1383641074-13710-4-git-send-email-haver@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1383641074-13710-1-git-send-email-haver@linux.vnet.ibm.com>
 References: <1383641074-13710-1-git-send-email-haver@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110508-1948-0000-0000-000006CA7BC9
+x-cbid: 13110508-1948-0000-0000-000006CA7B9D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GenWQE card itself provides access to a generic work queue into
-which the work can be put, which should be executed, e.g. compression
-or decompression request, or whatever the card was configured to do.
-
-Each request comes with a set of input data (ASV) and will produce some
-output data (ASIV). The request will also contain a sequence number,
-some timestamps and a command code/subcode plus some fields for hardware-/
-software-interaction.
-
-A request can contain references to blocks of memory. Since the card
-requires DMA-addresses of that memory, the driver provides two ways to
-solve that task:
-  1) The drivers mmap() will allocate some DMAable memory for the user.
-     The driver has a lookup table such that the virtual userspace
-     address can properly be replaced and checked.
-  2) The user allocates memory and the driver will pin/unpin that
-     memory and setup a scatter gatherlist with matching DMA addresses.
-
-Currently work requests are synchronous.
+Miscelanous functionality used in the other GenWQE driver parts.
 
 Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
 Co-authors: Joerg-Stephan Vogt <jsvogt@de.ibm.com>,
             Michael Jung <MIJUNG@de.ibm.com>,
             Michael Ruettger <michael@ibmra.de>
 ---
- drivers/misc/genwqe/card_ddcb.c | 1380 +++++++++++++++++++++++++++++++++++
- drivers/misc/genwqe/card_ddcb.h |  188 +++++
- drivers/misc/genwqe/card_dev.c  | 1499 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 3067 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/genwqe/card_ddcb.c
- create mode 100644 drivers/misc/genwqe/card_ddcb.h
- create mode 100644 drivers/misc/genwqe/card_dev.c
+ drivers/misc/genwqe/card_utils.c |  983 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 983 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/genwqe/card_utils.c
 
-diff --git a/drivers/misc/genwqe/card_ddcb.c b/drivers/misc/genwqe/card_ddcb.c
+diff --git a/drivers/misc/genwqe/card_utils.c b/drivers/misc/genwqe/card_utils.c
 new file mode 100644
-index 0000000..3d4d212
+index 0000000..5037e28
 --- /dev/null
-+++ b/drivers/misc/genwqe/card_ddcb.c
-@@ -0,0 +1,1380 @@
++++ b/drivers/misc/genwqe/card_utils.c
+@@ -0,0 +1,983 @@
 +/**
 + * IBM Accelerator Family 'GenWQE'
 + *
@@ -87,3017 +65,887 @@ index 0000000..3d4d212
 + */
 +
 +/*
-+ * Device Driver Control Block (DDCB) queue support. Definition of
-+ * interrupt handlers for queue support as well as triggering the
-+ * health monitor code in case of problems. The current hardware uses
-+ * an MSI interrupt which is shared between error handling and
-+ * functional code.
-+ */
-+
-+#include <linux/types.h>
-+#include <linux/module.h>
-+#include <linux/sched.h>
-+#include <linux/wait.h>
-+#include <linux/pci.h>
-+#include <linux/string.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/delay.h>
-+#include <linux/module.h>
-+#include <linux/interrupt.h>
-+#include <linux/crc-itu-t.h>
-+
-+#include "card_ddcb.h"
-+
-+/*
-+ * N: next DDCB, this is where the next DDCB will be put.
-+ * A: active DDCB, this is where the code will look for the next completion.
-+ * x: DDCB is enqueued, we are waiting for its completion.
-+
-+ * Situation (1): Empty queue
-+ *  +---+---+---+---+---+---+---+---+
-+ *  | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
-+ *  |   |   |   |   |   |   |   |   |
-+ *  +---+---+---+---+---+---+---+---+
-+ *           A/N
-+ *  enqueued_ddcbs = A - N = 2 - 2 = 0
-+ *
-+ * Situation (2): Wrapped, N > A
-+ *  +---+---+---+---+---+---+---+---+
-+ *  | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
-+ *  |   |   | x | x |   |   |   |   |
-+ *  +---+---+---+---+---+---+---+---+
-+ *            A       N
-+ *  enqueued_ddcbs = N - A = 4 - 2 = 2
-+ *
-+ * Situation (3): Queue wrapped, A > N
-+ *  +---+---+---+---+---+---+---+---+
-+ *  | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
-+ *  | x | x |   |   | x | x | x | x |
-+ *  +---+---+---+---+---+---+---+---+
-+ *            N       A
-+ *  enqueued_ddcbs = queue_max  - (A - N) = 8 - (4 - 2) = 6
-+ *
-+ * Situation (4a): Queue full N > A
-+ *  +---+---+---+---+---+---+---+---+
-+ *  | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
-+ *  | x | x | x | x | x | x | x |   |
-+ *  +---+---+---+---+---+---+---+---+
-+ *    A                           N
-+ *
-+ *  enqueued_ddcbs = N - A = 7 - 0 = 7
-+ *
-+ * Situation (4a): Queue full A > N
-+ *  +---+---+---+---+---+---+---+---+
-+ *  | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
-+ *  | x | x | x |   | x | x | x | x |
-+ *  +---+---+---+---+---+---+---+---+
-+ *                N   A
-+ *  enqueued_ddcbs = queue_max - (A - N) = 8 - (4 - 3) = 7
-+ */
-+
-+static int queue_empty(struct ddcb_queue *queue)
-+{
-+	return (queue->ddcb_next == queue->ddcb_act);
-+}
-+
-+static int queue_enqueued_ddcbs(struct ddcb_queue *queue)
-+{
-+	if (queue->ddcb_next >= queue->ddcb_act)
-+		return queue->ddcb_next - queue->ddcb_act;
-+
-+	return queue->ddcb_max - (queue->ddcb_act - queue->ddcb_next);
-+}
-+
-+static int queue_free_ddcbs(struct ddcb_queue *queue)
-+{
-+	int free_ddcbs = queue->ddcb_max - queue_enqueued_ddcbs(queue) - 1;
-+
-+	if (WARN_ON_ONCE(free_ddcbs < 0)) { /* must never ever happen! */
-+		return 0;
-+	}
-+	return free_ddcbs;
-+}
-+
-+/*
-+ * Use of the PRIV field in the DDCB for queue debugging:
-+ *
-+ * (1) Trying to get rid of a DDCB which saw a timeout:
-+ *     pddcb->priv[6] = 0xcc;   # cleared
-+ *
-+ * (2) Append a DDCB via NEXT bit:
-+ *     pddcb->priv[7] = 0xaa;	# appended
-+ *
-+ * (3) DDCB needed tapping:
-+ *     pddcb->priv[7] = 0xbb;   # tapped
-+ *
-+ * (4) DDCB marked as correctly finished:
-+ *     pddcb->priv[6] = 0xff;	# finished
-+ */
-+
-+static inline void ddcb_mark_tapped(struct ddcb *pddcb)
-+{
-+	pddcb->priv[7] = 0xbb;  /* tapped */
-+}
-+
-+static inline void ddcb_mark_appended(struct ddcb *pddcb)
-+{
-+	pddcb->priv[7] = 0xaa;	/* appended */
-+}
-+
-+static inline void ddcb_mark_cleared(struct ddcb *pddcb)
-+{
-+	pddcb->priv[6] = 0xcc; /* cleared */
-+}
-+
-+static inline void ddcb_mark_finished(struct ddcb *pddcb)
-+{
-+	pddcb->priv[6] = 0xff;	/* finished */
-+}
-+
-+static inline void ddcb_mark_unused(struct ddcb *pddcb)
-+{
-+	pddcb->priv_64 = cpu_to_be64(0); /* not tapped */
-+}
-+
-+/**
-+ * genwqe_crc16() - Generate 16-bit crc as required for DDCBs
-+ * @buff:       pointer to data buffer
-+ * @len:        length of data for calculation
-+ * @init:       initial crc (0xffff at start)
-+ *
-+ * Polynomial = x^16 + x^12 + x^5 + 1   (0x1021)
-+ * Example: 4 bytes 0x01 0x02 0x03 0x04 with init = 0xffff
-+ *          should result in a crc16 of 0x89c3
-+ *
-+ * Return: crc16 checksum in big endian format !
-+ */
-+static inline u16 genwqe_crc16(const u8 *buff, size_t len, u16 init)
-+{
-+	return crc_itu_t(init, buff, len);
-+}
-+
-+static void print_ddcb_info(struct genwqe_dev *cd, struct ddcb_queue *queue)
-+{
-+	int i;
-+	struct ddcb *pddcb;
-+	unsigned long flags;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+
-+	spin_lock_irqsave(&cd->print_lock, flags);
-+
-+	dev_info(&pci_dev->dev,
-+		 "DDCB list for card #%d (ddcb_act=%d / ddcb_next=%d):\n",
-+		 cd->card_idx, queue->ddcb_act, queue->ddcb_next);
-+
-+	pddcb = queue->ddcb_vaddr;
-+	for (i = 0; i < queue->ddcb_max; i++) {
-+		dev_err(&pci_dev->dev,
-+			"  %c %-3d: RETC=%03x SEQ=%04x "
-+			"HSI=%02X SHI=%02x PRIV=%06llx CMD=%03x\n",
-+			i == queue->ddcb_act ? '>' : ' ',
-+			i,
-+			be16_to_cpu(pddcb->retc_16),
-+			be16_to_cpu(pddcb->seqnum_16),
-+			pddcb->hsi,
-+			pddcb->shi,
-+			be64_to_cpu(pddcb->priv_64),
-+			pddcb->cmd);
-+		pddcb++;
-+	}
-+	spin_unlock_irqrestore(&cd->print_lock, flags);
-+}
-+
-+struct genwqe_ddcb_cmd *ddcb_requ_alloc(void)
-+{
-+	struct ddcb_requ *req;
-+
-+	req = kzalloc(sizeof(*req), GFP_ATOMIC);
-+	if (!req)
-+		return NULL;
-+
-+	return &req->cmd;
-+}
-+
-+void ddcb_requ_free(struct genwqe_ddcb_cmd *cmd)
-+{
-+	struct ddcb_requ *req = container_of(cmd, struct ddcb_requ, cmd);
-+	kfree(req);
-+}
-+
-+static inline enum genwqe_requ_state ddcb_requ_get_state(struct ddcb_requ *req)
-+{
-+	return req->req_state;
-+}
-+
-+static inline void ddcb_requ_set_state(struct ddcb_requ *req,
-+				       enum genwqe_requ_state new_state)
-+{
-+	req->req_state = new_state;
-+}
-+
-+static inline int ddcb_requ_collect_debug_data(struct ddcb_requ *req)
-+{
-+	return (req->cmd.debug_data != NULL);
-+}
-+
-+/**
-+ * ddcb_requ_finished() - Returns the hardware state of the associated DDCB
-+ * @cd:          pointer to genwqe device descriptor
-+ * @req:         DDCB work request
-+ *
-+ * Status of ddcb_requ mirrors this hardware state, but is copied in
-+ * the ddcb_requ on interrupt/polling function. The lowlevel code
-+ * should check the hardware state directly, the higher level code
-+ * should check the copy.
-+ *
-+ * This function will also return true if the state of the queue is
-+ * not GENWQE_CARD_USED. This enables us to purge all DDCBs in the
-+ * shutdown case.
-+ */
-+static int ddcb_requ_finished(struct genwqe_dev *cd, struct ddcb_requ *req)
-+{
-+	return ((ddcb_requ_get_state(req) == GENWQE_REQU_FINISHED) ||
-+		(cd->card_state != GENWQE_CARD_USED));
-+}
-+
-+/**
-+ * enqueue_ddcb() - Enqueue a DDCB
-+ * @cd:         pointer to genwqe device descriptor
-+ * @queue:	queue this operation should be done on
-+ * @ddcb_no:    pointer to ddcb number being tapped
-+ *
-+ * Start execution of DDCB by tapping or append to queue via NEXT
-+ * bit. This is done by an atomic 'compare and swap' instruction and
-+ * checking SHI and HSI of the previous DDCB.
-+ *
-+ * This function must only be called with ddcb_lock held.
-+ *
-+ * Return: 1 if new DDCB is appended to previous
-+ *         2 if DDCB queue is tapped via register/simulation
-+ */
-+#define RET_DDCB_APPENDED 1
-+#define RET_DDCB_TAPPED   2
-+
-+static int enqueue_ddcb(struct genwqe_dev *cd, struct ddcb_queue *queue,
-+			struct ddcb *pddcb, int ddcb_no)
-+{
-+	unsigned int try;
-+	int prev_no;
-+	struct ddcb *prev_ddcb;
-+	u32 old, new, icrc_hsi_shi;
-+	u64 num;
-+
-+	/*
-+	 * For performance checks a Dispatch Timestamp can be put into
-+	 * DDCB It is supposed to use the SLU's free running counter,
-+	 * but this requires PCIe cycles.
-+	 */
-+	ddcb_mark_unused(pddcb);
-+
-+	/* check previous DDCB if already fetched */
-+	prev_no = (ddcb_no == 0) ? queue->ddcb_max - 1 : ddcb_no - 1;
-+	prev_ddcb = &queue->ddcb_vaddr[prev_no];
-+
-+	/*
-+	 * It might have happened that the HSI.FETCHED bit is
-+	 * set. Retry in this case. Therefore I expect maximum 2 times
-+	 * trying.
-+	 */
-+	ddcb_mark_appended(pddcb);
-+	for (try = 0; try < 2; try++) {
-+		old = prev_ddcb->icrc_hsi_shi_32; /* read SHI/HSI in BE32 */
-+
-+		/* try to append via NEXT bit if prev DDCB is not completed */
-+		if ((old & DDCB_COMPLETED_BE32) != 0x00000000)
-+			break;
-+
-+		new = (old | DDCB_NEXT_BE32);
-+		icrc_hsi_shi = cmpxchg(&prev_ddcb->icrc_hsi_shi_32, old, new);
-+
-+		if (icrc_hsi_shi == old)
-+			return RET_DDCB_APPENDED; /* appended to queue */
-+	}
-+
-+	/* Queue must be re-started by updating QUEUE_OFFSET */
-+	ddcb_mark_tapped(pddcb);
-+	num = (u64)ddcb_no << 8;
-+	__genwqe_writeq(cd, queue->IO_QUEUE_OFFSET, num); /* start queue */
-+
-+	return RET_DDCB_TAPPED;
-+}
-+
-+/**
-+ * copy_ddcb_results() - Copy output state from real DDCB to request
-+ *
-+ * Copy DDCB ASV to request struct. There is no endian
-+ * conversion made, since data structure in ASV is still
-+ * unknown here.
-+ *
-+ * This is needed by:
-+ *   - genwqe_purge_ddcb()
-+ *   - genwqe_check_ddcb_queue()
-+ */
-+static void copy_ddcb_results(struct ddcb_requ *req, int ddcb_no)
-+{
-+	struct ddcb_queue *queue = req->queue;
-+	struct ddcb *pddcb = &queue->ddcb_vaddr[req->num];
-+
-+	memcpy(&req->cmd.asv[0], &pddcb->asv[0], DDCB_ASV_LENGTH);
-+
-+	/* copy status flags of the variant part */
-+	req->cmd.vcrc     = be16_to_cpu(pddcb->vcrc_16);
-+	req->cmd.deque_ts = be64_to_cpu(pddcb->deque_ts_64);
-+	req->cmd.cmplt_ts = be64_to_cpu(pddcb->cmplt_ts_64);
-+
-+	req->cmd.attn     = be16_to_cpu(pddcb->attn_16);
-+	req->cmd.progress = be32_to_cpu(pddcb->progress_32);
-+	req->cmd.retc     = be16_to_cpu(pddcb->retc_16);
-+
-+	if (ddcb_requ_collect_debug_data(req)) {
-+		int prev_no = (ddcb_no == 0) ?
-+			queue->ddcb_max - 1 : ddcb_no - 1;
-+		struct ddcb *prev_pddcb = &queue->ddcb_vaddr[prev_no];
-+
-+		memcpy(&req->debug_data.ddcb_finished, pddcb,
-+		       sizeof(req->debug_data.ddcb_finished));
-+		memcpy(&req->debug_data.ddcb_prev, prev_pddcb,
-+		       sizeof(req->debug_data.ddcb_prev));
-+	}
-+}
-+
-+/**
-+ * genwqe_check_ddcb_queue() - Checks DDCB queue for completed work equests.
-+ * @cd:         pointer to genwqe device descriptor
-+ *
-+ * Return: Number of DDCBs which were finished
-+ */
-+static int genwqe_check_ddcb_queue(struct genwqe_dev *cd,
-+				   struct ddcb_queue *queue)
-+{
-+	unsigned long flags;
-+	int ddcbs_finished = 0;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+
-+	spin_lock_irqsave(&queue->ddcb_lock, flags);
-+
-+	/* FIXME avoid soft locking CPU */
-+	while (!queue_empty(queue) && (ddcbs_finished < queue->ddcb_max)) {
-+
-+		struct ddcb *pddcb;
-+		struct ddcb_requ *req;
-+		u16 vcrc, vcrc_16, retc_16;
-+
-+		pddcb = &queue->ddcb_vaddr[queue->ddcb_act];
-+
-+		if ((pddcb->icrc_hsi_shi_32 & DDCB_COMPLETED_BE32) ==
-+		    0x00000000)
-+			goto go_home; /* not completed, continue waiting */
-+
-+		/* Note: DDCB could be purged */
-+
-+		req = queue->ddcb_req[queue->ddcb_act];
-+		if (req == NULL) {
-+			/* this occurs if DDCB is purged, not an error */
-+			/* Move active DDCB further; Nothing to do anymore. */
-+			goto pick_next_one;
-+		}
-+
-+		/*
-+		 * HSI=0x44 (fetched and completed), but RETC is
-+		 * 0x101, or even worse 0x000.
-+		 *
-+		 * In case of seeing the queue in inconsistent state
-+		 * we read the errcnts and the queue status to provide
-+		 * a trigger for our PCIe analyzer stop capturing.
-+		 */
-+		retc_16 = be16_to_cpu(pddcb->retc_16);
-+		if ((pddcb->hsi == 0x44) && (retc_16 <= 0x101)) {
-+			u64 errcnts, status;
-+			u64 ddcb_offs = (u64)pddcb - (u64)queue->ddcb_vaddr;
-+
-+			errcnts = __genwqe_readq(cd, queue->IO_QUEUE_ERRCNTS);
-+			status  = __genwqe_readq(cd, queue->IO_QUEUE_STATUS);
-+
-+			dev_err(&pci_dev->dev,
-+				"[%s] SEQN=%04x HSI=%02x RETC=%03x "
-+				" Q_ERRCNTS=%016llx Q_STATUS=%016llx\n"
-+				" DDCB_DMA_ADDR=%016llx\n",
-+				__func__, be16_to_cpu(pddcb->seqnum_16),
-+				pddcb->hsi, retc_16, errcnts, status,
-+				queue->ddcb_daddr + ddcb_offs);
-+		}
-+
-+		copy_ddcb_results(req, queue->ddcb_act);
-+		queue->ddcb_req[queue->ddcb_act] = NULL; /* take from queue */
-+
-+		if (cd->debug & dbg_card_ddcb) {
-+			genwqe_dprintk(cd, dbg_card_ddcb, "FINISHED DDCB#%d\n",
-+				       req->num);
-+			genwqe_hexdump(pci_dev, pddcb, sizeof(*pddcb));
-+		}
-+
-+		ddcb_mark_finished(pddcb);
-+
-+		/* calculate CRC_16 to see if VCRC is correct */
-+		vcrc = genwqe_crc16(pddcb->asv,
-+				   VCRC_LENGTH(req->cmd.asv_length),
-+				   0xffff);
-+		vcrc_16 = be16_to_cpu(pddcb->vcrc_16);
-+		if (vcrc != vcrc_16) {
-+			printk_ratelimited(KERN_ERR
-+				"%s %s: err: wrong VCRC pre=%02x vcrc_len=%d "
-+				"bytes vcrc_data=%04x is not vcrc_card=%04x\n",
-+				GENWQE_DEVNAME, dev_name(&pci_dev->dev),
-+				pddcb->pre, VCRC_LENGTH(req->cmd.asv_length),
-+				vcrc, vcrc_16);
-+		}
-+
-+		ddcb_requ_set_state(req, GENWQE_REQU_FINISHED);
-+		queue->ddcbs_completed++;
-+		queue->ddcbs_in_flight--;
-+
-+		/* wake up process waiting for this DDCB */
-+		wake_up_interruptible(&queue->ddcb_waitqs[queue->ddcb_act]);
-+
-+pick_next_one:
-+		queue->ddcb_act = (queue->ddcb_act + 1) % queue->ddcb_max;
-+		ddcbs_finished++;
-+	}
-+
-+ go_home:
-+	spin_unlock_irqrestore(&queue->ddcb_lock, flags);
-+	return ddcbs_finished;
-+}
-+
-+/**
-+ * __genwqe_wait_ddcb(): Waits until DDCB is completed
-+ * @cd:         pointer to genwqe device descriptor
-+ * @req:        pointer to requsted DDCB parameters
-+ *
-+ * The Service Layer will update the RETC in DDCB when processing is
-+ * pending or done.
-+ *
-+ * Return: > 0 remaining jiffies, DDCB completed
-+ *           -ETIMEDOUT	when timeout
-+ *           -ERESTARTSYS when ^C
-+ *           -EINVAL when unknown error condition
-+ *
-+ * When an error is returned the called needs to ensure that
-+ * purge_ddcb() is being called to get the &req removed from the
-+ * queue.
-+ */
-+int __genwqe_wait_ddcb(struct genwqe_dev *cd, struct ddcb_requ *req)
-+{
-+	int rc;
-+	unsigned int ddcb_no;
-+	struct ddcb_queue *queue;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+
-+	if (req == NULL)
-+		return -EINVAL;
-+
-+	queue = req->queue;
-+	if (queue == NULL)
-+		return -EINVAL;
-+
-+	ddcb_no = req->num;
-+	if (ddcb_no >= queue->ddcb_max)
-+		return -EINVAL;
-+
-+	rc = wait_event_interruptible_timeout(queue->ddcb_waitqs[ddcb_no],
-+				ddcb_requ_finished(cd, req),
-+				genwqe_ddcb_software_timeout * HZ);
-+
-+	/*
-+	 * We need to distinguish 3 cases here:
-+	 *   1. rc == 0              timeout occured
-+	 *   2. rc == -ERESTARTSYS   signal received
-+	 *   3. rc > 0               remaining jiffies condition is true
-+	 */
-+	if (rc == 0) {
-+		struct ddcb_queue *queue = req->queue;
-+
-+		/*
-+		 * Timeout may be caused by long task switching time.
-+		 * When timeout happens, check if the request has
-+		 * meanwhile completed.
-+		 */
-+		genwqe_check_ddcb_queue(cd, req->queue);
-+		if (ddcb_requ_finished(cd, req))
-+			return rc;
-+
-+		dev_err(&pci_dev->dev,
-+			"[%s] err: DDCB#%d timeout rc=%d state=%d req @ %p\n",
-+			__func__, req->num, rc,	ddcb_requ_get_state(req),
-+			req);
-+		dev_err(&pci_dev->dev,
-+			"[%s]      IO_QUEUE_STATUS=0x%016llx\n", __func__,
-+			__genwqe_readq(cd, queue->IO_QUEUE_STATUS));
-+
-+		if (cd->debug & dbg_card_ddcb) {
-+			struct ddcb *pddcb = &queue->ddcb_vaddr[req->num];
-+			genwqe_hexdump(pci_dev, pddcb, sizeof(*pddcb));
-+		}
-+		print_ddcb_info(cd, req->queue);
-+		return -ETIMEDOUT;
-+
-+	} else if (rc == -ERESTARTSYS) {
-+		return rc;
-+		/*
-+		 * EINTR:       Stops the application
-+		 * ERESTARTSYS: Restartable systemcall; called again
-+		 */
-+
-+	} else if (rc < 0) {
-+		dev_err(&pci_dev->dev,
-+			"[%s] err: DDCB#%d unknown result (rc=%d) %d!\n",
-+			__func__, req->num, rc, ddcb_requ_get_state(req));
-+		return -EINVAL;
-+	}
-+
-+	/* Severe error occured. Driver is forced to stop operation */
-+	if (cd->card_state != GENWQE_CARD_USED) {
-+		dev_err(&pci_dev->dev,
-+			"[%s] err: DDCB#%d forced to stop (rc=%d)\n",
-+			__func__, req->num, rc);
-+		return -EIO;
-+	}
-+	return rc;
-+}
-+
-+/**
-+ * get_next_ddcb() - Get next available DDCB
-+ * @cd:         pointer to genwqe device descriptor
-+ *
-+ * DDCB's content is completely cleared but presets for PRE and
-+ * SEQNUM. This function must only be called when ddcb_lock is held.
-+ *
-+ * Return: NULL if no empty DDCB available otherwise ptr to next DDCB.
-+ */
-+static struct ddcb *get_next_ddcb(struct genwqe_dev *cd,
-+				  struct ddcb_queue *queue,
-+				  int *num)
-+{
-+	u64 *pu64;
-+	struct ddcb *pddcb;
-+
-+	if (queue_free_ddcbs(queue) == 0) /* queue is  full */
-+		return NULL;
-+
-+	/* find new ddcb */
-+	pddcb = &queue->ddcb_vaddr[queue->ddcb_next];
-+
-+	/* if it is not completed, we are not allowed to use it */
-+	/* barrier(); */
-+	if ((pddcb->icrc_hsi_shi_32 & DDCB_COMPLETED_BE32) == 0x00000000)
-+		return NULL;
-+
-+	*num = queue->ddcb_next;	/* internal DDCB number */
-+	queue->ddcb_next = (queue->ddcb_next + 1) % queue->ddcb_max;
-+
-+	/* clear important DDCB fields */
-+	pu64 = (u64 *)pddcb;
-+	pu64[0] = 0ULL;		/* offs 0x00 (ICRC,HSI,SHI,...) */
-+	pu64[1] = 0ULL;		/* offs 0x01 (ACFUNC,CMD...) */
-+
-+	/* destroy previous results in ASV */
-+	pu64[0x80/8] = 0ULL;	/* offs 0x80 (ASV + 0) */
-+	pu64[0x88/8] = 0ULL;	/* offs 0x88 (ASV + 0x08) */
-+	pu64[0x90/8] = 0ULL;	/* offs 0x90 (ASV + 0x10) */
-+	pu64[0x98/8] = 0ULL;	/* offs 0x98 (ASV + 0x18) */
-+	pu64[0xd0/8] = 0ULL;	/* offs 0xd0 (RETC,ATTN...) */
-+
-+	pddcb->pre = DDCB_PRESET_PRE; /* 128 */
-+	pddcb->seqnum_16 = cpu_to_be16(queue->ddcb_seq++);
-+	return pddcb;
-+}
-+
-+/**
-+ * __genwqe_purge_ddcb() - Remove a DDCB from the workqueue
-+ * @cd:         genwqe device descriptor
-+ * @req:        DDCB request
-+ *
-+ * This will fail when the request was already FETCHED. In this case
-+ * we need to wait until it is finished. Else the DDCB can be
-+ * reused. This function also ensures that the request data structure
-+ * is removed from ddcb_req[].
-+ *
-+ * Do not forget to call this function when genwqe_wait_ddcb() fails,
-+ * such that the request gets really removed from ddcb_req[].
-+ *
-+ * Return: 0 success
-+ */
-+int __genwqe_purge_ddcb(struct genwqe_dev *cd, struct ddcb_requ *req)
-+{
-+	struct ddcb *pddcb = NULL;
-+	unsigned int t;
-+	unsigned long flags;
-+	struct ddcb_queue *queue = req->queue;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+	u32 icrc_hsi_shi = 0x0000;
-+	u64 queue_status;
-+	u32 old, new;
-+
-+	/* unsigned long flags; */
-+	if (genwqe_ddcb_software_timeout <= 0) {
-+		dev_err(&pci_dev->dev,
-+			"[%s] err: software timeout is not set!\n", __func__);
-+		return -EFAULT;
-+	}
-+
-+	pddcb = &queue->ddcb_vaddr[req->num];
-+
-+	for (t = 0; t < genwqe_ddcb_software_timeout * 10; t++) {
-+
-+		spin_lock_irqsave(&queue->ddcb_lock, flags);
-+
-+		/* Check if req was meanwhile finished */
-+		if (ddcb_requ_get_state(req) == GENWQE_REQU_FINISHED)
-+			goto go_home;
-+
-+		/* try to set PURGE bit if FETCHED/COMPLETED are not set */
-+		old = pddcb->icrc_hsi_shi_32;	/* read SHI/HSI in BE32 */
-+		if ((old & DDCB_FETCHED_BE32) == 0x00000000) {
-+
-+			new = (old | DDCB_PURGE_BE32);
-+			icrc_hsi_shi = cmpxchg(&pddcb->icrc_hsi_shi_32,
-+					       old, new);
-+			if (icrc_hsi_shi == old)
-+				goto finish_ddcb;
-+		}
-+
-+		/* normal finish with HSI bit */
-+		barrier();
-+		icrc_hsi_shi = pddcb->icrc_hsi_shi_32;
-+		if (icrc_hsi_shi & DDCB_COMPLETED_BE32)
-+			goto finish_ddcb;
-+
-+		spin_unlock_irqrestore(&queue->ddcb_lock, flags);
-+
-+		/*
-+		 * Here the check_ddcb() function will most likely
-+		 * discover this DDCB to be finished some point in
-+		 * time. It will mark the req finished and free it up
-+		 * in the list.
-+		 */
-+
-+		copy_ddcb_results(req, req->num); /* for the failing case */
-+		msleep(100); /* sleep for 1/10 second and try again */
-+		continue;
-+
-+finish_ddcb:
-+		copy_ddcb_results(req, req->num);
-+		ddcb_requ_set_state(req, GENWQE_REQU_FINISHED);
-+		queue->ddcbs_in_flight--;
-+		queue->ddcb_req[req->num] = NULL; /* delete from array */
-+		ddcb_mark_cleared(pddcb);
-+
-+		/* Move active DDCB further; Nothing to do here anymore. */
-+
-+		/*
-+		 * We need to ensure that there is at least one free
-+		 * DDCB in the queue. To do that, we must update
-+		 * ddcb_act only if the COMPLETED bit is set for the
-+		 * DDCB we are working on else we treat that DDCB even
-+		 * if we PURGED it as occupied (hardware is supposed
-+		 * to set the COMPLETED bit yet!).
-+		 */
-+		icrc_hsi_shi = pddcb->icrc_hsi_shi_32;
-+		if ((icrc_hsi_shi & DDCB_COMPLETED_BE32) &&
-+		    (queue->ddcb_act == req->num)) {
-+			queue->ddcb_act = ((queue->ddcb_act + 1) %
-+					   queue->ddcb_max);
-+		}
-+go_home:
-+		spin_unlock_irqrestore(&queue->ddcb_lock, flags);
-+		return 0;
-+	}
-+
-+	/*
-+	 * If the card is dead and the queue is forced to stop, we
-+	 * might see this in the queue status register.
-+	 */
-+	queue_status = __genwqe_readq(cd, queue->IO_QUEUE_STATUS);
-+
-+	if (cd->debug & dbg_card_ddcb) {
-+		genwqe_dprintk(cd, dbg_card_ddcb, "UN/FINISHED DDCB#%d\n",
-+			       req->num);
-+		genwqe_hexdump(pci_dev, pddcb, sizeof(*pddcb));
-+	}
-+	dev_err(&pci_dev->dev,
-+		"[%s] err: DDCB#%d not purged and not completed "
-+		"after %d seconds QSTAT=%016llx!!\n",
-+		__func__, req->num, genwqe_ddcb_software_timeout,
-+		queue_status);
-+
-+	print_ddcb_info(cd, req->queue);
-+
-+	return -EFAULT;
-+}
-+
-+int genwqe_init_debug_data(struct genwqe_dev *cd, struct genwqe_debug_data *d)
-+{
-+	int len;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+
-+	if (d == NULL) {
-+		dev_err(&pci_dev->dev,
-+			"[%s] err: invalid memory for debug data!\n",
-+			__func__);
-+		return -EFAULT;
-+	}
-+
-+	len  = sizeof(d->driver_version);
-+	snprintf(d->driver_version, len, "%s", DRV_VERS_STRING);
-+	d->slu_unitcfg = cd->slu_unitcfg;
-+	d->app_unitcfg = cd->app_unitcfg;
-+	return 0;
-+}
-+
-+/**
-+ * __genwqe_enqueue_ddcb() - Enqueue a DDCB
-+ * @cd:          pointer to genwqe device descriptor
-+ * @req:         pointer to DDCB execution request
-+ *
-+ * Return: 0 if enqueuing succeeded
-+ *         -EIO if card is unusable/PCIe problems
-+ *         -EBUSY if enqueuing failed
-+ */
-+int __genwqe_enqueue_ddcb(struct genwqe_dev *cd, struct ddcb_requ *req)
-+{
-+	struct ddcb *pddcb;
-+	unsigned long flags;
-+	struct ddcb_queue *queue;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+	u16 icrc;
-+
-+	if (cd->card_state != GENWQE_CARD_USED) {
-+		printk_ratelimited(KERN_ERR
-+			"%s %s: [%s] Card is unusable/PCIe problem Req#%d\n",
-+			GENWQE_DEVNAME, dev_name(&pci_dev->dev),
-+			__func__, req->num);
-+		return -EIO;
-+	}
-+
-+	queue = req->queue = &cd->queue;
-+
-+	/* FIXME circumvention to improve performance when no irq is
-+	 * there.
-+	 */
-+	if (genwqe_polling_enabled)
-+		genwqe_check_ddcb_queue(cd, queue);
-+
-+	/*
-+	 * It must be ensured to process all DDCBs in successive
-+	 * order. Use a lock here in order to prevent nested DDCB
-+	 * enqueuing.
-+	 */
-+	spin_lock_irqsave(&queue->ddcb_lock, flags);
-+
-+	pddcb = get_next_ddcb(cd, queue, &req->num);	/* get ptr and num */
-+	if (pddcb == NULL) {
-+		spin_unlock_irqrestore(&queue->ddcb_lock, flags);
-+		queue->busy++;
-+		return -EBUSY;
-+	}
-+
-+	if (queue->ddcb_req[req->num] != NULL) {
-+		spin_unlock_irqrestore(&queue->ddcb_lock, flags);
-+
-+		dev_err(&pci_dev->dev,
-+			"[%s] picked DDCB %d with req=%p still in use!!\n",
-+			__func__, req->num, req);
-+		return -EFAULT;
-+	}
-+	ddcb_requ_set_state(req, GENWQE_REQU_ENQUEUED);
-+	queue->ddcb_req[req->num] = req;
-+
-+	pddcb->cmdopts_16 = cpu_to_be16(req->cmd.cmdopts);
-+	pddcb->cmd = req->cmd.cmd;
-+	pddcb->acfunc = req->cmd.acfunc;	/* functional unit */
-+
-+	/*
-+	 * We know that we can get retc 0x104 with CRC error, do not
-+	 * stop the queue in those cases for this command. XDIR = 1
-+	 * does not work for old SLU versions.
-+	 *
-+	 * Last bitstream with the old XDIR behavior had SLU_ID
-+	 * 0x34199.
-+	 */
-+	if ((cd->slu_unitcfg & 0xFFFF0ull) > 0x34199ull)
-+		pddcb->xdir = 0x1;
-+	else
-+		pddcb->xdir = 0x0;
-+
-+
-+	pddcb->psp = (((req->cmd.asiv_length / 8) << 4) |
-+		      ((req->cmd.asv_length  / 8)));
-+	pddcb->disp_ts_64 = cpu_to_be64(req->cmd.disp_ts);
-+
-+	/*
-+	 * If copying the whole DDCB_ASIV_LENGTH is impacting
-+	 * performance we need to change it to
-+	 * req->cmd.asiv_length. But simulation benefits from some
-+	 * non-architectured bits behind the architectured content.
-+	 *
-+	 * How much data is copied depends on the availability of the
-+	 * ATS field, which was introduced late. If the ATS field is
-+	 * supported ASIV is 8 bytes shorter than it used to be. Since
-+	 * the ATS field is copied too, the code should do exactly
-+	 * what it did before, but I wanted to make copying of the ATS
-+	 * field very explicit.
-+	 */
-+	if (genwqe_get_slu_id(cd) <= 0x2) {
-+		memcpy(&pddcb->__asiv[0],	/* destination */
-+		       &req->cmd.__asiv[0],	/* source */
-+		       DDCB_ASIV_LENGTH);	/* req->cmd.asiv_length */
-+	} else {
-+		pddcb->n.ats_64 = req->cmd.ats;
-+		memcpy(&pddcb->n.asiv[0],		/* destination */
-+			&req->cmd.asiv[0],	/* source */
-+			DDCB_ASIV_LENGTH_ATS);	/* req->cmd.asiv_length */
-+	}
-+
-+	pddcb->icrc_hsi_shi_32 = cpu_to_be32(0x00000000); /* for crc */
-+
-+	/*
-+	 * Calculate CRC_16 for corresponding range PSP(7:4). Include
-+	 * empty 4 bytes prior to the data.
-+	 */
-+	icrc = genwqe_crc16((const u8 *)pddcb,
-+			   ICRC_LENGTH(req->cmd.asiv_length), 0xffff);
-+	pddcb->icrc_hsi_shi_32 = cpu_to_be32((u32)icrc << 16);
-+
-+	/* enable DDCB completion irq */
-+	if (!genwqe_polling_enabled)
-+		pddcb->icrc_hsi_shi_32 |= DDCB_INTR_BE32;
-+
-+	if (cd->debug & dbg_card_ddcb) {
-+		genwqe_dprintk(cd, dbg_card_ddcb, "INPUT DDCB#%d\n", req->num);
-+		genwqe_hexdump(pci_dev, pddcb, sizeof(*pddcb));
-+	}
-+
-+	if (ddcb_requ_collect_debug_data(req)) {
-+		/* use the kernel copy of debug data. copying back to
-+		   user buffer happens later */
-+
-+		genwqe_init_debug_data(cd, &req->debug_data);
-+		memcpy(&req->debug_data.ddcb_before, pddcb,
-+		       sizeof(req->debug_data.ddcb_before));
-+	}
-+
-+	enqueue_ddcb(cd, queue, pddcb, req->num);
-+	queue->ddcbs_in_flight++;
-+
-+	if (queue->ddcbs_in_flight > queue->ddcbs_max_in_flight)
-+		queue->ddcbs_max_in_flight = queue->ddcbs_in_flight;
-+
-+	ddcb_requ_set_state(req, GENWQE_REQU_TAPPED);
-+	spin_unlock_irqrestore(&queue->ddcb_lock, flags);
-+	wake_up_interruptible(&cd->queue_waitq);
-+
-+	return 0;
-+}
-+
-+/**
-+ * __genwqe_execute_raw_ddcb() - Setup and execute DDCB
-+ * @cd:         pointer to genwqe device descriptor
-+ * @req:        user provided DDCB request
-+ */
-+int __genwqe_execute_raw_ddcb(struct genwqe_dev *cd,
-+			     struct genwqe_ddcb_cmd *cmd)
-+{
-+	int rc = 0;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+	struct ddcb_requ *req = container_of(cmd, struct ddcb_requ, cmd);
-+
-+	if (cmd->asiv_length > DDCB_ASIV_LENGTH) {
-+		dev_err(&pci_dev->dev, "[%s] err: wrong asiv_length of %d\n",
-+			__func__, cmd->asiv_length);
-+		return -EINVAL;
-+	}
-+	if (cmd->asv_length > DDCB_ASV_LENGTH) {
-+		dev_err(&pci_dev->dev, "[%s] err: wrong asv_length of %d\n",
-+			__func__, cmd->asiv_length);
-+		return -EINVAL;
-+	}
-+	rc = __genwqe_enqueue_ddcb(cd, req);
-+	if (rc != 0)
-+		return rc;
-+
-+	rc = __genwqe_wait_ddcb(cd, req);
-+	if (rc < 0)		/* error or signal interrupt */
-+		goto err_exit;
-+
-+	if (ddcb_requ_collect_debug_data(req)) {
-+		if (copy_to_user(cmd->debug_data, &req->debug_data,
-+				 sizeof(*cmd->debug_data))) {
-+			return -EFAULT;
-+		}
-+	}
-+
-+	/*
-+	 * Higher values than 0x102 indicate completion with faults,
-+	 * lower values than 0x102 indicate processing faults. Note
-+	 * that DDCB might have been purged. E.g. Cntl+C.
-+	 */
-+	if (cmd->retc != DDCB_RETC_COMPLETE) {
-+		/* This might happen e.g. flash read, and needs to be
-+		   handled by the upper layer code. */
-+		rc = -EBADMSG;	/* not processed/error retc */
-+	}
-+
-+	return rc;
-+
-+ err_exit:
-+	__genwqe_purge_ddcb(cd, req);
-+
-+	if (ddcb_requ_collect_debug_data(req)) {
-+		if (copy_to_user(cmd->debug_data, &req->debug_data,
-+				 sizeof(*cmd->debug_data))) {
-+			return -EFAULT;
-+		}
-+	}
-+	return rc;
-+}
-+
-+/**
-+ * genwqe_next_ddcb_ready() - Figure out if the next DDCB is already finished
-+ *
-+ * We use this as condition for our wait-queue code.
-+ */
-+static int genwqe_next_ddcb_ready(struct genwqe_dev *cd)
-+{
-+	unsigned long flags;
-+	struct ddcb *pddcb;
-+	struct ddcb_queue *queue = &cd->queue;
-+
-+	spin_lock_irqsave(&queue->ddcb_lock, flags);
-+
-+	if (queue_empty(queue)) { /* emtpy queue */
-+		spin_unlock_irqrestore(&queue->ddcb_lock, flags);
-+		return 0;
-+	}
-+
-+	pddcb = &queue->ddcb_vaddr[queue->ddcb_act];
-+	if (pddcb->icrc_hsi_shi_32 & DDCB_COMPLETED_BE32) { /* ddcb ready */
-+		spin_unlock_irqrestore(&queue->ddcb_lock, flags);
-+		return 1;
-+	}
-+
-+	spin_unlock_irqrestore(&queue->ddcb_lock, flags);
-+	return 0;
-+}
-+
-+/**
-+ * genwqe_ddcbs_in_flight() - Check how many DDCBs are in flight
-+ *
-+ * Keep track on the number of DDCBs which ware currently in the
-+ * queue. This is needed for statistics as well as conditon if we want
-+ * to wait or better do polling in case of no interrupts available.
-+ */
-+int genwqe_ddcbs_in_flight(struct genwqe_dev *cd)
-+{
-+	unsigned long flags;
-+	int ddcbs_in_flight = 0;
-+	struct ddcb_queue *queue = &cd->queue;
-+
-+	spin_lock_irqsave(&queue->ddcb_lock, flags);
-+	ddcbs_in_flight += queue->ddcbs_in_flight;
-+	spin_unlock_irqrestore(&queue->ddcb_lock, flags);
-+
-+	return ddcbs_in_flight;
-+}
-+
-+static int setup_ddcb_queue(struct genwqe_dev *cd, struct ddcb_queue *queue)
-+{
-+	int rc, i;
-+	struct ddcb *pddcb;
-+	u64 val64;
-+	unsigned int queue_size;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+
-+	if (genwqe_ddcb_max < 2)
-+		return -EINVAL;
-+
-+	queue_size = roundup(genwqe_ddcb_max * sizeof(struct ddcb), PAGE_SIZE);
-+
-+	queue->ddcbs_in_flight = 0;  /* statistics */
-+	queue->ddcbs_max_in_flight = 0;
-+	queue->ddcbs_completed = 0;
-+	queue->busy = 0;
-+
-+	queue->ddcb_seq	  = 0x100; /* start sequence number */
-+	queue->ddcb_max	  = genwqe_ddcb_max; /* module parameter */
-+	queue->ddcb_vaddr = __genwqe_alloc_consistent(cd, queue_size,
-+						&queue->ddcb_daddr);
-+	if (queue->ddcb_vaddr == NULL) {
-+		dev_err(&pci_dev->dev,
-+			"[%s] **err: could not allocate DDCB **\n", __func__);
-+		return -ENOMEM;
-+	}
-+	memset(queue->ddcb_vaddr, 0, queue_size);
-+
-+	queue->ddcb_req = kzalloc(sizeof(struct ddcb_requ *) *
-+				  queue->ddcb_max, GFP_KERNEL);
-+	if (!queue->ddcb_req) {
-+		rc = -ENOMEM;
-+		goto free_ddcbs;
-+	}
-+
-+	queue->ddcb_waitqs = kzalloc(sizeof(wait_queue_head_t) *
-+				     queue->ddcb_max, GFP_KERNEL);
-+	if (!queue->ddcb_waitqs) {
-+		rc = -ENOMEM;
-+		goto free_requs;
-+	}
-+
-+	for (i = 0; i < queue->ddcb_max; i++) {
-+		pddcb = &queue->ddcb_vaddr[i];		     /* DDCBs */
-+		pddcb->icrc_hsi_shi_32 = DDCB_COMPLETED_BE32;
-+		pddcb->retc_16 = cpu_to_be16(0xfff);
-+
-+		queue->ddcb_req[i] = NULL;		     /* requests */
-+		init_waitqueue_head(&queue->ddcb_waitqs[i]); /* waitqueues */
-+	}
-+
-+	queue->ddcb_act  = 0;
-+	queue->ddcb_next = 0;	/* queue is empty */
-+
-+	spin_lock_init(&queue->ddcb_lock);
-+	init_waitqueue_head(&queue->ddcb_waitq);
-+
-+	val64 = ((u64)(queue->ddcb_max - 1) <<  8); /* lastptr */
-+	__genwqe_writeq(cd, queue->IO_QUEUE_CONFIG,  0x07);  /* iCRC/vCRC */
-+	__genwqe_writeq(cd, queue->IO_QUEUE_SEGMENT, queue->ddcb_daddr);
-+	__genwqe_writeq(cd, queue->IO_QUEUE_INITSQN, queue->ddcb_seq);
-+	__genwqe_writeq(cd, queue->IO_QUEUE_WRAP,    val64);
-+	return 0;
-+
-+ free_requs:
-+	kfree(queue->ddcb_req);
-+	queue->ddcb_req = NULL;
-+ free_ddcbs:
-+	__genwqe_free_consistent(cd, queue_size, queue->ddcb_vaddr,
-+				queue->ddcb_daddr);
-+	queue->ddcb_vaddr = NULL;
-+	queue->ddcb_daddr = 0ull;
-+	return -ENODEV;
-+
-+}
-+
-+static int ddcb_queue_initialized(struct ddcb_queue *queue)
-+{
-+	return (queue->ddcb_vaddr != NULL);
-+}
-+
-+static void free_ddcb_queue(struct genwqe_dev *cd, struct ddcb_queue *queue)
-+{
-+	unsigned int queue_size;
-+
-+	queue_size = roundup(queue->ddcb_max * sizeof(struct ddcb), PAGE_SIZE);
-+
-+	kfree(queue->ddcb_req);
-+	queue->ddcb_req = NULL;
-+
-+	if (queue->ddcb_vaddr) {
-+		__genwqe_free_consistent(cd, queue_size, queue->ddcb_vaddr,
-+					queue->ddcb_daddr);
-+		queue->ddcb_vaddr = NULL;
-+		queue->ddcb_daddr = 0ull;
-+	}
-+}
-+
-+static irqreturn_t genwqe_pf_isr(int irq, void *dev_id)
-+{
-+	u64 gfir;
-+	struct genwqe_dev *cd = (struct genwqe_dev *)dev_id;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+
-+	/*
-+	 * In case of fatal FIR error the queue is stopped, such that
-+	 * we can safely check it without risking anything.
-+	 */
-+	cd->irqs_processed++;
-+	wake_up_interruptible(&cd->queue_waitq);
-+
-+	/*
-+	 * Checking for errors before kicking the queue might be
-+	 * safer, but slower for the good-case ... See above.
-+	 */
-+	gfir = __genwqe_readq(cd, IO_SLC_CFGREG_GFIR);
-+	if ((gfir & GFIR_ERR_TRIGGER) != 0x0) {
-+
-+		wake_up_interruptible(&cd->health_waitq);
-+
-+		/*
-+		 * By default GFIRs causes recovery actions. This
-+		 * count is just for debug when recovery is masked.
-+		 */
-+		printk_ratelimited(KERN_ERR
-+				   "%s %s: [%s] GFIR=%016llx\n",
-+				   GENWQE_DEVNAME, dev_name(&pci_dev->dev),
-+				   __func__, gfir);
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static irqreturn_t genwqe_vf_isr(int irq, void *dev_id)
-+{
-+	struct genwqe_dev *cd = (struct genwqe_dev *)dev_id;
-+
-+	cd->irqs_processed++;
-+	wake_up_interruptible(&cd->queue_waitq);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * genwqe_card_thread() - Work thread for the DDCB queue
-+ *
-+ * The idea is to check if there are DDCBs in processing. If there are
-+ * some finished DDCBs, we process them and wakeup the
-+ * requestors. Otherwise we give other processes time using
-+ * cond_resched().
-+ */
-+static int genwqe_card_thread(void *data)
-+{
-+	int should_stop = 0, rc = 0;
-+	struct genwqe_dev *cd = (struct genwqe_dev *)data;
-+
-+	while (!kthread_should_stop()) {
-+
-+		genwqe_check_ddcb_queue(cd, &cd->queue);
-+
-+		if (genwqe_polling_enabled) {
-+			rc = wait_event_interruptible_timeout(
-+				cd->queue_waitq,
-+				genwqe_ddcbs_in_flight(cd) ||
-+				(should_stop = kthread_should_stop()), 1);
-+		} else {
-+			rc = wait_event_interruptible_timeout(
-+				cd->queue_waitq,
-+				genwqe_next_ddcb_ready(cd) ||
-+				(should_stop = kthread_should_stop()), HZ);
-+		}
-+		if (should_stop)
-+			break;
-+
-+		/*
-+		 * Avoid soft lockups on heavy loads; we do not want
-+		 * to disable our interrupts.
-+		 */
-+		cond_resched();
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * genwqe_setup_service_layer() - Setup DDCB queue
-+ * @cd:         pointer to genwqe device descriptor
-+ *
-+ * Allocate DDCBs. Configure Service Layer Controller (SLC).
-+ *
-+ * Return: 0 success
-+ */
-+int genwqe_setup_service_layer(struct genwqe_dev *cd)
-+{
-+	int rc;
-+	struct ddcb_queue *queue;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+
-+	if (genwqe_is_privileged(cd)) {
-+		rc = genwqe_card_reset(cd);
-+		if (rc < 0) {
-+			dev_err(&pci_dev->dev,
-+				"[%s] err: reset failed.\n", __func__);
-+			return rc;
-+		}
-+		genwqe_read_softreset(cd);
-+	}
-+
-+	queue = &cd->queue;
-+	queue->IO_QUEUE_CONFIG  = IO_SLC_QUEUE_CONFIG;
-+	queue->IO_QUEUE_STATUS  = IO_SLC_QUEUE_STATUS;
-+	queue->IO_QUEUE_SEGMENT = IO_SLC_QUEUE_SEGMENT;
-+	queue->IO_QUEUE_INITSQN = IO_SLC_QUEUE_INITSQN;
-+	queue->IO_QUEUE_OFFSET  = IO_SLC_QUEUE_OFFSET;
-+	queue->IO_QUEUE_WRAP    = IO_SLC_QUEUE_WRAP;
-+	queue->IO_QUEUE_WTIME   = IO_SLC_QUEUE_WTIME;
-+	queue->IO_QUEUE_ERRCNTS = IO_SLC_QUEUE_ERRCNTS;
-+	queue->IO_QUEUE_LRW     = IO_SLC_QUEUE_LRW;
-+
-+	rc = setup_ddcb_queue(cd, queue);
-+	if (rc != 0) {
-+		rc = -ENODEV;
-+		goto err_out;
-+	}
-+
-+	init_waitqueue_head(&cd->queue_waitq);
-+	cd->card_thread = kthread_run(genwqe_card_thread, cd,
-+				      GENWQE_DEVNAME "%d_thread",
-+				      cd->card_idx);
-+	if (IS_ERR(cd->card_thread)) {
-+		rc = PTR_ERR(cd->card_thread);
-+		cd->card_thread = NULL;
-+		goto stop_free_queue;
-+	}
-+
-+	rc = genwqe_set_interrupt_capability(cd, GENWQE_MSI_IRQS);
-+	if (rc > 0)
-+		rc = genwqe_set_interrupt_capability(cd, rc);
-+	if (rc != 0) {
-+		rc = -ENODEV;
-+		goto stop_kthread;
-+	}
-+
-+	/*
-+	 * We must have all wait-queues initialized when we enable the
-+	 * interrupts. Otherwise we might crash if we get an early
-+	 * irq.
-+	 */
-+	init_waitqueue_head(&cd->health_waitq);
-+
-+	if (genwqe_is_privileged(cd)) {
-+		rc = request_irq(pci_dev->irq, genwqe_pf_isr, IRQF_SHARED,
-+				 GENWQE_DEVNAME, cd);
-+	} else {
-+		rc = request_irq(pci_dev->irq, genwqe_vf_isr, IRQF_SHARED,
-+				 GENWQE_DEVNAME, cd);
-+	}
-+	if (rc < 0) {
-+		dev_err(&pci_dev->dev, "irq %d not free.\n", pci_dev->irq);
-+		goto stop_irq_cap;
-+	}
-+
-+	cd->card_state = GENWQE_CARD_USED;
-+	return 0;
-+
-+ stop_irq_cap:
-+	genwqe_reset_interrupt_capability(cd);
-+ stop_kthread:
-+	kthread_stop(cd->card_thread);
-+	cd->card_thread = NULL;
-+ stop_free_queue:
-+	free_ddcb_queue(cd, queue);
-+ err_out:
-+	return rc;
-+}
-+
-+/**
-+ * queue_wake_up_all() - Handles fatal error case
-+ *
-+ * The PCI device got unusable and we have to stop all pending
-+ * requests as fast as we can. The code after this must purge the
-+ * DDCBs in question and ensure that all mappings are freed.
-+ */
-+static int queue_wake_up_all(struct genwqe_dev *cd)
-+{
-+	unsigned int i;
-+	unsigned long flags;
-+	struct ddcb_queue *queue = &cd->queue;
-+
-+	spin_lock_irqsave(&queue->ddcb_lock, flags);
-+
-+	for (i = 0; i < queue->ddcb_max; i++)
-+		wake_up_interruptible(&queue->ddcb_waitqs[queue->ddcb_act]);
-+
-+	spin_unlock_irqrestore(&queue->ddcb_lock, flags);
-+
-+	return 0;
-+}
-+
-+/**
-+ * genwqe_finish_queue() - Remove any genwqe devices and user-interfaces
-+ *
-+ * Relies on the pre-condition that there are no users of the card
-+ * device anymore e.g. with open file-descriptors.
-+ *
-+ * This function must be robust enough to be called twice.
-+ */
-+int genwqe_finish_queue(struct genwqe_dev *cd)
-+{
-+	int i, rc, in_flight;
-+	int waitmax = genwqe_ddcb_software_timeout;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+	struct ddcb_queue *queue = &cd->queue;
-+
-+	if (!ddcb_queue_initialized(queue))
-+		return 0;
-+
-+	/* Do not wipe out the error state. */
-+	if (cd->card_state == GENWQE_CARD_USED)
-+		cd->card_state = GENWQE_CARD_UNUSED;
-+
-+	/* Wake up all requests in the DDCB queue such that they
-+	   should be removed nicely. */
-+	queue_wake_up_all(cd);
-+
-+	/* We must wait to get rid of the DDCBs in flight */
-+	for (i = 0; i < waitmax; i++) {
-+		in_flight = genwqe_ddcbs_in_flight(cd);
-+
-+		if (in_flight == 0)
-+			break;
-+
-+		dev_info(&pci_dev->dev,
-+			 "  DEBUG [%d/%d] waiting for queue to get empty: "
-+			 "%d requests!\n", i, waitmax, in_flight);
-+
-+		/*
-+		 * Severe severe error situation: The card itself has
-+		 * 16 DDCB queues, each queue has e.g. 32 entries,
-+		 * each DDBC has a hardware timeout of currently 250
-+		 * msec but the PFs have a hardware timeout of 8 sec
-+		 * ... so I take something large.
-+		 */
-+		msleep(1000);
-+	}
-+	if (i == waitmax) {
-+		dev_err(&pci_dev->dev, "  [%s] err: queue is not empty!!\n",
-+			__func__);
-+		rc = -EIO;
-+	}
-+	return rc;
-+}
-+
-+/**
-+ * genwqe_release_service_layer() - Shutdown DDCB queue
-+ * @cd:       genwqe device descriptor
-+ *
-+ * This function must be robust enough to be called twice.
-+ */
-+int genwqe_release_service_layer(struct genwqe_dev *cd)
-+{
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+
-+	if (!ddcb_queue_initialized(&cd->queue))
-+		return 1;
-+
-+	free_irq(pci_dev->irq, cd);
-+	genwqe_reset_interrupt_capability(cd);
-+
-+	if (cd->card_thread != NULL) {
-+		kthread_stop(cd->card_thread);
-+		cd->card_thread = NULL;
-+	}
-+
-+	free_ddcb_queue(cd, &cd->queue);
-+	return 0;
-+}
-diff --git a/drivers/misc/genwqe/card_ddcb.h b/drivers/misc/genwqe/card_ddcb.h
-new file mode 100644
-index 0000000..c4f2672
---- /dev/null
-+++ b/drivers/misc/genwqe/card_ddcb.h
-@@ -0,0 +1,188 @@
-+#ifndef __CARD_DDCB_H__
-+#define __CARD_DDCB_H__
-+
-+/**
-+ * IBM Accelerator Family 'GenWQE'
-+ *
-+ * (C) Copyright IBM Corp. 2013
-+ *
-+ * Author: Frank Haverkamp <haver@linux.vnet.ibm.com>
-+ * Author: Joerg-Stephan Vogt <jsvogt@de.ibm.com>
-+ * Author: Michael Jung <mijung@de.ibm.com>
-+ * Author: Michael Ruettger <michael@ibmra.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2, or (at your option)
-+ * any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/types.h>
-+#include <asm/byteorder.h>
-+
-+#include "genwqe_driver.h"
-+#include "card_base.h"
-+
-+/**
-+ * struct ddcb - Device Driver Control Block DDCB
-+ * @hsi:        Hardware software interlock
-+ * @shi:        Software hardware interlock. Hsi and shi are used to interlock
-+ *              software and hardware activities. We are using a compare and
-+ *              swap operation to ensure that there are no races when
-+ *              activating new DDCBs on the queue, or when we need to
-+ *              purge a DDCB from a running queue.
-+ * @acfunc:     Accelerator function addresses a unit within the chip
-+ * @cmd:        Command to work on
-+ * @cmdopts_16: Options for the command
-+ * @asiv:       Input data
-+ * @asv:        Output data
-+ *
-+ * The DDCB data format is big endian. Multiple consequtive DDBCs form
-+ * a DDCB queue.
-+ */
-+#define ASIV_LENGTH		104 /* Old specification without ATS field */
-+#define ASIV_LENGTH_ATS		96  /* New specification with ATS field */
-+#define ASV_LENGTH		64
-+
-+struct ddcb {
-+	union {
-+		__be32 icrc_hsi_shi_32;	/* iCRC, Hardware/SW interlock */
-+		struct {
-+			__be16	icrc_16;
-+			u8	hsi;
-+			u8	shi;
-+		};
-+	};
-+	u8  pre;		/* Preamble */
-+	u8  xdir;		/* Execution Directives */
-+	__be16 seqnum_16;	/* Sequence Number */
-+
-+	u8  acfunc;		/* Accelerator Function.. */
-+	u8  cmd;		/* Command. */
-+	__be16 cmdopts_16;	/* Command Options */
-+	u8  sur;		/* Status Update Rate */
-+	u8  psp;		/* Protection Section Pointer */
-+	__be16 rsvd_0e_16;	/* Reserved invariant */
-+
-+	__be64 fwiv_64;		/* Firmware Invariant. */
-+
-+	union {
-+		struct {
-+			__be64 ats_64;  /* Address Translation Spec */
-+			u8     asiv[ASIV_LENGTH_ATS]; /* New ASIV */
-+		} n;
-+		u8  __asiv[ASIV_LENGTH];	/* obsolete */
-+	};
-+	u8     asv[ASV_LENGTH];	/* Appl Spec Variant */
-+
-+	__be16 rsvd_c0_16;	/* Reserved Variant */
-+	__be16 vcrc_16;		/* Variant CRC */
-+	__be32 rsvd_32;		/* Reserved unprotected */
-+
-+	__be64 deque_ts_64;	/* Deque Time Stamp. */
-+
-+	__be16 retc_16;		/* Return Code */
-+	__be16 attn_16;		/* Attention/Extended Error Codes */
-+	__be32 progress_32;	/* Progress indicator. */
-+
-+	__be64 cmplt_ts_64;	/* Completion Time Stamp. */
-+
-+	/* The following layout matches the new service layer format */
-+	__be32 ibdc_32;		/* Inbound Data Count  (* 256) */
-+	__be32 obdc_32;		/* Outbound Data Count (* 256) */
-+
-+	__be64 rsvd_SLH_64;	/* Reserved for hardware */
-+	union {			/* private data for driver */
-+		u8	priv[8];
-+		__be64	priv_64;
-+	};
-+	__be64 disp_ts_64;	/* Dispatch TimeStamp */
-+} __attribute__((__packed__));
-+
-+/* CRC polynomials for DDCB */
-+#define CRC16_POLYNOMIAL	0x1021
-+
-+/*
-+ * SHI: Software to Hardware Interlock
-+ *   This 1 byte field is written by software to interlock the
-+ *   movement of one queue entry to another with the hardware in the
-+ *   chip.
-+ */
-+#define DDCB_SHI_INTR		0x04 /* Bit 2 */
-+#define DDCB_SHI_PURGE		0x02 /* Bit 1 */
-+#define DDCB_SHI_NEXT		0x01 /* Bit 0 */
-+
-+/*
-+ * HSI: Hardware to Software interlock
-+ * This 1 byte field is written by hardware to interlock the movement
-+ * of one queue entry to another with the software in the chip.
-+ */
-+#define DDCB_HSI_COMPLETED	0x40 /* Bit 6 */
-+#define DDCB_HSI_FETCHED	0x04 /* Bit 2 */
-+
-+/*
-+ * Accessing HSI/SHI is done 32-bit wide
-+ *   Normally 16-bit access would work too, but on some platforms the
-+ *   16 compare and swap operation is not supported. Therefore
-+ *   switching to 32-bit such that those platforms will work too.
-+ *
-+ *                                         iCRC HSI/SHI
-+ */
-+#define DDCB_INTR_BE32		cpu_to_be32(0x00000004)
-+#define DDCB_PURGE_BE32		cpu_to_be32(0x00000002)
-+#define DDCB_NEXT_BE32		cpu_to_be32(0x00000001)
-+#define DDCB_COMPLETED_BE32	cpu_to_be32(0x00004000)
-+#define DDCB_FETCHED_BE32	cpu_to_be32(0x00000400)
-+
-+/* Definitions of DDCB presets */
-+#define DDCB_PRESET_PRE		0x80
-+#define ICRC_LENGTH(n)		((n) + 8 + 8 + 8)  /* used ASIV + hdr fields */
-+#define VCRC_LENGTH(n)		((n))		   /* used ASV */
-+
-+/*
-+ * Genwqe Scatter Gather list
-+ *   Each element has up to 8 entries.
-+ *   The chaining element is element 0 cause of prefetching needs.
-+ */
-+
-+/*
-+ * 0b0110 Chained descriptor. The descriptor is describing the next
-+ * descriptor list.
-+ */
-+#define SG_CHAINED		(0x6)
-+
-+/*
-+ * 0b0010 First entry of a descriptor list. Start from a Buffer-Empty
-+ * condition.
-+ */
-+#define SG_DATA			(0x2)
-+
-+/*
-+ * 0b0000 Early terminator. This is the last entry on the list
-+ * irregardless of the length indicated.
-+ */
-+#define SG_END_LIST		(0x0)
-+
-+/**
-+ * struct sglist - Scatter gather list
-+ * @target_addr:       Either a dma addr of memory to work on or a
-+ *                     dma addr or a subsequent sglist block.
-+ * @len:               Length of the data block.
-+ * @flags:             See above.
-+ *
-+ * Depending on the command the GenWQE card can use a scatter gather
-+ * list to describe the memory it works on. Always 8 sg_entry's form
-+ * a block.
-+ */
-+struct sg_entry {
-+	__be64 target_addr;
-+	__be32 len;
-+	__be32 flags;
-+};
-+
-+#endif /* __CARD_DDCB_H__ */
-diff --git a/drivers/misc/genwqe/card_dev.c b/drivers/misc/genwqe/card_dev.c
-new file mode 100644
-index 0000000..fabf749
---- /dev/null
-+++ b/drivers/misc/genwqe/card_dev.c
-@@ -0,0 +1,1499 @@
-+/**
-+ * IBM Accelerator Family 'GenWQE'
-+ *
-+ * (C) Copyright IBM Corp. 2013
-+ *
-+ * Author: Frank Haverkamp <haver@linux.vnet.ibm.com>
-+ * Author: Joerg-Stephan Vogt <jsvogt@de.ibm.com>
-+ * Author: Michael Jung <mijung@de.ibm.com>
-+ * Author: Michael Ruettger <michael@ibmra.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License (version 2 only)
-+ * as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ */
-+
-+/*
-+ * Character device representation of the GenWQE device. This allows
-+ * user-space applications to communicate with the card.
++ * Miscelanous functionality used in the other GenWQE driver parts.
 + */
 +
 +#include <linux/kernel.h>
-+#include <linux/types.h>
-+#include <linux/module.h>
-+#include <linux/pci.h>
-+#include <linux/string.h>
-+#include <linux/fs.h>
++#include <linux/dma-mapping.h>
 +#include <linux/sched.h>
-+#include <linux/wait.h>
++#include <linux/vmalloc.h>
++#include <linux/page-flags.h>
++#include <linux/scatterlist.h>
++#include <linux/hugetlb.h>
++#include <linux/iommu.h>
 +#include <linux/delay.h>
-+#include <linux/atomic.h>
++#include <linux/pci.h>
++#include <linux/dma-mapping.h>
++#include <linux/ctype.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/delay.h>
++#include <asm/pgtable.h>
 +
++#include "genwqe_driver.h"
 +#include "card_base.h"
 +#include "card_ddcb.h"
 +
-+static int genwqe_open_files(struct genwqe_dev *cd)
++/**
++ * __genwqe_writeq() - Write 64-bit register
++ * @cd:	        genwqe device descriptor
++ * @byte_offs:  byte offset within BAR
++ * @val:        64-bit value
++ *
++ * Return: 0 if success; < 0 if error
++ */
++int __genwqe_writeq(struct genwqe_dev *cd, u64 byte_offs, u64 val)
 +{
-+	int rc;
-+	unsigned long flags;
++	genwqe_dprintk(cd, dbg_card_regs,
++		   "  genwqe_writeq: reg=%08llx val=%016llx\n",
++		   byte_offs, val);
 +
-+	spin_lock_irqsave(&cd->file_lock, flags);
-+	rc = list_empty(&cd->file_list);
-+	spin_unlock_irqrestore(&cd->file_lock, flags);
-+	return !rc;
-+}
++	if (cd->err_inject & GENWQE_INJECT_HARDWARE_FAILURE)
++		return -EIO;
 +
-+static void genwqe_add_file(struct genwqe_dev *cd, struct genwqe_file *cfile)
-+{
-+	unsigned long flags;
++	if (cd->mmio == NULL)
++		return -EIO;
 +
-+	cfile->owner = current;
-+	spin_lock_irqsave(&cd->file_lock, flags);
-+	list_add(&cfile->list, &cd->file_list);
-+	spin_unlock_irqrestore(&cd->file_lock, flags);
-+}
-+
-+static int genwqe_del_file(struct genwqe_dev *cd, struct genwqe_file *cfile)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&cd->file_lock, flags);
-+	list_del(&cfile->list);
-+	spin_unlock_irqrestore(&cd->file_lock, flags);
-+
-+	return 0;
-+}
-+
-+static void genwqe_add_pin(struct genwqe_file *cfile, struct dma_mapping *m)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&cfile->pin_lock, flags);
-+	list_add(&m->pin_list, &cfile->pin_list);
-+	spin_unlock_irqrestore(&cfile->pin_lock, flags);
-+}
-+
-+static int genwqe_del_pin(struct genwqe_file *cfile, struct dma_mapping *m)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&cfile->pin_lock, flags);
-+	list_del(&m->pin_list);
-+	spin_unlock_irqrestore(&cfile->pin_lock, flags);
-+
++	__raw_writeq(cpu_to_be64((val)), (cd->mmio + byte_offs));
 +	return 0;
 +}
 +
 +/**
-+ * genwqe_search_pin() - Search for the mapping for a userspace address
-+ * @cfile:	Descriptor of opened file
-+ * @u_addr:	User virtual address
-+ * @size:	Size of buffer
-+ * @dma_addr:	DMA address to be updated
++ * __genwqe_readq() - Read 64-bit register
++ * @cd:         genwqe device descriptor
++ * @byte_offs:  offset within BAR
 + *
-+ * Return: Pointer to the corresponding mapping	NULL if not found
++ * Return: value from register
 + */
-+static struct dma_mapping *genwqe_search_pin(struct genwqe_file *cfile,
-+					    unsigned long u_addr,
-+					    unsigned int size,
-+					    void **virt_addr)
++u64 __genwqe_readq(struct genwqe_dev *cd, u64 byte_offs)
 +{
-+	unsigned long flags;
-+	struct dma_mapping *m;
++	u64 val;
 +
-+	spin_lock_irqsave(&cfile->pin_lock, flags);
++	if (cd->err_inject & GENWQE_INJECT_HARDWARE_FAILURE)
++		return 0xffffffffffffffffull;
 +
-+	list_for_each_entry(m, &cfile->pin_list, pin_list) {
-+		if ((((u64)m->u_vaddr) <= (u_addr)) &&
-+		    (((u64)m->u_vaddr + m->size) >= (u_addr + size))) {
++	if ((cd->err_inject & GENWQE_INJECT_GFIR_FATAL) &&
++	    (byte_offs == IO_SLC_CFGREG_GFIR))
++		return 0x000000000000ffffull;
 +
-+			if (virt_addr)
-+				*virt_addr = m->k_vaddr +
-+					(u_addr - (u64)m->u_vaddr);
++	if ((cd->err_inject & GENWQE_INJECT_GFIR_INFO) &&
++	    (byte_offs == IO_SLC_CFGREG_GFIR))
++		return 0x00000000ffff0000ull;
 +
-+			spin_unlock_irqrestore(&cfile->pin_lock, flags);
-+			return m;
-+		}
-+	}
-+	spin_unlock_irqrestore(&cfile->pin_lock, flags);
-+	return NULL;
-+}
++	if (cd->mmio == NULL)
++		return 0xffffffffffffffffull;
 +
-+static void __genwqe_add_mapping(struct genwqe_file *cfile,
-+			      struct dma_mapping *dma_map)
-+{
-+	unsigned long flags;
++	val = be64_to_cpu(__raw_readq(cd->mmio + byte_offs));
 +
-+	spin_lock_irqsave(&cfile->map_lock, flags);
-+	list_add(&dma_map->card_list, &cfile->map_list);
-+	spin_unlock_irqrestore(&cfile->map_lock, flags);
-+}
++	genwqe_dprintk(cd, dbg_card_regs,
++		       "  genwqe_readq:  reg=%08llx val=%016llx\n",
++		       byte_offs, val);
 +
-+static void __genwqe_del_mapping(struct genwqe_file *cfile,
-+			      struct dma_mapping *dma_map)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&cfile->map_lock, flags);
-+	list_del(&dma_map->card_list);
-+	spin_unlock_irqrestore(&cfile->map_lock, flags);
-+}
-+
-+
-+/**
-+ * __genwqe_search_mapping() - Search for the mapping for a userspace address
-+ * @cfile:	descriptor of opened file
-+ * @u_addr:	user virtual address
-+ * @size:	size of buffer
-+ * @dma_addr:	DMA address to be updated
-+ * Return: Pointer to the corresponding mapping	NULL if not found
-+ */
-+static struct dma_mapping *__genwqe_search_mapping(struct genwqe_file *cfile,
-+						   unsigned long u_addr,
-+						   unsigned int size,
-+						   dma_addr_t *dma_addr,
-+						   void **virt_addr)
-+{
-+	unsigned long flags;
-+	struct dma_mapping *m;
-+	struct pci_dev *pci_dev = cfile->cd->pci_dev;
-+
-+	spin_lock_irqsave(&cfile->map_lock, flags);
-+	list_for_each_entry(m, &cfile->map_list, card_list) {
-+
-+		if ((((u64)m->u_vaddr) <= (u_addr)) &&
-+		    (((u64)m->u_vaddr + m->size) >= (u_addr + size))) {
-+
-+			/* match found: current is as expected and
-+			   addr is in range */
-+			if (dma_addr)
-+				*dma_addr = m->dma_addr +
-+					(u_addr - (u64)m->u_vaddr);
-+
-+			if (virt_addr)
-+				*virt_addr = m->k_vaddr +
-+					(u_addr - (u64)m->u_vaddr);
-+
-+			spin_unlock_irqrestore(&cfile->map_lock, flags);
-+			return m;
-+		}
-+	}
-+	spin_unlock_irqrestore(&cfile->map_lock, flags);
-+
-+	dev_err(&pci_dev->dev,
-+		"[%s] Entry not found: u_addr=%lx, size=%x\n",
-+		__func__, u_addr, size);
-+
-+	return NULL;
-+}
-+
-+static void genwqe_remove_mappings(struct genwqe_file *cfile)
-+{
-+	int i = 0;
-+	struct list_head *node, *next;
-+	struct dma_mapping *dma_map;
-+	struct genwqe_dev *cd = cfile->cd;
-+	struct pci_dev *pci_dev = cfile->cd->pci_dev;
-+
-+	list_for_each_safe(node, next, &cfile->map_list) {
-+		dma_map = list_entry(node, struct dma_mapping, card_list);
-+
-+		list_del_init(&dma_map->card_list);
-+
-+		/*
-+		 * This is really a bug, because those things should
-+		 * have been already tidied up.
-+		 *
-+		 * GENWQE_MAPPING_RAW should have been removed via mmunmap().
-+		 * GENWQE_MAPPING_SGL_TEMP should be removed by tidy up code.
-+		 */
-+		dev_err(&pci_dev->dev,
-+			"[%s] %d. cleanup mapping: u_vaddr=%p "
-+			"u_kaddr=%016lx dma_addr=%llx\n", __func__, i++,
-+			dma_map->u_vaddr, (unsigned long)dma_map->k_vaddr,
-+			dma_map->dma_addr);
-+
-+		if (dma_map->type == GENWQE_MAPPING_RAW) {
-+			/* we allocated this dynamically */
-+			__genwqe_free_consistent(cd, dma_map->size,
-+						dma_map->k_vaddr,
-+						dma_map->dma_addr);
-+			kfree(dma_map);
-+		} else if (dma_map->type == GENWQE_MAPPING_SGL_TEMP) {
-+			/* we use dma_map statically from the request */
-+			user_vunmap(cd, dma_map, NULL);
-+		}
-+	}
-+}
-+
-+static void genwqe_remove_pinnings(struct genwqe_file *cfile)
-+{
-+	int i = 0;
-+	struct list_head *node, *next;
-+	struct dma_mapping *dma_map;
-+	struct genwqe_dev *cd = cfile->cd;
-+
-+	list_for_each_safe(node, next, &cfile->pin_list) {
-+		dma_map = list_entry(node, struct dma_mapping, pin_list);
-+
-+		/*
-+		 * This is not a bug, because a killed processed might
-+		 * not call the unpin ioctl, which is supposed to free
-+		 * the resources.
-+		 *
-+		 * Pinnings are dymically allocated and need to be
-+		 * deleted.
-+		 */
-+		list_del_init(&dma_map->pin_list);
-+
-+		genwqe_dprintk(cd, dbg_card_pinning,
-+			       "[%s] %d. not all pinnings removed: "
-+			       "u_vaddr=%p size=%08x u_kaddr=%016lx "
-+			       "dma_addr=%llx\n", __func__, i++,
-+			       dma_map->u_vaddr, dma_map->size,
-+			       (unsigned long)dma_map->k_vaddr,
-+			       dma_map->dma_addr);
-+
-+		user_vunmap(cd, dma_map, NULL);
-+		kfree(dma_map);
-+	}
++	return val;
 +}
 +
 +/**
-+ * genwqe_kill_fasync() - Send signal to all processes with open GenWQE files
++ * __genwqe_writel() - Write 32-bit register
++ * @cd:	        genwqe device descriptor
++ * @byte_offs:  byte offset within BAR
++ * @val:        32-bit value
 + *
-+ * E.g. genwqe_send_signal(cd, SIGIO);
++ * Return: 0 if success; < 0 if error
 + */
-+static int genwqe_kill_fasync(struct genwqe_dev *cd, int sig)
++int __genwqe_writel(struct genwqe_dev *cd, uint64_t byte_offs, u32 val)
 +{
-+	unsigned int files = 0;
-+	unsigned long flags;
-+	struct genwqe_file *cfile;
++	genwqe_dprintk(cd, dbg_card_regs,
++		       "  genwqe_writel: reg=%08llx val=%08x\n",
++		       byte_offs, val);
 +
-+	spin_lock_irqsave(&cd->file_lock, flags);
-+	list_for_each_entry(cfile, &cd->file_list, list) {
-+		if (cfile->async_queue)
-+			kill_fasync(&cfile->async_queue, sig, POLL_HUP);
-+		files++;
-+	}
-+	spin_unlock_irqrestore(&cd->file_lock, flags);
-+	return files;
-+}
++	if (cd->err_inject & GENWQE_INJECT_HARDWARE_FAILURE)
++		return -EIO;
 +
-+static int genwqe_force_sig(struct genwqe_dev *cd, int sig)
-+{
-+	unsigned int files = 0;
-+	unsigned long flags;
-+	struct genwqe_file *cfile;
++	if (cd->mmio == NULL)
++		return -EIO;
 +
-+	spin_lock_irqsave(&cd->file_lock, flags);
-+	list_for_each_entry(cfile, &cd->file_list, list) {
-+		force_sig(sig, cfile->owner);
-+		files++;
-+	}
-+	spin_unlock_irqrestore(&cd->file_lock, flags);
-+	return files;
-+}
-+
-+/**
-+ * genwqe_open() - file open
-+ * @inode:      file system information
-+ * @filp:	file handle
-+ *
-+ * This function is executed whenever an application calls
-+ * open("/dev/genwqe",..).
-+ *
-+ * Return: 0 if successful or <0 if errors
-+ */
-+static int genwqe_open(struct inode *inode, struct file *filp)
-+{
-+	struct genwqe_dev *cd;
-+	struct genwqe_file *cfile;
-+	struct pci_dev *pci_dev;
-+
-+	cfile = kzalloc(sizeof(*cfile), GFP_KERNEL);
-+	if (cfile == NULL)
-+		return -ENOMEM;
-+
-+	cd = container_of(inode->i_cdev, struct genwqe_dev, cdev_genwqe);
-+	pci_dev = cd->pci_dev;
-+	cfile->cd = cd;
-+	cfile->filp = filp;
-+	cfile->client = NULL;
-+
-+	spin_lock_init(&cfile->map_lock);  /* list of raw memory allocations */
-+	INIT_LIST_HEAD(&cfile->map_list);
-+
-+	spin_lock_init(&cfile->pin_lock);  /* list of user pinned memory */
-+	INIT_LIST_HEAD(&cfile->pin_list);
-+
-+	filp->private_data = cfile;
-+
-+	genwqe_add_file(cd, cfile);
++	__raw_writel(cpu_to_be32((val)), cd->mmio + byte_offs);
 +	return 0;
 +}
 +
 +/**
-+ * genwqe_fasync() - Setup process to receive SIGIO.
-+ * @fd:        file descriptor
-+ * @filp:      file handle
-+ * @mode:      file mode
++ * __genwqe_readl() - Read 32-bit register
++ * @cd:         genwqe device descriptor
++ * @byte_offs:  offset within BAR
 + *
-+ * Sending a signal is working as following:
-+ *
-+ * if (cdev->async_queue)
-+ *         kill_fasync(&cdev->async_queue, SIGIO, POLL_IN);
-+ *
-+ * Some devices also implement asynchronous notification to indicate
-+ * when the device can be written; in this case, of course,
-+ * kill_fasync must be called with a mode of POLL_OUT.
++ * Return: Value from register
 + */
-+static int genwqe_fasync(int fd, struct file *filp, int mode)
++u32 __genwqe_readl(struct genwqe_dev *cd, uint64_t byte_offs)
 +{
-+	struct genwqe_file *cdev = (struct genwqe_file *)filp->private_data;
-+	return fasync_helper(fd, filp, mode, &cdev->async_queue);
-+}
++	if (cd->err_inject & GENWQE_INJECT_HARDWARE_FAILURE)
++		return 0xffffffff;
 +
++	if (cd->mmio == NULL)
++		return 0xffffffff;
 +
-+/**
-+ * genwqe_release() - file close
-+ * @inode:      file system information
-+ * @filp:       file handle
-+ *
-+ * This function is executed whenever an application calls 'close(fd_genwqe)'
-+ *
-+ * Return: always 0
-+ */
-+static int genwqe_release(struct inode *inode, struct file *filp)
-+{
-+	struct genwqe_file *cfile = (struct genwqe_file *)filp->private_data;
-+	struct genwqe_dev *cd = cfile->cd;
-+
-+	/* there must be no entries in these lists! */
-+	genwqe_remove_mappings(cfile);
-+	genwqe_remove_pinnings(cfile);
-+
-+	/* remove this filp from the asynchronously notified filp's */
-+	genwqe_fasync(-1, filp, 0);
-+
-+	/*
-+	 * For this to work we must not release cd when this cfile is
-+	 * not yet released, otherwise the list entry is invalid,
-+	 * because the list itself gets reinstantiated!
-+	 */
-+	genwqe_del_file(cd, cfile);
-+	kfree(cfile);
-+	return 0;
-+}
-+
-+static void genwqe_vma_open(struct vm_area_struct *vma)
-+{
-+	/* nothing ... */
++	return be32_to_cpu(__raw_readl(cd->mmio + byte_offs));
 +}
 +
 +/**
-+ * genwqe_vma_close() - Called each time when vma is unmapped
++ * genwqe_read_app_id() - Extract app_id
 + *
-+ * Free memory which got allocated by GenWQE mmap().
++ * app_unitcfg need to be filled with valid data first
 + */
-+static void genwqe_vma_close(struct vm_area_struct *vma)
++int genwqe_read_app_id(struct genwqe_dev *cd, char *app_name, int len)
 +{
-+	unsigned long vsize = vma->vm_end - vma->vm_start;
-+	struct inode *inode = vma->vm_file->f_dentry->d_inode;
-+	struct dma_mapping *dma_map;
-+	struct genwqe_dev *cd = container_of(inode->i_cdev, struct genwqe_dev,
-+					    cdev_genwqe);
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+	dma_addr_t d_addr = 0;
-+	struct genwqe_file *cfile = vma->vm_private_data;
++	int i, j;
++	u32 app_id = (u32)cd->app_unitcfg;
 +
-+	dma_map = __genwqe_search_mapping(cfile, vma->vm_start, vsize,
-+					 &d_addr, NULL);
-+	if (dma_map == NULL) {
-+		dev_err(&pci_dev->dev,
-+			"  [%s] err: mapping not found: v=%lx, p=%lx s=%lx\n",
-+			__func__, vma->vm_start, vma->vm_pgoff << PAGE_SHIFT,
-+			vsize);
-+		return;
++	memset(app_name, 0, len);
++	for (i = 0, j = 0; j < min(len, 4); j++) {
++		char ch = (char)((app_id >> (24 - j*8)) & 0xff);
++		if (ch == ' ')
++			continue;
++		app_name[i++] = isprint(ch) ? ch : 'X';
 +	}
-+	__genwqe_del_mapping(cfile, dma_map);
-+	__genwqe_free_consistent(cd, dma_map->size, dma_map->k_vaddr,
-+				 dma_map->dma_addr);
-+	kfree(dma_map);
-+}
-+
-+static struct vm_operations_struct genwqe_vma_ops = {
-+	.open   = genwqe_vma_open,
-+	.close  = genwqe_vma_close,
-+};
-+
-+/**
-+ * genwqe_mmap() - Provide contignous buffers to userspace
-+ *
-+ * We use mmap() to allocate contignous buffers used for DMA
-+ * transfers. After the buffer is allocated we remap it to user-space
-+ * and remember a reference to our dma_mapping data structure, where
-+ * we store the associated DMA address and allocated size.
-+ *
-+ * When we receive a DDCB execution request with the ATS bits set to
-+ * plain buffer, we lookup our dma_mapping list to find the
-+ * corresponding DMA address for the associated user-space address.
-+ */
-+static int genwqe_mmap(struct file *filp, struct vm_area_struct *vma)
-+{
-+	int rc;
-+	unsigned long pfn, vsize = vma->vm_end - vma->vm_start;
-+	struct genwqe_file *cfile = (struct genwqe_file *)filp->private_data;
-+	struct genwqe_dev *cd = cfile->cd;
-+	struct dma_mapping *dma_map;
-+
-+	if (vsize == 0)
-+		return -EINVAL;
-+
-+	if (get_order(vsize) > MAX_ORDER)
-+		return -ENOMEM;
-+
-+	dma_map = kzalloc(sizeof(struct dma_mapping), GFP_ATOMIC);
-+	if (dma_map == NULL)
-+		return -ENOMEM;
-+
-+	genwqe_mapping_init(dma_map, GENWQE_MAPPING_RAW);
-+	dma_map->u_vaddr = (void *)vma->vm_start;
-+	dma_map->size = vsize;
-+	dma_map->nr_pages = DIV_ROUND_UP(vsize, PAGE_SIZE);
-+	dma_map->k_vaddr = __genwqe_alloc_consistent(cd, vsize,
-+						     &dma_map->dma_addr);
-+	if (dma_map->k_vaddr == NULL) {
-+		rc = -ENOMEM;
-+		goto free_dma_map;
-+	}
-+
-+	if (capable(CAP_SYS_ADMIN) && (vsize > sizeof(dma_addr_t)))
-+		*(dma_addr_t *)dma_map->k_vaddr = dma_map->dma_addr;
-+
-+	pfn = virt_to_phys(dma_map->k_vaddr) >> PAGE_SHIFT;
-+	rc = remap_pfn_range(vma,
-+			     vma->vm_start,
-+			     pfn,
-+			     vsize,
-+			     vma->vm_page_prot);
-+	if (rc != 0) {
-+		rc = -EFAULT;
-+		goto free_dma_mem;
-+	}
-+
-+	vma->vm_private_data = cfile;
-+	vma->vm_ops = &genwqe_vma_ops;
-+	__genwqe_add_mapping(cfile, dma_map);
-+
-+	return 0;
-+
-+ free_dma_mem:
-+	__genwqe_free_consistent(cd, dma_map->size,
-+				dma_map->k_vaddr,
-+				dma_map->dma_addr);
-+ free_dma_map:
-+	kfree(dma_map);
-+	return rc;
++	return i;
 +}
 +
 +/**
-+ * do_flash_update() - Excute flash update (write image or CVPD)
-+ * @cd:        genwqe device
-+ * @load:      details about image load
++ * init_crc32() - Prepare a lookup table for fast crc32 calculations
 + *
-+ * Return: 0 if successful
++ * Existing kernel functions seem to use a different polynom,
++ * therefore we could not use them here.
++ *
++ * Genwqe's Polynomial = 0x20044009
 + */
++#define CRC32_POLYNOMIAL	0x20044009
++static u32 crc32_tab[256];	/* crc32 lookup table */
 +
-+#define	FLASH_BLOCK	0x40000	/* we use 256k blocks */
-+
-+static int do_flash_update(struct genwqe_file *cfile,
-+			   struct chip_bitstream *load)
++void init_crc32(void)
 +{
-+	int rc = 0;
-+	int blocks_to_flash;
-+	u64 dma_addr, flash = 0;
-+	size_t tocopy = 0;
-+	u8 __user *buf;
-+	u8 *xbuf;
++	int i, j;
 +	u32 crc;
-+	u8 cmdopts;
-+	struct genwqe_dev *cd = cfile->cd;
-+	struct pci_dev *pci_dev = cd->pci_dev;
 +
-+	if ((load->size & 0x3) != 0) {
-+		dev_err(&pci_dev->dev,
-+			"err: buf %d bytes not 4 bytes aligned!\n",
-+			load->size);
-+		return -EINVAL;
-+	}
-+	if (((unsigned long)(load->pdata) & ~PAGE_MASK) != 0) {
-+		dev_err(&pci_dev->dev,
-+			"err: buf is not page aligned!\n");
-+		return -EINVAL;
-+	}
-+
-+	/* FIXME Bits have changed for new service layer! */
-+	switch ((char)load->partition) {
-+	case '0':
-+		cmdopts = 0x14;
-+		break;		/* download/erase_first/part_0 */
-+	case '1':
-+		cmdopts = 0x1C;
-+		break;		/* download/erase_first/part_1 */
-+	case 'v':		/* cmdopts = 0x0c (VPD) */
-+	default:
-+		dev_err(&pci_dev->dev,
-+			"err: invalid partition %02x!\n", load->partition);
-+		return -EINVAL;
-+	}
-+	dev_info(&pci_dev->dev,
-+		 "[%s] start flash update UID: 0x%x size: %u bytes part: %c\n",
-+		 __func__, load->uid, load->size, (char)load->partition);
-+
-+	buf = load->pdata;
-+	xbuf = __genwqe_alloc_consistent(cd, FLASH_BLOCK, &dma_addr);
-+	if (xbuf == NULL) {
-+		dev_err(&pci_dev->dev, "err: no memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	blocks_to_flash = load->size / FLASH_BLOCK;
-+	while (load->size) {
-+		struct genwqe_ddcb_cmd *req;
-+
-+		/*
-+		 * We must be 4 byte aligned. Buffer must be 0 appened
-+		 * to have defined values when calculating CRC.
-+		 */
-+		tocopy = min_t(size_t, load->size, FLASH_BLOCK);
-+
-+		rc = copy_from_user(xbuf, buf, tocopy);
-+		if (rc) {
-+			dev_err(&pci_dev->dev,
-+				"err: could not copy all data rc=%d\n", rc);
-+			goto free_buffer;
++	for (i = 0;  i < 256;  i++) {
++		crc = i << 24;
++		for (j = 0;  j < 8;  j++) {
++			if (crc & 0x80000000)
++				crc = (crc << 1) ^ CRC32_POLYNOMIAL;
++			else
++				crc = (crc << 1);
 +		}
-+		crc = genwqe_crc32(xbuf, tocopy, 0xffffffff);
-+
-+		dev_info(&pci_dev->dev,
-+			 "[%s] DMA: 0x%llx CRC: %08x SZ: %ld %d\n",
-+			__func__, dma_addr, crc, tocopy, blocks_to_flash);
-+
-+		/* prepare DDCB for SLU process */
-+		req = ddcb_requ_alloc();
-+		if (req == NULL) {
-+			rc = -ENOMEM;
-+			goto free_buffer;
-+		}
-+
-+		req->cmd = SLCMD_MOVE_FLASH;
-+		req->cmdopts = cmdopts;
-+
-+		/* prepare invariant values */
-+		if (genwqe_get_slu_id(cd) <= 0x2) {
-+			*(u64 *)&req->__asiv[0]  = cpu_to_be64(dma_addr);
-+			*(u64 *)&req->__asiv[8]  = cpu_to_be64(tocopy);
-+			*(u64 *)&req->__asiv[16] = cpu_to_be64(flash);
-+			*(u32 *)&req->__asiv[24] = cpu_to_be32(0);
-+			req->__asiv[24]	       = load->uid;
-+			*(u32 *)&req->__asiv[28] = cpu_to_be32(crc);
-+
-+			/* for simulation only */
-+			*(u64 *)&req->__asiv[88] = cpu_to_be64(load->slu_id);
-+			*(u64 *)&req->__asiv[96] = cpu_to_be64(load->app_id);
-+			req->asiv_length = 32; /* bytes included in crc calc */
-+		} else {	/* setup DDCB for ATS architecture */
-+			*(u64 *)&req->asiv[0]  = cpu_to_be64(dma_addr);
-+			*(u32 *)&req->asiv[8]  = cpu_to_be32(tocopy);
-+			*(u32 *)&req->asiv[12] = cpu_to_be32(0); /* resvd */
-+			*(u64 *)&req->asiv[16] = cpu_to_be64(flash);
-+			*(u32 *)&req->asiv[24] = cpu_to_be32(load->uid<<24);
-+			*(u32 *)&req->asiv[28] = cpu_to_be32(crc);
-+
-+			/* for simulation only */
-+			*(u64 *)&req->asiv[80] = cpu_to_be64(load->slu_id);
-+			*(u64 *)&req->asiv[88] = cpu_to_be64(load->app_id);
-+
-+			req->ats = cpu_to_be64(0x4ULL << 44);	/* Rd only */
-+			req->asiv_length = 40; /* bytes included in crc calc */
-+		}
-+		req->asv_length  = 8;
-+
-+		/* For Genwqe5 we get back the calculated CRC */
-+		*(u64 *)&req->asv[0] = 0ULL;			/* 0x80 */
-+
-+		rc = __genwqe_execute_raw_ddcb(cd, req);
-+
-+		load->retc = req->retc;
-+		load->attn = req->attn;
-+		load->progress = req->progress;
-+
-+		if (rc < 0) {
-+			dev_err(&pci_dev->dev,
-+				"  [%s] DDCB returned (RETC=%x ATTN=%x "
-+				"PROG=%x rc=%d)\n", __func__, req->retc,
-+				req->attn, req->progress, rc);
-+
-+			ddcb_requ_free(req);
-+			goto free_buffer;
-+		}
-+
-+		if (req->retc != DDCB_RETC_COMPLETE) {
-+			dev_info(&pci_dev->dev,
-+				 "  [%s] DDCB returned (RETC=%x ATTN=%x "
-+				 "PROG=%x)\n", __func__, req->retc,
-+				 req->attn, req->progress);
-+
-+			rc = -EIO;
-+			ddcb_requ_free(req);
-+			goto free_buffer;
-+		}
-+
-+		load->size  -= tocopy;
-+		flash += tocopy;
-+		buf += tocopy;
-+		blocks_to_flash--;
-+		ddcb_requ_free(req);
++		crc32_tab[i] = crc;
 +	}
-+
-+ free_buffer:
-+	__genwqe_free_consistent(cd, FLASH_BLOCK, xbuf, dma_addr);
-+	return rc;
-+}
-+
-+static int do_flash_read(struct genwqe_file *cfile,
-+			 struct chip_bitstream *load)
-+{
-+	int rc, blocks_to_flash;
-+	u64 dma_addr, flash = 0;
-+	size_t tocopy = 0;
-+	u8 __user *buf;
-+	u8 *xbuf;
-+	u8 cmdopts;
-+	struct genwqe_dev *cd = cfile->cd;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+	struct genwqe_ddcb_cmd *cmd;
-+
-+	if ((load->size & 0x3) != 0) {
-+		dev_err(&pci_dev->dev,
-+			"err: buf size %d bytes not 4 bytes aligned!\n",
-+			load->size);
-+		return -EINVAL;
-+	}
-+	if (((unsigned long)(load->pdata) & ~PAGE_MASK) != 0) {
-+		dev_err(&pci_dev->dev, "err: buf is not page aligned!\n");
-+		return -EINVAL;
-+	}
-+
-+	/* FIXME Bits have changed for new service layer! */
-+	switch ((char)load->partition) {
-+	case '0':
-+		cmdopts = 0x12;
-+		break;		/* upload/part_0 */
-+	case '1':
-+		cmdopts = 0x1A;
-+		break;		/* upload/part_1 */
-+	case 'v':
-+	default:
-+		dev_err(&pci_dev->dev,
-+			"err: invalid partition %02x!\n", load->partition);
-+		return -EINVAL;
-+	}
-+	dev_info(&pci_dev->dev,
-+		 "[%s] start flash read UID: 0x%x size: %u bytes part: %c\n",
-+		 __func__, load->uid, load->size, (char)load->partition);
-+
-+	buf = load->pdata;
-+	xbuf = __genwqe_alloc_consistent(cd, FLASH_BLOCK, &dma_addr);
-+	if (xbuf == NULL) {
-+		dev_err(&pci_dev->dev, "err: no memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	blocks_to_flash = load->size / FLASH_BLOCK;
-+	while (load->size) {
-+		/*
-+		 * We must be 4 byte aligned. Buffer must be 0 appened
-+		 * to have defined values when calculating CRC.
-+		 */
-+		tocopy = min_t(size_t, load->size, FLASH_BLOCK);
-+
-+		dev_info(&pci_dev->dev,
-+			 "[%s] DMA: 0x%llx SZ: %ld %d\n",
-+			 __func__, dma_addr, tocopy, blocks_to_flash);
-+
-+		/* prepare DDCB for SLU process */
-+		cmd = ddcb_requ_alloc();
-+		if (cmd == NULL) {
-+			rc = -ENOMEM;
-+			goto free_buffer;
-+		}
-+		cmd->cmd = SLCMD_MOVE_FLASH;
-+		cmd->cmdopts = cmdopts;
-+
-+		/* prepare invariant values */
-+		if (genwqe_get_slu_id(cd) <= 0x2) {
-+			*(u64 *)&cmd->__asiv[0]  = cpu_to_be64(dma_addr);
-+			*(u64 *)&cmd->__asiv[8]  = cpu_to_be64(tocopy);
-+			*(u64 *)&cmd->__asiv[16] = cpu_to_be64(flash);
-+			*(u32 *)&cmd->__asiv[24] = cpu_to_be32(0);
-+			cmd->__asiv[24] = load->uid;
-+			*(u32 *)&cmd->__asiv[28] = cpu_to_be32(0)  /* CRC */;
-+			cmd->asiv_length = 32; /* bytes included in crc calc */
-+		} else {	/* setup DDCB for ATS architecture */
-+			*(u64 *)&cmd->asiv[0]  = cpu_to_be64(dma_addr);
-+			*(u32 *)&cmd->asiv[8]  = cpu_to_be32(tocopy);
-+			*(u32 *)&cmd->asiv[12] = cpu_to_be32(0); /* resvd */
-+			*(u64 *)&cmd->asiv[16] = cpu_to_be64(flash);
-+			*(u32 *)&cmd->asiv[24] = cpu_to_be32(load->uid<<24);
-+			*(u32 *)&cmd->asiv[28] = cpu_to_be32(0); /* CRC */
-+			cmd->ats = cpu_to_be64(0x5ULL << 44);	/* rd/wr */
-+			cmd->asiv_length = 40; /* bytes included in crc calc */
-+		}
-+		cmd->asv_length  = 8;
-+
-+		/* we only get back the calculated CRC */
-+		*(u64 *)&cmd->asv[0] = 0ULL;	/* 0x80 */
-+
-+		rc = __genwqe_execute_raw_ddcb(cd, cmd);
-+
-+		load->retc = cmd->retc;
-+		load->attn = cmd->attn;
-+		load->progress = cmd->progress;
-+
-+		if ((rc < 0) && (rc != -EBADMSG)) {
-+			dev_err(&pci_dev->dev,
-+				"  [%s] DDCB returned (RETC=%x ATTN=%x "
-+				"PROG=%x rc=%d)\n", __func__, cmd->retc,
-+				cmd->attn, cmd->progress, rc);
-+			ddcb_requ_free(cmd);
-+			goto free_buffer;
-+		}
-+
-+		rc = copy_to_user(buf, xbuf, tocopy);
-+		if (rc) {
-+			dev_err(&pci_dev->dev,
-+				"  [%s] copy data to user failed rc=%d\n",
-+				__func__, rc);
-+			rc = -EIO;
-+			ddcb_requ_free(cmd);
-+			goto free_buffer;
-+		}
-+
-+		/* We know that we can get retc 0x104 with CRC err */
-+		if (((cmd->retc == DDCB_RETC_FAULT) &&
-+		     (cmd->attn != 0x02)) ||  /* Normally ignore CRC error */
-+		    ((cmd->retc == DDCB_RETC_COMPLETE) &&
-+		     (cmd->attn != 0x00))) {  /* Everything was fine */
-+			dev_err(&pci_dev->dev,
-+				"  [%s] DDCB returned (RETC=%x ATTN=%x "
-+				"PROG=%x rc=%d)\n", __func__, cmd->retc,
-+				cmd->attn, cmd->progress, rc);
-+			rc = -EIO;
-+			ddcb_requ_free(cmd);
-+			goto free_buffer;
-+		}
-+
-+		load->size  -= tocopy;
-+		flash += tocopy;
-+		buf += tocopy;
-+		blocks_to_flash--;
-+		ddcb_requ_free(cmd);
-+	}
-+	rc = 0;
-+
-+ free_buffer:
-+	__genwqe_free_consistent(cd, FLASH_BLOCK, xbuf, dma_addr);
-+	return rc;
-+}
-+
-+static int genwqe_pin_mem(struct genwqe_file *cfile, struct genwqe_mem *m)
-+{
-+	int rc;
-+	struct genwqe_dev *cd = cfile->cd;
-+	struct pci_dev *pci_dev = cfile->cd->pci_dev;
-+	struct dma_mapping *dma_map;
-+	unsigned long map_addr;
-+	unsigned long map_size;
-+
-+	if ((m->addr == 0x0) || (m->size == 0))
-+		return -EINVAL;
-+
-+	map_addr = (m->addr & PAGE_MASK);
-+	map_size = round_up(m->size + (m->addr & ~PAGE_MASK), PAGE_SIZE);
-+
-+	genwqe_dprintk(cd, dbg_card_pinning,
-+		       "[%s] pinning user memory %016lx %ld bytes w=%d\n",
-+		       __func__, map_addr, map_size, m->direction);
-+
-+	dma_map = kzalloc(sizeof(struct dma_mapping), GFP_ATOMIC);
-+	if (dma_map == NULL)
-+		return -ENOMEM;
-+
-+	genwqe_mapping_init(dma_map, GENWQE_MAPPING_SGL_PINNED);
-+	rc = user_vmap(cd, dma_map, (void *)map_addr, map_size, NULL);
-+	if (rc != 0) {
-+		dev_err(&pci_dev->dev,
-+			"[%s] user_vmap rc=%d\n", __func__, rc);
-+		return rc;
-+	}
-+
-+	genwqe_add_pin(cfile, dma_map);
-+	return 0;
-+}
-+
-+static int genwqe_unpin_mem(struct genwqe_file *cfile, struct genwqe_mem *m)
-+{
-+	struct genwqe_dev *cd = cfile->cd;
-+	struct dma_mapping *dma_map;
-+	unsigned long map_addr;
-+	unsigned long map_size;
-+
-+	if (m->addr == 0x0)
-+		return -EINVAL;
-+
-+	map_addr = (m->addr & PAGE_MASK);
-+	map_size = round_up(m->size + (m->addr & ~PAGE_MASK), PAGE_SIZE);
-+
-+	genwqe_dprintk(cd, dbg_card_pinning,
-+		       "[%s] unpinning user memory %016lx %ld bytes\n",
-+		       __func__, map_addr, map_size);
-+
-+	dma_map = genwqe_search_pin(cfile, map_addr, map_size, NULL);
-+	if (dma_map == NULL)
-+		return -ENOENT;
-+
-+	genwqe_del_pin(cfile, dma_map);
-+	user_vunmap(cd, dma_map, NULL);
-+	kfree(dma_map);
-+	return 0;
 +}
 +
 +/**
-+ * ddcb_cmd_cleanup() - Remove dynamically created fixup entries
++ * genwqe_crc32() - Generate 32-bit crc as required for DDCBs
++ * @buff:       pointer to data buffer
++ * @len:        length of data for calculation
++ * @init:       initial crc (0xffffffff at start)
 + *
-+ * Only if there are any. Pinnings are not removed.
++ * polynomial = x^32 * + x^29 + x^18 + x^14 + x^3 + 1 (0x20044009)
++
++ * Example: 4 bytes 0x01 0x02 0x03 0x04 with init=0xffffffff should
++ * result in a crc32 of 0xf33cb7d3.
++ *
++ * The existing kernel crc functions did not cover this polynom yet.
++ *
++ * Return: crc32 checksum.
 + */
-+static int ddcb_cmd_cleanup(struct genwqe_file *cfile, struct ddcb_requ *req)
++u32 genwqe_crc32(u8 *buff, size_t len, u32 init)
++{
++	int i;
++	u32 crc;
++
++	crc = init;
++	while (len--) {
++		i = ((crc >> 24) ^ *buff++) & 0xFF;
++		crc = (crc << 8) ^ crc32_tab[i];
++	}
++	return crc;
++}
++
++void *__genwqe_alloc_consistent(struct genwqe_dev *cd, size_t size,
++			       dma_addr_t *dma_handle)
++{
++	if (get_order(size) > MAX_ORDER)
++		return NULL;
++
++	return pci_alloc_consistent(cd->pci_dev, size, dma_handle);
++}
++
++void __genwqe_free_consistent(struct genwqe_dev *cd, size_t size,
++			     void *vaddr, dma_addr_t dma_handle)
++{
++	if (vaddr == NULL)
++		return;
++	pci_free_consistent(cd->pci_dev, size, vaddr, dma_handle);
++}
++
++static void genwqe_unmap_pages(struct genwqe_dev *cd, dma_addr_t *dma_list,
++			      int num_pages)
++{
++	int i;
++	struct pci_dev *pci_dev = cd->pci_dev;
++
++	for (i = 0; (i < num_pages) && (dma_list[i] != 0x0); i++) {
++		pci_unmap_page(pci_dev, dma_list[i],
++			       PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
++		dma_list[i] = 0x0;
++	}
++}
++
++static int genwqe_map_pages(struct genwqe_dev *cd,
++			   struct page **page_list, int num_pages,
++			   dma_addr_t *dma_list)
++{
++	int i;
++	struct pci_dev *pci_dev = cd->pci_dev;
++
++	/* establish DMA mapping for requested pages */
++	for (i = 0; i < num_pages; i++) {
++		dma_addr_t daddr;
++
++		dma_list[i] = 0x0;
++		daddr = pci_map_page(pci_dev, page_list[i],
++				     0,	 /* map_offs */
++				     PAGE_SIZE,
++				     PCI_DMA_BIDIRECTIONAL);  /* FIXME rd/rw */
++
++		if (pci_dma_mapping_error(pci_dev, daddr)) {
++			dev_err(&pci_dev->dev,
++				"[%s] err: no dma addr daddr=%016llx!\n",
++				__func__, (long long)daddr);
++			goto err;
++		}
++
++		dma_list[i] = daddr;
++	}
++	return 0;
++
++ err:
++	genwqe_unmap_pages(cd, dma_list, num_pages);
++	return -EIO;
++}
++
++static int genwqe_sgl_size(int num_pages)
++{
++	int len, num_tlb = num_pages / 7;
++
++	len = sizeof(struct sg_entry) * (num_pages+num_tlb + 1);
++	return roundup(len, PAGE_SIZE);
++}
++
++struct sg_entry *genwqe_alloc_sgl(struct genwqe_dev *cd, int num_pages,
++				  dma_addr_t *dma_addr, size_t *sgl_size)
++{
++	struct pci_dev *pci_dev = cd->pci_dev;
++	struct sg_entry *sgl;
++
++	*sgl_size = genwqe_sgl_size(num_pages);
++	if (get_order(*sgl_size) > MAX_ORDER) {
++		dev_err(&pci_dev->dev,
++			"[%s] err: too much memory requested!\n", __func__);
++		return NULL;
++	}
++
++	sgl = __genwqe_alloc_consistent(cd, *sgl_size, dma_addr);
++	if (sgl == NULL) {
++		dev_err(&pci_dev->dev,
++			"[%s] err: no memory available!\n", __func__);
++		return NULL;
++	}
++
++	return sgl;
++}
++
++static void genwqe_dump_sgl(struct genwqe_dev *cd, struct sg_entry *sgl,
++		    size_t sgl_size)
++{
++	unsigned int i, j;
++	struct pci_dev *pci_dev = cd->pci_dev;
++
++	for (j = 0, i = 0; i < sgl_size/sizeof(struct sg_entry); i++, j++) {
++		if (j == 8) {
++			dev_info(&pci_dev->dev, "  --\n");
++			j = 0;
++		}
++		dev_info(&pci_dev->dev, "  %016llx %08x %08x %s\n",
++			 be64_to_cpu(sgl[i].target_addr),
++			 be32_to_cpu(sgl[i].len),
++			 be32_to_cpu(sgl[i].flags),
++			 (be32_to_cpu(sgl[i].len) > PAGE_SIZE) ? "C" : "");
++
++		if (be32_to_cpu(sgl[i].flags) == SG_END_LIST)
++			break;
++	}
++}
++
++int genwqe_setup_sgl(struct genwqe_dev *cd,
++		    unsigned long offs,
++		    unsigned long size,
++		    struct sg_entry *sgl, /* genwqe sgl */
++		    dma_addr_t dma_addr, size_t sgl_size,
++		    dma_addr_t *dma_list, int page_offs, int num_pages)
++{
++	int i = 0, j = 0, p;
++	unsigned long dma_offs, map_offs;
++	struct pci_dev *pci_dev = cd->pci_dev;
++	dma_addr_t prev_daddr = 0;
++	struct sg_entry *s, *last_s = NULL;
++
++	/* sanity checks */
++	if (offs > PAGE_SIZE) {
++		dev_err(&pci_dev->dev,
++			"[%s] too large start offs %08lx\n", __func__, offs);
++		return -EFAULT;
++	}
++	if (sgl_size < genwqe_sgl_size(num_pages)) {
++		dev_err(&pci_dev->dev,
++			"[%s] sgl_size too small %08lx for %d pages\n",
++			__func__, sgl_size, num_pages);
++		return -EFAULT;
++	}
++
++	dma_offs = 128;		/* next block if needed/dma_offset */
++	map_offs = offs;	/* offset in first page */
++
++	s = &sgl[0];		/* first set of 8 entries */
++	p = 0;			/* page */
++	while (p < num_pages) {
++		dma_addr_t daddr;
++		unsigned int size_to_map;
++
++		/* always write the chaining entry, cleanup is done later */
++		j = 0;
++		s[j].target_addr = cpu_to_be64(dma_addr + dma_offs);
++		s[j].len	 = cpu_to_be32(128);
++		s[j].flags	 = cpu_to_be32(SG_CHAINED);
++		j++;
++
++		while (j < 8) {
++			/* DMA mapping for requested page, offs, size */
++			size_to_map = min(size, PAGE_SIZE - map_offs);
++			daddr = dma_list[page_offs + p] + map_offs;
++			size -= size_to_map;
++			map_offs = 0;
++
++			if (prev_daddr == daddr) {
++				u32 prev_len = be32_to_cpu(last_s->len);
++
++				/* pr_info("daddr combining: "
++					"%016llx/%08x -> %016llx\n",
++					prev_daddr, prev_len, daddr); */
++
++				last_s->len = cpu_to_be32(prev_len +
++							  size_to_map);
++
++				p++; /* process next page */
++				if (p == num_pages)
++					goto fixup;  /* nothing to do */
++
++				prev_daddr = daddr + size_to_map;
++				continue;
++			}
++
++			/* start new entry */
++			s[j].target_addr = cpu_to_be64(daddr);
++			s[j].len	 = cpu_to_be32(size_to_map);
++			s[j].flags	 = cpu_to_be32(SG_DATA);
++			prev_daddr = daddr + size_to_map;
++			last_s = &s[j];
++			j++;
++
++			p++;	/* process next page */
++			if (p == num_pages)
++				goto fixup;  /* nothing to do */
++		}
++		dma_offs += 128;
++		s += 8;		/* continue 8 elements further */
++	}
++ fixup:
++	if (j == 1) {		/* combining happend on last entry! */
++		s -= 8;		/* full shift needed on previous sgl block */
++		j =  7;		/* shift all elements */
++	}
++
++	for (i = 0; i < j; i++)	/* move elements 1 up */
++		s[i] = s[i + 1];
++
++	s[i].target_addr = cpu_to_be64(0);
++	s[i].len	 = cpu_to_be32(0);
++	s[i].flags	 = cpu_to_be32(SG_END_LIST);
++
++	if (cd->debug & dbg_card_sglist) {
++		genwqe_dprintk(cd, dbg_card_sglist,
++			       " genwqe_sglist %d/sgl poffs=%d %d\n",
++			       j, page_offs, num_pages);
++		genwqe_dump_sgl(cd, sgl, sgl_size);
++	}
++	return 0;
++}
++
++void genwqe_free_sgl(struct genwqe_dev *cd, struct sg_entry *sg_list,
++		    dma_addr_t dma_addr, size_t size)
++{
++	__genwqe_free_consistent(cd, size, sg_list, dma_addr);
++}
++
++/**
++ * free_user_pages() - Give pinned pages back
++ *
++ * Documentation of get_user_pages is in mm/memory.c:
++ *
++ * If the page is written to, set_page_dirty (or set_page_dirty_lock,
++ * as appropriate) must be called after the page is finished with, and
++ * before put_page is called.
++ */
++static int free_user_pages(struct page **page_list, unsigned int nr_pages,
++			   int dirty)
 +{
 +	unsigned int i;
-+	struct dma_mapping *dma_map;
-+	struct genwqe_dev *cd = cfile->cd;
 +
-+	for (i = 0; i < DDCB_FIXUPS; i++) {
-+		dma_map = &req->dma_mappings[i];
-+
-+		if (dma_mapping_used(dma_map)) {
-+			__genwqe_del_mapping(cfile, dma_map);
-+			user_vunmap(cd, dma_map, req);
++	for (i = 0; i < nr_pages; i++) {
++		if (page_list[i] != NULL) {
++			if (dirty)
++				set_page_dirty_lock(page_list[i]);
++			put_page(page_list[i]);
 +		}
-+		if (req->sgl[i] != NULL) {
-+			genwqe_free_sgl(cd, req->sgl[i],
-+				       req->sgl_dma_addr[i],
-+				       req->sgl_size[i]);
-+			req->sgl[i] = NULL;
-+			req->sgl_dma_addr[i] = 0x0;
-+			req->sgl_size[i] = 0;
-+		}
-+
 +	}
 +	return 0;
 +}
 +
 +/**
-+ * ddcb_cmd_fixups() - Establish DMA fixups/sglists for user memory references
++ * user_vmap() - Map user-space memory to virtual kernel memory
++ * @cd:         pointer to genwqe device
++ * @m:          mapping params
++ * @uaddr:      user virtual address
++ * @size:       size of memory to be mapped
 + *
-+ * Before the DDCB gets executed we need to handle the fixups. We
-+ * replace the user-space addresses with DMA addresses or do
-+ * additional setup work e.g. generating a scatter-gather list which
-+ * is used to describe the memory referred to in the fixup.
++ * We need to think about how we could speed this up. Of course it is
++ * not a good idea to do this over and over again, like we are
++ * currently doing it. Nevertheless, I am curious where on the path
++ * the performance is spend. Most probably within the memory
++ * allocation functions, but maybe also in the DMA mapping code.
++ *
++ * Restrictions: The maximum size of the possible mapping currently depends
++ *               on the amount of memory we can get using kzalloc() for the
++ *               page_list and pci_alloc_coherent for the sg_list.
++ *               The sg_list is currently itself not scattered, which could
++ *               be fixed with some effort. The page_list must be split into
++ *               PAGE_SIZE chunks too. All that will make the complicated
++ *               code more complicated.
++ *
++ * Return: 0 if success
 + */
-+static int ddcb_cmd_fixups(struct genwqe_file *cfile, struct ddcb_requ *req)
++int user_vmap(struct genwqe_dev *cd, struct dma_mapping *m, void *uaddr,
++	      unsigned long size, struct ddcb_requ *req)
++{
++	int rc = -EINVAL;
++	unsigned long data, offs;
++	struct pci_dev *pci_dev = cd->pci_dev;
++
++	if ((uaddr == NULL) || (size == 0)) {
++		m->size = 0;	/* mark unused and not added */
++		return -EINVAL;
++	}
++	m->u_vaddr = uaddr;
++	m->size    = size;
++
++	/* determine space needed for page_list. */
++	data = (unsigned long)uaddr;
++	offs = offset_in_page(data);
++	m->nr_pages = DIV_ROUND_UP(offs + size, PAGE_SIZE);
++
++	m->page_list = kcalloc(m->nr_pages,
++			       sizeof(struct page *) + sizeof(dma_addr_t),
++			       GFP_KERNEL);
++	if (!m->page_list) {
++		dev_err(&pci_dev->dev, "err: alloc page_list failed\n");
++		m->nr_pages = 0;
++		m->u_vaddr = NULL;
++		m->size = 0;	/* mark unused and not added */
++		return -ENOMEM;
++	}
++	m->dma_list = (dma_addr_t *)(m->page_list + m->nr_pages);
++
++	/* pin user pages in memory */
++	rc = get_user_pages_fast(data & PAGE_MASK, /* page aligned addr */
++				 m->nr_pages,
++				 1,		/* write by caller */
++				 m->page_list);	/* ptrs to pages */
++
++	/* assumption: get_user_pages can be killed by signals. */
++	if (rc < m->nr_pages) {
++		free_user_pages(m->page_list, rc, 0);
++		rc = -EFAULT;
++		goto fail_get_user_pages;
++	}
++
++	rc = genwqe_map_pages(cd, m->page_list, m->nr_pages, m->dma_list);
++	if (rc != 0)
++		goto fail_free_user_pages;
++
++	return 0;
++
++ fail_free_user_pages:
++	free_user_pages(m->page_list, m->nr_pages, 0);
++
++ fail_get_user_pages:
++	kfree(m->page_list);
++	m->page_list = NULL;
++	m->dma_list = NULL;
++	m->nr_pages = 0;
++	m->u_vaddr = NULL;
++	m->size = 0;		/* mark unused and not added */
++	return rc;
++}
++
++/**
++ * user_vunmap() - Undo mapping of user-space memory to virtual kernel memory
++ * @cd:         pointer to genwqe device
++ * @m:          mapping params
++ */
++int user_vunmap(struct genwqe_dev *cd, struct dma_mapping *m,
++		struct ddcb_requ *req)
++{
++	struct pci_dev *pci_dev = cd->pci_dev;
++
++	if (!dma_mapping_used(m)) {
++		dev_err(&pci_dev->dev, "[%s] err: mapping %p not used!\n",
++			__func__, m);
++		return -EINVAL;
++	}
++
++	if (m->dma_list)
++		genwqe_unmap_pages(cd, m->dma_list, m->nr_pages);
++
++	if (m->page_list) {
++		free_user_pages(m->page_list, m->nr_pages, 1);
++
++		kfree(m->page_list);
++		m->page_list = NULL;
++		m->dma_list = NULL;
++		m->nr_pages = 0;
++	}
++
++	m->u_vaddr = NULL;
++	m->size = 0;		/* mark as unused and not added */
++	return 0;
++}
++
++/**
++ * genwqe_card_type() - Get chip type SLU Configuration Register
++ * @cd:         pointer to the genwqe device descriptor
++ * Return: 0: Altera Stratix-IV 230
++ *         1: Altera Stratix-IV 530
++ *         2: Altera Stratix-V A4
++ *         3: Altera Stratix-V A7
++ */
++u8 genwqe_card_type(struct genwqe_dev *cd)
++{
++	u64 card_type = cd->slu_unitcfg;
++	return (u8)((card_type & SLU_UNITCFG_TYPE_MASK) >> 20);
++}
++
++/**
++ * genwqe_card_reset() - Reset the card
++ * @cd:         pointer to the genwqe device descriptor
++ */
++int genwqe_card_reset(struct genwqe_dev *cd)
++{
++	u64 softrst;
++	struct pci_dev *pci_dev = cd->pci_dev;
++
++	if (!genwqe_is_privileged(cd))
++		return -ENODEV;
++
++	/* new SL */
++	__genwqe_writeq(cd, IO_SLC_CFGREG_SOFTRESET, 0x1ull);
++	msleep(1000);
++	__genwqe_readq(cd, IO_HSU_FIR_CLR);
++	__genwqe_readq(cd, IO_APP_FIR_CLR);
++	__genwqe_readq(cd, IO_SLU_FIR_CLR);
++
++	/*
++	 * Read-modify-write to preserve the stealth bits
++	 *
++	 * For SL >= 039, Stealth WE bit allows removing
++	 * the read-modify-wrote.
++	 * r-m-w may require a mask 0x3C to avoid hitting hard
++	 * reset again for error reset (should be 0, chicken).
++	 */
++	softrst = __genwqe_readq(cd, IO_SLC_CFGREG_SOFTRESET) & 0x3cull;
++	__genwqe_writeq(cd, IO_SLC_CFGREG_SOFTRESET, softrst | 0x2ull);
++
++	/* give ERRORRESET some time to finish */
++	msleep(50);
++
++	if (genwqe_need_err_masking(cd)) {
++		dev_info(&pci_dev->dev,
++			 "[%s] masking errors for old bitstreams\n", __func__);
++		__genwqe_writeq(cd, IO_SLC_MISC_DEBUG, 0x0aull);
++	}
++	return 0;
++}
++
++int genwqe_read_softreset(struct genwqe_dev *cd)
++{
++	u64 bitstream;
++
++	if (!genwqe_is_privileged(cd))
++		return -ENODEV;
++
++	bitstream = __genwqe_readq(cd, IO_SLU_BITSTREAM) & 0x1;
++	cd->softreset = (bitstream == 0) ? 0x8ull : 0xcull;
++	return 0;
++}
++
++/**
++ * genwqe_set_interrupt_capability() - Configure MSI capability structure
++ * @cd:         pointer to the device
++ * Return: 0 if no error
++ */
++int genwqe_set_interrupt_capability(struct genwqe_dev *cd, int count)
 +{
 +	int rc;
-+	unsigned int asiv_offs, i;
-+	struct genwqe_dev *cd = cfile->cd;
-+	struct genwqe_ddcb_cmd *cmd = &req->cmd;
-+	struct dma_mapping *m;
 +	struct pci_dev *pci_dev = cd->pci_dev;
-+	const char *type = "UNKNOWN";
 +
-+	for (i = 0, asiv_offs = 0x00; asiv_offs <= 0x58;
-+	     i++, asiv_offs += 0x08) {
++	rc = pci_enable_msi_block(pci_dev, count);
++	if (rc == 0)
++		cd->flags |= GENWQE_FLAG_MSI_ENABLED;
++	return rc;
++}
 +
-+		u64 u_addr, d_addr;
-+		u32 u_size = 0;
-+		unsigned long ats_flags;
++/**
++ * genwqe_reset_interrupt_capability() - Undo genwqe_set_interrupt_capability()
++ * @cd:         pointer to the device
++ */
++void genwqe_reset_interrupt_capability(struct genwqe_dev *cd)
++{
++	struct pci_dev *pci_dev = cd->pci_dev;
 +
-+		ats_flags = ATS_GET_FLAGS(be64_to_cpu(cmd->ats), asiv_offs);
++	if (cd->flags & GENWQE_FLAG_MSI_ENABLED) {
++		pci_disable_msi(pci_dev);
++		cd->flags &= ~GENWQE_FLAG_MSI_ENABLED;
++	}
++}
 +
-+		switch (ats_flags) {
++/**
++ * set_reg_idx() - Fill array with data. Ignore illegal offsets.
++ * @cd:         card device
++ * @r:          debug register array
++ * @i:          index to desired entry
++ * @m:          maximum possible entries
++ * @addr:       addr which is read
++ * @index:      index in debug array
++ * @val:        read value
++ */
++static int set_reg_idx(struct genwqe_dev *cd, struct genwqe_reg *r,
++		       unsigned int *i, unsigned int m, u32 addr, u32 idx,
++		       u64 val)
++{
++	if (WARN_ON_ONCE(*i >= m))
++		return -EFAULT;
 +
-+		case ATS_TYPE_DATA:
-+			break;	/* nothing to do here */
++	r[*i].addr = addr;
++	r[*i].idx = idx;
++	r[*i].val = val;
++	++*i;
++	return 0;
++}
 +
-+		case ATS_TYPE_FLAT_RDWR:
-+		case ATS_TYPE_FLAT_RD: {
-+			u_addr = be64_to_cpu(*((u64 *)&cmd->
-+					       asiv[asiv_offs]));
-+			u_size = be32_to_cpu(*((u32 *)&cmd->
-+					       asiv[asiv_offs + 0x08]));
++static int set_reg(struct genwqe_dev *cd, struct genwqe_reg *r,
++		   unsigned int *i, unsigned int m, u32 addr, u64 val)
++{
++	return set_reg_idx(cd, r, i, m, addr, 0, val);
++}
 +
-+			/*
-+			 * No data available. Ignore u_addr in this
-+			 * case and set addr to 0. Hardware must not
-+			 * fetch the buffer.
-+			 */
-+			if (u_size == 0x0) {
-+				*((u64 *)&cmd->asiv[asiv_offs]) =
-+					cpu_to_be64(0x0);
-+				break;
-+			}
++int genwqe_read_ffdc_regs(struct genwqe_dev *cd, struct genwqe_reg *regs,
++			 unsigned int max_regs, int all)
++{
++	unsigned int i, j, idx = 0;
++	u32 ufir_addr, ufec_addr, sfir_addr, sfec_addr;
++	u64 gfir, sluid, appid, ufir, ufec, sfir, sfec;
 +
-+			m = __genwqe_search_mapping(cfile, u_addr, u_size,
-+						   &d_addr, NULL);
-+			if (m == NULL) {
-+				rc = -EFAULT;
-+				goto err_out;
-+			}
++	/* Global FIR */
++	gfir = __genwqe_readq(cd, IO_SLC_CFGREG_GFIR);
++	set_reg(cd, regs, &idx, max_regs, IO_SLC_CFGREG_GFIR, gfir);
 +
-+			*((u64 *)&cmd->asiv[asiv_offs]) = cpu_to_be64(d_addr);
-+			break;
++	/* UnitCfg for SLU */
++	sluid = __genwqe_readq(cd, IO_SLU_UNITCFG); /* 0x00000000 */
++	set_reg(cd, regs, &idx, max_regs, IO_SLU_UNITCFG, sluid);
++
++	/* UnitCfg for APP */
++	appid = __genwqe_readq(cd, IO_APP_UNITCFG); /* 0x02000000 */
++	set_reg(cd, regs, &idx, max_regs, IO_APP_UNITCFG, appid);
++
++	/* Check all chip Units */
++	for (i = 0; i < GENWQE_MAX_UNITS; i++) {
++
++		/* Unit FIR */
++		ufir_addr = (i << 24) | 0x008;
++		ufir = __genwqe_readq(cd, ufir_addr);
++		set_reg(cd, regs, &idx, max_regs, ufir_addr, ufir);
++
++		/* Unit FEC */
++		ufec_addr = (i << 24) | 0x018;
++		ufec = __genwqe_readq(cd, ufec_addr);
++		set_reg(cd, regs, &idx, max_regs, ufec_addr, ufec);
++
++		for (j = 0; j < 64; j++) {
++			/* wherever there is a primary 1, read the 2ndary */
++			if (!all && (!(ufir & (1ull << j))))
++				continue;
++
++			sfir_addr = (i << 24) | (0x100 + 8 * j);
++			sfir = __genwqe_readq(cd, sfir_addr);
++			set_reg(cd, regs, &idx, max_regs, sfir_addr, sfir);
++
++			sfec_addr = (i << 24) | (0x300 + 8 * j);
++			sfec = __genwqe_readq(cd, sfec_addr);
++			set_reg(cd, regs, &idx, max_regs, sfec_addr, sfec);
 +		}
++	}
 +
-+		case ATS_TYPE_SGL_RDWR:
-+		case ATS_TYPE_SGL_RD: {
-+			int page_offs, nr_pages, offs;
++	/* fill with invalid data until end */
++	for (i = idx; i < max_regs; i++) {
++		regs[i].addr = 0xffffffff;
++		regs[i].val = 0xffffffffffffffffull;
++	}
++	return idx;
++}
 +
-+			u_addr = be64_to_cpu(*((u64 *)&cmd->asiv[asiv_offs]));
-+			u_size = be32_to_cpu(*((u32 *)&cmd->asiv[asiv_offs +
-+								 0x08]));
++/**
++ * genwqe_ffdc_buff_size() - Calculates the number of dump registers
++ */
++int genwqe_ffdc_buff_size(struct genwqe_dev *cd, int uid)
++{
++	int entries = 0, ring, traps, traces, trace_entries;
++	uint32_t eevptr_addr, l_addr, d_len, d_type;
++	uint64_t eevptr, val, addr;
 +
-+			/*
-+			 * No data available. Ignore u_addr in this
-+			 * case and set addr to 0. Hardware must not
-+			 * fetch the empty sgl.
-+			 */
-+			if (u_size == 0x0) {
-+				*((u64 *)&cmd->asiv[asiv_offs]) =
-+					cpu_to_be64(0x0);
++	eevptr_addr = UID_OFFS(uid) | IO_EXTENDED_ERROR_POINTER;
++	eevptr = __genwqe_readq(cd, eevptr_addr);
++
++	if ((eevptr != 0x0) && (eevptr != -1ull)) {
++		l_addr = UID_OFFS(uid) | eevptr;
++
++		while (1) {
++			val = __genwqe_readq(cd, l_addr);
++
++			if ((val == 0x0) || (val == -1ull))
 +				break;
++
++			/* 38:24 */
++			d_len  = (val & 0x0000007fff000000ull) >> 24;
++
++			/* 39 */
++			d_type = (val & 0x0000008000000000ull) >> 36;
++
++			if (d_type) {	/* repeat */
++				entries += d_len;
++			} else {	/* size in bytes! */
++				entries += d_len >> 3;
 +			}
 +
-+			m = genwqe_search_pin(cfile, u_addr, u_size, NULL);
-+			if (m != NULL) {
-+				type = "PINNING";
-+				page_offs = (u_addr -
-+					     (u64)m->u_vaddr)/PAGE_SIZE;
++			l_addr += 8;
++		}
++	}
++
++	for (ring = 0; ring < 8; ring++) {
++		addr = UID_OFFS(uid) | IO_EXTENDED_DIAG_MAP(ring);
++		val = __genwqe_readq(cd, addr);
++
++		if ((val == 0x0ull) || (val == -1ull))
++			continue;
++
++		traps = (val >> 24) & 0xff;
++		traces = (val >> 16) & 0xff;
++		trace_entries = val & 0xffff;
++
++		entries += traps + (traces * trace_entries);
++	}
++	return entries;
++}
++
++/**
++ * genwqe_ffdc_buff_read() - Implements LogoutExtendedErrorRegisters procedure
++ */
++int genwqe_ffdc_buff_read(struct genwqe_dev *cd, int uid,
++			  struct genwqe_reg *regs, unsigned int max_regs)
++{
++	int i, traps, traces, trace, trace_entries, trace_entry, ring;
++	unsigned int idx = 0;
++	uint32_t eevptr_addr, l_addr, d_addr, d_len, d_type;
++	uint64_t eevptr, e, val, addr;
++
++	eevptr_addr = UID_OFFS(uid) | IO_EXTENDED_ERROR_POINTER;
++	eevptr = __genwqe_readq(cd, eevptr_addr);
++
++	if ((eevptr != 0x0) && (eevptr != 0xffffffffffffffffull)) {
++		l_addr = UID_OFFS(uid) | eevptr;
++		while (1) {
++			e = __genwqe_readq(cd, l_addr);
++			if ((e == 0x0) || (e == 0xffffffffffffffffull))
++				break;
++
++			d_addr = (e & 0x0000000000ffffffull);	    /* 23:0 */
++			d_len  = (e & 0x0000007fff000000ull) >> 24; /* 38:24 */
++			d_type = (e & 0x0000008000000000ull) >> 36; /* 39 */
++			d_addr |= UID_OFFS(uid);
++
++			if (d_type) {
++				for (i = 0; i < (int)d_len; i++) {
++					val = __genwqe_readq(cd, d_addr);
++					set_reg_idx(cd, regs, &idx, max_regs,
++						    d_addr, i, val);
++				}
 +			} else {
-+				type = "MAPPING";
-+				m = &req->dma_mappings[i];
-+
-+				genwqe_mapping_init(m,
-+						    GENWQE_MAPPING_SGL_TEMP);
-+				rc = user_vmap(cd, m, (void *)u_addr, u_size,
-+					       req);
-+				if (rc != 0)
-+					goto err_out;
-+
-+				__genwqe_add_mapping(cfile, m);
-+				page_offs = 0;
++				d_len >>= 3; /* Size in bytes! */
++				for (i = 0; i < (int)d_len; i++, d_addr += 8) {
++					val = __genwqe_readq(cd, d_addr);
++					set_reg_idx(cd, regs, &idx, max_regs,
++						    d_addr, 0, val);
++				}
 +			}
-+
-+			offs = offset_in_page(u_addr);
-+			nr_pages = DIV_ROUND_UP(offs + u_size, PAGE_SIZE);
-+
-+			genwqe_dprintk(cd, dbg_card_pinning,
-+				       "[%s] %s for %016llx/%08x: "
-+				       "addr=%p/size=%08x page_start=%d "
-+				       "offs=%08x num_pages=%d "
-+				       "new/n_pages=%d\n", __func__,
-+				       type, u_addr, u_size, m->u_vaddr,
-+				       m->size, page_offs, offs, m->nr_pages,
-+				       nr_pages);
-+
-+			/* create genwqe style scatter gather list */
-+			req->sgl[i] = genwqe_alloc_sgl(cd, m->nr_pages,
-+						      &req->sgl_dma_addr[i],
-+						      &req->sgl_size[i]);
-+			if (req->sgl[i] == NULL) {
-+				rc = -ENOMEM;
-+				goto err_out;
-+			}
-+			genwqe_setup_sgl(cd, offs, u_size,
-+					req->sgl[i],
-+					req->sgl_dma_addr[i],
-+					req->sgl_size[i],
-+					m->dma_list,
-+					page_offs,
-+					nr_pages);
-+
-+			*((u64 *)&cmd->asiv[asiv_offs]) =
-+				cpu_to_be64(req->sgl_dma_addr[i]);
-+
-+			break;
++			l_addr += 8;
 +		}
-+		default:
-+			dev_err(&pci_dev->dev,
-+				"[%s] err: invalid ATS flags %01lx\n",
-+				__func__, ats_flags);
-+			rc = -EINVAL;
-+			goto err_out;
-+		}
-+	}
-+	return 0;
-+
-+ err_out:
-+	dev_err(&pci_dev->dev, "[%s] err: rc=%d\n", __func__, rc);
-+	ddcb_cmd_cleanup(cfile, req);
-+	return rc;
-+}
-+
-+/**
-+ * genwqe_execute_ddcb() - Execute DDCB using userspace address fixups
-+ *
-+ * The code will build up the translation tables or lookup the
-+ * contignous memory allocation table to find the right translations
-+ * and DMA addresses.
-+ */
-+static int genwqe_execute_ddcb(struct genwqe_file *cfile,
-+			       struct genwqe_ddcb_cmd *cmd)
-+{
-+	int rc;
-+	struct genwqe_dev *cd = cfile->cd;
-+	struct ddcb_requ *req = container_of(cmd, struct ddcb_requ, cmd);
-+
-+	rc = ddcb_cmd_fixups(cfile, req);
-+	if (rc != 0) {
-+		genwqe_dprintk(cd, dbg_card_ddcb,
-+			       "[%s] err: fixups rc=%d\n", __func__, rc);
-+		return rc;
-+	}
-+	rc = __genwqe_execute_raw_ddcb(cd, cmd);
-+
-+	ddcb_cmd_cleanup(cfile, req);
-+	return rc;
-+}
-+
-+static int do_execute_ddcb(struct genwqe_file *cfile,
-+			   unsigned long arg, int raw)
-+{
-+	int rc;
-+	struct genwqe_ddcb_cmd *cmd;
-+	struct ddcb_requ *req;
-+	struct genwqe_dev *cd = cfile->cd;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+
-+	cmd = ddcb_requ_alloc();
-+	if (cmd == NULL)
-+		return -ENOMEM;
-+
-+	req = container_of(cmd, struct ddcb_requ, cmd);
-+
-+	if (copy_from_user(cmd, (void __user *)arg, sizeof(*cmd))) {
-+		dev_err(&pci_dev->dev,
-+			"err: could not copy params from user\n");
-+		ddcb_requ_free(cmd);
-+		return -EFAULT;
-+	}
-+
-+	if (!raw)
-+		rc = genwqe_execute_ddcb(cfile, cmd);
-+	else
-+		rc = __genwqe_execute_raw_ddcb(cd, cmd);
-+
-+	/* Copy back only the modifed fields. Do not copy ASIV
-+	   back since the copy got modified by the driver. */
-+	if (copy_to_user((void __user *)arg, cmd,
-+			 sizeof(*cmd) - DDCB_ASIV_LENGTH)) {
-+		dev_err(&pci_dev->dev,
-+			"err: could not copy params to user\n");
-+		ddcb_requ_free(cmd);
-+		return -EFAULT;
-+	}
-+
-+	ddcb_requ_free(cmd);
-+	return rc;
-+}
-+
-+/**
-+ * genwqe_ioctl() - IO control
-+ * @filp:       file handle
-+ * @cmd:        command identifier (passed from user)
-+ * @arg:        argument (passed from user)
-+ *
-+ * Return: 0 success
-+ */
-+static long genwqe_ioctl(struct file *filp, unsigned int cmd,
-+			 unsigned long arg)
-+{
-+	int rc = 0;
-+	struct genwqe_file *cfile = (struct genwqe_file *)filp->private_data;
-+	struct genwqe_dev *cd = cfile->cd;
-+	struct regs_io __user *io;
-+	u64 u64_val;
-+	u32 reg_offs, u32_val;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+
-+	if (_IOC_TYPE(cmd) != GENWQE_IOC_CODE) {
-+		dev_err(&pci_dev->dev, "err: ioctl code does not match!\n");
-+		return -EINVAL;
-+	}
-+
-+	switch (cmd) {
-+
-+	case GENWQE_GET_CARD_STATE:
-+		put_user(cd->card_state, (enum genwqe_card_state __user *)arg);
-+		return 0;
-+
-+		/* Register access */
-+	case GENWQE_READ_REG64: {
-+		io = (struct regs_io __user *)arg;
-+
-+		if (get_user(reg_offs, &io->num)) {
-+			dev_err(&pci_dev->dev, "err: reg read64\n");
-+			return -EFAULT;
-+		}
-+		if ((reg_offs >= cd->mmio_len) || (reg_offs & 0x7))
-+			return -EINVAL;
-+
-+		u64_val = __genwqe_readq(cd, reg_offs);
-+		put_user(u64_val, &io->val64);
-+		return 0;
-+	}
-+
-+	case GENWQE_WRITE_REG64: {
-+		io = (struct regs_io __user *)arg;
-+
-+		if (!capable(CAP_SYS_ADMIN))
-+			return -EPERM;
-+
-+		if ((filp->f_flags & O_ACCMODE) == O_RDONLY)
-+			return -EPERM;
-+
-+		if (get_user(reg_offs, &io->num)) {
-+			dev_err(&pci_dev->dev, "err: reg write64\n");
-+			return -EFAULT;
-+		}
-+		if ((reg_offs >= cd->mmio_len) || (reg_offs & 0x7))
-+			return -EINVAL;
-+
-+		if (get_user(u64_val, &io->val64)) {
-+			dev_err(&pci_dev->dev, "err: reg write64\n");
-+			return -EFAULT;
-+		}
-+		__genwqe_writeq(cd, reg_offs, u64_val);
-+		return 0;
-+	}
-+
-+	case GENWQE_READ_REG32: {
-+		io = (struct regs_io __user *)arg;
-+
-+		if (get_user(reg_offs, &io->num)) {
-+			dev_err(&pci_dev->dev, "err: reg read32\n");
-+			return -EFAULT;
-+		}
-+		if ((reg_offs >= cd->mmio_len) || (reg_offs & 0x3))
-+			return -EINVAL;
-+
-+		u32_val = __genwqe_readl(cd, reg_offs);
-+		put_user(u32_val, &io->val32);
-+		return 0;
-+	}
-+
-+	case GENWQE_WRITE_REG32: {
-+		io = (struct regs_io __user *)arg;
-+
-+		if (!capable(CAP_SYS_ADMIN))
-+			return -EPERM;
-+
-+		if ((filp->f_flags & O_ACCMODE) == O_RDONLY)
-+			return -EPERM;
-+
-+		if (get_user(reg_offs, &io->num)) {
-+			dev_err(&pci_dev->dev, "err: reg write32\n");
-+			return -EFAULT;
-+		}
-+		if ((reg_offs >= cd->mmio_len) || (reg_offs & 0x3))
-+			return -EINVAL;
-+
-+		if (get_user(u32_val, &io->val32)) {
-+			dev_err(&pci_dev->dev, "err: reg write32\n");
-+			return -EFAULT;
-+		}
-+		__genwqe_writel(cd, reg_offs, u32_val);
-+		return 0;
-+	}
-+
-+		/* Flash update/reading */
-+	case GENWQE_SLU_UPDATE: {
-+		struct chip_bitstream load;
-+
-+		if (!genwqe_is_privileged(cd))
-+			return -EPERM;
-+
-+		if ((filp->f_flags & O_ACCMODE) == O_RDONLY)
-+			return -EPERM;
-+
-+		if (copy_from_user(&load, (void __user *)arg, sizeof(load))) {
-+			dev_err(&pci_dev->dev,
-+				"err: could not copy params from user\n");
-+			return -EFAULT;
-+		}
-+		rc = do_flash_update(cfile, &load);
-+
-+		if (copy_to_user((void __user *)arg, &load, sizeof(load))) {
-+			dev_err(&pci_dev->dev,
-+				"err: could not copy params to user\n");
-+			return -EFAULT;
-+		}
-+		dev_info(&pci_dev->dev, "[%s] rc=%d\n", __func__, rc);
-+		return rc;
-+	}
-+
-+	case GENWQE_SLU_READ: {
-+		struct chip_bitstream load;
-+
-+		if (!genwqe_is_privileged(cd))
-+			return -EPERM;
-+
-+		if (genwqe_flash_readback_fails(cd))
-+			return -ENOSPC;	 /* known to fail for old versions */
-+
-+		if (copy_from_user(&load, (void __user *)arg, sizeof(load))) {
-+			dev_err(&pci_dev->dev,
-+				"err: could not copy params from user\n");
-+			return -EFAULT;
-+		}
-+		rc = do_flash_read(cfile, &load);
-+
-+		if (copy_to_user((void __user *)arg, &load, sizeof(load))) {
-+			dev_err(&pci_dev->dev,
-+				"err: could not copy params to user\n");
-+			return -EFAULT;
-+		}
-+		dev_info(&pci_dev->dev, "[%s] rc=%d\n", __func__, rc);
-+		return rc;
-+	}
-+
-+		/* memory pinning and unpinning */
-+	case GENWQE_PIN_MEM: {
-+		struct genwqe_mem m;
-+
-+		if (copy_from_user(&m, (void __user *)arg, sizeof(m))) {
-+			dev_err(&pci_dev->dev,
-+				"err: could not copy params from user\n");
-+			return -EFAULT;
-+		}
-+		return genwqe_pin_mem(cfile, &m);
-+	}
-+
-+	case GENWQE_UNPIN_MEM: {
-+		struct genwqe_mem m;
-+
-+		if (copy_from_user(&m, (void __user *)arg, sizeof(m))) {
-+			dev_err(&pci_dev->dev,
-+				"err: could not copy params from user\n");
-+			return -EFAULT;
-+		}
-+		return genwqe_unpin_mem(cfile, &m);
-+	}
-+
-+		/* launch an DDCB and wait for completion */
-+	case GENWQE_EXECUTE_DDCB:
-+		return do_execute_ddcb(cfile, arg, 0);
-+
-+	case GENWQE_EXECUTE_RAW_DDCB: {
-+
-+		if (!capable(CAP_SYS_ADMIN)) {
-+			dev_err(&pci_dev->dev,
-+				"err: must be superuser execute raw DDCB!\n");
-+			return -EPERM;
-+		}
-+		return do_execute_ddcb(cfile, arg, 1);
-+	}
-+
-+	default:
-+		pr_err("unknown ioctl %x/%lx**\n", cmd, arg);
-+		return -EINVAL;
-+	}
-+
-+	return rc;
-+}
-+
-+static const struct file_operations genwqe_fops = {
-+	.owner		= THIS_MODULE,
-+	.open		= genwqe_open,
-+	.fasync		= genwqe_fasync,
-+	.mmap		= genwqe_mmap,
-+	.unlocked_ioctl	= genwqe_ioctl,
-+	.release	= genwqe_release,
-+};
-+
-+static int genwqe_device_initialized(struct genwqe_dev *cd)
-+{
-+	return (cd->dev != NULL);
-+}
-+
-+/**
-+ * genwqe_device_create() - Create and configure genwqe char device
-+ * @cd:      genwqe device descriptor
-+ *
-+ * This function must be called before we create any more genwqe
-+ * character devices, because it is allocating the major and minor
-+ * number which are supposed to be used by the client drivers.
-+ */
-+int genwqe_device_create(struct genwqe_dev *cd)
-+{
-+	int rc;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+
-+	/*
-+	 * Here starts the individual setup per client. It must
-+	 * initialize its own cdev data structure with its own fops.
-+	 * The appropriate devnum needs to be created. The ranges must
-+	 * not overlap.
-+	 */
-+	rc = alloc_chrdev_region(&cd->devnum_genwqe, 0,
-+				 GENWQE_MAX_MINOR, GENWQE_DEVNAME);
-+	if (rc < 0) {
-+		dev_err(&pci_dev->dev, "err: alloc_chrdev_region failed\n");
-+		goto err_dev;
-+	}
-+
-+	cdev_init(&cd->cdev_genwqe, &genwqe_fops);
-+	cd->cdev_genwqe.owner = THIS_MODULE;
-+
-+	rc = cdev_add(&cd->cdev_genwqe, cd->devnum_genwqe, 1);
-+	if (rc < 0) {
-+		dev_err(&pci_dev->dev, "err: cdev_add failed\n");
-+		goto err_add;
 +	}
 +
 +	/*
-+	 * Finally the device in /dev/... must be created. The rule is
-+	 * to use card%d_clientname for each created device.
++	 * To save time, there are only 6 traces poplulated on Uid=2,
++	 * Ring=1. each with iters=512.
 +	 */
-+	cd->dev = device_create(cd->class_genwqe, &cd->pci_dev->dev,
-+				cd->devnum_genwqe, NULL,
-+				GENWQE_DEVNAME "%u_card", cd->card_idx);
-+	if (cd->dev == NULL) {
-+		rc = -ENODEV;
-+		goto err_cdev;
-+	}
-+	dev_set_drvdata(cd->dev, cd);
++	for (ring = 0; ring < 8; ring++) { /* 0 is fls, 1 is fds,
++					      2...7 are ASI rings */
++		addr = UID_OFFS(uid) | IO_EXTENDED_DIAG_MAP(ring);
++		val = __genwqe_readq(cd, addr);
 +
-+	rc = genwqe_init_sysfs(cd);
-+	if (rc != 0)
-+		goto err_sysfs;
++		if ((val == 0x0ull) || (val == -1ull))
++			continue;
 +
-+	rc = genwqe_init_debugfs(cd);
-+	if (rc != 0)
-+		goto err_debugfs;
++		traps = (val >> 24) & 0xff;	/* Number of Traps	*/
++		traces = (val >> 16) & 0xff;	/* Number of Traces	*/
++		trace_entries = val & 0xffff;	/* Entries per trace	*/
 +
-+	return 0;
++		/* Note: This is a combined loop that dumps both the traps */
++		/* (for the trace == 0 case) as well as the traces 1 to    */
++		/* 'traces'.						   */
++		for (trace = 0; trace <= traces; trace++) {
++			uint32_t diag_sel =
++				EXTENDED_DIAG_SELECTOR(ring, trace);
 +
-+ err_debugfs:
-+	genwqe_exit_sysfs(cd);
-+ err_sysfs:
-+	device_destroy(cd->class_genwqe, cd->devnum_genwqe);
-+ err_cdev:
-+	cdev_del(&cd->cdev_genwqe);
-+ err_add:
-+	unregister_chrdev_region(cd->devnum_genwqe, GENWQE_MAX_MINOR);
-+ err_dev:
-+	cd->dev = NULL;
-+	return rc;
-+}
++			addr = UID_OFFS(uid) | IO_EXTENDED_DIAG_SELECTOR;
++			__genwqe_writeq(cd, addr, diag_sel);
 +
-+static int genwqe_inform_and_stop_processes(struct genwqe_dev *cd)
-+{
-+	int rc;
-+	unsigned int i;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+
-+	if (!genwqe_open_files(cd))
-+		return 0;
-+
-+	dev_warn(&pci_dev->dev, "[%s] send SIGIO and wait ...\n", __func__);
-+
-+	rc = genwqe_kill_fasync(cd, SIGIO);
-+	if (rc > 0) {
-+		/* give kill_timeout seconds to close file descriptors ... */
-+		for (i = 0; (i < genwqe_kill_timeout) &&
-+			     genwqe_open_files(cd); i++) {
-+			dev_info(&pci_dev->dev, "  %d sec ...", i);
-+
-+			cond_resched();
-+			msleep(1000);
-+		}
-+
-+		/* if no open files we can safely continue, else ... */
-+		if (!genwqe_open_files(cd))
-+			return 0;
-+
-+		dev_warn(&pci_dev->dev,
-+			 "[%s] send SIGKILL and wait ...\n", __func__);
-+
-+		rc = genwqe_force_sig(cd, SIGKILL); /* force terminate */
-+		if (rc) {
-+			/* Give kill_timout more seconds to end processes */
-+			for (i = 0; (i < genwqe_kill_timeout) &&
-+				     genwqe_open_files(cd); i++) {
-+				dev_warn(&pci_dev->dev, "  %d sec ...", i);
-+
-+				cond_resched();
-+				msleep(1000);
++			for (trace_entry = 0;
++			     trace_entry < (trace ? trace_entries : traps);
++			     trace_entry++) {
++				addr = UID_OFFS(uid)|IO_EXTENDED_DIAG_READ_MBX;
++				val = __genwqe_readq(cd, addr);
++				set_reg_idx(cd, regs, &idx, max_regs, addr,
++					    (diag_sel<<16) | trace_entry, val);
 +			}
 +		}
 +	}
@@ -3105,45 +953,79 @@ index 0000000..fabf749
 +}
 +
 +/**
-+ * genwqe_device_remove() - Remove genwqe's char device
++ * genwqe_write_jtimer() - Write jobtimeout register
 + *
-+ * This function must be called after the client devices are removed
-+ * because it will free the major/minor number range for the genwqe
-+ * drivers.
++ * Sets the jobtimeout and heartbeat rate timers for this queue.
++ * Note, this register is accessible only to the PF through the
++ * VF-window. It is not intended for the VF to initialize this.
 + *
-+ * This function must be robust enough to be called twice.
++ * It is an error to write to this register while the queue is active,
++ * i.e. when Queue Status(7:6) != 0.
 + */
-+int genwqe_device_remove(struct genwqe_dev *cd)
++int genwqe_write_jtimer(struct genwqe_dev *cd, int func, u64 jtimer)
 +{
-+	int rc;
-+	struct pci_dev *pci_dev = cd->pci_dev;
-+
-+	if (!genwqe_device_initialized(cd))
-+		return 1;
-+
-+	genwqe_inform_and_stop_processes(cd);
-+
-+	/*
-+	 * We currently do wait until all filedescriptors are
-+	 * closed. This leads to a problem when we abort the
-+	 * application which will decrease this reference from
-+	 * 1/unused to 0/illegal and not from 2/used 1/empty.
-+	 */
-+	rc = atomic_read(&cd->cdev_genwqe.kobj.kref.refcount);
-+	if (rc != 1) {
-+		dev_err(&pci_dev->dev,
-+			"[%s] err: cdev_genwqe...refcount=%d\n", __func__, rc);
-+		panic("Fatal err: cannot free resources with pending references!");
-+	}
-+
-+	genqwe_exit_debugfs(cd);
-+	genwqe_exit_sysfs(cd);
-+	device_destroy(cd->class_genwqe, cd->devnum_genwqe);
-+	cdev_del(&cd->cdev_genwqe);
-+	unregister_chrdev_region(cd->devnum_genwqe, GENWQE_MAX_MINOR);
-+	cd->dev = NULL;
-+
++	__genwqe_writeq(cd, IO_PF_SLC_VIRTUAL_WINDOW, func & 0xf);
++	__genwqe_writeq(cd, IO_SLC_VF_APPJOB_TIMEOUT, jtimer);
 +	return 0;
++}
++
++u64 genwqe_read_jtimer(struct genwqe_dev *cd, int func)
++{
++	u64 jtimer;
++
++	__genwqe_writeq(cd, IO_PF_SLC_VIRTUAL_WINDOW, func & 0xf);
++	jtimer = __genwqe_readq(cd, IO_SLC_VF_APPJOB_TIMEOUT);
++
++	return jtimer;
++}
++
++/**
++ * genwqe_base_clock_frequency() - Deteremine base clock frequency of the card
++ *
++ * Note: From a design perspective it turned out to be a bad idea to
++ * use codes here to specifiy the frequency/speed values. An old
++ * driver cannot understand new codes and is therefore always a
++ * problem. Better is to measure out the value or put the
++ * speed/frequency directly into a register which is always a valid
++ * value for old as well as for new software.
++ *
++ * Return: Card clock in MHz
++ */
++int genwqe_base_clock_frequency(struct genwqe_dev *cd)
++{
++	u16 speed;		/*         MHz  MHz  MHz  MHz */
++	static const int speed_grade[] = { 250, 200, 166, 175 };
++
++	speed = (u16)((cd->slu_unitcfg >> 28) & 0x0full);
++	if (speed >= ARRAY_SIZE(speed_grade))
++		return 0;	/* illegal value */
++
++	return speed_grade[speed];
++}
++
++/**
++ * genwqe_stop_traps() - Stop traps
++ *
++ * Before reading out the analysis data, we need to stop the traps.
++ */
++void genwqe_stop_traps(struct genwqe_dev *cd)
++{
++	/* Halt the traps while dumping FFDC. */
++	__genwqe_writeq(cd, IO_SLC_MISC_DEBUG_SET, 0xcull);
++}
++
++/**
++ * genwqe_start_traps() - Start traps
++ *
++ * After having read the data, we can/must enable the traps again.
++ */
++void genwqe_start_traps(struct genwqe_dev *cd)
++{
++	/* Restart the traps. */
++	__genwqe_writeq(cd, IO_SLC_MISC_DEBUG_CLR, 0xcull);
++
++	if (genwqe_need_err_masking(cd))
++		__genwqe_writeq(cd, IO_SLC_MISC_DEBUG, 0x0aull);
 +}
 -- 
 1.7.1
