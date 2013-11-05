@@ -1,145 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab3KERCD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 12:02:03 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:62158 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754661Ab3KERCA (ORCPT
+	id S1754258Ab3KERMb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 12:12:31 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:58513 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab3KERM3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 12:02:00 -0500
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
-        jolsa@redhat.com, zheng.z.yan@intel.com, bp@alien8.de,
-        maria.n.dimakopoulou@gmail.com
-Subject: [PATCH v5 0/4] perf/x86: add Intel RAPL PMU support
-Date: Tue,  5 Nov 2013 18:01:22 +0100
-Message-Id: <1383670886-30827-1-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 5 Nov 2013 12:12:29 -0500
+Subject: Re: [PATCH 02/11] devicetree: bindings: Document Qualcomm cpus and enable-method
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <20131104173606.GL21983@codeaurora.org>
+Date: Tue, 5 Nov 2013 11:12:27 -0600
+Cc: Rob Herring <robherring2@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        David Brown <davidb@codeaurora.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <378446F7-DC51-448D-AF99-93F98CEAFB03@codeaurora.org>
+References: <1383343739-23080-1-git-send-email-sboyd@codeaurora.org> <1383343739-23080-3-git-send-email-sboyd@codeaurora.org> <CAL_JsqLObXEWJJ=SuifTjpPz9qTW0n43fyQNA-vjLNeLy-7-XA@mail.gmail.com> <20131104173606.GL21983@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new uncore PMU to expose the Intel
-RAPL (Running Average Power Limit) energy consumption counters.
-Up to 3 counters, each counting a single RAPL event are exposed.
 
-The RAPL counters are available on Intel SandyBridge, IvyBridge,
-Haswell. The server processors add a 3rd counter to measure
-DRAM power consumption.
+On Nov 4, 2013, at 11:36 AM, Stephen Boyd wrote:
 
-The following events are available and exposed in sysfs:
-- power/energy-cores: power consumption of all cores on socket
-- power/energy-pkg  : power consumption of all cores + LLC cache
-- power/energy-dram : power consumption of DRAM (servers only)
+> On 11/01, Rob Herring wrote:
+>> On Fri, Nov 1, 2013 at 5:08 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>>> From: Rohit Vaswani <rvaswani@codeaurora.org>
+>>> 
+>>> Scorpion and Krait are Qualcomm cpus. These cpus don't use the
+>>> spin-table enable-method. Instead they rely on mmio register
+>>> accesses to enable power and clocks to bring CPUs out of reset.
+>>> 
+>>> Cc: <devicetree@vger.kernel.org>
+>>> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+>>> [sboyd: Split off into separate patch, renamed method to
+>>> qcom,mmio]
+>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>>> ---
+>>> 
+>>> This slightly conflicts with my krait EDAC series.
+>>> 
+>>> Documentation/devicetree/bindings/arm/cpus.txt | 3 +++
+>>> 1 file changed, 3 insertions(+)
+>>> 
+>>> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+>>> index 37258f9..e2969fa2 100644
+>>> --- a/Documentation/devicetree/bindings/arm/cpus.txt
+>>> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
+>>> @@ -44,6 +44,8 @@ For the ARM architecture every CPU node must contain the following properties:
+>>>                "marvell,mohawk"
+>>>                "marvell,xsc3"
+>>>                "marvell,xscale"
+>>> +               "qcom,scorpion"
+>>> +               "qcom,krait"
+>>> 
+>>> And the following optional properties:
+>>> 
+>>> @@ -52,6 +54,7 @@ And the following optional properties:
+>>>                 different types of cpus.
+>>>                 This should be one of:
+>>>                 "spin-table"
+>>> +                "qcom,mmio"
+>> 
+>> Not exactly specific. How would you handle variations in the enable
+>> method? The mmio method to enable is tied to the core type or SOC
+>> type?
+> 
+> Variations in the enable method are handled by searching for
+> another node with different compatible strings. Later on in this
+> series you'll see that we search for gcc-8660, kpss-acc-v1, or
+> kpps-acc-v2. Once we find one of these nodes we perform the
+> correct cold boot routine.
+> 
+> I'm actually considering renaming this to "qcom,cold-boot". We
+> could further extend the enable-metho property to allow
+> "qcom,warm-boot" and then for cases like kexec we could make the
+> enable method be warm boot and our smp code could be smart enough
+> to know to skip the whole cold boot sequence.
 
-The RAPL PMU is uncore by nature and is implemented such
-that it only works in system-wide mode. Measuring only
-one CPU per socket is sufficient. 
 
-The counters all count in the same unit. The perf_events API
-exposes all RAPL counters as 64-bit integers counting in unit
-of 1/2^32 Joules (about 0.23 nJ). User level tools must convert
-the counts by multiplying them by the scaling factor exposed
-in the correponding event .scale file in sysfs to obtain a value
-expressed in Joules. The reason for this approach is that the kernel
-avoids doing floating point math whenever possible because it is
-expensive (user floating-point state must be saved). The method
-used avoids kernel floating-point and does not incur any precision
-loss. Thanks to PeterZ for suggesting this approach.
+I think this should be more specific than just 'qcom,mmio' or 'qcom,warm-boot'.  It should be 'qcom,kpss-acc-v1' or 'qcom-gcc-8660'.
 
-To convert the raw count in Watts: W = C * 2.3 / (1e10 * time)
-
-The kernel exposes both the scaling factor and the unit (Joules)
-in sysfs:
-$ ls -1 /sys/devices/power/events/energy-*
-/sys/devices/power/events/energy-cores
-/sys/devices/power/events/energy-cores.scale
-/sys/devices/power/events/energy-cores.unit
-/sys/devices/power/events/energy-pkg
-/sys/devices/power/events/energy-pkg.scale
-/sys/devices/power/events/energy-pkg.unit
-
-$ cat /sys/devices/power/events/energy-cores.scale
-2.3283064365386962890625e-10
-
-$ cat cat /sys/devices/power/events/energy-cores.unit
-Joules
-
-RAPL PMU is a new standalone PMU which registers with the
-perf_event core subsystem. The PMU type (attr->type) is
-dynamically allocated and is available from /sys/device/rapl/type.
-
-Sampling is not supported by the RAPL PMU. There is no
-privilege level filtering either.
-
-The PMU exports a cpumask in /sys/devices/power/cpumask. It
-is used by perf to ensure only one instance of each RAPL event
-is measured per processor socket. Hotplug CPU is also supported.
-
-The perf stat infrastrructure is enhanced to show events
-units. It also applies the scaling factor. As such, perf stat prints
-RAPL events in Joules (and not increments of 0.23 nJ):
-
- # perf stat -a -e power/energy-pkg/,power/energy-cores/,cycles -I 1000 sleep 1000
- #          time             counts   unit events
-     1.000282860               2.51 Joules power/energy-pkg/
-     1.000282860               0.31 Joules power/energy-cores/
-     1.000282860           37765378        cycles
-
-The patch adds a hrtimer to poll the counters given that
-they do no interrupt on overflow. Hardware counters are 32-bit
-wide.
-
-In v2, we add the locking necesarry to protect the rapl_pmu
-struct. We also add a description at the top of the file.
-We check for Intel only processor. We improved the data
-layout of the rapl_pmu struct. We also lifted the restriction
-of the number of instances of RAPL counters that can be active
-at the same time. RAPL is free running counters, so ought to be
-able to measure events as many times as necessary in parallel
-via multiple tools. There is never multiplexing among RAPL events.
-
-In v3, we have renamed the event to be more generic power/* instead
-of rapl/*. We have modified perf stat to print the event with the
-unit and scaling factors.
-
-In v4, we integrate the feedback from Jiri and rebase to 3.12-rc7+
-from tip.git.
-
-In v5, we export the full scaling factor to increase prescision.
-In the perf tool, we changed the way the .unit and .scale syfs
-entries are parsed. Thank to Jiri for this contribution on this.
-We also fix a couple of printf() issues with perf stat and units.
-Now, we print no unit symbol when the event has no unit (was ? before).
-Patch is relative to 3.12 from tip.git.
-
-Thanks to all contributors to this patch series: PeterZ, Jiri, Maria,
-Arnaldo, Andi, Ingo.
-
-Supported CPUs: SandyBridge, IvyBridge, Haswell.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
-
-Stephane Eranian (4):
-  perf: add active_entry list head to struct perf_event
-  perf stat: add event unit and scale support
-  perf,x86: add Intel RAPL PMU support
-  perf,x86: add RAPL hrtimer support
-
- arch/x86/kernel/cpu/Makefile                |    2 +-
- arch/x86/kernel/cpu/perf_event_intel_rapl.c |  721 +++++++++++++++++++++++++++
- include/linux/perf_event.h                  |    5 +-
- kernel/events/core.c                        |    1 +
- tools/perf/builtin-stat.c                   |  114 +++--
- tools/perf/util/evsel.c                     |    2 +
- tools/perf/util/evsel.h                     |    3 +
- tools/perf/util/parse-events.c              |   28 +-
- tools/perf/util/pmu.c                       |  144 +++++-
- tools/perf/util/pmu.h                       |    3 +-
- 10 files changed, 978 insertions(+), 45 deletions(-)
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_rapl.c
+- k
 
 -- 
-1.7.9.5
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
