@@ -1,137 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab3KESPy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 13:15:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14952 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755287Ab3KESPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 13:15:52 -0500
-Date: Tue, 5 Nov 2013 19:16:14 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Long <dave.long@linaro.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 01/13] uprobes: move function declarations out of
-	arch
-Message-ID: <20131105181614.GA7614@redhat.com>
-References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-2-git-send-email-dave.long@linaro.org> <20131105160150.GA1539@redhat.com>
+	id S1755248Ab3KESY6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 13:24:58 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:43291 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754227Ab3KESY5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 13:24:57 -0500
+Date: Tue, 5 Nov 2013 13:24:56 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: David Cohen <david.a.cohen@linux.intel.com>,
+        Michal Nazarewicz <mina86@mina86.com>
+cc: Felipe Balbi <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3/4] usb: ffs: check quirk to pad epout buf size when
+ not aligned to maxpacketsize
+In-Reply-To: <5279351E.2000300@linux.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1311051324100.1360-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131105160150.GA1539@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05, Oleg Nesterov wrote:
->
-> On 10/15, David Long wrote:
-> >
-> > Move the function declarations from the arch header to the common
-> > header, since only the function bodies are architecture-specific.
-> > These changes are from Vincent Rabin's uprobes patch.
->
-> Hmm. I didn't look at this patch because I thought it is obviously
-> fine, but...
->
-> >  arch/x86/include/asm/uprobes.h | 7 -------
-> >  include/linux/uprobes.h        | 8 ++++++++
-> >  2 files changed, 8 insertions(+), 7 deletions(-)
->
-> it should also update arch/powerpc/include/asm/uprobes.h ?
->
-> And 12/13 should not touch arch/powerpc/ or include/linux/uprobes.h.
+On Tue, 5 Nov 2013, David Cohen wrote:
 
-And I think we can merge this change separately to reduce the
-number of non-arm changes in the next version.
+> Hi Alan,
+> 
+> On 11/05/2013 07:38 AM, Alan Stern wrote:
+> > On Tue, 5 Nov 2013, David Cohen wrote:
+> > 
+> >>>> +		/*
+> >>>> +		 * Controller requires buffer size to be aligned to
+> >>>> +		 * maxpacketsize of an out endpoint.
+> >>>> +		 */
+> >>>> +		if (gadget->quirk_ep_out_aligned_size && read) {
+> >>>> +			/*
+> >>>> +			 * We pass 'orig_len' to usp_ep_align_maxpacketsize()
+> >>>> +			 * due to we're in a loop and 'len' may have been
+> >>>> +			 * changed.
+> >>>> +			 */
+> >>>> +			len = usb_ep_align_maxpacketsize(ep->ep, orig_len);
+> >>>> +			if (data && len > data_len) {
+> >>>> +				kfree(data);
+> >>>> +				data = NULL;
+> >>>> +				data_len = 0;
+> >>>> +			}
+> >>>> +		}
+> >>>
+> >>> Since the value of orig_len never changes, there's no point calling 
+> >>> usb_ep_align_maxpacketsize() inside the loop.  You should call it only 
+> >>> once, before the loop starts.  Once you do that, you won't need 
+> >>> orig_len at all.
+> >>
+> >> orig_len doesn't change but ep->ep does. If USB specs say max packet
+> >> size won't change even if ep does, than we can call it from outside the
+> >> loop.
+> > 
+> > I'm not too familiar with this driver.  It looks like the only way 
+> > ep->ep can change is if the endpoint gets enabled while you're sitting 
+> > inside the wait_event_interruptible() call.
+> > 
+> > In fact, the whole structure of that loop looks peculiar.  Why not
+> > acquire the mutex first and then do everything else?
+> 
+> I'm not 100% familiar with this driver too. I'd keep this change to
+> another patch.
+> 
+> > 
+> > Does it even make sense for ep to change?  Would this change be visible
+> > to the host?  What if the host changes the alternate setting while this
+> > loop is running -- does it make sense for the userspace program to
+> > start a read or write under one altsetting but then have the read/write
+> > take place under a different altsetting?
+> 
+> It doesn't make sense to do so, but gadget driver allows it. If we just
+> ignore, it would be a security or instability issue possible to xploit
+> (for DWC3 and any other controller which may depend on this quirk).
 
-Please see the patch I am going to add to my tree below.
+Maybe Michal can enlighten us.
 
-Oleg.
----
-
-Subject: [PATCH] uprobes: move function declarations out of arch
-From: David A. Long <dave.long@linaro.org>
-Date: Tue, 15 Oct 2013 17:04:16 -0400
-
-Move the function declarations from the arch headers to the common
-header, since only the function bodies are architecture-specific.
-These changes are from Vincent Rabin's uprobes patch.
-
-[ oleg: update arch/powerpc/include/asm/uprobes.h ]
-
-Signed-off-by: Rabin Vincent <rabin@rab.in>
-Signed-off-by: David A. Long <dave.long@linaro.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/powerpc/include/asm/uprobes.h |    7 -------
- arch/x86/include/asm/uprobes.h     |    7 -------
- include/linux/uprobes.h            |    8 ++++++++
- 3 files changed, 8 insertions(+), 14 deletions(-)
-
-diff --git a/arch/powerpc/include/asm/uprobes.h b/arch/powerpc/include/asm/uprobes.h
-index 541fd6f..75c6ecd 100644
---- a/arch/powerpc/include/asm/uprobes.h
-+++ b/arch/powerpc/include/asm/uprobes.h
-@@ -46,11 +46,4 @@ struct arch_uprobe_task {
- 	unsigned long	saved_trap_nr;
- };
- 
--extern int  arch_uprobe_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long addr);
--extern int  arch_uprobe_pre_xol(struct arch_uprobe *aup, struct pt_regs *regs);
--extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
--extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
--extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
--extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
--extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long trampoline_vaddr, struct pt_regs *regs);
- #endif	/* _ASM_UPROBES_H */
-diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-index 2a24180..3087ea9 100644
---- a/arch/x86/include/asm/uprobes.h
-+++ b/arch/x86/include/asm/uprobes.h
-@@ -52,11 +52,4 @@ struct arch_uprobe_task {
- 	unsigned int			saved_tf;
- };
- 
--extern int  arch_uprobe_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long addr);
--extern int  arch_uprobe_pre_xol(struct arch_uprobe *aup, struct pt_regs *regs);
--extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
--extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
--extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
--extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
--extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long trampoline_vaddr, struct pt_regs *regs);
- #endif	/* _ASM_UPROBES_H */
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 06f28be..9fd60c5 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -30,6 +30,7 @@
- struct vm_area_struct;
- struct mm_struct;
- struct inode;
-+struct notifier_block;
- 
- #ifdef CONFIG_ARCH_SUPPORTS_UPROBES
- # include <asm/uprobes.h>
-@@ -125,6 +126,13 @@ extern void uprobe_notify_resume(struct pt_regs *regs);
- extern bool uprobe_deny_signal(void);
- extern bool __weak arch_uprobe_skip_sstep(struct arch_uprobe *aup, struct pt_regs *regs);
- extern void uprobe_clear_state(struct mm_struct *mm);
-+extern int  arch_uprobe_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long addr);
-+extern int  arch_uprobe_pre_xol(struct arch_uprobe *aup, struct pt_regs *regs);
-+extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
-+extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
-+extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
-+extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
-+extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long trampoline_vaddr, struct pt_regs *regs);
- #else /* !CONFIG_UPROBES */
- struct uprobes_state {
- };
--- 
-1.5.5.1
-
+Alan Stern
 
