@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956Ab3KEXgv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 18:36:51 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:52124 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755892Ab3KEXf6 (ORCPT
+	id S1755972Ab3KEXgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 18:36:54 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:61013 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755892Ab3KEXgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 18:35:58 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 0/3] More ACPI hotplug updates (was: [Update][PATCH 0/6] ACPI scan and hotplug fixes)
-Date: Wed, 06 Nov 2013 00:32:12 +0100
-Message-ID: <18462848.9zsetEL1Yy@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <2970389.SeMGM45Qln@vostro.rjw.lan>
-References: <5839747.7HXXGHmMBd@vostro.rjw.lan> <2970389.SeMGM45Qln@vostro.rjw.lan>
+	Tue, 5 Nov 2013 18:36:51 -0500
+Date: Tue, 5 Nov 2013 15:36:46 -0800
+From: Matt Wilson <msw@linux.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, Cristian Gafton <gafton@amazon.com>,
+        Anthony Liguori <anthony@codemonkey.ws>
+Subject: Re: [GIT PULL] (xen) stable/for-jens-3.13
+Message-ID: <20131105233646.GA25858@u109add4315675089e695.ant.amazon.com>
+References: <20131105165908.GA405@phenom.dumpdata.com>
+ <20131105225229.GB21473@u109add4315675089e695.ant.amazon.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131105225229.GB21473@u109add4315675089e695.ant.amazon.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 04, 2013 02:29:56 PM Rafael J. Wysocki wrote:
-> On Monday, November 04, 2013 01:17:12 AM Rafael J. Wysocki wrote:
-> > Hi,
+On Tue, Nov 05, 2013 at 02:52:29PM -0800, Matt Wilson wrote:
+> On Tue, Nov 05, 2013 at 11:59:08AM -0500, Konrad Rzeszutek Wilk wrote:
 > > 
-> > The following three patches fix some issues that we have in the common ACPI
-> > hotplug infrastructure.
+> > Hey Jens,
 > > 
-> > If anyone sees any problems with them, please let me know.
+> > Please git pull the following branch:
+> > 
+> >  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.13
+> > 
+> > 
+> > which has a fix to the Xen block frontend driver. For the backends that
+> > don't support persistent grants, we don't want to use the logic that would
+> > use copying (needed for persistent grants). That logic existed there initially
+> > but with the persistent grants code added in - it was removed (so in 3.10
+> > time-frame). This adds part of it back.
 > 
-> Well, the last patch from the last version didn't really do the right thing in
-> my opinion, so new series follows.
+> I just tested this patch as part of a backported series on top of a
+> 3.4.68 base. When this patch is included and a domU boots on a system
+> that does not support persistent grants the kernel panics on boot with
+> the trace below. Full boot log: http://paste.ubuntu.com/6367329/
 > 
-> I actually would like to squeeze it into 3.13 if there are no objections, since
-> at least patch [3/6] is kind of urgent.
+> It's possible we missed something in the backport series. I'll test
+> this patch on top of 3.11.4 to see how it fares.
 
-Three more patches for 3.13 if people don't mind, on top of the previous series
-of six.  [2/3] actually is a fix, the other two are more like cleanups, but
-they are worth doing at this point if no one sees any problems with them.
+Hi Konrad,
 
-This is the last batch for 3.13, I promise.
+Looks like there's something amiss in the backport. Testing your git
+branch worked fine.
 
-Thanks!
+Sorry for the false alarm.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--msw
