@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab3KEHYM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 02:24:12 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:38245 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab3KEHYJ (ORCPT
+	id S1753771Ab3KEHbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 02:31:24 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52493 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967Ab3KEHbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 02:24:09 -0500
+	Tue, 5 Nov 2013 02:31:23 -0500
+X-AuditID: 9c93016f-b7bc7ae0000010eb-c0-52789eca7cf5
+From: Namhyung Kim <namhyung@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
+Subject: Re: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist periods (v2)
+References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
+	<20131031080932.GA8479@gmail.com> <87vc0c4ny2.fsf@sejong.aot.lge.com>
+	<20131101075502.GA25547@gmail.com> <874n7w4gtm.fsf@sejong.aot.lge.com>
+	<20131101092759.GC27063@gmail.com>
+Date: Tue, 05 Nov 2013 16:31:21 +0900
+In-Reply-To: <20131101092759.GC27063@gmail.com> (Ingo Molnar's message of
+	"Fri, 1 Nov 2013 10:27:59 +0100")
+Message-ID: <87bo1zz4mu.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1381784555-18344-1-git-send-email-marek@goldelico.com>
-References: <1381784555-18344-1-git-send-email-marek@goldelico.com>
-Date: Tue, 5 Nov 2013 08:24:08 +0100
-Message-ID: <CAAfyv34j+YhEjtHyf7zg5oBoCV5ROEXow8VV0PQNHLTF5uDZJg@mail.gmail.com>
-Subject: Re: [PATCH 0/3] omapdss: venc: Add support for bypass and acbias.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Tony Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fbdev@vger.kernel.org,
-        NeilBrown <neilb@suse.de>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        Marek Belisko <marek@goldelico.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Ingo,
 
-ping.
-
-On Mon, Oct 14, 2013 at 11:02 PM, Marek Belisko <marek@goldelico.com> wrote:
-> This patches is adding bypass and acbias functionality to omapdss venc driver.
-> In first patch we export updatin bypass and acbias in devconf1 register. Next patch
-> add handling for updating in venc driver and last patch add driver for opa362 which
-> is used on gta04 board and set bypass + acbias.
-Is there a chance to get this series to 3.13? Thanks.
+On Fri, 1 Nov 2013 10:27:59 +0100, Ingo Molnar wrote:
+> * Namhyung Kim <namhyung@kernel.org> wrote:
 >
-> Marek Belisko (3):
->   arm: omap2: Export devconf1 bypass and acbias.
->   video: venc: Add new callback and handling for bypass and acbias
->     setup.
->   omapdss: Add OPA362 analog video amplifier driver.
+>> >> > 2)
+>> >> >
+>> >> > Is it possible to configure the default 'report -g' style, so that 
+>> >> > people who'd like to use it all the time don't have to type '-g 
+>> >> > cumulative' all the time?
+>> >> 
+>> >> Hmm.. maybe I can add support for the 'report.call-graph' config option.
+>> >
+>> > If we display your new 'total' field by default then it's not as 
+>> > pressing to me :)
+>> 
+>> Do you mean -g cumulative without 'self' column?
 >
->  arch/arm/mach-omap2/Makefile                       |   2 +
->  arch/arm/mach-omap2/control.h                      |   2 +
->  arch/arm/mach-omap2/omap3-tvout.c                  |  36 +++
->  drivers/video/omap2/displays-new/Kconfig           |   6 +
->  drivers/video/omap2/displays-new/Makefile          |   1 +
->  .../video/omap2/displays-new/amplifier-opa362.c    | 294 +++++++++++++++++++++
->  drivers/video/omap2/dss/venc.c                     |  21 ++
->  include/linux/omap-tvout.h                         |  14 +
->  include/video/omap-panel-data.h                    |  17 ++
->  include/video/omapdss.h                            |   2 +
->  10 files changed, 395 insertions(+)
->  create mode 100644 arch/arm/mach-omap2/omap3-tvout.c
->  create mode 100644 drivers/video/omap2/displays-new/amplifier-opa362.c
->  create mode 100644 include/linux/omap-tvout.h
+> So, if by default we display both 'self' and 'total' and sort by 
+> 'total', then I'm personally a happy camper: while it's a change of 
+> the default perf report output, it's also a step forward.
 >
-> --
-> 1.8.1.2
+> But some people might complain about it once this hits v3.13 (or 
+> v3.14) and might want to hide individual columns and have different 
+> sorting preferences.
 >
+> So out of defensive caution you might want to provide toggles for 
+> such things, maybe even generalize it a bit to allow arbitrary 
+> hiding/display of individual colums in perf report.
+>
+> That would probably also make it easier to do minimal tweaks to the 
+> upstream reporting defaults.
 
-Marek
+Okay, so what would the interface look like?
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+I think it'd better to separate the option and pass column and
+(optional) sort key argument.
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
+  --cumulative both,total (default)
+  --cumulative both,self
+  --cumulative total
+  --cumulative self (meaningless?)
+
+Maybe we need a config option and a single letter option for the default
+case like --call-graph and -g options do.
+
+What do you think?
+
+Thanks,
+Namhyung
