@@ -1,28 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab3KEHiZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 02:38:25 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47713 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab3KEHiY (ORCPT
+	id S1751996Ab3KEHlp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 02:41:45 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:55782 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759Ab3KEHlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 02:38:24 -0500
-X-AuditID: 9c930179-b7c44ae000000c83-2b-5278a06e3d39
+	Tue, 5 Nov 2013 02:41:44 -0500
+X-AuditID: 9c93017e-b7c22ae000005611-07-5278a1359d74
 From: Namhyung Kim <namhyung@kernel.org>
 To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH] perf tools: Allow multiple cpus record for -p option
-References: <1383321165-25252-1-git-send-email-jolsa@redhat.com>
-Date: Tue, 05 Nov 2013 16:38:22 +0900
-In-Reply-To: <1383321165-25252-1-git-send-email-jolsa@redhat.com> (Jiri Olsa's
-	message of "Fri, 1 Nov 2013 16:52:45 +0100")
-Message-ID: <877gcnz4b5.fsf@sejong.aot.lge.com>
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
+Subject: Re: [PATCH 07/14] perf tools: Update cpumode for each cumulative entry
+References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
+	<1383202576-28141-8-git-send-email-namhyung@kernel.org>
+	<20131101125551.GE10041@krava.brq.redhat.com>
+Date: Tue, 05 Nov 2013 16:41:41 +0900
+In-Reply-To: <20131101125551.GE10041@krava.brq.redhat.com> (Jiri Olsa's
+	message of "Fri, 1 Nov 2013 13:55:51 +0100")
+Message-ID: <8738nbz45m.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -31,53 +34,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  1 Nov 2013 16:52:45 +0100, Jiri Olsa wrote:
-> Currently we don't create default CPU map for task related
-> target, like:
->
->   $ perf record -p <pid>
->
-> This makes record command to disable inherited events.
-> which is not desired behaviour (we have special option
-> for that (-i) anyway).
->
-> Fixing this by creating default CPU map for task related
-> processes.
->
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Adrian Hunter <adrian.hunter@intel.com>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> ---
->  tools/perf/util/evlist.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-> index 0582f67..52bb127 100644
-> --- a/tools/perf/util/evlist.c
-> +++ b/tools/perf/util/evlist.c
-> @@ -804,7 +804,7 @@ int perf_evlist__create_maps(struct perf_evlist *evlist,
->  		return -1;
->  
->  	if (perf_target__has_task(target))
-> -		evlist->cpus = cpu_map__dummy_new();
-> +		evlist->cpus = cpu_map__new(target->cpu_list);
+On Fri, 1 Nov 2013 13:55:51 +0100, Jiri Olsa wrote:
+> On Thu, Oct 31, 2013 at 03:56:09PM +0900, Namhyung Kim wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> The cpumode and level in struct addr_localtion was set for a sample
+>> and but updated as cumulative callchains were added.  This led to have
+>> non-matching symbol and cpumode in the output.
+>> 
+>> Update it accordingly based on the fact whether the map is a part of
+>> the kernel or not.
 
-Just a side note, if the target has task, the cpu list should be NULL as
-task target has a precedence.  Please see perf_target__validate().
+[SNIP]
 
-But I'm fine with the change itself. :)
+>> @@ -468,6 +470,27 @@ iter_next_cumulative_entry(struct add_entry_iter *iter __maybe_unused,
+>>  	if (al->sym == NULL)
+>>  		return 0;
+>>  
+>> +	if (al->map->groups == &iter->machine->kmaps) {
+>> +		if (machine__is_host(iter->machine)) {
+>> +			al->cpumode = PERF_RECORD_MISC_KERNEL;
+>> +			al->level = 'k';
+>> +		} else {
+>> +			al->cpumode = PERF_RECORD_MISC_GUEST_KERNEL;
+>> +			al->level = 'g';
+>> +		}
+>> +	} else {
+>> +		if (machine__is_host(iter->machine)) {
+>> +			al->cpumode = PERF_RECORD_MISC_USER;
+>> +			al->level = '.';
+>> +		} else if (perf_guest) {
+>> +			al->cpumode = PERF_RECORD_MISC_GUEST_USER;
+>> +			al->level = 'u';
+>> +		} else {
+>> +			al->cpumode = PERF_RECORD_MISC_HYPERVISOR;
+>> +			al->level = 'H';
+>> +		}
+>> +	}
+>> +
+>
+> Looks like this is what thread__find_addr_map does as well.
+> Could above code go into a function used by both places?
+
+In fact, it does the reverse - the thread__find_addr_map() tries to find
+a map group (and map) using cpumode, but it wants to know cpumode using
+map (and map group).
 
 Thanks,
 Namhyung
-
-
->  	else if (!perf_target__has_cpu(target) && !target->uses_mmap)
->  		evlist->cpus = cpu_map__dummy_new();
->  	else
