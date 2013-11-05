@@ -1,54 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211Ab3KEEbZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 23:31:25 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:26760 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819Ab3KEEbY (ORCPT
+	id S1754300Ab3KEEiJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 23:38:09 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:49998 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754095Ab3KEEiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 23:31:24 -0500
-X-Spam-Score: -106.8
-Message-ID: <5278745A.9000400@asianux.com>
-Date: Tue, 05 Nov 2013 12:30:18 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 4 Nov 2013 23:38:07 -0500
 MIME-Version: 1.0
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        gang.chen@asianux.com, tglx@linutronix.de
-CC: tip-bot for Chen Gang <tipbot@zytor.com>,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/build] x86, defconfig: Add DEVTMPFS and DEVTMPFS_MOUNT
- to *86*_defconfig
-References: <52784DFF.8040004@asianux.com> <tip-7f71be4c9f9a334e7bd0adc66225db4eb88c3bc4@git.kernel.org>
-In-Reply-To: <tip-7f71be4c9f9a334e7bd0adc66225db4eb88c3bc4@git.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1383621014-11202-1-git-send-email-rongjun.ying@csr.com>
+References: <1383621014-11202-1-git-send-email-rongjun.ying@csr.com>
+Date: Tue, 5 Nov 2013 10:08:06 +0530
+Message-ID: <CAKohpo=qR5WD=5VjGmeRraQ+_m5NUn8xiP5Z_ZuZWLv1hNx5KA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] cpufreq: cpufreq-cpu0: use the max voltage instead of voltage-tolerance
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjying <rjying@gmail.com>, Shawn Guo <shawn.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        rongjun.ying@gcsr.com, Rongjun Ying <rongjun.ying@csr.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2013 12:03 PM, tip-bot for Chen Gang wrote:
-> Commit-ID:  7f71be4c9f9a334e7bd0adc66225db4eb88c3bc4
-> Gitweb:     http://git.kernel.org/tip/7f71be4c9f9a334e7bd0adc66225db4eb88c3bc4
-> Author:     Chen Gang <gang.chen@asianux.com>
-> AuthorDate: Tue, 5 Nov 2013 09:46:39 +0800
-> Committer:  H. Peter Anvin <hpa@zytor.com>
-> CommitDate: Mon, 4 Nov 2013 20:01:55 -0800
-> 
-> x86, defconfig: Add DEVTMPFS and DEVTMPFS_MOUNT to *86*_defconfig
-> 
-> The defconfig kernel can not run under neither fedora16 x86_64 laptop
-> nor fedora17 x86_64 pc. After enable DEVTMPFS* in x86_64_defconfig, it
-> will be OK.
-> 
-> DEVTMPFS* is only related with software, so for i386_defconfig may also
-> need them (at least, it has no negative effect for defconfig).
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> Link: http://lkml.kernel.org/r/52784DFF.8040004@asianux.com
-> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Adding shawn in cc list..
 
-
-Thanks.
--- 
-Chen Gang
+On 5 November 2013 08:40, rjying <rjying@gmail.com> wrote:
+> From: Rongjun Ying <rongjun.ying@csr.com>
+>
+> Sometime the regulator can't supply appropriate voltages for requestion of cpu.
+> All voltage tolerance value can't figure out a good voltage.
+>
+> Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
+> ---
+>  drivers/cpufreq/cpufreq-cpu0.c |   17 ++++++++++-------
+>  1 files changed, 10 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+> index c522a95..0c9e6b9 100644
+> --- a/drivers/cpufreq/cpufreq-cpu0.c
+> +++ b/drivers/cpufreq/cpufreq-cpu0.c
+> @@ -23,7 +23,7 @@
+>  #include <linux/slab.h>
+>
+>  static unsigned int transition_latency;
+> -static unsigned int voltage_tolerance; /* in percentage */
+> +static unsigned int voltage_max;
+>
+>  static struct device *cpu_dev;
+>  static struct clk *cpu_clk;
+> @@ -45,7 +45,7 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
+>  {
+>         struct cpufreq_freqs freqs;
+>         struct opp *opp;
+> -       unsigned long volt = 0, volt_old = 0, tol = 0;
+> +       unsigned long volt = 0, volt_old = 0;
+>         long freq_Hz, freq_exact;
+>         unsigned int index;
+>         int ret;
+> @@ -82,7 +82,6 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
+>                 }
+>                 volt = opp_get_voltage(opp);
+>                 rcu_read_unlock();
+> -               tol = volt * voltage_tolerance / 100;
+>                 volt_old = regulator_get_voltage(cpu_reg);
+>         }
+>
+> @@ -92,7 +91,7 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
+>
+>         /* scaling up?  scale voltage before frequency */
+>         if (!IS_ERR(cpu_reg) && freqs.new > freqs.old) {
+> -               ret = regulator_set_voltage_tol(cpu_reg, volt, tol);
+> +               ret = regulator_set_voltage(cpu_reg, volt, voltage_max);
+>                 if (ret) {
+>                         pr_err("failed to scale voltage up: %d\n", ret);
+>                         freqs.new = freqs.old;
+> @@ -104,14 +103,14 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
+>         if (ret) {
+>                 pr_err("failed to set clock rate: %d\n", ret);
+>                 if (!IS_ERR(cpu_reg))
+> -                       regulator_set_voltage_tol(cpu_reg, volt_old, tol);
+> +                       regulator_set_voltage(cpu_reg, volt_old, voltage_max);
+>                 freqs.new = freqs.old;
+>                 goto post_notify;
+>         }
+>
+>         /* scaling down?  scale voltage after frequency */
+>         if (!IS_ERR(cpu_reg) && freqs.new < freqs.old) {
+> -               ret = regulator_set_voltage_tol(cpu_reg, volt, tol);
+> +               ret = regulator_set_voltage(cpu_reg, volt, voltage_max);
+>                 if (ret) {
+>                         pr_err("failed to scale voltage down: %d\n", ret);
+>                         clk_set_rate(cpu_clk, freqs.old * 1000);
+> @@ -224,7 +223,11 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
+>                 goto out_put_node;
+>         }
+>
+> -       of_property_read_u32(np, "voltage-tolerance", &voltage_tolerance);
+> +       ret = of_property_read_u32(np, "voltage-max", &voltage_max);
+> +       if (ret) {
+> +               pr_err("failed to get max voltage: %d\n", ret);
+> +               goto out_put_node;
+> +       }
+>
+>         if (of_property_read_u32(np, "clock-latency", &transition_latency))
+>                 transition_latency = CPUFREQ_ETERNAL;
+> --
+> 1.7.5.4
+>
