@@ -1,151 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754483Ab3KEMfi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 07:35:38 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:50625 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753957Ab3KEMfg (ORCPT
+	id S1754684Ab3KEMgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 07:36:07 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:38840 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754331Ab3KEMgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 07:35:36 -0500
-Message-ID: <5278E610.2010202@hitachi.com>
-Date: Tue, 05 Nov 2013 21:35:28 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 5 Nov 2013 07:36:05 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: gitorious v3.12-rc1-n900 tree
+Date: Tue, 5 Nov 2013 13:35:57 +0100
+User-Agent: KMail/1.13.7 (Linux/3.11.0-13-generic; KDE/4.11.2; x86_64; ; )
+Cc: Jenny TC <jenny.tc@intel.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        linux-kernel@vger.kernel.org
+References: <201310240806.49340@pali> <20131026002500.GA16970@earth.universe> <20131105120016.GA30670@amd.pavel.ucw.cz>
+In-Reply-To: <20131105120016.GA30670@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?VXdlIEtsZQ==?= =?UTF-8?B?aW5lLUvDtm5pZw==?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH -tip v2 3/3] [BUGFIX] kprobes: Prohibit probing on func_ptr_is_kernel_text
-References: <20131101112530.14657.87835.stgit@kbuild-fedora.novalocal> <20131101112537.14657.88496.stgit@kbuild-fedora.novalocal> <20131104210053.76c37210@gandalf.local.home> <20131105060901.GA29936@gmail.com> <5278973A.1010705@hitachi.com> <20131105070537.GA2007@gmail.com> <5278D89B.1070806@hitachi.com>
-In-Reply-To: <5278D89B.1070806@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed;
+  boundary="nextPart1409417.3ZQgrll8Cf";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201311051336.00159@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/05 20:38), Masami Hiramatsu wrote:
-> (2013/11/05 16:05), Ingo Molnar wrote:
->>
->> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
->>
->>> (2013/11/05 15:09), Ingo Molnar wrote:
->>>>
->>>> * Steven Rostedt <rostedt@goodmis.org> wrote:
->>>>
->>>>> On Fri, 01 Nov 2013 11:25:37 +0000
->>>>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
->>>>>
->>>>>> Prohibit probing on func_ptr_is_kernel_text().
->>>>>> Since the func_ptr_is_kernel_text() is called from
->>>>>> notifier_call_chain() which is called from int3 handler,
->>>>>> probing it may cause double int3 fault and kernel will
->>>>>> reboot.
->>>>>>
->>>>>> This happenes when the kernel built with CONFIG_DEBUG_NOTIFIERS=y.
->>>>>>
->>>>>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->>>>>> Cc: Andrew Morton <akpm@linux-foundation.org>
->>>>>> Cc: "Uwe Kleine-König" <u.kleine-koenig@pengutronix.de>
->>>>>> Cc: Borislav Petkov <bp@suse.de>
->>>>>> Cc: Ingo Molnar <mingo@kernel.org>
->>>>>> ---
->>>>>>  kernel/extable.c |    2 +-
->>>>>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>>>>>
->>>>>> diff --git a/kernel/extable.c b/kernel/extable.c
->>>>>> index 832cb28..022fb25 100644
->>>>>> --- a/kernel/extable.c
->>>>>> +++ b/kernel/extable.c
->>>>>> @@ -129,7 +129,7 @@ int kernel_text_address(unsigned long addr)
->>>>>>   * pointer is part of the kernel text, we need to do some
->>>>>>   * special dereferencing first.
->>>>>>   */
->>>>>> -int func_ptr_is_kernel_text(void *ptr)
->>>>>> +int nokprobe func_ptr_is_kernel_text(void *ptr)
->>>>>>  {
->>>>>>  	unsigned long addr;
->>>>>>  	addr = (unsigned long) dereference_function_descriptor(ptr);
->>>>>>
->>>>>
->>>>> One thing I worry about the "nokprobe" annotation, is that it moves the 
->>>>> location of the function out of local. This function no exists in the 
->>>>> section with its users. Same with the debug functions in the other 
->>>>> patch.
->>>>
->>>> Well, it's a bit like noinline, that changes the position of the function 
->>>> as well. So it's not true that 'noxyz' attributes don't affect function 
->>>> placement - they often don't, but some do.
->>>>
->>>> The more important aspect is that 'noprobe' makes it really, really 
->>>> apparent what the tag is about, at first sight.
->>>>
->>>> _How_ the 'non probing' is achived is an implementational detail when 
->>>> kprobes are enabled: right now it puts a function into a separate section, 
->>>> but we could just a much build a list of function names and check against 
->>>> it at probe insertion time.
->>>
->>> Actually, kprobes already has it -- kprobes_blacklist. Currently the 
->>> list is manually maintained in kprobes.c separated from the function 
->>> definition. [...]
->>
->> Yes, I meant a list that is built automatically from the 'noprobe' 
->> annotations.
-> 
-> Agreed. That makes maintenance work simple, and we can remove
-> ".kprobes.text" section.
-> 
->>> [...] I hope to build the list when the kernel build time if possible... 
->>> Would you have any idea to classify some annotated(but no side-effect) 
->>> functions?
->>
->> The macro magic I can think of would need to change the syntax of the 
->> function definition - for example that is how the SYSCALL_DEFINE*() macros 
->> work.
-> 
-> Would you mean something like the below macro? :)
-> 
-> NOKPROBE_SYMBOL(int, func_ptr_is_kernel_text)(void *ptr)
-> 
-> which is expanded as;
-> 
-> static struct nokprobe_entry __used
-> __nokprobe_entry_func_ptr_is_kernel_text = {
->   .name = "func_ptr_is_kernel_text"
-> };
-> static struct kprobe_blacklist_entry __used
-> __attribute__((section("_nokprobe_list")))
-> __p_nokprobe_entry_func_ptr_is_kernel_text = &__nokprobe_entry_func_ptr_is_kernel_text;
-> int func_ptr_is_kernel_text(void *ptr)
-> 
+--nextPart1409417.3ZQgrll8Cf
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-By the way, this method can be done in C file, but not in asm file.
-And there are many sensitive entries in the entry_*.S. I think we have
-two options.
+On Tuesday 05 November 2013 13:00:16 Pavel Machek wrote:
+> Hi!
+>=20
+> I tried pulling current linux-n900 tree from gitorious.
 
-(A) keep the kprobes.text(or nokprobe.text) section for such assembler parts.
-(B) Put a starter symbol and end symbol in such region and make a list
- of symbols between them in build time by using nm.
+Hi, use branch v3.12-rc5-n900 (not -rc1) and consider using=20
+rx51_defconfig.
 
-Anyway, until removing all __kprobes from kernel, we can not remove the
-kprobes.text section. So, at the first step I just try to introduce
-above macro and apply it to only the symbols in kprobes_blacklist.
-After that, I'll try to classify the real unsafe entries and apply
-the new macro. Eventually, I think I can remove all __kprobes.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Thank you,
+--nextPart1409417.3ZQgrll8Cf
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+iEYEABECAAYFAlJ45jAACgkQi/DJPQPkQ1IMsACgsUVWz7bZC337QlbbxhtzUZmv
+UvMAn2yW0Q+8z9UsS6DaYC1yt/JHEyGM
+=zdV0
+-----END PGP SIGNATURE-----
 
-
+--nextPart1409417.3ZQgrll8Cf--
