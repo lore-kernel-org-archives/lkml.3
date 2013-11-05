@@ -1,59 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab3KEAxW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 19:53:22 -0500
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:34021 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833Ab3KEAxD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 19:53:03 -0500
-X-Authority-Analysis: v=2.0 cv=LKjkseq9 c=1 sm=0 a=3SewDSjaRW4vdJyuxQ33ZQ==:17 a=DeBnktw0k-IA:10 a=S7odh0Gf1mcA:10 a=S1A5HrydsesA:10 a=fxJcL_dCAAAA:8 a=KGjhK52YXX0A:10 a=n2y2MpndqSQA:10 a=7Z2EJvZXTn7YVNZo5r0A:9 a=2eKvNQJKnqYA:10 a=3SewDSjaRW4vdJyuxQ33ZQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 72.238.73.171
-From: Phillip Susi <psusi@ubuntu.com>
-To: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] libata: avoid waking disk to check power
-Date: Mon,  4 Nov 2013 19:53:00 -0500
-Message-Id: <1383612780-6591-2-git-send-email-psusi@ubuntu.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1383612780-6591-1-git-send-email-psusi@ubuntu.com>
-References: <1383612780-6591-1-git-send-email-psusi@ubuntu.com>
+	id S1754122Ab3KEAxc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 19:53:32 -0500
+Received: from mga14.intel.com ([143.182.124.37]:32069 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753833Ab3KEAxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 19:53:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="316987204"
+Message-ID: <52783EFA.5080901@intel.com>
+Date: Tue, 05 Nov 2013 08:42:34 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: rjw@rjwysocki.net, viresh.kumar@linaro.org, dipankar@in.ibm.com,
+        fweisbec@gmail.com, youquan.song@intel.com, riel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Tick: Introduce tick_nohz_check() to check nohz enable
+ status
+References: <1383036537-30362-1-git-send-email-tianyu.lan@intel.com> <20131029095135.GH4126@linux.vnet.ibm.com> <526F8E21.1030702@intel.com> <527710C8.8020908@intel.com> <20131104095258.GI3947@linux.vnet.ibm.com>
+In-Reply-To: <20131104095258.GI3947@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a disk is in SLEEP mode it can not respond to commands,
-including the CHECK POWER command.  Instead of waking up the
-sleeping disk, fake the reply to the CHECK POWER command to
-indicate the disk is in standby mode.  This prevents udisks
-from waking up sleeping disks when it polls to see if they
-are awake or not before trying to read their smart status.
+On 2013年11月04日 17:52, Paul E. McKenney wrote:
+> On Mon, Nov 04, 2013 at 11:13:12AM +0800, Lan Tianyu wrote:
+>> On 2013年10月29日 18:29, Lan Tianyu wrote:
+>>> On 10/29/2013 05:51 PM, Paul E. McKenney wrote:
+>>>> On Tue, Oct 29, 2013 at 04:48:56PM +0800, Lan Tianyu wrote:
+>>>>> In some cases, nohz enable status needs to be checked. E.G, in RCU
+>>>>> and cpufreq
+>>>>> ondemand governor. So add tick_nohz_check() to return
+>>>>> tick_nohz_enabled value
+>>>>> And use tick_nohz_check() instead of referencing tick_nohz_enabled in
+>>>>> the rcutree_plugin.h.
+>>>>>
+>>>>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+>>>>
+>>>> NACK on the rcutree change unless you put the ACCESS_ONCE() in.
+>>>>
+>>>> Or is there some reason that ACCESS_ONCE() is not needed?  If so, what
+>>>> is that reason?
+>>>
+>>> Hi Paul:
+>>>
+>>> Thanks for review. When I change this code, I find the tick_nohz_enabled
+>>> isn't changed dynamically. It's only changed during parsing kernel
+>>> params when "nohz=off/on" is set. Except this, it will not be changed.
+>>> So I ignored ACCESS_ONCE(). If necessary, I can add it back.
+>>
+>> Hi Paul:
+>> 	Does this reason make sense to you? Or you still prefer to add
+>> ACCESS_ONCE() in the new tick_nohz_check()?
+> 
+> I prefer the ACCESS_ONCE().  It adds little or no overhead, and Frederic
+> has been heard to say that he mkight allow tick_nohz_check() to change
+> in the future.
+> 
 
-Signed-off-by: Phillip Susi <psusi@ubuntu.com>
----
- drivers/ata/libata-core.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+Ok. I will update it.
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 83b1a9f..573d151 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -5084,6 +5084,13 @@ void ata_qc_issue(struct ata_queued_cmd *qc)
- 
- 	/* if device is sleeping, schedule reset and abort the link */
- 	if (unlikely(qc->dev->flags & ATA_DFLAG_SLEEPING)) {
-+		if (unlikely(qc->tf.command == ATA_CMD_CHK_POWER))
-+		{
-+			/* fake reply to avoid waking drive */
-+			qc->result_tf.nsect = 0;
-+			ata_qc_complete(qc);
-+			return;
-+		}
- 		link->eh_info.action |= ATA_EH_RESET;
- 		ata_ehi_push_desc(&link->eh_info, "waking up from sleep");
- 		ata_link_abort(link);
+> 							Thanx, Paul
+> 
+>>>>> ---
+>>>>>   include/linux/tick.h     | 2 ++
+>>>>>   kernel/rcutree_plugin.h  | 4 +---
+>>>>>   kernel/time/tick-sched.c | 8 +++++++-
+>>>>>   3 files changed, 10 insertions(+), 4 deletions(-)
+>>>>>
+>>>>> diff --git a/include/linux/tick.h b/include/linux/tick.h
+>>>>> index 5128d33..a9c5374 100644
+>>>>> --- a/include/linux/tick.h
+>>>>> +++ b/include/linux/tick.h
+>>>>> @@ -136,6 +136,7 @@ static inline int tick_nohz_tick_stopped(void)
+>>>>>   extern void tick_nohz_idle_enter(void);
+>>>>>   extern void tick_nohz_idle_exit(void);
+>>>>>   extern void tick_nohz_irq_exit(void);
+>>>>> +extern int tick_nohz_check(void);
+>>>>>   extern ktime_t tick_nohz_get_sleep_length(void);
+>>>>>   extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
+>>>>>   extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+>>>>> @@ -155,6 +156,7 @@ static inline ktime_t
+>>>>> tick_nohz_get_sleep_length(void)
+>>>>>
+>>>>>       return len;
+>>>>>   }
+>>>>> +static inline int tick_nohz_check(void) { return 0; }
+>>>>>   static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) {
+>>>>> return -1; }
+>>>>>   static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) {
+>>>>> return -1; }
+>>>>>   # endif /* !CONFIG_NO_HZ_COMMON */
+>>>>> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+>>>>> index 130c97b..af167ec 100644
+>>>>> --- a/kernel/rcutree_plugin.h
+>>>>> +++ b/kernel/rcutree_plugin.h
+>>>>> @@ -1627,8 +1627,6 @@ module_param(rcu_idle_gp_delay, int, 0644);
+>>>>>   static int rcu_idle_lazy_gp_delay = RCU_IDLE_LAZY_GP_DELAY;
+>>>>>   module_param(rcu_idle_lazy_gp_delay, int, 0644);
+>>>>>
+>>>>> -extern int tick_nohz_enabled;
+>>>>> -
+>>>>>   /*
+>>>>>    * Try to advance callbacks for all flavors of RCU on the current CPU.
+>>>>>    * Afterwards, if there are any callbacks ready for immediate
+>>>>> invocation,
+>>>>> @@ -1718,7 +1716,7 @@ static void rcu_prepare_for_idle(int cpu)
+>>>>>       int tne;
+>>>>>
+>>>>>       /* Handle nohz enablement switches conservatively. */
+>>>>> -    tne = ACCESS_ONCE(tick_nohz_enabled);
+>>>>> +    tne = tick_nohz_check();
+>>>>>       if (tne != rdtp->tick_nohz_enabled_snap) {
+>>>>>           if (rcu_cpu_has_callbacks(cpu, NULL))
+>>>>>               invoke_rcu_core(); /* force nohz to see update. */
+>>>>> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+>>>>> index 3612fc7..d381a22 100644
+>>>>> --- a/kernel/time/tick-sched.c
+>>>>> +++ b/kernel/time/tick-sched.c
+>>>>> @@ -361,7 +361,13 @@ void __init tick_nohz_init(void)
+>>>>>   /*
+>>>>>    * NO HZ enabled ?
+>>>>>    */
+>>>>> -int tick_nohz_enabled __read_mostly  = 1;
+>>>>> +static int tick_nohz_enabled __read_mostly  = 1;
+>>>>> +
+>>>>> +int tick_nohz_check(void)
+>>>>> +{
+>>>>> +    return    tick_nohz_enabled;
+>>>>> +}
+>>>>> +EXPORT_SYMBOL_GPL(tick_nohz_check);
+>>>>>
+>>>>>   /*
+>>>>>    * Enable / Disable tickless mode
+>>>>> -- 
+>>>>> 1.8.4.rc0.1.g8f6a3e5.dirty
+>>>>>
+>>>>
+>>>
+>>
+>>
+>> -- 
+>> Best regards
+>> Tianyu Lan
+>>
+> 
+
+
 -- 
-1.8.3.2
-
+Best regards
+Tianyu Lan
