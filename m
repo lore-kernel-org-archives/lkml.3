@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab3KEKmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 05:42:19 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:33643 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab3KEKmS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 05:42:18 -0500
-From: Jamie Iles <jamie.iles@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jamie Iles <jamie.iles@oracle.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCHv2] recordmcount.pl: add support for __fentry__
-Date: Tue,  5 Nov 2013 10:42:09 +0000
-Message-Id: <1383648129-10724-1-git-send-email-jamie.iles@oracle.com>
-X-Mailer: git-send-email 1.8.4.2
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1754339Ab3KEKnG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 05:43:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23484 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753931Ab3KEKnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 05:43:04 -0500
+Date: Tue, 5 Nov 2013 05:42:56 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        chutzpah@gentoo.org, liguangc@cn.ibm.com
+Subject: Re: [PATCH] [RFC] vfs: don't revalidate dentries that serve as
+ mountpoints
+Message-ID: <20131105054256.59328806@tlielax.poochiereds.net>
+In-Reply-To: <CADT32eJ_cqej0wnjKOZk1x0UtRqoNy201hFt8hQLLShjcbp3Dg@mail.gmail.com>
+References: <1383614186-8039-1-git-send-email-jlayton@redhat.com>
+	<CADT32eJ_cqej0wnjKOZk1x0UtRqoNy201hFt8hQLLShjcbp3Dg@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With gcc 4.6.0 the -mfentry feature places the function profiling call
-at the start of the function. When this is used, the call is to
-__fentry__ and not mcount.  This is required for Ksplice as the C
-version of recordmcount doesn't insert section symbols for the
-__mcount_loc section so we fall back to the perl version.
+On Mon, 4 Nov 2013 21:00:23 -0600
+Shirish Pargaonkar <shirishpargaonkar@gmail.com> wrote:
 
-Based on 48bb5dc6cd9d30fe0d594947563da1f8bd9abada (ftrace: Make
-recordmcount.c handle __fentry__).
+> For a similar issue in cifs vfs (samba bugzilla 8950), I was going to try
+> unset the bit DCACHE_OP_REVALIDATE of d_flags of the
+> dentry.  Would something like work for the mountpoint dentry?
+> 
+> 
 
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Jamie Iles <jamie.iles@oracle.com>
----
+I don't think that's the same issue at all. The problem there is that
+you need to instantiate a dentry for the root of the mount on the
+client, when you don't have any information about the parents.
 
-v2: describe the problem for Ksplice and include a hunk for x86_64 where the
-regex is overridden.
+In this case, we have dentries that are acting as mountpoints that were
+getting invalidated.
 
- scripts/recordmcount.pl | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> On Mon, Nov 4, 2013 at 7:16 PM, Jeff Layton <jlayton@redhat.com> wrote:
+> > We had a couple of reports of people that are mounting NFS filesystems,
+> > and then bind mounting certain local files onto dentries in that nfs
+> > mount (sort of like a poor-man's unionmount).
+> >
+> > This all works well until the dentry serving as the mountpoint fails
+> > d_revalidate. The dentry will end up being invalidated which makes the
+> > bind mount unreachable via pathwalk.
+> >
+> > It doesn't make much sense to me to allow dentries to serve as
+> > mountpoints to end up invalidated, so there's no real point in
+> > attempting to d_revalidate them at all.
+> >
+> > Reported-by: Patrick McLean <chutzpah@gentoo.org>
+> > Reported-by: Guang Cheng Li <liguangc@cn.ibm.com>
+> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> > ---
+> >  fs/namei.c | 3 +++
+> >  1 file changed, 3 insertions(+)
+> >
+> > diff --git a/fs/namei.c b/fs/namei.c
+> > index caa2805..5b10ad0 100644
+> > --- a/fs/namei.c
+> > +++ b/fs/namei.c
+> > @@ -585,6 +585,9 @@ drop_root_mnt:
+> >
+> >  static inline int d_revalidate(struct dentry *dentry, unsigned int flags)
+> >  {
+> > +       /* dentries that serve as mountpoints are always considered valid */
+> > +       if (d_mountpoint(dentry))
+> > +               return 1;
+> >         return dentry->d_op->d_revalidate(dentry, flags);
+> >  }
+> >
+> > --
+> > 1.8.3.1
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
-index a674fd5..d0da663 100755
---- a/scripts/recordmcount.pl
-+++ b/scripts/recordmcount.pl
-@@ -214,13 +214,13 @@ $local_regex = "^[0-9a-fA-F]+\\s+t\\s+(\\S+)";
- $weak_regex = "^[0-9a-fA-F]+\\s+([wW])\\s+(\\S+)";
- $section_regex = "Disassembly of section\\s+(\\S+):";
- $function_regex = "^([0-9a-fA-F]+)\\s+<(.*?)>:";
--$mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\smcount\$";
-+$mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s(mcount|__fentry__)\$";
- $section_type = '@progbits';
- $mcount_adjust = 0;
- $type = ".long";
- 
- if ($arch eq "x86_64") {
--    $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\smcount([+-]0x[0-9a-zA-Z]+)?\$";
-+    $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s(mcount|__fentry__)([+-]0x[0-9a-zA-Z]+)?\$";
-     $type = ".quad";
-     $alignment = 8;
-     $mcount_adjust = -1;
+
 -- 
-1.8.4.2
-
+Jeff Layton <jlayton@redhat.com>
