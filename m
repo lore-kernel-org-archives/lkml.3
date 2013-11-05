@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab3KEX4W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 18:56:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59523 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755916Ab3KEX4U (ORCPT
+	id S1755886Ab3KEX6y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 18:58:54 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:63864 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755668Ab3KEX6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 18:56:20 -0500
-Date: Tue, 5 Nov 2013 15:56:19 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH] mm: create a separate slab for page->ptl allocation
-Message-Id: <20131105155619.021f32eba1ca8f15a73ed4c9@linux-foundation.org>
-In-Reply-To: <20131105224217.GC20167@shutemov.name>
-References: <1382442839-7458-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<20131105150145.734a5dd5b5d455800ebfa0d3@linux-foundation.org>
-	<20131105224217.GC20167@shutemov.name>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 5 Nov 2013 18:58:53 -0500
+Message-ID: <52798635.70209@gmail.com>
+Date: Tue, 05 Nov 2013 16:58:45 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: perf version not set when building out of tree
+References: <5272E86B.7090003@gmail.com> <20131101070219.GA21471@gmail.com>
+In-Reply-To: <20131101070219.GA21471@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Nov 2013 00:42:17 +0200 "Kirill A. Shutemov" <kirill@shutemov.name> wrote:
+On 11/1/13, 1:02 AM, Ingo Molnar wrote:
+> I think we should pack the PERF-VERSION-FILE with the tarball and
+> use that. This needs roughly 3 changes:
+>
+>   - make PERF-VERSION-FILE part of the tarball
+>   - make sure it's not zapped on 'make clean'
+>   - don't try to regenerate it if there's no git repository to get a version from
 
-> > >  #if USE_SPLIT_PTE_PTLOCKS
-> > > +struct kmem_cache *page_ptl_cachep;
-> > > +void __init ptlock_cache_init(void)
-> > > +{
-> > > +	if (sizeof(spinlock_t) > sizeof(long))
-> > > +		page_ptl_cachep = kmem_cache_create("page->ptl",
-> > > +				sizeof(spinlock_t), 0, SLAB_PANIC, NULL);
-> > > +}
-> > 
-> > Confused.  If (sizeof(spinlock_t) > sizeof(long)) happens to be false
-> > then the kernel will later crash.  It would be better to use BUILD_BUG_ON()
-> > here, if that works.  Otherwise BUG_ON.
-> 
-> if (sizeof(spinlock_t) > sizeof(long)) is false, we don't need dynamicly
-> allocate page->ptl. It's embedded to struct page itself. __ptlock_alloc()
-> never called in this case.
+Solution was actually kind of easy. The head commit is already saved to 
+HEAD file when the tar is generated:
 
-OK.  Please add a comment explaining this so the next reader doesn't get
-tripped up like I was.
+diff --git a/perf/tools/perf/util/PERF-VERSION-GEN 
+b/perf/tools/perf/util/PERF-VERSION-GEN
+index 15a77b7c0e36..2155882e7c1d 100755
+--- a/perf/tools/perf/util/PERF-VERSION-GEN
++++ b/perf/tools/perf/util/PERF-VERSION-GEN
+@@ -19,6 +19,9 @@ if test -d ../../.git -o -f ../../.git
+  then
+     TAG=$(git describe --abbrev=0 --match "v[0-9].[0-9]*" 2>/dev/null )
+     CID=$(git log -1 --abbrev=4 --pretty=format:"%h" 2>/dev/null) && 
+CID="-g$CID"
++elif test -f ../../HEAD
++then
++   TAG=$(cat ../../HEAD)
+  fi
+  if test -z "$TAG"
+  then
 
-Really the function shouldn't exist in this case.  It is __init so the
-sin is not terrible, but can this be arranged?
+David
