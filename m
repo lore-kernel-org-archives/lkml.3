@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab3KESA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 13:00:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36702 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754825Ab3KESAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 13:00:55 -0500
-Date: Tue, 5 Nov 2013 19:01:10 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Long <dave.long@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [PATCH] uprobes: introduce arch_uprobe->ixol
-Message-ID: <20131105180110.GA6943@redhat.com>
-References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-4-git-send-email-dave.long@linaro.org> <20131019163627.GA7837@redhat.com> <52671265.2020107@linaro.org> <20131029154006.GA22344@redhat.com> <20131104194901.GA28022@redhat.com> <527916F4.1010805@linaro.org>
+	id S1755282Ab3KESD5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 13:03:57 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:60086 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754866Ab3KESDz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 13:03:55 -0500
+Date: Tue, 5 Nov 2013 18:03:49 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jan =?iso-8859-1?Q?L=FCbbe?= <jlu@pengutronix.de>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH] typo fixes (coordiante -> coordinate) in am335x
+Message-ID: <20131105180349.GD30901@lee--X1>
+References: <1373901928-19605-1-git-send-email-zubair.lutfullah@gmail.com>
+ <20130821075828.GZ7656@atomide.com>
+ <1382198544.22609.8.camel@polaris.local>
+ <20131022090552.GE19112@lee--X1>
+ <1383667293.6753.35.camel@polaris.local>
+ <20131105171553.GB30901@lee--X1>
+ <1383673871.6753.36.camel@polaris.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <527916F4.1010805@linaro.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1383673871.6753.36.camel@polaris.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05, David Long wrote:
->
-> On 11/04/13 14:49, Oleg Nesterov wrote:
->> On 10/29, Oleg Nesterov wrote:
->>>
->> Seriouly, how about the patch below?
->>
->> In fact, given that you are going to reimplement set_swbp/orig_insn,
->> the new member is not strictly needed (afaics). But it looks more
->> clear this way, and we need s/MAX_UINSN_BYTES/sizeof()/ anyway.
->>
->> Oleg.
->> ---
->
-> I agree that this is cleaner than another weak callout.  I have it
-> working for ARM now.
+On Tue, 05 Nov 2013, Jan Lübbe wrote:
 
-OK, I am going to add this patch to my tree, thanks. Can I add your
-acked-by ?
+> On Tue, 2013-11-05 at 17:15 +0000, Lee Jones wrote:
+> > On Tue, 05 Nov 2013, Jan Lübbe wrote:
+> > 
+> > > On Tue, 2013-10-22 at 10:05 +0100, Lee Jones wrote:
+> > > > This is the first time this patch has been sent to me.
+> > > > 
+> > > > I need Dmitry's input (no pun intended) on how he's like to deal with
+> > > > this. At a bare minimum I'd like his Ack.
+> > > 
+> > > Is there anything I can do to push this forward? The earlier we get the
+> > > typo fixed in the documentation, the less chance that someone will use
+> > > it that way.
+> > 
+> > I think you should sent it again, but this time Cc the Device Tree
+> > list, Dmitry and myself when you submit.
+> 
+> The original patch was not from me. But sure, I can resend it.
 
-Oleg.
+I'm not worried about who re-sends the patch. Just make sure whoever
+does sends in correctly with regards to the $SUBJECT line etc. The one
+on this patch looks odd.
 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
