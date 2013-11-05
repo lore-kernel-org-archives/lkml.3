@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab3KEHQd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 02:16:33 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:45917 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072Ab3KEHQb (ORCPT
+	id S1754322Ab3KEHQp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 02:16:45 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:59769 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754258Ab3KEHQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 02:16:31 -0500
-Subject: Re: [PATCH] Generic WorkQueue Engine (GenWQE) device driver (v4)
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Reply-To: haver@linux.vnet.ibm.com
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
-        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
-        cascardo@linux.vnet.ibm.com, michael@ibmra.de,
-        Frank Haverkamp <haver@vnet.ibm.com>
-In-Reply-To: <20131104221524.GD14141@kroah.com>
-References: <1383125578-26202-1-git-send-email-haver@linux.vnet.ibm.com>
-	 <1383125578-26202-2-git-send-email-haver@linux.vnet.ibm.com>
-	 <20131030174403.GF20147@kroah.com>
-	 <1383583287.15642.29.camel@oc7383187364.ibm.com>
-	 <20131104221524.GD14141@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Tue, 05 Nov 2013 08:16:24 +0100
-Message-ID: <1383635784.11383.2.camel@oc7383187364.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110507-3548-0000-0000-0000070BD035
+	Tue, 5 Nov 2013 02:16:42 -0500
+X-AuditID: 9c93017e-b7c22ae000005611-98-52789b58faad
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>
+Subject: Re: [PATCH 02/14] perf tools: Introduce struct add_entry_iter
+References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
+	<1383202576-28141-3-git-send-email-namhyung@kernel.org>
+	<20131101120909.GC10041@krava.brq.redhat.com>
+Date: Tue, 05 Nov 2013 16:16:40 +0900
+In-Reply-To: <20131101120909.GC10041@krava.brq.redhat.com> (Jiri Olsa's
+	message of "Fri, 1 Nov 2013 13:09:09 +0100")
+Message-ID: <87k3gnz5bb.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Fri, 1 Nov 2013 13:09:09 +0100, Jiri Olsa wrote:
+> On Thu, Oct 31, 2013 at 03:56:04PM +0900, Namhyung Kim wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>
+> SNIP
+>
+>> +}
+>> +
+>> +static int
+>> +iter_add_next_nop_entry(struct add_entry_iter *iter __maybe_unused,
+>> +			struct addr_location *al __maybe_unused)
+>> +{
+>> +	return 0;
+>> +}
+>> +
+>> +static int
+>> +iter_prepare_mem_entry(struct add_entry_iter *iter, struct machine *machine,
+>> +		       struct perf_evsel *evsel, struct addr_location *al,
+>> +		       struct perf_sample *sample)
+>> +{
+>> +	union perf_event *event = iter->priv;
+>> +	struct mem_info *mi;
+>> +	u8 cpumode;
+>> +
+>> +	BUG_ON(event == NULL);
+>
+> the priv does not get assigned.. 'perf mem rep' aborts
+>
+> [jolsa@krava perf]$ ./perf mem rep --stdio
+> Aborted
+> perf: builtin-report.c:120: iter_prepare_mem_entry: Assertion `!(event == ((void *)0))' failed.
 
-Am Montag, den 04.11.2013, 14:15 -0800 schrieb Greg KH:
-> > I am using sysfs_create_group() now, but do I understand you
-> correctly
-> > that setting the const struct attribute_group **groups; in my device
-> > (where in my struct pci_device.dev?) is an even better way to
-> establish
-> > my sysfs attributes? Is there a function which I could call rather
-> than
-> > trying to find the right pointer?
-> 
-> Ugh, this is still a problem, I'm trying to work through how to have
-> individual drivers implement groups and sysfs files in a non-racy way.
-> The issue is your device was announced to userspace _before_ it was
-> bound to the driver, so there's no way to get the sysfs files to apply
-> before then.
-> 
-> You should just have the attributes on the sysfs device you create
-> yourself, not your pci device, as that's where they make more sense,
-> and
-> there you should be able to use the attribute group easily, right?
-> 
+Argh... forgot to set it for mem entries after code refactoring,
+sorry. :-/  Will fix in v3.
 
-The current version works well for me and I did not get any complaints
-about the possible race-condition you mentioned so far. So I am happy.
-
-> thanks,
-> 
-> greg k-h
-
-Greetings
-
-Frank
-
+Thanks,
+Namhyung
