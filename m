@@ -1,108 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab3KEAFc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 19:05:32 -0500
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:55040 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752195Ab3KEAFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 19:05:31 -0500
-Message-ID: <52783444.8070309@cs.wisc.edu>
-Date: Mon, 04 Nov 2013 15:56:52 -0800
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1753888Ab3KEAGo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 19:06:44 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:11155 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab3KEAGm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 19:06:42 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 04 Nov 2013 16:05:45 -0800
+From: Eric Miao <eric.miao@nvidia.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Eric Miao <eric.miao@nvidia.com>, David Howells <dhowells@redhat.com>,
+        "Dan Willemsen" <dwillemsen@nvidia.com>
+Subject: [PATCH 1/2] module: export sig_enforce readonly even if MODULE_SIG_FORCE is on
+Date: Mon, 4 Nov 2013 16:06:34 -0800
+Message-ID: <1383609995-8251-1-git-send-email-eric.miao@nvidia.com>
+X-Mailer: git-send-email 1.8.4.1
 MIME-Version: 1.0
-To: device-mapper development <dm-devel@redhat.com>
-CC: Kent Overstreet <kmo@daterainc.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        axboe@kernel.dk, hch@infradead.org, Alasdair Kergon <agk@redhat.com>
-Subject: Re: [dm-devel] [PATCH 4/9] block: Make generic_make_request handle
- arbitrary sized bios
-References: <1383608187-27368-1-git-send-email-kmo@daterainc.com> <1383608187-27368-5-git-send-email-kmo@daterainc.com>
-In-Reply-To: <1383608187-27368-5-git-send-email-kmo@daterainc.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2013 03:36 PM, Kent Overstreet wrote:
-> @@ -1822,6 +1820,14 @@ void generic_make_request(struct bio *bio)
->  		 */
->  		blk_queue_bounce(q, &bio);
->  
-> +		if (!blk_queue_largebios(q))
-> +			split = blk_bio_segment_split(q, bio, q->bio_split);
+Even if MODULE_SIG_FORCE is turned on, it is still useful if module
+can export sig_enforce, so user space will know if module signature
+is turned on and forced.
 
+Signed-off-by: Eric Miao <eric.miao@nvidia.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Dan Willemsen <dwillemsen@nvidia.com>
+---
+ kernel/module.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-Is it assumed bios coming down this path are created using bio_add_page?
-If not, does blk_bio_segment_split need a queue_max_sectors or
-queue_max_hw_sectors check? I only saw a segment count check below.
+diff --git a/kernel/module.c b/kernel/module.c
+index dc58274..d55646b 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -110,6 +110,14 @@ struct list_head *kdb_modules = &modules; /* kdb needs the list of modules */
+ #ifdef CONFIG_MODULE_SIG
+ #ifdef CONFIG_MODULE_SIG_FORCE
+ static bool sig_enforce = true;
++
++static const struct kernel_param_ops param_ops_bool_read_only = {
++	.flags = KERNEL_PARAM_FL_NOARG,
++	.get = param_get_bool,
++};
++#define param_check_bool_read_only param_check_bool
++
++module_param(sig_enforce, bool_read_only, 0444);
+ #else
+ static bool sig_enforce = false;
+ 
+-- 
+1.8.4.1
 
-
-> +
-> +struct bio *blk_bio_segment_split(struct request_queue *q, struct bio *bio,
-> +				  struct bio_set *bs)
-> +{
-> +	struct bio *split;
-> +	struct bio_vec bv, bvprv;
-> +	struct bvec_iter iter;
-> +	unsigned seg_size = 0, nsegs = 0;
-> +	int prev = 0;
-> +
-> +	struct bvec_merge_data bvm = {
-> +		.bi_bdev	= bio->bi_bdev,
-> +		.bi_sector	= bio->bi_iter.bi_sector,
-> +		.bi_size	= 0,
-> +		.bi_rw		= bio->bi_rw,
-> +	};
-> +
-> +	if (bio->bi_rw & REQ_DISCARD)
-> +		return blk_bio_discard_split(q, bio, bs);
-> +
-> +	if (bio->bi_rw & REQ_WRITE_SAME)
-> +		return blk_bio_write_same_split(q, bio, bs);
-> +
-> +	bio_for_each_segment(bv, bio, iter) {
-> +		if (q->merge_bvec_fn &&
-> +		    q->merge_bvec_fn(q, &bvm, &bv) < (int) bv.bv_len)
-> +			goto split;
-> +
-> +		bvm.bi_size += bv.bv_len;
-> +
-> +		if (prev && blk_queue_cluster(q)) {
-> +			if (seg_size + bv.bv_len > queue_max_segment_size(q))
-> +				goto new_segment;
-> +			if (!BIOVEC_PHYS_MERGEABLE(&bvprv, &bv))
-> +				goto new_segment;
-> +			if (!BIOVEC_SEG_BOUNDARY(q, &bvprv, &bv))
-> +				goto new_segment;
-> +
-> +			seg_size += bv.bv_len;
-> +			bvprv = bv;
-> +			prev = 1;
-> +			continue;
-> +		}
-> +new_segment:
-> +		if (nsegs == queue_max_segments(q))
-> +			goto split;
-> +
-> +		nsegs++;
-> +		bvprv = bv;
-> +		prev = 1;
-> +		seg_size = bv.bv_len;
-> +	}
-> +
-> +	return NULL;
-> +split:
-> +	split = bio_clone_bioset(bio, GFP_NOIO, bs);
-> +
-> +	split->bi_iter.bi_size -= iter.bi_size;
-> +	bio->bi_iter = iter;
-> +
-> +	if (bio_integrity(bio)) {
-> +		bio_integrity_advance(bio, split->bi_iter.bi_size);
-> +		bio_integrity_trim(split, 0, bio_sectors(split));
-> +	}
-> +
-> +	return split;
-> +}
