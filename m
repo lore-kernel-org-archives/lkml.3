@@ -1,77 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919Ab3KESlQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 13:41:16 -0500
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:58309 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754596Ab3KESlO (ORCPT
+	id S1755184Ab3KESlt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 13:41:49 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:60104 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754969Ab3KESlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 13:41:14 -0500
-X-AuditID: cbfec37c-b7fd86d00000670b-fc-52793bc93f71
-Message-id: <52793BC6.1080208@samsung.com>
-Date: Tue, 05 Nov 2013 11:41:10 -0700
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.0
-MIME-version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: pavel@ucw.cz, len.brown@intel.com, gregkh@linuxfoundation.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com, Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH] power: Add legacy pm ops usage warning
-References: <1383318424-4072-1-git-send-email-shuah.kh@samsung.com>
- <7710681.pPuGuuagq2@vostro.rjw.lan>
-In-reply-to: <7710681.pPuGuuagq2@vostro.rjw.lan>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsVy+t9hX92T1pVBBo0HxS2aF69ns5g1ZS+T
-	xeVdc9gsPvceYbS4e+oom8WZ05dYLb7+dHBg99g56y67x+I9L5k89s9dw+6x5Wo7i8eK1d/Z
-	PT5vkgtgi+KySUnNySxLLdK3S+DK2Nx4nqXgElfF0ZkPmBsYd3B0MXJySAiYSHycuIgVwhaT
-	uHBvPVsXIxeHkMAyRom5t5YxQTi9TBKvdrxmhnA2MkrM3/KAEaSFV0BL4tXhBcwgNouAqsTm
-	jXfYQGw2AXWJz693sIPYQgJyEk1LVoPViApESBxd/YwVoldQ4sfkeywgtoiAtsTcnlNgC5gF
-	tjJKPJjzEqxIWMBaYsK+fSwQgzIlug8vA1vAKWAgMeflajCbWcBM4lHLOmYIW15i85q3zBD1
-	yhJ/Lp8CeoED6DdFie2rrSYwisxCsnoWku5ZSLoXMDKvYhQrLU4uKE5KT60w1itOzC0uzUvX
-	S87P3cQIiamaHYz3vtocYhTgYFTi4U2QrwwSYk0sK67MPcQowcGsJMJ7XgcoxJuSWFmVWpQf
-	X1Sak1p8iJGJg1OqgTHzz/q59TPqAuZMNNrdaRY7laHncs9MgYcNYZqaxmaBj30eh0xYtupJ
-	6bJJUZuPquhM++9hYH7om4vUnLMC+xqtnaY4upv9UVvz/tS3gycXzv7MFLyv65Z3gHgTB1tE
-	XuaO5Zz7X0h/ZPVtWP/pzt6M9QmTZRJbJr9X7I4si/5wMc37CetF/UlKLMUZiYZazEXFiQBS
-	tjcehwIAAA==
+	Tue, 5 Nov 2013 13:41:47 -0500
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: [PATCH 0/3 - V2] Introducing Device Tree Overlays
+Date: Tue,  5 Nov 2013 20:41:35 +0200
+Message-Id: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2013 05:04 PM, Rafael J. Wysocki wrote:
-> On Friday, November 01, 2013 09:07:04 AM Shuah Khan wrote:
->> Add legacy pm_ops usage checks to device_pm_add() when a device gets added
->> to PM core's list of active devices. If legacy pm_ops usage is found at its
->> class, bus, driver level, print warning message to indicate the driver code
->> needs updating to use dev pm ops interfaces. This will help serve as a way
->> to track drivers that still use legacy pm ops and fix them.
->
-> I think it would be much better to do these checks during bus type, class or
-> driver registration, because if you register a bus type with legacy PM, for
-> example, the check in device_pm_add() will trigger for all devices with that
-> bus type.
->
-> Thanks!
+The following patchset introduces Device Tree overlays, a method
+of dynamically altering the kernel's live Device Tree, along with
+a generic interface to use it in a board agnostic manner.
 
-Rafael,
+It is against mainline as of today, Nov 5 2013:
+	be408cd3e1fef73e9408b196a79b9934697fe3b1 
+	Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
 
-Correct. device_pm_add() triggers for all devices that use the driver. 
-On the other hand, the check is done only when the device gets added to 
-the pm core. I do like that part.
+It relies on the following previously submitted patches/patchsets:
 
-I am testing with adding checks driver_register() to look for suspend at 
-bus level. I am not seeing the same set of drivers I saw with the check 
-in device_pm_add(), which is puzzling. I am working on testing still. 
-Keep you posted.
+The DTC compiler patch required to get symbol resolution working
 
--- Shuah
+	"dtc: Dynamic symbols & fixup support (v2)"
+
+The I2C device registration patch
+
+	"of: i2c: Export single device registration method"
+
+And finally a patchset exporting various OF fixes
+
+	"OF: Fixes in preperation of DT overlays"
+
+Note that although this patchset allows DT overlay removal
+on my preferred platform (omap), platform device registration
+fails; another patchset that deals with this issue has been posted:
+
+	"omap_device removal fixups"
+
+I should also note that the /proc interface is an anachronism, but
+it is the place where /proc/device-tree is also located, so it makes
+sense to group /proc/device-tree & /proc/device-tree-overlay* together.
+I am open to suggestions about where the generic interface should reside.
+A suggestion has been made about configfs but I'd like to get this out
+as a basis of discussion.
+
+This low level interface should be used as a starting point for platforms
+with discoverable hardware on the daughtercard level since they should use the
+facilities provided to implement their own policy, dealing with things like
+conflicts, high level resource allocation and so on.
+
+Changes since V1:
+
+* Removal of any bits related to a specific board (beaglebone).
+* Introduced a platform agnostic interface using /proc/device-tree-overlay
+* Various bug fixes related to i2c device handling have been squashed in.
+
+Pantelis Antoniou (3):
+  OF: Introduce Device Tree resolve support.
+  OF: Introduce DT overlay support.
+  DT: proc: Add runtime overlay interface in /proc
+
+ .../devicetree/dynamic-resolution-notes.txt        |  25 +
+ Documentation/devicetree/overlay-notes.txt         | 179 +++++
+ drivers/of/Kconfig                                 |  19 +
+ drivers/of/Makefile                                |   2 +
+ drivers/of/overlay.c                               | 869 +++++++++++++++++++++
+ drivers/of/resolver.c                              | 395 ++++++++++
+ fs/proc/proc_devtree.c                             | 278 +++++++
+ include/linux/of.h                                 | 130 +++
+ 8 files changed, 1897 insertions(+)
+ create mode 100644 Documentation/devicetree/dynamic-resolution-notes.txt
+ create mode 100644 Documentation/devicetree/overlay-notes.txt
+ create mode 100644 drivers/of/overlay.c
+ create mode 100644 drivers/of/resolver.c
 
 -- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+1.7.12
+
