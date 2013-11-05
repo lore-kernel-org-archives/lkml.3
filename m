@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab3KERCH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 12:02:07 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:50021 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755253Ab3KERCE (ORCPT
+	id S1755310Ab3KERCN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 12:02:13 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:56539 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755253Ab3KERCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 12:02:04 -0500
+	Tue, 5 Nov 2013 12:02:09 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, zheng.z.yan@intel.com, bp@alien8.de,
         maria.n.dimakopoulou@gmail.com
-Subject: [PATCH v5 1/4] perf: add active_entry list head to struct perf_event
-Date: Tue,  5 Nov 2013 18:01:23 +0100
-Message-Id: <1383670886-30827-2-git-send-email-eranian@google.com>
+Subject: [PATCH v5 2/4] perf stat: add event unit and scale support
+Date: Tue,  5 Nov 2013 18:01:24 +0100
+Message-Id: <1383670886-30827-3-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1383670886-30827-1-git-send-email-eranian@google.com>
 References: <1383670886-30827-1-git-send-email-eranian@google.com>
@@ -22,50 +22,671 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new field to the struct perf_event.
-It is intended to be used to chain events which are
-active (enabled). It helps in the hardware layer
-for PMUs which do not have actual counter restrictions, i.e.,
-free running read-only counters. Active events are chained
-as opposed to being tracked via the counter they use.
+This patch adds perf stat support for handling event units and
+scales as exported by the kernel.
 
-To save space we use a union with hlist_entry as both
-are mutually exclusive (suggested by Jiri Olsa).
+The kernel can export PMU events actual unit and scaling factor
+via sysfs:
+$ ls -1 /sys/devices/power/events/energy-*
+/sys/devices/power/events/energy-cores
+/sys/devices/power/events/energy-cores.scale
+/sys/devices/power/events/energy-cores.unit
+/sys/devices/power/events/energy-pkg
+/sys/devices/power/events/energy-pkg.scale
+/sys/devices/power/events/energy-pkg.unit
+$ cat /sys/devices/power/events/energy-cores.scale
+2.3283064365386962890625e-10
+$ cat cat /sys/devices/power/events/energy-cores.unit
+Joules
+
+This patch modifies the pmu event alias code to check
+for the presence of the .unit and .scale files to load
+the corresponding values. They are then used by perf stat
+transparently:
+
+ # perf stat -a -e power/energy-pkg/,power/energy-cores/,cycles -I 1000 sleep 1000
+ #          time             counts   unit events
+     1.000214717               3.07 Joules power/energy-pkg/         [100.00%]
+     1.000214717               0.53 Joules power/energy-cores/
+     1.000214717           12965028        cycles                    [100.00%]
+     2.000749289               3.01 Joules power/energy-pkg/
+     2.000749289               0.52 Joules power/energy-cores/
+     2.000749289           15817043        cycles
+
+When the event does not have an explicit unit exported by
+the kernel, nothing is printed. In csv output mode, there
+will be an empty field.
+
+Special thanks to Jiri for providing the supporting code
+in the parser to trigger reading of the scale and unit files.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- include/linux/perf_event.h |    5 ++++-
- kernel/events/core.c       |    1 +
- 2 files changed, 5 insertions(+), 1 deletion(-)
+ tools/perf/builtin-stat.c      |  114 ++++++++++++++++++++++---------
+ tools/perf/util/evsel.c        |    2 +
+ tools/perf/util/evsel.h        |    3 +
+ tools/perf/util/parse-events.c |   28 +++++---
+ tools/perf/util/pmu.c          |  144 +++++++++++++++++++++++++++++++++++++++-
+ tools/perf/util/pmu.h          |    3 +-
+ 6 files changed, 251 insertions(+), 43 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 2e069d1..8f4a70f 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -319,7 +319,10 @@ struct perf_event {
- 	 */
- 	struct list_head		migrate_entry;
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 0fc1c94..66d20c9 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -138,6 +138,7 @@ static const char		*post_cmd			= NULL;
+ static bool			sync_run			= false;
+ static unsigned int		interval			= 0;
+ static unsigned int		initial_delay			= 0;
++static unsigned int		unit_width			= 4; /* strlen("unit") */
+ static bool			forever				= false;
+ static struct timespec		ref_time;
+ static struct cpu_map		*aggr_map;
+@@ -462,17 +463,17 @@ static void print_interval(void)
+ 	if (num_print_interval == 0 && !csv_output) {
+ 		switch (aggr_mode) {
+ 		case AGGR_SOCKET:
+-			fprintf(output, "#           time socket cpus             counts events\n");
++			fprintf(output, "#           time socket cpus             counts %*s events\n", unit_width, "unit");
+ 			break;
+ 		case AGGR_CORE:
+-			fprintf(output, "#           time core         cpus             counts events\n");
++			fprintf(output, "#           time core         cpus             counts %*s events\n", unit_width, "unit");
+ 			break;
+ 		case AGGR_NONE:
+-			fprintf(output, "#           time CPU                 counts events\n");
++			fprintf(output, "#           time CPU                counts %*s events\n", unit_width, "unit");
+ 			break;
+ 		case AGGR_GLOBAL:
+ 		default:
+-			fprintf(output, "#           time             counts events\n");
++			fprintf(output, "#           time             counts %*s events\n", unit_width, "unit");
+ 		}
+ 	}
  
--	struct hlist_node		hlist_entry;
-+	union {
-+		struct hlist_node	hlist_entry;
-+		struct list_head	active_entry;
-+	};
- 	int				nr_siblings;
- 	int				group_flags;
- 	struct perf_event		*group_leader;
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 17b3c6c..2de509b 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6663,6 +6663,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 	INIT_LIST_HEAD(&event->event_entry);
- 	INIT_LIST_HEAD(&event->sibling_list);
- 	INIT_LIST_HEAD(&event->rb_entry);
-+	INIT_LIST_HEAD(&event->active_entry);
+@@ -517,6 +518,7 @@ static int __run_perf_stat(int argc, const char **argv)
+ 	unsigned long long t0, t1;
+ 	struct perf_evsel *counter;
+ 	struct timespec ts;
++	size_t l;
+ 	int status = 0;
+ 	const bool forks = (argc > 0);
  
- 	init_waitqueue_head(&event->waitq);
- 	init_irq_work(&event->pending, perf_pending_event);
+@@ -566,6 +568,10 @@ static int __run_perf_stat(int argc, const char **argv)
+ 			return -1;
+ 		}
+ 		counter->supported = true;
++
++		l = strlen(counter->unit);
++		if (l > unit_width)
++			unit_width = l;
+ 	}
+ 
+ 	if (perf_evlist__apply_filters(evsel_list)) {
+@@ -705,14 +711,25 @@ static void aggr_printout(struct perf_evsel *evsel, int id, int nr)
+ static void nsec_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ {
+ 	double msecs = avg / 1e6;
+-	const char *fmt = csv_output ? "%.6f%s%s" : "%18.6f%s%-25s";
++	const char *fmt_v, *fmt_n;
+ 	char name[25];
+ 
++	fmt_v = csv_output ? "%.6f%s" : "%18.6f%s";
++	fmt_n = csv_output ? "%s" : "%-25s";
++
+ 	aggr_printout(evsel, cpu, nr);
+ 
+ 	scnprintf(name, sizeof(name), "%s%s",
+ 		  perf_evsel__name(evsel), csv_output ? "" : " (msec)");
+-	fprintf(output, fmt, msecs, csv_sep, name);
++
++	fprintf(output, fmt_v, msecs, csv_sep);
++
++	if (csv_output)
++		fprintf(output, "%s%s", evsel->unit, csv_sep);
++	else
++		fprintf(output, "%-*s%s", unit_width, evsel->unit, csv_sep);
++
++	fprintf(output, fmt_n, name);
+ 
+ 	if (evsel->cgrp)
+ 		fprintf(output, "%s%s", csv_sep, evsel->cgrp->name);
+@@ -909,21 +926,31 @@ static void print_ll_cache_misses(int cpu,
+ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ {
+ 	double total, ratio = 0.0, total2;
++	double sc =  evsel->scale;
+ 	const char *fmt;
+ 
+-	if (csv_output)
+-		fmt = "%.0f%s%s";
+-	else if (big_num)
+-		fmt = "%'18.0f%s%-25s";
+-	else
+-		fmt = "%18.0f%s%-25s";
++	if (csv_output) {
++		fmt = sc != 1.0 ?  "%.2f%s" : "%.0f%s";
++	} else {
++		if (big_num)
++			fmt = sc != 1.0 ? "%'18.2f%s" : "%'18.0f%s";
++		else
++			fmt = sc != 1.0 ? "%18.2f%s" : "%18.0f%s";
++	}
+ 
+ 	aggr_printout(evsel, cpu, nr);
+ 
+ 	if (aggr_mode == AGGR_GLOBAL)
+ 		cpu = 0;
+ 
+-	fprintf(output, fmt, avg, csv_sep, perf_evsel__name(evsel));
++	fprintf(output, fmt, avg, csv_sep);
++
++	if (evsel->unit)
++		fprintf(output, "%-*s%s",
++			csv_output ? 0 : unit_width,
++			evsel->unit, csv_sep);
++
++	fprintf(output, "%-*s", csv_output ? 0 : 25, perf_evsel__name(evsel));
+ 
+ 	if (evsel->cgrp)
+ 		fprintf(output, "%s%s", csv_sep, evsel->cgrp->name);
+@@ -942,7 +969,10 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ 
+ 		if (total && avg) {
+ 			ratio = total / avg;
+-			fprintf(output, "\n                                             #   %5.2f  stalled cycles per insn", ratio);
++			fprintf(output, "\n");
++			if (aggr_mode == AGGR_NONE)
++				fprintf(output, "        ");
++			fprintf(output, "                                                  #   %5.2f  stalled cycles per insn", ratio);
+ 		}
+ 
+ 	} else if (perf_evsel__match(evsel, HARDWARE, HW_BRANCH_MISSES) &&
+@@ -1062,6 +1092,7 @@ static void print_aggr(char *prefix)
+ {
+ 	struct perf_evsel *counter;
+ 	int cpu, cpu2, s, s2, id, nr;
++	double uval;
+ 	u64 ena, run, val;
+ 
+ 	if (!(aggr_map || aggr_get_id))
+@@ -1088,11 +1119,17 @@ static void print_aggr(char *prefix)
+ 			if (run == 0 || ena == 0) {
+ 				aggr_printout(counter, id, nr);
+ 
+-				fprintf(output, "%*s%s%*s",
++				fprintf(output, "%*s%s",
+ 					csv_output ? 0 : 18,
+ 					counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
+-					csv_sep,
+-					csv_output ? 0 : -24,
++					csv_sep);
++
++				fprintf(output, "%-*s%s",
++					csv_output ? 0 : unit_width,
++					counter->unit, csv_sep);
++
++				fprintf(output, "%*s",
++					csv_output ? 0 : -25,
+ 					perf_evsel__name(counter));
+ 
+ 				if (counter->cgrp)
+@@ -1102,11 +1139,12 @@ static void print_aggr(char *prefix)
+ 				fputc('\n', output);
+ 				continue;
+ 			}
++			uval = val * counter->scale;
+ 
+ 			if (nsec_counter(counter))
+-				nsec_printout(id, nr, counter, val);
++				nsec_printout(id, nr, counter, uval);
+ 			else
+-				abs_printout(id, nr, counter, val);
++				abs_printout(id, nr, counter, uval);
+ 
+ 			if (!csv_output) {
+ 				print_noise(counter, 1.0);
+@@ -1129,16 +1167,21 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
+ 	struct perf_stat *ps = counter->priv;
+ 	double avg = avg_stats(&ps->res_stats[0]);
+ 	int scaled = counter->counts->scaled;
++	double uval;
+ 
+ 	if (prefix)
+ 		fprintf(output, "%s", prefix);
+ 
+ 	if (scaled == -1) {
+-		fprintf(output, "%*s%s%*s",
++		fprintf(output, "%*s%s",
+ 			csv_output ? 0 : 18,
+ 			counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
+-			csv_sep,
+-			csv_output ? 0 : -24,
++			csv_sep);
++		fprintf(output, "%-*s%s",
++			csv_output ? 0 : unit_width,
++			counter->unit, csv_sep);
++		fprintf(output, "%*s",
++			csv_output ? 0 : -25,
+ 			perf_evsel__name(counter));
+ 
+ 		if (counter->cgrp)
+@@ -1148,10 +1191,12 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
+ 		return;
+ 	}
+ 
++	uval = avg * counter->scale;
++
+ 	if (nsec_counter(counter))
+-		nsec_printout(-1, 0, counter, avg);
++		nsec_printout(-1, 0, counter, uval);
+ 	else
+-		abs_printout(-1, 0, counter, avg);
++		abs_printout(-1, 0, counter, uval);
+ 
+ 	print_noise(counter, avg);
+ 
+@@ -1178,6 +1223,7 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
+ static void print_counter(struct perf_evsel *counter, char *prefix)
+ {
+ 	u64 ena, run, val;
++	double uval;
+ 	int cpu;
+ 
+ 	for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
+@@ -1189,14 +1235,20 @@ static void print_counter(struct perf_evsel *counter, char *prefix)
+ 			fprintf(output, "%s", prefix);
+ 
+ 		if (run == 0 || ena == 0) {
+-			fprintf(output, "CPU%*d%s%*s%s%*s",
++			fprintf(output, "CPU%*d%s%*s%s",
+ 				csv_output ? 0 : -4,
+ 				perf_evsel__cpus(counter)->map[cpu], csv_sep,
+ 				csv_output ? 0 : 18,
+ 				counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
+-				csv_sep,
+-				csv_output ? 0 : -24,
+-				perf_evsel__name(counter));
++				csv_sep);
++
++				fprintf(output, "%-*s%s",
++					csv_output ? 0 : unit_width,
++					counter->unit, csv_sep);
++
++				fprintf(output, "%*s",
++					csv_output ? 0 : -25,
++					perf_evsel__name(counter));
+ 
+ 			if (counter->cgrp)
+ 				fprintf(output, "%s%s",
+@@ -1206,10 +1258,12 @@ static void print_counter(struct perf_evsel *counter, char *prefix)
+ 			continue;
+ 		}
+ 
++		uval = val * counter->scale;
++
+ 		if (nsec_counter(counter))
+-			nsec_printout(cpu, 0, counter, val);
++			nsec_printout(cpu, 0, counter, uval);
+ 		else
+-			abs_printout(cpu, 0, counter, val);
++			abs_printout(cpu, 0, counter, uval);
+ 
+ 		if (!csv_output) {
+ 			print_noise(counter, 1.0);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 5280820..f1e3d02 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -162,6 +162,8 @@ void perf_evsel__init(struct perf_evsel *evsel,
+ 	evsel->idx	   = idx;
+ 	evsel->attr	   = *attr;
+ 	evsel->leader	   = evsel;
++	evsel->unit	   = "";
++	evsel->scale	   = 1.0;
+ 	INIT_LIST_HEAD(&evsel->node);
+ 	hists__init(&evsel->hists);
+ 	evsel->sample_size = __perf_evsel__sample_size(attr->sample_type);
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 5aa68cd..d5c6606 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -68,6 +68,8 @@ struct perf_evsel {
+ 	u32			ids;
+ 	struct hists		hists;
+ 	char			*name;
++	double			scale;
++	const char		*unit;
+ 	struct event_format	*tp_format;
+ 	union {
+ 		void		*priv;
+@@ -130,6 +132,7 @@ extern const char *perf_evsel__sw_names[PERF_COUNT_SW_MAX];
+ int __perf_evsel__hw_cache_type_op_res_name(u8 type, u8 op, u8 result,
+ 					    char *bf, size_t size);
+ const char *perf_evsel__name(struct perf_evsel *evsel);
++
+ const char *perf_evsel__group_name(struct perf_evsel *evsel);
+ int perf_evsel__group_desc(struct perf_evsel *evsel, char *buf, size_t size);
+ 
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index c90e55c..90ae328 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -269,9 +269,10 @@ const char *event_type(int type)
+ 
+ 
+ 
+-static int __add_event(struct list_head *list, int *idx,
+-		       struct perf_event_attr *attr,
+-		       char *name, struct cpu_map *cpus)
++static struct perf_evsel *
++__add_event(struct list_head *list, int *idx,
++	    struct perf_event_attr *attr,
++	    char *name, struct cpu_map *cpus)
+ {
+ 	struct perf_evsel *evsel;
+ 
+@@ -279,19 +280,19 @@ static int __add_event(struct list_head *list, int *idx,
+ 
+ 	evsel = perf_evsel__new(attr, (*idx)++);
+ 	if (!evsel)
+-		return -ENOMEM;
++		return NULL;
+ 
+ 	evsel->cpus = cpus;
+ 	if (name)
+ 		evsel->name = strdup(name);
+ 	list_add_tail(&evsel->node, list);
+-	return 0;
++	return evsel;
+ }
+ 
+ static int add_event(struct list_head *list, int *idx,
+ 		     struct perf_event_attr *attr, char *name)
+ {
+-	return __add_event(list, idx, attr, name, NULL);
++	return __add_event(list, idx, attr, name, NULL) ? 0 : -ENOMEM;
+ }
+ 
+ static int parse_aliases(char *str, const char *names[][PERF_EVSEL__MAX_ALIASES], int size)
+@@ -633,6 +634,9 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
+ {
+ 	struct perf_event_attr attr;
+ 	struct perf_pmu *pmu;
++	struct perf_evsel *evsel;
++	char *unit;
++	double scale;
+ 
+ 	pmu = perf_pmu__find(name);
+ 	if (!pmu)
+@@ -640,7 +644,7 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
+ 
+ 	memset(&attr, 0, sizeof(attr));
+ 
+-	if (perf_pmu__check_alias(pmu, head_config))
++	if (perf_pmu__check_alias(pmu, head_config, &unit, &scale))
+ 		return -EINVAL;
+ 
+ 	/*
+@@ -652,8 +656,14 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
+ 	if (perf_pmu__config(pmu, &attr, head_config))
+ 		return -EINVAL;
+ 
+-	return __add_event(list, idx, &attr, pmu_event_name(head_config),
+-			   pmu->cpus);
++	evsel = __add_event(list, idx, &attr, pmu_event_name(head_config),
++			    pmu->cpus);
++	if (evsel) {
++		evsel->unit = unit;
++		evsel->scale = scale;
++	}
++
++	return evsel ? 0 : -ENOMEM;
+ }
+ 
+ int parse_events__modifier_group(struct list_head *list,
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 64362fe..df68d43 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -4,6 +4,7 @@
+ #include <unistd.h>
+ #include <stdio.h>
+ #include <dirent.h>
++#include <locale.h>
+ #include "sysfs.h"
+ #include "util.h"
+ #include "pmu.h"
+@@ -14,6 +15,8 @@ struct perf_pmu_alias {
+ 	char *name;
+ 	struct list_head terms;
+ 	struct list_head list;
++	char *unit;
++	double scale;
+ };
+ 
+ struct perf_pmu_format {
+@@ -95,7 +98,89 @@ static int pmu_format(const char *name, struct list_head *format)
+ 	return 0;
+ }
+ 
+-static int perf_pmu__new_alias(struct list_head *list, char *name, FILE *file)
++static int perf_pmu__parse_scale(struct perf_pmu_alias *alias, char *dir, char *name)
++{
++	struct stat st;
++	ssize_t sret;
++	char scale[128];
++	int fd, ret = -1;
++	char path[PATH_MAX];
++	char *lc;
++
++	snprintf(path, PATH_MAX, "%s/%s.scale", dir, name);
++
++	fd = open(path, O_RDONLY);
++	if (fd == -1)
++		return -1;
++
++	if (fstat(fd, &st) < 0)
++		goto error;
++
++	sret = read(fd, scale, sizeof(scale)-1);
++	if (sret < 0)
++		goto error;
++
++	scale[sret] = '\0';
++	/*
++	 * save current locale
++	 */
++	lc = setlocale(LC_NUMERIC, NULL);
++
++	/*
++	 * force to C locale to ensure kernel
++	 * scale string is converted correctly.
++	 * kernel uses default C locale.
++	 */
++	setlocale(LC_NUMERIC, "C");
++
++	alias->scale = strtod(scale, NULL);
++
++	/* restore locale */
++	setlocale(LC_NUMERIC, lc);
++
++	ret = 0;
++error:
++	close(fd);
++	return ret;
++}
++
++static int perf_pmu__parse_unit(struct perf_pmu_alias *alias, char *dir, char *name)
++{
++	struct stat st;
++	ssize_t sret;
++	int fd;
++	char path[PATH_MAX];
++
++	snprintf(path, PATH_MAX, "%s/%s.unit", dir, name);
++
++	fd = open(path, O_RDONLY);
++	if (fd == -1)
++		return -1;
++
++	if (fstat(fd, &st) < 0)
++		goto error;
++
++	alias->unit = malloc(st.st_size + 1);
++	if (!alias->unit)
++		goto error;
++
++	sret = read(fd, alias->unit, st.st_size);
++	if (sret < 0)
++		goto error;
++
++	close(fd);
++
++	alias->unit[sret] = '\0';
++
++	return 0;
++error:
++	close(fd);
++	free(alias->unit);
++	alias->unit = NULL;
++	return -1;
++}
++
++static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FILE *file)
+ {
+ 	struct perf_pmu_alias *alias;
+ 	char buf[256];
+@@ -111,6 +196,9 @@ static int perf_pmu__new_alias(struct list_head *list, char *name, FILE *file)
+ 		return -ENOMEM;
+ 
+ 	INIT_LIST_HEAD(&alias->terms);
++	alias->scale = 1.0;
++	alias->unit = NULL;
++
+ 	ret = parse_events_terms(&alias->terms, buf);
+ 	if (ret) {
+ 		free(alias);
+@@ -118,7 +206,14 @@ static int perf_pmu__new_alias(struct list_head *list, char *name, FILE *file)
+ 	}
+ 
+ 	alias->name = strdup(name);
++	/*
++	 * load unit name and scale if available
++	 */
++	perf_pmu__parse_unit(alias, dir, name);
++	perf_pmu__parse_scale(alias, dir, name);
++
+ 	list_add_tail(&alias->list, list);
++
+ 	return 0;
+ }
+ 
+@@ -130,6 +225,7 @@ static int pmu_aliases_parse(char *dir, struct list_head *head)
+ {
+ 	struct dirent *evt_ent;
+ 	DIR *event_dir;
++	size_t len;
+ 	int ret = 0;
+ 
+ 	event_dir = opendir(dir);
+@@ -144,13 +240,24 @@ static int pmu_aliases_parse(char *dir, struct list_head *head)
+ 		if (!strcmp(name, ".") || !strcmp(name, ".."))
+ 			continue;
+ 
++		/*
++		 * skip .unit and .scale info files
++		 * parsed in perf_pmu__new_alias()
++		 */
++		len = strlen(name);
++		if (len > 5 && !strcmp(name + len - 5, ".unit"))
++			continue;
++		if (len > 6 && !strcmp(name + len - 6, ".scale"))
++			continue;
++
+ 		snprintf(path, PATH_MAX, "%s/%s", dir, name);
+ 
+ 		ret = -EINVAL;
+ 		file = fopen(path, "r");
+ 		if (!file)
+ 			break;
+-		ret = perf_pmu__new_alias(head, name, file);
++
++		ret = perf_pmu__new_alias(head, dir, name, file);
+ 		fclose(file);
+ 	}
+ 
+@@ -513,16 +620,42 @@ static struct perf_pmu_alias *pmu_find_alias(struct perf_pmu *pmu,
+ 	return NULL;
+ }
+ 
++
++static int check_unit_scale(struct perf_pmu_alias *alias,
++			    char **unit, double *scale)
++{
++	/*
++	 * Only one term in event definition can
++	 * define unit and scale, fail if there's
++	 * more than one.
++	 */
++	if ((*unit && alias->unit) ||
++	    (*scale && alias->scale))
++		return -EINVAL;
++
++	if (alias->unit)
++		*unit = alias->unit;
++
++	if (alias->scale)
++		*scale = alias->scale;
++
++	return 0;
++}
++
+ /*
+  * Find alias in the terms list and replace it with the terms
+  * defined for the alias
+  */
+-int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms)
++int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
++			  char **unit, double *scale)
+ {
+ 	struct parse_events_term *term, *h;
+ 	struct perf_pmu_alias *alias;
+ 	int ret;
+ 
++	*unit   = NULL;
++	*scale  = 0;
++
+ 	list_for_each_entry_safe(term, h, head_terms, list) {
+ 		alias = pmu_find_alias(pmu, term);
+ 		if (!alias)
+@@ -530,6 +663,11 @@ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms)
+ 		ret = pmu_alias_terms(alias, &term->list);
+ 		if (ret)
+ 			return ret;
++
++		ret = check_unit_scale(alias, unit, scale);
++		if (ret)
++			return ret;
++
+ 		list_del(&term->list);
+ 		free(term);
+ 	}
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 1179b26..9183380 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -28,7 +28,8 @@ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+ int perf_pmu__config_terms(struct list_head *formats,
+ 			   struct perf_event_attr *attr,
+ 			   struct list_head *head_terms);
+-int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms);
++int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
++			  char **unit, double *scale);
+ struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
+ 				  struct list_head *head_terms);
+ int perf_pmu_wrap(void);
 -- 
 1.7.9.5
 
