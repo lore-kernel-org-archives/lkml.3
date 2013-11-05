@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab3KERQR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 12:16:17 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:58861 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755159Ab3KERQP convert rfc822-to-8bit (ORCPT
+	id S1755290Ab3KERRd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 12:17:33 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22711 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754617Ab3KERRb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 12:16:15 -0500
-Subject: Re: [PATCH 04/11] devicetree: bindings: Document qcom,saw2 node
-Mime-Version: 1.0 (Apple Message framework v1283)
+	Tue, 5 Nov 2013 12:17:31 -0500
+Date: Tue, 5 Nov 2013 12:17:23 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: Re: [GIT PULL] (xen) stable/for-jens-3.13
+Message-ID: <20131105171723.GA506@phenom.dumpdata.com>
+References: <20131105165908.GA405@phenom.dumpdata.com>
+ <52792410.5020200@kernel.dk>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1383343739-23080-5-git-send-email-sboyd@codeaurora.org>
-Date: Tue, 5 Nov 2013 11:16:14 -0600
-Cc: linux-arm-kernel@lists.infradead.org, David Brown <davidb@codeaurora.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, <devicetree@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <CF57F27A-A622-4FA7-B0B0-AEA18C6F1E43@codeaurora.org>
-References: <1383343739-23080-1-git-send-email-sboyd@codeaurora.org> <1383343739-23080-5-git-send-email-sboyd@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-X-Mailer: Apple Mail (2.1283)
+Content-Disposition: inline
+In-Reply-To: <52792410.5020200@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Nov 1, 2013, at 5:08 PM, Stephen Boyd wrote:
-
-> The saw2 binding describes the SPM/AVS wrapper hardware used to
-> control the regulator supplying voltage to the Krait CPUs.
+On Tue, Nov 05, 2013 at 10:00:00AM -0700, Jens Axboe wrote:
+> On 11/05/2013 09:59 AM, Konrad Rzeszutek Wilk wrote:
+> > 
+> > Hey Jens,
+> > 
+> > Please git pull the following branch:
+> > 
+> >  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.13
+> > 
+> > 
+> > which has a fix to the Xen block frontend driver. For the backends that
+> > don't support persistent grants, we don't want to use the logic that would
+> > use copying (needed for persistent grants). That logic existed there initially
+> > but with the persistent grants code added in - it was removed (so in 3.10
+> > time-frame). This adds part of it back.
+> > 
+> > Please pull!
 > 
-> Cc: <devicetree@vger.kernel.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
-> 
-> When a SAW is for a CPU it is put behind the CPU alias region similar
-> to the ACC and timers. I haven't documented that here because I'm not using
-> it right now. I'm also thinking perhaps l2-saw2 is not important (technically
-> its the same hardware block as a CPU's saw). Instead I should point to this
-> node via the l2-cache node via some *-supply property. Thoughts?
+> Did you forget to publish it?
 
-I don't get this, why wouldn't the SAW just be under the soc node?  Do we really need to encode a relationship between the cpu and the SAW?
+No, but I gave you the wrong git tree <sad>
 
-And kill the "l2-saw2" stuff until its needed.
+ git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-jens-3.13
 
-Also are SAWs specific to a given SoC or not?
+Sorry about that.
 
-> 
-> .../devicetree/bindings/arm/msm/qcom,saw2.txt      | 23 ++++++++++++++++++++++
-> 1 file changed, 23 insertions(+)
-> create mode 100644 Documentation/devicetree/bindings/arm/msm/qcom,saw2.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/msm/qcom,saw2.txt b/Documentation/devicetree/bindings/arm/msm/qcom,saw2.txt
-> new file mode 100644
-> index 0000000..6360db2
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/msm/qcom,saw2.txt
-> @@ -0,0 +1,23 @@
-> +* SPM AVS Wrapper 2 (SAW2)
-> +
-> +The SAW2 is a wrapper around the Subsystem Power Manager (SPM) and the
-> +Adaptive Voltage Scaling (AVS) hardware. The SPM is programmable
-> +micro-controller that transitions a piece of hardware (like a processor) into
-> +and out of low power modes via a direct connection to the PMIC. It can also
-> +be wired up to interact with other processors in the system, notifying them
-> +when a low power state is entered or exited.
-> +
-> +Required Properties:
-> +
-> +- compatible : Shall contain "qcom,saw2".
-> +	       A more specific property can be specified as follows:
-> +		"qcom,l2-saw2"
-> +- reg: Specifies the base address and size of the register region.
-> +
-> +Example:
-> +
-> +	regulator@f9012000 {
-> +		compatible = "qcom,l2-saw2", "qcom,saw2";
-> +		reg = <0xf9012000 0x1000>;
-> +	};
-> +
 > -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
+> Jens Axboe
 > 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+> Please read the FAQ at  http://www.tux.org/lkml/
