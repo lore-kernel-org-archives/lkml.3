@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab3KEQgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 11:36:12 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:44124 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532Ab3KEQgK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 11:36:10 -0500
-Date: Tue, 5 Nov 2013 08:36:04 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 0/2] Add FALLOC_FL_ZERO_RANGE to fallocate
-Message-ID: <20131105163604.GA28013@infradead.org>
-References: <1339515364-17374-1-git-send-email-pbonzini@redhat.com>
- <20120613013549.GO22848@dastard>
- <20120613033052.GT22848@dastard>
- <4FD82F89.80106@redhat.com>
- <20131105103435.GA24387@infradead.org>
- <5278CA40.8080609@redhat.com>
+	id S1754842Ab3KEQjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 11:39:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60774 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750838Ab3KEQjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 11:39:45 -0500
+Date: Tue, 5 Nov 2013 17:41:02 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch
+	methods (v6)
+Message-ID: <20131105164102.GC2460@redhat.com>
+References: <1383029621-7384-1-git-send-email-namhyung@kernel.org> <20131102155458.GA6981@redhat.com> <87ob60366m.fsf@sejong.aot.lge.com> <87fvrc35kj.fsf@sejong.aot.lge.com> <20131104155131.GD4440@redhat.com> <20131104162229.GA8921@redhat.com> <20131104184741.GA15945@redhat.com> <20131104185754.GA16428@redhat.com> <8761s71rxw.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5278CA40.8080609@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <8761s71rxw.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 05, 2013 at 11:36:48AM +0100, Paolo Bonzini wrote:
-> Il 05/11/2013 11:34, Christoph Hellwig ha scritto:
-> > On Wed, Jun 13, 2012 at 08:13:29AM +0200, Paolo Bonzini wrote:
-> >> Sure.  Thanks for the hints, I'll submit a v2 (may take a while as I'll
-> >> leave for holiday soon).
-> > 
-> > Did you ever get back to this?
-> 
-> I have some patches for both kernel and xfstests, but I never got round
-> to testing them properly.  I don't think I'll have time soon to finish
-> that, but I might coerce someone into doing it.
+On 11/05, Namhyung Kim wrote:
+>
+> On Mon, 4 Nov 2013 19:57:54 +0100, Oleg Nesterov wrote:
+> >>
+> >> 	static void __user *get_user_vaddr(struct pt_regs *regs, unsigned long addr)
+> >> 	{
+> >> 		return (void __force __user *)addr + instruction_pointer(regs);
+> >> 	}
+> >>
+> >> ?
+> >>
+> >> This should solve the problems with relocations/randomization/bss.
+> >>
+> >> The obvious disadvantage is that it is not easy to calculate the
+> >> offset we need to pass as an argument, it depends on the probed
+> >> function.
+> >
+> > forgot to mention... and instruction_pointer() can't work in ret-probe,
+> > we need to pass the "unsigned long func" arg somehow...
+>
+> Hmm.. what's the value of tu->offset in this case?  Does it have the
+> offset of the return address or the start of the function?
 
-Feel free to send the current state my way and I'll handle it.
+It is the offest of function. IOW, it is the same regardless of
+is_ret_probe().
+
+Ignoring probes_seq_show() we only need it for uprobe_register().
+
+(yes, it is also used in uprobe_unregister/apply, but this is only
+ because this API ugly and should be cleanuped).
+
+Oleg.
 
