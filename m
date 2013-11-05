@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab3KEMXq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 07:23:46 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55925 "EHLO
+	id S1754827Ab3KEMYr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 07:24:47 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55937 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754643Ab3KEMXn (ORCPT
+	with ESMTP id S1754677Ab3KEMXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 07:23:43 -0500
-Message-Id: <20131105110027.057494574@infradead.org>
+	Tue, 5 Nov 2013 07:23:46 -0500
+Message-Id: <20131105110026.878790658@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 05 Nov 2013 13:10:47 +0100
+Date: Tue, 05 Nov 2013 13:10:45 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: torvalds@linux-foundation.org, akpm@linux-foundation.org
 Cc: paulmck@linux.vnet.ibm.com, oleg@redhat.com, dhowells@redhat.com,
@@ -17,9 +17,9 @@ Cc: paulmck@linux.vnet.ibm.com, oleg@redhat.com, dhowells@redhat.com,
         airlied@gmail.com, maarten.lankhorst@canonical.com, walken@google.com,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [RFC 3/8] locking: Move spinlock into kernel/locking/
+Subject: [RFC 1/8] locking: Move mutex into kernel/locking/
 References: <20131105105244.666320103@infradead.org>
-Content-Disposition: inline; filename=peterz-move-locking-spinlock.patch
+Content-Disposition: inline; filename=peterz-move-locking-mutex.patch
 X-Bad-Reply: References but no 'Re:' in Subject.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,1460 +29,2453 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Suggested-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- kernel/Makefile                 |    3 
- kernel/locking/Makefile         |    4 
- kernel/locking/spinlock.c       |  399 ++++++++++++++++++++++++++++++++++++++++
- kernel/locking/spinlock_debug.c |  302 ++++++++++++++++++++++++++++++
- kernel/spinlock.c               |  399 ----------------------------------------
- lib/Makefile                    |    1 
- lib/spinlock_debug.c            |  302 ------------------------------
- 7 files changed, 705 insertions(+), 705 deletions(-)
+ kernel/Makefile              |    6 
+ kernel/locking/Makefile      |    9 
+ kernel/locking/mutex-debug.c |  110 ++++
+ kernel/locking/mutex-debug.h |   55 ++
+ kernel/locking/mutex.c       |  960 +++++++++++++++++++++++++++++++++++++++++++
+ kernel/locking/mutex.h       |   48 ++
+ kernel/mutex-debug.c         |  110 ----
+ kernel/mutex-debug.h         |   55 --
+ kernel/mutex.c               |  960 -------------------------------------------
+ kernel/mutex.h               |   48 --
+ 10 files changed, 1184 insertions(+), 1177 deletions(-)
 
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -43,9 +43,6 @@ obj-$(CONFIG_SMP) += smp.o
- ifneq ($(CONFIG_SMP),y)
- obj-y += up.o
+Index: linux-2.6/kernel/Makefile
+===================================================================
+--- linux-2.6.orig/kernel/Makefile
++++ linux-2.6/kernel/Makefile
+@@ -7,7 +7,7 @@ obj-y     = fork.o exec_domain.o panic.o
+ 	    sysctl.o sysctl_binary.o capability.o ptrace.o timer.o user.o \
+ 	    signal.o sys.o kmod.o workqueue.o pid.o task_work.o \
+ 	    extable.o params.o posix-timers.o \
+-	    kthread.o sys_ni.o posix-cpu-timers.o mutex.o \
++	    kthread.o sys_ni.o posix-cpu-timers.o \
+ 	    hrtimer.o rwsem.o nsproxy.o semaphore.o \
+ 	    notifier.o ksysfs.o cred.o reboot.o \
+ 	    async.o range.o groups.o lglock.o smpboot.o
+@@ -16,13 +16,12 @@ ifdef CONFIG_FUNCTION_TRACER
+ # Do not trace debug files and internal ftrace files
+ CFLAGS_REMOVE_lockdep.o = -pg
+ CFLAGS_REMOVE_lockdep_proc.o = -pg
+-CFLAGS_REMOVE_mutex-debug.o = -pg
+-CFLAGS_REMOVE_rtmutex-debug.o = -pg
+ CFLAGS_REMOVE_cgroup-debug.o = -pg
+ CFLAGS_REMOVE_irq_work.o = -pg
  endif
--obj-$(CONFIG_SMP) += spinlock.o
--obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock.o
--obj-$(CONFIG_PROVE_LOCKING) += spinlock.o
- obj-$(CONFIG_UID16) += uid16.o
- obj-$(CONFIG_SYSTEM_TRUSTED_KEYRING) += system_keyring.o system_certificates.o
- obj-$(CONFIG_MODULES) += module.o
---- a/kernel/locking/Makefile
-+++ b/kernel/locking/Makefile
-@@ -13,3 +13,7 @@ obj-$(CONFIG_LOCKDEP) += lockdep.o
+ 
+ obj-y += sched/
++obj-y += locking/
+ obj-y += power/
+ obj-y += printk/
+ obj-y += cpu/
+@@ -34,7 +33,6 @@ obj-$(CONFIG_FREEZER) += freezer.o
+ obj-$(CONFIG_PROFILING) += profile.o
+ obj-$(CONFIG_STACKTRACE) += stacktrace.o
+ obj-y += time/
+-obj-$(CONFIG_DEBUG_MUTEXES) += mutex-debug.o
+ obj-$(CONFIG_LOCKDEP) += lockdep.o
  ifeq ($(CONFIG_PROC_FS),y)
  obj-$(CONFIG_LOCKDEP) += lockdep_proc.o
- endif
-+obj-$(CONFIG_SMP) += spinlock.o
-+obj-$(CONFIG_PROVE_LOCKING) += spinlock.o
-+obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock.o
-+obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock_debug.o
+Index: linux-2.6/kernel/locking/Makefile
+===================================================================
 --- /dev/null
-+++ b/kernel/locking/spinlock.c
-@@ -0,0 +1,399 @@
-+/*
-+ * Copyright (2004) Linus Torvalds
-+ *
-+ * Author: Zwane Mwaikambo <zwane@fsmlabs.com>
-+ *
-+ * Copyright (2004, 2005) Ingo Molnar
-+ *
-+ * This file contains the spinlock/rwlock implementations for the
-+ * SMP and the DEBUG_SPINLOCK cases. (UP-nondebug inlines them)
-+ *
-+ * Note that some architectures have special knowledge about the
-+ * stack frames of these functions in their profile_pc. If you
-+ * change anything significant here that could change the stack
-+ * frame contact the architecture maintainers.
-+ */
++++ linux-2.6/kernel/locking/Makefile
+@@ -0,0 +1,9 @@
 +
-+#include <linux/linkage.h>
-+#include <linux/preempt.h>
-+#include <linux/spinlock.h>
-+#include <linux/interrupt.h>
-+#include <linux/debug_locks.h>
-+#include <linux/export.h>
++obj-y += mutex.o
 +
-+/*
-+ * If lockdep is enabled then we use the non-preemption spin-ops
-+ * even on CONFIG_PREEMPT, because lockdep assumes that interrupts are
-+ * not re-enabled during lock-acquire (which the preempt-spin-ops do):
-+ */
-+#if !defined(CONFIG_GENERIC_LOCKBREAK) || defined(CONFIG_DEBUG_LOCK_ALLOC)
-+/*
-+ * The __lock_function inlines are taken from
-+ * include/linux/spinlock_api_smp.h
-+ */
-+#else
-+#define raw_read_can_lock(l)	read_can_lock(l)
-+#define raw_write_can_lock(l)	write_can_lock(l)
++ifdef CONFIG_FUNCTION_TRACER
++CFLAGS_REMOVE_mutex-debug.o = -pg
++CFLAGS_REMOVE_rtmutex-debug.o = -pg
++endif
 +
-+/*
-+ * Some architectures can relax in favour of the CPU owning the lock.
-+ */
-+#ifndef arch_read_relax
-+# define arch_read_relax(l)	cpu_relax()
-+#endif
-+#ifndef arch_write_relax
-+# define arch_write_relax(l)	cpu_relax()
-+#endif
-+#ifndef arch_spin_relax
-+# define arch_spin_relax(l)	cpu_relax()
-+#endif
-+
-+/*
-+ * We build the __lock_function inlines here. They are too large for
-+ * inlining all over the place, but here is only one user per function
-+ * which embedds them into the calling _lock_function below.
-+ *
-+ * This could be a long-held lock. We both prepare to spin for a long
-+ * time (making _this_ CPU preemptable if possible), and we also signal
-+ * towards that other CPU that it should break the lock ASAP.
-+ */
-+#define BUILD_LOCK_OPS(op, locktype)					\
-+void __lockfunc __raw_##op##_lock(locktype##_t *lock)			\
-+{									\
-+	for (;;) {							\
-+		preempt_disable();					\
-+		if (likely(do_raw_##op##_trylock(lock)))		\
-+			break;						\
-+		preempt_enable();					\
-+									\
-+		if (!(lock)->break_lock)				\
-+			(lock)->break_lock = 1;				\
-+		while (!raw_##op##_can_lock(lock) && (lock)->break_lock)\
-+			arch_##op##_relax(&lock->raw_lock);		\
-+	}								\
-+	(lock)->break_lock = 0;						\
-+}									\
-+									\
-+unsigned long __lockfunc __raw_##op##_lock_irqsave(locktype##_t *lock)	\
-+{									\
-+	unsigned long flags;						\
-+									\
-+	for (;;) {							\
-+		preempt_disable();					\
-+		local_irq_save(flags);					\
-+		if (likely(do_raw_##op##_trylock(lock)))		\
-+			break;						\
-+		local_irq_restore(flags);				\
-+		preempt_enable();					\
-+									\
-+		if (!(lock)->break_lock)				\
-+			(lock)->break_lock = 1;				\
-+		while (!raw_##op##_can_lock(lock) && (lock)->break_lock)\
-+			arch_##op##_relax(&lock->raw_lock);		\
-+	}								\
-+	(lock)->break_lock = 0;						\
-+	return flags;							\
-+}									\
-+									\
-+void __lockfunc __raw_##op##_lock_irq(locktype##_t *lock)		\
-+{									\
-+	_raw_##op##_lock_irqsave(lock);					\
-+}									\
-+									\
-+void __lockfunc __raw_##op##_lock_bh(locktype##_t *lock)		\
-+{									\
-+	unsigned long flags;						\
-+									\
-+	/*							*/	\
-+	/* Careful: we must exclude softirqs too, hence the	*/	\
-+	/* irq-disabling. We use the generic preemption-aware	*/	\
-+	/* function:						*/	\
-+	/**/								\
-+	flags = _raw_##op##_lock_irqsave(lock);				\
-+	local_bh_disable();						\
-+	local_irq_restore(flags);					\
-+}									\
-+
-+/*
-+ * Build preemption-friendly versions of the following
-+ * lock-spinning functions:
-+ *
-+ *         __[spin|read|write]_lock()
-+ *         __[spin|read|write]_lock_irq()
-+ *         __[spin|read|write]_lock_irqsave()
-+ *         __[spin|read|write]_lock_bh()
-+ */
-+BUILD_LOCK_OPS(spin, raw_spinlock);
-+BUILD_LOCK_OPS(read, rwlock);
-+BUILD_LOCK_OPS(write, rwlock);
-+
-+#endif
-+
-+#ifndef CONFIG_INLINE_SPIN_TRYLOCK
-+int __lockfunc _raw_spin_trylock(raw_spinlock_t *lock)
-+{
-+	return __raw_spin_trylock(lock);
-+}
-+EXPORT_SYMBOL(_raw_spin_trylock);
-+#endif
-+
-+#ifndef CONFIG_INLINE_SPIN_TRYLOCK_BH
-+int __lockfunc _raw_spin_trylock_bh(raw_spinlock_t *lock)
-+{
-+	return __raw_spin_trylock_bh(lock);
-+}
-+EXPORT_SYMBOL(_raw_spin_trylock_bh);
-+#endif
-+
-+#ifndef CONFIG_INLINE_SPIN_LOCK
-+void __lockfunc _raw_spin_lock(raw_spinlock_t *lock)
-+{
-+	__raw_spin_lock(lock);
-+}
-+EXPORT_SYMBOL(_raw_spin_lock);
-+#endif
-+
-+#ifndef CONFIG_INLINE_SPIN_LOCK_IRQSAVE
-+unsigned long __lockfunc _raw_spin_lock_irqsave(raw_spinlock_t *lock)
-+{
-+	return __raw_spin_lock_irqsave(lock);
-+}
-+EXPORT_SYMBOL(_raw_spin_lock_irqsave);
-+#endif
-+
-+#ifndef CONFIG_INLINE_SPIN_LOCK_IRQ
-+void __lockfunc _raw_spin_lock_irq(raw_spinlock_t *lock)
-+{
-+	__raw_spin_lock_irq(lock);
-+}
-+EXPORT_SYMBOL(_raw_spin_lock_irq);
-+#endif
-+
-+#ifndef CONFIG_INLINE_SPIN_LOCK_BH
-+void __lockfunc _raw_spin_lock_bh(raw_spinlock_t *lock)
-+{
-+	__raw_spin_lock_bh(lock);
-+}
-+EXPORT_SYMBOL(_raw_spin_lock_bh);
-+#endif
-+
-+#ifdef CONFIG_UNINLINE_SPIN_UNLOCK
-+void __lockfunc _raw_spin_unlock(raw_spinlock_t *lock)
-+{
-+	__raw_spin_unlock(lock);
-+}
-+EXPORT_SYMBOL(_raw_spin_unlock);
-+#endif
-+
-+#ifndef CONFIG_INLINE_SPIN_UNLOCK_IRQRESTORE
-+void __lockfunc _raw_spin_unlock_irqrestore(raw_spinlock_t *lock, unsigned long flags)
-+{
-+	__raw_spin_unlock_irqrestore(lock, flags);
-+}
-+EXPORT_SYMBOL(_raw_spin_unlock_irqrestore);
-+#endif
-+
-+#ifndef CONFIG_INLINE_SPIN_UNLOCK_IRQ
-+void __lockfunc _raw_spin_unlock_irq(raw_spinlock_t *lock)
-+{
-+	__raw_spin_unlock_irq(lock);
-+}
-+EXPORT_SYMBOL(_raw_spin_unlock_irq);
-+#endif
-+
-+#ifndef CONFIG_INLINE_SPIN_UNLOCK_BH
-+void __lockfunc _raw_spin_unlock_bh(raw_spinlock_t *lock)
-+{
-+	__raw_spin_unlock_bh(lock);
-+}
-+EXPORT_SYMBOL(_raw_spin_unlock_bh);
-+#endif
-+
-+#ifndef CONFIG_INLINE_READ_TRYLOCK
-+int __lockfunc _raw_read_trylock(rwlock_t *lock)
-+{
-+	return __raw_read_trylock(lock);
-+}
-+EXPORT_SYMBOL(_raw_read_trylock);
-+#endif
-+
-+#ifndef CONFIG_INLINE_READ_LOCK
-+void __lockfunc _raw_read_lock(rwlock_t *lock)
-+{
-+	__raw_read_lock(lock);
-+}
-+EXPORT_SYMBOL(_raw_read_lock);
-+#endif
-+
-+#ifndef CONFIG_INLINE_READ_LOCK_IRQSAVE
-+unsigned long __lockfunc _raw_read_lock_irqsave(rwlock_t *lock)
-+{
-+	return __raw_read_lock_irqsave(lock);
-+}
-+EXPORT_SYMBOL(_raw_read_lock_irqsave);
-+#endif
-+
-+#ifndef CONFIG_INLINE_READ_LOCK_IRQ
-+void __lockfunc _raw_read_lock_irq(rwlock_t *lock)
-+{
-+	__raw_read_lock_irq(lock);
-+}
-+EXPORT_SYMBOL(_raw_read_lock_irq);
-+#endif
-+
-+#ifndef CONFIG_INLINE_READ_LOCK_BH
-+void __lockfunc _raw_read_lock_bh(rwlock_t *lock)
-+{
-+	__raw_read_lock_bh(lock);
-+}
-+EXPORT_SYMBOL(_raw_read_lock_bh);
-+#endif
-+
-+#ifndef CONFIG_INLINE_READ_UNLOCK
-+void __lockfunc _raw_read_unlock(rwlock_t *lock)
-+{
-+	__raw_read_unlock(lock);
-+}
-+EXPORT_SYMBOL(_raw_read_unlock);
-+#endif
-+
-+#ifndef CONFIG_INLINE_READ_UNLOCK_IRQRESTORE
-+void __lockfunc _raw_read_unlock_irqrestore(rwlock_t *lock, unsigned long flags)
-+{
-+	__raw_read_unlock_irqrestore(lock, flags);
-+}
-+EXPORT_SYMBOL(_raw_read_unlock_irqrestore);
-+#endif
-+
-+#ifndef CONFIG_INLINE_READ_UNLOCK_IRQ
-+void __lockfunc _raw_read_unlock_irq(rwlock_t *lock)
-+{
-+	__raw_read_unlock_irq(lock);
-+}
-+EXPORT_SYMBOL(_raw_read_unlock_irq);
-+#endif
-+
-+#ifndef CONFIG_INLINE_READ_UNLOCK_BH
-+void __lockfunc _raw_read_unlock_bh(rwlock_t *lock)
-+{
-+	__raw_read_unlock_bh(lock);
-+}
-+EXPORT_SYMBOL(_raw_read_unlock_bh);
-+#endif
-+
-+#ifndef CONFIG_INLINE_WRITE_TRYLOCK
-+int __lockfunc _raw_write_trylock(rwlock_t *lock)
-+{
-+	return __raw_write_trylock(lock);
-+}
-+EXPORT_SYMBOL(_raw_write_trylock);
-+#endif
-+
-+#ifndef CONFIG_INLINE_WRITE_LOCK
-+void __lockfunc _raw_write_lock(rwlock_t *lock)
-+{
-+	__raw_write_lock(lock);
-+}
-+EXPORT_SYMBOL(_raw_write_lock);
-+#endif
-+
-+#ifndef CONFIG_INLINE_WRITE_LOCK_IRQSAVE
-+unsigned long __lockfunc _raw_write_lock_irqsave(rwlock_t *lock)
-+{
-+	return __raw_write_lock_irqsave(lock);
-+}
-+EXPORT_SYMBOL(_raw_write_lock_irqsave);
-+#endif
-+
-+#ifndef CONFIG_INLINE_WRITE_LOCK_IRQ
-+void __lockfunc _raw_write_lock_irq(rwlock_t *lock)
-+{
-+	__raw_write_lock_irq(lock);
-+}
-+EXPORT_SYMBOL(_raw_write_lock_irq);
-+#endif
-+
-+#ifndef CONFIG_INLINE_WRITE_LOCK_BH
-+void __lockfunc _raw_write_lock_bh(rwlock_t *lock)
-+{
-+	__raw_write_lock_bh(lock);
-+}
-+EXPORT_SYMBOL(_raw_write_lock_bh);
-+#endif
-+
-+#ifndef CONFIG_INLINE_WRITE_UNLOCK
-+void __lockfunc _raw_write_unlock(rwlock_t *lock)
-+{
-+	__raw_write_unlock(lock);
-+}
-+EXPORT_SYMBOL(_raw_write_unlock);
-+#endif
-+
-+#ifndef CONFIG_INLINE_WRITE_UNLOCK_IRQRESTORE
-+void __lockfunc _raw_write_unlock_irqrestore(rwlock_t *lock, unsigned long flags)
-+{
-+	__raw_write_unlock_irqrestore(lock, flags);
-+}
-+EXPORT_SYMBOL(_raw_write_unlock_irqrestore);
-+#endif
-+
-+#ifndef CONFIG_INLINE_WRITE_UNLOCK_IRQ
-+void __lockfunc _raw_write_unlock_irq(rwlock_t *lock)
-+{
-+	__raw_write_unlock_irq(lock);
-+}
-+EXPORT_SYMBOL(_raw_write_unlock_irq);
-+#endif
-+
-+#ifndef CONFIG_INLINE_WRITE_UNLOCK_BH
-+void __lockfunc _raw_write_unlock_bh(rwlock_t *lock)
-+{
-+	__raw_write_unlock_bh(lock);
-+}
-+EXPORT_SYMBOL(_raw_write_unlock_bh);
-+#endif
-+
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+
-+void __lockfunc _raw_spin_lock_nested(raw_spinlock_t *lock, int subclass)
-+{
-+	preempt_disable();
-+	spin_acquire(&lock->dep_map, subclass, 0, _RET_IP_);
-+	LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
-+}
-+EXPORT_SYMBOL(_raw_spin_lock_nested);
-+
-+unsigned long __lockfunc _raw_spin_lock_irqsave_nested(raw_spinlock_t *lock,
-+						   int subclass)
-+{
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	preempt_disable();
-+	spin_acquire(&lock->dep_map, subclass, 0, _RET_IP_);
-+	LOCK_CONTENDED_FLAGS(lock, do_raw_spin_trylock, do_raw_spin_lock,
-+				do_raw_spin_lock_flags, &flags);
-+	return flags;
-+}
-+EXPORT_SYMBOL(_raw_spin_lock_irqsave_nested);
-+
-+void __lockfunc _raw_spin_lock_nest_lock(raw_spinlock_t *lock,
-+				     struct lockdep_map *nest_lock)
-+{
-+	preempt_disable();
-+	spin_acquire_nest(&lock->dep_map, 0, 0, nest_lock, _RET_IP_);
-+	LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
-+}
-+EXPORT_SYMBOL(_raw_spin_lock_nest_lock);
-+
-+#endif
-+
-+notrace int in_lock_functions(unsigned long addr)
-+{
-+	/* Linker adds these: start and end of __lockfunc functions */
-+	extern char __lock_text_start[], __lock_text_end[];
-+
-+	return addr >= (unsigned long)__lock_text_start
-+	&& addr < (unsigned long)__lock_text_end;
-+}
-+EXPORT_SYMBOL(in_lock_functions);
++obj-$(CONFIG_DEBUG_MUTEXES) += mutex-debug.o
+Index: linux-2.6/kernel/locking/mutex-debug.c
+===================================================================
 --- /dev/null
-+++ b/kernel/locking/spinlock_debug.c
-@@ -0,0 +1,302 @@
++++ linux-2.6/kernel/locking/mutex-debug.c
+@@ -0,0 +1,110 @@
 +/*
-+ * Copyright 2005, Red Hat, Inc., Ingo Molnar
-+ * Released under the General Public License (GPL).
++ * kernel/mutex-debug.c
 + *
-+ * This file contains the spinlock/rwlock implementations for
-+ * DEBUG_SPINLOCK.
++ * Debugging code for mutexes
++ *
++ * Started by Ingo Molnar:
++ *
++ *  Copyright (C) 2004, 2005, 2006 Red Hat, Inc., Ingo Molnar <mingo@redhat.com>
++ *
++ * lock debugging, locking tree, deadlock detection started by:
++ *
++ *  Copyright (C) 2004, LynuxWorks, Inc., Igor Manyilov, Bill Huey
++ *  Released under the General Public License (GPL).
 + */
-+
-+#include <linux/spinlock.h>
-+#include <linux/nmi.h>
-+#include <linux/interrupt.h>
-+#include <linux/debug_locks.h>
++#include <linux/mutex.h>
 +#include <linux/delay.h>
 +#include <linux/export.h>
++#include <linux/poison.h>
++#include <linux/sched.h>
++#include <linux/spinlock.h>
++#include <linux/kallsyms.h>
++#include <linux/interrupt.h>
++#include <linux/debug_locks.h>
 +
-+void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,
-+			  struct lock_class_key *key)
++#include "mutex-debug.h"
++
++/*
++ * Must be called with lock->wait_lock held.
++ */
++void debug_mutex_lock_common(struct mutex *lock, struct mutex_waiter *waiter)
 +{
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	/*
-+	 * Make sure we are not reinitializing a held lock:
-+	 */
-+	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
-+	lockdep_init_map(&lock->dep_map, name, key, 0);
-+#endif
-+	lock->raw_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
-+	lock->magic = SPINLOCK_MAGIC;
-+	lock->owner = SPINLOCK_OWNER_INIT;
-+	lock->owner_cpu = -1;
++	memset(waiter, MUTEX_DEBUG_INIT, sizeof(*waiter));
++	waiter->magic = waiter;
++	INIT_LIST_HEAD(&waiter->list);
 +}
 +
-+EXPORT_SYMBOL(__raw_spin_lock_init);
-+
-+void __rwlock_init(rwlock_t *lock, const char *name,
-+		   struct lock_class_key *key)
++void debug_mutex_wake_waiter(struct mutex *lock, struct mutex_waiter *waiter)
 +{
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	/*
-+	 * Make sure we are not reinitializing a held lock:
-+	 */
-+	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
-+	lockdep_init_map(&lock->dep_map, name, key, 0);
-+#endif
-+	lock->raw_lock = (arch_rwlock_t) __ARCH_RW_LOCK_UNLOCKED;
-+	lock->magic = RWLOCK_MAGIC;
-+	lock->owner = SPINLOCK_OWNER_INIT;
-+	lock->owner_cpu = -1;
++	SMP_DEBUG_LOCKS_WARN_ON(!spin_is_locked(&lock->wait_lock));
++	DEBUG_LOCKS_WARN_ON(list_empty(&lock->wait_list));
++	DEBUG_LOCKS_WARN_ON(waiter->magic != waiter);
++	DEBUG_LOCKS_WARN_ON(list_empty(&waiter->list));
 +}
 +
-+EXPORT_SYMBOL(__rwlock_init);
-+
-+static void spin_dump(raw_spinlock_t *lock, const char *msg)
++void debug_mutex_free_waiter(struct mutex_waiter *waiter)
 +{
-+	struct task_struct *owner = NULL;
-+
-+	if (lock->owner && lock->owner != SPINLOCK_OWNER_INIT)
-+		owner = lock->owner;
-+	printk(KERN_EMERG "BUG: spinlock %s on CPU#%d, %s/%d\n",
-+		msg, raw_smp_processor_id(),
-+		current->comm, task_pid_nr(current));
-+	printk(KERN_EMERG " lock: %pS, .magic: %08x, .owner: %s/%d, "
-+			".owner_cpu: %d\n",
-+		lock, lock->magic,
-+		owner ? owner->comm : "<none>",
-+		owner ? task_pid_nr(owner) : -1,
-+		lock->owner_cpu);
-+	dump_stack();
++	DEBUG_LOCKS_WARN_ON(!list_empty(&waiter->list));
++	memset(waiter, MUTEX_DEBUG_FREE, sizeof(*waiter));
 +}
 +
-+static void spin_bug(raw_spinlock_t *lock, const char *msg)
++void debug_mutex_add_waiter(struct mutex *lock, struct mutex_waiter *waiter,
++			    struct thread_info *ti)
 +{
-+	if (!debug_locks_off())
++	SMP_DEBUG_LOCKS_WARN_ON(!spin_is_locked(&lock->wait_lock));
++
++	/* Mark the current thread as blocked on the lock: */
++	ti->task->blocked_on = waiter;
++}
++
++void mutex_remove_waiter(struct mutex *lock, struct mutex_waiter *waiter,
++			 struct thread_info *ti)
++{
++	DEBUG_LOCKS_WARN_ON(list_empty(&waiter->list));
++	DEBUG_LOCKS_WARN_ON(waiter->task != ti->task);
++	DEBUG_LOCKS_WARN_ON(ti->task->blocked_on != waiter);
++	ti->task->blocked_on = NULL;
++
++	list_del_init(&waiter->list);
++	waiter->task = NULL;
++}
++
++void debug_mutex_unlock(struct mutex *lock)
++{
++	if (unlikely(!debug_locks))
 +		return;
 +
-+	spin_dump(lock, msg);
++	DEBUG_LOCKS_WARN_ON(lock->magic != lock);
++	DEBUG_LOCKS_WARN_ON(lock->owner != current);
++	DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
++	mutex_clear_owner(lock);
 +}
 +
-+#define SPIN_BUG_ON(cond, lock, msg) if (unlikely(cond)) spin_bug(lock, msg)
++void debug_mutex_init(struct mutex *lock, const char *name,
++		      struct lock_class_key *key)
++{
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	/*
++	 * Make sure we are not reinitializing a held lock:
++	 */
++	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
++	lockdep_init_map(&lock->dep_map, name, key, 0);
++#endif
++	lock->magic = lock;
++}
++
++/***
++ * mutex_destroy - mark a mutex unusable
++ * @lock: the mutex to be destroyed
++ *
++ * This function marks the mutex uninitialized, and any subsequent
++ * use of the mutex is forbidden. The mutex must not be locked when
++ * this function is called.
++ */
++void mutex_destroy(struct mutex *lock)
++{
++	DEBUG_LOCKS_WARN_ON(mutex_is_locked(lock));
++	lock->magic = NULL;
++}
++
++EXPORT_SYMBOL_GPL(mutex_destroy);
+Index: linux-2.6/kernel/locking/mutex-debug.h
+===================================================================
+--- /dev/null
++++ linux-2.6/kernel/locking/mutex-debug.h
+@@ -0,0 +1,55 @@
++/*
++ * Mutexes: blocking mutual exclusion locks
++ *
++ * started by Ingo Molnar:
++ *
++ *  Copyright (C) 2004, 2005, 2006 Red Hat, Inc., Ingo Molnar <mingo@redhat.com>
++ *
++ * This file contains mutex debugging related internal declarations,
++ * prototypes and inline functions, for the CONFIG_DEBUG_MUTEXES case.
++ * More details are in kernel/mutex-debug.c.
++ */
++
++/*
++ * This must be called with lock->wait_lock held.
++ */
++extern void debug_mutex_lock_common(struct mutex *lock,
++				    struct mutex_waiter *waiter);
++extern void debug_mutex_wake_waiter(struct mutex *lock,
++				    struct mutex_waiter *waiter);
++extern void debug_mutex_free_waiter(struct mutex_waiter *waiter);
++extern void debug_mutex_add_waiter(struct mutex *lock,
++				   struct mutex_waiter *waiter,
++				   struct thread_info *ti);
++extern void mutex_remove_waiter(struct mutex *lock, struct mutex_waiter *waiter,
++				struct thread_info *ti);
++extern void debug_mutex_unlock(struct mutex *lock);
++extern void debug_mutex_init(struct mutex *lock, const char *name,
++			     struct lock_class_key *key);
++
++static inline void mutex_set_owner(struct mutex *lock)
++{
++	lock->owner = current;
++}
++
++static inline void mutex_clear_owner(struct mutex *lock)
++{
++	lock->owner = NULL;
++}
++
++#define spin_lock_mutex(lock, flags)			\
++	do {						\
++		struct mutex *l = container_of(lock, struct mutex, wait_lock); \
++							\
++		DEBUG_LOCKS_WARN_ON(in_interrupt());	\
++		local_irq_save(flags);			\
++		arch_spin_lock(&(lock)->rlock.raw_lock);\
++		DEBUG_LOCKS_WARN_ON(l->magic != l);	\
++	} while (0)
++
++#define spin_unlock_mutex(lock, flags)				\
++	do {							\
++		arch_spin_unlock(&(lock)->rlock.raw_lock);	\
++		local_irq_restore(flags);			\
++		preempt_check_resched();			\
++	} while (0)
+Index: linux-2.6/kernel/locking/mutex.c
+===================================================================
+--- /dev/null
++++ linux-2.6/kernel/locking/mutex.c
+@@ -0,0 +1,960 @@
++/*
++ * kernel/mutex.c
++ *
++ * Mutexes: blocking mutual exclusion locks
++ *
++ * Started by Ingo Molnar:
++ *
++ *  Copyright (C) 2004, 2005, 2006 Red Hat, Inc., Ingo Molnar <mingo@redhat.com>
++ *
++ * Many thanks to Arjan van de Ven, Thomas Gleixner, Steven Rostedt and
++ * David Howells for suggestions and improvements.
++ *
++ *  - Adaptive spinning for mutexes by Peter Zijlstra. (Ported to mainline
++ *    from the -rt tree, where it was originally implemented for rtmutexes
++ *    by Steven Rostedt, based on work by Gregory Haskins, Peter Morreale
++ *    and Sven Dietrich.
++ *
++ * Also see Documentation/mutex-design.txt.
++ */
++#include <linux/mutex.h>
++#include <linux/ww_mutex.h>
++#include <linux/sched.h>
++#include <linux/sched/rt.h>
++#include <linux/export.h>
++#include <linux/spinlock.h>
++#include <linux/interrupt.h>
++#include <linux/debug_locks.h>
++
++/*
++ * In the DEBUG case we are using the "NULL fastpath" for mutexes,
++ * which forces all calls into the slowpath:
++ */
++#ifdef CONFIG_DEBUG_MUTEXES
++# include "mutex-debug.h"
++# include <asm-generic/mutex-null.h>
++#else
++# include "mutex.h"
++# include <asm/mutex.h>
++#endif
++
++/*
++ * A negative mutex count indicates that waiters are sleeping waiting for the
++ * mutex.
++ */
++#define	MUTEX_SHOW_NO_WAITER(mutex)	(atomic_read(&(mutex)->count) >= 0)
++
++void
++__mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
++{
++	atomic_set(&lock->count, 1);
++	spin_lock_init(&lock->wait_lock);
++	INIT_LIST_HEAD(&lock->wait_list);
++	mutex_clear_owner(lock);
++#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
++	lock->spin_mlock = NULL;
++#endif
++
++	debug_mutex_init(lock, name, key);
++}
++
++EXPORT_SYMBOL(__mutex_init);
++
++#ifndef CONFIG_DEBUG_LOCK_ALLOC
++/*
++ * We split the mutex lock/unlock logic into separate fastpath and
++ * slowpath functions, to reduce the register pressure on the fastpath.
++ * We also put the fastpath first in the kernel image, to make sure the
++ * branch is predicted by the CPU as default-untaken.
++ */
++static __used noinline void __sched
++__mutex_lock_slowpath(atomic_t *lock_count);
++
++/**
++ * mutex_lock - acquire the mutex
++ * @lock: the mutex to be acquired
++ *
++ * Lock the mutex exclusively for this task. If the mutex is not
++ * available right now, it will sleep until it can get it.
++ *
++ * The mutex must later on be released by the same task that
++ * acquired it. Recursive locking is not allowed. The task
++ * may not exit without first unlocking the mutex. Also, kernel
++ * memory where the mutex resides mutex must not be freed with
++ * the mutex still locked. The mutex must first be initialized
++ * (or statically defined) before it can be locked. memset()-ing
++ * the mutex to 0 is not allowed.
++ *
++ * ( The CONFIG_DEBUG_MUTEXES .config option turns on debugging
++ *   checks that will enforce the restrictions and will also do
++ *   deadlock debugging. )
++ *
++ * This function is similar to (but not equivalent to) down().
++ */
++void __sched mutex_lock(struct mutex *lock)
++{
++	might_sleep();
++	/*
++	 * The locking fastpath is the 1->0 transition from
++	 * 'unlocked' into 'locked' state.
++	 */
++	__mutex_fastpath_lock(&lock->count, __mutex_lock_slowpath);
++	mutex_set_owner(lock);
++}
++
++EXPORT_SYMBOL(mutex_lock);
++#endif
++
++#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
++/*
++ * In order to avoid a stampede of mutex spinners from acquiring the mutex
++ * more or less simultaneously, the spinners need to acquire a MCS lock
++ * first before spinning on the owner field.
++ *
++ * We don't inline mspin_lock() so that perf can correctly account for the
++ * time spent in this lock function.
++ */
++struct mspin_node {
++	struct mspin_node *next ;
++	int		  locked;	/* 1 if lock acquired */
++};
++#define	MLOCK(mutex)	((struct mspin_node **)&((mutex)->spin_mlock))
++
++static noinline
++void mspin_lock(struct mspin_node **lock, struct mspin_node *node)
++{
++	struct mspin_node *prev;
++
++	/* Init node */
++	node->locked = 0;
++	node->next   = NULL;
++
++	prev = xchg(lock, node);
++	if (likely(prev == NULL)) {
++		/* Lock acquired */
++		node->locked = 1;
++		return;
++	}
++	ACCESS_ONCE(prev->next) = node;
++	smp_wmb();
++	/* Wait until the lock holder passes the lock down */
++	while (!ACCESS_ONCE(node->locked))
++		arch_mutex_cpu_relax();
++}
++
++static void mspin_unlock(struct mspin_node **lock, struct mspin_node *node)
++{
++	struct mspin_node *next = ACCESS_ONCE(node->next);
++
++	if (likely(!next)) {
++		/*
++		 * Release the lock by setting it to NULL
++		 */
++		if (cmpxchg(lock, node, NULL) == node)
++			return;
++		/* Wait until the next pointer is set */
++		while (!(next = ACCESS_ONCE(node->next)))
++			arch_mutex_cpu_relax();
++	}
++	ACCESS_ONCE(next->locked) = 1;
++	smp_wmb();
++}
++
++/*
++ * Mutex spinning code migrated from kernel/sched/core.c
++ */
++
++static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
++{
++	if (lock->owner != owner)
++		return false;
++
++	/*
++	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
++	 * lock->owner still matches owner, if that fails, owner might
++	 * point to free()d memory, if it still matches, the rcu_read_lock()
++	 * ensures the memory stays valid.
++	 */
++	barrier();
++
++	return owner->on_cpu;
++}
++
++/*
++ * Look out! "owner" is an entirely speculative pointer
++ * access and not reliable.
++ */
++static noinline
++int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
++{
++	rcu_read_lock();
++	while (owner_running(lock, owner)) {
++		if (need_resched())
++			break;
++
++		arch_mutex_cpu_relax();
++	}
++	rcu_read_unlock();
++
++	/*
++	 * We break out the loop above on need_resched() and when the
++	 * owner changed, which is a sign for heavy contention. Return
++	 * success only when lock->owner is NULL.
++	 */
++	return lock->owner == NULL;
++}
++
++/*
++ * Initial check for entering the mutex spinning loop
++ */
++static inline int mutex_can_spin_on_owner(struct mutex *lock)
++{
++	struct task_struct *owner;
++	int retval = 1;
++
++	rcu_read_lock();
++	owner = ACCESS_ONCE(lock->owner);
++	if (owner)
++		retval = owner->on_cpu;
++	rcu_read_unlock();
++	/*
++	 * if lock->owner is not set, the mutex owner may have just acquired
++	 * it and not set the owner yet or the mutex has been released.
++	 */
++	return retval;
++}
++#endif
++
++static __used noinline void __sched __mutex_unlock_slowpath(atomic_t *lock_count);
++
++/**
++ * mutex_unlock - release the mutex
++ * @lock: the mutex to be released
++ *
++ * Unlock a mutex that has been locked by this task previously.
++ *
++ * This function must not be used in interrupt context. Unlocking
++ * of a not locked mutex is not allowed.
++ *
++ * This function is similar to (but not equivalent to) up().
++ */
++void __sched mutex_unlock(struct mutex *lock)
++{
++	/*
++	 * The unlocking fastpath is the 0->1 transition from 'locked'
++	 * into 'unlocked' state:
++	 */
++#ifndef CONFIG_DEBUG_MUTEXES
++	/*
++	 * When debugging is enabled we must not clear the owner before time,
++	 * the slow path will always be taken, and that clears the owner field
++	 * after verifying that it was indeed current.
++	 */
++	mutex_clear_owner(lock);
++#endif
++	__mutex_fastpath_unlock(&lock->count, __mutex_unlock_slowpath);
++}
++
++EXPORT_SYMBOL(mutex_unlock);
++
++/**
++ * ww_mutex_unlock - release the w/w mutex
++ * @lock: the mutex to be released
++ *
++ * Unlock a mutex that has been locked by this task previously with any of the
++ * ww_mutex_lock* functions (with or without an acquire context). It is
++ * forbidden to release the locks after releasing the acquire context.
++ *
++ * This function must not be used in interrupt context. Unlocking
++ * of a unlocked mutex is not allowed.
++ */
++void __sched ww_mutex_unlock(struct ww_mutex *lock)
++{
++	/*
++	 * The unlocking fastpath is the 0->1 transition from 'locked'
++	 * into 'unlocked' state:
++	 */
++	if (lock->ctx) {
++#ifdef CONFIG_DEBUG_MUTEXES
++		DEBUG_LOCKS_WARN_ON(!lock->ctx->acquired);
++#endif
++		if (lock->ctx->acquired > 0)
++			lock->ctx->acquired--;
++		lock->ctx = NULL;
++	}
++
++#ifndef CONFIG_DEBUG_MUTEXES
++	/*
++	 * When debugging is enabled we must not clear the owner before time,
++	 * the slow path will always be taken, and that clears the owner field
++	 * after verifying that it was indeed current.
++	 */
++	mutex_clear_owner(&lock->base);
++#endif
++	__mutex_fastpath_unlock(&lock->base.count, __mutex_unlock_slowpath);
++}
++EXPORT_SYMBOL(ww_mutex_unlock);
++
++static inline int __sched
++__mutex_lock_check_stamp(struct mutex *lock, struct ww_acquire_ctx *ctx)
++{
++	struct ww_mutex *ww = container_of(lock, struct ww_mutex, base);
++	struct ww_acquire_ctx *hold_ctx = ACCESS_ONCE(ww->ctx);
++
++	if (!hold_ctx)
++		return 0;
++
++	if (unlikely(ctx == hold_ctx))
++		return -EALREADY;
++
++	if (ctx->stamp - hold_ctx->stamp <= LONG_MAX &&
++	    (ctx->stamp != hold_ctx->stamp || ctx > hold_ctx)) {
++#ifdef CONFIG_DEBUG_MUTEXES
++		DEBUG_LOCKS_WARN_ON(ctx->contending_lock);
++		ctx->contending_lock = ww;
++#endif
++		return -EDEADLK;
++	}
++
++	return 0;
++}
++
++static __always_inline void ww_mutex_lock_acquired(struct ww_mutex *ww,
++						   struct ww_acquire_ctx *ww_ctx)
++{
++#ifdef CONFIG_DEBUG_MUTEXES
++	/*
++	 * If this WARN_ON triggers, you used ww_mutex_lock to acquire,
++	 * but released with a normal mutex_unlock in this call.
++	 *
++	 * This should never happen, always use ww_mutex_unlock.
++	 */
++	DEBUG_LOCKS_WARN_ON(ww->ctx);
++
++	/*
++	 * Not quite done after calling ww_acquire_done() ?
++	 */
++	DEBUG_LOCKS_WARN_ON(ww_ctx->done_acquire);
++
++	if (ww_ctx->contending_lock) {
++		/*
++		 * After -EDEADLK you tried to
++		 * acquire a different ww_mutex? Bad!
++		 */
++		DEBUG_LOCKS_WARN_ON(ww_ctx->contending_lock != ww);
++
++		/*
++		 * You called ww_mutex_lock after receiving -EDEADLK,
++		 * but 'forgot' to unlock everything else first?
++		 */
++		DEBUG_LOCKS_WARN_ON(ww_ctx->acquired > 0);
++		ww_ctx->contending_lock = NULL;
++	}
++
++	/*
++	 * Naughty, using a different class will lead to undefined behavior!
++	 */
++	DEBUG_LOCKS_WARN_ON(ww_ctx->ww_class != ww->ww_class);
++#endif
++	ww_ctx->acquired++;
++}
++
++/*
++ * after acquiring lock with fastpath or when we lost out in contested
++ * slowpath, set ctx and wake up any waiters so they can recheck.
++ *
++ * This function is never called when CONFIG_DEBUG_LOCK_ALLOC is set,
++ * as the fastpath and opportunistic spinning are disabled in that case.
++ */
++static __always_inline void
++ww_mutex_set_context_fastpath(struct ww_mutex *lock,
++			       struct ww_acquire_ctx *ctx)
++{
++	unsigned long flags;
++	struct mutex_waiter *cur;
++
++	ww_mutex_lock_acquired(lock, ctx);
++
++	lock->ctx = ctx;
++
++	/*
++	 * The lock->ctx update should be visible on all cores before
++	 * the atomic read is done, otherwise contended waiters might be
++	 * missed. The contended waiters will either see ww_ctx == NULL
++	 * and keep spinning, or it will acquire wait_lock, add itself
++	 * to waiter list and sleep.
++	 */
++	smp_mb(); /* ^^^ */
++
++	/*
++	 * Check if lock is contended, if not there is nobody to wake up
++	 */
++	if (likely(atomic_read(&lock->base.count) == 0))
++		return;
++
++	/*
++	 * Uh oh, we raced in fastpath, wake up everyone in this case,
++	 * so they can see the new lock->ctx.
++	 */
++	spin_lock_mutex(&lock->base.wait_lock, flags);
++	list_for_each_entry(cur, &lock->base.wait_list, list) {
++		debug_mutex_wake_waiter(&lock->base, cur);
++		wake_up_process(cur->task);
++	}
++	spin_unlock_mutex(&lock->base.wait_lock, flags);
++}
++
++/*
++ * Lock a mutex (possibly interruptible), slowpath:
++ */
++static __always_inline int __sched
++__mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
++		    struct lockdep_map *nest_lock, unsigned long ip,
++		    struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
++{
++	struct task_struct *task = current;
++	struct mutex_waiter waiter;
++	unsigned long flags;
++	int ret;
++
++	preempt_disable();
++	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
++
++#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
++	/*
++	 * Optimistic spinning.
++	 *
++	 * We try to spin for acquisition when we find that there are no
++	 * pending waiters and the lock owner is currently running on a
++	 * (different) CPU.
++	 *
++	 * The rationale is that if the lock owner is running, it is likely to
++	 * release the lock soon.
++	 *
++	 * Since this needs the lock owner, and this mutex implementation
++	 * doesn't track the owner atomically in the lock field, we need to
++	 * track it non-atomically.
++	 *
++	 * We can't do this for DEBUG_MUTEXES because that relies on wait_lock
++	 * to serialize everything.
++	 *
++	 * The mutex spinners are queued up using MCS lock so that only one
++	 * spinner can compete for the mutex. However, if mutex spinning isn't
++	 * going to happen, there is no point in going through the lock/unlock
++	 * overhead.
++	 */
++	if (!mutex_can_spin_on_owner(lock))
++		goto slowpath;
++
++	for (;;) {
++		struct task_struct *owner;
++		struct mspin_node  node;
++
++		if (use_ww_ctx && ww_ctx->acquired > 0) {
++			struct ww_mutex *ww;
++
++			ww = container_of(lock, struct ww_mutex, base);
++			/*
++			 * If ww->ctx is set the contents are undefined, only
++			 * by acquiring wait_lock there is a guarantee that
++			 * they are not invalid when reading.
++			 *
++			 * As such, when deadlock detection needs to be
++			 * performed the optimistic spinning cannot be done.
++			 */
++			if (ACCESS_ONCE(ww->ctx))
++				goto slowpath;
++		}
++
++		/*
++		 * If there's an owner, wait for it to either
++		 * release the lock or go to sleep.
++		 */
++		mspin_lock(MLOCK(lock), &node);
++		owner = ACCESS_ONCE(lock->owner);
++		if (owner && !mutex_spin_on_owner(lock, owner)) {
++			mspin_unlock(MLOCK(lock), &node);
++			goto slowpath;
++		}
++
++		if ((atomic_read(&lock->count) == 1) &&
++		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
++			lock_acquired(&lock->dep_map, ip);
++			if (use_ww_ctx) {
++				struct ww_mutex *ww;
++				ww = container_of(lock, struct ww_mutex, base);
++
++				ww_mutex_set_context_fastpath(ww, ww_ctx);
++			}
++
++			mutex_set_owner(lock);
++			mspin_unlock(MLOCK(lock), &node);
++			preempt_enable();
++			return 0;
++		}
++		mspin_unlock(MLOCK(lock), &node);
++
++		/*
++		 * When there's no owner, we might have preempted between the
++		 * owner acquiring the lock and setting the owner field. If
++		 * we're an RT task that will live-lock because we won't let
++		 * the owner complete.
++		 */
++		if (!owner && (need_resched() || rt_task(task)))
++			goto slowpath;
++
++		/*
++		 * The cpu_relax() call is a compiler barrier which forces
++		 * everything in this loop to be re-loaded. We don't need
++		 * memory barriers as we'll eventually observe the right
++		 * values at the cost of a few extra spins.
++		 */
++		arch_mutex_cpu_relax();
++	}
++slowpath:
++#endif
++	spin_lock_mutex(&lock->wait_lock, flags);
++
++	/* once more, can we acquire the lock? */
++	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, 0) == 1))
++		goto skip_wait;
++
++	debug_mutex_lock_common(lock, &waiter);
++	debug_mutex_add_waiter(lock, &waiter, task_thread_info(task));
++
++	/* add waiting tasks to the end of the waitqueue (FIFO): */
++	list_add_tail(&waiter.list, &lock->wait_list);
++	waiter.task = task;
++
++	lock_contended(&lock->dep_map, ip);
++
++	for (;;) {
++		/*
++		 * Lets try to take the lock again - this is needed even if
++		 * we get here for the first time (shortly after failing to
++		 * acquire the lock), to make sure that we get a wakeup once
++		 * it's unlocked. Later on, if we sleep, this is the
++		 * operation that gives us the lock. We xchg it to -1, so
++		 * that when we release the lock, we properly wake up the
++		 * other waiters:
++		 */
++		if (MUTEX_SHOW_NO_WAITER(lock) &&
++		    (atomic_xchg(&lock->count, -1) == 1))
++			break;
++
++		/*
++		 * got a signal? (This code gets eliminated in the
++		 * TASK_UNINTERRUPTIBLE case.)
++		 */
++		if (unlikely(signal_pending_state(state, task))) {
++			ret = -EINTR;
++			goto err;
++		}
++
++		if (use_ww_ctx && ww_ctx->acquired > 0) {
++			ret = __mutex_lock_check_stamp(lock, ww_ctx);
++			if (ret)
++				goto err;
++		}
++
++		__set_task_state(task, state);
++
++		/* didn't get the lock, go to sleep: */
++		spin_unlock_mutex(&lock->wait_lock, flags);
++		schedule_preempt_disabled();
++		spin_lock_mutex(&lock->wait_lock, flags);
++	}
++	mutex_remove_waiter(lock, &waiter, current_thread_info());
++	/* set it to 0 if there are no waiters left: */
++	if (likely(list_empty(&lock->wait_list)))
++		atomic_set(&lock->count, 0);
++	debug_mutex_free_waiter(&waiter);
++
++skip_wait:
++	/* got the lock - cleanup and rejoice! */
++	lock_acquired(&lock->dep_map, ip);
++	mutex_set_owner(lock);
++
++	if (use_ww_ctx) {
++		struct ww_mutex *ww = container_of(lock, struct ww_mutex, base);
++		struct mutex_waiter *cur;
++
++		/*
++		 * This branch gets optimized out for the common case,
++		 * and is only important for ww_mutex_lock.
++		 */
++		ww_mutex_lock_acquired(ww, ww_ctx);
++		ww->ctx = ww_ctx;
++
++		/*
++		 * Give any possible sleeping processes the chance to wake up,
++		 * so they can recheck if they have to back off.
++		 */
++		list_for_each_entry(cur, &lock->wait_list, list) {
++			debug_mutex_wake_waiter(lock, cur);
++			wake_up_process(cur->task);
++		}
++	}
++
++	spin_unlock_mutex(&lock->wait_lock, flags);
++	preempt_enable();
++	return 0;
++
++err:
++	mutex_remove_waiter(lock, &waiter, task_thread_info(task));
++	spin_unlock_mutex(&lock->wait_lock, flags);
++	debug_mutex_free_waiter(&waiter);
++	mutex_release(&lock->dep_map, 1, ip);
++	preempt_enable();
++	return ret;
++}
++
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++void __sched
++mutex_lock_nested(struct mutex *lock, unsigned int subclass)
++{
++	might_sleep();
++	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE,
++			    subclass, NULL, _RET_IP_, NULL, 0);
++}
++
++EXPORT_SYMBOL_GPL(mutex_lock_nested);
++
++void __sched
++_mutex_lock_nest_lock(struct mutex *lock, struct lockdep_map *nest)
++{
++	might_sleep();
++	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE,
++			    0, nest, _RET_IP_, NULL, 0);
++}
++
++EXPORT_SYMBOL_GPL(_mutex_lock_nest_lock);
++
++int __sched
++mutex_lock_killable_nested(struct mutex *lock, unsigned int subclass)
++{
++	might_sleep();
++	return __mutex_lock_common(lock, TASK_KILLABLE,
++				   subclass, NULL, _RET_IP_, NULL, 0);
++}
++EXPORT_SYMBOL_GPL(mutex_lock_killable_nested);
++
++int __sched
++mutex_lock_interruptible_nested(struct mutex *lock, unsigned int subclass)
++{
++	might_sleep();
++	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE,
++				   subclass, NULL, _RET_IP_, NULL, 0);
++}
++
++EXPORT_SYMBOL_GPL(mutex_lock_interruptible_nested);
++
++static inline int
++ww_mutex_deadlock_injection(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
++{
++#ifdef CONFIG_DEBUG_WW_MUTEX_SLOWPATH
++	unsigned tmp;
++
++	if (ctx->deadlock_inject_countdown-- == 0) {
++		tmp = ctx->deadlock_inject_interval;
++		if (tmp > UINT_MAX/4)
++			tmp = UINT_MAX;
++		else
++			tmp = tmp*2 + tmp + tmp/2;
++
++		ctx->deadlock_inject_interval = tmp;
++		ctx->deadlock_inject_countdown = tmp;
++		ctx->contending_lock = lock;
++
++		ww_mutex_unlock(lock);
++
++		return -EDEADLK;
++	}
++#endif
++
++	return 0;
++}
++
++int __sched
++__ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
++{
++	int ret;
++
++	might_sleep();
++	ret =  __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE,
++				   0, &ctx->dep_map, _RET_IP_, ctx, 1);
++	if (!ret && ctx->acquired > 1)
++		return ww_mutex_deadlock_injection(lock, ctx);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(__ww_mutex_lock);
++
++int __sched
++__ww_mutex_lock_interruptible(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
++{
++	int ret;
++
++	might_sleep();
++	ret = __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE,
++				  0, &ctx->dep_map, _RET_IP_, ctx, 1);
++
++	if (!ret && ctx->acquired > 1)
++		return ww_mutex_deadlock_injection(lock, ctx);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(__ww_mutex_lock_interruptible);
++
++#endif
++
++/*
++ * Release the lock, slowpath:
++ */
++static inline void
++__mutex_unlock_common_slowpath(atomic_t *lock_count, int nested)
++{
++	struct mutex *lock = container_of(lock_count, struct mutex, count);
++	unsigned long flags;
++
++	spin_lock_mutex(&lock->wait_lock, flags);
++	mutex_release(&lock->dep_map, nested, _RET_IP_);
++	debug_mutex_unlock(lock);
++
++	/*
++	 * some architectures leave the lock unlocked in the fastpath failure
++	 * case, others need to leave it locked. In the later case we have to
++	 * unlock it here
++	 */
++	if (__mutex_slowpath_needs_to_unlock())
++		atomic_set(&lock->count, 1);
++
++	if (!list_empty(&lock->wait_list)) {
++		/* get the first entry from the wait-list: */
++		struct mutex_waiter *waiter =
++				list_entry(lock->wait_list.next,
++					   struct mutex_waiter, list);
++
++		debug_mutex_wake_waiter(lock, waiter);
++
++		wake_up_process(waiter->task);
++	}
++
++	spin_unlock_mutex(&lock->wait_lock, flags);
++}
++
++/*
++ * Release the lock, slowpath:
++ */
++static __used noinline void
++__mutex_unlock_slowpath(atomic_t *lock_count)
++{
++	__mutex_unlock_common_slowpath(lock_count, 1);
++}
++
++#ifndef CONFIG_DEBUG_LOCK_ALLOC
++/*
++ * Here come the less common (and hence less performance-critical) APIs:
++ * mutex_lock_interruptible() and mutex_trylock().
++ */
++static noinline int __sched
++__mutex_lock_killable_slowpath(struct mutex *lock);
++
++static noinline int __sched
++__mutex_lock_interruptible_slowpath(struct mutex *lock);
++
++/**
++ * mutex_lock_interruptible - acquire the mutex, interruptible
++ * @lock: the mutex to be acquired
++ *
++ * Lock the mutex like mutex_lock(), and return 0 if the mutex has
++ * been acquired or sleep until the mutex becomes available. If a
++ * signal arrives while waiting for the lock then this function
++ * returns -EINTR.
++ *
++ * This function is similar to (but not equivalent to) down_interruptible().
++ */
++int __sched mutex_lock_interruptible(struct mutex *lock)
++{
++	int ret;
++
++	might_sleep();
++	ret =  __mutex_fastpath_lock_retval(&lock->count);
++	if (likely(!ret)) {
++		mutex_set_owner(lock);
++		return 0;
++	} else
++		return __mutex_lock_interruptible_slowpath(lock);
++}
++
++EXPORT_SYMBOL(mutex_lock_interruptible);
++
++int __sched mutex_lock_killable(struct mutex *lock)
++{
++	int ret;
++
++	might_sleep();
++	ret = __mutex_fastpath_lock_retval(&lock->count);
++	if (likely(!ret)) {
++		mutex_set_owner(lock);
++		return 0;
++	} else
++		return __mutex_lock_killable_slowpath(lock);
++}
++EXPORT_SYMBOL(mutex_lock_killable);
++
++static __used noinline void __sched
++__mutex_lock_slowpath(atomic_t *lock_count)
++{
++	struct mutex *lock = container_of(lock_count, struct mutex, count);
++
++	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0,
++			    NULL, _RET_IP_, NULL, 0);
++}
++
++static noinline int __sched
++__mutex_lock_killable_slowpath(struct mutex *lock)
++{
++	return __mutex_lock_common(lock, TASK_KILLABLE, 0,
++				   NULL, _RET_IP_, NULL, 0);
++}
++
++static noinline int __sched
++__mutex_lock_interruptible_slowpath(struct mutex *lock)
++{
++	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0,
++				   NULL, _RET_IP_, NULL, 0);
++}
++
++static noinline int __sched
++__ww_mutex_lock_slowpath(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
++{
++	return __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE, 0,
++				   NULL, _RET_IP_, ctx, 1);
++}
++
++static noinline int __sched
++__ww_mutex_lock_interruptible_slowpath(struct ww_mutex *lock,
++					    struct ww_acquire_ctx *ctx)
++{
++	return __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE, 0,
++				   NULL, _RET_IP_, ctx, 1);
++}
++
++#endif
++
++/*
++ * Spinlock based trylock, we take the spinlock and check whether we
++ * can get the lock:
++ */
++static inline int __mutex_trylock_slowpath(atomic_t *lock_count)
++{
++	struct mutex *lock = container_of(lock_count, struct mutex, count);
++	unsigned long flags;
++	int prev;
++
++	spin_lock_mutex(&lock->wait_lock, flags);
++
++	prev = atomic_xchg(&lock->count, -1);
++	if (likely(prev == 1)) {
++		mutex_set_owner(lock);
++		mutex_acquire(&lock->dep_map, 0, 1, _RET_IP_);
++	}
++
++	/* Set it back to 0 if there are no waiters: */
++	if (likely(list_empty(&lock->wait_list)))
++		atomic_set(&lock->count, 0);
++
++	spin_unlock_mutex(&lock->wait_lock, flags);
++
++	return prev == 1;
++}
++
++/**
++ * mutex_trylock - try to acquire the mutex, without waiting
++ * @lock: the mutex to be acquired
++ *
++ * Try to acquire the mutex atomically. Returns 1 if the mutex
++ * has been acquired successfully, and 0 on contention.
++ *
++ * NOTE: this function follows the spin_trylock() convention, so
++ * it is negated from the down_trylock() return values! Be careful
++ * about this when converting semaphore users to mutexes.
++ *
++ * This function must not be used in interrupt context. The
++ * mutex must be released by the same task that acquired it.
++ */
++int __sched mutex_trylock(struct mutex *lock)
++{
++	int ret;
++
++	ret = __mutex_fastpath_trylock(&lock->count, __mutex_trylock_slowpath);
++	if (ret)
++		mutex_set_owner(lock);
++
++	return ret;
++}
++EXPORT_SYMBOL(mutex_trylock);
++
++#ifndef CONFIG_DEBUG_LOCK_ALLOC
++int __sched
++__ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
++{
++	int ret;
++
++	might_sleep();
++
++	ret = __mutex_fastpath_lock_retval(&lock->base.count);
++
++	if (likely(!ret)) {
++		ww_mutex_set_context_fastpath(lock, ctx);
++		mutex_set_owner(&lock->base);
++	} else
++		ret = __ww_mutex_lock_slowpath(lock, ctx);
++	return ret;
++}
++EXPORT_SYMBOL(__ww_mutex_lock);
++
++int __sched
++__ww_mutex_lock_interruptible(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
++{
++	int ret;
++
++	might_sleep();
++
++	ret = __mutex_fastpath_lock_retval(&lock->base.count);
++
++	if (likely(!ret)) {
++		ww_mutex_set_context_fastpath(lock, ctx);
++		mutex_set_owner(&lock->base);
++	} else
++		ret = __ww_mutex_lock_interruptible_slowpath(lock, ctx);
++	return ret;
++}
++EXPORT_SYMBOL(__ww_mutex_lock_interruptible);
++
++#endif
++
++/**
++ * atomic_dec_and_mutex_lock - return holding mutex if we dec to 0
++ * @cnt: the atomic which we are to dec
++ * @lock: the mutex to return holding if we dec to 0
++ *
++ * return true and hold lock if we dec to 0, return false otherwise
++ */
++int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock)
++{
++	/* dec if we can't possibly hit 0 */
++	if (atomic_add_unless(cnt, -1, 1))
++		return 0;
++	/* we might hit 0, so take the lock */
++	mutex_lock(lock);
++	if (!atomic_dec_and_test(cnt)) {
++		/* when we actually did the dec, we didn't hit 0 */
++		mutex_unlock(lock);
++		return 0;
++	}
++	/* we hit 0, and we hold the lock */
++	return 1;
++}
++EXPORT_SYMBOL(atomic_dec_and_mutex_lock);
+Index: linux-2.6/kernel/locking/mutex.h
+===================================================================
+--- /dev/null
++++ linux-2.6/kernel/locking/mutex.h
+@@ -0,0 +1,48 @@
++/*
++ * Mutexes: blocking mutual exclusion locks
++ *
++ * started by Ingo Molnar:
++ *
++ *  Copyright (C) 2004, 2005, 2006 Red Hat, Inc., Ingo Molnar <mingo@redhat.com>
++ *
++ * This file contains mutex debugging related internal prototypes, for the
++ * !CONFIG_DEBUG_MUTEXES case. Most of them are NOPs:
++ */
++
++#define spin_lock_mutex(lock, flags) \
++		do { spin_lock(lock); (void)(flags); } while (0)
++#define spin_unlock_mutex(lock, flags) \
++		do { spin_unlock(lock); (void)(flags); } while (0)
++#define mutex_remove_waiter(lock, waiter, ti) \
++		__list_del((waiter)->list.prev, (waiter)->list.next)
++
++#ifdef CONFIG_SMP
++static inline void mutex_set_owner(struct mutex *lock)
++{
++	lock->owner = current;
++}
++
++static inline void mutex_clear_owner(struct mutex *lock)
++{
++	lock->owner = NULL;
++}
++#else
++static inline void mutex_set_owner(struct mutex *lock)
++{
++}
++
++static inline void mutex_clear_owner(struct mutex *lock)
++{
++}
++#endif
++
++#define debug_mutex_wake_waiter(lock, waiter)		do { } while (0)
++#define debug_mutex_free_waiter(waiter)			do { } while (0)
++#define debug_mutex_add_waiter(lock, waiter, ti)	do { } while (0)
++#define debug_mutex_unlock(lock)			do { } while (0)
++#define debug_mutex_init(lock, name, key)		do { } while (0)
 +
 +static inline void
-+debug_spin_lock_before(raw_spinlock_t *lock)
++debug_mutex_lock_common(struct mutex *lock, struct mutex_waiter *waiter)
 +{
-+	SPIN_BUG_ON(lock->magic != SPINLOCK_MAGIC, lock, "bad magic");
-+	SPIN_BUG_ON(lock->owner == current, lock, "recursion");
-+	SPIN_BUG_ON(lock->owner_cpu == raw_smp_processor_id(),
-+							lock, "cpu recursion");
 +}
-+
-+static inline void debug_spin_lock_after(raw_spinlock_t *lock)
-+{
-+	lock->owner_cpu = raw_smp_processor_id();
-+	lock->owner = current;
-+}
-+
-+static inline void debug_spin_unlock(raw_spinlock_t *lock)
-+{
-+	SPIN_BUG_ON(lock->magic != SPINLOCK_MAGIC, lock, "bad magic");
-+	SPIN_BUG_ON(!raw_spin_is_locked(lock), lock, "already unlocked");
-+	SPIN_BUG_ON(lock->owner != current, lock, "wrong owner");
-+	SPIN_BUG_ON(lock->owner_cpu != raw_smp_processor_id(),
-+							lock, "wrong CPU");
-+	lock->owner = SPINLOCK_OWNER_INIT;
-+	lock->owner_cpu = -1;
-+}
-+
-+static void __spin_lock_debug(raw_spinlock_t *lock)
-+{
-+	u64 i;
-+	u64 loops = loops_per_jiffy * HZ;
-+
-+	for (i = 0; i < loops; i++) {
-+		if (arch_spin_trylock(&lock->raw_lock))
-+			return;
-+		__delay(1);
-+	}
-+	/* lockup suspected: */
-+	spin_dump(lock, "lockup suspected");
-+#ifdef CONFIG_SMP
-+	trigger_all_cpu_backtrace();
-+#endif
-+
-+	/*
-+	 * The trylock above was causing a livelock.  Give the lower level arch
-+	 * specific lock code a chance to acquire the lock. We have already
-+	 * printed a warning/backtrace at this point. The non-debug arch
-+	 * specific code might actually succeed in acquiring the lock.  If it is
-+	 * not successful, the end-result is the same - there is no forward
-+	 * progress.
-+	 */
-+	arch_spin_lock(&lock->raw_lock);
-+}
-+
-+void do_raw_spin_lock(raw_spinlock_t *lock)
-+{
-+	debug_spin_lock_before(lock);
-+	if (unlikely(!arch_spin_trylock(&lock->raw_lock)))
-+		__spin_lock_debug(lock);
-+	debug_spin_lock_after(lock);
-+}
-+
-+int do_raw_spin_trylock(raw_spinlock_t *lock)
-+{
-+	int ret = arch_spin_trylock(&lock->raw_lock);
-+
-+	if (ret)
-+		debug_spin_lock_after(lock);
-+#ifndef CONFIG_SMP
-+	/*
-+	 * Must not happen on UP:
-+	 */
-+	SPIN_BUG_ON(!ret, lock, "trylock failure on UP");
-+#endif
-+	return ret;
-+}
-+
-+void do_raw_spin_unlock(raw_spinlock_t *lock)
-+{
-+	debug_spin_unlock(lock);
-+	arch_spin_unlock(&lock->raw_lock);
-+}
-+
-+static void rwlock_bug(rwlock_t *lock, const char *msg)
-+{
-+	if (!debug_locks_off())
-+		return;
-+
-+	printk(KERN_EMERG "BUG: rwlock %s on CPU#%d, %s/%d, %p\n",
-+		msg, raw_smp_processor_id(), current->comm,
-+		task_pid_nr(current), lock);
-+	dump_stack();
-+}
-+
-+#define RWLOCK_BUG_ON(cond, lock, msg) if (unlikely(cond)) rwlock_bug(lock, msg)
-+
-+#if 0		/* __write_lock_debug() can lock up - maybe this can too? */
-+static void __read_lock_debug(rwlock_t *lock)
-+{
-+	u64 i;
-+	u64 loops = loops_per_jiffy * HZ;
-+	int print_once = 1;
-+
-+	for (;;) {
-+		for (i = 0; i < loops; i++) {
-+			if (arch_read_trylock(&lock->raw_lock))
-+				return;
-+			__delay(1);
-+		}
-+		/* lockup suspected: */
-+		if (print_once) {
-+			print_once = 0;
-+			printk(KERN_EMERG "BUG: read-lock lockup on CPU#%d, "
-+					"%s/%d, %p\n",
-+				raw_smp_processor_id(), current->comm,
-+				current->pid, lock);
-+			dump_stack();
-+		}
-+	}
-+}
-+#endif
-+
-+void do_raw_read_lock(rwlock_t *lock)
-+{
-+	RWLOCK_BUG_ON(lock->magic != RWLOCK_MAGIC, lock, "bad magic");
-+	arch_read_lock(&lock->raw_lock);
-+}
-+
-+int do_raw_read_trylock(rwlock_t *lock)
-+{
-+	int ret = arch_read_trylock(&lock->raw_lock);
-+
-+#ifndef CONFIG_SMP
-+	/*
-+	 * Must not happen on UP:
-+	 */
-+	RWLOCK_BUG_ON(!ret, lock, "trylock failure on UP");
-+#endif
-+	return ret;
-+}
-+
-+void do_raw_read_unlock(rwlock_t *lock)
-+{
-+	RWLOCK_BUG_ON(lock->magic != RWLOCK_MAGIC, lock, "bad magic");
-+	arch_read_unlock(&lock->raw_lock);
-+}
-+
-+static inline void debug_write_lock_before(rwlock_t *lock)
-+{
-+	RWLOCK_BUG_ON(lock->magic != RWLOCK_MAGIC, lock, "bad magic");
-+	RWLOCK_BUG_ON(lock->owner == current, lock, "recursion");
-+	RWLOCK_BUG_ON(lock->owner_cpu == raw_smp_processor_id(),
-+							lock, "cpu recursion");
-+}
-+
-+static inline void debug_write_lock_after(rwlock_t *lock)
-+{
-+	lock->owner_cpu = raw_smp_processor_id();
-+	lock->owner = current;
-+}
-+
-+static inline void debug_write_unlock(rwlock_t *lock)
-+{
-+	RWLOCK_BUG_ON(lock->magic != RWLOCK_MAGIC, lock, "bad magic");
-+	RWLOCK_BUG_ON(lock->owner != current, lock, "wrong owner");
-+	RWLOCK_BUG_ON(lock->owner_cpu != raw_smp_processor_id(),
-+							lock, "wrong CPU");
-+	lock->owner = SPINLOCK_OWNER_INIT;
-+	lock->owner_cpu = -1;
-+}
-+
-+#if 0		/* This can cause lockups */
-+static void __write_lock_debug(rwlock_t *lock)
-+{
-+	u64 i;
-+	u64 loops = loops_per_jiffy * HZ;
-+	int print_once = 1;
-+
-+	for (;;) {
-+		for (i = 0; i < loops; i++) {
-+			if (arch_write_trylock(&lock->raw_lock))
-+				return;
-+			__delay(1);
-+		}
-+		/* lockup suspected: */
-+		if (print_once) {
-+			print_once = 0;
-+			printk(KERN_EMERG "BUG: write-lock lockup on CPU#%d, "
-+					"%s/%d, %p\n",
-+				raw_smp_processor_id(), current->comm,
-+				current->pid, lock);
-+			dump_stack();
-+		}
-+	}
-+}
-+#endif
-+
-+void do_raw_write_lock(rwlock_t *lock)
-+{
-+	debug_write_lock_before(lock);
-+	arch_write_lock(&lock->raw_lock);
-+	debug_write_lock_after(lock);
-+}
-+
-+int do_raw_write_trylock(rwlock_t *lock)
-+{
-+	int ret = arch_write_trylock(&lock->raw_lock);
-+
-+	if (ret)
-+		debug_write_lock_after(lock);
-+#ifndef CONFIG_SMP
-+	/*
-+	 * Must not happen on UP:
-+	 */
-+	RWLOCK_BUG_ON(!ret, lock, "trylock failure on UP");
-+#endif
-+	return ret;
-+}
-+
-+void do_raw_write_unlock(rwlock_t *lock)
-+{
-+	debug_write_unlock(lock);
-+	arch_write_unlock(&lock->raw_lock);
-+}
---- a/kernel/spinlock.c
+Index: linux-2.6/kernel/mutex-debug.c
+===================================================================
+--- linux-2.6.orig/kernel/mutex-debug.c
 +++ /dev/null
-@@ -1,399 +0,0 @@
+@@ -1,110 +0,0 @@
 -/*
-- * Copyright (2004) Linus Torvalds
+- * kernel/mutex-debug.c
 - *
-- * Author: Zwane Mwaikambo <zwane@fsmlabs.com>
+- * Debugging code for mutexes
 - *
-- * Copyright (2004, 2005) Ingo Molnar
+- * Started by Ingo Molnar:
 - *
-- * This file contains the spinlock/rwlock implementations for the
-- * SMP and the DEBUG_SPINLOCK cases. (UP-nondebug inlines them)
+- *  Copyright (C) 2004, 2005, 2006 Red Hat, Inc., Ingo Molnar <mingo@redhat.com>
 - *
-- * Note that some architectures have special knowledge about the
-- * stack frames of these functions in their profile_pc. If you
-- * change anything significant here that could change the stack
-- * frame contact the architecture maintainers.
-- */
--
--#include <linux/linkage.h>
--#include <linux/preempt.h>
--#include <linux/spinlock.h>
--#include <linux/interrupt.h>
--#include <linux/debug_locks.h>
--#include <linux/export.h>
--
--/*
-- * If lockdep is enabled then we use the non-preemption spin-ops
-- * even on CONFIG_PREEMPT, because lockdep assumes that interrupts are
-- * not re-enabled during lock-acquire (which the preempt-spin-ops do):
-- */
--#if !defined(CONFIG_GENERIC_LOCKBREAK) || defined(CONFIG_DEBUG_LOCK_ALLOC)
--/*
-- * The __lock_function inlines are taken from
-- * include/linux/spinlock_api_smp.h
-- */
--#else
--#define raw_read_can_lock(l)	read_can_lock(l)
--#define raw_write_can_lock(l)	write_can_lock(l)
--
--/*
-- * Some architectures can relax in favour of the CPU owning the lock.
-- */
--#ifndef arch_read_relax
--# define arch_read_relax(l)	cpu_relax()
--#endif
--#ifndef arch_write_relax
--# define arch_write_relax(l)	cpu_relax()
--#endif
--#ifndef arch_spin_relax
--# define arch_spin_relax(l)	cpu_relax()
--#endif
--
--/*
-- * We build the __lock_function inlines here. They are too large for
-- * inlining all over the place, but here is only one user per function
-- * which embedds them into the calling _lock_function below.
+- * lock debugging, locking tree, deadlock detection started by:
 - *
-- * This could be a long-held lock. We both prepare to spin for a long
-- * time (making _this_ CPU preemptable if possible), and we also signal
-- * towards that other CPU that it should break the lock ASAP.
+- *  Copyright (C) 2004, LynuxWorks, Inc., Igor Manyilov, Bill Huey
+- *  Released under the General Public License (GPL).
 - */
--#define BUILD_LOCK_OPS(op, locktype)					\
--void __lockfunc __raw_##op##_lock(locktype##_t *lock)			\
--{									\
--	for (;;) {							\
--		preempt_disable();					\
--		if (likely(do_raw_##op##_trylock(lock)))		\
--			break;						\
--		preempt_enable();					\
--									\
--		if (!(lock)->break_lock)				\
--			(lock)->break_lock = 1;				\
--		while (!raw_##op##_can_lock(lock) && (lock)->break_lock)\
--			arch_##op##_relax(&lock->raw_lock);		\
--	}								\
--	(lock)->break_lock = 0;						\
--}									\
--									\
--unsigned long __lockfunc __raw_##op##_lock_irqsave(locktype##_t *lock)	\
--{									\
--	unsigned long flags;						\
--									\
--	for (;;) {							\
--		preempt_disable();					\
--		local_irq_save(flags);					\
--		if (likely(do_raw_##op##_trylock(lock)))		\
--			break;						\
--		local_irq_restore(flags);				\
--		preempt_enable();					\
--									\
--		if (!(lock)->break_lock)				\
--			(lock)->break_lock = 1;				\
--		while (!raw_##op##_can_lock(lock) && (lock)->break_lock)\
--			arch_##op##_relax(&lock->raw_lock);		\
--	}								\
--	(lock)->break_lock = 0;						\
--	return flags;							\
--}									\
--									\
--void __lockfunc __raw_##op##_lock_irq(locktype##_t *lock)		\
--{									\
--	_raw_##op##_lock_irqsave(lock);					\
--}									\
--									\
--void __lockfunc __raw_##op##_lock_bh(locktype##_t *lock)		\
--{									\
--	unsigned long flags;						\
--									\
--	/*							*/	\
--	/* Careful: we must exclude softirqs too, hence the	*/	\
--	/* irq-disabling. We use the generic preemption-aware	*/	\
--	/* function:						*/	\
--	/**/								\
--	flags = _raw_##op##_lock_irqsave(lock);				\
--	local_bh_disable();						\
--	local_irq_restore(flags);					\
--}									\
--
--/*
-- * Build preemption-friendly versions of the following
-- * lock-spinning functions:
-- *
-- *         __[spin|read|write]_lock()
-- *         __[spin|read|write]_lock_irq()
-- *         __[spin|read|write]_lock_irqsave()
-- *         __[spin|read|write]_lock_bh()
-- */
--BUILD_LOCK_OPS(spin, raw_spinlock);
--BUILD_LOCK_OPS(read, rwlock);
--BUILD_LOCK_OPS(write, rwlock);
--
--#endif
--
--#ifndef CONFIG_INLINE_SPIN_TRYLOCK
--int __lockfunc _raw_spin_trylock(raw_spinlock_t *lock)
--{
--	return __raw_spin_trylock(lock);
--}
--EXPORT_SYMBOL(_raw_spin_trylock);
--#endif
--
--#ifndef CONFIG_INLINE_SPIN_TRYLOCK_BH
--int __lockfunc _raw_spin_trylock_bh(raw_spinlock_t *lock)
--{
--	return __raw_spin_trylock_bh(lock);
--}
--EXPORT_SYMBOL(_raw_spin_trylock_bh);
--#endif
--
--#ifndef CONFIG_INLINE_SPIN_LOCK
--void __lockfunc _raw_spin_lock(raw_spinlock_t *lock)
--{
--	__raw_spin_lock(lock);
--}
--EXPORT_SYMBOL(_raw_spin_lock);
--#endif
--
--#ifndef CONFIG_INLINE_SPIN_LOCK_IRQSAVE
--unsigned long __lockfunc _raw_spin_lock_irqsave(raw_spinlock_t *lock)
--{
--	return __raw_spin_lock_irqsave(lock);
--}
--EXPORT_SYMBOL(_raw_spin_lock_irqsave);
--#endif
--
--#ifndef CONFIG_INLINE_SPIN_LOCK_IRQ
--void __lockfunc _raw_spin_lock_irq(raw_spinlock_t *lock)
--{
--	__raw_spin_lock_irq(lock);
--}
--EXPORT_SYMBOL(_raw_spin_lock_irq);
--#endif
--
--#ifndef CONFIG_INLINE_SPIN_LOCK_BH
--void __lockfunc _raw_spin_lock_bh(raw_spinlock_t *lock)
--{
--	__raw_spin_lock_bh(lock);
--}
--EXPORT_SYMBOL(_raw_spin_lock_bh);
--#endif
--
--#ifdef CONFIG_UNINLINE_SPIN_UNLOCK
--void __lockfunc _raw_spin_unlock(raw_spinlock_t *lock)
--{
--	__raw_spin_unlock(lock);
--}
--EXPORT_SYMBOL(_raw_spin_unlock);
--#endif
--
--#ifndef CONFIG_INLINE_SPIN_UNLOCK_IRQRESTORE
--void __lockfunc _raw_spin_unlock_irqrestore(raw_spinlock_t *lock, unsigned long flags)
--{
--	__raw_spin_unlock_irqrestore(lock, flags);
--}
--EXPORT_SYMBOL(_raw_spin_unlock_irqrestore);
--#endif
--
--#ifndef CONFIG_INLINE_SPIN_UNLOCK_IRQ
--void __lockfunc _raw_spin_unlock_irq(raw_spinlock_t *lock)
--{
--	__raw_spin_unlock_irq(lock);
--}
--EXPORT_SYMBOL(_raw_spin_unlock_irq);
--#endif
--
--#ifndef CONFIG_INLINE_SPIN_UNLOCK_BH
--void __lockfunc _raw_spin_unlock_bh(raw_spinlock_t *lock)
--{
--	__raw_spin_unlock_bh(lock);
--}
--EXPORT_SYMBOL(_raw_spin_unlock_bh);
--#endif
--
--#ifndef CONFIG_INLINE_READ_TRYLOCK
--int __lockfunc _raw_read_trylock(rwlock_t *lock)
--{
--	return __raw_read_trylock(lock);
--}
--EXPORT_SYMBOL(_raw_read_trylock);
--#endif
--
--#ifndef CONFIG_INLINE_READ_LOCK
--void __lockfunc _raw_read_lock(rwlock_t *lock)
--{
--	__raw_read_lock(lock);
--}
--EXPORT_SYMBOL(_raw_read_lock);
--#endif
--
--#ifndef CONFIG_INLINE_READ_LOCK_IRQSAVE
--unsigned long __lockfunc _raw_read_lock_irqsave(rwlock_t *lock)
--{
--	return __raw_read_lock_irqsave(lock);
--}
--EXPORT_SYMBOL(_raw_read_lock_irqsave);
--#endif
--
--#ifndef CONFIG_INLINE_READ_LOCK_IRQ
--void __lockfunc _raw_read_lock_irq(rwlock_t *lock)
--{
--	__raw_read_lock_irq(lock);
--}
--EXPORT_SYMBOL(_raw_read_lock_irq);
--#endif
--
--#ifndef CONFIG_INLINE_READ_LOCK_BH
--void __lockfunc _raw_read_lock_bh(rwlock_t *lock)
--{
--	__raw_read_lock_bh(lock);
--}
--EXPORT_SYMBOL(_raw_read_lock_bh);
--#endif
--
--#ifndef CONFIG_INLINE_READ_UNLOCK
--void __lockfunc _raw_read_unlock(rwlock_t *lock)
--{
--	__raw_read_unlock(lock);
--}
--EXPORT_SYMBOL(_raw_read_unlock);
--#endif
--
--#ifndef CONFIG_INLINE_READ_UNLOCK_IRQRESTORE
--void __lockfunc _raw_read_unlock_irqrestore(rwlock_t *lock, unsigned long flags)
--{
--	__raw_read_unlock_irqrestore(lock, flags);
--}
--EXPORT_SYMBOL(_raw_read_unlock_irqrestore);
--#endif
--
--#ifndef CONFIG_INLINE_READ_UNLOCK_IRQ
--void __lockfunc _raw_read_unlock_irq(rwlock_t *lock)
--{
--	__raw_read_unlock_irq(lock);
--}
--EXPORT_SYMBOL(_raw_read_unlock_irq);
--#endif
--
--#ifndef CONFIG_INLINE_READ_UNLOCK_BH
--void __lockfunc _raw_read_unlock_bh(rwlock_t *lock)
--{
--	__raw_read_unlock_bh(lock);
--}
--EXPORT_SYMBOL(_raw_read_unlock_bh);
--#endif
--
--#ifndef CONFIG_INLINE_WRITE_TRYLOCK
--int __lockfunc _raw_write_trylock(rwlock_t *lock)
--{
--	return __raw_write_trylock(lock);
--}
--EXPORT_SYMBOL(_raw_write_trylock);
--#endif
--
--#ifndef CONFIG_INLINE_WRITE_LOCK
--void __lockfunc _raw_write_lock(rwlock_t *lock)
--{
--	__raw_write_lock(lock);
--}
--EXPORT_SYMBOL(_raw_write_lock);
--#endif
--
--#ifndef CONFIG_INLINE_WRITE_LOCK_IRQSAVE
--unsigned long __lockfunc _raw_write_lock_irqsave(rwlock_t *lock)
--{
--	return __raw_write_lock_irqsave(lock);
--}
--EXPORT_SYMBOL(_raw_write_lock_irqsave);
--#endif
--
--#ifndef CONFIG_INLINE_WRITE_LOCK_IRQ
--void __lockfunc _raw_write_lock_irq(rwlock_t *lock)
--{
--	__raw_write_lock_irq(lock);
--}
--EXPORT_SYMBOL(_raw_write_lock_irq);
--#endif
--
--#ifndef CONFIG_INLINE_WRITE_LOCK_BH
--void __lockfunc _raw_write_lock_bh(rwlock_t *lock)
--{
--	__raw_write_lock_bh(lock);
--}
--EXPORT_SYMBOL(_raw_write_lock_bh);
--#endif
--
--#ifndef CONFIG_INLINE_WRITE_UNLOCK
--void __lockfunc _raw_write_unlock(rwlock_t *lock)
--{
--	__raw_write_unlock(lock);
--}
--EXPORT_SYMBOL(_raw_write_unlock);
--#endif
--
--#ifndef CONFIG_INLINE_WRITE_UNLOCK_IRQRESTORE
--void __lockfunc _raw_write_unlock_irqrestore(rwlock_t *lock, unsigned long flags)
--{
--	__raw_write_unlock_irqrestore(lock, flags);
--}
--EXPORT_SYMBOL(_raw_write_unlock_irqrestore);
--#endif
--
--#ifndef CONFIG_INLINE_WRITE_UNLOCK_IRQ
--void __lockfunc _raw_write_unlock_irq(rwlock_t *lock)
--{
--	__raw_write_unlock_irq(lock);
--}
--EXPORT_SYMBOL(_raw_write_unlock_irq);
--#endif
--
--#ifndef CONFIG_INLINE_WRITE_UNLOCK_BH
--void __lockfunc _raw_write_unlock_bh(rwlock_t *lock)
--{
--	__raw_write_unlock_bh(lock);
--}
--EXPORT_SYMBOL(_raw_write_unlock_bh);
--#endif
--
--#ifdef CONFIG_DEBUG_LOCK_ALLOC
--
--void __lockfunc _raw_spin_lock_nested(raw_spinlock_t *lock, int subclass)
--{
--	preempt_disable();
--	spin_acquire(&lock->dep_map, subclass, 0, _RET_IP_);
--	LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
--}
--EXPORT_SYMBOL(_raw_spin_lock_nested);
--
--unsigned long __lockfunc _raw_spin_lock_irqsave_nested(raw_spinlock_t *lock,
--						   int subclass)
--{
--	unsigned long flags;
--
--	local_irq_save(flags);
--	preempt_disable();
--	spin_acquire(&lock->dep_map, subclass, 0, _RET_IP_);
--	LOCK_CONTENDED_FLAGS(lock, do_raw_spin_trylock, do_raw_spin_lock,
--				do_raw_spin_lock_flags, &flags);
--	return flags;
--}
--EXPORT_SYMBOL(_raw_spin_lock_irqsave_nested);
--
--void __lockfunc _raw_spin_lock_nest_lock(raw_spinlock_t *lock,
--				     struct lockdep_map *nest_lock)
--{
--	preempt_disable();
--	spin_acquire_nest(&lock->dep_map, 0, 0, nest_lock, _RET_IP_);
--	LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
--}
--EXPORT_SYMBOL(_raw_spin_lock_nest_lock);
--
--#endif
--
--notrace int in_lock_functions(unsigned long addr)
--{
--	/* Linker adds these: start and end of __lockfunc functions */
--	extern char __lock_text_start[], __lock_text_end[];
--
--	return addr >= (unsigned long)__lock_text_start
--	&& addr < (unsigned long)__lock_text_end;
--}
--EXPORT_SYMBOL(in_lock_functions);
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -42,7 +42,6 @@ obj-$(CONFIG_GENERIC_PCI_IOMAP) += pci_i
- obj-$(CONFIG_HAS_IOMEM) += iomap_copy.o devres.o
- obj-$(CONFIG_CHECK_SIGNATURE) += check_signature.o
- obj-$(CONFIG_DEBUG_LOCKING_API_SELFTESTS) += locking-selftest.o
--obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock_debug.o
- lib-$(CONFIG_RWSEM_GENERIC_SPINLOCK) += rwsem-spinlock.o
- lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem.o
- lib-$(CONFIG_PERCPU_RWSEM) += percpu-rwsem.o
---- a/lib/spinlock_debug.c
-+++ /dev/null
-@@ -1,302 +0,0 @@
--/*
-- * Copyright 2005, Red Hat, Inc., Ingo Molnar
-- * Released under the General Public License (GPL).
-- *
-- * This file contains the spinlock/rwlock implementations for
-- * DEBUG_SPINLOCK.
-- */
--
--#include <linux/spinlock.h>
--#include <linux/nmi.h>
--#include <linux/interrupt.h>
--#include <linux/debug_locks.h>
+-#include <linux/mutex.h>
 -#include <linux/delay.h>
 -#include <linux/export.h>
+-#include <linux/poison.h>
+-#include <linux/sched.h>
+-#include <linux/spinlock.h>
+-#include <linux/kallsyms.h>
+-#include <linux/interrupt.h>
+-#include <linux/debug_locks.h>
 -
--void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,
--			  struct lock_class_key *key)
+-#include "mutex-debug.h"
+-
+-/*
+- * Must be called with lock->wait_lock held.
+- */
+-void debug_mutex_lock_common(struct mutex *lock, struct mutex_waiter *waiter)
 -{
--#ifdef CONFIG_DEBUG_LOCK_ALLOC
--	/*
--	 * Make sure we are not reinitializing a held lock:
--	 */
--	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
--	lockdep_init_map(&lock->dep_map, name, key, 0);
--#endif
--	lock->raw_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
--	lock->magic = SPINLOCK_MAGIC;
--	lock->owner = SPINLOCK_OWNER_INIT;
--	lock->owner_cpu = -1;
+-	memset(waiter, MUTEX_DEBUG_INIT, sizeof(*waiter));
+-	waiter->magic = waiter;
+-	INIT_LIST_HEAD(&waiter->list);
 -}
 -
--EXPORT_SYMBOL(__raw_spin_lock_init);
--
--void __rwlock_init(rwlock_t *lock, const char *name,
--		   struct lock_class_key *key)
+-void debug_mutex_wake_waiter(struct mutex *lock, struct mutex_waiter *waiter)
 -{
--#ifdef CONFIG_DEBUG_LOCK_ALLOC
--	/*
--	 * Make sure we are not reinitializing a held lock:
--	 */
--	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
--	lockdep_init_map(&lock->dep_map, name, key, 0);
--#endif
--	lock->raw_lock = (arch_rwlock_t) __ARCH_RW_LOCK_UNLOCKED;
--	lock->magic = RWLOCK_MAGIC;
--	lock->owner = SPINLOCK_OWNER_INIT;
--	lock->owner_cpu = -1;
+-	SMP_DEBUG_LOCKS_WARN_ON(!spin_is_locked(&lock->wait_lock));
+-	DEBUG_LOCKS_WARN_ON(list_empty(&lock->wait_list));
+-	DEBUG_LOCKS_WARN_ON(waiter->magic != waiter);
+-	DEBUG_LOCKS_WARN_ON(list_empty(&waiter->list));
 -}
 -
--EXPORT_SYMBOL(__rwlock_init);
--
--static void spin_dump(raw_spinlock_t *lock, const char *msg)
+-void debug_mutex_free_waiter(struct mutex_waiter *waiter)
 -{
--	struct task_struct *owner = NULL;
--
--	if (lock->owner && lock->owner != SPINLOCK_OWNER_INIT)
--		owner = lock->owner;
--	printk(KERN_EMERG "BUG: spinlock %s on CPU#%d, %s/%d\n",
--		msg, raw_smp_processor_id(),
--		current->comm, task_pid_nr(current));
--	printk(KERN_EMERG " lock: %pS, .magic: %08x, .owner: %s/%d, "
--			".owner_cpu: %d\n",
--		lock, lock->magic,
--		owner ? owner->comm : "<none>",
--		owner ? task_pid_nr(owner) : -1,
--		lock->owner_cpu);
--	dump_stack();
+-	DEBUG_LOCKS_WARN_ON(!list_empty(&waiter->list));
+-	memset(waiter, MUTEX_DEBUG_FREE, sizeof(*waiter));
 -}
 -
--static void spin_bug(raw_spinlock_t *lock, const char *msg)
+-void debug_mutex_add_waiter(struct mutex *lock, struct mutex_waiter *waiter,
+-			    struct thread_info *ti)
 -{
--	if (!debug_locks_off())
+-	SMP_DEBUG_LOCKS_WARN_ON(!spin_is_locked(&lock->wait_lock));
+-
+-	/* Mark the current thread as blocked on the lock: */
+-	ti->task->blocked_on = waiter;
+-}
+-
+-void mutex_remove_waiter(struct mutex *lock, struct mutex_waiter *waiter,
+-			 struct thread_info *ti)
+-{
+-	DEBUG_LOCKS_WARN_ON(list_empty(&waiter->list));
+-	DEBUG_LOCKS_WARN_ON(waiter->task != ti->task);
+-	DEBUG_LOCKS_WARN_ON(ti->task->blocked_on != waiter);
+-	ti->task->blocked_on = NULL;
+-
+-	list_del_init(&waiter->list);
+-	waiter->task = NULL;
+-}
+-
+-void debug_mutex_unlock(struct mutex *lock)
+-{
+-	if (unlikely(!debug_locks))
 -		return;
 -
--	spin_dump(lock, msg);
+-	DEBUG_LOCKS_WARN_ON(lock->magic != lock);
+-	DEBUG_LOCKS_WARN_ON(lock->owner != current);
+-	DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
+-	mutex_clear_owner(lock);
 -}
 -
--#define SPIN_BUG_ON(cond, lock, msg) if (unlikely(cond)) spin_bug(lock, msg)
+-void debug_mutex_init(struct mutex *lock, const char *name,
+-		      struct lock_class_key *key)
+-{
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
+-	/*
+-	 * Make sure we are not reinitializing a held lock:
+-	 */
+-	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
+-	lockdep_init_map(&lock->dep_map, name, key, 0);
+-#endif
+-	lock->magic = lock;
+-}
+-
+-/***
+- * mutex_destroy - mark a mutex unusable
+- * @lock: the mutex to be destroyed
+- *
+- * This function marks the mutex uninitialized, and any subsequent
+- * use of the mutex is forbidden. The mutex must not be locked when
+- * this function is called.
+- */
+-void mutex_destroy(struct mutex *lock)
+-{
+-	DEBUG_LOCKS_WARN_ON(mutex_is_locked(lock));
+-	lock->magic = NULL;
+-}
+-
+-EXPORT_SYMBOL_GPL(mutex_destroy);
+Index: linux-2.6/kernel/mutex-debug.h
+===================================================================
+--- linux-2.6.orig/kernel/mutex-debug.h
++++ /dev/null
+@@ -1,55 +0,0 @@
+-/*
+- * Mutexes: blocking mutual exclusion locks
+- *
+- * started by Ingo Molnar:
+- *
+- *  Copyright (C) 2004, 2005, 2006 Red Hat, Inc., Ingo Molnar <mingo@redhat.com>
+- *
+- * This file contains mutex debugging related internal declarations,
+- * prototypes and inline functions, for the CONFIG_DEBUG_MUTEXES case.
+- * More details are in kernel/mutex-debug.c.
+- */
+-
+-/*
+- * This must be called with lock->wait_lock held.
+- */
+-extern void debug_mutex_lock_common(struct mutex *lock,
+-				    struct mutex_waiter *waiter);
+-extern void debug_mutex_wake_waiter(struct mutex *lock,
+-				    struct mutex_waiter *waiter);
+-extern void debug_mutex_free_waiter(struct mutex_waiter *waiter);
+-extern void debug_mutex_add_waiter(struct mutex *lock,
+-				   struct mutex_waiter *waiter,
+-				   struct thread_info *ti);
+-extern void mutex_remove_waiter(struct mutex *lock, struct mutex_waiter *waiter,
+-				struct thread_info *ti);
+-extern void debug_mutex_unlock(struct mutex *lock);
+-extern void debug_mutex_init(struct mutex *lock, const char *name,
+-			     struct lock_class_key *key);
+-
+-static inline void mutex_set_owner(struct mutex *lock)
+-{
+-	lock->owner = current;
+-}
+-
+-static inline void mutex_clear_owner(struct mutex *lock)
+-{
+-	lock->owner = NULL;
+-}
+-
+-#define spin_lock_mutex(lock, flags)			\
+-	do {						\
+-		struct mutex *l = container_of(lock, struct mutex, wait_lock); \
+-							\
+-		DEBUG_LOCKS_WARN_ON(in_interrupt());	\
+-		local_irq_save(flags);			\
+-		arch_spin_lock(&(lock)->rlock.raw_lock);\
+-		DEBUG_LOCKS_WARN_ON(l->magic != l);	\
+-	} while (0)
+-
+-#define spin_unlock_mutex(lock, flags)				\
+-	do {							\
+-		arch_spin_unlock(&(lock)->rlock.raw_lock);	\
+-		local_irq_restore(flags);			\
+-		preempt_check_resched();			\
+-	} while (0)
+Index: linux-2.6/kernel/mutex.c
+===================================================================
+--- linux-2.6.orig/kernel/mutex.c
++++ /dev/null
+@@ -1,960 +0,0 @@
+-/*
+- * kernel/mutex.c
+- *
+- * Mutexes: blocking mutual exclusion locks
+- *
+- * Started by Ingo Molnar:
+- *
+- *  Copyright (C) 2004, 2005, 2006 Red Hat, Inc., Ingo Molnar <mingo@redhat.com>
+- *
+- * Many thanks to Arjan van de Ven, Thomas Gleixner, Steven Rostedt and
+- * David Howells for suggestions and improvements.
+- *
+- *  - Adaptive spinning for mutexes by Peter Zijlstra. (Ported to mainline
+- *    from the -rt tree, where it was originally implemented for rtmutexes
+- *    by Steven Rostedt, based on work by Gregory Haskins, Peter Morreale
+- *    and Sven Dietrich.
+- *
+- * Also see Documentation/mutex-design.txt.
+- */
+-#include <linux/mutex.h>
+-#include <linux/ww_mutex.h>
+-#include <linux/sched.h>
+-#include <linux/sched/rt.h>
+-#include <linux/export.h>
+-#include <linux/spinlock.h>
+-#include <linux/interrupt.h>
+-#include <linux/debug_locks.h>
+-
+-/*
+- * In the DEBUG case we are using the "NULL fastpath" for mutexes,
+- * which forces all calls into the slowpath:
+- */
+-#ifdef CONFIG_DEBUG_MUTEXES
+-# include "mutex-debug.h"
+-# include <asm-generic/mutex-null.h>
+-#else
+-# include "mutex.h"
+-# include <asm/mutex.h>
+-#endif
+-
+-/*
+- * A negative mutex count indicates that waiters are sleeping waiting for the
+- * mutex.
+- */
+-#define	MUTEX_SHOW_NO_WAITER(mutex)	(atomic_read(&(mutex)->count) >= 0)
+-
+-void
+-__mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
+-{
+-	atomic_set(&lock->count, 1);
+-	spin_lock_init(&lock->wait_lock);
+-	INIT_LIST_HEAD(&lock->wait_list);
+-	mutex_clear_owner(lock);
+-#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+-	lock->spin_mlock = NULL;
+-#endif
+-
+-	debug_mutex_init(lock, name, key);
+-}
+-
+-EXPORT_SYMBOL(__mutex_init);
+-
+-#ifndef CONFIG_DEBUG_LOCK_ALLOC
+-/*
+- * We split the mutex lock/unlock logic into separate fastpath and
+- * slowpath functions, to reduce the register pressure on the fastpath.
+- * We also put the fastpath first in the kernel image, to make sure the
+- * branch is predicted by the CPU as default-untaken.
+- */
+-static __used noinline void __sched
+-__mutex_lock_slowpath(atomic_t *lock_count);
+-
+-/**
+- * mutex_lock - acquire the mutex
+- * @lock: the mutex to be acquired
+- *
+- * Lock the mutex exclusively for this task. If the mutex is not
+- * available right now, it will sleep until it can get it.
+- *
+- * The mutex must later on be released by the same task that
+- * acquired it. Recursive locking is not allowed. The task
+- * may not exit without first unlocking the mutex. Also, kernel
+- * memory where the mutex resides mutex must not be freed with
+- * the mutex still locked. The mutex must first be initialized
+- * (or statically defined) before it can be locked. memset()-ing
+- * the mutex to 0 is not allowed.
+- *
+- * ( The CONFIG_DEBUG_MUTEXES .config option turns on debugging
+- *   checks that will enforce the restrictions and will also do
+- *   deadlock debugging. )
+- *
+- * This function is similar to (but not equivalent to) down().
+- */
+-void __sched mutex_lock(struct mutex *lock)
+-{
+-	might_sleep();
+-	/*
+-	 * The locking fastpath is the 1->0 transition from
+-	 * 'unlocked' into 'locked' state.
+-	 */
+-	__mutex_fastpath_lock(&lock->count, __mutex_lock_slowpath);
+-	mutex_set_owner(lock);
+-}
+-
+-EXPORT_SYMBOL(mutex_lock);
+-#endif
+-
+-#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+-/*
+- * In order to avoid a stampede of mutex spinners from acquiring the mutex
+- * more or less simultaneously, the spinners need to acquire a MCS lock
+- * first before spinning on the owner field.
+- *
+- * We don't inline mspin_lock() so that perf can correctly account for the
+- * time spent in this lock function.
+- */
+-struct mspin_node {
+-	struct mspin_node *next ;
+-	int		  locked;	/* 1 if lock acquired */
+-};
+-#define	MLOCK(mutex)	((struct mspin_node **)&((mutex)->spin_mlock))
+-
+-static noinline
+-void mspin_lock(struct mspin_node **lock, struct mspin_node *node)
+-{
+-	struct mspin_node *prev;
+-
+-	/* Init node */
+-	node->locked = 0;
+-	node->next   = NULL;
+-
+-	prev = xchg(lock, node);
+-	if (likely(prev == NULL)) {
+-		/* Lock acquired */
+-		node->locked = 1;
+-		return;
+-	}
+-	ACCESS_ONCE(prev->next) = node;
+-	smp_wmb();
+-	/* Wait until the lock holder passes the lock down */
+-	while (!ACCESS_ONCE(node->locked))
+-		arch_mutex_cpu_relax();
+-}
+-
+-static void mspin_unlock(struct mspin_node **lock, struct mspin_node *node)
+-{
+-	struct mspin_node *next = ACCESS_ONCE(node->next);
+-
+-	if (likely(!next)) {
+-		/*
+-		 * Release the lock by setting it to NULL
+-		 */
+-		if (cmpxchg(lock, node, NULL) == node)
+-			return;
+-		/* Wait until the next pointer is set */
+-		while (!(next = ACCESS_ONCE(node->next)))
+-			arch_mutex_cpu_relax();
+-	}
+-	ACCESS_ONCE(next->locked) = 1;
+-	smp_wmb();
+-}
+-
+-/*
+- * Mutex spinning code migrated from kernel/sched/core.c
+- */
+-
+-static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
+-{
+-	if (lock->owner != owner)
+-		return false;
+-
+-	/*
+-	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
+-	 * lock->owner still matches owner, if that fails, owner might
+-	 * point to free()d memory, if it still matches, the rcu_read_lock()
+-	 * ensures the memory stays valid.
+-	 */
+-	barrier();
+-
+-	return owner->on_cpu;
+-}
+-
+-/*
+- * Look out! "owner" is an entirely speculative pointer
+- * access and not reliable.
+- */
+-static noinline
+-int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
+-{
+-	rcu_read_lock();
+-	while (owner_running(lock, owner)) {
+-		if (need_resched())
+-			break;
+-
+-		arch_mutex_cpu_relax();
+-	}
+-	rcu_read_unlock();
+-
+-	/*
+-	 * We break out the loop above on need_resched() and when the
+-	 * owner changed, which is a sign for heavy contention. Return
+-	 * success only when lock->owner is NULL.
+-	 */
+-	return lock->owner == NULL;
+-}
+-
+-/*
+- * Initial check for entering the mutex spinning loop
+- */
+-static inline int mutex_can_spin_on_owner(struct mutex *lock)
+-{
+-	struct task_struct *owner;
+-	int retval = 1;
+-
+-	rcu_read_lock();
+-	owner = ACCESS_ONCE(lock->owner);
+-	if (owner)
+-		retval = owner->on_cpu;
+-	rcu_read_unlock();
+-	/*
+-	 * if lock->owner is not set, the mutex owner may have just acquired
+-	 * it and not set the owner yet or the mutex has been released.
+-	 */
+-	return retval;
+-}
+-#endif
+-
+-static __used noinline void __sched __mutex_unlock_slowpath(atomic_t *lock_count);
+-
+-/**
+- * mutex_unlock - release the mutex
+- * @lock: the mutex to be released
+- *
+- * Unlock a mutex that has been locked by this task previously.
+- *
+- * This function must not be used in interrupt context. Unlocking
+- * of a not locked mutex is not allowed.
+- *
+- * This function is similar to (but not equivalent to) up().
+- */
+-void __sched mutex_unlock(struct mutex *lock)
+-{
+-	/*
+-	 * The unlocking fastpath is the 0->1 transition from 'locked'
+-	 * into 'unlocked' state:
+-	 */
+-#ifndef CONFIG_DEBUG_MUTEXES
+-	/*
+-	 * When debugging is enabled we must not clear the owner before time,
+-	 * the slow path will always be taken, and that clears the owner field
+-	 * after verifying that it was indeed current.
+-	 */
+-	mutex_clear_owner(lock);
+-#endif
+-	__mutex_fastpath_unlock(&lock->count, __mutex_unlock_slowpath);
+-}
+-
+-EXPORT_SYMBOL(mutex_unlock);
+-
+-/**
+- * ww_mutex_unlock - release the w/w mutex
+- * @lock: the mutex to be released
+- *
+- * Unlock a mutex that has been locked by this task previously with any of the
+- * ww_mutex_lock* functions (with or without an acquire context). It is
+- * forbidden to release the locks after releasing the acquire context.
+- *
+- * This function must not be used in interrupt context. Unlocking
+- * of a unlocked mutex is not allowed.
+- */
+-void __sched ww_mutex_unlock(struct ww_mutex *lock)
+-{
+-	/*
+-	 * The unlocking fastpath is the 0->1 transition from 'locked'
+-	 * into 'unlocked' state:
+-	 */
+-	if (lock->ctx) {
+-#ifdef CONFIG_DEBUG_MUTEXES
+-		DEBUG_LOCKS_WARN_ON(!lock->ctx->acquired);
+-#endif
+-		if (lock->ctx->acquired > 0)
+-			lock->ctx->acquired--;
+-		lock->ctx = NULL;
+-	}
+-
+-#ifndef CONFIG_DEBUG_MUTEXES
+-	/*
+-	 * When debugging is enabled we must not clear the owner before time,
+-	 * the slow path will always be taken, and that clears the owner field
+-	 * after verifying that it was indeed current.
+-	 */
+-	mutex_clear_owner(&lock->base);
+-#endif
+-	__mutex_fastpath_unlock(&lock->base.count, __mutex_unlock_slowpath);
+-}
+-EXPORT_SYMBOL(ww_mutex_unlock);
+-
+-static inline int __sched
+-__mutex_lock_check_stamp(struct mutex *lock, struct ww_acquire_ctx *ctx)
+-{
+-	struct ww_mutex *ww = container_of(lock, struct ww_mutex, base);
+-	struct ww_acquire_ctx *hold_ctx = ACCESS_ONCE(ww->ctx);
+-
+-	if (!hold_ctx)
+-		return 0;
+-
+-	if (unlikely(ctx == hold_ctx))
+-		return -EALREADY;
+-
+-	if (ctx->stamp - hold_ctx->stamp <= LONG_MAX &&
+-	    (ctx->stamp != hold_ctx->stamp || ctx > hold_ctx)) {
+-#ifdef CONFIG_DEBUG_MUTEXES
+-		DEBUG_LOCKS_WARN_ON(ctx->contending_lock);
+-		ctx->contending_lock = ww;
+-#endif
+-		return -EDEADLK;
+-	}
+-
+-	return 0;
+-}
+-
+-static __always_inline void ww_mutex_lock_acquired(struct ww_mutex *ww,
+-						   struct ww_acquire_ctx *ww_ctx)
+-{
+-#ifdef CONFIG_DEBUG_MUTEXES
+-	/*
+-	 * If this WARN_ON triggers, you used ww_mutex_lock to acquire,
+-	 * but released with a normal mutex_unlock in this call.
+-	 *
+-	 * This should never happen, always use ww_mutex_unlock.
+-	 */
+-	DEBUG_LOCKS_WARN_ON(ww->ctx);
+-
+-	/*
+-	 * Not quite done after calling ww_acquire_done() ?
+-	 */
+-	DEBUG_LOCKS_WARN_ON(ww_ctx->done_acquire);
+-
+-	if (ww_ctx->contending_lock) {
+-		/*
+-		 * After -EDEADLK you tried to
+-		 * acquire a different ww_mutex? Bad!
+-		 */
+-		DEBUG_LOCKS_WARN_ON(ww_ctx->contending_lock != ww);
+-
+-		/*
+-		 * You called ww_mutex_lock after receiving -EDEADLK,
+-		 * but 'forgot' to unlock everything else first?
+-		 */
+-		DEBUG_LOCKS_WARN_ON(ww_ctx->acquired > 0);
+-		ww_ctx->contending_lock = NULL;
+-	}
+-
+-	/*
+-	 * Naughty, using a different class will lead to undefined behavior!
+-	 */
+-	DEBUG_LOCKS_WARN_ON(ww_ctx->ww_class != ww->ww_class);
+-#endif
+-	ww_ctx->acquired++;
+-}
+-
+-/*
+- * after acquiring lock with fastpath or when we lost out in contested
+- * slowpath, set ctx and wake up any waiters so they can recheck.
+- *
+- * This function is never called when CONFIG_DEBUG_LOCK_ALLOC is set,
+- * as the fastpath and opportunistic spinning are disabled in that case.
+- */
+-static __always_inline void
+-ww_mutex_set_context_fastpath(struct ww_mutex *lock,
+-			       struct ww_acquire_ctx *ctx)
+-{
+-	unsigned long flags;
+-	struct mutex_waiter *cur;
+-
+-	ww_mutex_lock_acquired(lock, ctx);
+-
+-	lock->ctx = ctx;
+-
+-	/*
+-	 * The lock->ctx update should be visible on all cores before
+-	 * the atomic read is done, otherwise contended waiters might be
+-	 * missed. The contended waiters will either see ww_ctx == NULL
+-	 * and keep spinning, or it will acquire wait_lock, add itself
+-	 * to waiter list and sleep.
+-	 */
+-	smp_mb(); /* ^^^ */
+-
+-	/*
+-	 * Check if lock is contended, if not there is nobody to wake up
+-	 */
+-	if (likely(atomic_read(&lock->base.count) == 0))
+-		return;
+-
+-	/*
+-	 * Uh oh, we raced in fastpath, wake up everyone in this case,
+-	 * so they can see the new lock->ctx.
+-	 */
+-	spin_lock_mutex(&lock->base.wait_lock, flags);
+-	list_for_each_entry(cur, &lock->base.wait_list, list) {
+-		debug_mutex_wake_waiter(&lock->base, cur);
+-		wake_up_process(cur->task);
+-	}
+-	spin_unlock_mutex(&lock->base.wait_lock, flags);
+-}
+-
+-/*
+- * Lock a mutex (possibly interruptible), slowpath:
+- */
+-static __always_inline int __sched
+-__mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+-		    struct lockdep_map *nest_lock, unsigned long ip,
+-		    struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
+-{
+-	struct task_struct *task = current;
+-	struct mutex_waiter waiter;
+-	unsigned long flags;
+-	int ret;
+-
+-	preempt_disable();
+-	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
+-
+-#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+-	/*
+-	 * Optimistic spinning.
+-	 *
+-	 * We try to spin for acquisition when we find that there are no
+-	 * pending waiters and the lock owner is currently running on a
+-	 * (different) CPU.
+-	 *
+-	 * The rationale is that if the lock owner is running, it is likely to
+-	 * release the lock soon.
+-	 *
+-	 * Since this needs the lock owner, and this mutex implementation
+-	 * doesn't track the owner atomically in the lock field, we need to
+-	 * track it non-atomically.
+-	 *
+-	 * We can't do this for DEBUG_MUTEXES because that relies on wait_lock
+-	 * to serialize everything.
+-	 *
+-	 * The mutex spinners are queued up using MCS lock so that only one
+-	 * spinner can compete for the mutex. However, if mutex spinning isn't
+-	 * going to happen, there is no point in going through the lock/unlock
+-	 * overhead.
+-	 */
+-	if (!mutex_can_spin_on_owner(lock))
+-		goto slowpath;
+-
+-	for (;;) {
+-		struct task_struct *owner;
+-		struct mspin_node  node;
+-
+-		if (use_ww_ctx && ww_ctx->acquired > 0) {
+-			struct ww_mutex *ww;
+-
+-			ww = container_of(lock, struct ww_mutex, base);
+-			/*
+-			 * If ww->ctx is set the contents are undefined, only
+-			 * by acquiring wait_lock there is a guarantee that
+-			 * they are not invalid when reading.
+-			 *
+-			 * As such, when deadlock detection needs to be
+-			 * performed the optimistic spinning cannot be done.
+-			 */
+-			if (ACCESS_ONCE(ww->ctx))
+-				goto slowpath;
+-		}
+-
+-		/*
+-		 * If there's an owner, wait for it to either
+-		 * release the lock or go to sleep.
+-		 */
+-		mspin_lock(MLOCK(lock), &node);
+-		owner = ACCESS_ONCE(lock->owner);
+-		if (owner && !mutex_spin_on_owner(lock, owner)) {
+-			mspin_unlock(MLOCK(lock), &node);
+-			goto slowpath;
+-		}
+-
+-		if ((atomic_read(&lock->count) == 1) &&
+-		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
+-			lock_acquired(&lock->dep_map, ip);
+-			if (use_ww_ctx) {
+-				struct ww_mutex *ww;
+-				ww = container_of(lock, struct ww_mutex, base);
+-
+-				ww_mutex_set_context_fastpath(ww, ww_ctx);
+-			}
+-
+-			mutex_set_owner(lock);
+-			mspin_unlock(MLOCK(lock), &node);
+-			preempt_enable();
+-			return 0;
+-		}
+-		mspin_unlock(MLOCK(lock), &node);
+-
+-		/*
+-		 * When there's no owner, we might have preempted between the
+-		 * owner acquiring the lock and setting the owner field. If
+-		 * we're an RT task that will live-lock because we won't let
+-		 * the owner complete.
+-		 */
+-		if (!owner && (need_resched() || rt_task(task)))
+-			goto slowpath;
+-
+-		/*
+-		 * The cpu_relax() call is a compiler barrier which forces
+-		 * everything in this loop to be re-loaded. We don't need
+-		 * memory barriers as we'll eventually observe the right
+-		 * values at the cost of a few extra spins.
+-		 */
+-		arch_mutex_cpu_relax();
+-	}
+-slowpath:
+-#endif
+-	spin_lock_mutex(&lock->wait_lock, flags);
+-
+-	/* once more, can we acquire the lock? */
+-	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, 0) == 1))
+-		goto skip_wait;
+-
+-	debug_mutex_lock_common(lock, &waiter);
+-	debug_mutex_add_waiter(lock, &waiter, task_thread_info(task));
+-
+-	/* add waiting tasks to the end of the waitqueue (FIFO): */
+-	list_add_tail(&waiter.list, &lock->wait_list);
+-	waiter.task = task;
+-
+-	lock_contended(&lock->dep_map, ip);
+-
+-	for (;;) {
+-		/*
+-		 * Lets try to take the lock again - this is needed even if
+-		 * we get here for the first time (shortly after failing to
+-		 * acquire the lock), to make sure that we get a wakeup once
+-		 * it's unlocked. Later on, if we sleep, this is the
+-		 * operation that gives us the lock. We xchg it to -1, so
+-		 * that when we release the lock, we properly wake up the
+-		 * other waiters:
+-		 */
+-		if (MUTEX_SHOW_NO_WAITER(lock) &&
+-		    (atomic_xchg(&lock->count, -1) == 1))
+-			break;
+-
+-		/*
+-		 * got a signal? (This code gets eliminated in the
+-		 * TASK_UNINTERRUPTIBLE case.)
+-		 */
+-		if (unlikely(signal_pending_state(state, task))) {
+-			ret = -EINTR;
+-			goto err;
+-		}
+-
+-		if (use_ww_ctx && ww_ctx->acquired > 0) {
+-			ret = __mutex_lock_check_stamp(lock, ww_ctx);
+-			if (ret)
+-				goto err;
+-		}
+-
+-		__set_task_state(task, state);
+-
+-		/* didn't get the lock, go to sleep: */
+-		spin_unlock_mutex(&lock->wait_lock, flags);
+-		schedule_preempt_disabled();
+-		spin_lock_mutex(&lock->wait_lock, flags);
+-	}
+-	mutex_remove_waiter(lock, &waiter, current_thread_info());
+-	/* set it to 0 if there are no waiters left: */
+-	if (likely(list_empty(&lock->wait_list)))
+-		atomic_set(&lock->count, 0);
+-	debug_mutex_free_waiter(&waiter);
+-
+-skip_wait:
+-	/* got the lock - cleanup and rejoice! */
+-	lock_acquired(&lock->dep_map, ip);
+-	mutex_set_owner(lock);
+-
+-	if (use_ww_ctx) {
+-		struct ww_mutex *ww = container_of(lock, struct ww_mutex, base);
+-		struct mutex_waiter *cur;
+-
+-		/*
+-		 * This branch gets optimized out for the common case,
+-		 * and is only important for ww_mutex_lock.
+-		 */
+-		ww_mutex_lock_acquired(ww, ww_ctx);
+-		ww->ctx = ww_ctx;
+-
+-		/*
+-		 * Give any possible sleeping processes the chance to wake up,
+-		 * so they can recheck if they have to back off.
+-		 */
+-		list_for_each_entry(cur, &lock->wait_list, list) {
+-			debug_mutex_wake_waiter(lock, cur);
+-			wake_up_process(cur->task);
+-		}
+-	}
+-
+-	spin_unlock_mutex(&lock->wait_lock, flags);
+-	preempt_enable();
+-	return 0;
+-
+-err:
+-	mutex_remove_waiter(lock, &waiter, task_thread_info(task));
+-	spin_unlock_mutex(&lock->wait_lock, flags);
+-	debug_mutex_free_waiter(&waiter);
+-	mutex_release(&lock->dep_map, 1, ip);
+-	preempt_enable();
+-	return ret;
+-}
+-
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
+-void __sched
+-mutex_lock_nested(struct mutex *lock, unsigned int subclass)
+-{
+-	might_sleep();
+-	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE,
+-			    subclass, NULL, _RET_IP_, NULL, 0);
+-}
+-
+-EXPORT_SYMBOL_GPL(mutex_lock_nested);
+-
+-void __sched
+-_mutex_lock_nest_lock(struct mutex *lock, struct lockdep_map *nest)
+-{
+-	might_sleep();
+-	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE,
+-			    0, nest, _RET_IP_, NULL, 0);
+-}
+-
+-EXPORT_SYMBOL_GPL(_mutex_lock_nest_lock);
+-
+-int __sched
+-mutex_lock_killable_nested(struct mutex *lock, unsigned int subclass)
+-{
+-	might_sleep();
+-	return __mutex_lock_common(lock, TASK_KILLABLE,
+-				   subclass, NULL, _RET_IP_, NULL, 0);
+-}
+-EXPORT_SYMBOL_GPL(mutex_lock_killable_nested);
+-
+-int __sched
+-mutex_lock_interruptible_nested(struct mutex *lock, unsigned int subclass)
+-{
+-	might_sleep();
+-	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE,
+-				   subclass, NULL, _RET_IP_, NULL, 0);
+-}
+-
+-EXPORT_SYMBOL_GPL(mutex_lock_interruptible_nested);
+-
+-static inline int
+-ww_mutex_deadlock_injection(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+-{
+-#ifdef CONFIG_DEBUG_WW_MUTEX_SLOWPATH
+-	unsigned tmp;
+-
+-	if (ctx->deadlock_inject_countdown-- == 0) {
+-		tmp = ctx->deadlock_inject_interval;
+-		if (tmp > UINT_MAX/4)
+-			tmp = UINT_MAX;
+-		else
+-			tmp = tmp*2 + tmp + tmp/2;
+-
+-		ctx->deadlock_inject_interval = tmp;
+-		ctx->deadlock_inject_countdown = tmp;
+-		ctx->contending_lock = lock;
+-
+-		ww_mutex_unlock(lock);
+-
+-		return -EDEADLK;
+-	}
+-#endif
+-
+-	return 0;
+-}
+-
+-int __sched
+-__ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+-{
+-	int ret;
+-
+-	might_sleep();
+-	ret =  __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE,
+-				   0, &ctx->dep_map, _RET_IP_, ctx, 1);
+-	if (!ret && ctx->acquired > 1)
+-		return ww_mutex_deadlock_injection(lock, ctx);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL_GPL(__ww_mutex_lock);
+-
+-int __sched
+-__ww_mutex_lock_interruptible(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+-{
+-	int ret;
+-
+-	might_sleep();
+-	ret = __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE,
+-				  0, &ctx->dep_map, _RET_IP_, ctx, 1);
+-
+-	if (!ret && ctx->acquired > 1)
+-		return ww_mutex_deadlock_injection(lock, ctx);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL_GPL(__ww_mutex_lock_interruptible);
+-
+-#endif
+-
+-/*
+- * Release the lock, slowpath:
+- */
+-static inline void
+-__mutex_unlock_common_slowpath(atomic_t *lock_count, int nested)
+-{
+-	struct mutex *lock = container_of(lock_count, struct mutex, count);
+-	unsigned long flags;
+-
+-	spin_lock_mutex(&lock->wait_lock, flags);
+-	mutex_release(&lock->dep_map, nested, _RET_IP_);
+-	debug_mutex_unlock(lock);
+-
+-	/*
+-	 * some architectures leave the lock unlocked in the fastpath failure
+-	 * case, others need to leave it locked. In the later case we have to
+-	 * unlock it here
+-	 */
+-	if (__mutex_slowpath_needs_to_unlock())
+-		atomic_set(&lock->count, 1);
+-
+-	if (!list_empty(&lock->wait_list)) {
+-		/* get the first entry from the wait-list: */
+-		struct mutex_waiter *waiter =
+-				list_entry(lock->wait_list.next,
+-					   struct mutex_waiter, list);
+-
+-		debug_mutex_wake_waiter(lock, waiter);
+-
+-		wake_up_process(waiter->task);
+-	}
+-
+-	spin_unlock_mutex(&lock->wait_lock, flags);
+-}
+-
+-/*
+- * Release the lock, slowpath:
+- */
+-static __used noinline void
+-__mutex_unlock_slowpath(atomic_t *lock_count)
+-{
+-	__mutex_unlock_common_slowpath(lock_count, 1);
+-}
+-
+-#ifndef CONFIG_DEBUG_LOCK_ALLOC
+-/*
+- * Here come the less common (and hence less performance-critical) APIs:
+- * mutex_lock_interruptible() and mutex_trylock().
+- */
+-static noinline int __sched
+-__mutex_lock_killable_slowpath(struct mutex *lock);
+-
+-static noinline int __sched
+-__mutex_lock_interruptible_slowpath(struct mutex *lock);
+-
+-/**
+- * mutex_lock_interruptible - acquire the mutex, interruptible
+- * @lock: the mutex to be acquired
+- *
+- * Lock the mutex like mutex_lock(), and return 0 if the mutex has
+- * been acquired or sleep until the mutex becomes available. If a
+- * signal arrives while waiting for the lock then this function
+- * returns -EINTR.
+- *
+- * This function is similar to (but not equivalent to) down_interruptible().
+- */
+-int __sched mutex_lock_interruptible(struct mutex *lock)
+-{
+-	int ret;
+-
+-	might_sleep();
+-	ret =  __mutex_fastpath_lock_retval(&lock->count);
+-	if (likely(!ret)) {
+-		mutex_set_owner(lock);
+-		return 0;
+-	} else
+-		return __mutex_lock_interruptible_slowpath(lock);
+-}
+-
+-EXPORT_SYMBOL(mutex_lock_interruptible);
+-
+-int __sched mutex_lock_killable(struct mutex *lock)
+-{
+-	int ret;
+-
+-	might_sleep();
+-	ret = __mutex_fastpath_lock_retval(&lock->count);
+-	if (likely(!ret)) {
+-		mutex_set_owner(lock);
+-		return 0;
+-	} else
+-		return __mutex_lock_killable_slowpath(lock);
+-}
+-EXPORT_SYMBOL(mutex_lock_killable);
+-
+-static __used noinline void __sched
+-__mutex_lock_slowpath(atomic_t *lock_count)
+-{
+-	struct mutex *lock = container_of(lock_count, struct mutex, count);
+-
+-	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0,
+-			    NULL, _RET_IP_, NULL, 0);
+-}
+-
+-static noinline int __sched
+-__mutex_lock_killable_slowpath(struct mutex *lock)
+-{
+-	return __mutex_lock_common(lock, TASK_KILLABLE, 0,
+-				   NULL, _RET_IP_, NULL, 0);
+-}
+-
+-static noinline int __sched
+-__mutex_lock_interruptible_slowpath(struct mutex *lock)
+-{
+-	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0,
+-				   NULL, _RET_IP_, NULL, 0);
+-}
+-
+-static noinline int __sched
+-__ww_mutex_lock_slowpath(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+-{
+-	return __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE, 0,
+-				   NULL, _RET_IP_, ctx, 1);
+-}
+-
+-static noinline int __sched
+-__ww_mutex_lock_interruptible_slowpath(struct ww_mutex *lock,
+-					    struct ww_acquire_ctx *ctx)
+-{
+-	return __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE, 0,
+-				   NULL, _RET_IP_, ctx, 1);
+-}
+-
+-#endif
+-
+-/*
+- * Spinlock based trylock, we take the spinlock and check whether we
+- * can get the lock:
+- */
+-static inline int __mutex_trylock_slowpath(atomic_t *lock_count)
+-{
+-	struct mutex *lock = container_of(lock_count, struct mutex, count);
+-	unsigned long flags;
+-	int prev;
+-
+-	spin_lock_mutex(&lock->wait_lock, flags);
+-
+-	prev = atomic_xchg(&lock->count, -1);
+-	if (likely(prev == 1)) {
+-		mutex_set_owner(lock);
+-		mutex_acquire(&lock->dep_map, 0, 1, _RET_IP_);
+-	}
+-
+-	/* Set it back to 0 if there are no waiters: */
+-	if (likely(list_empty(&lock->wait_list)))
+-		atomic_set(&lock->count, 0);
+-
+-	spin_unlock_mutex(&lock->wait_lock, flags);
+-
+-	return prev == 1;
+-}
+-
+-/**
+- * mutex_trylock - try to acquire the mutex, without waiting
+- * @lock: the mutex to be acquired
+- *
+- * Try to acquire the mutex atomically. Returns 1 if the mutex
+- * has been acquired successfully, and 0 on contention.
+- *
+- * NOTE: this function follows the spin_trylock() convention, so
+- * it is negated from the down_trylock() return values! Be careful
+- * about this when converting semaphore users to mutexes.
+- *
+- * This function must not be used in interrupt context. The
+- * mutex must be released by the same task that acquired it.
+- */
+-int __sched mutex_trylock(struct mutex *lock)
+-{
+-	int ret;
+-
+-	ret = __mutex_fastpath_trylock(&lock->count, __mutex_trylock_slowpath);
+-	if (ret)
+-		mutex_set_owner(lock);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(mutex_trylock);
+-
+-#ifndef CONFIG_DEBUG_LOCK_ALLOC
+-int __sched
+-__ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+-{
+-	int ret;
+-
+-	might_sleep();
+-
+-	ret = __mutex_fastpath_lock_retval(&lock->base.count);
+-
+-	if (likely(!ret)) {
+-		ww_mutex_set_context_fastpath(lock, ctx);
+-		mutex_set_owner(&lock->base);
+-	} else
+-		ret = __ww_mutex_lock_slowpath(lock, ctx);
+-	return ret;
+-}
+-EXPORT_SYMBOL(__ww_mutex_lock);
+-
+-int __sched
+-__ww_mutex_lock_interruptible(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+-{
+-	int ret;
+-
+-	might_sleep();
+-
+-	ret = __mutex_fastpath_lock_retval(&lock->base.count);
+-
+-	if (likely(!ret)) {
+-		ww_mutex_set_context_fastpath(lock, ctx);
+-		mutex_set_owner(&lock->base);
+-	} else
+-		ret = __ww_mutex_lock_interruptible_slowpath(lock, ctx);
+-	return ret;
+-}
+-EXPORT_SYMBOL(__ww_mutex_lock_interruptible);
+-
+-#endif
+-
+-/**
+- * atomic_dec_and_mutex_lock - return holding mutex if we dec to 0
+- * @cnt: the atomic which we are to dec
+- * @lock: the mutex to return holding if we dec to 0
+- *
+- * return true and hold lock if we dec to 0, return false otherwise
+- */
+-int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock)
+-{
+-	/* dec if we can't possibly hit 0 */
+-	if (atomic_add_unless(cnt, -1, 1))
+-		return 0;
+-	/* we might hit 0, so take the lock */
+-	mutex_lock(lock);
+-	if (!atomic_dec_and_test(cnt)) {
+-		/* when we actually did the dec, we didn't hit 0 */
+-		mutex_unlock(lock);
+-		return 0;
+-	}
+-	/* we hit 0, and we hold the lock */
+-	return 1;
+-}
+-EXPORT_SYMBOL(atomic_dec_and_mutex_lock);
+Index: linux-2.6/kernel/mutex.h
+===================================================================
+--- linux-2.6.orig/kernel/mutex.h
++++ /dev/null
+@@ -1,48 +0,0 @@
+-/*
+- * Mutexes: blocking mutual exclusion locks
+- *
+- * started by Ingo Molnar:
+- *
+- *  Copyright (C) 2004, 2005, 2006 Red Hat, Inc., Ingo Molnar <mingo@redhat.com>
+- *
+- * This file contains mutex debugging related internal prototypes, for the
+- * !CONFIG_DEBUG_MUTEXES case. Most of them are NOPs:
+- */
+-
+-#define spin_lock_mutex(lock, flags) \
+-		do { spin_lock(lock); (void)(flags); } while (0)
+-#define spin_unlock_mutex(lock, flags) \
+-		do { spin_unlock(lock); (void)(flags); } while (0)
+-#define mutex_remove_waiter(lock, waiter, ti) \
+-		__list_del((waiter)->list.prev, (waiter)->list.next)
+-
+-#ifdef CONFIG_SMP
+-static inline void mutex_set_owner(struct mutex *lock)
+-{
+-	lock->owner = current;
+-}
+-
+-static inline void mutex_clear_owner(struct mutex *lock)
+-{
+-	lock->owner = NULL;
+-}
+-#else
+-static inline void mutex_set_owner(struct mutex *lock)
+-{
+-}
+-
+-static inline void mutex_clear_owner(struct mutex *lock)
+-{
+-}
+-#endif
+-
+-#define debug_mutex_wake_waiter(lock, waiter)		do { } while (0)
+-#define debug_mutex_free_waiter(waiter)			do { } while (0)
+-#define debug_mutex_add_waiter(lock, waiter, ti)	do { } while (0)
+-#define debug_mutex_unlock(lock)			do { } while (0)
+-#define debug_mutex_init(lock, name, key)		do { } while (0)
 -
 -static inline void
--debug_spin_lock_before(raw_spinlock_t *lock)
+-debug_mutex_lock_common(struct mutex *lock, struct mutex_waiter *waiter)
 -{
--	SPIN_BUG_ON(lock->magic != SPINLOCK_MAGIC, lock, "bad magic");
--	SPIN_BUG_ON(lock->owner == current, lock, "recursion");
--	SPIN_BUG_ON(lock->owner_cpu == raw_smp_processor_id(),
--							lock, "cpu recursion");
--}
--
--static inline void debug_spin_lock_after(raw_spinlock_t *lock)
--{
--	lock->owner_cpu = raw_smp_processor_id();
--	lock->owner = current;
--}
--
--static inline void debug_spin_unlock(raw_spinlock_t *lock)
--{
--	SPIN_BUG_ON(lock->magic != SPINLOCK_MAGIC, lock, "bad magic");
--	SPIN_BUG_ON(!raw_spin_is_locked(lock), lock, "already unlocked");
--	SPIN_BUG_ON(lock->owner != current, lock, "wrong owner");
--	SPIN_BUG_ON(lock->owner_cpu != raw_smp_processor_id(),
--							lock, "wrong CPU");
--	lock->owner = SPINLOCK_OWNER_INIT;
--	lock->owner_cpu = -1;
--}
--
--static void __spin_lock_debug(raw_spinlock_t *lock)
--{
--	u64 i;
--	u64 loops = loops_per_jiffy * HZ;
--
--	for (i = 0; i < loops; i++) {
--		if (arch_spin_trylock(&lock->raw_lock))
--			return;
--		__delay(1);
--	}
--	/* lockup suspected: */
--	spin_dump(lock, "lockup suspected");
--#ifdef CONFIG_SMP
--	trigger_all_cpu_backtrace();
--#endif
--
--	/*
--	 * The trylock above was causing a livelock.  Give the lower level arch
--	 * specific lock code a chance to acquire the lock. We have already
--	 * printed a warning/backtrace at this point. The non-debug arch
--	 * specific code might actually succeed in acquiring the lock.  If it is
--	 * not successful, the end-result is the same - there is no forward
--	 * progress.
--	 */
--	arch_spin_lock(&lock->raw_lock);
--}
--
--void do_raw_spin_lock(raw_spinlock_t *lock)
--{
--	debug_spin_lock_before(lock);
--	if (unlikely(!arch_spin_trylock(&lock->raw_lock)))
--		__spin_lock_debug(lock);
--	debug_spin_lock_after(lock);
--}
--
--int do_raw_spin_trylock(raw_spinlock_t *lock)
--{
--	int ret = arch_spin_trylock(&lock->raw_lock);
--
--	if (ret)
--		debug_spin_lock_after(lock);
--#ifndef CONFIG_SMP
--	/*
--	 * Must not happen on UP:
--	 */
--	SPIN_BUG_ON(!ret, lock, "trylock failure on UP");
--#endif
--	return ret;
--}
--
--void do_raw_spin_unlock(raw_spinlock_t *lock)
--{
--	debug_spin_unlock(lock);
--	arch_spin_unlock(&lock->raw_lock);
--}
--
--static void rwlock_bug(rwlock_t *lock, const char *msg)
--{
--	if (!debug_locks_off())
--		return;
--
--	printk(KERN_EMERG "BUG: rwlock %s on CPU#%d, %s/%d, %p\n",
--		msg, raw_smp_processor_id(), current->comm,
--		task_pid_nr(current), lock);
--	dump_stack();
--}
--
--#define RWLOCK_BUG_ON(cond, lock, msg) if (unlikely(cond)) rwlock_bug(lock, msg)
--
--#if 0		/* __write_lock_debug() can lock up - maybe this can too? */
--static void __read_lock_debug(rwlock_t *lock)
--{
--	u64 i;
--	u64 loops = loops_per_jiffy * HZ;
--	int print_once = 1;
--
--	for (;;) {
--		for (i = 0; i < loops; i++) {
--			if (arch_read_trylock(&lock->raw_lock))
--				return;
--			__delay(1);
--		}
--		/* lockup suspected: */
--		if (print_once) {
--			print_once = 0;
--			printk(KERN_EMERG "BUG: read-lock lockup on CPU#%d, "
--					"%s/%d, %p\n",
--				raw_smp_processor_id(), current->comm,
--				current->pid, lock);
--			dump_stack();
--		}
--	}
--}
--#endif
--
--void do_raw_read_lock(rwlock_t *lock)
--{
--	RWLOCK_BUG_ON(lock->magic != RWLOCK_MAGIC, lock, "bad magic");
--	arch_read_lock(&lock->raw_lock);
--}
--
--int do_raw_read_trylock(rwlock_t *lock)
--{
--	int ret = arch_read_trylock(&lock->raw_lock);
--
--#ifndef CONFIG_SMP
--	/*
--	 * Must not happen on UP:
--	 */
--	RWLOCK_BUG_ON(!ret, lock, "trylock failure on UP");
--#endif
--	return ret;
--}
--
--void do_raw_read_unlock(rwlock_t *lock)
--{
--	RWLOCK_BUG_ON(lock->magic != RWLOCK_MAGIC, lock, "bad magic");
--	arch_read_unlock(&lock->raw_lock);
--}
--
--static inline void debug_write_lock_before(rwlock_t *lock)
--{
--	RWLOCK_BUG_ON(lock->magic != RWLOCK_MAGIC, lock, "bad magic");
--	RWLOCK_BUG_ON(lock->owner == current, lock, "recursion");
--	RWLOCK_BUG_ON(lock->owner_cpu == raw_smp_processor_id(),
--							lock, "cpu recursion");
--}
--
--static inline void debug_write_lock_after(rwlock_t *lock)
--{
--	lock->owner_cpu = raw_smp_processor_id();
--	lock->owner = current;
--}
--
--static inline void debug_write_unlock(rwlock_t *lock)
--{
--	RWLOCK_BUG_ON(lock->magic != RWLOCK_MAGIC, lock, "bad magic");
--	RWLOCK_BUG_ON(lock->owner != current, lock, "wrong owner");
--	RWLOCK_BUG_ON(lock->owner_cpu != raw_smp_processor_id(),
--							lock, "wrong CPU");
--	lock->owner = SPINLOCK_OWNER_INIT;
--	lock->owner_cpu = -1;
--}
--
--#if 0		/* This can cause lockups */
--static void __write_lock_debug(rwlock_t *lock)
--{
--	u64 i;
--	u64 loops = loops_per_jiffy * HZ;
--	int print_once = 1;
--
--	for (;;) {
--		for (i = 0; i < loops; i++) {
--			if (arch_write_trylock(&lock->raw_lock))
--				return;
--			__delay(1);
--		}
--		/* lockup suspected: */
--		if (print_once) {
--			print_once = 0;
--			printk(KERN_EMERG "BUG: write-lock lockup on CPU#%d, "
--					"%s/%d, %p\n",
--				raw_smp_processor_id(), current->comm,
--				current->pid, lock);
--			dump_stack();
--		}
--	}
--}
--#endif
--
--void do_raw_write_lock(rwlock_t *lock)
--{
--	debug_write_lock_before(lock);
--	arch_write_lock(&lock->raw_lock);
--	debug_write_lock_after(lock);
--}
--
--int do_raw_write_trylock(rwlock_t *lock)
--{
--	int ret = arch_write_trylock(&lock->raw_lock);
--
--	if (ret)
--		debug_write_lock_after(lock);
--#ifndef CONFIG_SMP
--	/*
--	 * Must not happen on UP:
--	 */
--	RWLOCK_BUG_ON(!ret, lock, "trylock failure on UP");
--#endif
--	return ret;
--}
--
--void do_raw_write_unlock(rwlock_t *lock)
--{
--	debug_write_unlock(lock);
--	arch_write_unlock(&lock->raw_lock);
 -}
 
 
