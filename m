@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab3KERCN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 12:02:13 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:56539 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755253Ab3KERCJ (ORCPT
+	id S1755349Ab3KERCV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 12:02:21 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:64407 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755288Ab3KERCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 12:02:09 -0500
+	Tue, 5 Nov 2013 12:02:12 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, zheng.z.yan@intel.com, bp@alien8.de,
         maria.n.dimakopoulou@gmail.com
-Subject: [PATCH v5 2/4] perf stat: add event unit and scale support
-Date: Tue,  5 Nov 2013 18:01:24 +0100
-Message-Id: <1383670886-30827-3-git-send-email-eranian@google.com>
+Subject: [PATCH v5 3/4] perf,x86: add Intel RAPL PMU support
+Date: Tue,  5 Nov 2013 18:01:25 +0100
+Message-Id: <1383670886-30827-4-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1383670886-30827-1-git-send-email-eranian@google.com>
 References: <1383670886-30827-1-git-send-email-eranian@google.com>
@@ -22,671 +22,737 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds perf stat support for handling event units and
-scales as exported by the kernel.
+This patch adds a new uncore PMU to expose the Intel
+RAPL energy consumption counters. Up to 3 counters,
+each counting a particular RAPL event are exposed.
 
-The kernel can export PMU events actual unit and scaling factor
-via sysfs:
-$ ls -1 /sys/devices/power/events/energy-*
-/sys/devices/power/events/energy-cores
-/sys/devices/power/events/energy-cores.scale
-/sys/devices/power/events/energy-cores.unit
-/sys/devices/power/events/energy-pkg
-/sys/devices/power/events/energy-pkg.scale
-/sys/devices/power/events/energy-pkg.unit
-$ cat /sys/devices/power/events/energy-cores.scale
-2.3283064365386962890625e-10
-$ cat cat /sys/devices/power/events/energy-cores.unit
-Joules
+The RAPL counters are available on Intel SandyBridge,
+IvyBridge, Haswell. The server skus add a 3rd counter.
 
-This patch modifies the pmu event alias code to check
-for the presence of the .unit and .scale files to load
-the corresponding values. They are then used by perf stat
-transparently:
+The following events are available and exposed in sysfs:
+- power/energy-cores: power consumption of all cores on socket
+- power/energy-pkg: power consumption of all cores + LLc cache
+- power/energy-dram: power consumption of DRAM (servers only)
 
- # perf stat -a -e power/energy-pkg/,power/energy-cores/,cycles -I 1000 sleep 1000
- #          time             counts   unit events
-     1.000214717               3.07 Joules power/energy-pkg/         [100.00%]
-     1.000214717               0.53 Joules power/energy-cores/
-     1.000214717           12965028        cycles                    [100.00%]
-     2.000749289               3.01 Joules power/energy-pkg/
-     2.000749289               0.52 Joules power/energy-cores/
-     2.000749289           15817043        cycles
+For each event both the unit (Joules) and scale (2^-32 J)
+is exposed in sysfs for use by perf stat and other tools.
+Files are:
+	/sys/devices/power/events/energy-*.unit
+	/sys/devices/power/events/energy-*.scale
 
-When the event does not have an explicit unit exported by
-the kernel, nothing is printed. In csv output mode, there
-will be an empty field.
+The RAPL PMU is uncore by nature and is implemented such
+that it only works in system-wide mode. Measuring only
+one CPU per socket is sufficient. The /sys/devices/power/cpumask
+file can be used by tools to figure out which CPUs to monitor
+by default. For instance, on a 2-socket system, 2 CPUs
+(one on each socket) will be shown.
 
-Special thanks to Jiri for providing the supporting code
-in the parser to trigger reading of the scale and unit files.
+All the counters measure in the same unit (exposed via sysfs).
+The perf_events API exposes all RAPL counters as 64-bit integers
+counting in unit of 1/2^32 Joules (about 0.23 nJ). User level tools
+must convert the counts by multiplying them by 2^-32 to obtain
+Joules. The reason for this is that the kernel avoids
+doing floating point math whenever possible because it is
+expensive (user floating-point state must be saved). The method
+used avoids kernel floating-point usage. There is no loss of
+precision. Thanks to PeterZ for suggesting this approach.
+
+To convert the raw count in Watts:
+   W = C * 2.3 / (1e10 * time)
+or ldexp(C, -32).
+
+RAPL PMU is a new standalone PMU which registers with the
+perf_event core subsystem. The PMU type (attr->type) is
+dynamically allocated and is available from /sys/device/power/type.
+
+Sampling is not supported by the RAPL PMU. There is no
+privilege level filtering either.
+
+Thanks to Maria Dimakopoulou for her contributions to this patch
+especially on the floating-point aspects.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
 ---
- tools/perf/builtin-stat.c      |  114 ++++++++++++++++++++++---------
- tools/perf/util/evsel.c        |    2 +
- tools/perf/util/evsel.h        |    3 +
- tools/perf/util/parse-events.c |   28 +++++---
- tools/perf/util/pmu.c          |  144 +++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/pmu.h          |    3 +-
- 6 files changed, 251 insertions(+), 43 deletions(-)
+ arch/x86/kernel/cpu/Makefile                |    2 +-
+ arch/x86/kernel/cpu/perf_event_intel_rapl.c |  655 +++++++++++++++++++++++++++
+ 2 files changed, 656 insertions(+), 1 deletion(-)
+ create mode 100644 arch/x86/kernel/cpu/perf_event_intel_rapl.c
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 0fc1c94..66d20c9 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -138,6 +138,7 @@ static const char		*post_cmd			= NULL;
- static bool			sync_run			= false;
- static unsigned int		interval			= 0;
- static unsigned int		initial_delay			= 0;
-+static unsigned int		unit_width			= 4; /* strlen("unit") */
- static bool			forever				= false;
- static struct timespec		ref_time;
- static struct cpu_map		*aggr_map;
-@@ -462,17 +463,17 @@ static void print_interval(void)
- 	if (num_print_interval == 0 && !csv_output) {
- 		switch (aggr_mode) {
- 		case AGGR_SOCKET:
--			fprintf(output, "#           time socket cpus             counts events\n");
-+			fprintf(output, "#           time socket cpus             counts %*s events\n", unit_width, "unit");
- 			break;
- 		case AGGR_CORE:
--			fprintf(output, "#           time core         cpus             counts events\n");
-+			fprintf(output, "#           time core         cpus             counts %*s events\n", unit_width, "unit");
- 			break;
- 		case AGGR_NONE:
--			fprintf(output, "#           time CPU                 counts events\n");
-+			fprintf(output, "#           time CPU                counts %*s events\n", unit_width, "unit");
- 			break;
- 		case AGGR_GLOBAL:
- 		default:
--			fprintf(output, "#           time             counts events\n");
-+			fprintf(output, "#           time             counts %*s events\n", unit_width, "unit");
- 		}
- 	}
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index 47b56a7..6359506 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -36,7 +36,7 @@ obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd_iommu.o
+ endif
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
+-obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o
++obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o perf_event_intel_rapl.o
+ endif
  
-@@ -517,6 +518,7 @@ static int __run_perf_stat(int argc, const char **argv)
- 	unsigned long long t0, t1;
- 	struct perf_evsel *counter;
- 	struct timespec ts;
-+	size_t l;
- 	int status = 0;
- 	const bool forks = (argc > 0);
  
-@@ -566,6 +568,10 @@ static int __run_perf_stat(int argc, const char **argv)
- 			return -1;
- 		}
- 		counter->supported = true;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+new file mode 100644
+index 0000000..cf3559f
+--- /dev/null
++++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+@@ -0,0 +1,655 @@
++/*
++ * perf_event_intel_rapl.c: support Intel RAPL energy consumption counters
++ * Copyright (C) 2013 Google, Inc., Stephane Eranian
++ *
++ * Intel RAPL interface is specified in the IA-32 Manual Vol3b
++ * section 14.7.1 (September 2013)
++ *
++ * RAPL provides more controls than just reporting energy consumption
++ * however here we only expose the 3 energy consumption free running
++ * counters (pp0, pkg, dram).
++ *
++ * Each of those counters increments in a power unit defined by the
++ * RAPL_POWER_UNIT MSR. On SandyBridge, this unit is 1/(2^16) Joules
++ * but it can vary.
++ *
++ * Counter to rapl events mappings:
++ *
++ *  pp0 counter: consumption of all physical cores (power plane 0)
++ * 	  event: rapl_energy_cores
++ *    perf code: 0x1
++ *
++ *  pkg counter: consumption of the whole processor package
++ *	  event: rapl_energy_pkg
++ *    perf code: 0x2
++ *
++ * dram counter: consumption of the dram domain (servers only)
++ *	  event: rapl_energy_dram
++ *    perf code: 0x3
++ *
++ * We manage those counters as free running (read-only). They may be
++ * use simultaneously by other tools, such as turbostat.
++ *
++ * The events only support system-wide mode counting. There is no
++ * sampling support because it does not make sense and is not
++ * supported by the RAPL hardware.
++ *
++ * Because we want to avoid floating-point operations in the kernel,
++ * the events are all reported in fixed point arithmetic (32.32).
++ * Tools must adjust the counts to convert them to Watts using
++ * the duration of the measurement. Tools may use a function such as
++ * ldexp(raw_count, -32);
++ */
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/perf_event.h>
++#include <asm/cpu_device_id.h>
++#include "perf_event.h"
 +
-+		l = strlen(counter->unit);
-+		if (l > unit_width)
-+			unit_width = l;
- 	}
- 
- 	if (perf_evlist__apply_filters(evsel_list)) {
-@@ -705,14 +711,25 @@ static void aggr_printout(struct perf_evsel *evsel, int id, int nr)
- static void nsec_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- {
- 	double msecs = avg / 1e6;
--	const char *fmt = csv_output ? "%.6f%s%s" : "%18.6f%s%-25s";
-+	const char *fmt_v, *fmt_n;
- 	char name[25];
- 
-+	fmt_v = csv_output ? "%.6f%s" : "%18.6f%s";
-+	fmt_n = csv_output ? "%s" : "%-25s";
++/*
++ * RAPL energy status counters
++ */
++#define RAPL_IDX_PP0_NRG_STAT	0	/* all cores */
++#define INTEL_RAPL_PP0		0x1	/* pseudo-encoding */
++#define RAPL_IDX_PKG_NRG_STAT	1	/* entire package */
++#define INTEL_RAPL_PKG		0x2	/* pseudo-encoding */
++#define RAPL_IDX_RAM_NRG_STAT	2	/* DRAM */
++#define INTEL_RAPL_RAM		0x3	/* pseudo-encoding */
 +
- 	aggr_printout(evsel, cpu, nr);
- 
- 	scnprintf(name, sizeof(name), "%s%s",
- 		  perf_evsel__name(evsel), csv_output ? "" : " (msec)");
--	fprintf(output, fmt, msecs, csv_sep, name);
++/* Clients have PP0, PKG */
++#define RAPL_IDX_CLN	(1<<RAPL_IDX_PP0_NRG_STAT|\
++			 1<<RAPL_IDX_PKG_NRG_STAT)
 +
-+	fprintf(output, fmt_v, msecs, csv_sep);
++/* Servers have PP0, PKG, RAM */
++#define RAPL_IDX_SRV	(1<<RAPL_IDX_PP0_NRG_STAT|\
++			 1<<RAPL_IDX_PKG_NRG_STAT|\
++			 1<<RAPL_IDX_RAM_NRG_STAT)
 +
-+	if (csv_output)
-+		fprintf(output, "%s%s", evsel->unit, csv_sep);
-+	else
-+		fprintf(output, "%-*s%s", unit_width, evsel->unit, csv_sep);
++/*
++ * event code: LSB 8 bits, passed in attr->config
++ * any other bit is reserved
++ */
++#define RAPL_EVENT_MASK	0xFFULL
 +
-+	fprintf(output, fmt_n, name);
- 
- 	if (evsel->cgrp)
- 		fprintf(output, "%s%s", csv_sep, evsel->cgrp->name);
-@@ -909,21 +926,31 @@ static void print_ll_cache_misses(int cpu,
- static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- {
- 	double total, ratio = 0.0, total2;
-+	double sc =  evsel->scale;
- 	const char *fmt;
- 
--	if (csv_output)
--		fmt = "%.0f%s%s";
--	else if (big_num)
--		fmt = "%'18.0f%s%-25s";
--	else
--		fmt = "%18.0f%s%-25s";
-+	if (csv_output) {
-+		fmt = sc != 1.0 ?  "%.2f%s" : "%.0f%s";
-+	} else {
-+		if (big_num)
-+			fmt = sc != 1.0 ? "%'18.2f%s" : "%'18.0f%s";
-+		else
-+			fmt = sc != 1.0 ? "%18.2f%s" : "%18.0f%s";
-+	}
- 
- 	aggr_printout(evsel, cpu, nr);
- 
- 	if (aggr_mode == AGGR_GLOBAL)
- 		cpu = 0;
- 
--	fprintf(output, fmt, avg, csv_sep, perf_evsel__name(evsel));
-+	fprintf(output, fmt, avg, csv_sep);
++#define DEFINE_RAPL_FORMAT_ATTR(_var, _name, _format)		\
++static ssize_t __rapl_##_var##_show(struct kobject *kobj,	\
++				struct kobj_attribute *attr,	\
++				char *page)			\
++{								\
++	BUILD_BUG_ON(sizeof(_format) >= PAGE_SIZE);		\
++	return sprintf(page, _format "\n");			\
++}								\
++static struct kobj_attribute format_attr_##_var =		\
++	__ATTR(_name, 0444, __rapl_##_var##_show, NULL)
 +
-+	if (evsel->unit)
-+		fprintf(output, "%-*s%s",
-+			csv_output ? 0 : unit_width,
-+			evsel->unit, csv_sep);
++#define RAPL_EVENT_DESC(_name, _config)				\
++{								\
++	.attr	= __ATTR(_name, 0444, rapl_event_show, NULL),	\
++	.config	= _config,					\
++}
 +
-+	fprintf(output, "%-*s", csv_output ? 0 : 25, perf_evsel__name(evsel));
- 
- 	if (evsel->cgrp)
- 		fprintf(output, "%s%s", csv_sep, evsel->cgrp->name);
-@@ -942,7 +969,10 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- 
- 		if (total && avg) {
- 			ratio = total / avg;
--			fprintf(output, "\n                                             #   %5.2f  stalled cycles per insn", ratio);
-+			fprintf(output, "\n");
-+			if (aggr_mode == AGGR_NONE)
-+				fprintf(output, "        ");
-+			fprintf(output, "                                                  #   %5.2f  stalled cycles per insn", ratio);
- 		}
- 
- 	} else if (perf_evsel__match(evsel, HARDWARE, HW_BRANCH_MISSES) &&
-@@ -1062,6 +1092,7 @@ static void print_aggr(char *prefix)
- {
- 	struct perf_evsel *counter;
- 	int cpu, cpu2, s, s2, id, nr;
-+	double uval;
- 	u64 ena, run, val;
- 
- 	if (!(aggr_map || aggr_get_id))
-@@ -1088,11 +1119,17 @@ static void print_aggr(char *prefix)
- 			if (run == 0 || ena == 0) {
- 				aggr_printout(counter, id, nr);
- 
--				fprintf(output, "%*s%s%*s",
-+				fprintf(output, "%*s%s",
- 					csv_output ? 0 : 18,
- 					counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
--					csv_sep,
--					csv_output ? 0 : -24,
-+					csv_sep);
++#define RAPL_CNTR_WIDTH 32 /* 32-bit rapl counters */
 +
-+				fprintf(output, "%-*s%s",
-+					csv_output ? 0 : unit_width,
-+					counter->unit, csv_sep);
++struct rapl_pmu {
++	spinlock_t	lock;
++	atomic_t	refcnt;
++	int		hw_unit;  /* 1/2^hw_unit Joule */
++	int		phys_id;
++	int		n_active; /* number of active events */
++	struct list_head active_list;
++};
 +
-+				fprintf(output, "%*s",
-+					csv_output ? 0 : -25,
- 					perf_evsel__name(counter));
- 
- 				if (counter->cgrp)
-@@ -1102,11 +1139,12 @@ static void print_aggr(char *prefix)
- 				fputc('\n', output);
- 				continue;
- 			}
-+			uval = val * counter->scale;
- 
- 			if (nsec_counter(counter))
--				nsec_printout(id, nr, counter, val);
-+				nsec_printout(id, nr, counter, uval);
- 			else
--				abs_printout(id, nr, counter, val);
-+				abs_printout(id, nr, counter, uval);
- 
- 			if (!csv_output) {
- 				print_noise(counter, 1.0);
-@@ -1129,16 +1167,21 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
- 	struct perf_stat *ps = counter->priv;
- 	double avg = avg_stats(&ps->res_stats[0]);
- 	int scaled = counter->counts->scaled;
-+	double uval;
- 
- 	if (prefix)
- 		fprintf(output, "%s", prefix);
- 
- 	if (scaled == -1) {
--		fprintf(output, "%*s%s%*s",
-+		fprintf(output, "%*s%s",
- 			csv_output ? 0 : 18,
- 			counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
--			csv_sep,
--			csv_output ? 0 : -24,
-+			csv_sep);
-+		fprintf(output, "%-*s%s",
-+			csv_output ? 0 : unit_width,
-+			counter->unit, csv_sep);
-+		fprintf(output, "%*s",
-+			csv_output ? 0 : -25,
- 			perf_evsel__name(counter));
- 
- 		if (counter->cgrp)
-@@ -1148,10 +1191,12 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
- 		return;
- 	}
- 
-+	uval = avg * counter->scale;
++static struct pmu rapl_pmu_class;
++static cpumask_t rapl_cpu_mask;
++static int rapl_cntr_mask;
 +
- 	if (nsec_counter(counter))
--		nsec_printout(-1, 0, counter, avg);
-+		nsec_printout(-1, 0, counter, uval);
- 	else
--		abs_printout(-1, 0, counter, avg);
-+		abs_printout(-1, 0, counter, uval);
- 
- 	print_noise(counter, avg);
- 
-@@ -1178,6 +1223,7 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
- static void print_counter(struct perf_evsel *counter, char *prefix)
- {
- 	u64 ena, run, val;
-+	double uval;
- 	int cpu;
- 
- 	for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
-@@ -1189,14 +1235,20 @@ static void print_counter(struct perf_evsel *counter, char *prefix)
- 			fprintf(output, "%s", prefix);
- 
- 		if (run == 0 || ena == 0) {
--			fprintf(output, "CPU%*d%s%*s%s%*s",
-+			fprintf(output, "CPU%*d%s%*s%s",
- 				csv_output ? 0 : -4,
- 				perf_evsel__cpus(counter)->map[cpu], csv_sep,
- 				csv_output ? 0 : 18,
- 				counter->supported ? CNTR_NOT_COUNTED : CNTR_NOT_SUPPORTED,
--				csv_sep,
--				csv_output ? 0 : -24,
--				perf_evsel__name(counter));
-+				csv_sep);
++static DEFINE_PER_CPU(struct rapl_pmu *, rapl_pmu);
++static DEFINE_PER_CPU(struct rapl_pmu *, rapl_pmu_kfree);
 +
-+				fprintf(output, "%-*s%s",
-+					csv_output ? 0 : unit_width,
-+					counter->unit, csv_sep);
++static DEFINE_SPINLOCK(rapl_hotplug_lock);
 +
-+				fprintf(output, "%*s",
-+					csv_output ? 0 : -25,
-+					perf_evsel__name(counter));
- 
- 			if (counter->cgrp)
- 				fprintf(output, "%s%s",
-@@ -1206,10 +1258,12 @@ static void print_counter(struct perf_evsel *counter, char *prefix)
- 			continue;
- 		}
- 
-+		uval = val * counter->scale;
-+
- 		if (nsec_counter(counter))
--			nsec_printout(cpu, 0, counter, val);
-+			nsec_printout(cpu, 0, counter, uval);
- 		else
--			abs_printout(cpu, 0, counter, val);
-+			abs_printout(cpu, 0, counter, uval);
- 
- 		if (!csv_output) {
- 			print_noise(counter, 1.0);
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 5280820..f1e3d02 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -162,6 +162,8 @@ void perf_evsel__init(struct perf_evsel *evsel,
- 	evsel->idx	   = idx;
- 	evsel->attr	   = *attr;
- 	evsel->leader	   = evsel;
-+	evsel->unit	   = "";
-+	evsel->scale	   = 1.0;
- 	INIT_LIST_HEAD(&evsel->node);
- 	hists__init(&evsel->hists);
- 	evsel->sample_size = __perf_evsel__sample_size(attr->sample_type);
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 5aa68cd..d5c6606 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -68,6 +68,8 @@ struct perf_evsel {
- 	u32			ids;
- 	struct hists		hists;
- 	char			*name;
-+	double			scale;
-+	const char		*unit;
- 	struct event_format	*tp_format;
- 	union {
- 		void		*priv;
-@@ -130,6 +132,7 @@ extern const char *perf_evsel__sw_names[PERF_COUNT_SW_MAX];
- int __perf_evsel__hw_cache_type_op_res_name(u8 type, u8 op, u8 result,
- 					    char *bf, size_t size);
- const char *perf_evsel__name(struct perf_evsel *evsel);
-+
- const char *perf_evsel__group_name(struct perf_evsel *evsel);
- int perf_evsel__group_desc(struct perf_evsel *evsel, char *buf, size_t size);
- 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index c90e55c..90ae328 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -269,9 +269,10 @@ const char *event_type(int type)
- 
- 
- 
--static int __add_event(struct list_head *list, int *idx,
--		       struct perf_event_attr *attr,
--		       char *name, struct cpu_map *cpus)
-+static struct perf_evsel *
-+__add_event(struct list_head *list, int *idx,
-+	    struct perf_event_attr *attr,
-+	    char *name, struct cpu_map *cpus)
- {
- 	struct perf_evsel *evsel;
- 
-@@ -279,19 +280,19 @@ static int __add_event(struct list_head *list, int *idx,
- 
- 	evsel = perf_evsel__new(attr, (*idx)++);
- 	if (!evsel)
--		return -ENOMEM;
-+		return NULL;
- 
- 	evsel->cpus = cpus;
- 	if (name)
- 		evsel->name = strdup(name);
- 	list_add_tail(&evsel->node, list);
--	return 0;
-+	return evsel;
- }
- 
- static int add_event(struct list_head *list, int *idx,
- 		     struct perf_event_attr *attr, char *name)
- {
--	return __add_event(list, idx, attr, name, NULL);
-+	return __add_event(list, idx, attr, name, NULL) ? 0 : -ENOMEM;
- }
- 
- static int parse_aliases(char *str, const char *names[][PERF_EVSEL__MAX_ALIASES], int size)
-@@ -633,6 +634,9 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
- {
- 	struct perf_event_attr attr;
- 	struct perf_pmu *pmu;
-+	struct perf_evsel *evsel;
-+	char *unit;
-+	double scale;
- 
- 	pmu = perf_pmu__find(name);
- 	if (!pmu)
-@@ -640,7 +644,7 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
- 
- 	memset(&attr, 0, sizeof(attr));
- 
--	if (perf_pmu__check_alias(pmu, head_config))
-+	if (perf_pmu__check_alias(pmu, head_config, &unit, &scale))
- 		return -EINVAL;
- 
- 	/*
-@@ -652,8 +656,14 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
- 	if (perf_pmu__config(pmu, &attr, head_config))
- 		return -EINVAL;
- 
--	return __add_event(list, idx, &attr, pmu_event_name(head_config),
--			   pmu->cpus);
-+	evsel = __add_event(list, idx, &attr, pmu_event_name(head_config),
-+			    pmu->cpus);
-+	if (evsel) {
-+		evsel->unit = unit;
-+		evsel->scale = scale;
-+	}
-+
-+	return evsel ? 0 : -ENOMEM;
- }
- 
- int parse_events__modifier_group(struct list_head *list,
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 64362fe..df68d43 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -4,6 +4,7 @@
- #include <unistd.h>
- #include <stdio.h>
- #include <dirent.h>
-+#include <locale.h>
- #include "sysfs.h"
- #include "util.h"
- #include "pmu.h"
-@@ -14,6 +15,8 @@ struct perf_pmu_alias {
- 	char *name;
- 	struct list_head terms;
- 	struct list_head list;
-+	char *unit;
-+	double scale;
- };
- 
- struct perf_pmu_format {
-@@ -95,7 +98,89 @@ static int pmu_format(const char *name, struct list_head *format)
- 	return 0;
- }
- 
--static int perf_pmu__new_alias(struct list_head *list, char *name, FILE *file)
-+static int perf_pmu__parse_scale(struct perf_pmu_alias *alias, char *dir, char *name)
++static inline u64 rapl_read_counter(struct perf_event *event)
 +{
-+	struct stat st;
-+	ssize_t sret;
-+	char scale[128];
-+	int fd, ret = -1;
-+	char path[PATH_MAX];
-+	char *lc;
++	u64 raw;
++	rdmsrl(event->hw.event_base, raw);
++	return raw;
++}
 +
-+	snprintf(path, PATH_MAX, "%s/%s.scale", dir, name);
-+
-+	fd = open(path, O_RDONLY);
-+	if (fd == -1)
-+		return -1;
-+
-+	if (fstat(fd, &st) < 0)
-+		goto error;
-+
-+	sret = read(fd, scale, sizeof(scale)-1);
-+	if (sret < 0)
-+		goto error;
-+
-+	scale[sret] = '\0';
++static inline u64 rapl_scale(u64 v)
++{
 +	/*
-+	 * save current locale
++	 * scale delta to smallest unit (1/2^32)
++	 * users must then scale back: count * 1/(1e9*2^32) to get Joules
++	 * or use ldexp(count, -32).
++	 * Watts = Joules/Time delta
 +	 */
-+	lc = setlocale(LC_NUMERIC, NULL);
++	return v << (32 - __get_cpu_var(rapl_pmu)->hw_unit);
++}
++
++static u64 rapl_event_update(struct perf_event *event)
++{
++	struct hw_perf_event *hwc = &event->hw;
++	u64 prev_raw_count, new_raw_count;
++	s64 delta, sdelta;
++	int shift = RAPL_CNTR_WIDTH;
++
++again:
++	prev_raw_count = local64_read(&hwc->prev_count);
++	rdmsrl(event->hw.event_base, new_raw_count);
++
++	if (local64_cmpxchg(&hwc->prev_count, prev_raw_count,
++			    new_raw_count) != prev_raw_count) {
++		cpu_relax();
++		goto again;
++	}
 +
 +	/*
-+	 * force to C locale to ensure kernel
-+	 * scale string is converted correctly.
-+	 * kernel uses default C locale.
++	 * Now we have the new raw value and have updated the prev
++	 * timestamp already. We can now calculate the elapsed delta
++	 * (event-)time and add that to the generic event.
++	 *
++	 * Careful, not all hw sign-extends above the physical width
++	 * of the count.
 +	 */
-+	setlocale(LC_NUMERIC, "C");
++	delta = (new_raw_count << shift) - (prev_raw_count << shift);
++	delta >>= shift;
 +
-+	alias->scale = strtod(scale, NULL);
++	sdelta = rapl_scale(delta);
 +
-+	/* restore locale */
-+	setlocale(LC_NUMERIC, lc);
++	local64_add(sdelta, &event->count);
 +
-+	ret = 0;
-+error:
-+	close(fd);
++	return new_raw_count;
++}
++
++static void __rapl_pmu_event_start(struct rapl_pmu *pmu,
++				   struct perf_event *event)
++{
++	if (WARN_ON_ONCE(!(event->hw.state & PERF_HES_STOPPED)))
++		return;
++
++	event->hw.state = 0;
++
++	list_add_tail(&event->active_entry, &pmu->active_list);
++
++	local64_set(&event->hw.prev_count, rapl_read_counter(event));
++
++	pmu->n_active++;
++}
++
++static void rapl_pmu_event_start(struct perf_event *event, int mode)
++{
++	struct rapl_pmu *pmu = __get_cpu_var(rapl_pmu);
++	unsigned long flags;
++
++	spin_lock_irqsave(&pmu->lock, flags);
++	__rapl_pmu_event_start(pmu, event);
++	spin_unlock_irqrestore(&pmu->lock, flags);
++}
++
++static void rapl_pmu_event_stop(struct perf_event *event, int mode)
++{
++	struct rapl_pmu *pmu = __get_cpu_var(rapl_pmu);
++	struct hw_perf_event *hwc = &event->hw;
++	unsigned long flags;
++
++	spin_lock_irqsave(&pmu->lock, flags);
++
++	/* mark event as deactivated and stopped */
++	if (!(hwc->state & PERF_HES_STOPPED)) {
++		WARN_ON_ONCE(pmu->n_active <= 0);
++		pmu->n_active--;
++
++		list_del(&event->active_entry);
++
++		WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);
++		hwc->state |= PERF_HES_STOPPED;
++	}
++
++	/* check if update of sw counter is necessary */
++	if ((mode & PERF_EF_UPDATE) && !(hwc->state & PERF_HES_UPTODATE)) {
++		/*
++		 * Drain the remaining delta count out of a event
++		 * that we are disabling:
++		 */
++		rapl_event_update(event);
++		hwc->state |= PERF_HES_UPTODATE;
++	}
++
++	spin_unlock_irqrestore(&pmu->lock, flags);
++}
++
++static int rapl_pmu_event_add(struct perf_event *event, int mode)
++{
++	struct rapl_pmu *pmu = __get_cpu_var(rapl_pmu);
++	struct hw_perf_event *hwc = &event->hw;
++	unsigned long flags;
++
++	spin_lock_irqsave(&pmu->lock, flags);
++
++	hwc->state = PERF_HES_UPTODATE | PERF_HES_STOPPED;
++
++	if (mode & PERF_EF_START)
++		__rapl_pmu_event_start(pmu, event);
++
++	spin_unlock_irqrestore(&pmu->lock, flags);
++
++	return 0;
++}
++
++static void rapl_pmu_event_del(struct perf_event *event, int flags)
++{
++	rapl_pmu_event_stop(event, PERF_EF_UPDATE);
++}
++
++static int rapl_pmu_event_init(struct perf_event *event)
++{
++	u64 cfg = event->attr.config & RAPL_EVENT_MASK;
++	int bit, msr, ret = 0;
++
++	/* only look at RAPL events */
++	if (event->attr.type != rapl_pmu_class.type)
++		return -ENOENT;
++
++	/* check only supported bits are set */
++	if (event->attr.config & ~RAPL_EVENT_MASK)
++		return -EINVAL;
++
++	/*
++	 * check event is known (determines counter)
++	 */
++	switch (cfg) {
++	case INTEL_RAPL_PP0:
++		bit = RAPL_IDX_PP0_NRG_STAT;
++		msr = MSR_PP0_ENERGY_STATUS;
++		break;
++	case INTEL_RAPL_PKG:
++		bit = RAPL_IDX_PKG_NRG_STAT;
++		msr = MSR_PKG_ENERGY_STATUS;
++		break;
++	case INTEL_RAPL_RAM:
++		bit = RAPL_IDX_RAM_NRG_STAT;
++		msr = MSR_DRAM_ENERGY_STATUS;
++		break;
++	default:
++		return -EINVAL;
++	}
++	/* check event supported */
++	if (!(rapl_cntr_mask & (1 << bit)))
++		return -EINVAL;
++
++	/* unsupported modes and filters */
++	if (event->attr.exclude_user   ||
++	    event->attr.exclude_kernel ||
++	    event->attr.exclude_hv     ||
++	    event->attr.exclude_idle   ||
++	    event->attr.exclude_host   ||
++	    event->attr.exclude_guest  ||
++	    event->attr.sample_period) /* no sampling */
++		return -EINVAL;
++
++	/* must be done before validate_group */
++	event->hw.event_base = msr;
++	event->hw.config = cfg;
++	event->hw.idx = bit;
++
 +	return ret;
 +}
 +
-+static int perf_pmu__parse_unit(struct perf_pmu_alias *alias, char *dir, char *name)
++static void rapl_pmu_event_read(struct perf_event *event)
 +{
-+	struct stat st;
-+	ssize_t sret;
-+	int fd;
-+	char path[PATH_MAX];
++	rapl_event_update(event);
++}
 +
-+	snprintf(path, PATH_MAX, "%s/%s.unit", dir, name);
++static ssize_t rapl_get_attr_cpumask(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &rapl_cpu_mask);
 +
-+	fd = open(path, O_RDONLY);
-+	if (fd == -1)
++	buf[n++] = '\n';
++	buf[n] = '\0';
++	return n;
++}
++
++static DEVICE_ATTR(cpumask, S_IRUGO, rapl_get_attr_cpumask, NULL);
++
++static struct attribute *rapl_pmu_attrs[] = {
++	&dev_attr_cpumask.attr,
++	NULL,
++};
++
++static struct attribute_group rapl_pmu_attr_group = {
++	.attrs = rapl_pmu_attrs,
++};
++
++EVENT_ATTR_STR(energy-cores, rapl_cores, "event=0x01");
++EVENT_ATTR_STR(energy-pkg  , rapl_pkg, "event=0x02");
++EVENT_ATTR_STR(energy-ram  , rapl_ram, "event=0x03");
++
++EVENT_ATTR_STR(energy-cores.unit, rapl_cores_unit, "Joules");
++EVENT_ATTR_STR(energy-pkg.unit  , rapl_pkg_unit, "Joules");
++EVENT_ATTR_STR(energy-ram.unit  , rapl_ram_unit, "Joules");
++
++/*
++ * we compute in 0.23 nJ increments regardless of MSR
++ */
++EVENT_ATTR_STR(energy-cores.scale, rapl_cores_scale, "2.3283064365386962890625e-10");
++EVENT_ATTR_STR(energy-pkg.scale, rapl_pkg_scale, "2.3283064365386962890625e-10");
++EVENT_ATTR_STR(energy-ram.scale, rapl_ram_scale, "2.3283064365386962890625e-10");
++
++static struct attribute *rapl_events_srv_attr[] = {
++	EVENT_PTR(rapl_cores),
++	EVENT_PTR(rapl_pkg),
++	EVENT_PTR(rapl_ram),
++
++	EVENT_PTR(rapl_cores_unit),
++	EVENT_PTR(rapl_pkg_unit),
++	EVENT_PTR(rapl_ram_unit),
++
++	EVENT_PTR(rapl_cores_scale),
++	EVENT_PTR(rapl_pkg_scale),
++	EVENT_PTR(rapl_ram_scale),
++	NULL,
++};
++
++static struct attribute *rapl_events_cln_attr[] = {
++	EVENT_PTR(rapl_cores),
++	EVENT_PTR(rapl_pkg),
++
++	EVENT_PTR(rapl_cores_unit),
++	EVENT_PTR(rapl_pkg_unit),
++
++	EVENT_PTR(rapl_cores_scale),
++	EVENT_PTR(rapl_pkg_scale),
++	NULL,
++};
++
++static struct attribute_group rapl_pmu_events_group = {
++	.name = "events",
++	.attrs = NULL, /* patched at runtime */
++};
++
++DEFINE_RAPL_FORMAT_ATTR(event, event, "config:0-7");
++static struct attribute *rapl_formats_attr[] = {
++	&format_attr_event.attr,
++	NULL,
++};
++
++static struct attribute_group rapl_pmu_format_group = {
++	.name = "format",
++	.attrs = rapl_formats_attr,
++};
++
++const struct attribute_group *rapl_attr_groups[] = {
++	&rapl_pmu_attr_group,
++	&rapl_pmu_format_group,
++	&rapl_pmu_events_group,
++	NULL,
++};
++
++static struct pmu rapl_pmu_class = {
++	.attr_groups	= rapl_attr_groups,
++	.task_ctx_nr	= perf_invalid_context, /* system-wide only */
++	.event_init	= rapl_pmu_event_init,
++	.add		= rapl_pmu_event_add, /* must have */
++	.del		= rapl_pmu_event_del, /* must have */
++	.start		= rapl_pmu_event_start,
++	.stop		= rapl_pmu_event_stop,
++	.read		= rapl_pmu_event_read,
++};
++
++static void rapl_exit_cpu(int cpu)
++{
++	int i, phys_id = topology_physical_package_id(cpu);
++
++	spin_lock(&rapl_hotplug_lock);
++
++	/* if CPU not in RAPL mask, nothing to do */
++	if (!cpumask_test_and_clear_cpu(cpu, &rapl_cpu_mask))
++		goto skip;
++
++	/* find a new cpu on same package */
++	for_each_online_cpu(i) {
++		if (i == cpu || i == 0)
++			continue;
++		if (phys_id == topology_physical_package_id(i)) {
++			cpumask_set_cpu(i, &rapl_cpu_mask);
++			break;
++		}
++	}
++
++	WARN_ON(cpumask_empty(&rapl_cpu_mask));
++skip:
++	spin_unlock(&rapl_hotplug_lock);
++}
++
++static void rapl_init_cpu(int cpu)
++{
++	int i, phys_id = topology_physical_package_id(cpu);
++
++	spin_lock(&rapl_hotplug_lock);
++
++	/* check if phys_is is already covered */
++	for_each_cpu(i, &rapl_cpu_mask) {
++		if (phys_id == topology_physical_package_id(i))
++			goto skip;
++	}
++	/* was not found, so add it */
++	cpumask_set_cpu(cpu, &rapl_cpu_mask);
++skip:
++	spin_unlock(&rapl_hotplug_lock);
++}
++
++static int rapl_cpu_prepare(int cpu)
++{
++	struct rapl_pmu *pmu = per_cpu(rapl_pmu, cpu);
++	int phys_id = topology_physical_package_id(cpu);
++
++	if (pmu)
++		return 0;
++
++	if (phys_id < 0)
 +		return -1;
 +
-+	if (fstat(fd, &st) < 0)
-+		goto error;
++	pmu = kzalloc_node(sizeof(*pmu), GFP_KERNEL, cpu_to_node(cpu));
++	if (!pmu)
++		return -1;
 +
-+	alias->unit = malloc(st.st_size + 1);
-+	if (!alias->unit)
-+		goto error;
++	spin_lock_init(&pmu->lock);
++	atomic_set(&pmu->refcnt, 1);
 +
-+	sret = read(fd, alias->unit, st.st_size);
-+	if (sret < 0)
-+		goto error;
++	INIT_LIST_HEAD(&pmu->active_list);
 +
-+	close(fd);
++	pmu->phys_id = phys_id;
++	/*
++	 * grab power unit as: 1/2^unit Joules
++	 *
++	 * we cache in local PMU instance
++	 */
++	rdmsrl(MSR_RAPL_POWER_UNIT, pmu->hw_unit);
++	pmu->hw_unit = (pmu->hw_unit >> 8) & 0x1FULL;
 +
-+	alias->unit[sret] = '\0';
++	/* set RAPL pmu for this cpu for now */
++	per_cpu(rapl_pmu_kfree, cpu) = NULL;
++	per_cpu(rapl_pmu, cpu) = pmu;
 +
 +	return 0;
-+error:
-+	close(fd);
-+	free(alias->unit);
-+	alias->unit = NULL;
-+	return -1;
 +}
 +
-+static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FILE *file)
- {
- 	struct perf_pmu_alias *alias;
- 	char buf[256];
-@@ -111,6 +196,9 @@ static int perf_pmu__new_alias(struct list_head *list, char *name, FILE *file)
- 		return -ENOMEM;
- 
- 	INIT_LIST_HEAD(&alias->terms);
-+	alias->scale = 1.0;
-+	alias->unit = NULL;
-+
- 	ret = parse_events_terms(&alias->terms, buf);
- 	if (ret) {
- 		free(alias);
-@@ -118,7 +206,14 @@ static int perf_pmu__new_alias(struct list_head *list, char *name, FILE *file)
- 	}
- 
- 	alias->name = strdup(name);
-+	/*
-+	 * load unit name and scale if available
-+	 */
-+	perf_pmu__parse_unit(alias, dir, name);
-+	perf_pmu__parse_scale(alias, dir, name);
-+
- 	list_add_tail(&alias->list, list);
-+
- 	return 0;
- }
- 
-@@ -130,6 +225,7 @@ static int pmu_aliases_parse(char *dir, struct list_head *head)
- {
- 	struct dirent *evt_ent;
- 	DIR *event_dir;
-+	size_t len;
- 	int ret = 0;
- 
- 	event_dir = opendir(dir);
-@@ -144,13 +240,24 @@ static int pmu_aliases_parse(char *dir, struct list_head *head)
- 		if (!strcmp(name, ".") || !strcmp(name, ".."))
- 			continue;
- 
-+		/*
-+		 * skip .unit and .scale info files
-+		 * parsed in perf_pmu__new_alias()
-+		 */
-+		len = strlen(name);
-+		if (len > 5 && !strcmp(name + len - 5, ".unit"))
-+			continue;
-+		if (len > 6 && !strcmp(name + len - 6, ".scale"))
-+			continue;
-+
- 		snprintf(path, PATH_MAX, "%s/%s", dir, name);
- 
- 		ret = -EINVAL;
- 		file = fopen(path, "r");
- 		if (!file)
- 			break;
--		ret = perf_pmu__new_alias(head, name, file);
-+
-+		ret = perf_pmu__new_alias(head, dir, name, file);
- 		fclose(file);
- 	}
- 
-@@ -513,16 +620,42 @@ static struct perf_pmu_alias *pmu_find_alias(struct perf_pmu *pmu,
- 	return NULL;
- }
- 
-+
-+static int check_unit_scale(struct perf_pmu_alias *alias,
-+			    char **unit, double *scale)
++static int rapl_cpu_starting(int cpu)
 +{
-+	/*
-+	 * Only one term in event definition can
-+	 * define unit and scale, fail if there's
-+	 * more than one.
-+	 */
-+	if ((*unit && alias->unit) ||
-+	    (*scale && alias->scale))
-+		return -EINVAL;
++	struct rapl_pmu *pmu2;
++	struct rapl_pmu *pmu1 = per_cpu(rapl_pmu, cpu);
++	int i, phys_id = topology_physical_package_id(cpu);
 +
-+	if (alias->unit)
-+		*unit = alias->unit;
++	if (pmu1)
++		return 0;
 +
-+	if (alias->scale)
-+		*scale = alias->scale;
++	spin_lock(&rapl_hotplug_lock);
 +
++	for_each_online_cpu(i) {
++		pmu2 = per_cpu(rapl_pmu, i);
++
++		if (!pmu2 || i == cpu)
++			continue;
++
++		if (pmu2->phys_id == phys_id) {
++			per_cpu(rapl_pmu, cpu) = pmu2;
++			per_cpu(rapl_pmu_kfree, cpu) = pmu1;
++			atomic_inc(&pmu2->refcnt);
++			break;
++		}
++	}
++	spin_unlock(&rapl_hotplug_lock);
 +	return 0;
 +}
 +
- /*
-  * Find alias in the terms list and replace it with the terms
-  * defined for the alias
-  */
--int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms)
-+int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
-+			  char **unit, double *scale)
- {
- 	struct parse_events_term *term, *h;
- 	struct perf_pmu_alias *alias;
- 	int ret;
- 
-+	*unit   = NULL;
-+	*scale  = 0;
++static int rapl_cpu_dying(int cpu)
++{
++	struct rapl_pmu *pmu = per_cpu(rapl_pmu, cpu);
++	struct perf_event *event, *tmp;
 +
- 	list_for_each_entry_safe(term, h, head_terms, list) {
- 		alias = pmu_find_alias(pmu, term);
- 		if (!alias)
-@@ -530,6 +663,11 @@ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms)
- 		ret = pmu_alias_terms(alias, &term->list);
- 		if (ret)
- 			return ret;
++	if (!pmu)
++		return 0;
 +
-+		ret = check_unit_scale(alias, unit, scale);
-+		if (ret)
-+			return ret;
++	spin_lock(&rapl_hotplug_lock);
 +
- 		list_del(&term->list);
- 		free(term);
- 	}
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 1179b26..9183380 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -28,7 +28,8 @@ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
- int perf_pmu__config_terms(struct list_head *formats,
- 			   struct perf_event_attr *attr,
- 			   struct list_head *head_terms);
--int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms);
-+int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
-+			  char **unit, double *scale);
- struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
- 				  struct list_head *head_terms);
- int perf_pmu_wrap(void);
++	/*
++	 * stop all syswide RAPL events on that  CPU
++	 * as a consequence also stops the hrtimer
++	 */
++	list_for_each_entry_safe(event, tmp, &pmu->active_list, active_entry) {
++		rapl_pmu_event_stop(event, PERF_EF_UPDATE);
++	}
++
++	per_cpu(rapl_pmu, cpu) = NULL;
++
++	if (atomic_dec_and_test(&pmu->refcnt))
++		kfree(pmu);
++
++	spin_unlock(&rapl_hotplug_lock);
++	return 0;
++}
++
++static int rapl_cpu_notifier(struct notifier_block *self,
++			     unsigned long action, void *hcpu)
++{
++	unsigned int cpu = (long)hcpu;
++
++	/* allocate/free data structure for uncore box */
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_UP_PREPARE:
++		rapl_cpu_prepare(cpu);
++		break;
++	case CPU_STARTING:
++		rapl_cpu_starting(cpu);
++		break;
++	case CPU_UP_CANCELED:
++	case CPU_DYING:
++		rapl_cpu_dying(cpu);
++		break;
++	case CPU_ONLINE:
++		kfree(per_cpu(rapl_pmu_kfree, cpu));
++		per_cpu(rapl_pmu_kfree, cpu) = NULL;
++		break;
++	case CPU_DEAD:
++		per_cpu(rapl_pmu, cpu) = NULL;
++		break;
++	default:
++		break;
++	}
++
++	/* select the cpu that collects uncore events */
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_DOWN_FAILED:
++	case CPU_STARTING:
++		rapl_init_cpu(cpu);
++		break;
++	case CPU_DOWN_PREPARE:
++		rapl_exit_cpu(cpu);
++		break;
++	default:
++		break;
++	}
++
++	return NOTIFY_OK;
++}
++
++static const struct x86_cpu_id rapl_cpu_match[] = {
++	[0] = { .vendor = X86_VENDOR_INTEL, .family = 6 },
++	[1] = {},
++};
++static int __init rapl_pmu_init(void)
++{
++	struct rapl_pmu *pmu;
++	int i, cpu, ret;
++
++	/*
++	 * check for Intel processor family 6
++	 */
++	if (!x86_match_cpu(rapl_cpu_match))
++		return 0;
++
++	/* check supported CPU */
++	switch (boot_cpu_data.x86_model) {
++	case 42: /* Sandy Bridge */
++	case 58: /* Ivy Bridge */
++	case 60: /* Haswell */
++		rapl_cntr_mask = RAPL_IDX_CLN;
++		rapl_pmu_events_group.attrs = rapl_events_cln_attr;
++		break;
++	case 45: /* Sandy Bridge-EP */
++	case 62: /* IvyTown */
++		rapl_cntr_mask = RAPL_IDX_SRV;
++		rapl_pmu_events_group.attrs = rapl_events_srv_attr;
++		break;
++
++	default:
++		/* unsupported */
++		return 0;
++	}
++	get_online_cpus();
++
++	for_each_online_cpu(cpu) {
++		int phys_id = topology_physical_package_id(cpu);
++
++		/* save on prepare by only calling prepare for new phys_id */
++		for_each_cpu(i, &rapl_cpu_mask) {
++			if (phys_id == topology_physical_package_id(i)) {
++				phys_id = -1;
++				break;
++			}
++		}
++		if (phys_id < 0) {
++			pmu = per_cpu(rapl_pmu, i);
++			if (pmu) {
++				per_cpu(rapl_pmu, cpu) = pmu;
++				atomic_inc(&pmu->refcnt);
++			}
++			continue;
++		}
++		rapl_cpu_prepare(cpu);
++		cpumask_set_cpu(cpu, &rapl_cpu_mask);
++	}
++
++	perf_cpu_notifier(rapl_cpu_notifier);
++
++	ret = perf_pmu_register(&rapl_pmu_class, "power", -1);
++	if (WARN_ON(ret)) {
++		pr_info("RAPL PMU detected, registration failed (%d), RAPL PMU disabled\n", ret);
++		put_online_cpus();
++		return -1;
++	}
++
++	pmu = __get_cpu_var(rapl_pmu);
++
++	pr_info("RAPL PMU detected, hw unit 2^-%d Joules,"
++		" API unit is 2^-32 Joules,"
++		" %d fixed counters\n",
++		pmu->hw_unit,
++		hweight32(rapl_cntr_mask));
++
++	put_online_cpus();
++
++	return 0;
++}
++device_initcall(rapl_pmu_init);
 -- 
 1.7.9.5
 
