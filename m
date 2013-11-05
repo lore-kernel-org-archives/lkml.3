@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab3KEWpe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 17:45:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59009 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755836Ab3KEWp2 (ORCPT
+	id S1755791Ab3KEWqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 17:46:53 -0500
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:36183 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755435Ab3KEWqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 17:45:28 -0500
-Date: Tue, 5 Nov 2013 14:45:26 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Ron van der Wees <rvdwees@redhat.com>, Erik Mouw <erik.mouw_2@nxp.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        walken@google.com, Shaohua Li <shli@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC PATCH -mm] provide estimated available memory in
- /proc/meminfo
-Message-Id: <20131105144526.49a233ca19298808e54ff900@linux-foundation.org>
-In-Reply-To: <20131105173852.709a103b@annuminas.surriel.com>
-References: <ECFC0369-0745-44AB-9858-E689F41CCB4D@nxp.com>
-	<5256D4C7.90301@redhat.com>
-	<DB649DE8-5595-4370-912B-BDC6BD5FF8C3@nxp.com>
-	<20131025120752.GB2415@rh0004426.ams.redhat.com>
-	<20131105173852.709a103b@annuminas.surriel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Nov 2013 17:46:52 -0500
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <1382698313-13161-16-git-send-email-stefano.stabellini@eu.citrix.com>
+References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>
+	<1382698313-13161-16-git-send-email-stefano.stabellini@eu.citrix.com>
+Date: Tue, 5 Nov 2013 14:46:51 -0800
+Message-ID: <CAOesGMjdfGoEp+yCRa1WhQi=c_LHBCjrU3H9WUqf0Fn_cqkz_Q@mail.gmail.com>
+Subject: Re: [PATCH v9 16/18] arm,arm64: do not always merge biovec if we are
+ running on Xen
+From: Olof Johansson <olof@lixom.net>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        konrad.wilk@oracle.com, Ian Campbell <Ian.Campbell@citrix.com>,
+        Russell King <rmk@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Nov 2013 17:38:52 -0500 Rik van Riel <riel@redhat.com> wrote:
+Hi,
 
-> Many load balancing and workload placing programs check /proc/meminfo
-> to estimate how much free memory is available. They generally do this
-> by adding up "free" and "cached", which was fine ten years ago, but
-> is pretty much guaranteed to be wrong today.
-> 
-> It is wrong because Cached includes memory that is not freeable as
-> page cache, for example shared memory segments, tmpfs, and ramfs,
-> and it does not include reclaimable slab memory, which can take up
-> a large fraction of system memory on mostly idle systems with lots
-> of files.
-> 
-> Currently, the amount of memory that is available for a new workload,
-> without pushing the system into swap, can be estimated from MemFree,
-> Active(file), Inactive(file), and SReclaimable, as well as the "low"
-> watermarks from /proc/zoneinfo.
-> 
-> However, this may change in the future, and user space really should
-> not be expected to know kernel internals to come up with an estimate
-> for the amount of free memory.
-> 
-> It is more convenient to provide such an estimate in /proc/meminfo,
-> if things change in the future, we only have to change it in one
-> place.
-> 
+On Fri, Oct 25, 2013 at 3:51 AM, Stefano Stabellini
+<stefano.stabellini@eu.citrix.com> wrote:
+> This is similar to what it is done on X86: biovecs are prevented from merging
+> otherwise every dma requests would be forced to bounce on the swiotlb buffer.
+>
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
-That's a good idea.
 
->  fs/proc/meminfo.c | 36 ++++++++++++++++++++++++++++++++++++
->  1 file changed, 36 insertions(+)
+This is spewing 800+ warnings on ape6evm_defconfig on ARM that doesn't
+have CONFIG_BLOCK enabled, since struct bio_vec is protected by that
+in include/linux/blk_types.h. I guess it could be argued that those
+ifdefs could be removed, but still:
 
-Documentation/filesystems/proc.txt told me it's feeling all offended.
+../../arch/arm/include/asm/io.h:378:24: warning: its scope is only
+this definition or declaration, which is probably not what you want
+[enabled by default]
+In file included from ../../include/linux/scatterlist.h:10:0,
+                 from ../../include/linux/dmaengine.h:27,
+                 from ../../include/linux/skbuff.h:31,
+                 from ../../include/crypto/algapi.h:18,
+                 from ../../crypto/internal.h:16,
+                 from ../../crypto/cipher.c:21:
+../../arch/arm/include/asm/io.h:378:24: warning: 'struct bio_vec'
+declared inside parameter list [enabled by default]
+           const struct bio_vec *vec2);
+
+
+-Olof
