@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab3KEB7I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 20:59:08 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44969 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab3KEB7G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 20:59:06 -0500
-X-AuditID: 9c93016f-b7bc7ae0000010eb-a1-527850e71546
-From: Namhyung Kim <namhyung@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch methods (v6)
-References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
-	<20131102155458.GA6981@redhat.com> <87ob60366m.fsf@sejong.aot.lge.com>
-	<87fvrc35kj.fsf@sejong.aot.lge.com> <20131104155131.GD4440@redhat.com>
-Date: Tue, 05 Nov 2013 10:59:02 +0900
-In-Reply-To: <20131104155131.GD4440@redhat.com> (Oleg Nesterov's message of
-	"Mon, 4 Nov 2013 16:51:31 +0100")
-Message-ID: <87vc071ue1.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S1754069Ab3KECA4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 21:00:56 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:55880 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753944Ab3KECAz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 21:00:55 -0500
+Date: Mon, 4 Nov 2013 21:00:53 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Uwe =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -tip v2 3/3] [BUGFIX] kprobes: Prohibit probing on
+ func_ptr_is_kernel_text
+Message-ID: <20131104210053.76c37210@gandalf.local.home>
+In-Reply-To: <20131101112537.14657.88496.stgit@kbuild-fedora.novalocal>
+References: <20131101112530.14657.87835.stgit@kbuild-fedora.novalocal>
+	<20131101112537.14657.88496.stgit@kbuild-fedora.novalocal>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Nov 2013 16:51:31 +0100, Oleg Nesterov wrote:
-> On 11/04, Namhyung Kim wrote:
->> On Mon, 04 Nov 2013 17:46:41 +0900, Namhyung Kim wrote:
->> > On Sat, 2 Nov 2013 16:54:58 +0100, Oleg Nesterov wrote:
->> >> - this only allows to read the data from the same binary.
->> >
->> > Right.  This is also an unnecessary restriction.  We should be able to
->> > access data in other binary.
->>
->> Hmm.. I guess this gonna be not simple
->
-> Yes ;)
->
-> - perhaps it can only be
->> supported for per-process uprobe with known virtual addresses?
->
-> "Known" is very limited. Even in the simplest case (like your test-case
-> from from 0/13), you simply can't know the address of "int glob" if you
-> compile it with "-pie -fPIC".
->
-> As for other binaries (say libc) the problem is even worse, and
-> randomize_va_space adds even more pain.
+On Fri, 01 Nov 2013 11:25:37 +0000
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-Hmm.. right.  We should deal with relative addresses from the base
-mapping address of a binary.
+> Prohibit probing on func_ptr_is_kernel_text().
+> Since the func_ptr_is_kernel_text() is called from
+> notifier_call_chain() which is called from int3 handler,
+> probing it may cause double int3 fault and kernel will
+> reboot.
+> 
+> This happenes when the kernel built with CONFIG_DEBUG_NOTIFIERS=y.
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: "Uwe Kleine-König" <u.kleine-koenig@pengutronix.de>
+> Cc: Borislav Petkov <bp@suse.de>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> ---
+>  kernel/extable.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/extable.c b/kernel/extable.c
+> index 832cb28..022fb25 100644
+> --- a/kernel/extable.c
+> +++ b/kernel/extable.c
+> @@ -129,7 +129,7 @@ int kernel_text_address(unsigned long addr)
+>   * pointer is part of the kernel text, we need to do some
+>   * special dereferencing first.
+>   */
+> -int func_ptr_is_kernel_text(void *ptr)
+> +int nokprobe func_ptr_is_kernel_text(void *ptr)
+>  {
+>  	unsigned long addr;
+>  	addr = (unsigned long) dereference_function_descriptor(ptr);
+> 
 
->
-> But in any case, I strongly believe that it doesn't make any sense to
-> rely on tu->inode in get_user_vaddr().
+One thing I worry about the "nokprobe" annotation, is that it moves the
+location of the function out of local. This function no exists in
+the section with its users. Same with the debug functions in the
+other patch.
 
-I'll think about it more.
+Now these may be a slow path where we really don't care, but if the
+nokprobe expands this can cause issues.
 
-Thanks,
-Namhyung
+The "nokprobe" works differently than "notrace" as "notrace" is just an
+attribute that tells gcc not to add mcount to it. The "nokprobe"
+actually moves the function into a different section.
+
+-- Steve
