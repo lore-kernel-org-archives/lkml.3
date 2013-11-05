@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab3KEVYq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 16:24:46 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:48531 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755270Ab3KEVYp (ORCPT
+	id S1755608Ab3KEVZX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 16:25:23 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:39979 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755159Ab3KEVZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 16:24:45 -0500
+	Tue, 5 Nov 2013 16:25:21 -0500
+Message-ID: <5279622C.8040509@kernel.dk>
+Date: Tue, 05 Nov 2013 14:25:00 -0700
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <20131105212029.GT28601@twins.programming.kicks-ass.net>
-References: <20131105105244.666320103@infradead.org>
-	<20131105110026.878790658@infradead.org>
-	<CANN689EVEQUXUm9Nwu=-Gzr85tkMPVOEFWX=8dQQ3WbqfyZy5w@mail.gmail.com>
-	<20131105212029.GT28601@twins.programming.kicks-ass.net>
-Date: Tue, 5 Nov 2013 13:24:44 -0800
-Message-ID: <CANN689FKEy3cc9EGOViY-kev1hJ-8DR1RB_4hya0jkJfahSQug@mail.gmail.com>
-Subject: Re: [RFC 1/8] locking: Move mutex into kernel/locking/
-From: Michel Lespinasse <walken@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, oleg@redhat.com, dhowells@redhat.com,
-        willy@linux.intel.com, tglx@linutronix.de, rostedt@goodmis.org,
-        airlied@gmail.com, maarten.lankhorst@canonical.com,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Warren <swarren@wwwdotorg.org>, Tomasz Figa <t.figa@samsung.com>,
+        Tushar Behera <tushar.behera@linaro.org>
+CC: linux-next@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: Re: Boot failure on Arndale with next-20131105
+References: <CAHbNUh1Cw3bc4WR0VcD1H_eKYqGBtv_215_euh6mwTbZ41ejUw@mail.gmail.com> <1451170.jb5zbRXgpt@amdc1227> <52792D13.70704@wwwdotorg.org>
+In-Reply-To: <52792D13.70704@wwwdotorg.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 5, 2013 at 1:20 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> This is probably a stupid question, but I haven't been able to find
->> one kernel version that this applies cleanly over ???
->
-> Oh my bad, it appears I made it against a working tree, not an actual
-> published tree. That said, I don't think the rejects should be super
-> hard to fix.
->
-> If people don't object to the idea I'll respin against something
-> published and testable.
+On 11/05/2013 10:38 AM, Stephen Warren wrote:
+> I note that compiling next-20131105 generates quite a few warnings re:
+> uninitialized variables. Reverting the commit doesn't solve those.
+> 
+>> block/blk-merge.c: In function ‘blk_bio_map_sg’:
+>> block/blk-merge.c:133:8: warning: ‘bvprv.bv_len’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>> block/blk-merge.c:233:23: note: ‘bvprv.bv_len’ was declared here
+>> block/blk-merge.c:133:8: warning: ‘bvprv.bv_offset’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>> block/blk-merge.c:233:23: note: ‘bvprv.bv_offset’ was declared here
+>> block/blk-merge.c:133:8: warning: ‘bvprv.bv_page’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>> block/blk-merge.c:233:23: note: ‘bvprv.bv_page’ was declared here
+>> block/blk-merge.c: In function ‘blk_rq_map_sg’:
+>> block/blk-merge.c:133:8: warning: ‘bvprv.bv_page’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>> block/blk-merge.c:171:23: note: ‘bvprv.bv_page’ was declared here
+>> block/blk-merge.c:133:8: warning: ‘bvprv.bv_offset’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>> block/blk-merge.c:171:23: note: ‘bvprv.bv_offset’ was declared here
+>> block/blk-merge.c:133:8: warning: ‘bvprv.bv_len’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>> block/blk-merge.c:171:23: note: ‘bvprv.bv_len’ was declared here
+>> block/blk-merge.c: In function ‘attempt_merge’:
+>> block/blk-merge.c:108:7: warning: ‘end_bv.bv_offset’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>> block/blk-merge.c:89:17: note: ‘end_bv.bv_offset’ was declared here
+>> block/blk-merge.c:108:7: warning: ‘end_bv.bv_page’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>> block/blk-merge.c:89:17: note: ‘end_bv.bv_page’ was declared here
+>> block/blk-merge.c:108:7: warning: ‘end_bv.bv_len’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>> block/blk-merge.c:89:17: note: ‘end_bv.bv_len’ was declared here
 
-Yes please.
-
-The reason I want to apply this is because code moves cause noisy
-patches, and the easiest way I know to fully figure them out is to
-diff them against a private tree where I have moved the same files
-(yeah, there really ought to be a better way, ....)
+Looks like an incomplete merge. The patch to silence those warnings
+(which aren't bugs, BTW) is definitely in my for-next branch.
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Jens Axboe
+
