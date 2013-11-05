@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab3KENPm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 08:15:42 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44352 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754424Ab3KENPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 08:15:39 -0500
-From: Sricharan R <r.sricharan@ti.com>
-To: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
-        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
-        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <mark.rutland@arm.com>, <robherring2@gmail.com>, <tglx@linutronix.de>,
-        <santosh.shilimkar@ti.com>, <galak@codeaurora.org>,
-        <r.sricharan@ti.com>
-Subject: [PATCH V3 6/7] ARM: OMAP4+: Correct Wakeup-gen code to use physical irq number
-Date: Tue, 5 Nov 2013 18:44:16 +0530
-Message-ID: <1383657257-3458-7-git-send-email-r.sricharan@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1383657257-3458-1-git-send-email-r.sricharan@ti.com>
-References: <1383657257-3458-1-git-send-email-r.sricharan@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755103Ab3KENP2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 08:15:28 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:42911 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755084Ab3KENPY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 08:15:24 -0500
+Date: Tue, 5 Nov 2013 08:15:22 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Jon Stanley <jonstanley@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org
+Subject: Re: [libtraceevent] hrtimer_expire_entry unknown op '{'
+Message-ID: <20131105081522.1c8e2012@gandalf.local.home>
+In-Reply-To: <20131105093755.GB2272@swordfish.minsk.epam.com>
+References: <20131105093755.GB2272@swordfish.minsk.epam.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The wakeup gen mask/unmask callback uses the irq element of the
-irq_data to setup. The irq is the linux virtual irq number and
-is same as the hardware irq number only when the parent irqchip
-is setup as a legacy domain. When it is used as a linear domain,
-the virtual irqs are allocated dynamically and wakeup gen code
-cannot rely on these numbers to access the irq registers. Instead
-use the hwirq element of the irq_data which represent the physical
-irq number.
+On Tue, 5 Nov 2013 12:37:55 +0300
+Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
 
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Rajendra Nayak <rnayak@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Sricharan R <r.sricharan@ti.com>
----
- arch/arm/mach-omap2/omap-wakeupgen.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> Hello,
+> 
+> libtraceevent reports ` unknown op '{' ' while processing hrtimer_expire_entry event
 
-diff --git a/arch/arm/mach-omap2/omap-wakeupgen.c b/arch/arm/mach-omap2/omap-wakeupgen.c
-index 813c615..b813f4b 100644
---- a/arch/arm/mach-omap2/omap-wakeupgen.c
-+++ b/arch/arm/mach-omap2/omap-wakeupgen.c
-@@ -134,7 +134,7 @@ static void wakeupgen_mask(struct irq_data *d)
- 	unsigned long flags;
- 
- 	raw_spin_lock_irqsave(&wakeupgen_lock, flags);
--	_wakeupgen_clear(d->irq, irq_target_cpu[d->irq]);
-+	_wakeupgen_clear(d->hwirq, irq_target_cpu[d->hwirq]);
- 	raw_spin_unlock_irqrestore(&wakeupgen_lock, flags);
- }
- 
-@@ -146,7 +146,7 @@ static void wakeupgen_unmask(struct irq_data *d)
- 	unsigned long flags;
- 
- 	raw_spin_lock_irqsave(&wakeupgen_lock, flags);
--	_wakeupgen_set(d->irq, irq_target_cpu[d->irq]);
-+	_wakeupgen_set(d->hwirq, irq_target_cpu[d->hwirq]);
- 	raw_spin_unlock_irqrestore(&wakeupgen_lock, flags);
- }
- 
--- 
-1.7.9.5
+Yes, we need to port the plugin code from trace-cmd to handle this and
+other cases. It's a known issue.
+
+-- Steve
+
+> 
+> cat /sys/kernel/debug/tracing/events/timer/hrtimer_expire_entry/format
+> 
+> name: hrtimer_expire_entry
+> ID: 91
+> format:
+> 	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
+> 	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
+> 	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
+> 	field:int common_pid;	offset:4;	size:4;	signed:1;
+> 
+> 	field:void * hrtimer;	offset:8;	size:8;	signed:0;
+> 	field:s64 now;	offset:16;	size:8;	signed:1;
+> 	field:void * function;	offset:24;	size:8;	signed:0;
+> 
+> print fmt: "hrtimer=%p function=%pf now=%llu", REC->hrtimer, REC->function, (unsigned long long)(((ktime_t) { .tv64 = REC->now }).tv64)
+> 
+> 
+> 	-ss
 
