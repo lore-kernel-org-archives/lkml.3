@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab3KEJ6p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 04:58:45 -0500
-Received: from mga01.intel.com ([192.55.52.88]:22149 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750851Ab3KEJ6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 04:58:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,638,1378882800"; 
-   d="scan'208";a="428088964"
-From: "Usyskin, Alexander" <alexander.usyskin@intel.com>
-To: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
-CC: =?utf-8?B?Tmljb2zDsiBDb3N0YW56YQ==?= <abitrules@yahoo.it>,
-        Alex Burmashev <alex.burmashev@rosalab.ru>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Winkler, Tomas" <tomas.winkler@intel.com>
-Subject: RE: mei: cancel stall timers in mei_reset
-Thread-Topic: mei: cancel stall timers in mei_reset
-Thread-Index: AQHO1v25SuqUoX7R9021oFgYVQgsvJoTBDKAgAIW/gCAARFxgIAAP5xA
-Date: Tue, 5 Nov 2013 09:58:25 +0000
-Message-ID: <C980C034A53E0646B96866D6CE3D187A3330D460@HASMSX106.ger.corp.intel.com>
-References: <1361817048.3583.1383580128332.JavaMail.root@collab.rosalab.ru>
- <5278A741.6040206@rosalab.ru>
-In-Reply-To: <5278A741.6040206@rosalab.ru>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.10]
-Content-Type: text/plain; charset="utf-8"
+	id S1753570Ab3KEKFy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 05:05:54 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:44316 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097Ab3KEKFv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 05:05:51 -0500
+Message-ID: <5278C2F8.3050805@linux.vnet.ibm.com>
+Date: Tue, 05 Nov 2013 02:05:44 -0800
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
+CC: Andreas Dilger <adilger.kernel@dilger.ca>,
+        LKML <linux-kernel@vger.kernel.org>, EXT4 <linux-ext4@vger.kernel.org>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/2] rbtree: fix postorder iteration when the rb_node
+ is not the first element in an entry
+References: <52784ADF.1040104@linux.vnet.ibm.com> <1383615602-1784-1-git-send-email-cody@linux.vnet.ibm.com>
+In-Reply-To: <1383615602-1784-1-git-send-email-cody@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13110510-8236-0000-0000-0000036EAE0E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rA59x2ob016572
 
-Hi
+On 11/04/2013 05:40 PM, Cody P Schafer wrote:
+> Provide a new helper called rb_next_postorder_entry() to perform NULL
+> checks and container_of() coversions and use it in
+> rbtree_for_each_entry_safe() to fix oopses that occur when rb_node is
+> not the first element in the entry.
 
-The problem that you found was fixed in patch here: https://lkml.org/lkml/2013/6/23/169
-And this patch merged into 3.11 according to http://lxr.free-electrons.com/source/drivers/misc/mei/mei_dev.h?v=3.11
-Can you re-check with latest 3.11 point release?
+On second thought, it appears I was a bit to hasty with this, and this patch actually breaks things.
 
+On 11/04/2013 04:45 PM, Jan Kara wrote:> On Mon 04-11-13 15:26:38, Jan Kara wrote:
+>> On Fri 01-11-13 15:38:50, Cody P Schafer wrote:
+>>> Use rbtree_postorder_for_each_entry_safe() to destroy the rbtree instead
+>>> of opencoding an alternate postorder iteration that modifies the tree
+>>    Thanks. I've merged the patch into my tree.
+>    Hum, except that the kernel oopses with this patch. And I think the
+> problem is in rbtree_postorder_for_each_entry_safe(). How are those tests
+> for NULL supposed to work? For example if the tree is empty, 'pos' will be
+> NULL and you'll call rb_next_postorder(&NULL->field) which is pretty much
+> guaranteed to oops if 'field' doesn't have offset 0 in the structure...
 
-Thanks
---
-Sasha
+No, it shouldn't oops because pos won't be NULL, &pos->field will be.
 
------Original Message-----
-From: Eugene Shatokhin [mailto:eugene.shatokhin@rosalab.ru] 
-Sent: Tuesday, November 05, 2013 10:07
-To: Winkler, Tomas
-Cc: Usyskin, Alexander; NicolÃ² Costanza; Alex Burmashev; LKML
-Subject: Re: mei: cancel stall timers in mei_reset
+pos is only assigned via an rb_entry(rb_first_postorder()) or rb_entry(rb_next_postorder()). rb_next_postorder() and rb_first_postorder() can return NULL. That NULL then is munged by rb_entry to be (NULL - offset_of_field). Causing (&pos->field == NULL == (pos + offset_of_field)).
 
-On 11/04/2013 07:48 PM, Eugene Shatokhin wrote:
-> ----- Original Message -----
->> I would appreciate the full log and your .config
->
-> I have attached the config and the log.
->
-> Meanwhile, I have found one suspicious place in the code that could be related: mei_reset() ignores the return value of mei_hw_start(). According to the logs, there was at least the following interesting call sequence before things went wrong:
->
-> mei_reset() => mei_hw_start() => .hw_start() callback, which is mei_me_hw_start() => mei_me_hw_ready_wait().
->
-> mei_me_hw_ready_wait() reported "wait hw ready failed" and returned -ETIMEDOUT, that error was propagated to mei_hw_start(). mei_reset(), however, does not check the return value of that function and goes on even if it returns an error: sets dev->dev_state to MEI_DEV_INIT_CLIENTS, calls mei_hbm_start_req(dev), etc.
->
-> I am not sure if this is intentional and if this is related to the problem, but still.
->
+That is, unless I've screwed something up (very possible, as this overly hurried patchset shows).
 
-Oh, looks like it is mei_hw_start() that first ignores the error. Might 
-be a problem anyway.
+I expect it's more likely that my adaptation of this to ext3's usage is buggy. Could you tell me what you did to cause the oops? And/Or post it?
 
-Regards,
-Eugene
-
--- 
-Eugene Shatokhin, ROSA Laboratory.
-www.rosalab.com
----------------------------------------------------------------------
-Intel Israel (74) Limited
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
