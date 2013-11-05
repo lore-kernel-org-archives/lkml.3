@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab3KEV6A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 16:58:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46180 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755271Ab3KEV56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 16:57:58 -0500
-Date: Tue, 5 Nov 2013 22:57:55 +0100
-From: Jan Kara <jack@suse.cz>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        LKML <linux-kernel@vger.kernel.org>, EXT4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 1/2] rbtree: fix postorder iteration when the rb_node is
- not the first element in an entry
-Message-ID: <20131105215755.GB9236@quack.suse.cz>
-References: <52784ADF.1040104@linux.vnet.ibm.com>
- <1383615602-1784-1-git-send-email-cody@linux.vnet.ibm.com>
- <5278C2F8.3050805@linux.vnet.ibm.com>
+	id S1755620Ab3KEV71 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 16:59:27 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:63438 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755271Ab3KEV7Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 16:59:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5278C2F8.3050805@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <001101ced6a8$a18a2c80$e49e8580$%han@samsung.com>
+References: <CAPgLHd8V06KzBcPmFywSfNxM0q6=s86xn-AdLKeY9h5JZ_nP7g@mail.gmail.com>
+	<001101ced6a8$a18a2c80$e49e8580$%han@samsung.com>
+Date: Tue, 5 Nov 2013 13:59:25 -0800
+Message-ID: <CAN8TOE9Eac0LDA+Ke_OCPc_AQGnyYB806pO8JP-qOB1Dr8N2pg@mail.gmail.com>
+Subject: Re: [PATCH -next] mtd: nand: omap: fix error return code in omap_nand_probe()
+From: Brian Norris <computersforpeace@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>, "Gupta, Pekon" <pekon@ti.com>
+Cc: Wei Yongjun <weiyj.lk@gmail.com>, David Woodhouse <dwmw2@infradead.org>,
+        Daniel Mack <zonque@gmail.com>, avinashphilip@ti.com,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        "tony@atomide.com" <tony@atomide.com>, yongjun_wei@trendmicro.com.cn,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 05-11-13 02:05:44, Cody P Schafer wrote:
-> On 11/04/2013 05:40 PM, Cody P Schafer wrote:
-> > Provide a new helper called rb_next_postorder_entry() to perform NULL
-> > checks and container_of() coversions and use it in
-> > rbtree_for_each_entry_safe() to fix oopses that occur when rb_node is
-> > not the first element in the entry.
-> 
-> On second thought, it appears I was a bit to hasty with this, and this patch actually breaks things.
-> 
-> On 11/04/2013 04:45 PM, Jan Kara wrote:> On Mon 04-11-13 15:26:38, Jan Kara wrote:
-> >> On Fri 01-11-13 15:38:50, Cody P Schafer wrote:
-> >>> Use rbtree_postorder_for_each_entry_safe() to destroy the rbtree instead
-> >>> of opencoding an alternate postorder iteration that modifies the tree
-> >>    Thanks. I've merged the patch into my tree.
-> >    Hum, except that the kernel oopses with this patch. And I think the
-> > problem is in rbtree_postorder_for_each_entry_safe(). How are those tests
-> > for NULL supposed to work? For example if the tree is empty, 'pos' will be
-> > NULL and you'll call rb_next_postorder(&NULL->field) which is pretty much
-> > guaranteed to oops if 'field' doesn't have offset 0 in the structure...
-> 
-> No, it shouldn't oops because pos won't be NULL, &pos->field will be.
-> 
-> pos is only assigned via an rb_entry(rb_first_postorder()) or
-> rb_entry(rb_next_postorder()). rb_next_postorder() and
-> rb_first_postorder() can return NULL. That NULL then is munged by
-> rb_entry to be (NULL - offset_of_field). Causing (&pos->field == NULL ==
-> (pos + offset_of_field)).
-  OK, so I had a second look. And the compiler thinks differently than you
-:) The thing is that my gcc (4.3.4) apparently assumes pointer underflow is
-undefined and thus optimizes your test &pos->field to 1. I've asked our gcc
-guys for a definitive answer but clearly your code will need some way to
-avoid pointer underflows...
+On Thu, Oct 31, 2013 at 7:18 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+> On Friday, November 01, 2013 9:16 AM, Wei Yongjun wrote:
+>>
+>> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>>
+>> Fix to return a negative error code from the error handling
+>> case instead of 0, as done elsewhere in this function.
+>
+> Commit message is right? :-(
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+It sounds OK by my reading. Unless you're having trouble parsing what
+"as done elsewhere in this function" is being applied to. (IOW, is the
+rest of the function returning a negative error code on the error
+paths, or is it returning 0? Of course the answer is the former, but
+it's possible to misread it.) If it helps, I can try to tweak the
+wording a bit when applying this patch.
+
+Pekon, can I get an Acked-by?
+
+Thanks,
+Brian
