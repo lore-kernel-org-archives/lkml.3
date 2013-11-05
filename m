@@ -1,81 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab3KEJeN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 04:34:13 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40110 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab3KEJeI (ORCPT
+	id S1753805Ab3KEJeb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 04:34:31 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:51954 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753476Ab3KEJeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 04:34:08 -0500
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Vivek Gautam <gautamvivek1987@gmail.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kamil Debski <k.debski@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>, Julius Werner <jwerner@chromium.org>
-Subject: Re: [PATCH RFC 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
-Date: Tue, 05 Nov 2013 10:34:07 +0100
-Message-ID: <230638605.rENrU3ufJZ@flatron>
-User-Agent: KMail/4.11.2 (Linux/3.11.6-gentoo; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <CAFp+6iH7vQ-OtMFL4pyr4tFDRchH4oh1Z0753WNgrHiUzj+kzw@mail.gmail.com>
-References: <1383205544-32244-1-git-send-email-gautam.vivek@samsung.com> <52779D28.9000905@ti.com> <CAFp+6iH7vQ-OtMFL4pyr4tFDRchH4oh1Z0753WNgrHiUzj+kzw@mail.gmail.com>
+	Tue, 5 Nov 2013 04:34:25 -0500
+Message-ID: <5278BB96.20207@gmail.com>
+Date: Tue, 05 Nov 2013 10:34:14 +0100
+From: Richard Genoud <richard.genoud@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Wenyou Yang <wenyou.yang@atmel.com>, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: SPI zero-length transfer: What should it do ?
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 05 of November 2013 12:50:18 Vivek Gautam wrote:
-> Hi Kishon,
-> 
-> On Mon, Nov 4, 2013 at 6:42 PM, Kishon Vijay Abraham I <kishon@ti.com> 
-wrote:
-> > Hi,
-> > 
-> > On Monday 04 November 2013 03:45 PM, Kamil Debski wrote:
-> >> Hi Kishon,
-> >> 
-> >>> From: Kishon Vijay Abraham I [mailto:kishon@ti.com]
-> >>> Sent: Monday, November 04, 2013 7:55 AM
-> >>> 
-> >>> Hi Vivek,
-> >>> 
-> >>> On Thursday 31 October 2013 01:15 PM, Vivek Gautam wrote:
-> >>>> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
-> >>>> The new driver uses the generic PHY framework and will interact
-> >>>> with
-> >>>> DWC3 controller present on Exynos5 series of SoCs.
-> >>> 
-> >>> In Exynos, you have a single IP that supports both USB3 and USB2 PHY
-> >>> right? I think that needs to be mentioned here.
-> >> 
-> >> As far as I know the IP is different.
-> > 
-> > Ok. Sometime back Vivek was mentioning about a single IP for both USB3
-> > and USB2. Thought it should be this driver. Anyway thanks for the
-> > clarification.
-> Right Kishon, I had mentioned that Exynos5's dwc3 controller have a
-> single IP for USB2 and USB3 phy.
-> From what i see, on exynos5 systems the dwc3 controller uses a combo
-> of usb 2 (utmi+) and usb 3 (pipe 3) phy
-> (with base address starting 0x12100000).
+Hi,
 
-I meant there is a single PHY used with the USB 3.0 controller (dwc3) and 
-it is different from the PHY used with the USB 2.0 controller (s3c-hsotg 
-aka dwc2). The USB 3.0 PHY and controller blocks also support USB 2.0 
-operation, though. So we were both right. ;)
+As I was coding something like this:
+	static struct spi_ioc_transfer *xfer;
+	struct spi_frame *rx_frame;
+	xfer = calloc(nb, sizeof(*xfer));
+
+	for (i = 0; i < nb; i++) {
+		xfer[i].tx_buf = (unsigned long)tx_buf;
+		xfer[i].rx_buf = (unsigned long)rx_buf;
+		xfer[i].len = 0;
+	}
+
+	err = ioctl(spi_data->fd, SPI_IOC_MESSAGE(nb), xfer);
+I ran into a bug in spi-atmel.c
+
+NB: The zero-length SPI message was not intentional, it was just a bug in my software.
+
+[   13.593750] spidev spi1.1:   xfer len 0 rx tx cs 8bits 150 usec 18000000Hz
+[   13.601562] spidev spi1.1:   xfer len 0 rx tx cs 8bits 150 usec 18000000Hz
+[   13.601562] spidev spi1.1:   xfer len 0 rx tx cs 8bits 150 usec 18000000Hz
+[   13.609375] spidev spi1.1:   xfer len 0 rx tx cs 8bits 150 usec 18000000Hz
+[   13.617187] spidev spi1.1:   xfer len 0 rx tx cs 8bits 150 usec 18000000Hz
+[   13.625000] spidev spi1.1:   xfer len 0 rx tx cs 8bits 150 usec 18000000Hz
+[   13.632812] spidev spi1.1:   xfer len 0 rx tx cs 8bits 150 usec 18000000Hz
+[   13.632812] atmel_spi f0004000.spi: new message c7b49ec4 submitted for spi1.1
+[   13.632812] atmel_spi f0004000.spi: start message c7b49ec4 for spi1.1
+[   13.632812] spidev spi1.1: activate 16, mr 000d0031
+[   13.632812] atmel_spi f0004000.spi: atmel_spi_next_xfer_pio
+[   13.632812] atmel_spi f0004000.spi:   start pio xfer c79d80c0: len 0 tx c6e00000 rx c6e00000 bitpw 8
+[   13.632812] irq 29: nobody cared (try booting with the "irqpoll" option)
+[   13.632812] CPU: 0 PID: 494 Comm: multichannel Not tainted 3.11.2 #1
+[   13.632812] [<c0012e20>] (unwind_backtrace+0x0/0xe0) from [<c0010bb8>] (show_stack+0x10/0x14)
+[   13.632812] [<c0010bb8>] (show_stack+0x10/0x14) from [<c004d5b4>] (__report_bad_irq+0x1c/0xb4)
+[   13.632812] [<c004d5b4>] (__report_bad_irq+0x1c/0xb4) from [<c004d9ac>] (note_interrupt+0x178/0x234)
+[   13.632812] [<c004d9ac>] (note_interrupt+0x178/0x234) from [<c004c078>] (handle_irq_event_percpu+0x170/0x1a0)
+[   13.632812] [<c004c078>] (handle_irq_event_percpu+0x170/0x1a0) from [<c004c0d0>] (handle_irq_event+0x28/0x38)
+[   13.632812] [<c004c0d0>] (handle_irq_event+0x28/0x38) from [<c004e57c>] (handle_fasteoi_irq+0xa4/0xe4)
+[   13.632812] [<c004e57c>] (handle_fasteoi_irq+0xa4/0xe4) from [<c004b910>] (generic_handle_irq+0x20/0x30)
+[   13.632812] [<c004b910>] (generic_handle_irq+0x20/0x30) from [<c000f3e8>] (handle_IRQ+0x60/0x84)
+[   13.632812] [<c000f3e8>] (handle_IRQ+0x60/0x84) from [<c00115e0>] (__irq_svc+0x40/0x4c)
+[   13.632812] [<c00115e0>] (__irq_svc+0x40/0x4c) from [<bf1293dc>] (spidev_sync+0x6c/0x94 [spidev])
+[   13.632812] [<bf1293dc>] (spidev_sync+0x6c/0x94 [spidev]) from [<bf129b24>] (spidev_ioctl+0x53c/0x66c [spidev])
+[   13.632812] [<bf129b24>] (spidev_ioctl+0x53c/0x66c [spidev]) from [<c0087730>] (vfs_ioctl+0x28/0x3c)
+[   13.632812] [<c0087730>] (vfs_ioctl+0x28/0x3c) from [<c0088158>] (do_vfs_ioctl+0x4e8/0x54c)
+[   13.632812] [<c0088158>] (do_vfs_ioctl+0x4e8/0x54c) from [<c00881f0>] (SyS_ioctl+0x34/0x58)
+[   13.632812] [<c00881f0>] (SyS_ioctl+0x34/0x58) from [<c000e500>] (ret_fast_syscall+0x0/0x2c)
+[   13.632812] handlers:
+[   13.632812] [<bf01142c>] atmel_spi_pio_interrupt [spi_atmel]
+[   13.632812] Disabling IRQ #29
+
+And that make me wonder what was the behavior to adopt in case of a zero-length transfer ?
+Should spidev.c just return ok without doing anything ? Should it return -EINVAL ?
+Or maybe we should activate/deactivate the chip select ?
+
 
 Best regards,
-Tomasz
-
+Richard.
