@@ -1,69 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755106Ab3KETar (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 14:30:47 -0500
-Received: from mga02.intel.com ([134.134.136.20]:51958 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752140Ab3KETap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 14:30:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="404072598"
-Subject: Re: [PATCH v2 4/4] MCS Lock: Make mcs_spinlock.h includable in
- other files
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Will Deacon <will.deacon@arm.com>
-In-Reply-To: <20131105185717.GZ16117@laptop.programming.kicks-ass.net>
-References: <cover.1383670202.git.tim.c.chen@linux.intel.com>
-	 <1383673359.11046.280.camel@schen9-DESK>
-	 <20131105185717.GZ16117@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 05 Nov 2013 11:30:42 -0800
-Message-ID: <1383679842.11046.298.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1755390Ab3KETdD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 14:33:03 -0500
+Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.103]:46795
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754975Ab3KETdC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 14:33:02 -0500
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: 
+To: Recipients <john6788@DodeliaFinancial.onmicrosoft.com>
+From: <john6788@DodeliaFinancial.onmicrosoft.com>
+Date: Wed, 6 Nov 2013 00:46:55 +0530
+Reply-To: <jerrysmith13@rediffmail.com>
+Message-ID: <84d93bd7-a90e-4975-8ba0-f6e006762ed8@DBXPR03MB159.eurprd03.prod.outlook.com>
+X-Originating-IP: [115.243.127.56]
+X-ClientProxiedBy: HKNPR02CA025.apcprd02.prod.outlook.com (10.141.16.20) To
+ DBXPR03MB159.eurprd03.prod.outlook.com (10.242.141.17)
+X-Forefront-PRVS: 0021920B5A
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(199002)(189002)(74706001)(19580395003)(54316002)(76482001)(25636003)(74876001)(50466002)(47976001)(4396001)(81542001)(47776003)(19580405001)(83322001)(31686002)(54356001)(74366001)(56816003)(46102001)(87266001)(53256004)(80022001)(42186004)(76796001)(77096001)(80976001)(50986001)(51856001)(79102001)(49866001)(76786001)(81816001)(69226001)(81686001)(56776001)(83072001)(66066001)(47736001)(63696002)(76576001)(65816001)(85306002)(33646001)(43066001)(5406001)(81342001)(76176001)(23756003)(74662001)(59766001)(47446002)(558084003)(74316001)(77982001)(74502001)(416774004);DIR:OUT;SFP:1501;SCL:5;SRVR:DBXPR03MB159;H:[115.243.127.56];CLIP:115.243.127.56;FPR:;RD:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: DodeliaFinancial.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-05 at 19:57 +0100, Peter Zijlstra wrote:
-> On Tue, Nov 05, 2013 at 09:42:39AM -0800, Tim Chen wrote:
-> > + * The _raw_mcs_spin_lock() function should not be called directly. Instead,
-> > + * users should call mcs_spin_lock().
-> >   */
-> > -static noinline
-> > -void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
-> > +static inline
-> > +void _raw_mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
-> >  {
-> >  	struct mcs_spinlock *prev;
-> >  
-> 
-> So why keep it in the header at all?
-
-I also made the suggestion originally of keeping both lock and unlock in
-mcs_spinlock.c.  Wonder if Waiman decides to keep them in header 
-because in-lining the unlock function makes execution a bit faster?
-
-Tim
-
+Do You Need A Loan? Email Us Now At jerrysmith13@rediffmail.com With Amount Needed As Loan And Phone Number.
