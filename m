@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab3KEWlo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 17:41:44 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:34500 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755168Ab3KEWlm (ORCPT
+	id S1755737Ab3KEWnN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 17:43:13 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:60222 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755400Ab3KEWnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 17:41:42 -0500
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <52796BE1.5010306@wwwdotorg.org>
-References: <CAHbNUh1Cw3bc4WR0VcD1H_eKYqGBtv_215_euh6mwTbZ41ejUw@mail.gmail.com>
-	<52794823.7080503@kernel.dk>
-	<CAOesGMj1xXXM-gNgWQwBKOczpJtM7CobYy4h7Fe=4W3U43EJGQ@mail.gmail.com>
-	<20131105203308.3802.45122@localhost.localdomain>
-	<CAOesGMirg=ex9hLCjGBpj0cMhLeQ5cJQoRv72tgg7PoSKWUDhA@mail.gmail.com>
-	<20131105205623.3802.5166@localhost.localdomain>
-	<52796BE1.5010306@wwwdotorg.org>
-Date: Tue, 5 Nov 2013 14:41:42 -0800
-Message-ID: <CAOesGMiyp3VNUZf=A_MMVAKsdqtE8nJqNuNCmZh6PO2zkU-oTA@mail.gmail.com>
-Subject: Re: Boot failure on Arndale with next-20131105
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Chris Mason <chris.mason@fusionio.com>, Jens Axboe <axboe@kernel.dk>,
-        Tushar Behera <tushar.behera@linaro.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Kent Overstreet <kmo@daterainc.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 5 Nov 2013 17:43:11 -0500
+Date: Wed, 6 Nov 2013 09:42:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kent Overstreet <kmo@daterainc.com>, Joe Thornber <ejt@redhat.com>
+Subject: Re: linux-next: build failure after merge of the device-mapper tree
+Message-Id: <20131106094257.43d679d08de823ee5064ddff@canb.auug.org.au>
+In-Reply-To: <52791B33.9060001@kernel.dk>
+References: <20131105135128.496b8b2f599d11f2d30ad70c@canb.auug.org.au>
+	<20131105032054.GA19421@redhat.com>
+	<20131105143248.551f68c3cd9fe1902860c1ff@canb.auug.org.au>
+	<20131105125456.GA25219@redhat.com>
+	<52791B33.9060001@kernel.dk>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__6_Nov_2013_09_42_57_+1100_JU5+8HMkSb87XEKf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 5, 2013 at 2:06 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 11/05/2013 01:56 PM, Chris Mason wrote:
->> Quoting Olof Johansson (2013-11-05 15:38:33)
->>> On Tue, Nov 5, 2013 at 12:33 PM, Chris Mason <chris.mason@fusionio.com> wrote:
->>>> Quoting Olof Johansson (2013-11-05 15:23:51)
->>>>> On Tue, Nov 5, 2013 at 11:33 AM, Jens Axboe <axboe@kernel.dk> wrote:
->>>>
->>>> [ horrible crashes fixed by removing my patch ]
->>>>
-> ...
->> Ok, I think I see it.  My guess is that you're hitting bounce buffers.
->> __blk_queue_bounce is the only caller of the bio splitting code I can
->> see that you might be hitting.
->>
->> My first patch exposed a lurking bug in bio_clone_biovec.  Basically
->> bio->bi_vcnt is being doubled instead of initialized.
->>
->> This patch is only compile tested, but I think it'll fix it.
+--Signature=_Wed__6_Nov_2013_09_42_57_+1100_JU5+8HMkSb87XEKf
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Jens,
+
+On Tue, 05 Nov 2013 09:22:11 -0700 Jens Axboe <axboe@kernel.dk> wrote:
 >
-> Tested-by: Stephen Warren <swarren@nvidia.com>
-> (this fixes the issue on Tegra30/Beaver at least)
+> Just a heads up that I plan on sending the block bits shortly, hopefully
+> merging sooner rather than later. This round is huge, so I'd like to get
+> it in asap.
 
-Tested-by: Olof Johansson <olof@lixom.net>
+Given the problems we have seen since the inclusion into linux-next of
+some of it, don't you think it could do with a little more bedding in?
 
-This resolves boot failures on:
-* Tegra30/beaver
-* OMAP4/panda
-* i.MX6/wandboard
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thanks Chris!
+--Signature=_Wed__6_Nov_2013_09_42_57_+1100_JU5+8HMkSb87XEKf
+Content-Type: application/pgp-signature
 
--Olof
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSeXR2AAoJEMDTa8Ir7ZwV1OcP/2ODWCPzpoILIJQaQYK/4OvO
+bguPDFN7ag8zCwoAccZU9+xZoK8ICYKIRecMMTkWC+1mJKdM823bsJi78cTdx/vV
+v+tVYmjxA/q+CpqHuiE2uCbp2e3pqni/45WEi8Z7VKsJLjHszjP6RJAzXYT7UX0P
+Pjesq55utR1OudEgUWkZsRhVGPSd/vW0ULAKCd1DZ6CKi32v5SqEH93GOs0Gu1Vi
+Nn8looxyznWwiP4LgRPwbMTf0HgktRuBtw0oELeVDXANXLakHNftkpyKXEWZn21J
+VpNaqlL4/84dfBaC04b6kgRTaoM/8/N5JAB+TljkE4/yMAzByqvPdsUQFdBtePkJ
+14VI71ayFvpA6ki8f8dWVB3bz5d0ldELc8HNr20xwy5k5AprNMk3B/XRMsi7c/fT
+oztokwIOZn2xeYaIGniZqXKEu1dO2ML55uxJBv/feq2yrhzhjipRCuLzrnOUqJH4
+xdf2/YPfYHWAmug6Yf5vdPEX8Xs/IoOLfm6anFFIazDh1AgKNeOVyegrf8ma6vO8
+7JDk+8Co/F1W+d3ahX1Pon0Kk1Z9sAnVEthz+zMeTvQGLE3dqe3MYEktr9YLMnuf
+wRAPKvFu923TfQ0G51VzkH+AtkuceqKQwBu4PVEiQaqyQ+rsly2F2MTZYWRs5Pxk
+qaD1shiyhY6zTgWtKoQf
+=uRbC
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__6_Nov_2013_09_42_57_+1100_JU5+8HMkSb87XEKf--
