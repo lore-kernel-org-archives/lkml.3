@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab3KEUGW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 15:06:22 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:52600 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752906Ab3KEUGV (ORCPT
+	id S1755547Ab3KEUKN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 15:10:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38804 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754644Ab3KEUKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 15:06:21 -0500
-Date: Tue, 5 Nov 2013 12:06:16 -0800
-From: Matt Wilson <msw@linux.com>
-To: Roger Pau =?iso-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, David Vrabel <david.vrabel@citrix.com>,
-        Matt Wilson <msw@amazon.com>, xen-devel@lists.xen.org,
-        Anthony Liguori <anthony@codemonkey.ws>
-Subject: Re: [Xen-devel] [PATCH] grant-table: don't set m2p override if
- kmap_ops is not set
-Message-ID: <20131105200616.GA23362@u109add4315675089e695.ant.amazon.com>
-References: <1383650649-13971-1-git-send-email-roger.pau@citrix.com>
- <5278E64C.40200@citrix.com>
- <527904EC.9090402@citrix.com>
- <20131105145607.GB25836@phenom.dumpdata.com>
- <5279085E.7070703@citrix.com>
- <1383664090.13961.88.camel@kazak.uk.xensource.com>
- <527916EE.6060104@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <527916EE.6060104@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 5 Nov 2013 15:10:10 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 03/10] tools/perf/build: Fix detection of non-core features
+Date: Tue,  5 Nov 2013 17:09:54 -0300
+Message-Id: <1383682201-19399-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1383682201-19399-1-git-send-email-acme@infradead.org>
+References: <1383682201-19399-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 05, 2013 at 05:03:58PM +0100, Roger Pau Monné wrote:
-> On 05/11/13 16:08, Ian Campbell wrote:
-> > On Tue, 2013-11-05 at 16:01 +0100, Roger Pau Monné wrote:
-> >> On 05/11/13 15:56, Konrad Rzeszutek Wilk wrote:
-> >>> On Tue, Nov 05, 2013 at 03:47:08PM +0100, Roger Pau Monné wrote:
-> >>>> On 05/11/13 13:36, David Vrabel wrote:
-> >>>>> On 05/11/13 11:24, Roger Pau Monne wrote:
-> >>>>>> IMHO there's no reason to set a m2p override if the mapping is done in
-> >>>>>> kernel space, so only set the m2p override when kmap_ops is set.
-> >>>>>
-> >>>>> Can you provide a more detailed reasoning about why this is safe?
-> >>>>
-> >>>> To tell the truth, I don't understand why we need to use the m2p
-> >>>> override for kernel space only mappings, my understanding is that this
-> >>>> m2p override is needed for user space mappings only (where we actually
-> >>>> end up doing two mappings, one in kernel space and one in user space).
-> >>>> For kernel space I don't see why we need to do anything else than
-> >>>> setting the right p2m translation.
-> >>>
-> >>> We needed the m2p when doing DMA operations. As the driver would
-> >>> want the bus address (so p2m) and then when unmapping the DMA we
-> >>> only get the bus address  - so we needed to do a m2p lookup.
-> >>
-> >> OK, we need a m2p (that we already have in machine_to_phys_mapping),
-> >> what I don't understand is why we need the m2p override.
-> > 
-> > The m2p is a host global table.
-> > 
-> > For a foreign page grant mapped into the current domain the m2p will
-> > give you the foreign (owner) domain's p from the m, not the local one.
-> 
-> Yes, you are completely right, then I have to figure out why blkback
-> works fine with this patch applied (or at least it seems to work fine).
+From: David Ahern <dsahern@gmail.com>
 
-blkback also works for me when testing a similar patch. I'm still
-confused. One thing with your proposed patch: I'm not sure that you're
-putting back the correct mfn.
+feature_check needs to be invoked through call, and LDFLAGS may not be
+set so quotes are needed.
 
-Adding Anthony to the thread.
+Thanks to Jiri for spotting the quotes around LDFLAGS; that one was
+driving me nuts with the upcoming timerfd feature detection.
 
---msw
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Reviewed-by: Jiri Olsa <jolsa@redhat.com>
+Tested-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1383064996-20933-1-git-send-email-dsahern@gmail.com
+[ Fixed conflict with 8a0c4c2843d3 ("perf tools: Fix libunwind build and feature detection for 32-bit build") ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/config/Makefile | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index be8bb9a77287..58b2d37ae23a 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -98,7 +98,7 @@ endif
+ 
+ feature_check = $(eval $(feature_check_code))
+ define feature_check_code
+-  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS=$(LDFLAGS) LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
++  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS="$(LDFLAGS)" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
+ endef
+ 
+ feature_set = $(eval $(feature_set_code))
+@@ -235,7 +235,7 @@ CFLAGS += -I$(LIB_INCLUDE)
+ CFLAGS += -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ 
+ ifndef NO_BIONIC
+-  $(feature_check,bionic)
++  $(call feature_check,bionic)
+   ifeq ($(feature-bionic), 1)
+     BIONIC := 1
+     EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
+@@ -479,15 +479,15 @@ else
+     CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
+   else
+     ifneq ($(feature-libbfd), 1)
+-      $(feature_check,liberty)
++      $(call feature_check,liberty)
+       ifeq ($(feature-liberty), 1)
+         EXTLIBS += -lbfd -liberty
+       else
+-        $(feature_check,liberty-z)
++        $(call feature_check,liberty-z)
+         ifeq ($(feature-liberty-z), 1)
+           EXTLIBS += -lbfd -liberty -lz
+         else
+-          $(feature_check,cplus-demangle)
++          $(call feature_check,cplus-demangle)
+           ifeq ($(feature-cplus-demangle), 1)
+             EXTLIBS += -liberty
+             CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
+-- 
+1.8.1.4
 
