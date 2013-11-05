@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab3KEMMs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 07:12:48 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:61327 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754331Ab3KEMMq (ORCPT
+	id S1754681Ab3KEMN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 07:13:59 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58721 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754607Ab3KEMNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 07:12:46 -0500
-X-Nat-Received: from [202.181.97.72]:57375 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1383653548.3756
-To: zohar@linux.vnet.ibm.com, jim.epost@gmail.com
-Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, james.l.morris@oracle.com,
-        linux-security-module@vger.kernel.org
-Subject: Re: randconfig build error with next-20131104, in security/integrity
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <CA+r1Zhir86Mdmps5N1awK7mJxf1CWgkr-RDKYVhmpj_3+oYyYQ@mail.gmail.com>
-	<1383606829.15186.25.camel@dhcp-9-2-203-236.watson.ibm.com>
-In-Reply-To: <1383606829.15186.25.camel@dhcp-9-2-203-236.watson.ibm.com>
-Message-Id: <201311052112.DCC60296.MFOOFSOHJVtLQF@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Tue, 5 Nov 2013 21:12:26 +0900
-Mime-Version: 1.0
+	Tue, 5 Nov 2013 07:13:55 -0500
+Date: Tue, 5 Nov 2013 13:13:53 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Sebastian Reichel <sre@ring0.de>, Luciano Coelho <luca@coelho.fi>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Felipe Balbi <balbi@ti.com>, Sachin Kamat <sachin.kamat@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bill Pemberton <wfp5p@virginia.edu>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        Luciano Coelho <coelho@ti.com>
+Subject: Re: [PATCH 1/4] wl1251: split wl251 platform data to a separate
+ structure
+Message-ID: <20131105121353.GB30670@amd.pavel.ucw.cz>
+References: <1382890469-25286-1-git-send-email-sre@debian.org>
+ <1382890469-25286-2-git-send-email-sre@debian.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 05112013 #9885645, status: clean
+Content-Disposition: inline
+In-Reply-To: <1382890469-25286-2-git-send-email-sre@debian.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mimi Zohar wrote:
-> @@ -132,24 +133,22 @@ static inline int integrity_digsig_verify(const unsigned int id,
->  	return -EOPNOTSUPP;
->  }
->  
-> +static int integrity_init_keyring(const unsigned int id)
+On Sun 2013-10-27 17:14:26, Sebastian Reichel wrote:
+> From: Luciano Coelho <coelho@ti.com>
+> 
+> Move the wl1251 part of the wl12xx platform data structure into a new
+> structure specifically for wl1251.  Change the platform data built-in
+> block and board files accordingly.
+> 
+> Cc: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Luciano Coelho <coelho@ti.com>
+> Acked-by: Tony Lindgren <tony@atomide.com>
+> Reviewed-by: Felipe Balbi <balbi@ti.com>
 
-Please add inline keyword, or compiler makes noisy warning.
+Reviewed-by: Pavel Machek <pavel@ucw.cz>
 
-> +{
-> +	return 0;
-> +}
->  #endif /* CONFIG_INTEGRITY_SIGNATURE */
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
