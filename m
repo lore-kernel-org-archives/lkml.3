@@ -1,148 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab3KEIyW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 03:54:22 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:62359 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab3KEIyT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 03:54:19 -0500
+	id S1753505Ab3KEIz4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 03:55:56 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:16485 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750719Ab3KEIzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 03:55:54 -0500
+X-IronPort-AV: E=Sophos;i="4.93,638,1378828800"; 
+   d="scan'208";a="8951173"
+Message-ID: <5278B2D7.6060409@cn.fujitsu.com>
+Date: Tue, 05 Nov 2013 16:56:55 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <5277E752.8090005@ti.com>
-References: <1383406775-14902-1-git-send-email-prabhakar.csenng@gmail.com>
- <1383406775-14902-5-git-send-email-prabhakar.csenng@gmail.com> <5277E752.8090005@ti.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 5 Nov 2013 14:23:54 +0530
-Message-ID: <CA+V-a8uV0g36LoQtxFjR56SaMxj7KOE2ztC+pfT_Pn1wGcqEmw@mail.gmail.com>
-Subject: Re: [PATCH v4 4/6] gpio: davinci: add OF support
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Sekhar Nori <nsekhar@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alex Elder <alex.elder@linaro.org>, LDOC <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Li Zefan <lizefan@huawei.com>
+CC: toshi.okajima@jp.fujitsu.com, containers@lists.linux-foundation.org,
+        serge.hallyn@ubuntu.com, linux-kernel@vger.kernel.org,
+        eparis@redhat.com, Richard Guy Briggs <rgb@redhat.com>,
+        linux-audit@redhat.com, ebiederm@xmission.com, sgrubb@redhat.com
+Subject: Re: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
+References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com> <5271D3FC.8000709@cn.fujitsu.com> <5278A39B.6000303@cn.fujitsu.com> <5278A3D5.3010309@cn.fujitsu.com> <5278A828.50406@huawei.com>
+In-Reply-To: <5278A828.50406@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/05 16:53:59,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/05 16:54:00,
+	Serialize complete at 2013/11/05 16:54:00
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grygorii,
-
-Thanks for the review.
-
-On Mon, Nov 4, 2013 at 11:58 PM, Grygorii Strashko
-<grygorii.strashko@ti.com> wrote:
-> Hi Prabhakar Lad,
->
->
-> On 11/02/2013 05:39 PM, Lad, Prabhakar wrote:
+On 11/05/2013 04:11 PM, Li Zefan wrote:
+> On 2013/11/5 15:52, Gao feng wrote:
+>> On 11/05/2013 03:51 PM, Gao feng wrote:
+>>> Ping...
+>>>
 >>
->> From: KV Sujith <sujithkv@ti.com>
+>> I want to catch up the merge window..
 >>
->> This patch adds OF parser support for davinci gpio
->> driver and also appropriate documentation in gpio-davinci.txt
->> located at Documentation/devicetree/bindings/gpio/.
->
->
-> I worry, do we need to have gpio_chip.of_xlate() callback implemented?
+> 
+> Even if your patches are accepted by a certain maintainer immediately,
+> he will in no doubt queue them for 3.14.
+> 
 
-I looked for the other OF GPIO implementations with same "ngpio"
-property (marvel, msm) but I don’t see of_xlate() callback implemented.
+Yes, you are right...
+But I still want to get some comments..
 
-> - From one side, Davinci GPIO controller in DT described by one entry
-> which defines number of supported GPIOs as "ti,ngpio = <144>;"
->
-> - From other side, on Linux level more than one gpio_chip objects are
-> instantiated (one per each 32 GPIO).
->
-> How the standard GPIO biding will work in this case? .. And will they?
->
-> Linus, I'd very appreciate if you will be able to clarify this point.
->
->
->>
->> Signed-off-by: KV Sujith <sujithkv@ti.com>
->> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
->> [prabhakar.csengg@gmail.com: simplified the OF code, removed
->>                 unnecessary DT property and also simplified
->>                 the commit message]
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> ---
->>   .../devicetree/bindings/gpio/gpio-davinci.txt      |   32 ++++++++++++
->>   drivers/gpio/gpio-davinci.c                        |   54
->> ++++++++++++++++++--
->>   2 files changed, 83 insertions(+), 3 deletions(-)
->>   create mode 100644
->> Documentation/devicetree/bindings/gpio/gpio-davinci.txt
->>
->> diff --git a/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
->> b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
->> new file mode 100644
->> index 0000000..55aae1c
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
->> @@ -0,0 +1,32 @@
->> +Davinci GPIO controller bindings
->> +
->> +Required Properties:
->> +- compatible: should be "ti,dm6441-gpio"
->> +
->> +- reg: Physical base address of the controller and the size of memory
->> mapped
->> +       registers.
->> +
->> +- gpio-controller : Marks the device node as a gpio controller.
->> +
->> +- interrupts: Array of GPIO interrupt number.
->
->
-> May be meaning of <interrupts> property need to be extended, because,
-> as of now, only banked or unbanked IRQs are supported - and not both.
->
->
-OK
-
->> +
->> +- ti,ngpio: The number of GPIO pins supported.
->> +
->> +- ti,davinci-gpio-unbanked: The number of GPIOs that have an individual
->> interrupt
->> +                            line to processor.
->
->
-> Should interrupt-controller; specifier be added here?
->
-No
-
->
->> +
->> +Example:
->> +
->> +gpio: gpio@1e26000 {
->> +       compatible = "ti,dm6441-gpio";
->> +       gpio-controller;
->> +       reg = <0x226000 0x1000>;
->> +       interrupts = <42 IRQ_TYPE_EDGE_BOTH 43 IRQ_TYPE_EDGE_BOTH
->> +               44 IRQ_TYPE_EDGE_BOTH 45 IRQ_TYPE_EDGE_BOTH
->> +               46 IRQ_TYPE_EDGE_BOTH 47 IRQ_TYPE_EDGE_BOTH
->> +               48 IRQ_TYPE_EDGE_BOTH 49 IRQ_TYPE_EDGE_BOTH
->> +               50 IRQ_TYPE_EDGE_BOTH>;
->> +       ti,ngpio = <144>;
->> +       ti,davinci-gpio-irq-base = <101>;
->
->
->         ^^ Is it still needed?
->
-OOps missed to remove that.
-
-Regards,
---Prabhakar Lad
