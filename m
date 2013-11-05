@@ -1,43 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab3KENGV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 08:06:21 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:44157 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754607Ab3KENGT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 08:06:19 -0500
-X-Sasl-enc: yq2GulZs7L0ntLV6W5hxLHoPzu2MuWH6deHXSWv24WSk 1383656779
-Date: Tue, 5 Nov 2013 05:08:33 -0800
-From: Greg KH <greg@kroah.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: linux-next: manual merge of the staging tree with the block tree
-Message-ID: <20131105130833.GC19906@kroah.com>
-References: <20131105160924.4da55b7e36aa2ab93443fdda@canb.auug.org.au>
- <20131105052010.GA14557@kroah.com>
- <20131105094926.GA12440@infradead.org>
+	id S1754922Ab3KENGg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 08:06:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47908 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754904Ab3KENGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 08:06:34 -0500
+Date: Tue, 5 Nov 2013 14:06:30 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Adam Radford <aradford@gmail.com>
+Subject: Re: [PATCH] PCI: add quirk for 3ware 9650SE controller
+In-Reply-To: <CAErSpo7qORQjs62zdi-5et2WnWwy3weMs56G84rWhNrW59F5WQ@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1311051402500.2779@pobox.suse.cz>
+References: <alpine.LNX.2.00.1308271141080.2077@pobox.suse.cz> <alpine.LNX.2.00.1308271144420.2077@pobox.suse.cz> <alpine.LNX.2.00.1308281745460.4557@pobox.suse.cz> <CAErSpo6saRNMw6Js0PLXZzYDdH0M3ypSFLDxVxp0G02aetp0Dw@mail.gmail.com>
+ <alpine.LNX.2.00.1309061150140.26934@pobox.suse.cz> <CAErSpo5ExXsbSd+jYP5JYwq-RBf-dx1T_AZx6CV4=6-AfTTynQ@mail.gmail.com> <alpine.LNX.2.00.1309271106090.18703@pobox.suse.cz> <alpine.LNX.2.00.1310301125400.19090@pobox.suse.cz>
+ <CAErSpo7qORQjs62zdi-5et2WnWwy3weMs56G84rWhNrW59F5WQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131105094926.GA12440@infradead.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 05, 2013 at 01:49:26AM -0800, Christoph Hellwig wrote:
-> On Mon, Nov 04, 2013 at 09:20:10PM -0800, Greg KH wrote:
-> > > I fixed it up (see below) and can carry the fix as necessary (no action
-> > > is required).
-> > 
-> > Looks good to me, thanks.
-> 
-> The lloop driver should simply be dropped.  It's a duplication of loop
-> which had some lustre-specific hacks that are replaced with generic
-> improvements already in linux-next.
+On Thu, 31 Oct 2013, Bjorn Helgaas wrote:
 
-That's fine with me, I figure it will be deleted eventually by someone
-sending me a patch to do so...
+> > Attached is dmesg output leading to timeouts (that are cured by my
+> > original patch in this thread) and lspci.
+> 
+> I opened https://bugzilla.kernel.org/show_bug.cgi?id=64141 for this
+> issue and attached your dmesg log and lspci output.
+> 
+> > Please let me know if there is anything else I could do, or if you are
+> > going to proceed with my patch adding the quirk.
+> 
+> Your quirk keeps us from disabling MSIs on the device during
+> enumeration.  But even if the BIOS left MSIs enabled, there's nothing
+> to field the MSI until after the driver claims the device.  So I don't
+> believe this has to be done as a quirk.  It should work just as well
+> to do something in the driver when it claims the device.
+> 
+> I guess another way to say this is that I don't think we understand
+> what the real problem is, and if we just add a quirk to work around
+> it, we might miss the chance to fix the real problem, and we may never
+> be able to remove the special-case code we're adding in the generic
+> path.
+> 
+> I know you said you tried doing something in the driver, and it didn't
+> work.  I don't know exactly what you tried, but twa_probe() looks
+> strange to me.  The other drivers I looked at do all their PCI
+> initialization before the scsi_host_alloc() / scsi_add_host() /
+> scsi_scan_host() stuff.  But twa_probe() has PCI stuff scattered
+> around between those three SCSI calls.  In particular, it does the MSI
+> setup way down near the end, after scsi_add_host(), which seems like
+> just the sort of thing that could explain this problem.
+
+What I tried was patch below, but it didn't have any observable effect -- 
+the commands sent to the controller would still time out the same way.
+
+Debugging this is not really straightforward for me unfortunately, as I 
+don't own the system myself.
+
+I agree that we don't fully understand what is happening, but the quirk 
+was the only way I have been able to come up with to make the device 
+functioning again (apart from reverting d5dea7d95).
+
+Any other ideas are welcome.
+
+---
+ drivers/scsi/3w-9xxx.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/scsi/3w-9xxx.c b/drivers/scsi/3w-9xxx.c
+index ba754c3..bad7faf 100644
+--- a/drivers/scsi/3w-9xxx.c
++++ b/drivers/scsi/3w-9xxx.c
+@@ -2055,6 +2055,11 @@ static int __devinit twa_probe(struct pci_dev *pdev, const struct pci_device_id
+ 			goto out_disable_device;
+ 		}
+ 
++	/* Try to enable MSI */
++	if (use_msi && (pdev->device != PCI_DEVICE_ID_3WARE_9000) &&
++	    !pci_enable_msi(pdev))
++		set_bit(TW_USING_MSI, &tw_dev->flags);
++
+ 	host = scsi_host_alloc(&driver_template, sizeof(TW_Device_Extension));
+ 	if (!host) {
+ 		TW_PRINTK(host, TW_DRIVER, 0x24, "Failed to allocate memory for device extension");
+@@ -2134,11 +2139,6 @@ static int __devinit twa_probe(struct pci_dev *pdev, const struct pci_device_id
+ 	       le32_to_cpu(*(int *)twa_get_param(tw_dev, 2, TW_INFORMATION_TABLE,
+ 				     TW_PARAM_PORTCOUNT, TW_PARAM_PORTCOUNT_LENGTH)));
+ 
+-	/* Try to enable MSI */
+-	if (use_msi && (pdev->device != PCI_DEVICE_ID_3WARE_9000) &&
+-	    !pci_enable_msi(pdev))
+-		set_bit(TW_USING_MSI, &tw_dev->flags);
+-
+ 	/* Now setup the interrupt handler */
+ 	retval = request_irq(pdev->irq, twa_interrupt, IRQF_SHARED, "3w-9xxx", tw_dev);
+ 	if (retval) {
+
+
+-- 
+Jiri Kosina
+SUSE Labs
