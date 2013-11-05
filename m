@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab3KEDVP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 22:21:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46750 "EHLO mx1.redhat.com"
+	id S1754156Ab3KED13 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 22:27:29 -0500
+Received: from ozlabs.org ([203.10.76.45]:60762 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751451Ab3KEDVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 22:21:14 -0500
-Date: Mon, 4 Nov 2013 22:20:54 -0500
-From: Mike Snitzer <snitzer@redhat.com>
+	id S1750819Ab3KED12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 22:27:28 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
 To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Alasdair G Kergon <agk@redhat.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>,
-        Jens Axboe <axboe@kernel.dk>, Joe Thornber <ejt@redhat.com>
-Subject: Re: linux-next: build failure after merge of the device-mapper tree
-Message-ID: <20131105032054.GA19421@redhat.com>
-References: <20131105135128.496b8b2f599d11f2d30ad70c@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, <linux-kbuild@vger.kernel.org>
+Subject: Re: linux-next: build warnings after merge of the modules tree
+In-Reply-To: <20131104134134.48665968dd006e3310333993@canb.auug.org.au>
+References: <20131104134134.48665968dd006e3310333993@canb.auug.org.au>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Tue, 05 Nov 2013 12:50:33 +1030
+Message-ID: <87fvrba8su.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131105135128.496b8b2f599d11f2d30ad70c@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04 2013 at  9:51pm -0500,
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
+> Hi Rusty,
+>
+> After merging the modules tree, today's linux-next build (x86_64
+> allmodconfig) produced these warning:
+>
+> WARNING: vmlinux: 'pci_restore_msi_state' exported twice. Previous export was in vmlinux
+> WARNING: vmlinux: '__mod_zone_page_state' exported twice. Previous export was in vmlinux
+> WARNING: vmlinux: 'scsi_prep_return' exported twice. Previous export was in vmlinux
+> WARNING: vmlinux: 'hvc_poll' exported twice. Previous export was in vmlinux
+> WARNING: vmlinux: 'nfs_clear_inode' exported twice. Previous export was in vmlinux
+>
+> (just some samples ... it scrolled off my scrollback :-()
+>
+> Presumably caused by commit e0f244c63fc9 ("asmlinkage, module: Make
+> ksymtab and kcrctab symbols and __this_module __visible").  (reverting
+> that commit makes the warnings go away.)
 
-> Hi all,
-> 
-> After merging the device-mapper tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/md/dm-cache-target.c: In function 'bio_writes_complete_block':
-> drivers/md/dm-cache-target.c:1020:7: error: 'struct bio' has no member named 'bi_size'
->    (bio->bi_size == (cache->sectors_per_block << SECTOR_SHIFT));
->        ^
-> 
-> Caused by commit 1bd270d800ec ("dm cache: promotion optimisation for
-> writes") interacting with commit ed2d2f9a8265 ("block: Abstract out bvec
-> iterator") from the block tree.
-> 
-> I applied this fix up patch and can carry it as necessary:
+This works for me.... feedback please!
 
-Hi Stephen,
+Cheers,
+Rusty.
 
-Yes that is needed, as is this (which begs the question: how should I be
-handling the fact that post-merge changes are needed?  Especially since
-Linus will need the changes too):
+modpost: fix bogus 'exported twice' warnings.
 
- drivers/md/dm-cache-target.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+Andi's change in e0f244c63fc9 ("asmlinkage, module: Make ksymtab and
+kcrctab symbols and __this_module __visible") make the crc appear
+first in the symbol table.
 
-diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
-index a977d5c..52d7d75 100644
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -85,6 +85,12 @@ static void dm_unhook_bio(struct dm_hook_info *h, struct bio *bio)
+modpost creates an entry when it sees the CRC, then when it sees the
+actual symbol, it complains that it's seen it before.  The preloaded
+flag already exists for the equivalent case where we loaded from
+Module.symvers, so use that.
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+
+diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+index 9b873ac6ed7b..5c677a3e7487 100644
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -164,7 +164,7 @@ struct symbol {
+ 	unsigned int vmlinux:1;    /* 1 if symbol is defined in vmlinux */
+ 	unsigned int kernel:1;     /* 1 if symbol is from kernel
+ 				    *  (only for external modules) **/
+-	unsigned int preloaded:1;  /* 1 if symbol from Module.symvers */
++	unsigned int preloaded:1;  /* 1 if symbol from Module.symvers, or crc */
+ 	enum export  export;       /* Type of export */
+ 	char name[0];
+ };
+@@ -332,8 +332,11 @@ static void sym_update_crc(const char *name, struct module *mod,
  {
- 	bio->bi_end_io = h->bi_end_io;
- 	bio->bi_private = h->bi_private;
-+
-+	/*
-+	 * Must bump bi_remaining to allow bio to complete with
-+	 * restored bi_end_io.
-+	 */
-+	atomic_inc(&bio->bi_remaining);
+ 	struct symbol *s = find_symbol(name);
+ 
+-	if (!s)
++	if (!s) {
+ 		s = new_symbol(name, mod, export);
++		/* Don't complain when we find it later. */
++		s->preloaded = 1;
++	}
+ 	s->crc = crc;
+ 	s->crc_valid = 1;
  }
- 
- /*----------------------------------------------------------------*/
-@@ -746,12 +752,6 @@ static void writethrough_endio(struct bio *bio, int err)
- 
- 	dm_unhook_bio(&pb->hook_info, bio);
- 
--	/*
--	 * Must bump bi_remaining to allow bio to complete with
--	 * restored bi_end_io.
--	 */
--	atomic_inc(&bio->bi_remaining);
--
- 	if (err) {
- 		bio_endio(bio, err);
- 		return;
