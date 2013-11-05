@@ -1,93 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab3KEDPM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 22:15:12 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:58331 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753412Ab3KEDPK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 22:15:10 -0500
-Message-ID: <527862B9.2060300@hitachi.com>
-Date: Tue, 05 Nov 2013 12:15:05 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1754093Ab3KEDVP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 22:21:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46750 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751451Ab3KEDVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 22:21:14 -0500
+Date: Mon, 4 Nov 2013 22:20:54 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Alasdair G Kergon <agk@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>,
+        Jens Axboe <axboe@kernel.dk>, Joe Thornber <ejt@redhat.com>
+Subject: Re: linux-next: build failure after merge of the device-mapper tree
+Message-ID: <20131105032054.GA19421@redhat.com>
+References: <20131105135128.496b8b2f599d11f2d30ad70c@canb.auug.org.au>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?VXdlIEtsZQ==?= =?UTF-8?B?aW5lLUvDtm5pZw==?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH -tip v2 3/3] [BUGFIX] kprobes: Prohibit probing on func_ptr_is_kernel_text
-References: <20131101112530.14657.87835.stgit@kbuild-fedora.novalocal> <20131101112537.14657.88496.stgit@kbuild-fedora.novalocal> <20131104210053.76c37210@gandalf.local.home>
-In-Reply-To: <20131104210053.76c37210@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131105135128.496b8b2f599d11f2d30ad70c@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/11/05 11:00), Steven Rostedt wrote:
-> On Fri, 01 Nov 2013 11:25:37 +0000
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+On Mon, Nov 04 2013 at  9:51pm -0500,
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+
+> Hi all,
 > 
->> Prohibit probing on func_ptr_is_kernel_text().
->> Since the func_ptr_is_kernel_text() is called from
->> notifier_call_chain() which is called from int3 handler,
->> probing it may cause double int3 fault and kernel will
->> reboot.
->>
->> This happenes when the kernel built with CONFIG_DEBUG_NOTIFIERS=y.
->>
->> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: "Uwe Kleine-König" <u.kleine-koenig@pengutronix.de>
->> Cc: Borislav Petkov <bp@suse.de>
->> Cc: Ingo Molnar <mingo@kernel.org>
->> ---
->>  kernel/extable.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/kernel/extable.c b/kernel/extable.c
->> index 832cb28..022fb25 100644
->> --- a/kernel/extable.c
->> +++ b/kernel/extable.c
->> @@ -129,7 +129,7 @@ int kernel_text_address(unsigned long addr)
->>   * pointer is part of the kernel text, we need to do some
->>   * special dereferencing first.
->>   */
->> -int func_ptr_is_kernel_text(void *ptr)
->> +int nokprobe func_ptr_is_kernel_text(void *ptr)
->>  {
->>  	unsigned long addr;
->>  	addr = (unsigned long) dereference_function_descriptor(ptr);
->>
+> After merging the device-mapper tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 > 
-> One thing I worry about the "nokprobe" annotation, is that it moves the
-> location of the function out of local. This function no exists in
-> the section with its users. Same with the debug functions in the
-> other patch.
+> drivers/md/dm-cache-target.c: In function 'bio_writes_complete_block':
+> drivers/md/dm-cache-target.c:1020:7: error: 'struct bio' has no member named 'bi_size'
+>    (bio->bi_size == (cache->sectors_per_block << SECTOR_SHIFT));
+>        ^
 > 
-> Now these may be a slow path where we really don't care, but if the
-> nokprobe expands this can cause issues.
+> Caused by commit 1bd270d800ec ("dm cache: promotion optimisation for
+> writes") interacting with commit ed2d2f9a8265 ("block: Abstract out bvec
+> iterator") from the block tree.
 > 
-> The "nokprobe" works differently than "notrace" as "notrace" is just an
-> attribute that tells gcc not to add mcount to it. The "nokprobe"
-> actually moves the function into a different section.
+> I applied this fix up patch and can carry it as necessary:
 
-Well, in that case, I can put it in the opt-out type blacklist(kprobe_blacklist). :)
-Hmm, I think if I can list nokprobe functions up at build time, we can almost
-remove the .kprobes.text (Note that some of entry functions in asm still require it.)
+Hi Stephen,
 
-Thank you,
+Yes that is needed, as is this (which begs the question: how should I be
+handling the fact that post-merge changes are needed?  Especially since
+Linus will need the changes too):
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+ drivers/md/dm-cache-target.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-
+diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
+index a977d5c..52d7d75 100644
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -85,6 +85,12 @@ static void dm_unhook_bio(struct dm_hook_info *h, struct bio *bio)
+ {
+ 	bio->bi_end_io = h->bi_end_io;
+ 	bio->bi_private = h->bi_private;
++
++	/*
++	 * Must bump bi_remaining to allow bio to complete with
++	 * restored bi_end_io.
++	 */
++	atomic_inc(&bio->bi_remaining);
+ }
+ 
+ /*----------------------------------------------------------------*/
+@@ -746,12 +752,6 @@ static void writethrough_endio(struct bio *bio, int err)
+ 
+ 	dm_unhook_bio(&pb->hook_info, bio);
+ 
+-	/*
+-	 * Must bump bi_remaining to allow bio to complete with
+-	 * restored bi_end_io.
+-	 */
+-	atomic_inc(&bio->bi_remaining);
+-
+ 	if (err) {
+ 		bio_endio(bio, err);
+ 		return;
