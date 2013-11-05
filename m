@@ -1,94 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab3KEXjA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 18:39:00 -0500
-Received: from [204.155.152.216] ([204.155.152.216]:45634 "EHLO shutemov.name"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755739Ab3KEXi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 18:38:58 -0500
-Date: Wed, 6 Nov 2013 00:42:17 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH] mm: create a separate slab for page->ptl allocation
-Message-ID: <20131105224217.GC20167@shutemov.name>
-References: <1382442839-7458-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20131105150145.734a5dd5b5d455800ebfa0d3@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131105150145.734a5dd5b5d455800ebfa0d3@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755874Ab3KEXl0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 18:41:26 -0500
+Received: from mga09.intel.com ([134.134.136.24]:41017 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755605Ab3KEXlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 18:41:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="404179045"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org
+Cc: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: [PATCH v4.1 2/4] usb: gadget: add quirk_ep_out_aligned_size field to struct usb_gadget
+Date: Tue,  5 Nov 2013 15:45:47 -0800
+Message-Id: <1383695147-18389-1-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1383603177-4624-3-git-send-email-david.a.cohen@linux.intel.com>
+References: <1383603177-4624-3-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Due to USB controllers may have different restrictions, usb gadget layer
+needs to provide a generic way to inform gadget functions to complain
+with non-standard requirements.
 
-[ sorry, resend to all ]
+This patch adds 'quirk_ep_out_aligned_size' field to struct usb_gadget
+to inform when controller's epout requires buffer size to be aligned to
+MaxPacketSize. A helper is also provided to align buffer size when
+necessary.
 
-On Tue, Nov 05, 2013 at 03:01:45PM -0800, Andrew Morton wrote:
-> On Tue, 22 Oct 2013 14:53:59 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> 
-> > If DEBUG_SPINLOCK and DEBUG_LOCK_ALLOC are enabled spinlock_t on x86_64
-> > is 72 bytes. For page->ptl they will be allocated from kmalloc-96 slab,
-> > so we loose 24 on each. An average system can easily allocate few tens
-> > thousands of page->ptl and overhead is significant.
-> > 
-> > Let's create a separate slab for page->ptl allocation to solve this.
-> > 
-> > ...
-> >
-> > --- a/mm/memory.c
-> > +++ b/mm/memory.c
-> > @@ -4332,11 +4332,19 @@ void copy_user_huge_page(struct page *dst, struct page *src,
-> >  #endif /* CONFIG_TRANSPARENT_HUGEPAGE || CONFIG_HUGETLBFS */
-> >  
-> >  #if USE_SPLIT_PTE_PTLOCKS
-> > +struct kmem_cache *page_ptl_cachep;
-> > +void __init ptlock_cache_init(void)
-> > +{
-> > +	if (sizeof(spinlock_t) > sizeof(long))
-> > +		page_ptl_cachep = kmem_cache_create("page->ptl",
-> > +				sizeof(spinlock_t), 0, SLAB_PANIC, NULL);
-> > +}
-> 
-> Confused.  If (sizeof(spinlock_t) > sizeof(long)) happens to be false
-> then the kernel will later crash.  It would be better to use BUILD_BUG_ON()
-> here, if that works.  Otherwise BUG_ON.
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+---
 
-if (sizeof(spinlock_t) > sizeof(long)) is false, we don't need dynamicly
-allocate page->ptl. It's embedded to struct page itself. __ptlock_alloc()
-never called in this case.
+Changes from v4 to v4.1:
+ - Simplified usb_ep_align_maxpacketsize() macro as per Alen Stern's request
 
-> Also, we have the somewhat silly KMEM_CACHE() macro, but it looks
-> inapplicable here?
+ include/linux/usb/gadget.h | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-The first argument of KMEM_CACHE() is struct name, but we have typedef
-here.
-
-> >  bool __ptlock_alloc(struct page *page)
-> >  {
-> >  	spinlock_t *ptl;
-> >  
-> > -	ptl = kmalloc(sizeof(spinlock_t), GFP_KERNEL);
-> > +	ptl = kmem_cache_alloc(page_ptl_cachep, GFP_KERNEL);
-> >  	if (!ptl)
-> >  		return false;
-> >  	page->ptl = (unsigned long)ptl;
-> > @@ -4346,6 +4354,6 @@ bool __ptlock_alloc(struct page *page)
-> >  void __ptlock_free(struct page *page)
-> >  {
-> >  	if (sizeof(spinlock_t) > sizeof(page->ptl))
-> > -		kfree((spinlock_t *)page->ptl);
-> > +		kmem_cache_free(page_ptl_cachep, (spinlock_t *)page->ptl);
-> 
-> A void* cast would suffice here, but I suppose the spinlock_t* cast has
-> some documentation value.
-
-Right.
-
+diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
+index 23b3bfd0a842..41e8834af57d 100644
+--- a/include/linux/usb/gadget.h
++++ b/include/linux/usb/gadget.h
+@@ -441,6 +441,19 @@ static inline void usb_ep_fifo_flush(struct usb_ep *ep)
+ 		ep->ops->fifo_flush(ep);
+ }
+ 
++/**
++ * usb_ep_align_maxpacketsize - returns @len aligned to ep's maxpacketsize
++ * @ep: the endpoint whose maxpacketsize is used to align @len
++ * @len: buffer size's length to align to @ep's maxpacketsize
++ *
++ * This helper is used in case it's required for any reason to align buffer's
++ * size to an ep's maxpacketsize.
++ */
++static inline size_t usb_ep_align_maxpacketsize(struct usb_ep *ep, size_t len)
++{
++	return round_up(len, (size_t)ep->desc->wMaxPacketSize);
++}
++
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -502,6 +515,8 @@ struct usb_gadget_ops {
+  *	only supports HNP on a different root port.
+  * @b_hnp_enable: OTG device feature flag, indicating that the A-Host
+  *	enabled HNP support.
++ * @quirk_ep_out_aligned_size: epout requires buffer size to be aligned to
++ *	MaxPacketSize.
+  *
+  * Gadgets have a mostly-portable "gadget driver" implementing device
+  * functions, handling all usb configurations and interfaces.  Gadget
+@@ -541,6 +556,7 @@ struct usb_gadget {
+ 	unsigned			b_hnp_enable:1;
+ 	unsigned			a_hnp_support:1;
+ 	unsigned			a_alt_hnp_support:1;
++	unsigned			quirk_ep_out_aligned_size:1;
+ };
+ #define work_to_gadget(w)	(container_of((w), struct usb_gadget, work))
+ 
 -- 
- Kirill A. Shutemov
+1.8.4.rc3
+
