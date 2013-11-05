@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab3KENxh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 08:53:37 -0500
-Received: from dkim1.fusionio.com ([66.114.96.53]:52712 "EHLO
-	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754913Ab3KENxf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 08:53:35 -0500
-X-ASG-Debug-ID: 1383659614-0421b57ae67d790001-xx1T2L
-X-Barracuda-Envelope-From: JBacik@fusionio.com
-Date: Tue, 5 Nov 2013 08:53:33 -0500
-From: Josef Bacik <jbacik@fusionio.com>
-To: Kent Overstreet <kmo@daterainc.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-btrfs@vger.kernel.org>, <axboe@kernel.dk>, <hch@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>, Joern Engel <joern@logfs.org>,
-        Prasad Joshi <prasadjoshi.linux@gmail.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: Re: [PATCH 1/9] block: Convert various code to bio_for_each_segment()
-Message-ID: <20131105135333.GB27784@localhost.localdomain>
-X-ASG-Orig-Subj: Re: [PATCH 1/9] block: Convert various code to bio_for_each_segment()
-References: <1383608187-27368-1-git-send-email-kmo@daterainc.com>
- <1383608187-27368-2-git-send-email-kmo@daterainc.com>
+	id S1754902Ab3KEOBW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 09:01:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50233 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754112Ab3KEOBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 09:01:21 -0500
+Date: Tue, 5 Nov 2013 15:00:30 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Borislav Petkov <bp@alien8.de>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Subject: Re: [PATCH v4 2/4] perf stat: add event unit and scale support
+Message-ID: <20131105140030.GA30283@krava.brq.redhat.com>
+References: <1383231582-15856-1-git-send-email-eranian@google.com>
+ <1383231582-15856-3-git-send-email-eranian@google.com>
+ <20131101105722.GA1088@krava.brq.redhat.com>
+ <CABPqkBRXPYHNmCbcGDvqSNxY_zWfUiy3S3_9SasrVw9nbNL9Mg@mail.gmail.com>
+ <20131104145110.GA2805@krava.brq.redhat.com>
+ <CABPqkBQ1Kv9MMBhRdNoBA4k=n=cGVQtuUn810P7-PSu_SRwLug@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383608187-27368-2-git-send-email-kmo@daterainc.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Originating-IP: [10.101.1.160]
-X-Barracuda-Connect: cas1.int.fusionio.com[10.101.1.40]
-X-Barracuda-Start-Time: 1383659614
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.142073
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <CABPqkBQ1Kv9MMBhRdNoBA4k=n=cGVQtuUn810P7-PSu_SRwLug@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04, 2013 at 03:36:19PM -0800, Kent Overstreet wrote:
-> With immutable biovecs we don't want code accessing bi_io_vec directly -
-> the uses this patch changes weren't incorrect since they all own the
-> bio, but it makes the code harder to audit for no good reason - also,
-> this will help with multipage bvecs later.
+On Tue, Nov 05, 2013 at 02:34:45PM +0100, Stephane Eranian wrote:
+> Hi,
 > 
+> One thing I realized while testing is that we cannot simply add the
+> unit printout like that.
+> This may break all the scripts people may have written to parse the
+> output of perf stat.
 
-The btrfs parts of this look good to me, you can add
+isn't it what the -x output is meant for?
 
-Reviewed-by: Josef Bacik <jbacik@fusionio.com>
+  perf stat -x, ...
 
-Thanks for this,
+  1.738605,task-clock
+  367,context-switches
+  0,cpu-migrations
+  272,page-faults
+  6722006,cycles
+  2592661,stalled-cycles-frontend
+  1935855,stalled-cycles-backend
+  4324013,instructions
+  823229,branches
+  11192,branch-misses
 
-Josef
+> I think we need to make the display of the unit optional. If I do:
+>    $ perf stat -e cycles ls
+> 
+> The output should remain as it was before and not show:
+> $ perf stat -e cycles ls
+>       22782847475 ? cycles
+
+maybe we should display just space ' ' instead
+of the '?' ...seems confusing
+
+> 
+> So I think we need a --show-unit option. It would be off by default.
+> Of course doing this causes a mess with the current code because
+> of all the various printf() in builtin-stat.c but I think it is better for
+> the end user.
+> 
+> Any opinion?
+
+I haven't checked by I think we changed the default perf stat
+output in the past without any fuzz
+
+maybe just keep the -x output or add the unit
+to the end of the line
+
+jirka
