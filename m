@@ -1,111 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922Ab3KENGg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 08:06:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47908 "EHLO mx2.suse.de"
+	id S1754943Ab3KENHu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 08:07:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52218 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754904Ab3KENGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 08:06:34 -0500
-Date: Tue, 5 Nov 2013 14:06:30 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Adam Radford <aradford@gmail.com>
-Subject: Re: [PATCH] PCI: add quirk for 3ware 9650SE controller
-In-Reply-To: <CAErSpo7qORQjs62zdi-5et2WnWwy3weMs56G84rWhNrW59F5WQ@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1311051402500.2779@pobox.suse.cz>
-References: <alpine.LNX.2.00.1308271141080.2077@pobox.suse.cz> <alpine.LNX.2.00.1308271144420.2077@pobox.suse.cz> <alpine.LNX.2.00.1308281745460.4557@pobox.suse.cz> <CAErSpo6saRNMw6Js0PLXZzYDdH0M3ypSFLDxVxp0G02aetp0Dw@mail.gmail.com>
- <alpine.LNX.2.00.1309061150140.26934@pobox.suse.cz> <CAErSpo5ExXsbSd+jYP5JYwq-RBf-dx1T_AZx6CV4=6-AfTTynQ@mail.gmail.com> <alpine.LNX.2.00.1309271106090.18703@pobox.suse.cz> <alpine.LNX.2.00.1310301125400.19090@pobox.suse.cz>
- <CAErSpo7qORQjs62zdi-5et2WnWwy3weMs56G84rWhNrW59F5WQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754795Ab3KENHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 08:07:48 -0500
+Date: Tue, 5 Nov 2013 14:07:29 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 1/3] perf tools: Factor sysfs code into generic fs object
+Message-ID: <20131105130729.GD1071@krava.brq.redhat.com>
+References: <1383563173-17466-1-git-send-email-jolsa@redhat.com>
+ <1383563173-17466-2-git-send-email-jolsa@redhat.com>
+ <20131105124814.GA5539@infradead.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131105124814.GA5539@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Oct 2013, Bjorn Helgaas wrote:
+On Tue, Nov 05, 2013 at 10:48:14AM -0200, Arnaldo Carvalho de Melo wrote:
 
-> > Attached is dmesg output leading to timeouts (that are cured by my
-> > original patch in this thread) and lspci.
+SNIP
+
+> > +struct perf_fs {
 > 
-> I opened https://bugzilla.kernel.org/show_bug.cgi?id=64141 for this
-> issue and attached your dmesg log and lspci output.
+> Ditch the 'perf', make it plain 'struct fs'.
 > 
-> > Please let me know if there is anything else I could do, or if you are
-> > going to proceed with my patch adding the quirk.
+> > +	const char		*name;
+> > +	const char * const	*mounts;
+> > +	char			 path[PATH_MAX + 1];
+> > +	bool			 found;
+> > +	long			 magic;
+> > +};
+> > +
+> > +enum {
+> > +	FS_SYSFS = 0,
 > 
-> Your quirk keeps us from disabling MSIs on the device during
-> enumeration.  But even if the BIOS left MSIs enabled, there's nothing
-> to field the MSI until after the driver claims the device.  So I don't
-> believe this has to be done as a quirk.  It should work just as well
-> to do something in the driver when it claims the device.
+> FS__SYSFS
 > 
-> I guess another way to say this is that I don't think we understand
-> what the real problem is, and if we just add a quirk to work around
-> it, we might miss the chance to fix the real problem, and we may never
-> be able to remove the special-case code we're adding in the generic
-> path.
+> > +};
+> > +
+> > +static struct perf_fs fss[] = {
 > 
-> I know you said you tried doing something in the driver, and it didn't
-> work.  I don't know exactly what you tried, but twa_probe() looks
-> strange to me.  The other drivers I looked at do all their PCI
-> initialization before the scsi_host_alloc() / scsi_add_host() /
-> scsi_scan_host() stuff.  But twa_probe() has PCI stuff scattered
-> around between those three SCSI calls.  In particular, it does the MSI
-> setup way down near the end, after scsi_add_host(), which seems like
-> just the sort of thing that could explain this problem.
+> Funny name, perhaps fs__entries instead? :-)
 
-What I tried was patch below, but it didn't have any observable effect -- 
-the commands sent to the controller would still time out the same way.
+ok, will change all above namings :)
 
-Debugging this is not really straightforward for me unfortunately, as I 
-don't own the system myself.
+> 
+> And here we have it static, at some point we could introduce a
+> 'fs__register', that would be the counterpart of 'register_filesystem'
+> in the kernel sources.
+> 
+> > +	[FS_SYSFS] = {
+> > +		.name	= "sysfs",
+> > +		.mounts	= sysfs_known_mountpoints,
+> > +		.magic	= SYSFS_MAGIC,
+> > +	},
+> > +};
+> > +
+> > +static bool read_mounts(struct perf_fs *fs)
+> > +{
+> > +	bool found = false;
+> > +	char type[100];
+> > +	FILE *fp;
+> > +
+> > +	fp = fopen("/proc/mounts", "r");
+> > +	if (fp == NULL)
+> > +		return NULL;
+> > +
+> > +	while (!found &&
+> > +	       fscanf(fp, "%*s %" STR(PATH_MAX) "s %99s %*s %*d %*d\n",
+> > +		      fs->path, type) == 2) {
+> > +
+> > +		if (strcmp(type, fs->name) == 0)
+> > +			found = true;
+> > +	}
+> > +
+> > +	fclose(fp);
+> > +	return fs->found = found;
+> > +}
+> 
+> This is not a per instance method, I to traverse /proc/mounts once,
+> checking all entries in 'fs__entries' marking the ones that are present,
+> i.e. fs__entries would be a list/tree of 'struct fs'.
+> 
+> > +static int valid_mount(const char *fs, long magic)
+> > +{
+> > +	struct statfs st_fs;
+> > +
+> > +	if (statfs(fs, &st_fs) < 0)
+> > +		return -ENOENT;
+> > +	else if (st_fs.f_type != magic)
+> > +		return -ENOENT;
+> > +
+> > +	return 0;
+> > +}
+> 
+> Now this is getting me confused, so we will have to traverse
+> /proc/mounts looking  for that .name to be what we expect in entries and
+> afterwards we do a second step, checking if the magic number is the one
+> expected? Can't we do both verifications in just one place?
 
-I agree that we don't fully understand what is happening, but the quirk 
-was the only way I have been able to come up with to make the device 
-functioning again (apart from reverting d5dea7d95).
+the valid_mount is called only for preconfigured
+(known mountpoints) paths
 
-Any other ideas are welcome.
+> 
+> I know you haven't written this code, is just generalizing, but I got
+> confused so had to comment on it :-\
 
----
- drivers/scsi/3w-9xxx.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+yep ;-) perhaps some init code could do that
 
-diff --git a/drivers/scsi/3w-9xxx.c b/drivers/scsi/3w-9xxx.c
-index ba754c3..bad7faf 100644
---- a/drivers/scsi/3w-9xxx.c
-+++ b/drivers/scsi/3w-9xxx.c
-@@ -2055,6 +2055,11 @@ static int __devinit twa_probe(struct pci_dev *pdev, const struct pci_device_id
- 			goto out_disable_device;
- 		}
- 
-+	/* Try to enable MSI */
-+	if (use_msi && (pdev->device != PCI_DEVICE_ID_3WARE_9000) &&
-+	    !pci_enable_msi(pdev))
-+		set_bit(TW_USING_MSI, &tw_dev->flags);
-+
- 	host = scsi_host_alloc(&driver_template, sizeof(TW_Device_Extension));
- 	if (!host) {
- 		TW_PRINTK(host, TW_DRIVER, 0x24, "Failed to allocate memory for device extension");
-@@ -2134,11 +2139,6 @@ static int __devinit twa_probe(struct pci_dev *pdev, const struct pci_device_id
- 	       le32_to_cpu(*(int *)twa_get_param(tw_dev, 2, TW_INFORMATION_TABLE,
- 				     TW_PARAM_PORTCOUNT, TW_PARAM_PORTCOUNT_LENGTH)));
- 
--	/* Try to enable MSI */
--	if (use_msi && (pdev->device != PCI_DEVICE_ID_3WARE_9000) &&
--	    !pci_enable_msi(pdev))
--		set_bit(TW_USING_MSI, &tw_dev->flags);
--
- 	/* Now setup the interrupt handler */
- 	retval = request_irq(pdev->irq, twa_interrupt, IRQF_SHARED, "3w-9xxx", tw_dev);
- 	if (retval) {
+> 
+> Perhaps since you're just making it useful for more filesystems just
+> please address the 'perf_fs' naming suggestions and we can deal with
+> these other issues later?
 
+ok, I have already changes for the 3/3 change,
+I'll send it together
 
--- 
-Jiri Kosina
-SUSE Labs
+jirka
