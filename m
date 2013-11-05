@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab3KEDtD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 22:49:03 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:49744 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754389Ab3KEDsy (ORCPT
+	id S1754400Ab3KEDsz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 22:48:55 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:65202 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754338Ab3KEDsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 22:48:54 -0500
+	Mon, 4 Nov 2013 22:48:51 -0500
 From: Azael Avalos <coproscefalo@gmail.com>
 To: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org
 Cc: azael.avalos@gmail.com
-Subject: [PATCH 5/8] toshiba_acpi: Add ECO led support
-Date: Mon,  4 Nov 2013 20:48:42 -0700
-Message-Id: <1383623325-4004-6-git-send-email-coproscefalo@gmail.com>
+Subject: [PATCH 3/8] toshiba_acpi: Add platform support
+Date: Mon,  4 Nov 2013 20:48:40 -0700
+Message-Id: <1383623325-4004-4-git-send-email-coproscefalo@gmail.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1383623325-4004-1-git-send-email-coproscefalo@gmail.com>
 References: <1383623325-4004-1-git-send-email-coproscefalo@gmail.com>
@@ -20,131 +20,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Newer Toshiba laptops now come with a feature called
-ECO Mode, where the system is put in low power consupmtion
-state and a green (world shaped with leaves) icon illuminates
-indicating that the system is in such power state.
+Add platform support and change the backlight
+and led devices to register on it instead of the acpi_device.
 
-This patch adds support to turn on/off the ECO led by
-creating and registering the toshiba::eco_mode led.
+The use of the platform is to have just one place where to
+look for files instead of looking at the current three different
+ACPI devices (TOS6200, TOS6208 and TOS1900) and thus making
+userspace a bit easier.
 
 Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
 ---
- drivers/platform/x86/toshiba_acpi.c | 66 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 66 insertions(+)
+ drivers/platform/x86/toshiba_acpi.c | 32 ++++++++++++++++++++++++++++++--
+ 1 file changed, 30 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-index f97f942..022c6e6 100644
+index d7ecef3..226e0b5 100644
 --- a/drivers/platform/x86/toshiba_acpi.c
 +++ b/drivers/platform/x86/toshiba_acpi.c
-@@ -113,6 +113,7 @@ MODULE_LICENSE("GPL");
- #define HCI_LCD_BRIGHTNESS		0x002a
- #define HCI_WIRELESS			0x0056
- #define HCI_KBD_ILLUMINATION		0x0095
-+#define HCI_ECO_MODE			0x0097
- #define SCI_ILLUMINATION		0x014e
- #define SCI_KBD_ILLUM_STATUS		0x015c
+@@ -54,6 +54,7 @@
+ #include <linux/slab.h>
+ #include <linux/workqueue.h>
+ #include <linux/i8042.h>
++#include <linux/platform_device.h>
  
-@@ -143,6 +144,7 @@ struct toshiba_acpi_dev {
- 	struct backlight_device *backlight_dev;
- 	struct led_classdev led_dev;
- 	struct led_classdev kbd_led;
-+	struct led_classdev eco_led;
+ #include <asm/uaccess.h>
  
- 	int force_fan;
- 	int last_key_event;
-@@ -159,6 +161,7 @@ struct toshiba_acpi_dev {
- 	unsigned int tr_backlight_supported:1;
- 	unsigned int kbd_illum_supported:1;
- 	unsigned int kbd_led_registered:1;
-+	unsigned int eco_supported:1;
- 	unsigned int sysfs_created:1;
+@@ -129,6 +130,7 @@ MODULE_LICENSE("GPL");
  
- 	struct mutex mutex;
-@@ -538,6 +541,57 @@ static void toshiba_kbd_backlight_set(struct led_classdev *cdev,
- 	}
- }
+ struct toshiba_acpi_dev {
+ 	struct acpi_device *acpi_dev;
++	struct platform_device *pf_dev;
+ 	const char *method_hci;
+ 	struct rfkill *bt_rfk;
+ 	struct input_dev *hotkey_dev;
+@@ -1156,7 +1158,7 @@ static int toshiba_acpi_setup_backlight(struct toshiba_acpi_dev *dev)
+ 		props.max_brightness++;
  
-+/* Eco Mode support */
-+static int toshiba_eco_mode_available(struct toshiba_acpi_dev *dev)
-+{
-+	acpi_status status;
-+	u32 in[HCI_WORDS] = { HCI_GET, HCI_ECO_MODE, 0, 1, 0, 0 };
-+	u32 out[HCI_WORDS];
+ 	dev->backlight_dev = backlight_device_register("toshiba",
+-						       &dev->acpi_dev->dev,
++						       &dev->pf_dev->dev,
+ 						       dev,
+ 						       &toshiba_backlight_data,
+ 						       &props);
+@@ -1198,6 +1200,9 @@ static int toshiba_acpi_remove(struct acpi_device *acpi_dev)
+ 	if (dev->illumination_supported)
+ 		led_classdev_unregister(&dev->led_dev);
+ 
++	if (dev->pf_dev)
++		platform_device_unregister(dev->pf_dev);
 +
-+	status = hci_raw(dev, in, out);
-+	if (ACPI_FAILURE(status) || out[0] == INPUT_DATA_ERROR) {
-+		pr_info("ACPI call to get ECO led failed\n");
-+		return 0;
+ 	if (toshiba_acpi)
+ 		toshiba_acpi = NULL;
+ 
+@@ -1249,6 +1254,15 @@ static int toshiba_acpi_add(struct acpi_device *acpi_dev)
+ 	dev->method_hci = hci_method;
+ 	acpi_dev->driver_data = dev;
+ 
++	dev->pf_dev = platform_device_register_simple("toshiba", -1, NULL, 0);
++	if (IS_ERR(dev->pf_dev)) {
++		ret = PTR_ERR(dev->pf_dev);
++		pr_err("Unable to register platform device\n");
++		kfree(dev);
++		return ret;
 +	}
++	platform_set_drvdata(dev->pf_dev, dev);
 +
-+	return 1;
-+}
-+
-+static enum led_brightness toshiba_eco_mode_get_status(struct led_classdev *cdev)
-+{
-+	struct toshiba_acpi_dev *dev = container_of(cdev,
-+			struct toshiba_acpi_dev, eco_led);
-+	u32 in[HCI_WORDS] = { HCI_GET, HCI_ECO_MODE, 0, 1, 0, 0 };
-+	u32 out[HCI_WORDS];
-+	acpi_status status;
-+
-+	status = hci_raw(dev, in, out);
-+	if (ACPI_FAILURE(status) || out[0] == INPUT_DATA_ERROR) {
-+		pr_err("ACPI call to get ECO led failed\n");
-+		return LED_OFF;
-+	}
-+
-+	return out[2] ? LED_FULL : LED_OFF;
-+}
-+
-+static void toshiba_eco_mode_set_status(struct led_classdev *cdev,
-+				     enum led_brightness brightness)
-+{
-+	struct toshiba_acpi_dev *dev = container_of(cdev,
-+			struct toshiba_acpi_dev, eco_led);
-+	u32 in[HCI_WORDS] = { HCI_SET, HCI_ECO_MODE, 0, 1, 0, 0 };
-+	u32 out[HCI_WORDS];
-+	acpi_status status;
-+
-+	/* Switch the Eco Mode led on/off */
-+	in[2] = (brightness) ? 1 : 0;
-+	status = hci_raw(dev, in, out);
-+	if (ACPI_FAILURE(status) || out[0] == INPUT_DATA_ERROR) {
-+		pr_err("ACPI call to set ECO led failed\n");
-+		return;
-+	}
-+}
-+
- /* Bluetooth rfkill handlers */
+ 	if (toshiba_acpi_setup_keyboard(dev))
+ 		pr_info("Unable to activate hotkeys\n");
  
- static u32 hci_get_bt_present(struct toshiba_acpi_dev *dev, bool *present)
-@@ -1413,6 +1467,9 @@ static int toshiba_acpi_remove(struct acpi_device *acpi_dev)
- 	if (dev->kbd_led_registered)
- 		led_classdev_unregister(&dev->kbd_led);
- 
-+	if (dev->eco_supported)
-+		led_classdev_unregister(&dev->eco_led);
-+
- 	if (dev->pf_dev)
- 		platform_device_unregister(dev->pf_dev);
- 
-@@ -1515,6 +1572,15 @@ static int toshiba_acpi_add(struct acpi_device *acpi_dev)
+@@ -1284,7 +1298,7 @@ static int toshiba_acpi_add(struct acpi_device *acpi_dev)
+ 		dev->led_dev.max_brightness = 1;
+ 		dev->led_dev.brightness_set = toshiba_illumination_set;
+ 		dev->led_dev.brightness_get = toshiba_illumination_get;
+-		if (!led_classdev_register(&acpi_dev->dev, &dev->led_dev))
++		if (!led_classdev_register(&dev->pf_dev->dev, &dev->led_dev))
  			dev->illumination_supported = 1;
  	}
  
-+	if (toshiba_eco_mode_available(dev)) {
-+		dev->eco_led.name = "toshiba::eco_mode";
-+		dev->eco_led.max_brightness = 1;
-+		dev->eco_led.brightness_set = toshiba_eco_mode_set_status;
-+		dev->eco_led.brightness_get = toshiba_eco_mode_get_status;
-+		if (!led_classdev_register(&dev->pf_dev->dev, &dev->eco_led))
-+			dev->eco_supported = 1;
+@@ -1388,6 +1402,13 @@ static struct acpi_driver toshiba_acpi_driver = {
+ 	.drv.pm	= &toshiba_acpi_pm,
+ };
+ 
++static struct platform_driver platform_driver = {
++	.driver = {
++		.name = "toshiba",
++		.owner = THIS_MODULE,
++	},
++};
++
+ static int __init toshiba_acpi_init(void)
+ {
+ 	int ret;
+@@ -1406,6 +1427,12 @@ static int __init toshiba_acpi_init(void)
+ 		return -ENODEV;
+ 	}
+ 
++	ret = platform_driver_register(&platform_driver);
++	if (ret < 0) {
++		pr_err("Failed to register platform driver: %d\n", ret);
++		return ret;
 +	}
 +
- 	ret = toshiba_kbd_illum_status_get(dev, &dummy);
- 	if (!ret) {
- 		dev->kbd_time = dummy >> HCI_MISC_SHIFT;
+ 	ret = acpi_bus_register_driver(&toshiba_acpi_driver);
+ 	if (ret) {
+ 		pr_err("Failed to register ACPI driver: %d\n", ret);
+@@ -1418,6 +1445,7 @@ static int __init toshiba_acpi_init(void)
+ static void __exit toshiba_acpi_exit(void)
+ {
+ 	acpi_bus_unregister_driver(&toshiba_acpi_driver);
++	platform_driver_unregister(&platform_driver);
+ 	if (toshiba_proc_dir)
+ 		remove_proc_entry(PROC_TOSHIBA, acpi_root_dir);
+ }
 -- 
 1.8.1.4
 
