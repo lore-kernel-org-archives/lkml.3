@@ -1,87 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771Ab3KEHbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 02:31:24 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52493 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967Ab3KEHbX (ORCPT
+	id S1751894Ab3KEHfn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 02:35:43 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:57655 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704Ab3KEHfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 02:31:23 -0500
-X-AuditID: 9c93016f-b7bc7ae0000010eb-c0-52789eca7cf5
-From: Namhyung Kim <namhyung@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
-Subject: Re: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist periods (v2)
-References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
-	<20131031080932.GA8479@gmail.com> <87vc0c4ny2.fsf@sejong.aot.lge.com>
-	<20131101075502.GA25547@gmail.com> <874n7w4gtm.fsf@sejong.aot.lge.com>
-	<20131101092759.GC27063@gmail.com>
-Date: Tue, 05 Nov 2013 16:31:21 +0900
-In-Reply-To: <20131101092759.GC27063@gmail.com> (Ingo Molnar's message of
-	"Fri, 1 Nov 2013 10:27:59 +0100")
-Message-ID: <87bo1zz4mu.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 5 Nov 2013 02:35:41 -0500
+Date: Tue, 05 Nov 2013 02:35:35 -0500 (EST)
+Message-Id: <20131105.023535.180219972128101901.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless-next 2013-11-04
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20131104202241.GB1989@tuxdriver.com>
+References: <20131104202241.GB1989@tuxdriver.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 04 Nov 2013 23:35:41 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Mon, 4 Nov 2013 15:22:42 -0500
 
-On Fri, 1 Nov 2013 10:27:59 +0100, Ingo Molnar wrote:
-> * Namhyung Kim <namhyung@kernel.org> wrote:
->
->> >> > 2)
->> >> >
->> >> > Is it possible to configure the default 'report -g' style, so that 
->> >> > people who'd like to use it all the time don't have to type '-g 
->> >> > cumulative' all the time?
->> >> 
->> >> Hmm.. maybe I can add support for the 'report.call-graph' config option.
->> >
->> > If we display your new 'total' field by default then it's not as 
->> > pressing to me :)
->> 
->> Do you mean -g cumulative without 'self' column?
->
-> So, if by default we display both 'self' and 'total' and sort by 
-> 'total', then I'm personally a happy camper: while it's a change of 
-> the default perf report output, it's also a step forward.
->
-> But some people might complain about it once this hits v3.13 (or 
-> v3.14) and might want to hide individual columns and have different 
-> sorting preferences.
->
-> So out of defensive caution you might want to provide toggles for 
-> such things, maybe even generalize it a bit to allow arbitrary 
-> hiding/display of individual colums in perf report.
->
-> That would probably also make it easier to do minimal tweaks to the 
-> upstream reporting defaults.
+> Please accept the following pull request intended for the 3.13 tree...
 
-Okay, so what would the interface look like?
-
-I think it'd better to separate the option and pass column and
-(optional) sort key argument.
-
-  --cumulative both,total (default)
-  --cumulative both,self
-  --cumulative total
-  --cumulative self (meaningless?)
-
-Maybe we need a config option and a single letter option for the default
-case like --call-graph and -g options do.
-
-What do you think?
-
-Thanks,
-Namhyung
+Pulled, thanks John.
