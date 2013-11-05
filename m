@@ -1,310 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125Ab3KEULW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 15:11:22 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38832 "EHLO
+	id S932111Ab3KEULU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 15:11:20 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38835 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755574Ab3KEUKR (ORCPT
+	with ESMTP id S1755549Ab3KEUKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 15:10:17 -0500
+	Tue, 5 Nov 2013 15:10:18 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Peter Zijlstra <peterz@infradead.org>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/10] perf hists: Consolidate __hists__add_*entry()
-Date: Tue,  5 Nov 2013 17:09:52 -0300
-Message-Id: <1383682201-19399-2-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>
+Subject: [GIT PULL 00/10] perf/core improvements and fixes
+Date: Tue,  5 Nov 2013 17:09:51 -0300
+Message-Id: <1383682201-19399-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1383682201-19399-1-git-send-email-acme@infradead.org>
-References: <1383682201-19399-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-The __hists__add_{branch,mem}_entry() does almost the same thing that
-__hists__add_entry() does.  Consolidate them into one.
+Hi Ingo,
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rodrigo Campos <rodrigo@sdfg.com.ar>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1383202576-28141-2-git-send-email-namhyung@kernel.org
-[ Fixup clash with new COMM infrastructure ]
+	Please consider pulling,
+
+- Arnaldo
+
+The following changes since commit 87968f94fbea47df334502a0db645833ce8a848b:
+
+  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-11-04 21:14:04 +0100)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+
+for you to fetch changes up to 316c7136f8bad924609163b9b115f68d59a68c82:
+
+  perf tools: Finish the removal of 'self' arguments (2013-11-05 15:32:36 -0300)
+
+----------------------------------------------------------------
+perf/core improvements and fixes:
+
+. Check maximum frequency rate for record/top, emitting better error
+  messages, from Jiri Olsa.
+
+. Disable live kvm command if timerfd is not supported, from David Ahern.
+
+. Add usage to 'perf list', from David Ahern.
+
+. Fix detection of non-core features, from David Ahern.
+
+. Consolidate __hists__add_*entry(), cleanup from Namhyung Kim.
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-annotate.c |  2 +-
- tools/perf/builtin-diff.c     |  3 +-
- tools/perf/builtin-report.c   | 16 ++++++---
- tools/perf/builtin-top.c      |  5 +--
- tools/perf/tests/hists_link.c |  6 ++--
- tools/perf/util/hist.c        | 75 ++++---------------------------------------
- tools/perf/util/hist.h        | 18 ++---------
- 7 files changed, 30 insertions(+), 95 deletions(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 6c5ae57831f6..4087ab19823c 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -65,7 +65,7 @@ static int perf_evsel__add_sample(struct perf_evsel *evsel,
- 		return 0;
- 	}
- 
--	he = __hists__add_entry(&evsel->hists, al, NULL, 1, 1, 0);
-+	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL, 1, 1, 0);
- 	if (he == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index b605009e803f..3b67ea2444bd 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -307,7 +307,8 @@ static int hists__add_entry(struct hists *hists,
- 			    struct addr_location *al, u64 period,
- 			    u64 weight, u64 transaction)
- {
--	if (__hists__add_entry(hists, al, NULL, period, weight, transaction) != NULL)
-+	if (__hists__add_entry(hists, al, NULL, NULL, NULL, period, weight,
-+			       transaction) != NULL)
- 		return 0;
- 	return -ENOMEM;
- }
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 25f83d5d66fd..8cf8e66ba594 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -115,7 +115,8 @@ static int perf_report__add_mem_hist_entry(struct perf_tool *tool,
- 	 * and this is indirectly achieved by passing period=weight here
- 	 * and the he_stat__add_period() function.
- 	 */
--	he = __hists__add_mem_entry(&evsel->hists, al, parent, mi, cost, cost);
-+	he = __hists__add_entry(&evsel->hists, al, parent, NULL, mi,
-+				cost, cost, 0);
- 	if (!he)
- 		return -ENOMEM;
- 
-@@ -200,12 +201,16 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 
- 		err = -ENOMEM;
- 
-+		/* overwrite the 'al' to branch-to info */
-+		al->map = bi[i].to.map;
-+		al->sym = bi[i].to.sym;
-+		al->addr = bi[i].to.addr;
- 		/*
- 		 * The report shows the percentage of total branches captured
- 		 * and not events sampled. Thus we use a pseudo period of 1.
- 		 */
--		he = __hists__add_branch_entry(&evsel->hists, al, parent,
--				&bi[i], 1, 1);
-+		he = __hists__add_entry(&evsel->hists, al, parent, &bi[i], NULL,
-+					1, 1, 0);
- 		if (he) {
- 			struct annotation *notes;
- 			bx = he->branch_info;
-@@ -266,8 +271,9 @@ static int perf_evsel__add_hist_entry(struct perf_tool *tool,
- 			return err;
- 	}
- 
--	he = __hists__add_entry(&evsel->hists, al, parent, sample->period,
--				sample->weight, sample->transaction);
-+	he = __hists__add_entry(&evsel->hists, al, parent, NULL, NULL,
-+				sample->period, sample->weight,
-+				sample->transaction);
- 	if (he == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index ca5ca37980fb..21897f0ffcd3 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -246,8 +246,9 @@ static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- 	struct hist_entry *he;
- 
- 	pthread_mutex_lock(&evsel->hists.lock);
--	he = __hists__add_entry(&evsel->hists, al, NULL, sample->period,
--				sample->weight, sample->transaction);
-+	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL,
-+				sample->period, sample->weight,
-+				sample->transaction);
- 	pthread_mutex_unlock(&evsel->hists.lock);
- 	if (he == NULL)
- 		return NULL;
-diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
-index 6c337e653540..173bf42cc03e 100644
---- a/tools/perf/tests/hists_link.c
-+++ b/tools/perf/tests/hists_link.c
-@@ -223,7 +223,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
- 				goto out;
- 
- 			he = __hists__add_entry(&evsel->hists, &al, NULL,
--						1, 1, 0);
-+						NULL, NULL, 1, 1, 0);
- 			if (he == NULL)
- 				goto out;
- 
-@@ -245,8 +245,8 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
- 							  &sample) < 0)
- 				goto out;
- 
--			he = __hists__add_entry(&evsel->hists, &al, NULL, 1, 1,
--						0);
-+			he = __hists__add_entry(&evsel->hists, &al, NULL,
-+						NULL, NULL, 1, 1, 0);
- 			if (he == NULL)
- 				goto out;
- 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 30793f98c8bb..822903eaa201 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -407,73 +407,12 @@ out:
- 	return he;
- }
- 
--struct hist_entry *__hists__add_mem_entry(struct hists *hists,
--					  struct addr_location *al,
--					  struct symbol *sym_parent,
--					  struct mem_info *mi,
--					  u64 period,
--					  u64 weight)
--{
--	struct hist_entry entry = {
--		.thread	= al->thread,
--		.comm = thread__comm(al->thread),
--		.ms = {
--			.map	= al->map,
--			.sym	= al->sym,
--		},
--		.stat = {
--			.period	= period,
--			.weight = weight,
--			.nr_events = 1,
--		},
--		.cpu	= al->cpu,
--		.ip	= al->addr,
--		.level	= al->level,
--		.parent = sym_parent,
--		.filtered = symbol__parent_filter(sym_parent),
--		.hists = hists,
--		.mem_info = mi,
--		.branch_info = NULL,
--	};
--	return add_hist_entry(hists, &entry, al, period, weight);
--}
--
--struct hist_entry *__hists__add_branch_entry(struct hists *hists,
--					     struct addr_location *al,
--					     struct symbol *sym_parent,
--					     struct branch_info *bi,
--					     u64 period,
--					     u64 weight)
--{
--	struct hist_entry entry = {
--		.thread	= al->thread,
--		.comm = thread__comm(al->thread),
--		.ms = {
--			.map	= bi->to.map,
--			.sym	= bi->to.sym,
--		},
--		.cpu	= al->cpu,
--		.ip	= bi->to.addr,
--		.level	= al->level,
--		.stat = {
--			.period	= period,
--			.nr_events = 1,
--			.weight = weight,
--		},
--		.parent = sym_parent,
--		.filtered = symbol__parent_filter(sym_parent),
--		.branch_info = bi,
--		.hists	= hists,
--		.mem_info = NULL,
--	};
--
--	return add_hist_entry(hists, &entry, al, period, weight);
--}
--
- struct hist_entry *__hists__add_entry(struct hists *hists,
- 				      struct addr_location *al,
--				      struct symbol *sym_parent, u64 period,
--				      u64 weight, u64 transaction)
-+				      struct symbol *sym_parent,
-+				      struct branch_info *bi,
-+				      struct mem_info *mi,
-+				      u64 period, u64 weight, u64 transaction)
- {
- 	struct hist_entry entry = {
- 		.thread	= al->thread,
-@@ -486,15 +425,15 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- 		.ip	= al->addr,
- 		.level	= al->level,
- 		.stat = {
--			.period	= period,
- 			.nr_events = 1,
-+			.period	= period,
- 			.weight = weight,
- 		},
- 		.parent = sym_parent,
- 		.filtered = symbol__parent_filter(sym_parent),
- 		.hists	= hists,
--		.branch_info = NULL,
--		.mem_info = NULL,
-+		.branch_info = bi,
-+		.mem_info = mi,
- 		.transaction = transaction,
- 	};
- 
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 9d2d022cdb79..307f1c742563 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -86,7 +86,9 @@ struct hists {
- 
- struct hist_entry *__hists__add_entry(struct hists *self,
- 				      struct addr_location *al,
--				      struct symbol *parent, u64 period,
-+				      struct symbol *parent,
-+				      struct branch_info *bi,
-+				      struct mem_info *mi, u64 period,
- 				      u64 weight, u64 transaction);
- int64_t hist_entry__cmp(struct hist_entry *left, struct hist_entry *right);
- int64_t hist_entry__collapse(struct hist_entry *left, struct hist_entry *right);
-@@ -95,20 +97,6 @@ int hist_entry__sort_snprintf(struct hist_entry *self, char *bf, size_t size,
- 			      struct hists *hists);
- void hist_entry__free(struct hist_entry *);
- 
--struct hist_entry *__hists__add_branch_entry(struct hists *self,
--					     struct addr_location *al,
--					     struct symbol *sym_parent,
--					     struct branch_info *bi,
--					     u64 period,
--					     u64 weight);
--
--struct hist_entry *__hists__add_mem_entry(struct hists *self,
--					  struct addr_location *al,
--					  struct symbol *sym_parent,
--					  struct mem_info *mi,
--					  u64 period,
--					  u64 weight);
--
- void hists__output_resort(struct hists *self);
- void hists__collapse_resort(struct hists *self, struct ui_progress *prog);
- 
--- 
-1.8.1.4
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (2):
+      perf fs: Rename NAME_find_mountpoint() to NAME__mountpoint()
+      perf tools: Finish the removal of 'self' arguments
 
+David Ahern (4):
+      perf kvm: Disable live command if timerfd is not supported
+      tools/perf/build: Fix detection of non-core features
+      perf list: Remove a level of indentation
+      perf list: Add usage
+
+Jiri Olsa (3):
+      perf tools: Factor sysfs code into generic fs object
+      perf fs: Add procfs support
+      perf tools: Check maximum frequency rate for record/top
+
+Namhyung Kim (1):
+      perf hists: Consolidate __hists__add_*entry()
+
+ tools/perf/Makefile.perf                           |   4 +-
+ tools/perf/builtin-annotate.c                      |   2 +-
+ tools/perf/builtin-diff.c                          |   3 +-
+ tools/perf/builtin-kvm.c                           |  12 ++
+ tools/perf/builtin-list.c                          |  84 ++++++++------
+ tools/perf/builtin-record.c                        |  15 +--
+ tools/perf/builtin-report.c                        |  16 ++-
+ tools/perf/builtin-top.c                           |  20 +---
+ tools/perf/config/Makefile                         |  17 ++-
+ tools/perf/config/feature-checks/Makefile          |   6 +-
+ tools/perf/config/feature-checks/test-all.c        |   5 +
+ tools/perf/config/feature-checks/test-timerfd.c    |  18 +++
+ .../perf/scripts/python/Perf-Trace-Util/Context.c  |   6 +-
+ tools/perf/tests/hists_link.c                      |   6 +-
+ tools/perf/tests/parse-events.c                    |   6 +-
+ tools/perf/ui/browser.h                            |  32 +++---
+ tools/perf/ui/browsers/hists.c                     |   2 +-
+ tools/perf/ui/browsers/map.c                       |  40 +++----
+ tools/perf/ui/browsers/map.h                       |   2 +-
+ tools/perf/ui/browsers/scripts.c                   |   8 +-
+ tools/perf/ui/stdio/hist.c                         |  14 +--
+ tools/perf/util/build-id.h                         |   3 +-
+ tools/perf/util/cpumap.c                           |   6 +-
+ tools/perf/util/event.c                            |   6 +-
+ tools/perf/util/event.h                            |   3 +-
+ tools/perf/util/evlist.h                           |   3 +-
+ tools/perf/util/fs.c                               | 119 ++++++++++++++++++++
+ tools/perf/util/fs.h                               |   7 ++
+ tools/perf/util/hist.c                             |  75 ++-----------
+ tools/perf/util/hist.h                             |  51 +++------
+ tools/perf/util/include/linux/magic.h              |   4 +
+ tools/perf/util/pmu.c                              |  17 +--
+ tools/perf/util/probe-finder.c                     | 113 +++++++++----------
+ tools/perf/util/probe-finder.h                     |  10 +-
+ tools/perf/util/pstack.h                           |  10 +-
+ tools/perf/util/python-ext-sources                 |   2 +-
+ tools/perf/util/record.c                           |  71 ++++++++++++
+ tools/perf/util/session.c                          | 121 ++++++++++-----------
+ tools/perf/util/session.h                          |  27 ++---
+ tools/perf/util/sort.h                             |   2 +-
+ tools/perf/util/strfilter.c                        |  32 +++---
+ tools/perf/util/strfilter.h                        |  12 +-
+ tools/perf/util/sysfs.c                            |  60 ----------
+ tools/perf/util/sysfs.h                            |   6 -
+ tools/perf/util/thread.h                           |  10 +-
+ 45 files changed, 591 insertions(+), 497 deletions(-)
+ create mode 100644 tools/perf/config/feature-checks/test-timerfd.c
+ create mode 100644 tools/perf/util/fs.c
+ create mode 100644 tools/perf/util/fs.h
+ delete mode 100644 tools/perf/util/sysfs.c
+ delete mode 100644 tools/perf/util/sysfs.h
