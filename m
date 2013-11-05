@@ -1,89 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab3KER6g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 12:58:36 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:59110 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467Ab3KER6U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 12:58:20 -0500
-Date: Tue, 5 Nov 2013 13:06:23 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Ingo Molnar <mingo@kernel.org>
-cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Dave Jones <davej@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: perf/ftrace lockup on 3.12-rc6 with trigger code
-In-Reply-To: <20131026084836.GC14237@gmail.com>
-Message-ID: <alpine.DEB.2.10.1311051259370.22719@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1310241324330.4352@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1310241422460.6573@vincent-weaver-1.um.maine.edu> <1382695687.12254.4.camel@pippen.local.home> <alpine.DEB.2.10.1310250906110.22710@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1310251726001.31246@vincent-weaver-1.um.maine.edu> <20131026084836.GC14237@gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1755172Ab3KESA4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 13:00:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36702 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754825Ab3KESAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 13:00:55 -0500
+Date: Tue, 5 Nov 2013 19:01:10 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Long <dave.long@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: [PATCH] uprobes: introduce arch_uprobe->ixol
+Message-ID: <20131105180110.GA6943@redhat.com>
+References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-4-git-send-email-dave.long@linaro.org> <20131019163627.GA7837@redhat.com> <52671265.2020107@linaro.org> <20131029154006.GA22344@redhat.com> <20131104194901.GA28022@redhat.com> <527916F4.1010805@linaro.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <527916F4.1010805@linaro.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/05, David Long wrote:
+>
+> On 11/04/13 14:49, Oleg Nesterov wrote:
+>> On 10/29, Oleg Nesterov wrote:
+>>>
+>> Seriouly, how about the patch below?
+>>
+>> In fact, given that you are going to reimplement set_swbp/orig_insn,
+>> the new member is not strictly needed (afaics). But it looks more
+>> clear this way, and we need s/MAX_UINSN_BYTES/sizeof()/ anyway.
+>>
+>> Oleg.
+>> ---
+>
+> I agree that this is cleaner than another weak callout.  I have it
+> working for ARM now.
 
-short summary: the check for root-only ftrace use is wrong
+OK, I am going to add this patch to my tree, thanks. Can I add your
+acked-by ?
 
+Oleg.
 
-OK, so after wasting a lot of time on this, the underlying bug is just
-that with the settings chosen by the fuzzer, the kernel gets stuck.
-The function tracer keeps the CPU busy until interrupted by an interrupt, 
-which is then traced, but then another interrupt comes, etc, etc, and the 
-code never makes progress outside of the kernel.
-
-So I was going to make the argument that this interface should be made 
-root only, because it is too easy for a regular user to trigger this and
-DoS a machine.
-
-But I did some digging, and the initial commit for 3.4 had this:
-
-commit ced39002f5ea736b716ae233fb68b26d59783912
-Author: Jiri Olsa <jolsa@redhat.com>
-Date:   Wed Feb 15 15:51:52 2012 +0100
-
-....
-
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index d72af0b..fdeeb5c 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -24,6 +24,11 @@ static int   total_ref_count;
- static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
-                                 struct perf_event *p_event)
- {
-+       /* The ftrace function trace is allowed only for root. */
-+       if (ftrace_event_is_function(tp_event) &&
-+           perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-+               return -EPERM;
-+
-
-The intention was to only allow root, but the check is wrong.
-
-The poorly named
-	perf_paranoid_kernel()
-
-does
-
-static inline bool perf_paranoid_kernel(void)
-{
-         return sysctl_perf_event_paranoid > 1;
-}
-
-But the "default" setting for paranoid is "1" (user and kernel access 
-allowed).
-
-So the ftrace check never triggers EPERM unless someone has configured 
-paranoid to be the higher "2" value (user perf use only).
-
-So this check should be fixed and propogated to stable and this bug that 
-keeps crashing all the fuzzers will become a much less critical "root 
-only" bug.
-
-Vince
