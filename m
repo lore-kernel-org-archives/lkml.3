@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094Ab3KEULA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 15:11:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38838 "EHLO
+	id S932125Ab3KEULW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 15:11:22 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38832 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755590Ab3KEUKS (ORCPT
+	with ESMTP id S1755574Ab3KEUKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 15:10:18 -0500
+	Tue, 5 Nov 2013 15:10:17 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 07/10] perf fs: Rename NAME_find_mountpoint() to NAME__mountpoint()
-Date: Tue,  5 Nov 2013 17:09:58 -0300
-Message-Id: <1383682201-19399-8-git-send-email-acme@infradead.org>
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 01/10] perf hists: Consolidate __hists__add_*entry()
+Date: Tue,  5 Nov 2013 17:09:52 -0300
+Message-Id: <1383682201-19399-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1383682201-19399-1-git-send-email-acme@infradead.org>
 References: <1383682201-19399-1-git-send-email-acme@infradead.org>
@@ -28,181 +29,281 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Shorten it, "finding" it is an implementation detail, what callers want
-is the pathname, not to ask for it to _always_ do the lookup.
+The __hists__add_{branch,mem}_entry() does almost the same thing that
+__hists__add_entry() does.  Consolidate them into one.
 
-And the existing implementation already caches it, i.e. it doesn't
-"finds" it on every call.
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Rodrigo Campos <rodrigo@sdfg.com.ar>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-r24wa4bvtccg7mnkessrbbdj@git.kernel.org
+Link: http://lkml.kernel.org/r/1383202576-28141-2-git-send-email-namhyung@kernel.org
+[ Fixup clash with new COMM infrastructure ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/parse-events.c |  4 ++--
- tools/perf/util/cpumap.c        |  4 ++--
- tools/perf/util/fs.c            | 12 ++++++------
- tools/perf/util/fs.h            |  2 +-
- tools/perf/util/pmu.c           | 15 +++++----------
- 5 files changed, 16 insertions(+), 21 deletions(-)
+ tools/perf/builtin-annotate.c |  2 +-
+ tools/perf/builtin-diff.c     |  3 +-
+ tools/perf/builtin-report.c   | 16 ++++++---
+ tools/perf/builtin-top.c      |  5 +--
+ tools/perf/tests/hists_link.c |  6 ++--
+ tools/perf/util/hist.c        | 75 ++++---------------------------------------
+ tools/perf/util/hist.h        | 18 ++---------
+ 7 files changed, 30 insertions(+), 95 deletions(-)
 
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index f47bf459c3f5..ef671cd41bb3 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -1456,7 +1456,7 @@ static int test_pmu(void)
- 	int ret;
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 6c5ae57831f6..4087ab19823c 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -65,7 +65,7 @@ static int perf_evsel__add_sample(struct perf_evsel *evsel,
+ 		return 0;
+ 	}
  
- 	snprintf(path, PATH_MAX, "%s/bus/event_source/devices/cpu/format/",
--		 sysfs_find_mountpoint());
-+		 sysfs__mountpoint());
+-	he = __hists__add_entry(&evsel->hists, al, NULL, 1, 1, 0);
++	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL, 1, 1, 0);
+ 	if (he == NULL)
+ 		return -ENOMEM;
  
- 	ret = stat(path, &st);
- 	if (ret)
-@@ -1473,7 +1473,7 @@ static int test_pmu_events(void)
- 	int ret;
- 
- 	snprintf(path, PATH_MAX, "%s/bus/event_source/devices/cpu/events/",
--		 sysfs_find_mountpoint());
-+		 sysfs__mountpoint());
- 
- 	ret = stat(path, &st);
- 	if (ret) {
-diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-index 4af5a23b2423..a9b48c42e81e 100644
---- a/tools/perf/util/cpumap.c
-+++ b/tools/perf/util/cpumap.c
-@@ -216,7 +216,7 @@ int cpu_map__get_socket(struct cpu_map *map, int idx)
- 
- 	cpu = map->map[idx];
- 
--	mnt = sysfs_find_mountpoint();
-+	mnt = sysfs__mountpoint();
- 	if (!mnt)
- 		return -1;
- 
-@@ -279,7 +279,7 @@ int cpu_map__get_core(struct cpu_map *map, int idx)
- 
- 	cpu = map->map[idx];
- 
--	mnt = sysfs_find_mountpoint();
-+	mnt = sysfs__mountpoint();
- 	if (!mnt)
- 		return -1;
- 
-diff --git a/tools/perf/util/fs.c b/tools/perf/util/fs.c
-index a2413e842a02..77bac4e4c115 100644
---- a/tools/perf/util/fs.c
-+++ b/tools/perf/util/fs.c
-@@ -88,7 +88,7 @@ static const char *fs__get_mountpoint(struct fs *fs)
- 	return fs__read_mounts(fs) ? fs->path : NULL;
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index b605009e803f..3b67ea2444bd 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -307,7 +307,8 @@ static int hists__add_entry(struct hists *hists,
+ 			    struct addr_location *al, u64 period,
+ 			    u64 weight, u64 transaction)
+ {
+-	if (__hists__add_entry(hists, al, NULL, period, weight, transaction) != NULL)
++	if (__hists__add_entry(hists, al, NULL, NULL, NULL, period, weight,
++			       transaction) != NULL)
+ 		return 0;
+ 	return -ENOMEM;
  }
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 25f83d5d66fd..8cf8e66ba594 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -115,7 +115,8 @@ static int perf_report__add_mem_hist_entry(struct perf_tool *tool,
+ 	 * and this is indirectly achieved by passing period=weight here
+ 	 * and the he_stat__add_period() function.
+ 	 */
+-	he = __hists__add_mem_entry(&evsel->hists, al, parent, mi, cost, cost);
++	he = __hists__add_entry(&evsel->hists, al, parent, NULL, mi,
++				cost, cost, 0);
+ 	if (!he)
+ 		return -ENOMEM;
  
--static const char *fs__find_mountpoint(int idx)
-+static const char *fs__mountpoint(int idx)
- {
- 	struct fs *fs = &fs__entries[idx];
+@@ -200,12 +201,16 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
  
-@@ -98,10 +98,10 @@ static const char *fs__find_mountpoint(int idx)
- 	return fs__get_mountpoint(fs);
- }
+ 		err = -ENOMEM;
  
--#define FIND_MOUNTPOINT(name, idx)		\
--const char *name##_find_mountpoint(void)	\
--{						\
--	return fs__find_mountpoint(idx);	\
-+#define FS__MOUNTPOINT(name, idx)	\
-+const char *name##__mountpoint(void)	\
-+{					\
-+	return fs__mountpoint(idx);	\
- }
++		/* overwrite the 'al' to branch-to info */
++		al->map = bi[i].to.map;
++		al->sym = bi[i].to.sym;
++		al->addr = bi[i].to.addr;
+ 		/*
+ 		 * The report shows the percentage of total branches captured
+ 		 * and not events sampled. Thus we use a pseudo period of 1.
+ 		 */
+-		he = __hists__add_branch_entry(&evsel->hists, al, parent,
+-				&bi[i], 1, 1);
++		he = __hists__add_entry(&evsel->hists, al, parent, &bi[i], NULL,
++					1, 1, 0);
+ 		if (he) {
+ 			struct annotation *notes;
+ 			bx = he->branch_info;
+@@ -266,8 +271,9 @@ static int perf_evsel__add_hist_entry(struct perf_tool *tool,
+ 			return err;
+ 	}
  
--FIND_MOUNTPOINT(sysfs, FS__SYSFS);
-+FS__MOUNTPOINT(sysfs, FS__SYSFS);
-diff --git a/tools/perf/util/fs.h b/tools/perf/util/fs.h
-index 082edbd2159b..a7561c83c33c 100644
---- a/tools/perf/util/fs.h
-+++ b/tools/perf/util/fs.h
-@@ -1,6 +1,6 @@
- #ifndef __PERF_FS
- #define __PERF_FS
+-	he = __hists__add_entry(&evsel->hists, al, parent, sample->period,
+-				sample->weight, sample->transaction);
++	he = __hists__add_entry(&evsel->hists, al, parent, NULL, NULL,
++				sample->period, sample->weight,
++				sample->transaction);
+ 	if (he == NULL)
+ 		return -ENOMEM;
  
--const char *sysfs_find_mountpoint(void);
-+const char *sysfs__mountpoint(void);
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index ca5ca37980fb..21897f0ffcd3 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -246,8 +246,9 @@ static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 	struct hist_entry *he;
  
- #endif /* __PERF_FS */
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 45b42dffcd70..c232d8dd410b 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -77,9 +77,8 @@ static int pmu_format(const char *name, struct list_head *format)
- {
- 	struct stat st;
- 	char path[PATH_MAX];
--	const char *sysfs;
-+	const char *sysfs = sysfs__mountpoint();
- 
--	sysfs = sysfs_find_mountpoint();
- 	if (!sysfs)
- 		return -1;
- 
-@@ -166,9 +165,8 @@ static int pmu_aliases(const char *name, struct list_head *head)
- {
- 	struct stat st;
- 	char path[PATH_MAX];
--	const char *sysfs;
-+	const char *sysfs = sysfs__mountpoint();
- 
--	sysfs = sysfs_find_mountpoint();
- 	if (!sysfs)
- 		return -1;
- 
-@@ -212,11 +210,10 @@ static int pmu_type(const char *name, __u32 *type)
- {
- 	struct stat st;
- 	char path[PATH_MAX];
--	const char *sysfs;
- 	FILE *file;
- 	int ret = 0;
-+	const char *sysfs = sysfs__mountpoint();
- 
--	sysfs = sysfs_find_mountpoint();
- 	if (!sysfs)
- 		return -1;
- 
-@@ -241,11 +238,10 @@ static int pmu_type(const char *name, __u32 *type)
- static void pmu_read_sysfs(void)
- {
- 	char path[PATH_MAX];
--	const char *sysfs;
- 	DIR *dir;
- 	struct dirent *dent;
-+	const char *sysfs = sysfs__mountpoint();
- 
--	sysfs = sysfs_find_mountpoint();
- 	if (!sysfs)
- 		return;
- 
-@@ -270,11 +266,10 @@ static struct cpu_map *pmu_cpumask(const char *name)
- {
- 	struct stat st;
- 	char path[PATH_MAX];
--	const char *sysfs;
- 	FILE *file;
- 	struct cpu_map *cpus;
-+	const char *sysfs = sysfs__mountpoint();
- 
--	sysfs = sysfs_find_mountpoint();
- 	if (!sysfs)
+ 	pthread_mutex_lock(&evsel->hists.lock);
+-	he = __hists__add_entry(&evsel->hists, al, NULL, sample->period,
+-				sample->weight, sample->transaction);
++	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL,
++				sample->period, sample->weight,
++				sample->transaction);
+ 	pthread_mutex_unlock(&evsel->hists.lock);
+ 	if (he == NULL)
  		return NULL;
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index 6c337e653540..173bf42cc03e 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -223,7 +223,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 				goto out;
+ 
+ 			he = __hists__add_entry(&evsel->hists, &al, NULL,
+-						1, 1, 0);
++						NULL, NULL, 1, 1, 0);
+ 			if (he == NULL)
+ 				goto out;
+ 
+@@ -245,8 +245,8 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 							  &sample) < 0)
+ 				goto out;
+ 
+-			he = __hists__add_entry(&evsel->hists, &al, NULL, 1, 1,
+-						0);
++			he = __hists__add_entry(&evsel->hists, &al, NULL,
++						NULL, NULL, 1, 1, 0);
+ 			if (he == NULL)
+ 				goto out;
+ 
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 30793f98c8bb..822903eaa201 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -407,73 +407,12 @@ out:
+ 	return he;
+ }
+ 
+-struct hist_entry *__hists__add_mem_entry(struct hists *hists,
+-					  struct addr_location *al,
+-					  struct symbol *sym_parent,
+-					  struct mem_info *mi,
+-					  u64 period,
+-					  u64 weight)
+-{
+-	struct hist_entry entry = {
+-		.thread	= al->thread,
+-		.comm = thread__comm(al->thread),
+-		.ms = {
+-			.map	= al->map,
+-			.sym	= al->sym,
+-		},
+-		.stat = {
+-			.period	= period,
+-			.weight = weight,
+-			.nr_events = 1,
+-		},
+-		.cpu	= al->cpu,
+-		.ip	= al->addr,
+-		.level	= al->level,
+-		.parent = sym_parent,
+-		.filtered = symbol__parent_filter(sym_parent),
+-		.hists = hists,
+-		.mem_info = mi,
+-		.branch_info = NULL,
+-	};
+-	return add_hist_entry(hists, &entry, al, period, weight);
+-}
+-
+-struct hist_entry *__hists__add_branch_entry(struct hists *hists,
+-					     struct addr_location *al,
+-					     struct symbol *sym_parent,
+-					     struct branch_info *bi,
+-					     u64 period,
+-					     u64 weight)
+-{
+-	struct hist_entry entry = {
+-		.thread	= al->thread,
+-		.comm = thread__comm(al->thread),
+-		.ms = {
+-			.map	= bi->to.map,
+-			.sym	= bi->to.sym,
+-		},
+-		.cpu	= al->cpu,
+-		.ip	= bi->to.addr,
+-		.level	= al->level,
+-		.stat = {
+-			.period	= period,
+-			.nr_events = 1,
+-			.weight = weight,
+-		},
+-		.parent = sym_parent,
+-		.filtered = symbol__parent_filter(sym_parent),
+-		.branch_info = bi,
+-		.hists	= hists,
+-		.mem_info = NULL,
+-	};
+-
+-	return add_hist_entry(hists, &entry, al, period, weight);
+-}
+-
+ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 				      struct addr_location *al,
+-				      struct symbol *sym_parent, u64 period,
+-				      u64 weight, u64 transaction)
++				      struct symbol *sym_parent,
++				      struct branch_info *bi,
++				      struct mem_info *mi,
++				      u64 period, u64 weight, u64 transaction)
+ {
+ 	struct hist_entry entry = {
+ 		.thread	= al->thread,
+@@ -486,15 +425,15 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 		.ip	= al->addr,
+ 		.level	= al->level,
+ 		.stat = {
+-			.period	= period,
+ 			.nr_events = 1,
++			.period	= period,
+ 			.weight = weight,
+ 		},
+ 		.parent = sym_parent,
+ 		.filtered = symbol__parent_filter(sym_parent),
+ 		.hists	= hists,
+-		.branch_info = NULL,
+-		.mem_info = NULL,
++		.branch_info = bi,
++		.mem_info = mi,
+ 		.transaction = transaction,
+ 	};
+ 
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 9d2d022cdb79..307f1c742563 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -86,7 +86,9 @@ struct hists {
+ 
+ struct hist_entry *__hists__add_entry(struct hists *self,
+ 				      struct addr_location *al,
+-				      struct symbol *parent, u64 period,
++				      struct symbol *parent,
++				      struct branch_info *bi,
++				      struct mem_info *mi, u64 period,
+ 				      u64 weight, u64 transaction);
+ int64_t hist_entry__cmp(struct hist_entry *left, struct hist_entry *right);
+ int64_t hist_entry__collapse(struct hist_entry *left, struct hist_entry *right);
+@@ -95,20 +97,6 @@ int hist_entry__sort_snprintf(struct hist_entry *self, char *bf, size_t size,
+ 			      struct hists *hists);
+ void hist_entry__free(struct hist_entry *);
+ 
+-struct hist_entry *__hists__add_branch_entry(struct hists *self,
+-					     struct addr_location *al,
+-					     struct symbol *sym_parent,
+-					     struct branch_info *bi,
+-					     u64 period,
+-					     u64 weight);
+-
+-struct hist_entry *__hists__add_mem_entry(struct hists *self,
+-					  struct addr_location *al,
+-					  struct symbol *sym_parent,
+-					  struct mem_info *mi,
+-					  u64 period,
+-					  u64 weight);
+-
+ void hists__output_resort(struct hists *self);
+ void hists__collapse_resort(struct hists *self, struct ui_progress *prog);
  
 -- 
 1.8.1.4
