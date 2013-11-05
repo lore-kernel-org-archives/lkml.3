@@ -1,130 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab3KEWjL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 17:39:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57159 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755309Ab3KEWjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 17:39:09 -0500
-Date: Tue, 5 Nov 2013 17:38:52 -0500
-From: Rik van Riel <riel@redhat.com>
-To: Ron van der Wees <rvdwees@redhat.com>
-Cc: Erik Mouw <erik.mouw_2@nxp.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        walken@google.com, Shaohua Li <shli@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: [RFC PATCH -mm] provide estimated available memory in /proc/meminfo
-Message-ID: <20131105173852.709a103b@annuminas.surriel.com>
-In-Reply-To: <20131025120752.GB2415@rh0004426.ams.redhat.com>
-References: <ECFC0369-0745-44AB-9858-E689F41CCB4D@nxp.com>
-	<5256D4C7.90301@redhat.com>
-	<DB649DE8-5595-4370-912B-BDC6BD5FF8C3@nxp.com>
-	<20131025120752.GB2415@rh0004426.ams.redhat.com>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755714Ab3KEWlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 17:41:44 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:34500 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755168Ab3KEWlm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 17:41:42 -0500
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <52796BE1.5010306@wwwdotorg.org>
+References: <CAHbNUh1Cw3bc4WR0VcD1H_eKYqGBtv_215_euh6mwTbZ41ejUw@mail.gmail.com>
+	<52794823.7080503@kernel.dk>
+	<CAOesGMj1xXXM-gNgWQwBKOczpJtM7CobYy4h7Fe=4W3U43EJGQ@mail.gmail.com>
+	<20131105203308.3802.45122@localhost.localdomain>
+	<CAOesGMirg=ex9hLCjGBpj0cMhLeQ5cJQoRv72tgg7PoSKWUDhA@mail.gmail.com>
+	<20131105205623.3802.5166@localhost.localdomain>
+	<52796BE1.5010306@wwwdotorg.org>
+Date: Tue, 5 Nov 2013 14:41:42 -0800
+Message-ID: <CAOesGMiyp3VNUZf=A_MMVAKsdqtE8nJqNuNCmZh6PO2zkU-oTA@mail.gmail.com>
+Subject: Re: Boot failure on Arndale with next-20131105
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Chris Mason <chris.mason@fusionio.com>, Jens Axboe <axboe@kernel.dk>,
+        Tushar Behera <tushar.behera@linaro.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Kent Overstreet <kmo@daterainc.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many load balancing and workload placing programs check /proc/meminfo
-to estimate how much free memory is available. They generally do this
-by adding up "free" and "cached", which was fine ten years ago, but
-is pretty much guaranteed to be wrong today.
+On Tue, Nov 5, 2013 at 2:06 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 11/05/2013 01:56 PM, Chris Mason wrote:
+>> Quoting Olof Johansson (2013-11-05 15:38:33)
+>>> On Tue, Nov 5, 2013 at 12:33 PM, Chris Mason <chris.mason@fusionio.com> wrote:
+>>>> Quoting Olof Johansson (2013-11-05 15:23:51)
+>>>>> On Tue, Nov 5, 2013 at 11:33 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>>
+>>>> [ horrible crashes fixed by removing my patch ]
+>>>>
+> ...
+>> Ok, I think I see it.  My guess is that you're hitting bounce buffers.
+>> __blk_queue_bounce is the only caller of the bio splitting code I can
+>> see that you might be hitting.
+>>
+>> My first patch exposed a lurking bug in bio_clone_biovec.  Basically
+>> bio->bi_vcnt is being doubled instead of initialized.
+>>
+>> This patch is only compile tested, but I think it'll fix it.
+>
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+> (this fixes the issue on Tegra30/Beaver at least)
 
-It is wrong because Cached includes memory that is not freeable as
-page cache, for example shared memory segments, tmpfs, and ramfs,
-and it does not include reclaimable slab memory, which can take up
-a large fraction of system memory on mostly idle systems with lots
-of files.
+Tested-by: Olof Johansson <olof@lixom.net>
 
-Currently, the amount of memory that is available for a new workload,
-without pushing the system into swap, can be estimated from MemFree,
-Active(file), Inactive(file), and SReclaimable, as well as the "low"
-watermarks from /proc/zoneinfo.
+This resolves boot failures on:
+* Tegra30/beaver
+* OMAP4/panda
+* i.MX6/wandboard
 
-However, this may change in the future, and user space really should
-not be expected to know kernel internals to come up with an estimate
-for the amount of free memory.
+Thanks Chris!
 
-It is more convenient to provide such an estimate in /proc/meminfo,
-if things change in the future, we only have to change it in one
-place.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Reported-by: Erik Mouw <erik.mouw_2@nxp.com>
----
- fs/proc/meminfo.c | 36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
-
-diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
-index 5aa847a..1c43db5 100644
---- a/fs/proc/meminfo.c
-+++ b/fs/proc/meminfo.c
-@@ -25,9 +25,12 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
- 	struct sysinfo i;
- 	unsigned long committed;
- 	unsigned long allowed;
-+	long available;
-+	unsigned long pagecache, wmark_low = 0;
- 	struct vmalloc_info vmi;
- 	long cached;
- 	unsigned long pages[NR_LRU_LISTS];
-+	struct zone *zone;
- 	int lru;
- 
- /*
-@@ -50,12 +53,44 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
- 	for (lru = LRU_BASE; lru < NR_LRU_LISTS; lru++)
- 		pages[lru] = global_page_state(NR_LRU_BASE + lru);
- 
-+	for_each_zone(zone)
-+		wmark_low += zone->watermark[WMARK_LOW];
-+
-+	/*
-+	 * Estimate the amount of memory available for userspace allocations,
-+	 * without causing swapping.
-+	 *
-+	 * Free memory cannot be taken below the low watermark, before the
-+	 * system starts swapping.
-+	 */
-+	available = i.freeram - wmark_low;
-+
-+	/*
-+	 * Not all the page cache can be freed, otherwise the system will
-+	 * start swapping. Assume at least half of the page cache, or the
-+	 * low watermark worth of cache, needs to stay.
-+	 */
-+	pagecache = pages[LRU_ACTIVE_FILE] + pages[LRU_INACTIVE_FILE];
-+	pagecache -= min(pagecache / 2, wmark_low);
-+	available += pagecache;
-+
-+	/*
-+	 * Part of the reclaimable swap consists of items that are in use,
-+	 * and cannot be freed. Cap this estimate at the low watermark.
-+	 */
-+	available += global_page_state(NR_SLAB_RECLAIMABLE) -
-+		     min(global_page_state(NR_SLAB_RECLAIMABLE) / 2, wmark_low);
-+
-+	if (available < 0)
-+		available = 0;
-+
- 	/*
- 	 * Tagged format, for easy grepping and expansion.
- 	 */
- 	seq_printf(m,
- 		"MemTotal:       %8lu kB\n"
- 		"MemFree:        %8lu kB\n"
-+		"MemAvailable:   %8lu kB\n"
- 		"Buffers:        %8lu kB\n"
- 		"Cached:         %8lu kB\n"
- 		"SwapCached:     %8lu kB\n"
-@@ -108,6 +143,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
- 		,
- 		K(i.totalram),
- 		K(i.freeram),
-+		K(available),
- 		K(i.bufferram),
- 		K(cached),
- 		K(total_swapcache_pages()),
+-Olof
