@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab3KEDsz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 22:48:55 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:65202 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338Ab3KEDsv (ORCPT
+	id S1754504Ab3KEDtB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 22:49:01 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:61665 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754345Ab3KEDs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 22:48:51 -0500
+	Mon, 4 Nov 2013 22:48:57 -0500
 From: Azael Avalos <coproscefalo@gmail.com>
 To: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org
 Cc: azael.avalos@gmail.com
-Subject: [PATCH 3/8] toshiba_acpi: Add platform support
-Date: Mon,  4 Nov 2013 20:48:40 -0700
-Message-Id: <1383623325-4004-4-git-send-email-coproscefalo@gmail.com>
+Subject: [PATCH 7/8] toshiba_acpi: Add touchpad enable/disable support
+Date: Mon,  4 Nov 2013 20:48:44 -0700
+Message-Id: <1383623325-4004-8-git-send-email-coproscefalo@gmail.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1383623325-4004-1-git-send-email-coproscefalo@gmail.com>
 References: <1383623325-4004-1-git-send-email-coproscefalo@gmail.com>
@@ -20,118 +20,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add platform support and change the backlight
-and led devices to register on it instead of the acpi_device.
+Toshiba laptops have two ways of enabling/disabling the
+touchpad, one with a hardwired button on top of the touchpad
+that simply emmits scancodes to let userspace know it has changed,
+and another with a SCI call that triggers (on Windows drivers)
+whenever the user press the Fn-F9 (touchpad toggle) hotkey.
 
-The use of the platform is to have just one place where to
-look for files instead of looking at the current three different
-ACPI devices (TOS6200, TOS6208 and TOS1900) and thus making
-userspace a bit easier.
+This patch adds support to enable/disable the touchpad
+by exposing the _touchpad_ file in sysfs.
 
 Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
 ---
- drivers/platform/x86/toshiba_acpi.c | 32 ++++++++++++++++++++++++++++++--
- 1 file changed, 30 insertions(+), 2 deletions(-)
+ drivers/platform/x86/toshiba_acpi.c | 81 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 81 insertions(+)
 
 diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-index d7ecef3..226e0b5 100644
+index 9c718eb..0e14e9c 100644
 --- a/drivers/platform/x86/toshiba_acpi.c
 +++ b/drivers/platform/x86/toshiba_acpi.c
-@@ -54,6 +54,7 @@
- #include <linux/slab.h>
- #include <linux/workqueue.h>
- #include <linux/i8042.h>
-+#include <linux/platform_device.h>
+@@ -120,6 +120,7 @@ MODULE_LICENSE("GPL");
+ #define HCI_ACCELEROMETER2		0x00a6
+ #define SCI_ILLUMINATION		0x014e
+ #define SCI_KBD_ILLUM_STATUS		0x015c
++#define SCI_TOUCHPAD			0x050e
  
- #include <asm/uaccess.h>
+ /* field definitions */
+ #define HCI_ACCEL_MASK			0x7fff
+@@ -168,6 +169,7 @@ struct toshiba_acpi_dev {
+ 	unsigned int kbd_led_registered:1;
+ 	unsigned int eco_supported:1;
+ 	unsigned int accelerometer_supported:1;
++	unsigned int touchpad_supported:1;
+ 	unsigned int sysfs_created:1;
  
-@@ -129,6 +130,7 @@ MODULE_LICENSE("GPL");
+ 	struct mutex mutex;
+@@ -643,6 +645,47 @@ static int toshiba_accelerometer_get(struct toshiba_acpi_dev *dev,
+ 	return 0;
+ }
  
- struct toshiba_acpi_dev {
- 	struct acpi_device *acpi_dev;
-+	struct platform_device *pf_dev;
- 	const char *method_hci;
- 	struct rfkill *bt_rfk;
- 	struct input_dev *hotkey_dev;
-@@ -1156,7 +1158,7 @@ static int toshiba_acpi_setup_backlight(struct toshiba_acpi_dev *dev)
- 		props.max_brightness++;
- 
- 	dev->backlight_dev = backlight_device_register("toshiba",
--						       &dev->acpi_dev->dev,
-+						       &dev->pf_dev->dev,
- 						       dev,
- 						       &toshiba_backlight_data,
- 						       &props);
-@@ -1198,6 +1200,9 @@ static int toshiba_acpi_remove(struct acpi_device *acpi_dev)
- 	if (dev->illumination_supported)
- 		led_classdev_unregister(&dev->led_dev);
- 
-+	if (dev->pf_dev)
-+		platform_device_unregister(dev->pf_dev);
++/* TouchPad support */
++static int toshiba_touchpad_set(struct toshiba_acpi_dev *dev, u32 state)
++{
++	u32 result;
++	acpi_status status;
 +
- 	if (toshiba_acpi)
- 		toshiba_acpi = NULL;
- 
-@@ -1249,6 +1254,15 @@ static int toshiba_acpi_add(struct acpi_device *acpi_dev)
- 	dev->method_hci = hci_method;
- 	acpi_dev->driver_data = dev;
- 
-+	dev->pf_dev = platform_device_register_simple("toshiba", -1, NULL, 0);
-+	if (IS_ERR(dev->pf_dev)) {
-+		ret = PTR_ERR(dev->pf_dev);
-+		pr_err("Unable to register platform device\n");
-+		kfree(dev);
-+		return ret;
++	if (!sci_open(dev))
++		return -EIO;
++
++	status = sci_write(dev, SCI_TOUCHPAD, state, &result);
++	sci_close(dev);
++	if (ACPI_FAILURE(status)) {
++		pr_err("ACPI call to set the touchpad failed\n");
++		return -EIO;
++	} else if (result == NOT_SUPPORTED) {
++		return -ENODEV;
 +	}
-+	platform_set_drvdata(dev->pf_dev, dev);
 +
- 	if (toshiba_acpi_setup_keyboard(dev))
- 		pr_info("Unable to activate hotkeys\n");
++	return 0;
++}
++
++static int toshiba_touchpad_get(struct toshiba_acpi_dev *dev, u32 *state)
++{
++	u32 result;
++	acpi_status status;
++
++	if (!sci_open(dev))
++		return -EIO;
++
++	status = sci_read(dev, SCI_TOUCHPAD, state, &result);
++	sci_close(dev);
++	if (ACPI_FAILURE(status)) {
++		pr_err("ACPI call to query the touchpad failed\n");
++		return -EIO;
++	} else if (result == NOT_SUPPORTED) {
++		return -ENODEV;
++	}
++
++	return 0;
++}
++
+ /* Bluetooth rfkill handlers */
  
-@@ -1284,7 +1298,7 @@ static int toshiba_acpi_add(struct acpi_device *acpi_dev)
- 		dev->led_dev.max_brightness = 1;
- 		dev->led_dev.brightness_set = toshiba_illumination_set;
- 		dev->led_dev.brightness_get = toshiba_illumination_get;
--		if (!led_classdev_register(&acpi_dev->dev, &dev->led_dev))
-+		if (!led_classdev_register(&dev->pf_dev->dev, &dev->led_dev))
- 			dev->illumination_supported = 1;
- 	}
+ static u32 hci_get_bt_present(struct toshiba_acpi_dev *dev, bool *present)
+@@ -1267,16 +1310,49 @@ static ssize_t toshiba_position_show(struct device *dev,
+ 	return sprintf(buf, "%d %d %d\n", x, y, z);
+ }
  
-@@ -1388,6 +1402,13 @@ static struct acpi_driver toshiba_acpi_driver = {
- 	.drv.pm	= &toshiba_acpi_pm,
++static ssize_t toshiba_touchpad_store(struct device *dev,
++				      struct device_attribute *attr,
++				      const char *buf, size_t count)
++{
++	struct toshiba_acpi_dev *toshiba = dev_get_drvdata(dev);
++	int state;
++
++	/* Set the TouchPad on/off, 0 - Disable | 1 - Enable */
++	if (sscanf(buf, "%i", &state) == 1 && (state == 0 || state == 1)) {
++		if (toshiba_touchpad_set(toshiba, state) < 0)
++			return -EIO;
++	}
++
++	return count;
++}
++
++static ssize_t toshiba_touchpad_show(struct device *dev,
++				     struct device_attribute *attr, char *buf)
++{
++	struct toshiba_acpi_dev *toshiba = dev_get_drvdata(dev);
++	u32 state;
++	int ret;
++
++	ret = toshiba_touchpad_get(toshiba, &state);
++	if (ret < 0)
++		return ret;
++
++	return sprintf(buf, "%i\n", state);
++}
++
+ static DEVICE_ATTR(kbd_backlight_mode, S_IRUGO | S_IWUSR,
+ 		   toshiba_kbd_bl_mode_show, toshiba_kbd_bl_mode_store);
+ static DEVICE_ATTR(kbd_backlight_timeout, S_IRUGO | S_IWUSR,
+ 		   toshiba_kbd_bl_timeout_show, toshiba_kbd_bl_timeout_store);
+ static DEVICE_ATTR(position, S_IRUGO, toshiba_position_show, NULL);
++static DEVICE_ATTR(touchpad, S_IRUGO | S_IWUSR,
++		   toshiba_touchpad_show, toshiba_touchpad_store);
+ 
+ static struct attribute *toshiba_attributes[] = {
+ 	&dev_attr_kbd_backlight_mode.attr,
+ 	&dev_attr_kbd_backlight_timeout.attr,
+ 	&dev_attr_position.attr,
++	&dev_attr_touchpad.attr,
+ 	NULL,
  };
  
-+static struct platform_driver platform_driver = {
-+	.driver = {
-+		.name = "toshiba",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
- static int __init toshiba_acpi_init(void)
- {
- 	int ret;
-@@ -1406,6 +1427,12 @@ static int __init toshiba_acpi_init(void)
- 		return -ENODEV;
- 	}
+@@ -1294,6 +1370,8 @@ static umode_t toshiba_sysfs_is_visible(struct kobject *kobj,
+ 		exists = (driver->kbd_mode == SCI_KBD_MODE_AUTO) ? true : false;
+ 	else if (attr == &dev_attr_position.attr)
+ 		exists = (driver->accelerometer_supported) ? true : false;
++	else if (attr == &dev_attr_touchpad.attr)
++		exists = (driver->touchpad_supported) ? true : false;
  
-+	ret = platform_driver_register(&platform_driver);
-+	if (ret < 0) {
-+		pr_err("Failed to register platform driver: %d\n", ret);
-+		return ret;
-+	}
-+
- 	ret = acpi_bus_register_driver(&toshiba_acpi_driver);
- 	if (ret) {
- 		pr_err("Failed to register ACPI driver: %d\n", ret);
-@@ -1418,6 +1445,7 @@ static int __init toshiba_acpi_init(void)
- static void __exit toshiba_acpi_exit(void)
- {
- 	acpi_bus_unregister_driver(&toshiba_acpi_driver);
-+	platform_driver_unregister(&platform_driver);
- 	if (toshiba_proc_dir)
- 		remove_proc_entry(PROC_TOSHIBA, acpi_root_dir);
+ 	return exists ? attr->mode : 0;
  }
+@@ -1679,6 +1757,9 @@ static int toshiba_acpi_add(struct acpi_device *acpi_dev)
+ 	ret = toshiba_accelerometer_supported(dev);
+ 	dev->accelerometer_supported = !ret;
+ 
++	ret = toshiba_touchpad_get(dev, &dummy);
++	dev->touchpad_supported = !ret;
++
+ 	/* Determine whether or not BIOS supports fan and video interfaces */
+ 
+ 	ret = get_video_status(dev, &dummy);
 -- 
 1.8.1.4
 
