@@ -1,147 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027Ab3KEChm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 21:37:42 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:48158 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab3KEChl (ORCPT
+	id S1754111Ab3KECiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 21:38:21 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:12969 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab3KECiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 21:37:41 -0500
+	Mon, 4 Nov 2013 21:38:20 -0500
+X-Spam-Score: -100.8
+Message-ID: <527859D9.30109@asianux.com>
+Date: Tue, 05 Nov 2013 10:37:13 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20131105003733.GA24531@quack.suse.cz>
-References: <CAOvWMLZ-ezykR6TkFAoZ1UW20QF6XMOKeZH8R-FdFJkXjAP9nA@mail.gmail.com>
-	<20131105003733.GA24531@quack.suse.cz>
-Date: Mon, 4 Nov 2013 18:37:40 -0800
-Message-ID: <CAOvWMLZ6_boRgQi2L9kqR_bWcnLDHY+uFo9g4DP=zxeGtT+dag@mail.gmail.com>
-Subject: Re: [BUG][ext2] XIP does not work on ext2
-From: Andiry Xu <andiry@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Wang Shilong <wangsl-fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Andiry Xu <andiry.xu@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joe Perches <joe@perches.com>
+CC: Chen Gang F T <chen.gang.flying.transformer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] get_maintainer: Improve "Author:" rolestats
+References: <52738E90.6040104@asianux.com>  <1383330777.3042.2.camel@joe-AO722> <52750739.6040706@gmail.com> <1383602096.28651.8.camel@joe-AO722> <52785676.8030801@asianux.com>
+In-Reply-To: <52785676.8030801@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan,
+On 11/05/2013 10:22 AM, Chen Gang wrote:
+> On 11/05/2013 05:54 AM, Joe Perches wrote:
+>> Add this to "try this"...
+>>
+>> Chen Gang's defect is because his git repository branch
+>> had a commit he authored but where did not add his signature.
+>>
 
-On Mon, Nov 4, 2013 at 4:37 PM, Jan Kara <jack@suse.cz> wrote:
->   Hello,
->
-> On Mon 04-11-13 14:31:34, Andiry Xu wrote:
->> When I'm trying XIP on ext2, I find that xip does not work on ext2
->> with latest kernel.
->>
->> Reproduce steps:
->> Compile kernel with following configs:
->> CONFIG_BLK_DEV_XIP=y
->> CONFIG_EXT2_FS_XIP=y
->>
->> And run following commands:
->> # mke2fs -b 4096 /dev/ram0
->> # mount -t ext2 -o xip /dev/ram0 /mnt/ramdisk/
->> # dd if=/dev/zero of=/mnt/ramdisk/test1 bs=1M count=16
->>
->> And it shows:
->> dd: writing `/mnt/ramdisk/test1': No space left on device
->>
->> df also shows /mnt/ramdisk is 100% full. Its default size is 64MB so a
->> 16MB write should only occupy 1/4 capacity.
->>
->> Criminal commit:
->> After git bisect, it points to the following commit:
->> 8e3dffc651cb668e1ff4d8b89cc1c3dde7540d3b
->> Ext2: mark inode dirty after the function dquot_free_block_nodirty is called
->   Thanks for report and the bisection!
->
->> Particularly, the following code:
->> @@ -1412,9 +1415,11 @@ allocated:
->> *errp = 0;
->> brelse(bitmap_bh);
->> -    dquot_free_block_nodirty(inode, *count-num);
->> -    mark_inode_dirty(inode);
->> -    *count = num;
->> +    if (num < *count) {
->> +        dquot_free_block_nodirty(inode, *count-num);
->> +        mark_inode_dirty(inode);
->> +        *count = num;
->> +    }
->>       return ret_block;
->>
->> Not mark_inode_dirty() is called only when num is less than *count.
->> However, I've seen
->> with the dd command, there is case where num >= *count.
->>
->> Fix:
->> I've verified that the following patch fixes the issue:
->> diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
->> index 9f9992b..5446a52 100644
->> --- a/fs/ext2/balloc.c
->> +++ b/fs/ext2/balloc.c
->> @@ -1406,11 +1406,10 @@ allocated:
->>
->>         *errp = 0;
->>         brelse(bitmap_bh);
->> -       if (num < *count) {
->> +       if (num <= *count)
->>                 dquot_free_block_nodirty(inode, *count-num);
->> -               mark_inode_dirty(inode);
->> -               *count = num;
->> -       }
->> +       mark_inode_dirty(inode);
->> +       *count = num;
->>         return ret_block;
->>
->>  io_error:
->>
->> However, I'm not familiar with ext2 source code and cannot tell if
->> this is the correct fix. At least it fixes my issue.
->   With this, you have essentially reverted a hunk from commit
-> 8e3dffc651cb668e1ff4d8b89cc1c3dde7540d3b. But I don't see a reason why it
-> should be reverted. num should never ever be greater than *count and when
-> num == count, we the code inside if doesn't do anything useful.
->
-> I've looked into the code and I think I see the problem. It is a long
-> standing bug in __ext2_get_block() in fs/ext2/xip.c. It calls
-> ext2_get_block() asking for 0 blocks to map (while we really want 1 block).
-> ext2_get_block() just passes that request and ext2_get_blocks() actually
-> allocates 1 block. And that's were the commit you have identified makes a
-> difference because previously we returned that 1 block was allocated while
-> now we return that 0 blocks were allocated and thus allocation is repeated
-> until all free blocks are exhaused.
->
-> Attached patch should fix the problem.
->
+Hmm... in fact, when I make a patch, I really let "git log" contents a
+commit I author but where do not add my  signature.
 
-Thanks for the reply. I've verified that your patch fixes my issue.
-And it's absolutely better than my solution.
+But after I let it pure next-20131101 ("git reset HEAD^; git stash"), it
+still cause this issue.
 
-Tested-by: Andiry Xu <andiry.xu@gmail.com>
+> 
+> Hmm... for pure next-20131101 tree in my git directory and the demo
+> patches in attachment, it will cause this issue.
+> 
+> And excuse me, I am not quite familiar with git, could you provide more
+> details (e.g. where the special difference of the demo patches or the
+> pure next-20131101 tree in my git directory)? thanks.
+> 
+>> Also, there's a defect in function vcs_find_signers.
+>> It should only return the commit count and array references.
+>>
+>> If there are no signers in the commit history interval specified,
+>> then the "authors" array is added to the "signers" array and
+>> returned as a single array.
+>>
+>> Use references instead.
+>>
+>> Make sure that references are defined in the places
+>> that vcs_find_signers is called.
+>>
+> 
+> After apply the patch below, it can work well.
+> 
+> Tested-by Chen Gang <gang.chen@asianux.com>
+> 
+> 
+> 
+>> Signed-off-by: Joe Perches <joe@perches.com>
+>> ---
+>>  scripts/get_maintainer.pl | 21 +++++++++++----------
+>>  1 file changed, 11 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+>> index ee9adb8..9c3986f 100755
+>> --- a/scripts/get_maintainer.pl
+>> +++ b/scripts/get_maintainer.pl
+>> @@ -128,7 +128,7 @@ my %VCS_cmds_git = (
+>>      "blame_commit_pattern" => "^([0-9a-f]+) ",
+>>      "author_pattern" => "^GitAuthor: (.*)",
+>>      "subject_pattern" => "^GitSubject: (.*)",
+>> -    "stat_pattern" => "(\\d+)\\t(\\d+)\\t\$file",
+>> +    "stat_pattern" => "^(\\d+)\\t(\\d+)\\t\$file\$",
+>>  );
+>>  
+>>  my %VCS_cmds_hg = (
+>> @@ -156,7 +156,7 @@ my %VCS_cmds_hg = (
+>>      "blame_commit_pattern" => "^([ 0-9a-f]+):",
+>>      "author_pattern" => "^HgAuthor: (.*)",
+>>      "subject_pattern" => "^HgSubject: (.*)",
+>> -    "stat_pattern" => "(\\d+)\t(\\d+)\t\$file",
+>> +    "stat_pattern" => "^(\\d+)\t(\\d+)\t\$file\$",
+>>  );
+>>  
+>>  my $conf = which_conf(".get_maintainer.conf");
+>> @@ -1297,7 +1297,7 @@ sub vcs_find_signers {
+>>  
+>>  #    print("stats: <@stats>\n");
+>>  
+>> -    return (0, @signatures, @authors) if !@signatures;
+>> +    return (0, \@signatures, \@authors, \@stats) if !@signatures;
+>>  
+>>      save_commits_by_author(@lines) if ($interactive);
+>>      save_commits_by_signer(@lines) if ($interactive);
+>> @@ -1880,9 +1880,10 @@ sub vcs_file_signoffs {
+>>      $cmd =~ s/(\$\w+)/$1/eeg;		# interpolate $cmd
+>>  
+>>      ($commits, $signers_ref, $authors_ref, $stats_ref) = vcs_find_signers($cmd, $file);
+>> -    @signers = @{$signers_ref};
+>> -    @authors = @{$authors_ref};
+>> -    @stats = @{$stats_ref};
+>> +
+>> +    @signers = @{$signers_ref} if defined $signers_ref;
+>> +    @authors = @{$authors_ref} if defined $authors_ref;
+>> +    @stats = @{$stats_ref} if defined $stats_ref;
+>>  
+>>  #    print("commits: <$commits>\nsigners:<@signers>\nauthors: <@authors>\nstats: <@stats>\n");
+>>  
+>> @@ -1965,8 +1966,8 @@ sub vcs_file_blame {
+>>  	    $cmd =~ s/(\$\w+)/$1/eeg;	#substitute variables in $cmd
+>>  
+>>  	    ($commit_count, $commit_signers_ref, $commit_authors_ref, $stats_ref) = vcs_find_signers($cmd, $file);
+>> -	    @commit_authors = @{$commit_authors_ref};
+>> -	    @commit_signers = @{$commit_signers_ref};
+>> +	    @commit_authors = @{$commit_authors_ref} if defined $commit_authors_ref;
+>> +	    @commit_signers = @{$commit_signers_ref} if defined $commit_signers_ref;
+>>  
+>>  	    push(@signers, @commit_signers);
+>>  	} else {
+>> @@ -1983,8 +1984,8 @@ sub vcs_file_blame {
+>>  		$cmd =~ s/(\$\w+)/$1/eeg;	#substitute variables in $cmd
+>>  
+>>  		($commit_count, $commit_signers_ref, $commit_authors_ref, $stats_ref) = vcs_find_signers($cmd, $file);
+>> -		@commit_authors = @{$commit_authors_ref};
+>> -		@commit_signers = @{$commit_signers_ref};
+>> +		@commit_authors = @{$commit_authors_ref} if defined $commit_authors_ref;
+>> +		@commit_signers = @{$commit_signers_ref} if defined $commit_signers_ref;
+>>  
+>>  		push(@signers, @commit_signers);
+>>  	    }
+>>
+>>
+>>
+>>
+> 
+> 
 
-I have another question about ext2 XIP performance, although it's not
-quite related to this thread.
 
-I'm testing xip with ext2 on a ram disk drive, the driver is brd.c.
-The RAM disk size is 2GB and I pre-fill it to guarantee that all pages
-reside in main memory.
-Then I use two different applications to write to the ram disk. One is
-open() with O_DIRECT flag, and writing with Posix write(). Another is
-open() with O_DIRECT, mmap() it to user space, then use memcpy() to
-write data. I use different request size to write data, from 512 bytes
-to 64MB.
-
-In my understanding, the mmap version bypasses the file system and
-does not go to kernel space, hence it should have better performance
-than the Posix-write version. However, my test result shows it's not
-always true: when the request size is between 8KB and 1MB, the
-Posix-write() version has bandwidth about 7GB/s and mmap version only
-has 5GB/s. The test is performed on a i7-3770K machine with 8GB
-memory, kernel 3.12. Also I have tested on kernel 3.2, in which mmap
-has really bad performance, only 2GB/s for all request sizes.
-
-Do you know the reason why write() outperforms mmap() in some cases? I
-know it's not related the thread but I really appreciate if you can
-answer my question.
-
-Thanks,
-Andiry
+-- 
+Chen Gang
