@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475Ab3KEVOU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 16:14:20 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:59047 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754726Ab3KEVOR (ORCPT
+	id S1755573Ab3KEVRX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 16:17:23 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:48665 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754726Ab3KEVRW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 16:14:17 -0500
+	Tue, 5 Nov 2013 16:17:22 -0500
+Date: Tue, 5 Nov 2013 16:16:35 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Anthony Liguori <anthony@codemonkey.ws>
+Cc: Matt Wilson <msw@linux.com>,
+        Roger Pau =?iso-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, linux-kernel@vger.kernel.org,
+        David Vrabel <david.vrabel@citrix.com>, Matt Wilson <msw@amazon.com>,
+        xen-devel@lists.xen.org
+Subject: Re: [Xen-devel] [PATCH] grant-table: don't set m2p override if
+ kmap_ops is not set
+Message-ID: <20131105211635.GA1695@phenom.dumpdata.com>
+References: <1383650649-13971-1-git-send-email-roger.pau@citrix.com>
+ <5278E64C.40200@citrix.com>
+ <527904EC.9090402@citrix.com>
+ <20131105145607.GB25836@phenom.dumpdata.com>
+ <5279085E.7070703@citrix.com>
+ <1383664090.13961.88.camel@kazak.uk.xensource.com>
+ <527916EE.6060104@citrix.com>
+ <20131105200616.GA23362@u109add4315675089e695.ant.amazon.com>
+ <878ux2vade.fsf@codemonkey.ws>
 MIME-Version: 1.0
-In-Reply-To: <1383673346.11046.276.camel@schen9-DESK>
-References: <cover.1383670202.git.tim.c.chen@linux.intel.com>
-	<1383673346.11046.276.camel@schen9-DESK>
-Date: Tue, 5 Nov 2013 13:14:16 -0800
-Message-ID: <CANN689He+1uW2UpfLtjrtBO8_F=5EX4MnynXbp8rV7uTeD+5aw@mail.gmail.com>
-Subject: Re: [PATCH v2 0/4] MCS Lock: MCS lock code cleanup and optimizations
-From: Michel Lespinasse <walken@google.com>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Will Deacon <will.deacon@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <878ux2vade.fsf@codemonkey.ws>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 5, 2013 at 9:42 AM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
-> In this patch series, we separated out the MCS lock code which was
-> previously embedded in the mutex.c.  This allows for easier reuse of
-> MCS lock in other places like rwsem and qrwlock.  We also did some micro
-> optimizations and barrier cleanup.
->
-> This patches were previously part of the rwsem optimization patch series
-> but now we spearate them out.
->
-> Tim Chen
->
-> v2:
-> 1. change export mcs_spin_lock as a GPL export symbol
-> 2. corrected mcs_spin_lock to references
->
-> Jason Low (2):
->   MCS Lock: optimizations and extra comments
->   MCS Lock: Barrier corrections
->
-> Tim Chen (1):
->   MCS Lock: Restructure the MCS lock defines and locking code into its
->     own file
->
-> Waiman Long (1):
->   MCS Lock: Make mcs_spinlock.h includable in other files
->
->  include/linux/mcs_spinlock.h |   99 ++++++++++++++++++++++++++++++++++++++++++
->  include/linux/mutex.h        |    5 +-
->  kernel/Makefile              |    6 +-
->  kernel/mcs_spinlock.c        |   21 +++++++++
->  kernel/mutex.c               |   60 +++----------------------
->  5 files changed, 133 insertions(+), 58 deletions(-)
->  create mode 100644 include/linux/mcs_spinlock.h
->  create mode 100644 kernel/mcs_spinlock.c
+On Tue, Nov 05, 2013 at 12:53:17PM -0800, Anthony Liguori wrote:
+> Matt Wilson <msw@linux.com> writes:
+> 
+> > On Tue, Nov 05, 2013 at 05:03:58PM +0100, Roger Pau Monné wrote:
+> >> On 05/11/13 16:08, Ian Campbell wrote:
+> >> > On Tue, 2013-11-05 at 16:01 +0100, Roger Pau Monné wrote:
+> >> >> On 05/11/13 15:56, Konrad Rzeszutek Wilk wrote:
+> >> >>> On Tue, Nov 05, 2013 at 03:47:08PM +0100, Roger Pau Monné wrote:
+> >> >>>> On 05/11/13 13:36, David Vrabel wrote:
+> >> >>>>> On 05/11/13 11:24, Roger Pau Monne wrote:
+> >> >>>>>> IMHO there's no reason to set a m2p override if the mapping is done in
+> >> >>>>>> kernel space, so only set the m2p override when kmap_ops is set.
+> >> >>>>>
+> >> >>>>> Can you provide a more detailed reasoning about why this is safe?
+> >> >>>>
+> >> >>>> To tell the truth, I don't understand why we need to use the m2p
+> >> >>>> override for kernel space only mappings, my understanding is that this
+> >> >>>> m2p override is needed for user space mappings only (where we actually
+> >> >>>> end up doing two mappings, one in kernel space and one in user space).
+> >> >>>> For kernel space I don't see why we need to do anything else than
+> >> >>>> setting the right p2m translation.
+> >> >>>
+> >> >>> We needed the m2p when doing DMA operations. As the driver would
+> >> >>> want the bus address (so p2m) and then when unmapping the DMA we
+> >> >>> only get the bus address  - so we needed to do a m2p lookup.
+> >> >>
+> >> >> OK, we need a m2p (that we already have in machine_to_phys_mapping),
+> >> >> what I don't understand is why we need the m2p override.
+> >> > 
+> >> > The m2p is a host global table.
+> >> > 
+> >> > For a foreign page grant mapped into the current domain the m2p will
+> >> > give you the foreign (owner) domain's p from the m, not the local one.
+> >> 
+> >> Yes, you are completely right, then I have to figure out why blkback
+> >> works fine with this patch applied (or at least it seems to work fine).
+> >
+> > blkback also works for me when testing a similar patch. I'm still
+> > confused. One thing with your proposed patch: I'm not sure that you're
+> > putting back the correct mfn.
+> 
+> It's perfectly fine to store a foreign pfn in the m2p table.  The m2p
+> override table is used by the grant device to allow a reverse lookup of
+> the real mfn to a pfn even if it's foreign.
+> 
+> blkback doesn't actually need this though.  This was introduced in:
+> 
+> commit 5dc03639cc903f887931831d69895facb5260f4b
+> Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Date:   Tue Mar 1 16:46:45 2011 -0500
+> 
+>     xen/blkback: Utilize the M2P override mechanism for GNTMAP_host_map
+> 
+> Purely as an optimization.  In practice though due to lock contention it
+> slows things down.
+> 
+> I think an alternative would be to use a read/write lock instead of just
+> a spinlock since it's the read path that is the most hot.
 
-What base kernel does this apply over ?
+The m2p hash table can also be expanded to lower the contention.
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+> 
+> I haven't tested that yet though.
+
+Looking forward to your patches :-)
+> 
+> Regards,
+> 
+> Anthony Liguori
+> 
+> >
+> > Adding Anthony to the thread.
+> >
+> > --msw
