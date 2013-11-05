@@ -1,380 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab3KELif (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 06:38:35 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:47707 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754823Ab3KELiO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754832Ab3KELiO (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 5 Nov 2013 06:38:14 -0500
-X-AuditID: cbfee61a-b7f836d0000025d7-71-5278d8a46056
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: axboe@kernel.dk
-Cc: abhansali@stec-inc.com, jmoyer@redhat.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: [PATCH v2 11/11] skd: fix formatting in skd_s1120.h
-Date: Tue, 05 Nov 2013 12:37:09 +0100
-Message-id: <1383651429-4322-12-git-send-email-b.zolnierkie@samsung.com>
-X-Mailer: git-send-email 1.7.10
-In-reply-to: <1383651429-4322-1-git-send-email-b.zolnierkie@samsung.com>
-References: <1383651429-4322-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjluLIzCtJLcpLzFFi42I5/e+xoO7SGxVBBqdOslr09pxkt1h9t5/N
-	YuOM9awWZ39dZbE42/SG3eLyrjlsDmwel8+Werzfd5XNo2/LKkaPO+c+MHl83iQXwBrFZZOS
-	mpNZllqkb5fAlTHpiEvB/OiKtqmTGBsYp7l1MXJySAiYSLz6dpcJwhaTuHBvPVsXIxeHkMB0
-	Ronmp+vZIZwuJonNc58wg1SxCVhJTGxfxQhiiwgIS+zvaGUBKWIWWMAoMXnHHHaQhLCAjUTr
-	+3tgDSwCqhL7Fm9nAbF5BTwk9q9rYoRYJy/x9H4fG4jNCRS/cukNWK+QgLvEto97WScw8i5g
-	ZFjFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERxKz6R2MK5ssDjEKMDBqMTD++BseZAQa2JZ
-	cWXuIUYJDmYlEd62IxVBQrwpiZVVqUX58UWlOanFhxilOViUxHkPtFoHCgmkJ5akZqemFqQW
-	wWSZODilGhhNL//1rv2/+ae5WZ7X60bbZZHLplneTpp8bk8/a+P/vngVi8OddjvVraw3XmD3
-	392y85nL5iNfSp693XuJ9Wnb9claDZN+Ox05O+/E7bv/NoZP0ZUuZEwIvZcuaBGk+vyldb+H
-	mO+lWkUPfkMH9w95cy8ytnwykw1+1yJy7srTeTkarzXS5tQpsRRnJBpqMRcVJwIAaJZ0yiEC	AAA=
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:57464 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754815Ab3KELiK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 06:38:10 -0500
+Message-ID: <5278D89B.1070806@hitachi.com>
+Date: Tue, 05 Nov 2013 20:38:03 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?VXdlIEtsZQ==?= =?UTF-8?B?aW5lLUvDtm5pZw==?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -tip v2 3/3] [BUGFIX] kprobes: Prohibit probing on func_ptr_is_kernel_text
+References: <20131101112530.14657.87835.stgit@kbuild-fedora.novalocal> <20131101112537.14657.88496.stgit@kbuild-fedora.novalocal> <20131104210053.76c37210@gandalf.local.home> <20131105060901.GA29936@gmail.com> <5278973A.1010705@hitachi.com> <20131105070537.GA2007@gmail.com>
+In-Reply-To: <20131105070537.GA2007@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Akhil Bhansali <abhansali@stec-inc.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/block/skd_s1120.h | 230 ++++++++++++++++++++++------------------------
- 1 file changed, 110 insertions(+), 120 deletions(-)
+(2013/11/05 16:05), Ingo Molnar wrote:
+> 
+> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+>> (2013/11/05 15:09), Ingo Molnar wrote:
+>>>
+>>> * Steven Rostedt <rostedt@goodmis.org> wrote:
+>>>
+>>>> On Fri, 01 Nov 2013 11:25:37 +0000
+>>>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+>>>>
+>>>>> Prohibit probing on func_ptr_is_kernel_text().
+>>>>> Since the func_ptr_is_kernel_text() is called from
+>>>>> notifier_call_chain() which is called from int3 handler,
+>>>>> probing it may cause double int3 fault and kernel will
+>>>>> reboot.
+>>>>>
+>>>>> This happenes when the kernel built with CONFIG_DEBUG_NOTIFIERS=y.
+>>>>>
+>>>>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>>>>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>>>>> Cc: "Uwe Kleine-König" <u.kleine-koenig@pengutronix.de>
+>>>>> Cc: Borislav Petkov <bp@suse.de>
+>>>>> Cc: Ingo Molnar <mingo@kernel.org>
+>>>>> ---
+>>>>>  kernel/extable.c |    2 +-
+>>>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>>
+>>>>> diff --git a/kernel/extable.c b/kernel/extable.c
+>>>>> index 832cb28..022fb25 100644
+>>>>> --- a/kernel/extable.c
+>>>>> +++ b/kernel/extable.c
+>>>>> @@ -129,7 +129,7 @@ int kernel_text_address(unsigned long addr)
+>>>>>   * pointer is part of the kernel text, we need to do some
+>>>>>   * special dereferencing first.
+>>>>>   */
+>>>>> -int func_ptr_is_kernel_text(void *ptr)
+>>>>> +int nokprobe func_ptr_is_kernel_text(void *ptr)
+>>>>>  {
+>>>>>  	unsigned long addr;
+>>>>>  	addr = (unsigned long) dereference_function_descriptor(ptr);
+>>>>>
+>>>>
+>>>> One thing I worry about the "nokprobe" annotation, is that it moves the 
+>>>> location of the function out of local. This function no exists in the 
+>>>> section with its users. Same with the debug functions in the other 
+>>>> patch.
+>>>
+>>> Well, it's a bit like noinline, that changes the position of the function 
+>>> as well. So it's not true that 'noxyz' attributes don't affect function 
+>>> placement - they often don't, but some do.
+>>>
+>>> The more important aspect is that 'noprobe' makes it really, really 
+>>> apparent what the tag is about, at first sight.
+>>>
+>>> _How_ the 'non probing' is achived is an implementational detail when 
+>>> kprobes are enabled: right now it puts a function into a separate section, 
+>>> but we could just a much build a list of function names and check against 
+>>> it at probe insertion time.
+>>
+>> Actually, kprobes already has it -- kprobes_blacklist. Currently the 
+>> list is manually maintained in kprobes.c separated from the function 
+>> definition. [...]
+> 
+> Yes, I meant a list that is built automatically from the 'noprobe' 
+> annotations.
 
-diff --git a/drivers/block/skd_s1120.h b/drivers/block/skd_s1120.h
-index 426581e..61c757f 100644
---- a/drivers/block/skd_s1120.h
-+++ b/drivers/block/skd_s1120.h
-@@ -17,30 +17,29 @@
- /*
-  * Q-channel, 64-bit r/w
-  */
--#define FIT_Q_COMMAND               0x400u
--#define  FIT_QCMD_QID_MASK              (0x3 << 1)
--#define  FIT_QCMD_QID0                  (0x0 << 1)
--#define  FIT_QCMD_QID_NORMAL            FIT_QCMD_QID0
--#define  FIT_QCMD_QID1                  (0x1 << 1)
--#define  FIT_QCMD_QID2                  (0x2 << 1)
--#define  FIT_QCMD_QID3                  (0x3 << 1)
--#define  FIT_QCMD_FLUSH_QUEUE           (0ull)      /* add QID */
--#define  FIT_QCMD_MSGSIZE_MASK          (0x3 << 4)
--#define  FIT_QCMD_MSGSIZE_64            (0x0 << 4)
--#define  FIT_QCMD_MSGSIZE_128           (0x1 << 4)
--#define  FIT_QCMD_MSGSIZE_256           (0x2 << 4)
--#define  FIT_QCMD_MSGSIZE_512           (0x3 << 4)
--#define  FIT_QCMD_BASE_ADDRESS_MASK     (0xFFFFFFFFFFFFFFC0ull)
--
-+#define FIT_Q_COMMAND			0x400u
-+#define FIT_QCMD_QID_MASK		(0x3 << 1)
-+#define  FIT_QCMD_QID0			(0x0 << 1)
-+#define  FIT_QCMD_QID_NORMAL		FIT_QCMD_QID0
-+#define  FIT_QCMD_QID1			(0x1 << 1)
-+#define  FIT_QCMD_QID2			(0x2 << 1)
-+#define  FIT_QCMD_QID3			(0x3 << 1)
-+#define  FIT_QCMD_FLUSH_QUEUE		(0ull)	/* add QID */
-+#define  FIT_QCMD_MSGSIZE_MASK		(0x3 << 4)
-+#define  FIT_QCMD_MSGSIZE_64		(0x0 << 4)
-+#define  FIT_QCMD_MSGSIZE_128		(0x1 << 4)
-+#define  FIT_QCMD_MSGSIZE_256		(0x2 << 4)
-+#define  FIT_QCMD_MSGSIZE_512		(0x3 << 4)
-+#define  FIT_QCMD_BASE_ADDRESS_MASK	(0xFFFFFFFFFFFFFFC0ull)
- 
- /*
-  * Control, 32-bit r/w
-  */
--#define FIT_CONTROL                 0x500u
--#define  FIT_CR_HARD_RESET              (1u << 0u)
--#define  FIT_CR_SOFT_RESET              (1u << 1u)
--#define	 FIT_CR_DIS_TIMESTAMPS		(1u << 6u)
--#define  FIT_CR_ENABLE_INTERRUPTS       (1u << 7u)
-+#define FIT_CONTROL			0x500u
-+#define  FIT_CR_HARD_RESET		(1u << 0u)
-+#define  FIT_CR_SOFT_RESET		(1u << 1u)
-+#define  FIT_CR_DIS_TIMESTAMPS		(1u << 6u)
-+#define  FIT_CR_ENABLE_INTERRUPTS	(1u << 7u)
- 
- /*
-  * Status, 32-bit, r/o
-@@ -63,88 +62,82 @@
- #define FIT_SR_DRIVE_BUSY_ERASE		0x0B
- #define FIT_SR_DRIVE_FW_BOOTING		0x0C
- #define FIT_SR_DRIVE_NEED_FW_DOWNLOAD	0xFE
--#define FIT_SR_DEVICE_MISSING           0xFF
-+#define FIT_SR_DEVICE_MISSING		0xFF
- #define FIT_SR__RESERVED		0xFFFFFF00u
- 
- /*
-  * FIT_STATUS - Status register data definition
-  */
--#define	FIT_SR_STATE_MASK		(0xFF << 0)
--#define	FIT_SR_SIGNATURE		(0xFF << 8)
--#define	FIT_SR_PIO_DMA			(1 << 16)
--
-+#define FIT_SR_STATE_MASK		(0xFF << 0)
-+#define FIT_SR_SIGNATURE		(0xFF << 8)
-+#define FIT_SR_PIO_DMA			(1 << 16)
- 
- /*
-  * Interrupt status, 32-bit r/w1c (w1c ==> write 1 to clear)
-  */
--#define FIT_INT_STATUS_HOST         0x520u
--#define  FIT_ISH_FW_STATE_CHANGE        (1u << 0u)
--#define  FIT_ISH_COMPLETION_POSTED      (1u << 1u)
--#define  FIT_ISH_MSG_FROM_DEV           (1u << 2u)
--#define  FIT_ISH_UNDEFINED_3            (1u << 3u)
--#define  FIT_ISH_UNDEFINED_4            (1u << 4u)
--#define  FIT_ISH_Q0_FULL                (1u << 5u)
--#define  FIT_ISH_Q1_FULL                (1u << 6u)
--#define  FIT_ISH_Q2_FULL                (1u << 7u)
--#define  FIT_ISH_Q3_FULL                (1u << 8u)
--#define  FIT_ISH_QCMD_FIFO_OVERRUN      (1u << 9u)
--#define  FIT_ISH_BAD_EXP_ROM_READ       (1u << 10u)
--
--
--#define FIT_INT_DEF_MASK	\
--		(FIT_ISH_FW_STATE_CHANGE | \
--		 FIT_ISH_COMPLETION_POSTED | \
--		 FIT_ISH_MSG_FROM_DEV | \
--		 FIT_ISH_Q0_FULL | \
--		 FIT_ISH_Q1_FULL | \
--		 FIT_ISH_Q2_FULL | \
--		 FIT_ISH_Q3_FULL | \
--		 FIT_ISH_QCMD_FIFO_OVERRUN | \
--		 FIT_ISH_BAD_EXP_ROM_READ)
--
--#define FIT_INT_QUEUE_FULL	\
--		(FIT_ISH_Q0_FULL | \
--		FIT_ISH_Q1_FULL | \
--		FIT_ISH_Q2_FULL | \
--		FIT_ISH_Q3_FULL)
--
--
--#define MSI_MSG_NWL_ERROR_0             0x00000000
--#define MSI_MSG_NWL_ERROR_1             0x00000001
--#define MSI_MSG_NWL_ERROR_2             0x00000002
--#define MSI_MSG_NWL_ERROR_3             0x00000003
--#define MSI_MSG_STATE_CHANGE            0x00000004
--#define MSI_MSG_COMPLETION_POSTED       0x00000005
--#define MSI_MSG_MSG_FROM_DEV            0x00000006
--#define MSI_MSG_RESERVED_0              0x00000007
--#define MSI_MSG_RESERVED_1              0x00000008
--#define MSI_MSG_QUEUE_0_FULL            0x00000009
--#define MSI_MSG_QUEUE_1_FULL            0x0000000A
--#define MSI_MSG_QUEUE_2_FULL            0x0000000B
--#define MSI_MSG_QUEUE_3_FULL            0x0000000C
--
--
--
--#define FIT_INT_RESERVED_MASK	\
--		(FIT_ISH_UNDEFINED_3 | \
--		FIT_ISH_UNDEFINED_4)
-+#define FIT_INT_STATUS_HOST		0x520u
-+#define  FIT_ISH_FW_STATE_CHANGE	(1u << 0u)
-+#define  FIT_ISH_COMPLETION_POSTED	(1u << 1u)
-+#define  FIT_ISH_MSG_FROM_DEV		(1u << 2u)
-+#define  FIT_ISH_UNDEFINED_3		(1u << 3u)
-+#define  FIT_ISH_UNDEFINED_4		(1u << 4u)
-+#define  FIT_ISH_Q0_FULL		(1u << 5u)
-+#define  FIT_ISH_Q1_FULL		(1u << 6u)
-+#define  FIT_ISH_Q2_FULL		(1u << 7u)
-+#define  FIT_ISH_Q3_FULL		(1u << 8u)
-+#define  FIT_ISH_QCMD_FIFO_OVERRUN	(1u << 9u)
-+#define  FIT_ISH_BAD_EXP_ROM_READ	(1u << 10u)
-+
-+#define FIT_INT_DEF_MASK \
-+	(FIT_ISH_FW_STATE_CHANGE | \
-+	 FIT_ISH_COMPLETION_POSTED | \
-+	 FIT_ISH_MSG_FROM_DEV | \
-+	 FIT_ISH_Q0_FULL | \
-+	 FIT_ISH_Q1_FULL | \
-+	 FIT_ISH_Q2_FULL | \
-+	 FIT_ISH_Q3_FULL | \
-+	 FIT_ISH_QCMD_FIFO_OVERRUN | \
-+	 FIT_ISH_BAD_EXP_ROM_READ)
-+
-+#define FIT_INT_QUEUE_FULL \
-+	(FIT_ISH_Q0_FULL | \
-+	 FIT_ISH_Q1_FULL | \
-+	 FIT_ISH_Q2_FULL | \
-+	 FIT_ISH_Q3_FULL)
-+
-+#define MSI_MSG_NWL_ERROR_0		0x00000000
-+#define MSI_MSG_NWL_ERROR_1		0x00000001
-+#define MSI_MSG_NWL_ERROR_2		0x00000002
-+#define MSI_MSG_NWL_ERROR_3		0x00000003
-+#define MSI_MSG_STATE_CHANGE		0x00000004
-+#define MSI_MSG_COMPLETION_POSTED	0x00000005
-+#define MSI_MSG_MSG_FROM_DEV		0x00000006
-+#define MSI_MSG_RESERVED_0		0x00000007
-+#define MSI_MSG_RESERVED_1		0x00000008
-+#define MSI_MSG_QUEUE_0_FULL		0x00000009
-+#define MSI_MSG_QUEUE_1_FULL		0x0000000A
-+#define MSI_MSG_QUEUE_2_FULL		0x0000000B
-+#define MSI_MSG_QUEUE_3_FULL		0x0000000C
-+
-+#define FIT_INT_RESERVED_MASK \
-+	(FIT_ISH_UNDEFINED_3 | \
-+	 FIT_ISH_UNDEFINED_4)
-+
- /*
-  * Interrupt mask, 32-bit r/w
-  * Bit definitions are the same as FIT_INT_STATUS_HOST
-  */
--#define FIT_INT_MASK_HOST           0x528u
--
-+#define FIT_INT_MASK_HOST		0x528u
- 
- /*
-  * Message to device, 32-bit r/w
-  */
--#define FIT_MSG_TO_DEVICE           0x540u
-+#define FIT_MSG_TO_DEVICE		0x540u
- 
- /*
-  * Message from device, 32-bit, r/o
-  */
--#define FIT_MSG_FROM_DEVICE         0x548u
--
-+#define FIT_MSG_FROM_DEVICE		0x548u
- 
- /*
-  * 32-bit messages to/from device, composition/extraction macros
-@@ -153,52 +146,50 @@
- 	((((TYPE)  & 0xFFu) << 24u) | \
- 	(((PARAM) & 0xFFu) << 16u) | \
- 	(((DATA)  & 0xFFFFu) << 0u))
--#define FIT_MXD_TYPE(MXD)               (((MXD) >> 24u) & 0xFFu)
--#define FIT_MXD_PARAM(MXD)              (((MXD) >> 16u) & 0xFFu)
--#define FIT_MXD_DATA(MXD)               (((MXD) >> 0u) & 0xFFFFu)
--
-+#define FIT_MXD_TYPE(MXD)		(((MXD) >> 24u) & 0xFFu)
-+#define FIT_MXD_PARAM(MXD)		(((MXD) >> 16u) & 0xFFu)
-+#define FIT_MXD_DATA(MXD)		(((MXD) >> 0u) & 0xFFFFu)
- 
- /*
-  * Types of messages to/from device
-  */
--#define FIT_MTD_FITFW_INIT              0x01u
--#define FIT_MTD_GET_CMDQ_DEPTH          0x02u
--#define FIT_MTD_SET_COMPQ_DEPTH         0x03u
--#define FIT_MTD_SET_COMPQ_ADDR          0x04u
--#define FIT_MTD_ARM_QUEUE               0x05u
--#define FIT_MTD_CMD_LOG_HOST_ID         0x07u
--#define FIT_MTD_CMD_LOG_TIME_STAMP_LO   0x08u
--#define FIT_MTD_CMD_LOG_TIME_STAMP_HI   0x09u
--#define FIT_MFD_SMART_EXCEEDED          0x10u
--#define FIT_MFD_POWER_DOWN		        0x11u
--#define FIT_MFD_OFFLINE			        0x12u
--#define FIT_MFD_ONLINE			        0x13u
--#define FIT_MFD_FW_RESTARTING		    0x14u
--#define FIT_MFD_PM_ACTIVE		        0x15u
--#define FIT_MFD_PM_STANDBY		        0x16u
--#define FIT_MFD_PM_SLEEP		        0x17u
--#define FIT_MFD_CMD_PROGRESS		    0x18u
--
--#define FIT_MTD_DEBUG                   0xFEu
--#define FIT_MFD_DEBUG                   0xFFu
-+#define FIT_MTD_FITFW_INIT		0x01u
-+#define FIT_MTD_GET_CMDQ_DEPTH		0x02u
-+#define FIT_MTD_SET_COMPQ_DEPTH		0x03u
-+#define FIT_MTD_SET_COMPQ_ADDR		0x04u
-+#define FIT_MTD_ARM_QUEUE		0x05u
-+#define FIT_MTD_CMD_LOG_HOST_ID		0x07u
-+#define FIT_MTD_CMD_LOG_TIME_STAMP_LO	0x08u
-+#define FIT_MTD_CMD_LOG_TIME_STAMP_HI	0x09u
-+#define FIT_MFD_SMART_EXCEEDED		0x10u
-+#define FIT_MFD_POWER_DOWN		0x11u
-+#define FIT_MFD_OFFLINE			0x12u
-+#define FIT_MFD_ONLINE			0x13u
-+#define FIT_MFD_FW_RESTARTING		0x14u
-+#define FIT_MFD_PM_ACTIVE		0x15u
-+#define FIT_MFD_PM_STANDBY		0x16u
-+#define FIT_MFD_PM_SLEEP		0x17u
-+#define FIT_MFD_CMD_PROGRESS		0x18u
-+
-+#define FIT_MTD_DEBUG			0xFEu
-+#define FIT_MFD_DEBUG			0xFFu
- 
- #define FIT_MFD_MASK			(0xFFu)
- #define FIT_MFD_DATA_MASK		(0xFFu)
- #define FIT_MFD_MSG(x)			(((x) >> 24) & FIT_MFD_MASK)
- #define FIT_MFD_DATA(x)			((x) & FIT_MFD_MASK)
- 
--
- /*
-  * Extra arg to FIT_MSG_TO_DEVICE, 64-bit r/w
-  * Used to set completion queue address (FIT_MTD_SET_COMPQ_ADDR)
-  * (was Response buffer in docs)
-  */
--#define FIT_MSG_TO_DEVICE_ARG       0x580u
-+#define FIT_MSG_TO_DEVICE_ARG		0x580u
- 
- /*
-  * Hardware (ASIC) version, 32-bit r/o
-  */
--#define FIT_HW_VERSION              0x588u
-+#define FIT_HW_VERSION			0x588u
- 
- /*
-  * Scatter/gather list descriptor.
-@@ -213,8 +204,8 @@ struct fit_sg_descriptor {
- 	uint64_t next_desc_ptr;
- };
- 
--#define FIT_SGD_CONTROL_NOT_LAST    0x000u
--#define FIT_SGD_CONTROL_LAST        0x40Eu
-+#define FIT_SGD_CONTROL_NOT_LAST	0x000u
-+#define FIT_SGD_CONTROL_LAST		0x40Eu
- 
- /*
-  * Header at the beginning of a FIT message. The header
-@@ -228,9 +219,9 @@ struct fit_msg_hdr {
- 	uint8_t _reserved[62];
- };
- 
--#define FIT_PROTOCOL_ID_FIT     1
--#define FIT_PROTOCOL_ID_SSDI    2
--#define FIT_PROTOCOL_ID_SOFIT   3
-+#define FIT_PROTOCOL_ID_FIT	1
-+#define FIT_PROTOCOL_ID_SSDI	2
-+#define FIT_PROTOCOL_ID_SOFIT	3
- 
- 
- #define FIT_PROTOCOL_MINOR_VER(mtd_val) ((mtd_val >> 16) & 0xF)
-@@ -251,7 +242,7 @@ struct fit_msg_hdr {
-  * Command_context is opaque and taken verbatim from the SSDI command.
-  * All other fields are big endian.
-  */
--#define FIT_PROTOCOL_VERSION_0          0
-+#define FIT_PROTOCOL_VERSION_0		0
- 
- /*
-  *  Protocol major version 1 completion entry.
-@@ -264,8 +255,8 @@ struct fit_completion_entry_v1 {
- 	uint8_t		status;  /* SCSI status */
- 	uint8_t		cycle;
- };
--#define FIT_PROTOCOL_VERSION_1          1
--#define FIT_PROTOCOL_VERSION_CURRENT    FIT_PROTOCOL_VERSION_1
-+#define FIT_PROTOCOL_VERSION_1		1
-+#define FIT_PROTOCOL_VERSION_CURRENT	FIT_PROTOCOL_VERSION_1
- 
- struct fit_comp_error_info {
- 	uint8_t		type:7; /* 00: Bits0-6 indicates the type of sense data. */
-@@ -293,10 +284,9 @@ struct fit_comp_error_info {
- 
- 
- /* Task management constants */
--#define SOFT_TASK_SIMPLE            0x00
--#define SOFT_TASK_HEAD_OF_QUEUE     0x01
--#define SOFT_TASK_ORDERED           0x02
--
-+#define SOFT_TASK_SIMPLE		0x00
-+#define SOFT_TASK_HEAD_OF_QUEUE		0x01
-+#define SOFT_TASK_ORDERED		0x02
- 
- /* Version zero has the last 32 bits reserved,
-  * Version one has the last 32 bits sg_list_len_bytes;
+Agreed. That makes maintenance work simple, and we can remove
+".kprobes.text" section.
+
+>> [...] I hope to build the list when the kernel build time if possible... 
+>> Would you have any idea to classify some annotated(but no side-effect) 
+>> functions?
+> 
+> The macro magic I can think of would need to change the syntax of the 
+> function definition - for example that is how the SYSCALL_DEFINE*() macros 
+> work.
+
+Would you mean something like the below macro? :)
+
+NOKPROBE_SYMBOL(int, func_ptr_is_kernel_text)(void *ptr)
+
+which is expanded as;
+
+static struct nokprobe_entry __used
+__nokprobe_entry_func_ptr_is_kernel_text = {
+  .name = "func_ptr_is_kernel_text"
+};
+static struct kprobe_blacklist_entry __used
+__attribute__((section("_nokprobe_list")))
+__p_nokprobe_entry_func_ptr_is_kernel_text = &__nokprobe_entry_func_ptr_is_kernel_text;
+int func_ptr_is_kernel_text(void *ptr)
+
+Hmm, this looks worth to try.
+
+Thank you,
+
 -- 
-1.8.2.3
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
