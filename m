@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab3KEI3B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 03:29:01 -0500
-Received: from mga02.intel.com ([134.134.136.20]:3748 "EHLO mga02.intel.com"
+	id S1753864Ab3KEIia (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 03:38:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64774 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750943Ab3KEI3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 03:29:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="403767957"
-Message-ID: <5278AC36.1020702@intel.com>
-Date: Tue, 05 Nov 2013 10:28:38 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V3 06/11] perf record: Add an option to force per-cpu
- mmaps
-References: <1383313899-15987-1-git-send-email-adrian.hunter@intel.com> <1383313899-15987-7-git-send-email-adrian.hunter@intel.com> <20131104152942.GA4004@krava.brq.redhat.com>
-In-Reply-To: <20131104152942.GA4004@krava.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751675Ab3KEIiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 03:38:24 -0500
+Message-Id: <20131105082719.416282009@dhcp-16-126.nay.redhat.com>
+User-Agent: quilt/0.60-1
+Date: Tue, 05 Nov 2013 16:20:14 +0800
+From: dyoung@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, bp@alien8.de,
+        Dave Young <dyoung@redhat.com>
+Subject: [patch 7/7 v2] x86: add xloadflags bit for efi runtime support on kexec
+References: <20131105082007.872550445@dhcp-16-126.nay.redhat.com>
+Content-Disposition: inline; filename=07-add-xloadflags-for-kexec-efi-runtime-feature.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/13 17:29, Jiri Olsa wrote:
-> On Fri, Nov 01, 2013 at 03:51:34PM +0200, Adrian Hunter wrote:
->> By default, when tasks are specified (i.e. -p, -t
->> or -u options) per-thread mmaps are created.  Add
->> an option to override that and force per-cpu mmaps.
->>
->> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
->> ---
->>  tools/perf/Documentation/perf-record.txt | 6 ++++++
->>  tools/perf/builtin-record.c              | 2 ++
->>  tools/perf/util/evlist.c                 | 4 +++-
->>  tools/perf/util/evsel.c                  | 4 ++--
->>  tools/perf/util/target.h                 | 1 +
->>  5 files changed, 14 insertions(+), 3 deletions(-)
->>
->> diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
->> index f10ab63..2ea6685 100644
->> --- a/tools/perf/Documentation/perf-record.txt
->> +++ b/tools/perf/Documentation/perf-record.txt
->> @@ -189,6 +189,12 @@ abort events and some memory events in precise mode on modern Intel CPUs.
->>  --transaction::
->>  Record transaction flags for transaction related events.
->>  
->> +--force-per-cpu::
->> +Force the use of per-cpu mmaps.  By default, when tasks are specified (i.e. -p,
->> +-t or -u options) per-thread mmaps are created.  This option overrides that and
->> +forces per-cpu mmaps.  A side-effect of that is that inheritance is
->> +automatically enabled.  Add the -i option also to disable inheritance.
-> 
-> I recently sent out patch that actually force perf cpu mmaps for -p,-t,-u
-> http://marc.info/?l=linux-kernel&m=138332119912433&w=2
-> 
-> Is there a reason why would you want to keep single
-> mmap (in record command) and cut yourself from inherited
-> events?
+Old kexec-tools can not load new kernel. The reason is previously kexec-tools
+do not fill efi_info in x86 setup header thus efi init fail and switch
+to noefi boot. In new kexec-tools it will by default fill efi_info and
+pass other efi required infomation to 2nd kernel so kexec kernel efi
+initialization will success finally.
 
-Not sure I understand the question.
+To prevent from breaking userspace, add a new xloadflags bit so kexec-tools
+will check the flag and switch to old logic.
 
-perf supports having a single context for a thread.  That is a
-feature.  You seem to be removing perf tools support for it.
+Signed-off-by: Dave Young <dyoung@redhat.com>
+---
+ arch/x86/boot/header.S                |    9 ++++++++-
+ arch/x86/include/uapi/asm/bootparam.h |    1 +
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
-I image a case where the user has hundreds of CPUs but just
-wants to record one thread.  Currently -t does that. i.e.
-one file descriptor and one mmap saving megabytes of memory.
-
-Another advantage of per-thread mmaps is that you do not
-need to sample time (nor cpu), because the events are recorded
-in order.
-
-I was adding a feature.  Users can choose per-cpu mmaps if
-they want.
+--- linux-2.6.orig/arch/x86/boot/header.S
++++ linux-2.6/arch/x86/boot/header.S
+@@ -391,7 +391,14 @@ xloadflags:
+ #else
+ # define XLF23 0
+ #endif
+-			.word XLF0 | XLF1 | XLF23
++
++#if defined(CONFIG_X86_64) && defined(CONFIG_EFI)
++# define XLF4 XLF_EFI_KEXEC
++#else
++# define XLF4 0
++#endif
++
++			.word XLF0 | XLF1 | XLF23 | XLF4
+ 
+ cmdline_size:   .long   COMMAND_LINE_SIZE-1     #length of the command line,
+                                                 #added with boot protocol
+--- linux-2.6.orig/arch/x86/include/uapi/asm/bootparam.h
++++ linux-2.6/arch/x86/include/uapi/asm/bootparam.h
+@@ -24,6 +24,7 @@
+ #define XLF_CAN_BE_LOADED_ABOVE_4G	(1<<1)
+ #define XLF_EFI_HANDOVER_32		(1<<2)
+ #define XLF_EFI_HANDOVER_64		(1<<3)
++#define XLF_EFI_KEXEC			(1<<4)
+ 
+ #ifndef __ASSEMBLY__
+ 
 
