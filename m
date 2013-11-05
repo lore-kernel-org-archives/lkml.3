@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941Ab3KEN1Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 08:27:25 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:63895 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754348Ab3KEN1Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 08:27:24 -0500
-Date: Tue, 5 Nov 2013 16:25:16 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jon Stanley <jonstanley@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org
-Subject: Re: [libtraceevent] hrtimer_expire_entry unknown op '{'
-Message-ID: <20131105132516.GD2272@swordfish.minsk.epam.com>
-References: <20131105093755.GB2272@swordfish.minsk.epam.com>
- <20131105081522.1c8e2012@gandalf.local.home>
+	id S1754930Ab3KENaq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 08:30:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63843 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754477Ab3KENao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 08:30:44 -0500
+Date: Tue, 5 Nov 2013 14:30:24 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V3 06/11] perf record: Add an option to force per-cpu
+ mmaps
+Message-ID: <20131105133024.GE1071@krava.brq.redhat.com>
+References: <1383313899-15987-1-git-send-email-adrian.hunter@intel.com>
+ <1383313899-15987-7-git-send-email-adrian.hunter@intel.com>
+ <20131104152942.GA4004@krava.brq.redhat.com>
+ <5278AC36.1020702@intel.com>
+ <20131105094220.GA1071@krava.brq.redhat.com>
+ <5278EE0A.1080108@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131105081522.1c8e2012@gandalf.local.home>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <5278EE0A.1080108@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (11/05/13 08:15), Steven Rostedt wrote:
-> Date: Tue, 5 Nov 2013 08:15:22 -0500
-> From: Steven Rostedt <rostedt@goodmis.org>
-> To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Namhyung Kim
->  <namhyung@kernel.org>, Jon Stanley <jonstanley@gmail.com>, Sasha Levin
->  <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org
-> Subject: Re: [libtraceevent] hrtimer_expire_entry unknown op '{'
-> X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-> 
-> On Tue, 5 Nov 2013 12:37:55 +0300
-> Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
-> 
-> > Hello,
-> > 
-> > libtraceevent reports ` unknown op '{' ' while processing hrtimer_expire_entry event
-> 
-> Yes, we need to port the plugin code from trace-cmd to handle this and
-> other cases. It's a known issue.
-> 
+On Tue, Nov 05, 2013 at 03:09:30PM +0200, Adrian Hunter wrote:
 
-oh, sorry for the noise then. thanks.
+SNIP
 
-	-ss
+> >> Another advantage of per-thread mmaps is that you do not
+> >> need to sample time (nor cpu), because the events are recorded
+> >> in order.
+> >>
+> >> I was adding a feature.  Users can choose per-cpu mmaps if
+> >> they want.
+> > 
+> > right, I haven't considered the hundreds CPU machine.. I just
+> > saw that it disables inherited events in my test ;-) maybe we
+> > could mentioned that somewhere, because it's not clear
+> 
+> How about this:
+> 
+> From: Adrian Hunter <adrian.hunter@intel.com>
+> 
+> By default, when tasks are specified (i.e. -p, -t
+> or -u options) per-thread mmaps are created.  Add
+> an option to override that and force per-cpu mmaps.
+> 
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 
-> -- Steve
-> 
-> > 
-> > cat /sys/kernel/debug/tracing/events/timer/hrtimer_expire_entry/format
-> > 
-> > name: hrtimer_expire_entry
-> > ID: 91
-> > format:
-> > 	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
-> > 	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
-> > 	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
-> > 	field:int common_pid;	offset:4;	size:4;	signed:1;
-> > 
-> > 	field:void * hrtimer;	offset:8;	size:8;	signed:0;
-> > 	field:s64 now;	offset:16;	size:8;	signed:1;
-> > 	field:void * function;	offset:24;	size:8;	signed:0;
-> > 
-> > print fmt: "hrtimer=%p function=%pf now=%llu", REC->hrtimer, REC->function, (unsigned long long)(((ktime_t) { .tv64 = REC->now }).tv64)
-> > 
-> > 
-> > 	-ss
-> 
+seems ok, thanks
+
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+
+jirka
