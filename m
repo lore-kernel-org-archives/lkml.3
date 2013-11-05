@@ -1,109 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab3KECIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 21:08:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49847 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753447Ab3KECId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 21:08:33 -0500
-Date: Tue, 5 Nov 2013 13:08:14 +1100
-From: NeilBrown <neilb@suse.de>
-To: "Figo.zhang" <figo1802@gmail.com>
-Cc: "Artem S. Tashkinov" <t.artem@lycos.com>, david@lang.hm,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
-        Linux-MM <linux-mm@kvack.org>
-Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
-Message-ID: <20131105130814.7127298d@notabene.brown>
-In-Reply-To: <CAF7GXvpJVLYDS5NfH-NVuN9bOJjAS5c1MQqSTjoiVBHJt6bWcw@mail.gmail.com>
-References: <160824051.3072.1382685914055.JavaMail.mail@webmail07>
-	<20131025214952.3eb41201@notabene.brown>
-	<alpine.DEB.2.02.1310250425270.22538@nftneq.ynat.uz>
-	<154617470.12445.1382725583671.JavaMail.mail@webmail11>
-	<20131026074349.0adc9646@notabene.brown>
-	<476525596.14731.1382735024280.JavaMail.mail@webmail11>
-	<20131026091112.241da260@notabene.brown>
-	<CAF7GXvpJVLYDS5NfH-NVuN9bOJjAS5c1MQqSTjoiVBHJt6bWcw@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/gVWr30a.5_RNZoFmDoCa/kl"; protocol="application/pgp-signature"
+	id S1754134Ab3KECIy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 21:08:54 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:49613 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754009Ab3KECIw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 21:08:52 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: kay@vrfy.org, linux-kernel@vger.kernel.org, ebiederm@xmission.com,
+        bhelgaas@google.com, dpquigl@tycho.nsa.gov
+Subject: [PATCHSET driver-core-next] kernfs: implement trusted.* xattr support
+Date: Mon,  4 Nov 2013 21:08:40 -0500
+Message-Id: <1383617322-4386-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/gVWr30a.5_RNZoFmDoCa/kl
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-On Tue, 5 Nov 2013 09:40:55 +0800 "Figo.zhang" <figo1802@gmail.com> wrote:
+(This is for 3.14-rc1.  Posting early for review.  Will refresh and
+repost once the next driver-core-next opens.)
 
-> > >
-> > > Of course, if you don't use Linux on the desktop you don't really car=
-e -
-> > well, I do. Also
-> > > not everyone in this world has an UPS - which means such a huge buffer
-> > can lead to a
-> > > serious data loss in case of a power blackout.
-> >
-> > I don't have a desk (just a lap), but I use Linux on all my computers a=
-nd
-> > I've never really noticed the problem.  Maybe I'm just very patient, or
-> > maybe
-> > I don't work with large data sets and slow devices.
-> >
-> > However I don't think data-loss is really a related issue.  Any process
-> > that
-> > cares about data safety *must* use fsync at appropriate places.  This h=
-as
-> > always been true.
-> >
-> > =3D>May i ask question that, some like ext4 filesystem, if some app mot=
-ify
-> the files, it create some dirty data. if some meta-data writing to the
-> journal disk when a power backout,
-> it will be lose some serious data and the the file will damage?
+kernfs inherited "security.*" xattr support from sysfs but for it to
+be useable for cgroupfs, it needs to support "trusted.*" too.  This
+patchset adds "trusted.*" xattr support using simple_xattr*().
 
-If you modify a file, then you must take care that you can recover from a
-crash at any point in the process.
+Note that the existing "security.*" support is gimped in that it
+doesn't include remove/get/list.  This patchset implements all
+operations for "trusted.*" but doesn't change "security.*" support.
 
-If the file is small, the usual approach is to create a copy of the file wi=
-th
-the appropriate changes made, then 'fsync' the file and rename the new file
-over the old file.
+David P. Quigley, can you please comment on this?  It doesn't seem
+like adding it would be too difficult.  Why don't we have it yet?  Are
+they unnecessary?
 
-If the file is large you might need some sort of update log (in a small fil=
-e)
-so you can replay recent updates after a crash.
+This patchset contains the following two patches.
 
-The  journalling that the filesystem provides only protects the filesystem
-metadata.  It does not protect the consistency of the data in your file.
+ 0001-kernfs-update-sysfs_init_inode_attrs.patch
+ 0002-kernfs-implement-trusted.-xattr-support.patch
 
-I hope  that helps.
+0001 preps and 0002 implements.
 
-NeilBrown
+This patchset is on top of
 
---Sig_/gVWr30a.5_RNZoFmDoCa/kl
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+  driver-core-next 0cae60f91494 ("sysfs: rename sysfs_assoc_lock and explain what it's about")
++ [1] [PATCHSET] sysfs: separate out kernfs, take #2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+and available in the following git branch.
 
-iQIVAwUBUnhTDjnsnt1WYoG5AQL8UhAAsymCSPXOccBun3EqBLddwOqwUyyiZq2l
-WxRF5e8qbj1r48FPPDVzVPxDwu91n0Er+QC1D/tC2NUxwC4rx0LNqigGAcI2l3Ic
-JUeNfZfaO3Gm1KcNqqdk25qOa+7mJoMakkIuQ6GQX5DtefeMiUEW6svTXsKt0nGW
-3qOudkFCf3hyux/NQBNKvlsk4ljbfKyaVrOCIoxmT4js/BzxHOlkB7Vj7cnRM/Q0
-DasihAIzIWKFTCqQCKhB0xMwD53XjurYGKIdMfPhmjUYOh4c42wF/Hy2h9vFm9Px
-6jK+LS/XCxHt/+EiAj4LEBEeyCbfKCgOabV+qsgH+qP8yR89I/k5iGTaq4+I2rib
-lko5VSqUdnGvUt/GbubbCAf5DvH/dcZM1sddT+/iqI9XyA9+vvVTFOHJUW1E2ZSX
-jYpuZiTabCcSNZQeBFrwMzxtjj0m102mLW1jbyesIGtBbR8ozDqxplZqeyMKblMH
-2yLTkv7hjANpayAiBHWB1bHHrH2GjxAf/iYToeBqB4gt45+FQIjwkcUzdUFMU/bP
-iPnvtflafvHGaQWI99rkrN5Kaoi9UcPlKxUd+xA9EJOpFgyZGAwFvge8QzlxH5up
-Pxtk2RCYVWaTznzRT40qVe/2CBzwPbH2XyAWcTdQBGLFj7TzqKEp38bnakG3mB9e
-nq8sQ97WdMs=
-=PdUs
------END PGP SIGNATURE-----
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-kernfs-xattr
 
---Sig_/gVWr30a.5_RNZoFmDoCa/kl--
+diffstat follows.  Thanks.
+
+ fs/kernfs/dir.c             |   12 +++-
+ fs/kernfs/inode.c           |  123 ++++++++++++++++++++++++++++----------------
+ fs/kernfs/kernfs-internal.h |   13 +++-
+ fs/kernfs/symlink.c         |    3 +
+ 4 files changed, 103 insertions(+), 48 deletions(-)
+
+--
+tejun
+
+[1] https://lkml.kernel.org/g/1383472398-17812-1-git-send-email-tj@kernel.org
