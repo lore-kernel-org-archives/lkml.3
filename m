@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab3KEMZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 07:25:21 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55934 "EHLO
+	id S1754861Ab3KEMZu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 07:25:50 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55920 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754588Ab3KEMXp (ORCPT
+	with ESMTP id S1754596Ab3KEMXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 07:23:45 -0500
-Message-Id: <20131105110027.129364284@infradead.org>
+	Tue, 5 Nov 2013 07:23:42 -0500
+Message-Id: <20131105110027.441118795@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 05 Nov 2013 13:10:48 +0100
+Date: Tue, 05 Nov 2013 13:10:52 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: torvalds@linux-foundation.org, akpm@linux-foundation.org
 Cc: paulmck@linux.vnet.ibm.com, oleg@redhat.com, dhowells@redhat.com,
@@ -17,584 +17,380 @@ Cc: paulmck@linux.vnet.ibm.com, oleg@redhat.com, dhowells@redhat.com,
         airlied@gmail.com, maarten.lankhorst@canonical.com, walken@google.com,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [RFC 4/8] locking: Move semaphore into kernel/locking/
+Subject: [RFC 8/8] locking: Move percpu-rwsem into kernel/locking/
 References: <20131105105244.666320103@infradead.org>
-Content-Disposition: inline; filename=peterz-move-locking-semaphore.patch
+Content-Disposition: inline; filename=peterz-move-locking-percpu-rwsem.patch
 X-Bad-Reply: References but no 'Re:' in Subject.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Cc: willy@linux.intel.com
+Cc: oleg@redhat.com
 Suggested-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- kernel/Makefile            |    2 
- kernel/locking/Makefile    |    2 
- kernel/locking/semaphore.c |  263 +++++++++++++++++++++++++++++++++++++++++++++
- kernel/semaphore.c         |  263 ---------------------------------------------
- 4 files changed, 265 insertions(+), 265 deletions(-)
+ kernel/locking/Makefile       |    3 
+ kernel/locking/percpu-rwsem.c |  165 ++++++++++++++++++++++++++++++++++++++++++
+ lib/Makefile                  |    1 
+ lib/percpu-rwsem.c            |  165 ------------------------------------------
+ 4 files changed, 167 insertions(+), 167 deletions(-)
 
-Index: linux-2.6/kernel/Makefile
-===================================================================
---- linux-2.6.orig/kernel/Makefile
-+++ linux-2.6/kernel/Makefile
-@@ -8,7 +8,7 @@ obj-y     = fork.o exec_domain.o panic.o
- 	    signal.o sys.o kmod.o workqueue.o pid.o task_work.o \
- 	    extable.o params.o posix-timers.o \
- 	    kthread.o sys_ni.o posix-cpu-timers.o \
--	    hrtimer.o rwsem.o nsproxy.o semaphore.o \
-+	    hrtimer.o rwsem.o nsproxy.o \
- 	    notifier.o ksysfs.o cred.o reboot.o \
- 	    async.o range.o groups.o lglock.o smpboot.o
- 
-Index: linux-2.6/kernel/locking/Makefile
-===================================================================
---- linux-2.6.orig/kernel/locking/Makefile
-+++ linux-2.6/kernel/locking/Makefile
-@@ -1,5 +1,5 @@
- 
--obj-y += mutex.o
-+obj-y += mutex.o semaphore.o
- 
- ifdef CONFIG_FUNCTION_TRACER
- CFLAGS_REMOVE_lockdep.o = -pg
-Index: linux-2.6/kernel/locking/semaphore.c
-===================================================================
+--- a/kernel/locking/Makefile
++++ b/kernel/locking/Makefile
+@@ -21,4 +21,5 @@ obj-$(CONFIG_RT_MUTEX_TESTER) += rtmutex
+ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock.o
+ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock_debug.o
+ obj-$(CONFIG_RWSEM_GENERIC_SPINLOCK) += rwsem-spinlock.o
+-obj-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem-xadd.o
+\ No newline at end of file
++obj-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem-xadd.o
++obj-$(CONFIG_PERCPU_RWSEM) += percpu-rwsem.o
 --- /dev/null
-+++ linux-2.6/kernel/locking/semaphore.c
-@@ -0,0 +1,263 @@
-+/*
-+ * Copyright (c) 2008 Intel Corporation
-+ * Author: Matthew Wilcox <willy@linux.intel.com>
-+ *
-+ * Distributed under the terms of the GNU GPL, version 2
-+ *
-+ * This file implements counting semaphores.
-+ * A counting semaphore may be acquired 'n' times before sleeping.
-+ * See mutex.c for single-acquisition sleeping locks which enforce
-+ * rules which allow code to be debugged more easily.
-+ */
-+
-+/*
-+ * Some notes on the implementation:
-+ *
-+ * The spinlock controls access to the other members of the semaphore.
-+ * down_trylock() and up() can be called from interrupt context, so we
-+ * have to disable interrupts when taking the lock.  It turns out various
-+ * parts of the kernel expect to be able to use down() on a semaphore in
-+ * interrupt context when they know it will succeed, so we have to use
-+ * irqsave variants for down(), down_interruptible() and down_killable()
-+ * too.
-+ *
-+ * The ->count variable represents how many more tasks can acquire this
-+ * semaphore.  If it's zero, there may be tasks waiting on the wait_list.
-+ */
-+
-+#include <linux/compiler.h>
-+#include <linux/kernel.h>
-+#include <linux/export.h>
++++ b/kernel/locking/percpu-rwsem.c
+@@ -0,0 +1,165 @@
++#include <linux/atomic.h>
++#include <linux/rwsem.h>
++#include <linux/percpu.h>
++#include <linux/wait.h>
++#include <linux/lockdep.h>
++#include <linux/percpu-rwsem.h>
++#include <linux/rcupdate.h>
 +#include <linux/sched.h>
-+#include <linux/semaphore.h>
-+#include <linux/spinlock.h>
-+#include <linux/ftrace.h>
++#include <linux/errno.h>
 +
-+static noinline void __down(struct semaphore *sem);
-+static noinline int __down_interruptible(struct semaphore *sem);
-+static noinline int __down_killable(struct semaphore *sem);
-+static noinline int __down_timeout(struct semaphore *sem, long jiffies);
-+static noinline void __up(struct semaphore *sem);
-+
-+/**
-+ * down - acquire the semaphore
-+ * @sem: the semaphore to be acquired
-+ *
-+ * Acquires the semaphore.  If no more tasks are allowed to acquire the
-+ * semaphore, calling this function will put the task to sleep until the
-+ * semaphore is released.
-+ *
-+ * Use of this function is deprecated, please use down_interruptible() or
-+ * down_killable() instead.
-+ */
-+void down(struct semaphore *sem)
++int __percpu_init_rwsem(struct percpu_rw_semaphore *brw,
++			const char *name, struct lock_class_key *rwsem_key)
 +{
-+	unsigned long flags;
++	brw->fast_read_ctr = alloc_percpu(int);
++	if (unlikely(!brw->fast_read_ctr))
++		return -ENOMEM;
 +
-+	raw_spin_lock_irqsave(&sem->lock, flags);
-+	if (likely(sem->count > 0))
-+		sem->count--;
-+	else
-+		__down(sem);
-+	raw_spin_unlock_irqrestore(&sem->lock, flags);
++	/* ->rw_sem represents the whole percpu_rw_semaphore for lockdep */
++	__init_rwsem(&brw->rw_sem, name, rwsem_key);
++	atomic_set(&brw->write_ctr, 0);
++	atomic_set(&brw->slow_read_ctr, 0);
++	init_waitqueue_head(&brw->write_waitq);
++	return 0;
 +}
-+EXPORT_SYMBOL(down);
 +
-+/**
-+ * down_interruptible - acquire the semaphore unless interrupted
-+ * @sem: the semaphore to be acquired
-+ *
-+ * Attempts to acquire the semaphore.  If no more tasks are allowed to
-+ * acquire the semaphore, calling this function will put the task to sleep.
-+ * If the sleep is interrupted by a signal, this function will return -EINTR.
-+ * If the semaphore is successfully acquired, this function returns 0.
-+ */
-+int down_interruptible(struct semaphore *sem)
++void percpu_free_rwsem(struct percpu_rw_semaphore *brw)
 +{
-+	unsigned long flags;
-+	int result = 0;
-+
-+	raw_spin_lock_irqsave(&sem->lock, flags);
-+	if (likely(sem->count > 0))
-+		sem->count--;
-+	else
-+		result = __down_interruptible(sem);
-+	raw_spin_unlock_irqrestore(&sem->lock, flags);
-+
-+	return result;
++	free_percpu(brw->fast_read_ctr);
++	brw->fast_read_ctr = NULL; /* catch use after free bugs */
 +}
-+EXPORT_SYMBOL(down_interruptible);
-+
-+/**
-+ * down_killable - acquire the semaphore unless killed
-+ * @sem: the semaphore to be acquired
-+ *
-+ * Attempts to acquire the semaphore.  If no more tasks are allowed to
-+ * acquire the semaphore, calling this function will put the task to sleep.
-+ * If the sleep is interrupted by a fatal signal, this function will return
-+ * -EINTR.  If the semaphore is successfully acquired, this function returns
-+ * 0.
-+ */
-+int down_killable(struct semaphore *sem)
-+{
-+	unsigned long flags;
-+	int result = 0;
-+
-+	raw_spin_lock_irqsave(&sem->lock, flags);
-+	if (likely(sem->count > 0))
-+		sem->count--;
-+	else
-+		result = __down_killable(sem);
-+	raw_spin_unlock_irqrestore(&sem->lock, flags);
-+
-+	return result;
-+}
-+EXPORT_SYMBOL(down_killable);
-+
-+/**
-+ * down_trylock - try to acquire the semaphore, without waiting
-+ * @sem: the semaphore to be acquired
-+ *
-+ * Try to acquire the semaphore atomically.  Returns 0 if the semaphore has
-+ * been acquired successfully or 1 if it it cannot be acquired.
-+ *
-+ * NOTE: This return value is inverted from both spin_trylock and
-+ * mutex_trylock!  Be careful about this when converting code.
-+ *
-+ * Unlike mutex_trylock, this function can be used from interrupt context,
-+ * and the semaphore can be released by any task or interrupt.
-+ */
-+int down_trylock(struct semaphore *sem)
-+{
-+	unsigned long flags;
-+	int count;
-+
-+	raw_spin_lock_irqsave(&sem->lock, flags);
-+	count = sem->count - 1;
-+	if (likely(count >= 0))
-+		sem->count = count;
-+	raw_spin_unlock_irqrestore(&sem->lock, flags);
-+
-+	return (count < 0);
-+}
-+EXPORT_SYMBOL(down_trylock);
-+
-+/**
-+ * down_timeout - acquire the semaphore within a specified time
-+ * @sem: the semaphore to be acquired
-+ * @jiffies: how long to wait before failing
-+ *
-+ * Attempts to acquire the semaphore.  If no more tasks are allowed to
-+ * acquire the semaphore, calling this function will put the task to sleep.
-+ * If the semaphore is not released within the specified number of jiffies,
-+ * this function returns -ETIME.  It returns 0 if the semaphore was acquired.
-+ */
-+int down_timeout(struct semaphore *sem, long jiffies)
-+{
-+	unsigned long flags;
-+	int result = 0;
-+
-+	raw_spin_lock_irqsave(&sem->lock, flags);
-+	if (likely(sem->count > 0))
-+		sem->count--;
-+	else
-+		result = __down_timeout(sem, jiffies);
-+	raw_spin_unlock_irqrestore(&sem->lock, flags);
-+
-+	return result;
-+}
-+EXPORT_SYMBOL(down_timeout);
-+
-+/**
-+ * up - release the semaphore
-+ * @sem: the semaphore to release
-+ *
-+ * Release the semaphore.  Unlike mutexes, up() may be called from any
-+ * context and even by tasks which have never called down().
-+ */
-+void up(struct semaphore *sem)
-+{
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&sem->lock, flags);
-+	if (likely(list_empty(&sem->wait_list)))
-+		sem->count++;
-+	else
-+		__up(sem);
-+	raw_spin_unlock_irqrestore(&sem->lock, flags);
-+}
-+EXPORT_SYMBOL(up);
-+
-+/* Functions for the contended case */
-+
-+struct semaphore_waiter {
-+	struct list_head list;
-+	struct task_struct *task;
-+	bool up;
-+};
 +
 +/*
-+ * Because this function is inlined, the 'state' parameter will be
-+ * constant, and thus optimised away by the compiler.  Likewise the
-+ * 'timeout' parameter for the cases without timeouts.
++ * This is the fast-path for down_read/up_read, it only needs to ensure
++ * there is no pending writer (atomic_read(write_ctr) == 0) and inc/dec the
++ * fast per-cpu counter. The writer uses synchronize_sched_expedited() to
++ * serialize with the preempt-disabled section below.
++ *
++ * The nontrivial part is that we should guarantee acquire/release semantics
++ * in case when
++ *
++ *	R_W: down_write() comes after up_read(), the writer should see all
++ *	     changes done by the reader
++ * or
++ *	W_R: down_read() comes after up_write(), the reader should see all
++ *	     changes done by the writer
++ *
++ * If this helper fails the callers rely on the normal rw_semaphore and
++ * atomic_dec_and_test(), so in this case we have the necessary barriers.
++ *
++ * But if it succeeds we do not have any barriers, atomic_read(write_ctr) or
++ * __this_cpu_add() below can be reordered with any LOAD/STORE done by the
++ * reader inside the critical section. See the comments in down_write and
++ * up_write below.
 + */
-+static inline int __sched __down_common(struct semaphore *sem, long state,
-+								long timeout)
++static bool update_fast_ctr(struct percpu_rw_semaphore *brw, unsigned int val)
 +{
-+	struct task_struct *task = current;
-+	struct semaphore_waiter waiter;
++	bool success = false;
 +
-+	list_add_tail(&waiter.list, &sem->wait_list);
-+	waiter.task = task;
-+	waiter.up = false;
++	preempt_disable();
++	if (likely(!atomic_read(&brw->write_ctr))) {
++		__this_cpu_add(*brw->fast_read_ctr, val);
++		success = true;
++	}
++	preempt_enable();
 +
-+	for (;;) {
-+		if (signal_pending_state(state, task))
-+			goto interrupted;
-+		if (unlikely(timeout <= 0))
-+			goto timed_out;
-+		__set_task_state(task, state);
-+		raw_spin_unlock_irq(&sem->lock);
-+		timeout = schedule_timeout(timeout);
-+		raw_spin_lock_irq(&sem->lock);
-+		if (waiter.up)
-+			return 0;
++	return success;
++}
++
++/*
++ * Like the normal down_read() this is not recursive, the writer can
++ * come after the first percpu_down_read() and create the deadlock.
++ *
++ * Note: returns with lock_is_held(brw->rw_sem) == T for lockdep,
++ * percpu_up_read() does rwsem_release(). This pairs with the usage
++ * of ->rw_sem in percpu_down/up_write().
++ */
++void percpu_down_read(struct percpu_rw_semaphore *brw)
++{
++	might_sleep();
++	if (likely(update_fast_ctr(brw, +1))) {
++		rwsem_acquire_read(&brw->rw_sem.dep_map, 0, 0, _RET_IP_);
++		return;
 +	}
 +
-+ timed_out:
-+	list_del(&waiter.list);
-+	return -ETIME;
-+
-+ interrupted:
-+	list_del(&waiter.list);
-+	return -EINTR;
++	down_read(&brw->rw_sem);
++	atomic_inc(&brw->slow_read_ctr);
++	/* avoid up_read()->rwsem_release() */
++	__up_read(&brw->rw_sem);
 +}
 +
-+static noinline void __sched __down(struct semaphore *sem)
++void percpu_up_read(struct percpu_rw_semaphore *brw)
 +{
-+	__down_common(sem, TASK_UNINTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
++	rwsem_release(&brw->rw_sem.dep_map, 1, _RET_IP_);
++
++	if (likely(update_fast_ctr(brw, -1)))
++		return;
++
++	/* false-positive is possible but harmless */
++	if (atomic_dec_and_test(&brw->slow_read_ctr))
++		wake_up_all(&brw->write_waitq);
 +}
 +
-+static noinline int __sched __down_interruptible(struct semaphore *sem)
++static int clear_fast_ctr(struct percpu_rw_semaphore *brw)
 +{
-+	return __down_common(sem, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
++	unsigned int sum = 0;
++	int cpu;
++
++	for_each_possible_cpu(cpu) {
++		sum += per_cpu(*brw->fast_read_ctr, cpu);
++		per_cpu(*brw->fast_read_ctr, cpu) = 0;
++	}
++
++	return sum;
 +}
 +
-+static noinline int __sched __down_killable(struct semaphore *sem)
++/*
++ * A writer increments ->write_ctr to force the readers to switch to the
++ * slow mode, note the atomic_read() check in update_fast_ctr().
++ *
++ * After that the readers can only inc/dec the slow ->slow_read_ctr counter,
++ * ->fast_read_ctr is stable. Once the writer moves its sum into the slow
++ * counter it represents the number of active readers.
++ *
++ * Finally the writer takes ->rw_sem for writing and blocks the new readers,
++ * then waits until the slow counter becomes zero.
++ */
++void percpu_down_write(struct percpu_rw_semaphore *brw)
 +{
-+	return __down_common(sem, TASK_KILLABLE, MAX_SCHEDULE_TIMEOUT);
++	/* tell update_fast_ctr() there is a pending writer */
++	atomic_inc(&brw->write_ctr);
++	/*
++	 * 1. Ensures that write_ctr != 0 is visible to any down_read/up_read
++	 *    so that update_fast_ctr() can't succeed.
++	 *
++	 * 2. Ensures we see the result of every previous this_cpu_add() in
++	 *    update_fast_ctr().
++	 *
++	 * 3. Ensures that if any reader has exited its critical section via
++	 *    fast-path, it executes a full memory barrier before we return.
++	 *    See R_W case in the comment above update_fast_ctr().
++	 */
++	synchronize_sched_expedited();
++
++	/* exclude other writers, and block the new readers completely */
++	down_write(&brw->rw_sem);
++
++	/* nobody can use fast_read_ctr, move its sum into slow_read_ctr */
++	atomic_add(clear_fast_ctr(brw), &brw->slow_read_ctr);
++
++	/* wait for all readers to complete their percpu_up_read() */
++	wait_event(brw->write_waitq, !atomic_read(&brw->slow_read_ctr));
 +}
 +
-+static noinline int __sched __down_timeout(struct semaphore *sem, long jiffies)
++void percpu_up_write(struct percpu_rw_semaphore *brw)
 +{
-+	return __down_common(sem, TASK_UNINTERRUPTIBLE, jiffies);
++	/* release the lock, but the readers can't use the fast-path */
++	up_write(&brw->rw_sem);
++	/*
++	 * Insert the barrier before the next fast-path in down_read,
++	 * see W_R case in the comment above update_fast_ctr().
++	 */
++	synchronize_sched_expedited();
++	/* the last writer unblocks update_fast_ctr() */
++	atomic_dec(&brw->write_ctr);
 +}
-+
-+static noinline void __sched __up(struct semaphore *sem)
-+{
-+	struct semaphore_waiter *waiter = list_first_entry(&sem->wait_list,
-+						struct semaphore_waiter, list);
-+	list_del(&waiter->list);
-+	waiter->up = true;
-+	wake_up_process(waiter->task);
-+}
-Index: linux-2.6/kernel/semaphore.c
-===================================================================
---- linux-2.6.orig/kernel/semaphore.c
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -42,7 +42,6 @@ obj-$(CONFIG_GENERIC_PCI_IOMAP) += pci_i
+ obj-$(CONFIG_HAS_IOMEM) += iomap_copy.o devres.o
+ obj-$(CONFIG_CHECK_SIGNATURE) += check_signature.o
+ obj-$(CONFIG_DEBUG_LOCKING_API_SELFTESTS) += locking-selftest.o
+-lib-$(CONFIG_PERCPU_RWSEM) += percpu-rwsem.o
+ 
+ CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
+ obj-$(CONFIG_GENERIC_HWEIGHT) += hweight.o
+--- a/lib/percpu-rwsem.c
 +++ /dev/null
-@@ -1,263 +0,0 @@
--/*
-- * Copyright (c) 2008 Intel Corporation
-- * Author: Matthew Wilcox <willy@linux.intel.com>
-- *
-- * Distributed under the terms of the GNU GPL, version 2
-- *
-- * This file implements counting semaphores.
-- * A counting semaphore may be acquired 'n' times before sleeping.
-- * See mutex.c for single-acquisition sleeping locks which enforce
-- * rules which allow code to be debugged more easily.
-- */
--
--/*
-- * Some notes on the implementation:
-- *
-- * The spinlock controls access to the other members of the semaphore.
-- * down_trylock() and up() can be called from interrupt context, so we
-- * have to disable interrupts when taking the lock.  It turns out various
-- * parts of the kernel expect to be able to use down() on a semaphore in
-- * interrupt context when they know it will succeed, so we have to use
-- * irqsave variants for down(), down_interruptible() and down_killable()
-- * too.
-- *
-- * The ->count variable represents how many more tasks can acquire this
-- * semaphore.  If it's zero, there may be tasks waiting on the wait_list.
-- */
--
--#include <linux/compiler.h>
--#include <linux/kernel.h>
--#include <linux/export.h>
+@@ -1,165 +0,0 @@
+-#include <linux/atomic.h>
+-#include <linux/rwsem.h>
+-#include <linux/percpu.h>
+-#include <linux/wait.h>
+-#include <linux/lockdep.h>
+-#include <linux/percpu-rwsem.h>
+-#include <linux/rcupdate.h>
 -#include <linux/sched.h>
--#include <linux/semaphore.h>
--#include <linux/spinlock.h>
--#include <linux/ftrace.h>
+-#include <linux/errno.h>
 -
--static noinline void __down(struct semaphore *sem);
--static noinline int __down_interruptible(struct semaphore *sem);
--static noinline int __down_killable(struct semaphore *sem);
--static noinline int __down_timeout(struct semaphore *sem, long jiffies);
--static noinline void __up(struct semaphore *sem);
--
--/**
-- * down - acquire the semaphore
-- * @sem: the semaphore to be acquired
-- *
-- * Acquires the semaphore.  If no more tasks are allowed to acquire the
-- * semaphore, calling this function will put the task to sleep until the
-- * semaphore is released.
-- *
-- * Use of this function is deprecated, please use down_interruptible() or
-- * down_killable() instead.
-- */
--void down(struct semaphore *sem)
+-int __percpu_init_rwsem(struct percpu_rw_semaphore *brw,
+-			const char *name, struct lock_class_key *rwsem_key)
 -{
--	unsigned long flags;
+-	brw->fast_read_ctr = alloc_percpu(int);
+-	if (unlikely(!brw->fast_read_ctr))
+-		return -ENOMEM;
 -
--	raw_spin_lock_irqsave(&sem->lock, flags);
--	if (likely(sem->count > 0))
--		sem->count--;
--	else
--		__down(sem);
--	raw_spin_unlock_irqrestore(&sem->lock, flags);
+-	/* ->rw_sem represents the whole percpu_rw_semaphore for lockdep */
+-	__init_rwsem(&brw->rw_sem, name, rwsem_key);
+-	atomic_set(&brw->write_ctr, 0);
+-	atomic_set(&brw->slow_read_ctr, 0);
+-	init_waitqueue_head(&brw->write_waitq);
+-	return 0;
 -}
--EXPORT_SYMBOL(down);
 -
--/**
-- * down_interruptible - acquire the semaphore unless interrupted
-- * @sem: the semaphore to be acquired
-- *
-- * Attempts to acquire the semaphore.  If no more tasks are allowed to
-- * acquire the semaphore, calling this function will put the task to sleep.
-- * If the sleep is interrupted by a signal, this function will return -EINTR.
-- * If the semaphore is successfully acquired, this function returns 0.
-- */
--int down_interruptible(struct semaphore *sem)
+-void percpu_free_rwsem(struct percpu_rw_semaphore *brw)
 -{
--	unsigned long flags;
--	int result = 0;
--
--	raw_spin_lock_irqsave(&sem->lock, flags);
--	if (likely(sem->count > 0))
--		sem->count--;
--	else
--		result = __down_interruptible(sem);
--	raw_spin_unlock_irqrestore(&sem->lock, flags);
--
--	return result;
+-	free_percpu(brw->fast_read_ctr);
+-	brw->fast_read_ctr = NULL; /* catch use after free bugs */
 -}
--EXPORT_SYMBOL(down_interruptible);
--
--/**
-- * down_killable - acquire the semaphore unless killed
-- * @sem: the semaphore to be acquired
-- *
-- * Attempts to acquire the semaphore.  If no more tasks are allowed to
-- * acquire the semaphore, calling this function will put the task to sleep.
-- * If the sleep is interrupted by a fatal signal, this function will return
-- * -EINTR.  If the semaphore is successfully acquired, this function returns
-- * 0.
-- */
--int down_killable(struct semaphore *sem)
--{
--	unsigned long flags;
--	int result = 0;
--
--	raw_spin_lock_irqsave(&sem->lock, flags);
--	if (likely(sem->count > 0))
--		sem->count--;
--	else
--		result = __down_killable(sem);
--	raw_spin_unlock_irqrestore(&sem->lock, flags);
--
--	return result;
--}
--EXPORT_SYMBOL(down_killable);
--
--/**
-- * down_trylock - try to acquire the semaphore, without waiting
-- * @sem: the semaphore to be acquired
-- *
-- * Try to acquire the semaphore atomically.  Returns 0 if the semaphore has
-- * been acquired successfully or 1 if it it cannot be acquired.
-- *
-- * NOTE: This return value is inverted from both spin_trylock and
-- * mutex_trylock!  Be careful about this when converting code.
-- *
-- * Unlike mutex_trylock, this function can be used from interrupt context,
-- * and the semaphore can be released by any task or interrupt.
-- */
--int down_trylock(struct semaphore *sem)
--{
--	unsigned long flags;
--	int count;
--
--	raw_spin_lock_irqsave(&sem->lock, flags);
--	count = sem->count - 1;
--	if (likely(count >= 0))
--		sem->count = count;
--	raw_spin_unlock_irqrestore(&sem->lock, flags);
--
--	return (count < 0);
--}
--EXPORT_SYMBOL(down_trylock);
--
--/**
-- * down_timeout - acquire the semaphore within a specified time
-- * @sem: the semaphore to be acquired
-- * @jiffies: how long to wait before failing
-- *
-- * Attempts to acquire the semaphore.  If no more tasks are allowed to
-- * acquire the semaphore, calling this function will put the task to sleep.
-- * If the semaphore is not released within the specified number of jiffies,
-- * this function returns -ETIME.  It returns 0 if the semaphore was acquired.
-- */
--int down_timeout(struct semaphore *sem, long jiffies)
--{
--	unsigned long flags;
--	int result = 0;
--
--	raw_spin_lock_irqsave(&sem->lock, flags);
--	if (likely(sem->count > 0))
--		sem->count--;
--	else
--		result = __down_timeout(sem, jiffies);
--	raw_spin_unlock_irqrestore(&sem->lock, flags);
--
--	return result;
--}
--EXPORT_SYMBOL(down_timeout);
--
--/**
-- * up - release the semaphore
-- * @sem: the semaphore to release
-- *
-- * Release the semaphore.  Unlike mutexes, up() may be called from any
-- * context and even by tasks which have never called down().
-- */
--void up(struct semaphore *sem)
--{
--	unsigned long flags;
--
--	raw_spin_lock_irqsave(&sem->lock, flags);
--	if (likely(list_empty(&sem->wait_list)))
--		sem->count++;
--	else
--		__up(sem);
--	raw_spin_unlock_irqrestore(&sem->lock, flags);
--}
--EXPORT_SYMBOL(up);
--
--/* Functions for the contended case */
--
--struct semaphore_waiter {
--	struct list_head list;
--	struct task_struct *task;
--	bool up;
--};
 -
 -/*
-- * Because this function is inlined, the 'state' parameter will be
-- * constant, and thus optimised away by the compiler.  Likewise the
-- * 'timeout' parameter for the cases without timeouts.
+- * This is the fast-path for down_read/up_read, it only needs to ensure
+- * there is no pending writer (atomic_read(write_ctr) == 0) and inc/dec the
+- * fast per-cpu counter. The writer uses synchronize_sched_expedited() to
+- * serialize with the preempt-disabled section below.
+- *
+- * The nontrivial part is that we should guarantee acquire/release semantics
+- * in case when
+- *
+- *	R_W: down_write() comes after up_read(), the writer should see all
+- *	     changes done by the reader
+- * or
+- *	W_R: down_read() comes after up_write(), the reader should see all
+- *	     changes done by the writer
+- *
+- * If this helper fails the callers rely on the normal rw_semaphore and
+- * atomic_dec_and_test(), so in this case we have the necessary barriers.
+- *
+- * But if it succeeds we do not have any barriers, atomic_read(write_ctr) or
+- * __this_cpu_add() below can be reordered with any LOAD/STORE done by the
+- * reader inside the critical section. See the comments in down_write and
+- * up_write below.
 - */
--static inline int __sched __down_common(struct semaphore *sem, long state,
--								long timeout)
+-static bool update_fast_ctr(struct percpu_rw_semaphore *brw, unsigned int val)
 -{
--	struct task_struct *task = current;
--	struct semaphore_waiter waiter;
+-	bool success = false;
 -
--	list_add_tail(&waiter.list, &sem->wait_list);
--	waiter.task = task;
--	waiter.up = false;
+-	preempt_disable();
+-	if (likely(!atomic_read(&brw->write_ctr))) {
+-		__this_cpu_add(*brw->fast_read_ctr, val);
+-		success = true;
+-	}
+-	preempt_enable();
 -
--	for (;;) {
--		if (signal_pending_state(state, task))
--			goto interrupted;
--		if (unlikely(timeout <= 0))
--			goto timed_out;
--		__set_task_state(task, state);
--		raw_spin_unlock_irq(&sem->lock);
--		timeout = schedule_timeout(timeout);
--		raw_spin_lock_irq(&sem->lock);
--		if (waiter.up)
--			return 0;
+-	return success;
+-}
+-
+-/*
+- * Like the normal down_read() this is not recursive, the writer can
+- * come after the first percpu_down_read() and create the deadlock.
+- *
+- * Note: returns with lock_is_held(brw->rw_sem) == T for lockdep,
+- * percpu_up_read() does rwsem_release(). This pairs with the usage
+- * of ->rw_sem in percpu_down/up_write().
+- */
+-void percpu_down_read(struct percpu_rw_semaphore *brw)
+-{
+-	might_sleep();
+-	if (likely(update_fast_ctr(brw, +1))) {
+-		rwsem_acquire_read(&brw->rw_sem.dep_map, 0, 0, _RET_IP_);
+-		return;
 -	}
 -
-- timed_out:
--	list_del(&waiter.list);
--	return -ETIME;
--
-- interrupted:
--	list_del(&waiter.list);
--	return -EINTR;
+-	down_read(&brw->rw_sem);
+-	atomic_inc(&brw->slow_read_ctr);
+-	/* avoid up_read()->rwsem_release() */
+-	__up_read(&brw->rw_sem);
 -}
 -
--static noinline void __sched __down(struct semaphore *sem)
+-void percpu_up_read(struct percpu_rw_semaphore *brw)
 -{
--	__down_common(sem, TASK_UNINTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+-	rwsem_release(&brw->rw_sem.dep_map, 1, _RET_IP_);
+-
+-	if (likely(update_fast_ctr(brw, -1)))
+-		return;
+-
+-	/* false-positive is possible but harmless */
+-	if (atomic_dec_and_test(&brw->slow_read_ctr))
+-		wake_up_all(&brw->write_waitq);
 -}
 -
--static noinline int __sched __down_interruptible(struct semaphore *sem)
+-static int clear_fast_ctr(struct percpu_rw_semaphore *brw)
 -{
--	return __down_common(sem, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+-	unsigned int sum = 0;
+-	int cpu;
+-
+-	for_each_possible_cpu(cpu) {
+-		sum += per_cpu(*brw->fast_read_ctr, cpu);
+-		per_cpu(*brw->fast_read_ctr, cpu) = 0;
+-	}
+-
+-	return sum;
 -}
 -
--static noinline int __sched __down_killable(struct semaphore *sem)
+-/*
+- * A writer increments ->write_ctr to force the readers to switch to the
+- * slow mode, note the atomic_read() check in update_fast_ctr().
+- *
+- * After that the readers can only inc/dec the slow ->slow_read_ctr counter,
+- * ->fast_read_ctr is stable. Once the writer moves its sum into the slow
+- * counter it represents the number of active readers.
+- *
+- * Finally the writer takes ->rw_sem for writing and blocks the new readers,
+- * then waits until the slow counter becomes zero.
+- */
+-void percpu_down_write(struct percpu_rw_semaphore *brw)
 -{
--	return __down_common(sem, TASK_KILLABLE, MAX_SCHEDULE_TIMEOUT);
+-	/* tell update_fast_ctr() there is a pending writer */
+-	atomic_inc(&brw->write_ctr);
+-	/*
+-	 * 1. Ensures that write_ctr != 0 is visible to any down_read/up_read
+-	 *    so that update_fast_ctr() can't succeed.
+-	 *
+-	 * 2. Ensures we see the result of every previous this_cpu_add() in
+-	 *    update_fast_ctr().
+-	 *
+-	 * 3. Ensures that if any reader has exited its critical section via
+-	 *    fast-path, it executes a full memory barrier before we return.
+-	 *    See R_W case in the comment above update_fast_ctr().
+-	 */
+-	synchronize_sched_expedited();
+-
+-	/* exclude other writers, and block the new readers completely */
+-	down_write(&brw->rw_sem);
+-
+-	/* nobody can use fast_read_ctr, move its sum into slow_read_ctr */
+-	atomic_add(clear_fast_ctr(brw), &brw->slow_read_ctr);
+-
+-	/* wait for all readers to complete their percpu_up_read() */
+-	wait_event(brw->write_waitq, !atomic_read(&brw->slow_read_ctr));
 -}
 -
--static noinline int __sched __down_timeout(struct semaphore *sem, long jiffies)
+-void percpu_up_write(struct percpu_rw_semaphore *brw)
 -{
--	return __down_common(sem, TASK_UNINTERRUPTIBLE, jiffies);
--}
--
--static noinline void __sched __up(struct semaphore *sem)
--{
--	struct semaphore_waiter *waiter = list_first_entry(&sem->wait_list,
--						struct semaphore_waiter, list);
--	list_del(&waiter->list);
--	waiter->up = true;
--	wake_up_process(waiter->task);
+-	/* release the lock, but the readers can't use the fast-path */
+-	up_write(&brw->rw_sem);
+-	/*
+-	 * Insert the barrier before the next fast-path in down_read,
+-	 * see W_R case in the comment above update_fast_ctr().
+-	 */
+-	synchronize_sched_expedited();
+-	/* the last writer unblocks update_fast_ctr() */
+-	atomic_dec(&brw->write_ctr);
 -}
 
 
