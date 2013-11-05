@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab3KESPV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 13:15:21 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:44110 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753955Ab3KESPR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 13:15:17 -0500
-Subject: Re: [PATCH 3/5] OF: export of_property_notify
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20131105181246.GK7028@beef>
-Date: Tue, 5 Nov 2013 20:15:05 +0200
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+	id S1755518Ab3KESPo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 13:15:44 -0500
+Received: from mga02.intel.com ([134.134.136.20]:44707 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755322Ab3KESPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 13:15:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="404036657"
+Message-ID: <52793566.9080704@linux.intel.com>
+Date: Tue, 05 Nov 2013 10:13:58 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <AD1BC6B6-1DD1-47CC-BBE1-F5C258CD4E63@antoniou-consulting.com>
-References: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com> <1383673816-29293-4-git-send-email-panto@antoniou-consulting.com> <20131105181246.GK7028@beef>
-To: Matt Porter <matt.porter@linaro.org>
-X-Mailer: Apple Mail (2.1085)
+Subject: Re: [PATCH v4 2/4] usb: gadget: add quirk_ep_out_aligned_size field
+ to struct usb_gadget
+References: <Pine.LNX.4.44L0.1311051039250.1360-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1311051039250.1360-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matt,
-
-On Nov 5, 2013, at 8:12 PM, Matt Porter wrote:
-
-> On Tue, Nov 05, 2013 at 07:50:14PM +0200, Pantelis Antoniou wrote:
->> of_property_notify can be utilized by other users too, export it.
->> 
->> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
->> ---
->> drivers/of/base.c  |  8 +-------
->> include/linux/of.h | 11 +++++++++++
->> 2 files changed, 12 insertions(+), 7 deletions(-)
->> 
->> diff --git a/drivers/of/base.c b/drivers/of/base.c
->> index ca10916..0ffc5a9 100644
->> --- a/drivers/of/base.c
->> +++ b/drivers/of/base.c
->> @@ -1424,7 +1424,7 @@ int of_count_phandle_with_args(const struct device_node *np, const char *list_na
->> EXPORT_SYMBOL(of_count_phandle_with_args);
->> 
->> #if defined(CONFIG_OF_DYNAMIC)
->> -static int of_property_notify(int action, struct device_node *np,
->> +int of_property_notify(int action, struct device_node *np,
->> 			      struct property *prop)
->> {
->> 	struct of_prop_reconfig pr;
->> @@ -1433,12 +1433,6 @@ static int of_property_notify(int action, struct device_node *np,
->> 	pr.prop = prop;
->> 	return of_reconfig_notify(action, &pr);
->> }
->> -#else
->> -static int of_property_notify(int action, struct device_node *np,
->> -			      struct property *prop)
->> -{
->> -	return 0;
->> -}
->> #endif
+On 11/05/2013 07:41 AM, Alan Stern wrote:
+> On Tue, 5 Nov 2013, David Cohen wrote:
 > 
-> EXPORT_SYMBOL[_GPL]?
+>>>> +static inline size_t usb_ep_align_maxpacketsize(struct usb_ep *ep, size_t len)
+>>>> +{
+>>>> +	int aligned;
+>>>> +
+>>>> +	if (ep->desc->bmAttributes & USB_ENDPOINT_XFER_INT)
+>>>> +		/*
+>>>> +		 * Interrupt eps don't need max packet size to be power of 2,
+>>>> +		 * so can't use cheap IS_ALIGNED() macro.
+>>>> +		 */
+>>>> +		aligned = !(len % ep->desc->wMaxPacketSize);
+>>>> +	else
+>>>> +		aligned = IS_ALIGNED(len, ep->desc->wMaxPacketSize);
+>>>
+>>> This isn't on a hot path, and I suspect that the extra "if" will 
+>>> require nearly as much time as you save by not doing the division.  You 
+>>> might as well always use the % operation.
+>>
+>> Perhaps if I use unlikely() on 'if' condition instead?
+>> Anyway I'll double check the costs of if + IS_ALIGNED vs modulo.
 > 
+> You're missing the point.  You and I (not to mention anybody who ever
+> reads this code in the future) have already wasted more time talking
+> about it and trying to understand it than you will ever save by using
+> IS_ALIGNED.
+> 
+> The difference to the computer is minimal at best.  Make things easier 
+> for the programmers.
 
-Duh, good catch.
+I don't see it as complex :)
+But I'm fine with your proposal. I can send new patch dropping
+IS_ALIGNED() case.
 
-Will fix on next revision.
-
-> -Matt
-
-Regards
-
--- Pantelis
-
+Br, David Cohen
