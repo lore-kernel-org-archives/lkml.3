@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab3KECKe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 21:10:34 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:43262 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264Ab3KECKc (ORCPT
+	id S1754083Ab3KECPs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 21:15:48 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:55331 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753625Ab3KECPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 21:10:32 -0500
-X-AuditID: 9c93016f-b7bc7ae0000010eb-3f-527853977dc4
+	Mon, 4 Nov 2013 21:15:47 -0500
+X-AuditID: 9c93017d-b7c6fae00000364c-5a-527854d06cb7
 From: Namhyung Kim <namhyung@kernel.org>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
@@ -18,14 +18,15 @@ Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 11/13] tracing/kprobes: Add priv argument to fetch functions
+Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch methods (v6)
 References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
-	<1383029621-7384-12-git-send-email-namhyung@kernel.org>
-	<20131104160914.GA8595@redhat.com>
-Date: Tue, 05 Nov 2013 11:10:31 +0900
-In-Reply-To: <20131104160914.GA8595@redhat.com> (Oleg Nesterov's message of
-	"Mon, 4 Nov 2013 17:09:14 +0100")
-Message-ID: <87r4av1tuw.fsf@sejong.aot.lge.com>
+	<20131102155458.GA6981@redhat.com> <87ob60366m.fsf@sejong.aot.lge.com>
+	<87fvrc35kj.fsf@sejong.aot.lge.com> <20131104155131.GD4440@redhat.com>
+	<20131104162229.GA8921@redhat.com>
+Date: Tue, 05 Nov 2013 11:15:44 +0900
+In-Reply-To: <20131104162229.GA8921@redhat.com> (Oleg Nesterov's message of
+	"Mon, 4 Nov 2013 17:22:29 +0100")
+Message-ID: <87mwlj1tm7.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -34,44 +35,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Nov 2013 17:09:14 +0100, Oleg Nesterov wrote:
-> See my replies to 0/13. Lets assume that you agree that get_user_vaddr()
-> doesn't need tu->inode.
-
-Okay.
-
->
-> On 10/29, Namhyung Kim wrote:
+On Mon, 4 Nov 2013 17:22:29 +0100, Oleg Nesterov wrote:
+> On 11/04, Oleg Nesterov wrote:
 >>
->> This argument is for passing private data structure to each fetch
->> function and will be used by uprobes.
+>> But in any case, I strongly believe that it doesn't make any sense to
+>> rely on tu->inode in get_user_vaddr().
 >
-> In this case, why do we need this "void *priv"? It actually becomes
-> "bool need_addr_translation".
+> Hmm. But I forgot about the case when you probe the function in libc
+> and want to dump the variable in libc...
 
-Right.  I added it because the deref method is used for both of kprobes
-and uprobes and it only needed for uprobes.  And I thought if we need
-something for kprobes later, it can be reused so make it general.
+Right.  Actually that's what I really wanted.
 
 >
-> Can't we avoid it? Can't we just add FETCH_MTD_memory_notranslate ?
-> kprobes should use the same methods for FETCH_MTD_memory*, uprobes
-> should obviously adjust the addr in FETCH_MTD_memory.
->
-> Then (afaics) we need a single change in parse_probe_arg(),
->
-> 	-	dprm->fetch = t->fetch[FETCH_MTD_memory];
-> 	+	dprm->fetch = t->fetch[FETCH_MTD_memory_notranslate];
->
-> Yes, this will blow *probes_fetch_type_table[], but looks simpler.
+> So probably I was wrong and this all needs more thinking. Damn.
 
-Looks good to me too, thanks! :)
+:)
 
->
-> And. This way it would be simple to teach parse_probe_arg('@') to use
-> _notranslate, say, "@=addr" or whatever.
+> Perhaps we really need to pass @file/offset, but it is not clear what
+> we can do with bss/anon-mapping.
 
-Yeah, it'll be useful at least for fetching data in anon pages.
+The @file/offset should work with bss since data in bss is accessed via
+an offset in the program, but still anon-mapping has nothing to do with
+it.  Hmm...
 
 Thanks,
 Namhyung
