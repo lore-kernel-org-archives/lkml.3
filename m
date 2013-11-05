@@ -1,63 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755756Ab3KEW1v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 17:27:51 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:2877 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755716Ab3KEW1u (ORCPT
+	id S1755818Ab3KEW2X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 17:28:23 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40944 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755723Ab3KEW2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 17:27:50 -0500
-Date: Tue, 5 Nov 2013 17:27:45 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] tracing: Update event filters for multibuffer
-Message-ID: <20131105172745.2ebbd6ba@gandalf.local.home>
-In-Reply-To: <f16e9ce4270c62f46b2e966119225e1c3cca7e60.1382620672.git.tom.zanussi@linux.intel.com>
-References: <cover.1382620672.git.tom.zanussi@linux.intel.com>
-	<f16e9ce4270c62f46b2e966119225e1c3cca7e60.1382620672.git.tom.zanussi@linux.intel.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Tue, 5 Nov 2013 17:28:22 -0500
+Date: Tue, 5 Nov 2013 23:27:52 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Len Brown <len.brown@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Lukasz Majewski <l.majewski@samsung.com>, james.hogan@imgtec.com,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
+Subject: Re: [RFC][PATCH v5 01/14] sched: add a new arch_sd_local_flags for
+ sched_domain init
+Message-ID: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
+References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
+ <1382097147-30088-2-git-send-email-vincent.guittot@linaro.org>
+ <20131105140626.GP31370@twins.programming.kicks-ass.net>
+ <CAKfTPtCYHKRv=w3b4tZV-2BW_a_T+tkO9Qpc0PhLD=uZY1yvfw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKfTPtCYHKRv=w3b4tZV-2BW_a_T+tkO9Qpc0PhLD=uZY1yvfw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Oct 2013 08:34:17 -0500
-Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
+On Tue, Nov 05, 2013 at 03:57:23PM +0100, Vincent Guittot wrote:
+> Your proposal looks fine for me. It's clearly better to move in one
+> place the configuration of sched_domain fields. Have you already got
+> an idea about how to let architecture override the topology?
 
+Maybe something like the below -- completely untested (my s390 compiler
+is on a machine that's currently powered off).
 
-> @@ -1577,6 +1577,7 @@ static void event_remove(struct ftrace_event_call *call)
->  		if (file->event_call != call)
->  			continue;
->  		ftrace_event_enable_disable(file, 0);
-> +		destroy_preds(file);
->  		/*
->  		 * The do_for_each_event_file() is
->  		 * a double loop. After finding the call for this
-> @@ -1700,7 +1701,7 @@ static void __trace_remove_event_call(struct ftrace_event_call *call)
->  {
->  	event_remove(call);
->  	trace_destroy_fields(call);
-> -	destroy_preds(call);
-> +	destroy_call_preds(call);
+> My primary need comes from the fact that the topology configuration is
+> not the same for all cores
 
-A small nit, but I don't believe we need this anymore.
+Do expand.. the various cpu masks used in the topology list are per cpu,
+is that sufficient room to wriggle or do you need more?
 
-First, what event that requires a call filter can be removed?
-
-Second, if one could be removed, the previous call to "event_remove"
-would remove the filter for us, as destroy_preds(file) calls
-destroy_call_preds() if the USE_CALL_FILTER flag is set.
-
-I'll keep it in for now, but may remove it later.
-
--- Steve
-
-
->  }
->  
-
+---
+--- a/arch/s390/kernel/smp.c
++++ b/arch/s390/kernel/smp.c
+@@ -1070,3 +1070,23 @@ static int __init s390_smp_init(void)
+ 	return 0;
+ }
+ subsys_initcall(s390_smp_init);
++
++static struct sched_domain_topology_level s390_topology[] = {
++#ifdef CONFIG_SCHED_SMT
++	{ cpu_smt_mask, SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES },
++#endif
++#ifdef CONFIG_SCHED_MC
++	{ cpu_coregroup_mask, SD_SHARE_PKG_RESOURCES },
++#endif
++#ifdef CONFIG_SCHED_BOOK
++	{ cpu_book_mask, },
++#endif
++	{ cpu_cpu_mask, },
++	{ NULL, },
++};
++
++static int __init s390_sched_topology(void)
++{
++	sched_domain_topology = s390_topology;
++}
++early_initcall(s390_sched_topology);
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -889,6 +889,20 @@ void free_sched_domains(cpumask_var_t do
+ 
+ bool cpus_share_cache(int this_cpu, int that_cpu);
+ 
++typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
++
++#define SDTL_OVERLAP	0x01
++
++struct sched_domain_topology_level {
++	sched_domain_mask_f mask;
++	int		    sd_flags;
++	int		    flags;
++	int		    numa_level;
++	struct sd_data      data;
++};
++
++extern struct sched_domain_topology_level *sched_domain_topology;
++
+ #else /* CONFIG_SMP */
+ 
+ struct sched_domain_attr;
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5377,20 +5377,6 @@ enum s_alloc {
+ 	sa_none,
+ };
+ 
+-struct sched_domain_topology_level;
+-
+-typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
+-
+-#define SDTL_OVERLAP	0x01
+-
+-struct sched_domain_topology_level {
+-	sched_domain_mask_f mask;
+-	int		    sd_flags;
+-	int		    flags;
+-	int		    numa_level;
+-	struct sd_data      data;
+-};
+-
+ /*
+  * Build an iteration mask that can exclude certain CPUs from the upwards
+  * domain traversal.
+@@ -5841,6 +5827,7 @@ sd_init(struct sched_domain_topology_lev
+ 
+ 	return sd;
+ }
++
+ /*
+  * Topology list, bottom-up.
+  */
+@@ -5851,14 +5838,11 @@ static struct sched_domain_topology_leve
+ #ifdef CONFIG_SCHED_MC
+ 	{ cpu_coregroup_mask, SD_SHARE_PKG_RESOURCES },
+ #endif
+-#ifdef CONFIG_SCHED_BOOK
+-	{ cpu_book_mask, },
+-#endif
+ 	{ cpu_cpu_mask, },
+ 	{ NULL, },
+ };
+ 
+-static struct sched_domain_topology_level *sched_domain_topology = default_topology;
++struct sched_domain_topology_level *sched_domain_topology = default_topology;
+ 
+ #define for_each_sd_topology(tl)			\
+ 	for (tl = sched_domain_topology; tl->mask; tl++)
