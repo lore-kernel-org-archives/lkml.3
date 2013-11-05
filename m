@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568Ab3KETzw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 14:55:52 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:4517 "EHLO mms1.broadcom.com"
+	id S1755587Ab3KETz4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 14:55:56 -0500
+Received: from smtp-out.abv.bg ([194.153.145.99]:35742 "EHLO smtp-out.abv.bg"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755433Ab3KETzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 14:55:44 -0500
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-From: "Wendy Ng" <wendy.ng@broadcom.com>
-To: "Rob Herring" <rob.herring@calxeda.com>, "Pawel Moll" <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Stephen Warren" <swarren@wwwdotorg.org>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        "Eduardo Valentin" <eduardo.valentin@ti.com>,
-        "Kumar Gala" <galak@codeaurora.org>
-cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Christian Daudt" <bcm@fixthebug.org>,
-        "Markus Mayer" <mmayer@broadcom.com>,
-        "Tim Kryger" <tim.kryger@linaro.org>,
-        "Matt Porter" <matt.porter@linaro.org>,
-        "Wendy Ng" <wendy.ng@broadcom.com>
-Subject: [PATCH V2 2/3] ARM: configs:enable thermal framework for
- bcm281xx
-Date: Tue, 5 Nov 2013 11:54:43 -0800
-Message-ID: <1383681284-17643-3-git-send-email-wendy.ng@broadcom.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1383681284-17643-1-git-send-email-wendy.ng@broadcom.com>
-References: <1383681284-17643-1-git-send-email-wendy.ng@broadcom.com>
+	id S1755570Ab3KETzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 14:55:53 -0500
+DomainKey-Signature: a=rsa-sha1; s=smtp-out; d=abv.bg; c=simple; q=dns;
+	b=hwF0wQWzgu71xsHcnfAzyO3iWH/U+B4x9JAxmySnlMy+YdtIgDt+/OVmzWc0sYGuc
+	Mdx1AWZ1vrzwDerzdzvCxDI4+wEk6uzU35fCm3wC+q044fzdmjEKB7GbbYD8/15wUEt
+	UOl9HNA2ys2tf+uUoQ1FAkeL1XTodh7wWeXzLks=
+Date: Tue, 5 Nov 2013 21:55:51 +0200 (EET)
+From: =?UTF-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: minchan@kernel.org, pavel@ucw.cz, sre@debian.org, pali.rohar@gmail.com,
+        pc+n900@asdf.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Message-ID: <1380566786.52844.1383681351015.JavaMail.apache@mail83.abv.bg>
+Subject: Re: OMAPFB: CMA allocation failures
 MIME-Version: 1.0
-X-WSS-ID: 7E6792AC1505061213-01-01
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Priority: 3
+X-Mailer: AbvMail 1.0
+X-Originating-IP: 46.249.74.23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables the thermal framework and hwmon interface for Broadcom
-bcm281xx SoCs.
-
-Signed-off-by: Wendy Ng <wendy.ng@broadcom.com>
-Reviewed-by: Markus Mayer <mmayer@broadcom.com>
-Reviewed-by: Christian Daudt <csd@broadcom.com>
-Reviewed-by: Matt Porter <matt.porter@linaro.org>
-Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
-Acked-by: Kumar Gala <galak@codeaurora.org>
----
- arch/arm/configs/bcm_defconfig |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
-index efb0132..a600b61 100644
---- a/arch/arm/configs/bcm_defconfig
-+++ b/arch/arm/configs/bcm_defconfig
-@@ -84,7 +84,9 @@ CONFIG_SERIAL_8250_DW=y
- CONFIG_HW_RANDOM=y
- CONFIG_I2C=y
- CONFIG_I2C_CHARDEV=y
--# CONFIG_HWMON is not set
-+CONFIG_THERMAL=y
-+CONFIG_THERMAL_OF=y
-+CONFIG_HWMON=y
- CONFIG_VIDEO_OUTPUT_CONTROL=y
- CONFIG_FB=y
- CONFIG_BACKLIGHT_LCD_SUPPORT=y
--- 
-1.7.9.5
+ 
 
 
+
+
+ >-------- Оригинално писмо --------
+ >От:  Tomi Valkeinen 
+ >Относно: Re: OMAPFB: CMA allocation failures
+ >До: Ивайло Димитров
+ >Изпратено на: Сряда, 2013, Октомври 30 14:19:32 EET
+ >
+ >I really dislike the idea of adding the omap vram allocator back. Then
+ >again, if the CMA doesn't work, something has to be done.
+ >
+
+If I got Minchan Kim's explanation correctly, CMA simply can't be used
+for allocation of framebuffer memory, because it is unreliable.
+
+ >Pre-allocating is possible, but that won't work if there's any need to
+ >re-allocating the framebuffers. Except if the omapfb would retain and
+ >manage the pre-allocated buffers, but that would just be more or less
+ >the old vram allocator again.
+ >
+ >So, as I see it, the best option would be to have the standard dma_alloc
+ >functions get the memory for omapfb from a private pool, which is not
+ >used for anything else.
+ >
+ >I wonder if that's possible already? It sounds quite trivial to me.
+ 
+dma_alloc functions use either CMA or (iirc) get_pages_exact if CMA is
+disabled. Both of those fail easily. AFAIK there are several 
+implementations with similar functionality, like CMEM and ION but
+(correct me if I am wrong) neither of them is upstreamed. In the 
+current kernel I don't see anything that can be used for the purpose 
+of reliable allocation of big chunks of contiguous memory.
+So, something should be done, but honestly, I can't think of anything
+but bringing VRAM allocator back. Not that I like the idea of bringing
+back ~700 lines of code, but I see no other option if omapfb driver is
+to be actually useful.
+
+Regards,
+Ivo
