@@ -1,168 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755675Ab3KEX0E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 18:26:04 -0500
-Received: from ihemail2.lucent.com ([135.245.0.35]:50199 "EHLO
-	ihemail2.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755494Ab3KEX0C (ORCPT
+	id S1755764Ab3KEX0o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 18:26:44 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:44243 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755720Ab3KEX0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 18:26:02 -0500
-From: James Solner <solner@alcatel-lucent.com>
-To: jwboyer@fedoraproject.org
-Cc: dhowells@redhat.com, rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Subject: [PATCH v1] Add Documentation/module-signing.txt file
-Date: Tue, 05 Nov 2013 17:25:48 -0600
-Message-ID: <2796832.O3WlZ61LSy@cmlinux10.ih.lucent.com>
-User-Agent: KMail/4.11.2 (Linux/3.11.6-PRV02+; KDE/4.11.2; x86_64; ; )
+	Tue, 5 Nov 2013 18:26:42 -0500
+Date: Tue, 5 Nov 2013 16:26:38 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PCI: Workaround missing pci_set_master in pci drivers
+Message-ID: <20131105232638.GA3359@google.com>
+References: <CAE9FiQV8ipnQ_vV68S-QHMrUrQTWQT_XObxyBeR=dOuw6fG1eg@mail.gmail.com>
+ <1380399187-4962-1-git-send-email-yinghai@kernel.org>
+ <20131003220628.GA14835@google.com>
+ <CAE9FiQVYZ2pRTs5Xsc2MKgUiWfLbSExLA-vF0HK2iy=tVw2OHA@mail.gmail.com>
+ <CAErSpo79xHn7RNNrbQBa49M464xryqjwi_iTPjTCnhEphkCvEg@mail.gmail.com>
+ <1383569048.9623.16.camel@x220.thuisdomein>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383569048.9623.16.camel@x220.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the Documentation/module-signing.txt file that is
-currently missing from the Documentation directory. The init/Kconfig
-file references the Documentation/module-signing.txt file to explain
-how kernel module signing works. This patch supplies this documentation. 
+On Mon, Nov 04, 2013 at 01:44:08PM +0100, Paul Bolle wrote:
+> On Fri, 2013-10-04 at 09:55 -0600, Bjorn Helgaas wrote:
+> > On Thu, Oct 3, 2013 at 5:35 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> > > On Thu, Oct 3, 2013 at 3:06 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > >> On Sat, Sep 28, 2013 at 01:13:07PM -0700, Yinghai Lu wrote:
+> > >>> @@ -1156,8 +1156,14 @@ static void pci_enable_bridge(struct pci
+> > >>>
+> > >>>       pci_enable_bridge(dev->bus->self);
+> > >>>
+> > >>> -     if (pci_is_enabled(dev))
+> > >>> +     if (pci_is_enabled(dev)) {
+> > >>> +             if (!dev->is_busmaster) {
+> > >>> +                     dev_warn(&dev->dev, "driver skip pci_set_master, fix it!\n");
+> > >>
+> > >> I know this is already in Linus' tree, but if we're going to enable
+> > >> bus mastering here, what's the point of the warning?  If somebody
+> > >> fixes the driver by adding a pci_set_master() call there, does that
+> > >> improve something?
+> > >
+> > > Help us to catch other offender and fix them.
+> > 
+> > What is improved by doing it in the driver instead of here?
+> 
+> After booting v3.12 for the first time on a laptop I noticed two new
+> warnings: 
+>     <4>[    4.427959] pcieport 0000:00:1c.4: driver skip pci_set_master, fix it!
+>     <4>[    4.448630] pcieport 0000:00:1c.1: driver skip pci_set_master, fix it!
+> 
+> These warnings aren't entirely clear, but luckily they are easily
+> greppable. It turns out they can be traced back to this patch.
+> 
+> So some further grepping, looking at the code, etc. suggests these
+> warnings could be silenced by calling pci_set_master() before calling
+> pci_enable_device(). Ie, reverse the current order of those calls in
+> drivers/pci/pcie/portdrv_core.c:pcie_port_device_register(). Is that
+> correct? But what should then be done if pci_enable_device() fails?
+> 
+> And Bjorn's question - what's the point of this warning if
+> pci_set_master() will be called anyway - also came up when I looked at
+> that code segment for the first time. But I'm not familiar with the PCI
+> code.
 
-The initial version of this patch provided old documentation
-that used that was a mix of the old RHEL style GPG signing. 
-This new version, version 1, is updated to the current appended-signature 
-x509 certificate signing. 
+Unless somebody can point out a problem with doing the pci_set_master()
+inside pci_enable_bridges(), I plan to merge the following patch to
+remove the warning.
 
-Signed-off-by: James Solner <solner@alcatel-lucent.com>
 
+PCI: Drop warning about drivers that don't use pci_set_master()
+
+From: Bjorn Helgaas <bhelgaas@google.com>
+
+f41f064cf4 ("PCI: Workaround missing pci_set_master in pci drivers") made
+pci_enable_bridge() turn on bus mastering if the driver hadn't done so
+already.  It also added a warning in this case.  But there's no reason to
+warn about it unless it's actually a problem to enable bus mastering here.
+
+This patch drops the warning because I'm not aware of any such problem.
+
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Paul Bolle <pebolle@tiscali.nl>
 ---
- Documentation/module-signing.txt | 117 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 117 insertions(+)
- create mode 100644 Documentation/module-signing.txt
+ drivers/pci/pci.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/Documentation/module-signing.txt b/Documentation/module-signing.txt
-new file mode 100644
-index 0000000..fdae5b2
---- /dev/null
-+++ b/Documentation/module-signing.txt
-@@ -0,0 +1,117 @@
-+		==============================
-+		KERNEL MODULE SIGNING FACILITY
-+		==============================
-+
-+The module signing facility applies cryptographic signature checking 
-+when loading modules by checking its signature against a public key. 
-+This allows increased kernel security by disallowing loading unsigned 
-+modules or modules signed with an invalid key. Module signing increases 
-+the kernel security and reduces the odds of malicious modules being 
-+loading into Linux operating system.
-+
-+This facility uses X.509 ITU-T standard to perform the cryptographic 
-+work and determines the format of the signatures and key data. The 
-+key type used is RSA and the possible hash algorithms that can be 
-+used  are SHA-1, SHA-224, SHA-256, SHA-384, and SHA-512. Provided 
-+the requisite algorithms are configured and compiled into the 
-+kernel. The following hash algorithms can be selected during the kernel 
-+configuration build:
-+
-+	CONFIG_SIG_SHA1
-+	CONFIG_SIG_SHA224
-+	CONFIG_SIG_SHA256
-+	CONFIG_SIG_SHA384
-+	CONFIG_SIG_SHA512
-+	
-+The module signing facility is a kernel feature and is enabled through the 
-+Linux kernel configuration builder. In the "Enable Loadable Module Support"
-+section of the kernel configuration, the CONFIG_MODULE_SIG define is enabled 
-+to activate this feature. This feature supports two options for signed 
-+module support: "permissive" and "restrictive".  The default is the 
-+"permissive" option and allows a module with a valid signature to be loaded. 
-+If the signature is invalid, the module is still loaded, but the kernel is 
-+marked as "tainted". The "restrictive" option (CONFIG_MODULE_SIG_FORCE) 
-+requires a valid signature before the module can be loaded.
-+
-+There are two ways to signed modules: "automatically" or "manually". 
-+The CONFIG_MODULE_SIG_ALL define will automatically signed the modules 
-+during the "modules_install" part of the kernel build. A module can also 
-+be signed manually using the scripts/sign-file tool.
-+
-+================================================
-+AUTOMATICALLY GENERATING PUBLIC AND PUBLIC KEYS
-+================================================
-+As part of "modules_install" kernel build, the Linux kernel build 
-+infrastructure will automatically create two files in the root node 
-+of the Linux kernel source tree. These files contain the public/private 
-+keys and are called "signing_key.x509" and "signing_key.priv". 
-+The public key is built into to the kernel and used to verify modules 
-+signatures when the modules are loaded. 
-+
-+=================================================
-+MANUALLY GENERATING PUBLIC AND PRIVATE KEYS
-+=================================================
-+To manually generate the key private/public files, use the x509.genkey key 
-+generation configuration file in the root mode of the Linux kernel 
-+sources tree and the openssl command. The following is an example to 
-+generate the public/private key files:
-+
-+	openssl req -new -nodes -utf8 -sha256 -days 36500 -batch -x509 \
-+	   -config x509.genkey -outform DER -out signing_key.x509 \
-+	   -keyout signing_key.priv
-+
-+=========================
-+MANUALLY SIGNING MODULES
-+=========================
-+To manually sign a module, use the scripts/sign-file tool available in 
-+the Linux kernel source tree. The script requires 4 arguments: 
-+
-+	1. The hash algorithm (e.g., sha256)
-+	2. The private key 
-+	3. The public key
-+	4. The kernel module to be signed
-+	
-+The following is an example to sign a kernel module: 
-+
-+	scripts/sign-file sha512 kernel-signkey.priv \
-+	    kernel-signkey.x509 module.ko
-+
-+============================
-+SIGNED MODULES AND STRIPPING
-+============================
-+
-+A signed modules has a digital signature appended at the end. The string 
-+"~Module signature appended~." at the end of the module's file confirms 
-+that a signature is present. But, it does not confirm that the 
-+signature is valid!
-+
-+Signed modules are BRITTLE as the signature is outside of the defined
-+ELF container.  Thus they MAY NOT be stripped once the signature is computed
-+and attached. Note the entire module is the signed payload, including 
-+all the debug information present at the time of signing.
-+
-+======================
-+LOADING SIGNED MODULES
-+======================
-+
-+Modules are loaded with insmod, exactly as for unsigned modules.  
-+The signature checker checks at the end of the file for the signature 
-+marker and apply signature checking. 
-+
-+=========================================
-+NON-VALID SIGNATURES AND UNSIGNED MODULES
-+=========================================
-+
-+If CONFIG_MODULE_SIG_FORCE is enabled or enforcemodulesig=1 is supplied on
-+the kernel command line, the kernel will only load validly signed modules
-+for which it has a public key.  Otherwise, it will also load modules that are
-+unsigned.  Any module for which the kernel has a key, but which proves to have
-+a signature mismatch will not be permitted to load.
-+
-+=========================================
-+ADMINISTERING/PROTECTING THE PRIVATE KEY
-+=========================================
-+Since the private key is used to signed modules, malware can use 
-+the private key to signed modules and compromise the operating system. 
-+The private key must be moved to secure location and not keep in 
-+the root node of the kernel source tree. 
--- 
-1.7.12.4
----
-
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 7a92d81..ac40f90 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1156,10 +1156,8 @@ static void pci_enable_bridge(struct pci_dev *dev)
+ 	pci_enable_bridge(dev->bus->self);
+ 
+ 	if (pci_is_enabled(dev)) {
+-		if (!dev->is_busmaster) {
+-			dev_warn(&dev->dev, "driver skip pci_set_master, fix it!\n");
++		if (!dev->is_busmaster)
+ 			pci_set_master(dev);
+-		}
+ 		return;
+ 	}
+ 
