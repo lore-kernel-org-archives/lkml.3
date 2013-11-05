@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab3KEPV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 10:21:26 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:55023 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab3KEPVZ (ORCPT
+	id S1754838Ab3KEPVp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 10:21:45 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:24539 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754773Ab3KEPVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 10:21:25 -0500
-X-AuditID: cbfec7f5-b7ef66d00000795a-eb-52790cf38fd0
+	Tue, 5 Nov 2013 10:21:43 -0500
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-af-52790d05d963
 From: Tomasz Figa <t.figa@samsung.com>
 To: Olof Johansson <olof@lixom.net>
 Cc: Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Kevin Hilman <khilman@linaro.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 1/2] of: irq: Fix interrupt-map entry matching
-Date: Tue, 05 Nov 2013 16:21:18 +0100
-Message-id: <2713030.RoDxNQo0oz@amdc1227>
+Subject: [PATCH 2/2] of: irq: Check for reg property presence only when parsing
+ interrupt-map
+Date: Tue, 05 Nov 2013 16:21:36 +0100
+Message-id: <11085147.qYFvaZYATK@amdc1227>
 Organization: Samsung Poland R&D Center
 User-Agent: KMail/4.11.2 (Linux/3.11.5-gentoo; KDE/4.11.2; x86_64; ; )
 In-reply-to: <2177804.l4VGDTRFDu@amdc1227>
@@ -25,42 +26,70 @@ References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
 MIME-version: 1.0
 Content-transfer-encoding: 7Bit
 Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t/xq7qfeSqDDA5eEbP40NTKbDH/yDlW
-	iwN/djBafD28gtHi8q45bBanrn9mc2Dz6HnTwupx59oeNo8rJ5pYPT5vkgtgieKySUnNySxL
-	LdK3S+DKWDPNtaCbreLX72nsDYwfWLoYOTkkBEwk1p56wAphi0lcuLeerYuRi0NIYCmjxJIz
-	69khnC4miVPfG5lAqtgE1CQ+NzxiA7FFBJQlnrRdYgaxmQXuMEosOJwFYgsL2Ekc+X2UEcRm
-	EVCV6P7bwA5i8wpoSpx+/A3M5hdQl3i37SnYTFEBN4npPw6CzeEU0JJ49LWJCWJxH6PErgMH
-	WSCaBSV+TL7HArFMXmLf/qmsELaWxPqdx5kmMArOQlI2C0nZLCRlCxiZVzGKppYmFxQnpeca
-	6RUn5haX5qXrJefnbmKEhPrXHYxLj1kdYhTgYFTi4bW8UB4kxJpYVlyZe4hRgoNZSYT32P+K
-	ICHelMTKqtSi/Pii0pzU4kOMTBycUg2MhxzXzFqvbH82427ewXCpZ/+PGV2L+ll3WSXyQuXV
-	+uQNMZbXD7S0u3xcv+Kjp7Rpw58pD2XWPa7rKbluXyHyTFbmz0zpVYtKXrd7VkXd5WJPK98w
-	34fnDO9TjQftc06fnXJN4Yi3U0XThQkTuuMuGDTvaO26U7SbSdmQWyMw9xEPn8BZlt2VSizF
-	GYmGWsxFxYkA94KyLFMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t/xq7qsvJVBBv1zFCw+NLUyW8w/co7V
+	4sCfHYwWXw+vYLS4vGsOm8Wp65/ZHNg8et60sHrcubaHzePKiSZWj8+b5AJYorhsUlJzMstS
+	i/TtErgylk2ezVJwgLfi06Uz7A2Mx7m6GDk5JARMJD592c0CYYtJXLi3ng3EFhJYyihx+YZR
+	FyMXkN3FJHHp3wRmkASbgJrE54ZHYEUiAsoST9ougcWZBe4wSiw4nAViCwvES7xdvZIVxGYR
+	UJXY+Gw6WA2vgJbEh039TCA2v4C6xLttT8FsUQE3iek/DoLVcALVPPraxASxuI9RYteBgywQ
+	zYISPybfY4FYJi+xb/9UVghbS2L9zuNMExgFZyEpm4WkbBaSsgWMzKsYRVNLkwuKk9JzDfWK
+	E3OLS/PS9ZLzczcxQkL9yw7GxcesDjEKcDAq8fA+OFseJMSaWFZcmXuIUYKDWUmE99j/iiAh
+	3pTEyqrUovz4otKc1OJDjEwcnFINjLEWZ1bqGXrlps9QemrZYDM5MN+w4N2UzEd3/pfp35U+
+	5GpyZJK58ZqtPxbbF2QvKPFiP7rziP7+yUuqFsr8mio7ZWa1zQbNY+f1/bSOLp7su+PBm7zi
+	lwFh9/5pffvo/8Btr87fZzm1BbFp7R2vDovfSkiQj3PwKoxeyTSp8N/vqT1bfTcyfVRiKc5I
+	NNRiLipOBACW6mgjUwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes interrupt-map entry matching code to properly match all
-specifier cells with interrupt map entries.
+This patch fixes the of_irq_parse_raw() function to check for reg
+property only when really parsing interrupt map property, as it is not
+required otherwise and breaks existing device trees.
 
 Signed-off-by: Tomasz Figa <t.figa@samsung.com>
 ---
- drivers/of/irq.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/of/irq.c | 21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-index 0ed5ed4..717eed4 100644
+index 717eed4..72e9c51 100644
 --- a/drivers/of/irq.c
 +++ b/drivers/of/irq.c
-@@ -195,7 +195,7 @@ int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq)
- 			/* Compare specifiers */
- 			match = 1;
- 			for (i = 0; i < (addrsize + intsize); i++, imaplen--)
--				match = !((match_array[i] ^ *imap++) & imask[i]);
-+				match &= !((match_array[i] ^ *imap++) & imask[i]);
+@@ -147,17 +147,8 @@ int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq)
  
- 			pr_debug(" -> match=%d (imaplen=%d)\n", match, imaplen);
+ 	pr_debug(" -> addrsize=%d\n", addrsize);
  
+-	/* If we were passed no "reg" property and we attempt to parse
+-	 * an interrupt-map, then #address-cells must be 0.
+-	 * Fail if it's not.
+-	 */
+-	if (addr == NULL && addrsize != 0) {
+-		pr_debug(" -> no reg passed in when needed !\n");
+-		return -EINVAL;
+-	}
+-
+ 	/* Precalculate the match array - this simplifies match loop */
+-	for (i = 0; i < addrsize; i++)
++	for (i = 0; i < addrsize && addr; i++)
+ 		initial_match_array[i] = addr[i];
+ 	for (i = 0; i < intsize; i++)
+ 		initial_match_array[addrsize + i] = cpu_to_be32(out_irq->args[i]);
+@@ -184,6 +175,16 @@ int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq)
+ 		}
+ 		imaplen /= sizeof(u32);
+ 
++		/*
++		 * If we were passed no "reg" property and we attempt to parse
++		 * an interrupt-map, then #address-cells must be 0.
++		 * Fail if it's not.
++		 */
++		if (addr == NULL && addrsize != 0) {
++			pr_debug(" -> no reg passed in when needed !\n");
++			return -EINVAL;
++		}
++
+ 		/* Look for a mask */
+ 		imask = of_get_property(ipar, "interrupt-map-mask", NULL);
+ 		if (!imask)
 -- 
 1.8.4.2
 
