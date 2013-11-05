@@ -1,64 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab3KEQHz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 11:07:55 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:33810 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab3KEQHy (ORCPT
+	id S1754735Ab3KEQOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 11:14:19 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:49745 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754208Ab3KEQOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 11:07:54 -0500
-Message-ID: <527917C5.7050402@kernel.dk>
-Date: Tue, 05 Nov 2013 09:07:33 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: abhansali@stec-inc.com, jmoyer@redhat.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/11] skd: various fixes/cleanups
-References: <1383651429-4322-1-git-send-email-b.zolnierkie@samsung.com>
-In-Reply-To: <1383651429-4322-1-git-send-email-b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Nov 2013 11:14:17 -0500
+Date: Tue, 05 Nov 2013 17:13:18 +0100
+From: Kamil Debski <k.debski@samsung.com>
+Subject: [PATCH v3 0/3] phy: Add new Exynos USB 2.0 PHY driver
+To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm@vger.kernel.org
+Cc: kyungmin.park@samsung.com, kishon@ti.com, t.figa@samsung.com,
+        s.nawrocki@samsung.com, m.szyprowski@samsung.com,
+        gautam.vivek@samsung.com, mat.krawczuk@gmail.com,
+        yulgon.kim@samsung.com, p.paneri@samsung.com,
+        av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org,
+        Kamil Debski <k.debski@samsung.com>
+Message-id: <1383668001-19141-1-git-send-email-k.debski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-AuditID: cbfee61a-b7f836d0000025d7-5f-5279195756b1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrILMWRmVeSWpSXmKPExsVy+t9jAd1wycoggznXDC2W7L7BajH/yDlW
+	i/43C1kt2q4cZLe4vPASq8WP1xfYLC487WGzONv0ht1i2s7/rBaXd81hs5hxfh+TxaJlrcwW
+	a4/cZbc423+bzeL8lk4mi8Nv2lkt1s94zWLRcfYgu4OQx+W+XiaPnbPusnv0bVnF6HH8xnYm
+	j8+b5AJYo7hsUlJzMstSi/TtErgyXu/4yFbQJ1mx/dFk9gbGTuEuRg4OCQETiaaLHl2MnECm
+	mMSFe+vZuhi5OIQEFjFKtM27ygLhdDBJPJmyngWkgU1AU2LVPbAGEYGZjBKbF5uC1DALHGWS
+	aH26hREkISxgJ/Gj+zELiM0ioCrxcMYddhCbV8BF4vX+ThaIxQoScybZTGDkXsDIsIpRNLUg
+	uaA4KT3XUK84Mbe4NC9dLzk/dxMjOCCfSe1gXNlgcYhRgINRiYf3wdnyICHWxLLiytxDjBIc
+	zEoivMf+VwQJ8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Qah0oJJCeWJKanZpakFoEk2Xi4JRq
+	YORaGi1Xqpp0oYF50uz+W5KKIicVRHVudPydvqatYrKp9dxvsVr6r9nCLiuesJQrPR+h0Ox4
+	bFlUyqTTsVY6ZasD+c07HsUe0iyN6639UZaZfkd51xULMT5W1ifvZp++2Pkj/Lv6AesEwbPx
+	Mk+uiqzK8TN+qJVy30/4+cd37Cy7V0sf4eSaq8RSnJFoqMVcVJwIAC34TzxEAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2013 04:36 AM, Bartlomiej Zolnierkiewicz wrote:
-> Hi,
-> 
-> Here is a bunch of fixes/cleanups for the new skd driver.
-> 
-> Reference to v1:
-> 	https://lkml.org/lkml/2013/9/30/279
-> 
-> Changes since v1:
-> - synced against for-3.13/drivers branch (commit 76c4a6f) of block tree
-> - dropped no longer needed patch #4 ("skd: alloc flush slab only if some
->   devices are present"), #12 ("skd: reorder skd_flush_cmd_[en,de]queue()
->   code") and #14 ("skd: remove skd_bio code")
-> 
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
-> 
-> Bartlomiej Zolnierkiewicz (11):
->   skd: fix unregister_blkdev() placement
->   skd: fix error paths in skd_init()
->   skd: fix error messages in skd_init()
->   skd: register block device only if some devices are present
->   skd: remove SCSI subsystem specific includes
->   skd: use <asm/unaligned.h>
->   skd: remove redundant skdev->pdev assignment from skd_pci_probe()
->   skd: remove SKD_OMIT_FROM_SRC_DIST ifdefs
->   skd: cleanup skd_do_inq_page_da()
->   skd: reorder construct/destruct code
->   skd: fix formatting in skd_s1120.h
+Hi,
 
-Thanks Bart, applied.
+This is the third version of the patchset adding the new Exynos USB 2.0 PHY
+driver, which uses the Generic PHY Framework.
+
+It contains numerous fixes and cleanups, which are the results of the feedback
+to the second version.
+
+Best wishes,
+Kamil Debski
+
+----------------
+Changes from v2:
+- rebase all patches to the usb-next branch
+- fixes in the documentation file
+  - remove wrong entries in the phy node (ranges, and #address- & #size-cells)
+  - add clocks and clock-names as required properites
+  - rephrase a few sentences
+- fixes in the ehci-exynos.c file
+  - move phy_name variable next to phy in exynos_ehci_hcd
+  - remove otg from exynos_ehci_hcd as it was no longer used
+  - move devm_phy_get after the Exynos5440 skip_phy check
+- fixes in the s3c-hsotg.c file
+  - cosmetic fixes (remove empty line that was wrongfully added)
+- fixes in the main driver
+  - remove cpu_type in favour for a boolean flag matched with the compatible
+    value
+  - rename files, structures, variables and Kconfig entires - change from simple
+    "uphy" to "usb2_phy"
+  - fix multiline comments style
+  - simplify #ifdefs in of_device_id
+  - fix Kconfig description
+  - change dev_info to dev_dbg where reasonable
+  - cosmetic changes (remove wrongful blank lines)
+  - remove unnecessary reference counting
+
+----------------
+Changes from v1:
+- the changes include minor fixes of the hardware initialization of the PHY
+  module
+- some other minor fixes were introduced
+
+----------------------
+Original cover letter:
+
+Hi,
+
+This patch adds a new drive for USB PHYs for Samsung SoCs. The driver is
+using the Generic PHY Framework created by Kishon Vijay Abrahan I. It can
+be found here https://lkml.org/lkml/2013/8/21/29. This patch adds support
+to Exynos4 family of SoCs. Support for Exynos3 and Exynos5 is planned to
+be added in the near future.
+
+I welcome your comments.
+
+----------------------
+
+[1] https://lkml.org/lkml/2013/8/21/29
+
+*** BLURB HERE ***
+
+Kamil Debski (3):
+  phy: Add new Exynos USB PHY driver
+  usb: ehci-s5p: Change to use phy provided by the generic phy
+    framework
+  usb: s3c-hsotg: Use the new Exynos USB phy driver with the generic
+    phy framework
+
+ .../devicetree/bindings/phy/samsung-usbphy.txt     |   52 ++++
+ drivers/phy/Kconfig                                |   23 +-
+ drivers/phy/Makefile                               |    4 +
+ drivers/phy/phy-exynos-usb2.c                      |  234 ++++++++++++++
+ drivers/phy/phy-exynos-usb2.h                      |   87 ++++++
+ drivers/phy/phy-exynos4210-usb2.c                  |  272 ++++++++++++++++
+ drivers/phy/phy-exynos4212-usb2.c                  |  324 ++++++++++++++++++++
+ drivers/usb/gadget/s3c-hsotg.c                     |   12 +-
+ drivers/usb/host/ehci-exynos.c                     |   34 +-
+ 9 files changed, 1013 insertions(+), 29 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/phy/samsung-usbphy.txt
+ create mode 100644 drivers/phy/phy-exynos-usb2.c
+ create mode 100644 drivers/phy/phy-exynos-usb2.h
+ create mode 100644 drivers/phy/phy-exynos4210-usb2.c
+ create mode 100644 drivers/phy/phy-exynos4212-usb2.c
 
 -- 
-Jens Axboe
+1.7.9.5
 
