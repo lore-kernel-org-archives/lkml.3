@@ -1,255 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab3KEOcP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 09:32:15 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:59199 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754905Ab3KEO24 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 09:28:56 -0500
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 3/9] ARM: l2x0: add Marvell Tauros3 support
-Date: Tue,  5 Nov 2013 15:28:37 +0100
-Message-Id: <1383661723-17956-4-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1383661723-17956-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1383661723-17956-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1755453Ab3KEOc1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 09:32:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52446 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754596Ab3KEOcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 09:32:25 -0500
+Date: Tue, 5 Nov 2013 15:32:21 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andiry Xu <andiry@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Wang Shilong <wangsl-fnst@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Andiry Xu <andiry.xu@gmail.com>
+Subject: Re: [BUG][ext2] XIP does not work on ext2
+Message-ID: <20131105143221.GA30006@quack.suse.cz>
+References: <CAOvWMLZ-ezykR6TkFAoZ1UW20QF6XMOKeZH8R-FdFJkXjAP9nA@mail.gmail.com>
+ <20131105003733.GA24531@quack.suse.cz>
+ <CAOvWMLZ6_boRgQi2L9kqR_bWcnLDHY+uFo9g4DP=zxeGtT+dag@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOvWMLZ6_boRgQi2L9kqR_bWcnLDHY+uFo9g4DP=zxeGtT+dag@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for the Marvell Tauros3 cache controller which
-is compatible with pl310 cache controller but broadcasts L1 cache
-operations to L2 cache. While updating the binding documentation,
-clean up the list of possible compatibles. Also reorder driver
-compatibles to allow non-ARM derivated to be compatible to ARM
-cache controller compatibles.
+  Hello,
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Reviewed-by: Mark Rutland <mark.rutland@arm.com>
----
-Changelog:
-v2->v3:
-- none
-v1->v2:
-- add tauros3 data without outer cache ops (Suggested by Jisheng Zhang)
-- reorder compatibles to allow derivates to be compatible with ARM
-  controllers (Suggested by Mark Rutland)
+On Mon 04-11-13 18:37:40, Andiry Xu wrote:
+> On Mon, Nov 4, 2013 at 4:37 PM, Jan Kara <jack@suse.cz> wrote:
+> >   Hello,
+> >
+> > On Mon 04-11-13 14:31:34, Andiry Xu wrote:
+> >> When I'm trying XIP on ext2, I find that xip does not work on ext2
+> >> with latest kernel.
+> >>
+> >> Reproduce steps:
+> >> Compile kernel with following configs:
+> >> CONFIG_BLK_DEV_XIP=y
+> >> CONFIG_EXT2_FS_XIP=y
+> >>
+> >> And run following commands:
+> >> # mke2fs -b 4096 /dev/ram0
+> >> # mount -t ext2 -o xip /dev/ram0 /mnt/ramdisk/
+> >> # dd if=/dev/zero of=/mnt/ramdisk/test1 bs=1M count=16
+> >>
+> >> And it shows:
+> >> dd: writing `/mnt/ramdisk/test1': No space left on device
+> >>
+> >> df also shows /mnt/ramdisk is 100% full. Its default size is 64MB so a
+> >> 16MB write should only occupy 1/4 capacity.
+> >>
+> >> Criminal commit:
+> >> After git bisect, it points to the following commit:
+> >> 8e3dffc651cb668e1ff4d8b89cc1c3dde7540d3b
+> >> Ext2: mark inode dirty after the function dquot_free_block_nodirty is called
+> >   Thanks for report and the bisection!
+> >
+> >> Particularly, the following code:
+> >> @@ -1412,9 +1415,11 @@ allocated:
+> >> *errp = 0;
+> >> brelse(bitmap_bh);
+> >> -    dquot_free_block_nodirty(inode, *count-num);
+> >> -    mark_inode_dirty(inode);
+> >> -    *count = num;
+> >> +    if (num < *count) {
+> >> +        dquot_free_block_nodirty(inode, *count-num);
+> >> +        mark_inode_dirty(inode);
+> >> +        *count = num;
+> >> +    }
+> >>       return ret_block;
+> >>
+> >> Not mark_inode_dirty() is called only when num is less than *count.
+> >> However, I've seen
+> >> with the dd command, there is case where num >= *count.
+> >>
+> >> Fix:
+> >> I've verified that the following patch fixes the issue:
+> >> diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
+> >> index 9f9992b..5446a52 100644
+> >> --- a/fs/ext2/balloc.c
+> >> +++ b/fs/ext2/balloc.c
+> >> @@ -1406,11 +1406,10 @@ allocated:
+> >>
+> >>         *errp = 0;
+> >>         brelse(bitmap_bh);
+> >> -       if (num < *count) {
+> >> +       if (num <= *count)
+> >>                 dquot_free_block_nodirty(inode, *count-num);
+> >> -               mark_inode_dirty(inode);
+> >> -               *count = num;
+> >> -       }
+> >> +       mark_inode_dirty(inode);
+> >> +       *count = num;
+> >>         return ret_block;
+> >>
+> >>  io_error:
+> >>
+> >> However, I'm not familiar with ext2 source code and cannot tell if
+> >> this is the correct fix. At least it fixes my issue.
+> >   With this, you have essentially reverted a hunk from commit
+> > 8e3dffc651cb668e1ff4d8b89cc1c3dde7540d3b. But I don't see a reason why it
+> > should be reverted. num should never ever be greater than *count and when
+> > num == count, we the code inside if doesn't do anything useful.
+> >
+> > I've looked into the code and I think I see the problem. It is a long
+> > standing bug in __ext2_get_block() in fs/ext2/xip.c. It calls
+> > ext2_get_block() asking for 0 blocks to map (while we really want 1 block).
+> > ext2_get_block() just passes that request and ext2_get_blocks() actually
+> > allocates 1 block. And that's were the commit you have identified makes a
+> > difference because previously we returned that 1 block was allocated while
+> > now we return that 0 blocks were allocated and thus allocation is repeated
+> > until all free blocks are exhaused.
+> >
+> > Attached patch should fix the problem.
+> >
+> 
+> Thanks for the reply. I've verified that your patch fixes my issue.
+> And it's absolutely better than my solution.
+> 
+> Tested-by: Andiry Xu <andiry.xu@gmail.com>
+  Thanks for testing!
 
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Rob Landley <rob@landley.net>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: devicetree@vger.kernel.org
-Cc: linux-doc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- Documentation/devicetree/bindings/arm/l2cc.txt |   23 +++++------
- arch/arm/include/asm/hardware/cache-l2x0.h     |    1 +
- arch/arm/mm/cache-l2x0.c                       |   49 ++++++++++++++++++++----
- arch/arm/mm/cache-tauros3.h                    |   41 ++++++++++++++++++++
- 4 files changed, 95 insertions(+), 19 deletions(-)
- create mode 100644 arch/arm/mm/cache-tauros3.h
+> I have another question about ext2 XIP performance, although it's not
+> quite related to this thread.
+> 
+> I'm testing xip with ext2 on a ram disk drive, the driver is brd.c.
+> The RAM disk size is 2GB and I pre-fill it to guarantee that all pages
+> reside in main memory.
+> Then I use two different applications to write to the ram disk. One is
+> open() with O_DIRECT flag, and writing with Posix write(). Another is
+> open() with O_DIRECT, mmap() it to user space, then use memcpy() to
+> write data. I use different request size to write data, from 512 bytes
+> to 64MB.
+> 
+> In my understanding, the mmap version bypasses the file system and
+> does not go to kernel space, hence it should have better performance
+> than the Posix-write version. However, my test result shows it's not
+> always true: when the request size is between 8KB and 1MB, the
+> Posix-write() version has bandwidth about 7GB/s and mmap version only
+> has 5GB/s. The test is performed on a i7-3770K machine with 8GB
+> memory, kernel 3.12. Also I have tested on kernel 3.2, in which mmap
+> has really bad performance, only 2GB/s for all request sizes.
+> 
+> Do you know the reason why write() outperforms mmap() in some cases? I
+> know it's not related the thread but I really appreciate if you can
+> answer my question.
+  Well, I'm not completely sure. mmap()ed memory always works on page-by-page
+basis - you first access the page, it gets faulted in and you can further
+access it. So for small (sub page size) accesses this is a win because you
+don't have an overhead of syscall and fs write path. For accesses larger
+than page size the overhead of syscall and some initial checks is well
+hidden by other things. I guess write() ends up being more efficient
+because write path taken for each page is somewhat lighter than full page
+fault. But you'd need to look into perf data to get some hard numbers on
+where the time is spent.
 
-diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
-index c0c7626..b513cb8 100644
---- a/Documentation/devicetree/bindings/arm/l2cc.txt
-+++ b/Documentation/devicetree/bindings/arm/l2cc.txt
-@@ -7,20 +7,21 @@ The ARM L2 cache representation in the device tree should be done as follows:
- Required properties:
- 
- - compatible : should be one of:
--	"arm,pl310-cache"
--	"arm,l220-cache"
--	"arm,l210-cache"
--	"marvell,aurora-system-cache": Marvell Controller designed to be
-+  "arm,pl310-cache"
-+  "arm,l220-cache"
-+  "arm,l210-cache"
-+  "bcm,bcm11351-a2-pl310-cache": DEPRECATED by "brcm,bcm11351-a2-pl310-cache"
-+  "brcm,bcm11351-a2-pl310-cache": For Broadcom bcm11351 chipset where an
-+     offset needs to be added to the address before passing down to the L2
-+     cache controller
-+  "marvell,aurora-system-cache": Marvell Controller designed to be
-      compatible with the ARM one, with system cache mode (meaning
-      maintenance operations on L1 are broadcasted to the L2 and L2
-      performs the same operation).
--	"marvell,"aurora-outer-cache: Marvell Controller designed to be
--	 compatible with the ARM one with outer cache mode.
--	"brcm,bcm11351-a2-pl310-cache": For Broadcom bcm11351 chipset where an
--	offset needs to be added to the address before passing down to the L2
--	cache controller
--	"bcm,bcm11351-a2-pl310-cache": DEPRECATED by
--	                               "brcm,bcm11351-a2-pl310-cache"
-+  "marvell,aurora-outer-cache": Marvell Controller designed to be
-+     compatible with the ARM one with outer cache mode.
-+  "marvell,tauros3-cache": Marvell Tauros3 cache controller, compatible
-+     with arm,pl310-cache controller.
- - cache-unified : Specifies the cache is a unified cache.
- - cache-level : Should be set to 2 for a level 2 cache.
- - reg : Physical base address and size of cache controller's memory mapped
-diff --git a/arch/arm/include/asm/hardware/cache-l2x0.h b/arch/arm/include/asm/hardware/cache-l2x0.h
-index 3b2c40b..6795ff7 100644
---- a/arch/arm/include/asm/hardware/cache-l2x0.h
-+++ b/arch/arm/include/asm/hardware/cache-l2x0.h
-@@ -131,6 +131,7 @@ struct l2x0_regs {
- 	unsigned long prefetch_ctrl;
- 	unsigned long pwr_ctrl;
- 	unsigned long ctrl;
-+	unsigned long aux2_ctrl;
- };
- 
- extern struct l2x0_regs l2x0_saved_regs;
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index 447da6f..a70a4f5 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -25,6 +25,7 @@
- 
- #include <asm/cacheflush.h>
- #include <asm/hardware/cache-l2x0.h>
-+#include "cache-tauros3.h"
- #include "cache-aurora-l2.h"
- 
- #define CACHE_LINE_SIZE		32
-@@ -767,6 +768,14 @@ static void aurora_save(void)
- 	l2x0_saved_regs.aux_ctrl = readl_relaxed(l2x0_base + L2X0_AUX_CTRL);
- }
- 
-+static void __init tauros3_save(void)
-+{
-+	l2x0_saved_regs.aux2_ctrl =
-+		readl_relaxed(l2x0_base + TAUROS3_AUX2_CTRL);
-+	l2x0_saved_regs.prefetch_ctrl =
-+		readl_relaxed(l2x0_base + L2X0_PREFETCH_CTRL);
-+}
-+
- static void l2x0_resume(void)
- {
- 	if (!(readl_relaxed(l2x0_base + L2X0_CTRL) & L2X0_CTRL_EN)) {
-@@ -821,6 +830,18 @@ static void aurora_resume(void)
- 	}
- }
- 
-+static void tauros3_resume(void)
-+{
-+	if (!(readl_relaxed(l2x0_base + L2X0_CTRL) & L2X0_CTRL_EN)) {
-+		writel_relaxed(l2x0_saved_regs.aux2_ctrl,
-+			       l2x0_base + TAUROS3_AUX2_CTRL);
-+		writel_relaxed(l2x0_saved_regs.prefetch_ctrl,
-+			       l2x0_base + L2X0_PREFETCH_CTRL);
-+	}
-+
-+	l2x0_resume();
-+}
-+
- static void __init aurora_broadcast_l2_commands(void)
- {
- 	__u32 u;
-@@ -906,6 +927,15 @@ static const struct l2x0_of_data aurora_no_outer_data = {
- 	},
- };
- 
-+static const struct l2x0_of_data tauros3_data = {
-+	.setup = NULL,
-+	.save  = tauros3_save,
-+	/* Tauros3 broadcasts L1 cache operations to L2 */
-+	.outer_cache = {
-+		.resume      = tauros3_resume,
-+	},
-+};
-+
- static const struct l2x0_of_data bcm_l2x0_data = {
- 	.setup = pl310_of_setup,
- 	.save  = pl310_save,
-@@ -922,17 +952,20 @@ static const struct l2x0_of_data bcm_l2x0_data = {
- };
- 
- static const struct of_device_id l2x0_ids[] __initconst = {
-+	{ .compatible = "bcm,bcm11351-a2-pl310-cache", /* deprecated name */
-+	  .data = (void *)&bcm_l2x0_data},
-+	{ .compatible = "brcm,bcm11351-a2-pl310-cache",
-+	  .data = (void *)&bcm_l2x0_data},
-+	{ .compatible = "marvell,aurora-outer-cache",
-+	  .data = (void *)&aurora_with_outer_data},
-+	{ .compatible = "marvell,aurora-system-cache",
-+	  .data = (void *)&aurora_no_outer_data},
-+	{ .compatible = "marvell,tauros3-cache",
-+	  .data = (void *)&tauros3_data },
-+	/* keep ARM compatibles below non-ARM derivates */
- 	{ .compatible = "arm,pl310-cache", .data = (void *)&pl310_data },
- 	{ .compatible = "arm,l220-cache", .data = (void *)&l2x0_data },
- 	{ .compatible = "arm,l210-cache", .data = (void *)&l2x0_data },
--	{ .compatible = "marvell,aurora-system-cache",
--	  .data = (void *)&aurora_no_outer_data},
--	{ .compatible = "marvell,aurora-outer-cache",
--	  .data = (void *)&aurora_with_outer_data},
--	{ .compatible = "brcm,bcm11351-a2-pl310-cache",
--	  .data = (void *)&bcm_l2x0_data},
--	{ .compatible = "bcm,bcm11351-a2-pl310-cache", /* deprecated name */
--	  .data = (void *)&bcm_l2x0_data},
- 	{}
- };
- 
-diff --git a/arch/arm/mm/cache-tauros3.h b/arch/arm/mm/cache-tauros3.h
-new file mode 100644
-index 0000000..02c0a97
---- /dev/null
-+++ b/arch/arm/mm/cache-tauros3.h
-@@ -0,0 +1,41 @@
-+/*
-+ * Marvell Tauros3 cache controller includes
-+ *
-+ * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-+ *
-+ * based on GPL'ed 2.6 kernel sources
-+ *  (c) Marvell International Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+
-+#ifndef __ASM_ARM_HARDWARE_TAUROS3_H
-+#define __ASM_ARM_HARDWARE_TAUROS3_H
-+
-+/*
-+ * Marvell Tauros3 L2CC is compatible with PL310 r0p0
-+ * but with PREFETCH_CTRL (r2p0) and an additional event counter.
-+ * Also, there is AUX2_CTRL for some Marvell specific control.
-+ */
-+
-+#define TAUROS3_EVENT_CNT2_CFG		0x224
-+#define TAUROS3_EVENT_CNT2_VAL		0x228
-+#define TAUROS3_INV_ALL			0x780
-+#define TAUROS3_CLEAN_ALL		0x784
-+#define TAUROS3_AUX2_CTRL		0x820
-+
-+/* Registers shifts and masks */
-+#define TAUROS3_AUX2_CTRL_LINEFILL_BURST8_EN	(1 << 2)
-+
-+#endif
+								Honza
+
+								Honza
 -- 
-1.7.10.4
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
