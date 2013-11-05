@@ -1,158 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833Ab3KEJFP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 04:05:15 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:48457 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282Ab3KEJFG (ORCPT
+	id S1753950Ab3KEJGu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 04:06:50 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:63245 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070Ab3KEJGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 04:05:06 -0500
-X-AuditID: 9c93017e-b7c22ae000005611-18-5278b4bf7b7b
-From: Namhyung Kim <namhyung@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
-Subject: Re: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist periods (v2)
-References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
-	<20131031080932.GA8479@gmail.com> <87vc0c4ny2.fsf@sejong.aot.lge.com>
-	<20131101075502.GA25547@gmail.com> <874n7w4gtm.fsf@sejong.aot.lge.com>
-	<20131101092759.GC27063@gmail.com> <87bo1zz4mu.fsf@sejong.aot.lge.com>
-	<20131105074650.GA2855@gmail.com>
-Date: Tue, 05 Nov 2013 18:05:03 +0900
-In-Reply-To: <20131105074650.GA2855@gmail.com> (Ingo Molnar's message of "Tue,
-	5 Nov 2013 08:46:50 +0100")
-Message-ID: <87txfrxlq8.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 5 Nov 2013 04:06:46 -0500
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+Subject: [PATCH] staging: new asus fan driver
+Date: Tue,  5 Nov 2013 02:59:47 -0600
+Message-Id: <1383641987-4403-1-git-send-email-felipe.contreras@gmail.com>
+X-Mailer: git-send-email 1.8.4.2+fc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Nov 2013 08:46:50 +0100, Ingo Molnar wrote:
-> * Namhyung Kim <namhyung@kernel.org> wrote:
->> I think it'd better to separate the option and pass column and
->> (optional) sort key argument.
->> 
->>   --cumulative both,total (default)
->>   --cumulative both,self
->>   --cumulative total
->>   --cumulative self (meaningless?)
->> 
->> Maybe we need a config option and a single letter option for the default
->> case like --call-graph and -g options do.
->> 
->> What do you think?
->
-> So why restrict it to 'cumulative'? Why not have a generic --fields/-F, 
-> with a good default. The ordering of the fields determines sorting 
-> behavior.
+Simple driver to enable control of the fan in ASUS laptops. So far this
+has only been tested in ASUS Zenbook Prime UX31A, but according to some
+online reference [1], it should work in other models as well.
 
-Ah, I didn't know you meant that too. :)
+The implementation is very straight-forward, the only caveat is that the
+fan speed needs to be saved after it has been manually changed because
+it won't be reported properly until it goes back to 'auto' mode.
 
-But the 'cumulative' (btw, I feel a bit hard to type this word..) is
-different in that it *generates* entries didn't get sampled originally.
-And as it requires callchains, total field will not work if callchains
-are missing.
+[1] http://forum.notebookreview.com/asus/705656-fan-control-asus-prime-ux31-ux31a-ux32a-ux32vd.html
 
-So I tried to make it a standalone option.
+Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+---
 
->
-> The default would be something like:
->
->   -F total,self,process,dso,name
->
-> Whether 'cumulative' data is calculated is not a function of any direct 
-> option, but simply a function of whether the 'total' field is in the -F 
-> list of columns displayed or not.
+Two incarnations of this code exists [1][2], one that used ACPI methods
+directly, and one through WMI. Unfortunately the WMI version needs us to pass
+physicall addresses which is not exactly clean, and that's the only reason the
+code is proposed for staging.
 
-So you want to turn the cumulative behavior always on, right?
+Most likely this cannot graduate until acpica gets support to receive virtual
+addresses.
 
-But as Frederic noted, it might affect the performance of perf report,
-so it might be better to delay this behavior to make default after users
-feel comfortable with an option?
+ [1] http://article.gmane.org/gmane.linux.power-management.general/36774
+ [2] http://article.gmane.org/gmane.linux.kernel/1576463
 
->
-> With that scheme we could also do things like this to get old-style 
-> sorting:
->
->  -F self,process,dso,name
->
-> Or a really frugal 'readprofile'-style output:
->
->  -F self,name
->
-> if one is only interested in percentages and raw function names.
+ drivers/staging/Kconfig                     |   2 +
+ drivers/staging/Makefile                    |   1 +
+ drivers/staging/asus-thermal/Kconfig        |   7 ++
+ drivers/staging/asus-thermal/asus_thermal.c | 166 ++++++++++++++++++++++++++++
+ 4 files changed, 176 insertions(+)
+ create mode 100644 drivers/staging/asus-thermal/Kconfig
+ create mode 100644 drivers/staging/asus-thermal/asus_thermal.c
 
-s/name/sym(bol)/ :)
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index 3626dbc8..b245af5 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -148,4 +148,6 @@ source "drivers/staging/dgnc/Kconfig"
+ 
+ source "drivers/staging/dgap/Kconfig"
+ 
++source "drivers/staging/asus-thermal/Kconfig"
++
+ endif # STAGING
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index d1b4b80..70e4456 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -66,3 +66,4 @@ obj-$(CONFIG_USB_BTMTK)		+= btmtk_usb/
+ obj-$(CONFIG_XILLYBUS)		+= xillybus/
+ obj-$(CONFIG_DGNC)			+= dgnc/
+ obj-$(CONFIG_DGAP)			+= dgap/
++obj-$(CONFIG_ASUS_THERMAL)	+= asus-thermal/
+diff --git a/drivers/staging/asus-thermal/Kconfig b/drivers/staging/asus-thermal/Kconfig
+new file mode 100644
+index 0000000..8bf7db4
+--- /dev/null
++++ b/drivers/staging/asus-thermal/Kconfig
+@@ -0,0 +1,7 @@
++config ASUS_THERMAL
++	tristate "ASUS thermal driver"
++	depends on THERMAL
++	depends on X86
++	help
++	  Enables control of the fan in ASUS laptops.
++
+diff --git a/drivers/staging/asus-thermal/asus_thermal.c b/drivers/staging/asus-thermal/asus_thermal.c
+new file mode 100644
+index 0000000..a84856e
+--- /dev/null
++++ b/drivers/staging/asus-thermal/asus_thermal.c
+@@ -0,0 +1,166 @@
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/acpi.h>
++#include <linux/thermal.h>
++#include <linux/dmi.h>
++
++MODULE_AUTHOR("Felipe Contreras <felipe.contreras@gmail.com>");
++MODULE_DESCRIPTION("ASUS fan driver");
++MODULE_LICENSE("GPL");
++
++#define ASUS_WMI_MGMT_GUID "97845ED0-4E6D-11DE-8A39-0800200C9A66"
++#define ASUS_WMI_METHODID_AGFN 0x4E464741
++#define ASUS_WMI_UNSUPPORTED_METHOD 0xFFFFFFFE
++
++static struct thermal_cooling_device *fan;
++static int fan_speed;
++
++struct bios_args {
++	u32 arg0;
++	u32 arg1;
++} __packed;
++
++struct fan_args {
++	u16 mfun;
++	u16 sfun;
++	u16 len;
++	u8 stas;
++	u8 err;
++	u8 fan;
++	u32 speed;
++} __packed;
++
++/*
++ * Copied from [1], where this code belongs.
++ * [1] drivers/platform/x86/asus-wmi.c
++ */
++static int asus_wmi_evaluate_method(u32 method_id, u32 arg0, u32 arg1,
++				    u32 *retval)
++{
++	struct bios_args args = {
++		.arg0 = arg0,
++		.arg1 = arg1,
++	};
++	struct acpi_buffer input = { (acpi_size) sizeof(args), &args };
++	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
++	acpi_status status;
++	union acpi_object *obj;
++	u32 tmp;
++
++	status = wmi_evaluate_method(ASUS_WMI_MGMT_GUID, 1, method_id,
++				     &input, &output);
++
++	if (ACPI_FAILURE(status))
++		goto exit;
++
++	obj = (union acpi_object *)output.pointer;
++	if (obj && obj->type == ACPI_TYPE_INTEGER)
++		tmp = (u32) obj->integer.value;
++	else
++		tmp = 0;
++
++	if (retval)
++		*retval = tmp;
++
++	kfree(obj);
++
++exit:
++	if (ACPI_FAILURE(status))
++		return -EIO;
++
++	if (tmp == ASUS_WMI_UNSUPPORTED_METHOD)
++		return -ENODEV;
++
++	return 0;
++}
++
++static int fan_speed_helper(int write, int fan, unsigned long *speed)
++{
++	struct fan_args args = {
++		.len = sizeof(args),
++		.mfun = 0x13,
++		.sfun = write ? 0x07 : 0x06,
++		.fan = fan,
++		.speed = write ? *speed : 0,
++	};
++	int r;
++	u32 value;
++
++	if (!write && fan_speed >= 0) {
++		*speed = fan_speed;
++		return 0;
++	}
++
++	r = asus_wmi_evaluate_method(ASUS_WMI_METHODID_AGFN, virt_to_phys(&args), 0, &value);
++	if (r)
++		return r;
++	if (value || args.err)
++		return -EINVAL;
++
++	if (write)
++		fan_speed = fan > 0 ? *speed : -1;
++	else
++		*speed = args.speed;
++
++	return 0;
++}
++
++static int fan_set_auto(void)
++{
++	unsigned long speed = 0;
++	return fan_speed_helper(1, 0, &speed);
++}
++
++static int fan_get_max_state(struct thermal_cooling_device *cdev, unsigned long *state)
++{
++	*state = 0xff;
++	return 0;
++}
++
++static int fan_get_cur_state(struct thermal_cooling_device *cdev, unsigned long *state)
++{
++	return fan_speed_helper(0, 1, state);
++}
++
++static int fan_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
++{
++	return fan_speed_helper(1, 1, &state);
++}
++
++static const struct thermal_cooling_device_ops fan_cooling_ops = {
++	.get_max_state = fan_get_max_state,
++	.get_cur_state = fan_get_cur_state,
++	.set_cur_state = fan_set_cur_state,
++};
++
++static int __init fan_init(void)
++{
++	struct thermal_cooling_device *cdev;
++	int r;
++
++	if (!wmi_has_guid(ASUS_WMI_MGMT_GUID))
++		return -ENODEV;
++
++	r = fan_set_auto();
++	if (r)
++		return r;
++
++	cdev = thermal_cooling_device_register("Fan", NULL, &fan_cooling_ops);
++	if (IS_ERR(cdev))
++		return PTR_ERR(cdev);
++	fan = cdev;
++	return 0;
++}
++
++static void __exit fan_exit(void)
++{
++	if (!fan)
++		return;
++	fan_set_auto();
++	thermal_cooling_device_unregister(fan);
++	fan = NULL;
++}
++
++module_init(fan_init);
++module_exit(fan_exit);
+-- 
+1.8.4.2+fc1
 
-Yes, this is what we do with -s option now.
-
->
-> Wrt. sorting order, by default the first column in the list of columns 
-> would be the primary (and only) sort key.
-
-Ah, I never thought it like this way.  It makes sense as sort orders
-really affect the output sorting.
-
->
-> (The -F field setup list could also be specified in the .perfconfig.)
->
-> With this method we could do away with all this geometrical explosion of 
-> somewhat inconsistent formatting and sorting options...
-
-For now, there're two kind of columns:
-
-- one for showing entry's overhead percentage: self, sys, user,
-  guest_sys and guest_user.  So the 'total' should go into this
-  category.  I named it hpp (hist_entry period percentage) functions and
-  yes, I know it's an awfully bad name. :)  Please see perf_hpp__format.
-
-  There're controlled by a couple of options:  --show-total-period,
-  --show-nr-samples and --showcpuutilization (I hate this!).  And event
-  group also can affect its output.
-
-- one for grouping entries: cpu, pid, comm, dso, symbol, srcline and
-  parent.  We call it "sort keys" but confusingly it doesn't affect
-  output sorting for now.
-
-
-So I think cleaning this up with -F option is good and I've been wanting
-this discussion for a long time. :)
-
->
-> If there's demand then we could decouple sort keys from the display order, 
-> by slightly augmenting the field format:
->
->  -F total,self:2,process:0,dso:1,name
->
-> This would sort by 'process' field as the primary key, 'dso' the secondary 
-> key and 'self' as the tertiary key.
->
-> And we could also keep the -s/--sort option:
->
->  -s process,dso,self
->
-> So the above -F line would be equivalent to:
->
->  -F total,self,process,dso,name -s process,dso,self
->
-> What do you think?
-
-I like the second one.  It can sustain the old way but can support the
-new way easily.
-
-But for compatibility we need to use 'self' sort key internally iff
-neither the -F option nor the config option was given by user.  And it
-might warn (or notice) users to add 'self' column in the sort key for
-future use.
-
-Thanks,
-Namhyung
