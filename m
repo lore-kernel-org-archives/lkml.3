@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab3KEUii (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 15:38:38 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:48146 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754726Ab3KEUig (ORCPT
+	id S1755516Ab3KEUkE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 15:40:04 -0500
+Received: from smtprelay0220.hostedemail.com ([216.40.44.220]:50869 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755159Ab3KEUkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 15:38:36 -0500
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <20131105203308.3802.45122@localhost.localdomain>
-References: <CAHbNUh1Cw3bc4WR0VcD1H_eKYqGBtv_215_euh6mwTbZ41ejUw@mail.gmail.com>
-	<52794823.7080503@kernel.dk>
-	<CAOesGMj1xXXM-gNgWQwBKOczpJtM7CobYy4h7Fe=4W3U43EJGQ@mail.gmail.com>
-	<20131105203308.3802.45122@localhost.localdomain>
-Date: Tue, 5 Nov 2013 12:38:33 -0800
-Message-ID: <CAOesGMirg=ex9hLCjGBpj0cMhLeQ5cJQoRv72tgg7PoSKWUDhA@mail.gmail.com>
-Subject: Re: Boot failure on Arndale with next-20131105
-From: Olof Johansson <olof@lixom.net>
-To: Chris Mason <chris.mason@fusionio.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Tushar Behera <tushar.behera@linaro.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 5 Nov 2013 15:40:01 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:69:355:379:541:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3867:3870:3872:4321:4419:4605:5007:7652:9592:10004:10400:10848:11026:11473:11657:11658:11914:12043:12296:12517:12519:12555:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: beast23_916e1ca45125b
+X-Filterd-Recvd-Size: 2651
+Message-ID: <1383684000.4387.42.camel@joe-AO722>
+Subject: [PATCH] wcn36xx: Fix logging macro with unnecessary semicolon
+From: Joe Perches <joe@perches.com>
+To: Eugene Krasnikov <k.eugene.e@gmail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>, wcn36xx@lists.infradead.org,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 05 Nov 2013 12:40:00 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 5, 2013 at 12:33 PM, Chris Mason <chris.mason@fusionio.com> wrote:
-> Quoting Olof Johansson (2013-11-05 15:23:51)
->> On Tue, Nov 5, 2013 at 11:33 AM, Jens Axboe <axboe@kernel.dk> wrote:
->
-> [ horrible crashes fixed by removing my patch ]
->
->> > Very weird! What file system is being used?
->>
->> Most of my failures have happened on regular MMC cards with ext4
->> filesystems on them.
->>
->> Note that the panic happens during device probe / partition table
->> scanning, not after mounting the filesystem.
->>
->> Giving your patch a go now across the board. I'm very concerned about
->> the reports of bisectability, build failures and heaps of warnings
->> though. Did the 0-day builder pick up any of those? :-/
->>
->
-> Hmmm, is bcache in your config?
+The wcn36xx_err macro should not end in a semicolon as
+there are 2 consecutive semicolons in the preprocessed
+output.
 
-Doesn't look that way -- no ARM defconfigs enable it (it's what I
-build and boot), and the option defaults to off and nothing selects
-it.
+Remove it.
+
+Neaten the logging macros to use a more common style.
+Convert to use pr_debug to enable dynamic debug.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/wireless/ath/wcn36xx/wcn36xx.h | 28 +++++++++++++---------------
+ 1 file changed, 13 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/wcn36xx/wcn36xx.h b/drivers/net/wireless/ath/wcn36xx/wcn36xx.h
+index 58b6383..d157bb7 100644
+--- a/drivers/net/wireless/ath/wcn36xx/wcn36xx.h
++++ b/drivers/net/wireless/ath/wcn36xx/wcn36xx.h
+@@ -53,22 +53,20 @@ enum wcn36xx_debug_mask {
+ 	WCN36XX_DBG_ANY		= 0xffffffff,
+ };
+ 
+-#define wcn36xx_err(fmt, arg...)				\
+-	printk(KERN_ERR pr_fmt("ERROR " fmt), ##arg);
+-
+-#define wcn36xx_warn(fmt, arg...)				\
+-	printk(KERN_WARNING pr_fmt("WARNING " fmt), ##arg)
+-
+-#define wcn36xx_info(fmt, arg...)		\
+-	printk(KERN_INFO pr_fmt(fmt), ##arg)
+-
+-#define wcn36xx_dbg(mask, fmt, arg...) do {			\
+-	if (wcn36xx_dbg_mask & mask)					\
+-		printk(KERN_DEBUG pr_fmt(fmt), ##arg);	\
++#define wcn36xx_err(fmt, ...)					\
++	pr_err("ERROR " fmt, ##__VA_ARGS__)
++#define wcn36xx_warn(fmt, ...)					\
++	pr_warn("WARNING " fmt, ##__VA_ARGS__)
++#define wcn36xx_info(fmt, ...)					\
++	pr_info(fmt, ##__VA_ARGS__)
++#define wcn36xx_dbg(mask, fmt, ...)				\
++do {								\
++	if (wcn36xx_dbg_mask & mask)				\
++		pr_debug(fmt, ##__VA_ARGS__);			\
+ } while (0)
+-
+-#define wcn36xx_dbg_dump(mask, prefix_str, buf, len) do {	\
+-	if (wcn36xx_dbg_mask & mask)					\
++#define wcn36xx_dbg_dump(mask, prefix_str, buf, len)		\
++do {								\
++	if (wcn36xx_dbg_mask & mask)				\
+ 		print_hex_dump(KERN_DEBUG, pr_fmt(prefix_str),	\
+ 			       DUMP_PREFIX_OFFSET, 32, 1,	\
+ 			       buf, len, false);		\
 
 
--Olof
