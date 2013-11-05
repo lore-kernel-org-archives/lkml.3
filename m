@@ -1,54 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab3KET7C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 14:59:02 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:55101 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970Ab3KET7A (ORCPT
+	id S1755686Ab3KET7w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 14:59:52 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38633 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755239Ab3KET7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 14:59:00 -0500
+	Tue, 5 Nov 2013 14:59:51 -0500
+Message-ID: <52794E22.5030807@kernel.dk>
+Date: Tue, 05 Nov 2013 12:59:30 -0700
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1362388174-3435-10-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1362388174-3435-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1362388174-3435-10-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Tue, 5 Nov 2013 11:58:58 -0800
-X-Google-Sender-Auth: 4PCTwRxWov8uL-8KkGazOxsa0ic
-Message-ID: <CAA9_cmdYr_KMf7UyanX9QAndPoFa4fVW6=QwDJbH6pZExYUcpw@mail.gmail.com>
-Subject: Re: [PATCH 09/10] dmatest: gather test results in the linked list
-From: Dan Williams <dan.j.williams@intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, dmaengine@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tomasz Figa <t.figa@samsung.com>, Tushar Behera <tushar.behera@linaro.org>
+CC: linux-next@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: Re: Boot failure on Arndale with next-20131105
+References: <CAHbNUh1Cw3bc4WR0VcD1H_eKYqGBtv_215_euh6mwTbZ41ejUw@mail.gmail.com> <1451170.jb5zbRXgpt@amdc1227>
+In-Reply-To: <1451170.jb5zbRXgpt@amdc1227>
+Content-Type: multipart/mixed;
+ boundary="------------020109080607070201030409"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 4, 2013 at 1:09 AM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> The patch provides a storage for the test results in the linked list. The
-> gathered data could be used after test is done.
->
-> The new file 'results' represents gathered data of the in progress test. The
-> messages collected are printed to the kernel log as well.
->
-> Example of output:
->         % cat /sys/kernel/debug/dmatest/results
->         dma0chan0-copy0: #1: No errors with src_off=0x7bf dst_off=0x8ad len=0x3fea (0)
->
-> The message format is unified across the different types of errors. A number in
-> the parens represents additional information, e.g. error code, error counter,
-> or status.
->
-> Note that the buffer comparison is done in the old way, i.e. data is not
-> collected and just printed out.
->
+This is a multi-part message in MIME format.
+--------------020109080607070201030409
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-I need to revert this to get my testing done as it just leaks memory
-for no real benefit that I can see.  Outside of making the log
-messages have a uniform format I'm not seeing the case for this?  I'll
-revert and add a pr_fmt to make dmatest messages readily parseable.
+On 11/05/2013 09:42 AM, Tomasz Figa wrote:
+> Hi,
+> 
+> On Tuesday 05 of November 2013 17:19:00 Tushar Behera wrote:
+>> Hi,
+>>
+>> We are having a boot-time kernel panic on Samsung's Exynos5250-based
+>> Arndale board with next-20131105. Bisect points to following commit.
+>>
+>> <<<
+>> commit febca1baea1cfe2d7a0271385d89b03d5fb34f94
+>> Author: Chris Mason <chris.mason@fusionio.com>
+>> Date:   Thu Oct 31 13:32:42 2013 -0600
+>>
+>>     block: setup bi_vcnt on clones
+>>
+>>     commit 9fc6286f347d changed the cloning code to make clones cheaper for
+>>     the case where we don't need to clone the iovec array.  But,
+>>     the new clone needs the bi_vnct from the original.
+>>
+>>     Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+>>     Signed-off-by: Jens Axboe <axboe@kernel.dk>
+>>>>>
+>>
+>> Reverting above commit, Arndale is able to boot again.
+> 
+> I can confirm exactly the same behavior on Exynos 4210-based Trats board,
+> with exactly the same bisection results.
 
---
-Dan
+Can either (or both) of you try this?
+
+-- 
+Jens Axboe
+
+
+--------------020109080607070201030409
+Content-Type: text/x-patch;
+ name="dm-clone.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="dm-clone.patch"
+
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index 8e6174c..a1177e1 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -1123,8 +1123,13 @@ struct clone_info {
+ 
+ static void bio_setup_sector(struct bio *bio, sector_t sector, sector_t len)
+ {
+-	bio->bi_iter.bi_sector = sector;
+-	bio->bi_iter.bi_size = to_bytes(len);
++	if (len) {
++		bio->bi_iter.bi_sector = sector;
++		bio->bi_iter.bi_size = to_bytes(len);
++	} else {
++		bio->bi_iter.bi_size = 0;
++		bio->bi_vcnt = 0;
++	}
+ }
+ 
+ /*
+@@ -1178,8 +1183,7 @@ static void __clone_and_map_simple_bio(struct clone_info *ci,
+ 	 * and discard, so no need for concern about wasted bvec allocations.
+ 	 */
+ 	 __bio_clone(clone, ci->bio);
+-	if (len)
+-		bio_setup_sector(clone, ci->sector, len);
++	bio_setup_sector(clone, ci->sector, len);
+ 
+ 	__map_bio(tio);
+ }
+
+--------------020109080607070201030409--
