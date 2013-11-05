@@ -1,50 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab3KESmr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 13:42:47 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:52040 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755036Ab3KESls convert rfc822-to-8bit (ORCPT
+	id S1755420Ab3KESob (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 13:44:31 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:55991 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886Ab3KESo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 13:41:48 -0500
-From: Steven Schlansker <stevenschlansker@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
-Subject: Multiple copy-on-write branches of an anonymous memory segment
-Message-Id: <9492A0F4-990D-44F0-B10A-1B55D25995B6@gmail.com>
-Date: Tue, 5 Nov 2013 10:41:43 -0800
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1816\))
-X-Mailer: Apple Mail (2.1816)
+	Tue, 5 Nov 2013 13:44:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1311051402500.2779@pobox.suse.cz>
+References: <alpine.LNX.2.00.1308271141080.2077@pobox.suse.cz>
+ <alpine.LNX.2.00.1308271144420.2077@pobox.suse.cz> <alpine.LNX.2.00.1308281745460.4557@pobox.suse.cz>
+ <CAErSpo6saRNMw6Js0PLXZzYDdH0M3ypSFLDxVxp0G02aetp0Dw@mail.gmail.com>
+ <alpine.LNX.2.00.1309061150140.26934@pobox.suse.cz> <CAErSpo5ExXsbSd+jYP5JYwq-RBf-dx1T_AZx6CV4=6-AfTTynQ@mail.gmail.com>
+ <alpine.LNX.2.00.1309271106090.18703@pobox.suse.cz> <alpine.LNX.2.00.1310301125400.19090@pobox.suse.cz>
+ <CAErSpo7qORQjs62zdi-5et2WnWwy3weMs56G84rWhNrW59F5WQ@mail.gmail.com> <alpine.LNX.2.00.1311051402500.2779@pobox.suse.cz>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 5 Nov 2013 11:44:08 -0700
+Message-ID: <CAErSpo4J2+XVb=aTGM9u3Kaeo-TOrvfe1=9PuyKx6jq=NnLgaw@mail.gmail.com>
+Subject: Re: [PATCH] PCI: add quirk for 3ware 9650SE controller
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Adam Radford <aradford@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Nov 5, 2013 at 6:06 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Thu, 31 Oct 2013, Bjorn Helgaas wrote:
+>
+>> > Attached is dmesg output leading to timeouts (that are cured by my
+>> > original patch in this thread) and lspci.
+>>
+>> I opened https://bugzilla.kernel.org/show_bug.cgi?id=64141 for this
+>> issue and attached your dmesg log and lspci output.
+>>
+>> > Please let me know if there is anything else I could do, or if you are
+>> > going to proceed with my patch adding the quirk.
+>>
+>> Your quirk keeps us from disabling MSIs on the device during
+>> enumeration.  But even if the BIOS left MSIs enabled, there's nothing
+>> to field the MSI until after the driver claims the device.  So I don't
+>> believe this has to be done as a quirk.  It should work just as well
+>> to do something in the driver when it claims the device.
+>>
+>> I guess another way to say this is that I don't think we understand
+>> what the real problem is, and if we just add a quirk to work around
+>> it, we might miss the chance to fix the real problem, and we may never
+>> be able to remove the special-case code we're adding in the generic
+>> path.
+>>
+>> I know you said you tried doing something in the driver, and it didn't
+>> work.  I don't know exactly what you tried, but twa_probe() looks
+>> strange to me.  The other drivers I looked at do all their PCI
+>> initialization before the scsi_host_alloc() / scsi_add_host() /
+>> scsi_scan_host() stuff.  But twa_probe() has PCI stuff scattered
+>> around between those three SCSI calls.  In particular, it does the MSI
+>> setup way down near the end, after scsi_add_host(), which seems like
+>> just the sort of thing that could explain this problem.
+>
+> What I tried was patch below, but it didn't have any observable effect --
+> the commands sent to the controller would still time out the same way.
+>
+> Debugging this is not really straightforward for me unfortunately, as I
+> don't own the system myself.
+>
+> I agree that we don't fully understand what is happening, but the quirk
+> was the only way I have been able to come up with to make the device
+> functioning again (apart from reverting d5dea7d95).
+>
+> Any other ideas are welcome.
 
-I am developing a data structure that resides in a large memory buffer.  It is important that I be able to
-mutate the data structure without interfering with concurrent reads, and then swap it in at a convenient time.
+This patch looks like a good start, but there's a whole lot of other
+PCI-related initialization that I would suggest moving as well --
+pci_request_regions(), ioremap(), pci_set_drvdata(), pci_enable_msi,
+request_irq(), etc.  I would do this myself, but there are some pieces
+that don't look completely trivial, e.g., things like
+TW_DISABLE_INTERRUPTS() and twa_reset_sequence() don't look like
+they're SCSI-specific, but they are currently implemented using
+tw_dev, which looks like it's allocated by scsi_host_alloc().
+Untangling all this looks like more work than I want to sign up to.
 
-There is a set of initial data stored in a file.  I use mmap(2) to map the file into memory.  At some later point, I would like to run incremental updates.  This involves copying the data structure, mutating it, then publishing it.  Only a very small percentage of the data structure is changed, but it can change at random.
+But I really don't want to put the quirk in because it's just a quick
+hack that apparently just covers up bugs in the driver, and it will be
+an annoyance in the PCI core forever.
 
-Currently, I accomplish this by mapping a new anonymous segment, copying the data, and modifying it.  However this is wasteful both in time (copying all that data takes a fair amount of time) and memory (most of the data did not actually change, but now we have two copies).
+Bjorn
 
-I would like to utilize kernel support for copy-on-write to eliminate both of these bottlenecks.  Ideally, I would be able to:
-
-1) create a new COW mapping of an existing anonymous mapping that shares pages initially and I can write to without affecting the original
-2) At the time of creating that new mapping, extend the buffer with initially-zero pages (in case I need more space to append to the end of the data structure in the new version)
-
-The mmap and mremap documentation get me tantalizingly close — I can resize the segment I already have, I can allocate file-backed copy on write segments.  Also, forking while holding a private mapping seems to provide other bits of the functionality (COW of anonymous segments).  But I can’t seem to figure out how to fit the puzzle pieces together.  Also, I’m running in the JVM, so forking is not a possibility.
-
-There’s a couple of unanswered StackOverflow questions in a similar vein, so I hope I’m not just missing something obvious.  The most relevant is:
-
-http://stackoverflow.com/questions/16965505/allocating-copy-on-write-memory-within-a-process
-
-And it looks like this dance is even possible on Mach, with some clever use of ‘vm_remap'.
-
-
-I’m hoping that I’m just missing the magic incantation to pass to mmap to achieve this behavior.  I wasn’t brave enough to subscribe to LKML just yet, so please CC me on replies!
-
-TIA,
-Steven Schlansker
-
+> ---
+>  drivers/scsi/3w-9xxx.c |   10 +++++-----
+>  1 files changed, 5 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/scsi/3w-9xxx.c b/drivers/scsi/3w-9xxx.c
+> index ba754c3..bad7faf 100644
+> --- a/drivers/scsi/3w-9xxx.c
+> +++ b/drivers/scsi/3w-9xxx.c
+> @@ -2055,6 +2055,11 @@ static int __devinit twa_probe(struct pci_dev *pdev, const struct pci_device_id
+>                         goto out_disable_device;
+>                 }
+>
+> +       /* Try to enable MSI */
+> +       if (use_msi && (pdev->device != PCI_DEVICE_ID_3WARE_9000) &&
+> +           !pci_enable_msi(pdev))
+> +               set_bit(TW_USING_MSI, &tw_dev->flags);
+> +
+>         host = scsi_host_alloc(&driver_template, sizeof(TW_Device_Extension));
+>         if (!host) {
+>                 TW_PRINTK(host, TW_DRIVER, 0x24, "Failed to allocate memory for device extension");
+> @@ -2134,11 +2139,6 @@ static int __devinit twa_probe(struct pci_dev *pdev, const struct pci_device_id
+>                le32_to_cpu(*(int *)twa_get_param(tw_dev, 2, TW_INFORMATION_TABLE,
+>                                      TW_PARAM_PORTCOUNT, TW_PARAM_PORTCOUNT_LENGTH)));
+>
+> -       /* Try to enable MSI */
+> -       if (use_msi && (pdev->device != PCI_DEVICE_ID_3WARE_9000) &&
+> -           !pci_enable_msi(pdev))
+> -               set_bit(TW_USING_MSI, &tw_dev->flags);
+> -
+>         /* Now setup the interrupt handler */
+>         retval = request_irq(pdev->irq, twa_interrupt, IRQF_SHARED, "3w-9xxx", tw_dev);
+>         if (retval) {
+>
+>
+> --
+> Jiri Kosina
+> SUSE Labs
