@@ -1,55 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755801Ab3KEWxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 17:53:41 -0500
-Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:18472
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755713Ab3KEWxj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 17:53:39 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 8
-X-BigFish: VS8(z33fclz4015Idbb0izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6h1082kzz8275ch1d7338h17326ah1de097h186068hz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216hbe9i1155h)
-From: Stuart Yoder <B08248@freescale.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "kim.phillips@linaro.org" <kim.phillips@linaro.org>
-Subject: driver core patches
-Thread-Topic: driver core patches
-Thread-Index: Ac7aedvd0hns3ndWTCm68Q+mlo9iMw==
-Date: Tue, 5 Nov 2013 22:53:36 +0000
-Message-ID: <9F6FE96B71CF29479FF1CDC8046E15036F480C@039-SN1MPN1-002.039d.mgd.msft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.214.84.194]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755838Ab3KEW4Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 17:56:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48221 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755435Ab3KEW4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 17:56:22 -0500
+Date: Tue, 5 Nov 2013 23:56:19 +0100
+From: Jan Kara <jack@suse.cz>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        LKML <linux-kernel@vger.kernel.org>, EXT4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 1/2] rbtree: fix postorder iteration when the rb_node is
+ not the first element in an entry
+Message-ID: <20131105225619.GC9236@quack.suse.cz>
+References: <52784ADF.1040104@linux.vnet.ibm.com>
+ <1383615602-1784-1-git-send-email-cody@linux.vnet.ibm.com>
+ <5278C2F8.3050805@linux.vnet.ibm.com>
+ <20131105215755.GB9236@quack.suse.cz>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: multipart/mixed; boundary="IS0zKkzwUGydFO0o"
+Content-Disposition: inline
+In-Reply-To: <20131105215755.GB9236@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
 
-Any feedback on the driver core patches in Kim Phillips patch series
-from mid-October?
+--IS0zKkzwUGydFO0o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The 3rd patch of the series has some open issues related to vfio-pci,
-but the first two are driver core related and am wondering if they
-are acceptable.
+On Tue 05-11-13 22:57:55, Jan Kara wrote:
+> On Tue 05-11-13 02:05:44, Cody P Schafer wrote:
+> > On 11/04/2013 05:40 PM, Cody P Schafer wrote:
+> > > Provide a new helper called rb_next_postorder_entry() to perform NULL
+> > > checks and container_of() coversions and use it in
+> > > rbtree_for_each_entry_safe() to fix oopses that occur when rb_node is
+> > > not the first element in the entry.
+> > 
+> > On second thought, it appears I was a bit to hasty with this, and this patch actually breaks things.
+> > 
+> > On 11/04/2013 04:45 PM, Jan Kara wrote:> On Mon 04-11-13 15:26:38, Jan Kara wrote:
+> > >> On Fri 01-11-13 15:38:50, Cody P Schafer wrote:
+> > >>> Use rbtree_postorder_for_each_entry_safe() to destroy the rbtree instead
+> > >>> of opencoding an alternate postorder iteration that modifies the tree
+> > >>    Thanks. I've merged the patch into my tree.
+> > >    Hum, except that the kernel oopses with this patch. And I think the
+> > > problem is in rbtree_postorder_for_each_entry_safe(). How are those tests
+> > > for NULL supposed to work? For example if the tree is empty, 'pos' will be
+> > > NULL and you'll call rb_next_postorder(&NULL->field) which is pretty much
+> > > guaranteed to oops if 'field' doesn't have offset 0 in the structure...
+> > 
+> > No, it shouldn't oops because pos won't be NULL, &pos->field will be.
+> > 
+> > pos is only assigned via an rb_entry(rb_first_postorder()) or
+> > rb_entry(rb_next_postorder()). rb_next_postorder() and
+> > rb_first_postorder() can return NULL. That NULL then is munged by
+> > rb_entry to be (NULL - offset_of_field). Causing (&pos->field == NULL ==
+> > (pos + offset_of_field)).
+>   OK, so I had a second look. And the compiler thinks differently than you
+> :) The thing is that my gcc (4.3.4) apparently assumes pointer underflow is
+> undefined and thus optimizes your test &pos->field to 1. I've asked our gcc
+> guys for a definitive answer but clearly your code will need some way to
+> avoid pointer underflows...
+  I've just now checked how e.g. hlist iterators solve similar problem and
+modified the rbtree iterator accordingly. The patch is attached and with it
+and your ext3 patch my test machine is able to boot again.
 
-[PATCH 1/4] driver core: Add new device_driver flag to allow binding via sysfs only
-http://www.spinics.net/lists/kvm/msg97198.html
-[PATCH 2/4] driver core: platform: allow platform drivers to bind to any device
-http://www.spinics.net/lists/kvm/msg97195.html
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
 
-If you have any issues, we would like to get them addressed.
+--IS0zKkzwUGydFO0o
+Content-Type: text/x-patch; charset=us-ascii
+Content-Disposition: attachment; filename="0001-rbtree-Fix-rbtree_postorder_for_each_entry_safe-i.patch"
 
-Thanks,
-Stuart Yoder
+>From d51a16626d241ded8913768d6f24484b1d4335ba Mon Sep 17 00:00:00 2001
+From: Jan Kara <jack@suse.cz>
+Date: Tue, 5 Nov 2013 21:39:48 +0100
+Subject: [PATCH] rbtree: Fix rbtree_postorder_for_each_entry_safe() iterator
 
+The iterator rbtree_postorder_for_each_entry_safe() relies on pointer
+underflow behavior when testing for loop termination. In particular
+it expects that
+  &rb_entry(NULL, type, field)->field
+is NULL. But the result of this expression is not defined by a C standard
+and some gcc versions (e.g. 4.3.4) assume the above expression can never
+be equal to NULL. The net result is an oops because the iteration is not
+properly terminated.
+
+Fix the problem by modifying the iterator to avoid pointer underflows.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ include/linux/rbtree.h |   16 +++++++++-------
+ 1 files changed, 9 insertions(+), 7 deletions(-)
+
+diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
+index aa870a4..57e75ae 100644
+--- a/include/linux/rbtree.h
++++ b/include/linux/rbtree.h
+@@ -85,6 +85,11 @@ static inline void rb_link_node(struct rb_node * node, struct rb_node * parent,
+ 	*rb_link = node;
+ }
+ 
++#define rb_entry_safe(ptr, type, member) \
++	({ typeof(ptr) ____ptr = (ptr); \
++	   ____ptr ? rb_entry(____ptr, type, member) : NULL; \
++	})
++
+ /**
+  * rbtree_postorder_for_each_entry_safe - iterate over rb_root in post order of
+  * given type safe against removal of rb_node entry
+@@ -95,12 +100,9 @@ static inline void rb_link_node(struct rb_node * node, struct rb_node * parent,
+  * @field:	the name of the rb_node field within 'type'.
+  */
+ #define rbtree_postorder_for_each_entry_safe(pos, n, root, field) \
+-	for (pos = rb_entry(rb_first_postorder(root), typeof(*pos), field),\
+-		n = rb_entry(rb_next_postorder(&pos->field), \
+-			typeof(*pos), field); \
+-	     &pos->field; \
+-	     pos = n, \
+-		n = rb_entry(rb_next_postorder(&pos->field), \
+-			typeof(*pos), field))
++	for (pos = rb_entry_safe(rb_first_postorder(root), typeof(*pos), field); \
++	     pos && ({ n = rb_entry_safe(rb_next_postorder(&pos->field), \
++			typeof(*pos), field); 1; }); \
++	     pos = n)
+ 
+ #endif	/* _LINUX_RBTREE_H */
+-- 
+1.6.0.2
+
+
+--IS0zKkzwUGydFO0o--
