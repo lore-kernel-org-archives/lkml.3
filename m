@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab3KEHJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 02:09:58 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53116 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab3KEHJ5 (ORCPT
+	id S1754230Ab3KEHML (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 02:12:11 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:49584 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab3KEHMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 02:09:57 -0500
-X-AuditID: 9c930197-b7b60ae000006860-7d-527899c4a6a1
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: Re: [PATCH 02/14] perf tools: Introduce struct add_entry_iter
-References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
-	<1383202576-28141-3-git-send-email-namhyung@kernel.org>
-	<20131101120735.GB10041@krava.brq.redhat.com>
-Date: Tue, 05 Nov 2013 16:09:56 +0900
-In-Reply-To: <20131101120735.GB10041@krava.brq.redhat.com> (Jiri Olsa's
-	message of "Fri, 1 Nov 2013 13:07:35 +0100")
-Message-ID: <87ob5zz5mj.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 5 Nov 2013 02:12:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <CAFp+6iG5SAe5h0-RRsBuAhtWO_NBW6G=7jQeObd4Y2BQGaRHyA@mail.gmail.com>
+References: <1383205544-32244-1-git-send-email-gautam.vivek@samsung.com>
+	<1383205544-32244-2-git-send-email-gautam.vivek@samsung.com>
+	<527744B2.4090303@ti.com>
+	<1539581.zprt32081v@amdc1227>
+	<CAFp+6iG5SAe5h0-RRsBuAhtWO_NBW6G=7jQeObd4Y2BQGaRHyA@mail.gmail.com>
+Date: Tue, 5 Nov 2013 12:42:03 +0530
+Message-ID: <CAFp+6iF443AR1SKPxozdGn2Y-Dm+pSwh5Xx9FFvNqGyRz9k7xw@mail.gmail.com>
+Subject: Re: [PATCH RFC 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jingoo Han <jg1.han@samsung.com>, linux-doc@vger.kernel.org,
+        Julius Werner <jwerner@chromium.org>, Felipe Balbi <balbi@ti.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Kamil Debski <k.debski@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Tue, Nov 5, 2013 at 11:06 AM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
+> Hi Tomasz,
 
-On Fri, 1 Nov 2013 13:07:35 +0100, Jiri Olsa wrote:
-> On Thu, Oct 31, 2013 at 03:56:04PM +0900, Namhyung Kim wrote:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->
-> SNIP
->
->> +
->> +static int
->> +perf_evsel__add_entry(struct perf_evsel *evsel, struct addr_location *al,
->> +		      struct perf_sample *sample, struct machine *machine,
->> +		      struct add_entry_iter *iter)
->> +{
->> +	int err;
->> +
->> +	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
->> +		err = machine__resolve_callchain(machine, evsel, al->thread,
->> +						 sample, &iter->parent, al,
->> +						 iter->rep->max_stack);
->> +		if (err)
->> +			return err;
->> +	}
->> +
->> +	err = iter->prepare_entry(iter, machine, evsel, al, sample);
->> +	if (err)
->> +		return err;
->> +
->> +	err = iter->add_single_entry(iter, al);
->> +	if (err)
->> +		return err;
->> +
->> +	while (iter->next_entry(iter, al)) {
->> +		err = iter->add_next_entry(iter, al);
->> +		if (err)
->> +			break;
->> +	}
->> +
->> +	err = iter->finish_entry(iter, al);
->> +
->> +	return err;
->
-> 	return iter->finish_entry(iter, al);  ?
+Sorry my mail client had some problem, so forwarding this again.
 
-Right.  Will fix in v3.
+>
+> On Nov 4, 2013 5:59 PM, "Tomasz Figa" <t.figa@samsung.com> wrote:
+>>
+>> Hi Kishon,
+>>
+>> On Monday 04 of November 2013 12:24:42 Kishon Vijay Abraham I wrote:
+>> > Hi Vivek,
+>> >
+>> > On Thursday 31 October 2013 01:15 PM, Vivek Gautam wrote:
+>> > > Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
+>> > > The new driver uses the generic PHY framework and will interact
+>> > > with DWC3 controller present on Exynos5 series of SoCs.
+>> >
+>> > In Exynos, you have a single IP that supports both USB3 and USB2 PHY
+>> > right? I think that needs to be mentioned here.
+>>
+>> Nope. There are two separate, different IPs.
+>
+> AFAICS the dwc3 controller (aka usb 3.0 drd controller, as mentioned in
+> exynos5 UM) uses a combo of usb 2 (utmi+) and usb 3 (pipe 3) phy (with base
+> address starting 0x12100000), thereby giving the driver only freedom to
+> control them as one. The entire set of registers with base 0x12100000 for
+> exynos5250 and later 0x12500000 for exynos5420 are being programmed by this
+> driver. That's the reason i structured the driver this way, and thereby it
+> makes the dwc3 controller to just use only single phy.
+> Please correct me if i am wrong.
+>
+>>
+>> > Do you have separate registers that should be used for
+>> > initializing/powerin_on/powering_off etc.. for usb2 phy and usb3 phy? If
+>> > so, then you should model this driver as a single driver that supports
+>> > two PHYs similar to what Sylwester has done before?
+>>
+>> Sylwester's MIPI PHY uses such model because it has a single register
+>> that controls both PHYs.
+>>
+>> Best regards,
+>> Tomasz
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 
-Thanks,
-Namhyung
+
+
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
