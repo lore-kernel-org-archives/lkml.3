@@ -1,168 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409Ab3KESMW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 13:12:22 -0500
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:40691 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755322Ab3KESMS (ORCPT
+	id S1755436Ab3KESMy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 13:12:54 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:51615 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755203Ab3KESMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 13:12:18 -0500
+	Tue, 5 Nov 2013 13:12:53 -0500
+Date: Tue, 5 Nov 2013 13:12:46 -0500
+From: Matt Porter <matt.porter@linaro.org>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] OF: export of_property_notify
+Message-ID: <20131105181246.GK7028@beef>
+References: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com>
+ <1383673816-29293-4-git-send-email-panto@antoniou-consulting.com>
 MIME-Version: 1.0
-In-Reply-To: <CAFp+6iFFk9Bg1xDaKbuQwF_vEmnVtFtai6LPEsNDodpH5WF4ow@mail.gmail.com>
-References: <1381866857-3861-1-git-send-email-kishon@ti.com>
-	<1381866857-3861-2-git-send-email-kishon@ti.com>
-	<525E8E93.9010503@ti.com>
-	<525E9046.3090209@ti.com>
-	<CAFp+6iFFk9Bg1xDaKbuQwF_vEmnVtFtai6LPEsNDodpH5WF4ow@mail.gmail.com>
-Date: Tue, 5 Nov 2013 23:42:16 +0530
-Message-ID: <CAFp+6iHLxrY1mwG=MB3aUty-h43Q_i3yBKY7An02TMRqEyd6Mg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/7] usb: dwc3: get "usb_phy" only if the platform
- indicates the presence of PHY's
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>, Roger Quadros <rogerq@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, ijc+devicetree@hellion.org.uk,
-        Rob Landley <rob@landley.net>, Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-omap@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383673816-29293-4-git-send-email-panto@antoniou-consulting.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 5, 2013 at 11:41 PM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
-> Dear Kishon, Roger
->
->
-> On Wed, Oct 16, 2013 at 6:40 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->> Hi roger,
->>
->> On Wednesday 16 October 2013 06:33 PM, Roger Quadros wrote:
->>> Hi Kishon,
->
-> Apologies for missing this thread for so long.
->
->>>
->>> On 10/15/2013 10:54 PM, Kishon Vijay Abraham I wrote:
->>>> There can be systems which does not have a external usb_phy, so get
->>>> usb_phy only if dt data indicates the presence of PHY in the case of dt boot or
->>>> if platform_data indicates the presence of PHY. Also remove checking if
->>>> return value is -ENXIO since it's now changed to always enable usb_phy layer.
->>>>
->>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>> ---
->>>> In usb_get_phy_by_phandle, index 0 always refers to usb2 phy and index 1 always
->>>> refers to usb3 phy. Since we've lived so long with this, this patch will make
->>>> an assumption that if only one entry is populated in *usb-phy* property, it will
->>>> be usb2 phy and the next entry will be usb3 phy.
->>>>
->>>>  drivers/usb/dwc3/Kconfig         |    1 +
->>>>  drivers/usb/dwc3/core.c          |   72 ++++++++++++++++++++------------------
->>>>  drivers/usb/dwc3/platform_data.h |    2 ++
->>>>  3 files changed, 41 insertions(+), 34 deletions(-)
->>>>
->>>> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
->>>> index 70fc430..8e385b4 100644
->>>> --- a/drivers/usb/dwc3/Kconfig
->>>> +++ b/drivers/usb/dwc3/Kconfig
->>>> @@ -1,6 +1,7 @@
->>>>  config USB_DWC3
->>>>      tristate "DesignWare USB3 DRD Core Support"
->>>>      depends on (USB || USB_GADGET) && HAS_DMA
->>>> +    select USB_PHY
->>>>      select USB_XHCI_PLATFORM if USB_SUPPORT && USB_XHCI_HCD
->>>>      help
->>>>        Say Y or M here if your system has a Dual Role SuperSpeed
->>>> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
->>>> index 474162e..cb91d70 100644
->>>> --- a/drivers/usb/dwc3/core.c
->>>> +++ b/drivers/usb/dwc3/core.c
->>>> @@ -354,6 +354,7 @@ static int dwc3_probe(struct platform_device *pdev)
->>>>      struct device_node      *node = dev->of_node;
->>>>      struct resource         *res;
->>>>      struct dwc3             *dwc;
->>>> +    int                     count;
->>>>
->>>>      int                     ret = -ENOMEM;
->>>>
->>>> @@ -387,16 +388,49 @@ static int dwc3_probe(struct platform_device *pdev)
->>>>      if (node) {
->>>>              dwc->maximum_speed = of_usb_get_maximum_speed(node);
->>>>
->>>> -            dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
->>>> -            dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 1);
->>>> +            count = of_count_phandle_with_args(node, "usb-phy", NULL);
->>>> +            switch (count) {
->>>> +            case 2:
->>>> +                    dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev,
->>>> +                            "usb-phy", 1);
->>>> +                    if (IS_ERR(dwc->usb3_phy)) {
->>>> +                            dev_err(dev, "usb3 phy not found\n");
->>>> +                            return PTR_ERR(dwc->usb3_phy);
->>>> +                    }
->>>> +            case 1:
->>>> +                    dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev,
->>>> +                            "usb-phy", 0);
->>>> +                    if (IS_ERR(dwc->usb2_phy)) {
->>>> +                            dev_err(dev, "usb2 phy not found\n");
->>>> +                            return PTR_ERR(dwc->usb2_phy);
->>>> +                    }
->>>> +                    break;
->>>
->>> In the Exynos case, there is only 1 phy and it is the USB3 phy. This code
->>> will wrongly treat it as usb2_phy.
->
-> Thank you Roger for your concern regarding Exynos case.
-> It's true that, Exynos5 series of SoCs have got only one IP block for
-> DWC3'c PHY.
-> This block is actually a combo of USB2 phy (UTMI+) as well as USB3 phy (PIPE3).
-> And the same is served by a single USB phy driver. This is also
-> clarified in the thread : https://lkml.org/lkml/2013/11/5/160
->
->>
->> That was the case even before this patch no? Unfortunately the old USB PHY
->> library doesn't have APIs to get PHYs in a better way. If we try modifying the
->> USB PHY library, it'll be kind of duplicating what is already there in the
->> Generic PHY library. I'd rather prefer Exynos guys to use the new framework.
+On Tue, Nov 05, 2013 at 07:50:14PM +0200, Pantelis Antoniou wrote:
+> of_property_notify can be utilized by other users too, export it.
+> 
+> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+> ---
+>  drivers/of/base.c  |  8 +-------
+>  include/linux/of.h | 11 +++++++++++
+>  2 files changed, 12 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index ca10916..0ffc5a9 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -1424,7 +1424,7 @@ int of_count_phandle_with_args(const struct device_node *np, const char *list_na
+>  EXPORT_SYMBOL(of_count_phandle_with_args);
+>  
+>  #if defined(CONFIG_OF_DYNAMIC)
+> -static int of_property_notify(int action, struct device_node *np,
+> +int of_property_notify(int action, struct device_node *np,
+>  			      struct property *prop)
+>  {
+>  	struct of_prop_reconfig pr;
+> @@ -1433,12 +1433,6 @@ static int of_property_notify(int action, struct device_node *np,
+>  	pr.prop = prop;
+>  	return of_reconfig_notify(action, &pr);
+>  }
+> -#else
+> -static int of_property_notify(int action, struct device_node *np,
+> -			      struct property *prop)
+> -{
+> -	return 0;
+> -}
+>  #endif
 
-we have tried moving Samsung's USB phy controller driver for DWC3, to
-generic phy framework
-so that things look clearer on Samsung's side too. The necessary
-patches are availble at:
-https://lkml.org/lkml/2013/10/31/79
+EXPORT_SYMBOL[_GPL]?
 
->>
->> Thanks
->> Kishon
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
->
-> --
-> Best Regards
-> Vivek Gautam
-> Samsung R&D Institute, Bangalore
-> India
-
-
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+-Matt
