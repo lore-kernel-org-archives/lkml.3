@@ -1,168 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab3KEKUM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 05:20:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18688 "EHLO mx1.redhat.com"
+	id S1754010Ab3KEK3G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 05:29:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35061 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751943Ab3KEKUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 05:20:10 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: rusty@rustcorp.com.au, mst@redhat.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [RESEND PATCH net-next] virtio-net: switch to use XPS to choose txq
-Date: Tue,  5 Nov 2013 18:19:45 +0800
-Message-Id: <1383646785-10446-1-git-send-email-jasowang@redhat.com>
+	id S1751675Ab3KEK3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 05:29:04 -0500
+Date: Tue, 5 Nov 2013 11:28:59 +0100
+From: David Sterba <dsterba@suse.cz>
+To: Aldo Iljazi <mail@aldo.io>
+Cc: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] FS: BTRFS: fixed coding style issues
+Message-ID: <20131105102859.GC16662@twin.jikos.cz>
+Reply-To: dsterba@suse.cz
+Mail-Followup-To: dsterba@suse.cz, Aldo Iljazi <mail@aldo.io>,
+	chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1383571658-7440-1-git-send-email-mail@aldo.io>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383571658-7440-1-git-send-email-mail@aldo.io>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We used to use a percpu structure vq_index to record the cpu to queue
-mapping, this is suboptimal since it duplicates the work of XPS and
-loses all other XPS functionality such as allowing user to configure
-their own transmission steering strategy.
+On Mon, Nov 04, 2013 at 03:27:38PM +0200, Aldo Iljazi wrote:
+> Fixed three coding style issues. Replaced spaces with tabs.
+> 
+> Signed-off-by: Aldo Iljazi <mail@aldo.io>
+> ---
+>  fs/btrfs/dev-replace.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/btrfs/dev-replace.c b/fs/btrfs/dev-replace.c
+> index 9efb94e..b2fe609 100644
+> --- a/fs/btrfs/dev-replace.c
+> +++ b/fs/btrfs/dev-replace.c
+> @@ -377,7 +377,7 @@ int btrfs_dev_replace_start(struct btrfs_root *root,
+>  	printk_in_rcu(KERN_INFO
+>  		      "btrfs: dev_replace from %s (devid %llu) to %s) started\n",
+>  		      src_device->missing ? "<missing disk>" :
+> -		        rcu_str_deref(src_device->name),
+> +			rcu_str_deref(src_device->name),
 
-So this patch switches to use XPS and suggest a default mapping when
-the number of cpus is equal to the number of queues. With XPS support,
-there's no need for keeping per-cpu vq_index and .ndo_select_queue(),
-so they were removed also.
+What's the change here? I don't think we need to fix whitespace, this makes
+searching in patch history more tedious, namely in case where the code looks
+exactly the same before and after the patch.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
-Resend since the previous complie warning disappears after commit
-3573540cafa4296dd60f8be02f2aecaa31047525
-(netif_set_xps_queue: make cpu mask const).
----
- drivers/net/virtio_net.c | 48 ++----------------------------------------------
- 1 file changed, 2 insertions(+), 46 deletions(-)
+The style issues should be best fixed when the patch is about to be
+merged, doing it later like this is kind of not welcome, speaking for
+myself. There are lots of opportunities to do real code cleanups.
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index a7e9ad9..01f4eb5 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -132,9 +132,6 @@ struct virtnet_info {
- 	/* Does the affinity hint is set for virtqueues? */
- 	bool affinity_hint_set;
- 
--	/* Per-cpu variable to show the mapping from CPU to virtqueue */
--	int __percpu *vq_index;
--
- 	/* CPU hot plug notifier */
- 	struct notifier_block nb;
- };
-@@ -1114,7 +1111,6 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev,
- static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
- {
- 	int i;
--	int cpu;
- 
- 	if (vi->affinity_hint_set) {
- 		for (i = 0; i < vi->max_queue_pairs; i++) {
-@@ -1124,16 +1120,6 @@ static void virtnet_clean_affinity(struct virtnet_info *vi, long hcpu)
- 
- 		vi->affinity_hint_set = false;
- 	}
--
--	i = 0;
--	for_each_online_cpu(cpu) {
--		if (cpu == hcpu) {
--			*per_cpu_ptr(vi->vq_index, cpu) = -1;
--		} else {
--			*per_cpu_ptr(vi->vq_index, cpu) =
--				++i % vi->curr_queue_pairs;
--		}
--	}
- }
- 
- static void virtnet_set_affinity(struct virtnet_info *vi)
-@@ -1155,7 +1141,7 @@ static void virtnet_set_affinity(struct virtnet_info *vi)
- 	for_each_online_cpu(cpu) {
- 		virtqueue_set_affinity(vi->rq[i].vq, cpu);
- 		virtqueue_set_affinity(vi->sq[i].vq, cpu);
--		*per_cpu_ptr(vi->vq_index, cpu) = i;
-+		netif_set_xps_queue(vi->dev, cpumask_of(cpu), i);
- 		i++;
- 	}
- 
-@@ -1269,28 +1255,6 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
- 	return 0;
- }
- 
--/* To avoid contending a lock hold by a vcpu who would exit to host, select the
-- * txq based on the processor id.
-- */
--static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
--{
--	int txq;
--	struct virtnet_info *vi = netdev_priv(dev);
--
--	if (skb_rx_queue_recorded(skb)) {
--		txq = skb_get_rx_queue(skb);
--	} else {
--		txq = *__this_cpu_ptr(vi->vq_index);
--		if (txq == -1)
--			txq = 0;
--	}
--
--	while (unlikely(txq >= dev->real_num_tx_queues))
--		txq -= dev->real_num_tx_queues;
--
--	return txq;
--}
--
- static const struct net_device_ops virtnet_netdev = {
- 	.ndo_open            = virtnet_open,
- 	.ndo_stop   	     = virtnet_close,
-@@ -1302,7 +1266,6 @@ static const struct net_device_ops virtnet_netdev = {
- 	.ndo_get_stats64     = virtnet_stats,
- 	.ndo_vlan_rx_add_vid = virtnet_vlan_rx_add_vid,
- 	.ndo_vlan_rx_kill_vid = virtnet_vlan_rx_kill_vid,
--	.ndo_select_queue     = virtnet_select_queue,
- #ifdef CONFIG_NET_POLL_CONTROLLER
- 	.ndo_poll_controller = virtnet_netpoll,
- #endif
-@@ -1613,10 +1576,6 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	if (vi->stats == NULL)
- 		goto free;
- 
--	vi->vq_index = alloc_percpu(int);
--	if (vi->vq_index == NULL)
--		goto free_stats;
--
- 	mutex_init(&vi->config_lock);
- 	vi->config_enable = true;
- 	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
-@@ -1643,7 +1602,7 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	/* Allocate/initialize the rx/tx queues, and invoke find_vqs */
- 	err = init_vqs(vi);
- 	if (err)
--		goto free_index;
-+		goto free_stats;
- 
- 	netif_set_real_num_tx_queues(dev, 1);
- 	netif_set_real_num_rx_queues(dev, 1);
-@@ -1696,8 +1655,6 @@ free_vqs:
- 	virtnet_del_vqs(vi);
- 	if (vi->alloc_frag.page)
- 		put_page(vi->alloc_frag.page);
--free_index:
--	free_percpu(vi->vq_index);
- free_stats:
- 	free_percpu(vi->stats);
- free:
-@@ -1736,7 +1693,6 @@ static void virtnet_remove(struct virtio_device *vdev)
- 
- 	flush_work(&vi->config_work);
- 
--	free_percpu(vi->vq_index);
- 	free_percpu(vi->stats);
- 	free_netdev(vi->dev);
- }
--- 
-1.8.3.2
+Whitespace changes are just noise, we don't need them at this point of
+development phase of btrfs.
 
+
+david
