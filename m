@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab3KEA47 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 19:56:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12895 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750819Ab3KEA45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 19:56:57 -0500
-Date: Mon, 4 Nov 2013 19:56:54 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: axboe@kernel.dk, kmo@daterainc.com, dm-devel@redhat.com, agk@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH for-next] dm: fix missing bi_remaining accounting
-Message-ID: <20131105005654.GA22356@redhat.com>
-References: <20131101135931.GA22903@redhat.com>
- <5273C2B8.5030608@kernel.dk>
- <alpine.LRH.2.02.1311041003400.4548@file01.intranet.prod.int.rdu2.redhat.com>
- <20131104152001.GA12398@redhat.com>
- <alpine.LRH.2.02.1311041023090.4548@file01.intranet.prod.int.rdu2.redhat.com>
- <20131104160336.GB12398@redhat.com>
- <alpine.LRH.2.02.1311041246060.28005@file01.intranet.prod.int.rdu2.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1311041246060.28005@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753898Ab3KEBE0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 20:04:26 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:55858 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997Ab3KEBEY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 20:04:24 -0500
+Date: Mon, 04 Nov 2013 20:04:22 -0500 (EST)
+Message-Id: <20131104.200422.1529242936573745110.davem@davemloft.net>
+To: jasowang@redhat.com
+Cc: edumazet@google.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        rusty@rustcorp.com.au, mst@redhat.com, mwdalton@google.com,
+        virtualization@lists.linux-foundation.org, kmindg@gmail.com
+Subject: Re: [PATCH net-next V3 1/2] net: introduce skb_coalesce_rx_frag()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1383286068-10421-1-git-send-email-jasowang@redhat.com>
+References: <1383286068-10421-1-git-send-email-jasowang@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 04 Nov 2013 17:04:24 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04 2013 at 12:49pm -0500,
-Mikulas Patocka <mpatocka@redhat.com> wrote:
+From: Jason Wang <jasowang@redhat.com>
+Date: Fri,  1 Nov 2013 14:07:47 +0800
 
+> Sometimes we need to coalesce the rx frags to avoid frag list. One example is
+> virtio-net driver which tries to use small frags for both MTU sized packet and
+> GSO packet. So this patch introduce skb_coalesce_rx_frag() to do this.
 > 
-> 
-> On Mon, 4 Nov 2013, Mike Snitzer wrote:
-> 
-> > On Mon, Nov 04 2013 at 10:25am -0500,
-> > Mikulas Patocka <mpatocka@redhat.com> wrote:
-> > 
-> > > 
-> > > 
-> > > On Mon, 4 Nov 2013, Mike Snitzer wrote:
-> > > 
-> > > > On Mon, Nov 04 2013 at 10:06am -0500,
-> > > > Mikulas Patocka <mpatocka@redhat.com> wrote:
-> > > > > 
-> > > > > The code uses atomic_inc for restoration of bi_remaining. This patch
-> > > > > changes it to atomic_set(1) to avoid an interlocked instruction. In the
-> > > > > target's bi_endio routine we are sure that bi_remaining is zero
-> > > > > (otherwise, the bi_endio routine wouldn't be called) and there are no
-> > > > > concurrent users of the bio, so we can replace atomic_inc with
-> > > > > atomic_set(1).
-> > > > 
-> > > > This isn't DM-specific.  Shouldn't the other places in the tree that use
-> > > > atomic_inc on bi_remaining should really be converted at the same time?
-> > > 
-> > > There is no 'atomic_inc.*bi_remaining' in other drivers.
-> > 
-> > Wrong.  I know btrfs has at least one.  As does bcache afaik.
-> 
-> grep -r 'atomic_inc.*bi_remaining' * yilds no hits in btrfs or bcache (on 
-> git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-block.git , 
-> branch remotes/origin/for-next). It only finds 
-> drivers/md/dm-cache-target.c, drivers/md/dm-verity.c, 
-> drivers/md/dm-snap.c, drivers/md/dm-thin.c. Maybe in other git trees there 
-> are more cases of this.
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: Michael Dalton <mwdalton@google.com>
+> Cc: Eric Dumazet <edumazet@google.com>
+> Acked-by: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+> Changes from V2:
+> - remove the skb_frag_unref() and let the called to put the page reference
+> Changes from V1:
+> - remove the useless off parameter.
 
-Here is the btrfs one I was thinking of from Chris:
-https://patchwork.kernel.org/patch/3123121/
-
-Should probably make its way into linux-block.git, Jens?
+Applied.
