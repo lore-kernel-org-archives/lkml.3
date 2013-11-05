@@ -1,136 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab3KECbk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 21:31:40 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:24668 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752839Ab3KECbj (ORCPT
+	id S1754027Ab3KEChm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 21:37:42 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:48158 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab3KEChl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 21:31:39 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(z579ehzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh2222h1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh1155h)
-Message-ID: <5278587F.7090500@freescale.com>
-Date: Tue, 5 Nov 2013 10:31:27 +0800
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 4 Nov 2013 21:37:41 -0500
 MIME-Version: 1.0
-To: <vinod.koul@intel.com>, <djbw@fb.com>
-CC: Hongbo Zhang <hongbo.zhang@freescale.com>, <rob.herring@calxeda.com>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ian.campbell@citrix.com>, <devicetree@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v11 3/3] DMA: Freescale: update driver to support 8-channel
- DMA engine
-References: <1380188023-3936-1-git-send-email-hongbo.zhang@freescale.com> <1380188023-3936-4-git-send-email-hongbo.zhang@freescale.com> <525F7C18.3010409@freescale.com>
-In-Reply-To: <525F7C18.3010409@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20131105003733.GA24531@quack.suse.cz>
+References: <CAOvWMLZ-ezykR6TkFAoZ1UW20QF6XMOKeZH8R-FdFJkXjAP9nA@mail.gmail.com>
+	<20131105003733.GA24531@quack.suse.cz>
+Date: Mon, 4 Nov 2013 18:37:40 -0800
+Message-ID: <CAOvWMLZ6_boRgQi2L9kqR_bWcnLDHY+uFo9g4DP=zxeGtT+dag@mail.gmail.com>
+Subject: Re: [BUG][ext2] XIP does not work on ext2
+From: Andiry Xu <andiry@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Wang Shilong <wangsl-fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Andiry Xu <andiry.xu@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod Koul and Dan Williams,
-Ping?
+Hi Jan,
 
-
-On 10/17/2013 01:56 PM, Hongbo Zhang wrote:
-> Hi Vinod,
-> I have gotten ACK from Mark for both the 1/3 and 2/3 patches.
-> Thanks.
+On Mon, Nov 4, 2013 at 4:37 PM, Jan Kara <jack@suse.cz> wrote:
+>   Hello,
 >
->
-> On 09/26/2013 05:33 PM, hongbo.zhang@freescale.com wrote:
->> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+> On Mon 04-11-13 14:31:34, Andiry Xu wrote:
+>> When I'm trying XIP on ext2, I find that xip does not work on ext2
+>> with latest kernel.
 >>
->> This patch adds support to 8-channel DMA engine, thus the driver 
->> works for both
->> the new 8-channel and the legacy 4-channel DMA engines.
+>> Reproduce steps:
+>> Compile kernel with following configs:
+>> CONFIG_BLK_DEV_XIP=y
+>> CONFIG_EXT2_FS_XIP=y
 >>
->> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
->> ---
->>   drivers/dma/Kconfig  |    9 +++++----
->>   drivers/dma/fsldma.c |    9 ++++++---
->>   drivers/dma/fsldma.h |    2 +-
->>   3 files changed, 12 insertions(+), 8 deletions(-)
+>> And run following commands:
+>> # mke2fs -b 4096 /dev/ram0
+>> # mount -t ext2 -o xip /dev/ram0 /mnt/ramdisk/
+>> # dd if=/dev/zero of=/mnt/ramdisk/test1 bs=1M count=16
 >>
->> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
->> index 6825957..3979c65 100644
->> --- a/drivers/dma/Kconfig
->> +++ b/drivers/dma/Kconfig
->> @@ -89,14 +89,15 @@ config AT_HDMAC
->>         Support the Atmel AHB DMA controller.
->>     config FSL_DMA
->> -    tristate "Freescale Elo and Elo Plus DMA support"
->> +    tristate "Freescale Elo series DMA support"
->>       depends on FSL_SOC
->>       select DMA_ENGINE
->>       select ASYNC_TX_ENABLE_CHANNEL_SWITCH
->>       ---help---
->> -      Enable support for the Freescale Elo and Elo Plus DMA 
->> controllers.
->> -      The Elo is the DMA controller on some 82xx and 83xx parts, and 
->> the
->> -      Elo Plus is the DMA controller on 85xx and 86xx parts.
->> +      Enable support for the Freescale Elo series DMA controllers.
->> +      The Elo is the DMA controller on some mpc82xx and mpc83xx 
->> parts, the
->> +      EloPlus is on mpc85xx and mpc86xx and Pxxx parts, and the Elo3 
->> is on
->> +      some Txxx and Bxxx parts.
->>     config MPC512X_DMA
->>       tristate "Freescale MPC512x built-in DMA engine support"
->> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
->> index 49e8fbd..16a9a48 100644
->> --- a/drivers/dma/fsldma.c
->> +++ b/drivers/dma/fsldma.c
->> @@ -1261,7 +1261,9 @@ static int fsl_dma_chan_probe(struct 
->> fsldma_device *fdev,
->>       WARN_ON(fdev->feature != chan->feature);
->>         chan->dev = fdev->dev;
->> -    chan->id = ((res.start - 0x100) & 0xfff) >> 7;
->> +    chan->id = (res.start & 0xfff) < 0x300 ?
->> +           ((res.start - 0x100) & 0xfff) >> 7 :
->> +           ((res.start - 0x200) & 0xfff) >> 7;
->>       if (chan->id >= FSL_DMA_MAX_CHANS_PER_DEVICE) {
->>           dev_err(fdev->dev, "too many channels for device\n");
->>           err = -EINVAL;
->> @@ -1434,6 +1436,7 @@ static int fsldma_of_remove(struct 
->> platform_device *op)
->>   }
->>     static const struct of_device_id fsldma_of_ids[] = {
->> +    { .compatible = "fsl,elo3-dma", },
->>       { .compatible = "fsl,eloplus-dma", },
->>       { .compatible = "fsl,elo-dma", },
->>       {}
->> @@ -1455,7 +1458,7 @@ static struct platform_driver fsldma_of_driver = {
->>     static __init int fsldma_init(void)
->>   {
->> -    pr_info("Freescale Elo / Elo Plus DMA driver\n");
->> +    pr_info("Freescale Elo series DMA driver\n");
->>       return platform_driver_register(&fsldma_of_driver);
->>   }
->>   @@ -1467,5 +1470,5 @@ static void __exit fsldma_exit(void)
->>   subsys_initcall(fsldma_init);
->>   module_exit(fsldma_exit);
->>   -MODULE_DESCRIPTION("Freescale Elo / Elo Plus DMA driver");
->> +MODULE_DESCRIPTION("Freescale Elo series DMA driver");
->>   MODULE_LICENSE("GPL");
->> diff --git a/drivers/dma/fsldma.h b/drivers/dma/fsldma.h
->> index f5c3879..1ffc244 100644
->> --- a/drivers/dma/fsldma.h
->> +++ b/drivers/dma/fsldma.h
->> @@ -112,7 +112,7 @@ struct fsldma_chan_regs {
->>   };
->>     struct fsldma_chan;
->> -#define FSL_DMA_MAX_CHANS_PER_DEVICE 4
->> +#define FSL_DMA_MAX_CHANS_PER_DEVICE 8
->>     struct fsldma_device {
->>       void __iomem *regs;    /* DGSR register base */
+>> And it shows:
+>> dd: writing `/mnt/ramdisk/test1': No space left on device
+>>
+>> df also shows /mnt/ramdisk is 100% full. Its default size is 64MB so a
+>> 16MB write should only occupy 1/4 capacity.
+>>
+>> Criminal commit:
+>> After git bisect, it points to the following commit:
+>> 8e3dffc651cb668e1ff4d8b89cc1c3dde7540d3b
+>> Ext2: mark inode dirty after the function dquot_free_block_nodirty is called
+>   Thanks for report and the bisection!
 >
+>> Particularly, the following code:
+>> @@ -1412,9 +1415,11 @@ allocated:
+>> *errp = 0;
+>> brelse(bitmap_bh);
+>> -    dquot_free_block_nodirty(inode, *count-num);
+>> -    mark_inode_dirty(inode);
+>> -    *count = num;
+>> +    if (num < *count) {
+>> +        dquot_free_block_nodirty(inode, *count-num);
+>> +        mark_inode_dirty(inode);
+>> +        *count = num;
+>> +    }
+>>       return ret_block;
+>>
+>> Not mark_inode_dirty() is called only when num is less than *count.
+>> However, I've seen
+>> with the dd command, there is case where num >= *count.
+>>
+>> Fix:
+>> I've verified that the following patch fixes the issue:
+>> diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
+>> index 9f9992b..5446a52 100644
+>> --- a/fs/ext2/balloc.c
+>> +++ b/fs/ext2/balloc.c
+>> @@ -1406,11 +1406,10 @@ allocated:
+>>
+>>         *errp = 0;
+>>         brelse(bitmap_bh);
+>> -       if (num < *count) {
+>> +       if (num <= *count)
+>>                 dquot_free_block_nodirty(inode, *count-num);
+>> -               mark_inode_dirty(inode);
+>> -               *count = num;
+>> -       }
+>> +       mark_inode_dirty(inode);
+>> +       *count = num;
+>>         return ret_block;
+>>
+>>  io_error:
+>>
+>> However, I'm not familiar with ext2 source code and cannot tell if
+>> this is the correct fix. At least it fixes my issue.
+>   With this, you have essentially reverted a hunk from commit
+> 8e3dffc651cb668e1ff4d8b89cc1c3dde7540d3b. But I don't see a reason why it
+> should be reverted. num should never ever be greater than *count and when
+> num == count, we the code inside if doesn't do anything useful.
+>
+> I've looked into the code and I think I see the problem. It is a long
+> standing bug in __ext2_get_block() in fs/ext2/xip.c. It calls
+> ext2_get_block() asking for 0 blocks to map (while we really want 1 block).
+> ext2_get_block() just passes that request and ext2_get_blocks() actually
+> allocates 1 block. And that's were the commit you have identified makes a
+> difference because previously we returned that 1 block was allocated while
+> now we return that 0 blocks were allocated and thus allocation is repeated
+> until all free blocks are exhaused.
+>
+> Attached patch should fix the problem.
 >
 
+Thanks for the reply. I've verified that your patch fixes my issue.
+And it's absolutely better than my solution.
 
+Tested-by: Andiry Xu <andiry.xu@gmail.com>
 
+I have another question about ext2 XIP performance, although it's not
+quite related to this thread.
+
+I'm testing xip with ext2 on a ram disk drive, the driver is brd.c.
+The RAM disk size is 2GB and I pre-fill it to guarantee that all pages
+reside in main memory.
+Then I use two different applications to write to the ram disk. One is
+open() with O_DIRECT flag, and writing with Posix write(). Another is
+open() with O_DIRECT, mmap() it to user space, then use memcpy() to
+write data. I use different request size to write data, from 512 bytes
+to 64MB.
+
+In my understanding, the mmap version bypasses the file system and
+does not go to kernel space, hence it should have better performance
+than the Posix-write version. However, my test result shows it's not
+always true: when the request size is between 8KB and 1MB, the
+Posix-write() version has bandwidth about 7GB/s and mmap version only
+has 5GB/s. The test is performed on a i7-3770K machine with 8GB
+memory, kernel 3.12. Also I have tested on kernel 3.2, in which mmap
+has really bad performance, only 2GB/s for all request sizes.
+
+Do you know the reason why write() outperforms mmap() in some cases? I
+know it's not related the thread but I really appreciate if you can
+answer my question.
+
+Thanks,
+Andiry
