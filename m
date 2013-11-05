@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab3KEKnG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 05:43:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23484 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753931Ab3KEKnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 05:43:04 -0500
-Date: Tue, 5 Nov 2013 05:42:56 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        chutzpah@gentoo.org, liguangc@cn.ibm.com
-Subject: Re: [PATCH] [RFC] vfs: don't revalidate dentries that serve as
- mountpoints
-Message-ID: <20131105054256.59328806@tlielax.poochiereds.net>
-In-Reply-To: <CADT32eJ_cqej0wnjKOZk1x0UtRqoNy201hFt8hQLLShjcbp3Dg@mail.gmail.com>
-References: <1383614186-8039-1-git-send-email-jlayton@redhat.com>
-	<CADT32eJ_cqej0wnjKOZk1x0UtRqoNy201hFt8hQLLShjcbp3Dg@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753961Ab3KEKrq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 05:47:46 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:20543 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735Ab3KEKrp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 05:47:45 -0500
+X-IronPort-AV: E=Sophos;i="4.93,639,1378857600"; 
+   d="scan'208";a="68082275"
+Message-ID: <5278CCC4.3020501@citrix.com>
+Date: Tue, 5 Nov 2013 10:47:32 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: Roger Pau Monne <roger.pau@citrix.com>
+CC: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v3] p2m: use GNTTABOP_unmap_and_duplicate if available
+References: <1383579524-12465-1-git-send-email-roger.pau@citrix.com>
+In-Reply-To: <1383579524-12465-1-git-send-email-roger.pau@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Nov 2013 21:00:23 -0600
-Shirish Pargaonkar <shirishpargaonkar@gmail.com> wrote:
+On 04/11/13 15:38, Roger Pau Monne wrote:
+> The new GNTTABOP_unmap_and_duplicate operation doesn't zero the
+> mapping passed in new_addr, allowing us to perform batch unmaps in p2m
+> code without requiring the use of a multicall.
 
-> For a similar issue in cifs vfs (samba bugzilla 8950), I was going to try
-> unset the bit DCACHE_OP_REVALIDATE of d_flags of the
-> dentry.  Would something like work for the mountpoint dentry?
-> 
-> 
+Should the grant maps should be batched in a similar way?
 
-I don't think that's the same issue at all. The problem there is that
-you need to instantiate a dentry for the root of the mount on the
-client, when you don't have any information about the parents.
+> +int m2p_remove_override_batch(struct page **pages,
+> +		struct gnttab_map_grant_ref *kmap_ops, int count)
+> +{
+> +	struct gnttab_unmap_and_duplicate *unmap_ops = NULL;
+> +	int ret = 0, i;
+> +
+> +	for (i = 0; i < count; i++) {
+> +		ret = remove_page_override(pages[i]);
+> +		if (ret)
+> +			goto out;
+> +	}
+> +
+> +	if (kmap_ops != NULL) {
+> +		struct page *scratch_page = get_balloon_scratch_page();
+> +		unsigned long scratch_page_address = (unsigned long)
+> +					__va(page_to_pfn(scratch_page) << PAGE_SHIFT);
+> +		int invcount = 0;
+> +
+> +		unmap_ops = kcalloc(count, sizeof(unmap_ops[0]), GFP_KERNEL);
+> +		if (!unmap_ops) {
+> +			put_balloon_scratch_page();
+> +			ret = -ENOMEM;
+> +			goto out;
+> +		}
 
-In this case, we have dentries that are acting as mountpoints that were
-getting invalidated.
+A memory allocation failure here looks bad as the grants will not be
+unmapped which will have an impact on the granter domain.  Either: a)
+the unmap ops should be constructed in advance (excluding high mem pages
+at that point); or b) this should use a statically allocated per-cpu
+array of unmap ops with the batch split as necessary to fit into the
+static array.
 
-> 
-> On Mon, Nov 4, 2013 at 7:16 PM, Jeff Layton <jlayton@redhat.com> wrote:
-> > We had a couple of reports of people that are mounting NFS filesystems,
-> > and then bind mounting certain local files onto dentries in that nfs
-> > mount (sort of like a poor-man's unionmount).
-> >
-> > This all works well until the dentry serving as the mountpoint fails
-> > d_revalidate. The dentry will end up being invalidated which makes the
-> > bind mount unreachable via pathwalk.
-> >
-> > It doesn't make much sense to me to allow dentries to serve as
-> > mountpoints to end up invalidated, so there's no real point in
-> > attempting to d_revalidate them at all.
-> >
-> > Reported-by: Patrick McLean <chutzpah@gentoo.org>
-> > Reported-by: Guang Cheng Li <liguangc@cn.ibm.com>
-> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> > ---
-> >  fs/namei.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> >
-> > diff --git a/fs/namei.c b/fs/namei.c
-> > index caa2805..5b10ad0 100644
-> > --- a/fs/namei.c
-> > +++ b/fs/namei.c
-> > @@ -585,6 +585,9 @@ drop_root_mnt:
-> >
-> >  static inline int d_revalidate(struct dentry *dentry, unsigned int flags)
-> >  {
-> > +       /* dentries that serve as mountpoints are always considered valid */
-> > +       if (d_mountpoint(dentry))
-> > +               return 1;
-> >         return dentry->d_op->d_revalidate(dentry, flags);
-> >  }
-> >
-> > --
-> > 1.8.3.1
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
--- 
-Jeff Layton <jlayton@redhat.com>
+David
