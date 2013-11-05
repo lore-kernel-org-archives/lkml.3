@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755700Ab3KEXAx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 18:00:53 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:16603 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755403Ab3KEXAv (ORCPT
+	id S1755795Ab3KEXBs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 18:01:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59111 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755494Ab3KEXBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 18:00:51 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18+0O8l1mxjFtfNFgwj3Dj3ltJMpbUTJbE=
-Date: Tue, 5 Nov 2013 18:00:24 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Arnaud Ebalard <arno@natisbad.org>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>
-Subject: Re: [PATCH] net: mv643xx_eth: Add missing phy_addr_set in DT mode
-Message-ID: <20131105230024.GB8308@titan.lakedaemon.net>
-References: <1383611239-14556-1-git-send-email-jgunthorpe@obsidianresearch.com>
- <87sivacxcf.fsf@natisbad.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87sivacxcf.fsf@natisbad.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 5 Nov 2013 18:01:46 -0500
+Date: Tue, 5 Nov 2013 15:01:45 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH] mm: create a separate slab for page->ptl allocation
+Message-Id: <20131105150145.734a5dd5b5d455800ebfa0d3@linux-foundation.org>
+In-Reply-To: <1382442839-7458-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1382442839-7458-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 05, 2013 at 11:12:00PM +0100, Arnaud Ebalard wrote:
-> Hi Jason,
-> 
-> Jason Gunthorpe <jgunthorpe@obsidianresearch.com> writes:
-> 
-> > Commit cc9d4598 'net: mv643xx_eth: use of_phy_connect if phy_node
-> > present' made the call to phy_scan optional, if the DT has a link to
-> > the phy node.
-> >
-> > However phy_scan has the side effect of calling phy_addr_set, which
-> > writes the phy MDIO address to the ethernet controller. If phy_addr_set
-> > is not called, and the bootloader has not set the correct address then
-> > the driver will fail to function.
-> 
-> Thanks *a lot* for fixing this one! I had the issue on my ReadyNAS 102
-> (Armada 370 based) which I had put on a todo list and temporarily
+On Tue, 22 Oct 2013 14:53:59 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
 
-readynas duo v2?
-
-thx,
-
-Jason.
-
-> workarounded by including a 'ping whatever' call in my u-boot env in
-> order to force it to do the init. Without it, I was unable to properly
-> use the interface. With your fix, after multiple reboots to test it,
-> everything works as expected. So, FWIW: 
+> If DEBUG_SPINLOCK and DEBUG_LOCK_ALLOC are enabled spinlock_t on x86_64
+> is 72 bytes. For page->ptl they will be allocated from kmalloc-96 slab,
+> so we loose 24 on each. An average system can easily allocate few tens
+> thousands of page->ptl and overhead is significant.
 > 
-> Tested-by: Arnaud Ebalard <arno@natisbad.org>
+> Let's create a separate slab for page->ptl allocation to solve this.
 > 
-> Cheers,
-> 
-> a+
+> ...
+>
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -4332,11 +4332,19 @@ void copy_user_huge_page(struct page *dst, struct page *src,
+>  #endif /* CONFIG_TRANSPARENT_HUGEPAGE || CONFIG_HUGETLBFS */
+>  
+>  #if USE_SPLIT_PTE_PTLOCKS
+> +struct kmem_cache *page_ptl_cachep;
+> +void __init ptlock_cache_init(void)
+> +{
+> +	if (sizeof(spinlock_t) > sizeof(long))
+> +		page_ptl_cachep = kmem_cache_create("page->ptl",
+> +				sizeof(spinlock_t), 0, SLAB_PANIC, NULL);
+> +}
+
+Confused.  If (sizeof(spinlock_t) > sizeof(long)) happens to be false
+then the kernel will later crash.  It would be better to use BUILD_BUG_ON()
+here, if that works.  Otherwise BUG_ON.
+
+Also, we have the somewhat silly KMEM_CACHE() macro, but it looks
+inapplicable here?
+
+>  bool __ptlock_alloc(struct page *page)
+>  {
+>  	spinlock_t *ptl;
+>  
+> -	ptl = kmalloc(sizeof(spinlock_t), GFP_KERNEL);
+> +	ptl = kmem_cache_alloc(page_ptl_cachep, GFP_KERNEL);
+>  	if (!ptl)
+>  		return false;
+>  	page->ptl = (unsigned long)ptl;
+> @@ -4346,6 +4354,6 @@ bool __ptlock_alloc(struct page *page)
+>  void __ptlock_free(struct page *page)
+>  {
+>  	if (sizeof(spinlock_t) > sizeof(page->ptl))
+> -		kfree((spinlock_t *)page->ptl);
+> +		kmem_cache_free(page_ptl_cachep, (spinlock_t *)page->ptl);
+
+A void* cast would suffice here, but I suppose the spinlock_t* cast has
+some documentation value.
+
