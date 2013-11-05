@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662Ab3KEV1q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 16:27:46 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:49134 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755635Ab3KEV1n (ORCPT
+	id S1755522Ab3KEV3w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 16:29:52 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:45290 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754728Ab3KEV3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 16:27:43 -0500
+	Tue, 5 Nov 2013 16:29:50 -0500
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <20131105205623.3802.5166@localhost.localdomain>
-References: <CAHbNUh1Cw3bc4WR0VcD1H_eKYqGBtv_215_euh6mwTbZ41ejUw@mail.gmail.com>
-	<52794823.7080503@kernel.dk>
-	<CAOesGMj1xXXM-gNgWQwBKOczpJtM7CobYy4h7Fe=4W3U43EJGQ@mail.gmail.com>
-	<20131105203308.3802.45122@localhost.localdomain>
-	<CAOesGMirg=ex9hLCjGBpj0cMhLeQ5cJQoRv72tgg7PoSKWUDhA@mail.gmail.com>
-	<20131105205623.3802.5166@localhost.localdomain>
-Date: Tue, 5 Nov 2013 13:27:42 -0800
-Message-ID: <CAOesGMhTu_bifFUNDGPsd9Hmn50W_OHF_+LgscF4WLyNY-bHQg@mail.gmail.com>
-Subject: Re: Boot failure on Arndale with next-20131105
-From: Olof Johansson <olof@lixom.net>
-To: Chris Mason <chris.mason@fusionio.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Tushar Behera <tushar.behera@linaro.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Kent Overstreet <kmo@daterainc.com>
+In-Reply-To: <5267A0DF.7080604@ti.com>
+References: <5267A0DF.7080604@ti.com>
+Date: Tue, 5 Nov 2013 22:29:49 +0100
+Message-ID: <CAPDyKFp0UGjEbn+pWDLKOQvKsxeXSh5hY3++TA1rpErfihOtPA@mail.gmail.com>
+Subject: Re: Async runtime put in __device_release_driver()
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Kevin Hilman <khilman@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Archit Taneja <archit@ti.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 5, 2013 at 12:56 PM, Chris Mason <chris.mason@fusionio.com> wrote:
-> Quoting Olof Johansson (2013-11-05 15:38:33)
->> On Tue, Nov 5, 2013 at 12:33 PM, Chris Mason <chris.mason@fusionio.com> wrote:
->> > Quoting Olof Johansson (2013-11-05 15:23:51)
->> >> On Tue, Nov 5, 2013 at 11:33 AM, Jens Axboe <axboe@kernel.dk> wrote:
->> >
->> > [ horrible crashes fixed by removing my patch ]
->> >
->> >> > Very weird! What file system is being used?
->> >>
->> >> Most of my failures have happened on regular MMC cards with ext4
->> >> filesystems on them.
->> >>
->> >> Note that the panic happens during device probe / partition table
->> >> scanning, not after mounting the filesystem.
->> >>
->> >> Giving your patch a go now across the board. I'm very concerned about
->> >> the reports of bisectability, build failures and heaps of warnings
->> >> though. Did the 0-day builder pick up any of those? :-/
->> >>
->> >
->> > Hmmm, is bcache in your config?
->>
->> Doesn't look that way -- no ARM defconfigs enable it (it's what I
->> build and boot), and the option defaults to off and nothing selects
->> it.
+On 23 October 2013 12:11, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+> Hi,
 >
-> Ok, I think I see it.  My guess is that you're hitting bounce buffers.
-> __blk_queue_bounce is the only caller of the bio splitting code I can
-> see that you might be hitting.
+> I was debugging why clocks were left enabled after removing omapdss
+> driver, and I found this commit:
 >
-> My first patch exposed a lurking bug in bio_clone_biovec.  Basically
-> bio->bi_vcnt is being doubled instead of initialized.
+> fa180eb448fa263cf18dd930143b515d27d70d7b (PM / Runtime: Idle devices
+> asynchronously after probe|release)
 >
-> This patch is only compile tested, but I think it'll fix it.
+> I don't understand how that is supposed to work.
+>
+> When a driver is removed, instead of using pm_runtime_put_sync() the
+> commit uses pm_runtime_put(), so the runtime_suspend call is queued. But
+> who is going to handle the queued suspend call, as the driver is already
+> removed? At least in my case, obviously nobody, as I only get
+> runtime_resume call in my driver, never the runtime_suspend.
+>
+> Is there something I need to add to my driver to make this work, or
+> should that part of the patch be reverted?
 
-Thanks, giving it a go now (will have results in 30+ minutes). Jens'
-patch didn't make a difference, which makes sense given lack of dm
-usage.
+I believe it is quite common that a device driver calls
+pm_runtime_get_sync as a part of it's remove callback, then it
+explicitly returns it's resources that has been fetched during probe.
+Like a clk_disable_unprepare for example.
 
+The idea behind the change in __device_release_driver, was to try to
+prevent  devices from going active->idle->active and instead just
+remain active (if possible).
 
--Olof
+In your case, which seems like a more modern way of implementing
+"remove", you shall call "pm_runtime_suspend" to make sure the
+runtime_suspend callbacks gets called.
+
+Kind regards
+Ulf Hansson
+
+>
+>  Tomi
+>
