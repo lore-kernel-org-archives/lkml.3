@@ -1,113 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841Ab3KEXPB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 18:15:01 -0500
-Received: from mic92-1-81-57-185-249.fbx.proxad.net ([81.57.185.249]:52865
-	"EHLO smtp.natisbad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755462Ab3KEXO7 (ORCPT
+	id S1755870Ab3KEXPN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 18:15:13 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53631 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755563Ab3KEXPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 18:14:59 -0500
-X-Hashcash: 1:20:131105:thomas.petazzoni@free-electrons.com::B+beKnHvDd9mFzZR:000000000000000000000000001RHC
-From: arno@natisbad.org (Arnaud Ebalard)
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH] net: mv643xx_eth: Add missing phy_addr_set in DT mode
-References: <1383611239-14556-1-git-send-email-jgunthorpe@obsidianresearch.com>
-	<87sivacxcf.fsf@natisbad.org> <52796E82.5010800@gmail.com>
-X-PGP-Key-URL: http://natisbad.org/arno@natisbad.org.asc
-X-Fingerprint: D3A5 B68A 839B 38A5 815A 781B B77C 0748 A7AE 341B
-X-Hashcash: 1:20:131105:davem@davemloft.net::a6YQVclk//bvC5iM:0000000000000000000000000000000000000000000IBt
-X-Hashcash: 1:20:131105:sebastian.hesselbarth@gmail.com::X2SCVt7paBhSpedj:0000000000000000000000000000000fdV
-X-Hashcash: 1:20:131105:andrew@lunn.ch::VPA2GMjCM6T+H6jQ:0000utx
-X-Hashcash: 1:20:131105:linux-kernel@vger.kernel.org::EYct8vbbDimDuVZA:00000000000000000000000000000000014BF
-X-Hashcash: 1:20:131105:linux-arm-kernel@lists.infradead.org::ZFK+4z5tSRVUhU9B:00000000000000000000000001x0h
-X-Hashcash: 1:20:131105:jason@lakedaemon.net::x/9Pp6c+dyZQhBso:000000000000000000000000000000000000000002Dbg
-X-Hashcash: 1:20:131105:netdev@vger.kernel.org::sxqBsC/cwIK/cKvi:0000000000000000000000000000000000000002/TA
-X-Hashcash: 1:20:131105:jgunthorpe@obsidianresearch.com::bAIJjKHKzQGEStGF:00000000000000000000000000000041H8
-X-Hashcash: 1:20:131105:buytenh@wantstofly.org::nxSYO+fiigEsPyrH:00000000000000000000000000000000000000062M7
-X-Hashcash: 1:20:131105:linuxppc-dev@lists.ozlabs.org::jY5YV1gO1HEjeG+0:00000000000000000000000000000000CrzD
-X-Hashcash: 1:20:131105:benh@kernel.crashing.org::hyEBGjyjfmCBFP8i:0000000000000000000000000000000000000Cqil
-Date: Wed, 06 Nov 2013 00:14:34 +0100
-In-Reply-To: <52796E82.5010800@gmail.com> (Sebastian Hesselbarth's message of
-	"Tue, 05 Nov 2013 23:17:38 +0100")
-Message-ID: <87iow6cug5.fsf@natisbad.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 5 Nov 2013 18:15:08 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Toshi Kani <toshi.kani@hp.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [fixup][PATCH 2/6] ACPI / hotplug: Refuse to hot-remove all objects with disabled hotplug
+Date: Wed, 06 Nov 2013 00:27:26 +0100
+Message-ID: <5195965.AgE9G8aXP3@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1842331.UHR0XPv1jo@vostro.rjw.lan>
+References: <5839747.7HXXGHmMBd@vostro.rjw.lan> <2970389.SeMGM45Qln@vostro.rjw.lan> <1842331.UHR0XPv1jo@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> writes:
+In theory, an ACPI device object may be the parent of another
+device object whose hotplug is disabled by user space through its
+scan handler.  In that case, the eject operation targeting the
+parent should fail as though the parent's own hotplug was disabled,
+but currently this is not the case, because acpi_scan_hot_remove()
+doesn't check the disable/enable hotplug status of the children
+of the top-most object passed to it.
 
-> On 11/05/2013 11:12 PM, Arnaud Ebalard wrote:
->> Hi Jason,
->>
->> Jason Gunthorpe <jgunthorpe@obsidianresearch.com> writes:
->>
->>> Commit cc9d4598 'net: mv643xx_eth: use of_phy_connect if phy_node
->>> present' made the call to phy_scan optional, if the DT has a link to
->>> the phy node.
->>>
->>> However phy_scan has the side effect of calling phy_addr_set, which
->>> writes the phy MDIO address to the ethernet controller. If phy_addr_set
->>> is not called, and the bootloader has not set the correct address then
->>> the driver will fail to function.
->>
->> Thanks *a lot* for fixing this one! I had the issue on my ReadyNAS 102
->> (Armada 370 based) which I had put on a todo list and temporarily
->
-> Erm, just to make sure: Armada 370 isn't using mv643xx_eth but mvneta,
-> are you sure it is (was) related to Jason's fix?
+To fix this, modify acpi_bus_offline_companions() to return an
+error code if hotplug is disabled for the given device object.
+[Also change the name of the function to acpi_bus_offline(),
+because it is not only about companions any more, and change
+the name of acpi_bus_online_companions() accordingly.]  Make
+acpi_scan_hot_remove() propagate that error to its callers.
 
-Thanks for pointing this, Sebastian and my apologies for the noise.
-Jason's fix is indeed for a file which is not compiled for my RN102.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
-As the problem perfectly matched the issue I had and current kernel w/
-the patch applied does indeed fix it, I did not try and do the test w/o
-the patch applied. It would have showed the problem was fixed by
-something else in 3.12. Well, I spent some time digging the changes on
-mvneta.c and: 
+acpi_force_hot_remove has to be honored by the new code.
 
-commit 714086029116b6b0a34e67ba1dd2f0d1cf26770c
-Author: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Date:   Wed Sep 4 16:21:18 2013 +0200
+Thanks,
+Rafael
 
-    net: mvneta: properly disable HW PHY polling and ensure adjust_link() works
-    
-    This commit fixes a long-standing bug that has been reported by many
-    users: on some Armada 370 platforms, only the network interface that
-    has been used in U-Boot to tftp the kernel works properly in
-    Linux. The other network interfaces can see a 'link up', but are
-    unable to transmit data. The reports were generally made on the Armada
-    370-based Mirabox, but have also been given on the Armada 370-RD
-    board.
+---
+ drivers/acpi/scan.c |   58 +++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 37 insertions(+), 21 deletions(-)
 
-    [SNIP]
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -125,8 +125,8 @@ acpi_device_modalias_show(struct device
+ }
+ static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
+ 
+-static acpi_status acpi_bus_offline_companions(acpi_handle handle, u32 lvl,
+-					       void *data, void **ret_p)
++static acpi_status acpi_bus_offline(acpi_handle handle, u32 lvl, void *data,
++				    void **ret_p)
+ {
+ 	struct acpi_device *device = NULL;
+ 	struct acpi_device_physical_node *pn;
+@@ -136,6 +136,12 @@ static acpi_status acpi_bus_offline_comp
+ 	if (acpi_bus_get_device(handle, &device))
+ 		return AE_OK;
+ 
++	if (device->handler && !device->handler->hotplug.enabled
++	    && !acpi_force_hot_remove) {
++		*ret_p = &device->dev;
++		return AE_SUPPORT;
++	}
++
+ 	mutex_lock(&device->physical_node_lock);
+ 
+ 	list_for_each_entry(pn, &device->physical_node_list, node) {
+@@ -168,8 +174,8 @@ static acpi_status acpi_bus_offline_comp
+ 	return status;
+ }
+ 
+-static acpi_status acpi_bus_online_companions(acpi_handle handle, u32 lvl,
+-					      void *data, void **ret_p)
++static acpi_status acpi_bus_online(acpi_handle handle, u32 lvl, void *data,
++				   void **ret_p)
+ {
+ 	struct acpi_device *device = NULL;
+ 	struct acpi_device_physical_node *pn;
+@@ -214,26 +220,32 @@ static int acpi_scan_hot_remove(struct a
+ 	 * If the first pass is successful, the second one isn't needed, though.
+ 	 */
+ 	errdev = NULL;
+-	acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+-			    NULL, acpi_bus_offline_companions,
+-			    (void *)false, (void **)&errdev);
+-	acpi_bus_offline_companions(handle, 0, (void *)false, (void **)&errdev);
++	status = acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
++				     NULL, acpi_bus_offline, (void *)false,
++				     (void **)&errdev);
++	if (status == AE_SUPPORT) {
++		dev_warn(errdev, "Offline disabled.\n");
++		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
++				    acpi_bus_online, NULL, NULL, NULL);
++		put_device(&device->dev);
++		return -EPERM;
++	}
++	acpi_bus_offline(handle, 0, (void *)false, (void **)&errdev);
+ 	if (errdev) {
+ 		errdev = NULL;
+ 		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+-				    NULL, acpi_bus_offline_companions,
+-				    (void *)true , (void **)&errdev);
++				    NULL, acpi_bus_offline, (void *)true,
++				    (void **)&errdev);
+ 		if (!errdev || acpi_force_hot_remove)
+-			acpi_bus_offline_companions(handle, 0, (void *)true,
+-						    (void **)&errdev);
++			acpi_bus_offline(handle, 0, (void *)true,
++					 (void **)&errdev);
+ 
+ 		if (errdev && !acpi_force_hot_remove) {
+ 			dev_warn(errdev, "Offline failed.\n");
+-			acpi_bus_online_companions(handle, 0, NULL, NULL);
++			acpi_bus_online(handle, 0, NULL, NULL);
+ 			acpi_walk_namespace(ACPI_TYPE_ANY, handle,
+-					    ACPI_UINT32_MAX,
+-					    acpi_bus_online_companions, NULL,
+-					    NULL, NULL);
++					    ACPI_UINT32_MAX, acpi_bus_online,
++					    NULL, NULL, NULL);
+ 			put_device(&device->dev);
+ 			return -EBUSY;
+ 		}
+@@ -290,10 +302,9 @@ static void acpi_bus_device_eject(void *
+ 		goto err_out;
+ 
+ 	handler = device->handler;
+-	if (!handler || !handler->hotplug.enabled) {
+-		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+-		goto err_out;
+-	}
++	if (!handler || !handler->hotplug.enabled)
++		goto err_support;
++
+ 	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
+ 				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+ 	if (handler->hotplug.mode == AHM_CONTAINER)
+@@ -301,14 +312,19 @@ static void acpi_bus_device_eject(void *
+ 
+ 	get_device(&device->dev);
+ 	error = acpi_scan_hot_remove(device);
+-	if (error)
++	if (error == -EPERM) {
++		goto err_support;
++	} else if (error) {
+ 		goto err_out;
++	}
+ 
+  out:
+ 	mutex_unlock(&acpi_scan_lock);
+ 	unlock_device_hotplug();
+ 	return;
+ 
++ err_support:
++	ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+  err_out:
+ 	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST, ost_code,
+ 				  NULL);
 
-$ git tag --contains 714086029116
-v3.12
-v3.12-rc1
-v3.12-rc2
-v3.12-rc3
-v3.12-rc4
-v3.12-rc5
-v3.12-rc6
-v3.12-rc7
-
-So the problem was indeed fixed at the beginning of 3.12 series by Thomas.
-
-Anyway, my bad and thanks again for pointing it out.
-
-Cheers,
-
-a+
