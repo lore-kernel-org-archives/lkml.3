@@ -1,162 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab3KERZE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 12:25:04 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:59427 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752187Ab3KERZB convert rfc822-to-8bit (ORCPT
+	id S1755217Ab3KER1O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 12:27:14 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:59957 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab3KER1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 12:25:01 -0500
-Subject: Re: [PATCH 05/11] ARM: Introduce CPU_METHOD_OF_DECLARE() for cpu hotplug/smp
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1383343739-23080-6-git-send-email-sboyd@codeaurora.org>
-Date: Tue, 5 Nov 2013 11:24:58 -0600
-Cc: linux-arm-kernel@lists.infradead.org, David Brown <davidb@codeaurora.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E3155290-B7BD-4559-BB0E-6C6C7D74ACFB@codeaurora.org>
-References: <1383343739-23080-1-git-send-email-sboyd@codeaurora.org> <1383343739-23080-6-git-send-email-sboyd@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-X-Mailer: Apple Mail (2.1283)
+	Tue, 5 Nov 2013 12:27:11 -0500
+X-AuditID: cbfee61b-b7fd56d000001fc6-85-52792a6e240e
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>
+Subject: [PATCH v10 0/7] cpufreq:boost: CPU Boost mode support
+Date: Tue, 05 Nov 2013 18:26:44 +0100
+Message-id: <1383672411-26324-1-git-send-email-l.majewski@samsung.com>
+X-Mailer: git-send-email 1.7.10
+In-reply-to: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t9jQd08rcogg70dshYNV0MsNs5Yz2rx
+	tOkHu0XfzyvMFmv2/2Sy6Dz7hNnizSNuizcPNzNaXN41h83ic+8RRovbjSvYLM6cvsRq8eRh
+	H5vFxq8eDnwei/e8ZPK4c20Pm8e6aW+ZPbZcbWfx6NuyitHj+I3tTB6fN8kFsEdx2aSk5mSW
+	pRbp2yVwZdz4soixoFWy4tasPtYGxuPCXYycHBICJhJvV6xmhrDFJC7cW8/WxcjFISQwnVFi
+	/6NDrBBOF5PEygn3WECq2AT0JD7ffcoEkhARWMIo8bppAVgVs8BeZolJf9ayglQJC9hJ7Dtw
+	GMxmEVCVWHt9PiOIzSvgJvGn+x8bxD55iaf3+8BsTqD43E8vwGwhAVeJmx9Wskxg5F3AyLCK
+	UTS1ILmgOCk910ivODG3uDQvXS85P3cTIzhcn0nvYFzVYHGIUYCDUYmHN0G+MkiINbGsuDL3
+	EKMEB7OSCO+x/xVBQrwpiZVVqUX58UWlOanFhxilOViUxHkPtloHCgmkJ5akZqemFqQWwWSZ
+	ODilGhiX+xTdlVjwNcBrU6DQAbWehToiwqEXZmkwvHp2xteA4/WnDNPaGY2vWP8qxXQ66xoa
+	xB38upPtlMTRn9v4dn5MN89zncbTu2VvslXN5sl5Ecm8E26IsLxjSPF7dn9x08p3dlWXb0mX
+	xFy33HjooXm1/zHXCYW/z1bGTo6Q17968f7cW1fnvDRXYinOSDTUYi4qTgQAMe/MylMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch series introduces support for CPU overclocking technique
+called Boost.
 
-On Nov 1, 2013, at 5:08 PM, Stephen Boyd wrote:
+It is a follow up of a LAB governor proposal. Boost is a LAB component:
+http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
 
-> The goal of multi-platform kernels is to remove the need for mach
-> directories and machine descriptors. To further that goal,
-> introduce CPU_METHOD_OF_DECLARE() to allow cpu hotplug/smp
-> support to be separated from the machine descriptors.
-> Implementers should specify an enable-method property in their
-> cpus node and then implement a matching set of smp_ops in their
-> hotplug/smp code, wiring it up with the CPU_METHOD_OF_DECLARE()
-> macro. When the kernel is compiled we'll collect all the
-> enable-method smp_ops into one section for use at boot.
-> 
-> At boot time we'll look for an enable-method in each cpu node and
-> try to match that against all known CPU enable methods in the
-> kernel. If there are no enable-methods in the cpu nodes we
-> fallback to the cpus node and try to use any enable-method found
-> there. If that doesn't work we fall back to the old way of using
-> the machine descriptor.
-> 
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: <devicetree@vger.kernel.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
-> arch/arm/include/asm/smp.h        |  9 +++++++++
-> arch/arm/kernel/devtree.c         | 38 ++++++++++++++++++++++++++++++++++++++
-> include/asm-generic/vmlinux.lds.h | 10 ++++++++++
-> 3 files changed, 57 insertions(+)
-> 
-> diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
-> index a8cae71c..c27ec55 100644
-> --- a/arch/arm/include/asm/smp.h
-> +++ b/arch/arm/include/asm/smp.h
-> @@ -112,6 +112,15 @@ struct smp_operations {
-> #endif
-> };
-> 
-> +struct of_cpu_method {
-> +	const char *method;
-> +	struct smp_operations *ops;
-> +};
-> +
-> +#define CPU_METHOD_OF_DECLARE(name, _method, _ops)			\
-> +	static const struct of_cpu_method __cpu_method_of_table_##name	\
-> +		__used __section(__cpu_method_of_table)			\
-> +		= { .method = _method, .ops = _ops }
-> /*
->  * set platform specific SMP operations
->  */
-> diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
-> index f35906b..71a8592 100644
-> --- a/arch/arm/kernel/devtree.c
-> +++ b/arch/arm/kernel/devtree.c
-> @@ -25,6 +25,7 @@
-> #include <asm/smp_plat.h>
-> #include <asm/mach/arch.h>
-> #include <asm/mach-types.h>
-> +#include <asm/smp.h>
-> 
-> void __init early_init_dt_add_memory_arch(u64 base, u64 size)
-> {
-> @@ -63,6 +64,36 @@ void __init arm_dt_memblock_reserve(void)
-> 	}
-> }
-> 
-> +#ifdef CONFIG_SMP
-> +extern struct of_cpu_method __cpu_method_of_table[];
-> +
-> +static const struct of_cpu_method __cpu_method_of_table_sentinel
-> +	__used __section(__cpu_method_of_table_end);
-> +
-> +static int __init set_smp_ops_by_method(struct device_node *node)
-> +{
-> +	const char *method;
-> +	struct of_cpu_method *m = __cpu_method_of_table;
-> +
-> +	if (of_property_read_string(node, "enable-method", &method))
-> +		return 0;
-> +
-> +	for (; m != &__cpu_method_of_table_sentinel; m++)
-> +		if (!strcmp(m->method, method)) {
-> +			smp_set_ops(m->ops);
-> +			return 1;
-> +		}
-> +
-> +	return 0;
-> +}
-> +#else
-> +static inline int set_smp_ops_by_method(struct device_node *node)
-> +{
-> +	return 1;
-> +}
-> +#endif
-> +
-> +
-> /*
->  * arm_dt_init_cpu_maps - Function retrieves cpu nodes from the device tree
->  * and builds the cpu logical map array containing MPIDR values related to
-> @@ -79,6 +110,7 @@ void __init arm_dt_init_cpu_maps(void)
-> 	 * read as 0.
-> 	 */
-> 	struct device_node *cpu, *cpus;
-> +	int found_method = 0;
-> 	u32 i, j, cpuidx = 1;
-> 	u32 mpidr = is_smp() ? read_cpuid_mpidr() & MPIDR_HWID_BITMASK : 0;
-> 
-> @@ -150,8 +182,14 @@ void __init arm_dt_init_cpu_maps(void)
-> 		}
-> 
-> 		tmp_map[i] = hwid;
-> +
-> +		if (!found_method)
-> +			found_method = set_smp_ops_by_method(cpu);
-> 	}
-> 
-> +	if (!found_method)
-> +		set_smp_ops_by_method(cpus);
-> +
+Boost unifies hardware based solution (e.g. Intel Nehalem) with
+software oriented one (like the one done at Exynos).
+For this reason cpufreq/freq_table code has been reorganized to include
+common code.
 
-I assume this if for the case that the enable method is in the cpus{ } container but not in a specific cpu node?
+Important design decisions:
+- Boost related code is compiled-in unconditionally to cpufreq core and
+  disabled by default. The cpufreq_driver is responsibile for setting
+  boost_supported flag and providing set_boost callback(if HW support
+  is needed). For software managed boost, special Kconfig flag -
+  CONFIG_CPU_FREQ_BOOST_SW has been defined. It will be selected only
+  when a target platform has thermal framework properly configured.
 
-If so, the binding is not clear that we allow this.  Also a comment would probably be nice.
+- struct cpufreq_driver has been extended with boost related fields:
+        -- boost_supported - when driver supports boosting
+        -- boost_enabled - boost state
+        -- set_boost - callback to function, which is necessary to
+           enable/disable boost
 
-> 	if (!bootcpu_valid) {
-> 		pr_warn("DT missing boot CPU MPIDR[23:0], fall back to default cpu_logical_map\n");
-> 		return;
+- Boost sysfs attribute (/sys/devices/system/cpu/cpufreq/boost) is visible
+  _only_ when cpufreq driver supports Boost.
 
-- k
+- No special spin_lock for Boost was created. The one from cpufreq core
+  was reused.
+
+- The Boost code doesn't rely on any policy. When boost state is changed,
+  then the policy list is iterated and proper adjustements are done.
+
+- To improve safety level, the thermal framework is also extended to disable
+  software boosting, when thermal trip point is reached. After cooling down
+  the boost can be enabled again. This emulates behaviour similar to HW
+  managed boost (like x86)
+
+Tested at HW:
+       Exynos 4412 3.12-rc7 Linux
+       Intel Core i7-3770 3.12-rc7 Linux
+
+Above patches were posted on top of kernel_pm/bleeding-edge
+(SHA1: acc3663ce3f9cde3a7da88fb478531c58d5ed399)
+
+
+Lukasz Majewski (7):
+  cpufreq: Add boost frequency support in core
+  cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to work with common
+    boost solution
+  cpufreq:boost:Kconfig: Provide support for software managed BOOST
+  cpufreq:exynos:Extend Exynos cpufreq driver to support boost
+    framework
+  Documentation:cpufreq:boost: Update BOOST documentation
+  cpufreq:exynos4x12: Change L0 driver data to CPUFREQ_BOOST_FREQ
+  thermal:exynos:boost: Automatic enable/disable of BOOST feature (at
+    Exynos4412)
+
+ Documentation/cpu-freq/boost.txt          |   26 +++----
+ drivers/cpufreq/Kconfig                   |    4 +
+ drivers/cpufreq/Kconfig.arm               |   15 ++++
+ drivers/cpufreq/acpi-cpufreq.c            |   86 +++++++--------------
+ drivers/cpufreq/cpufreq.c                 |  118 ++++++++++++++++++++++++++++-
+ drivers/cpufreq/exynos-cpufreq.c          |    3 +
+ drivers/cpufreq/exynos4x12-cpufreq.c      |    2 +-
+ drivers/cpufreq/freq_table.c              |   56 ++++++++++++--
+ drivers/thermal/samsung/exynos_tmu_data.c |   47 ++++++++++++
+ include/linux/cpufreq.h                   |   24 ++++++
+ 10 files changed, 302 insertions(+), 79 deletions(-)
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+1.7.10.4
 
