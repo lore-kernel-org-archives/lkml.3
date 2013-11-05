@@ -1,142 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab3KEHq4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 02:46:56 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:45545 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab3KEHqz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 02:46:55 -0500
-Date: Tue, 5 Nov 2013 08:46:50 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
-Subject: Re: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist
- periods (v2)
-Message-ID: <20131105074650.GA2855@gmail.com>
-References: <1383202576-28141-1-git-send-email-namhyung@kernel.org>
- <20131031080932.GA8479@gmail.com>
- <87vc0c4ny2.fsf@sejong.aot.lge.com>
- <20131101075502.GA25547@gmail.com>
- <874n7w4gtm.fsf@sejong.aot.lge.com>
- <20131101092759.GC27063@gmail.com>
- <87bo1zz4mu.fsf@sejong.aot.lge.com>
+	id S1752851Ab3KEHvB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 02:51:01 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:42057 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750864Ab3KEHvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 02:51:00 -0500
+X-IronPort-AV: E=Sophos;i="4.93,638,1378828800"; 
+   d="scan'208";a="8950445"
+Message-ID: <5278A39B.6000303@cn.fujitsu.com>
+Date: Tue, 05 Nov 2013 15:51:55 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87bo1zz4mu.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gao feng <gaofeng@cn.fujitsu.com>
+CC: eparis@redhat.com, linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        containers@lists.linux-foundation.org, ebiederm@xmission.com,
+        serge.hallyn@ubuntu.com, sgrubb@redhat.com,
+        toshi.okajima@jp.fujitsu.com, Richard Guy Briggs <rgb@redhat.com>
+Subject: Re: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
+References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com> <5271D3FC.8000709@cn.fujitsu.com>
+In-Reply-To: <5271D3FC.8000709@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/05 15:49:00,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/05 15:49:06,
+	Serialize complete at 2013/11/05 15:49:06
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ping...
 
-* Namhyung Kim <namhyung@kernel.org> wrote:
-
-> Hi Ingo,
+On 10/31/2013 11:52 AM, Gao feng wrote:
+> Hi Eric Paris,
 > 
-> On Fri, 1 Nov 2013 10:27:59 +0100, Ingo Molnar wrote:
-> > * Namhyung Kim <namhyung@kernel.org> wrote:
-> >
-> >> >> > 2)
-> >> >> >
-> >> >> > Is it possible to configure the default 'report -g' style, so that 
-> >> >> > people who'd like to use it all the time don't have to type '-g 
-> >> >> > cumulative' all the time?
-> >> >> 
-> >> >> Hmm.. maybe I can add support for the 'report.call-graph' config option.
-> >> >
-> >> > If we display your new 'total' field by default then it's not as 
-> >> > pressing to me :)
-> >> 
-> >> Do you mean -g cumulative without 'self' column?
-> >
-> > So, if by default we display both 'self' and 'total' and sort by 
-> > 'total', then I'm personally a happy camper: while it's a change of 
-> > the default perf report output, it's also a step forward.
-> >
-> > But some people might complain about it once this hits v3.13 (or 
-> > v3.14) and might want to hide individual columns and have different 
-> > sorting preferences.
-> >
-> > So out of defensive caution you might want to provide toggles for 
-> > such things, maybe even generalize it a bit to allow arbitrary 
-> > hiding/display of individual colums in perf report.
-> >
-> > That would probably also make it easier to do minimal tweaks to the 
-> > upstream reporting defaults.
+> Can you give me some comments?
 > 
-> Okay, so what would the interface look like?
+> You think the tying audit namespace to user namespace is a bad idea,
+> so this patchset doesn't assign auditns to userns and introduce an
+> new audit netlink type to help to create audit namespace.
 > 
-> I think it'd better to separate the option and pass column and
-> (optional) sort key argument.
+> and this patchset also introduces an new proc interface to make
+> sure container can't influence the whole system.
 > 
->   --cumulative both,total (default)
->   --cumulative both,self
->   --cumulative total
->   --cumulative self (meaningless?)
+> and the audit rules are not namespace aware, all of audit namespaces
+> should comply with the rules. in next step, if we find it's need to
+> make audit rules per audit namespace, then it's the time to do that
+> job.
 > 
-> Maybe we need a config option and a single letter option for the default
-> case like --call-graph and -g options do.
+> This patchset also makes all of net namespaces have ability to send/
+> receive audit netlink message.
 > 
-> What do you think?
+> I may miss some points, if you find there are some shortage or loophole,
+> please let me know.
+> 
+> Thanks!
+> 
+> On 10/24/2013 03:31 PM, Gao feng wrote:
+>> Here is the v1 patchset: http://lwn.net/Articles/549546/
+>>
+>> The main target of this patchset is allowing user in audit
+>> namespace to generate the USER_MSG type of audit message,
+>> some userspace tools need to generate audit message, or
+>> these tools will broken.
+>>
+>> And the login process in container may want to setup
+>> /proc/<pid>/loginuid, right now this value is unalterable
+>> once it being set. this will also broke the login problem
+>> in container. After this patchset, we can reset this loginuid
+>> to zero if task is running in a new audit namespace.
+>>
+>> Same with v1 patchset, in this patchset, only the privileged
+>> user in init_audit_ns and init_user_ns has rights to
+>> add/del audit rules. and these rules are gloabl. all
+>> audit namespace will comply with the rules.
+>>
+>> Compared with v1, v2 patch has some big changes.
+>> 1, the audit namespace is not assigned to user namespace.
+>>    since there is no available bit of flags for clone, we
+>>    create audit namespace through netlink, patch[18/20]
+>>    introduces a new audit netlink type AUDIT_CREATE_NS.
+>>    the privileged user in userns has rights to create a
+>>    audit namespace, it means the unprivileged user can
+>>    create auditns through create userns first. In order
+>>    to prevent them from doing harm to host, the default
+>>    audit_backlog_limit of un-init-audit-ns is zero(means
+>>    audit is unavailable in audit namespace). and it can't
+>>    be changed in auditns through netlink.
+>>
+>> 2, introduce /proc/<pid>/audit_log_limit
+>>    this interface is used to setup log_limit of audit
+>>    namespace.  we need this interface to make audit
+>>    available in un-init-audit-ns. Only the privileged user
+>>    has right to set this value, it means only the root user
+>>    of host can change it.
+>>
+>> 3, make audit namespace don't depend on net namespace.
+>>    patch[1/20] add a compare function audit_compare for
+>>    audit netlink, it always return true, it means the
+>>    netlink subsystem will find out the netlink socket
+>>    only through portid and netlink type. So we needn't
+>>    to create kernel side audit netlink socket for per
+>>    net namespace, all userspace audit netlink socket
+>>    can find out the audit_sock, and audit_sock can
+>>    communicate with them through the proper portid.
+>>    it's just like the behavior we don't have net
+>>    namespace before.
+>>
+>>
+>> This patchset still need some work, such as allow changing
+>> audit_enabled in audit namespace, auditd wants this feature.
+>>
+>> I send this patchset now in order to get more comments, so
+>> I can keep on improving namespace support for audit.
+>>
+>> Gao feng (20):
+>>   Audit: make audit netlink socket net namespace unaware
+>>   audit: introduce configure option CONFIG_AUDIT_NS
+>>   audit: make audit_skb_queue per audit namespace
+>>   audit: make audit_skb_hold_queue per audit namespace
+>>   audit: make audit_pid per audit namespace
+>>   audit: make kauditd_task per audit namespace
+>>   aduit: make audit_nlk_portid per audit namespace
+>>   audit: make kaudit_wait queue per audit namespace
+>>   audit: make audit_backlog_wait per audit namespace
+>>   audit: allow un-init audit ns to change pid and portid only
+>>   audit: use proper audit namespace in audit_receive_msg
+>>   audit: use proper audit_namespace in kauditd_thread
+>>   audit: introduce new audit logging interface for audit namespace
+>>   audit: pass proper audit namespace to audit_log_common_recv_msg
+>>   audit: Log audit pid config change in audit namespace
+>>   audit: allow GET,SET,USER MSG operations in audit namespace
+>>   nsproxy: don't make create_new_namespaces static
+>>   audit: add new message type AUDIT_CREATE_NS
+>>   audit: make audit_backlog_limit per audit namespace
+>>   audit: introduce /proc/<pid>/audit_backlog_limit
+>>
+>>  fs/proc/base.c                  |  53 ++++++
+>>  include/linux/audit.h           |  26 ++-
+>>  include/linux/audit_namespace.h |  92 ++++++++++
+>>  include/linux/nsproxy.h         |  15 +-
+>>  include/uapi/linux/audit.h      |   1 +
+>>  init/Kconfig                    |  10 ++
+>>  kernel/Makefile                 |   2 +-
+>>  kernel/audit.c                  | 364 +++++++++++++++++++++++++---------------
+>>  kernel/audit.h                  |   5 +-
+>>  kernel/audit_namespace.c        | 123 ++++++++++++++
+>>  kernel/auditsc.c                |   6 +-
+>>  kernel/nsproxy.c                |  18 +-
+>>  12 files changed, 561 insertions(+), 154 deletions(-)
+>>  create mode 100644 include/linux/audit_namespace.h
+>>  create mode 100644 kernel/audit_namespace.c
+>>
+> 
+> 
 
-So why restrict it to 'cumulative'? Why not have a generic --fields/-F, 
-with a good default. The ordering of the fields determines sorting 
-behavior.
-
-The default would be something like:
-
-  -F total,self,process,dso,name
-
-Whether 'cumulative' data is calculated is not a function of any direct 
-option, but simply a function of whether the 'total' field is in the -F 
-list of columns displayed or not.
-
-With that scheme we could also do things like this to get old-style 
-sorting:
-
- -F self,process,dso,name
-
-Or a really frugal 'readprofile'-style output:
-
- -F self,name
-
-if one is only interested in percentages and raw function names.
-
-Wrt. sorting order, by default the first column in the list of columns 
-would be the primary (and only) sort key.
-
-(The -F field setup list could also be specified in the .perfconfig.)
-
-With this method we could do away with all this geometrical explosion of 
-somewhat inconsistent formatting and sorting options...
-
-If there's demand then we could decouple sort keys from the display order, 
-by slightly augmenting the field format:
-
- -F total,self:2,process:0,dso:1,name
-
-This would sort by 'process' field as the primary key, 'dso' the secondary 
-key and 'self' as the tertiary key.
-
-And we could also keep the -s/--sort option:
-
- -s process,dso,self
-
-So the above -F line would be equivalent to:
-
- -F total,self,process,dso,name -s process,dso,self
-
-What do you think?
-
-Thanks,
-
-	Ingo
