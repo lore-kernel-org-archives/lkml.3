@@ -1,103 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab3KEUPe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 15:15:34 -0500
-Received: from smtprelay0121.hostedemail.com ([216.40.44.121]:57700 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754403Ab3KEUPc (ORCPT
+	id S1755351Ab3KEUXy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 15:23:54 -0500
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:55923 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754403Ab3KEUXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 15:15:32 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3867:3873:4250:4321:4559:5007:6119:6691:7652:7903:8957:10004
-X-HE-Tag: corn84_4cea8fe6b684f
-X-Filterd-Recvd-Size: 3090
-Message-ID: <1383682529.4387.37.camel@joe-AO722>
-Subject: Re: [PATCH V2 1/3] thermal: bcm281xx: Add Temperature Monitor driver
-From: Joe Perches <joe@perches.com>
-To: Wendy Ng <wendy.ng@broadcom.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Christian Daudt <bcm@fixthebug.org>,
-        Markus Mayer <mmayer@broadcom.com>, Tim Kryger <tim.kryger@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>
-Date: Tue, 05 Nov 2013 12:15:29 -0800
-In-Reply-To: <1383681284-17643-2-git-send-email-wendy.ng@broadcom.com>
-References: <1383681284-17643-1-git-send-email-wendy.ng@broadcom.com>
-	 <1383681284-17643-2-git-send-email-wendy.ng@broadcom.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Nov 2013 15:23:52 -0500
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <52794823.7080503@kernel.dk>
+References: <CAHbNUh1Cw3bc4WR0VcD1H_eKYqGBtv_215_euh6mwTbZ41ejUw@mail.gmail.com>
+	<52794823.7080503@kernel.dk>
+Date: Tue, 5 Nov 2013 12:23:51 -0800
+Message-ID: <CAOesGMj1xXXM-gNgWQwBKOczpJtM7CobYy4h7Fe=4W3U43EJGQ@mail.gmail.com>
+Subject: Re: Boot failure on Arndale with next-20131105
+From: Olof Johansson <olof@lixom.net>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Tushar Behera <tushar.behera@linaro.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-05 at 11:54 -0800, Wendy Ng wrote:
-> This adds the support for Temperature Monitor (TMON) driver for
-> Broadcom bcm281xx SoCs. This driver plugs into the Thermal Framework.
+On Tue, Nov 5, 2013 at 11:33 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> On 11/05/2013 04:49 AM, Tushar Behera wrote:
+>> Hi,
+>>
+>> We are having a boot-time kernel panic on Samsung's Exynos5250-based
+>> Arndale board with next-20131105. Bisect points to following commit.
+>>
+>> <<<
+>> commit febca1baea1cfe2d7a0271385d89b03d5fb34f94
+>> Author: Chris Mason <chris.mason@fusionio.com>
+>> Date:   Thu Oct 31 13:32:42 2013 -0600
+>>
+>>     block: setup bi_vcnt on clones
+>>
+>>     commit 9fc6286f347d changed the cloning code to make clones cheaper for
+>>     the case where we don't need to clone the iovec array.  But,
+>>     the new clone needs the bi_vnct from the original.
+>>
+>>     Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+>>     Signed-off-by: Jens Axboe <axboe@kernel.dk>
+>>>>>
+>>
+>> Reverting above commit, Arndale is able to boot again.
+>>
+>> Excerpts from the boot log (just in case, it helps in debugging).
+>>
+>> [    1.972062] Unable to handle kernel paging request at virtual
+>> address 025e63a0
+>> [    1.981164] pgd = c0004000
+>> [    1.982375] [025e63a0] *pgd=00000000
+>> [    1.985875] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
+>> [    1.991086] Modules linked in:
+>> [    1.994076] CPU: 0 PID: 1178 Comm: mmcqd/0 Not tainted
+>> 3.12.0-rc5-00051-gfebca1b #21
+>> [    2.001683] task: ef3530c0 ti: ee82e000 task.ti: ee82e000
+>> [    2.006981] PC is at dma_cache_maint_page+0x84/0x174
+>> [    2.011842] LR is at 0x6
+>>
+>> [    2.043532] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM
+>> Segment kernel
+>> [    2.050708] Control: 10c5387d  Table: 4000406a  DAC: 00000015
+>> [    2.056342] Process mmcqd/0 (pid: 1178, stack limit = 0xee82e240)
+>> [    2.062321] Stack: (0xee82fd58 to 0xee830000)
+>>
+>> [ ... ]
+>>
+>> [    2.275352] [<c0015768>] (dma_cache_maint_page+0x84/0x174) from
+>> [<c0015880>] (__dma_page_cpu_to_dev+0x28/0xa0)
+>> [    2.285170] [<c0015880>] (__dma_page_cpu_to_dev+0x28/0xa0) from
+>> [<c00159a4>] (arm_dma_map_page+0x6c/0x70)
+>> [    2.294565] [<c00159a4>] (arm_dma_map_page+0x6c/0x70) from
+>> [<c0015d28>] (arm_dma_map_sg+0x74/0xec)
+>> [    2.303366] [<c0015d28>] (arm_dma_map_sg+0x74/0xec) from
+>> [<c02bf534>] (dw_mci_pre_dma_transfer.isra.16+0x124/0x15c)
+>> [    2.313614] [<c02bf534>]
+>> (dw_mci_pre_dma_transfer.isra.16+0x124/0x15c) from [<c02bf8d4>]
+>> (dw_mci_pre_req+0x44/0x50)
+>> [    2.323863] [<c02bf8d4>] (dw_mci_pre_req+0x44/0x50) from
+>> [<c02a8970>] (mmc_start_req+0x3c/0x39c)
+>> [    2.332486] [<c02a8970>] (mmc_start_req+0x3c/0x39c) from
+>> [<c02b606c>] (mmc_blk_issue_rw_rq+0xbc/0xa9c)
+>> [    2.341625] [<c02b606c>] (mmc_blk_issue_rw_rq+0xbc/0xa9c) from
+>> [<c02b6c14>] (mmc_blk_issue_rq+0x1c8/0x498)
+>> [    2.351106] [<c02b6c14>] (mmc_blk_issue_rq+0x1c8/0x498) from
+>> [<c02b75d4>] (mmc_queue_thread+0xa4/0x144)
+>> [    2.360331] [<c02b75d4>] (mmc_queue_thread+0xa4/0x144) from
+>> [<c0038614>] (kthread+0xb4/0xb8)
+>> [    2.368616] [<c0038614>] (kthread+0xb4/0xb8) from [<c000e2f8>]
+>> (ret_from_fork+0x14/0x3c)
+>> [    2.376556] Code: 17e81051 10822181 e592c000 e3ccc003 (e79c2007)
+>> [    2.382570] ---[ end trace df06b64b1b7fa443 ]---
+>>
+>> [ ... ]
+>>
+>> Begin: Mounting root file system ... Begin: Running /scripts/local-top ... done.
+>> Gave up waiting for root device.  Common problems:
+>>  - Boot args (cat /proc/cmdline)
+>>    - Check rootdelay= (did the system wait long enough?)
+>>    - Check root= (did the system wait for the right device?)
+>>  - Missing modules (cat /proc/modules; ls /dev)
+>> ALERT!  /dev/mmcblk1p3 does not exist.  Dropping to a shell!
+>> FATAL: Could not load
+>> /lib/modules/3.12.0-rc5-00051-gfebca1b/modules.dep: No such file or
+>> directory
+>> FATAL: Could not load
+>> /lib/modules/3.12.0-rc5-00051-gfebca1b/modules.dep: No such file or
+>> directory
+>
+> Very weird! What file system is being used?
 
-trivia:
+Most of my failures have happened on regular MMC cards with ext4
+filesystems on them.
 
-> diff --git a/drivers/thermal/bcm_kona_tmon.c b/drivers/thermal/bcm_kona_tmon.c
+Note that the panic happens during device probe / partition table
+scanning, not after mounting the filesystem.
 
-Please add
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-before any #include to prefix the pr_<level> dmesg output.
-
-If you _really_ want __func__ with each output, you could use
-#define pr_fmt(fmt) KBUILD_MODNAME ":%s: " fmt, __func__
-though I think __func__ isn't particularly useful.
-
-> +#include <linux/clk.h>
-> +#include <linux/err.h>
-[]
-> +static int bcm_get_temp(void *sensor_data, long *temp)
-> +{
-> +	u32 raw;
-> +	long mcelsius;
-> +	struct bcm_tmon_data_priv *priv = sensor_data;
-> +
-> +	if (!priv) {
-> +		pr_err("%s: input sensor_data not initialized.\n", __func__);
-
-then this could become
-		pr_err("input sensor_data not initialized\n");
-
-Also, there's no real need to terminate messages with sentence
-ending ".".  dmesg output generally isn't a sentence.
-
-> +		return -EINVAL;
-> +	}
-> +
-> +	raw = (readl(priv->base + TMON_TEMP_VAL_OFFSET)
-> +		& TMON_TEMP_VAL_TEMP_VAL_MASK) >> TMON_TEMP_VAL_TEMP_VAL_SHIFT;
-> +
-> +	pr_debug("%s: raw temp 0x%x\n", __func__, raw);
-
-also consider:
-
-	pr_debug("raw temp: %#x\n", raw);
+Giving your patch a go now across the board. I'm very concerned about
+the reports of bisectability, build failures and heaps of warnings
+though. Did the 0-day builder pick up any of those? :-/
 
 
-> +static int bcm_kona_tmon_probe(struct platform_device *pdev)
-> +{
-[]
-> +	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
-> +	if (!priv) {
-> +		dev_err(&pdev->dev, "Failed to malloc priv.\n");
-> +		return -ENOMEM;
-> +	}
-
-Generic OOM messages are already emitted by devm_kzalloc.
-This could be written as:
-
-	priv = devm_kzalloc(etc...)
-	if (!priv)
-		return -ENOMEM;
-
-
+-Olof
