@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755843Ab3KEWp2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 17:45:28 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:42612 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755435Ab3KEWp1 (ORCPT
+	id S1755861Ab3KEWpe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 17:45:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59009 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755836Ab3KEWp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 17:45:27 -0500
-Date: Tue, 5 Nov 2013 19:45:27 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Jingoo Han <jg1.han@samsung.com>, "Gupta, Pekon" <pekon@ti.com>,
-        Wei Yongjun <weiyj.lk@gmail.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Daniel Mack <zonque@gmail.com>, yongjun_wei@trendmicro.com.cn,
-        avinashphilip@ti.com,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH -next] mtd: nand: omap: fix error return code in
- omap_nand_probe()
-Message-ID: <20131105224526.GA11759@localhost>
-References: <CAPgLHd8V06KzBcPmFywSfNxM0q6=s86xn-AdLKeY9h5JZ_nP7g@mail.gmail.com>
- <001101ced6a8$a18a2c80$e49e8580$%han@samsung.com>
- <CAN8TOE9Eac0LDA+Ke_OCPc_AQGnyYB806pO8JP-qOB1Dr8N2pg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAN8TOE9Eac0LDA+Ke_OCPc_AQGnyYB806pO8JP-qOB1Dr8N2pg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 5 Nov 2013 17:45:28 -0500
+Date: Tue, 5 Nov 2013 14:45:26 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Ron van der Wees <rvdwees@redhat.com>, Erik Mouw <erik.mouw_2@nxp.com>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        walken@google.com, Shaohua Li <shli@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC PATCH -mm] provide estimated available memory in
+ /proc/meminfo
+Message-Id: <20131105144526.49a233ca19298808e54ff900@linux-foundation.org>
+In-Reply-To: <20131105173852.709a103b@annuminas.surriel.com>
+References: <ECFC0369-0745-44AB-9858-E689F41CCB4D@nxp.com>
+	<5256D4C7.90301@redhat.com>
+	<DB649DE8-5595-4370-912B-BDC6BD5FF8C3@nxp.com>
+	<20131025120752.GB2415@rh0004426.ams.redhat.com>
+	<20131105173852.709a103b@annuminas.surriel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 05, 2013 at 01:59:25PM -0800, Brian Norris wrote:
-> On Thu, Oct 31, 2013 at 7:18 PM, Jingoo Han <jg1.han@samsung.com> wrote:
-> > On Friday, November 01, 2013 9:16 AM, Wei Yongjun wrote:
-> >>
-> >> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> >>
-> >> Fix to return a negative error code from the error handling
-> >> case instead of 0, as done elsewhere in this function.
-> >
-> > Commit message is right? :-(
+On Tue, 5 Nov 2013 17:38:52 -0500 Rik van Riel <riel@redhat.com> wrote:
+
+> Many load balancing and workload placing programs check /proc/meminfo
+> to estimate how much free memory is available. They generally do this
+> by adding up "free" and "cached", which was fine ten years ago, but
+> is pretty much guaranteed to be wrong today.
 > 
-> It sounds OK by my reading. Unless you're having trouble parsing what
-> "as done elsewhere in this function" is being applied to. (IOW, is the
-> rest of the function returning a negative error code on the error
-> paths, or is it returning 0? Of course the answer is the former, but
-> it's possible to misread it.) If it helps, I can try to tweak the
-> wording a bit when applying this patch.
+> It is wrong because Cached includes memory that is not freeable as
+> page cache, for example shared memory segments, tmpfs, and ramfs,
+> and it does not include reclaimable slab memory, which can take up
+> a large fraction of system memory on mostly idle systems with lots
+> of files.
 > 
-> Pekon, can I get an Acked-by?
+> Currently, the amount of memory that is available for a new workload,
+> without pushing the system into swap, can be estimated from MemFree,
+> Active(file), Inactive(file), and SReclaimable, as well as the "low"
+> watermarks from /proc/zoneinfo.
+> 
+> However, this may change in the future, and user space really should
+> not be expected to know kernel internals to come up with an estimate
+> for the amount of free memory.
+> 
+> It is more convenient to provide such an estimate in /proc/meminfo,
+> if things change in the future, we only have to change it in one
+> place.
 > 
 
-I guess you'd prefer Pekon's ack than mine, but anyway:
+That's a good idea.
 
-Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+>  fs/proc/meminfo.c | 36 ++++++++++++++++++++++++++++++++++++
+>  1 file changed, 36 insertions(+)
 
-I'd like to point out this driver has other "mis-behaviors" in returning codes
-in some other places.
-
-In particular, this pattern can be found repeatedly:
-
-	if (do_something()) {
-		err = -ENXIO;
-		goto some_other_place;
-	}
-
-Which should probably be:
-
-	err = do_something();
-	if (err)
-		goto some_other_place;
-
-Wei: maybe you'd like to prepare some more patches?
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+Documentation/filesystems/proc.txt told me it's feeling all offended.
