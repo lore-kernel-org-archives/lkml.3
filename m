@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755808Ab3KEWot (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 17:44:49 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41263 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755403Ab3KEWor (ORCPT
+	id S1755843Ab3KEWp2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 17:45:28 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:42612 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755435Ab3KEWp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 17:44:47 -0500
-Message-ID: <527974CA.6050102@kernel.dk>
-Date: Tue, 05 Nov 2013 15:44:26 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 5 Nov 2013 17:45:27 -0500
+Date: Tue, 5 Nov 2013 19:45:27 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Jingoo Han <jg1.han@samsung.com>, "Gupta, Pekon" <pekon@ti.com>,
+        Wei Yongjun <weiyj.lk@gmail.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Daniel Mack <zonque@gmail.com>, yongjun_wei@trendmicro.com.cn,
+        avinashphilip@ti.com,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH -next] mtd: nand: omap: fix error return code in
+ omap_nand_probe()
+Message-ID: <20131105224526.GA11759@localhost>
+References: <CAPgLHd8V06KzBcPmFywSfNxM0q6=s86xn-AdLKeY9h5JZ_nP7g@mail.gmail.com>
+ <001101ced6a8$a18a2c80$e49e8580$%han@samsung.com>
+ <CAN8TOE9Eac0LDA+Ke_OCPc_AQGnyYB806pO8JP-qOB1Dr8N2pg@mail.gmail.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>, Joe Thornber <ejt@redhat.com>
-Subject: Re: linux-next: build failure after merge of the device-mapper tree
-References: <20131105135128.496b8b2f599d11f2d30ad70c@canb.auug.org.au>	<20131105032054.GA19421@redhat.com>	<20131105143248.551f68c3cd9fe1902860c1ff@canb.auug.org.au>	<20131105125456.GA25219@redhat.com>	<52791B33.9060001@kernel.dk> <20131106094257.43d679d08de823ee5064ddff@canb.auug.org.au>
-In-Reply-To: <20131106094257.43d679d08de823ee5064ddff@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAN8TOE9Eac0LDA+Ke_OCPc_AQGnyYB806pO8JP-qOB1Dr8N2pg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2013 03:42 PM, Stephen Rothwell wrote:
-> Hi Jens,
+On Tue, Nov 05, 2013 at 01:59:25PM -0800, Brian Norris wrote:
+> On Thu, Oct 31, 2013 at 7:18 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+> > On Friday, November 01, 2013 9:16 AM, Wei Yongjun wrote:
+> >>
+> >> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> >>
+> >> Fix to return a negative error code from the error handling
+> >> case instead of 0, as done elsewhere in this function.
+> >
+> > Commit message is right? :-(
 > 
-> On Tue, 05 Nov 2013 09:22:11 -0700 Jens Axboe <axboe@kernel.dk> wrote:
->>
->> Just a heads up that I plan on sending the block bits shortly, hopefully
->> merging sooner rather than later. This round is huge, so I'd like to get
->> it in asap.
+> It sounds OK by my reading. Unless you're having trouble parsing what
+> "as done elsewhere in this function" is being applied to. (IOW, is the
+> rest of the function returning a negative error code on the error
+> paths, or is it returning 0? Of course the answer is the former, but
+> it's possible to misread it.) If it helps, I can try to tweak the
+> wording a bit when applying this patch.
 > 
-> Given the problems we have seen since the inclusion into linux-next of
-> some of it, don't you think it could do with a little more bedding in?
+> Pekon, can I get an Acked-by?
+> 
 
-It'll either simmer without problems for the next day or two, or the
-immutable bits will get pushed to the next merge window.
+I guess you'd prefer Pekon's ack than mine, but anyway:
 
+Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+
+I'd like to point out this driver has other "mis-behaviors" in returning codes
+in some other places.
+
+In particular, this pattern can be found repeatedly:
+
+	if (do_something()) {
+		err = -ENXIO;
+		goto some_other_place;
+	}
+
+Which should probably be:
+
+	err = do_something();
+	if (err)
+		goto some_other_place;
+
+Wei: maybe you'd like to prepare some more patches?
 -- 
-Jens Axboe
-
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
