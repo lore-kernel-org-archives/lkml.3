@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab3KEMkB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 07:40:01 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:50423 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754184Ab3KEMj7 (ORCPT
+	id S1754588Ab3KEMqY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 07:46:24 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:38529 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754175Ab3KEMqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 07:39:59 -0500
+	Tue, 5 Nov 2013 07:46:22 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID rA5CkEDJ019481, This message is accepted by code: ctloc85258
+From: hayeswang <hayeswang@realtek.com>
+To: "'David Miller'" <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, "'nic_swsd'" <nic_swsd@realtek.com>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+References: <1383117220-893-3-git-send-email-hayeswang@realtek.com><20131030.170441.2031802071448773661.davem@davemloft.net><3FC2D94481C34A40A55B033CB9CFA9FB@realtek.com.tw> <20131104.155320.2172500441669637943.davem@davemloft.net>
+Subject: RE: [PATCH net v2 2/3] r8152: modify the tx flow
+Date: Tue, 5 Nov 2013 20:46:14 +0800
+Message-ID: <5D02552B27BB4305AA91C0EFE0344CE2@realtek.com.tw>
 MIME-Version: 1.0
-In-Reply-To: <1383406775-14902-2-git-send-email-prabhakar.csenng@gmail.com>
-References: <1383406775-14902-1-git-send-email-prabhakar.csenng@gmail.com>
-	<1383406775-14902-2-git-send-email-prabhakar.csenng@gmail.com>
-Date: Tue, 5 Nov 2013 13:39:58 +0100
-Message-ID: <CACRpkdZ7pwGQnK0NN4tybLUNdMxu5WVaGX8Dqu+kMgVBuyF16w@mail.gmail.com>
-Subject: Re: [PATCH v4 1/6] gpio: davinci: Fixed a check for unbanked gpio
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Cc: Sekhar Nori <nsekhar@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alex Elder <alex.elder@linaro.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: Ac7Zn+iV8+8NvxOeRiqzxrgsiojKGwAhEPMA
+In-Reply-To: <20131104.155320.2172500441669637943.davem@davemloft.net>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+X-Originating-IP: [172.21.71.143]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 2, 2013 at 4:39 PM, Lad, Prabhakar
-<prabhakar.csengg@gmail.com> wrote:
+ David Miller [mailto:davem@davemloft.net] 
+> Sent: Tuesday, November 05, 2013 4:53 AM
+> To: Hayeswang
+> Cc: netdev@vger.kernel.org; nic_swsd; 
+> linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org
+> Subject: Re: [PATCH net v2 2/3] r8152: modify the tx flow
+[...]
+> The more TX work you push into the workqueue handler, the longer the
+> latency for releasing the SKB and releasing all the queues that are
+> waiting for release of that packet.
+> 
+> Do you know that sockets, queueing discplines, etc. all rely upon
+> there being a timely release of SKBs once they are successfully
+> transmitted?  It must happen at the earliest moment possible that
+> can be reasonable obtained.
 
-> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
->
-> This patch fixes the check for the offset in
-> gpio_to_irq_unbanked() function.
->
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Thanks for your answer. I would resend the patches after finishing the
+setting of the queue length.
 
-Is this a regression that should go in right now?
-
-Yours,
-Linus Walleij
