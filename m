@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab3KEXiY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 18:38:24 -0500
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:47980 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755853Ab3KEXiW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 18:38:22 -0500
-Message-ID: <5279816B.90808@linaro.org>
-Date: Wed, 06 Nov 2013 00:38:19 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1756006Ab3KEXjA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 18:39:00 -0500
+Received: from [204.155.152.216] ([204.155.152.216]:45634 "EHLO shutemov.name"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755739Ab3KEXi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 18:38:58 -0500
+Date: Wed, 6 Nov 2013 00:42:17 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH] mm: create a separate slab for page->ptl allocation
+Message-ID: <20131105224217.GC20167@shutemov.name>
+References: <1382442839-7458-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20131105150145.734a5dd5b5d455800ebfa0d3@linux-foundation.org>
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>, tglx@linutronix.de
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        sboyd@codeaurora.org
-Subject: Re: [PATCH 0/2] More Allwinner SoC timer fixes
-References: <1382699771-4396-1-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1382699771-4396-1-git-send-email-maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131105150145.734a5dd5b5d455800ebfa0d3@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2013 01:16 PM, Maxime Ripard wrote:
-> Hi,
->
-> Here are more fixes to the sun4i timer that we spotted during the review of the
-> High Speed timers patches, and that we hunted down during the Kernel Summit.
->
-> Since they are not critical fixes for the current code we have, it doesn't have
-> to be merged in 3.12 and can wait.
->
-> Thanks!
-> Maxime
->
-> Maxime Ripard (2):
->    clockevent: sun4i: Fill the irq field in the clockevent structure
->    clocksource: sun4i: change CPU mask to cpu_possible_mask
->
->   drivers/clocksource/sun4i_timer.c | 3 ++-
->   1 file changed, 2 insertions(+), 1 deletion(-)
->
 
-Hi Maxime,
+[ sorry, resend to all ]
 
-just a head up to tell I have been very busy last week for the Linaro 
-connect. I will take care of the patches tomorrow.
+On Tue, Nov 05, 2013 at 03:01:45PM -0800, Andrew Morton wrote:
+> On Tue, 22 Oct 2013 14:53:59 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> 
+> > If DEBUG_SPINLOCK and DEBUG_LOCK_ALLOC are enabled spinlock_t on x86_64
+> > is 72 bytes. For page->ptl they will be allocated from kmalloc-96 slab,
+> > so we loose 24 on each. An average system can easily allocate few tens
+> > thousands of page->ptl and overhead is significant.
+> > 
+> > Let's create a separate slab for page->ptl allocation to solve this.
+> > 
+> > ...
+> >
+> > --- a/mm/memory.c
+> > +++ b/mm/memory.c
+> > @@ -4332,11 +4332,19 @@ void copy_user_huge_page(struct page *dst, struct page *src,
+> >  #endif /* CONFIG_TRANSPARENT_HUGEPAGE || CONFIG_HUGETLBFS */
+> >  
+> >  #if USE_SPLIT_PTE_PTLOCKS
+> > +struct kmem_cache *page_ptl_cachep;
+> > +void __init ptlock_cache_init(void)
+> > +{
+> > +	if (sizeof(spinlock_t) > sizeof(long))
+> > +		page_ptl_cachep = kmem_cache_create("page->ptl",
+> > +				sizeof(spinlock_t), 0, SLAB_PANIC, NULL);
+> > +}
+> 
+> Confused.  If (sizeof(spinlock_t) > sizeof(long)) happens to be false
+> then the kernel will later crash.  It would be better to use BUILD_BUG_ON()
+> here, if that works.  Otherwise BUG_ON.
 
-Thanks
-   -- Daniel
+if (sizeof(spinlock_t) > sizeof(long)) is false, we don't need dynamicly
+allocate page->ptl. It's embedded to struct page itself. __ptlock_alloc()
+never called in this case.
+
+> Also, we have the somewhat silly KMEM_CACHE() macro, but it looks
+> inapplicable here?
+
+The first argument of KMEM_CACHE() is struct name, but we have typedef
+here.
+
+> >  bool __ptlock_alloc(struct page *page)
+> >  {
+> >  	spinlock_t *ptl;
+> >  
+> > -	ptl = kmalloc(sizeof(spinlock_t), GFP_KERNEL);
+> > +	ptl = kmem_cache_alloc(page_ptl_cachep, GFP_KERNEL);
+> >  	if (!ptl)
+> >  		return false;
+> >  	page->ptl = (unsigned long)ptl;
+> > @@ -4346,6 +4354,6 @@ bool __ptlock_alloc(struct page *page)
+> >  void __ptlock_free(struct page *page)
+> >  {
+> >  	if (sizeof(spinlock_t) > sizeof(page->ptl))
+> > -		kfree((spinlock_t *)page->ptl);
+> > +		kmem_cache_free(page_ptl_cachep, (spinlock_t *)page->ptl);
+> 
+> A void* cast would suffice here, but I suppose the spinlock_t* cast has
+> some documentation value.
+
+Right.
 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+ Kirill A. Shutemov
