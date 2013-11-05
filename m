@@ -1,180 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab3KEAhi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 19:37:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48006 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753853Ab3KEAhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 19:37:37 -0500
-Date: Tue, 5 Nov 2013 01:37:33 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andiry Xu <andiry@gmail.com>
-Cc: Wang Shilong <wangsl-fnst@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Andiry Xu <andiry.xu@gmail.com>
-Subject: Re: [BUG][ext2] XIP does not work on ext2
-Message-ID: <20131105003733.GA24531@quack.suse.cz>
-References: <CAOvWMLZ-ezykR6TkFAoZ1UW20QF6XMOKeZH8R-FdFJkXjAP9nA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="lrZ03NoBR/3+SXJZ"
-Content-Disposition: inline
-In-Reply-To: <CAOvWMLZ-ezykR6TkFAoZ1UW20QF6XMOKeZH8R-FdFJkXjAP9nA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754013Ab3KEAjS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 19:39:18 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:8627 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab3KEAjR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 19:39:17 -0500
+Message-ID: <1383611954.2342.7.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 0/3] mm,vdso: preallocate new vmas
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Michel Lespinasse <walken@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, Tim Chen <tim.c.chen@linux.intel.com>,
+        aswin@hp.com, linux-mm <linux-mm@kvack.org>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 04 Nov 2013 16:39:14 -0800
+In-Reply-To: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
+References: <1382057438-3306-1-git-send-email-davidlohr@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Andrew - 
 
---lrZ03NoBR/3+SXJZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-  Hello,
-
-On Mon 04-11-13 14:31:34, Andiry Xu wrote:
-> When I'm trying XIP on ext2, I find that xip does not work on ext2
-> with latest kernel.
+On Thu, 2013-10-17 at 17:50 -0700, Davidlohr Bueso wrote:
+> Linus recently pointed out[1] some of the amount of unnecessary work 
+> being done with the mmap_sem held. This patchset is a very initial 
+> approach on reducing some of the contention on this lock, and moving
+> work outside of the critical region.
 > 
-> Reproduce steps:
-> Compile kernel with following configs:
-> CONFIG_BLK_DEV_XIP=y
-> CONFIG_EXT2_FS_XIP=y
+> Patch 1 adds a simple helper function.
 > 
-> And run following commands:
-> # mke2fs -b 4096 /dev/ram0
-> # mount -t ext2 -o xip /dev/ram0 /mnt/ramdisk/
-> # dd if=/dev/zero of=/mnt/ramdisk/test1 bs=1M count=16
+> Patch 2 moves out some trivial setup logic in mlock related calls.
 > 
-> And it shows:
-> dd: writing `/mnt/ramdisk/test1': No space left on device
-> 
-> df also shows /mnt/ramdisk is 100% full. Its default size is 64MB so a
-> 16MB write should only occupy 1/4 capacity.
-> 
-> Criminal commit:
-> After git bisect, it points to the following commit:
-> 8e3dffc651cb668e1ff4d8b89cc1c3dde7540d3b
-> Ext2: mark inode dirty after the function dquot_free_block_nodirty is called
-  Thanks for report and the bisection!
+> Patch 3 allows managing new vmas without requiring the mmap_sem for
+> vdsos. While it's true that there are many other scenarios where
+> this can be done, few are actually as straightforward as this in the
+> sense that we *always* end up allocating memory anyways, so there's really
+> no tradeoffs. For this reason I wanted to get this patch out in the open.
 
-> Particularly, the following code:
-> @@ -1412,9 +1415,11 @@ allocated:
-> *errp = 0;
-> brelse(bitmap_bh);
-> -    dquot_free_block_nodirty(inode, *count-num);
-> -    mark_inode_dirty(inode);
-> -    *count = num;
-> +    if (num < *count) {
-> +        dquot_free_block_nodirty(inode, *count-num);
-> +        mark_inode_dirty(inode);
-> +        *count = num;
-> +    }
->       return ret_block;
-> 
-> Not mark_inode_dirty() is called only when num is less than *count.
-> However, I've seen
-> with the dd command, there is case where num >= *count.
-> 
-> Fix:
-> I've verified that the following patch fixes the issue:
-> diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
-> index 9f9992b..5446a52 100644
-> --- a/fs/ext2/balloc.c
-> +++ b/fs/ext2/balloc.c
-> @@ -1406,11 +1406,10 @@ allocated:
-> 
->         *errp = 0;
->         brelse(bitmap_bh);
-> -       if (num < *count) {
-> +       if (num <= *count)
->                 dquot_free_block_nodirty(inode, *count-num);
-> -               mark_inode_dirty(inode);
-> -               *count = num;
-> -       }
-> +       mark_inode_dirty(inode);
-> +       *count = num;
->         return ret_block;
-> 
->  io_error:
-> 
-> However, I'm not familiar with ext2 source code and cannot tell if
-> this is the correct fix. At least it fixes my issue.
-  With this, you have essentially reverted a hunk from commit 
-8e3dffc651cb668e1ff4d8b89cc1c3dde7540d3b. But I don't see a reason why it
-should be reverted. num should never ever be greater than *count and when
-num == count, we the code inside if doesn't do anything useful.
+If you have no objections, could you pickup patches 1 and 2? I think
+it's safe to say that patch 3 isn't worth any more discussion.
 
-I've looked into the code and I think I see the problem. It is a long
-standing bug in __ext2_get_block() in fs/ext2/xip.c. It calls
-ext2_get_block() asking for 0 blocks to map (while we really want 1 block).
-ext2_get_block() just passes that request and ext2_get_blocks() actually
-allocates 1 block. And that's were the commit you have identified makes a
-difference because previously we returned that 1 block was allocated while
-now we return that 0 blocks were allocated and thus allocation is repeated
-until all free blocks are exhaused.
+Thanks!
 
-Attached patch should fix the problem.
-
-								Honza
-
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
-
---lrZ03NoBR/3+SXJZ
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="0001-ext2-Fix-fs-corruption-in-ext2_get_xip_mem.patch"
-
->From ce14b6595c9f23db4a3fbeccd921f0687c9c73d4 Mon Sep 17 00:00:00 2001
-From: Jan Kara <jack@suse.cz>
-Date: Tue, 5 Nov 2013 01:15:38 +0100
-Subject: [PATCH] ext2: Fix fs corruption in ext2_get_xip_mem()
-
-Commit 8e3dffc651cb "Ext2: mark inode dirty after the function
-dquot_free_block_nodirty is called" unveiled a bug in __ext2_get_block()
-called from ext2_get_xip_mem(). That function called ext2_get_block()
-mistakenly asking it to map 0 blocks while 1 was intended. Before the
-above mentioned commit things worked out fine by luck but after that commit
-we started returning that we allocated 0 blocks while we in fact
-allocated 1 block and thus allocation was looping until all blocks in
-the filesystem were exhausted.
-
-Fix the problem by properly asking for one block and also add assertion
-in ext2_get_blocks() to catch similar problems.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/ext2/inode.c | 2 ++
- fs/ext2/xip.c   | 1 +
- 2 files changed, 3 insertions(+)
-
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index c260de6d7b6d..8a337640a46a 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -632,6 +632,8 @@ static int ext2_get_blocks(struct inode *inode,
- 	int count = 0;
- 	ext2_fsblk_t first_block = 0;
- 
-+	BUG_ON(maxblocks == 0);
-+
- 	depth = ext2_block_to_path(inode,iblock,offsets,&blocks_to_boundary);
- 
- 	if (depth == 0)
-diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
-index 1c3312858fcf..e98171a11cfe 100644
---- a/fs/ext2/xip.c
-+++ b/fs/ext2/xip.c
-@@ -35,6 +35,7 @@ __ext2_get_block(struct inode *inode, pgoff_t pgoff, int create,
- 	int rc;
- 
- 	memset(&tmp, 0, sizeof(struct buffer_head));
-+	tmp.b_size = 1 << inode->i_blkbits;
- 	rc = ext2_get_block(inode, pgoff, &tmp, create);
- 	*result = tmp.b_blocknr;
- 
--- 
-1.8.1.4
-
-
---lrZ03NoBR/3+SXJZ--
