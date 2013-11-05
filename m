@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab3KEN0O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 08:26:14 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:49149 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424Ab3KEN0N (ORCPT
+	id S1754941Ab3KEN1Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 08:27:25 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:63895 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754348Ab3KEN1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 08:26:13 -0500
-Date: Tue, 5 Nov 2013 14:26:09 +0100
-From: Ingo Molnar <mingo@kernel.org>
+	Tue, 5 Nov 2013 08:27:24 -0500
+Date: Tue, 5 Nov 2013 16:25:16 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
-        dhowells@redhat.com, willy@linux.intel.com, tglx@linutronix.de,
-        airlied@gmail.com, maarten.lankhorst@canonical.com, walken@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 0/8] Move locking primitives into kernel/locking/
-Message-ID: <20131105132609.GA12146@gmail.com>
-References: <20131105105244.666320103@infradead.org>
- <20131105081838.27c7fcd4@gandalf.local.home>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Jon Stanley <jonstanley@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org
+Subject: Re: [libtraceevent] hrtimer_expire_entry unknown op '{'
+Message-ID: <20131105132516.GD2272@swordfish.minsk.epam.com>
+References: <20131105093755.GB2272@swordfish.minsk.epam.com>
+ <20131105081522.1c8e2012@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131105081838.27c7fcd4@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131105081522.1c8e2012@gandalf.local.home>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Tue, 05 Nov 2013 13:10:44 +0100
-> Peter Zijlstra <peterz@infradead.org> wrote:
+On (11/05/13 08:15), Steven Rostedt wrote:
+> Date: Tue, 5 Nov 2013 08:15:22 -0500
+> From: Steven Rostedt <rostedt@goodmis.org>
+> To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Namhyung Kim
+>  <namhyung@kernel.org>, Jon Stanley <jonstanley@gmail.com>, Sasha Levin
+>  <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org
+> Subject: Re: [libtraceevent] hrtimer_expire_entry unknown op '{'
+> X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 > 
-> > Hi all,
-> > 
-> > During Kernel Summit Dave mentioned that there wasn't a clear maintainer for
-> > locking bits.
-> > 
-> > To remedy this Ingo suggested gathering all the various locking primitives and
-> > lockdep into a single place: kernel/locking/.
-> > 
-> > I would further like to propose a MAINTAINERS entry like:
-> > 
-> > LOCKING
-> > M:      Ingo Molnar <mingo@redhat.com>
-> > M:      Peter Zijlstra <peterz@infradead.org>
-> > M:	Oleg Nesterov <oleg@redhat.com>
-> > M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > M:	Linus Torvalds <torvalds@linux-foundation.org>
-> > T:      git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git locking/core
-> > S:      Maintained
-> > F:      kernel/locking/
+> On Tue, 5 Nov 2013 12:37:55 +0300
+> Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
 > 
-> I wonder if it should be called kernel/locks, as that's less to type,
-> smaller path names, and tastes good on bagels.
+> > Hello,
+> > 
+> > libtraceevent reports ` unknown op '{' ' while processing hrtimer_expire_entry event
+> 
+> Yes, we need to port the plugin code from trace-cmd to handle this and
+> other cases. It's a known issue.
+> 
 
-The subsystem and topic is generally called 'kernel locking' though, and 
-that's what the tree branches have been called for the past couple of 
-years as well.
+oh, sorry for the noise then. thanks.
 
-Also, 'kernel lock' brings me back memories of the 'big kernel lock' - 
-while 'kernel locks' brings verb/noun ambiguity and visuals of
-'kernel locks up'.
+	-ss
 
-As for typing legth: kernel/lo<Tab> autocompletion is your friend! :-)
-
-All in one, I think kernel/locking/ is a better name.
-
-Thanks,
-
-	Ingo
+> -- Steve
+> 
+> > 
+> > cat /sys/kernel/debug/tracing/events/timer/hrtimer_expire_entry/format
+> > 
+> > name: hrtimer_expire_entry
+> > ID: 91
+> > format:
+> > 	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
+> > 	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
+> > 	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
+> > 	field:int common_pid;	offset:4;	size:4;	signed:1;
+> > 
+> > 	field:void * hrtimer;	offset:8;	size:8;	signed:0;
+> > 	field:s64 now;	offset:16;	size:8;	signed:1;
+> > 	field:void * function;	offset:24;	size:8;	signed:0;
+> > 
+> > print fmt: "hrtimer=%p function=%pf now=%llu", REC->hrtimer, REC->function, (unsigned long long)(((ktime_t) { .tv64 = REC->now }).tv64)
+> > 
+> > 
+> > 	-ss
+> 
