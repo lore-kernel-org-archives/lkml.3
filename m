@@ -1,75 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab3KEKg6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 05:36:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35315 "EHLO mx2.suse.de"
+	id S1754513Ab3KEKhW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 05:37:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52299 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750851Ab3KEKg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 05:36:57 -0500
-Date: Tue, 5 Nov 2013 11:36:52 +0100
-From: David Sterba <dsterba@suse.cz>
-To: Aldo Iljazi <mail@aldo.io>
-Cc: dsterba@suse.cz, chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] FS: BTRFS: fixed coding style issues
-Message-ID: <20131105103652.GD16662@twin.jikos.cz>
-Reply-To: dsterba@suse.cz
-Mail-Followup-To: dsterba@suse.cz, Aldo Iljazi <mail@aldo.io>,
-	chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1383571658-7440-1-git-send-email-mail@aldo.io>
- <20131105102859.GC16662@twin.jikos.cz>
- <20131105103237.GA23961@linux>
+	id S1752839Ab3KEKhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 05:37:19 -0500
+Message-ID: <5278CA40.8080609@redhat.com>
+Date: Tue, 05 Nov 2013 11:36:48 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131105103237.GA23961@linux>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Christoph Hellwig <hch@infradead.org>
+CC: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 0/2] Add FALLOC_FL_ZERO_RANGE to fallocate
+References: <1339515364-17374-1-git-send-email-pbonzini@redhat.com> <20120613013549.GO22848@dastard> <20120613033052.GT22848@dastard> <4FD82F89.80106@redhat.com> <20131105103435.GA24387@infradead.org>
+In-Reply-To: <20131105103435.GA24387@infradead.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 05, 2013 at 12:32:37PM +0200, Aldo Iljazi wrote:
->  David Sterba wrote:
+Il 05/11/2013 11:34, Christoph Hellwig ha scritto:
+> On Wed, Jun 13, 2012 at 08:13:29AM +0200, Paolo Bonzini wrote:
+>> Sure.  Thanks for the hints, I'll submit a v2 (may take a while as I'll
+>> leave for holiday soon).
 > 
-> > On Mon, Nov 04, 2013 at 03:27:38PM +0200, Aldo Iljazi wrote:
-> > > Fixed three coding style issues. Replaced spaces with tabs.
-> > > 
-> > > Signed-off-by: Aldo Iljazi <mail@aldo.io>
-> > > ---
-> > >  fs/btrfs/dev-replace.c | 6 +++---
-> > >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/fs/btrfs/dev-replace.c b/fs/btrfs/dev-replace.c
-> > > index 9efb94e..b2fe609 100644
-> > > --- a/fs/btrfs/dev-replace.c
-> > > +++ b/fs/btrfs/dev-replace.c
-> > > @@ -377,7 +377,7 @@ int btrfs_dev_replace_start(struct btrfs_root *root,
-> > >  	printk_in_rcu(KERN_INFO
-> > >  		      "btrfs: dev_replace from %s (devid %llu) to %s) started\n",
-> > >  		      src_device->missing ? "<missing disk>" :
-> > > -		        rcu_str_deref(src_device->name),
-> > > +			rcu_str_deref(src_device->name),
-> > 
-> > What's the change here? I don't think we need to fix whitespace, this makes
-> > searching in patch history more tedious, namely in case where the code looks
-> > exactly the same before and after the patch.
-> > 
-> > The style issues should be best fixed when the patch is about to be
-> > merged, doing it later like this is kind of not welcome, speaking for
-> > myself. There are lots of opportunities to do real code cleanups.
-> > 
-> > Whitespace changes are just noise, we don't need them at this point of
-> > development phase of btrfs.
-> > 
-> > 
-> > david
-> 
-> I replaced the spaces with tabs, as the kernel coding style suggests.
+> Did you ever get back to this?
 
-I repeat:
+I have some patches for both kernel and xfstests, but I never got round
+to testing them properly.  I don't think I'll have time soon to finish
+that, but I might coerce someone into doing it.
 
-Whitespace changes are just noise, we don't need them at this point of
-development phase of btrfs.
-
-david
+Paolo
