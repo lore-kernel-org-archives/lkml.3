@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab3KECvm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 21:51:42 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:41860 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819Ab3KECvk (ORCPT
+	id S1754216Ab3KECwA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 21:52:00 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:62152 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab3KECv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 21:51:40 -0500
-Date: Tue, 5 Nov 2013 13:51:28 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alasdair G Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
-        Joe Thornber <ejt@redhat.com>
-Subject: linux-next: build failure after merge of the device-mapper tree
-Message-Id: <20131105135128.496b8b2f599d11f2d30ad70c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__5_Nov_2013_13_51_28_+1100_Xb21y0Nc8IppEk0d"
+	Mon, 4 Nov 2013 21:51:58 -0500
+X-AuditID: 9c93017d-b7c6fae00000364c-32-52785d4dd4cb
+From: Namhyung Kim <namhyung@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch methods (v6)
+References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
+	<20131102155458.GA6981@redhat.com> <87ob60366m.fsf@sejong.aot.lge.com>
+	<87fvrc35kj.fsf@sejong.aot.lge.com> <20131104155131.GD4440@redhat.com>
+	<20131104162229.GA8921@redhat.com> <20131104184741.GA15945@redhat.com>
+	<20131104185754.GA16428@redhat.com>
+Date: Tue, 05 Nov 2013 11:51:55 +0900
+In-Reply-To: <20131104185754.GA16428@redhat.com> (Oleg Nesterov's message of
+	"Mon, 4 Nov 2013 19:57:54 +0100")
+Message-ID: <8761s71rxw.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__5_Nov_2013_13_51_28_+1100_Xb21y0Nc8IppEk0d
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 4 Nov 2013 19:57:54 +0100, Oleg Nesterov wrote:
+> On 11/04, Oleg Nesterov wrote:
+>>
+>> On 11/04, Oleg Nesterov wrote:
+>> >
+>> > On 11/04, Oleg Nesterov wrote:
+>> > >
+>> > > But in any case, I strongly believe that it doesn't make any sense to
+>> > > rely on tu->inode in get_user_vaddr().
+>> >
+>> > Hmm. But I forgot about the case when you probe the function in libc
+>> > and want to dump the variable in libc...
+>> >
+>> > So probably I was wrong and this all needs more thinking. Damn.
+>> > Perhaps we really need to pass @file/offset, but it is not clear what
+>> > we can do with bss/anon-mapping.
+>>
+>> Or. Not that I really like this, but just for discussion...
+>>
+>> How about
+>>
+>> 	static void __user *get_user_vaddr(struct pt_regs *regs, unsigned long addr)
+>> 	{
+>> 		return (void __force __user *)addr + instruction_pointer(regs);
+>> 	}
+>>
+>> ?
+>>
+>> This should solve the problems with relocations/randomization/bss.
+>>
+>> The obvious disadvantage is that it is not easy to calculate the
+>> offset we need to pass as an argument, it depends on the probed
+>> function.
+>
+> forgot to mention... and instruction_pointer() can't work in ret-probe,
+> we need to pass the "unsigned long func" arg somehow...
 
-Hi all,
+Hmm.. what's the value of tu->offset in this case?  Does it have the
+offset of the return address or the start of the function?
 
-After merging the device-mapper tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Anyway, what we really need is the base address of the text mapping
+IMHO.
 
-drivers/md/dm-cache-target.c: In function 'bio_writes_complete_block':
-drivers/md/dm-cache-target.c:1020:7: error: 'struct bio' has no member name=
-d 'bi_size'
-   (bio->bi_size =3D=3D (cache->sectors_per_block << SECTOR_SHIFT));
-       ^
-
-Caused by commit 1bd270d800ec ("dm cache: promotion optimisation for
-writes") interacting with commit ed2d2f9a8265 ("block: Abstract out bvec
-iterator") from the block tree.
-
-I applied this fix up patch and can carry it as necessary:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 5 Nov 2013 13:49:25 +1100
-Subject: [PATCH] dm_cache: fix up for bvec iterator abstraction
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/md/dm-cache-target.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
-index a977d5c6d544..5ce0f5ec6d74 100644
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -1017,7 +1017,7 @@ static void issue_overwrite(struct dm_cache_migration=
- *mg, struct bio *bio)
- static bool bio_writes_complete_block(struct cache *cache, struct bio *bio)
- {
- 	return (bio_data_dir(bio) =3D=3D WRITE) &&
--		(bio->bi_size =3D=3D (cache->sectors_per_block << SECTOR_SHIFT));
-+		(bio->bi_iter.bi_size =3D=3D (cache->sectors_per_block << SECTOR_SHIFT));
- }
-=20
- static void avoid_copy(struct dm_cache_migration *mg)
---=20
-1.8.4.rc3
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__5_Nov_2013_13_51_28_+1100_Xb21y0Nc8IppEk0d
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSeF01AAoJEMDTa8Ir7ZwVOZAP/j4FbYoT4lzSnAjM1Uxl+9zf
-8pIr9PoPR73C5U1SuHqo8eo//u+dE0OfMYeh+of8yhwX51vQtUtc+jv2gDt5UkRC
-/Lpn/xcxjRI5nZrlfN/LgVruJFoqTnnRAS5xNBbFLBbBgOpJc4/zIi3ROCk0l99F
-88c/wr3jRktg/735KcVRpxbBY2SQHKQ6Xx1uVGSlDmkMMKgJRKZRCIb0MgSyz0SW
-ABeSh47fpV+nU0FtpqE7bDYYD/Z2gZy/G6hQZuITcZqJYUJgHCl+2QUDVIg4IZad
-OuDMS9jvESG1PBZ9AbXeXoPlB0vtc6xQTsLTtSyLd23uWqrAMcZFmvZtXpihQgdp
-+Git6Nx2KPeeM6uAFYFNLIgWJcScC4YjDaCTnqqVkVNr3YRpLUcAkKE9H46Zoz6z
-AUusD7qRavPPUBLvXO5yeHF6el4nYXTpHW4YXaPBLbmMIIqk59VXaEp6Q9SI0Zdq
-B36L8BxHjZ7Mslyz/iNOlOHGvV/twzvvhiPHnRfefF6aWbj35FNgHr/w90ztCvDj
-8+XNZJD2ddJHVOaywO9W4oAmv017TPSHwrLm8xI0z3gnwVE2FTkIqMUnngQSWU2P
-chGqs4Z4FbYUekoT6Hxd8knhFQHvqI7WtQgPuCZ5fu/qqsrrr04l8IHiyKNpcrp/
-1fY+o2SrFVqZFZRHfHqP
-=6hm4
------END PGP SIGNATURE-----
-
---Signature=_Tue__5_Nov_2013_13_51_28_+1100_Xb21y0Nc8IppEk0d--
+Thanks,
+Namhyung
