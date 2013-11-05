@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755076Ab3KEON4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 09:13:56 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:54554 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754831Ab3KEONz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 09:13:55 -0500
-Date: Tue, 5 Nov 2013 09:13:51 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
-        dhowells@redhat.com, willy@linux.intel.com, tglx@linutronix.de,
-        airlied@gmail.com, maarten.lankhorst@canonical.com, walken@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 0/8] Move locking primitives into kernel/locking/
-Message-ID: <20131105091351.30d1e913@gandalf.local.home>
-In-Reply-To: <20131105132609.GA12146@gmail.com>
-References: <20131105105244.666320103@infradead.org>
-	<20131105081838.27c7fcd4@gandalf.local.home>
-	<20131105132609.GA12146@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	id S1755181Ab3KEOPM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 09:15:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34065 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754635Ab3KEOPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 09:15:10 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Joe Mario <jmario@redhat.com>, Don Zickus <dzickus@redhat.com>
+Subject: [PATCHv2 0/3] perf tools: Add perf_event_max_sample_rate freq check
+Date: Tue,  5 Nov 2013 15:14:44 +0100
+Message-Id: <1383660887-1734-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Nov 2013 14:26:09 +0100
-Ingo Molnar <mingo@kernel.org> wrote:
+hi,
+adding the check for maximum allowed frequency rate
+defined in perf_event_max_sample_rate.
 
-> 
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
+Plus procfs mountpoint reading code. Reachable here:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+  perf/max_rate
 
-> Also, 'kernel lock' brings me back memories of the 'big kernel lock' - 
-> while 'kernel locks' brings verb/noun ambiguity and visuals of
-> 'kernel locks up'.
+v2 changes:
+  naming changes suggested by Arnaldo in patch 1/3
+  patch 3/3:
+    - unify freq. config code for record and top
+    - add warning for default rate crossing the max
 
-Of course "locking" is only a verb, and we get "kernel locking up"
-too ;-)
+jirka   
 
-> 
-> As for typing legth: kernel/lo<Tab> autocompletion is your friend! :-)
-> 
-> All in one, I think kernel/locking/ is a better name.
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Joe Mario <jmario@redhat.com>
+Cc: Don Zickus <dzickus@redhat.com>
+---
+Jiri Olsa (3):
+      perf tools: Factor sysfs code into generic fs object
+      perf tools: Add procfs support into fs object
+      perf tools: Check maximum frequency rate for record/top
 
-Fine, but I just love the idea of having the choice between a bagel and
-cream cheese or with kernel lox.
-
--- Steve
+ tools/perf/Makefile.perf              |   4 ++--
+ tools/perf/builtin-record.c           |  15 +-----------
+ tools/perf/builtin-top.c              |  15 +-----------
+ tools/perf/tests/parse-events.c       |   2 +-
+ tools/perf/util/cpumap.c              |   2 +-
+ tools/perf/util/evlist.h              |   1 +
+ tools/perf/util/fs.c                  | 119 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/fs.h                  |   7 ++++++
+ tools/perf/util/include/linux/magic.h |   4 ++++
+ tools/perf/util/pmu.c                 |   2 +-
+ tools/perf/util/python-ext-sources    |   2 +-
+ tools/perf/util/record.c              |  72 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/sysfs.c               |  60 -----------------------------------------------
+ tools/perf/util/sysfs.h               |   6 -----
+ 14 files changed, 211 insertions(+), 100 deletions(-)
+ create mode 100644 tools/perf/util/fs.c
+ create mode 100644 tools/perf/util/fs.h
+ delete mode 100644 tools/perf/util/sysfs.c
+ delete mode 100644 tools/perf/util/sysfs.h
