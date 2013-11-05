@@ -1,104 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab3KEDLO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 22:11:14 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:40413 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754043Ab3KEDLL (ORCPT
+	id S1754201Ab3KEDPM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 22:15:12 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:58331 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753412Ab3KEDPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 22:11:11 -0500
-From: rjying <rjying@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, rongjun.ying@gcsr.com,
-        Rongjun Ying <rongjun.ying@csr.com>
-Subject: [PATCH 1/1] cpufreq: cpufreq-cpu0: use the max voltage instead of voltage-tolerance
-Date: Tue,  5 Nov 2013 11:10:14 +0800
-Message-Id: <1383621014-11202-1-git-send-email-rongjun.ying@csr.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 4 Nov 2013 22:15:10 -0500
+Message-ID: <527862B9.2060300@hitachi.com>
+Date: Tue, 05 Nov 2013 12:15:05 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?VXdlIEtsZQ==?= =?UTF-8?B?aW5lLUvDtm5pZw==?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -tip v2 3/3] [BUGFIX] kprobes: Prohibit probing on func_ptr_is_kernel_text
+References: <20131101112530.14657.87835.stgit@kbuild-fedora.novalocal> <20131101112537.14657.88496.stgit@kbuild-fedora.novalocal> <20131104210053.76c37210@gandalf.local.home>
+In-Reply-To: <20131104210053.76c37210@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rongjun Ying <rongjun.ying@csr.com>
+(2013/11/05 11:00), Steven Rostedt wrote:
+> On Fri, 01 Nov 2013 11:25:37 +0000
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+>> Prohibit probing on func_ptr_is_kernel_text().
+>> Since the func_ptr_is_kernel_text() is called from
+>> notifier_call_chain() which is called from int3 handler,
+>> probing it may cause double int3 fault and kernel will
+>> reboot.
+>>
+>> This happenes when the kernel built with CONFIG_DEBUG_NOTIFIERS=y.
+>>
+>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: "Uwe Kleine-König" <u.kleine-koenig@pengutronix.de>
+>> Cc: Borislav Petkov <bp@suse.de>
+>> Cc: Ingo Molnar <mingo@kernel.org>
+>> ---
+>>  kernel/extable.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/kernel/extable.c b/kernel/extable.c
+>> index 832cb28..022fb25 100644
+>> --- a/kernel/extable.c
+>> +++ b/kernel/extable.c
+>> @@ -129,7 +129,7 @@ int kernel_text_address(unsigned long addr)
+>>   * pointer is part of the kernel text, we need to do some
+>>   * special dereferencing first.
+>>   */
+>> -int func_ptr_is_kernel_text(void *ptr)
+>> +int nokprobe func_ptr_is_kernel_text(void *ptr)
+>>  {
+>>  	unsigned long addr;
+>>  	addr = (unsigned long) dereference_function_descriptor(ptr);
+>>
+> 
+> One thing I worry about the "nokprobe" annotation, is that it moves the
+> location of the function out of local. This function no exists in
+> the section with its users. Same with the debug functions in the
+> other patch.
+> 
+> Now these may be a slow path where we really don't care, but if the
+> nokprobe expands this can cause issues.
+> 
+> The "nokprobe" works differently than "notrace" as "notrace" is just an
+> attribute that tells gcc not to add mcount to it. The "nokprobe"
+> actually moves the function into a different section.
 
-Sometime the regulator can't supply appropriate voltages for requestion of cpu.
-All voltage tolerance value can't figure out a good voltage.
+Well, in that case, I can put it in the opt-out type blacklist(kprobe_blacklist). :)
+Hmm, I think if I can list nokprobe functions up at build time, we can almost
+remove the .kprobes.text (Note that some of entry functions in asm still require it.)
 
-Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
----
- drivers/cpufreq/cpufreq-cpu0.c |   17 ++++++++++-------
- 1 files changed, 10 insertions(+), 7 deletions(-)
+Thank you,
 
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index c522a95..0c9e6b9 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -23,7 +23,7 @@
- #include <linux/slab.h>
- 
- static unsigned int transition_latency;
--static unsigned int voltage_tolerance; /* in percentage */
-+static unsigned int voltage_max;
- 
- static struct device *cpu_dev;
- static struct clk *cpu_clk;
-@@ -45,7 +45,7 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
- {
- 	struct cpufreq_freqs freqs;
- 	struct opp *opp;
--	unsigned long volt = 0, volt_old = 0, tol = 0;
-+	unsigned long volt = 0, volt_old = 0;
- 	long freq_Hz, freq_exact;
- 	unsigned int index;
- 	int ret;
-@@ -82,7 +82,6 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
- 		}
- 		volt = opp_get_voltage(opp);
- 		rcu_read_unlock();
--		tol = volt * voltage_tolerance / 100;
- 		volt_old = regulator_get_voltage(cpu_reg);
- 	}
- 
-@@ -92,7 +91,7 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
- 
- 	/* scaling up?  scale voltage before frequency */
- 	if (!IS_ERR(cpu_reg) && freqs.new > freqs.old) {
--		ret = regulator_set_voltage_tol(cpu_reg, volt, tol);
-+		ret = regulator_set_voltage(cpu_reg, volt, voltage_max);
- 		if (ret) {
- 			pr_err("failed to scale voltage up: %d\n", ret);
- 			freqs.new = freqs.old;
-@@ -104,14 +103,14 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
- 	if (ret) {
- 		pr_err("failed to set clock rate: %d\n", ret);
- 		if (!IS_ERR(cpu_reg))
--			regulator_set_voltage_tol(cpu_reg, volt_old, tol);
-+			regulator_set_voltage(cpu_reg, volt_old, voltage_max);
- 		freqs.new = freqs.old;
- 		goto post_notify;
- 	}
- 
- 	/* scaling down?  scale voltage after frequency */
- 	if (!IS_ERR(cpu_reg) && freqs.new < freqs.old) {
--		ret = regulator_set_voltage_tol(cpu_reg, volt, tol);
-+		ret = regulator_set_voltage(cpu_reg, volt, voltage_max);
- 		if (ret) {
- 			pr_err("failed to scale voltage down: %d\n", ret);
- 			clk_set_rate(cpu_clk, freqs.old * 1000);
-@@ -224,7 +223,11 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 		goto out_put_node;
- 	}
- 
--	of_property_read_u32(np, "voltage-tolerance", &voltage_tolerance);
-+	ret = of_property_read_u32(np, "voltage-max", &voltage_max);
-+	if (ret) {
-+		pr_err("failed to get max voltage: %d\n", ret);
-+		goto out_put_node;
-+	}
- 
- 	if (of_property_read_u32(np, "clock-latency", &transition_latency))
- 		transition_latency = CPUFREQ_ETERNAL;
 -- 
-1.7.5.4
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
