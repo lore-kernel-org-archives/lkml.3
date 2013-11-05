@@ -1,184 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab3KERCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 12:02:36 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:60741 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732Ab3KERCd (ORCPT
+	id S1755331Ab3KERCT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 12:02:19 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:60201 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755253Ab3KERCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 12:02:33 -0500
-Message-ID: <527923EF.4070602@ti.com>
-Date: Tue, 5 Nov 2013 18:59:27 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: Sekhar Nori <nsekhar@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alex Elder <alex.elder@linaro.org>, LDOC <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Subject: Re: [PATCH v4 4/6] gpio: davinci: add OF support
-References: <1383406775-14902-1-git-send-email-prabhakar.csenng@gmail.com> <1383406775-14902-5-git-send-email-prabhakar.csenng@gmail.com> <5277E752.8090005@ti.com> <CA+V-a8uV0g36LoQtxFjR56SaMxj7KOE2ztC+pfT_Pn1wGcqEmw@mail.gmail.com>
-In-Reply-To: <CA+V-a8uV0g36LoQtxFjR56SaMxj7KOE2ztC+pfT_Pn1wGcqEmw@mail.gmail.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.167.145.75]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+	Tue, 5 Nov 2013 12:02:15 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, zheng.z.yan@intel.com, bp@alien8.de,
+        maria.n.dimakopoulou@gmail.com
+Subject: [PATCH v5 4/4] perf,x86: add RAPL hrtimer support
+Date: Tue,  5 Nov 2013 18:01:26 +0100
+Message-Id: <1383670886-30827-5-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1383670886-30827-1-git-send-email-eranian@google.com>
+References: <1383670886-30827-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2013 10:53 AM, Prabhakar Lad wrote:> Hi Grygorii,
- >
- > Thanks for the review.
- >
- > On Mon, Nov 4, 2013 at 11:58 PM, Grygorii Strashko
- > <grygorii.strashko@ti.com> wrote:
- >> Hi Prabhakar Lad,
- >>
- >>
- >> On 11/02/2013 05:39 PM, Lad, Prabhakar wrote:
- >>>
- >>> From: KV Sujith <sujithkv@ti.com>
- >>>
- >>> This patch adds OF parser support for davinci gpio
- >>> driver and also appropriate documentation in gpio-davinci.txt
- >>> located at Documentation/devicetree/bindings/gpio/.
- >>
- >>
- >> I worry, do we need to have gpio_chip.of_xlate() callback implemented?
- >
- > I looked for the other OF GPIO implementations with same "ngpio"
- > property (marvel, msm) but I don’t see of_xlate() callback implemented.
+The RAPL PMU counters do not interrupt on overflow.
+Therefore, the kernel needs to poll the counters
+to avoid missing an overflow. This patch adds
+the hrtimer code to do this.
 
-The question: will below definitions in DT work or not after this series?
-  Will of_get_gpio()/of_get_named_gpio() work?
+The timer internval is calculated at boot time
+based on the power unit used by the HW.
 
-Example1 - leds:
-	leds {
-		compatible = "gpio-leds";
-		debug0 {
-			label = "green:debug0";
-			gpios = <&gpio 29 GPIO_ACTIVE_HIGH>;
-		};
-	};
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_rapl.c |   75 +++++++++++++++++++++++++--
+ 1 file changed, 70 insertions(+), 5 deletions(-)
 
-Example2 - any dev:
-devA {
-	compatible = "devA";
-	gpios = <&gpio 120 GPIO_ACTIVE_LOW>;
-}
-
-
- >
- >> - From one side, Davinci GPIO controller in DT described by one entry
- >> which defines number of supported GPIOs as "ti,ngpio = <144>;"
- >>
- >> - From other side, on Linux level more than one gpio_chip objects are
- >> instantiated (one per each 32 GPIO).
- >>
- >> How the standard GPIO biding will work in this case? .. And will they?
- >>
- >> Linus, I'd very appreciate if you will be able to clarify this point.
- >>
- >>
- >>>
- >>> Signed-off-by: KV Sujith <sujithkv@ti.com>
- >>> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
- >>> [prabhakar.csengg@gmail.com: simplified the OF code, removed
- >>>                  unnecessary DT property and also simplified
- >>>                  the commit message]
- >>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
- >>> ---
- >>>    .../devicetree/bindings/gpio/gpio-davinci.txt      |   32 
-++++++++++++
- >>>    drivers/gpio/gpio-davinci.c                        |   54
- >>> ++++++++++++++++++--
- >>>    2 files changed, 83 insertions(+), 3 deletions(-)
- >>>    create mode 100644
- >>> Documentation/devicetree/bindings/gpio/gpio-davinci.txt
- >>>
- >>> diff --git a/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
- >>> b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
- >>> new file mode 100644
- >>> index 0000000..55aae1c
- >>> --- /dev/null
- >>> +++ b/Documentation/devicetree/bindings/gpio/gpio-davinci.txt
- >>> @@ -0,0 +1,32 @@
- >>> +Davinci GPIO controller bindings29
- >>> +
- >>> +Required Properties:
- >>> +- compatible: should be "ti,dm6441-gpio"
- >>> +
- >>> +- reg: Physical base address of the controller and the size of memory
- >>> mapped
- >>> +       registers.
- >>> +
- >>> +- gpio-controller : Marks the device node as a gpio controller.
- >>> +
- >>> +- interrupts: Array of GPIO interrupt number.
- >>
- >>
- >> May be meaning of <interrupts> property need to be extended, because,
- >> as of now, only banked or unbanked IRQs are supported - and not both.
- >>
- >>
- > OK
- >
- >>> +
- >>> +- ti,ngpio: The number of GPIO pins supported.
- >>> +
- >>> +- ti,davinci-gpio-unbanked: The number of GPIOs that have an 
-individual
- >>> interrupt
- >>> +                            line to processor.
- >>
- >>
- >> Should interrupt-controller; specifier be added here?
- >>
- > No
-
-So, it would be impossible to map GPIO IRQ to device through DT. Right?
-Like:
-	devX@0 {
-		compatible = "devX";
-		interrupt-parent = <&gpio>;
-		interrupts = <50 IRQ_TYPE_EDGE_FALLING>; /* gpio line 50 */
-
-	};
-
-
- >
- >>
- >>> +
- >>> +Example:
- >>> +
- >>> +gpio: gpio@1e26000 {
- >>> +       compatible = "ti,dm6441-gpio";
- >>> +       gpio-controller;
- >>> +       reg = <0x226000 0x1000>;
- >>> +       interrupts = <42 IRQ_TYPE_EDGE_BOTH 43 IRQ_TYPE_EDGE_BOTH
- >>> +               44 IRQ_TYPE_EDGE_BOTH 45 IRQ_TYPE_EDGE_BOTH
- >>> +               46 IRQ_TYPE_EDGE_BOTH 47 IRQ_TYPE_EDGE_BOTH
- >>> +               48 IRQ_TYPE_EDGE_BOTH 49 IRQ_TYPE_EDGE_BOTH
- >>> +               50 IRQ_TYPE_EDGE_BOTH>;
- >>> +       ti,ngpio = <144>;
- >>> +       ti,davinci-gpio-irq-base = <101>;
- >>
- >>
- >>          ^^ Is it still needed?
- >>
- > OOps missed to remove that.
- >
-Regards,
--grygorii
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+index cf3559f..8963f69 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+@@ -92,11 +92,13 @@ static struct kobj_attribute format_attr_##_var =		\
+ 
+ struct rapl_pmu {
+ 	spinlock_t	lock;
+-	atomic_t	refcnt;
+ 	int		hw_unit;  /* 1/2^hw_unit Joule */
+-	int		phys_id;
+-	int		n_active; /* number of active events */
++	struct hrtimer	hrtimer;
+ 	struct list_head active_list;
++	ktime_t		timer_interval; /* in ktime_t unit */
++	int		n_active; /* number of active events */
++	int		phys_id;
++	atomic_t	refcnt;
+ };
+ 
+ static struct pmu rapl_pmu_class;
+@@ -161,6 +163,47 @@ static u64 rapl_event_update(struct perf_event *event)
+ 	return new_raw_count;
+ }
+ 
++static void rapl_start_hrtimer(struct rapl_pmu *pmu)
++{
++	__hrtimer_start_range_ns(&pmu->hrtimer,
++			pmu->timer_interval, 0,
++			HRTIMER_MODE_REL_PINNED, 0);
++}
++
++static void rapl_stop_hrtimer(struct rapl_pmu *pmu)
++{
++	hrtimer_cancel(&pmu->hrtimer);
++}
++
++static enum hrtimer_restart rapl_hrtimer_handle(struct hrtimer *hrtimer)
++{
++	struct rapl_pmu *pmu = container_of(hrtimer, struct rapl_pmu, hrtimer);
++	struct perf_event *event;
++	unsigned long flags;
++
++	if (!pmu->n_active)
++		return HRTIMER_NORESTART;
++
++	spin_lock_irqsave(&pmu->lock, flags);
++
++	list_for_each_entry(event, &pmu->active_list, active_entry) {
++		rapl_event_update(event);
++	}
++
++	spin_unlock_irqrestore(&pmu->lock, flags);
++
++	hrtimer_forward_now(&pmu->hrtimer, pmu->timer_interval);
++
++	return HRTIMER_RESTART;
++}
++
++static void rapl_hrtimer_init(struct rapl_pmu *pmu)
++{
++	hrtimer_init(&pmu->hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	pmu->hrtimer.function = rapl_hrtimer_handle;
++}
++
++
+ static void __rapl_pmu_event_start(struct rapl_pmu *pmu,
+ 				   struct perf_event *event)
+ {
+@@ -174,6 +217,8 @@ static void __rapl_pmu_event_start(struct rapl_pmu *pmu,
+ 	local64_set(&event->hw.prev_count, rapl_read_counter(event));
+ 
+ 	pmu->n_active++;
++	if (pmu->n_active == 1)
++		rapl_start_hrtimer(pmu);
+ }
+ 
+ static void rapl_pmu_event_start(struct perf_event *event, int mode)
+@@ -198,6 +243,8 @@ static void rapl_pmu_event_stop(struct perf_event *event, int mode)
+ 	if (!(hwc->state & PERF_HES_STOPPED)) {
+ 		WARN_ON_ONCE(pmu->n_active <= 0);
+ 		pmu->n_active--;
++		if (pmu->n_active == 0)
++			rapl_stop_hrtimer(pmu);
+ 
+ 		list_del(&event->active_entry);
+ 
+@@ -443,6 +490,7 @@ static int rapl_cpu_prepare(int cpu)
+ {
+ 	struct rapl_pmu *pmu = per_cpu(rapl_pmu, cpu);
+ 	int phys_id = topology_physical_package_id(cpu);
++	u64 ms;
+ 
+ 	if (pmu)
+ 		return 0;
+@@ -468,6 +516,20 @@ static int rapl_cpu_prepare(int cpu)
+ 	rdmsrl(MSR_RAPL_POWER_UNIT, pmu->hw_unit);
+ 	pmu->hw_unit = (pmu->hw_unit >> 8) & 0x1FULL;
+ 
++	/*
++	 * use reference of 200W for scaling the timeout
++	 * to avoid missing counter overflows.
++	 * 200W = 200 Joules/sec
++	 * divide interval by 2 to avoid lockstep (2 * 100)
++	 * if hw unit is 32, then we use 2 ms 1/200/2
++	 */
++	if (pmu->hw_unit < 32)
++		ms = 1000 * (1ULL << (32 - pmu->hw_unit - 1)) / (2 * 100);
++	else
++		ms = 2;
++
++	pmu->timer_interval = ms_to_ktime(ms);
++
+ 	/* set RAPL pmu for this cpu for now */
+ 	per_cpu(rapl_pmu_kfree, cpu) = NULL;
+ 	per_cpu(rapl_pmu, cpu) = pmu;
+@@ -629,6 +691,7 @@ static int __init rapl_pmu_init(void)
+ 		}
+ 		rapl_cpu_prepare(cpu);
+ 		cpumask_set_cpu(cpu, &rapl_cpu_mask);
++		rapl_hrtimer_init(per_cpu(rapl_pmu, cpu));
+ 	}
+ 
+ 	perf_cpu_notifier(rapl_cpu_notifier);
+@@ -644,9 +707,11 @@ static int __init rapl_pmu_init(void)
+ 
+ 	pr_info("RAPL PMU detected, hw unit 2^-%d Joules,"
+ 		" API unit is 2^-32 Joules,"
+-		" %d fixed counters\n",
++		" %d fixed counters"
++		" %llu ms ovfl timer\n",
+ 		pmu->hw_unit,
+-		hweight32(rapl_cntr_mask));
++		hweight32(rapl_cntr_mask),
++		ktime_to_ms(pmu->timer_interval));
+ 
+ 	put_online_cpus();
+ 
+-- 
+1.7.9.5
 
