@@ -1,218 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100Ab3KENqK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 08:46:10 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:41465 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755073Ab3KENqI (ORCPT
+	id S1755148Ab3KENtd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 08:49:33 -0500
+Received: from dkim1.fusionio.com ([66.114.96.53]:52675 "EHLO
+	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754875Ab3KENtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 08:46:08 -0500
-Subject: [PATCH 3/3] makedumpfile: hugepage filtering: add new dump levels
- for manual page
-To: ptesarik@suse.cz, d.hatayama@jp.fujitsu.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp
-From: Jingbai Ma <jingbai.ma@hp.com>
-Cc: bhe@redhat.com, tom.vaden@hp.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, lisa.mitchell@hp.com,
-        anderson@redhat.com, ebiederm@xmission.com, vgoyal@redhat.com
-Date: Tue, 05 Nov 2013 21:46:03 +0800
-Message-ID: <20131105134603.32112.63599.stgit@k.asiapacific.hpqcorp.net>
-In-Reply-To: <20131105134532.32112.78008.stgit@k.asiapacific.hpqcorp.net>
-References: <20131105134532.32112.78008.stgit@k.asiapacific.hpqcorp.net>
-User-Agent: StGit/0.16
+	Tue, 5 Nov 2013 08:49:31 -0500
+X-ASG-Debug-ID: 1383659370-03d6a54d18feb40001-xx1T2L
+X-Barracuda-Envelope-From: JBacik@fusionio.com
+Date: Tue, 5 Nov 2013 08:49:28 -0500
+From: Josef Bacik <jbacik@fusionio.com>
+To: Kent Overstreet <kmo@daterainc.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <linux-btrfs@vger.kernel.org>, <axboe@kernel.dk>, <hch@infradead.org>
+Subject: Re: [PATCH 6/9] mtip32xx: handle arbitrary size bios
+Message-ID: <20131105134928.GA27784@localhost.localdomain>
+X-ASG-Orig-Subj: Re: [PATCH 6/9] mtip32xx: handle arbitrary size bios
+References: <1383608187-27368-1-git-send-email-kmo@daterainc.com>
+ <1383608187-27368-7-git-send-email-kmo@daterainc.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1383608187-27368-7-git-send-email-kmo@daterainc.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
+X-Barracuda-Start-Time: 1383659370
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.142073
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new dump levels for makedumpfile manual page.
+On Mon, Nov 04, 2013 at 03:36:24PM -0800, Kent Overstreet wrote:
+> We get a measurable performance increase by handling this in the driver when
+> we're already looping over the biovec, instead of handling it separately in
+> generic_make_request() (or bio_add_page() originally)
+> 
+> Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+> ---
+>  drivers/block/mtip32xx/mtip32xx.c | 46 +++++++++++++--------------------------
+>  1 file changed, 15 insertions(+), 31 deletions(-)
+> 
+> diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+> index d4c669b..c5a7a96 100644
+> --- a/drivers/block/mtip32xx/mtip32xx.c
+> +++ b/drivers/block/mtip32xx/mtip32xx.c
+> @@ -2648,24 +2648,6 @@ static void mtip_hw_submit_io(struct driver_data *dd, sector_t sector,
+>  }
+>  
+>  /*
+> - * Release a command slot.
+> - *
+> - * @dd  Pointer to the driver data structure.
+> - * @tag Slot tag
+> - *
+> - * return value
+> - *      None
+> - */
+> -static void mtip_hw_release_scatterlist(struct driver_data *dd, int tag,
+> -								int unaligned)
+> -{
+> -	struct semaphore *sem = unaligned ? &dd->port->cmd_slot_unal :
+> -							&dd->port->cmd_slot;
+> -	release_slot(dd->port, tag);
+> -	up(sem);
+> -}
+> -
+> -/*
+>   * Obtain a command slot and return its associated scatter list.
+>   *
+>   * @dd  Pointer to the driver data structure.
+> @@ -4016,21 +3998,22 @@ static void mtip_make_request(struct request_queue *queue, struct bio *bio)
+>  
+>  	sg = mtip_hw_get_scatterlist(dd, &tag, unaligned);
+>  	if (likely(sg != NULL)) {
+> -		if (unlikely((bio)->bi_vcnt > MTIP_MAX_SG)) {
+> -			dev_warn(&dd->pdev->dev,
+> -				"Maximum number of SGL entries exceeded\n");
+> -			bio_io_error(bio);
+> -			mtip_hw_release_scatterlist(dd, tag, unaligned);
+> -			return;
+> -		}
+> -
+>  		/* Create the scatter list for this bio. */
+>  		bio_for_each_segment(bvec, bio, iter) {
+> -			sg_set_page(&sg[nents],
+> -					bvec.bv_page,
+> -					bvec.bv_len,
+> -					bvec.bv_offset);
+> -			nents++;
+> +			if (unlikely(nents == MTIP_MAX_SG)) {
+> +				struct bio *split = bio_clone(bio, GFP_NOIO);
+> +
 
-Signed-off-by: Jingbai Ma <jingbai.ma@hp.com>
----
- makedumpfile.8 |  170 ++++++++++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 133 insertions(+), 37 deletions(-)
+Need to check for memory allocation failure here.  Thanks,
 
-diff --git a/makedumpfile.8 b/makedumpfile.8
-index adeb811..70e8732 100644
---- a/makedumpfile.8
-+++ b/makedumpfile.8
-@@ -164,43 +164,139 @@ by dump_level 11, makedumpfile retries it by dump_level 31.
- .br
- # makedumpfile \-d 11,31 \-x vmlinux /proc/vmcore dumpfile
- 
--       |      |cache  |cache  |      |
--  dump | zero |without|with   | user | free
-- level | page |private|private| data | page
--.br
--\-\-\-\-\-\-\-+\-\-\-\-\-\-+\-\-\-\-\-\-\-+\-\-\-\-\-\-\-+\-\-\-\-\-\-+\-\-\-\-\-\-
--     0 |      |       |       |      |
--     1 |  X   |       |       |      |
--     2 |      |   X   |       |      |
--     3 |  X   |   X   |       |      |
--     4 |      |   X   |   X   |      |
--     5 |  X   |   X   |   X   |      |
--     6 |      |   X   |   X   |      |
--     7 |  X   |   X   |   X   |      |
--     8 |      |       |       |  X   |
--     9 |  X   |       |       |  X   |
--    10 |      |   X   |       |  X   |
--    11 |  X   |   X   |       |  X   |
--    12 |      |   X   |   X   |  X   |
--    13 |  X   |   X   |   X   |  X   |
--    14 |      |   X   |   X   |  X   |
--    15 |  X   |   X   |   X   |  X   |
--    16 |      |       |       |      |  X
--    17 |  X   |       |       |      |  X
--    18 |      |   X   |       |      |  X
--    19 |  X   |   X   |       |      |  X
--    20 |      |   X   |   X   |      |  X
--    21 |  X   |   X   |   X   |      |  X
--    22 |      |   X   |   X   |      |  X
--    23 |  X   |   X   |   X   |      |  X
--    24 |      |       |       |  X   |  X
--    25 |  X   |       |       |  X   |  X
--    26 |      |   X   |       |  X   |  X
--    27 |  X   |   X   |       |  X   |  X
--    28 |      |   X   |   X   |  X   |  X
--    29 |  X   |   X   |   X   |  X   |  X
--    30 |      |   X   |   X   |  X   |  X
--    31 |  X   |   X   |   X   |  X   |  X
-+       |      |cache  |cache  |      |      | free | active
-+  dump | zero |without|with   | user | free | huge | huge
-+ level | page |private|private| data | page | page | page
-+.br
-+\-\-\-\-\-\-\-+\-\-\-\-\-\-+\-\-\-\-\-\-\-+\-\-\-\-\-\-\-+\-\-\-\-\-\-+\-\-\-\-\-\-+\-\-\-\-\-\-+\-\-\-\-\-\-\-\-
-+     0 |      |       |       |      |      |      |
-+     1 |  X   |       |       |      |      |      |
-+     2 |      |   X   |       |      |      |      |
-+     3 |  X   |   X   |       |      |      |      |
-+     4 |      |   X   |   X   |      |      |      |
-+     5 |  X   |   X   |   X   |      |      |      |
-+     6 |      |   X   |   X   |      |      |      |
-+     7 |  X   |   X   |   X   |      |      |      |
-+     8 |      |       |       |  X   |      |      |
-+     9 |  X   |       |       |  X   |      |      |
-+    10 |      |   X   |       |  X   |      |      |
-+    11 |  X   |   X   |       |  X   |      |      |
-+    12 |      |   X   |   X   |  X   |      |      |
-+    13 |  X   |   X   |   X   |  X   |      |      |
-+    14 |      |   X   |   X   |  X   |      |      |
-+    15 |  X   |   X   |   X   |  X   |      |      |
-+    16 |      |       |       |      |  X   |      |
-+    17 |  X   |       |       |      |  X   |      |
-+    18 |      |   X   |       |      |  X   |      |
-+    19 |  X   |   X   |       |      |  X   |      |
-+    20 |      |   X   |   X   |      |  X   |      |
-+    21 |  X   |   X   |   X   |      |  X   |      |
-+    22 |      |   X   |   X   |      |  X   |      |
-+    23 |  X   |   X   |   X   |      |  X   |      |
-+    24 |      |       |       |  X   |  X   |      |
-+    25 |  X   |       |       |  X   |  X   |      |
-+    26 |      |   X   |       |  X   |  X   |      |
-+    27 |  X   |   X   |       |  X   |  X   |      |
-+    28 |      |   X   |   X   |  X   |  X   |      |
-+    29 |  X   |   X   |   X   |  X   |  X   |      |
-+    30 |      |   X   |   X   |  X   |  X   |      |
-+    31 |  X   |   X   |   X   |  X   |  X   |      |
-+    32 |      |       |       |      |      |  X   |
-+    33 |  X   |       |       |      |      |  X   |
-+    34 |      |   X   |       |      |      |  X   |
-+    35 |  X   |   X   |       |      |      |  X   |
-+    36 |      |   X   |   X   |      |      |  X   |
-+    37 |  X   |   X   |   X   |      |      |  X   |
-+    38 |      |   X   |   X   |      |      |  X   |
-+    39 |  X   |   X   |   X   |      |      |  X   |
-+    40 |      |       |       |  X   |      |  X   |
-+    41 |  X   |       |       |  X   |      |  X   |
-+    42 |      |   X   |       |  X   |      |  X   |
-+    43 |  X   |   X   |       |  X   |      |  X   |
-+    44 |      |   X   |   X   |  X   |      |  X   |
-+    45 |  X   |   X   |   X   |  X   |      |  X   |
-+    46 |      |   X   |   X   |  X   |      |  X   |
-+    47 |  X   |   X   |   X   |  X   |      |  X   |
-+    48 |      |       |       |      |  X   |  X   |
-+    49 |  X   |       |       |      |  X   |  X   |
-+    50 |      |   X   |       |      |  X   |  X   |
-+    51 |  X   |   X   |       |      |  X   |  X   |
-+    52 |      |   X   |   X   |      |  X   |  X   |
-+    53 |  X   |   X   |   X   |      |  X   |  X   |
-+    54 |      |   X   |   X   |      |  X   |  X   |
-+    55 |  X   |   X   |   X   |      |  X   |  X   |
-+    56 |      |       |       |  X   |  X   |  X   |
-+    57 |  X   |       |       |  X   |  X   |  X   |
-+    58 |      |   X   |       |  X   |  X   |  X   |
-+    59 |  X   |   X   |       |  X   |  X   |  X   |
-+    60 |      |   X   |   X   |  X   |  X   |  X   |
-+    61 |  X   |   X   |   X   |  X   |  X   |  X   |
-+    62 |      |   X   |   X   |  X   |  X   |  X   |
-+    63 |  X   |   X   |   X   |  X   |  X   |  X   |
-+    64 |      |       |       |      |      |  X   |  X
-+    65 |  X   |       |       |      |      |  X   |  X
-+    66 |      |   X   |       |      |      |  X   |  X
-+    67 |  X   |   X   |       |      |      |  X   |  X
-+    68 |      |   X   |   X   |      |      |  X   |  X
-+    69 |  X   |   X   |   X   |      |      |  X   |  X
-+    70 |      |   X   |   X   |      |      |  X   |  X
-+    71 |  X   |   X   |   X   |      |      |  X   |  X
-+    72 |      |       |       |  X   |      |  X   |  X
-+    73 |  X   |       |       |  X   |      |  X   |  X
-+    74 |      |   X   |       |  X   |      |  X   |  X
-+    75 |  X   |   X   |       |  X   |      |  X   |  X
-+    76 |      |   X   |   X   |  X   |      |  X   |  X
-+    77 |  X   |   X   |   X   |  X   |      |  X   |  X
-+    78 |      |   X   |   X   |  X   |      |  X   |  X
-+    79 |  X   |   X   |   X   |  X   |      |  X   |  X
-+    80 |      |       |       |      |  X   |  X   |  X
-+    81 |  X   |       |       |      |  X   |  X   |  X
-+    82 |      |   X   |       |      |  X   |  X   |  X
-+    83 |  X   |   X   |       |      |  X   |  X   |  X
-+    84 |      |   X   |   X   |      |  X   |  X   |  X
-+    85 |  X   |   X   |   X   |      |  X   |  X   |  X
-+    86 |      |   X   |   X   |      |  X   |  X   |  X
-+    87 |  X   |   X   |   X   |      |  X   |  X   |  X
-+    88 |      |       |       |  X   |  X   |  X   |  X
-+    89 |  X   |       |       |  X   |  X   |  X   |  X
-+    90 |      |   X   |       |  X   |  X   |  X   |  X
-+    91 |  X   |   X   |       |  X   |  X   |  X   |  X
-+    92 |      |   X   |   X   |  X   |  X   |  X   |  X
-+    93 |  X   |   X   |   X   |  X   |  X   |  X   |  X
-+    94 |      |   X   |   X   |  X   |  X   |  X   |  X
-+    95 |  X   |   X   |   X   |  X   |  X   |  X   |  X
-+    96 |      |       |       |      |      |  X   |  X
-+    97 |  X   |       |       |      |      |  X   |  X
-+    98 |      |   X   |       |      |      |  X   |  X
-+    99 |  X   |   X   |       |      |      |  X   |  X
-+   100 |      |   X   |   X   |      |      |  X   |  X
-+   101 |  X   |   X   |   X   |      |      |  X   |  X
-+   102 |      |   X   |   X   |      |      |  X   |  X
-+   103 |  X   |   X   |   X   |      |      |  X   |  X
-+   104 |      |       |       |  X   |      |  X   |  X
-+   105 |  X   |       |       |  X   |      |  X   |  X
-+   106 |      |   X   |       |  X   |      |  X   |  X
-+   107 |  X   |   X   |       |  X   |      |  X   |  X
-+   108 |      |   X   |   X   |  X   |      |  X   |  X
-+   109 |  X   |   X   |   X   |  X   |      |  X   |  X
-+   110 |      |   X   |   X   |  X   |      |  X   |  X
-+   111 |  X   |   X   |   X   |  X   |      |  X   |  X
-+   112 |      |       |       |      |  X   |  X   |  X
-+   113 |  X   |       |       |      |  X   |  X   |  X
-+   114 |      |   X   |       |      |  X   |  X   |  X
-+   115 |  X   |   X   |       |      |  X   |  X   |  X
-+   116 |      |   X   |   X   |      |  X   |  X   |  X
-+   117 |  X   |   X   |   X   |      |  X   |  X   |  X
-+   118 |      |   X   |   X   |      |  X   |  X   |  X
-+   119 |  X   |   X   |   X   |      |  X   |  X   |  X
-+   120 |      |       |       |  X   |  X   |  X   |  X
-+   121 |  X   |       |       |  X   |  X   |  X   |  X
-+   122 |      |   X   |       |  X   |  X   |  X   |  X
-+   123 |  X   |   X   |       |  X   |  X   |  X   |  X
-+   124 |      |   X   |   X   |  X   |  X   |  X   |  X
-+   125 |  X   |   X   |   X   |  X   |  X   |  X   |  X
-+   126 |      |   X   |   X   |  X   |  X   |  X   |  X
-+   127 |  X   |   X   |   X   |  X   |  X   |  X   |  X
- 
- 
- .TP
-
+Josef
