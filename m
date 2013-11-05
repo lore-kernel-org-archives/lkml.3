@@ -1,155 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755818Ab3KEW2X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 17:28:23 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40944 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755723Ab3KEW2W (ORCPT
+	id S1755589Ab3KEWhv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 17:37:51 -0500
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:56514 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755377Ab3KEWht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 17:28:22 -0500
-Date: Tue, 5 Nov 2013 23:27:52 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Len Brown <len.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Lukasz Majewski <l.majewski@samsung.com>, james.hogan@imgtec.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
-Subject: Re: [RFC][PATCH v5 01/14] sched: add a new arch_sd_local_flags for
- sched_domain init
-Message-ID: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
-References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
- <1382097147-30088-2-git-send-email-vincent.guittot@linaro.org>
- <20131105140626.GP31370@twins.programming.kicks-ass.net>
- <CAKfTPtCYHKRv=w3b4tZV-2BW_a_T+tkO9Qpc0PhLD=uZY1yvfw@mail.gmail.com>
+	Tue, 5 Nov 2013 17:37:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKfTPtCYHKRv=w3b4tZV-2BW_a_T+tkO9Qpc0PhLD=uZY1yvfw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 5 Nov 2013 14:36:56 -0800
+Message-ID: <CALCETrUt7Ojh5Yy4KYgBPj_wBr=fzKKJ=OOgGP9BtXoKrr9QnA@mail.gmail.com>
+Subject: ARM audit, seccomp, etc are broken wrt OABI syscalls
+To: Kees Cook <keescook@chromium.org>
+Cc: Paul Moore <paul@paul-moore.com>, Richard Weinberger <richard@nod.at>,
+        libseccomp-discuss@lists.sourceforge.net,
+        Will Drewry <wad@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: multipart/mixed; boundary=047d7b343bd6a6b05f04ea75ae29
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 05, 2013 at 03:57:23PM +0100, Vincent Guittot wrote:
-> Your proposal looks fine for me. It's clearly better to move in one
-> place the configuration of sched_domain fields. Have you already got
-> an idea about how to let architecture override the topology?
+--047d7b343bd6a6b05f04ea75ae29
+Content-Type: text/plain; charset=ISO-8859-1
 
-Maybe something like the below -- completely untested (my s390 compiler
-is on a machine that's currently powered off).
+[cc: some ARM people]
 
-> My primary need comes from the fact that the topology configuration is
-> not the same for all cores
+After a bit of an adventure, I got QEMU working.  (Linux 3.12's smc91x
+driver and qemu 1.6 don't get along.  It would be great if some
+kernel.org page described a standard way to boot a modern Linux image
+on a modern QEMU version, but I digress.)
 
-Do expand.. the various cpu masks used in the topology list are per cpu,
-is that sufficient room to wriggle or do you need more?
+The current state of affairs is unhealthy.  I wrote a program
+(attached) that does 'svc $0x90002f' (silly GNU syntax for "Issue the
+getgid syscall in OABI").  The registers I program are:
 
----
---- a/arch/s390/kernel/smp.c
-+++ b/arch/s390/kernel/smp.c
-@@ -1070,3 +1070,23 @@ static int __init s390_smp_init(void)
- 	return 0;
- }
- subsys_initcall(s390_smp_init);
-+
-+static struct sched_domain_topology_level s390_topology[] = {
-+#ifdef CONFIG_SCHED_SMT
-+	{ cpu_smt_mask, SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES },
-+#endif
-+#ifdef CONFIG_SCHED_MC
-+	{ cpu_coregroup_mask, SD_SHARE_PKG_RESOURCES },
-+#endif
-+#ifdef CONFIG_SCHED_BOOK
-+	{ cpu_book_mask, },
-+#endif
-+	{ cpu_cpu_mask, },
-+	{ NULL, },
-+};
-+
-+static int __init s390_sched_topology(void)
-+{
-+	sched_domain_topology = s390_topology;
-+}
-+early_initcall(s390_sched_topology);
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -889,6 +889,20 @@ void free_sched_domains(cpumask_var_t do
- 
- bool cpus_share_cache(int this_cpu, int that_cpu);
- 
-+typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
-+
-+#define SDTL_OVERLAP	0x01
-+
-+struct sched_domain_topology_level {
-+	sched_domain_mask_f mask;
-+	int		    sd_flags;
-+	int		    flags;
-+	int		    numa_level;
-+	struct sd_data      data;
-+};
-+
-+extern struct sched_domain_topology_level *sched_domain_topology;
-+
- #else /* CONFIG_SMP */
- 
- struct sched_domain_attr;
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5377,20 +5377,6 @@ enum s_alloc {
- 	sa_none,
- };
- 
--struct sched_domain_topology_level;
--
--typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
--
--#define SDTL_OVERLAP	0x01
--
--struct sched_domain_topology_level {
--	sched_domain_mask_f mask;
--	int		    sd_flags;
--	int		    flags;
--	int		    numa_level;
--	struct sd_data      data;
--};
--
- /*
-  * Build an iteration mask that can exclude certain CPUs from the upwards
-  * domain traversal.
-@@ -5841,6 +5827,7 @@ sd_init(struct sched_domain_topology_lev
- 
- 	return sd;
- }
-+
- /*
-  * Topology list, bottom-up.
-  */
-@@ -5851,14 +5838,11 @@ static struct sched_domain_topology_leve
- #ifdef CONFIG_SCHED_MC
- 	{ cpu_coregroup_mask, SD_SHARE_PKG_RESOURCES },
- #endif
--#ifdef CONFIG_SCHED_BOOK
--	{ cpu_book_mask, },
--#endif
- 	{ cpu_cpu_mask, },
- 	{ NULL, },
- };
- 
--static struct sched_domain_topology_level *sched_domain_topology = default_topology;
-+struct sched_domain_topology_level *sched_domain_topology = default_topology;
- 
- #define for_each_sd_topology(tl)			\
- 	for (tl = sched_domain_topology; tl->mask; tl++)
+r0: 1
+r1: 2
+r2: 3
+r3: 4
+r4: 5
+r5: 6
+
+(i.e. the arguments are 1,2,3,4,5,6, although getgid ignores them)
+
+r7: 1
+
+(r7 is the EABI syscall register.  On a kernel without OABI support,
+the immediate svc argument is ignored and syscall 1, i.e. _exit, will
+be invoked).
+
+Seccomp sees the registers as I set them (unsurprisingly) and it sees
+nr == 0x2f.  It passes those values on to a SIGSYS handler, if one
+exists.  This is, IMO, bad.  The OABI and EABI argument passing
+conventions are *not* the same, and seccomp filters that check syscall
+argument values may be spoofable by using OABI calls.
+
+I suspect that audit, perf, ftrace, and maybe even ptrace are broken
+as well for exactly the same reason.
+
+I would argue that there are two reasonable fixes:
+
+1. Set a different audit arch for OABI syscalls (e.g.
+AUDIT_ARCH_ARMOABI).  That is, treat OABI syscall entries the same way
+that x86_64 treats int 80.
+
+2. Leave the 0x900000 bits set in the syscall nr.  That way OABI
+syscalls would look like a different set of syscalls on the same
+architecture.  That is, treat OABI syscall entries kind of like x86_64
+treats x32 syscalls.  (There's probably no reason to accept 0x900000 +
+N as an r7 value to cause 'svc 0' to invoke OABI syscall N, though.)
+
+3. Unconditionally kill any process that makes an OABI syscall with
+seccomp enabled (because there should be no such programs).  Eww.
+
+Options 1 and 2 are both break ABI, but I doubt that anythink cares.
+OABI is, AFAICT, mostly dead.  That being said, even if nothing
+legitimate uses OABI, exploits against seccomp-using programs can
+certainly use OABI, so I think that this needs to be fixed somehow.
+
+Thoughts?  I think I prefer option 1.  I don't really want to make the
+change because my ARM assembly skills are lacking.
+
+--047d7b343bd6a6b05f04ea75ae29
+Content-Type: text/x-csrc; charset=US-ASCII; name="seccomp_oabi.c"
+Content-Disposition: attachment; filename="seccomp_oabi.c"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hnnpmn7j1
+
+I2RlZmluZSBfR05VX1NPVVJDRQojaW5jbHVkZSA8c3RkaW8uaD4KI2luY2x1ZGUgPHVuaXN0ZC5o
+PgojaW5jbHVkZSA8bGludXgvZmlsdGVyLmg+CiNpbmNsdWRlIDxzeXMvc3lzY2FsbC5oPgojaW5j
+bHVkZSA8ZXJyLmg+CiNpbmNsdWRlIDxzeXMvcHJjdGwuaD4KI2luY2x1ZGUgPHN0ZGRlZi5oPgoj
+aW5jbHVkZSA8c3lzL3Vjb250ZXh0Lmg+CgojaWZuZGVmIF9fQVJNX0VBQklfXwojZXJyb3IgTXVz
+dCBiZSBjb21waWxlZCBmb3IgQVJNIEVBQkkKI2VuZGlmCgpzdHJ1Y3Qgc2VjY29tcF9kYXRhIHsK
+CWludCBucjsKCV9fdTMyIGFyY2g7CglfX3U2NCBpbnN0cnVjdGlvbl9wb2ludGVyOwoJX191NjQg
+YXJnc1s2XTsKfTsKCiNpZm5kZWYgUFJfU0VUX05PX05FV19QUklWUwojZGVmaW5lIFBSX1NFVF9O
+T19ORVdfUFJJVlMJMzgKI2VuZGlmCgojZGVmaW5lIFNFQ0NPTVBfUkVUX0tJTEwgMHgwMDAwMDAw
+MFUKI2RlZmluZSBTRUNDT01QX1JFVF9UUkFQIDB4MDAwMzAwMDBVCiNkZWZpbmUgU0VDQ09NUF9S
+RVRfRVJSTk8gMHgwMDA1MDAwMFUKI2RlZmluZSBTRUNDT01QX1JFVF9UUkFDRSAweDdmZjAwMDAw
+VQojZGVmaW5lIFNFQ0NPTVBfUkVUX0FMTE9XIDB4N2ZmZjAwMDBVCgpzdHJ1Y3Qgc2lmaWVsZHNf
+c2lnc3lzIHsKCXZvaWQgKl9jYWxsX2FkZHI7CglpbnQgX3N5c2NhbGw7Cgl1bnNpZ25lZCBpbnQg
+X2FyY2g7Cn07CgojZGVmaW5lIFNJR0lORk9fU0lHU1lTKHNpKSAoKHN0cnVjdCBzaWZpZWxkc19z
+aWdzeXMgKikmKHNpKS0+X3NpZmllbGRzKQoKX19hdHRyaWJ1dGVfXygobm9pbmxpbmUsb3B0aW1p
+emUoIjIiKSkpIGxvbmcgY2FsbF9nZXRnaWRfb2FiaSh2b2lkKQp7CgkvLyBJZiBPQUJJIGNvbXBh
+dGliaWxpdHkgaXMgZGlzYWJsZWQsIHRoaXMgd2lsbCBjYWxsIGV4aXQgaW5zdGVhZAoJLy8gKFRo
+YXQncyB3aGF0IHI3PT0xIG1lYW5zLikKCXJlZ2lzdGVyIGxvbmcgcmV0IGFzbSgicjAiKTsKCWFz
+bSB2b2xhdGlsZSgibW92IHIwLCAkMVxuXHRtb3YgcjEsICQyXG5cdG1vdiByMiwgJDNcblx0IgoJ
+CSAgICAgIm1vdiByMywgJDRcblx0bW92IHI0LCAkNVxuXHRtb3YgcjUsICQ2XG5cdCIKCQkgICAg
+ICJtb3YgcjcsICQxXG5cdHN2YyAkMHg5MDAwMmZcblx0IiA6IDogOgoJCSAgICAgInIwIiwgInIx
+IiwgInIyIiwgInIzIiwgInI0IiwgInI1IiwgInI2IiwgInI3IiwgIm1lbW9yeSIpOwoJcmV0dXJu
+IHJldDsKfQoKdm9pZCBoYW5kbGVyKGludCBzaWdudW0sIHNpZ2luZm9fdCAqc2ksIHZvaWQgKnVj
+X3ZvaWQpCnsKCWNvbnN0IHN0cnVjdCB1Y29udGV4dCAqdWMgPSB1Y192b2lkOwoJY29uc3Qgc3Ry
+dWN0IHNpZmllbGRzX3NpZ3N5cyAqc3MgPSBTSUdJTkZPX1NJR1NZUyhzaSk7CgoJcHJpbnRmKCJT
+SUdTWVNcblxuIik7CglwcmludGYoIm5yOiAweCVYIChfX05SX2dldGdpZCA9IDB4JVgsIE9BQkkg
+bnIgPSAweDkwMDAyRilcbiIsCgkgICAgICAgc3MtPl9zeXNjYWxsLCBfX05SX2dldGdpZCk7Cgoj
+ZGVmaW5lIERPX1JFRyhpKSBwcmludGYoInIiICNpICI6ICAweCUwOFhcbiIsIHVjLT51Y19tY29u
+dGV4dC5hcm1fciMjaSk7CglET19SRUcoMCk7CglET19SRUcoMSk7CglET19SRUcoMik7CglET19S
+RUcoMyk7CglET19SRUcoNCk7CglET19SRUcoNSk7CglET19SRUcoNik7CglET19SRUcoNyk7Cn0K
+CmludCBtYWluKCkKewoJaW50IHJjOwoKCXN0cnVjdCBzb2NrX2ZpbHRlciBmaWx0ZXJbXSA9IHsK
+CQlCUEZfU1RNVChCUEZfTEQrQlBGX1crQlBGX0FCUywKCQkJIChvZmZzZXRvZihzdHJ1Y3Qgc2Vj
+Y29tcF9kYXRhLCBucikpKSwKCQlCUEZfSlVNUChCUEZfSk1QK0JQRl9KRVErQlBGX0ssIF9fTlJf
+Z2V0Z2lkLCAwLCAxKSwKCQlCUEZfU1RNVChCUEZfUkVUK0JQRl9LLCBTRUNDT01QX1JFVF9UUkFQ
+KSwKCQlCUEZfU1RNVChCUEZfUkVUK0JQRl9LLCBTRUNDT01QX1JFVF9BTExPVyksCgl9OwoKCXN0
+cnVjdCBzb2NrX2Zwcm9nIHByb2cgPSB7CgkJLmxlbiA9ICh1bnNpZ25lZCBzaG9ydCkoc2l6ZW9m
+KGZpbHRlcikvc2l6ZW9mKGZpbHRlclswXSkpLAoJCS5maWx0ZXIgPSBmaWx0ZXIsCgl9OwoKCXN0
+cnVjdCBzaWdhY3Rpb24gc2EgPSB7fTsKCXNhLnNhX3NpZ2FjdGlvbiA9IGhhbmRsZXI7CglzYS5z
+YV9mbGFncyA9IFNBX1NJR0lORk87CglpZiAoc2lnYWN0aW9uKFNJR1NZUywgJnNhLCBOVUxMKSAh
+PSAwKQoJCWVycigxLCAic2lnYWN0aW9uIik7CgoJaWYgKHByY3RsKFBSX1NFVF9OT19ORVdfUFJJ
+VlMsIDEsIDAsIDAsIDApKQoJCWVycigxLCAiUFJfU0VUX05PX05FV19QUklWUyIpOwoJaWYgKHBy
+Y3RsKFBSX1NFVF9TRUNDT01QLCAyLCAmcHJvZykpCgkJZXJyKDEsICJQUl9TRVRfU0VDQ09NUCIp
+OwoKCWNhbGxfZ2V0Z2lkX29hYmkoKTsKCglyZXR1cm4gMDsKfQo=
+--047d7b343bd6a6b05f04ea75ae29--
