@@ -1,110 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab3KERaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 12:30:10 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:63611 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755171Ab3KERaH (ORCPT
+	id S1755305Ab3KERcG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 12:32:06 -0500
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:45913 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab3KERcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 12:30:07 -0500
+	Tue, 5 Nov 2013 12:32:04 -0500
+Date: Tue, 5 Nov 2013 14:31:52 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Adrian Hunter <adrian.hunter@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V3 06/11] perf record: Add an option to force per-cpu
+ mmaps
+Message-ID: <20131105173152.GB7329@ghostprotocols.net>
+References: <1383313899-15987-1-git-send-email-adrian.hunter@intel.com>
+ <1383313899-15987-7-git-send-email-adrian.hunter@intel.com>
+ <20131104152942.GA4004@krava.brq.redhat.com>
+ <5278AC36.1020702@intel.com>
+ <20131105094220.GA1071@krava.brq.redhat.com>
+ <5278EE0A.1080108@intel.com>
+ <20131105133024.GE1071@krava.brq.redhat.com>
+ <20131105142545.GD22912@ghostprotocols.net>
 MIME-Version: 1.0
-In-Reply-To: <1383278208-4053-1-git-send-email-liwang@ubuntukylin.com>
-References: <1383278208-4053-1-git-send-email-liwang@ubuntukylin.com>
-Date: Tue, 5 Nov 2013 12:30:05 -0500
-Message-ID: <CANP1eJH2ewpYyWe2Oo4OMMg2UB+RE8DBt=Xg-MUDo6uJ5aGcpg@mail.gmail.com>
-Subject: Re: [PATCH] ceph: Update the pages in fscache in writepages() path
-From: Milosz Tanski <milosz@adfin.com>
-To: Li Wang <liwang@ubuntukylin.com>
-Cc: ceph-devel <ceph-devel@vger.kernel.org>,
-        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
-        Sage Weil <sage@inktank.com>, linux-kernel@vger.kernel.org,
-        Min Chen <minchen@ubuntukylin.com>,
-        Yunchuan Wen <yunchuanwen@ubuntukylin.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131105142545.GD22912@ghostprotocols.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Li,
+PeterZ,
 
-First, sorry for the late reply on this.
+	Can I have your Acked-by for this one? I guess now the goal is
+achieved, no?
 
-Currently fscache is only supported for files that are open in read
-only mode. I originally was going to let fscache cache in the write
-path as well as long as the file was open in with O_LAZY. I abandoned
-that idea. When a user opens the file in O_LAZY we can cache things
-locally with the assumption that the user will care of the
-synchronization in some other manner. There is no way of invalidating
-a subset of the pages in object cached by fscache, there is no way we
-can make O_LAZY work well.
+- Arnaldo
 
-The ceph_readpage_to_fscache() in writepage has no effect and it
-should be removed. ceph_readpage_to_fscache() calls cache_valid() to
-see if it should perform the page save, and since the file can't have
-a CACHE cap at the point in time it doesn't do it.
-
-Thanks,
-- Milosz
-
-On Thu, Oct 31, 2013 at 11:56 PM, Li Wang <liwang@ubuntukylin.com> wrote:
-> Currently, the pages in fscache only are updated in writepage() path,
-> add the process in writepages().
->
-> Signed-off-by: Min Chen <minchen@ubuntukylin.com>
-> Signed-off-by: Li Wang <liwang@ubuntukylin.com>
-> Signed-off-by: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
-> ---
->  fs/ceph/addr.c |    8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
->
-> diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-> index 6df8bd4..cc57911 100644
-> --- a/fs/ceph/addr.c
-> +++ b/fs/ceph/addr.c
-> @@ -746,7 +746,7 @@ retry:
->
->         while (!done && index <= end) {
->                 int num_ops = do_sync ? 2 : 1;
-> -               unsigned i;
-> +               unsigned i, j;
->                 int first;
->                 pgoff_t next;
->                 int pvec_pages, locked_pages;
-> @@ -894,7 +894,6 @@ get_more_pages:
->                 if (!locked_pages)
->                         goto release_pvec_pages;
->                 if (i) {
-> -                       int j;
->                         BUG_ON(!locked_pages || first < 0);
->
->                         if (pvec_pages && i == pvec_pages &&
-> @@ -924,7 +923,10 @@ get_more_pages:
->
->                 osd_req_op_extent_osd_data_pages(req, 0, pages, len, 0,
->                                                         !!pool, false);
-> -
-> +               for(j = 0; j < locked_pages; j++) {
-> +                       struct page *page = pages[j];
-> +                       ceph_readpage_to_fscache(inode, page);
-> +               }
->                 pages = NULL;   /* request message now owns the pages array */
->                 pool = NULL;
->
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-Milosz Tanski
-CTO
-10 East 53rd Street, 37th floor
-New York, NY 10022
-
-p: 646-253-9055
-e: milosz@adfin.com
+Em Tue, Nov 05, 2013 at 11:25:45AM -0300, Arnaldo Carvalho de Melo escreveu:
+> Em Tue, Nov 05, 2013 at 02:30:24PM +0100, Jiri Olsa escreveu:
+> > On Tue, Nov 05, 2013 at 03:09:30PM +0200, Adrian Hunter wrote:
+> > > > right, I haven't considered the hundreds CPU machine.. I just
+> > > > saw that it disables inherited events in my test ;-) maybe we
+> > > > could mentioned that somewhere, because it's not clear
+> > > 
+> > > How about this:
+> > > 
+> > > From: Adrian Hunter <adrian.hunter@intel.com>
+> > > 
+> > > By default, when tasks are specified (i.e. -p, -t
+> > > or -u options) per-thread mmaps are created.  Add
+> > > an option to override that and force per-cpu mmaps.
+> > > 
+> > > Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> > 
+> > seems ok, thanks
+> 
+> Much better, but may I ask that the explanation in the man pages be
+> present in the changeset commit as well? So that by just looking at 'git
+> log' we can more readily get the whole picture, i.e. scalability versus
+> wanting to have inherit.
+> 
+> - Arnaldo
+>  
+> > Acked-by: Jiri Olsa <jolsa@redhat.com>
+> > 
+> > jirka
