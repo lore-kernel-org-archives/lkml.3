@@ -1,88 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234Ab3KEDaW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 22:30:22 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:41123 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819Ab3KEDaV (ORCPT
+	id S1754267Ab3KEDdD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 22:33:03 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:54328 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751451Ab3KEDdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 22:30:21 -0500
-Message-ID: <52786640.90403@oracle.com>
-Date: Tue, 05 Nov 2013 11:30:08 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>
-CC: Bob Liu <lliubbo@gmail.com>, konrad.wilk@oracle.com,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] drivers: xen-selfballoon: consider slab pages
-References: <1383568764-30478-1-git-send-email-bob.liu@oracle.com> <5277D7EA.9000801@citrix.com>
-In-Reply-To: <5277D7EA.9000801@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 4 Nov 2013 22:33:00 -0500
+Date: Tue, 5 Nov 2013 14:32:48 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Alasdair G Kergon <agk@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>,
+        Jens Axboe <axboe@kernel.dk>, Joe Thornber <ejt@redhat.com>
+Subject: Re: linux-next: build failure after merge of the device-mapper tree
+Message-Id: <20131105143248.551f68c3cd9fe1902860c1ff@canb.auug.org.au>
+In-Reply-To: <20131105032054.GA19421@redhat.com>
+References: <20131105135128.496b8b2f599d11f2d30ad70c@canb.auug.org.au>
+	<20131105032054.GA19421@redhat.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__5_Nov_2013_14_32_48_+1100_hL/mePQhPZ8dZ1RJ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Tue__5_Nov_2013_14_32_48_+1100_hL/mePQhPZ8dZ1RJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 11/05/2013 01:22 AM, David Vrabel wrote:
-> On 04/11/13 12:39, Bob Liu wrote:
->> Currently the goal_page in xen-selfballon doesn't consider much about pages used
->> in kernel space.
->> A typical usage is slab pages, without consider slab pages the goal_page result
->> may be too rough and lead extra memory pressure to guest os.
-> 
-> Can you provide some real world figures where the calculatation got it
-> wrong? What was the resultant behavior?  Swap death? OOM killer?
-> 
+Hi Mike,
 
-Sorry, I didn't run any testing I just think it's unreasonable while
-reading the source code.
+On Mon, 4 Nov 2013 22:20:54 -0500 Mike Snitzer <snitzer@redhat.com> wrote:
+>
+> On Mon, Nov 04 2013 at  9:51pm -0500,
+> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>=20
+> > After merging the device-mapper tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> >=20
+> > drivers/md/dm-cache-target.c: In function 'bio_writes_complete_block':
+> > drivers/md/dm-cache-target.c:1020:7: error: 'struct bio' has no member =
+named 'bi_size'
+> >    (bio->bi_size =3D=3D (cache->sectors_per_block << SECTOR_SHIFT));
+> >        ^
+> >=20
+> > Caused by commit 1bd270d800ec ("dm cache: promotion optimisation for
+> > writes") interacting with commit ed2d2f9a8265 ("block: Abstract out bvec
+> > iterator") from the block tree.
+> >=20
+> > I applied this fix up patch and can carry it as necessary:
+>=20
+> Yes that is needed, as is this (which begs the question: how should I be
 
-vm_memory_committed() only calculate pages which mapped to process
-address space, but the kernel itself(like block, fs and network
-subsystem) may occupy some memory. And it's possible that those
-subsystem may occupy a significant amount of memory in some situation.
+I will add that tomorrow.
 
-I'm afraid if we don't consider those kernel memory while calculating
-goal_pages, guest memory will be set lower than guest really needs.
+> handling the fact that post-merge changes are needed?  Especially since
+> Linus will need the changes too):
 
->> Signed-off-by: Bob Liu <bob.liu@oracle.com>
->> ---
->>  drivers/xen/xen-selfballoon.c |    2 ++
->>  1 file changed, 2 insertions(+)
->>
->> diff --git a/drivers/xen/xen-selfballoon.c b/drivers/xen/xen-selfballoon.c
->> index 21e18c1..4814759 100644
->> --- a/drivers/xen/xen-selfballoon.c
->> +++ b/drivers/xen/xen-selfballoon.c
->> @@ -191,6 +191,8 @@ static void selfballoon_process(struct work_struct *work)
->>  		tgt_pages = cur_pages; /* default is no change */
->>  		goal_pages = vm_memory_committed() +
->>  				totalreserve_pages +
->> +				global_page_state(NR_SLAB_RECLAIMABLE) +
-> 
-> Does SLAB_RECLAIMABLE want to be included here?  Unless I'm
-> misunderstanding here, SLAB_RECLAIMABLE is effectively free.
-> 
+Who ever gets their tree in last has to tell Linus about these extra
+merge fix ups as part of their pull request.
 
-SLAB_RECLAIMABLE isn't effectively free, it means the slab page is in
-used but can be reclaimed(freed) during memory pressure.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
->> +				global_page_state(NR_SLAB_UNRECLAIMABLE) +
-> 
-> This bit looks fine to me.
-> 
->>  				MB2PAGES(selfballoon_reserved_mb);
->>  #ifdef CONFIG_FRONTSWAP
->>  		/* allow space for frontswap pages to be repatriated */
-> 
-> David
-> 
+--Signature=_Tue__5_Nov_2013_14_32_48_+1100_hL/mePQhPZ8dZ1RJ
+Content-Type: application/pgp-signature
 
-Thanks for your review.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
--- 
-Regards,
--Bob
+iQIcBAEBCAAGBQJSeGbmAAoJEMDTa8Ir7ZwVDBYP/R1nvGsP+jOQYgm4Yz2RgnZV
+DEYbaRtn+FsM4eboqAIJaAgg3OtyUlMh/bif6WtEghjGW2HEvjqzVraBEmxPqukb
+f00oBsoWoBffqERVKL51ZQVf8pRltQUGY99lD5sEfve5f2tcTxqZSXA/VFBE0Kye
+GhRQYmjKIVvD/rvvSqojhWqhOD39BVDEQ47Vpc/7XwwK6gvUT4bHOf3CAgx/dM9Z
+O19rqHPyLYpZrJuFVUA8TeKtlpjy/YgyKKmdL3wONu5SvjvdNj9phOYyCQDUXIJz
+ZG/JE+TWnBwG7PLIJU6TqYlmsP999MlvG1xB10FaTLxPf5JJbRrMQJGdTxZ+RH1A
+aufiOGo3H51pJghI4+81Pwtlx+7c5SeouzJxOQIb7nJdlIXi5umqi3D+Lkh+3pwF
+iD/kmUrJ40ljfzKk8/hbjZJzF1VBo8F7LcM/f6+cRTtvRRWKDEmzFflN3k/lQRf5
+jF5CwQzl7/eRZpkAxovzhI+Eu8CmPydKnkZd673Xm5nWQf4xex1gZr1v76gBIBow
+1Fs5P0WiO77hanscBVNWrqjaNHcaowCjXXys2HaykZ3G8qsNZslnUML+/pPdPRG2
+yYiQieAeGFYDXuBR3XLdOuYBe5WCbG8GrHSWLw0GSBRDNpX1l46jVt7/h7huIY2h
+1qGjxgHl3cGNr0yTynGt
+=QDFG
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__5_Nov_2013_14_32_48_+1100_hL/mePQhPZ8dZ1RJ--
