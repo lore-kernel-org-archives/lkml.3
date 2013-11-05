@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab3KEBLq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 20:11:46 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:49279 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750719Ab3KEBLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 20:11:45 -0500
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Miller <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] net: mv643xx_eth: Add missing phy_addr_set in DT mode
-Date: Mon,  4 Nov 2013 17:27:19 -0700
-Message-Id: <1383611239-14556-1-git-send-email-jgunthorpe@obsidianresearch.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1753999Ab3KEBMt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 20:12:49 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61642 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab3KEBMs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 20:12:48 -0500
+X-AuditID: 9c930179-b7c44ae000000c83-92-5278460ec10f
+From: Namhyung Kim <namhyung@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a ring buffer
+References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
+	<1383029621-7384-11-git-send-email-namhyung@kernel.org>
+	<20131031181654.GA11208@redhat.com>
+	<87y554382a.fsf@sejong.aot.lge.com> <20131104143517.GA4440@redhat.com>
+Date: Tue, 05 Nov 2013 10:12:46 +0900
+In-Reply-To: <20131104143517.GA4440@redhat.com> (Oleg Nesterov's message of
+	"Mon, 4 Nov 2013 15:35:17 +0100")
+Message-ID: <878ux33b3l.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit cc9d4598 'net: mv643xx_eth: use of_phy_connect if phy_node
-present' made the call to phy_scan optional, if the DT has a link to
-the phy node.
+Hi Oleg,
 
-However phy_scan has the side effect of calling phy_addr_set, which
-writes the phy MDIO address to the ethernet controller. If phy_addr_set
-is not called, and the bootloader has not set the correct address then
-the driver will fail to function.
+On Mon, 4 Nov 2013 15:35:17 +0100, Oleg Nesterov wrote:
+> Hi Namhyung,
+>
+> On 11/04, Namhyung Kim wrote:
+>>
+>> >>
+>> >> +	if (atomic_dec_and_test(&uprobe_buffer_ref)) {
+>> >> +		free_percpu(uprobe_cpu_buffer);
+>> >> +		uprobe_cpu_buffer = NULL;
+>> >> +	}
+>> >> +
+>> >>  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+>> >
+>> > Do we really need atomic_t? probe_event_enable/disable is called under
+>> > event_mutex and we rely on this fact anyway.
+>>
+>> Looking at the code, it seems probe_event_enable/disable() is called
+>> without event_mutex when it called from sys_perf_event_open().
+>
+> Where?
+>
+> __ftrace_set_clr_event(), perf_trace_init() or perf_trace_destroy()
+> hold event_mutex. We rely on this fact anyway.
 
-Tested on Kirkwood.
+Ah, you're right.  My eyes simply missed it. ;-)
 
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
----
-Cc: David Miller <davem@davemloft.net>
-Cc: Lennert Buytenhek <buytenh@wantstofly.org>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: netdev@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/net/ethernet/marvell/mv643xx_eth.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
-index 2c210ec..00e43b5 100644
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -2890,6 +2890,7 @@ static int mv643xx_eth_probe(struct platform_device *pdev)
- 					 PHY_INTERFACE_MODE_GMII);
- 		if (!mp->phy)
- 			err = -ENODEV;
-+		phy_addr_set(mp, mp->phy->addr);
- 	} else if (pd->phy_addr != MV643XX_ETH_PHY_NONE) {
- 		mp->phy = phy_scan(mp, pd->phy_addr);
- 
--- 
-1.8.1.2
-
+Thanks,
+Namhyung
