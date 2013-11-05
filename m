@@ -1,83 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab3KECA4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 21:00:56 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:55880 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753944Ab3KECAz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 21:00:55 -0500
-Date: Mon, 4 Nov 2013 21:00:53 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Uwe =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?= 
-	<u.kleine-koenig@pengutronix.de>,
+	id S1754113Ab3KECDS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 21:03:18 -0500
+Received: from mga09.intel.com ([134.134.136.24]:5305 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750997Ab3KECDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Nov 2013 21:03:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="403654512"
+Subject: Re: [PATCH 0/4] per anon_vma lock and turn anon_vma rwsem lock to
+ rwlock_t
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH -tip v2 3/3] [BUGFIX] kprobes: Prohibit probing on
- func_ptr_is_kernel_text
-Message-ID: <20131104210053.76c37210@gandalf.local.home>
-In-Reply-To: <20131101112537.14657.88496.stgit@kbuild-fedora.novalocal>
-References: <20131101112530.14657.87835.stgit@kbuild-fedora.novalocal>
-	<20131101112537.14657.88496.stgit@kbuild-fedora.novalocal>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+        Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Michel Lespinasse <walken@google.com>
+In-Reply-To: <1383615840.11046.265.camel@schen9-DESK>
+References: <1383292467-28922-1-git-send-email-yuanhan.liu@linux.intel.com>
+	 <20131101080135.GB25547@gmail.com>
+	 <20131101081159.GB12829@yliu-dev.sh.intel.com>
+	 <20131101082146.GA27021@gmail.com>
+	 <20131101101643.GC30123@yliu-dev.sh.intel.com>
+	 <1383362113.2444.5.camel@buesod1.americas.hpqcorp.net>
+	 <20131104035920.GH30123@yliu-dev.sh.intel.com>
+	 <1383615840.11046.265.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Nov 2013 18:03:12 -0800
+Message-ID: <1383616992.11046.271.camel@schen9-DESK>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 01 Nov 2013 11:25:37 +0000
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-
-> Prohibit probing on func_ptr_is_kernel_text().
-> Since the func_ptr_is_kernel_text() is called from
-> notifier_call_chain() which is called from int3 handler,
-> probing it may cause double int3 fault and kernel will
-> reboot.
+On Mon, 2013-11-04 at 17:44 -0800, Tim Chen wrote:
+> On Mon, 2013-11-04 at 11:59 +0800, Yuanhan Liu wrote:
+> > On Fri, Nov 01, 2013 at 08:15:13PM -0700, Davidlohr Bueso wrote:
+> > > On Fri, 2013-11-01 at 18:16 +0800, Yuanhan Liu wrote:
+> > > > On Fri, Nov 01, 2013 at 09:21:46AM +0100, Ingo Molnar wrote:
+> > > > > 
+> > > > > * Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
+> > > > > 
+> > > > > > > Btw., another _really_ interesting comparison would be against 
+> > > > > > > the latest rwsem patches. Mind doing such a comparison?
+> > > > > > 
+> > > > > > Sure. Where can I get it? Are they on some git tree?
+> > > > > 
+> > > > > I've Cc:-ed Tim Chen who might be able to point you to the latest 
+> > > > > version.
+> > > > > 
+> > > > > The last on-lkml submission was in this thread:
+> > > > > 
+> > > > >   Subject: [PATCH v8 0/9] rwsem performance optimizations
+> > > > > 
+> > > > 
+> > > > Thanks.
+> > > > 
+> > > > I queued bunchs of tests about one hour ago, and already got some
+> > > > results(If necessary, I can add more data tomorrow when those tests are
+> > > > finished):
+> > > 
+> > > What kind of system are you using to run these workloads on?
+> > 
+> > I queued jobs on 5 testboxes:
+> >   - brickland1: 120 core Ivybridge server
+> >   - lkp-ib03:   48 core Ivybridge server
+> >   - lkp-sb03:   32 core Sandybridge server
+> >   - lkp-nex04:  64 core NHM server
+> >   - lkp-a04:    Atom server
+> > > 
+> > > > 
+> > > > 
+> > > >                v3.12-rc7      fe001e3de090e179f95d  
+> > > > ------------------------  ------------------------  
+> > > >                                 -9.3%               brickland1/micro/aim7/shared
+> > > >                                 +4.3%               lkp-ib03/micro/aim7/fork_test
+> > > >                                 +2.2%               lkp-ib03/micro/aim7/shared
+> > > >                                 -2.6%               TOTAL aim7.2000.jobs-per-min
+> > > > 
+> > > 
+> > > Sorry if I'm missing something, but could you elaborate more on what
+> > > these percentages represent?
+> > 
+> >                v3.12-rc7      fe001e3de090e179f95d  
+> > ------------------------  ------------------------  
+> >                                 -9.3%               brickland1/micro/aim7/shared
+> > ....
+> > ....
+> >                                 -2.6%               TOTAL aim7.2000.jobs-per-min
+> > 
+> > The comparation base is v3.12-rc7, and we got 9.3 performance regression
+> > at commit fe001e3de090e179f95d, which is the head of rwsem performance
+> > optimizations patch set.
 > 
-> This happenes when the kernel built with CONFIG_DEBUG_NOTIFIERS=y.
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: "Uwe Kleine-König" <u.kleine-koenig@pengutronix.de>
-> Cc: Borislav Petkov <bp@suse.de>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> ---
->  kernel/extable.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/extable.c b/kernel/extable.c
-> index 832cb28..022fb25 100644
-> --- a/kernel/extable.c
-> +++ b/kernel/extable.c
-> @@ -129,7 +129,7 @@ int kernel_text_address(unsigned long addr)
->   * pointer is part of the kernel text, we need to do some
->   * special dereferencing first.
->   */
-> -int func_ptr_is_kernel_text(void *ptr)
-> +int nokprobe func_ptr_is_kernel_text(void *ptr)
->  {
->  	unsigned long addr;
->  	addr = (unsigned long) dereference_function_descriptor(ptr);
-> 
+> Yunahan, thanks for the data.  This I assume is with the entire rwsem
+> v8 patchset. Any idea of the run variation on the workload?
 
-One thing I worry about the "nokprobe" annotation, is that it moves the
-location of the function out of local. This function no exists in
-the section with its users. Same with the debug functions in the
-other patch.
+Yunhan,
 
-Now these may be a slow path where we really don't care, but if the
-nokprobe expands this can cause issues.
+I haven't got a chance to make multiple runs to check the standard
+deviation.  From the few runs I did, I got a 5.1% increase in
+performance for aim7 shared workload for the complete rwsem patchset
+on a similar machine that you are using.  The patches are applied
+to the 3.12-rc7 and compared to the vanilla kernel.
 
-The "nokprobe" works differently than "notrace" as "notrace" is just an
-attribute that tells gcc not to add mcount to it. The "nokprobe"
-actually moves the function into a different section.
+Thanks.
 
--- Steve
+Tim
+
