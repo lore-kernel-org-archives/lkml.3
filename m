@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755024Ab3KLNtE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Nov 2013 08:49:04 -0500
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751610Ab3KLNtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Nov 2013 08:49:03 -0500
-Message-ID: <528231C5.9010101@nod.at>
-Date: Tue, 12 Nov 2013 14:48:53 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1755287Ab3KLNt2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Nov 2013 08:49:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59681 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753879Ab3KLNt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Nov 2013 08:49:26 -0500
+Date: Tue, 5 Nov 2013 10:43:54 +0100
+From: David Sterba <dsterba@suse.cz>
+To: Aldo Iljazi <mail@aldo.io>
+Cc: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] BTRFS: fixed coding style issues
+Message-ID: <20131105094354.GD16999@twin.jikos.cz>
+Reply-To: dsterba@suse.cz
+Mail-Followup-To: dsterba@suse.cz, Aldo Iljazi <mail@aldo.io>,
+	chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1383634921-4271-1-git-send-email-mail@aldo.io>
 MIME-Version: 1.0
-To: Mark Salter <msalter@redhat.com>, linux-kernel@vger.kernel.org
-CC: Jeff Dike <jdike@addtoit.com>, user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: [PATCH 11/11] um: use generic fixmap.h
-References: <1384262545-20875-1-git-send-email-msalter@redhat.com> <1384262545-20875-12-git-send-email-msalter@redhat.com>
-In-Reply-To: <1384262545-20875-12-git-send-email-msalter@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383634921-4271-1-git-send-email-mail@aldo.io>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 12.11.2013 14:22, schrieb Mark Salter:
-> Signed-off-by: Mark Salter <msalter@redhat.com>
-> CC: Jeff Dike <jdike@addtoit.com>
-> CC: Richard Weinberger <richard@nod.at>
-> CC: user-mode-linux-devel@lists.sourceforge.net
-> ---
->  arch/um/include/asm/fixmap.h | 40 +---------------------------------------
->  1 file changed, 1 insertion(+), 39 deletions(-)
+On Tue, Nov 05, 2013 at 09:02:01AM +0200, Aldo Iljazi wrote:
+> Line 4989: Inserted a space after the comma.
+> Lines 7986 and 8274: Inserted a space before the open parenthesis.
 
-Acked-by: Richard Weinberger <richard@nod.at>
+Hm, I don't know why my message from yesterday did not make it to the
+list, but I'm objecting against flow of such changes that are not always
+actual changes (replacing spaces by tabs). We don't really need them at
+this point of development phase of btrfs.
 
-Thanks,
-//richard
+The style issues should be fixed when a patch is being merged, doing it
+afterwards increases patch history and makes digging in history
+unnecessarily tedious.
+
+There are lots of opportunities to do actual code cleanup, whitespaces
+are just noise.
+
+david
