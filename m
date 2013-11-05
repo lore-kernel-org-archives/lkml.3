@@ -1,59 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755010Ab3KETGl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 14:06:41 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:53592 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467Ab3KETGk (ORCPT
+	id S1755213Ab3KETNJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 14:13:09 -0500
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:43043 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906Ab3KETNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 14:06:40 -0500
-Date: Tue, 5 Nov 2013 11:06:33 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
-Message-ID: <20131105190633.GA21178@roeck-us.net>
-References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
+	Tue, 5 Nov 2013 14:13:07 -0500
+Message-ID: <52794340.7030009@linaro.org>
+Date: Tue, 05 Nov 2013 14:13:04 -0500
+From: David Long <dave.long@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 01/13] uprobes: move function declarations out of arch
+References: <1381871068-27660-1-git-send-email-dave.long@linaro.org> <1381871068-27660-2-git-send-email-dave.long@linaro.org> <20131105160150.GA1539@redhat.com> <20131105181614.GA7614@redhat.com>
+In-Reply-To: <20131105181614.GA7614@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 05, 2013 at 08:41:35PM +0200, Pantelis Antoniou wrote:
-> The following patchset introduces Device Tree overlays, a method
-> of dynamically altering the kernel's live Device Tree, along with
-> a generic interface to use it in a board agnostic manner.
-> 
-Hi Pantelis,
+On 11/05/13 13:16, Oleg Nesterov wrote:
+> On 11/05, Oleg Nesterov wrote:
+>>
+>> On 10/15, David Long wrote:
+>>>
+>>> Move the function declarations from the arch header to the common
+>>> header, since only the function bodies are architecture-specific.
+>>> These changes are from Vincent Rabin's uprobes patch.
+>>
+>> Hmm. I didn't look at this patch because I thought it is obviously
+>> fine, but...
+>>
+>>>   arch/x86/include/asm/uprobes.h | 7 -------
+>>>   include/linux/uprobes.h        | 8 ++++++++
+>>>   2 files changed, 8 insertions(+), 7 deletions(-)
+>>
+>> it should also update arch/powerpc/include/asm/uprobes.h ?
+>>
+>> And 12/13 should not touch arch/powerpc/ or include/linux/uprobes.h.
+>
+> And I think we can merge this change separately to reduce the
+> number of non-arm changes in the next version.
+>
+> Please see the patch I am going to add to my tree below.
+>
+> Oleg.
+> ---
+>
+> Subject: [PATCH] uprobes: move function declarations out of arch
+> From: David A. Long <dave.long@linaro.org>
+> Date: Tue, 15 Oct 2013 17:04:16 -0400
+>
+> Move the function declarations from the arch headers to the common
+> header, since only the function bodies are architecture-specific.
+> These changes are from Vincent Rabin's uprobes patch.
+>
+> [ oleg: update arch/powerpc/include/asm/uprobes.h ]
+>
+> Signed-off-by: Rabin Vincent <rabin@rab.in>
+> Signed-off-by: David A. Long <dave.long@linaro.org>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>   arch/powerpc/include/asm/uprobes.h |    7 -------
+>   arch/x86/include/asm/uprobes.h     |    7 -------
+>   include/linux/uprobes.h            |    8 ++++++++
+>   3 files changed, 8 insertions(+), 14 deletions(-)
+>
+> diff --git a/arch/powerpc/include/asm/uprobes.h b/arch/powerpc/include/asm/uprobes.h
+> index 541fd6f..75c6ecd 100644
+> --- a/arch/powerpc/include/asm/uprobes.h
+> +++ b/arch/powerpc/include/asm/uprobes.h
+> @@ -46,11 +46,4 @@ struct arch_uprobe_task {
+>   	unsigned long	saved_trap_nr;
+>   };
+>
+> -extern int  arch_uprobe_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long addr);
+> -extern int  arch_uprobe_pre_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+> -extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+> -extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
+> -extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
+> -extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+> -extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long trampoline_vaddr, struct pt_regs *regs);
+>   #endif	/* _ASM_UPROBES_H */
+> diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+> index 2a24180..3087ea9 100644
+> --- a/arch/x86/include/asm/uprobes.h
+> +++ b/arch/x86/include/asm/uprobes.h
+> @@ -52,11 +52,4 @@ struct arch_uprobe_task {
+>   	unsigned int			saved_tf;
+>   };
+>
+> -extern int  arch_uprobe_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long addr);
+> -extern int  arch_uprobe_pre_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+> -extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+> -extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
+> -extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
+> -extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+> -extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long trampoline_vaddr, struct pt_regs *regs);
+>   #endif	/* _ASM_UPROBES_H */
+> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+> index 06f28be..9fd60c5 100644
+> --- a/include/linux/uprobes.h
+> +++ b/include/linux/uprobes.h
+> @@ -30,6 +30,7 @@
+>   struct vm_area_struct;
+>   struct mm_struct;
+>   struct inode;
+> +struct notifier_block;
+>
+>   #ifdef CONFIG_ARCH_SUPPORTS_UPROBES
+>   # include <asm/uprobes.h>
+> @@ -125,6 +126,13 @@ extern void uprobe_notify_resume(struct pt_regs *regs);
+>   extern bool uprobe_deny_signal(void);
+>   extern bool __weak arch_uprobe_skip_sstep(struct arch_uprobe *aup, struct pt_regs *regs);
+>   extern void uprobe_clear_state(struct mm_struct *mm);
+> +extern int  arch_uprobe_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long addr);
+> +extern int  arch_uprobe_pre_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+> +extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+> +extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
+> +extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
+> +extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+> +extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long trampoline_vaddr, struct pt_regs *regs);
+>   #else /* !CONFIG_UPROBES */
+>   struct uprobes_state {
+>   };
+>
 
-great to see this going. I'll apply the patches to our tree and test.
+Looks good to me.  ARM builds/runs fine with your patch.  I will remove 
+my (updated) version from my patch set.
 
-I have a couple of patches on top of yours:
-- export overlay functions
-- declare of_free_overlay_info as static inline if OF is undefined.
-- ignore PCI devices when inserting or removing overlays 
-  [ Based on the idea that PCI/PCIe ports are handled by the PCI subsystem ]
+-dl
 
-I'll rebase those to the new version of your patches and send it out
-after I get it all working.
-
-Thanks,
-Guenter
