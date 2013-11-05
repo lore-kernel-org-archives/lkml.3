@@ -1,59 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab3KERvU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 12:51:20 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38599 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174Ab3KERvS (ORCPT
+	id S1755328Ab3KER4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 12:56:07 -0500
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:59699 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752857Ab3KER4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 12:51:18 -0500
-Message-ID: <1383673871.6753.36.camel@polaris.local>
-Subject: Re: [PATCH] typo fixes (coordiante -> coordinate) in am335x
-From: Jan =?ISO-8859-1?Q?L=FCbbe?= <jlu@pengutronix.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-input@vger.kernel.org
-Date: Tue, 05 Nov 2013 18:51:11 +0100
-In-Reply-To: <20131105171553.GB30901@lee--X1>
-References: <1373901928-19605-1-git-send-email-zubair.lutfullah@gmail.com>
-	 <20130821075828.GZ7656@atomide.com>
-	 <1382198544.22609.8.camel@polaris.local> <20131022090552.GE19112@lee--X1>
-	 <1383667293.6753.35.camel@polaris.local> <20131105171553.GB30901@lee--X1>
-Organization: Pengutronix
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: jlu@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 5 Nov 2013 12:56:04 -0500
+MIME-Version: 1.0
+In-Reply-To: <00fe01ceda0a$941957a0$bc4c06e0$%debski@samsung.com>
+References: <1383205544-32244-1-git-send-email-gautam.vivek@samsung.com>
+	<1383205544-32244-2-git-send-email-gautam.vivek@samsung.com>
+	<527744B2.4090303@ti.com>
+	<030d01ced946$d6e23490$84a69db0$%debski@samsung.com>
+	<52779D28.9000905@ti.com>
+	<CAFp+6iH7vQ-OtMFL4pyr4tFDRchH4oh1Z0753WNgrHiUzj+kzw@mail.gmail.com>
+	<00fe01ceda0a$941957a0$bc4c06e0$%debski@samsung.com>
+Date: Tue, 5 Nov 2013 23:26:01 +0530
+Message-ID: <CAFp+6iE_EgPJCSHqRrNDMhmc6ODtM=LogVyfG8SpR6TPH0MicA@mail.gmail.com>
+Subject: Re: [PATCH RFC 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Kamil Debski <k.debski@samsung.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Julius Werner <jwerner@chromium.org>, Jingoo Han <jg1.han@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-05 at 17:15 +0000, Lee Jones wrote:
-> On Tue, 05 Nov 2013, Jan Lübbe wrote:
-> 
-> > On Tue, 2013-10-22 at 10:05 +0100, Lee Jones wrote:
-> > > This is the first time this patch has been sent to me.
-> > > 
-> > > I need Dmitry's input (no pun intended) on how he's like to deal with
-> > > this. At a bare minimum I'd like his Ack.
-> > 
-> > Is there anything I can do to push this forward? The earlier we get the
-> > typo fixed in the documentation, the less chance that someone will use
-> > it that way.
-> 
-> I think you should sent it again, but this time Cc the Device Tree
-> list, Dmitry and myself when you submit.
-
-The original patch was not from me. But sure, I can resend it.
-
-Jan
+Hi Kamil,
 
 
+On Tue, Nov 5, 2013 at 3:06 PM, Kamil Debski <k.debski@samsung.com> wrote:
+> Hi,
+>
+>> From: Vivek Gautam [mailto:gautamvivek1987@gmail.com]
+>> Sent: Tuesday, November 05, 2013 8:20 AM
+>> To: Kishon Vijay Abraham I
+>> Cc: Kamil Debski; Vivek Gautam; Linux USB Mailing List; linux-samsung-
+>> soc@vger.kernel.org; linux-kernel@vger.kernel.org;
+>> devicetree@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+>> linux-doc@vger.kernel.org; Greg KH; Kukjin Kim; Sylwester Nawrocki;
+>> Tomasz Figa; Felipe Balbi; Julius Werner; Jingoo Han
+>> Subject: Re: [PATCH RFC 1/4] phy: Add new Exynos5 USB 3.0 PHY driver
+>>
+>> Hi Kishon,
+>>
+>>
+>>
+>> On Mon, Nov 4, 2013 at 6:42 PM, Kishon Vijay Abraham I <kishon@ti.com>
+>> wrote:
+>> > Hi,
+>> >
+>> >
+>> > On Monday 04 November 2013 03:45 PM, Kamil Debski wrote:
+>> >>
+>> >> Hi Kishon,
+>> >>
+>> >>> From: Kishon Vijay Abraham I [mailto:kishon@ti.com]
+>> >>> Sent: Monday, November 04, 2013 7:55 AM
+>> >>>
+>> >>> Hi Vivek,
+>> >>>
+>> >>> On Thursday 31 October 2013 01:15 PM, Vivek Gautam wrote:
+>> >>>>
+>> >>>> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
+>> >>>> The new driver uses the generic PHY framework and will interact
+>> >>>> with
+>> >>>> DWC3 controller present on Exynos5 series of SoCs.
+>> >>>
+>> >>>
+>> >>> In Exynos, you have a single IP that supports both USB3 and USB2
+>> PHY
+>> >>> right? I think that needs to be mentioned here.
+>> >>
+>> >>
+>> >> As far as I know the IP is different.
+>> >
+>> >
+>> > Ok. Sometime back Vivek was mentioning about a single IP for both
+>> USB3
+>> > and USB2. Thought it should be this driver. Anyway thanks for the
+>> clarification.
+>>
+>> Right Kishon, I had mentioned that Exynos5's dwc3 controller have a
+>> single IP for USB2 and USB3 phy.
+>> From what i see, on exynos5 systems the dwc3 controller uses a combo of
+>> usb 2 (utmi+) and usb 3 (pipe 3) phy (with base address starting
+>> 0x12100000).
+>>
+>> Kamil, Tomasz,
+>>
+>> Please correct me if i am wrong.
+>
+> I have the Exynos 5250 documentation and I found two phy register ranges:
+> 1) USB 2.0 PHY having the base address of 0x1213 0000
+>         Chapter 33. USB 2.0 Host Controller
+>         Subchapter 33.5.2 Phy Control Register p. 1696
+>         First register's description is
+>         "USB2.0 phy control register"
+> 2) USB 3.0 PHY (I guess) with the base address 0x1210 0000
+>         Chapter 35. USB 3.0 DRD Controller
+>         Subchapter 35.4.6 PHY Control Register p. 1872
+>
+> Jingoo, could you comment on the above? You may know more than we do :)
+>
+> In addition, I have a question to you Vivek - does your USB 3.0
+> PHY support both host and device?
+
+Yes, this PHY driver supports both Host as well as device type of
+operations of DWC3 controller.
+This driver is a straight port from older driver available at
+drivers/usb/phy/phy-samsung-usb3.c which also had been tested
+for host as well as device operation of DWC3.
+
+>
+> [snip]
+>
+> Best wishes,
+> Kamil Debski
+>
+
+
+
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
