@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab3KEI6k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 03:58:40 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:42004 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719Ab3KEI6i (ORCPT
+	id S1753884Ab3KEJAM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 04:00:12 -0500
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:39204 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990Ab3KEJAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 03:58:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAHbNUh1PFDaeUw3MfVNjLVboEmLij3JRfzNbMDrwZ_HHXTHzPA@mail.gmail.com>
-References: <1383202124-1775-1-git-send-email-tushar.behera@linaro.org>
-	<1383202124-1775-4-git-send-email-tushar.behera@linaro.org>
-	<20131031161603.GB9587@lee--X1>
-	<CAHbNUh2GRv3bQD30PtBcoW9-K8PFm4FYWUNXBQEDUH-iVb_JOw@mail.gmail.com>
-	<CAH9JG2XuyeGWkyiBEHNK5cpE2CJ7TOcqLKZ4H-sWyxP9LbfhyQ@mail.gmail.com>
-	<CAHbNUh1PFDaeUw3MfVNjLVboEmLij3JRfzNbMDrwZ_HHXTHzPA@mail.gmail.com>
-Date: Tue, 5 Nov 2013 17:58:38 +0900
-X-Google-Sender-Auth: hN1mz71AJXO-pVndqNhgkAYEXwY
-Message-ID: <CAH9JG2W=WSV_POHs6MudOOkVuj6b0PtXgo0nOc_DPXjRt65J7A@mail.gmail.com>
-Subject: Re: [PATCH 3/4] mfd: sec-core: Add cells for S5M8767-clocks
-From: Kyungmin Park <kmpark@infradead.org>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: k.kozlowski@samsung.com, Kukjin Kim <kgene.kim@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 5 Nov 2013 04:00:11 -0500
+Subject: Re: [PATCH 2/9] GenWQE: Remove option to select name
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Reply-To: haver@linux.vnet.ibm.com
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, gregkh@linuxfoundation.org,
+        cody@linux.vnet.ibm.com, schwidefsky@de.ibm.com, utz.bacher@de.ibm.com,
+        mmarek@suse.cz, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
+        cascardo@linux.vnet.ibm.com, michael@ibmra.de
+In-Reply-To: <527817CF.7020304@gmail.com>
+References: <1383584889-21594-1-git-send-email-haver@linux.vnet.ibm.com>
+	 <1383584889-21594-3-git-send-email-haver@linux.vnet.ibm.com>
+	 <527817CF.7020304@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Tue, 05 Nov 2013 10:00:01 +0100
+Message-ID: <1383642001.15859.1.camel@oc7383187364.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13110509-6892-0000-0000-000006CE13C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 5, 2013 at 5:04 PM, Tushar Behera <tushar.behera@linaro.org> wrote:
-> On 5 November 2013 13:27, Kyungmin Park <kmpark@infradead.org> wrote:
->> On Tue, Nov 5, 2013 at 3:29 PM, Tushar Behera <tushar.behera@linaro.org> wrote:
->>> On 31 October 2013 21:46, Lee Jones <lee.jones@linaro.org> wrote:
->>>> On Thu, 31 Oct 2013, Tushar Behera wrote:
->>>>
->>>>> S5M8767 chip has 3 crystal oscillators running at 32KHz. These are
->>>>> supported by s2mps11-clk driver.
->>>>>
->>>>> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
->>>>> CC: Lee Jones <lee.jones@linaro.org>
->>>>> ---
->>>>>  drivers/mfd/sec-core.c |    4 +++-
->>>>>  1 file changed, 3 insertions(+), 1 deletion(-)
->>>>>
->>>>> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
->>>>> index 34c18fb..020b86b 100644
->>>>> --- a/drivers/mfd/sec-core.c
->>>>> +++ b/drivers/mfd/sec-core.c
->>>>> @@ -56,7 +56,9 @@ static struct mfd_cell s5m8767_devs[] = {
->>>>>               .name = "s5m8767-pmic",
->>>>>       }, {
->>>>>               .name = "s5m-rtc",
->>>>> -     },
->>>>> +     }, {
->>>>> +             .name = "s5m8767-clk",
->>
->> Do you want to handle these as "clock"? previous time, it's
->> implemented at regulator. please see drivers/regulator/max* series.
->>
->> Thank you,
->> Kyungmin Park
->
-> There is already a clock-implementation available for this kind of
-> device (through clk-s2mps11). I would like to extend that support.
-> Also for MAX77686, it is implemented through clock subsystem.
->
+Hi Ryan,
 
-Yes it's possible, but losts of MAX chips are implemented already with
-regulator.
-but in case of maxim chip. it's voltage instead of clock. doesn't
-better to use regulaor?
+Am Dienstag, den 05.11.2013, 08:55 +1100 schrieb Ryan Mallon:
+> On 05/11/13 04:08, Frank Haverkamp wrote:
+> > Selecting interface names via configuration option is obsolete.
+> 
+> Don't do this. You are adding completely new code, so there is no reason
+> to post a patch full of code that is known to be incorrect, followed by
+> a set of patches fixing things. Just post the correct code to start
+> with. This makes the git history cleaner, and makes the code easier to
+> review.
 
-Ah I confused between 32KHz and Safeout. okay it's 32KHz clock. okay
-it's better to use clock.
+Agreed.
 
-Ignore previous comments.
+> You can use tools like git interactive rebase to split your work into
+> multiple patches. It should be quite easy for this because you mostly
+> just want to break down things to the file level, so even:
+> 
+>   git reset --soft <your-first-commit>
+> 
+> and then manually staging and commiting things from there would probably
+> be enough. You can use git add --interactive to stage individual file
+> hunks if you want to break things down further.
 
-Thank you,
-Kyungmin Park
+I have sent "Generic WorkQueue Engine (GenWQE) device driver (v6)" now
+which hopefully is what you wanted.
+
+Regards
+
+Frank
+
