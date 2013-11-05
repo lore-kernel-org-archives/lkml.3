@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab3KEXiR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 18:38:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59399 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755582Ab3KEXiP (ORCPT
+	id S1755995Ab3KEXiY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 18:38:24 -0500
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:47980 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755853Ab3KEXiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 18:38:15 -0500
-Date: Tue, 5 Nov 2013 15:38:14 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vyacheslav Dubeyko <slava@dubeyko.com>
-Subject: Re: [PATCH] hfs: remove duplicate includes
-Message-Id: <20131105153814.c9786e731b937dd3316d5e93@linux-foundation.org>
-In-Reply-To: <1382342497-3132-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1382342497-3132-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Nov 2013 18:38:22 -0500
+Message-ID: <5279816B.90808@linaro.org>
+Date: Wed, 06 Nov 2013 00:38:19 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Maxime Ripard <maxime.ripard@free-electrons.com>, tglx@linutronix.de
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        sboyd@codeaurora.org
+Subject: Re: [PATCH 0/2] More Allwinner SoC timer fixes
+References: <1382699771-4396-1-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1382699771-4396-1-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Oct 2013 10:01:37 +0200 Michael Opdenacker <michael.opdenacker@free-electrons.com> wrote:
+On 10/25/2013 01:16 PM, Maxime Ripard wrote:
+> Hi,
+>
+> Here are more fixes to the sun4i timer that we spotted during the review of the
+> High Speed timers patches, and that we hunted down during the Kernel Summit.
+>
+> Since they are not critical fixes for the current code we have, it doesn't have
+> to be merged in 3.12 and can wait.
+>
+> Thanks!
+> Maxime
+>
+> Maxime Ripard (2):
+>    clockevent: sun4i: Fill the irq field in the clockevent structure
+>    clocksource: sun4i: change CPU mask to cpu_possible_mask
+>
+>   drivers/clocksource/sun4i_timer.c | 3 ++-
+>   1 file changed, 2 insertions(+), 1 deletion(-)
+>
 
-> This patch removes duplicate includes from fs/hfs/btree.h
-> 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> ---
->  fs/hfs/btree.h | 5 -----
->  1 file changed, 5 deletions(-)
-> 
-> diff --git a/fs/hfs/btree.h b/fs/hfs/btree.h
-> index 2a1d712..f6bd266 100644
-> --- a/fs/hfs/btree.h
-> +++ b/fs/hfs/btree.h
-> @@ -153,11 +153,6 @@ struct hfs_btree_header_rec {
->  	u32 reserved3[16];
->  } __packed;
->  
-> -#define HFS_NODE_INDEX	0x00	/* An internal (index) node */
-> -#define HFS_NODE_HEADER	0x01	/* The tree header node (node 0) */
-> -#define HFS_NODE_MAP		0x02	/* Holds part of the bitmap of used nodes */
-> -#define HFS_NODE_LEAF		0xFF	/* A leaf (ndNHeight==1) node */
-> -
->  #define BTREE_ATTR_BADCLOSE	0x00000001	/* b-tree not closed properly. not
->  						   used by hfsplus. */
->  #define HFS_TREE_BIGKEYS	0x00000002	/* key length is u16 instead of u8.
+Hi Maxime,
 
-But we lost the nice comments...
+just a head up to tell I have been very busy last week for the Linaro 
+connect. I will take care of the patches tomorrow.
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: fs-hfs-btreeh-remove-duplicate-defines-fix
+Thanks
+   -- Daniel
 
-retain the comments
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- fs/hfsplus/hfsplus_raw.h |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff -puN fs/hfs/btree.h~fs-hfs-btreeh-remove-duplicate-defines-fix fs/hfs/btree.h
-diff -puN fs/hfsplus/hfsplus_raw.h~fs-hfs-btreeh-remove-duplicate-defines-fix fs/hfsplus/hfsplus_raw.h
---- a/fs/hfsplus/hfsplus_raw.h~fs-hfs-btreeh-remove-duplicate-defines-fix
-+++ a/fs/hfsplus/hfsplus_raw.h
-@@ -156,10 +156,10 @@ struct hfs_bnode_desc {
- } __packed;
- 
- /* HFS+ BTree node types */
--#define HFS_NODE_INDEX	0x00
--#define HFS_NODE_HEADER	0x01
--#define HFS_NODE_MAP	0x02
--#define HFS_NODE_LEAF	0xFF
-+#define HFS_NODE_INDEX	0x00	/* An internal (index) node */
-+#define HFS_NODE_HEADER	0x01	/* The tree header node (node 0) */
-+#define HFS_NODE_MAP	0x02	/* Holds part of the bitmap of used nodes */
-+#define HFS_NODE_LEAF	0xFF	/* A leaf (ndNHeight==1) node */
- 
- /* HFS+ BTree header */
- struct hfs_btree_header_rec {
-_
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
