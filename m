@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab3KEBQh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 20:16:37 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:53349 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753309Ab3KEBQe (ORCPT
+	id S1754091Ab3KEBRp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 20:17:45 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:62502 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab3KEBRo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 20:16:34 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, chutzpah@gentoo.org, liguangc@cn.ibm.com
-Subject: [PATCH] [RFC] vfs: don't revalidate dentries that serve as mountpoints
-Date: Mon,  4 Nov 2013 20:16:26 -0500
-Message-Id: <1383614186-8039-1-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Mon, 4 Nov 2013 20:17:44 -0500
+X-AuditID: 9c93017d-b7c6fae00000364c-a3-52784736173f
+From: Namhyung Kim <namhyung@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a ring buffer
+References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
+	<1383029621-7384-11-git-send-email-namhyung@kernel.org>
+	<20131101150910.GA18278@redhat.com> <20131101152232.GA2703@redhat.com>
+	<20131103202037.GA2785@redhat.com> <87txfs37ta.fsf@sejong.aot.lge.com>
+	<20131104143813.GB4440@redhat.com>
+Date: Tue, 05 Nov 2013 10:17:42 +0900
+In-Reply-To: <20131104143813.GB4440@redhat.com> (Oleg Nesterov's message of
+	"Mon, 4 Nov 2013 15:38:13 +0100")
+Message-ID: <874n7r3avd.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We had a couple of reports of people that are mounting NFS filesystems,
-and then bind mounting certain local files onto dentries in that nfs
-mount (sort of like a poor-man's unionmount).
+On Mon, 4 Nov 2013 15:38:13 +0100, Oleg Nesterov wrote:
+> On 11/04, Namhyung Kim wrote:
+>>
+>> On Sun, 3 Nov 2013 21:20:37 +0100, Oleg Nesterov wrote:
+>> >
+>> > But. Perhaps it makes sense to at least add a couple of trivial
+>> > helpers in 10/13? Something like arg_buf_get/put/init, just to
+>> > simplify the potential changes.
+>>
+>> Good idea.  How about something like below?
+>
+> Thanks, I agree with any implementation ;)
+>
+>> static DEFINE_MUTEX(uprobe_buffer_mutex);
+>
+> but see my previous email, afaics we don't need it.
 
-This all works well until the dentry serving as the mountpoint fails
-d_revalidate. The dentry will end up being invalidated which makes the
-bind mount unreachable via pathwalk.
+I see.  Probably checking the event_mutex is locked in front of the
+_enable/disable function would be enough.
 
-It doesn't make much sense to me to allow dentries to serve as
-mountpoints to end up invalidated, so there's no real point in
-attempting to d_revalidate them at all.
-
-Reported-by: Patrick McLean <chutzpah@gentoo.org>
-Reported-by: Guang Cheng Li <liguangc@cn.ibm.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/namei.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/fs/namei.c b/fs/namei.c
-index caa2805..5b10ad0 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -585,6 +585,9 @@ drop_root_mnt:
- 
- static inline int d_revalidate(struct dentry *dentry, unsigned int flags)
- {
-+	/* dentries that serve as mountpoints are always considered valid */
-+	if (d_mountpoint(dentry))
-+		return 1;
- 	return dentry->d_op->d_revalidate(dentry, flags);
- }
- 
--- 
-1.8.3.1
-
+Thanks,
+Namhyung
