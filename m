@@ -1,107 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751014Ab3KEF3f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 00:29:35 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:58368 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab3KEF3e (ORCPT
+	id S1751301Ab3KEFn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 00:43:56 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:30481 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704Ab3KEFnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 00:29:34 -0500
-Date: Tue, 5 Nov 2013 16:29:22 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: =?UTF-8?B?IkrDtnJuIEVuZ2VsIg==?= <joern@logfs.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: linux-next: build failure after merge of the bcon tree
-Message-Id: <20131105162922.441f612bd17f6fa977c39e89@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__5_Nov_2013_16_29_22_+1100_MFLx2n5_.mINc.TO"
+	Tue, 5 Nov 2013 00:43:55 -0500
+X-Spam-Score: -100.8
+Message-ID: <5278853E.2000600@asianux.com>
+Date: Tue, 05 Nov 2013 13:42:22 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Chen Gang F T <chen.gang.flying.transformer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] get_maintainer: Improve "Author:" rolestats
+References: <52738E90.6040104@asianux.com>  <1383330777.3042.2.camel@joe-AO722> <52750739.6040706@gmail.com>  <1383602096.28651.8.camel@joe-AO722> <52785676.8030801@asianux.com>  <527859D9.30109@asianux.com> <1383629008.4387.0.camel@joe-AO722>
+In-Reply-To: <1383629008.4387.0.camel@joe-AO722>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__5_Nov_2013_16_29_22_+1100_MFLx2n5_.mINc.TO
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/05/2013 01:23 PM, Joe Perches wrote:
+> On Tue, 2013-11-05 at 10:37 +0800, Chen Gang wrote:
+>> But after I let it pure next-20131101 ("git reset HEAD^; git stash"), it
+>> still cause this issue.
+> 
+> It's also because:
+> 
+>>>> Also, there's a defect in function vcs_find_signers.
+>>>> It should only return the commit count and array references.
+>>>>
+>>>> If there are no signers in the commit history interval specified,
+>>>> then the "authors" array is added to the "signers" array and
+>>>> returned as a single array.
+> 
+> 
+> 
+> 
 
-Hi J=C3=B6rn,
+OK, thanks. Do you mean: in pure next-20131101 contents an author which
+commit a patch, but not signed himself? (if so, it seems the related
+patch need be re-committed again by the related author).
 
-After merging the bcon tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
 
-drivers/block/blockconsole.c: In function 'sync_read':
-drivers/block/blockconsole.c:184:5: error: 'struct bio' has no member named=
- 'bi_idx'
-  bio.bi_idx =3D 0;
-     ^
-drivers/block/blockconsole.c:185:5: error: 'struct bio' has no member named=
- 'bi_size'
-  bio.bi_size =3D SECTOR_SIZE;
-     ^
-drivers/block/blockconsole.c:187:5: error: 'struct bio' has no member named=
- 'bi_sector'
-  bio.bi_sector =3D ofs >> SECTOR_SHIFT;
-     ^
-drivers/block/blockconsole.c: In function 'bcon_erase_segment':
-drivers/block/blockconsole.c:215:6: error: 'struct bio' has no member named=
- 'bi_size'
-   bio->bi_size =3D PAGE_SIZE;
-      ^
-drivers/block/blockconsole.c:218:6: error: 'struct bio' has no member named=
- 'bi_idx'
-   bio->bi_idx =3D 0;
-      ^
-drivers/block/blockconsole.c:219:6: error: 'struct bio' has no member named=
- 'bi_sector'
-   bio->bi_sector =3D (bc->write_bytes + i * PAGE_SIZE) >> 9;
-      ^
-drivers/block/blockconsole.c: In function 'bcon_writesector':
-drivers/block/blockconsole.c:338:5: error: 'struct bio' has no member named=
- 'bi_size'
-  bio->bi_size =3D SECTOR_SIZE;
-     ^
-drivers/block/blockconsole.c:343:5: error: 'struct bio' has no member named=
- 'bi_idx'
-  bio->bi_idx =3D 0;
-     ^
-drivers/block/blockconsole.c:344:5: error: 'struct bio' has no member named=
- 'bi_sector'
-  bio->bi_sector =3D bc->write_bytes >> 9;
-     ^
-
-Caused by changes in the block tree.  Thierry Reding mentioned that you
-didn't think that the bcon tree was linux-next material any more, so I
-just dropped your tree.  If that is incorrect, please let me know and I
-will reinstate it and fix this merge conflict.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__5_Nov_2013_16_29_22_+1100_MFLx2n5_.mINc.TO
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSeII4AAoJEMDTa8Ir7ZwV1ZUQAIhze1BAYz6kTOJWA+agEVEo
-AKUEaZkphIXh35P3kmj69UeQGXstGJ9v/Cnsi4AWfgdIMxTy4FuiWnJPLep72egJ
-AyhoKY+zTdAxLWXkJv4EE0ZnVLwQBAt5sD5roHe3Gk1t7Qz4x54E1PXjFyfzOgJq
-yLHY5RxMprmbvrQIGY2JHy1q1cnCphKsAzq29g2GU1exuUu8+NxDOvZH+mMYJQyy
-7TPbtcYejHvQ+O0Y1xOFFV9AbP4XdsKDe6CFLE4aN1OuN9lPoOXxA9mdfOAph692
-chFISreV8VOJ44BGgoR+wsZ6PfaMuwJUHil3CPvVJLEhdMHDmQcU1SrW9NfhqmtW
-LF4Kz3jKaaAaWibgciMlQ84yMnFzidMOFomzQOva1CFHeSqzntxWmVSNLllUWLvG
-594yHxBKrKxAjHU7EvLMTW3FWYoUz5zMYSB/ZPgNWUh1LOVUNM23W6sHk2vkabE1
-kjrVSj6pTfC5cOU54ELOw6utVHKA7e3mFWHG1/lTs/mPR54vT44EbObF/BEYrVdY
-vmRjkArXhC6qSuF4YaxAIG5qtVRH+ivGJwY4Z/eVoNv6UfVH/9b8nZi509Ehsznl
-rKwDa2sWiHzz6Nwr4w1Vxbf3U++z7eiLzs4Sqv8nhBgJrJmUOoL0W7fUYIkeVrX2
-PlvOjXvZ/+R+JxDWrqyC
-=FMyI
------END PGP SIGNATURE-----
-
---Signature=_Tue__5_Nov_2013_16_29_22_+1100_MFLx2n5_.mINc.TO--
+Thanks.
+-- 
+Chen Gang
