@@ -1,49 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab3KEWGb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 17:06:31 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52514 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755582Ab3KEWG3 (ORCPT
+	id S1755652Ab3KEWJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 17:09:56 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:63270 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755272Ab3KEWJy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 17:06:29 -0500
-Message-ID: <52796BE1.5010306@wwwdotorg.org>
-Date: Tue, 05 Nov 2013 15:06:25 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 5 Nov 2013 17:09:54 -0500
 MIME-Version: 1.0
-To: Chris Mason <chris.mason@fusionio.com>, Olof Johansson <olof@lixom.net>
-CC: Jens Axboe <axboe@kernel.dk>, Tushar Behera <tushar.behera@linaro.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Kent Overstreet <kmo@daterainc.com>
-Subject: Re: Boot failure on Arndale with next-20131105
-References: <CAHbNUh1Cw3bc4WR0VcD1H_eKYqGBtv_215_euh6mwTbZ41ejUw@mail.gmail.com> <52794823.7080503@kernel.dk> <CAOesGMj1xXXM-gNgWQwBKOczpJtM7CobYy4h7Fe=4W3U43EJGQ@mail.gmail.com> <20131105203308.3802.45122@localhost.localdomain> <CAOesGMirg=ex9hLCjGBpj0cMhLeQ5cJQoRv72tgg7PoSKWUDhA@mail.gmail.com> <20131105205623.3802.5166@localhost.localdomain>
-In-Reply-To: <20131105205623.3802.5166@localhost.localdomain>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131105211635.GA1695@phenom.dumpdata.com>
+References: <1383650649-13971-1-git-send-email-roger.pau@citrix.com>
+	<5278E64C.40200@citrix.com>
+	<527904EC.9090402@citrix.com>
+	<20131105145607.GB25836@phenom.dumpdata.com>
+	<5279085E.7070703@citrix.com>
+	<1383664090.13961.88.camel@kazak.uk.xensource.com>
+	<527916EE.6060104@citrix.com>
+	<20131105200616.GA23362@u109add4315675089e695.ant.amazon.com>
+	<878ux2vade.fsf@codemonkey.ws>
+	<20131105211635.GA1695@phenom.dumpdata.com>
+Date: Tue, 5 Nov 2013 14:09:53 -0800
+Message-ID: <CA+aC4kt_F7b04OXrdWwf_ukWCwpZEphcCMisWTQkH=u=JDAnBg@mail.gmail.com>
+Subject: Re: [Xen-devel] [PATCH] grant-table: don't set m2p override if
+ kmap_ops is not set
+From: Anthony Liguori <anthony@codemonkey.ws>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Matt Wilson <msw@linux.com>,
+        =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, linux-kernel@vger.kernel.org,
+        David Vrabel <david.vrabel@citrix.com>, Matt Wilson <msw@amazon.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2013 01:56 PM, Chris Mason wrote:
-> Quoting Olof Johansson (2013-11-05 15:38:33)
->> On Tue, Nov 5, 2013 at 12:33 PM, Chris Mason <chris.mason@fusionio.com> wrote:
->>> Quoting Olof Johansson (2013-11-05 15:23:51)
->>>> On Tue, Nov 5, 2013 at 11:33 AM, Jens Axboe <axboe@kernel.dk> wrote:
->>>
->>> [ horrible crashes fixed by removing my patch ]
->>>
-...
-> Ok, I think I see it.  My guess is that you're hitting bounce buffers.
-> __blk_queue_bounce is the only caller of the bio splitting code I can
-> see that you might be hitting.
-> 
-> My first patch exposed a lurking bug in bio_clone_biovec.  Basically
-> bio->bi_vcnt is being doubled instead of initialized.
-> 
-> This patch is only compile tested, but I think it'll fix it.
+On Tue, Nov 5, 2013 at 1:16 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Tue, Nov 05, 2013 at 12:53:17PM -0800, Anthony Liguori wrote:
+>> Matt Wilson <msw@linux.com> writes:
+>>
+>> > On Tue, Nov 05, 2013 at 05:03:58PM +0100, Roger Pau Monné wrote:
+>> >> On 05/11/13 16:08, Ian Campbell wrote:
+>> >> > On Tue, 2013-11-05 at 16:01 +0100, Roger Pau Monné wrote:
+>> >> >> On 05/11/13 15:56, Konrad Rzeszutek Wilk wrote:
+>> >> >>> On Tue, Nov 05, 2013 at 03:47:08PM +0100, Roger Pau Monné wrote:
+>> >> >>>> On 05/11/13 13:36, David Vrabel wrote:
+>> >> >>>>> On 05/11/13 11:24, Roger Pau Monne wrote:
+>> >> >>>>>> IMHO there's no reason to set a m2p override if the mapping is done in
+>> >> >>>>>> kernel space, so only set the m2p override when kmap_ops is set.
+>> >> >>>>>
+>> >> >>>>> Can you provide a more detailed reasoning about why this is safe?
+>> >> >>>>
+>> >> >>>> To tell the truth, I don't understand why we need to use the m2p
+>> >> >>>> override for kernel space only mappings, my understanding is that this
+>> >> >>>> m2p override is needed for user space mappings only (where we actually
+>> >> >>>> end up doing two mappings, one in kernel space and one in user space).
+>> >> >>>> For kernel space I don't see why we need to do anything else than
+>> >> >>>> setting the right p2m translation.
+>> >> >>>
+>> >> >>> We needed the m2p when doing DMA operations. As the driver would
+>> >> >>> want the bus address (so p2m) and then when unmapping the DMA we
+>> >> >>> only get the bus address  - so we needed to do a m2p lookup.
+>> >> >>
+>> >> >> OK, we need a m2p (that we already have in machine_to_phys_mapping),
+>> >> >> what I don't understand is why we need the m2p override.
+>> >> >
+>> >> > The m2p is a host global table.
+>> >> >
+>> >> > For a foreign page grant mapped into the current domain the m2p will
+>> >> > give you the foreign (owner) domain's p from the m, not the local one.
+>> >>
+>> >> Yes, you are completely right, then I have to figure out why blkback
+>> >> works fine with this patch applied (or at least it seems to work fine).
+>> >
+>> > blkback also works for me when testing a similar patch. I'm still
+>> > confused. One thing with your proposed patch: I'm not sure that you're
+>> > putting back the correct mfn.
+>>
+>> It's perfectly fine to store a foreign pfn in the m2p table.  The m2p
+>> override table is used by the grant device to allow a reverse lookup of
+>> the real mfn to a pfn even if it's foreign.
+>>
+>> blkback doesn't actually need this though.  This was introduced in:
+>>
+>> commit 5dc03639cc903f887931831d69895facb5260f4b
+>> Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> Date:   Tue Mar 1 16:46:45 2011 -0500
+>>
+>>     xen/blkback: Utilize the M2P override mechanism for GNTMAP_host_map
+>>
+>> Purely as an optimization.  In practice though due to lock contention it
+>> slows things down.
+>>
+>> I think an alternative would be to use a read/write lock instead of just
+>> a spinlock since it's the read path that is the most hot.
+>
+> The m2p hash table can also be expanded to lower the contention.
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
-(this fixes the issue on Tegra30/Beaver at least)
+That was the first thing I tried :-)
+
+The issue isn't lookup cost as much as the number of acquisitions and
+the cost of adding/removing entries.
+
+>> I haven't tested that yet though.
+>
+> Looking forward to your patches :-)
+
+I'm really just being thorough in suggesting the rwlock.  I actually
+think that not using the m2p override table is the right long term
+fix.
+
+Regards,
+
+Anthony Liguori
+
+>>
+>> Regards,
+>>
+>> Anthony Liguori
+>>
+>> >
+>> > Adding Anthony to the thread.
+>> >
+>> > --msw
