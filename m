@@ -1,111 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab3KERnX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 12:43:23 -0500
-Received: from mga02.intel.com ([134.134.136.20]:10977 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754870Ab3KERmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 12:42:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="404017426"
-Subject: [PATCH v2 2/4] MCS Lock: optimizations and extra comments
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>,
-        linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Will Deacon <will.deacon@arm.com>
-In-Reply-To: <cover.1383670202.git.tim.c.chen@linux.intel.com>
-References: <cover.1383670202.git.tim.c.chen@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 05 Nov 2013 09:42:33 -0800
-Message-ID: <1383673353.11046.278.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1755413Ab3KERoD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 12:44:03 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:60790 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab3KERoB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 12:44:01 -0500
+Subject: Re: [PATCH 02/11] devicetree: bindings: Document Qualcomm cpus and enable-method
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=US-ASCII
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <52792C60.2030405@codeaurora.org>
+Date: Tue, 5 Nov 2013 11:43:59 -0600
+Cc: Rob Herring <robherring2@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        David Brown <davidb@codeaurora.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <1A27B0E2-FB92-488D-A0B3-65E677525720@codeaurora.org>
+References: <1383343739-23080-1-git-send-email-sboyd@codeaurora.org> <1383343739-23080-3-git-send-email-sboyd@codeaurora.org> <CAL_JsqLObXEWJJ=SuifTjpPz9qTW0n43fyQNA-vjLNeLy-7-XA@mail.gmail.com> <20131104173606.GL21983@codeaurora.org> <378446F7-DC51-448D-AF99-93F98CEAFB03@codeaurora.org> <52792C60.2030405@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unnecessary operation and make the cmpxchg(lock, node, NULL) == node
-check in mcs_spin_unlock() likely() as it is likely that a race did not occur
-most of the time.
 
-Also add in more comments describing how the local node is used in MCS locks.
+On Nov 5, 2013, at 11:35 AM, Stephen Boyd wrote:
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Tim Chen <tim.c.chen@linux.intel.com>
-Signed-off-by: Jason Low <jason.low2@hp.com>
----
- include/linux/mcs_spinlock.h |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
+> On 11/05/13 09:12, Kumar Gala wrote:
+>> On Nov 4, 2013, at 11:36 AM, Stephen Boyd wrote:
+>> 
+>>> On 11/01, Rob Herring wrote:
+>>>> On Fri, Nov 1, 2013 at 5:08 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>>>>> From: Rohit Vaswani <rvaswani@codeaurora.org>
+>>>>> 
+>>>>> Scorpion and Krait are Qualcomm cpus. These cpus don't use the
+>>>>> spin-table enable-method. Instead they rely on mmio register
+>>>>> accesses to enable power and clocks to bring CPUs out of reset.
+>>>>> 
+>>>>> Cc: <devicetree@vger.kernel.org>
+>>>>> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+>>>>> [sboyd: Split off into separate patch, renamed method to
+>>>>> qcom,mmio]
+>>>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>>>>> ---
+>>>>> 
+>>>>> This slightly conflicts with my krait EDAC series.
+>>>>> 
+>>>>> Documentation/devicetree/bindings/arm/cpus.txt | 3 +++
+>>>>> 1 file changed, 3 insertions(+)
+>>>>> 
+>>>>> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+>>>>> index 37258f9..e2969fa2 100644
+>>>>> --- a/Documentation/devicetree/bindings/arm/cpus.txt
+>>>>> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
+>>>>> @@ -44,6 +44,8 @@ For the ARM architecture every CPU node must contain the following properties:
+>>>>>               "marvell,mohawk"
+>>>>>               "marvell,xsc3"
+>>>>>               "marvell,xscale"
+>>>>> +               "qcom,scorpion"
+>>>>> +               "qcom,krait"
+>>>>> 
+>>>>> And the following optional properties:
+>>>>> 
+>>>>> @@ -52,6 +54,7 @@ And the following optional properties:
+>>>>>                different types of cpus.
+>>>>>                This should be one of:
+>>>>>                "spin-table"
+>>>>> +                "qcom,mmio"
+>>>> Not exactly specific. How would you handle variations in the enable
+>>>> method? The mmio method to enable is tied to the core type or SOC
+>>>> type?
+>>> Variations in the enable method are handled by searching for
+>>> another node with different compatible strings. Later on in this
+>>> series you'll see that we search for gcc-8660, kpss-acc-v1, or
+>>> kpps-acc-v2. Once we find one of these nodes we perform the
+>>> correct cold boot routine.
+>>> 
+>>> I'm actually considering renaming this to "qcom,cold-boot". We
+>>> could further extend the enable-metho property to allow
+>>> "qcom,warm-boot" and then for cases like kexec we could make the
+>>> enable method be warm boot and our smp code could be smart enough
+>>> to know to skip the whole cold boot sequence.
+>> 
+>> I think this should be more specific than just 'qcom,mmio' or 'qcom,warm-boot'.  It should be 'qcom,kpss-acc-v1' or 'qcom-gcc-8660'.
+>> 
+> 
+> Do you have any reasons why? I don't see why we need to keep adding more
+> and more enable-methods every time the subsystem surrounding the CPU
+> changes. The method is the same, write some registers to power up the
+> CPU for the first time (cold boot) or ping the CPU to wake it up
+> (warmboot). The only difference is where those registers live and a
+> slight variation in the sequence that we perform.
 
-diff --git a/include/linux/mcs_spinlock.h b/include/linux/mcs_spinlock.h
-index b5de3b0..96f14299 100644
---- a/include/linux/mcs_spinlock.h
-+++ b/include/linux/mcs_spinlock.h
-@@ -18,6 +18,12 @@ struct mcs_spinlock {
- };
- 
- /*
-+ * In order to acquire the lock, the caller should declare a local node and
-+ * pass a reference of the node to this function in addition to the lock.
-+ * If the lock has already been acquired, then this will proceed to spin
-+ * on this node->locked until the previous lock holder sets the node->locked
-+ * in mcs_spin_unlock().
-+ *
-  * We don't inline mcs_spin_lock() so that perf can correctly account for the
-  * time spent in this lock function.
-  */
-@@ -33,7 +39,6 @@ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
- 	prev = xchg(lock, node);
- 	if (likely(prev == NULL)) {
- 		/* Lock acquired */
--		node->locked = 1;
- 		return;
- 	}
- 	ACCESS_ONCE(prev->next) = node;
-@@ -43,6 +48,10 @@ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
- 		arch_mutex_cpu_relax();
- }
- 
-+/*
-+ * Releases the lock. The caller should pass in the corresponding node that
-+ * was used to acquire the lock.
-+ */
- static void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
- {
- 	struct mcs_spinlock *next = ACCESS_ONCE(node->next);
-@@ -51,7 +60,7 @@ static void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *nod
- 		/*
- 		 * Release the lock by setting it to NULL
- 		 */
--		if (cmpxchg(lock, node, NULL) == node)
-+		if (likely(cmpxchg(lock, node, NULL) == node))
- 			return;
- 		/* Wait until the next pointer is set */
- 		while (!(next = ACCESS_ONCE(node->next)))
+By that argument every device could just be compatible with 'mmio' and be done with it ;)
+
+As the registers you write vary, the compatible should vary.
+
+- k
 -- 
-1.7.4.4
-
-
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
