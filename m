@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab3KECp2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Nov 2013 21:45:28 -0500
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:45883 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447Ab3KECp0 (ORCPT
+	id S1754167Ab3KECtG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Nov 2013 21:49:06 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:47755 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495Ab3KECtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Nov 2013 21:45:26 -0500
-X-Authority-Analysis: v=2.0 cv=FKiZNpUs c=1 sm=0 a=3SewDSjaRW4vdJyuxQ33ZQ==:17 a=DeBnktw0k-IA:10 a=AizhB-pfR1kA:10 a=2uJ6EyLEdLkA:10 a=S1A5HrydsesA:10 a=IkcTkHD0fZMA:10 a=fxJcL_dCAAAA:8 a=KGjhK52YXX0A:10 a=8LyGJxwqpqQA:10 a=QfKxxUxMAAAA:8 a=ZvtQACrnleSx_ipsllwA:9 a=QEXdDO2ut3YA:10 a=Ktp2EsrM7zEA:10 a=3SewDSjaRW4vdJyuxQ33ZQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 72.238.73.171
-Message-ID: <52785BC5.9020205@ubuntu.com>
-Date: Mon, 04 Nov 2013 21:45:25 -0500
-From: Phillip Susi <psusi@ubuntu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 4 Nov 2013 21:49:05 -0500
+X-AuditID: 9c93017d-b7c6fae00000364c-a3-52785c9df45a
+From: Namhyung Kim <namhyung@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch methods (v6)
+References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
+	<20131102155458.GA6981@redhat.com> <87ob60366m.fsf@sejong.aot.lge.com>
+	<87fvrc35kj.fsf@sejong.aot.lge.com> <20131104155131.GD4440@redhat.com>
+	<20131104162229.GA8921@redhat.com> <20131104184741.GA15945@redhat.com>
+Date: Tue, 05 Nov 2013 11:49:01 +0900
+In-Reply-To: <20131104184741.GA15945@redhat.com> (Oleg Nesterov's message of
+	"Mon, 4 Nov 2013 19:47:41 +0100")
+Message-ID: <87a9hj1s2q.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Aaron Lu <aaron.lu@intel.com>, linux-scsi@vger.kernel.org
-CC: linux-kernel@vger.kernel.org,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 2/2] libata: avoid waking disk to check power
-References: <1383612780-6591-1-git-send-email-psusi@ubuntu.com> <1383612780-6591-2-git-send-email-psusi@ubuntu.com> <52785A5F.4060001@intel.com>
-In-Reply-To: <52785A5F.4060001@intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA512
+On Mon, 4 Nov 2013 19:47:41 +0100, Oleg Nesterov wrote:
+> On 11/04, Oleg Nesterov wrote:
+>>
+>> On 11/04, Oleg Nesterov wrote:
+>> >
+>> > But in any case, I strongly believe that it doesn't make any sense to
+>> > rely on tu->inode in get_user_vaddr().
+>>
+>> Hmm. But I forgot about the case when you probe the function in libc
+>> and want to dump the variable in libc...
+>>
+>> So probably I was wrong and this all needs more thinking. Damn.
+>> Perhaps we really need to pass @file/offset, but it is not clear what
+>> we can do with bss/anon-mapping.
+>
+> Or. Not that I really like this, but just for discussion...
+>
+> How about
+>
+> 	static void __user *get_user_vaddr(struct pt_regs *regs, unsigned long addr)
+> 	{
+> 		return (void __force __user *)addr + instruction_pointer(regs);
+> 	}
+>
+> ?
+>
+> This should solve the problems with relocations/randomization/bss.
 
-On 11/04/2013 09:39 PM, Aaron Lu wrote:
-> If the disk entered sleep mode due to runtime PM, then udisks can
-> easily tell by checking the device's runtime status and not send
-> out the query.
-> 
-> But if the disk entered sleep mode due to other reason, the patch
-> may be necessary. So what's your scenario?
+Right.  I think this approach is more reliable than playing with vma.
 
-I am planning on patching udisks to do that as well, but if you have a
-current udsisk or manually run hdparm -C, or some other program is
-doing something similar, then this patch takes care of that.
+>
+> The obvious disadvantage is that it is not easy to calculate the
+> offset we need to pass as an argument, it depends on the probed
+> function.
 
+Well, maybe it's not that hard if we use symbol address in elf image
+rather than file offset for the data.
 
+IOW we can get the base mapping address by subtracting tu->offset from
+instruction pointer.  And then adding symbol address of the data should
+give us the final virtual address, yay!
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+I'll try to play with it after lunch.
 
-iQEcBAEBCgAGBQJSeFvFAAoJEJrBOlT6nu75hcYH/0YsYcs3u9Dmuqq9z5kFXL3k
-C4xYQtvOxw2z+B/vEFzdym5J3ZfVyT4+ZdcHMvRgbbPH+R8/rzNC+F3OjdGtDIRA
-5EUo0BUT2IfY0Yp2SzP44+8aRC4iF5jLLcH9XJKQx7WHedJQ7puCgJXXHAgUhpwW
-52gJ0UEHnjlBgjwxY9RKqppnJs57x2VwgwR2BeFns6Hcry0S0HN0U4gwROmb1GZR
-kjpOUUYHb3MH/gfzCaY97t0duAAp7jzZeOIuu+XHfkyV3APwsnbasLOOoRYtpbvQ
-M++xmYQdNAh2DcZLEmAo6H6HLB/Z5d9K0+SKUFnsKHFaUCH0GPHm8SZ7E/NN7ig=
-=7c7v
------END PGP SIGNATURE-----
+>
+> And this still doesn't allow to, say, probe the executable but read
+> the data from libc. Unless, again, we attach to the running process
+> or randomize_va_space = 0, so we can know it in advance. But otherwise
+> I do not think there is any solution.
+
+Yes, cross-fetching is hard, let's go lunch. :)
+
+Thanks,
+Namhyung
