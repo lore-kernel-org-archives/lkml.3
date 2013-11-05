@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab3KET5X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 14:57:23 -0500
-Received: from asmtp.lnxw.com ([207.21.185.2]:46610 "EHLO asmtp.lnxw.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755637Ab3KET5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 14:57:22 -0500
-From: Alexey Neyman <stilor@att.net>
-To: Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org (open list:SECURE DIGITAL HO...),
-        linux-kernel@vger.kernel.org (open list)
-Cc: Alexey Neyman <stilor@att.net>
-Subject: [PATCH] Avoid needless loop in sdhci_irq()
-Date: Tue,  5 Nov 2013 11:58:46 -0800
-Message-Id: <1383681526-5316-1-git-send-email-stilor@att.net>
-X-Mailer: git-send-email 1.8.4.1
-In-Reply-To: <CAA+hA=R=hZfr6Kx_5X8PQ1ck+1wD3C6LOiXyKNMN7yrqdA0YqA@mail.gmail.com>
-References: <CAA+hA=R=hZfr6Kx_5X8PQ1ck+1wD3C6LOiXyKNMN7yrqdA0YqA@mail.gmail.com>
+	id S1755670Ab3KET7C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 14:59:02 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:55101 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752970Ab3KET7A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 14:59:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <1362388174-3435-10-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1362388174-3435-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1362388174-3435-10-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Tue, 5 Nov 2013 11:58:58 -0800
+X-Google-Sender-Auth: 4PCTwRxWov8uL-8KkGazOxsa0ic
+Message-ID: <CAA9_cmdYr_KMf7UyanX9QAndPoFa4fVW6=QwDJbH6pZExYUcpw@mail.gmail.com>
+Subject: Re: [PATCH 09/10] dmatest: gather test results in the linked list
+From: Dan Williams <dan.j.williams@intel.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, dmaengine@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ignore Card Interrupt bit in the interrupt status if we already know that
-mmc_signal_sdio_irq() is going to be called at the end of sdhci_irq(). This
-avoids a needless loop in sdhci_irq() repeatedly reading interrupt status
-and doing nothing.
+On Mon, Mar 4, 2013 at 1:09 AM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> The patch provides a storage for the test results in the linked list. The
+> gathered data could be used after test is done.
+>
+> The new file 'results' represents gathered data of the in progress test. The
+> messages collected are printed to the kernel log as well.
+>
+> Example of output:
+>         % cat /sys/kernel/debug/dmatest/results
+>         dma0chan0-copy0: #1: No errors with src_off=0x7bf dst_off=0x8ad len=0x3fea (0)
+>
+> The message format is unified across the different types of errors. A number in
+> the parens represents additional information, e.g. error code, error counter,
+> or status.
+>
+> Note that the buffer comparison is done in the old way, i.e. data is not
+> collected and just printed out.
+>
 
-Signed-off-by: Alexey Neyman <stilor@att.net>
----
- drivers/mmc/host/sdhci.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+I need to revert this to get my testing done as it just leaks memory
+for no real benefit that I can see.  Outside of making the log
+messages have a uniform format I'm not seeing the case for this?  I'll
+revert and add a pr_fmt to make dmatest messages readily parseable.
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 7a7fb4f..a83cd1b 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -2491,6 +2491,14 @@ again:
- 	result = IRQ_HANDLED;
- 
- 	intmask = sdhci_readl(host, SDHCI_INT_STATUS);
-+
-+	/*
-+	 * If we know we'll call the driver to signal SDIO IRQ, disregard
-+	 * further indications of Card Interrupt in the status to avoid a
-+	 * needless loop.
-+	 */
-+	if (cardint)
-+		intmask &= ~SDHCI_INT_CARD_INT;
- 	if (intmask && --max_loops)
- 		goto again;
- out:
--- 
-1.8.4.1
-
+--
+Dan
