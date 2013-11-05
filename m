@@ -1,138 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab3KEULU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 15:11:20 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38835 "EHLO
+	id S1755576Ab3KEUKR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 15:10:17 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38829 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755549Ab3KEUKS (ORCPT
+	with ESMTP id S1755549Ab3KEUKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 15:10:18 -0500
+	Tue, 5 Nov 2013 15:10:14 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>,
-        Stephane Eranian <eranian@google.com>
-Subject: [GIT PULL 00/10] perf/core improvements and fixes
-Date: Tue,  5 Nov 2013 17:09:51 -0300
-Message-Id: <1383682201-19399-1-git-send-email-acme@infradead.org>
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 09/10] perf tools: Check maximum frequency rate for record/top
+Date: Tue,  5 Nov 2013 17:10:00 -0300
+Message-Id: <1383682201-19399-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1383682201-19399-1-git-send-email-acme@infradead.org>
+References: <1383682201-19399-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Hi Ingo,
+Adding the check for maximum allowed frequency rate defined in following
+file:
 
-	Please consider pulling,
+  /proc/sys/kernel/perf_event_max_sample_rate
 
-- Arnaldo
+When we cross the maximum value we fail and display detailed error
+message with advise.
 
-The following changes since commit 87968f94fbea47df334502a0db645833ce8a848b:
+  $ perf record -F 3000 ls
+  Maximum frequency rate (2000) reached.
+  Please use -F freq option with lower value or consider
+  tweaking /proc/sys/kernel/perf_event_max_sample_rate.
 
-  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-11-04 21:14:04 +0100)
+In case user does not specify the frequency and the default value cross
+the maximum, we display warning and set the frequency value to the
+current maximum.
 
-are available in the git repository at:
+  $ perf record ls
+  Lowering default frequency rate to 2000.
+  Please consider tweaking /proc/sys/kernel/perf_event_max_sample_rate.
 
+Same messages are used for 'perf top'.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-
-for you to fetch changes up to 316c7136f8bad924609163b9b115f68d59a68c82:
-
-  perf tools: Finish the removal of 'self' arguments (2013-11-05 15:32:36 -0300)
-
-----------------------------------------------------------------
-perf/core improvements and fixes:
-
-. Check maximum frequency rate for record/top, emitting better error
-  messages, from Jiri Olsa.
-
-. Disable live kvm command if timerfd is not supported, from David Ahern.
-
-. Add usage to 'perf list', from David Ahern.
-
-. Fix detection of non-core features, from David Ahern.
-
-. Consolidate __hists__add_*entry(), cleanup from Namhyung Kim.
-
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1383660887-1734-4-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-record.c | 15 +---------
+ tools/perf/builtin-top.c    | 15 +---------
+ tools/perf/util/evlist.h    |  1 +
+ tools/perf/util/record.c    | 71 +++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 74 insertions(+), 28 deletions(-)
 
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (2):
-      perf fs: Rename NAME_find_mountpoint() to NAME__mountpoint()
-      perf tools: Finish the removal of 'self' arguments
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 8b45fcead5f6..ea4c04f7437e 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -958,20 +958,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (perf_evlist__create_maps(evsel_list, &rec->opts.target) < 0)
+ 		usage_with_options(record_usage, record_options);
+ 
+-	if (rec->opts.user_interval != ULLONG_MAX)
+-		rec->opts.default_interval = rec->opts.user_interval;
+-	if (rec->opts.user_freq != UINT_MAX)
+-		rec->opts.freq = rec->opts.user_freq;
+-
+-	/*
+-	 * User specified count overrides default frequency.
+-	 */
+-	if (rec->opts.default_interval)
+-		rec->opts.freq = 0;
+-	else if (rec->opts.freq) {
+-		rec->opts.default_interval = rec->opts.freq;
+-	} else {
+-		ui__error("frequency and count are zero, aborting\n");
++	if (perf_record_opts__config(&rec->opts)) {
+ 		err = -EINVAL;
+ 		goto out_free_fd;
+ 	}
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 21897f0ffcd3..9acca8856ccb 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1209,20 +1209,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (top.delay_secs < 1)
+ 		top.delay_secs = 1;
+ 
+-	if (opts->user_interval != ULLONG_MAX)
+-		opts->default_interval = opts->user_interval;
+-	if (opts->user_freq != UINT_MAX)
+-		opts->freq = opts->user_freq;
+-
+-	/*
+-	 * User specified count overrides default frequency.
+-	 */
+-	if (opts->default_interval)
+-		opts->freq = 0;
+-	else if (opts->freq) {
+-		opts->default_interval = opts->freq;
+-	} else {
+-		ui__error("frequency and count are zero, aborting\n");
++	if (perf_record_opts__config(opts)) {
+ 		status = -EINVAL;
+ 		goto out_delete_maps;
+ 	}
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 6e8acc9abe38..0617ce2a0679 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -99,6 +99,7 @@ void perf_evlist__set_id_pos(struct perf_evlist *evlist);
+ bool perf_can_sample_identifier(void);
+ void perf_evlist__config(struct perf_evlist *evlist,
+ 			 struct perf_record_opts *opts);
++int perf_record_opts__config(struct perf_record_opts *opts);
+ 
+ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
+ 				  struct perf_target *target,
+diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
+index 18d73aa2f0f8..c8845b107f60 100644
+--- a/tools/perf/util/record.c
++++ b/tools/perf/util/record.c
+@@ -2,6 +2,8 @@
+ #include "evsel.h"
+ #include "cpumap.h"
+ #include "parse-events.h"
++#include "fs.h"
++#include "util.h"
+ 
+ typedef void (*setup_probe_fn_t)(struct perf_evsel *evsel);
+ 
+@@ -106,3 +108,72 @@ void perf_evlist__config(struct perf_evlist *evlist,
+ 
+ 	perf_evlist__set_id_pos(evlist);
+ }
++
++static int get_max_rate(unsigned int *rate)
++{
++	char path[PATH_MAX];
++	const char *procfs = procfs__mountpoint();
++
++	if (!procfs)
++		return -1;
++
++	snprintf(path, PATH_MAX,
++		 "%s/sys/kernel/perf_event_max_sample_rate", procfs);
++
++	return filename__read_int(path, (int *) rate);
++}
++
++static int perf_record_opts__config_freq(struct perf_record_opts *opts)
++{
++	bool user_freq = opts->user_freq != UINT_MAX;
++	unsigned int max_rate;
++
++	if (opts->user_interval != ULLONG_MAX)
++		opts->default_interval = opts->user_interval;
++	if (user_freq)
++		opts->freq = opts->user_freq;
++
++	/*
++	 * User specified count overrides default frequency.
++	 */
++	if (opts->default_interval)
++		opts->freq = 0;
++	else if (opts->freq) {
++		opts->default_interval = opts->freq;
++	} else {
++		pr_err("frequency and count are zero, aborting\n");
++		return -1;
++	}
++
++	if (get_max_rate(&max_rate))
++		return 0;
++
++	/*
++	 * User specified frequency is over current maximum.
++	 */
++	if (user_freq && (max_rate < opts->freq)) {
++		pr_err("Maximum frequency rate (%u) reached.\n"
++		   "Please use -F freq option with lower value or consider\n"
++		   "tweaking /proc/sys/kernel/perf_event_max_sample_rate.\n",
++		   max_rate);
++		return -1;
++	}
++
++	/*
++	 * Default frequency is over current maximum.
++	 */
++	if (max_rate < opts->freq) {
++		pr_warning("Lowering default frequency rate to %u.\n"
++			   "Please consider tweaking "
++			   "/proc/sys/kernel/perf_event_max_sample_rate.\n",
++			   max_rate);
++		opts->freq = max_rate;
++	}
++
++	return 0;
++}
++
++int perf_record_opts__config(struct perf_record_opts *opts)
++{
++	return perf_record_opts__config_freq(opts);
++}
+-- 
+1.8.1.4
 
-David Ahern (4):
-      perf kvm: Disable live command if timerfd is not supported
-      tools/perf/build: Fix detection of non-core features
-      perf list: Remove a level of indentation
-      perf list: Add usage
-
-Jiri Olsa (3):
-      perf tools: Factor sysfs code into generic fs object
-      perf fs: Add procfs support
-      perf tools: Check maximum frequency rate for record/top
-
-Namhyung Kim (1):
-      perf hists: Consolidate __hists__add_*entry()
-
- tools/perf/Makefile.perf                           |   4 +-
- tools/perf/builtin-annotate.c                      |   2 +-
- tools/perf/builtin-diff.c                          |   3 +-
- tools/perf/builtin-kvm.c                           |  12 ++
- tools/perf/builtin-list.c                          |  84 ++++++++------
- tools/perf/builtin-record.c                        |  15 +--
- tools/perf/builtin-report.c                        |  16 ++-
- tools/perf/builtin-top.c                           |  20 +---
- tools/perf/config/Makefile                         |  17 ++-
- tools/perf/config/feature-checks/Makefile          |   6 +-
- tools/perf/config/feature-checks/test-all.c        |   5 +
- tools/perf/config/feature-checks/test-timerfd.c    |  18 +++
- .../perf/scripts/python/Perf-Trace-Util/Context.c  |   6 +-
- tools/perf/tests/hists_link.c                      |   6 +-
- tools/perf/tests/parse-events.c                    |   6 +-
- tools/perf/ui/browser.h                            |  32 +++---
- tools/perf/ui/browsers/hists.c                     |   2 +-
- tools/perf/ui/browsers/map.c                       |  40 +++----
- tools/perf/ui/browsers/map.h                       |   2 +-
- tools/perf/ui/browsers/scripts.c                   |   8 +-
- tools/perf/ui/stdio/hist.c                         |  14 +--
- tools/perf/util/build-id.h                         |   3 +-
- tools/perf/util/cpumap.c                           |   6 +-
- tools/perf/util/event.c                            |   6 +-
- tools/perf/util/event.h                            |   3 +-
- tools/perf/util/evlist.h                           |   3 +-
- tools/perf/util/fs.c                               | 119 ++++++++++++++++++++
- tools/perf/util/fs.h                               |   7 ++
- tools/perf/util/hist.c                             |  75 ++-----------
- tools/perf/util/hist.h                             |  51 +++------
- tools/perf/util/include/linux/magic.h              |   4 +
- tools/perf/util/pmu.c                              |  17 +--
- tools/perf/util/probe-finder.c                     | 113 +++++++++----------
- tools/perf/util/probe-finder.h                     |  10 +-
- tools/perf/util/pstack.h                           |  10 +-
- tools/perf/util/python-ext-sources                 |   2 +-
- tools/perf/util/record.c                           |  71 ++++++++++++
- tools/perf/util/session.c                          | 121 ++++++++++-----------
- tools/perf/util/session.h                          |  27 ++---
- tools/perf/util/sort.h                             |   2 +-
- tools/perf/util/strfilter.c                        |  32 +++---
- tools/perf/util/strfilter.h                        |  12 +-
- tools/perf/util/sysfs.c                            |  60 ----------
- tools/perf/util/sysfs.h                            |   6 -
- tools/perf/util/thread.h                           |  10 +-
- 45 files changed, 591 insertions(+), 497 deletions(-)
- create mode 100644 tools/perf/config/feature-checks/test-timerfd.c
- create mode 100644 tools/perf/util/fs.c
- create mode 100644 tools/perf/util/fs.h
- delete mode 100644 tools/perf/util/sysfs.c
- delete mode 100644 tools/perf/util/sysfs.h
