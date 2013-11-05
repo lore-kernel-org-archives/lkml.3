@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641Ab3KEVxD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 16:53:03 -0500
-Received: from alerce.vps.bitfolk.com ([85.119.82.134]:42309 "EHLO
-	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755499Ab3KEVxB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 16:53:01 -0500
-Date: Tue, 5 Nov 2013 21:52:43 +0000
-From: Rodrigo Campos <rodrigo@sdfg.com.ar>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 01/10] perf hists: Consolidate __hists__add_*entry()
-Message-ID: <20131105215243.GA8303@sdfg.com.ar>
-References: <1383682201-19399-1-git-send-email-acme@infradead.org>
- <1383682201-19399-2-git-send-email-acme@infradead.org>
+	id S1755551Ab3KEV6A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 16:58:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46180 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755271Ab3KEV56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 16:57:58 -0500
+Date: Tue, 5 Nov 2013 22:57:55 +0100
+From: Jan Kara <jack@suse.cz>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        LKML <linux-kernel@vger.kernel.org>, EXT4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 1/2] rbtree: fix postorder iteration when the rb_node is
+ not the first element in an entry
+Message-ID: <20131105215755.GB9236@quack.suse.cz>
+References: <52784ADF.1040104@linux.vnet.ibm.com>
+ <1383615602-1784-1-git-send-email-cody@linux.vnet.ibm.com>
+ <5278C2F8.3050805@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383682201-19399-2-git-send-email-acme@infradead.org>
+In-Reply-To: <5278C2F8.3050805@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 05, 2013 at 05:09:52PM -0300, Arnaldo Carvalho de Melo wrote:
-> @@ -486,15 +425,15 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
->  		.ip	= al->addr,
->  		.level	= al->level,
->  		.stat = {
-> -			.period	= period,
->  			.nr_events = 1,
-> +			.period	= period,
->  			.weight = weight,
->  		},
+On Tue 05-11-13 02:05:44, Cody P Schafer wrote:
+> On 11/04/2013 05:40 PM, Cody P Schafer wrote:
+> > Provide a new helper called rb_next_postorder_entry() to perform NULL
+> > checks and container_of() coversions and use it in
+> > rbtree_for_each_entry_safe() to fix oopses that occur when rb_node is
+> > not the first element in the entry.
+> 
+> On second thought, it appears I was a bit to hasty with this, and this patch actually breaks things.
+> 
+> On 11/04/2013 04:45 PM, Jan Kara wrote:> On Mon 04-11-13 15:26:38, Jan Kara wrote:
+> >> On Fri 01-11-13 15:38:50, Cody P Schafer wrote:
+> >>> Use rbtree_postorder_for_each_entry_safe() to destroy the rbtree instead
+> >>> of opencoding an alternate postorder iteration that modifies the tree
+> >>    Thanks. I've merged the patch into my tree.
+> >    Hum, except that the kernel oopses with this patch. And I think the
+> > problem is in rbtree_postorder_for_each_entry_safe(). How are those tests
+> > for NULL supposed to work? For example if the tree is empty, 'pos' will be
+> > NULL and you'll call rb_next_postorder(&NULL->field) which is pretty much
+> > guaranteed to oops if 'field' doesn't have offset 0 in the structure...
+> 
+> No, it shouldn't oops because pos won't be NULL, &pos->field will be.
+> 
+> pos is only assigned via an rb_entry(rb_first_postorder()) or
+> rb_entry(rb_next_postorder()). rb_next_postorder() and
+> rb_first_postorder() can return NULL. That NULL then is munged by
+> rb_entry to be (NULL - offset_of_field). Causing (&pos->field == NULL ==
+> (pos + offset_of_field)).
+  OK, so I had a second look. And the compiler thinks differently than you
+:) The thing is that my gcc (4.3.4) apparently assumes pointer underflow is
+undefined and thus optimizes your test &pos->field to 1. I've asked our gcc
+guys for a definitive answer but clearly your code will need some way to
+avoid pointer underflows...
 
-Isn't this seems unrelated and unneeded ?
-
-The "period" field is before the "nr_events" field in the struct, so maybe is
-more clear to leave it as it was ?  The actual relative order (it has some more
-fields) in the struct is: period, weigth, nr_events. Might be better if they
-match that order here ? Although not sure since we are using the fields with
-name and is clear enough.
-
-
-
-
-
-Thanks a lot,
-Rodrigo
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
