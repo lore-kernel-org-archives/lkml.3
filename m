@@ -1,362 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727Ab3KFO0Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 09:26:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61285 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756635Ab3KFO0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 09:26:22 -0500
-Date: Wed, 6 Nov 2013 09:23:50 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-Cc: "jingbai.ma@hp.com" <jingbai.ma@hp.com>, "bhe@redhat.com" <bhe@redhat.com>,
-        "tom.vaden@hp.com" <tom.vaden@hp.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "ptesarik@suse.cz" <ptesarik@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lisa.mitchell@hp.com" <lisa.mitchell@hp.com>,
-        "d.hatayama@jp.fujitsu.com" <d.hatayama@jp.fujitsu.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "anderson@redhat.com" <anderson@redhat.com>
-Subject: Re: [PATCH 0/3] makedumpfile: hugepage filtering for vmcore dump
-Message-ID: <20131106142350.GB23357@redhat.com>
-References: <20131105134532.32112.78008.stgit@k.asiapacific.hpqcorp.net>
- <20131105202631.GC4598@redhat.com>
- <0910DD04CBD6DE4193FCF86B9C00BE971BB7A9@BPXM01GP.gisp.nec.co.jp>
+	id S1756759Ab3KFO1y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 09:27:54 -0500
+Received: from [204.155.152.216] ([204.155.152.216]:45675 "EHLO shutemov.name"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756610Ab3KFO1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 09:27:52 -0500
+Date: Wed, 6 Nov 2013 15:31:12 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: lockref: Use bloated_spinlocks to avoid explicit config dependencies
+Message-ID: <20131106133112.GB22132@shutemov.name>
+References: <1382442839-7458-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20131105150145.734a5dd5b5d455800ebfa0d3@linux-foundation.org>
+ <20131105224217.GC20167@shutemov.name>
+ <20131105155619.021f32eba1ca8f15a73ed4c9@linux-foundation.org>
+ <20131105231310.GE20167@shutemov.name>
+ <20131106093131.GU28601@twins.programming.kicks-ass.net>
+ <20131106111845.GG26785@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <0910DD04CBD6DE4193FCF86B9C00BE971BB7A9@BPXM01GP.gisp.nec.co.jp>
+In-Reply-To: <20131106111845.GG26785@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 02:21:39AM +0000, Atsushi Kumagai wrote:
-> (2013/11/06 5:27), Vivek Goyal wrote:
-> > On Tue, Nov 05, 2013 at 09:45:32PM +0800, Jingbai Ma wrote:
-> >> This patch set intend to exclude unnecessary hugepages from vmcore dump file.
-> >>
-> >> This patch requires the kernel patch to export necessary data structures into
-> >> vmcore: "kexec: export hugepage data structure into vmcoreinfo"
-> >> http://lists.infradead.org/pipermail/kexec/2013-November/009997.html
-> >>
-> >> This patch introduce two new dump levels 32 and 64 to exclude all unused and
-> >> active hugepages. The level to exclude all unnecessary pages will be 127 now.
-> >
-> > Interesting. Why hugepages should be treated any differentely than normal
-> > pages?
-> >
-> > If user asked to filter out free page, then it should be filtered and
-> > it should not matter whether it is a huge page or not?
+On Wed, Nov 06, 2013 at 12:18:45PM +0100, Peter Zijlstra wrote:
+> On Wed, Nov 06, 2013 at 10:31:31AM +0100, Peter Zijlstra wrote:
+> > Subject: mm: Properly separate the bloated ptl from the regular case
+> > 
+> > Use kernel/bounds.c to convert build-time spinlock_t size into a
+> > preprocessor symbol and apply that to properly separate the page::ptl
+> > situation.
+> > 
+> > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> > ---
+> >  include/linux/mm.h       | 24 +++++++++++++-----------
+> >  include/linux/mm_types.h |  9 +++++----
+> >  kernel/bounds.c          |  2 ++
+> >  mm/memory.c              | 11 +++++------
+> >  4 files changed, 25 insertions(+), 21 deletions(-)
+> > 
+> > diff --git a/kernel/bounds.c b/kernel/bounds.c
+> > index e8ca97b5c386..5982437eca2c 100644
+> > --- a/kernel/bounds.c
+> > +++ b/kernel/bounds.c
+> > @@ -11,6 +11,7 @@
+> >  #include <linux/kbuild.h>
+> >  #include <linux/page_cgroup.h>
+> >  #include <linux/log2.h>
+> > +#include <linux/spinlock.h>
+> >  
+> >  void foo(void)
+> >  {
+> > @@ -21,5 +22,6 @@ void foo(void)
+> >  #ifdef CONFIG_SMP
+> >  	DEFINE(NR_CPUS_BITS, ilog2(CONFIG_NR_CPUS));
+> >  #endif
+> > +	DEFINE(BLOATED_SPINLOCKS, sizeof(spinlock_t) > sizeof(int));
+> >  	/* End of constants */
+> >  }
 > 
-> I'm making a RFC patch of hugepages filtering based on such policy.
+> Using that we could also do.. not been near a compiler.
 > 
-> I attach the prototype version.
-> It's able to filter out also THPs, and suitable for cyclic processing
-> because it depends on mem_map and looking up it can be divided into
-> cycles. This is the same idea as page_is_buddy().
-> 
-> So I think it's better.
 
-Agreed. Being able to treat hugepages in same manner as other pages
-sounds good.
-
-Jingbai, looks good to you?
-
-Thanks
-Vivek
-
-> 
-> -- 
-> Thanks
-> Atsushi Kumagai
-> 
-> 
-> From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-> Date: Wed, 6 Nov 2013 10:10:43 +0900
-> Subject: [PATCH] [RFC] Exclude hugepages.
-> 
-> Signed-off-by: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+[ Subject adjusted, CC: +Linus ]
 > ---
->    makedumpfile.c | 122 ++++++++++++++++++++++++++++++++++++++++++++++++++++++---
->    makedumpfile.h |   8 ++++
->    2 files changed, 125 insertions(+), 5 deletions(-)
+> Subject: lockref: Use bloated_spinlocks to avoid explicit config dependencies
 > 
-> diff --git a/makedumpfile.c b/makedumpfile.c
-> index 428c53e..75b7123 100644
-> --- a/makedumpfile.c
-> +++ b/makedumpfile.c
-> @@ -63,6 +63,7 @@ do { \
->    
->    static void check_cyclic_buffer_overrun(void);
->    static void setup_page_is_buddy(void);
-> +static void setup_page_is_hugepage(void);
->    
->    void
->    initialize_tables(void)
-> @@ -270,6 +271,18 @@ update_mmap_range(off_t offset, int initial) {
->    }
->    
->    static int
-> +page_is_hugepage(unsigned long flags) {
-> +	if (NUMBER(PG_head) != NOT_FOUND_NUMBER) {
-> +		return isHead(flags);
-> +	} else if (NUMBER(PG_tail) != NOT_FOUND_NUMBER) {
-> +		return isTail(flags);
-> +	}if (NUMBER(PG_compound) != NOT_FOUND_NUMBER) {
-> +		return isCompound(flags);
-> +	}
-> +	return 0;
-> +}
-> +
-> +static int
->    is_mapped_with_mmap(off_t offset) {
->    
->    	if (info->flag_usemmap
-> @@ -1107,6 +1120,8 @@ get_symbol_info(void)
->    		SYMBOL_ARRAY_LENGTH_INIT(node_remap_start_pfn,
->    					"node_remap_start_pfn");
->    
-> +	SYMBOL_INIT(free_huge_page, "free_huge_page");
-> +
->    	return TRUE;
->    }
->    
-> @@ -1214,11 +1229,19 @@ get_structure_info(void)
->    
->    	ENUM_NUMBER_INIT(PG_lru, "PG_lru");
->    	ENUM_NUMBER_INIT(PG_private, "PG_private");
-> +	ENUM_NUMBER_INIT(PG_head, "PG_head");
-> +	ENUM_NUMBER_INIT(PG_tail, "PG_tail");
-> +	ENUM_NUMBER_INIT(PG_compound, "PG_compound");
->    	ENUM_NUMBER_INIT(PG_swapcache, "PG_swapcache");
->    	ENUM_NUMBER_INIT(PG_buddy, "PG_buddy");
->    	ENUM_NUMBER_INIT(PG_slab, "PG_slab");
->    	ENUM_NUMBER_INIT(PG_hwpoison, "PG_hwpoison");
->    
-> +	if (NUMBER(PG_head) == NOT_FOUND_NUMBER &&
-> +	    NUMBER(PG_compound) == NOT_FOUND_NUMBER)
-> +		/* Pre-2.6.26 kernels did not have pageflags */
-> +		NUMBER(PG_compound) = PG_compound_ORIGINAL;
-> +
->    	ENUM_TYPE_SIZE_INIT(pageflags, "pageflags");
->    
->    	TYPEDEF_SIZE_INIT(nodemask_t, "nodemask_t");
-> @@ -1603,6 +1626,7 @@ write_vmcoreinfo_data(void)
->    	WRITE_SYMBOL("node_remap_start_vaddr", node_remap_start_vaddr);
->    	WRITE_SYMBOL("node_remap_end_vaddr", node_remap_end_vaddr);
->    	WRITE_SYMBOL("node_remap_start_pfn", node_remap_start_pfn);
-> +	WRITE_SYMBOL("free_huge_page", free_huge_page);
->    
->    	/*
->    	 * write the structure size of 1st kernel
-> @@ -1685,6 +1709,9 @@ write_vmcoreinfo_data(void)
->    
->    	WRITE_NUMBER("PG_lru", PG_lru);
->    	WRITE_NUMBER("PG_private", PG_private);
-> +	WRITE_NUMBER("PG_head", PG_head);
-> +	WRITE_NUMBER("PG_tail", PG_tail);
-> +	WRITE_NUMBER("PG_compound", PG_compound);
->    	WRITE_NUMBER("PG_swapcache", PG_swapcache);
->    	WRITE_NUMBER("PG_buddy", PG_buddy);
->    	WRITE_NUMBER("PG_slab", PG_slab);
-> @@ -1932,6 +1959,7 @@ read_vmcoreinfo(void)
->    	READ_SYMBOL("node_remap_start_vaddr", node_remap_start_vaddr);
->    	READ_SYMBOL("node_remap_end_vaddr", node_remap_end_vaddr);
->    	READ_SYMBOL("node_remap_start_pfn", node_remap_start_pfn);
-> +	READ_SYMBOL("free_huge_page", free_huge_page);
->    
->    	READ_STRUCTURE_SIZE("page", page);
->    	READ_STRUCTURE_SIZE("mem_section", mem_section);
-> @@ -2000,6 +2028,9 @@ read_vmcoreinfo(void)
->    
->    	READ_NUMBER("PG_lru", PG_lru);
->    	READ_NUMBER("PG_private", PG_private);
-> +	READ_NUMBER("PG_head", PG_head);
-> +	READ_NUMBER("PG_tail", PG_tail);
-> +	READ_NUMBER("PG_compound", PG_compound);
->    	READ_NUMBER("PG_swapcache", PG_swapcache);
->    	READ_NUMBER("PG_slab", PG_slab);
->    	READ_NUMBER("PG_buddy", PG_buddy);
-> @@ -3126,6 +3157,9 @@ out:
->    	if (!get_value_for_old_linux())
->    		return FALSE;
->    
-> +	/* Get page flags for compound pages */
-> +	setup_page_is_hugepage();
-> +
->    	/* use buddy identification of free pages whether cyclic or not */
->    	/* (this can reduce pages scan of 1TB memory from 60sec to 30sec) */
->    	if (info->dump_level & DL_EXCLUDE_FREE)
-> @@ -4197,6 +4231,23 @@ out:
->    			  "follow free lists instead of mem_map array.\n");
->    }
->    
-> +static void
-> +setup_page_is_hugepage(void)
-> +{
-> +	if (NUMBER(PG_head) != NOT_FOUND_NUMBER) {
-> +		if (NUMBER(PG_tail) == NOT_FOUND_NUMBER) {
-> +			/* If PG_tail is not explicitly saved, then assume
-> +			 * that it immediately follows PG_head.
-> +			 */
-> +			NUMBER(PG_tail) = NUMBER(PG_head) + 1;
-> +		}
-> +	} else if ((NUMBER(PG_compound) != NOT_FOUND_NUMBER)
-> +		   && (info->dump_level & DL_EXCLUDE_USER_DATA)) {
-> +		MSG("Compound page bit could not be determined: ");
-> +		MSG("huge pages will NOT be filtered.\n");
-> +	}
-> +}
-> +
->    /*
->     * If using a dumpfile in kdump-compressed format as a source file
->     * instead of /proc/vmcore, 1st-bitmap of a new dumpfile must be
-> @@ -4404,8 +4455,9 @@ __exclude_unnecessary_pages(unsigned long mem_map,
->    	unsigned long long pfn_read_start, pfn_read_end, index_pg;
->    	unsigned char page_cache[SIZE(page) * PGMM_CACHED];
->    	unsigned char *pcache;
-> -	unsigned int _count, _mapcount = 0;
-> +	unsigned int _count, _mapcount = 0, compound_order = 0;
->    	unsigned long flags, mapping, private = 0;
-> +	unsigned long hugetlb_dtor;
->    
->    	/*
->    	 * Refresh the buffer of struct page, when changing mem_map.
-> @@ -4459,6 +4511,27 @@ __exclude_unnecessary_pages(unsigned long mem_map,
->    		flags   = ULONG(pcache + OFFSET(page.flags));
->    		_count  = UINT(pcache + OFFSET(page._count));
->    		mapping = ULONG(pcache + OFFSET(page.mapping));
-> +
-> +		if (index_pg < PGMM_CACHED - 1) {
-> +			compound_order = ULONG(pcache + SIZE(page) + OFFSET(page.lru)
-> +					       + OFFSET(list_head.prev));
-> +			hugetlb_dtor = ULONG(pcache + SIZE(page) + OFFSET(page.lru)
-> +					     + OFFSET(list_head.next));
-> +		} else if (pfn + 1 < pfn_end) {
-> +			unsigned char page_cache_next[SIZE(page)];
-> +			if (!readmem(VADDR, mem_map, page_cache_next, SIZE(page))) {
-> +				ERRMSG("Can't read the buffer of struct page.\n");
-> +				return FALSE;
-> +			}
-> +			compound_order = ULONG(page_cache_next + OFFSET(page.lru)
-> +					       + OFFSET(list_head.prev));
-> +			hugetlb_dtor = ULONG(page_cache_next + OFFSET(page.lru)
-> +					     + OFFSET(list_head.next));
-> +		} else {
-> +			compound_order = 0;
-> +			hugetlb_dtor = 0;
-> +		}
-> +
->    		if (OFFSET(page._mapcount) != NOT_FOUND_STRUCTURE)
->    			_mapcount = UINT(pcache + OFFSET(page._mapcount));
->    		if (OFFSET(page.private) != NOT_FOUND_STRUCTURE)
-> @@ -4497,6 +4570,10 @@ __exclude_unnecessary_pages(unsigned long mem_map,
->    		    && !isPrivate(flags) && !isAnon(mapping)) {
->    			if (clear_bit_on_2nd_bitmap_for_kernel(pfn))
->    				pfn_cache++;
-> +			/*
-> +			 * NOTE: If THP for cache is introduced, the check for
-> +			 *       compound pages is needed here.
-> +			 */
->    		}
->    		/*
->    		 * Exclude the cache page with the private page.
-> @@ -4506,14 +4583,49 @@ __exclude_unnecessary_pages(unsigned long mem_map,
->    		    && !isAnon(mapping)) {
->    			if (clear_bit_on_2nd_bitmap_for_kernel(pfn))
->    				pfn_cache_private++;
-> +			/*
-> +			 * NOTE: If THP for cache is introduced, the check for
-> +			 *       compound pages is needed here.
-> +			 */
->    		}
->    		/*
->    		 * Exclude the data page of the user process.
->    		 */
-> -		else if ((info->dump_level & DL_EXCLUDE_USER_DATA)
-> -		    && isAnon(mapping)) {
-> -			if (clear_bit_on_2nd_bitmap_for_kernel(pfn))
-> -				pfn_user++;
-> +		else if (info->dump_level & DL_EXCLUDE_USER_DATA) {
-> +			/*
-> +			 * Exclude the anonnymous pages as user pages.
-> +			 */
-> +			if (isAnon(mapping)) {
-> +				if (clear_bit_on_2nd_bitmap_for_kernel(pfn))
-> +					pfn_user++;
-> +
-> +				/*
-> +				 * Check the compound page
-> +				 */
-> +				if (page_is_hugepage(flags) && compound_order > 0) {
-> +					int i, nr_pages = 1 << compound_order;
-> +
-> +					for (i = 1; i < nr_pages; ++i) {
-> +						if (clear_bit_on_2nd_bitmap_for_kernel(pfn + i))
-> +							pfn_user++;
-> +					}
-> +					pfn += nr_pages - 2;
-> +					mem_map += (nr_pages - 1) * SIZE(page);
-> +				}
-> +			}
-> +			/*
-> +			 * Exclude the hugetlbfs pages as user pages.
-> +			 */
-> +			else if (hugetlb_dtor == SYMBOL(free_huge_page)) {
-> +				int i, nr_pages = 1 << compound_order;
-> +
-> +				for (i = 0; i < nr_pages; ++i) {
-> +					if (clear_bit_on_2nd_bitmap_for_kernel(pfn + i))
-> +						pfn_user++;
-> +				}
-> +				pfn += nr_pages - 1;
-> +				mem_map += (nr_pages - 1) * SIZE(page);
-> +			}
->    		}
->    		/*
->    		 * Exclude the hwpoison page.
-> diff --git a/makedumpfile.h b/makedumpfile.h
-> index 3a7e61a..d6ee832 100644
-> --- a/makedumpfile.h
-> +++ b/makedumpfile.h
-> @@ -74,6 +74,7 @@ int get_mem_type(void);
->    #define PG_lru_ORIGINAL	 	(5)
->    #define PG_slab_ORIGINAL	(7)
->    #define PG_private_ORIGINAL	(11)	/* Has something at ->private */
-> +#define PG_compound_ORIGINAL	(14)	/* Is part of a compound page */
->    #define PG_swapcache_ORIGINAL	(15)	/* Swap page: swp_entry_t in private */
->    
->    #define PAGE_BUDDY_MAPCOUNT_VALUE_v2_6_38	(-2)
-> @@ -140,6 +141,9 @@ test_bit(int nr, unsigned long addr)
->    
->    #define isLRU(flags)		test_bit(NUMBER(PG_lru), flags)
->    #define isPrivate(flags)	test_bit(NUMBER(PG_private), flags)
-> +#define isHead(flags)		test_bit(NUMBER(PG_head), flags)
-> +#define isTail(flags)		test_bit(NUMBER(PG_tail), flags)
-> +#define isCompound(flags)	test_bit(NUMBER(PG_compound), flags)
->    #define isSwapCache(flags)	test_bit(NUMBER(PG_swapcache), flags)
->    #define isHWPOISON(flags)	(test_bit(NUMBER(PG_hwpoison), flags) \
->    				&& (NUMBER(PG_hwpoison) != NOT_FOUND_NUMBER))
-> @@ -1124,6 +1128,7 @@ struct symbol_table {
->    	unsigned long long	node_remap_start_vaddr;
->    	unsigned long long	node_remap_end_vaddr;
->    	unsigned long long	node_remap_start_pfn;
-> +	unsigned long long      free_huge_page;
->    
->    	/*
->    	 * for Xen extraction
-> @@ -1383,6 +1388,9 @@ struct number_table {
->    	 */
->    	long	PG_lru;
->    	long	PG_private;
-> +	long	PG_head;
-> +	long	PG_tail;
-> +	long	PG_compound;
->    	long	PG_swapcache;
->    	long	PG_buddy;
->    	long	PG_slab;
-> -- 
-> 1.8.0.2
+> Avoid the fragile Kconfig construct guestimating spinlock_t sizes; use a
+> friendly compile-time test to determine this.
 > 
+> Not-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  lib/Kconfig   | 3 ---
+>  lib/lockref.c | 2 +-
+>  2 files changed, 1 insertion(+), 4 deletions(-)
+> 
+> diff --git a/lib/Kconfig b/lib/Kconfig
+> index b3c8be0da17f..254af289d1d0 100644
+> --- a/lib/Kconfig
+> +++ b/lib/Kconfig
+> @@ -54,9 +54,6 @@ config ARCH_USE_CMPXCHG_LOCKREF
+>  config CMPXCHG_LOCKREF
+>  	def_bool y if ARCH_USE_CMPXCHG_LOCKREF
+>  	depends on SMP
+> -	depends on !GENERIC_LOCKBREAK
+> -	depends on !DEBUG_SPINLOCK
+> -	depends on !DEBUG_LOCK_ALLOC
+>  
+>  config CRC_CCITT
+>  	tristate "CRC-CCITT functions"
+> diff --git a/lib/lockref.c b/lib/lockref.c
+> index 6f9d434c1521..a158fd86aa1a 100644
+> --- a/lib/lockref.c
+> +++ b/lib/lockref.c
+> @@ -1,7 +1,7 @@
+>  #include <linux/export.h>
+>  #include <linux/lockref.h>
+>  
+> -#ifdef CONFIG_CMPXCHG_LOCKREF
+> +#if defined(CONFIG_CMPXCHG_LOCKREF) && !BLOATED_SPINLOCKS
+
+Having CONFIG_CMPXCHG_LOCKREF=y, but not really using it could be
+misleading.
+Should we get rid of CONFIG_CMPXCHG_LOCKREF completely and have here:
+
+#if defined(CONFIG_ARCH_USE_CMPXCHG_LOCKREF) && \
+	defined(CONFIG_SMP) && !BLOATED_SPINLOCKS
+
+?
+
+-- 
+ Kirill A. Shutemov
