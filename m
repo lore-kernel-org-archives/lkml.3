@@ -1,36 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942Ab3KFQGi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 11:06:38 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:64208 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750701Ab3KFQGg (ORCPT
+	id S1752229Ab3KFQHv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 11:07:51 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60077 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab3KFQHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 11:06:36 -0500
+	Wed, 6 Nov 2013 11:07:50 -0500
+Date: Wed, 6 Nov 2013 17:07:20 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vince@deater.net>
+Cc: mingo@kernel.org, hpa@zytor.com, anton@samba.org,
+        mathieu.desnoyers@polymtl.ca, linux-kernel@vger.kernel.org,
+        michael@ellerman.id.au, paulmck@linux.vnet.ibm.com,
+        benh@kernel.crashing.org, fweisbec@gmail.com, VICTORK@il.ibm.com,
+        tglx@linutronix.de, oleg@redhat.com, mikey@neuling.org,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] tools/perf: Add required memory barriers
+Message-ID: <20131106160720.GK26785@twins.programming.kicks-ass.net>
+References: <20131030104246.GH16117@laptop.programming.kicks-ass.net>
+ <tip-a94d342b9cb09edfe888ea972af0883b6a8d992b@git.kernel.org>
+ <alpine.DEB.2.02.1311060847340.27224@pianoman.cluster.toy>
+ <20131106140011.GL10651@twins.programming.kicks-ass.net>
+ <20131106144456.GI26785@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <52715AD1.7000703@gmx.de>
-References: <526696BF.6050909@gmx.de>
-	<CAFLxGvy3NeRKu+KQCCm0j4LS60PYhH0bC8WWjfiPvpstPBjAkA@mail.gmail.com>
-	<5266A698.10400@gmx.de>
-	<5266B60A.1000005@nod.at>
-	<52715AD1.7000703@gmx.de>
-Date: Wed, 6 Nov 2013 20:06:36 +0400
-Message-ID: <CALYGNiPvJF1u8gXNcX1AZR5-VkGqJnaose84KBbdaoBAq8aoGQ@mail.gmail.com>
-Subject: Re: [uml-devel] fuzz tested 32 bit user mode linux image hangs in radix_tree_next_chunk()
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>
-Cc: Richard Weinberger <richard@nod.at>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        UML devel <user-mode-linux-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131106144456.GI26785@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this case it must stop after scanning whole tree in line:
-/* Overflow after ~0UL */
-if (!index)
-  return NULL;
+On Wed, Nov 06, 2013 at 03:44:56PM +0100, Peter Zijlstra wrote:
+> long head = ((__atomic long)pc->data_head).load(memory_order_acquire);
+> 
+> coupled with:
+> 
+> ((__atomic long)pc->data_tail).store(tail, memory_order_release);
+> 
+> might be the 'right' and proper C11 incantations to avoid having to
+> touch kernel macros; but would obviously require a recent compiler.
+> 
+> Barring that, I think we're stuck with:
+> 
+> long head = ACCESS_ONCE(pc->data_head);
+> smp_rmb();
+> 
+> ...
+> 
+> smp_mb();
+> pc->data_tail = tail;
+> 
+> And using the right asm goo for the barriers. That said, all these asm
+> barriers should include a compiler barriers (memory clobber) which
+> _should_ avoid the worst compiler trickery -- although I don't think it
+> completely obviates the need for ACCESS_ONCE() -- uncertain there.
+
+http://software.intel.com/en-us/articles/single-producer-single-consumer-queue/
+
+There's one for icc on x86.
