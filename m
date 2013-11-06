@@ -1,79 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab3KFKvF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 05:51:05 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:46843 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756068Ab3KFKvC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 05:51:02 -0500
-Message-ID: <527A1EC7.20400@ti.com>
-Date: Wed, 6 Nov 2013 16:19:43 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1756351Ab3KFKvL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 05:51:11 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756068Ab3KFKvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 05:51:07 -0500
+Message-ID: <527A1F10.9060102@nod.at>
+Date: Wed, 06 Nov 2013 11:50:56 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, Alex Elder <alex.elder@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 1/6] gpio: davinci: Fixed a check for unbanked gpio
-References: <1383406775-14902-1-git-send-email-prabhakar.csenng@gmail.com> <1383406775-14902-2-git-send-email-prabhakar.csenng@gmail.com> <CACRpkdZ7pwGQnK0NN4tybLUNdMxu5WVaGX8Dqu+kMgVBuyF16w@mail.gmail.com> <CA+V-a8tE3bxsHMSh2i3Xeq=kJUjmxTjcU25Kuka5e_iXeB--pQ@mail.gmail.com> <CACRpkdbLTopHMaog7FDW7O4-yLyv+mmnvgkNuXgeQR-pEtbz6Q@mail.gmail.com> <CA+V-a8tZTm9bh+arQ+uFyTVHxfdf07bWaM_Sdqo08TO=UCMMUg@mail.gmail.com>
-In-Reply-To: <CA+V-a8tZTm9bh+arQ+uFyTVHxfdf07bWaM_Sdqo08TO=UCMMUg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Jonas Bonn <jonas@southpole.se>
+CC: linux-kernel@vger.kernel.org, linux@openrisc.net
+Subject: Re: [PATCH 1/1] openrisc: Use get_signal() signal_setup_done()
+References: <1381232035-4240-3-git-send-email-richard@nod.at> <1383733051-10112-1-git-send-email-jonas@southpole.se>
+In-Reply-To: <1383733051-10112-1-git-send-email-jonas@southpole.se>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 06 November 2013 03:45 PM, Prabhakar Lad wrote:
-> Hi Linus,
+Am 06.11.2013 11:17, schrieb Jonas Bonn:
+> From: Richard Weinberger <richard@nod.at>
 > 
-> On Wed, Nov 6, 2013 at 3:26 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
->> On Wed, Nov 6, 2013 at 10:33 AM, Prabhakar Lad
->> <prabhakar.csengg@gmail.com> wrote:
->>> On Tue, Nov 5, 2013 at 6:09 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
->>>> On Sat, Nov 2, 2013 at 4:39 PM, Lad, Prabhakar
->>>> <prabhakar.csengg@gmail.com> wrote:
->>>>
->>>>> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
->>>>>
->>>>> This patch fixes the check for the offset in
->>>>> gpio_to_irq_unbanked() function.
->>>>>
->>>>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->>>>
->>>> Is this a regression that should go in right now?
->>>>
->>> Yes it needs too.
->>
->> But on top of *what* exactly?
->>
->> This does not apply to my gpio tree devel branch and
->> not even on the mainline kernel.
->>
-> Looks like this needs to go via ARM tree as the earlier
-> patches have  gone via ARM tree itself [1].
-> If you can ACK it Sekhar can get it in via ARM tree.
+> Use the more generic functions get_signal() signal_setup_done()
+> for signal delivery.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> Signed-off-by: Jonas Bonn <jonas@southpole.se>
+> ---
+> 
+> Hi Richard,
+> 
+> What's the status of this patch series?  Are these lined up for 3.13 already?
 
-The dependent patches are all in linux-next through ARM SoC queued for
-v3.13 merge. This fix can either be sent late in merge cycle once Linus
-has pulled ARM SoC or after v3.13-rc1 comes out.
+It has to wait for 3.14.
+I got distracted and had not much time for Linux last month.
+After the merge window I'll send v2 of the series.
+
+> The changes look good but I've got a big rework of the signal handling code
+> for OpenRISC and the patch doesn't apply cleanly.  I've reworked your patch
+> (see below) and would just like you to verify that I haven't messed anything
+> up.  If it's OK by you, I will take the below patch directly into the OpenRISC
+> tree.
+
+Patch looks good. :)
+(But I didn't test it!)
 
 Thanks,
-Sekhar
+//richard
+
+> Best regards,
+> Jonas
+> 
+>  arch/openrisc/kernel/signal.c | 59 ++++++++++++++++---------------------------
+>  1 file changed, 22 insertions(+), 37 deletions(-)
+> 
+> diff --git a/arch/openrisc/kernel/signal.c b/arch/openrisc/kernel/signal.c
+> index c277ec8..66775bc 100644
+> --- a/arch/openrisc/kernel/signal.c
+> +++ b/arch/openrisc/kernel/signal.c
+> @@ -166,20 +166,21 @@ static inline void __user *get_sigframe(struct k_sigaction *ka,
+>   * trampoline which performs the syscall sigreturn, or a provided
+>   * user-mode trampoline.
+>   */
+> -static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+> -			  sigset_t *set, struct pt_regs *regs)
+> +static int setup_rt_frame(struct ksignal *ksig, sigset_t *set,
+> +			  struct pt_regs *regs)
+>  {
+>  	struct rt_sigframe *frame;
+>  	unsigned long return_ip;
+>  	int err = 0;
+>  
+> -	frame = get_sigframe(ka, regs, sizeof(*frame));
+> +	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
+> +
+>  	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
+> -		goto give_sigsegv;
+> +		return -EFAULT;
+>  
+>  	/* Create siginfo.  */
+> -	if (ka->sa.sa_flags & SA_SIGINFO)
+> -		err |= copy_siginfo_to_user(&frame->info, info);
+> +	if (ksig->ka.sa.sa_flags & SA_SIGINFO)
+> +		err |= copy_siginfo_to_user(&frame->info, &ksig->info);
+>  
+>  	/* Create the ucontext.  */
+>  	err |= __put_user(0, &frame->uc.uc_flags);
+> @@ -190,7 +191,7 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+>  	err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
+>  
+>  	if (err)
+> -		goto give_sigsegv;
+> +		return -EFAULT;
+>  
+>  	/* trampoline - the desired return ip is the retcode itself */
+>  	return_ip = (unsigned long)&frame->retcode;
+> @@ -204,14 +205,14 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+>  	err |= __put_user(0x15000000, (unsigned long *)(frame->retcode + 8));
+>  
+>  	if (err)
+> -		goto give_sigsegv;
+> +		return -EFAULT;
+>  
+>  	/* TODO what is the current->exec_domain stuff and invmap ? */
+>  
+>  	/* Set up registers for signal handler */
+> -	regs->pc = (unsigned long)ka->sa.sa_handler; /* what we enter NOW */
+> +	regs->pc = (unsigned long)ksig->ka.sa.sa_handler; /* what we enter NOW */
+>  	regs->gpr[9] = (unsigned long)return_ip;     /* what we enter LATER */
+> -	regs->gpr[3] = (unsigned long)sig;           /* arg 1: signo */
+> +	regs->gpr[3] = (unsigned long)ksig->sig;           /* arg 1: signo */
+>  	regs->gpr[4] = (unsigned long)&frame->info;  /* arg 2: (siginfo_t*) */
+>  	regs->gpr[5] = (unsigned long)&frame->uc;    /* arg 3: ucontext */
+>  
+> @@ -219,25 +220,16 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+>  	regs->sp = (unsigned long)frame;
+>  
+>  	return 0;
+> -
+> -give_sigsegv:
+> -	force_sigsegv(sig, current);
+> -	return -EFAULT;
+>  }
+>  
+>  static inline void
+> -handle_signal(unsigned long sig,
+> -	      siginfo_t *info, struct k_sigaction *ka,
+> -	      struct pt_regs *regs)
+> +handle_signal(struct ksignal *ksig, struct pt_regs *regs)
+>  {
+>  	int ret;
+>  
+> -	ret = setup_rt_frame(sig, ka, info, sigmask_to_save(), regs);
+> -	if (ret)
+> -		return;
+> +	ret = setup_rt_frame(ksig, sigmask_to_save(), regs);
+>  
+> -	signal_delivered(sig, info, ka, regs,
+> -				 test_thread_flag(TIF_SINGLESTEP));
+> +	signal_setup_done(ret, ksig, test_thread_flag(TIF_SINGLESTEP));
+>  }
+>  
+>  /*
+> @@ -254,9 +246,7 @@ handle_signal(unsigned long sig,
+>  
+>  int do_signal(struct pt_regs *regs, int syscall)
+>  {
+> -	siginfo_t info;
+> -	int signr;
+> -	struct k_sigaction ka;
+> +	struct ksignal ksig;
+>  	unsigned long continue_addr = 0;
+>  	unsigned long restart_addr = 0;
+>  	unsigned long retval = 0;
+> @@ -286,28 +276,23 @@ int do_signal(struct pt_regs *regs, int syscall)
+>  	}
+>  
+>  	/*
+> -	 * Get the signal to deliver.  When running under ptrace, at this
+> -	 * point the debugger may change all our registers ...
+> +	 * Get the signal to deliver.  During the call to get_signal the
+> +	 * debugger may change all our registers so we may need to revert
+> +	 * the decision to restart the syscall; specifically, if the PC is
+> +	 * changed, don't restart the syscall.
+>  	 */
+> -	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
+> -	/*
+> -	 * Depending on the signal settings we may need to revert the
+> -	 * decision to restart the system call.  But skip this if a
+> -	 * debugger has chosen to restart at a different PC.
+> -	 */
+> -	if (signr > 0) {
+> +	if (get_signal(&ksig)) {
+>  		if (unlikely(restart) && regs->pc == restart_addr) {
+>  			if (retval == -ERESTARTNOHAND ||
+>  			    retval == -ERESTART_RESTARTBLOCK
+>  			    || (retval == -ERESTARTSYS
+> -			        && !(ka.sa.sa_flags & SA_RESTART))) {
+> +			        && !(ksig.ka.sa.sa_flags & SA_RESTART))) {
+>  				/* No automatic restart */
+>  				regs->gpr[11] = -EINTR;
+>  				regs->pc = continue_addr;
+>  			}
+>  		}
+> -
+> -		handle_signal(signr, &info, &ka, regs);
+> +		handle_signal(&ksig, regs);
+>  	} else {
+>  		/* no handler */
+>  		restore_saved_sigmask();
+> 
 
