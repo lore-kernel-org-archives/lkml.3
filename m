@@ -1,150 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756373Ab3KFJzF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 04:55:05 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:39492 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756350Ab3KFJzA (ORCPT
+	id S1756319Ab3KFJ41 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 04:56:27 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:48674 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756021Ab3KFJ4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 04:55:00 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>,
-        alsa-devel@alsa-project.org, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 2/2] ASoC: ab8500: Revert "ASoC: ab8500: Convert register I/O to regmap"
-Date: Wed,  6 Nov 2013 09:54:45 +0000
-Message-Id: <1383731685-18441-2-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1383731685-18441-1-git-send-email-lee.jones@linaro.org>
-References: <1383731685-18441-1-git-send-email-lee.jones@linaro.org>
+	Wed, 6 Nov 2013 04:56:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+V-a8tE3bxsHMSh2i3Xeq=kJUjmxTjcU25Kuka5e_iXeB--pQ@mail.gmail.com>
+References: <1383406775-14902-1-git-send-email-prabhakar.csenng@gmail.com>
+	<1383406775-14902-2-git-send-email-prabhakar.csenng@gmail.com>
+	<CACRpkdZ7pwGQnK0NN4tybLUNdMxu5WVaGX8Dqu+kMgVBuyF16w@mail.gmail.com>
+	<CA+V-a8tE3bxsHMSh2i3Xeq=kJUjmxTjcU25Kuka5e_iXeB--pQ@mail.gmail.com>
+Date: Wed, 6 Nov 2013 10:56:24 +0100
+Message-ID: <CACRpkdbLTopHMaog7FDW7O4-yLyv+mmnvgkNuXgeQR-pEtbz6Q@mail.gmail.com>
+Subject: Re: [PATCH v4 1/6] gpio: davinci: Fixed a check for unbanked gpio
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: Sekhar Nori <nsekhar@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alex Elder <alex.elder@linaro.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit ff795d614bfa62a3c6fc0bcb75cb8842e5a87892, as this
-is one of two patches which stop audio from working on Snowball.
+On Wed, Nov 6, 2013 at 10:33 AM, Prabhakar Lad
+<prabhakar.csengg@gmail.com> wrote:
+> On Tue, Nov 5, 2013 at 6:09 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> On Sat, Nov 2, 2013 at 4:39 PM, Lad, Prabhakar
+>> <prabhakar.csengg@gmail.com> wrote:
+>>
+>>> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+>>>
+>>> This patch fixes the check for the offset in
+>>> gpio_to_irq_unbanked() function.
+>>>
+>>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>
+>> Is this a regression that should go in right now?
+>>
+> Yes it needs too.
 
-Cc: alsa-devel@alsa-project.org
-Cc: Mark Brown <broonie@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- sound/soc/codecs/ab8500-codec.c | 64 ++++++++++++++++++++++-------------------
- 1 file changed, 34 insertions(+), 30 deletions(-)
+But on top of *what* exactly?
 
-diff --git a/sound/soc/codecs/ab8500-codec.c b/sound/soc/codecs/ab8500-codec.c
-index ca500fd..7990217 100644
---- a/sound/soc/codecs/ab8500-codec.c
-+++ b/sound/soc/codecs/ab8500-codec.c
-@@ -126,8 +126,6 @@ struct ab8500_codec_drvdata_dbg {
- 
- /* Private data for AB8500 device-driver */
- struct ab8500_codec_drvdata {
--	struct regmap *regmap;
--
- 	/* Sidetone */
- 	long *sid_fir_values;
- 	enum sid_state sid_status;
-@@ -168,34 +166,48 @@ static inline const char *amic_type_str(enum amic_type type)
-  */
- 
- /* Read a register from the audio-bank of AB8500 */
--static int ab8500_codec_read_reg(void *context, unsigned int reg,
--				 unsigned int *value)
-+static unsigned int ab8500_codec_read_reg(struct snd_soc_codec *codec,
-+					unsigned int reg)
- {
--	struct device *dev = context;
- 	int status;
-+	unsigned int value = 0;
- 
- 	u8 value8;
--	status = abx500_get_register_interruptible(dev, AB8500_AUDIO,
--						   reg, &value8);
--	*value = (unsigned int)value8;
-+	status = abx500_get_register_interruptible(codec->dev, AB8500_AUDIO,
-+						reg, &value8);
-+	if (status < 0) {
-+		dev_err(codec->dev,
-+			"%s: ERROR: Register (0x%02x:0x%02x) read failed (%d).\n",
-+			__func__, (u8)AB8500_AUDIO, (u8)reg, status);
-+	} else {
-+		dev_dbg(codec->dev,
-+			"%s: Read 0x%02x from register 0x%02x:0x%02x\n",
-+			__func__, value8, (u8)AB8500_AUDIO, (u8)reg);
-+		value = (unsigned int)value8;
-+	}
- 
--	return status;
-+	return value;
- }
- 
- /* Write to a register in the audio-bank of AB8500 */
--static int ab8500_codec_write_reg(void *context, unsigned int reg,
--				  unsigned int value)
-+static int ab8500_codec_write_reg(struct snd_soc_codec *codec,
-+				unsigned int reg, unsigned int value)
- {
--	struct device *dev = context;
-+	int status;
- 
--	return abx500_set_register_interruptible(dev, AB8500_AUDIO,
--						 reg, value);
--}
-+	status = abx500_set_register_interruptible(codec->dev, AB8500_AUDIO,
-+						reg, value);
-+	if (status < 0)
-+		dev_err(codec->dev,
-+			"%s: ERROR: Register (%02x:%02x) write failed (%d).\n",
-+			__func__, (u8)AB8500_AUDIO, (u8)reg, status);
-+	else
-+		dev_dbg(codec->dev,
-+			"%s: Wrote 0x%02x into register %02x:%02x\n",
-+			__func__, (u8)value, (u8)AB8500_AUDIO, (u8)reg);
- 
--static const struct regmap_config ab8500_codec_regmap = {
--	.reg_read = ab8500_codec_read_reg,
--	.reg_write = ab8500_codec_write_reg,
--};
-+	return status;
-+}
- 
- /*
-  * Controls - DAPM
-@@ -2476,8 +2488,6 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
- 	/* Setup AB8500 according to board-settings */
- 	pdata = dev_get_platdata(dev->parent);
- 
--	codec->control_data = drvdata->regmap;
--
- 	if (np) {
- 		if (!pdata)
- 			pdata = devm_kzalloc(dev,
-@@ -2555,6 +2565,9 @@ static int ab8500_codec_probe(struct snd_soc_codec *codec)
- 
- static struct snd_soc_codec_driver ab8500_codec_driver = {
- 	.probe =		ab8500_codec_probe,
-+	.read =			ab8500_codec_read_reg,
-+	.write =		ab8500_codec_write_reg,
-+	.reg_word_size =	sizeof(u8),
- 	.controls =		ab8500_ctrls,
- 	.num_controls =		ARRAY_SIZE(ab8500_ctrls),
- 	.dapm_widgets =		ab8500_dapm_widgets,
-@@ -2577,15 +2590,6 @@ static int ab8500_codec_driver_probe(struct platform_device *pdev)
- 	drvdata->anc_status = ANC_UNCONFIGURED;
- 	dev_set_drvdata(&pdev->dev, drvdata);
- 
--	drvdata->regmap = devm_regmap_init(&pdev->dev, NULL, &pdev->dev,
--					   &ab8500_codec_regmap);
--	if (IS_ERR(drvdata->regmap)) {
--		status = PTR_ERR(drvdata->regmap);
--		dev_err(&pdev->dev, "%s: Failed to allocate regmap: %d\n",
--			__func__, status);
--		return status;
--	}
--
- 	dev_dbg(&pdev->dev, "%s: Register codec.\n", __func__);
- 	status = snd_soc_register_codec(&pdev->dev, &ab8500_codec_driver,
- 				ab8500_codec_dai,
--- 
-1.8.1.2
+This does not apply to my gpio tree devel branch and
+not even on the mainline kernel.
 
+Is this something that should go on top of the davinci
+GPIO patch set that is still being elaborated on?
+
+Yours,
+Linus Walleij
