@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab3KFPZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 10:25:58 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:43547 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab3KFPZ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 10:25:57 -0500
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <20131106050745.GA17641@moria.home.lan>
-References: <1383709721-22809-1-git-send-email-kmo@daterainc.com>
-	<CAOesGMjiPuqqP4oxd8vmvpbu5JZb=Nru59p5zX5KydAarSp2Rw@mail.gmail.com>
-	<20131106050745.GA17641@moria.home.lan>
-Date: Wed, 6 Nov 2013 07:25:55 -0800
-Message-ID: <CAOesGMjSLTxub0pa5tp_a4ybhnjco=6-BgFLyQE_+UZ0bixnDw@mail.gmail.com>
-Subject: Re: [PATCH] block: Revert bio_clone() default behaviour
-From: Olof Johansson <olof@lixom.net>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Mike Snitzer <snitzer@redhat.com>, NeilBrown <neilb@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754909Ab3KFP0G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 10:26:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52748 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752147Ab3KFP0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 10:26:04 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: jmorris@namei.org
+cc: dhowells@redhat.com, sgallagh@redhat.com, rdunlap@infradead.org,
+        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] KEYS: More fixes for next branch
+Date: Wed, 06 Nov 2013 15:25:29 +0000
+Message-ID: <14663.1383751529@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 5, 2013 at 9:07 PM, Kent Overstreet <kmo@daterainc.com> wrote:
-> On Tue, Nov 05, 2013 at 09:02:19PM -0800, Olof Johansson wrote:
->> Hi,
->>
->> On Tue, Nov 5, 2013 at 7:48 PM, Kent Overstreet <kmo@daterainc.com> wrote:
->>
->> > Chris, Olaf, can you two in particular test this? I have tested the bounce
->> > buffer code (and bcache), but Jens told me today there was an md bug that I
->> > _still_ can't find any emails about so I'm not sure what to test for that.
->>
->> (I'm guessing you mean me and not some German person here. :-)
->>
->> What is this expected to apply on top of? It doesn't apply cleanly on
->> the 20131105 -next tree which is where I had been seeing the issues.
->
-> Sorry - it's on top of Jens' for-3.13/core branch,
-> git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-block.git
 
-Tested-by: Olof Johansson <olof@lixom.net>
+Hi James,
 
-Note that last night's -next seems to have held up as well.
+Here are another couple of fixes.  Could you apply them to your next branch?
 
+David
+---
+The following changes since commit 217091dd7a7a1bdac027ddb7c5a25f6ac0b8e241:
 
--Olof
+  ima: define '_ima' as a builtin 'trusted' keyring (2013-10-31 20:20:48 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git keys-devel
+
+for you to fetch changes up to fbf8c53f1a2ac7610ed124043600dc074992e71b:
+
+  KEYS: Fix UID check in keyctl_get_persistent() (2013-11-06 14:01:51 +0000)
+
+----------------------------------------------------------------
+(from the branch description for keys-devel local branch)
+
+clone of "master"
+----------------------------------------------------------------
+David Howells (2):
+      KEYS: The RSA public key algorithm needs to select MPILIB
+      KEYS: Fix UID check in keyctl_get_persistent()
+
+ crypto/asymmetric_keys/Kconfig | 1 +
+ security/keys/persistent.c     | 6 ++----
+ 2 files changed, 3 insertions(+), 4 deletions(-)
