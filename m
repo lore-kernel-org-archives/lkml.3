@@ -1,386 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786Ab3KFMre (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 07:47:34 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:50815 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756461Ab3KFMpy (ORCPT
+	id S1756791Ab3KFMte (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 07:49:34 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:56522 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756436Ab3KFMtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 07:45:54 -0500
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
-        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
-        cascardo@linux.vnet.ibm.com, michael@ibmra.de,
-        haver@linux.vnet.ibm.com
-Subject: [PATCH 5/6] GenWQE Sysfs interfaces
-Date: Wed,  6 Nov 2013 13:45:42 +0100
-Message-Id: <1383741943-14609-6-git-send-email-haver@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1383741943-14609-1-git-send-email-haver@linux.vnet.ibm.com>
-References: <1383741943-14609-1-git-send-email-haver@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110612-8372-0000-0000-000007AF6D04
+	Wed, 6 Nov 2013 07:49:31 -0500
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        =?UTF-8?q?Frank=20Sch=C3=A4fer?= <fschaefer.oss@googlemail.com>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        linux-media@vger.kernel.org (open list:MT9M032 APTINA SE...),
+        linux-kernel@vger.kernel.org (open list)
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH] videodev2: Set vb2_rect's width and height as unsigned
+Date: Wed,  6 Nov 2013 13:49:25 +0100
+Message-Id: <1383742165-17634-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sysfs interfaces for the GenWQE card. There are attributes to query
-the version of the bitstream as well as some for the driver. For
-debugging, please also see the debugfs interfaces of this driver.
+As addressed on the media summit 2013, there is no reason for the width
+and height to be signed.
 
-Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Co-authors: Joerg-Stephan Vogt <jsvogt@de.ibm.com>,
-            Michael Jung <MIJUNG@de.ibm.com>,
-            Michael Ruettger <michael@ibmra.de>
+Therefore this patch is an attempt to convert those fields into unsigned.
+
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 ---
- Documentation/ABI/testing/sysfs-driver-genwqe |   50 +++++
- drivers/misc/genwqe/card_sysfs.c              |  277 +++++++++++++++++++++++++
- 2 files changed, 327 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-driver-genwqe
- create mode 100644 drivers/misc/genwqe/card_sysfs.c
+ drivers/media/i2c/mt9m032.c                        | 16 +++++++-----
+ drivers/media/i2c/mt9p031.c                        | 28 ++++++++++----------
+ drivers/media/i2c/mt9t001.c                        | 30 ++++++++++++----------
+ drivers/media/i2c/mt9v032.c                        | 30 ++++++++++++----------
+ drivers/media/i2c/smiapp/smiapp-core.c             | 10 +++++---
+ drivers/media/i2c/soc_camera/mt9m111.c             |  4 +--
+ drivers/media/i2c/tvp5150.c                        | 14 +++++-----
+ drivers/media/pci/bt8xx/bttv-driver.c              |  6 ++---
+ drivers/media/pci/saa7134/saa7134-video.c          |  4 ---
+ drivers/media/platform/soc_camera/soc_scale_crop.c |  4 +--
+ include/uapi/linux/videodev2.h                     |  4 +--
+ 11 files changed, 80 insertions(+), 70 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-driver-genwqe b/Documentation/ABI/testing/sysfs-driver-genwqe
-new file mode 100644
-index 0000000..3e185bb
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-driver-genwqe
-@@ -0,0 +1,50 @@
-+What:           /sys/class/genwqe/genwqe<n>_card/version
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Unique bitstream identification e.g.
-+                '0000000330336283.00000000475a4950'.
+diff --git a/drivers/media/i2c/mt9m032.c b/drivers/media/i2c/mt9m032.c
+index 846b15f..39b28b6 100644
+--- a/drivers/media/i2c/mt9m032.c
++++ b/drivers/media/i2c/mt9m032.c
+@@ -459,13 +459,15 @@ static int mt9m032_set_pad_crop(struct v4l2_subdev *subdev,
+ 			  MT9M032_COLUMN_START_MAX);
+ 	rect.top = clamp(ALIGN(crop->rect.top, 2), MT9M032_ROW_START_MIN,
+ 			 MT9M032_ROW_START_MAX);
+-	rect.width = clamp(ALIGN(crop->rect.width, 2), MT9M032_COLUMN_SIZE_MIN,
+-			   MT9M032_COLUMN_SIZE_MAX);
+-	rect.height = clamp(ALIGN(crop->rect.height, 2), MT9M032_ROW_SIZE_MIN,
+-			    MT9M032_ROW_SIZE_MAX);
+-
+-	rect.width = min(rect.width, MT9M032_PIXEL_ARRAY_WIDTH - rect.left);
+-	rect.height = min(rect.height, MT9M032_PIXEL_ARRAY_HEIGHT - rect.top);
++	rect.width = clamp_t (unsigned int, ALIGN(crop->rect.width, 2),
++			MT9M032_COLUMN_SIZE_MIN, MT9M032_COLUMN_SIZE_MAX);
++	rect.height = clamp_t(unsigned int, ALIGN(crop->rect.height, 2),
++			MT9M032_ROW_SIZE_MIN, MT9M032_ROW_SIZE_MAX);
 +
-+What:           /sys/class/genwqe/genwqe<n>_card/appid
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Identifies the currently active card application e.g. 'GZIP'
-+                for compression/decompression.
++	rect.width = min_t(unsigned int, rect.width,
++			MT9M032_PIXEL_ARRAY_WIDTH - rect.left);
++	rect.height = min_t(unsigned int, rect.height,
++			MT9M032_PIXEL_ARRAY_HEIGHT - rect.top);
+ 
+ 	__crop = __mt9m032_get_pad_crop(sensor, fh, crop->which);
+ 
+diff --git a/drivers/media/i2c/mt9p031.c b/drivers/media/i2c/mt9p031.c
+index 4734836..de99a58 100644
+--- a/drivers/media/i2c/mt9p031.c
++++ b/drivers/media/i2c/mt9p031.c
+@@ -518,11 +518,13 @@ static int mt9p031_set_format(struct v4l2_subdev *subdev,
+ 
+ 	/* Clamp the width and height to avoid dividing by zero. */
+ 	width = clamp_t(unsigned int, ALIGN(format->format.width, 2),
+-			max(__crop->width / 7, MT9P031_WINDOW_WIDTH_MIN),
+-			__crop->width);
++		max_t(unsigned int, __crop->width / 7,
++			MT9P031_WINDOW_WIDTH_MIN),
++		__crop->width);
+ 	height = clamp_t(unsigned int, ALIGN(format->format.height, 2),
+-			max(__crop->height / 8, MT9P031_WINDOW_HEIGHT_MIN),
+-			__crop->height);
++		max_t(unsigned int, __crop->height / 8,
++			MT9P031_WINDOW_HEIGHT_MIN),
++		__crop->height);
+ 
+ 	hratio = DIV_ROUND_CLOSEST(__crop->width, width);
+ 	vratio = DIV_ROUND_CLOSEST(__crop->height, height);
+@@ -564,15 +566,15 @@ static int mt9p031_set_crop(struct v4l2_subdev *subdev,
+ 			  MT9P031_COLUMN_START_MAX);
+ 	rect.top = clamp(ALIGN(crop->rect.top, 2), MT9P031_ROW_START_MIN,
+ 			 MT9P031_ROW_START_MAX);
+-	rect.width = clamp(ALIGN(crop->rect.width, 2),
+-			   MT9P031_WINDOW_WIDTH_MIN,
+-			   MT9P031_WINDOW_WIDTH_MAX);
+-	rect.height = clamp(ALIGN(crop->rect.height, 2),
+-			    MT9P031_WINDOW_HEIGHT_MIN,
+-			    MT9P031_WINDOW_HEIGHT_MAX);
+-
+-	rect.width = min(rect.width, MT9P031_PIXEL_ARRAY_WIDTH - rect.left);
+-	rect.height = min(rect.height, MT9P031_PIXEL_ARRAY_HEIGHT - rect.top);
++	rect.width = clamp_t(unsigned int, ALIGN(crop->rect.width, 2),
++			MT9P031_WINDOW_WIDTH_MIN, MT9P031_WINDOW_WIDTH_MAX);
++	rect.height = clamp_t(unsigned int, ALIGN(crop->rect.height, 2),
++			MT9P031_WINDOW_HEIGHT_MIN, MT9P031_WINDOW_HEIGHT_MAX);
 +
-+What:           /sys/class/genwqe/genwqe<n>_card/type
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Type of the card e.g. 'GenWQE5-A7'.
++	rect.width = min_t(unsigned int, rect.width,
++			MT9P031_PIXEL_ARRAY_WIDTH - rect.left);
++	rect.height = min_t(unsigned int, rect.height,
++			MT9P031_PIXEL_ARRAY_HEIGHT - rect.top);
+ 
+ 	__crop = __mt9p031_get_pad_crop(mt9p031, fh, crop->pad, crop->which);
+ 
+diff --git a/drivers/media/i2c/mt9t001.c b/drivers/media/i2c/mt9t001.c
+index 7964634..fc7867e 100644
+--- a/drivers/media/i2c/mt9t001.c
++++ b/drivers/media/i2c/mt9t001.c
+@@ -291,11 +291,13 @@ static int mt9t001_set_format(struct v4l2_subdev *subdev,
+ 
+ 	/* Clamp the width and height to avoid dividing by zero. */
+ 	width = clamp_t(unsigned int, ALIGN(format->format.width, 2),
+-			max(__crop->width / 8, MT9T001_WINDOW_HEIGHT_MIN + 1),
+-			__crop->width);
++		max_t(unsigned int, __crop->width / 8,
++			MT9T001_WINDOW_HEIGHT_MIN + 1),
++		__crop->width);
+ 	height = clamp_t(unsigned int, ALIGN(format->format.height, 2),
+-			 max(__crop->height / 8, MT9T001_WINDOW_HEIGHT_MIN + 1),
+-			 __crop->height);
++		 max_t(unsigned int, __crop->height / 8,
++			 MT9T001_WINDOW_HEIGHT_MIN + 1),
++		 __crop->height);
+ 
+ 	hratio = DIV_ROUND_CLOSEST(__crop->width, width);
+ 	vratio = DIV_ROUND_CLOSEST(__crop->height, height);
+@@ -339,15 +341,17 @@ static int mt9t001_set_crop(struct v4l2_subdev *subdev,
+ 	rect.top = clamp(ALIGN(crop->rect.top, 2),
+ 			 MT9T001_ROW_START_MIN,
+ 			 MT9T001_ROW_START_MAX);
+-	rect.width = clamp(ALIGN(crop->rect.width, 2),
+-			   MT9T001_WINDOW_WIDTH_MIN + 1,
+-			   MT9T001_WINDOW_WIDTH_MAX + 1);
+-	rect.height = clamp(ALIGN(crop->rect.height, 2),
+-			    MT9T001_WINDOW_HEIGHT_MIN + 1,
+-			    MT9T001_WINDOW_HEIGHT_MAX + 1);
+-
+-	rect.width = min(rect.width, MT9T001_PIXEL_ARRAY_WIDTH - rect.left);
+-	rect.height = min(rect.height, MT9T001_PIXEL_ARRAY_HEIGHT - rect.top);
++	rect.width = clamp_t(unsigned int, ALIGN(crop->rect.width, 2),
++			MT9T001_WINDOW_WIDTH_MIN + 1,
++			MT9T001_WINDOW_WIDTH_MAX + 1);
++	rect.height = clamp_t(unsigned int, ALIGN(crop->rect.height, 2),
++			MT9T001_WINDOW_HEIGHT_MIN + 1,
++			MT9T001_WINDOW_HEIGHT_MAX + 1);
 +
-+What:           /sys/class/genwqe/genwqe<n>_card/curr_bitstream
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Currently active bitstream. 1 is default, 0 is backup.
++	rect.width = min_t(unsigned int, rect.width,
++			MT9T001_PIXEL_ARRAY_WIDTH - rect.left);
++	rect.height = min_t(unsigned int, rect.height,
++			MT9T001_PIXEL_ARRAY_HEIGHT - rect.top);
+ 
+ 	__crop = __mt9t001_get_pad_crop(mt9t001, fh, crop->pad, crop->which);
+ 
+diff --git a/drivers/media/i2c/mt9v032.c b/drivers/media/i2c/mt9v032.c
+index 2c50eff..7f611ba 100644
+--- a/drivers/media/i2c/mt9v032.c
++++ b/drivers/media/i2c/mt9v032.c
+@@ -420,11 +420,13 @@ static int mt9v032_set_format(struct v4l2_subdev *subdev,
+ 					format->which);
+ 
+ 	/* Clamp the width and height to avoid dividing by zero. */
+-	width = clamp_t(unsigned int, ALIGN(format->format.width, 2),
+-			max(__crop->width / 8, MT9V032_WINDOW_WIDTH_MIN),
++	width = clamp(ALIGN(format->format.width, 2),
++			max_t(unsigned int, __crop->width / 8,
++				MT9V032_WINDOW_WIDTH_MIN),
+ 			__crop->width);
+-	height = clamp_t(unsigned int, ALIGN(format->format.height, 2),
+-			 max(__crop->height / 8, MT9V032_WINDOW_HEIGHT_MIN),
++	height = clamp(ALIGN(format->format.height, 2),
++			 max_t(unsigned int, __crop->height / 8,
++				 MT9V032_WINDOW_HEIGHT_MIN),
+ 			 __crop->height);
+ 
+ 	hratio = DIV_ROUND_CLOSEST(__crop->width, width);
+@@ -471,15 +473,17 @@ static int mt9v032_set_crop(struct v4l2_subdev *subdev,
+ 	rect.top = clamp(ALIGN(crop->rect.top + 1, 2) - 1,
+ 			 MT9V032_ROW_START_MIN,
+ 			 MT9V032_ROW_START_MAX);
+-	rect.width = clamp(ALIGN(crop->rect.width, 2),
+-			   MT9V032_WINDOW_WIDTH_MIN,
+-			   MT9V032_WINDOW_WIDTH_MAX);
+-	rect.height = clamp(ALIGN(crop->rect.height, 2),
+-			    MT9V032_WINDOW_HEIGHT_MIN,
+-			    MT9V032_WINDOW_HEIGHT_MAX);
+-
+-	rect.width = min(rect.width, MT9V032_PIXEL_ARRAY_WIDTH - rect.left);
+-	rect.height = min(rect.height, MT9V032_PIXEL_ARRAY_HEIGHT - rect.top);
++	rect.width = clamp_t(unsigned int, ALIGN(crop->rect.width, 2),
++			MT9V032_WINDOW_WIDTH_MIN,
++			MT9V032_WINDOW_WIDTH_MAX);
++	rect.height = clamp_t(unsigned int, ALIGN(crop->rect.height, 2),
++			MT9V032_WINDOW_HEIGHT_MIN,
++			MT9V032_WINDOW_HEIGHT_MAX);
 +
-+What:           /sys/class/genwqe/genwqe<n>_card/next_bitstream
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Interface to set the next bitstream to be used.
-+
-+What:           /sys/class/genwqe/genwqe<n>_card/tempsens
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Interface to read the cards temperature sense register.
-+
-+What:           /sys/class/genwqe/genwqe<n>_card/state
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    State of the card: "unused", "used", "error".
-+
-+What:           /sys/class/genwqe/genwqe<n>_card/base_clock
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Base clock frequency of the card.
-+
-+What:           /sys/class/genwqe/genwqe<n>_card/device/sriov_numvfs
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Enable VFs (1..15):
-+                  sudo sh -c 'echo 15 > \
-+                    /sys/bus/pci/devices/0000\:1b\:00.0/sriov_numvfs'
-+                Disable VFs:
-+                  Write a 0 into the same sysfs entry.
-diff --git a/drivers/misc/genwqe/card_sysfs.c b/drivers/misc/genwqe/card_sysfs.c
-new file mode 100644
-index 0000000..cf17afa
---- /dev/null
-+++ b/drivers/misc/genwqe/card_sysfs.c
-@@ -0,0 +1,277 @@
-+/**
-+ * IBM Accelerator Family 'GenWQE'
-+ *
-+ * (C) Copyright IBM Corp. 2013
-+ *
-+ * Author: Frank Haverkamp <haver@linux.vnet.ibm.com>
-+ * Author: Joerg-Stephan Vogt <jsvogt@de.ibm.com>
-+ * Author: Michael Jung <mijung@de.ibm.com>
-+ * Author: Michael Ruettger <michael@ibmra.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License (version 2 only)
-+ * as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ */
-+
-+/*
-+ * Sysfs interfaces for the GenWQE card. There are attributes to query
-+ * the version of the bitstream as well as some for the driver. For
-+ * debugging, please also see the debugfs interfaces of this driver.
-+ */
-+
-+#include <linux/version.h>
-+#include <linux/kernel.h>
-+#include <linux/types.h>
-+#include <linux/module.h>
-+#include <linux/pci.h>
-+#include <linux/string.h>
-+#include <linux/fs.h>
-+#include <linux/sysfs.h>
-+#include <linux/ctype.h>
-+#include <linux/device.h>
-+
-+#include "card_base.h"
-+#include "card_ddcb.h"
-+
-+static const char * const genwqe_types[] = {
-+	[GENWQE_TYPE_ALTERA_230] = "GenWQE4-230",
-+	[GENWQE_TYPE_ALTERA_530] = "GenWQE4-530",
-+	[GENWQE_TYPE_ALTERA_A4]  = "GenWQE5-A4",
-+	[GENWQE_TYPE_ALTERA_A7]  = "GenWQE5-A7",
-+};
-+
-+static ssize_t status_show(struct device *dev, struct device_attribute *attr,
-+			   char *buf)
-+{
-+	struct genwqe_dev *cd = dev_get_drvdata(dev);
-+	const char *cs[GENWQE_CARD_STATE_MAX] = { "unused", "used", "error" };
-+
-+	return sprintf(buf, "%s\n", cs[cd->card_state]);
-+}
-+static DEVICE_ATTR_RO(status);
-+
-+static ssize_t appid_show(struct device *dev, struct device_attribute *attr,
-+			  char *buf)
-+{
-+	char app_name[5];
-+	struct genwqe_dev *cd = dev_get_drvdata(dev);
-+
-+	genwqe_read_app_id(cd, app_name, sizeof(app_name));
-+	return sprintf(buf, "%s\n", app_name);
-+}
-+static DEVICE_ATTR_RO(appid);
-+
-+static ssize_t version_show(struct device *dev, struct device_attribute *attr,
-+			    char *buf)
-+{
-+	u64 slu_id, app_id;
-+	struct genwqe_dev *cd = dev_get_drvdata(dev);
-+
-+	slu_id = __genwqe_readq(cd, IO_SLU_UNITCFG);
-+	app_id = __genwqe_readq(cd, IO_APP_UNITCFG);
-+
-+	return sprintf(buf, "%016llx.%016llx\n", slu_id, app_id);
-+}
-+static DEVICE_ATTR_RO(version);
-+
-+static ssize_t type_show(struct device *dev, struct device_attribute *attr,
-+			 char *buf)
-+{
-+	u8 card_type;
-+	struct genwqe_dev *cd = dev_get_drvdata(dev);
-+
-+	card_type = genwqe_card_type(cd);
-+	return sprintf(buf, "%s\n", (card_type >= ARRAY_SIZE(genwqe_types)) ?
-+		       "invalid" : genwqe_types[card_type]);
-+}
-+static DEVICE_ATTR_RO(type);
-+
-+static ssize_t driver_show(struct device *dev, struct device_attribute *attr,
-+			   char *buf)
-+{
-+	return sprintf(buf, "%s\n", DRV_VERS_STRING);
-+}
-+static DEVICE_ATTR_RO(driver);
-+
-+static ssize_t tempsens_show(struct device *dev, struct device_attribute *attr,
-+			     char *buf)
-+{
-+	u64 tempsens;
-+	struct genwqe_dev *cd = dev_get_drvdata(dev);
-+
-+	tempsens = __genwqe_readq(cd, IO_SLU_TEMPERATURE_SENSOR);
-+	return sprintf(buf, "%016llx\n", tempsens);
-+}
-+static DEVICE_ATTR_RO(tempsens);
-+
-+static ssize_t base_clock_show(struct device *dev,
-+			       struct device_attribute *attr,
-+			       char *buf)
-+{
-+	u64 base_clock;
-+	struct genwqe_dev *cd = dev_get_drvdata(dev);
-+
-+	base_clock = genwqe_base_clock_frequency(cd);
-+	return sprintf(buf, "%lld\n", base_clock);
-+}
-+static DEVICE_ATTR_RO(base_clock);
-+
-+/**
-+ * curr_bitstream_show() - Show the current bitstream id
-+ *
-+ * There is a bug in some old versions of the CPLD which selects the
-+ * bitstream, which causes the IO_SLU_BITSTREAM register to report
-+ * unreliable data in very rare cases. This makes this sysfs
-+ * unreliable up to the point were a new CPLD version is being used.
-+ *
-+ * Unfortunately there is no automatic way yet to query the CPLD
-+ * version, such that you need to manually ensure via programming
-+ * tools that you have a recent version of the CPLD software.
-+ *
-+ * The proposed circumvention is to use a special recovery bitstream
-+ * on the backup partition (0) to identify problems while loading the
-+ * image.
-+ */
-+static ssize_t curr_bitstream_show(struct device *dev,
-+				   struct device_attribute *attr, char *buf)
-+{
-+	int curr_bitstream;
-+	struct genwqe_dev *cd = dev_get_drvdata(dev);
-+
-+	curr_bitstream = __genwqe_readq(cd, IO_SLU_BITSTREAM) & 0x1;
-+	return sprintf(buf, "%d\n", curr_bitstream);
-+}
-+static DEVICE_ATTR_RO(curr_bitstream);
-+
-+/**
-+ * next_bitstream_show() - Show the next activated bitstream
-+ *
-+ * IO_SLC_CFGREG_SOFTRESET: This register can only be accessed by the PF.
-+ */
-+static ssize_t next_bitstream_show(struct device *dev,
-+				   struct device_attribute *attr, char *buf)
-+{
-+	int next_bitstream;
-+	struct genwqe_dev *cd = dev_get_drvdata(dev);
-+
-+	switch ((cd->softreset & 0xc) >> 2) {
-+	case 0x2:
-+		next_bitstream =  0;
-+		break;
-+	case 0x3:
-+		next_bitstream =  1;
-+		break;
-+	default:
-+		next_bitstream = -1;
-+		break;		/* error */
-+	}
-+	return sprintf(buf, "%d\n", next_bitstream);
-+}
-+
-+static ssize_t next_bitstream_store(struct device *dev,
-+				    struct device_attribute *attr,
-+				    const char *buf, size_t count)
-+{
-+	int partition;
-+	struct genwqe_dev *cd = dev_get_drvdata(dev);
-+
-+	if (kstrtoint(buf, 0, &partition) < 0)
-+		return -EINVAL;
-+
-+	switch (partition) {
-+	case 0x0:
-+		cd->softreset = 0x78;
-+		break;
-+	case 0x1:
-+		cd->softreset = 0x7c;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	__genwqe_writeq(cd, IO_SLC_CFGREG_SOFTRESET, cd->softreset);
-+	return count;
-+}
-+static DEVICE_ATTR_RW(next_bitstream);
-+
-+/*
-+ * Create device_attribute structures / params: name, mode, show, store
-+ * additional flag if valid in VF
-+ */
-+static struct attribute *genwqe_attributes[] = {
-+	&dev_attr_tempsens.attr,
-+	&dev_attr_next_bitstream.attr,
-+	&dev_attr_curr_bitstream.attr,
-+	&dev_attr_base_clock.attr,
-+	&dev_attr_driver.attr,
-+	&dev_attr_type.attr,
-+	&dev_attr_version.attr,
-+	&dev_attr_appid.attr,
-+	&dev_attr_status.attr,
-+	NULL,
-+};
-+
-+static struct attribute *genwqe_normal_attributes[] = {
-+	&dev_attr_driver.attr,
-+	&dev_attr_type.attr,
-+	&dev_attr_version.attr,
-+	&dev_attr_appid.attr,
-+	&dev_attr_status.attr,
-+	NULL,
-+};
-+
-+/**
-+ * genwqe_is_visible() - Determine if sysfs attribute should be visible or not
-+ *
-+ * VFs have restricted mmio capabilities, so not all sysfs entries
-+ * are allowed in VFs.
-+ */
-+static umode_t genwqe_is_visible(struct kobject *kobj,
-+				 struct attribute *attr, int n)
-+{
-+	unsigned int j;
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct genwqe_dev *cd = dev_get_drvdata(dev);
-+	umode_t mode = attr->mode;
-+
-+	if (genwqe_is_privileged(cd))
-+		return mode;
-+
-+	for (j = 0; genwqe_normal_attributes[j] != NULL;  j++)
-+		if (genwqe_normal_attributes[j] == attr)
-+			return mode;
-+
-+	return 0;
-+}
-+
-+static struct attribute_group genwqe_attribute_group = {
-+	.is_visible = genwqe_is_visible,
-+	.attrs      = genwqe_attributes,
-+};
-+
-+/**
-+ * genwqe_init_sysfs() - Setup sysfs entries of the card device
-+ */
-+int genwqe_init_sysfs(struct genwqe_dev *cd)
-+{
-+	int rc;
-+
-+	rc = sysfs_create_group(&cd->dev->kobj, &genwqe_attribute_group);
-+	if (rc)
-+		return -ENXIO;
-+
-+	return 0;
-+}
-+
-+/**
-+ * genwqe_exit_sysfs() - Remove sysfs entries
-+ */
-+void genwqe_exit_sysfs(struct genwqe_dev *cd)
-+{
-+	sysfs_remove_group(&cd->dev->kobj, &genwqe_attribute_group);
-+}
++	rect.width = min_t(unsigned int,
++			rect.width, MT9V032_PIXEL_ARRAY_WIDTH - rect.left);
++	rect.height = min_t(unsigned int,
++			rect.height, MT9V032_PIXEL_ARRAY_HEIGHT - rect.top);
+ 
+ 	__crop = __mt9v032_get_pad_crop(mt9v032, fh, crop->pad, crop->which);
+ 
+diff --git a/drivers/media/i2c/smiapp/smiapp-core.c b/drivers/media/i2c/smiapp/smiapp-core.c
+index ae66d91..9036e64 100644
+--- a/drivers/media/i2c/smiapp/smiapp-core.c
++++ b/drivers/media/i2c/smiapp/smiapp-core.c
+@@ -2028,8 +2028,8 @@ static int smiapp_set_crop(struct v4l2_subdev *subdev,
+ 	sel->r.width = min(sel->r.width, src_size->width);
+ 	sel->r.height = min(sel->r.height, src_size->height);
+ 
+-	sel->r.left = min(sel->r.left, src_size->width - sel->r.width);
+-	sel->r.top = min(sel->r.top, src_size->height - sel->r.height);
++	sel->r.left = min(sel->r.left, (int) (src_size->width - sel->r.width));
++	sel->r.top = min(sel->r.top, (int) (src_size->height - sel->r.height));
+ 
+ 	*crops[sel->pad] = sel->r;
+ 
+@@ -2121,8 +2121,10 @@ static int smiapp_set_selection(struct v4l2_subdev *subdev,
+ 
+ 	sel->r.left = max(0, sel->r.left & ~1);
+ 	sel->r.top = max(0, sel->r.top & ~1);
+-	sel->r.width = max(0, SMIAPP_ALIGN_DIM(sel->r.width, sel->flags));
+-	sel->r.height = max(0, SMIAPP_ALIGN_DIM(sel->r.height, sel->flags));
++	sel->r.width = max_t(unsigned int, 0,
++			SMIAPP_ALIGN_DIM(sel->r.width, sel->flags));
++	sel->r.height = max_t(unsigned int, 0,
++			SMIAPP_ALIGN_DIM(sel->r.height, sel->flags));
+ 
+ 	sel->r.width = max_t(unsigned int,
+ 			     sensor->limits[SMIAPP_LIMIT_MIN_X_OUTPUT_SIZE],
+diff --git a/drivers/media/i2c/soc_camera/mt9m111.c b/drivers/media/i2c/soc_camera/mt9m111.c
+index 6f40566..ccf5940 100644
+--- a/drivers/media/i2c/soc_camera/mt9m111.c
++++ b/drivers/media/i2c/soc_camera/mt9m111.c
+@@ -208,8 +208,8 @@ struct mt9m111 {
+ 	struct mt9m111_context *ctx;
+ 	struct v4l2_rect rect;	/* cropping rectangle */
+ 	struct v4l2_clk *clk;
+-	int width;		/* output */
+-	int height;		/* sizes */
++	unsigned int width;	/* output */
++	unsigned int height;	/* sizes */
+ 	struct mutex power_lock; /* lock to protect power_count */
+ 	int power_count;
+ 	const struct mt9m111_datafmt *fmt;
+diff --git a/drivers/media/i2c/tvp5150.c b/drivers/media/i2c/tvp5150.c
+index 89c0b13..261a464 100644
+--- a/drivers/media/i2c/tvp5150.c
++++ b/drivers/media/i2c/tvp5150.c
+@@ -867,7 +867,7 @@ static int tvp5150_s_crop(struct v4l2_subdev *sd, const struct v4l2_crop *a)
+ 	struct v4l2_rect rect = a->c;
+ 	struct tvp5150 *decoder = to_tvp5150(sd);
+ 	v4l2_std_id std;
+-	int hmax;
++	unsigned int hmax;
+ 
+ 	v4l2_dbg(1, debug, sd, "%s left=%d, top=%d, width=%d, height=%d\n",
+ 		__func__, rect.left, rect.top, rect.width, rect.height);
+@@ -877,9 +877,9 @@ static int tvp5150_s_crop(struct v4l2_subdev *sd, const struct v4l2_crop *a)
+ 
+ 	/* tvp5150 has some special limits */
+ 	rect.left = clamp(rect.left, 0, TVP5150_MAX_CROP_LEFT);
+-	rect.width = clamp(rect.width,
+-			   TVP5150_H_MAX - TVP5150_MAX_CROP_LEFT - rect.left,
+-			   TVP5150_H_MAX - rect.left);
++	rect.width = clamp_t(unsigned int, rect.width,
++		TVP5150_H_MAX - TVP5150_MAX_CROP_LEFT - rect.left,
++		TVP5150_H_MAX - rect.left);
+ 	rect.top = clamp(rect.top, 0, TVP5150_MAX_CROP_TOP);
+ 
+ 	/* Calculate height based on current standard */
+@@ -893,9 +893,9 @@ static int tvp5150_s_crop(struct v4l2_subdev *sd, const struct v4l2_crop *a)
+ 	else
+ 		hmax = TVP5150_V_MAX_OTHERS;
+ 
+-	rect.height = clamp(rect.height,
+-			    hmax - TVP5150_MAX_CROP_TOP - rect.top,
+-			    hmax - rect.top);
++	rect.height = clamp_t(unsigned int, rect.height,
++			hmax - TVP5150_MAX_CROP_TOP - rect.top,
++			hmax - rect.top);
+ 
+ 	tvp5150_write(sd, TVP5150_VERT_BLANKING_START, rect.top);
+ 	tvp5150_write(sd, TVP5150_VERT_BLANKING_STOP,
+diff --git a/drivers/media/pci/bt8xx/bttv-driver.c b/drivers/media/pci/bt8xx/bttv-driver.c
+index c6532de..41ec4fa 100644
+--- a/drivers/media/pci/bt8xx/bttv-driver.c
++++ b/drivers/media/pci/bt8xx/bttv-driver.c
+@@ -1126,9 +1126,9 @@ bttv_crop_calc_limits(struct bttv_crop *c)
+ 		c->min_scaled_height = 32;
+ 	} else {
+ 		c->min_scaled_width =
+-			(max(48, c->rect.width >> 4) + 3) & ~3;
++			(max_t(unsigned int, 48, c->rect.width >> 4) + 3) & ~3;
+ 		c->min_scaled_height =
+-			max(32, c->rect.height >> 4);
++			max_t(unsigned int, 32, c->rect.height >> 4);
+ 	}
+ 
+ 	c->max_scaled_width  = c->rect.width & ~3;
+@@ -2024,7 +2024,7 @@ limit_scaled_size_lock       (struct bttv_fh *               fh,
+ 		/* We cannot scale up. When the scaled image is larger
+ 		   than crop.rect we adjust the crop.rect as required
+ 		   by the V4L2 spec, hence cropcap.bounds are our limit. */
+-		max_width = min(b->width, (__s32) MAX_HACTIVE);
++		max_width = min_t(unsigned int, b->width, MAX_HACTIVE);
+ 		max_height = b->height;
+ 
+ 		/* We cannot capture the same line as video and VBI data.
+diff --git a/drivers/media/pci/saa7134/saa7134-video.c b/drivers/media/pci/saa7134/saa7134-video.c
+index fb60da8..bdbd805 100644
+--- a/drivers/media/pci/saa7134/saa7134-video.c
++++ b/drivers/media/pci/saa7134/saa7134-video.c
+@@ -1979,10 +1979,6 @@ static int saa7134_s_crop(struct file *file, void *f, const struct v4l2_crop *cr
+ 	if (crop->type != V4L2_BUF_TYPE_VIDEO_CAPTURE &&
+ 	    crop->type != V4L2_BUF_TYPE_VIDEO_OVERLAY)
+ 		return -EINVAL;
+-	if (crop->c.height < 0)
+-		return -EINVAL;
+-	if (crop->c.width < 0)
+-		return -EINVAL;
+ 
+ 	if (res_locked(fh->dev, RESOURCE_OVERLAY))
+ 		return -EBUSY;
+diff --git a/drivers/media/platform/soc_camera/soc_scale_crop.c b/drivers/media/platform/soc_camera/soc_scale_crop.c
+index cbd3a34..8e74fb7 100644
+--- a/drivers/media/platform/soc_camera/soc_scale_crop.c
++++ b/drivers/media/platform/soc_camera/soc_scale_crop.c
+@@ -141,8 +141,8 @@ int soc_camera_client_s_crop(struct v4l2_subdev *sd,
+ 	 * Popular special case - some cameras can only handle fixed sizes like
+ 	 * QVGA, VGA,... Take care to avoid infinite loop.
+ 	 */
+-	width = max(cam_rect->width, 2);
+-	height = max(cam_rect->height, 2);
++	width = max_t(unsigned int, cam_rect->width, 2);
++	height = max_t(unsigned int, cam_rect->height, 2);
+ 
+ 	/*
+ 	 * Loop as long as sensor is not covering the requested rectangle and
+diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
+index 437f1b0..6ae7bbe 100644
+--- a/include/uapi/linux/videodev2.h
++++ b/include/uapi/linux/videodev2.h
+@@ -207,8 +207,8 @@ enum v4l2_priority {
+ struct v4l2_rect {
+ 	__s32   left;
+ 	__s32   top;
+-	__s32   width;
+-	__s32   height;
++	__u32   width;
++	__u32   height;
+ };
+ 
+ struct v4l2_fract {
 -- 
-1.7.1
+1.8.4.rc3
 
