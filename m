@@ -1,140 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192Ab3KFNsr (ORCPT <rfc822;w@1wt.eu>);
+	id S932240Ab3KFNsu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 08:48:50 -0500
+Received: from smtpauth03h.mfg.siteprotect.com ([64.26.60.134]:36382 "EHLO
+	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932196Ab3KFNsr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Nov 2013 08:48:47 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:54726 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756817Ab3KFNsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 08:48:41 -0500
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        Chandra Seetharaman <sekharan@us.ibm.com>
-Subject: [PATCH v6 09/11] VFS hot tracking, btrfs: Add hot tracking support
-Date: Wed,  6 Nov 2013 21:45:42 +0800
-Message-Id: <1383745544-391-10-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1383745544-391-1-git-send-email-zwu.kernel@gmail.com>
-References: <1383745544-391-1-git-send-email-zwu.kernel@gmail.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110613-0320-0000-0000-000001A3EE4C
+Date: Wed, 6 Nov 2013 08:50:47 -0500 (EST)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: mingo@kernel.org, hpa@zytor.com, anton@samba.org,
+        mathieu.desnoyers@polymtl.ca, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, michael@ellerman.id.au,
+        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        fweisbec@gmail.com, VICTORK@il.ibm.com, tglx@linutronix.de,
+        oleg@redhat.com, mikey@neuling.org
+cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] tools/perf: Add required memory barriers
+In-Reply-To: <tip-a94d342b9cb09edfe888ea972af0883b6a8d992b@git.kernel.org>
+Message-ID: <alpine.DEB.2.02.1311060847340.27224@pianoman.cluster.toy>
+References: <20131030104246.GH16117@laptop.programming.kicks-ass.net> <tip-a94d342b9cb09edfe888ea972af0883b6a8d992b@git.kernel.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020208.527A48BE.011F,ss=1,re=0.100,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Wed, 6 Nov 2013, tip-bot for Peter Zijlstra wrote:
 
-Introduce one new mount option '-o hot_track',
-and add its parsing support.
+> Commit-ID:  a94d342b9cb09edfe888ea972af0883b6a8d992b
+> Gitweb:     http://git.kernel.org/tip/a94d342b9cb09edfe888ea972af0883b6a8d992b
+> Author:     Peter Zijlstra <peterz@infradead.org>
+> AuthorDate: Wed, 30 Oct 2013 11:42:46 +0100
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Wed, 6 Nov 2013 12:34:26 +0100
+> 
+> tools/perf: Add required memory barriers
+> 
+> To match patch bf378d341e48 ("perf: Fix perf ring buffer memory
+> ordering") change userspace to also adhere to the ordering outlined.
 
-Its usage looks like:
-   mount -o hot_track
-   mount -o nouser,hot_track
-   mount -o nouser,hot_track,loop
-   mount -o hot_track,nouser
+...
 
-Reviewed-by: David Sterba <dsterba@suse.cz>
-Signed-off-by: Chandra Seetharaman <sekharan@us.ibm.com>
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- fs/btrfs/ctree.h |  1 +
- fs/btrfs/super.c | 22 +++++++++++++++++++++-
- 2 files changed, 22 insertions(+), 1 deletion(-)
+> +++ b/tools/perf/util/evlist.h
+> @@ -177,7 +177,7 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist, int err, char *buf, s
+>  static inline unsigned int perf_mmap__read_head(struct perf_mmap *mm)
+>  {
+>  	struct perf_event_mmap_page *pc = mm->base;
+> -	int head = pc->data_head;
+> +	int head = ACCESS_ONCE(pc->data_head);
+>  	rmb();
+>  	return head;
 
-diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
-index 0506f40..b8d8982 100644
---- a/fs/btrfs/ctree.h
-+++ b/fs/btrfs/ctree.h
-@@ -1990,6 +1990,7 @@ struct btrfs_ioctl_defrag_range_args {
- #define BTRFS_MOUNT_CHECK_INTEGRITY_INCLUDING_EXTENT_DATA (1 << 21)
- #define BTRFS_MOUNT_PANIC_ON_FATAL_ERROR	(1 << 22)
- #define BTRFS_MOUNT_RESCAN_UUID_TREE	(1 << 23)
-+#define BTRFS_MOUNT_HOT_TRACK		(1 << 24)
- 
- #define BTRFS_DEFAULT_COMMIT_INTERVAL	(30)
- 
-diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
-index e913328..69fe31d 100644
---- a/fs/btrfs/super.c
-+++ b/fs/btrfs/super.c
-@@ -42,6 +42,7 @@
- #include <linux/cleancache.h>
- #include <linux/ratelimit.h>
- #include <linux/btrfs.h>
-+#include <linux/hot_tracking.h>
- #include "compat.h"
- #include "delayed-inode.h"
- #include "ctree.h"
-@@ -310,6 +311,10 @@ static void btrfs_put_super(struct super_block *sb)
- 	 * last process that kept it busy.  Or segfault in the aforementioned
- 	 * process...  Whom would you report that to?
- 	 */
-+
-+	/* Hot data tracking */
-+	if (btrfs_test_opt(btrfs_sb(sb)->tree_root, HOT_TRACK))
-+		hot_track_exit(sb);
- }
- 
- enum {
-@@ -323,7 +328,7 @@ enum {
- 	Opt_no_space_cache, Opt_recovery, Opt_skip_balance,
- 	Opt_check_integrity, Opt_check_integrity_including_extent_data,
- 	Opt_check_integrity_print_mask, Opt_fatal_errors, Opt_rescan_uuid_tree,
--	Opt_commit_interval,
-+	Opt_commit_interval, Opt_hot_track,
- 	Opt_err,
- };
- 
-@@ -366,6 +371,7 @@ static match_table_t tokens = {
- 	{Opt_rescan_uuid_tree, "rescan_uuid_tree"},
- 	{Opt_fatal_errors, "fatal_errors=%s"},
- 	{Opt_commit_interval, "commit=%d"},
-+	{Opt_hot_track, "hot_track"},
- 	{Opt_err, NULL},
- };
- 
-@@ -676,6 +682,9 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
- 				info->commit_interval = BTRFS_DEFAULT_COMMIT_INTERVAL;
- 			}
- 			break;
-+		case Opt_hot_track:
-+			btrfs_set_opt(info->mount_opt, HOT_TRACK);
-+			break;
- 		case Opt_err:
- 			printk(KERN_INFO "btrfs: unrecognized mount option "
- 			       "'%s'\n", p);
-@@ -898,11 +907,20 @@ static int btrfs_fill_super(struct super_block *sb,
- 		goto fail_close;
- 	}
- 
-+	if (btrfs_test_opt(fs_info->tree_root, HOT_TRACK)) {
-+		err = hot_track_init(sb);
-+		if (err)
-+			goto fail_hot;
-+	}
-+
- 	save_mount_options(sb, data);
- 	cleancache_init_fs(sb);
- 	sb->s_flags |= MS_ACTIVE;
- 	return 0;
- 
-+fail_hot:
-+	dput(sb->s_root);
-+	sb->s_root = NULL;
- fail_close:
- 	close_ctree(fs_info->tree_root);
- 	return err;
-@@ -1014,6 +1032,8 @@ static int btrfs_show_options(struct seq_file *seq, struct dentry *dentry)
- 		seq_puts(seq, ",fatal_errors=panic");
- 	if (info->commit_interval != BTRFS_DEFAULT_COMMIT_INTERVAL)
- 		seq_printf(seq, ",commit=%d", info->commit_interval);
-+	if (btrfs_test_opt(root, HOT_TRACK))
-+		seq_puts(seq, ",hot_track");
- 	return 0;
- }
- 
--- 
-1.7.11.7
+so is this ACCESS_ONCE required now for proper access to the mmap buffer?
+
+remember that there are users trying to use this outside of the kernel 
+where we don't necessarily have access to internal kernl macros.  Some of 
+these users aren't necessarily GPLv2 compatible either (PAPI for example 
+is more or less BSD licensed) so just cutting and pasting chunks of 
+internal kernel macros isn't always the best route either.
+
+Vince
 
