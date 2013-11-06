@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932440Ab3KFOSC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 09:18:02 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45474 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932092Ab3KFOR7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 09:17:59 -0500
-Date: Wed, 6 Nov 2013 15:17:57 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Sebastian Reichel <sre@ring0.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        alsa-devel@alsa-project.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Subject: Re: [RFC 1/4] ASoC: omap: rx51: Use snd_soc_register_card
-Message-ID: <20131106141757.GA15551@amd.pavel.ucw.cz>
-References: <1382909086-10493-1-git-send-email-sre@debian.org>
- <1382909086-10493-2-git-send-email-sre@debian.org>
+	id S1756537Ab3KFOSV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 09:18:21 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:43778 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756363Ab3KFOST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 09:18:19 -0500
+Date: Wed, 6 Nov 2013 15:20:25 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Robert Richter <rric@kernel.org>, linux-edac@vger.kernel.org
+Subject: Re: [PATCH] edac, highbank: remove dependency on ARCH_HIGHBANK
+Message-ID: <20131106142025.GB16072@x1.alien8.de>
+References: <1383708352-19527-1-git-send-email-robherring2@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1382909086-10493-2-git-send-email-sre@debian.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1383708352-19527-1-git-send-email-robherring2@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2013-10-27 22:24:43, Sebastian Reichel wrote:
-> From: Pali Rohár <pali.rohar@gmail.com>
+On Tue, Nov 05, 2013 at 09:25:52PM -0600, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
 > 
-> This patch converts the rx51 ASoC module to use
-> snd_soc_register_card. It also adds module alias
-> to support driver autoloading.
+> In order to enable on arm64 and improve the build coverage, remove the
+> dependency on ARCH_HIGHBANK.
 > 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> Signed-off-by: Sebastian Reichel <sre@debian.org>
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: Doug Thompson <dougthompson@xmission.com>
+> Cc: Robert Richter <rric@kernel.org>
+> Cc: linux-edac@vger.kernel.org
+> ---
+>  drivers/edac/Kconfig | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+> index 878f090..fc8aaaf 100644
+> --- a/drivers/edac/Kconfig
+> +++ b/drivers/edac/Kconfig
+> @@ -328,14 +328,14 @@ config EDAC_TILE
+>  
+>  config EDAC_HIGHBANK_MC
+>  	tristate "Highbank Memory Controller"
+> -	depends on EDAC_MM_EDAC && ARCH_HIGHBANK
+> +	depends on EDAC_MM_EDAC
 
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
+Please, no, this'll get enabled on other arches where this driver is
+simply N/A. It should only depend on the ARM arches it supports.
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Regards/Gruss,
+Boris.
