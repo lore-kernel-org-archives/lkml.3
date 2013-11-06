@@ -1,104 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293Ab3KFLIw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 06:08:52 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:64051 "EHLO SMTP.CITRIX.COM"
+	id S1756304Ab3KFLOf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 06:14:35 -0500
+Received: from mail-bn1lp0149.outbound.protection.outlook.com ([207.46.163.149]:49911
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932209Ab3KFLIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 06:08:50 -0500
-X-IronPort-AV: E=Sophos;i="4.93,646,1378857600"; 
-   d="scan'208";a="71097099"
-Date: Wed, 6 Nov 2013 11:07:32 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Xen Devel <Xen-devel@lists.xensource.com>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: Re: linux-next: manual merge of the xen-tip tree with the arm tree
-In-Reply-To: <20131106181740.c5e7e966a750909290ba1f94@canb.auug.org.au>
-Message-ID: <alpine.DEB.2.02.1311061107130.26077@kaball.uk.xensource.com>
-References: <20131106181740.c5e7e966a750909290ba1f94@canb.auug.org.au>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756068Ab3KFLOe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 06:14:34 -0500
+From: Peter Guo <peter.guo@bayhubtech.com>
+To: Chris Ball <cjb@laptop.org>
+CC: Samuel Guan <samuel.guan@bayhubtech.com>,
+        Xiaoguang Yu <xiaoguang.yu@bayhubtech.com>,
+        Shirley Her <shirley.her@bayhubtech.com>,
+        Yuxiang Wan <yuxiang.wan@bayhubtech.com>,
+        Adam Lee <adam.lee@canonical.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] mmc:sdhci fix 2 tuning issues in sdchi_exectuing_tuning
+Thread-Topic: [PATCH] mmc:sdhci fix 2 tuning issues in sdchi_exectuing_tuning
+Thread-Index: AQHO2uFc76VF4tmCckG+4/xSxQZYYQ==
+Date: Wed, 6 Nov 2013 11:14:30 +0000
+Message-ID: <ddebee7a9b284b968a8a10f7cb2bc3c6@BN1PR04MB091.namprd04.prod.outlook.com>
+References: <97254cf7c23548fdbb3ebc10170af6a8@BL2PR04MB083.namprd04.prod.outlook.com>
+ <20131016081532.GB3416@adam-laptop>  
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [27.17.7.178]
+x-forefront-prvs: 0022134A87
+x-forefront-antispam-report: SFV:NSPM;SFS:(13464003)(199002)(189002)(164054003)(377454003)(65816001)(87266001)(2656002)(59766001)(76482001)(66066001)(79102001)(33646001)(56776001)(54316002)(63696002)(53806001)(54356001)(51856001)(46102001)(19580405001)(83322001)(4396001)(49866001)(81542001)(47736001)(47976001)(50986001)(19580395003)(83072001)(74706001)(76796001)(85306002)(74366001)(74876001)(81342001)(80976001)(47446002)(74662001)(77982001)(74502001)(80022001)(31966008)(77096001)(76576001)(76786001)(81816001)(81686001)(56816003)(74316001)(69226001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR04MB236;H:BN1PR04MB091.namprd04.prod.outlook.com;CLIP:27.17.7.178;FPR:;RD:InfoNoRecords;A:0;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+X-OriginatorOrg: bayhubtech.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Nov 2013, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Today's linux-next merge of the xen-tip tree got a conflict in
-> arch/arm/include/asm/dma-mapping.h between commit 6a6a5c15d871 ("ARM:
-> 7805/1: mm: change max*pfn to include the physical offset of memory")
-> from the arm tree and commit e24b7aa368a0 ("arm: make SWIOTLB available")
-> from the xen-tip tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+Hi Chris,
 
-It is good, thanks!
+Do you have any comments on this patch?
+
+Thanks,
+Peter.Guo
+
+-----Original Message-----
+From: Peter Guo 
+Sent: Tuesday, October 29, 2013 6:55 PM
+To: 'Chris Ball'; 'linux-mmc@vger.kernel.org'; 'linux-kernel@vger.kernel.org'
+Cc: Samuel Guan; Xiaoguang Yu; Shirley Her; Yuxiang Wan; 'Adam Lee'
+Subject: [PATCH] mmc:sdhci fix 2 tuning issues in sdchi_exectuing_tuning
 
 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc arch/arm/include/asm/dma-mapping.h
-> index 863cd84eb1a2,8acfef48124a..000000000000
-> --- a/arch/arm/include/asm/dma-mapping.h
-> +++ b/arch/arm/include/asm/dma-mapping.h
-> @@@ -87,13 -97,39 +98,46 @@@ static inline dma_addr_t virt_to_dma(st
->   }
->   #endif
->   
-> + static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
-> + {
-> + 	unsigned int offset = paddr & ~PAGE_MASK;
-> + 	return pfn_to_dma(dev, __phys_to_pfn(paddr)) + offset;
-> + }
-> + 
-> + static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
-> + {
-> + 	unsigned int offset = dev_addr & ~PAGE_MASK;
-> + 	return __pfn_to_phys(dma_to_pfn(dev, dev_addr)) + offset;
-> + }
-> + 
-> + static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
-> + {
-> + 	u64 limit, mask;
-> + 
-> + 	if (!dev->dma_mask)
-> + 		return 0;
-> + 
-> + 	mask = *dev->dma_mask;
-> + 
-> + 	limit = (mask + 1) & ~mask;
-> + 	if (limit && size > limit)
-> + 		return 0;
-> + 
-> + 	if ((addr | (addr + size - 1)) & ~mask)
-> + 		return 0;
-> + 
-> + 	return 1;
-> + }
-> + 
-> + static inline void dma_mark_clean(void *addr, size_t size) { }
-> + 
->  +/* The ARM override for dma_max_pfn() */
->  +static inline unsigned long dma_max_pfn(struct device *dev)
->  +{
->  +	return PHYS_PFN_OFFSET + dma_to_pfn(dev, *dev->dma_mask);
->  +}
->  +#define dma_max_pfn(dev) dma_max_pfn(dev)
->  +
->   /*
->    * DMA errors are defined by all-bits-set in the DMA address.
->    */
-> 
+1. Tuning success at 40th time should be ok, but current code take this as
+   failed.
+2. tuning_count equals to 0 means disable retuning function, but current
+   code still do retuning.
+
+Signed-off-by: peter.guo <peter.guo@bayhubtech.com>
+---
+
