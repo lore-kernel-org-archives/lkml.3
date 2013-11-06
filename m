@@ -1,383 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756633Ab3KFVlj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 16:41:39 -0500
-Received: from mail-db8lp0186.outbound.messaging.microsoft.com ([213.199.154.186]:59233
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754524Ab3KFVlg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 16:41:36 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zz98dIc89bh1432I4015Ic8kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2149h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h906i1155h192ch)
-Date: Wed, 6 Nov 2013 13:41:25 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Chris Ball <cjb@laptop.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mmc@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v2 1/2] mmc: arasan: Add driver for Arasan SDHCI
-References: <1383151090-13885-1-git-send-email-soren.brinkmann@xilinx.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1383151090-13885-1-git-send-email-soren.brinkmann@xilinx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <b3f788b3-dfc3-422e-9a74-b796c0fd3207@DB8EHSMHS004.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1756705Ab3KFVm2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 16:42:28 -0500
+Received: from mga09.intel.com ([134.134.136.24]:40300 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756403Ab3KFVmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 16:42:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="404699300"
+Subject: Re: [PATCH v3 5/5] MCS Lock: Allow architecture specific memory
+ barrier in lock/unlock
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Will Deacon <will.deacon@arm.com>, "Figo.zhang" <figo1802@gmail.com>
+In-Reply-To: <1383773836.11046.357.camel@schen9-DESK>
+References: <cover.1383771175.git.tim.c.chen@linux.intel.com>
+	 <1383773836.11046.357.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Nov 2013 13:42:21 -0800
+Message-ID: <1383774141.11046.359.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
-
-any comments from your side? Could you consider applying it to your
-tree, please?
-
-	Thanks,
-	Sören
-
-On Wed, Oct 30, 2013 at 09:38:09AM -0700, Soren Brinkmann wrote:
-> Add a driver for Arasan's SDHCI controller core.
+On Wed, 2013-11-06 at 13:37 -0800, Tim Chen wrote:
+> This patch moves the decision of what kind of memory barriers to be
+> used in the MCS lock and unlock functions to the architecture specific
+> layer. It also moves the actual lock/unlock code to mcs_spinlock.c
+> file.
 > 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
-> v2:
->  - document 'interrupts' and 'interrupt-parent' properties in the driver
->    bindings
->  - append '-8.9a' IP version specifier to comaptibility string
-> ---
->  .../devicetree/bindings/mmc/arasan,sdhci.txt       |  27 +++
->  MAINTAINERS                                        |   1 +
->  drivers/mmc/host/Kconfig                           |  12 ++
->  drivers/mmc/host/Makefile                          |   1 +
->  drivers/mmc/host/sdhci-of-arasan.c                 | 224 +++++++++++++++++++++
->  5 files changed, 265 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
->  create mode 100644 drivers/mmc/host/sdhci-of-arasan.c
+> A full memory barrier will be used if the following macros are not
+> defined:
+>  1) smp_mb__before_critical_section()
+>  2) smp_mb__after_critical_section()
 > 
-> diff --git a/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt b/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
-> new file mode 100644
-> index 000000000000..ef4c5ac753e8
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mmc/arasan,sdhci.txt
-> @@ -0,0 +1,27 @@
-> +Device Tree Bindings for the Arasan SDCHI Controller
+> For the x86 architecture, only compiler barrier will be needed.
+> 
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+
+Should be Acked-by: Tim Chen <tim.c.chen@linux.intel.com>
+> ---
+>  arch/x86/include/asm/barrier.h |    6 +++
+>  include/linux/mcs_spinlock.h   |   78 +-------------------------------------
+>  kernel/mcs_spinlock.c          |   81 ++++++++++++++++++++++++++++++++++++++-
+>  3 files changed, 86 insertions(+), 79 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/barrier.h b/arch/x86/include/asm/barrier.h
+> index c6cd358..6d0172c 100644
+> --- a/arch/x86/include/asm/barrier.h
+> +++ b/arch/x86/include/asm/barrier.h
+> @@ -92,6 +92,12 @@
+>  #endif
+>  #define smp_read_barrier_depends()	read_barrier_depends()
+>  #define set_mb(var, value) do { (void)xchg(&var, value); } while (0)
 > +
-> +  The bindings follow the mmc[1], clock[2] and interrupt[3] bindings. Only
-> +  deviations are documented here.
+> +#if !defined(CONFIG_X86_PPRO_FENCE) && !defined(CONFIG_X86_OOSTORE)
+> +# define smp_mb__before_critical_section()	barrier()
+> +# define smp_mb__after_critical_section()	barrier()
+> +#endif
 > +
-> +  [1] Documentation/devicetree/bindings/mmc/mmc.txt
-> +  [2] Documentation/devicetree/bindings/clock/clock-bindings.txt
-> +  [3] Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-> +
-> +Required Properties:
-> +  - compatible: Compatibility string. Must be 'arasan,sdhci-8.9a'
-> +  - reg: From mmc bindings: Register location and length.
-> +  - clocks: From clock bindings: Handles to clock inputs.
-> +  - clock-names: From clock bindings: Tuple including "clk_xin" and "clk_ahb"
-> +  - interrupts: Interrupt specifier
-> +  - interrupt-parent: Phandle for the interrupt controller that services
-> +		      interrupts for this device.
-> +
-> +Example:
-> +	sdhci@e0100000 {
-> +		compatible = "arasan,sdhci-8.9a";
-> +		reg = <0xe0100000 0x1000>;
-> +		clock-names = "clk_xin", "clk_ahb";
-> +		clocks = <&clkc 21>, <&clkc 32>;
-> +		interrupt-parent = <&gic>;
-> +		interrupts = <0 24 4>;
-> +	} ;
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 3438384d270c..5ede7f722025 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1357,6 +1357,7 @@ T:	git git://git.xilinx.com/linux-xlnx.git
->  S:	Supported
->  F:	arch/arm/mach-zynq/
->  F:	drivers/cpuidle/cpuidle-zynq.c
-> +F:	drivers/mmc/host/sdhci-of-arasan.c
+>  #else
+>  #define smp_mb()	barrier()
+>  #define smp_rmb()	barrier()
+> diff --git a/include/linux/mcs_spinlock.h b/include/linux/mcs_spinlock.h
+> index f2c71e8..d54bb23 100644
+> --- a/include/linux/mcs_spinlock.h
+> +++ b/include/linux/mcs_spinlock.h
+> @@ -12,19 +12,6 @@
+>  #ifndef __LINUX_MCS_SPINLOCK_H
+>  #define __LINUX_MCS_SPINLOCK_H
 >  
->  ARM SMMU DRIVER
->  M:	Will Deacon <will.deacon@arm.com>
-> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-> index 7fc5099e44b2..1eb090c187bb 100644
-> --- a/drivers/mmc/host/Kconfig
-> +++ b/drivers/mmc/host/Kconfig
-> @@ -104,6 +104,18 @@ config MMC_SDHCI_PLTFM
+> -/*
+> - * asm/processor.h may define arch_mutex_cpu_relax().
+> - * If it is not defined, cpu_relax() will be used.
+> - */
+> -#include <asm/barrier.h>
+> -#include <asm/cmpxchg.h>
+> -#include <asm/processor.h>
+> -#include <linux/compiler.h>
+> -
+> -#ifndef arch_mutex_cpu_relax
+> -# define arch_mutex_cpu_relax() cpu_relax()
+> -#endif
+> -
+>  struct mcs_spinlock {
+>  	struct mcs_spinlock *next;
+>  	int locked; /* 1 if lock acquired */
+> @@ -32,68 +19,7 @@ struct mcs_spinlock {
 >  
->  	  If unsure, say N.
+>  extern
+>  void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node);
+> -
+> -/*
+> - * In order to acquire the lock, the caller should declare a local node and
+> - * pass a reference of the node to this function in addition to the lock.
+> - * If the lock has already been acquired, then this will proceed to spin
+> - * on this node->locked until the previous lock holder sets the node->locked
+> - * in mcs_spin_unlock().
+> - *
+> - * The _raw_mcs_spin_lock() function should not be called directly. Instead,
+> - * users should call mcs_spin_lock().
+> - */
+> -static inline
+> -void _raw_mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+> -{
+> -	struct mcs_spinlock *prev;
+> -
+> -	/* Init node */
+> -	node->locked = 0;
+> -	node->next   = NULL;
+> -
+> -	/* xchg() provides a memory barrier */
+> -	prev = xchg(lock, node);
+> -	if (likely(prev == NULL)) {
+> -		/* Lock acquired */
+> -		return;
+> -	}
+> -	ACCESS_ONCE(prev->next) = node;
+> -	/* Wait until the lock holder passes the lock down */
+> -	while (!ACCESS_ONCE(node->locked))
+> -		arch_mutex_cpu_relax();
+> -
+> -	/* Make sure subsequent operations happen after the lock is acquired */
+> -	smp_rmb();
+> -}
+> -
+> -/*
+> - * Releases the lock. The caller should pass in the corresponding node that
+> - * was used to acquire the lock.
+> - */
+> -static inline
+> -void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+> -{
+> -	struct mcs_spinlock *next = ACCESS_ONCE(node->next);
+> -
+> -	if (likely(!next)) {
+> -		/*
+> -		 * cmpxchg() provides a memory barrier.
+> -		 * Release the lock by setting it to NULL
+> -		 */
+> -		if (likely(cmpxchg(lock, node, NULL) == node))
+> -			return;
+> -		/* Wait until the next pointer is set */
+> -		while (!(next = ACCESS_ONCE(node->next)))
+> -			arch_mutex_cpu_relax();
+> -	} else {
+> -		/*
+> -		 * Make sure all operations within the critical section
+> -		 * happen before the lock is released.
+> -		 */
+> -		smp_wmb();
+> -	}
+> -	ACCESS_ONCE(next->locked) = 1;
+> -}
+> +extern
+> +void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node);
 >  
-> +config MMC_SDHCI_OF_ARASAN
-> +	tristate "SDHCI OF support for the Arasan SDHCI controllers"
-> +	depends on MMC_SDHCI_PLTFM
-> +	depends on OF
-> +	help
-> +	  This selects the Arasan Secure Digital Host Controller Interface
-> +	  (SDHCI). This hardware is found e.g. in Xilinx' Zynq SoC.
-> +
-> +	  If you have a controller with this interface, say Y or M here.
-> +
-> +	  If unsure, say N.
-> +
->  config MMC_SDHCI_OF_ESDHC
->  	tristate "SDHCI OF support for the Freescale eSDHC controller"
->  	depends on MMC_SDHCI_PLTFM
-> diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
-> index c41d0c364509..f93617ec6548 100644
-> --- a/drivers/mmc/host/Makefile
-> +++ b/drivers/mmc/host/Makefile
-> @@ -57,6 +57,7 @@ obj-$(CONFIG_MMC_SDHCI_CNS3XXX)		+= sdhci-cns3xxx.o
->  obj-$(CONFIG_MMC_SDHCI_ESDHC_IMX)	+= sdhci-esdhc-imx.o
->  obj-$(CONFIG_MMC_SDHCI_DOVE)		+= sdhci-dove.o
->  obj-$(CONFIG_MMC_SDHCI_TEGRA)		+= sdhci-tegra.o
-> +obj-$(CONFIG_MMC_SDHCI_OF_ARASAN)	+= sdhci-of-arasan.o
->  obj-$(CONFIG_MMC_SDHCI_OF_ESDHC)	+= sdhci-of-esdhc.o
->  obj-$(CONFIG_MMC_SDHCI_OF_HLWD)		+= sdhci-of-hlwd.o
->  obj-$(CONFIG_MMC_SDHCI_BCM_KONA)	+= sdhci-bcm-kona.o
-> diff --git a/drivers/mmc/host/sdhci-of-arasan.c b/drivers/mmc/host/sdhci-of-arasan.c
-> new file mode 100644
-> index 000000000000..98464bc732f6
-> --- /dev/null
-> +++ b/drivers/mmc/host/sdhci-of-arasan.c
-> @@ -0,0 +1,224 @@
+>  #endif /* __LINUX_MCS_SPINLOCK_H */
+> diff --git a/kernel/mcs_spinlock.c b/kernel/mcs_spinlock.c
+> index 3c55626..2dfd207 100644
+> --- a/kernel/mcs_spinlock.c
+> +++ b/kernel/mcs_spinlock.c
+> @@ -7,15 +7,90 @@
+>   * It avoids expensive cache bouncings that common test-and-set spin-lock
+>   * implementations incur.
+>   */
 > +/*
-> + * Arasan Secure Digital Host Controller Interface.
-> + * Copyright (C) 2011 - 2012 Michal Simek <monstr@monstr.eu>
-> + * Copyright (c) 2012 Wind River Systems, Inc.
-> + * Copyright (C) 2013 Pengutronix e.K.
-> + * Copyright (C) 2013 Xilinx Inc.
-> + *
-> + * Based on sdhci-of-esdhc.c
-> + *
-> + * Copyright (c) 2007 Freescale Semiconductor, Inc.
-> + * Copyright (c) 2009 MontaVista Software, Inc.
-> + *
-> + * Authors: Xiaobo Xie <X.Xie@freescale.com>
-> + *	    Anton Vorontsov <avorontsov@ru.mvista.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or (at
-> + * your option) any later version.
+> + * asm/processor.h may define arch_mutex_cpu_relax().
+> + * If it is not defined, cpu_relax() will be used.
 > + */
+> +#include <asm/barrier.h>
+> +#include <asm/cmpxchg.h>
+> +#include <asm/processor.h>
+> +#include <linux/compiler.h>
+>  #include <linux/mcs_spinlock.h>
+>  #include <linux/export.h>
+>  
+> +#ifndef arch_mutex_cpu_relax
+> +# define arch_mutex_cpu_relax() cpu_relax()
+> +#endif
 > +
-> +#include <linux/module.h>
-> +#include "sdhci-pltfm.h"
-> +
-> +#define SDHCI_ARASAN_CLK_CTRL_OFFSET	0x2c
-> +
-> +#define CLK_CTRL_TIMEOUT_SHIFT		16
-> +#define CLK_CTRL_TIMEOUT_MASK		(0xf << CLK_CTRL_TIMEOUT_SHIFT)
-> +#define CLK_CTRL_TIMEOUT_MIN_EXP	13
-> +
-> +/**
-> + * struct sdhci_arasan_data
-> + * @clk_ahb:	Pointer to the AHB clock
+>  /*
+> - * We don't inline mcs_spin_lock() so that perf can correctly account for the
+> - * time spent in this lock function.
+> + * Fall back to use full memory barrier if those macros are not defined
+> + * in a architecture specific header file.
 > + */
-> +struct sdhci_arasan_data {
-> +	struct clk	*clk_ahb;
-> +};
+> +#ifndef smp_mb__before_critical_section
+> +#define	smp_mb__before_critical_section()	smp_mb()
+> +#endif
 > +
-> +static unsigned int sdhci_arasan_get_timeout_clock(struct sdhci_host *host)
-> +{
-> +	u32 div;
-> +	unsigned long freq;
-> +	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +#ifndef smp_mb__after_critical_section
+> +#define	smp_mb__after_critical_section()	smp_mb()
+> +#endif
 > +
-> +	div = readl(host->ioaddr + SDHCI_ARASAN_CLK_CTRL_OFFSET);
-> +	div = (div & CLK_CTRL_TIMEOUT_MASK) >> CLK_CTRL_TIMEOUT_SHIFT;
 > +
-> +	freq = clk_get_rate(pltfm_host->clk);
-> +	freq /= 1 << (CLK_CTRL_TIMEOUT_MIN_EXP + div);
+> +/*
+> + * In order to acquire the lock, the caller should declare a local node and
+> + * pass a reference of the node to this function in addition to the lock.
+> + * If the lock has already been acquired, then this will proceed to spin
+> + * on this node->locked until the previous lock holder sets the node->locked
+> + * in mcs_spin_unlock().
+>   */
+>  void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+>  {
+> -	_raw_mcs_spin_lock(lock, node);
+> +	struct mcs_spinlock *prev;
 > +
-> +	return freq;
-> +}
+> +	/* Init node */
+> +	node->locked = 0;
+> +	node->next   = NULL;
 > +
-> +static struct sdhci_ops sdhci_arasan_ops = {
-> +	.get_max_clock = sdhci_pltfm_clk_get_max_clock,
-> +	.get_timeout_clock = sdhci_arasan_get_timeout_clock,
-> +};
+> +	/* xchg() provides a memory barrier */
+> +	prev = xchg(lock, node);
+> +	if (likely(prev == NULL)) {
+> +		/* Lock acquired */
+> +		return;
+> +	}
+> +	ACCESS_ONCE(prev->next) = node;
+> +	/* Wait until the lock holder passes the lock down */
+> +	while (!ACCESS_ONCE(node->locked))
+> +		arch_mutex_cpu_relax();
 > +
-> +static struct sdhci_pltfm_data sdhci_arasan_pdata = {
-> +	.ops = &sdhci_arasan_ops,
-> +};
+> +	/* Make sure subsequent operations happen after the lock is acquired */
+> +	smp_mb__before_critical_section();
+>  }
+>  EXPORT_SYMBOL_GPL(mcs_spin_lock);
 > +
-> +#ifdef CONFIG_PM_SLEEP
-> +/**
-> + * sdhci_arasan_suspend - Suspend method for the driver
-> + * @dev:	Address of the device structure
-> + * Returns 0 on success and error value on error
-> + *
-> + * Put the device in a low power state.
+> +/*
+> + * Releases the lock. The caller should pass in the corresponding node that
+> + * was used to acquire the lock.
 > + */
-> +static int sdhci_arasan_suspend(struct device *dev)
+> +void mcs_spin_unlock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
 > +{
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct sdhci_host *host = platform_get_drvdata(pdev);
-> +	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-> +	struct sdhci_arasan_data *sdhci_arasan = pltfm_host->priv;
-> +	int ret;
+> +	struct mcs_spinlock *next = ACCESS_ONCE(node->next);
 > +
-> +	ret = sdhci_suspend_host(host);
-> +	if (ret)
-> +		return ret;
-> +
-> +	clk_disable(pltfm_host->clk);
-> +	clk_disable(sdhci_arasan->clk_ahb);
-> +
-> +	return 0;
+> +	if (likely(!next)) {
+> +		/*
+> +		 * cmpxchg() provides a memory barrier.
+> +		 * Release the lock by setting it to NULL
+> +		 */
+> +		if (likely(cmpxchg(lock, node, NULL) == node))
+> +			return;
+> +		/* Wait until the next pointer is set */
+> +		while (!(next = ACCESS_ONCE(node->next)))
+> +			arch_mutex_cpu_relax();
+> +	} else {
+> +		/*
+> +		 * Make sure all operations within the critical section
+> +		 * happen before the lock is released.
+> +		 */
+> +		smp_mb__after_critical_section();
+> +	}
+> +	ACCESS_ONCE(next->locked) = 1;
 > +}
-> +
-> +/**
-> + * sdhci_arasan_resume - Resume method for the driver
-> + * @dev:	Address of the device structure
-> + * Returns 0 on success and error value on error
-> + *
-> + * Resume operation after suspend
-> + */
-> +static int sdhci_arasan_resume(struct device *dev)
-> +{
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct sdhci_host *host = platform_get_drvdata(pdev);
-> +	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-> +	struct sdhci_arasan_data *sdhci_arasan = pltfm_host->priv;
-> +	int ret;
-> +
-> +	ret = clk_enable(sdhci_arasan->clk_ahb);
-> +	if (ret) {
-> +		dev_err(dev, "Cannot enable AHB clock.\n");
-> +		return ret;
-> +	}
-> +
-> +	ret = clk_enable(pltfm_host->clk);
-> +	if (ret) {
-> +		dev_err(dev, "Cannot enable SD clock.\n");
-> +		clk_disable(sdhci_arasan->clk_ahb);
-> +		return ret;
-> +	}
-> +
-> +	return sdhci_resume_host(host);
-> +}
-> +#endif /* ! CONFIG_PM_SLEEP */
-> +
-> +static SIMPLE_DEV_PM_OPS(sdhci_arasan_dev_pm_ops, sdhci_arasan_suspend,
-> +			 sdhci_arasan_resume);
-> +
-> +static int sdhci_arasan_probe(struct platform_device *pdev)
-> +{
-> +	int ret;
-> +	struct clk *clk_xin;
-> +	struct sdhci_host *host;
-> +	struct sdhci_pltfm_host *pltfm_host;
-> +	struct sdhci_arasan_data *sdhci_arasan;
-> +
-> +	sdhci_arasan = devm_kzalloc(&pdev->dev, sizeof(*sdhci_arasan),
-> +			GFP_KERNEL);
-> +	if (!sdhci_arasan)
-> +		return -ENOMEM;
-> +
-> +	sdhci_arasan->clk_ahb = devm_clk_get(&pdev->dev, "clk_ahb");
-> +	if (IS_ERR(sdhci_arasan->clk_ahb)) {
-> +		dev_err(&pdev->dev, "clk_ahb clock not found.\n");
-> +		return PTR_ERR(sdhci_arasan->clk_ahb);
-> +	}
-> +
-> +	clk_xin = devm_clk_get(&pdev->dev, "clk_xin");
-> +	if (IS_ERR(clk_xin)) {
-> +		dev_err(&pdev->dev, "clk_xin clock not found.\n");
-> +		return PTR_ERR(clk_xin);
-> +	}
-> +
-> +	ret = clk_prepare_enable(sdhci_arasan->clk_ahb);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Unable to enable AHB clock.\n");
-> +		return ret;
-> +	}
-> +
-> +	ret = clk_prepare_enable(clk_xin);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Unable to enable SD clock.\n");
-> +		goto clk_dis_ahb;
-> +	}
-> +
-> +	host = sdhci_pltfm_init(pdev, &sdhci_arasan_pdata, 0);
-> +	if (IS_ERR(host)) {
-> +		ret = PTR_ERR(host);
-> +		dev_err(&pdev->dev, "platform init failed (%u)\n", ret);
-> +		goto clk_disable_all;
-> +	}
-> +
-> +	sdhci_get_of_property(pdev);
-> +	pltfm_host = sdhci_priv(host);
-> +	pltfm_host->priv = sdhci_arasan;
-> +	pltfm_host->clk = clk_xin;
-> +
-> +	ret = sdhci_add_host(host);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "platform register failed (%u)\n", ret);
-> +		goto err_pltfm_free;
-> +	}
-> +
-> +	return 0;
-> +
-> +err_pltfm_free:
-> +	sdhci_pltfm_free(pdev);
-> +clk_disable_all:
-> +	clk_disable_unprepare(clk_xin);
-> +clk_dis_ahb:
-> +	clk_disable_unprepare(sdhci_arasan->clk_ahb);
-> +
-> +	return ret;
-> +}
-> +
-> +static int sdhci_arasan_remove(struct platform_device *pdev)
-> +{
-> +	struct sdhci_host *host = platform_get_drvdata(pdev);
-> +	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-> +	struct sdhci_arasan_data *sdhci_arasan = pltfm_host->priv;
-> +
-> +	clk_disable_unprepare(pltfm_host->clk);
-> +	clk_disable_unprepare(sdhci_arasan->clk_ahb);
-> +
-> +	return sdhci_pltfm_unregister(pdev);
-> +}
-> +
-> +static const struct of_device_id sdhci_arasan_of_match[] = {
-> +	{ .compatible = "arasan,sdhci-8.9a" },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(of, sdhci_arasan_of_match);
-> +
-> +static struct platform_driver sdhci_arasan_driver = {
-> +	.driver = {
-> +		.name = "sdhci-arasan",
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = sdhci_arasan_of_match,
-> +		.pm = &sdhci_arasan_dev_pm_ops,
-> +	},
-> +	.probe = sdhci_arasan_probe,
-> +	.remove = sdhci_arasan_remove,
-> +};
-> +
-> +module_platform_driver(sdhci_arasan_driver);
-> +
-> +MODULE_DESCRIPTION("Driver for the Arasan SDHCI Controller");
-> +MODULE_AUTHOR("Soeren Brinkmann <soren.brinkmann@xilinx.com");
-> +MODULE_LICENSE("GPL");
-> -- 
-> 1.8.4.1
-> 
-> 
+> +EXPORT_SYMBOL_GPL(mcs_spin_unlock);
+
 
