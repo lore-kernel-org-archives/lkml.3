@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab3KFWcP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 17:32:15 -0500
-Received: from mga14.intel.com ([143.182.124.37]:30176 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751873Ab3KFWcO convert rfc822-to-8bit (ORCPT
+	id S1751979Ab3KFWdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 17:33:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39734 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729Ab3KFWdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 17:32:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="385682266"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-CC: H Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] x86/apic: Disable I/O APIC before shutdown local APIC
-Thread-Topic: [PATCH] x86/apic: Disable I/O APIC before shutdown local APIC
-Thread-Index: AQHO0XEQ1goUKaaSDkuV7+Ij2zXrD5oY1zMw
-Date: Wed, 6 Nov 2013 22:32:12 +0000
-Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712205A58164A@ORSMSX106.amr.corp.intel.com>
-References: <1382578212-4677-1-git-send-email-fenghua.yu@intel.com>
- <20131025105742.GA5485@gmail.com>
-In-Reply-To: <20131025105742.GA5485@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 6 Nov 2013 17:33:14 -0500
+Date: Wed, 6 Nov 2013 14:33:13 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        dave hansen <dave.hansen@intel.com>
+Subject: Re: [PATCH v4 2/2] mm: allow to set overcommit ratio more precisely
+Message-Id: <20131106143313.1a368250df917fba0faf56fe@linux-foundation.org>
+In-Reply-To: <1450211196.19341043.1383727340985.JavaMail.root@redhat.com>
+References: <1382101019-23563-1-git-send-email-jmarchan@redhat.com>
+	<1382101019-23563-2-git-send-email-jmarchan@redhat.com>
+	<20131105155319.732dcbefb162c2ee4716ef9d@linux-foundation.org>
+	<1450211196.19341043.1383727340985.JavaMail.root@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Ingo Molnar [mailto:mingo.kernel.org@gmail.com] wrote:
-> Friday, October 25, 2013 3:58 AM
-> 
-> * Fenghua Yu <fenghua.yu@intel.com> wrote:
-> 
-> > From: Fenghua Yu <fenghua.yu@intel.com>
-> >
-> > In reboot and crash path, when shutdown local APIC, I/O APIC is still
-> active.
-> > This may cause issues because external interrupts can still come in
-> and
-> > disturb local APIC during shutdown process. To quiet external
-> interrupts,
-> > disable I/O APIC before shutdown local APIC.
-> 
-> What specific 'issues' were observed, on what kind of systems?
-> 
+On Wed, 6 Nov 2013 03:42:20 -0500 (EST) Jerome Marchand <jmarchan@redhat.com> wrote:
 
-This patch is a workaround for a to-be-published erratum; the erratum
-will be published in a few weeks.
+> 
+> 
+> ----- Original Message -----
+> > From: "Andrew Morton" <akpm@linux-foundation.org>
+> > To: "Jerome Marchand" <jmarchan@redhat.com>
+> > Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, "dave hansen" <dave.hansen@intel.com>
+> > Sent: Wednesday, November 6, 2013 12:53:19 AM
+> > Subject: Re: [PATCH v4 2/2] mm: allow to set overcommit ratio more precisely
+> > 
+> > On Fri, 18 Oct 2013 14:56:59 +0200 Jerome Marchand <jmarchan@redhat.com>
+> > wrote:
+> > 
+> > > Some applications that run on HPC clusters are designed around the
+> > > availability of RAM and the overcommit ratio is fine tuned to get the
+> > > maximum usage of memory without swapping. With growing memory, the 1%
+> > > of all RAM grain provided by overcommit_ratio has become too coarse
+> > > for these workload (on a 2TB machine it represents no less than
+> > > 20GB).
+> > > 
+> > > This patch adds the new overcommit_ratio_ppm sysctl variable that
+> > > allow to set overcommit ratio with a part per million precision.
+> > > The old overcommit_ratio variable can still be used to set and read
+> > > the ratio with a 1% precision. That way, overcommit_ratio interface
+> > > isn't broken in any way that I can imagine.
+> > 
+> > The way we've permanently squished this mistake in the past is to
+> > switch to "bytes".  See /proc/sys/vm/*bytes.
+> > 
+> > Would that approach work in this case?
+> > 
+> 
+> That was my first version of this patch (actually "kbytes" to avoid
+> overflow).
+> Dave raised the issue that it silently breaks the user interface:
+> overcommit_ratio is zero while the system behaves differently.
 
-Thanks.
+I don't understand that at all.  We keep overcommit_ratio as-is, with
+the same default values and add a different way of altering it.  That
+should be back-compatible?
 
--Fenghua
