@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663Ab3KFOSj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 09:18:39 -0500
-Received: from [204.155.152.216] ([204.155.152.216]:45673 "EHLO shutemov.name"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756588Ab3KFOSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 09:18:37 -0500
-Date: Wed, 6 Nov 2013 15:21:55 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH] mm: create a separate slab for page->ptl allocation
-Message-ID: <20131106132155.GA22132@shutemov.name>
-References: <1382442839-7458-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20131105150145.734a5dd5b5d455800ebfa0d3@linux-foundation.org>
- <20131105224217.GC20167@shutemov.name>
- <20131105155619.021f32eba1ca8f15a73ed4c9@linux-foundation.org>
- <20131105231310.GE20167@shutemov.name>
- <20131106093131.GU28601@twins.programming.kicks-ass.net>
+	id S1756698Ab3KFOT0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 09:19:26 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45510 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756443Ab3KFOTY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 09:19:24 -0500
+Date: Wed, 6 Nov 2013 15:19:23 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Sebastian Reichel <sre@ring0.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        alsa-devel@alsa-project.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Subject: Re: [RFC 2/4] ARM: OMAP: rx51: Register audio device
+Message-ID: <20131106141922.GB15551@amd.pavel.ucw.cz>
+References: <1382909086-10493-1-git-send-email-sre@debian.org>
+ <1382909086-10493-3-git-send-email-sre@debian.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20131106093131.GU28601@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1382909086-10493-3-git-send-email-sre@debian.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 10:31:31AM +0100, Peter Zijlstra wrote:
-> On Wed, Nov 06, 2013 at 01:13:11AM +0200, Kirill A. Shutemov wrote:
-> > I would like to get rid of __ptlock_alloc()/__ptlock_free() too, but I
-> > don't see a way within C: we need to know sizeof(spinlock_t) on
-> > preprocessor stage.
-> > 
-> > We can have a hack on kbuild level: write small helper program to find out
-> > sizeof(spinlock_t) before start building and turn it into define.
-> > But it's overkill from my POV. And cross-compilation will be a fun.
+Hi!
+
+> From: Pali Rohár <pali.rohar@gmail.com>
 > 
-> Ah, I just remembered, we have such a thing!
+> This patch adds support for the audio chip to the legacy
+> boardcode of the Nokia N900.
 
-Great!
+In 0/4, you said:
 
-> @@ -1354,7 +1356,7 @@ static inline bool ptlock_init(struct page *page)
->  	 * slab code uses page->slab_cache and page->first_page (for tail
->  	 * pages), which share storage with page->ptl.
->  	 */
-> -	VM_BUG_ON(page->ptl);
-> +	VM_BUG_ON(*(unsigned long *)&page->ptl);
+> For example non DT boot
+> does not work, because I did not yet add pdata in boardcode.
 
-Huh? Why not direct cast to unsigned long?
+So, perhaps we don't need this patch for now and can rely only do
+audio on device-tree-enabled configurations?
 
-VM_BUG_ON((unsigned long)page->ptl);
-
-Otherwise:
-
-Reviewed-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-
-
+Thanks,
+							Pavel
 -- 
- Kirill A. Shutemov
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
