@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102Ab3KFUl5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 15:41:57 -0500
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:54109 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756346Ab3KFUly (ORCPT
+	id S1756374Ab3KFUnJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 15:43:09 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:62547 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755788Ab3KFUnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 15:41:54 -0500
-Date: Wed, 6 Nov 2013 21:41:43 +0100
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
-Message-ID: <20131106204143.GD8662@breakpoint.cc>
-References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
- <20131106190152.GA8662@breakpoint.cc>
- <C10E33D7-53F6-4A50-9B84-1149DDBDC46F@antoniou-consulting.com>
- <20131106203102.GB8662@breakpoint.cc>
+	Wed, 6 Nov 2013 15:43:07 -0500
+Date: Wed, 6 Nov 2013 12:45:23 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Julius Werner <jwerner@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Benson Leung <bleung@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>
+Subject: Re: [PATCH] usb: hub: Use correct reset for wedged USB3 devices that
+ are NOTATTACHED
+Message-ID: <20131106204523.GA19041@kroah.com>
+References: <1383769641-22910-1-git-send-email-jwerner@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131106203102.GB8662@breakpoint.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1383769641-22910-1-git-send-email-jwerner@chromium.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.11.13, Sebastian Andrzej Siewior wrote:
-> > It has been discussed.
-> > 
-> > We are doing it because
+On Wed, Nov 06, 2013 at 12:27:21PM -0800, Julius Werner wrote:
+> This patch adds a check for USB_STATE_NOTATTACHED to the
+> hub_port_warm_reset_required() workaround for ports that end up in
+> Compliance Mode in hub_events() when trying to decide which reset
+> function to use. Trying to call usb_reset_device() with a NOTATTACHED
+> device will just fail and leave the port broken.
 
-Please don't get me wrong. I am not against this, I am just curious why
-this needs to be done at runtime and bootloader time is not an option.
+Who makes those calls, drivers?  Any specific ones that you know need to
+be fixed?
 
-Sebastian
+> Also bumped the messages about this kind of reset failure from dev_dbg()
+> to dev_warn() to make it easier to notice, since calling that function
+> with a NOTATTACHED device would almost always be a bug
+
+But what can a user do if those messages show up?
+
+thanks,
+
+greg k-h
