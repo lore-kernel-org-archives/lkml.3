@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756834Ab3KFObK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 09:31:10 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:34365 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756366Ab3KFObI (ORCPT
+	id S932199Ab3KFObN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 09:31:13 -0500
+Received: from relay.parallels.com ([195.214.232.42]:48144 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756366Ab3KFObL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 09:31:08 -0500
-Date: Wed, 6 Nov 2013 14:30:59 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: new asus fan driver
-Message-ID: <20131106143059.GA24451@srcf.ucam.org>
-References: <1383641987-4403-1-git-send-email-felipe.contreras@gmail.com>
- <20131105125228.GB18093@kroah.com>
- <CAMP44s0i-xCNHW_PPyO57p9yt0X_9OaYSQDkVPoNKum=nEHQbw@mail.gmail.com>
- <20131105151609.GA20950@kroah.com>
- <CAMP44s2BmZY2vQXQKsWmF68td8w9i4YNzp-o37ZN3YzsyZ3SWA@mail.gmail.com>
- <20131106021933.GA7242@kroah.com>
- <CAMP44s2vHKuNyqRndWty+-Ua47KEL8fwfeq+sakC7MJKv5KrTw@mail.gmail.com>
- <20131106085556.GA9487@kroah.com>
+	Wed, 6 Nov 2013 09:31:11 -0500
+Message-ID: <527A5269.7040900@parallels.com>
+Date: Wed, 6 Nov 2013 18:30:01 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131106085556.GA9487@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <karl.kiniger@med.ge.com>, <jack@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <t.artem@lycos.com>, <linux-mm@kvack.org>, <mgorman@suse.de>,
+        <tytso@mit.edu>, <fengguang.wu@intel.com>,
+        <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] mm: add strictlimit knob
+References: <20131031142612.GA28003@kipc2.localdomain>	<20131101142941.1161.40314.stgit@dhcp-10-30-17-2.sw.ru> <20131104140104.7936d263258a7a6753eb325e@linux-foundation.org>
+In-Reply-To: <20131104140104.7936d263258a7a6753eb325e@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 12:55:56AM -0800, Greg Kroah-Hartman wrote:
+Hi Andrew,
 
-> Matthew, please don't push drivers to the staging tree that have no
-> problems on their own, and don't require work within them to get out of
-> staging, as that doesn't help much, as I don't want to take code that
-> has to wait for external things to happen before it can move out of
-> staging.
+On 11/05/2013 02:01 AM, Andrew Morton wrote:
+> On Fri, 01 Nov 2013 18:31:40 +0400 Maxim Patlasov <MPatlasov@parallels.com> wrote:
+>
+>> "strictlimit" feature was introduced to enforce per-bdi dirty limits for
+>> FUSE which sets bdi max_ratio to 1% by default:
+>>
+>> http://www.http.com//article.gmane.org/gmane.linux.kernel.mm/105809
+>>
+>> However the feature can be useful for other relatively slow or untrusted
+>> BDIs like USB flash drives and DVD+RW. The patch adds a knob to enable the
+>> feature:
+>>
+>> echo 1 > /sys/class/bdi/X:Y/strictlimit
+>>
+>> Being enabled, the feature enforces bdi max_ratio limit even if global (10%)
+>> dirty limit is not reached. Of course, the effect is not visible until
+>> max_ratio is decreased to some reasonable value.
+> I suggest replacing "max_ratio" here with the much more informative
+> "/sys/class/bdi/X:Y/max_ratio".
+>
+> Also, Documentation/ABI/testing/sysfs-class-bdi will need an update
+> please.
 
-I'm not willing to commit to supporting this code with the 
-virt_to_phys() hack in place, but I also don't want to block Felipe from 
-having an incentive to fix up the ACPI core so we can do this cleanly. 
-What I suggested was adding it to the asus-wmi driver and wrapping the 
-functionality with CONFIG_STAGING in order to indicate that there were 
-no promises that this feature would remain, and then giving Felipe a few 
-months to do the ACPI work. If it got done in a reasonable time then 
-we'd keep the code, and if not I'd drop it. I certainly didn't suggest 
-writing a separate driver, let alone putting it in staging.
+OK, I'll update it, fix patch description and re-send the patch.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+>
+>>   mm/backing-dev.c |   35 +++++++++++++++++++++++++++++++++++
+>>   1 file changed, 35 insertions(+)
+>>
+> I'm not really sure what to make of the patch.  I assume you tested it
+> and observed some effect.  Could you please describe the test setup and
+> the effects in some detail?
+
+I plugged 16GB USB-flash in a node with 8GB RAM running 3.12.0-rc7 and 
+started writing a huge file by "dd" (from /dev/zero to USB-flash 
+mount-point). While writing I was observing "Dirty" counter as reported 
+by /proc/meminfo. As expected it stabilized on a level about 1.2GB (15% 
+of total RAM). Immediately after dd completed, the "umount" command took 
+about 5 minutes. This corresponded to 5MB write throughput of the flash 
+drive.
+
+Then I repeated the experiment after setting tunables:
+
+echo 1 > /sys/class/bdi/8\:16/max_ratio
+echo 1 > /sys/class/bdi/8\:16/strictlimit
+
+This time, "Dirty" counter became 100 times lesser - about 12MB and 
+"umount" took about a second.
+
+Thanks,
+Maxim
