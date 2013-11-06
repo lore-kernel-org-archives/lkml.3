@@ -1,78 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751031Ab3KFF3T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 00:29:19 -0500
-Received: from mga14.intel.com ([143.182.124.37]:4126 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747Ab3KFF3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 00:29:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,644,1378882800"; 
-   d="scan'208";a="422944698"
-Message-ID: <1383715752.2073.11.camel@rzhang1-mobl4>
-Subject: Re: [PATCH] thermal: Fix binding problem when there is thermal zone
- params
-From: Zhang Rui <rui.zhang@intel.com>
-To: Wei Ni <wni@nvidia.com>
-Cc: durgadoss.r@intel.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        Jinyoung Park <jinyoungp@nvidia.com>
-Date: Wed, 06 Nov 2013 13:29:12 +0800
-In-Reply-To: <1382090587-9602-1-git-send-email-wni@nvidia.com>
-References: <1382090587-9602-1-git-send-email-wni@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751329Ab3KFFbe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 00:31:34 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:64245 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab3KFFbc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 00:31:32 -0500
+Date: Wed, 6 Nov 2013 06:31:28 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [GIT PULL 00/10] perf/core improvements and fixes
+Message-ID: <20131106053128.GA19905@gmail.com>
+References: <1383682201-19399-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383682201-19399-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-10-18 at 18:03 +0800, Wei Ni wrote:
-> The thermal zone params can be used to set governor
-> to specific thermal governor for thermal zone device.
-> But if the thermal zone params has only governor name
-> without thermal bind params, then the thermal zone device
-> will not be binding to cooling device. Because tz->ops->bind
-> operator is not invoked in bind_tz() and bind_cdev() when
-> there is thermal zone params.
+
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
 > 
-> Signed-off-by: Wei Ni <wni@nvidia.com>
-> Signed-off-by: Jinyoung Park <jinyoungp@nvidia.com>
-> ---
->  drivers/thermal/thermal_core.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+> Hi Ingo,
 > 
-> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-> index 4962a6a..2ea41d3 100644
-> --- a/drivers/thermal/thermal_core.c
-> +++ b/drivers/thermal/thermal_core.c
-> @@ -247,7 +247,7 @@ static void bind_cdev(struct thermal_cooling_device *cdev)
->  		if (!pos->tzp && !pos->ops->bind)
->  			continue;
->  
-> -		if (!pos->tzp && pos->ops->bind) {
-> +		if (pos->ops->bind) {
->  			ret = pos->ops->bind(pos, cdev);
->  			if (ret)
->  				print_bind_err_msg(pos, cdev, ret);
-IMO, we should also add
-+		continue;
-after binding with pos->ops->bind(), to void binding via pos->tzp->tbp
-again, no?
+> 	Please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit 87968f94fbea47df334502a0db645833ce8a848b:
+> 
+>   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-11-04 21:14:04 +0100)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to 316c7136f8bad924609163b9b115f68d59a68c82:
+> 
+>   perf tools: Finish the removal of 'self' arguments (2013-11-05 15:32:36 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes:
+> 
+> . Check maximum frequency rate for record/top, emitting better error
+>   messages, from Jiri Olsa.
+> 
+> . Disable live kvm command if timerfd is not supported, from David Ahern.
+> 
+> . Add usage to 'perf list', from David Ahern.
+> 
+> . Fix detection of non-core features, from David Ahern.
+> 
+> . Consolidate __hists__add_*entry(), cleanup from Namhyung Kim.
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (2):
+>       perf fs: Rename NAME_find_mountpoint() to NAME__mountpoint()
+>       perf tools: Finish the removal of 'self' arguments
+> 
+> David Ahern (4):
+>       perf kvm: Disable live command if timerfd is not supported
+>       tools/perf/build: Fix detection of non-core features
+>       perf list: Remove a level of indentation
+>       perf list: Add usage
+> 
+> Jiri Olsa (3):
+>       perf tools: Factor sysfs code into generic fs object
+>       perf fs: Add procfs support
+>       perf tools: Check maximum frequency rate for record/top
+> 
+> Namhyung Kim (1):
+>       perf hists: Consolidate __hists__add_*entry()
+> 
+>  tools/perf/Makefile.perf                           |   4 +-
+>  tools/perf/builtin-annotate.c                      |   2 +-
+>  tools/perf/builtin-diff.c                          |   3 +-
+>  tools/perf/builtin-kvm.c                           |  12 ++
+>  tools/perf/builtin-list.c                          |  84 ++++++++------
+>  tools/perf/builtin-record.c                        |  15 +--
+>  tools/perf/builtin-report.c                        |  16 ++-
+>  tools/perf/builtin-top.c                           |  20 +---
+>  tools/perf/config/Makefile                         |  17 ++-
+>  tools/perf/config/feature-checks/Makefile          |   6 +-
+>  tools/perf/config/feature-checks/test-all.c        |   5 +
+>  tools/perf/config/feature-checks/test-timerfd.c    |  18 +++
+>  .../perf/scripts/python/Perf-Trace-Util/Context.c  |   6 +-
+>  tools/perf/tests/hists_link.c                      |   6 +-
+>  tools/perf/tests/parse-events.c                    |   6 +-
+>  tools/perf/ui/browser.h                            |  32 +++---
+>  tools/perf/ui/browsers/hists.c                     |   2 +-
+>  tools/perf/ui/browsers/map.c                       |  40 +++----
+>  tools/perf/ui/browsers/map.h                       |   2 +-
+>  tools/perf/ui/browsers/scripts.c                   |   8 +-
+>  tools/perf/ui/stdio/hist.c                         |  14 +--
+>  tools/perf/util/build-id.h                         |   3 +-
+>  tools/perf/util/cpumap.c                           |   6 +-
+>  tools/perf/util/event.c                            |   6 +-
+>  tools/perf/util/event.h                            |   3 +-
+>  tools/perf/util/evlist.h                           |   3 +-
+>  tools/perf/util/fs.c                               | 119 ++++++++++++++++++++
+>  tools/perf/util/fs.h                               |   7 ++
+>  tools/perf/util/hist.c                             |  75 ++-----------
+>  tools/perf/util/hist.h                             |  51 +++------
+>  tools/perf/util/include/linux/magic.h              |   4 +
+>  tools/perf/util/pmu.c                              |  17 +--
+>  tools/perf/util/probe-finder.c                     | 113 +++++++++----------
+>  tools/perf/util/probe-finder.h                     |  10 +-
+>  tools/perf/util/pstack.h                           |  10 +-
+>  tools/perf/util/python-ext-sources                 |   2 +-
+>  tools/perf/util/record.c                           |  71 ++++++++++++
+>  tools/perf/util/session.c                          | 121 ++++++++++-----------
+>  tools/perf/util/session.h                          |  27 ++---
+>  tools/perf/util/sort.h                             |   2 +-
+>  tools/perf/util/strfilter.c                        |  32 +++---
+>  tools/perf/util/strfilter.h                        |  12 +-
+>  tools/perf/util/sysfs.c                            |  60 ----------
+>  tools/perf/util/sysfs.h                            |   6 -
+>  tools/perf/util/thread.h                           |  10 +-
+>  45 files changed, 591 insertions(+), 497 deletions(-)
+>  create mode 100644 tools/perf/config/feature-checks/test-timerfd.c
+>  create mode 100644 tools/perf/util/fs.c
+>  create mode 100644 tools/perf/util/fs.h
+>  delete mode 100644 tools/perf/util/sysfs.c
+>  delete mode 100644 tools/perf/util/sysfs.h
 
-thanks,
-rui
-> @@ -282,8 +282,8 @@ static void bind_tz(struct thermal_zone_device *tz)
->  
->  	mutex_lock(&thermal_list_lock);
->  
-> -	/* If there is no platform data, try to use ops->bind */
-> -	if (!tzp && tz->ops->bind) {
-> +	/* If there is ops->bind, try to use ops->bind */
-> +	if (tz->ops->bind) {
->  		list_for_each_entry(pos, &thermal_cdev_list, node) {
->  			ret = tz->ops->bind(tz, pos);
->  			if (ret)
+Pulled, thanks Arnaldo!
 
-
+	Ingo
