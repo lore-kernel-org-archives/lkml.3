@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab3KFIqi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 03:46:38 -0500
-Received: from demumfd001.nsn-inter.net ([93.183.12.32]:14049 "EHLO
-	demumfd001.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab3KFIqh (ORCPT
+	id S1756092Ab3KFIrv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 03:47:51 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42468 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab3KFIrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 03:46:37 -0500
-Message-ID: <527A01C9.2090306@nsn.com>
-Date: Wed, 06 Nov 2013 09:46:01 +0100
-From: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: ext Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Gerhard Sittig <gsi@denx.de>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+	Wed, 6 Nov 2013 03:47:49 -0500
+Date: Wed, 6 Nov 2013 09:47:43 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Cc: kernel@pengutronix.de, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] OF: Clear detach flag on attach
-References: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com> <1383673816-29293-2-git-send-email-panto@antoniou-consulting.com> <20131105194310.GB17929@book.gsilab.sittig.org> <033B1C12-1AD8-44E3-A9BE-C216AEBA45F2@antoniou-consulting.com>
-In-Reply-To: <033B1C12-1AD8-44E3-A9BE-C216AEBA45F2@antoniou-consulting.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 1018
-X-purgate-ID: 151667::1383727564-00004A43-D3D8F216/0-0/0-0
+Subject: Re: [PATCH] ARM: imx: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
+Message-ID: <20131106084743.GV14892@pengutronix.de>
+References: <1383724365-15196-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1383724365-15196-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Pantelis,
-
-On 05/11/13 21:03, ext Pantelis Antoniou wrote:
-> On Nov 5, 2013, at 9:43 PM, Gerhard Sittig wrote:
->>> --- a/drivers/of/base.c
->>> +++ b/drivers/of/base.c
->>> @@ -1641,6 +1641,7 @@ int of_attach_node(struct device_node *np)
->>> 	np->allnext = of_allnodes;
->>> 	np->parent->child = np;
->>> 	of_allnodes = np;
->>> +	of_node_clear_flag(np, OF_DETACHED);
->>> 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
->>>
->>> 	of_add_proc_dt_entry(np);
->>
->> Does this add a call to a routine which only gets introduced in a
->> subsequent patch (2/5)?  If so, it would break builds during the
->> series, and thus would hinder bisection.
->>
+On Wed, Nov 06, 2013 at 03:52:45PM +0800, Duan Jiong wrote:
+> This patch fixes coccinelle error regarding usage of IS_ERR and
+> PTR_ERR instead of PTR_ERR_OR_ZERO.
 > 
-> You're right, I'll re-order on the next series.
+> Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-Is it necessary at all now, after these fixes:
-9e401275 of: fdt: fix memory initialization for expanded DT
-0640332e of: Fix missing memory initialization on FDT unflattening
-92d31610 of/fdt: Remove duplicate memory clearing on FDT unflattening
-
-?
+> ---
+>  arch/arm/mach-imx/mx31moboard-smartbot.c | 5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/mach-imx/mx31moboard-smartbot.c b/arch/arm/mach-imx/mx31moboard-smartbot.c
+> index 04ae45d..af6550e 100644
+> --- a/arch/arm/mach-imx/mx31moboard-smartbot.c
+> +++ b/arch/arm/mach-imx/mx31moboard-smartbot.c
+> @@ -141,10 +141,7 @@ static int __init smartbot_otg_host_init(void)
+>  		return -ENODEV;
+>  
+>  	pdev = imx31_add_mxc_ehci_otg(&otg_host_pdata);
+> -	if (IS_ERR(pdev))
+> -		return PTR_ERR(pdev);
+> -
+> -	return 0;
+> +	return PTR_ERR_OR_ZERO(pdev);
+>  }
+>  #else
+>  static inline int smartbot_otg_host_init(void) { return 0; }
+> -- 
+> 1.8.3.1
+> 
+> 
 
 -- 
-Best regards,
-Alexander Sverdlin.
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
