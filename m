@@ -1,54 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750985Ab3KFFRh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 00:17:37 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:49931 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab3KFFRf (ORCPT
+	id S1751184Ab3KFFVy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 00:21:54 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:3918 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750802Ab3KFFVx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 00:17:35 -0500
-From: Tim Harvey <tharvey@gateworks.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-Subject: [PATCH 1/2] regulator: pfuze100: allow misprogrammed ID
-Date: Tue,  5 Nov 2013 21:17:25 -0800
-Message-Id: <1383715045-15341-1-git-send-email-tharvey@gateworks.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 6 Nov 2013 00:21:53 -0500
+X-IronPort-AV: E=Sophos;i="4.93,644,1378828800"; 
+   d="scan'208";a="8958494"
+Message-ID: <5279D078.8080803@cn.fujitsu.com>
+Date: Wed, 06 Nov 2013 13:15:36 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Chao Yu <chao2.yu@samsung.com>
+CC: "'???'" <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
+        =?GB2312?B?J8y35q0n?= <shu.tan@samsung.com>
+Subject: Re: [f2fs-dev] [PATCH] f2fs: avoid to use a NULL point in destroy_segment_manager
+References: <000001ceda8d$5b185bd0$11491370$@samsung.com> <5279BA67.4040906@cn.fujitsu.com> <000101cedaae$bb7ed820$327c8860$@samsung.com>
+In-Reply-To: <000101cedaae$bb7ed820$327c8860$@samsung.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/06 13:19:50,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/06 13:19:51
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-prior to week 08 of 2013 Freescale misprogrammed between 1 and 3% of
-PFUZE1000 parts with a ID=0x8 instead of the expected ID=0x0
+On 11/06/2013 01:10 PM, Chao Yu wrote:
 
-Signed-off-by: Tim Harvey <tharvey@gateworks.com>
----
- drivers/regulator/pfuze100-regulator.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+> Hi Gu,
+> 
+>> -----Original Message-----
+>> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
+>> Sent: Wednesday, November 06, 2013 11:41 AM
+>> To: Chao Yu
+>> Cc: ???; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; Ì·æ­
+>> Subject: Re: [f2fs-dev] [PATCH] f2fs: avoid to use a NULL point in destroy_segment_manager
+>>
+>> On 11/06/2013 09:12 AM, Chao Yu wrote:
+>>
+>>> A NULL point should avoid to be used in destroy_segment_manager after allocating memory fail for f2fs_sm_info.
+>>
+>> Though without this patch it still can work well, because if it failed
+>> to allocate f2fs_sm_info, the sit_info, free_info... all were NULL, and
+>> the destory path(e.g. destroy_dirty_segmap) can deal with them well.
+> 
+> I think it could not work well. Without this patch we may got a segment 
+> fault in DIRTY_I(sbi) at the following code if it failed to allocate 
+> f2fs_sm_info memory(sbi->sm_info). Right?
 
-diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
-index ba67b2c..032df37 100644
---- a/drivers/regulator/pfuze100-regulator.c
-+++ b/drivers/regulator/pfuze100-regulator.c
-@@ -308,9 +308,15 @@ static int pfuze_identify(struct pfuze_chip *pfuze_chip)
- 	if (ret)
- 		return ret;
- 
--	if (value & 0x0f) {
--		dev_warn(pfuze_chip->dev, "Illegal ID: %x\n", value);
--		return -ENODEV;
-+	switch (value & 0x0f) {
-+		/* Freescale misprogrammed 1-3% of parts prior to week 8 of 2013 as ID=8 */
-+		case 0x8:
-+			dev_info(pfuze_chip->dev, "Assuming misprogrammed ID=0x8");
-+		case 0x0:
-+			break;
-+		default:
-+			dev_warn(pfuze_chip->dev, "Illegal ID: %x\n", value);
-+			return -ENODEV;
- 	}
- 
- 	ret = regmap_read(pfuze_chip->regmap, PFUZE100_REVID, &value);
--- 
-1.7.9.5
+Yes, you're right. SIT_I generates sit_info from f2fs_sm_info.
+Sorry for my mistake.:(
+
+Regards,
+Gu
+
+> 
+> static void destroy_dirty_segmap(struct f2fs_sb_info *sbi)
+> {
+> 	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
+> 
+>> IMO, this patch is still a good catch.
+>>
+>> Regards,
+>> Gu
+>>
+>>>
+>>> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+>>> ---
+>>>  fs/f2fs/segment.c |    2 ++
+>>>  1 file changed, 2 insertions(+)
+>>>
+>>> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+>>> index 3d4d5fc..ff363e6
+>>> --- a/fs/f2fs/segment.c
+>>> +++ b/fs/f2fs/segment.c
+>>> @@ -1744,6 +1744,8 @@ static void destroy_sit_info(struct f2fs_sb_info *sbi)
+>>>  void destroy_segment_manager(struct f2fs_sb_info *sbi)
+>>>  {
+>>>  	struct f2fs_sm_info *sm_info = SM_I(sbi);
+>>> +	if (!sm_info)
+>>> +		return;
+>>>  	destroy_dirty_segmap(sbi);
+>>>  	destroy_curseg(sbi);
+>>>  	destroy_free_segmap(sbi);
+> 
+> 
+> 
+
 
