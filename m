@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751236Ab3KFQsM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 11:48:12 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:24930 "EHLO SMTP.CITRIX.COM"
+	id S1755059Ab3KFQww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 11:52:52 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:34562 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751361Ab3KFQsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 11:48:09 -0500
-X-IronPort-AV: E=Sophos;i="4.93,647,1378857600"; 
-   d="scan'208";a="71238851"
-Date: Wed, 6 Nov 2013 16:46:31 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Grant Likely <grant.likely@linaro.org>
-CC: Rob Herring <robherring2@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <stefano.stabellini@eu.citrix.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH] of: set dma_mask to point to coherent_dma_mask
-In-Reply-To: <20131102180724.D8FC5C40F02@trevor.secretlab.ca>
-Message-ID: <alpine.DEB.2.02.1311061642270.26077@kaball.uk.xensource.com>
-References: <1383109522-6879-1-git-send-email-robherring2@gmail.com> <20131102180724.D8FC5C40F02@trevor.secretlab.ca>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753140Ab3KFQwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 11:52:50 -0500
+Date: Wed, 6 Nov 2013 17:54:38 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Robert Richter <rric@kernel.org>, linux-edac@vger.kernel.org
+Subject: Re: [PATCH] edac, highbank: remove dependency on ARCH_HIGHBANK
+Message-ID: <20131106165437.GA21870@x1.alien8.de>
+References: <1383708352-19527-1-git-send-email-robherring2@gmail.com>
+ <20131106142025.GB16072@x1.alien8.de>
+ <527A6B08.5020302@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <527A6B08.5020302@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2 Nov 2013, Grant Likely wrote:
-> On Wed, 30 Oct 2013 00:05:22 -0500, Rob Herring <robherring2@gmail.com> wrote:
-> > From: Rob Herring <rob.herring@calxeda.com>
-> > 
-> > Platform devices created by DT code don't initialize dma_mask pointer to
-> > anything. Set it to coherent_dma_mask by default if the architecture
-> > code has not set it.
-> > 
-> > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> 
-> I believe this is okay. I haven't done any testing to back up that
-> opinion though.
+On Wed, Nov 06, 2013 at 10:15:04AM -0600, Rob Herring wrote:
+> Other maintainers disagree because it reduces build coverage.
 
-Tested-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+What possible build coverage are we talking about when building highbank
+on x86, for example? And what does a build failure in that configuration
+tell you if it builds and boots fine on your hardware?
 
- 
-> > I think this is at least part of what is needed to fix dma_mask issue
-> > raised by Stefano [1]. Things should work AFAICT with just this, but
-> > I suppose the xgmac driver needs to set the mask as well (not relying
-> > on the default), but some pointing the dma_mask to a valid value is
-> > needed first.
-> > 
-> > Rob
-> > 
-> > [1] http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg528236.html
-> > 
-> >  drivers/of/platform.c | 2 ++
-> >  1 file changed, 2 insertions(+)
-> > 
-> > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> > index f6dcde2..fce088e 100644
-> > --- a/drivers/of/platform.c
-> > +++ b/drivers/of/platform.c
-> > @@ -215,6 +215,8 @@ static struct platform_device *of_platform_device_create_pdata(
-> >  	dev->archdata.dma_mask = 0xffffffffUL;
-> >  #endif
-> >  	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-> > +	if (!dev->dev.dma_mask)
-> > +		dev->dev.dma_mask = &dev->dev.coherent_dma_mask;
-> >  	dev->dev.bus = &platform_bus_type;
-> >  	dev->dev.platform_data = platform_data;
-> >  
+> Having done some cross arch clean-up, I have to agree with that
+> position. Iterating builds over different arches is bad enough, but
+> iterating over all configs for each arch is a pain.
+
+So make highbank depend only on the arches for which it is supposed to
+work but not for *all* arches. Look at how the other edac drivers do it,
+x86 ones depend on X86, tile on tile, etc, etc. Why should highbank be
+special?
+
+> It would be nice to have a uniform policy here.
+
+Simple: drivers should be selectable/buildable only on the arches
+they're supposed to run on.
+
+-- 
+Regards/Gruss,
+Boris.
