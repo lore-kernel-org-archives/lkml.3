@@ -1,110 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab3KFAOx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 19:14:53 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:44321 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755558Ab3KFAOv (ORCPT
+	id S1755913Ab3KFAPT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 19:15:19 -0500
+Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:1521
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755885Ab3KFAPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 19:14:51 -0500
+	Tue, 5 Nov 2013 19:15:17 -0500
+X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zz98dI936eI1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah8275dh1de097h186068hz2fh2a8h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h1155h)
+Message-ID: <1383696907.618.1.camel@linux-builds1>
+Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
+From: Dinh Nguyen <dinguyen@altera.com>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Tue, 5 Nov 2013 18:15:07 -0600
+In-Reply-To: <20131105190633.GA21178@roeck-us.net>
+References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
+	 <20131105190633.GA21178@roeck-us.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-In-Reply-To: <CALCETrUt7Ojh5Yy4KYgBPj_wBr=fzKKJ=OOgGP9BtXoKrr9QnA@mail.gmail.com>
-References: <CALCETrUt7Ojh5Yy4KYgBPj_wBr=fzKKJ=OOgGP9BtXoKrr9QnA@mail.gmail.com>
-Date: Tue, 5 Nov 2013 16:14:49 -0800
-X-Google-Sender-Auth: k07tiKhwdlzfVngzGXlFCK7o9xw
-Message-ID: <CAGXu5jJreo001uBLV8oAgR_Z2WZK2qtH8YfvriQJVAQ4SgdRzw@mail.gmail.com>
-Subject: Re: ARM audit, seccomp, etc are broken wrt OABI syscalls
-From: Kees Cook <keescook@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Paul Moore <paul@paul-moore.com>, Richard Weinberger <richard@nod.at>,
-        libseccomp-discuss@lists.sourceforge.net,
-        Will Drewry <wad@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+X-OriginatorOrg: altera.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 5, 2013 at 2:36 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> [cc: some ARM people]
->
-> After a bit of an adventure, I got QEMU working.  (Linux 3.12's smc91x
-> driver and qemu 1.6 don't get along.  It would be great if some
-> kernel.org page described a standard way to boot a modern Linux image
-> on a modern QEMU version, but I digress.)
+Hi Pantelis,
 
-Yeah, I kept losing this battle too, and most recently switch to using
-mmc emulation instead of the SCSI emulation (CONFIG_MMC=y, and qemu's
-"sd" disk driver).
+On Tue, 2013-11-05 at 11:06 -0800, Guenter Roeck wrote:
+> On Tue, Nov 05, 2013 at 08:41:35PM +0200, Pantelis Antoniou wrote:
+> > The following patchset introduces Device Tree overlays, a method
+> > of dynamically altering the kernel's live Device Tree, along with
+> > a generic interface to use it in a board agnostic manner.
+> > 
+> Hi Pantelis,
+> 
+> great to see this going. I'll apply the patches to our tree and test.
 
-> The current state of affairs is unhealthy.  I wrote a program
-> (attached) that does 'svc $0x90002f' (silly GNU syntax for "Issue the
-> getgid syscall in OABI").  The registers I program are:
->
-> r0: 1
-> r1: 2
-> r2: 3
-> r3: 4
-> r4: 5
-> r5: 6
->
-> (i.e. the arguments are 1,2,3,4,5,6, although getgid ignores them)
->
-> r7: 1
->
-> (r7 is the EABI syscall register.  On a kernel without OABI support,
-> the immediate svc argument is ignored and syscall 1, i.e. _exit, will
-> be invoked).
++1. Alan and I will also test this with the FPGA framework.
 
-Just to clarify: without CONFIG_OABI_COMPAT, all OABI syscalls turn into _exit?
+Thanks,
+Dinh
+> 
+> I have a couple of patches on top of yours:
+> - export overlay functions
+> - declare of_free_overlay_info as static inline if OF is undefined.
+> - ignore PCI devices when inserting or removing overlays 
+>   [ Based on the idea that PCI/PCIe ports are handled by the PCI subsystem ]
+> 
+> I'll rebase those to the new version of your patches and send it out
+> after I get it all working.
+> 
+> Thanks,
+> Guenter
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-> Seccomp sees the registers as I set them (unsurprisingly) and it sees
-> nr == 0x2f.  It passes those values on to a SIGSYS handler, if one
-> exists.  This is, IMO, bad.  The OABI and EABI argument passing
-> conventions are *not* the same, and seccomp filters that check syscall
-> argument values may be spoofable by using OABI calls.
->
-> I suspect that audit, perf, ftrace, and maybe even ptrace are broken
-> as well for exactly the same reason.
->
-> I would argue that there are two reasonable fixes:
->
-> 1. Set a different audit arch for OABI syscalls (e.g.
-> AUDIT_ARCH_ARMOABI).  That is, treat OABI syscall entries the same way
-> that x86_64 treats int 80.
->
-> 2. Leave the 0x900000 bits set in the syscall nr.  That way OABI
-> syscalls would look like a different set of syscalls on the same
-> architecture.  That is, treat OABI syscall entries kind of like x86_64
-> treats x32 syscalls.  (There's probably no reason to accept 0x900000 +
-> N as an r7 value to cause 'svc 0' to invoke OABI syscall N, though.)
->
-> 3. Unconditionally kill any process that makes an OABI syscall with
-> seccomp enabled (because there should be no such programs).  Eww.
->
-> Options 1 and 2 are both break ABI, but I doubt that anythink cares.
-> OABI is, AFAICT, mostly dead.  That being said, even if nothing
-> legitimate uses OABI, exploits against seccomp-using programs can
-> certainly use OABI, so I think that this needs to be fixed somehow.
->
-> Thoughts?  I think I prefer option 1.  I don't really want to make the
-> change because my ARM assembly skills are lacking.
 
-I would agree: option 1 seems cleanest of the 3. 3 is sort of like a
-built-in automatic check for a mismatched arch, so maybe that works
-better?
 
-Alternatively, CONFIG_SECCOMP_FILTER could depend on
-!CONFIG_OABI_COMPAT. That seems like the least work, given the desire
-to kill OABI in the real world. (Though I would note that at least
-Ubuntu's ARM kernels build with CONFIG_OABI_COMPAT; Chrome OS does
-not.)
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
