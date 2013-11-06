@@ -1,137 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab3KFXQj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 18:16:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55182 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab3KFXQe (ORCPT
+	id S1752527Ab3KFXS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 18:18:58 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:54531 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab3KFXS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 18:16:34 -0500
-Date: Wed, 6 Nov 2013 17:17:08 -0600
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Christian Seiler <christian@iwakd.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        Lxc development list <lxc-devel@lists.sourceforge.net>
-Subject: Re: CLONE_PARENT after setns(CLONE_NEWPID)
-Message-ID: <20131106231708.GB16974@ac100>
-References: <20131106180232.GA8980@ac100>
- <20131106193311.GA18720@redhat.com>
- <87vc05jgak.fsf@tw-ebiederman.twitter.com>
- <CALCETrX0BeKa+GWnV0RffhMzpTPyXeF5BK=7PFdSCz1WQKH62w@mail.gmail.com>
+	Wed, 6 Nov 2013 18:18:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrX0BeKa+GWnV0RffhMzpTPyXeF5BK=7PFdSCz1WQKH62w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOMZO5BarpUGOExmDR8c2e0YOL41MmNkMii2ZU+jKrmEVtcmig@mail.gmail.com>
+References: <1383778182-16941-1-git-send-email-delicious.quinoa@gmail.com>
+	<1383778182-16941-2-git-send-email-delicious.quinoa@gmail.com>
+	<CAOMZO5BarpUGOExmDR8c2e0YOL41MmNkMii2ZU+jKrmEVtcmig@mail.gmail.com>
+Date: Wed, 6 Nov 2013 17:18:54 -0600
+Message-ID: <CANk1AXTys8B-jW0bATu19pOauVqe=aMc7v=SxXPm7npWb2y7eA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] gpio: add a driver for the Synopsys DesignWare APB
+ GPIO block
+From: delicious quinoa <delicious.quinoa@gmail.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jamie Iles <jamie@jamieiles.com>, Heiko Stuebner <heiko@sntech.de>,
+        Alan Tull <atull@altera.com>, Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andy Lutomirski (luto@amacapital.net):
-> On Wed, Nov 6, 2013 at 2:50 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> > Oleg Nesterov <oleg@redhat.com> writes:
-> >
-> >> Hi Serge,
-> >>
-> >> On 11/06, Serge Hallyn wrote:
-> >>>
-> >>> Hi Oleg,
-> >>>
-> >>> commit 40a0d32d1eaffe6aac7324ca92604b6b3977eb0e :
-> >>> "fork: unify and tighten up CLONE_NEWUSER/CLONE_NEWPID checks"
-> >>> breaks lxc-attach in 3.12.  That code forks a child which does
-> >>> setns() and then does a clone(CLONE_PARENT).  That way the
-> >>> grandchild can be in the right namespaces (which the child was
-> >>> not) and be a child of the original task, which is the monitor.
-> >
-> > Serge that is a clever trick to get around the limitation that we can
-> > not change the pid namespace of our current process.  Given the
-> > challenging relaying of signals etc I can see why you would use this.
-> >
-> > At the same time it makes me a little sad to see new users of
-> > CLONE_PARENT.  With CLONE_THREAD in existence the original reasons for
-> > CLONE_PARENT are gone now.
-> >
-> > Having used bash as an init process I know it can handle unexpeted
-> > children.  However using CLONE_PARENT in this way still seems a little
-> > dodgy.  Or am I misunderstanding why you are using CLONE_PARENT?
-> >
-> > That trick sounds like it might be worth adding to nsenter in util-linux
-> > just to simplify the code.
-> >
-> >> Thanks...
-> >>
-> >> Yes, this is what 40a0d32d1ea explicitly tries to disallow.
-> >>
-> >>> Is there a real danger in allowing CLONE_PARENT
-> >>> when current->nsproxy->pidns_for_children is not our pidns,
-> >>> or was this done out of an "over-abundance of caution"?
-> >>
-> >> I am not sure... This all was based on the long discussion, and
-> >> it was decided that the CLONE_PARENT check should be consistent
-> >> wrt CLONE_NEWPID and pidns_for_children != task_active_pid_ns().
-> >>
-> >>> Can we
-> >>> safely revert that new extra check?
-> >>
-> >> Well, usually we do not break user-space, but I am not sure about
-> >> this case...
-> >>
-> >> Eric, Andy, what do you think?
-> >>
-> >> And if we allow CLONE_PARENT when ->pidns_for_children was changed,
-> >> should we also allow, say, CLONE_NEWPID && CLONE_PARENT ?
-> >
-> > The two fundamental things I know we can not allow are:
-> > - A shared signal queue aka CLONE_THREAD.  Because we compute the pid
-> >   and uid of the signal when we place it in the queue.
-> >
-> > - Changing the pid and by extention pid_namespace of an existing
-> >   process.
-> >
-> > From a parents perspective there is nothing special about the pid
-> > namespace, to deny CLONE_PARENT, because the parent simply won't know or
-> > care.
-> >
-> > From the childs perspective all that is special really are shared signal
-> > queues.
-> >
-> > User mode threading with CLONE_PARENT|CLONE_VM|CLONE_SIGHAND and tasks
-> > in different pid namespaces is almost certainly going to break because
-> > it is complicated.  But shared signal handlers can look at per thread
-> > information to know which pid namespace a process is in, so I don't know
-> > of any reason not to support CLONE_PARENT|CLONE_VM|CLONE_SIGHAND threads
-> > at the kernel level.  It would be absolutely stupid to implement but
-> > that is a different thing.
-> >
-> > So hmm.
-> >
-> > Because it can do no harm, and because it is a regression let's remove
-> > the CLONE_PARENT check and send it stable.
-> >
-> > diff --git a/kernel/fork.c b/kernel/fork.c
-> > index 086fe73..c447fbc 100644
-> > --- a/kernel/fork.c
-> > +++ b/kernel/fork.c
-> > @@ -1174,7 +1174,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
-> >          * do not allow it to share a thread group or signal handlers or
-> >          * parent with the forking task.
-> >          */
-> > -       if (clone_flags & (CLONE_SIGHAND | CLONE_PARENT)) {
-> > +       if (clone_flags & (CLONE_SIGHAND)) {
-> >                 if ((clone_flags & (CLONE_NEWUSER | CLONE_NEWPID)) ||
-> >                     (task_active_pid_ns(current) !=
-> >                                 current->nsproxy->pid_ns_for_children))
-> >
-> 
-> Acked-by: Andy Lutomirski <luto@amacapital.net>
+On Wed, Nov 6, 2013 at 5:09 PM, Fabio Estevam <festevam@gmail.com> wrote:
+> On Wed, Nov 6, 2013 at 8:49 PM, Alan Tull <delicious.quinoa@gmail.com> wrote:
+>
+>> +
+>> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +       gpio->regs = devm_ioremap_resource(&pdev->dev, res);
+>> +       if (!gpio->regs) {
+>> +               err = -ENOMEM;
+>> +               goto out_free_ports;
+>
+> The correct way to handle the error here would be:
+>
+> if (IS_ERR(gpio->regs) {
+>      err = PTR_ERR(gpio->regs)
+>      goto out_free_ports;
+>
+>
+>> +out_unregister:
+>> +       dwapb_gpio_unregister(gpio);
+>> +
+>> +       if (gpio->domain) {
+>> +               irq_dispose_mapping(gpio->hwirq);
+>> +               irq_domain_remove(gpio->domain);
+>> +       }
+>> +
+>> +out_free_ports:
+>> +       devm_kfree(&pdev->dev, gpio->ports);
+>
+> No need to call devm_kfree
+>
+>> +
+>> +out_err:
+>> +       devm_kfree(&pdev->dev, gpio);
+>
+> Same here.
+>
+>> +       return err;
+>> +}
+>> +
+>> +static int dwapb_gpio_remove(struct platform_device *pdev)
+>> +{
+>> +       struct dwapb_gpio *gpio = platform_get_drvdata(pdev);
+>> +
+>> +       dwapb_gpio_unregister(gpio);
+>> +       if (gpio->domain) {
+>> +               irq_dispose_mapping(gpio->hwirq);
+>> +               irq_domain_remove(gpio->domain);
+>> +       }
+>> +       devm_kfree(&pdev->dev, gpio->ports);
+>> +       devm_kfree(&pdev->dev, gpio);
+>
+> No need to call devm_kfree
+>
+> Regards,
+>
+> Fabio Estevam
 
-Also (obviously)
+Cool, I agree.  I will fix in v7.
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
-
+Thanks,
+Alan
