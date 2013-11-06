@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab3KFUbX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 15:31:23 -0500
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:54037 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754985Ab3KFUbW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 15:31:22 -0500
-Date: Wed, 6 Nov 2013 21:31:02 +0100
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
-Message-ID: <20131106203102.GB8662@breakpoint.cc>
-References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
- <20131106190152.GA8662@breakpoint.cc>
- <C10E33D7-53F6-4A50-9B84-1149DDBDC46F@antoniou-consulting.com>
+	id S1756025Ab3KFUcP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 15:32:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60105 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755866Ab3KFUcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 15:32:12 -0500
+Date: Wed, 6 Nov 2013 15:31:02 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org,
+        Chris Mason <chris.mason@fusionio.com>, NeilBrown <neilb@suse.de>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: block: Revert bio_clone() default behaviour
+Message-ID: <20131106203102.GA2049@redhat.com>
+References: <1383709721-22809-1-git-send-email-kmo@daterainc.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <C10E33D7-53F6-4A50-9B84-1149DDBDC46F@antoniou-consulting.com>
+In-Reply-To: <1383709721-22809-1-git-send-email-kmo@daterainc.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.11.13, Pantelis Antoniou wrote:
-> Hi Sebastian,
-Hi Pantelis,
+Hey Kent,
 
-> It has been discussed.
+Digging a bit in the LKML archive I think this patch is in response to
+this thread: https://lkml.org/lkml/2013/11/6/27
+
+Might be good to give context for which reported problem(s) are being
+fixed by this patch.
+
+On Tue, Nov 05 2013 at 10:48pm -0500,
+Kent Overstreet <kmo@daterainc.com> wrote:
+
+> This patch reverts the default behaviour introduced by
+> 9fc6286f347d00528adcdcf12396d220f47492ed - bio_clone_biovec() no clonger
+> shares the source bio's biovec, cloning the biovec is once again the
+> default.
+
+Your focus, in terms of revert, seems to be on restoring
+bio_clone_bioset, so: s/bio_clone_biovec/bio_clone_bioset/
+
+Maybe best to say "effectively reverts" since you aren't reverting 
+9fc6286f347d00528adcdcf12396d220f47492ed ?  Also s/clonger/longer/ typo ^
+
+> Instead, we add a new bio_clone_biovec_fast(), which creates a clone
+> that shares the source's biovec. This patch changes bcache and md to use
+
+s/md/dm/
+
+> __bio_clone_biovec_fast() since they're expecting the new behaviour due
+> to other refactoring; most of the other uses of bio_clone() should be
+> same to convert to the _fast() variant but that will be done more
+
+s/same/safe/
+
+> incrementally in other patches (bio_split() in particular).
 > 
-> We are doing it because
+> Note that __bio_clone() isn't being readded - the reason being that with
+> immutable biovecs allocating the right number of biovecs for the new
+> clone is no longer trivial so we don't want drivers trying to do that
+> themselves.
 > 
-> a) We tried to do it in u-boot and it has been a complete disaster.
-> Regular users just can't handle bootloader updates.
-
-How so? The "additional" dtb piece was deleted by accident as part of
-the u-boot upgrade? Do you maybe a link which describes the disaster?
-
-> b) It is similar to that. It was originally created for the beaglebone,
-> which has a concept of capes (similar to Arduino shields).
-> http://circuitco.com/support/index.php?title=BeagleBone_Capes
-> Turns out it's really useful to anyone doing reconfigurable hardware too,
-> so that's why FPGA people are thinking of using it.
-
-I am aware of this. My understanding is that those capes have hardware
-information encoded in an eeprom behind i2c _and_ you can't or should
-not replace capes at runtime.
-Naive as I am I *assume* it should be easy to read this eeprom in u-boot
-as part of the boot setup and extend the dtb before passing it to the
-kernel. In case this works well, the problem here is a) ?
-
-> c) There are people that want to tinker with Linux based hardware boards
-> but are not kernel developers. This gives them a way to do so without
-> having to recompile the kernel and/or reboot while tinkering.
-
-I understand that they want to avoid reboot. But they still need to
-recompile the device tree, don't they? Or does this allow to change the
-HW description without knowing the syntax of .dts?
-
-> Regards
+> This patch also reverts febca1baea1cfe2d7a0271385d89b03d5fb34f94 -
+> __bio_clone_fast() should not be setting bi_vcnt for bios that do not
+> own the biovec (see Documentation/block/biovecs.txt for rationale) - in
+> short, not setting it might cause bugs in the short term but long term
+> it's likely to hide nastier more subtle bugs, we don't want code looking
+> at bi_vcnt at all for bios it does not own. However, this patch
+> _shouldn't_ cause any regressions because of this since we're reverting
+> back to the old bio_clone() behaviour.
 > 
-> -- Pantelis
+> Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Chris Mason <chris.mason@fusionio.com>
+> Cc: Mike Snitzer <snitzer@redhat.com>
+> Cc: NeilBrown <neilb@suse.de>
+> Cc: Olof Johansson <olof@lixom.net>
+> ---
+> Chris, Olaf, can you two in particular test this? I have tested the bounce
+> buffer code (and bcache), but Jens told me today there was an md bug that I
+> _still_ can't find any emails about so I'm not sure what to test for that.
 
-Sebastian
+/me assumes you really mean md here, given Chris's later reply in this thread.
+
+Relative to DM, this patch looks fine to me:
+
+Acked-by: Mike Snitzer <snitzer@redhat.com>
+
+Thanks,
+Mike
