@@ -1,104 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab3KFHya (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 02:54:30 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:18852 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811Ab3KFHy2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 02:54:28 -0500
-Date: Wed, 6 Nov 2013 10:54:13 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Tomasz Figa <t.figa@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [patch] drivers: phy: tweaks to phy_create()
-Message-ID: <20131106075412.GB13475@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1756058Ab3KFHzG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 02:55:06 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:15541 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753854Ab3KFHzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 02:55:03 -0500
+X-IronPort-AV: E=Sophos;i="4.93,644,1378828800"; 
+   d="scan'208";a="8960193"
+From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+To: kernel@pengutronix.de, linux@arm.linux.org.uk
+Cc: linux-kernel@vger.kernel.org, Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Subject: [PATCH] ARM: imx: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
+Date: Wed, 6 Nov 2013 15:52:45 +0800
+Message-Id: <1383724365-15196-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.3.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/06 15:53:06,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/11/06 15:53:09,
+	Serialize complete at 2013/11/06 15:53:09
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If this was called with a NULL "dev" then it lead to a NULL dereference
-when we called dev_WARN().  I have changed it to WARN_ON() so that we
-get a stack dump and can fix the caller.
+This patch fixes coccinelle error regarding usage of IS_ERR and
+PTR_ERR instead of PTR_ERR_OR_ZERO.
 
-If ida_simple_get() failed then there was a missing call to kfree(phy).
+Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+---
+ arch/arm/mach-imx/mx31moboard-smartbot.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-The rest of this patch is just cleanup like returning directly instead
-of having do-nothing gotos.  Using descriptive labels instead of
-GW-BASIC style "err0" and "err1".  I also flipped the order of
-put_device() and ida_remove() so they are a mirror reflection of the
-order they were allocated.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index 03cf8fb..18b9de7 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -437,23 +437,18 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
- 	int id;
- 	struct phy *phy;
+diff --git a/arch/arm/mach-imx/mx31moboard-smartbot.c b/arch/arm/mach-imx/mx31moboard-smartbot.c
+index 04ae45d..af6550e 100644
+--- a/arch/arm/mach-imx/mx31moboard-smartbot.c
++++ b/arch/arm/mach-imx/mx31moboard-smartbot.c
+@@ -141,10 +141,7 @@ static int __init smartbot_otg_host_init(void)
+ 		return -ENODEV;
  
--	if (!dev) {
--		dev_WARN(dev, "no device provided for PHY\n");
--		ret = -EINVAL;
--		goto err0;
--	}
-+	if (WARN_ON(!dev))
-+		return ERR_PTR(-EINVAL);
- 
- 	phy = kzalloc(sizeof(*phy), GFP_KERNEL);
--	if (!phy) {
--		ret = -ENOMEM;
--		goto err0;
--	}
-+	if (!phy)
-+		return ERR_PTR(-ENOMEM);
- 
- 	id = ida_simple_get(&phy_ida, 0, 0, GFP_KERNEL);
- 	if (id < 0) {
- 		dev_err(dev, "unable to get id\n");
- 		ret = id;
--		goto err0;
-+		goto free_phy;
- 	}
- 
- 	device_initialize(&phy->dev);
-@@ -468,11 +463,11 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
- 
- 	ret = dev_set_name(&phy->dev, "phy-%s.%d", dev_name(dev), id);
- 	if (ret)
--		goto err1;
-+		goto put_dev;
- 
- 	ret = device_add(&phy->dev);
- 	if (ret)
--		goto err1;
-+		goto put_dev;
- 
- 	if (pm_runtime_enabled(dev)) {
- 		pm_runtime_enable(&phy->dev);
-@@ -481,12 +476,12 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
- 
- 	return phy;
- 
--err1:
--	ida_remove(&phy_ida, phy->id);
-+put_dev:
- 	put_device(&phy->dev);
-+	ida_remove(&phy_ida, phy->id);
-+free_phy:
- 	kfree(phy);
- 
--err0:
- 	return ERR_PTR(ret);
+ 	pdev = imx31_add_mxc_ehci_otg(&otg_host_pdata);
+-	if (IS_ERR(pdev))
+-		return PTR_ERR(pdev);
+-
+-	return 0;
++	return PTR_ERR_OR_ZERO(pdev);
  }
- EXPORT_SYMBOL_GPL(phy_create);
+ #else
+ static inline int smartbot_otg_host_init(void) { return 0; }
+-- 
+1.8.3.1
+
