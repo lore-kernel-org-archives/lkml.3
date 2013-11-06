@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350Ab3KFRtq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 12:49:46 -0500
-Received: from www.linutronix.de ([62.245.132.108]:46690 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174Ab3KFRtp (ORCPT
+	id S1755372Ab3KFRvz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 12:51:55 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:53928 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab3KFRvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 12:49:45 -0500
-Date: Wed, 6 Nov 2013 18:49:41 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mike Galbraith <bitbucket@online.de>
-cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>
-Subject: Re: CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo
-In-Reply-To: <1383228427.5272.36.camel@marge.simpson.net>
-Message-ID: <alpine.DEB.2.02.1311061842160.23353@ionos.tec.linutronix.de>
-References: <1383228427.5272.36.camel@marge.simpson.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 6 Nov 2013 12:51:54 -0500
+Message-ID: <527A81B8.7040505@gmail.com>
+Date: Wed, 06 Nov 2013 10:51:52 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+CC: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH 0/2] perf record: mmap output file - v3
+References: <1383589905-10208-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1383589905-10208-1-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Oct 2013, Mike Galbraith wrote:
+On 11/4/13, 11:31 AM, Jiri Olsa wrote:
+> hi,
+> after discussion with David, sending his change
+> updated into the new data file object.
+>
+> David's original post:
+>    http://marc.info/?l=linux-kernel&m=138180575328977&w=2
+>
+> Here's the change:
+>    git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+>    perf/mmap1
+>
 
-> Hi Frederic,
-> 
-> The tick wakes ksoftirqd, ensuring nr_running test ain't gonna happen
-> when an otherwise lonely task takes the timer interrupt.  Deferring to
-> softirq processing time..... works.
+Not having any luck with these patches. Basic use case:
 
--ENOPARSE
+perf trace record -a -- sleep 5
+perf trace --summary
 
-What the heck is this patch doing aside of slapping #ifdeffery all
-over the place?
+With your patches I get a parse error. With my latest versions 
+everything works clean.
 
-I bet you are trying to work around some of the side effects of the
-occasional tick which is still necessary despite of full nohz, right?
+David
 
-Bah, we want to solve the underlying problems and get rid of the tick
-completely instead of hiding the issues by magic hackery.
- 
-Thanks,
-
-	tglx
