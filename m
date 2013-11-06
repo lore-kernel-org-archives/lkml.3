@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326Ab3KFVUq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 16:20:46 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:56973 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932081Ab3KFVUp (ORCPT
+	id S1756268Ab3KFVXH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 16:23:07 -0500
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:45464 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756039Ab3KFVXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 16:20:45 -0500
+	Wed, 6 Nov 2013 16:23:06 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131106155104.GZ16735@n2100.arm.linux.org.uk>
-References: <CALCETrUt7Ojh5Yy4KYgBPj_wBr=fzKKJ=OOgGP9BtXoKrr9QnA@mail.gmail.com>
-	<1383751951.28218.64.camel@flatline.rdu.redhat.com>
-	<20131106155104.GZ16735@n2100.arm.linux.org.uk>
-Date: Wed, 6 Nov 2013 15:20:44 -0600
-Message-ID: <CABqD9hbaZhAztYF_H8RTuTdhh+J4WHaGpdRLR3EqHbtH2OLU+Q@mail.gmail.com>
-Subject: Re: [libseccomp-discuss] ARM audit, seccomp, etc are broken wrt OABI syscalls
-From: Will Drewry <wad@chromium.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
-        Kees Cook <keescook@chromium.org>, Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        libseccomp-discuss@lists.sourceforge.net,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <20131106211352.GA24006@www.outflux.net>
+References: <20131106211352.GA24006@www.outflux.net>
+Date: Wed, 6 Nov 2013 13:23:03 -0800
+Message-ID: <CAOesGMiJFt0sP1tjsLogDh0n6CXtE3POUpFLPH=XoFQapbir8Q@mail.gmail.com>
+Subject: Re: [PATCH] ARM: make OABI default to off
+From: Olof Johansson <olof@lixom.net>
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 6, 2013 at 9:51 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Nov 06, 2013 at 10:32:31AM -0500, Eric Paris wrote:
->> On Tue, 2013-11-05 at 14:36 -0800, Andy Lutomirski wrote:
->> > 1. Set a different audit arch for OABI syscalls (e.g.
->> > AUDIT_ARCH_ARMOABI).  That is, treat OABI syscall entries the same way
->> > that x86_64 treats int 80.
->>
->> As the audit maintainer, I like #1.  It might break ABI, but the ABI is
->> flat wrong now and not maintainable...
+On Wed, Nov 6, 2013 at 1:13 PM, Kees Cook <keescook@chromium.org> wrote:
+> Given recent discussions about the lack of OABI in the wild, switch
+> CONFIG_OABI_COMPAT to off-by-default to encourage more system builders
+> to avoid it.
 >
-> If you read the whole thread, you will see that this corner case is just
-> not worth the effort to support.  Audit may as well be disabled by
-> kernel config if any OABI support is enabled.
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  arch/arm/Kconfig |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 1ad6fb6c094d..4ace7f33e8a1 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -1728,7 +1728,7 @@ config AEABI
+>  config OABI_COMPAT
+>         bool "Allow old ABI binaries to run with this kernel (EXPERIMENTAL)"
+>         depends on AEABI && !THUMB2_KERNEL
+> -       default y
+> +       default n
 
-This might be the best move for seccomp too (as Kees suggested).  I'd
-love to have audit arch visibility, but it's not clear that it's worth
-any sort of larger changes ...
+Nit: "default n" is the default default. So you can just delete the
+line instead.
 
-... like adding a task_thread_info.compat flag that bubbles up to
-syscall_get_arch(), or if we assume consumers of syscall_get_nr() are
-broken today (I haven't checked), then it would be possible to at
-least re-add the 0x900000 bits, if compat, before handing back the
-system call number but leave the audit arch pieces alone.
+
+-Olof
