@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab3KFI51 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 03:57:27 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47023 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab3KFI5Z (ORCPT
+	id S1756147Ab3KFJA3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 04:00:29 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:33030 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753354Ab3KFJA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 03:57:25 -0500
-X-AuditID: 9c93016f-b7bb9ae000001e30-5e-527a04741109
-From: Namhyung Kim <namhyung@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch methods (v6)
-References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
-	<20131102155458.GA6981@redhat.com> <87ob60366m.fsf@sejong.aot.lge.com>
-	<87fvrc35kj.fsf@sejong.aot.lge.com> <20131104155131.GD4440@redhat.com>
-	<20131104162229.GA8921@redhat.com> <20131104184741.GA15945@redhat.com>
-	<87sivbz65t.fsf@sejong.aot.lge.com> <20131105174535.GA6385@redhat.com>
-	<20131105192401.GA772@redhat.com>
-Date: Wed, 06 Nov 2013 17:57:24 +0900
-In-Reply-To: <20131105192401.GA772@redhat.com> (Oleg Nesterov's message of
-	"Tue, 5 Nov 2013 20:24:01 +0100")
-Message-ID: <87vc05x5zf.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 6 Nov 2013 04:00:27 -0500
+Date: Wed, 6 Nov 2013 20:00:19 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the akpm tree with the net-next tree
+Message-Id: <20131106200019.4dae95f0346ec60f8415da96@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__6_Nov_2013_20_00_19_+1100_v.NQNBUTrKj4wyMw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Nov 2013 20:24:01 +0100, Oleg Nesterov wrote:
-> On 11/05, Oleg Nesterov wrote:
->>
->> As for "-= tu->offset"... Can't we avoid it? User-space needs to calculate
->> the "@" argument anyway, why it can't also substruct this offset?
->>
->> Or perhaps we can change parse_probe_arg("@") to update "param" ? Yes,
->> in this case it needs another argument, not sure...
->
-> Or,
->
->> 	+	if (is_ret_probe(tu)) {
->> 	+		saved_ip = instruction_pointer(regs);
->> 	+		instruction_pointer_set(func);
->> 	+	}
->> 		store_trace_args(...);
->> 	+	if (is_ret_probe(tu))
->> 	+		instruction_pointer_set(saved_ip);
->
-> we can put "-= tu->offset" here.
+--Signature=_Wed__6_Nov_2013_20_00_19_+1100_v.NQNBUTrKj4wyMw
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I don't think I get the point.
+Hi Andrew,
 
->
-> Or. Perhaps we can leave "case '@'" in parse_probe_arg() and
-> FETCH_MTD_memory alone. You seem to agree that "absolute address"
-> can be useful anyway.
+Today's linux-next merge of the akpm tree got a conflict in
+net/netfilter/ipset/ip_set_hash_netportnet.c between commit 1a869205c75c
+("netfilter: ipset: The unnamed union initialization may lead to
+compilation error") from the net-next tree and commit
+"net/netfilter/ipset/ip_set_hash_netportnet.c: fix build with older gccs"
+from the akpm tree.
 
-Yes, but it's only meaningful to process-wide tracing sessions IMHO.
+The latter is just a subset of the former, so I dropped the latter.
 
->
-> Instead, perhaps we can add FETCH_MTD_memory_do_fancy_addr_translation,
-> and, say, the new "case '*'" in parse_probe_arg() should add all the
-> neccessary info as f->data (like, say, FETCH_MTD_symbol).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Could you elaborate this more?
+--Signature=_Wed__6_Nov_2013_20_00_19_+1100_v.NQNBUTrKj4wyMw
+Content-Type: application/pgp-signature
 
->
-> But, just in case, I do not have a strong opinion. Just I think it
-> is better to discuss every choice we have.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Okay.  I really appreciate your reviews.
+iQIcBAEBCAAGBQJSegUqAAoJEMDTa8Ir7ZwVgSYP/06Z0G9A/EZ3FKgYTw5FMH3n
+tvaxDJCcPwL/GE3GLM6r8HIuv4ZhXtPGwH5atUwIfNlIsgHdFaZB8Fr3hktv+6EN
+J1iyI/FfRzkEUcv1qbGLYTYJEESZDxy0yP+yLlF0YIcepq2yMgNpZln9bfL3ihG5
+Ur3p04tuFU0fT6GJrb1SOF39bIOgZn1EWqtuivZiZHbBM/SBD0dRF63H+BAUoBjJ
+lnWI433XnZf0KePBZ54GCQBS3mx0+U6BSlIUT+mclnzJY+AGn/eeIJ/jq6ng1LfE
+xsYWcggvtlzo84UEyOhip9BBCRpa00VYi6QUsNfYTo4Ie3lQavxMlFFC8snonsgg
+cGTe0mN0LFHCfdwWdHoYAUGatHTHPdGqFv2O6gBAhmomvx18bTpPBUPrtkgB6sRe
+gJ4RvvnrFydsa785s8XtTvKzxjjQ3Qj6KGx9zq/Is2tH8b37QcRzOgI5fqlhoP6D
+/ZOpljKEAIhiJV2VW/tj+8MFNNnz0AEoqSJ1E3ftFtZVKXBODMpOtJaH8leiqVMl
+irOKvDLPG66dJEQC1uer6jiYch93aC78DshZi/Gvkq01rUH3RwMpnmbIH6Qlk5n3
+SdnnEnQFHR3I3m5uiFI6zlwkWICOrkXmEY43RiaeKYtpQa8LGKa+wFmwl4EjLdpQ
+17hMvfHseLBYgvsScrJT
+=hwUD
+-----END PGP SIGNATURE-----
 
-
-Thanks,
-Namhyung
+--Signature=_Wed__6_Nov_2013_20_00_19_+1100_v.NQNBUTrKj4wyMw--
