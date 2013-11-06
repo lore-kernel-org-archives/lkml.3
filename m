@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751107Ab3KFW0K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 17:26:10 -0500
-Received: from mail.lang.hm ([64.81.33.126]:47652 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750709Ab3KFW0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 17:26:08 -0500
-Date: Mon, 4 Nov 2013 17:47:34 -0800 (PST)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: "Figo.zhang" <figo1802@gmail.com>
-cc: NeilBrown <neilb@suse.de>, "Artem S. Tashkinov" <t.artem@lycos.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
-        Linux-MM <linux-mm@kvack.org>
-Subject: Re: Disabling in-memory write cache for x86-64 in Linux II
-In-Reply-To: <CAF7GXvpJVLYDS5NfH-NVuN9bOJjAS5c1MQqSTjoiVBHJt6bWcw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1311041744460.11629@nftneq.ynat.uz>
-References: <160824051.3072.1382685914055.JavaMail.mail@webmail07> <20131025214952.3eb41201@notabene.brown> <alpine.DEB.2.02.1310250425270.22538@nftneq.ynat.uz> <154617470.12445.1382725583671.JavaMail.mail@webmail11> <20131026074349.0adc9646@notabene.brown>
- <476525596.14731.1382735024280.JavaMail.mail@webmail11> <20131026091112.241da260@notabene.brown> <CAF7GXvpJVLYDS5NfH-NVuN9bOJjAS5c1MQqSTjoiVBHJt6bWcw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	id S1751579Ab3KFW1U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 17:27:20 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:42636 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022Ab3KFW1T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 17:27:19 -0500
+Date: Thu, 7 Nov 2013 09:27:09 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Moore <paul@paul-moore.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: error when fetching the selinux tree
+Message-Id: <20131107092709.09c9e76757362bad1f1dd885@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__7_Nov_2013_09_27_09_+1100_C1jvd30POwUQPQGb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Nov 2013, Figo.zhang wrote:
+--Signature=_Thu__7_Nov_2013_09_27_09_+1100_C1jvd30POwUQPQGb
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->>>
->>> Of course, if you don't use Linux on the desktop you don't really care -
->> well, I do. Also
->>> not everyone in this world has an UPS - which means such a huge buffer
->> can lead to a
->>> serious data loss in case of a power blackout.
->>
->> I don't have a desk (just a lap), but I use Linux on all my computers and
->> I've never really noticed the problem.  Maybe I'm just very patient, or
->> maybe
->> I don't work with large data sets and slow devices.
->>
->> However I don't think data-loss is really a related issue.  Any process
->> that
->> cares about data safety *must* use fsync at appropriate places.  This has
->> always been true.
->>
->> =>May i ask question that, some like ext4 filesystem, if some app motify
-> the files, it create some dirty data. if some meta-data writing to the
-> journal disk when a power backout,
-> it will be lose some serious data and the the file will damage?
->
+Hi Paul,
 
-with any filesystem and any OS, if you create dirty data but do not f*sync() the 
-data, there isa possibility that the system can go down between the time the 
-application creates the dirty data and the time the OS actually gets it on disk. 
-If the system goes down in this timeframe, the data will be lost and it may 
-corrupt the file if only some of the data got written.
+Fetching the selinux tree
+(git://git.infradead.org/users/pcmoore/selinux#master) produces this
+error:
 
-David Lang
+fatal: Couldn't find remote ref refs/heads/master
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__7_Nov_2013_09_27_09_+1100_C1jvd30POwUQPQGb
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSesJCAAoJEMDTa8Ir7ZwVtPYQAIFJMy52kzDsw6taaIz7vHeF
+j0GqeLpjjCUeh43thfFk9ydzU75fEO3oeMawtirUWSJhPsL5Mqth4mHMJf9f7dr2
+QCYvVWDs21MhHA+NOYEWK+UNoZstqw12ex4x0bT8OIrw1vnVj2gIJOu1hagDyE3l
+7Z1zlDRzJ2y3ItZ7a3bgCowKOKbj2LYZpsAY5rDIgaKNPD1teprxE0CILlaVWIbQ
+buCCq7kqlQcIAHkVd0qkIdaIWyDRI4bBf2tLQ2kiyHhmV9MqNb4EXRbr9r/UpZK4
+p4qd0hdyS8XkxwojU9wYlJlizyJ1h7+Jgzw5AUFr8tRTPsuVoeHlqVTA6I2mB/lg
+0j5Bs1bE8I3lfj60yiQW0La1RtAQIqQkajWQ3uJuAkdMF3pbs6fgK8JWPngTqaQu
+t0SIE7o+UQBMtxF3gMCktnGdNhTsuuUGqtVbzA/hBYFZ8qEhBInJ9sfaC3Y24W/r
+Syaq0fevzqrcZlJnu2K4IPs2IWlTOUh/eQsBBMorwwjRWmGkQfm65ZmvOZ3F6QZq
+C1u0vCRi1ABx3mNUGk+RCXomX9Y7JWJet9g9vTDcf/bjIgcnACyeBPAtk6TnSHmq
+7343QFkgmHcM9bC2gKTb50d6OOyrjv4HFH7WyYu2MarQYHl9jcSOsn8LNX6xAPvo
+Ok+EuHX7np+jp0DkvRsl
+=19/1
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__7_Nov_2013_09_27_09_+1100_C1jvd30POwUQPQGb--
