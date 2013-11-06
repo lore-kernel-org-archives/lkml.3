@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab3KFH6g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 02:58:36 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:3291 "EHLO song.cn.fujitsu.com"
+	id S1756253Ab3KFH7B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 02:59:01 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:51612 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751259Ab3KFH6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 02:58:34 -0500
+	id S1751921Ab3KFH67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 02:58:59 -0500
 X-IronPort-AV: E=Sophos;i="4.93,644,1378828800"; 
-   d="scan'208";a="8960253"
+   d="scan'208";a="8960259"
 From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 To: kernel@pengutronix.de, linux@arm.linux.org.uk, a.zummo@towertech.it,
         airlied@linux.ie, dmitry.torokhov@gmail.com, axboe@kernel.dk
@@ -16,14 +16,14 @@ Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
         linux-input@vger.kernel.org, devel@driverdev.osuosl.org,
         Duan Jiong <duanj.fnst@cn.fujitsu.com>
 Subject: [PATCH] block: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
-Date: Wed, 6 Nov 2013 15:56:00 +0800
-Message-Id: <1383724560-15707-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+Date: Wed, 6 Nov 2013 15:56:39 +0800
+Message-Id: <1383724599-15754-1-git-send-email-duanj.fnst@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.3.1
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/06 15:56:39,
+ 2013/11/06 15:57:03,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/06 15:56:39,
-	Serialize complete at 2013/11/06 15:56:39
+ 2013/11/06 15:57:04,
+	Serialize complete at 2013/11/06 15:57:04
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,22 +33,22 @@ PTR_ERR instead of PTR_ERR_OR_ZERO.
 
 Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 ---
- block/blk-timeout.c | 2 +-
+ block/ioctl.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/block/blk-timeout.c b/block/blk-timeout.c
-index 4e9cfd1..cdf5711 100644
---- a/block/blk-timeout.c
-+++ b/block/blk-timeout.c
-@@ -32,7 +32,7 @@ static int __init fail_io_timeout_debugfs(void)
- 	struct dentry *dir = fault_create_debugfs_attr("fail_io_timeout",
- 						NULL, &fail_io_timeout);
- 
--	return IS_ERR(dir) ? PTR_ERR(dir) : 0;
-+	return PTR_ERR_OR_ZERO(dir);
- }
- 
- late_initcall(fail_io_timeout_debugfs);
+diff --git a/block/ioctl.c b/block/ioctl.c
+index a31d91d..7d5c3b2 100644
+--- a/block/ioctl.c
++++ b/block/ioctl.c
+@@ -64,7 +64,7 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user
+ 			part = add_partition(disk, partno, start, length,
+ 					     ADDPART_FLAG_NONE, NULL);
+ 			mutex_unlock(&bdev->bd_mutex);
+-			return IS_ERR(part) ? PTR_ERR(part) : 0;
++			return PTR_ERR_OR_ZERO(part);
+ 		case BLKPG_DEL_PARTITION:
+ 			part = disk_get_part(disk, partno);
+ 			if (!part)
 -- 
 1.8.3.1
 
