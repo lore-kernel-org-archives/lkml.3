@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab3KFC5g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 21:57:36 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:11315 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753174Ab3KFC5e (ORCPT
+	id S1755990Ab3KFDAn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 22:00:43 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:37405 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753567Ab3KFDAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 21:57:34 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 05 Nov 2013 18:56:32 -0800
-Message-ID: <5279AFF0.1080105@nvidia.com>
-Date: Wed, 6 Nov 2013 10:56:48 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 5 Nov 2013 22:00:42 -0500
+Date: Wed, 6 Nov 2013 04:00:04 +0100
+From: Vladimir Murzin <murzin.v@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Luigi Semenzato <semenzato@google.com>, Sameer Nanda <snanda@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>, mhocko@suse.cz,
+        Johannes Weiner <hannes@cmpxchg.org>, rusty@rustcorp.com.au,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, oleg@redhat.com,
+        dserrg@gmail.com
+Subject: Re: [PATCH] mm, oom: Fix race when selecting process to kill
+Message-ID: <20131106030000.GA1934@hp530>
+References: <1383693987-14171-1-git-send-email-snanda@chromium.org>
+ <alpine.DEB.2.02.1311051715090.29471@chino.kir.corp.google.com>
+ <CAA25o9SFZW7JxDQGv+h43EMSS3xH0eXy=LoHO_Psmk_n3dxqoA@mail.gmail.com>
+ <alpine.DEB.2.02.1311051727090.29471@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Eduardo Valentin <eduardo.valentin@ti.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "rui.zhang@intel.com" <rui.zhang@intel.com>
-CC: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv4 02/18] thermal: core: allow binding via .bind when tzp
- is present
-References: <1380251605-3804-1-git-send-email-eduardo.valentin@ti.com>
- <1380251605-3804-3-git-send-email-eduardo.valentin@ti.com>
-In-Reply-To: <1380251605-3804-3-git-send-email-eduardo.valentin@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1311051727090.29471@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2013 11:13 AM, Eduardo Valentin wrote:
-> This patch allows drivers register thermal zone devices
-> with thermal zone params and .bind callbacks. In this case,
-> it will use the .bind callback.
+Ccing Oleg and Sergey
+
+On Tue, Nov 05, 2013 at 05:27:29PM -0800, David Rientjes wrote:
+> On Tue, 5 Nov 2013, Luigi Semenzato wrote:
 > 
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: linux-pm@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> ---
->  drivers/thermal/thermal_core.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> > It's not enough to hold a reference to the task struct, because it can
+> > still be taken out of the circular list of threads.  The RCU
+> > assumptions don't hold in that case.
+> > 
 > 
-> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-> index 8a94300..f7a9f4f 100644
-> --- a/drivers/thermal/thermal_core.c
-> +++ b/drivers/thermal/thermal_core.c
-> @@ -247,7 +247,7 @@ static void bind_cdev(struct thermal_cooling_device *cdev)
->  		if (!pos->tzp && !pos->ops->bind)
->  			continue;
->  
-> -		if (!pos->tzp && pos->ops->bind) {
-> +		if (pos->ops->bind) {
+> Could you please post a proper bug report that isolates this at the cause?
+>
+Hi David!
 
-Hi, Eduardo
-In bind_tz() routine, it also has same problem.
-I had sent out similar patch "[PATCHv4 02/18] thermal: core: allow
-binding via .bind when tzp is present" to fix it, but no response yet.
-I think you can add my changes in your series :)
+I think it has already been reported[1] and actively discussed. Oleg has
+confirmed that while_each_thread() is not safe under rcu_read_lock()[2].
 
-Thanks.
-Wei.
+Oleg, any news about your activity for fixing that?
 
->  			ret = pos->ops->bind(pos, cdev);
->  			if (ret)
->  				print_bind_err_msg(pos, cdev, ret);
+[1] http://www.spinics.net/lists/linux-mm/msg54836.html
+[2] http://marc.info/?l=linux-kernel&m=127688978121665
+> Thanks.
 > 
-
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
