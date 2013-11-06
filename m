@@ -1,675 +1,361 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756169Ab3KFJ23 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 04:28:29 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:38234 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755921Ab3KFJ2R (ORCPT
+	id S1756190Ab3KFJ3J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 04:29:09 -0500
+Received: from gerard.telenet-ops.be ([195.130.132.48]:39549 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753354Ab3KFJ3F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 04:28:17 -0500
-Date: Wed, 6 Nov 2013 20:28:03 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: <linux-next@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for Nov 6
-Message-Id: <20131106202803.856e480320bc04d0bf4c095b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__6_Nov_2013_20_28_03_+1100__dV2cwXf84BHPy/+"
+	Wed, 6 Nov 2013 04:29:05 -0500
+Date: Wed, 6 Nov 2013 10:29:00 +0100 (CET)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Build regressions/improvements in v3.12
+Message-ID: <alpine.DEB.2.02.1311061028420.20227@ayla.of.borg>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__6_Nov_2013_20_28_03_+1100__dV2cwXf84BHPy/+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Below is the list of build error/warning regressions/improvements in
+v3.12[1] compared to v3.11[2].
 
-Hi all,
+Summarized:
+  - build errors: +31/-10
+  - build warnings: +151/-98
 
-Changes since 20131105:
+JFYI, when comparing v3.12 to v3.12-rc7[3], the summaries are:
+  - build errors: +11/-6
+  - build warnings: +78/-165
 
-Removed tree: audit-current
+Note that there may be false regressions, as some logs are incomplete.
+Still, they're build errors/warnings.
 
-Changed tree: audit (change of maintainer)
+As I haven't mastered kup yet, there's no verbose summary at
+http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.12.summary.gz
 
-The modules tree lost its very large number of warnings.
+Happy fixing! ;-)
 
-The audit tree gained a conflict against Linus' tree and a build failure
-so I used the version from next-20131105.
+Thanks to the linux-next team for providing the build service.
 
-The xen-tip tree gained a conflict agains the arm tree.
+[1] http://kisskb.ellerman.id.au/kisskb/head/6840/ (all 120 configs)
+[2] http://kisskb.ellerman.id.au/kisskb/head/6601/ (all 120 configs)
+[3] http://kisskb.ellerman.id.au/kisskb/head/6819/ (119 out of 120 configs)
 
-The gpio tree gained conflicts against the arm-soc and cortex trees
 
-The akpm tree gained conflicts against the net-next tree.
+*** ERRORS ***
 
-----------------------------------------------------------------------------
+31 regressions:
+  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_HIGH_MASK' undeclared (first use in this function):  => 98:12
+  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_HIGH_SHIFT' undeclared (first use in this function):  => 98:34, 145:10
+  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_LOW_MASK' undeclared (first use in this function):  => 97:21
+  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_LOW_SHIFT' undeclared (first use in this function):  => 97:42, 145:10
+  + /scratch/kisskb/src/arch/sh/mm/cache-sh4.c: error: 'cached_to_uncached' undeclared (first use in this function):  => 99:17
+  + /scratch/kisskb/src/arch/sh/mm/cache-sh4.c: error: implicit declaration of function 'cpu_context' [-Werror=implicit-function-declaration]:  => 192:2
+  + /scratch/kisskb/src/drivers/media/platform/soc_camera/rcar_vin.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]:  => 351:2
+  + /scratch/kisskb/src/drivers/media/platform/soc_camera/rcar_vin.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]:  => 283:3
+  + /scratch/kisskb/src/drivers/media/platform/vsp1/vsp1.h: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]:  => 66:2
+  + /scratch/kisskb/src/drivers/media/platform/vsp1/vsp1.h: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]:  => 71:2
+  + /scratch/kisskb/src/drivers/mtd/nand/nand_base.c: error: implicit declaration of function 'ioread16_rep' [-Werror=implicit-function-declaration]:  => 263:2
+  + /scratch/kisskb/src/drivers/mtd/nand/nand_base.c: error: implicit declaration of function 'ioread8_rep' [-Werror=implicit-function-declaration]:  => 231:2
+  + /scratch/kisskb/src/drivers/mtd/nand/nand_base.c: error: implicit declaration of function 'iowrite16_rep' [-Werror=implicit-function-declaration]:  => 247:2
+  + /scratch/kisskb/src/drivers/mtd/nand/nand_base.c: error: implicit declaration of function 'iowrite8_rep' [-Werror=implicit-function-declaration]:  => 216:2
+  + /scratch/kisskb/src/drivers/spi/spi-sh-hspi.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]:  => 68:2
+  + /scratch/kisskb/src/drivers/spi/spi-sh-hspi.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]:  => 63:2
+  + /scratch/kisskb/src/drivers/spi/spi-sh.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]:  => 112:3
+  + /scratch/kisskb/src/drivers/spi/spi-sh.c: error: implicit declaration of function 'ioread8' [-Werror=implicit-function-declaration]:  => 110:3
+  + /scratch/kisskb/src/drivers/spi/spi-sh.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]:  => 104:3
+  + /scratch/kisskb/src/drivers/spi/spi-sh.c: error: implicit declaration of function 'iowrite8' [-Werror=implicit-function-declaration]:  => 102:3
+  + /scratch/kisskb/src/drivers/staging/comedi/drivers/das6402.c: error: implicit declaration of function 'outw_p' [-Werror=implicit-function-declaration]:  => 164:3
+  + /scratch/kisskb/src/drivers/usb/host/fotg210-hcd.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]:  => 5859:2
+  + /scratch/kisskb/src/drivers/usb/host/fotg210-hcd.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]:  => 5856:2
+  + /scratch/kisskb/src/include/linux/omap-dma.h: error: expected identifier before numeric constant:  => 171:8
+  + error: "flush_cache_page" [drivers/staging/lustre/lustre/libcfs/libcfs.ko] undefined!:  => N/A
+  + error: relocation truncated to fit: R_PPC64_REL24 against symbol `.__kmalloc' defined in .text section in mm/built-in.o:  => (.text+0x1ffa1ac), (.text+0x1ffa13c)
+  + error: relocation truncated to fit: R_PPC64_REL24 against symbol `.ip_fast_csum' defined in .text section in arch/powerpc/lib/built-in.o:  => (.text+0x1ff9648)
+  + error: relocation truncated to fit: R_PPC64_REL24 against symbol `.memcmp' defined in .text section in arch/powerpc/lib/built-in.o:  => (.text+0x1ff99fc), (.text+0x1ff9a40)
+  + error: relocation truncated to fit: R_PPC64_REL24 against symbol `_restgpr0_24' defined in .text.save.restore section in arch/powerpc/lib/built-in.o:  => (.text+0x1ff9704)
+  + error: sungem_phy.c: relocation truncated to fit: R_PPC64_REL24 against symbol `_restgpr0_27' defined in .text.save.restore section in arch/powerpc/lib/built-in.o:  => (.text+0x1ffb504), (.text+0x1ffae84)
+  + error: sungem_phy.c: relocation truncated to fit: R_PPC64_REL24 against symbol `_restgpr0_29' defined in .text.save.restore section in arch/powerpc/lib/built-in.o:  => (.text+0x1ffb39c), (.text+0x1ffad20)
 
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
+10 improvements:
+  - /scratch/kisskb/src/arch/xtensa/kernel/xtensa_ksyms.c: error: '_mcount' undeclared here (not in a function): 129:1 => 
+  - /scratch/kisskb/src/sound/soc/codecs/wm0010.c: error: implicit declaration of function 'irq_set_irq_wake' [-Werror=implicit-function-declaration]: 976:2 => 
+  - error: No rule to make target arch/cris/arch-v10/drivers/ds1302.o: N/A => 
+  - error: hostap_plx.c: relocation truncated to fit: R_PPC64_REL24 against symbol `.__init_waitqueue_head' defined in .text section in kernel/built-in.o: (.text+0x1ffaf4c) => 
+  - error: hostap_plx.c: relocation truncated to fit: R_PPC64_REL24 against symbol `._raw_spin_unlock' defined in .spinlock.text section in kernel/built-in.o: (.text+0x1ffa718), (.text+0x1ffa6bc) => 
+  - error: hostap_plx.c: relocation truncated to fit: R_PPC64_REL24 against symbol `.kfree' defined in .text section in mm/built-in.o: (.text+0x1ffb734) => 
+  - error: hostap_plx.c: relocation truncated to fit: R_PPC64_REL24 against symbol `.net_ratelimit' defined in .text section in net/built-in.o: (.text+0x1ff995c) => 
+  - error: hostap_plx.c: relocation truncated to fit: R_PPC64_REL24 against symbol `_restgpr0_21' defined in .text.save.restore section in arch/powerpc/lib/built-in.o: (.text+0x1ffb784) => 
+  - error: hostap_plx.c: relocation truncated to fit: R_PPC64_REL24 against symbol `_savegpr0_23' defined in .text.save.restore section in arch/powerpc/lib/built-in.o: (.text+0x1ffa7c4) => 
+  - error: hostap_plx.c: relocation truncated to fit: R_PPC64_REL24 against symbol `_savegpr0_28' defined in .text.save.restore section in arch/powerpc/lib/built-in.o: (.text+0x1ff9fa4), (.text+0x1ffb78c), (.text+0x1ffa1bc) => 
 
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64 and a
-multi_v7_defconfig for arm. After the final fixups (if any), it is also
-built with powerpc allnoconfig (32 and 64 bit), ppc44x_defconfig and
-allyesconfig (minus CONFIG_PROFILE_ALL_BRANCHES - this fails its final
-link) and i386, sparc, sparc64 and arm defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
 
-Below is a summary of the state of the merge.
+*** WARNINGS ***
 
-We are up to 210 trees (counting Linus' and 29 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
+151 regressions:
+  + /scratch/kisskb/src/arch/mips/include/asm/compat.h: warning: 'rtdev' may be used uninitialized in this function [-Wuninitialized]:  => 208:24
+  + /scratch/kisskb/src/arch/s390/kernel/crash_dump.c: warning: unused variable 'rc' [-Wunused-variable]:  => 48:6
+  + /scratch/kisskb/src/arch/sh/kernel/cpu/sh4/../sh3/../../entry-common.S: Warning: overflow in branch to __restore_all; converted into longer instruction sequence:  => 89
+  + /scratch/kisskb/src/arch/sh/kernel/cpu/sh4/../sh3/../../entry-common.S: Warning: overflow in branch to syscall_call; converted into longer instruction sequence:  => 210
+  + /scratch/kisskb/src/arch/sh/kernel/cpu/sh4/../sh3/../../entry-common.S: Warning: overflow in branch to syscall_exit_work; converted into longer instruction sequence: 378 => 375, 378
+  + /scratch/kisskb/src/arch/sh/kernel/cpu/sh4/../sh3/../../entry-common.S: Warning: overflow in branch to syscall_trace_entry; converted into longer instruction sequence:  => 349, 351
+  + /scratch/kisskb/src/arch/x86/kernel/vsyscall_64.c: warning: 'syscall_nr' may be used uninitialized in this function [-Wuninitialized]:  => 261:16
+  + /scratch/kisskb/src/block/blk-merge.c: warning: 'bbio' may be used uninitialized in this function [-Wuninitialized]:  => 65:2
+  + /scratch/kisskb/src/drivers/base/memory.c: warning: 'section_nr' may be used uninitialized in this function [-Wuninitialized]:  => 607:25
+  + /scratch/kisskb/src/drivers/base/regmap/regmap.c: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]:  => 1936:2, 1617:6
+  + /scratch/kisskb/src/drivers/block/mtip32xx/mtip32xx.c: warning: the frame size of 1040 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 2894:1, 2917:1
+  + /scratch/kisskb/src/drivers/block/nvme-core.c: warning: 'nvme_resume' defined but not used [-Wunused-function]:  => 2242:12
+  + /scratch/kisskb/src/drivers/block/nvme-core.c: warning: 'nvme_suspend' defined but not used [-Wunused-function]:  => 2233:12
+  + /scratch/kisskb/src/drivers/char/hw_random/via-rng.c: warning: 'via_rng_cpu_id' defined but not used [-Wunused-variable]:  => 224:26
+  + /scratch/kisskb/src/drivers/gpu/drm/drm_bufs.c: warning: 'master' may be used uninitialized in this function [-Wuninitialized]:  => 474:4
+  + /scratch/kisskb/src/drivers/gpu/drm/i2c/tda998x_drv.c: warning: 'reg_write_range' uses dynamic stack allocation [enabled by default]:  => 420:1
+  + /scratch/kisskb/src/drivers/gpu/drm/udl/udl_modeset.c: warning: 'reg' may be used uninitialized in this function [-Wuninitialized]:  => 28:9
+  + /scratch/kisskb/src/drivers/i2c/busses/i2c-diolan-u2c.c: warning: 'byte' may be used uninitialized in this function [-Wuninitialized]:  => 394:18
+  + /scratch/kisskb/src/drivers/input/keyboard/stmpe-keypad.c: warning: 'stmpe_keypad_irq' uses dynamic stack allocation [enabled by default]:  => 167:1
+  + /scratch/kisskb/src/drivers/input/touchscreen/cyttsp4_core.c: warning: 'cyttsp4_get_mt_touches' uses dynamic stack allocation [enabled by default]:  => 936:1
+  + /scratch/kisskb/src/drivers/md/bcache/alloc.c: warning: 'bucket' may be used uninitialized in this function [-Wuninitialized]:  => 408:5
+  + /scratch/kisskb/src/drivers/media/tuners/e4000.c: warning: 'e4000_rd_regs' uses dynamic stack allocation [enabled by default]:  => 84:1
+  + /scratch/kisskb/src/drivers/media/usb/gspca/cpia1.c: warning: unused variable 'sd' [-Wunused-variable]:  => 1627:13
+  + /scratch/kisskb/src/drivers/media/usb/gspca/konica.c: warning: unused variable 'sd' [-Wunused-variable]:  => 246:13
+  + /scratch/kisskb/src/drivers/media/usb/gspca/t613.c: warning: unused variable 'sd' [-Wunused-variable]:  => 840:13
+  + /scratch/kisskb/src/drivers/media/usb/pwc/pwc-if.c: warning: label 'err_video_unreg' defined but not used [-Wunused-label]:  => 1106:1
+  + /scratch/kisskb/src/drivers/media/usb/uvc/uvc_ctrl.c: warning: 'ctrl' may be used uninitialized in this function [-Wuninitialized]:  => 1972:6
+  + /scratch/kisskb/src/drivers/memstick/core/ms_block.c: warning: control reaches end of non-void function [-Wreturn-type]:  => 654:1, 720:1, 465:1, 677:1
+  + /scratch/kisskb/src/drivers/mfd/88pm860x-i2c.c: warning: 'write_device' uses dynamic stack allocation [enabled by default]:  => 140:1
+  + /scratch/kisskb/src/drivers/mfd/da903x.c: warning: 'reg_val' may be used uninitialized in this function [-Wuninitialized]:  => 185:2, 229:2, 207:2
+  + /scratch/kisskb/src/drivers/mfd/max8925-i2c.c: warning: 'max8925_bulk_write' uses dynamic stack allocation [enabled by default]:  => 108:1
+  + /scratch/kisskb/src/drivers/mfd/max8925-i2c.c: warning: 'max8925_reg_write' uses dynamic stack allocation [enabled by default]:  => 80:1
+  + /scratch/kisskb/src/drivers/mfd/max8925-i2c.c: warning: 'max8925_set_bits' uses dynamic stack allocation [enabled by default]:  => 128:1
+  + /scratch/kisskb/src/drivers/mfd/rtsx_pcr.c: warning: 'rtsx_pci_power_off' defined but not used [-Wunused-function]:  => 929:13
+  + /scratch/kisskb/src/drivers/mfd/stmpe.c: warning: 'stmpe_irq' uses dynamic stack allocation [enabled by default]:  => 890:1
+  + /scratch/kisskb/src/drivers/mfd/stmpe.c: warning: 'stmpe_set_altfunc' uses dynamic stack allocation [enabled by default]:  => 286:1
+  + /scratch/kisskb/src/drivers/misc/bmp085.c: warning: 'pressure' may be used uninitialized in this function [-Wuninitialized]:  => 344:17, 344:3
+  + /scratch/kisskb/src/drivers/mtd/nand/nandsim.c: warning: format '%u' expects argument of type 'unsigned int', but argument 2 has type 'long unsigned int' [-Wformat]:  => 774:2
+  + /scratch/kisskb/src/drivers/net/ethernet/broadcom/bnx2.c: warning: 'bnx2_resume' defined but not used [-Wunused-function]:  => 8605:1
+  + /scratch/kisskb/src/drivers/net/ethernet/broadcom/bnx2.c: warning: 'bnx2_suspend' defined but not used [-Wunused-function]:  => 8585:1
+  + /scratch/kisskb/src/drivers/net/ethernet/ibm/ehea/ehea_main.c: warning: 'ehea_module_device_table' defined but not used [-Wunused-variable]:  => 105:28
+  + /scratch/kisskb/src/drivers/net/ethernet/intel/i40e/i40e.h: warning: "prefetch" redefined [enabled by default]:  => 96:0
+  + /scratch/kisskb/src/drivers/net/ethernet/sfc/mcdi.c: warning: 'efx_mcdi_print_fwver' uses dynamic stack allocation [enabled by default]:  => 960:1
+  + /scratch/kisskb/src/drivers/net/usb/sr9700.h: warning: "RSR" redefined [enabled by default]:  => 65:0
+  + /scratch/kisskb/src/drivers/nubus/proc.c: warning: #warning Need to set some I/O handlers here [-Wcpp]  CC      drivers/ide/ide-probe.o:  => 64:2
+  + /scratch/kisskb/src/drivers/power/bq24190_charger.c: warning: 'f_reg' may be used uninitialized in this function [-Wuninitialized]:  => 1280:2
+  + /scratch/kisskb/src/drivers/power/bq24190_charger.c: warning: 'ss_reg' may be used uninitialized in this function [-Wuninitialized]:  => 1280:2
+  + /scratch/kisskb/src/drivers/regulator/da9063-regulator.c: warning: 'da9063_reg_matches' may be used uninitialized in this function [-Wuninitialized]:  => 847:6
+  + /scratch/kisskb/src/drivers/regulator/s5m8767.c: warning: 'mode' may be used uninitialized in this function [-Wuninitialized]:  => 211:29
+  + /scratch/kisskb/src/drivers/spi/spi-atmel.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]:  => 1335:13, 1460:19
+  + /scratch/kisskb/src/drivers/spi/spi-omap-100k.c: warning: "READ" redefined [enabled by default]:  => 74:0
+  + /scratch/kisskb/src/drivers/spi/spi-omap-100k.c: warning: "WRITE" redefined [enabled by default]:  => 73:0
+  + /scratch/kisskb/src/drivers/staging/comedi/drivers/aio_aio12_8.c: warning: statement with no effect [-Wunused-value]:  => 122:2
+  + /scratch/kisskb/src/drivers/staging/comedi/drivers/das08.c: warning: statement with no effect [-Wunused-value]:  => 217:2, 348:3, 353:3, 218:2
+  + /scratch/kisskb/src/drivers/staging/comedi/drivers/das16m1.c: warning: statement with no effect [-Wunused-value]:  => 453:2
+  + /scratch/kisskb/src/drivers/staging/comedi/drivers/dt2801.c: warning: 'hb' is used uninitialized in this function [-Wuninitialized]:  => 273:14
+  + /scratch/kisskb/src/drivers/staging/comedi/drivers/dt2801.c: warning: 'lb' is used uninitialized in this function [-Wuninitialized]:  => 273:20
+  + /scratch/kisskb/src/drivers/staging/comedi/drivers/dt2801.c: warning: statement with no effect [-Wunused-value]:  => 367:2, 366:2, 368:2, 369:2
+  + /scratch/kisskb/src/drivers/staging/comedi/drivers/dt2814.c: warning: statement with no effect [-Wunused-value]:  => 230:3, 229:3
+  + /scratch/kisskb/src/drivers/staging/comedi/drivers/fl512.c: warning: statement with no effect [-Wunused-value]:  => 86:3
+  + /scratch/kisskb/src/drivers/staging/comedi/drivers/ni_at_ao.c: warning: statement with no effect [-Wunused-value]:  => 183:2
+  + /scratch/kisskb/src/drivers/staging/comedi/drivers/pcmda12.c: warning: statement with no effect [-Wunused-value]:  => 128:2, 89:4, 110:3
+  + /scratch/kisskb/src/drivers/staging/comedi/drivers/rti800.c: warning: statement with no effect [-Wunused-value]:  => 179:2, 298:2
+  + /scratch/kisskb/src/drivers/staging/comedi/drivers/s526.c: warning: statement with no effect [-Wunused-value]:  => 363:2
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_conf.h: warning: "IO_FIELD" redefined [enabled by default]:  => 165:0
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_driver.c: warning: the frame size of 1028 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 982:1
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_driver.c: warning: the frame size of 1036 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 982:1
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_driver.c: warning: the frame size of 1040 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 982:1
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_driver.c: warning: the frame size of 1072 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 982:1
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_fep5.c: warning: the frame size of 1028 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 112:1
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_fep5.c: warning: the frame size of 1032 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 112:1, 173:1
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_fep5.c: warning: the frame size of 1040 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 112:1, 173:1
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_fep5.c: warning: the frame size of 1044 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 112:1
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_sysfs.c: warning: format '%x' expects argument of type 'unsigned int', but argument 4 has type 'tcflag_t' [-Wformat]:  => 494:2, 519:2, 569:2, 544:2
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_sysfs.c: warning: format '%x' expects argument of type 'unsigned int', but argument 5 has type 'tcflag_t' [-Wformat]:  => 292:4, 258:4, 275:4, 241:4
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_tty.c: warning: format '%ld' expects argument of type 'long int', but argument 4 has type '__kernel_suseconds_t' [-Wformat]:  => 576:2
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_tty.c: warning: the frame size of 1040 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 664:1
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_tty.c: warning: the frame size of 1044 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 664:1
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_tty.c: warning: the frame size of 1056 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 664:1
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_tty.c: warning: the frame size of 1068 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 664:1
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_tty.c: warning: the frame size of 1072 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 664:1
+  + /scratch/kisskb/src/drivers/staging/dgnc/dgnc_sysfs.c: warning: format '%x' expects argument of type 'unsigned int', but argument 4 has type 'tcflag_t' [-Wformat]:  => 557:2, 532:2, 607:2, 582:2
+  + /scratch/kisskb/src/drivers/staging/dgnc/dgnc_sysfs.c: warning: format '%x' expects argument of type 'unsigned int', but argument 5 has type 'tcflag_t' [-Wformat]:  => 309:4, 292:4, 275:4, 326:4
+  + /scratch/kisskb/src/drivers/staging/dgnc/dgnc_tty.c: warning: format '%ld' expects argument of type 'long int', but argument 4 has type '__kernel_suseconds_t' [-Wformat]:  => 525:2
+  + /scratch/kisskb/src/drivers/staging/dgnc/dgnc_tty.c: warning: the frame size of 1040 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 613:1
+  + /scratch/kisskb/src/drivers/staging/dgnc/dgnc_tty.c: warning: the frame size of 1056 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 613:1
+  + /scratch/kisskb/src/drivers/staging/gdm724x/gdm_lte.c: warning: 'packed' attribute ignored for field of type 'struct <anonymous>' [-Wattributes]:  => 202:3
+  + /scratch/kisskb/src/drivers/staging/lustre/lustre/llite/file.c: warning: 'count' may be used uninitialized in this function [-Wuninitialized]:  => 987:9, 1046:9
+  + /scratch/kisskb/src/drivers/staging/lustre/lustre/llite/lproc_llite.c: warning: format '%lu' expects argument of type 'long unsigned int', but argument 4 has type '__kernel_suseconds_t' [-Wformat]:  => 1066:6, 1296:6, 1130:6
+  + /scratch/kisskb/src/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c: warning: format '%lu' expects argument of type 'long unsigned int', but argument 5 has type '__kernel_suseconds_t' [-Wformat]:  => 1072:5
+  + /scratch/kisskb/src/drivers/staging/lustre/lustre/osc/lproc_osc.c: warning: format '%lu' expects argument of type 'long unsigned int', but argument 4 has type '__kernel_suseconds_t' [-Wformat]:  => 574:6, 686:6
+  + /scratch/kisskb/src/drivers/staging/rts5139/sd_cprm.c: warning: 'rsp_len' may be used uninitialized in this function [-Wuninitialized]:  => 260:7
+  + /scratch/kisskb/src/drivers/target/target_core_alua.c: warning: 'alua_ascq' may be used uninitialized in this function [-Wuninitialized]:  => 615:18
+  + /scratch/kisskb/src/drivers/uio/uio.c: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]:  => 269:6
+  + /scratch/kisskb/src/drivers/usb/gadget/f_fs.c: warning: '__ffs_ep0_read_events' uses dynamic stack allocation [enabled by default]:  => 579:1
+  + /scratch/kisskb/src/drivers/usb/gadget/g_ffs.c: warning: data definition has no type or storage class [enabled by default]:  => 79:1
+  + /scratch/kisskb/src/drivers/usb/gadget/g_ffs.c: warning: function declaration isn't a prototype [-Wstrict-prototypes]:  => 79:1
+  + /scratch/kisskb/src/drivers/usb/gadget/g_ffs.c: warning: type defaults to 'int' in declaration of 'USB_ETHERNET_MODULE_PARAMETERS' [-Wimplicit-int]:  => 79:1
+  + /scratch/kisskb/src/drivers/usb/host/xhci-plat.c: warning: 'xhci_plat_resume' defined but not used [-Wunused-function]:  => 209:12
+  + /scratch/kisskb/src/drivers/usb/host/xhci-plat.c: warning: 'xhci_plat_suspend' defined but not used [-Wunused-function]:  => 201:12
+  + /scratch/kisskb/src/drivers/video/backlight/adp8860_bl.c: warning: 'reg_val' may be used uninitialized in this function [-Wuninitialized]: 624:11, 568:10 => 598:32, 624:11, 568:10, 443:16
+  + /scratch/kisskb/src/drivers/video/backlight/adp8870_bl.c: warning: 'reg_val' may be used uninitialized in this function [-Wuninitialized]: 809:11 => 809:11, 563:16, 783:32
+  + /scratch/kisskb/src/fs/aio.c: warning: 'nr_segs' may be used uninitialized in this function:  => 1208
+  + /scratch/kisskb/src/fs/f2fs/recovery.c: warning: 'sum.<U3660>.<U3600>.ofs_in_node' may be used uninitialized in this function [-Wuninitialized]:  => 271:51
+  + /scratch/kisskb/src/fs/f2fs/recovery.c: warning: 'sum.nid' may be used uninitialized in this function [-Wuninitialized]:  => 243:2
+  + /scratch/kisskb/src/fs/locks.c: warning: 'lock' may be used uninitialized in this function [-Wuninitialized]:  => 1782:17
+  + /scratch/kisskb/src/fs/nilfs2/recovery.c: warning: 'sum' may be used uninitialized in this function [-Wuninitialized]:  => 909:21, 664:17
+  + /scratch/kisskb/src/fs/omfs/file.c: warning: 'remain' may be used uninitialized in this function [-Wuninitialized]:  => 257:4
+  + /scratch/kisskb/src/fs/reiserfs/prints.c: warning: 'noreturn' function does return [enabled by default]:  => 368:1
+  + /scratch/kisskb/src/include/asm-generic/io.h: warning: passing argument 1 of 'zpci_read_u16' makes pointer from integer without a cast [enabled by default]/scratch/kisskb/src/arch/s390/include/asm/pci_io.h:59:1: note: expected 'const volatile void *' but argument is of type 'long unsigned int':  => 183:4
+  + /scratch/kisskb/src/include/linux/err.h: warning: 'edid' may be used uninitialized in this function [-Wuninitialized]:  => 39:17
+  + /scratch/kisskb/src/kernel/trace/ring_buffer.c: warning: unused variable 'local_clock_stable' [-Wunused-variable]:  => 2559:8
+  + /scratch/kisskb/src/lib/lz4/lz4hc_compress.c: warning: the frame size of 1052 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 535:1
+  + /scratch/kisskb/src/lib/mpi/mpi-inline.h: warning: '______f' is static but declared in inline function 'mpihelp_add' which is not static [enabled by default]:  => 70:2, 73:2
+  + /scratch/kisskb/src/lib/mpi/mpi-inline.h: warning: '______f' is static but declared in inline function 'mpihelp_add_1' which is not static [enabled by default]:  => 45:2, 49:4, 56:2
+  + /scratch/kisskb/src/lib/mpi/mpi-inline.h: warning: '______f' is static but declared in inline function 'mpihelp_sub' which is not static [enabled by default]:  => 113:2, 116:2
+  + /scratch/kisskb/src/lib/mpi/mpi-inline.h: warning: '______f' is static but declared in inline function 'mpihelp_sub_1' which is not static [enabled by default]:  => 92:4, 99:2, 88:2
+  + /scratch/kisskb/src/lib/swiotlb.c: warning: 'dev_addr' may be used uninitialized in this function [-Wuninitialized]:  => 658:14
+  + /scratch/kisskb/src/mm/memblock.c: warning: 'r' may be used uninitialized in this function [-Wuninitialized]:  => 735:15
+  + /scratch/kisskb/src/mm/migrate.c: warning: statement with no effect [-Wunused-value]:  => 1172:4
+  + /scratch/kisskb/src/net/rds/iw_rdma.c: warning: the frame size of 1056 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 200:1
+  + /scratch/kisskb/src/security/apparmor/crypto.c: warning: 'aa_calc_profile_hash' uses dynamic stack allocation [enabled by default]:  => 72:1
+  + /scratch/kisskb/src/sound/soc/fsl/imx-audmux.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]:  => 70:13
+  + /scratch/kisskb/src/sound/soc/fsl/imx-audmux.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]:  => 161:7
+  + /scratch/kisskb/src/sound/soc/kirkwood/kirkwood-dma.c: warning: large integer implicitly truncated to unsigned type [-Woverflow]:  => 164:3
+  + /scratch/kisskb/src/sound/soc/soc-dapm.c: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]:  => 3330:6
+  + /scratch/kisskb/src/sound/usb/mixer_quirks.c: warning: 'err' may be used uninitialized in this function [-Wuninitialized]  CC [M]  crypto/rmd128.o:  => 1514:6
+  + kernel/time/Kconfig: warning: range is invalid:  => 162
+  + warning: (SPU_FS) selects MEMORY_HOTPLUG which has unmet direct dependencies ((SPARSEMEM || X86_64_ACPI_NUMA) && ARCH_ENABLE_MEMORY_HOTPLUG && (IA64 || X86 || PPC_BOOK3S_64 || SUPERH || S390)):  => N/A
+  + warning: drivers/built-in.o(.data+0x9e8): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe():  => N/A
+  + warning: drivers/built-in.o(.data+0xa88): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe():  => N/A
+  + warning: drivers/built-in.o(.data+0xbe4): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe():  => N/A
+  + warning: drivers/built-in.o(.data+0xcec): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip():  => N/A
+  + warning: drivers/built-in.o(.data+0xd4c): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip():  => N/A
+  + warning: drivers/built-in.o(.data+0xdac): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip():  => N/A
+  + warning: drivers/built-in.o(.data+0xe0c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe():  => N/A
+  + warning: drivers/built-in.o(.data+0xfb4): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe():  => N/A
+  + warning: drivers/net/cris/built-in.o(.text+0x1378): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
+  + warning: vmlinux.o(.data+0x40428): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe():  => N/A
+  + warning: vmlinux.o(.data+0x404c8): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe():  => N/A
+  + warning: vmlinux.o(.data+0x40624): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe():  => N/A
+  + warning: vmlinux.o(.data+0x4072c): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip():  => N/A
+  + warning: vmlinux.o(.data+0x4078c): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip():  => N/A
+  + warning: vmlinux.o(.data+0x407ec): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip():  => N/A
+  + warning: vmlinux.o(.data+0x4084c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe():  => N/A
+  + warning: vmlinux.o(.data+0x409f4): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe():  => N/A
+  + warning: vmlinux.o(.text.unlikely+0x2ee): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size:  => N/A
+  + warning: vmlinux.o(.text.unlikely+0x2f6): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size:  => N/A
+  + warning: vmlinux.o(.text.unlikely+0x356): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size:  => N/A
+  + warning: vmlinux.o(.text.unlikely+0x362): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size:  => N/A
+  + warning: vmlinux.o(.text.unlikely+0x3a6): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size:  => N/A
 
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
+98 improvements:
+  - /scratch/kisskb/src/arch/avr32/kernel/process.c: warning: assignment makes integer from pointer without a cast: 292 => 
+  - /scratch/kisskb/src/arch/sh/math-emu/math.c: warning: statement with no effect [-Wunused-value]  CC      ipc/msgutil.o: 122:1 => 
+  - /scratch/kisskb/src/arch/tile/kernel/process.c: warning: unused variable 'tsk' [-Wunused-variable]: 572:22 => 
+  - /scratch/kisskb/src/arch/x86/kvm/x86.c: warning: 'exchanged' may be used uninitialized in this function [-Wuninitialized]: 4338:5 => 
+  - /scratch/kisskb/src/drivers/gpu/drm/i915/i915_irq.c: warning: 'score' may be used uninitialized in this function [-Wuninitialized]: 2509:27 => 
+  - /scratch/kisskb/src/drivers/i2c/busses/i2c-cpm.c: warning: passing argument 3 of 'dma_alloc_attrs' from incompatible pointer type [enabled by default]: 542:3, 551:3 => 
+  - /scratch/kisskb/src/drivers/i2c/busses/i2c-designware-platdrv.c: warning: 'dw_i2c_resume' defined but not used [-Wunused-function]: 221:12 => 
+  - /scratch/kisskb/src/drivers/i2c/busses/i2c-designware-platdrv.c: warning: 'dw_i2c_suspend' defined but not used [-Wunused-function]: 211:12 => 
+  - /scratch/kisskb/src/drivers/i2c/busses/i2c-ocores.c: warning: 'ocores_i2c_resume' defined but not used [-Wunused-function]: 471:12 => 
+  - /scratch/kisskb/src/drivers/i2c/busses/i2c-ocores.c: warning: 'ocores_i2c_suspend' defined but not used [-Wunused-function]: 460:12 => 
+  - /scratch/kisskb/src/drivers/idle/i7300_idle.c: warning: 'got_ctl' may be used uninitialized in this function [-Wuninitialized]: 423:2 => 
+  - /scratch/kisskb/src/drivers/iio/adc/ti_am335x_adc.c: warning: unused variable 'cur' [-Wunused-variable]: 209:17 => 
+  - /scratch/kisskb/src/drivers/iio/adc/ti_am335x_adc.c: warning: unused variable 'prop' [-Wunused-variable]: 208:20 => 
+  - /scratch/kisskb/src/drivers/input/keyboard/max7359_keypad.c: warning: 'max7359_resume' defined but not used [-Wunused-function]: 287:12 => 
+  - /scratch/kisskb/src/drivers/input/keyboard/max7359_keypad.c: warning: 'max7359_suspend' defined but not used [-Wunused-function]: 275:12 => 
+  - /scratch/kisskb/src/drivers/input/misc/pwm-beeper.c: warning: 'pwm_beeper_resume' defined but not used [-Wunused-function]: 157:12 => 
+  - /scratch/kisskb/src/drivers/input/misc/pwm-beeper.c: warning: 'pwm_beeper_suspend' defined but not used [-Wunused-function]: 147:12 => 
+  - /scratch/kisskb/src/drivers/input/touchscreen/cyttsp4_core.c: warning: 'cyttsp4_core_sleep' defined but not used [-Wunused-function]: 1555:12 => 
+  - /scratch/kisskb/src/drivers/input/touchscreen/cyttsp4_core.c: warning: 'cyttsp4_core_wake' defined but not used [-Wunused-function]: 1633:12 => 
+  - /scratch/kisskb/src/drivers/input/touchscreen/eeti_ts.c: warning: 'eeti_ts_resume' defined but not used [-Wunused-function]: 287:12 => 
+  - /scratch/kisskb/src/drivers/input/touchscreen/eeti_ts.c: warning: 'eeti_ts_suspend' defined but not used [-Wunused-function]: 268:12 => 
+  - /scratch/kisskb/src/drivers/isdn/hardware/mISDN/hfcpci.c: warning: ignoring return value of 'driver_for_each_device', declared with attribute warn_unused_result [-Wunused-result]: 2298:2 => 
+  - /scratch/kisskb/src/drivers/md/bcache/btree.c: warning: format '%lu' expects argument of type 'long unsigned int', but argument 3 has type 'size_t' [-Wformat]: 259:8 => 
+  - /scratch/kisskb/src/drivers/media/platform/soc_camera/soc_camera.c: warning: 'sasd' may be used uninitialized in this function [-Wuninitialized]: 1513:10, 1514:55 => 
+  - /scratch/kisskb/src/drivers/media/tuners/e4000.c: warning: 'e4000_rd_regs.constprop.0' uses dynamic stack allocation [enabled by default]: 81:1 => 
+  - /scratch/kisskb/src/drivers/media/usb/cx231xx/cx231xx-cards.c: warning: statement with no effect [-Wunused-value]: 913:2, 1411:3, 1043:2 => 
+  - /scratch/kisskb/src/drivers/mfd/ti_am335x_tscadc.c: warning: unused variable 'cur' [-Wunused-variable]: 95:27 => 
+  - /scratch/kisskb/src/drivers/mfd/ti_am335x_tscadc.c: warning: unused variable 'prop' [-Wunused-variable]: 94:27 => 
+  - /scratch/kisskb/src/drivers/mfd/twl6030-irq.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]: 398:24, 415:9 => 
+  - /scratch/kisskb/src/drivers/mmc/host/tmio_mmc_pio.c: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]: 798:19 => 
+  - /scratch/kisskb/src/drivers/net/ethernet/smsc/smc91x.c: warning: passing argument 2 of 'outw' makes integer from pointer without a cast [enabled by default]: 1670:2, 1642:2, 390:2, 1265:4, 1130:2, 349:2, 389:2, 1804:2, 1909:2, 1666:2, 723:2, 1639:2, 1287:4, 1072:2, 1293:2, 1672:2, 795:2, 759:2, 836:2, 270:2, 1452:2, 271:2, 937:2, 1022:3, 592:2, 296:2, 726:2, 689:3, 396:2, 488:3, 1278:4, 1173:2, 1652:2, 677:4, 1294:2, 469:4, 936:2, 758:2, 667:2, 313:2, 858:2, 328:2, 1646:2, 598:2, 1669:2, 380:2, 1825:2, 309:2, 1883:2, 350:2, 1641:2, 595:2, 1198:2, 357:2, 1896:2, 1455:3, 1934:2, 381:2, 1073:2, 1653:2, 329:2, 579:2, 278:2, 310:2, 1199:2, 619:2, 803:3, 345:2, 1681:2, 783:3, 849:2, 1644:2, 1456:3, 831:2, 755:2, 391:2, 1680:2, 1023:3, 311:2, 395:2, 1284:4, 1171:2, 1798:2, 580:2, 441:3, 1638:2, 1195:2, 1667:2, 801:3, 863:2, 1345:2, 1225:2, 1797:2, 1263:4, 819:2, 1453:2, 356:2, 325:2, 612:2, 1248:4, 491:3, 1458:2, 418:2, 781:3, 346:2, 253:2, 760:2, 1342:2, 254:2, 938:2, 347:2, 751:2, 1197:2 => 1670:2, 1642:2, 390:2, 1265:4, 1130:2, 349:2, 389:2, 1804:2, 1909:2, 1666:2, 723:2, 1639:2, 1287:4, 1072:2, 1293:2, 1672:2, 795:2, 759:2, 836:2, 270:2, 1452:2, 271:2, 937:2, 1022:3, 592:2, 296:2, 726:2, 689:3, 396:2, 488:3, 1278:4, 1173:2, 1652:2, 677:4, 1294:2, 469:4, 936:2, 758:2, 667:2, 313:2, 858:2, 328:2, 1646:2, 598:2, 1669:2, 380:2, 1825:2, 309:2, 1883:2, 350:2, 1641:2, 1198:2, 357:2, 1896:2, 1455:3, 1934:2, 381:2, 1073:2, 1653:2, 329:2, 579:2, 278:2, 310:2, 1199:2, 619:2, 803:3, 345:2, 1681:2, 783:3, 849:2, 1644:2, 1456:3, 831:2, 755:2, 391:2, 1680:2, 311:2, 1023:3, 395:2, 1284:4, 1171:2, 1798:2, 580:2, 441:3, 1638:2, 1195:2, 1667:2, 801:3, 863:2, 1345:2, 1225:2, 1797:2, 1263:4, 819:2, 1453:2, 356:2, 325:2, 612:2, 1248:4, 491:3, 1458:2, 418:2, 781:3, 346:2, 253:2, 760:2, 1342:2, 254:2, 938:2, 347:2, 751:2, 1197:2
+  - /scratch/kisskb/src/drivers/net/wireless/b43/b43.h: warning: 'packed' attribute ignored for field of type 'union <anonymous>' [-Wattributes]  CC      drivers/scsi/device_handler/scsi_dh.o: 641:2 => 
+  - /scratch/kisskb/src/drivers/net/wireless/b43/xmit.h: warning: 'packed' attribute ignored for field of type 'struct <anonymous>' [-Wattributes]  CC [M]  drivers/net/wireless/rt2x00/rt2x00crypto.o: 283:3 => 
+  - /scratch/kisskb/src/drivers/pci/msi.c: warning: unused variable 'i' [-Wunused-variable]: 339:7 => 
+  - /scratch/kisskb/src/drivers/power/bq27x00_battery.c: warning: 'bq27x00_powersupply_init' defined but not used [-Wunused-function]: 693:12 => 
+  - /scratch/kisskb/src/drivers/power/bq27x00_battery.c: warning: 'bq27x00_powersupply_unregister' defined but not used [-Wunused-function]: 724:13 => 
+  - /scratch/kisskb/src/drivers/power/twl4030_charger.c: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]: 192:20 => 
+  - /scratch/kisskb/src/drivers/regulator/lp872x.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 910:33 => 
+  - /scratch/kisskb/src/drivers/scsi/pm8001/pm8001_init.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 424:4 => 
+  - /scratch/kisskb/src/drivers/spi/spi-gpio.c: warning: large integer implicitly truncated to unsigned type [-Woverflow]: 446:2 => 
+  - /scratch/kisskb/src/drivers/spi/spi-pxa2xx.c: warning: large integer implicitly truncated to unsigned type [-Woverflow]: 1152:3 => 
+  - /scratch/kisskb/src/drivers/staging/comedi/drivers/ni_labpc.c: warning: unused variable 'dma_chan' [-Wunused-variable]: 1697:15 => 
+  - /scratch/kisskb/src/drivers/tty/n_gsm.c: warning: unused variable 'buf' [-Wunused-variable]: 2270:7 => 
+  - /scratch/kisskb/src/drivers/tty/serial/8250/8250_early.c: warning: comparison of distinct pointer types lacks a cast [enabled by default]: 196:12 => 
+  - /scratch/kisskb/src/drivers/tty/serial/pch_uart.c: warning: 'wait_for_xmitr' defined but not used [-Wunused-function]: 1504:13 => 
+  - /scratch/kisskb/src/fs/afs/internal.h: warning: 'packed' attribute ignored for field of type 'enum <anonymous>' [-Wattributes]  CC      drivers/staging/ste_rmi4/synaptics_i2c_rmi4.o: 163:2 => 
+  - /scratch/kisskb/src/fs/compat_binfmt_elf.c: warning: 'cputime_to_compat_timeval' defined but not used [-Wunused-function]: 58:13 => 
+  - /scratch/kisskb/src/fs/ncpfs/dir.c: warning: unused variable 'sb' [-Wunused-variable]: 134:23 => 
+  - /scratch/kisskb/src/fs/nfs/unlink.c: warning: 'nfs_sillyrename' uses dynamic stack allocation [enabled by default]: 563:1 => 
+  - /scratch/kisskb/src/include/linux/mtd/map.h: warning: 'r.x[0]' may be used uninitialized in this function [-Wuninitialized]: 424:3, 279:4, 349:2, 324:17, 278:6, 367:14, 290:22, 414:2, 332:11, 397:11 => 279:4, 349:2, 324:17, 278:6, 367:14, 290:22, 414:2, 332:11, 397:11
+  - /scratch/kisskb/src/include/linux/of_net.h: warning: type qualifiers ignored on function return type: 16 => 
+  - /scratch/kisskb/src/kernel/seccomp.c: warning: control reaches end of non-void function [-Wreturn-type]: 112:1 => 
+  - /scratch/kisskb/src/lib/lz4/lz4hc_compress.c: warning: the frame size of 1236 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 514:1 => 
+  - /scratch/kisskb/src/net/9p/trans_rdma.c: warning: 'rdma_cancelled' defined but not used [-Wunused-function]: 594:12 => 
+  - /scratch/kisskb/src/net/rds/iw_rdma.c: warning: the frame size of 1040 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 200:1 => 
+  - /scratch/kisskb/src/net/rfkill/rfkill-regulator.c: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]: 43:20 => 
+  - /scratch/kisskb/src/sound/isa/sb/sb16.c: warning: 'err' may be used uninitialized in this function [-Wuninitialized]  CC [M]  sound/usb/pcm.o: 527:6 => 
+  - warning: (ARM_GIC && ARM_NVIC && ARM_VIC && ORION_IRQCHIP && RENESAS_INTC_IRQPIN && RENESAS_IRQC && TB10X_IRQC && VERSATILE_FPGA_IRQ && REGMAP && PINCTRL_BAYTRAIL && GPIO_LYNXPOINT && GPIO_GRGPIO && GPIO_PCF857X && GPIO_LANGWELL && MFD_CORE && MFD_MAX77686 && MFD_MAX8997 && MFD_MAX8998 && AB8500_CORE && MFD_LP8788 && MFD_TPS65910 && TWL4030_CORE && MFD_WM831X_I2C && MFD_WM831X_SPI && EXTCON_MAX77693) selects IRQ_DOMAIN which has unmet direct dependencies (HAVE_GENERIC_HARDIRQS): N/A => 
+  - warning: (BRIDGE_NF_EBTABLES) selects NETFILTER_XTABLES which has unmet direct dependencies (NET && INET && NETFILTER): N/A => 
+  - warning: (DW_DMAC && DW_DMAC_PCI) selects DW_DMAC_CORE which has unmet direct dependencies (DMADEVICES && GENERIC_HARDIRQS): N/A => 
+  - warning: (IMA) selects TCG_IBMVTPM which has unmet direct dependencies (TCG_TPM && PPC_PSERIES): N/A => 
+  - warning: (MIPS_SEAD3 && PMC_MSP && CPU_CAVIUM_OCTEON) selects USB_EHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB && USB_EHCI_HCD): N/A => 
+  - warning: arch/x86/built-in.o(.text.unlikely+0x435d): Section mismatch in reference from the function __node_set.constprop.0() to the variable .init.data:numa_nodes_parsed: N/A => 
+  - warning: arch/x86/mm/built-in.o(.text.unlikely+0x1b84): Section mismatch in reference from the function __node_set.constprop.0() to the variable .init.data:numa_nodes_parsed: N/A => 
+  - warning: drivers/built-in.o(.data+0x988): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe(): N/A => 
+  - warning: drivers/built-in.o(.data+0xa28): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe(): N/A => 
+  - warning: drivers/built-in.o(.data+0xb84): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe(): N/A => 
+  - warning: drivers/built-in.o(.data+0xc8c): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip(): N/A => 
+  - warning: drivers/built-in.o(.data+0xcec): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip(): N/A => 
+  - warning: drivers/built-in.o(.data+0xd4c): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip(): N/A => 
+  - warning: drivers/built-in.o(.data+0xdac): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe(): N/A => 
+  - warning: drivers/built-in.o(.data+0xf54): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe(): N/A => 
+  - warning: drivers/built-in.o(.text+0x32d02a): Section mismatch in reference from the function .ps3fb_probe() to the variable .init.data:ps3fb_fix: N/A => 
+  - warning: drivers/built-in.o(.text+0x32d03a): Section mismatch in reference from the function .ps3fb_probe() to the variable .init.data:ps3fb_fix: N/A => 
+  - warning: drivers/net/cris/built-in.o(.text+0x1366): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init(): N/A => 
+  - warning: drivers/video/built-in.o(.text+0x29b712): Section mismatch in reference from the function .ps3fb_probe() to the variable .init.data:ps3fb_fix: N/A => 
+  - warning: drivers/video/built-in.o(.text+0x29b722): Section mismatch in reference from the function .ps3fb_probe() to the variable .init.data:ps3fb_fix: N/A => 
+  - warning: mm/built-in.o(.meminit.text+0x1250): Section mismatch in reference from the function .free_area_init_core.isra.37() to the function .init.text:.set_pageblock_order(): N/A => 
+  - warning: vmlinux.o (.PPC.EMB.apuinfo): unexpected non-allocatable section.: N/A => 
+  - warning: vmlinux.o(.data+0x3ff68): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x40008): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x40164): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x4026c): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip(): N/A => 
+  - warning: vmlinux.o(.data+0x402cc): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip(): N/A => 
+  - warning: vmlinux.o(.data+0x4032c): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip(): N/A => 
+  - warning: vmlinux.o(.data+0x4038c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x40534): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe(): N/A => 
+  - warning: vmlinux.o(.meminit.text+0x1654): Section mismatch in reference from the function .free_area_init_core.isra.37() to the function .init.text:.set_pageblock_order(): N/A => 
+  - warning: vmlinux.o(.text+0x154def6): Section mismatch in reference from the function .ps3fb_probe() to the variable .init.data:ps3fb_fix: N/A => 
+  - warning: vmlinux.o(.text+0x154df06): Section mismatch in reference from the function .ps3fb_probe() to the variable .init.data:ps3fb_fix: N/A => 
+  - warning: vmlinux.o(.text.unlikely+0x372): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size: N/A => 
+  - warning: vmlinux.o(.text.unlikely+0x37a): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size: N/A => 
+  - warning: vmlinux.o(.text.unlikely+0x3da): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size: N/A => 
+  - warning: vmlinux.o(.text.unlikely+0x3e6): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size: N/A => 
+  - warning: vmlinux.o(.text.unlikely+0x42a): Section mismatch in reference from the function .free_lppacas() to the variable .init.data:lppaca_size: N/A => 
+  - warning: vmlinux.o(.text.unlikely+0x43ca): Section mismatch in reference from the function __node_set.constprop.0() to the variable .init.data:numa_nodes_parsed: N/A => 
+  - warning: vmlinux.o(.text.unlikely+0xc6): Section mismatch in reference from the function .prom_rtas_call() to the variable .init.data:dt_string_start: N/A => 
+  - warning: vmlinux.o(.text.unlikely+0xce): Section mismatch in reference from the function .prom_rtas_call() to the variable .init.data:dt_string_start: N/A => 
 
-Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
-Gortmaker for triage and bug fixes.
+Gr{oetje,eeting}s,
 
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+						Geert
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master (be408cd3e1fe Merge git://git.kernel.org/pub/scm/linu=
-x/kernel/git/davem/net)
-Merging fixes/master (fa8218def1b1 Merge tag 'regmap-v3.11-rc7' of git://gi=
-t.kernel.org/pub/scm/linux/kernel/git/broonie/regmap)
-Merging kbuild-current/rc-fixes (19514fc665ff arm, kbuild: make "make insta=
-ll" not depend on vmlinux)
-Merging arc-current/for-curr (18e8a7387340 ARC: [plat-arcfpga] defconfig up=
-date)
-Merging arm-current/fixes (384b38b66947 ARM: 7873/1: vfp: clear vfp_current=
-_hw_state for dying cpu)
-Merging m68k-current/for-linus (55490050df0f m68k/atari: ARAnyM - Always us=
-e physical addresses in NatFeat calls)
-Merging metag-fixes/fixes (3b2f64d00c46 Linux 3.11-rc2)
-Merging powerpc-merge/merge (8b5ede69d24d powerpc/irq: Don't switch to irq =
-stack from softirq stack)
-Merging sparc/master (6d15ee492809 Merge git://git.kernel.org/pub/scm/virt/=
-kvm/kvm)
-Merging net/master (be408cd3e1fe Merge git://git.kernel.org/pub/scm/linux/k=
-ernel/git/davem/net)
-Merging ipsec/master (84502b5ef984 xfrm: Fix null pointer dereference when =
-decoding sessions)
-Merging sound-current/for-linus (fab1285a51b7 ALSA: hda - Name Haswell HDMI=
- controllers better)
-Merging pci-current/for-linus (67d470e0e171 Revert "x86/PCI: MMCONFIG: Chec=
-k earlier for MMCONFIG region at address zero")
-Merging wireless/master (8ce9beac4661 drivers: net: wireless: b43: Fix poss=
-ible NULL ptr dereference)
-Merging driver-core.current/driver-core-linus (31d141e3a666 Linux 3.12-rc6)
-Merging tty.current/tty-linus (6e757ad2c92c tty/serial: at91: fix uart/usar=
-t selection for older products)
-Merging usb.current/usb-linus (e1466ad5b1ae USB: serial: ftdi_sio: add id f=
-or Z3X Box device)
-Merging staging.current/staging-linus (31d141e3a666 Linux 3.12-rc6)
-Merging char-misc.current/char-misc-linus (31d141e3a666 Linux 3.12-rc6)
-Merging input-current/for-linus (5beea882e641 Input: ALPS - add support for=
- model found on Dell XT2)
-Merging md-current/for-linus (d47648fcf061 raid5: avoid finding "discard" s=
-tripe)
-Merging crypto-current/master (f262f0f5cad0 crypto: s390 - Fix aes-cbc IV c=
-orruption)
-Merging ide/master (64110c16e012 ide: sgiioc4: Staticize ioc4_ide_attach_on=
-e())
-Merging dwmw2/master (5950f0803ca9 pcmcia: remove RPX board stuff)
-Merging sh-current/sh-fixes-for-linus (44033109e99c SH: Convert out[bwl] ma=
-cros to inline functions)
-Merging devicetree-current/devicetree/merge (1931ee143b0a Revert "drivers: =
-of: add initialization code for dma reserved memory")
-Merging rr-fixes/fixes (f6537f2f0eba scripts/kallsyms: filter symbols not i=
-n kernel address space)
-Merging mfd-fixes/master (d0e639c9e06d Linux 3.12-rc4)
-Merging vfio-fixes/for-linus (d93b3ac0edb8 VFIO: vfio_iommu_type1: fix bug =
-caused by break in nested loop)
-Merging drm-intel-fixes/for-linux-next-fixes (1fbc0d789d12 drm/i915: Fix th=
-e PPT fdi lane bifurcate state handling on ivb)
-Merging asm-generic/master (fb9de7ebc3a2 xtensa: Use generic asm/mmu.h for =
-nommu)
-Merging arc/for-next (72decceef59d ARC: [TB10x] Updates for GPIO and pinctr=
-l)
-Merging arm/for-next (17e09ac56465 Merge branches 'fixes', 'mmci' and 'sa11=
-x0' into for-next)
-Merging arm-perf/for-next/perf (15c03dd4859a Linux 3.12-rc3)
-Merging arm-soc/for-next (c1b35c610b89 Merge branch 'next/dt' into for-next)
-CONFLICT (content): Merge conflict in drivers/clk/clk-nomadik.c
-CONFLICT (content): Merge conflict in arch/arm/mach-tegra/Kconfig
-Merging bcm2835/for-next (7d132055814e Linux 3.10-rc6)
-Merging cortex/for-next (797d602db128 ARM: new platform for Energy Micro's =
-EFM32 Cortex-M3 SoCs)
-Merging ep93xx/ep93xx-for-next (bfb0709fd17b Merge branch 'ep93xx-fixes' in=
-to ep93xx-for-next)
-Merging imx-mxs/for-next (db8821583488 Merge branches 'imx/fixes-3.13', 'im=
-x/soc-3.14' and 'imx/dt-3.14' into for-next)
-Merging ixp4xx/next (19f949f52599 Linux 3.8)
-Merging msm/for-next (81cf1e061d00 ARM: msm: Rename msm devicetrees to have=
- standard 'qcom' prefix)
-Merging mvebu/for-next (b91cf40516e0 Merge branch 'mvebu/dt' into for-next)
-Merging renesas/next (597472bb771b Merge branch 'heads/clock' into next)
-Merging samsung/for-next (d2287944920d Merge branch 'v3.13-next/samsung' in=
-to for-next)
-Merging tegra/for-next (1ebd0d6a0589 Merge branch for-3.13/maintainers into=
- for-next)
-Merging arm64/upstream (aa62c2091129 arm64: compat: Clear the IT state inde=
-pendent of the 32-bit ARM or Thumb-2 mode)
-Merging blackfin/for-linus (08b67faa23fd blackfin: Ignore generated uImages)
-Merging c6x/for-linux-next (b2c32b32a212 c6x: remove unused COMMON_CLKDEV K=
-config parameter)
-CONFLICT (content): Merge conflict in arch/arm/Kconfig
-Merging cris/for-next (be8cb7f42ab9 CRIS: drop unused Kconfig symbols)
-Merging h8300-remove/h8300-remove (b400126add8f CREDITS: Add Yoshinori Sato=
- for h8300)
-Merging hexagon/linux-next (de44443a45e3 HEXAGON: Remove non existent refer=
-ence to GENERIC_KERNEL_EXECVE & GENERIC_KERNEL_THREAD)
-Merging ia64/next (959f58544b7f Linux 3.12-rc7)
-Merging m68k/for-next (77a42796786c m68k: Remove deprecated IRQF_DISABLED)
-Merging m68knommu/for-next (959f58544b7f Linux 3.12-rc7)
-Merging metag/for-next (b6ef9161e43a irq-imgpdc: add ImgTec PDC irqchip dri=
-ver)
-Merging microblaze/next (d5d04bb48f0e Bye, bye, WfW flag)
-Merging mips/mips-for-linux-next (edf7b938321e MIPS: Random whitespace clea=
-n-ups)
-Merging openrisc/for-upstream (56aea88df7b3 openrisc: Refactor 16-bit const=
-ant relocation)
-Merging parisc/for-next (6c700d71f7fa [PARISC] hpux: Remove obsolete regs p=
-arameter from do_execve() in hpux_execve())
-Merging parisc-hd/for-next (89bcde9f4c7f parisc: make "make install" not de=
-pend on vmlinux)
-Merging powerpc/next (b0c06d333505 powerpc/bpf: Support MOD operation)
-Merging mpc5xxx/next (7e198197ec87 powerpc/mpc512x: remove unnecessary #if)
-Merging galak/next (9e2ecdbba3b0 powerpc/fsl-booke: add the reg prop for pc=
-i bridge device node for T4/B4)
-Merging s390/features (106078641f32 s390/mm,tlb: correct tlb flush on page =
-table upgrade)
-Merging sh/sh-latest (37284bd93103 Merge branches 'sh/hw-breakpoints' and '=
-sh/serial-of' into sh-latest)
-CONFLICT (content): Merge conflict in include/linux/serial_sci.h
-CONFLICT (content): Merge conflict in drivers/tty/serial/sh-sci.c
-CONFLICT (content): Merge conflict in arch/sh/kernel/cpu/sh2a/Makefile
-Merging sparc-next/master (f8ce1faf5595 Merge tag 'modules-next-for-linus' =
-of git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux)
-Merging tile/master (e823acc0a9e3 tile: remove stray blank space)
-Merging unicore32/unicore32 (c284464658ac arch/unicore32: remove CONFIG_EXP=
-ERIMENTAL)
-Merging xtensa/for_next (8872366df396 xtensa: Fix broken allmodconfig build)
-Merging btrfs/next (d7396f07358a Btrfs: optimize key searches in btrfs_sear=
-ch_slot)
-Merging ceph/master (53d028160f1a ceph: implement readv/preadv for sync ope=
-ration)
-Merging cifs/for-next (81f4821f0bec SMB2/SMB3 Copy offload support (refcopy=
-) phase 1)
-Merging configfs/linux-next (b930c26416c4 Merge branch 'for-linus' of git:/=
-/git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs)
-Merging ecryptfs/next (959f58544b7f Linux 3.12-rc7)
-Merging ext3/for_next (7ba3ec5749dd ext2: Fix fs corruption in ext2_get_xip=
-_mem())
-Merging ext4/dev (efbed4dc5857 ext4: add ratelimiting to ext4 messages)
-Merging f2fs/dev (4bf08ff6f9f3 f2fs: remove unnecessary TestClearPageError =
-when wait pages writeback)
-Merging fscache/fscache (f1fe29b4a02d NFS: Use i_writecount to control whet=
-her to get an fscache cookie in nfs_open())
-Merging fuse/for-next (ce128de6260f fuse: writepages: protect secondary req=
-uests from fuse file release)
-Merging gfs2/master (2147dbfd059e GFS2: Use generic list_lru for quota)
-Merging jfs/jfs-next (8660998608cf jfs: fix error path in ialloc)
-Merging logfs/master (339466142b3f Fix the call to BUG() caused by no free =
-segment found)
-Merging nfs/linux-next (fab99ebe39fe NFSv4.2: Remove redundant checks in nf=
-s_setsecurity+nfs4_label_init_security)
-Merging nfsd/nfsd-next (3378b7f40d79 nfsd4: fix discarded security labels o=
-n setattr)
-Merging omfs/for-next (976d167615b6 Linux 3.1-rc9)
-Merging squashfs/master (8ae6a7f5a3a8 squashfs: enhance parallel I/O)
-Merging v9fs/for-next (94876b5bb6a8 9P: introduction of a new cache=3Dmmap =
-model.)
-Merging ubifs/linux-next (58a4e23703b2 UBIFS: correct data corruption range)
-Merging xfs/for-next (273203699f82 xfs: xfs_remove deadlocks due to inverte=
-d AGF vs AGI lock ordering)
-CONFLICT (content): Merge conflict in fs/xfs/xfs_dir2_sf.c
-CONFLICT (content): Merge conflict in fs/xfs/xfs_dir2_readdir.c
-CONFLICT (content): Merge conflict in fs/xfs/xfs_dir2_block.c
-CONFLICT (content): Merge conflict in fs/xfs/xfs_da_format.h
-Merging vfs/for-next (dc03a60dfcff do_remount(): pull touch_mnt_namespace()=
- up)
-CONFLICT (content): Merge conflict in fs/nfsd/nfsfh.c
-CONFLICT (content): Merge conflict in fs/9p/vfs_inode_dotl.c
-CONFLICT (content): Merge conflict in fs/9p/vfs_inode.c
-CONFLICT (content): Merge conflict in fs/9p/vfs_file.c
-Merging pci/next (589a1b076ff9 Merge branch 'pci/yijing-pci_is_pcie-v2' int=
-o next)
-Merging hid/for-next (bdae615c84bb Merge branch 'for-3.13/roccat' into for-=
-next)
-Merging i2c/i2c/for-next (8a73cd4cfa15 i2c: exynos5: add High Speed I2C con=
-troller driver)
-Merging jdelvare-hwmon/master (0f07c1dd7545 hwmon: (lm90) Add support for T=
-I TMP451)
-Merging hwmon-staging/hwmon-next (26336c8a36c0 hwmon: (w83793) Clean up a s=
-ignedness issue)
-Merging v4l-dvb/master (5c52a0f259af Merge branch 'build_fixes' into to_nex=
-t)
-Merging kbuild/for-next (9fbe8e5b9724 Merge branch 'kbuild/kconfig' into kb=
-uild/for-next)
-Merging kconfig/for-next (4eae518d4b01 localmodconfig: Fix localyesconfig t=
-o set to 'y' not 'm')
-Merging libata/for-next (1ca953d5f992 Merge branch 'for-3.13' into for-next)
-Merging pstore/master (bd08ec33b5c2 pstore/ram: Restore ecc information blo=
-ck)
-Merging pm/linux-next (4ac728bf9df4 Merge branch 'powercap-next' into linux=
--next)
-CONFLICT (content): Merge conflict in drivers/i2c/i2c-core.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/opp.c
-CONFLICT (content): Merge conflict in arch/arm/mach-imx/mach-imx6q.c
-Merging idle/next (d7b0a1b0b9b1 intel_idle: Support Intel Atom Processor C2=
-000 Product Family)
-Merging apm/for-next (fb9d78aca709 Merge branch 'for-linus' of git://git.ke=
-rnel.org/pub/scm/linux/kernel/git/jikos/apm)
-Merging cpupowerutils/master (f16603386b38 cpupower tools: add install targ=
-et to the debug tools' makefiles)
-Merging thermal/next (79122105c394 Merge branches 'intel_powerclamp', 'misc=
-' and 'x86_pkg_temp' of .git into next)
-Merging ieee1394/for-next (db9ae8fec7b1 firewire: ohci: Fix deadlock at bus=
- reset)
-Merging ubi/linux-next (ae0d14695566 UBI: Add some asserts to ubi_attach_fa=
-stmap())
-Merging dlm/next (a97f4a66d8ee dlm: Avoid that dlm_release_lockspace() inco=
-rrectly returns -EBUSY)
-Merging swiotlb/linux-next (af51a9f1848f swiotlb: Do not export swiotlb_bou=
-nce since there are no external consumers)
-Merging slave-dma/next (6b327a028f09 Merge branch 'for-linus' into next)
-Merging dmaengine/next (4a43f394a082 dmaengine: dma_sync_wait and dma_find_=
-channel undefined)
-Merging net-next/master (b915550179d9 Merge branch 'huawei_cdc_ncm')
-CONFLICT (content): Merge conflict in arch/parisc/include/uapi/asm/socket.h
-CONFLICT (modify/delete): arch/h8300/include/uapi/asm/socket.h deleted in H=
-EAD and modified in net-next/master. Version net-next/master of arch/h8300/=
-include/uapi/asm/socket.h left in tree.
-$ git rm -f arch/h8300/include/uapi/asm/socket.h
-Merging ipsec-next/master (1c5ad13f7c2b net: esp{4,6}: get rid of struct es=
-p_data)
-Merging wireless-next/master (6b732323c1e1 Merge branch 'master' of git://g=
-it.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth)
-Merging bluetooth/master (22c9c627a90d Bluetooth: Fix rejecting SMP securit=
-y request in slave role)
-Merging infiniband/for-next (a78fc816b361 Merge branches 'cma', 'ipoib', 'm=
-isc', 'mlx5', 'ocrdma', 'qib' and 'srp' into for-next)
-Merging mtd/master (d255c59aab2a Merge tag 'for-linus-20131025' of git://gi=
-t.infradead.org/linux-mtd)
-Merging l2-mtd/master (235c044446d6 mtd: nand_bbt: kill NAND_BBT_SCANALLPAG=
-ES)
-Merging crypto/master (f262f0f5cad0 crypto: s390 - Fix aes-cbc IV corruptio=
-n)
-Merging drm/drm-next (9d6104e0174b drm/sysfs: Do not drop device reference =
-twice)
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/intel_drv.h
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/intel_dp.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/intel_display.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/intel_ddi.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/intel_crt.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/i915_drv.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/i915_dma.c
-Applying: drm/i915: Resolve interaction with drm-fixes tree
-Merging drm-intel/for-linux-next (f02586dfedf1 drm/i915: Make intel_dp_is_e=
-dp() less specific)
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/intel_dp.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/i915_drv.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/i915_dma.c
-Merging drm-tegra/drm/for-next (977386a04bae drm/tegra: Reserve syncpoint b=
-ase for gr3d)
-CONFLICT (content): Merge conflict in MAINTAINERS
-Merging sound/for-next (fab1285a51b7 ALSA: hda - Name Haswell HDMI controll=
-ers better)
-Merging sound-asoc/for-next (e98209dda4b1 Merge remote-tracking branch 'aso=
-c/fix/ak4642' into asoc-linus)
-Merging modules/modules-next (08746a65c296 init: fix in-place parameter mod=
-ification regression)
-Applying: modpost: fix bogus 'exported twice' warnings.
-Merging virtio/virtio-next (2342d6a6512c virtio_ring: adapt to notify() ret=
-urning bool)
-Merging input/next (c6d81bd7237b Input: add driver for Neonode zForce based=
- touchscreens)
-Merging input-mt/for-next (ad81f0545ef0 Linux 3.11-rc1)
-Merging cgroup/for-next (0d60e6cd793e Merge branch 'for-3.13' into for-next)
-CONFLICT (content): Merge conflict in mm/memcontrol.c
-Merging block/for-next (75da81bb4d50 Merge branch 'for-3.13/core' into for-=
-next)
-CONFLICT (content): Merge conflict in fs/f2fs/segment.c
-CONFLICT (content): Merge conflict in drivers/md/raid5.c
-Merging aio-direct/for-next (bb6f7be48318 tmpfs: add support for read_iter =
-and write_iter)
-CONFLICT (content): Merge conflict in include/linux/blk_types.h
-CONFLICT (content): Merge conflict in fs/nfs/file.c
-CONFLICT (content): Merge conflict in fs/nfs/direct.c
-CONFLICT (content): Merge conflict in drivers/block/loop.c
-Applying: ceph: Fix up for iov_iter changes
-Merging device-mapper/for-next (8c5b2d8c4066 MAINTAINERS: add reference to =
-device-mapper's linux-dm.git tree)
-Applying: dm_cache: fix up for bvec iterator abstraction
-Applying: device-mapper: fixup for api changes
-Merging embedded/master (4744b43431e8 embedded: fix vc_translate operator p=
-recedence)
-Merging firmware/master (6e03a201bbe8 firmware: speed up request_firmware()=
-, v3)
-Merging pcmcia/master (80af9e6d7ae6 pcmcia at91_cf: fix raw gpio number usa=
-ge)
-Merging mmc/mmc-next (4d22378221bd mmc: core: Add MMC_CAP_RUNTIME_RESUME to=
- resume at runtime_resume)
-Merging kgdb/kgdb-next (6bedf31c25dd kdb: Remove unhandled ssb command)
-Merging slab/for-next (139f3f1863de Merge branch 'slab/struct-page' into fo=
-r-next)
-Merging uclinux/for-next (6dbe51c251a3 Linux 3.9-rc1)
-Merging md/for-next (555c28a5b0c1 raid1: Add some macros to make code clear=
-ly.)
-Merging mfd/master (5e90169c5a02 mfd: lpc_ich: Add Device IDs for Intel Wil=
-dcat Point-LP PCH)
-CONFLICT (content): Merge conflict in sound/soc/codecs/mc13783.c
-Merging mfd-lj/for-mfd-next (6bfd1e63de34 mfd: lpc_sch: Ignore resource con=
-flicts when adding mfd cells)
-Merging battery/master (588bd5918bac power_supply: Fix documentation for TE=
-MP_*ALERT* properties)
-Merging fbdev/for-next (718b90ac4c21 video: xilinxfb: Simplify error path)
-Applying: video: xilinxfb: Fix for "Use standard variable name convention"
-Merging viafb/viafb-next (838ac785d521 viafb: avoid refresh and mode lookup=
- in set_par)
-Merging omap_dss2/for-next (8623ec220b9c omapdss: Add new panel driver for =
-Topolly td028ttec1 LCD.)
-Merging regulator/for-next (4445d0094e75 Merge remote-tracking branch 'regu=
-lator/topic/tps65910' into regulator-next)
-Merging security/next (217091dd7a7a ima: define '_ima' as a builtin 'truste=
-d' keyring)
-CONFLICT (content): Merge conflict in crypto/Makefile
-Merging selinux/master (42d64e1add3a selinux: correct locking in selinux_ne=
-tlbl_socket_connect))
-Merging lblnet/master (07bc9dc1b01b Merge branch 'merge' of git://git.kerne=
-l.org/pub/scm/linux/kernel/git/benh/powerpc)
-Merging watchdog/master (ec1a1a17a211 watchdog: rt2880_wdt: fix return valu=
-e check in rt288x_wdt_probe())
-Merging dwmw2-iommu/master (e5d0c874391a Merge tag 'iommu-updates-v3.12' of=
- git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu)
-Merging iommu/next (e6ca48d995e4 Merge branches 'iommu/fixes', 'tracing', '=
-core', 'arm/tegra' and 'x86/vt-d' into next)
-Merging vfio/next (15c03dd4859a Linux 3.12-rc3)
-Merging osd/linux-next (861d66601acd exofs: don't leak io_state and pages o=
-n read error)
-Merging jc_docs/docs-next (5c050fb96380 docs: update the development proces=
-s document)
-Merging trivial/for-next (2bb9936beac2 doc: usb: Fix typo in Documentation/=
-usb/gadget_configs.txt)
-CONFLICT (content): Merge conflict in net/netfilter/xt_set.c
-Merging audit/master (9410d228a4cf audit: call audit_bprm() only once to ad=
-d AUDIT_EXECVE information)
-CONFLICT (content): Merge conflict in fs/exec.c
-$ git reset --hard HEAD^
-Merging next-20131105 version of audit
-Merging fsnotify/for-next (1ca39ab9d21a inotify: automatically restart sysc=
-alls)
-Merging devicetree/devicetree/next (355e62f5ad12 of/irq: Fix potential buff=
-er overflow)
-CONFLICT (content): Merge conflict in drivers/pci/host/pci-mvebu.c
-CONFLICT (content): Merge conflict in drivers/crypto/caam/jr.c
-CONFLICT (content): Merge conflict in arch/arm/mach-integrator/pci_v3.c
-Merging dt-rh/for-next (7f60466de9a4 mips: re-order DT init scan)
-CONFLICT (content): Merge conflict in arch/powerpc/include/asm/prom.h
-CONFLICT (content): Merge conflict in Documentation/devicetree/bindings/ven=
-dor-prefixes.txt
-Merging spi/for-next (f8ce25620cdc Merge remote-tracking branch 'spi/topic/=
-wr' into spi-next)
-CONFLICT (content): Merge conflict in drivers/spi/spi.c
-Merging tip/auto-latest (fa1471b9ac4e Merge branch 'x86/uaccess')
-CONFLICT (modify/delete): tools/perf/config/feature-tests.mak deleted in ti=
-p/auto-latest and modified in HEAD. Version HEAD of tools/perf/config/featu=
-re-tests.mak left in tree.
-CONFLICT (content): Merge conflict in tools/perf/config/Makefile
-CONFLICT (content): Merge conflict in include/linux/wait.h
-CONFLICT (content): Merge conflict in include/linux/acpi.h
-CONFLICT (modify/delete): arch/h8300/include/asm/Kbuild deleted in HEAD and=
- modified in tip/auto-latest. Version tip/auto-latest of arch/h8300/include=
-/asm/Kbuild left in tree.
-$ git rm -f arch/h8300/include/asm/Kbuild
-$ git rm -f tools/perf/config/feature-tests.mak
-Applying: tip: extra fixes for perf changes
-Merging edac/linux_next (de4772c62148 edac: sb_edac.c should not require pr=
-escence of IMC_DDRIO device)
-Merging edac-amd/for-next (c3e511e4c4d9 amd64_edac: Remove superfluous cond=
-ition check.)
-Merging ftrace/for-next (076a3a95a522 Merge branch 'trace/ftrace/urgent' in=
-to trace/for-next)
-Merging rcu/rcu/next (4102adab9189 rcu: Move RCU-related source code to ker=
-nel/rcu directory)
-Merging uprobes/for-next (0326f5a94dde uprobes/core: Handle breakpoint and =
-singlestep exceptions)
-Merging kvm/linux-next (81e87e267967 kvm_host: typo fix)
-Merging kvm-arm/kvm-arm-next (79c648806f90 arm/arm64: KVM: PSCI: use MPIDR =
-to identify a target CPU)
-CONFLICT (content): Merge conflict in arch/arm/kvm/reset.c
-Merging kvm-ppc/kvm-ppc-next (a78b55d1c021 kvm: powerpc: book3s: drop is_hv=
-_enabled)
-CONFLICT (content): Merge conflict in arch/powerpc/kernel/traps.c
-CONFLICT (content): Merge conflict in arch/powerpc/kernel/ptrace.c
-CONFLICT (content): Merge conflict in arch/powerpc/include/asm/processor.h
-Merging oprofile/for-next (9b415b3a3c4e edac, highbank: Moving error inject=
-ion to sysfs for edac)
-Merging fw-nohz/nohz/next (74876a98a87a printk: Wake up klogd using irq_wor=
-k)
-Merging xen-tip/linux-next (a54f899c5f57 pci-swiotlb-xen: call pci_request_=
-acs only ifdef CONFIG_PCI)
-CONFLICT (content): Merge conflict in arch/arm/include/asm/dma-mapping.h
-Merging percpu/for-next (90f2492cf9c8 x86: remove this_cpu_xor() implementa=
-tion)
-Merging workqueues/for-next (016564d41b35 workqueue: fix pool ID allocation=
- leakage and remove BUILD_BUG_ON() in init_workqueues)
-Merging drivers-x86/linux-next (5c07eae979df platform/x86: panasonic-laptop=
-: reuse module_acpi_driver)
-Merging sysctl/master (4e474a00d7ff sysctl: protect poll() in entries that =
-may go away)
-Merging regmap/for-next (04bc9ac163a2 Merge remote-tracking branch 'regmap/=
-topic/spmi' into regmap-next)
-Merging hsi/for-next (43139a61fc68 HSI: hsi_char: Update ioctl-number.txt)
-Merging leds/for-next (30dae2f98612 leds: lp55xx: handle enable pin in driv=
-er)
-CONFLICT (content): Merge conflict in include/linux/of.h
-CONFLICT (content): Merge conflict in arch/arm/mach-ux500/board-mop500.c
-Merging driver-core/driver-core-next (0cae60f91494 sysfs: rename sysfs_asso=
-c_lock and explain what it's about)
-CONFLICT (content): Merge conflict in include/linux/netdevice.h
-CONFLICT (content): Merge conflict in drivers/pci/pci-sysfs.c
-CONFLICT (content): Merge conflict in drivers/pci/pci-driver.c
-CONFLICT (content): Merge conflict in drivers/mmc/host/mvsdio.c
-Merging tty/tty-next (80d8611dd076 serial: omap: fix missing comma)
-CONFLICT (content): Merge conflict in drivers/tty/serial/imx.c
-CONFLICT (content): Merge conflict in drivers/tty/serial/atmel_serial.c
-Merging usb/usb-next (7d49f0bac41e USB: Maintainers change for usb serial d=
-rivers)
-CONFLICT (content): Merge conflict in drivers/usb/musb/davinci.c
-CONFLICT (content): Merge conflict in drivers/Kconfig
-CONFLICT (content): Merge conflict in arch/arm/boot/dts/omap3-evm.dts
-Merging usb-gadget/next (80d7d8a768cd usb: phy: twl6030-usb: Include linux/=
-of.h header)
-Merging staging/staging-next (ed5d6ca0038f staging: drm/imx: fix return val=
-ue check in ipu_add_subdevice_pdata())
-CONFLICT (content): Merge conflict in drivers/staging/lustre/lustre/llite/l=
-loop.c
-Merging char-misc/char-misc-next (425792266a40 misc: mic: Fixes for randcon=
-fig build errors and warnings.)
-Applying: Intel MIC Host Driver: fix for sysfs_get_dirent API change
-Merging scsi/for-next (2aee240c68ed Merge branch 'misc' into for-next)
-Merging target-updates/for-next (2dd1d53fe004 iscsi-target: Implement demo_=
-mode_discovery logic)
-Merging target-merge/for-next-merge (15c03dd4859a Linux 3.12-rc3)
-Merging writeback/writeback-for-next (a8855990e382 writeback: Do not sort b=
-_io list only because of block device inode)
-Merging hwspinlock/linux-next (8b37fcfc9b34 hwspinlock: add MAINTAINERS ent=
-ries)
-Merging pinctrl/for-next (94daf85e3c4d pinctrl: at91: copy define to driver)
-Merging vhost/linux-next (d3d665a654a3 vhost-scsi: whitespace tweak)
-Merging remoteproc/for-next (b9777859ec01 remoteproc: fix kconfig dependenc=
-ies for VIRTIO)
-Merging rpmsg/for-next (397944df3290 rpmsg: fix kconfig dependencies for VI=
-RTIO)
-Merging gpio/for-next (afb3690c3cbd gpio: bcm-kona: add missing .owner to s=
-truct gpio_chip)
-CONFLICT (content): Merge conflict in arch/arm/Kconfig
-Merging dma-mapping/dma-mapping-next (0df651a0740c Merge branch 'parisc-3.1=
-2' of git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux)
-Merging pwm/for-next (702e304f198f Documentation/pwm: Fix trivial typos)
-CONFLICT (modify/delete): arch/arm/mach-omap2/board-zoom-peripherals.c dele=
-ted in HEAD and modified in pwm/for-next. Version pwm/for-next of arch/arm/=
-mach-omap2/board-zoom-peripherals.c left in tree.
-$ git rm -f arch/arm/mach-omap2/board-zoom-peripherals.c
-Merging dma-buf/for-next (19e8697ba45e dma-buf: Expose buffer size to users=
-pace (v2))
-Merging userns/for-next (40216baa0101 vfs: Lazily remove mounts on unlinked=
- files and directories. v2)
-CONFLICT (content): Merge conflict in fs/fuse/dir.c
-Merging ktest/for-next (df5f7c66013c ktest: Reset grub menu cache with diff=
-erent machines)
-Merging signal/for-next (20b4fb485227 Merge branch 'for-linus' of git://git=
-.kernel.org/pub/scm/linux/kernel/git/viro/vfs)
-Merging clk/clk-next (f61027426a5b clk: of: helper for determining number o=
-f parent clocks)
-CONFLICT (content): Merge conflict in drivers/clk/Makefile
-Merging random/dev (392a546dc836 random: add debugging code to detect early=
- use of get_random_bytes())
-CONFLICT (content): Merge conflict in drivers/char/random.c
-Merging lzo-update/lzo-update (42b775abafaf lib/lzo: huge LZO decompression=
- speedup on ARM by using unaligned access)
-Merging arm64-hugepages/for-next/hugepages (af07484863e0 ARM64: mm: THP sup=
-port.)
-Merging aio/master (13fd8a5dc3cf Merge branch 'aio-fix' of http://evilpiepi=
-rate.org/git/linux-bcache)
-Merging akpm-current/current (3cd43dcfaabf scripts/bloat-o-meter: use .star=
-tswith rather than fragile slicing)
-CONFLICT (content): Merge conflict in mm/bounce.c
-CONFLICT (content): Merge conflict in fs/bio-integrity.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/rt2x00/rt2800pci=
-.c
-CONFLICT (content): Merge conflict in arch/x86/mm/init.c
-$ git checkout -b akpm remotes/origin/akpm/master
-Applying: mm: drop actor argument of do_generic_file_read()
-Applying: mm-drop-actor-argument-of-do_generic_file_read-fix
-Applying: mm: avoid increase sizeof(struct page) due to split page table lo=
-ck
-Applying: mm: rename USE_SPLIT_PTLOCKS to USE_SPLIT_PTE_PTLOCKS
-Applying: mm: convert mm->nr_ptes to atomic_long_t
-Applying: mm: introduce api for split page table lock for PMD level
-Applying: mm, thp: change pmd_trans_huge_lock() to return taken lock
-Applying: mm, thp: move ptl taking inside page_check_address_pmd()
-Applying: mm, thp: do not access mm->pmd_huge_pte directly
-Applying: mm, hugetlb: convert hugetlbfs to use split pmd lock
-Applying: mm-hugetlb-convert-hugetlbfs-to-use-split-pmd-lock-checkpatch-fix=
-es
-Applying: mm: convert the rest to new page table lock api
-Applying: mm: implement split page table lock for PMD level
-Applying: x86, mm: enable split page table lock for PMD level
-Applying: x86-mm-enable-split-page-table-lock-for-pmd-level-checkpatch-fixes
-Applying: x86: add missed pgtable_pmd_page_ctor/dtor calls for preallocated=
- pmds
-Applying: cris: fix potential NULL-pointer dereference
-Applying: m32r: fix potential NULL-pointer dereference
-Applying: xtensa: fix potential NULL-pointer dereference
-Applying: mm: allow pgtable_page_ctor() to fail
-Applying: microblaze: add missing pgtable_page_ctor/dtor calls
-Applying: mn10300: add missing pgtable_page_ctor/dtor calls
-Applying: openrisc: add missing pgtable_page_ctor/dtor calls
-Applying: alpha: handle pgtable_page_ctor() fail
-Applying: arc: handle pgtable_page_ctor() fail
-Applying: arm: handle pgtable_page_ctor() fail
-Applying: arm64: handle pgtable_page_ctor() fail
-Applying: avr32: handle pgtable_page_ctor() fail
-Applying: cris: handle pgtable_page_ctor() fail
-Applying: frv: handle pgtable_page_ctor() fail
-Applying: hexagon: handle pgtable_page_ctor() fail
-Applying: ia64: handle pgtable_page_ctor() fail
-Applying: m32r: handle pgtable_page_ctor() fail
-Applying: m68k: handle pgtable_page_ctor() fail
-Applying: m68k-handle-pgtable_page_ctor-fail-fix
-Applying: m68k-handle-pgtable_page_ctor-fail-fix-fix
-Applying: metag: handle pgtable_page_ctor() fail
-Applying: mips: handle pgtable_page_ctor() fail
-Applying: parisc: handle pgtable_page_ctor() fail
-Applying: powerpc: handle pgtable_page_ctor() fail
-Applying: s390: handle pgtable_page_ctor() fail
-Applying: score: handle pgtable_page_ctor() fail
-Applying: sh: handle pgtable_page_ctor() fail
-Applying: sparc: handle pgtable_page_ctor() fail
-Applying: tile: handle pgtable_page_ctor() fail
-Applying: um: handle pgtable_page_ctor() fail
-Applying: unicore32: handle pgtable_page_ctor() fail
-Applying: x86: handle pgtable_page_ctor() fail
-Applying: xtensa: handle pgtable_page_ctor() fail
-Applying: iommu/arm-smmu: handle pgtable_page_ctor() fail
-Applying: xtensa: use buddy allocator for PTE table
-Applying: mm: dynamically allocate page->ptl if it cannot be embedded to st=
-ruct page
-Applying: mm: try to detect that page->ptl is in use
-Applying: mm-dynamically-allocate-page-ptl-if-it-cannot-be-embedded-to-stru=
-ct-page-fix-fix
-Applying: seq_file: introduce seq_setwidth() and seq_pad()
-Applying: seq_file: remove "%n" usage from seq_file users
-Applying: vsprintf: ignore %n again
-Applying: drivers/rtc/rtc-hid-sensor-time.c: use dev_get_platdata()
-Applying: drivers/rtc/rtc-hid-sensor-time.c: enable HID input processing ea=
-rly
-Applying: sched: replace INIT_COMPLETION with reinit_completion
-Applying: tree-wide: use reinit_completion instead of INIT_COMPLETION
-Applying: tree-wide-use-reinit_completion-instead-of-init_completion-fix
-Applying: sched: remove INIT_COMPLETION
-Applying: drivers/w1/masters/w1-gpio.c: use dev_get_platdata()
-Applying: scripts/tags.sh: remove obsolete __devinit[const|data]
-Applying: revert "softirq: Add support for triggering softirq work on softi=
-rqs"
-Applying: kernel: remove CONFIG_USE_GENERIC_SMP_HELPERS
-Applying: kernel: provide a __smp_call_function_single stub for !CONFIG_SMP
-Applying: kernel-provide-a-__smp_call_function_single-stub-for-config_smp-f=
-ix
-Applying: kernel: fix generic_exec_single indentation
-Applying: llists: move llist_reverse_order from raid5 to llist.c
-Applying: llists-move-llist_reverse_order-from-raid5-to-llistc-fix
-Applying: kernel: use lockless list for smp_call_function_single
-Applying: blk-mq: use __smp_call_function_single directly
-Applying: sound/core/memalloc.c: use gen_pool_dma_alloc() to allocate iram =
-buffer
-Merging akpm/master (d076a30be385 sound/core/memalloc.c: use gen_pool_dma_a=
-lloc() to allocate iram buffer)
-
---Signature=_Wed__6_Nov_2013_20_28_03_+1100__dV2cwXf84BHPy/+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSegurAAoJEMDTa8Ir7ZwVgpAP/27IXdzvx6aHA4EXbDVOquA3
-i8kt8G7YduaFb3HOXYXR8TWRK+H+4RlGk/VOeDiE0ePEEW2BicmESAGr6IhG5A7X
-J+AbvmhS3NwmBSOq3/Rg5YNKQEaoSkiDwpr+5POHpwl5lz5peFNL8H2soEWxQbXL
-ADvOtHE1BqmTiPScKziYI9Nz4b2rlufk2DrufLx/V/CY7csJDy0bvqLo2uitBb4B
-/TRPXZgqXUPKzrz93Oy1pK6OeVeOs6uRoaWz3KtSHv7PJB7ityxIqaucNpY+mrbb
-G2heTCoWfu7KKMdm48AbMAJM1CPXeBy0tuBQlgzb2AcnWBqrdphUdfFUxQpdRQPE
-hxoSCFdkdzu8vxwor9qYabrKmMdaIr7mxQXkw1M/SMHTRWO3q0xZsiUW5ConAiKf
-Dx70TIq/IxgOQt5lQMjiDtChShDyGz87wqLFTsAK35Ko+XKN3TXBNZIX0Nd+0eXx
-wSNFET96qFVJkB4Sn0KZwG8+iwdBmgbEvrGHVjiS0fDMqKxqTLv+DWJYR0ypxUyf
-8RNd4IbHgkGmVhyPitf1XRYysLIvpmDRytCsYWJYOtjJtCTMXi+jkSG/lGEsNyLz
-8m5r/JKKJmYXdSuEjIXgateMwO+LkcpnAT/KNQJNnyNYnqVQlvu38e2R+e6wPlq9
-OMxGXLoxkrDx+qKC9zxn
-=/otq
------END PGP SIGNATURE-----
-
---Signature=_Wed__6_Nov_2013_20_28_03_+1100__dV2cwXf84BHPy/+--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
