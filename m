@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab3KFOAq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 09:00:46 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56676 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756314Ab3KFOAp (ORCPT
+	id S932216Ab3KFODl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 09:03:41 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:45905 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756221Ab3KFODk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 09:00:45 -0500
-Date: Wed, 6 Nov 2013 15:00:11 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vince@deater.net>
-Cc: mingo@kernel.org, hpa@zytor.com, anton@samba.org,
-        mathieu.desnoyers@polymtl.ca, linux-kernel@vger.kernel.org,
-        michael@ellerman.id.au, paulmck@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, fweisbec@gmail.com, VICTORK@il.ibm.com,
-        tglx@linutronix.de, oleg@redhat.com, mikey@neuling.org,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] tools/perf: Add required memory barriers
-Message-ID: <20131106140011.GL10651@twins.programming.kicks-ass.net>
-References: <20131030104246.GH16117@laptop.programming.kicks-ass.net>
- <tip-a94d342b9cb09edfe888ea972af0883b6a8d992b@git.kernel.org>
- <alpine.DEB.2.02.1311060847340.27224@pianoman.cluster.toy>
+	Wed, 6 Nov 2013 09:03:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1311060847340.27224@pianoman.cluster.toy>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131106060132.GB24044@gmail.com>
+References: <1383337039.2653.18.camel@buesod1.americas.hpqcorp.net>
+	<20131103101234.GB5330@gmail.com>
+	<1383538810.2373.22.camel@buesod1.americas.hpqcorp.net>
+	<20131104070500.GE13030@gmail.com>
+	<20131104142001.GE9299@localhost.localdomain>
+	<20131104175245.GA19517@gmail.com>
+	<20131104181012.GK9299@localhost.localdomain>
+	<20131105082450.GA10127@gmail.com>
+	<20131105142707.GC30283@krava.brq.redhat.com>
+	<20131106060132.GB24044@gmail.com>
+Date: Wed, 6 Nov 2013 18:03:39 +0400
+Message-ID: <CALYGNiNc__rWZGTdW-TZ2zp+HPziCiCj764JECP1tnvK4C0S8A@mail.gmail.com>
+Subject: Re: [PATCH] mm: cache largest vma
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, aswin@hp.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 08:50:47AM -0500, Vince Weaver wrote:
-> On Wed, 6 Nov 2013, tip-bot for Peter Zijlstra wrote:
-> 
-> > +++ b/tools/perf/util/evlist.h
-> > @@ -177,7 +177,7 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist, int err, char *buf, s
-> >  static inline unsigned int perf_mmap__read_head(struct perf_mmap *mm)
-> >  {
-> >  	struct perf_event_mmap_page *pc = mm->base;
-> > -	int head = pc->data_head;
-> > +	int head = ACCESS_ONCE(pc->data_head);
-> >  	rmb();
-> >  	return head;
-> 
-> so is this ACCESS_ONCE required now for proper access to the mmap buffer?
+Some time ago I've thought about caching vma on PTE's struct page.
+This will work for all huge vmas not only for largest ones.
 
-Pretty much; otherwise your C compiler is allowed to mess it up.
+Of course this requires some reordering in do_page_fault because
+currently it lookups vma before pte for obvious reason.
 
-> remember that there are users trying to use this outside of the kernel 
-> where we don't necessarily have access to internal kernl macros.  Some of 
-> these users aren't necessarily GPLv2 compatible either (PAPI for example 
-> is more or less BSD licensed) so just cutting and pasting chunks of 
-> internal kernel macros isn't always the best route either.
 
-Other license stuff is not my problem; that said I doubt there's much
-copyright to claim on a volatile cast.
+On Wed, Nov 6, 2013 at 10:01 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Jiri Olsa <jolsa@redhat.com> wrote:
+>
+>> > But success primarily depends on how useful the tooling UI turns out
+>> > to be: create a nice Slang or GTK UI for kprobes and triggers, and/or
+>> > turn it into a really intuitive command line UI, and people will use
+>> > it.
+>> >
+>> > I think annotated assembly/source output is a really nice match for
+>> > triggers and kprobes, so I'd suggest the Slang TUI route ...
+>>
+>> yep, current toggling command line UI is not much user friendly
+>>
+>> but perhaps we should leave it there (because it seems it wont get much
+>> better anyway) and focus more on Slang UI as the target one..
+>>
+>> CCing Arnaldo ;-)
+>
+> Btw., I think we should do the TUI interface _before_ we can merge the
+> kernel changes. Frankly, 'not very user friendly' means that it's not used
+> (and tested) much - which begs the question: why merge the feature at all?
+>
+> Making a new kernel feature usable to as many people as possible must be a
+> primary concern, not an afterthought.
+>
+> Thanks,
+>
+>         Ingo
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
