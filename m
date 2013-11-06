@@ -1,115 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756495Ab3KFOyP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 09:54:15 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:34091 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932509Ab3KFOxA (ORCPT
+	id S1756718Ab3KFOyq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 09:54:46 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:56134 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756686Ab3KFOyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 09:53:00 -0500
-Message-Id: <20131106145258.088636095@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 06 Nov 2013 09:50:48 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [for-next][PATCH 7/8] tracing: Make register/unregister_ftrace_command __init
-References: <20131106145041.904349372@goodmis.org>
-Content-Disposition: inline; filename=0013-tracing-Make-register-unregister_ftrace_command-__in.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Wed, 6 Nov 2013 09:54:44 -0500
+Message-ID: <527A582D.4000301@gmail.com>
+Date: Wed, 06 Nov 2013 07:54:37 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH] perf: Fix version when building out of tree
+References: <1383699213-23981-1-git-send-email-dsahern@gmail.com> <20131106053654.GA23746@gmail.com>
+In-Reply-To: <20131106053654.GA23746@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
+On 11/5/13, 10:36 PM, Ingo Molnar wrote:
+> I think you could avoid the 'short' complication altogether by doing
+> something like this:
+>
+>> +elif test -f ../../PERF-VERSION-FILE
+>> +then
+>> +	TAG=$(cut -d' ' -f3 ../../PERF-VERSION-FILE)
+>
+> That extracts 'TAG' as a true sha1 and makes GVF correct on out of tree
+> builds as well.
 
-register/unregister_ftrace_command() are only ever called from __init
-functions, so can themselves be made __init.
+Certainly. I was trying to make PERF-VERSION-FILE readable as a 
+standalone file -- a better version descriptor than HEAD file.
 
-Also make register_snapshot_cmd() __init for the same reason.
+David
 
-Link: http://lkml.kernel.org/r/d4042c8cadb7ae6f843ac9a89a24e1c6a3099727.1382620672.git.tom.zanussi@linux.intel.com
-
-Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/ftrace.h |  4 ++--
- kernel/trace/ftrace.c  | 12 ++++++++++--
- kernel/trace/trace.c   |  4 ++--
- 3 files changed, 14 insertions(+), 6 deletions(-)
-
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index ec85d48..31ea4b4 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -533,11 +533,11 @@ static inline int ftrace_force_update(void) { return 0; }
- static inline void ftrace_disable_daemon(void) { }
- static inline void ftrace_enable_daemon(void) { }
- static inline void ftrace_release_mod(struct module *mod) {}
--static inline int register_ftrace_command(struct ftrace_func_command *cmd)
-+static inline __init int register_ftrace_command(struct ftrace_func_command *cmd)
- {
- 	return -EINVAL;
- }
--static inline int unregister_ftrace_command(char *cmd_name)
-+static inline __init int unregister_ftrace_command(char *cmd_name)
- {
- 	return -EINVAL;
- }
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 080b7d4..22fa556 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3307,7 +3307,11 @@ void unregister_ftrace_function_probe_all(char *glob)
- static LIST_HEAD(ftrace_commands);
- static DEFINE_MUTEX(ftrace_cmd_mutex);
- 
--int register_ftrace_command(struct ftrace_func_command *cmd)
-+/*
-+ * Currently we only register ftrace commands from __init, so mark this
-+ * __init too.
-+ */
-+__init int register_ftrace_command(struct ftrace_func_command *cmd)
- {
- 	struct ftrace_func_command *p;
- 	int ret = 0;
-@@ -3326,7 +3330,11 @@ int register_ftrace_command(struct ftrace_func_command *cmd)
- 	return ret;
- }
- 
--int unregister_ftrace_command(struct ftrace_func_command *cmd)
-+/*
-+ * Currently we only unregister ftrace commands from __init, so mark
-+ * this __init too.
-+ */
-+__init int unregister_ftrace_command(struct ftrace_func_command *cmd)
- {
- 	struct ftrace_func_command *p, *n;
- 	int ret = -ENODEV;
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 489da8b..f9fa42b 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -5477,12 +5477,12 @@ static struct ftrace_func_command ftrace_snapshot_cmd = {
- 	.func			= ftrace_trace_snapshot_callback,
- };
- 
--static int register_snapshot_cmd(void)
-+static __init int register_snapshot_cmd(void)
- {
- 	return register_ftrace_command(&ftrace_snapshot_cmd);
- }
- #else
--static inline int register_snapshot_cmd(void) { return 0; }
-+static inline __init int register_snapshot_cmd(void) { return 0; }
- #endif /* defined(CONFIG_TRACER_SNAPSHOT) && defined(CONFIG_DYNAMIC_FTRACE) */
- 
- struct dentry *tracing_init_dentry_tr(struct trace_array *tr)
--- 
-1.8.4.rc3
 
 
