@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab3KFPlq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 10:41:46 -0500
-Received: from demumfd001.nsn-inter.net ([93.183.12.32]:14576 "EHLO
-	demumfd001.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720Ab3KFPlp (ORCPT
+	id S1754679Ab3KFPuq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 10:50:46 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:48664 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754175Ab3KFPup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 10:41:45 -0500
-Message-ID: <527A6320.6040600@nsn.com>
-Date: Wed, 06 Nov 2013 16:41:20 +0100
-From: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Wed, 6 Nov 2013 10:50:45 -0500
+Date: Wed, 6 Nov 2013 07:50:44 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Douglas Gilbert <dgilbert@interlog.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        vaughan <vaughan.cao@oracle.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] sg: O_EXCL and other lock handling
+Message-ID: <20131106155044.GA9323@infradead.org>
+References: <52718713.7050906@interlog.com>
+ <20131031155653.GA16944@infradead.org>
+ <5272AD80.90203@interlog.com>
 MIME-Version: 1.0
-To: ext Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-CC: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] OF: Fixes in preperation of DT overlays
-References: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com>
-In-Reply-To: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 1127
-X-purgate-ID: 151667::1383752481-00004A43-9892A58C/0-0/0-0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5272AD80.90203@interlog.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Thu, Oct 31, 2013 at 03:20:32PM -0400, Douglas Gilbert wrote:
+> Yes, it is being used as a mutex. However looking at
+> their semantics (mutex.h versus semaphore.h), a mutex
+> takes into account the task owner. If the user space
+> wants to pass around a sg file descriptor in a Unix
+> domain socket (see TLPI, Kerrisk) I don't see why the
+> sg driver should object (and pay the small performance
+> hit for each check).
 
-On 05/11/13 18:50, ext Pantelis Antoniou wrote:
-> This patchset introduces a number of fixes that are required
-> for the subsequent patches that add DT overlays support.
-> 
-> Most of them are trivial, adding small bits that are missing,
-> or exporting functions that were private before.
-> 
-> Pantelis Antoniou (5):
->   OF: Clear detach flag on attach
->   OF: Introduce device tree node flag helpers.
->   OF: export of_property_notify
->   OF: Export all DT proc update functions
->   OF: Introduce utility helper functions
+The sg driver won't object.  The lock is taken again and released
+during sg_open and sg_release, which are guranteed not to migrate
+to a different process during their run time.
 
-All patches there we use as they are since July on our MIPS64 platforms. So, for all 5 patches:
-Tested-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-Reviewed-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
+> section) but why bother. Give me a simple mutex and
+> I'll use it.
 
->  drivers/of/Makefile |   2 +-
->  drivers/of/base.c   |  77 ++++++++--------
->  drivers/of/util.c   | 253 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/of.h  | 119 ++++++++++++++++++++++++
->  4 files changed, 413 insertions(+), 38 deletions(-)
->  create mode 100644 drivers/of/util.c
-> 
+mutex_init/mutex_lock/mutex_unlock from <linux/mutex.h>
 
--- 
-Best regards,
-Alexander Sverdlin.
+> Not (usually) in this case. The sdp->sfds list can only
+> be expanded by another sg_open(same_dev) but this has
+> been excluded by taking down(&sdp->or_sem) prior to that
+> call. The sdp->sfds list is only normally decreased by
+> sg_release() which is also excluded by down(&sdp->or_sem).
+
+> The abnormal case is device removal (detaching). Now an
+> open(same_dev, O_EXCL) may start waiting just after a
+> detach but miss the wake up on open_wait. That suggests
+> the wake_up(open_wait) in sg_remove() should also
+> take the sdp->or_sem semaphore.
+> Ah, and if sg_remove() can be called from an interrupt
+> context then that takes out using mutexes :-)
+
+I don't think that sg_remove can be called from irq context.
+It always is called through the class interface remove_dev
+method, which always is called under a lock.
+
+> The two level of locks in sg_remove() is already making me
+> uncomfortable, adding the sdp->or_sem semaphore to the
+> mix calls for more analysis.
+
+I would suggest to remove the list lock and only use the or_sem
+replacement.
+
+> IMO that is a bug in scsi_block_when_processing_errors()
+> and the down() is placed lower than it should be in
+> sg_open() to account for that bug.
+
+How about we get that fixed first?
+
