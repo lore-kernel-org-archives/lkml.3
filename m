@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab3KFPYL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 10:24:11 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:44145 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391Ab3KFPYH (ORCPT
+	id S1754782Ab3KFPYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 10:24:18 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:58910 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab3KFPYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 10:24:07 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Neil Horman <nhorman@tuxdriver.com>, sebastien.dugue@bull.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [PATCH v2 2/2] x86: add prefetching to do_csum
-Date: Wed,  6 Nov 2013 10:23:19 -0500
-Message-Id: <1383751399-10298-3-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1383751399-10298-1-git-send-email-nhorman@tuxdriver.com>
-References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
- <1383751399-10298-1-git-send-email-nhorman@tuxdriver.com>
-X-Spam-Score: -2.9 (--)
+	Wed, 6 Nov 2013 10:24:14 -0500
+Date: Wed, 6 Nov 2013 16:23:46 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vince@deater.net>
+Cc: mingo@kernel.org, hpa@zytor.com, anton@samba.org,
+        mathieu.desnoyers@polymtl.ca, linux-kernel@vger.kernel.org,
+        michael@ellerman.id.au, paulmck@linux.vnet.ibm.com,
+        benh@kernel.crashing.org, fweisbec@gmail.com, VICTORK@il.ibm.com,
+        tglx@linutronix.de, oleg@redhat.com, mikey@neuling.org,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] tools/perf: Add required memory barriers
+Message-ID: <20131106152346.GJ26785@twins.programming.kicks-ass.net>
+References: <20131030104246.GH16117@laptop.programming.kicks-ass.net>
+ <tip-a94d342b9cb09edfe888ea972af0883b6a8d992b@git.kernel.org>
+ <alpine.DEB.2.02.1311060847340.27224@pianoman.cluster.toy>
+ <20131106140011.GL10651@twins.programming.kicks-ass.net>
+ <20131106142840.GH26785@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.02.1311060938220.27607@pianoman.cluster.toy>
+ <20131106151055.GQ10651@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131106151055.GQ10651@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-do_csum was identified via perf recently as a hot spot when doing
-receive on ip over infiniband workloads.  After alot of testing and
-ideas, we found the best optimization available to us currently is to
-prefetch the entire data buffer prior to doing the checksum
+On Wed, Nov 06, 2013 at 04:10:55PM +0100, Peter Zijlstra wrote:
+> On Wed, Nov 06, 2013 at 09:55:17AM -0500, Vince Weaver wrote:
+> > Having perf in the kernel tree really makes it hard for you guys to keep a
+> > clean API/ABI it seems.
+> 
+> Lock free buffers are 'fun'.. The ABI can be described as:
+> 
+>   read pc->data_head
+> 
+>   // ensure no other reads get before this point and ->data_head
+>   // doesn't get re-read hereafter.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: sebastien.dugue@bull.net
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: x86@kernel.org
----
- arch/x86/lib/csum-partial_64.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+FWIW; this is where barrier() and ACCESS_ONCE() differ afaict, barrier()
+only accomplishes that if the ->data_head read re-appears it must
+re-issue it; whereas ACCESS_ONCE(), by marking it volatile, completely
+avoids that read insertion from being possible.
 
-diff --git a/arch/x86/lib/csum-partial_64.c b/arch/x86/lib/csum-partial_64.c
-index 9845371..9f2d3ee 100644
---- a/arch/x86/lib/csum-partial_64.c
-+++ b/arch/x86/lib/csum-partial_64.c
-@@ -29,8 +29,15 @@ static inline unsigned short from32to16(unsigned a)
-  * Things tried and found to not make it faster:
-  * Manual Prefetching
-  * Unrolling to an 128 bytes inner loop.
-- * Using interleaving with more registers to break the carry chains.
-  */
-+
-+static inline void prefetch_lines(void *addr, size_t len)
-+{
-+	void *end = addr + len;
-+	for (; addr < end; addr += cache_line_size())
-+		asm("prefetch 0(%[buf])\n\t" : : [buf] "r" (addr));
-+}
-+
- static unsigned do_csum(const unsigned char *buff, unsigned len)
- {
- 	unsigned odd, count;
-@@ -67,7 +74,9 @@ static unsigned do_csum(const unsigned char *buff, unsigned len)
- 			/* main loop using 64byte blocks */
- 			zero = 0;
- 			count64 = count >> 3;
--			while (count64) { 
-+
-+			prefetch_lines((void *)buff, len);
-+			while (count64) {
- 				asm("addq 0*8(%[src]),%[res]\n\t"
- 				    "adcq 1*8(%[src]),%[res]\n\t"
- 				    "adcq 2*8(%[src]),%[res]\n\t"
--- 
-1.8.3.1
+Then again, the compiler should not lower the read over a compiler
+barrier anyway, so on that account the insertion of the second read
+would also be invalid.
+
+So you're _probably_ good without the ACCESS_ONCE, but please ask a
+compiler person, not me.
+
 
