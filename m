@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab3KFBMn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 20:12:43 -0500
-Received: from mga09.intel.com ([134.134.136.24]:30185 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755558Ab3KFBMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 20:12:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="430413207"
-Message-ID: <52799891.7070300@linux.intel.com>
-Date: Tue, 05 Nov 2013 17:17:05 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
-MIME-Version: 1.0
-To: Olav Haugan <ohaugan@codeaurora.org>
-CC: gregkh@linuxfoundation.org, ngupta@vflare.org, sjenning@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, minchan@kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] staging: zsmalloc: Ensure handle is never 0 on success
-References: <1383699252-8898-1-git-send-email-ohaugan@codeaurora.org>
-In-Reply-To: <1383699252-8898-1-git-send-email-ohaugan@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755925Ab3KFBNM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 20:13:12 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:56956 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755558Ab3KFBNL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Nov 2013 20:13:11 -0500
+X-AuditID: cbfee61b-b7fd56d000001fc6-a8-527997a541ac
+From: Chao Yu <chao2.yu@samsung.com>
+To: ??? <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
+Subject: [f2fs-dev] [PATCH] f2fs: avoid to use a NULL point in
+ destroy_segment_manager
+Date: Wed, 06 Nov 2013 09:12:04 +0800
+Message-id: <000001ceda8d$5b185bd0$11491370$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=gb2312
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac7ai9d7ldkLUJU9T+ma4ZCP42i6Hg==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd2l0yuDDGatUbG4vusvk8WlRe4W
+	e/aeZLG4vGsOm0XrwvPMDqweuxd8ZvLo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujHPfVrEW
+	zGOtOPz7MXsD4zqWLkZODgkBE4k9U2czQ9hiEhfurWfrYuTiEBJYxCgxbeYEVpCEkMAPRolf
+	7SIgNpuAisTyjv9MILaIgKLEhvcb2EEamAVmMEocnvsPrEFYIEJi4aOH7CA2i4CqxOLpTWAN
+	vAKWEhvbd7JB2IISPybfA7uCWUBDon/RBjYIW15i85q3UBcpSOw4+5oRYpmexPf2w0wQNeIS
+	G4/cYpnAKDALyahZSEbNQjJqFpKWBYwsqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCg/qZ
+	9A7GVQ0WhxgFOBiVeHgT5CuDhFgTy4orcw8xSnAwK4nwKsUBhXhTEiurUovy44tKc1KLDzFK
+	c7AoifMebLUOFBJITyxJzU5NLUgtgskycXBKNTCuzv1Qu+b1k9nz+o/5Kl9xT/y2/4CwpdtB
+	7gtqWwor4h0rK70iNHWLXAWPrT+lUXDmsm74N6+H4oe//D2kfDFpezs7/7nz8pXPLtz9ePzo
+	4Sknmk79sVX8s3Z9fNGjWY/apgmfUZ7QMn+SK3dLTVh6kKTqVcuVeWtF+t/Ou8XBseDbQa+k
+	TPYmJZbijERDLeai4kQAM7Sgk2YCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Olav,
+A NULL point should avoid to be used in destroy_segment_manager after allocating memory fail for f2fs_sm_info.
 
-On 11/05/2013 04:54 PM, Olav Haugan wrote:
-> zsmalloc encodes a handle using the page pfn and an object
-> index. On some hardware platforms the pfn could be 0 and this
-> causes the encoded handle to be 0 which is interpreted as an
-> allocation failure.
->
-> To prevent this false error we ensure that the encoded handle
-> will not be 0 when allocation succeeds.
->
-> Change-Id: Ifff930dcf254915b497aec5cb36f152a5e5365d6
-> Signed-off-by: Olav Haugan <ohaugan@codeaurora.org>
-> ---
->   drivers/staging/zsmalloc/zsmalloc-main.c | 4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-> index 523b937..0e32c0f 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> @@ -441,7 +441,7 @@ static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
->   	}
->
->   	handle = page_to_pfn(page) << OBJ_INDEX_BITS;
-> -	handle |= (obj_idx & OBJ_INDEX_MASK);
-> +	handle |= ((obj_idx + 1) & OBJ_INDEX_MASK);
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/segment.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-As suggestion you could use a macro instead of hardcoded 1.
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 3d4d5fc..ff363e6
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -1744,6 +1744,8 @@ static void destroy_sit_info(struct f2fs_sb_info *sbi)
+ void destroy_segment_manager(struct f2fs_sb_info *sbi)
+ {
+ 	struct f2fs_sm_info *sm_info = SM_I(sbi);
++	if (!sm_info)
++		return;
+ 	destroy_dirty_segmap(sbi);
+ 	destroy_curseg(sbi);
+ 	destroy_free_segmap(sbi);
+-- 
+1.7.9.5
 
-I am not familiar with this code, but if it's a valid test to verify if
-the resulting address is page aligned, you might want to set this
-offset macro to a page aligned value as well.
-
->
->   	return (void *)handle;
->   }
-> @@ -451,7 +451,7 @@ static void obj_handle_to_location(unsigned long handle, struct page **page,
->   				unsigned long *obj_idx)
->   {
->   	*page = pfn_to_page(handle >> OBJ_INDEX_BITS);
-> -	*obj_idx = handle & OBJ_INDEX_MASK;
-> +	*obj_idx = (handle & OBJ_INDEX_MASK) - 1;
-
-Ditto.
-
-Br, David Cohen
