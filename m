@@ -1,95 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab3KFR3y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 12:29:54 -0500
-Received: from smtpauth03h.mfg.siteprotect.com ([64.26.60.134]:56807 "EHLO
-	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750871Ab3KFR3x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 12:29:53 -0500
-Date: Wed, 6 Nov 2013 12:31:53 -0500 (EST)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Peter Zijlstra <peterz@infradead.org>
-cc: mingo@kernel.org, hpa@zytor.com, anton@samba.org,
-        mathieu.desnoyers@polymtl.ca, linux-kernel@vger.kernel.org,
-        michael@ellerman.id.au, paulmck@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, fweisbec@gmail.com, VICTORK@il.ibm.com,
-        tglx@linutronix.de, oleg@redhat.com, mikey@neuling.org,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] tools/perf: Add required memory barriers
-In-Reply-To: <20131106160720.GK26785@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.02.1311061223290.28798@pianoman.cluster.toy>
-References: <20131030104246.GH16117@laptop.programming.kicks-ass.net> <tip-a94d342b9cb09edfe888ea972af0883b6a8d992b@git.kernel.org> <alpine.DEB.2.02.1311060847340.27224@pianoman.cluster.toy> <20131106140011.GL10651@twins.programming.kicks-ass.net>
- <20131106144456.GI26785@twins.programming.kicks-ass.net> <20131106160720.GK26785@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754895Ab3KFRgi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 12:36:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37278 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751172Ab3KFRgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 12:36:37 -0500
+Date: Wed, 6 Nov 2013 18:37:54 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch
+	methods (v6)
+Message-ID: <20131106173754.GA11299@redhat.com>
+References: <20131102155458.GA6981@redhat.com> <87ob60366m.fsf@sejong.aot.lge.com> <87fvrc35kj.fsf@sejong.aot.lge.com> <20131104155131.GD4440@redhat.com> <20131104162229.GA8921@redhat.com> <20131104184741.GA15945@redhat.com> <87sivbz65t.fsf@sejong.aot.lge.com> <20131105174535.GA6385@redhat.com> <20131105192401.GA772@redhat.com> <87vc05x5zf.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020209.527A7C91.0003,ss=1,re=0.100,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vc05x5zf.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Nov 2013, Peter Zijlstra wrote:
+On 11/06, Namhyung Kim wrote:
+>
+> On Tue, 5 Nov 2013 20:24:01 +0100, Oleg Nesterov wrote:
+> > On 11/05, Oleg Nesterov wrote:
+> >>
+> >> As for "-= tu->offset"... Can't we avoid it? User-space needs to calculate
+> >> the "@" argument anyway, why it can't also substruct this offset?
+> >>
+> >> Or perhaps we can change parse_probe_arg("@") to update "param" ? Yes,
+> >> in this case it needs another argument, not sure...
+> >
+> > Or,
+> >
+> >> 	+	if (is_ret_probe(tu)) {
+> >> 	+		saved_ip = instruction_pointer(regs);
+> >> 	+		instruction_pointer_set(func);
+> >> 	+	}
+> >> 		store_trace_args(...);
+> >> 	+	if (is_ret_probe(tu))
+> >> 	+		instruction_pointer_set(saved_ip);
+> >
+> > we can put "-= tu->offset" here.
+>
+> I don't think I get the point.
 
-> On Wed, Nov 06, 2013 at 03:44:56PM +0100, Peter Zijlstra wrote:
-> > long head = ((__atomic long)pc->data_head).load(memory_order_acquire);
-> > 
-> > coupled with:
-> > 
-> > ((__atomic long)pc->data_tail).store(tail, memory_order_release);
-> > 
-> > might be the 'right' and proper C11 incantations to avoid having to
-> > touch kernel macros; but would obviously require a recent compiler.
-> > 
-> > Barring that, I think we're stuck with:
-> > 
-> > long head = ACCESS_ONCE(pc->data_head);
-> > smp_rmb();
-> > 
-> > ...
-> > 
-> > smp_mb();
-> > pc->data_tail = tail;
-> > 
-> > And using the right asm goo for the barriers. That said, all these asm
-> > barriers should include a compiler barriers (memory clobber) which
-> > _should_ avoid the worst compiler trickery -- although I don't think it
-> > completely obviates the need for ACCESS_ONCE() -- uncertain there.
-> 
-> http://software.intel.com/en-us/articles/single-producer-single-consumer-queue/
-> 
-> There's one for icc on x86.
-> 
+I meant,
 
-I think the problem here is this really isn't a good interface.
+		saved_ip = instruction_pointer(regs);
 
-Most users just want the most recent batch of samples.  Something like
+		// pass the "ip" which was used to calculate
+		// the @addr argument to fetch_*() methods
 
-    char buffer[4096];
-    int count;
+		temp_ip = is_ret_probe(tu) ? func : saved_ip;
+		temp_ip -= tu->offset;
+		instruction_pointer_set(temp_ip);
 
-    do {
-       count=perf_read_sample_buffer(buffer,4096);
-       process_samples(buffer);
-    } while(count);
+		store_trace_args(...);
 
-where perf_read_sample_buffer() is a syscall that just copies the current 
-valid samples to userspace.
+		instruction_pointer_set(saved_ip);
 
-Yes, this is inefficient (requires an extra copy of the values) but the 
-kernel then could handle all the SMP/multithread/barrier/locking issues.
+This way we can avoid the new "void *" argument for fetch_func_t,
+we do not need it to calculate the address.
 
-How much overhead is really introduced by making a copy?
+But: we still need the additional "bool translate_vaddr" to solve
+the problems with FETCH_MTD_deref.
 
-Requiring the user of a kernel interface to have a deep knowledge of 
-optimizing compilers, barriers, and CPU memory models is just asking for 
-trouble.
+We already discussed this a bit, previously I suggested the new
+FETCH_MTD_memory_notranslate and
 
-Especially as this all needs to get documented in the manpage and I'm not 
-sure that's possible in a sane fashion.
+        -       dprm->fetch = t->fetch[FETCH_MTD_memory];
+        +       dprm->fetch = t->fetch[FETCH_MTD_memory_notranslate];
 
-Vince
+change in parse_probe_arg().
 
+However, now I think it would be more clean to leave FETCH_MTD_memory
+alone and add FETCH_MTD_memory_dotranslate instead.
+
+So trace_uprobes.c should define
+
+	void FETCH_FUNC_NAME(memory, type)(addr, ...)
+	{
+		copy_from_user((void __user *)addr);
+	}
+
+	void FETCH_FUNC_NAME(memory_dotranslate, type)(addr, ...)
+	{
+		void __user *uaddr = get_user_vaddr(regs, addr);
+		copy_from_user(uaddr);
+	}
+
+Then,
+
+> > Or. Perhaps we can leave "case '@'" in parse_probe_arg() and
+> > FETCH_MTD_memory alone. You seem to agree that "absolute address"
+> > can be useful anyway.
+>
+> Yes, but it's only meaningful to process-wide tracing sessions IMHO.
+
+Yes, yes, sure.
+
+I meant, we need both. Say, "perf probe "func global=@addr" means
+FETCH_MTD_memory, and "perf probe "func global=*addr" means
+FETCH_MTD_memory_dotranslate.
+
+Just in case, of course I do not care about the syntax, for example we
+can use "@~addr" for translate (or not translate) or whatever.
+
+My only point: I think we need both to
+
+	1. avoid the new argument in fetch_func_t
+
+	2. allow the dump the data from the absolute address
+
+And just to simplify the discussion, lets assume we use "*addr" for
+FETCH_MTD_memory_dotranslate and thus parse_probe_arg() gets the new
+
+	case '*':
+		if (is_kprobe)
+			return -EINVAL;
+
+		kstrtoul(arg + 1, 0, &param);
+		f->fn = t->fetch[FETCH_MTD_memory_dotranslate];
+		f->data = (void *)param;
+		break;
+		
+branch.
+
+> > Instead, perhaps we can add FETCH_MTD_memory_do_fancy_addr_translation,
+> > and, say, the new "case '*'" in parse_probe_arg() should add all the
+> > neccessary info as f->data (like, say, FETCH_MTD_symbol).
+>
+> Could you elaborate this more?
+
+Yes, I was confusing sorry.
+
+As for FETCH_MTD_memory_do_fancy_addr_translation, please see above.
+
+As for "neccessary info as f->data". Suppose that we still have a reason
+for the additional argument in FETCH_MTD_memory_dotranslate method. Even
+in this case I don't think we should change the signature of fetch_func_t.
+
+What I think we can do is something like
+
+	1. Changed parse_probe_arg() to accept "struct trace_uprobe *tu"
+	   instead of is_kprobe. Naturally, !tu can be used instead.
+
+	2. Introduce
+
+		struct dotranslate_fetch_param {
+			struct trace_uprobe	*tu;
+			fetch_func_t		fetch;
+			fetch_func_t		fetch_size;
+		};
+
+	3. Change the "case '*'" above to do
+
+		case '*':
+			if (!tu)
+				return -EINVAL;
+
+			struct dotranslate_fetch_param *xxx = kmalloc(..);
+
+			xxx->fetch = t->fetch[FETCH_MTD_memory];
+
+			// ... kstrtoul, fetch_size, etc, ...
+
+			f->fn = t->fetch[FETCH_MTD_memory_dotranslate];
+			f->data = (void *)xxx;
+
+	4. Update traceprobe_free_probe_arg/etc.
+
+	5. Now,
+	
+		void FETCH_FUNC_NAME(memory_dotranslate, type)(addr, ...)
+		{
+			struct dotranslate_fetch_param *xxx = data;
+			void __user *uaddr = get_user_vaddr(regs, addr, tu);
+
+			xxx->fetch(regs, addr, dest);
+		}
+
+Yes, yes, I am sure I missed something and this is not that simple,
+I am new to this "fetch" code.
+
+And even if I am right, let me repeat that I am not going to argue.
+Well, at least too much ;) This looks better in my opinion, but this
+is always subjective, so please free to ignore.
+
+Oleg.
 
