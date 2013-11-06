@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164Ab3KFTnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 14:43:20 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36557 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab3KFTnT (ORCPT
+	id S1755391Ab3KFTo0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 14:44:26 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:52168 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754515Ab3KFToY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 14:43:19 -0500
-Date: Wed, 6 Nov 2013 20:42:44 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Tony Luck <tony.luck@intel.com>
-Subject: Re: [RFC] arch: Introduce new TSO memory barrier smp_tmb()
-Message-ID: <20131106194244.GL16117@laptop.programming.kicks-ass.net>
-References: <CA+55aFyD_kCkAHQwHCUBrumO-pH6LaZikTNvyWDW_tWsHdqk6Q@mail.gmail.com>
- <20131104105059.GL3947@linux.vnet.ibm.com>
- <20131104112254.GK28601@twins.programming.kicks-ass.net>
- <20131104162732.GN3947@linux.vnet.ibm.com>
- <20131104191127.GW16117@laptop.programming.kicks-ass.net>
- <20131104205344.GW3947@linux.vnet.ibm.com>
- <20131106123946.GJ10651@twins.programming.kicks-ass.net>
- <CAMuHMdXZjQJvT7R4ODbDNBgAVwPUBPjB6UoR66_sNuFx7opUDw@mail.gmail.com>
- <20131106135736.GK10651@twins.programming.kicks-ass.net>
- <20131106184848.GM18245@linux.vnet.ibm.com>
+	Wed, 6 Nov 2013 14:44:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131106184848.GM18245@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1383766098.21999.2.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1383753106-26978-1-git-send-email-avagin@openvz.org>
+	<527A9638.4020404@redhat.com>
+	<1383766098.21999.2.camel@edumazet-glaptop2.roam.corp.google.com>
+Date: Wed, 6 Nov 2013 11:44:23 -0800
+Message-ID: <CAMEtUuz51grUwaz+qzpmGLENx5WFJoMs0WuU2UMN8cmUoPpShg@mail.gmail.com>
+Subject: Re: [PATCH] net: don't forget to free sk_filter
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>, Andrey Vagin <avagin@openvz.org>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 10:48:48AM -0800, Paul E. McKenney wrote:
-> A few nits on Documentation/memory-barriers.txt and some pointless
-> comments elsewhere.  With the suggested Documentation/memory-barriers.txt
-> fixes:
-> 
-> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On Wed, Nov 6, 2013 at 11:28 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Actually, the new way [1] of doing this would be to use the 'Fixes:' tag
+> as in :
+>
+> Fixes: <12 digits SHA1> ("net: fix unsafe set_memory_rw from softirq")
+>
+> [1] As discussed at last Kernel Summit
 
-Thanks, I think I'll cut the thing into a number of smaller patches with
-identical end result. Will (hopefully) post a full new series tomorrow
-somewhere.
-
-I was thinking like:
- 1 - aggressively employ asm-generic/barrier.h
- 2 - Reformulate _The_ document to ACQUIRE/RELEASE
- 3 - add the new store/load thingies
-
-That should hopefully be slightly easier to look at.
+thx. good to know.
+Unfortunately 2013 Kernel Summit proceedings are not public (yet?),
+but available to paid LWN subscribers.
