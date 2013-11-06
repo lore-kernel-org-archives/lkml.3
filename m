@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751184Ab3KFFVy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 00:21:54 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:3918 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750802Ab3KFFVx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 00:21:53 -0500
-X-IronPort-AV: E=Sophos;i="4.93,644,1378828800"; 
-   d="scan'208";a="8958494"
-Message-ID: <5279D078.8080803@cn.fujitsu.com>
-Date: Wed, 06 Nov 2013 13:15:36 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Chao Yu <chao2.yu@samsung.com>
-CC: "'???'" <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        =?GB2312?B?J8y35q0n?= <shu.tan@samsung.com>
-Subject: Re: [f2fs-dev] [PATCH] f2fs: avoid to use a NULL point in destroy_segment_manager
-References: <000001ceda8d$5b185bd0$11491370$@samsung.com> <5279BA67.4040906@cn.fujitsu.com> <000101cedaae$bb7ed820$327c8860$@samsung.com>
-In-Reply-To: <000101cedaae$bb7ed820$327c8860$@samsung.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/06 13:19:50,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/06 13:19:51
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+	id S1751031Ab3KFF3T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 00:29:19 -0500
+Received: from mga14.intel.com ([143.182.124.37]:4126 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750747Ab3KFF3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 00:29:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,644,1378882800"; 
+   d="scan'208";a="422944698"
+Message-ID: <1383715752.2073.11.camel@rzhang1-mobl4>
+Subject: Re: [PATCH] thermal: Fix binding problem when there is thermal zone
+ params
+From: Zhang Rui <rui.zhang@intel.com>
+To: Wei Ni <wni@nvidia.com>
+Cc: durgadoss.r@intel.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Jinyoung Park <jinyoungp@nvidia.com>
+Date: Wed, 06 Nov 2013 13:29:12 +0800
+In-Reply-To: <1382090587-9602-1-git-send-email-wni@nvidia.com>
+References: <1382090587-9602-1-git-send-email-wni@nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2013 01:10 PM, Chao Yu wrote:
+On Fri, 2013-10-18 at 18:03 +0800, Wei Ni wrote:
+> The thermal zone params can be used to set governor
+> to specific thermal governor for thermal zone device.
+> But if the thermal zone params has only governor name
+> without thermal bind params, then the thermal zone device
+> will not be binding to cooling device. Because tz->ops->bind
+> operator is not invoked in bind_tz() and bind_cdev() when
+> there is thermal zone params.
+> 
+> Signed-off-by: Wei Ni <wni@nvidia.com>
+> Signed-off-by: Jinyoung Park <jinyoungp@nvidia.com>
+> ---
+>  drivers/thermal/thermal_core.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+> index 4962a6a..2ea41d3 100644
+> --- a/drivers/thermal/thermal_core.c
+> +++ b/drivers/thermal/thermal_core.c
+> @@ -247,7 +247,7 @@ static void bind_cdev(struct thermal_cooling_device *cdev)
+>  		if (!pos->tzp && !pos->ops->bind)
+>  			continue;
+>  
+> -		if (!pos->tzp && pos->ops->bind) {
+> +		if (pos->ops->bind) {
+>  			ret = pos->ops->bind(pos, cdev);
+>  			if (ret)
+>  				print_bind_err_msg(pos, cdev, ret);
+IMO, we should also add
++		continue;
+after binding with pos->ops->bind(), to void binding via pos->tzp->tbp
+again, no?
 
-> Hi Gu,
-> 
->> -----Original Message-----
->> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
->> Sent: Wednesday, November 06, 2013 11:41 AM
->> To: Chao Yu
->> Cc: ???; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; Ì·æ­
->> Subject: Re: [f2fs-dev] [PATCH] f2fs: avoid to use a NULL point in destroy_segment_manager
->>
->> On 11/06/2013 09:12 AM, Chao Yu wrote:
->>
->>> A NULL point should avoid to be used in destroy_segment_manager after allocating memory fail for f2fs_sm_info.
->>
->> Though without this patch it still can work well, because if it failed
->> to allocate f2fs_sm_info, the sit_info, free_info... all were NULL, and
->> the destory path(e.g. destroy_dirty_segmap) can deal with them well.
-> 
-> I think it could not work well. Without this patch we may got a segment 
-> fault in DIRTY_I(sbi) at the following code if it failed to allocate 
-> f2fs_sm_info memory(sbi->sm_info). Right?
-
-Yes, you're right. SIT_I generates sit_info from f2fs_sm_info.
-Sorry for my mistake.:(
-
-Regards,
-Gu
-
-> 
-> static void destroy_dirty_segmap(struct f2fs_sb_info *sbi)
-> {
-> 	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
-> 
->> IMO, this patch is still a good catch.
->>
->> Regards,
->> Gu
->>
->>>
->>> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
->>> ---
->>>  fs/f2fs/segment.c |    2 ++
->>>  1 file changed, 2 insertions(+)
->>>
->>> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
->>> index 3d4d5fc..ff363e6
->>> --- a/fs/f2fs/segment.c
->>> +++ b/fs/f2fs/segment.c
->>> @@ -1744,6 +1744,8 @@ static void destroy_sit_info(struct f2fs_sb_info *sbi)
->>>  void destroy_segment_manager(struct f2fs_sb_info *sbi)
->>>  {
->>>  	struct f2fs_sm_info *sm_info = SM_I(sbi);
->>> +	if (!sm_info)
->>> +		return;
->>>  	destroy_dirty_segmap(sbi);
->>>  	destroy_curseg(sbi);
->>>  	destroy_free_segmap(sbi);
-> 
-> 
-> 
+thanks,
+rui
+> @@ -282,8 +282,8 @@ static void bind_tz(struct thermal_zone_device *tz)
+>  
+>  	mutex_lock(&thermal_list_lock);
+>  
+> -	/* If there is no platform data, try to use ops->bind */
+> -	if (!tzp && tz->ops->bind) {
+> +	/* If there is ops->bind, try to use ops->bind */
+> +	if (tz->ops->bind) {
+>  		list_for_each_entry(pos, &thermal_cdev_list, node) {
+>  			ret = tz->ops->bind(tz, pos);
+>  			if (ret)
 
 
