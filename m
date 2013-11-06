@@ -1,139 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756569Ab3KFV16 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 16:27:58 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:36164 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756081Ab3KFV15 (ORCPT
+	id S1756586Ab3KFV2q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 16:28:46 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:10859 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756094Ab3KFV2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 16:27:57 -0500
-Date: Wed, 6 Nov 2013 16:27:47 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Cc: Jan Beulich <JBeulich@suse.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Mukesh Rathor <mukesh.rathor@oracle.com>
-Subject: Re: [PATCH] xen/mcfg: Call PHYSDEVOP_pci_mmcfg_reserved for MCFG
- areas.
-Message-ID: <20131106212747.GA23133@phenom.dumpdata.com>
-References: <1383769943-22636-1-git-send-email-konrad.wilk@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383769943-22636-1-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 6 Nov 2013 16:28:45 -0500
+Date: Wed, 6 Nov 2013 16:28:44 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: [PATCH] avr32: Remove HAVE_KPROBES from avr32 Kconfig
+Message-ID: <20131106162844.76119e9e@gandalf.local.home>
+In-Reply-To: <20131106210520.GA6825@samfundet.no>
+References: <20131106124330.4d73d200@gandalf.local.home>
+	<20131106210520.GA6825@samfundet.no>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resending it to LKML.
-On Wed, Nov 06, 2013 at 03:32:23PM -0500, Konrad Rzeszutek Wilk wrote:
-> The PCI MMCONFIG area is usually reserved via the E820 so the Xen hypervisor
-> is aware of these regions. But they can also be enumerated in the ACPI
-> DSDT which means the hypervisor won't know of them until the initial
-> domain informs it of via PHYSDEVOP_pci_mmcfg_reserved.
+On Wed, 6 Nov 2013 22:05:21 +0100
+Hans-Christian Egtvedt <egtvedt@samfundet.no> wrote:
+
+> Around Wed 06 Nov 2013 12:43:30 -0500 or thereabout, Steven Rostedt wrote:
 > 
-> This is what this patch does for all of the MCFG regions that the
-> initial domain is aware of (E820 enumerated and ACPI).
+> Hello,
 > 
-> Reported-by:  Santosh Jodh <Santosh.Jodh@citrix.com>
-> CC: Jan Beulich <JBeulich@suse.com>
-> CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> CC: David Vrabel <david.vrabel@citrix.com>
-> CC: Mukesh Rathor <mukesh.rathor@oracle.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> [v1: Redid it a bit]
-> [v2: Dropped the P2M 1-1 setting]
-> [v3: Check for Xen in-case we are running under baremetal]
-> ---
->  drivers/xen/pci.c               | 45 +++++++++++++++++++++++++++++++++++++++++
->  include/xen/interface/physdev.h | 11 ++++++++++
->  2 files changed, 56 insertions(+)
+> > Although there's a arch/avr32/kernel/kprobes.c file, this arch does not
+> > compile with kprobes enabled:
+> > 
+> >  In file included from cross-linux.git/arch/avr32/kernel/kprobes.c:14:
+> >  cross-linux.git/include/linux/kprobes.h: In function 'get_kprobe_ctlblk':
+> >  cross-linux.git/include/linux/kprobes.h:358: error: invalid use of undefined type 'struct kprobe_ctlblk'
+> >  cross-linux.git/include/linux/kprobes.h:358: error: dereferencing pointer to incomplete type
+> >  make[2]: *** [arch/avr32/kernel/kprobes.o] Error 1
+> > 
+> > This is because it does not define the required kprobe_ctlblk struct,
+> > and fails to compile when CONFIG_KPROBES is set.
+> > 
+> > Unfortunately, this also makes my testing of various configs for
+> > different archs to fail on avr32 as well.
+> > 
+> > If kprobes is not supported by avr32 than do not say that it is.
 > 
-> diff --git a/drivers/xen/pci.c b/drivers/xen/pci.c
-> index 18fff88..0331fe9 100644
-> --- a/drivers/xen/pci.c
-> +++ b/drivers/xen/pci.c
-> @@ -26,6 +26,7 @@
->  #include <asm/xen/hypervisor.h>
->  #include <asm/xen/hypercall.h>
->  #include "../pci/pci.h"
-> +#include <asm/pci_x86.h>
->  
->  static bool __read_mostly pci_seg_supported = true;
->  
-> @@ -192,3 +193,47 @@ static int __init register_xen_pci_notifier(void)
->  }
->  
->  arch_initcall(register_xen_pci_notifier);
-> +
-> +static int __init xen_mcfg_late(void)
-> +{
-> +	struct pci_mmcfg_region *cfg;
-> +	int rc;
-> +
-> +	if (!xen_initial_domain())
-> +		return 0;
-> +
-> +	if ((pci_probe & PCI_PROBE_MMCONF) == 0)
-> +		return 0;
-> +
-> +	if (list_empty(&pci_mmcfg_list))
-> +		return 0;
-> +
-> +	/* Check whether they are in the right area. */
-> +	list_for_each_entry(cfg, &pci_mmcfg_list, list) {
-> +		struct physdev_pci_mmcfg_reserved r;
-> +
-> +		r.address = cfg->address;
-> +		r.segment = cfg->segment;
-> +		r.start_bus = cfg->start_bus;
-> +		r.end_bus = cfg->end_bus;
-> +		r.flags = XEN_PCI_MMCFG_RESERVED;
-> +
-> +		rc = HYPERVISOR_physdev_op(PHYSDEVOP_pci_mmcfg_reserved, &r);
-> +		switch (rc) {
-> +		case 0:
-> +		case -ENOSYS:
-> +			continue;
-> +
-> +		default:
-> +			pr_warn("Failed to report MMCONFIG reservation"
-> +				" state for %s to hypervisor"
-> +				" (%d)\n",
-> +				cfg->name, rc);
-> +		}
-> +	}
-> +	return 0;
-> +}
-> +/*
-> + * Needs to be done after acpi_init which are subsys_initcall.
-> + */
-> +subsys_initcall_sync(xen_mcfg_late);
-> diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
-> index 7000bb1..42721d1 100644
-> --- a/include/xen/interface/physdev.h
-> +++ b/include/xen/interface/physdev.h
-> @@ -231,6 +231,17 @@ struct physdev_get_free_pirq {
->  #define XEN_PCI_DEV_VIRTFN             0x2
->  #define XEN_PCI_DEV_PXM                0x4
->  
-> +#define XEN_PCI_MMCFG_RESERVED         0x1
-> +
-> +#define PHYSDEVOP_pci_mmcfg_reserved    24
-> +struct physdev_pci_mmcfg_reserved {
-> +    uint64_t address;
-> +    uint16_t segment;
-> +    uint8_t start_bus;
-> +    uint8_t end_bus;
-> +    uint32_t flags;
-> +};
-> +
->  #define PHYSDEVOP_pci_device_add        25
->  struct physdev_pci_device_add {
->      /* IN */
-> -- 
-> 1.8.3.1
+> kprobes is supposed to be supported on AVR32, but it seems to have broken
+> somewhere down the road.
 > 
+> I re-discovered an old patch fixing this from Eirik, I have added this to my
+> for-linus branch instead of your proposed patch.
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/egtvedt/linux-avr32.git/log/?h=for-linus
+> 
+
+That works too! I was hoping for a similar fix. I sent my patch more as
+an incentive to get kprobes fixed than to disable it ;-)
+
+Tested-by: Steven Rostedt <rostedt@goodmis.org> # only cross compiled tested
+
+-- Steve
