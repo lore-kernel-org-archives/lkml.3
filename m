@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075Ab3KFUgP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 15:36:15 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:46590 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755423Ab3KFUgO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 15:36:14 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-To: konrad.wilk@oracle.com, david.vrabel@citrix.com
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com
-Subject: [PATCH] xen/balloon: Set balloon's initial state to number of existing RAM pages
-Date: Wed,  6 Nov 2013 15:37:40 -0500
-Message-Id: <1383770260-15395-1-git-send-email-boris.ostrovsky@oracle.com>
-X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1756193Ab3KFUhq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 15:37:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53698 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755472Ab3KFUhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 15:37:45 -0500
+Date: Wed, 6 Nov 2013 15:36:40 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Chris Mason <chris.mason@fusionio.com>
+Cc: Kent Overstreet <kmo@daterainc.com>, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: block: Revert bio_clone() default behaviour
+Message-ID: <20131106203639.GB2049@redhat.com>
+References: <1383709721-22809-1-git-send-email-kmo@daterainc.com>
+ <20131106161130.3802.97153@localhost.localdomain>
+ <20131106200222.GA3842@kmo>
+ <20131106202236.3802.2079@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131106202236.3802.2079@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently balloon's initial value is set to max_pfn which includes
-non-RAM ranges such as MMIO hole. As result, initial memory target
-(specified by guest's configuration file) will appear smaller than
-what balloon driver perceives to be the current number of available
-pages. Thus it will balloon down "extra" pages, decreasing amount of
-available memory for no good reason.
+On Wed, Nov 06 2013 at  3:22pm -0500,
+Chris Mason <chris.mason@fusionio.com> wrote:
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
----
- drivers/xen/balloon.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Quoting Kent Overstreet (2013-11-06 15:02:22)
+> > On Wed, Nov 06, 2013 at 11:11:30AM -0500, Chris Mason wrote:
+> > > 
+> > > I think the concept of bio ownership is still much too weak, at least
+> > > for established users like MD and DM.  I don't know how to verify the
+> > > sharing of bi_io_vec without some kind of reference counting on the
+> > > iovec.
+> > 
+> > What's unclear about it? The rule is just - if you didn't allocate the biovec,
+> > don't modify it or use bio_for_each_segment_all() (probably I didn't quite state
+> > it clearly enough before though)
+> 
+> That part makes sense.  The new rule that scares me is that we can't
+> free the src of the clone until all the clones are freed.  If it works
+> with today's existing users it feels like it is more by accident than
+> design.  I'm not saying we can't do it, we just need some bigger
+> flashing warning lights.
 
-diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-index b232908..1b62304 100644
---- a/drivers/xen/balloon.c
-+++ b/drivers/xen/balloon.c
-@@ -641,7 +641,7 @@ static int __init balloon_init(void)
- 
- 	balloon_stats.current_pages = xen_pv_domain()
- 		? min(xen_start_info->nr_pages - xen_released_pages, max_pfn)
--		: max_pfn;
-+		: get_num_physpages();
- 	balloon_stats.target_pages  = balloon_stats.current_pages;
- 	balloon_stats.balloon_low   = 0;
- 	balloon_stats.balloon_high  = 0;
--- 
-1.8.1.4
+But we probably don't want those warning lights to come with the cost of
+managing extra refcounts in the fast path -- so maybe a debug-only
+refcount?
 
+Mike
