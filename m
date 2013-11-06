@@ -1,67 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab3KFOVp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 09:21:45 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:57229 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756403Ab3KFOVn (ORCPT
+	id S1756508Ab3KFO0F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 09:26:05 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45703 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756152Ab3KFO0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 09:21:43 -0500
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: Sakari Ailus <sakari.ailus@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org (open list:SMIA AND SMIA++ I...),
-        linux-kernel@vger.kernel.org (open list)
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH] smiapp: Fix BUG_ON() on an impossible condition
-Date: Wed,  6 Nov 2013 15:21:30 +0100
-Message-Id: <1383747690-20003-1-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 1.8.4.rc3
+	Wed, 6 Nov 2013 09:26:03 -0500
+Date: Wed, 6 Nov 2013 15:25:59 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Sebastian Reichel <sre@ring0.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: Re: [RFC 3/4] ASoC: Allow Aux Codecs to be specified using DT
+Message-ID: <20131106142559.GC15551@amd.pavel.ucw.cz>
+References: <1382909086-10493-1-git-send-email-sre@debian.org>
+ <1382909086-10493-4-git-send-email-sre@debian.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1382909086-10493-4-git-send-email-sre@debian.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-internal_csi_format_idx and csi_format_idx are unsigned integers,
-therefore they can never be nevative.
+Hi!
 
-CC      drivers/media/i2c/smiapp/smiapp-core.o
-In file included from include/linux/err.h:4:0,
-                 from include/linux/clk.h:15,
-                 from drivers/media/i2c/smiapp/smiapp-core.c:29:
-drivers/media/i2c/smiapp/smiapp-core.c: In function ‘smiapp_update_mbus_formats’:
-include/linux/kernel.h:669:20: warning: comparison of unsigned expression < 0 is always false [-Wtype-limits]
- #define min(x, y) ({    \
-                    ^
-include/linux/compiler.h:153:42: note: in definition of macro ‘unlikely’
- # define unlikely(x) __builtin_expect(!!(x), 0)
-                                          ^
-drivers/media/i2c/smiapp/smiapp-core.c:402:2: note: in expansion of macro ‘BUG_ON’
-  BUG_ON(min(internal_csi_format_idx, csi_format_idx) < 0);
-  ^
-drivers/media/i2c/smiapp/smiapp-core.c:402:9: note: in expansion of macro ‘min’
-  BUG_ON(min(internal_csi_format_idx, csi_format_idx) < 0);
-         ^
+> This patch adds support for specifying auxiliary codecs and
+> codec configuration via device tree phandles.
+> 
+> This change adds new fields to snd_soc_aux_dev and snd_soc_codec_conf
+> and adds support for the changes to SoC core methods.
+> 
+> Signed-off-by: Sebastian Reichel <sre@debian.org>
+> ---
+>  include/sound/soc.h  | 13 +++++++++-
+>  sound/soc/soc-core.c | 68 ++++++++++++++++++++++++++++++++++++----------------
+>  2 files changed, 59 insertions(+), 22 deletions(-)
 
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
----
- drivers/media/i2c/smiapp/smiapp-core.c | 1 -
- 1 file changed, 1 deletion(-)
+> @@ -1527,15 +1529,23 @@ static void soc_unregister_ac97_dai_link(struct snd_soc_codec *codec)
+>  static int soc_check_aux_dev(struct snd_soc_card *card, int num)
+>  {
+>  	struct snd_soc_aux_dev *aux_dev = &card->aux_dev[num];
+> +	const char *codecname = aux_dev->codec_name;
+>  	struct snd_soc_codec *codec;
+>  
+>  	/* find CODEC from registered CODECs*/
+>  	list_for_each_entry(codec, &codec_list, list) {
+> -		if (!strcmp(codec->name, aux_dev->codec_name))
+> +		if (aux_dev->codec_of_node &&
+> +				codec->dev->of_node == aux_dev->codec_of_node)
+> +			return 0;
+> +		if (aux_dev->codec_name &&
+> +				!strcmp(codec->name, aux_dev->codec_name))
+>  			return 0;
 
-diff --git a/drivers/media/i2c/smiapp/smiapp-core.c b/drivers/media/i2c/smiapp/smiapp-core.c
-index ae66d91..fbd48f0 100644
---- a/drivers/media/i2c/smiapp/smiapp-core.c
-+++ b/drivers/media/i2c/smiapp/smiapp-core.c
-@@ -399,7 +399,6 @@ static void smiapp_update_mbus_formats(struct smiapp_sensor *sensor)
- 
- 	BUG_ON(max(internal_csi_format_idx, csi_format_idx) + pixel_order
- 	       >= ARRAY_SIZE(smiapp_csi_data_formats));
--	BUG_ON(min(internal_csi_format_idx, csi_format_idx) < 0);
- 
- 	dev_dbg(&client->dev, "new pixel order %s\n",
- 		pixel_order_str[pixel_order]);
+You can use codecname here.
+
+> -		if (!strcmp(codec->name, aux_dev->codec_name)) {
+> -			if (codec->probed) {
+> -				dev_err(codec->dev,
+> -					"ASoC: codec already probed");
+> -				ret = -EBUSY;
+> -				goto out;
+> -			}
+> -			goto found;
+> +		if (aux_dev->codec_of_node &&
+> +				codec->dev->of_node != aux_dev->codec_of_node)
+> +			continue;
+> +		if (aux_dev->codec_name &&
+> +				strcmp(codec->name, aux_dev->codec_name))
+> +			continue;
+
+So in (error) case of ! aux_dev->codec_of_node && ! aux_dev->codec_name 
+we match first possible codec?
+
+Given code similarity between this and the one above, should there be
+helper function that does the comparison (or even walks the list)?
+
+> @@ -1644,12 +1663,19 @@ static int snd_soc_instantiate_card(struct snd_soc_card *card)
+>  		/* check to see if we need to override the compress_type */
+>  		for (i = 0; i < card->num_configs; ++i) {
+>  			codec_conf = &card->codec_conf[i];
+> -			if (!strcmp(codec->name, codec_conf->dev_name)) {
+> -				compress_type = codec_conf->compress_type;
+> -				if (compress_type && compress_type
+> -				    != codec->compress_type)
+> -					break;
+> -			}
+> +
+> +			if (codec_conf->of_node &&
+> +				codec->dev->of_node != codec_conf->of_node)
+> +				continue;
+> +
+> +			if (codec_conf->dev_name &&
+> +				strcmp(codec->name, codec_conf->dev_name))
+> +				continue;
+> +
+
+..third copy of codec matching.
+
+Thanks for doing all the good work,
+									Pavel
 -- 
-1.8.4.rc3
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
