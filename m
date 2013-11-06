@@ -1,111 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932422Ab3KFLtS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 06:49:18 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44438 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932286Ab3KFLtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 06:49:14 -0500
-Message-ID: <527A2C9C.4080409@ti.com>
-Date: Wed, 6 Nov 2013 13:48:44 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Mike Turquette <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        "Kristo, Tero" <t-kristo@ti.com>
-Subject: Re: [PATCH] clk: divider: fix rate calculation for fractional rates
-References: <1383736008-22764-1-git-send-email-tomi.valkeinen@ti.com> <20131106111534.GW16735@n2100.arm.linux.org.uk>
-In-Reply-To: <20131106111534.GW16735@n2100.arm.linux.org.uk>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="WeSok8hTl6So1HH6OkqUqVKAPitKULhHs"
+	id S932314Ab3KFLsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 06:48:21 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:60838 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932233Ab3KFLsR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 06:48:17 -0500
+Message-Id: <20131106114812.591636205@openvz.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 06 Nov 2013 15:47:44 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrey Vagin <avagin@openvz.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Matthew Helsley <matt.helsley@gmail.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [patch 2/7] procfs: Introduce sequential fdinfo engine
+References: <20131106114742.988532945@openvz.org>
+Content-Disposition: inline; filename=0001-procfs-fdinfo-new-6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---WeSok8hTl6So1HH6OkqUqVKAPitKULhHs
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+At moment the fdinfo operations (ie the output from /proc/$pid/fdinfo/$fd)
+are generating output in one pass, allocating one page buffer as a maximum.
+But in case of lots of event polls watchees (75 and more) read procedure
+will fail because one page is not enough to provide all information
+associated with watch descriptors.
 
-On 2013-11-06 13:15, Russell King - ARM Linux wrote:
-> On Wed, Nov 06, 2013 at 01:06:48PM +0200, Tomi Valkeinen wrote:
->> This means that the following code works a bit oddly:
->>
->> rate =3D clk_round_rate(clk, 123428572);
->> clk_set_rate(clk, rate);
->=20
-> You're right, but the above sequence is quite a crass thing to do.  Why=
-?
+Instead, provide proc_fdinfo structure where each file hook own seq_operations
+for fdinfo output and the seq-file engine will be able to traverse over the all
+records and provide the reader complete information increasing buffer size if
+needed.
 
-Do you mean that you think the fix is right, but the above example
-sequence is silly, or that the fix is not needed either?
+Once all fdinfo callers are converted (addressed in next patches) the former
+@show_fdinfo member will be removed.
 
-> clk_round_rate() returns the clock rate that clk_set_rate() would give
-> you if you were to use this sequence:
->=20
-> 	clk_rate_rate(clk, 123428572);
-> 	rate =3D clk_get_rate(clk);
->=20
-> The difference is that it doesn't change the actual clock rate itself;
-> clk_round_rate() is meant to answer the question:
->=20
-> 	"If I were to set _this_ rate, what clock rate would
-> 	 the clock give me?"
->=20
-> thereby providing a method for drivers to inquire what the effect would=
+Note the patch doesn't change current output it's rather preparing
+the ground for next patches.
 
-> be when changing such a clock without actually affecting it.
->=20
-> So please, don't use clk_round_rate() followed by clk_set_rate().
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrey Vagin <avagin@openvz.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: James Bottomley <jbottomley@parallels.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Matthew Helsley <matt.helsley@gmail.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ fs/proc/fd.c       |  141 ++++++++++++++++++++++++++++++++++++++++-------------
+ include/linux/fs.h |    1 
+ 2 files changed, 109 insertions(+), 33 deletions(-)
 
-Ok, if defined like that, then the current behavior is logical.
+Index: linux-2.6.git/fs/proc/fd.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/fd.c
++++ linux-2.6.git/fs/proc/fd.c
+@@ -14,60 +14,135 @@
+ #include "internal.h"
+ #include "fd.h"
+ 
++struct proc_fdinfo {
++	struct seq_file		seq;	/* Make sure it's first */
++	struct seq_operations	*op;
++	struct file		*f_file;
++	unsigned int		f_flags;
++};
++
++#define seq_info(m)	(container_of(m, struct proc_fdinfo, seq))
++
++static void *seq_start(struct seq_file *m, loff_t *pos)
++{
++	struct proc_fdinfo *info = seq_info(m);
++
++	if (*pos == 0)
++		seq_printf(m, "pos:\t%lli\nflags:\t0%o\n",
++			   (long long)info->f_file->f_pos, info->f_flags);
++
++	return info->op ? info->op->start(m, pos) : NULL + (*pos == 0);
++}
++
++static void seq_stop(struct seq_file *m, void *v)
++{
++	struct proc_fdinfo *info = seq_info(m);
++
++	if (info->op)
++		info->op->stop(m, v);
++}
++
++static void *seq_next(struct seq_file *m, void *p, loff_t *pos)
++{
++	struct proc_fdinfo *info = seq_info(m);
++
++	if (info->op)
++		return info->op->next(m, p, pos);
++
++	++*pos;
++	return NULL;
++}
++
+ static int seq_show(struct seq_file *m, void *v)
+ {
++	struct proc_fdinfo *info = seq_info(m);
++
++	if (info->op)
++		return info->op->show(m, v);
++
++	/* Legacy interface */
++	if (info->f_file->f_op->show_fdinfo)
++		return info->f_file->f_op->show_fdinfo(m, info->f_file);
++
++	return 0;
++}
++
++static const struct seq_operations fdinfo_seq_ops = {
++	.start	= seq_start,
++	.stop	= seq_stop,
++	.next	= seq_next,
++	.show	= seq_show,
++};
++
++static int seq_fdinfo_open(struct inode *inode, struct file *file)
++{
+ 	struct files_struct *files = NULL;
+-	int f_flags = 0, ret = -ENOENT;
+-	struct file *file = NULL;
++	struct proc_fdinfo *info;
+ 	struct task_struct *task;
++	int ret;
++
++	info = kzalloc(sizeof(*info), GFP_KERNEL);
++	if (!info)
++		return -ENOMEM;
++	file->private_data = &info->seq;
++
++	ret = seq_open(file, &fdinfo_seq_ops);
++	if (!ret) {
++		ret = -ENOENT;
+ 
+-	task = get_proc_task(m->private);
+-	if (!task)
+-		return -ENOENT;
+-
+-	files = get_files_struct(task);
+-	put_task_struct(task);
+-
+-	if (files) {
+-		int fd = proc_fd(m->private);
+-
+-		spin_lock(&files->file_lock);
+-		file = fcheck_files(files, fd);
+-		if (file) {
+-			struct fdtable *fdt = files_fdtable(files);
+-
+-			f_flags = file->f_flags;
+-			if (close_on_exec(fd, fdt))
+-				f_flags |= O_CLOEXEC;
++		task = get_proc_task(inode);
++		if (task) {
++			files = get_files_struct(task);
++			put_task_struct(task);
++		}
+ 
+-			get_file(file);
+-			ret = 0;
++		if (files) {
++			struct seq_file *m = file->private_data;
++			int fd = proc_fd(inode);
++
++			spin_lock(&files->file_lock);
++			info->f_file = fcheck_files(files, fd);
++			if (info->f_file) {
++				struct fdtable *fdt = files_fdtable(files);
++
++				info->f_flags = info->f_file->f_flags & ~O_CLOEXEC;
++				if (close_on_exec(fd, fdt))
++					info->f_flags |= O_CLOEXEC;
++				info->op = info->f_file->f_op->fdinfo_op;
++				m->private = info->f_file;
++
++				get_file(info->f_file);
++				ret = 0;
++			}
++			spin_unlock(&files->file_lock);
++			put_files_struct(files);
+ 		}
+-		spin_unlock(&files->file_lock);
+-		put_files_struct(files);
+ 	}
+ 
+-	if (!ret) {
+-                seq_printf(m, "pos:\t%lli\nflags:\t0%o\n",
+-			   (long long)file->f_pos, f_flags);
+-		if (file->f_op->show_fdinfo)
+-			ret = file->f_op->show_fdinfo(m, file);
+-		fput(file);
++	if (ret) {
++		if (info->f_file)
++			fput(info->f_file);
++		file->private_data = NULL;
++		kfree(info);
+ 	}
+ 
+ 	return ret;
+ }
+ 
+-static int seq_fdinfo_open(struct inode *inode, struct file *file)
++static int seq_fdinfo_release(struct inode *inode, struct file *file)
+ {
+-	return single_open(file, seq_show, inode);
++	struct seq_file *m = file->private_data;
++	struct proc_fdinfo *info = seq_info(m);
++
++	fput(info->f_file);
++	return seq_release(inode, file);
+ }
+ 
+ static const struct file_operations proc_fdinfo_file_operations = {
+ 	.open		= seq_fdinfo_open,
+ 	.read		= seq_read,
+ 	.llseek		= seq_lseek,
+-	.release	= single_release,
++	.release	= seq_fdinfo_release,
+ };
+ 
+ static int tid_fd_revalidate(struct dentry *dentry, unsigned int flags)
+Index: linux-2.6.git/include/linux/fs.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/fs.h
++++ linux-2.6.git/include/linux/fs.h
+@@ -1552,6 +1552,7 @@ struct file_operations {
+ 	long (*fallocate)(struct file *file, int mode, loff_t offset,
+ 			  loff_t len);
+ 	int (*show_fdinfo)(struct seq_file *m, struct file *f);
++	struct seq_operations *fdinfo_op;
+ };
+ 
+ struct inode_operations {
 
-The comment in clk.h says "adjust a rate to the exact rate a clock can
-provide", which does not contradict with what you said, but doesn't
-really confirm it either. If I get "the exact rate a clock can provide"
-I don't see why I can't use that exact clock rate for clk_set_rate.
-Maybe the comment should be improved to state explicitly what it does.
-
-However, how about the following sequence:
-
-	clk_set_rate(clk, 123428572);
-	rate =3D clk_get_rate(clk);
-	clk_set_rate(clk, rate);
-
-I didn't test that but it should result in the clock first set to
-123428571, and then to 108000000. Obviously pointless if done exactly
-like that, but I don't see why the above code sequence is wrong, yet it
-gives a bit surprising result.
-
- Tomi
-
-
-
---WeSok8hTl6So1HH6OkqUqVKAPitKULhHs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJSeiycAAoJEPo9qoy8lh71Ix4P/0T2N/a3T9ZmdQY6NhcffxL8
-vKEUkm+MxvlGOg57bvT2NnwyUwuP3TD+PTTK4CxexWrJAgAexgKFJwH/n0nEAK/R
-9YYZpzjW5qaBJwUqWx2ev21weDrRn6nB/oYcZfHe8NS5G9f/CFyG3we20DhyHW4V
-4xXw3hYM1u8RPxtC7LIa/TB/W4thf+a41v6Bwn0Lz+UjSqHGSTw48cVJbIWdVFYD
-VaZnCRN4a4zesIQ1/hCrbij0ZtlpXN0ANKF8mbpUqGZC9mdVsDyN55t3xJLjvKiO
-IKuJ/6DVqPluxM/jY0zSSjJ9UygSH43BAd4meO07t8gBNNt4x/8TRgnaBy3CCHsT
-TkE0Jp+ZU+AyZU8DwFSZXE2cqVQeGUfA5YnTmLfqCpr3C0VFyEdJpMWIDOsH3B72
-j6nFv6k5Qvbl/XAczGDvVNjJ5I5RvL7vRagANZSQ4Q6u8CWc6tnSWGi/c2Vn2rEL
-tGpZz9rdUkXKym55dINKojJ1dVb47PO++tLJI4MNIL30k6drYYf3pNNLDa07gY20
-ChMzJeiC76/iBhJnoE0H5QXzzxkkXGVP655E04/RdAPe36/5+nR6aNqp+rrPzylN
-l/B7eSyq4PUl3/FCfzMzfJMKZe7HClF1uvK+kMP1J9JQ8QKNqrDZJGuWFlylZtK5
-AH65+A0F4Wy33rjSQP0E
-=4+9g
------END PGP SIGNATURE-----
-
---WeSok8hTl6So1HH6OkqUqVKAPitKULhHs--
