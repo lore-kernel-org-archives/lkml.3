@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab3KFUYZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 15:24:25 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:40964 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755431Ab3KFUYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 15:24:22 -0500
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
-        <linux@roeck-us.net>, <rui.zhang@intel.com>, <grant.likely@linaro.org>,
-        <bcousson@baylibre.com>
-CC: <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        <t-kristo@ti.com>, Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCHv2 3/7] arm: dts: dra7: add bandgap entry
-Date: Wed, 6 Nov 2013 16:23:03 -0400
-Message-ID: <1383769383-13500-1-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
-In-Reply-To: <1380652344-18819-4-git-send-email-eduardo.valentin@ti.com>
-References: <1380652344-18819-4-git-send-email-eduardo.valentin@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756084Ab3KFUYr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 15:24:47 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:43534 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754997Ab3KFUYq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 15:24:46 -0500
+Date: Wed, 06 Nov 2013 15:24:43 -0500 (EST)
+Message-Id: <20131106.152443.1288760715552220036.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: dborkman@redhat.com, avagin@openvz.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ast@plumgrid.com, edumazet@google.com
+Subject: Re: [PATCH] net: don't forget to free sk_filter
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1383766098.21999.2.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1383753106-26978-1-git-send-email-avagin@openvz.org>
+	<527A9638.4020404@redhat.com>
+	<1383766098.21999.2.camel@edumazet-glaptop2.roam.corp.google.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 06 Nov 2013 12:24:45 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds bandgap IP entry on DRA7 dtsi device tree file.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Wed, 06 Nov 2013 11:28:18 -0800
 
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
----
- arch/arm/boot/dts/dra7.dtsi | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
----
-Hi all,
+> On Wed, 2013-11-06 at 20:19 +0100, Daniel Borkmann wrote:
+> 
+>> When you send v2 with Alexei's feedback, please also be more specific
+>> in your subject like "net: x86: bpf: don't forget to free sk_filter"
+>> or the like. Also it's enough to say 'This memory leak was introduced
+>> by commit d45ed4a4e3 ("net: fix unsafe set_memory_rw from softirq")'
+>> instead of copying the whole log. Anyways, for v2 with feedback included
+>> then:
+> 
+> Actually, the new way [1] of doing this would be to use the 'Fixes:' tag
+> as in :
+> 
+> Fixes: <12 digits SHA1> ("net: fix unsafe set_memory_rw from softirq")
+> 
+> [1] As discussed at last Kernel Summit
+> 
+> Example in 
+> 
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6920a1bd037374a632d585de127b6f945199dcb8
 
-Difference from V1: now the BG node belongs to OCP.
-
-Tero, this is the patch you were asking for.
-
-Thanks,
-
-Eduardo
-
-diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-index 3a746c2..d3d467b 100644
---- a/arch/arm/boot/dts/dra7.dtsi
-+++ b/arch/arm/boot/dts/dra7.dtsi
-@@ -102,6 +102,18 @@
- 			pinctrl-single,function-mask = <0x3fffffff>;
- 		};
- 
-+		bandgap: bandgap {
-+			reg = <0x4a0021e0 0xc
-+				0x4a00232c 0xc
-+				0x4a002380 0x2c
-+				0x4a0023C0 0x3c
-+				0x4a002564 0x8
-+				0x4a002574 0x50>;
-+			compatible = "ti,dra752-bandgap";
-+			interrupts = <GIC_SPI 126 IRQ_TYPE_LEVEL_HIGH>;
-+			#thermal-sensor-cells = <1>;
-+		};
-+
- 		sdma: dma-controller@4a056000 {
- 			compatible = "ti,omap4430-sdma";
- 			reg = <0x4a056000 0x1000>;
--- 
-1.8.2.1.342.gfa7285d
-
+Indeed, and I'm totally fine with this new mechanism too, please use it.
