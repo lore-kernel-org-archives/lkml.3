@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932162Ab3KFIbF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 03:31:05 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48068 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932116Ab3KFIbC (ORCPT
+	id S932182Ab3KFIes (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 03:34:48 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:64922 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932116Ab3KFIer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 03:31:02 -0500
-X-AuditID: 9c930197-b7c0bae0000007bd-53-5279fe4452f7
+	Wed, 6 Nov 2013 03:34:47 -0500
+X-AuditID: 9c93017e-b7c9fae00000057d-6b-5279ff25510d
 From: Namhyung Kim <namhyung@kernel.org>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
@@ -21,12 +21,13 @@ Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
 Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch methods (v6)
 References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
 	<20131102155458.GA6981@redhat.com> <87ob60366m.fsf@sejong.aot.lge.com>
-	<20131104150112.GC4440@redhat.com> <87zjpj1unj.fsf@sejong.aot.lge.com>
-	<20131105162820.GA2460@redhat.com>
-Date: Wed, 06 Nov 2013 17:31:00 +0900
-In-Reply-To: <20131105162820.GA2460@redhat.com> (Oleg Nesterov's message of
-	"Tue, 5 Nov 2013 17:28:20 +0100")
-Message-ID: <87d2mex77f.fsf@sejong.aot.lge.com>
+	<87fvrc35kj.fsf@sejong.aot.lge.com> <20131104155131.GD4440@redhat.com>
+	<20131104162229.GA8921@redhat.com> <87mwlj1tm7.fsf@sejong.aot.lge.com>
+	<20131105163341.GB2460@redhat.com>
+Date: Wed, 06 Nov 2013 17:34:45 +0900
+In-Reply-To: <20131105163341.GB2460@redhat.com> (Oleg Nesterov's message of
+	"Tue, 5 Nov 2013 17:33:41 +0100")
+Message-ID: <878ux2x716.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -35,42 +36,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleg,
-
-On Tue, 5 Nov 2013 17:28:20 +0100, Oleg Nesterov wrote:
+On Tue, 5 Nov 2013 17:33:41 +0100, Oleg Nesterov wrote:
 > On 11/05, Namhyung Kim wrote:
 >>
->> On Mon, 4 Nov 2013 16:01:12 +0100, Oleg Nesterov wrote:
->> > Or the syntax should be "name=probe @file/addr" or something like this.
+>> On Mon, 4 Nov 2013 17:22:29 +0100, Oleg Nesterov wrote:
+>> >
+>> > So probably I was wrong and this all needs more thinking. Damn.
 >>
->> Okay.  Let's call this kind of thing "cross-fetch" (or a better name can
->> be suggested).
+>> :)
 >
-> Yes ;) and I am afraid there was some confusion in our discussion.
-> I probably confused "probe other binaries" with cross-fetch and vice
-> versa sometimes.
+> Don't laugh at me ;)
 
-Sorry for not being clear enough.
+:)
+
+(And now I'm feeling guilty..)
 
 >
->> > So far I think that trace_uprobes.c should not play games with vma. At all.
+>> > Perhaps we really need to pass @file/offset, but it is not clear what
+>> > we can do with bss/anon-mapping.
 >>
->> Yes, playing with vma is fragile.  But otherwise how can we get the
->> address from the file+offset in random processes?
+>> The @file/offset should work with bss since data in bss is accessed via
+>> an offset in the program,
 >
-> Yes, this is not as simple as I thought.
->
-> Let me repeat, somehow I completely forgot we need to probe other (libc)
-> binaries (not only the executable itself) and dump the data from that
-> binary. That is why I wrongly thought that that ->start_data trick can
-> work.
->
-> OK, I see other emails from you. Perhaps we can rely on instruction_pointer(),
-> (I'll write more emails on this), But if not, then we probably need tu->inode
-> and vma games in fetch/get_user_vaddr(). I'd still like to avoid this, if
-> possible, but I am no longer sure.
+> Yes, yes, but it is still not clear to me how we can identify the "right"
+> vma which doesn't cover the .bss address but can be used to calculate the
+> offset.
 
-Yes, I think it'll be necessary for the cross-fetch anyway.
+Yes, that's the open problem for the cross-fetch.
 
 Thanks,
 Namhyung
