@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756244Ab3KFJbH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 04:31:07 -0500
-Received: from gerard.telenet-ops.be ([195.130.132.48]:43139 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756046Ab3KFJbF (ORCPT
+	id S1756272Ab3KFJbS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 04:31:18 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:43824 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756046Ab3KFJbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 04:31:05 -0500
-Date: Wed, 6 Nov 2013 10:31:03 +0100 (CET)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: Build regressions/improvements in v3.12
-In-Reply-To: <alpine.DEB.2.02.1311061028420.20227@ayla.of.borg>
-Message-ID: <alpine.DEB.2.02.1311061030340.20318@ayla.of.borg>
-References: <alpine.DEB.2.02.1311061028420.20227@ayla.of.borg>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 6 Nov 2013 04:31:11 -0500
+Date: Wed, 6 Nov 2013 12:30:50 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Tomasz Figa <t.figa@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: [patch] drivers: phy: tweaks to phy_create()
+Message-ID: <20131106093050.GG20521@mwanda>
+References: <20131106075412.GB13475@elgon.mountain>
+ <5279F9AE.303@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5279F9AE.303@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Nov 2013, Geert Uytterhoeven wrote:
-> JFYI, when comparing v3.12 to v3.12-rc7[3], the summaries are:
->   - build errors: +11/-6
+On Wed, Nov 06, 2013 at 01:41:26PM +0530, Kishon Vijay Abraham I wrote:
 
-Nothing serious:
+> >The rest of this patch is just cleanup like returning directly instead
+> >of having do-nothing gotos.  Using descriptive labels instead of
+> 
+> Grouping the err returns in the end looked a bit cleaner to me. It's
+> just a matter of preference I guess.
 
-  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_HIGH_MASK' undeclared (first use in this function):  => 98:12
-  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_HIGH_SHIFT' undeclared (first use in this function):  => 98:34, 145:10
-  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_LOW_MASK' undeclared (first use in this function):  => 97:21
-  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_LOW_SHIFT' undeclared (first use in this function):  => 97:42, 145:10
-  + /scratch/kisskb/src/arch/sh/mm/cache-sh4.c: error: 'cached_to_uncached' undeclared (first use in this function):  => 99:17
-  + /scratch/kisskb/src/arch/sh/mm/cache-sh4.c: error: implicit declaration of function 'cpu_context' [-Werror=implicit-function-declaration]:  => 192:2
+Say if you are reading the code and it says:
 
-sh-randconfig
+	goto err0;
 
-  + error: "flush_cache_page" [drivers/staging/lustre/lustre/libcfs/libcfs.ko] undefined!:  => N/A
+What you think is, "Huh, that's a crap name for a label.  I wonder what
+it does?"  So you have interrupt what you are doing and scroll down and
+then you see that it doesn't do anything.  Not a single thing.  It just
+returns.  Then you have to scroll back and try remember where you were.
 
-parisc-allmodconfig (evil lustre)
+But if you use a clear label like:
 
-  + error: No rule to make target include/config/auto.conf:  => N/A
+	ret = -ENOMEM;
+	goto return_ret;
 
-powerpc-randconfig
+Then I don't have to scroll down to find out what it is.
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/6840/ (all 120 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/6819/ (119 out of 120 configs)
+But it's even more clear to just say:
 
-Gr{oetje,eeting}s,
+	return -ENOMEM;
 
-						Geert
+The original code was not just messy, it was also buggy.  If you do the
+error handling in the right way by unwinding in the correct order and
+thinking about label names then your code will be less buggy.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+regards,
+dan carpenter
