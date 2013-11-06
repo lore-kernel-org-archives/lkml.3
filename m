@@ -1,31 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab3KFFog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 00:44:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44293 "EHLO
+	id S1755880Ab3KFFoW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 00:44:22 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44264 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab3KFFod (ORCPT
+	with ESMTP id S1752998Ab3KFFoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 00:44:33 -0500
-Date: Tue, 5 Nov 2013 21:43:53 -0800
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-4299a549979783668d787959d61ba22b6b200877@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+	Wed, 6 Nov 2013 00:44:20 -0500
+Date: Tue, 5 Nov 2013 21:43:34 -0800
+From: tip-bot for David Ahern <tipbot@zytor.com>
+Message-ID: <tip-8e00ddc9dfe09ee131144fdaf6c96ebe95bbbbcb@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1383660887-1734-2-git-send-email-jolsa@redhat.com>
-References: <1383660887-1734-2-git-send-email-jolsa@redhat.com>
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1383149707-1008-1-git-send-email-dsahern@gmail.com>
+References: <1383149707-1008-1-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Factor sysfs code into generic fs object
-Git-Commit-ID: 4299a549979783668d787959d61ba22b6b200877
+Subject: [tip:perf/core] perf list: Remove a level of indentation
+Git-Commit-ID: 8e00ddc9dfe09ee131144fdaf6c96ebe95bbbbcb
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,320 +31,124 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 05 Nov 2013 21:44:00 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 05 Nov 2013 21:43:40 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4299a549979783668d787959d61ba22b6b200877
-Gitweb:     http://git.kernel.org/tip/4299a549979783668d787959d61ba22b6b200877
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Tue, 5 Nov 2013 15:14:45 +0100
+Commit-ID:  8e00ddc9dfe09ee131144fdaf6c96ebe95bbbbcb
+Gitweb:     http://git.kernel.org/tip/8e00ddc9dfe09ee131144fdaf6c96ebe95bbbbcb
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Wed, 30 Oct 2013 10:15:06 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 5 Nov 2013 14:44:26 -0300
+CommitDate: Tue, 5 Nov 2013 14:25:26 -0300
 
-perf tools: Factor sysfs code into generic fs object
+perf list: Remove a level of indentation
 
-Moving sysfs code into generic fs object and preparing it to carry
-procfs support.
+With a return after the if check an indentation level can be removed.
+Indentation shift only; no functional changes.
 
-This should be merged with tools/lib/lk/debugfs.c at some point in the
-future.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1383660887-1734-2-git-send-email-jolsa@redhat.com
-[ Added fs__ namespace qualifier to some more functions ]
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1383149707-1008-1-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile.perf           |   4 +-
- tools/perf/tests/parse-events.c    |   2 +-
- tools/perf/util/cpumap.c           |   2 +-
- tools/perf/util/fs.c               | 107 +++++++++++++++++++++++++++++++++++++
- tools/perf/util/fs.h               |   6 +++
- tools/perf/util/pmu.c              |   2 +-
- tools/perf/util/python-ext-sources |   2 +-
- tools/perf/util/sysfs.c            |  60 ---------------------
- tools/perf/util/sysfs.h            |   6 ---
- 9 files changed, 119 insertions(+), 72 deletions(-)
+ tools/perf/builtin-list.c | 73 ++++++++++++++++++++++++-----------------------
+ 1 file changed, 37 insertions(+), 36 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 5b86390..7fc8f17 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -242,7 +242,7 @@ LIB_H += util/cache.h
- LIB_H += util/callchain.h
- LIB_H += util/build-id.h
- LIB_H += util/debug.h
--LIB_H += util/sysfs.h
-+LIB_H += util/fs.h
- LIB_H += util/pmu.h
- LIB_H += util/event.h
- LIB_H += util/evsel.h
-@@ -304,7 +304,7 @@ LIB_OBJS += $(OUTPUT)util/annotate.o
- LIB_OBJS += $(OUTPUT)util/build-id.o
- LIB_OBJS += $(OUTPUT)util/config.o
- LIB_OBJS += $(OUTPUT)util/ctype.o
--LIB_OBJS += $(OUTPUT)util/sysfs.o
-+LIB_OBJS += $(OUTPUT)util/fs.o
- LIB_OBJS += $(OUTPUT)util/pmu.o
- LIB_OBJS += $(OUTPUT)util/environment.o
- LIB_OBJS += $(OUTPUT)util/event.o
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index 48114d1..f47bf45 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -2,7 +2,7 @@
- #include "parse-events.h"
- #include "evsel.h"
- #include "evlist.h"
--#include "sysfs.h"
-+#include "fs.h"
- #include <lk/debugfs.h>
- #include "tests.h"
- #include <linux/hw_breakpoint.h>
-diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-index beb8cf9..4af5a23 100644
---- a/tools/perf/util/cpumap.c
-+++ b/tools/perf/util/cpumap.c
-@@ -1,5 +1,5 @@
- #include "util.h"
--#include "sysfs.h"
-+#include "fs.h"
- #include "../perf.h"
- #include "cpumap.h"
- #include <assert.h>
-diff --git a/tools/perf/util/fs.c b/tools/perf/util/fs.c
-new file mode 100644
-index 0000000..a2413e8
---- /dev/null
-+++ b/tools/perf/util/fs.c
-@@ -0,0 +1,107 @@
+diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
+index e79f423..45000e7 100644
+--- a/tools/perf/builtin-list.c
++++ b/tools/perf/builtin-list.c
+@@ -17,48 +17,49 @@
+ 
+ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
++	int i;
 +
-+/* TODO merge/factor into tools/lib/lk/debugfs.c */
-+
-+#include "util.h"
-+#include "util/fs.h"
-+
-+static const char * const sysfs__fs_known_mountpoints[] = {
-+	"/sys",
-+	0,
-+};
-+
-+struct fs {
-+	const char		*name;
-+	const char * const	*mounts;
-+	char			 path[PATH_MAX + 1];
-+	bool			 found;
-+	long			 magic;
-+};
-+
-+enum {
-+	FS__SYSFS = 0,
-+};
-+
-+static struct fs fs__entries[] = {
-+	[FS__SYSFS] = {
-+		.name	= "sysfs",
-+		.mounts	= sysfs__fs_known_mountpoints,
-+		.magic	= SYSFS_MAGIC,
-+	},
-+};
-+
-+static bool fs__read_mounts(struct fs *fs)
-+{
-+	bool found = false;
-+	char type[100];
-+	FILE *fp;
-+
-+	fp = fopen("/proc/mounts", "r");
-+	if (fp == NULL)
-+		return NULL;
-+
-+	while (!found &&
-+	       fscanf(fp, "%*s %" STR(PATH_MAX) "s %99s %*s %*d %*d\n",
-+		      fs->path, type) == 2) {
-+
-+		if (strcmp(type, fs->name) == 0)
-+			found = true;
+ 	setup_pager();
+ 
+-	if (argc == 1)
++	if (argc == 1) {
+ 		print_events(NULL, false);
+-	else {
+-		int i;
+-
+-		for (i = 1; i < argc; ++i) {
+-			if (i > 2)
+-				putchar('\n');
+-			if (strncmp(argv[i], "tracepoint", 10) == 0)
+-				print_tracepoint_events(NULL, NULL, false);
+-			else if (strcmp(argv[i], "hw") == 0 ||
+-				 strcmp(argv[i], "hardware") == 0)
+-				print_events_type(PERF_TYPE_HARDWARE);
+-			else if (strcmp(argv[i], "sw") == 0 ||
+-				 strcmp(argv[i], "software") == 0)
+-				print_events_type(PERF_TYPE_SOFTWARE);
+-			else if (strcmp(argv[i], "cache") == 0 ||
+-				 strcmp(argv[i], "hwcache") == 0)
+-				print_hwcache_events(NULL, false);
+-			else if (strcmp(argv[i], "pmu") == 0)
+-				print_pmu_events(NULL, false);
+-			else if (strcmp(argv[i], "--raw-dump") == 0)
+-				print_events(NULL, true);
+-			else {
+-				char *sep = strchr(argv[i], ':'), *s;
+-				int sep_idx;
++		return 0;
 +	}
+ 
+-				if (sep == NULL) {
+-					print_events(argv[i], false);
+-					continue;
+-				}
+-				sep_idx = sep - argv[i];
+-				s = strdup(argv[i]);
+-				if (s == NULL)
+-					return -1;
++	for (i = 1; i < argc; ++i) {
++		if (i > 2)
++			putchar('\n');
++		if (strncmp(argv[i], "tracepoint", 10) == 0)
++			print_tracepoint_events(NULL, NULL, false);
++		else if (strcmp(argv[i], "hw") == 0 ||
++			 strcmp(argv[i], "hardware") == 0)
++			print_events_type(PERF_TYPE_HARDWARE);
++		else if (strcmp(argv[i], "sw") == 0 ||
++			 strcmp(argv[i], "software") == 0)
++			print_events_type(PERF_TYPE_SOFTWARE);
++		else if (strcmp(argv[i], "cache") == 0 ||
++			 strcmp(argv[i], "hwcache") == 0)
++			print_hwcache_events(NULL, false);
++		else if (strcmp(argv[i], "pmu") == 0)
++			print_pmu_events(NULL, false);
++		else if (strcmp(argv[i], "--raw-dump") == 0)
++			print_events(NULL, true);
++		else {
++			char *sep = strchr(argv[i], ':'), *s;
++			int sep_idx;
+ 
+-				s[sep_idx] = '\0';
+-				print_tracepoint_events(s, s + sep_idx + 1, false);
+-				free(s);
++			if (sep == NULL) {
++				print_events(argv[i], false);
++				continue;
+ 			}
++			sep_idx = sep - argv[i];
++			s = strdup(argv[i]);
++			if (s == NULL)
++				return -1;
 +
-+	fclose(fp);
-+	return fs->found = found;
-+}
-+
-+static int fs__valid_mount(const char *fs, long magic)
-+{
-+	struct statfs st_fs;
-+
-+	if (statfs(fs, &st_fs) < 0)
-+		return -ENOENT;
-+	else if (st_fs.f_type != magic)
-+		return -ENOENT;
-+
-+	return 0;
-+}
-+
-+static bool fs__check_mounts(struct fs *fs)
-+{
-+	const char * const *ptr;
-+
-+	ptr = fs->mounts;
-+	while (*ptr) {
-+		if (fs__valid_mount(*ptr, fs->magic) == 0) {
-+			fs->found = true;
-+			strcpy(fs->path, *ptr);
-+			return true;
-+		}
-+		ptr++;
-+	}
-+
-+	return false;
-+}
-+
-+static const char *fs__get_mountpoint(struct fs *fs)
-+{
-+	if (fs__check_mounts(fs))
-+		return fs->path;
-+
-+	return fs__read_mounts(fs) ? fs->path : NULL;
-+}
-+
-+static const char *fs__find_mountpoint(int idx)
-+{
-+	struct fs *fs = &fs__entries[idx];
-+
-+	if (fs->found)
-+		return (const char *)fs->path;
-+
-+	return fs__get_mountpoint(fs);
-+}
-+
-+#define FIND_MOUNTPOINT(name, idx)		\
-+const char *name##_find_mountpoint(void)	\
-+{						\
-+	return fs__find_mountpoint(idx);	\
-+}
-+
-+FIND_MOUNTPOINT(sysfs, FS__SYSFS);
-diff --git a/tools/perf/util/fs.h b/tools/perf/util/fs.h
-new file mode 100644
-index 0000000..082edbd
---- /dev/null
-+++ b/tools/perf/util/fs.h
-@@ -0,0 +1,6 @@
-+#ifndef __PERF_FS
-+#define __PERF_FS
-+
-+const char *sysfs_find_mountpoint(void);
-+
-+#endif /* __PERF_FS */
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 64362fe..45b42df 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -4,7 +4,7 @@
- #include <unistd.h>
- #include <stdio.h>
- #include <dirent.h>
--#include "sysfs.h"
-+#include "fs.h"
- #include "util.h"
- #include "pmu.h"
- #include "parse-events.h"
-diff --git a/tools/perf/util/python-ext-sources b/tools/perf/util/python-ext-sources
-index f75ae1b..239036f 100644
---- a/tools/perf/util/python-ext-sources
-+++ b/tools/perf/util/python-ext-sources
-@@ -17,5 +17,5 @@ util/xyarray.c
- util/cgroup.c
- util/rblist.c
- util/strlist.c
--util/sysfs.c
-+util/fs.c
- ../../lib/rbtree.c
-diff --git a/tools/perf/util/sysfs.c b/tools/perf/util/sysfs.c
-deleted file mode 100644
-index f71e9ea..0000000
---- a/tools/perf/util/sysfs.c
-+++ /dev/null
-@@ -1,60 +0,0 @@
--
--#include "util.h"
--#include "sysfs.h"
--
--static const char * const sysfs_known_mountpoints[] = {
--	"/sys",
--	0,
--};
--
--static int sysfs_found;
--char sysfs_mountpoint[PATH_MAX + 1];
--
--static int sysfs_valid_mountpoint(const char *sysfs)
--{
--	struct statfs st_fs;
--
--	if (statfs(sysfs, &st_fs) < 0)
--		return -ENOENT;
--	else if (st_fs.f_type != (long) SYSFS_MAGIC)
--		return -ENOENT;
--
--	return 0;
--}
--
--const char *sysfs_find_mountpoint(void)
--{
--	const char * const *ptr;
--	char type[100];
--	FILE *fp;
--
--	if (sysfs_found)
--		return (const char *) sysfs_mountpoint;
--
--	ptr = sysfs_known_mountpoints;
--	while (*ptr) {
--		if (sysfs_valid_mountpoint(*ptr) == 0) {
--			sysfs_found = 1;
--			strcpy(sysfs_mountpoint, *ptr);
--			return sysfs_mountpoint;
--		}
--		ptr++;
--	}
--
--	/* give up and parse /proc/mounts */
--	fp = fopen("/proc/mounts", "r");
--	if (fp == NULL)
--		return NULL;
--
--	while (!sysfs_found &&
--	       fscanf(fp, "%*s %" STR(PATH_MAX) "s %99s %*s %*d %*d\n",
--		      sysfs_mountpoint, type) == 2) {
--
--		if (strcmp(type, "sysfs") == 0)
--			sysfs_found = 1;
--	}
--
--	fclose(fp);
--
--	return sysfs_found ? sysfs_mountpoint : NULL;
--}
-diff --git a/tools/perf/util/sysfs.h b/tools/perf/util/sysfs.h
-deleted file mode 100644
-index a813b72..0000000
---- a/tools/perf/util/sysfs.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef __SYSFS_H__
--#define __SYSFS_H__
--
--const char *sysfs_find_mountpoint(void);
--
--#endif /* __DEBUGFS_H__ */
++			s[sep_idx] = '\0';
++			print_tracepoint_events(s, s + sep_idx + 1, false);
++			free(s);
+ 		}
+ 	}
+ 	return 0;
