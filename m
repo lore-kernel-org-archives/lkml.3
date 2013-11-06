@@ -1,132 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab3KFQ0y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 11:26:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14661 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751223Ab3KFQ0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 11:26:51 -0500
-Date: Wed, 6 Nov 2013 17:28:06 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch
-	methods (v6)
-Message-ID: <20131106162806.GA7089@redhat.com>
-References: <1383029621-7384-1-git-send-email-namhyung@kernel.org> <20131102155458.GA6981@redhat.com> <87ob60366m.fsf@sejong.aot.lge.com> <87fvrc35kj.fsf@sejong.aot.lge.com> <20131104155131.GD4440@redhat.com> <20131104162229.GA8921@redhat.com> <20131104184741.GA15945@redhat.com> <87sivbz65t.fsf@sejong.aot.lge.com> <20131105174535.GA6385@redhat.com> <87zjphx6dl.fsf@sejong.aot.lge.com>
+	id S1751898Ab3KFQcG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 11:32:06 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:59803 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab3KFQcE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 11:32:04 -0500
+Message-ID: <527A6EFB.4080000@gmail.com>
+Date: Thu, 07 Nov 2013 00:31:55 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87zjphx6dl.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Will Deacon <will.deacon@arm.com>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 4/7] arm64: introduce aarch64_insn_gen_{nop|branch_imm}()
+ helper functions
+References: <1382109602-27432-1-git-send-email-liuj97@gmail.com> <1382109602-27432-5-git-send-email-liuj97@gmail.com> <20131030004840.GC25346@mudshark.cambridge.arm.com>
+In-Reply-To: <20131030004840.GC25346@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06, Namhyung Kim wrote:
->
-> On Tue, 5 Nov 2013 18:45:35 +0100, Oleg Nesterov wrote:
-> > On 11/05, Namhyung Kim wrote:
-> >>
-> >> This is what I have for now:
-> >>
-> >> static void __user *get_user_vaddr(struct pt_regs *regs, unsigned long addr,
-> >> 				   struct trace_uprobe *tu)
-> >> {
-> >> 	unsigned long base_addr;
-> >> 	unsigned long vaddr;
-> >>
-> >> 	base_addr = instruction_pointer(regs) - tu->offset;
-> >> 	vaddr = base_addr + addr;
-> >>
-> >> 	return (void __force __user *) vaddr;
-> >> }
-> >>
-> >> When I tested it, it was able to fetch global and bss data from both of
-> >> executable and library properly.
-> >
-> > Heh ;) I didn't expect you will agree with this suggestion. But if you
-> > think it can work - great!
->
-> It seems to work for me well except the cross-fetch.
+On 10/30/2013 08:48 AM, Will Deacon wrote:
+> On Fri, Oct 18, 2013 at 04:19:58PM +0100, Jiang Liu wrote:
+>> From: Jiang Liu <jiang.liu@huawei.com>
+>>
+>> Introduce aarch64_insn_gen_{nop|branch_imm}() helper functions, which
+>> will be used to implement jump label on ARM64.
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> Cc: Jiang Liu <liuj97@gmail.com>
+>> ---
+>>  arch/arm64/include/asm/insn.h | 13 +++++++++++++
+>>  arch/arm64/kernel/insn.c      | 28 ++++++++++++++++++++++++++++
+>>  2 files changed, 41 insertions(+)
+>>
+>> diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
+>> index 8f94e48..ee4a60d 100644
+>> --- a/arch/arm64/include/asm/insn.h
+>> +++ b/arch/arm64/include/asm/insn.h
+>> @@ -96,9 +96,22 @@ static __always_inline void aarch64_insn_write(void *addr, u32 insn)
+>>  	*(u32 *)addr = cpu_to_le32(insn);
+>>  }
+>>  
+>> +static __always_inline u32 aarch64_insn_gen_hint(enum aarch64_insn_hint_op op)
+>> +{
+>> +	return aarch64_insn_get_hint_value() | op;
+> 
+> What's the point in that helper function? Does it just return an immediate
+> value (and are there are other users of it?).
+It just returns a const value. The helper function is just for ease
+maintainence.
 
-Yes, but cross-fetching needs something different anyway, so I think we
-should discuss this separately.
+> 
+>> +}
+>> +
+>> +static __always_inline u32 aarch64_insn_gen_nop(void)
+>> +{
+>> +	return aarch64_insn_gen_hint(AARCH64_INSN_HINT_NOP);
+>> +}
+> 
+> Either use plain old `inline' or write these as preprocessor macros.
+Will change to normal (non-inline) and add __kprobe property.
 
-> But I'm not sure it'll work for every cases.
+> 
+>> +
+>>  enum aarch64_insn_encoding_class aarch64_get_insn_class(u32 insn);
+>>  u32 aarch64_insn_encode_immediate(enum aarch64_insn_imm_type type,
+>>  				  u32 insn, u64 imm);
+>> +u32 aarch64_insn_gen_branch_imm(unsigned long pc, unsigned long addr,
+>> +				bool link);
+>> +
+>>  bool aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn);
+>>  
+>>  int aarch64_insn_patch_text_nosync(void *addr, u32 insn);
+>> diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
+>> index 886821f..f7498cc 100644
+>> --- a/arch/arm64/kernel/insn.c
+>> +++ b/arch/arm64/kernel/insn.c
+>> @@ -14,6 +14,7 @@
+>>   * You should have received a copy of the GNU General Public License
+>>   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+>>   */
+>> +#include <linux/bitops.h>
+>>  #include <linux/compiler.h>
+>>  #include <linux/kernel.h>
+>>  #include <linux/smp.h>
+>> @@ -233,3 +234,30 @@ u32 aarch64_insn_encode_immediate(enum aarch64_insn_imm_type type,
+>>  
+>>  	return insn;
+>>  }
+>> +
+>> +u32 aarch64_insn_gen_branch_imm(unsigned long pc, unsigned long addr, bool link)
+>> +{
+>> +	u32 insn;
+>> +	long offset;
+>> +
+>> +	/*
+>> +	 * PC: A 64-bit Program Counter holding the address of the current
+>> +	 * instruction. A64 instructions may be word-aligned.
+>> +	 */
+>> +	BUG_ON((pc & 0x3) || (addr & 0x3));
+>> +
+>> +	/*
+>> +	 * B/BL support [-128M, 128M) offset
+>> +	 * ARM64 virtual address arrangement garantees all kernel and module
+> 
+> Typo: `guarantees'.
+Thanks, will fix it.
 
-I think "ip - tu->offset + vaddr" trick should always work, just we need
-to calculate this "vaddr" passed as an argument correctly.
+> 
+>> +	 * texts are within +/-128M.
+>> +	 */
+>> +	offset = ((long)addr - (long)pc) >> 2;
+>> +	BUG_ON(abs(offset) > BIT(25) || offset == BIT(25));
+> 
+> I really struggle to follow this range checking. Why don't you just compare
+> the absolute difference between addr and pc with SZ_128M?
+Will change code to follow your suggestion.
 
-Except: user-space can create another executable mapping and call the
-probed function via another address, but I think we can ignore this.
-And I think we can do nothing in this case, because in this case we
-can't even rely on tu->inode.
-
-But,
-
-> It would be great if some
-> elf gurus come up and give some feedbacks.
->
-> Masami?
-
-Yes.
-
-> > As for "-= tu->offset"... Can't we avoid it? User-space needs to calculate
-> > the "@" argument anyway, why it can't also substruct this offset?
->
-> Hmm.. it makes sense too. :)
-
-I am no longer sure ;)
-
-This way the "@" argument will look more confusing, it will depend on the
-address/offset of the probed insn. But again, I do not know, this is up
-to you.
-
-> >> But it still doesn't work for uretprobes
-> >> as you said before.
-> >
-> > This looks simple,
-> >
-> > 	+	if (is_ret_probe(tu)) {
-> > 	+		saved_ip = instruction_pointer(regs);
-> > 	+		instruction_pointer_set(func);
-> > 	+	}
-> > 		store_trace_args(...);
-> > 	+	if (is_ret_probe(tu))
-> > 	+		instruction_pointer_set(saved_ip);
-> >
-> > although not pretty.
->
-> So for normal non-uretprobes, func == instruction_pointer(), right?
-
-No, for normal non-uretprobes func == 0 (actually, undefined).
-
-> If so, just passing func as you suggested looks better than this.
-
-Not sure I understand... OK, we can change uprobe_trace_func() and
-uprobe_perf_func()
-
-		if (!is_ret_probe(tu))
-	-		uprobe_trace_print(tu, 0, regs);
-	+		uprobe_trace_print(tu, instruction_pointer(regs), regs);
-		return 0;
-
-but why?
-
-We need the "saved_ip" ugly hack above only if is_ret_probe() == T and
-thus instruction_pointer() doesn't match the address of the probed function.
-And there is no way to pass some additional info to call_fetch/etc from
-uprobe_*_print().
-
-See also another email...
-
-Oleg.
+> 
+> Will
+> 
 
