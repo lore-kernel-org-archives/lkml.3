@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932148Ab3KFIlX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 03:41:23 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58246 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932099Ab3KFIlW (ORCPT
+	id S932175Ab3KFIm4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 03:42:56 -0500
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:38783 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932088Ab3KFImz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 03:41:22 -0500
-Date: Wed, 6 Nov 2013 09:41:17 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-Subject: Re: linux-next: manual merge of the gpio tree with the arm-soc and
- cortex trees
-Message-ID: <20131106084117.GT14892@pengutronix.de>
-References: <20131106191454.5f45b0b5300f03e74a6a09eb@canb.auug.org.au>
+	Wed, 6 Nov 2013 03:42:55 -0500
+Date: Wed, 6 Nov 2013 03:42:20 -0500 (EST)
+From: Jerome Marchand <jmarchan@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        dave hansen <dave.hansen@intel.com>
+Message-ID: <1450211196.19341043.1383727340985.JavaMail.root@redhat.com>
+In-Reply-To: <20131105155319.732dcbefb162c2ee4716ef9d@linux-foundation.org>
+References: <1382101019-23563-1-git-send-email-jmarchan@redhat.com> <1382101019-23563-2-git-send-email-jmarchan@redhat.com> <20131105155319.732dcbefb162c2ee4716ef9d@linux-foundation.org>
+Subject: Re: [PATCH v4 2/2] mm: allow to set overcommit ratio more precisely
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131106191454.5f45b0b5300f03e74a6a09eb@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.11]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF22 (Linux)/8.0.3_GA_5664)
+Thread-Topic: allow to set overcommit ratio more precisely
+Thread-Index: vmEQXa6c4meyr6nxaL+2qkPfDwXbJg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Stephen,
 
-On Wed, Nov 06, 2013 at 07:14:54PM +1100, Stephen Rothwell wrote:
-> Hi Linus,
+
+----- Original Message -----
+> From: "Andrew Morton" <akpm@linux-foundation.org>
+> To: "Jerome Marchand" <jmarchan@redhat.com>
+> Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, "dave hansen" <dave.hansen@intel.com>
+> Sent: Wednesday, November 6, 2013 12:53:19 AM
+> Subject: Re: [PATCH v4 2/2] mm: allow to set overcommit ratio more precisely
 > 
-> Today's linux-next merge of the gpio tree got a conflict in
-> arch/arm/Kconfig between commit f3372c01816e ("ARM: gemini: convert to
-> GENERIC_CLOCKEVENTS") from the arm-soc tree and f5caa3b59e18 ("ARM:
-> deprecate mach/timex.h for !ARCH_MULTIPLATFORM") from the cortex tree and
-> commits ffde39ea61ea ("ARM: mmp: delete the custom GPIO header"),
-> 88f718e3fa4d ("ARM: pxa: delete the custom GPIO header") and 85649711a895
-> ("ARM: gemini: delete <mach/gpio.h>") from the gpio tree.
+> On Fri, 18 Oct 2013 14:56:59 +0200 Jerome Marchand <jmarchan@redhat.com>
+> wrote:
 > 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
-looks correct.
-
-BTW, "cortex" is a bit too general. My tree is only about Cortex-M. Also
-you can drop -2.6 from the URL.
-
-Best regards
-Uwe
+> > Some applications that run on HPC clusters are designed around the
+> > availability of RAM and the overcommit ratio is fine tuned to get the
+> > maximum usage of memory without swapping. With growing memory, the 1%
+> > of all RAM grain provided by overcommit_ratio has become too coarse
+> > for these workload (on a 2TB machine it represents no less than
+> > 20GB).
+> > 
+> > This patch adds the new overcommit_ratio_ppm sysctl variable that
+> > allow to set overcommit ratio with a part per million precision.
+> > The old overcommit_ratio variable can still be used to set and read
+> > the ratio with a 1% precision. That way, overcommit_ratio interface
+> > isn't broken in any way that I can imagine.
 > 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+> The way we've permanently squished this mistake in the past is to
+> switch to "bytes".  See /proc/sys/vm/*bytes.
 > 
-> diff --cc arch/arm/Kconfig
-> index 568d6471dd18,c6debe07f036..000000000000
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@@ -397,10 -386,8 +397,9 @@@ config ARCH_CLPS711
->   config ARCH_GEMINI
->   	bool "Cortina Systems Gemini"
->   	select ARCH_REQUIRE_GPIOLIB
->  -	select ARCH_USES_GETTIMEOFFSET
->  +	select CLKSRC_MMIO
->   	select CPU_FA526
->  +	select GENERIC_CLOCKEVENTS
-> - 	select NEED_MACH_GPIO_H
->   	help
->   	  Support for the Cortina Systems Gemini family SoCs
->   
-> @@@ -593,8 -558,6 +592,7 @@@ config ARCH_MM
->   	select GPIO_PXA
->   	select IRQ_DOMAIN
->   	select MULTI_IRQ_HANDLER
-> - 	select NEED_MACH_GPIO_H
->  +	select NEED_MACH_TIMEX_H
->   	select PINCTRL
->   	select PLAT_PXA
->   	select SPARSE_IRQ
-> @@@ -658,8 -620,6 +656,7 @@@ config ARCH_PX
->   	select GPIO_PXA
->   	select HAVE_IDE
->   	select MULTI_IRQ_HANDLER
-> - 	select NEED_MACH_GPIO_H
->  +	select NEED_MACH_TIMEX_H
->   	select PLAT_PXA
->   	select SPARSE_IRQ
->   	help
+> Would that approach work in this case?
+> 
 
+That was my first version of this patch (actually "kbytes" to avoid
+overflow).
+Dave raised the issue that it silently breaks the user interface:
+overcommit_ratio is zero while the system behaves differently.
 
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Jerome
