@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932458Ab3KFOmM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 09:42:12 -0500
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:61279 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932127Ab3KFOmK (ORCPT
+	id S932400Ab3KFOp0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 09:45:26 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57826 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932113Ab3KFOpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 09:42:10 -0500
+	Wed, 6 Nov 2013 09:45:25 -0500
+Date: Wed, 6 Nov 2013 15:44:56 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vince@deater.net>
+Cc: mingo@kernel.org, hpa@zytor.com, anton@samba.org,
+        mathieu.desnoyers@polymtl.ca, linux-kernel@vger.kernel.org,
+        michael@ellerman.id.au, paulmck@linux.vnet.ibm.com,
+        benh@kernel.crashing.org, fweisbec@gmail.com, VICTORK@il.ibm.com,
+        tglx@linutronix.de, oleg@redhat.com, mikey@neuling.org,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] tools/perf: Add required memory barriers
+Message-ID: <20131106144456.GI26785@twins.programming.kicks-ass.net>
+References: <20131030104246.GH16117@laptop.programming.kicks-ass.net>
+ <tip-a94d342b9cb09edfe888ea972af0883b6a8d992b@git.kernel.org>
+ <alpine.DEB.2.02.1311060847340.27224@pianoman.cluster.toy>
+ <20131106140011.GL10651@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <20131106141901.GD24988@valkosipuli.retiisi.org.uk>
-References: <1383742165-17634-1-git-send-email-ricardo.ribalda@gmail.com> <20131106141901.GD24988@valkosipuli.retiisi.org.uk>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Wed, 6 Nov 2013 15:41:48 +0100
-Message-ID: <CAPybu_2xOkDB-F=50WKLxzh0wufG3Vb7Fz9ZPfGC3O8HfjZVUA@mail.gmail.com>
-Subject: Re: [PATCH] videodev2: Set vb2_rect's width and height as unsigned
-To: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        =?ISO-8859-1?Q?Frank_Sch=E4fer?= <fschaefer.oss@googlemail.com>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        "open list:MT9M032 APTINA SE..." <linux-media@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131106140011.GL10651@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sakari.
+On Wed, Nov 06, 2013 at 03:00:11PM +0100, Peter Zijlstra wrote:
+> On Wed, Nov 06, 2013 at 08:50:47AM -0500, Vince Weaver wrote:
+> > On Wed, 6 Nov 2013, tip-bot for Peter Zijlstra wrote:
+> > 
+> > > +++ b/tools/perf/util/evlist.h
+> > > @@ -177,7 +177,7 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist, int err, char *buf, s
+> > >  static inline unsigned int perf_mmap__read_head(struct perf_mmap *mm)
+> > >  {
+> > >  	struct perf_event_mmap_page *pc = mm->base;
+> > > -	int head = pc->data_head;
+> > > +	int head = ACCESS_ONCE(pc->data_head);
+> > >  	rmb();
+> > >  	return head;
+> > 
+> > so is this ACCESS_ONCE required now for proper access to the mmap buffer?
+> 
+> Pretty much; otherwise your C compiler is allowed to mess it up.
 
-Thanks for your comments. I have fixed them, but I will wait some time
-to get more comments, to avoid spamming the list.
+long head = ((__atomic long)pc->data_head).load(memory_order_acquire);
 
-Thanks!
+coupled with:
 
-On Wed, Nov 6, 2013 at 3:19 PM, Sakari Ailus <sakari.ailus@iki.fi> wrote:
-> Hi Ricardo,
->
-> Thanks for the patch.
->
-> On Wed, Nov 06, 2013 at 01:49:25PM +0100, Ricardo Ribalda Delgado wrote:
-> ...
->> diff --git a/drivers/media/i2c/smiapp/smiapp-core.c b/drivers/media/i2c/smiapp/smiapp-core.c
->> index ae66d91..9036e64 100644
->> --- a/drivers/media/i2c/smiapp/smiapp-core.c
->> +++ b/drivers/media/i2c/smiapp/smiapp-core.c
->> @@ -2028,8 +2028,8 @@ static int smiapp_set_crop(struct v4l2_subdev *subdev,
->>       sel->r.width = min(sel->r.width, src_size->width);
->>       sel->r.height = min(sel->r.height, src_size->height);
->>
->> -     sel->r.left = min(sel->r.left, src_size->width - sel->r.width);
->> -     sel->r.top = min(sel->r.top, src_size->height - sel->r.height);
->> +     sel->r.left = min(sel->r.left, (int) (src_size->width - sel->r.width));
->> +     sel->r.top = min(sel->r.top, (int) (src_size->height - sel->r.height));
->
-> How about min_t(int, ... instead?
->
->>       *crops[sel->pad] = sel->r;
->>
->> @@ -2121,8 +2121,10 @@ static int smiapp_set_selection(struct v4l2_subdev *subdev,
->>
->>       sel->r.left = max(0, sel->r.left & ~1);
->>       sel->r.top = max(0, sel->r.top & ~1);
->> -     sel->r.width = max(0, SMIAPP_ALIGN_DIM(sel->r.width, sel->flags));
->> -     sel->r.height = max(0, SMIAPP_ALIGN_DIM(sel->r.height, sel->flags));
->> +     sel->r.width = max_t(unsigned int, 0,
->> +                     SMIAPP_ALIGN_DIM(sel->r.width, sel->flags));
->> +     sel->r.height = max_t(unsigned int, 0,
->> +                     SMIAPP_ALIGN_DIM(sel->r.height, sel->flags));
->
-> The purpose of this check is to ensure the number is at least zero, and as
-> width and height are now unsigned, max_t() won't be needed anymore. Only
-> SMIAPP_ALIGN_DIM() is.
->
-> I can't see any harm from that, though --- there could be redundant checks
-> in other drivers, too.
->
->>       sel->r.width = max_t(unsigned int,
->>                            sensor->limits[SMIAPP_LIMIT_MIN_X_OUTPUT_SIZE],
->
-> Do you think it'd be worth adding a note on this change to the list of V4L2
-> in each kernel version in Documentation/DocBook/media/v4l/compat.xml?
->
-> --
-> Kind regards,
->
-> Sakari Ailus
-> e-mail: sakari.ailus@iki.fi     XMPP: sailus@retiisi.org.uk
+((__atomic long)pc->data_tail).store(tail, memory_order_release);
 
+might be the 'right' and proper C11 incantations to avoid having to
+touch kernel macros; but would obviously require a recent compiler.
 
+Barring that, I think we're stuck with:
 
--- 
-Ricardo Ribalda
+long head = ACCESS_ONCE(pc->data_head);
+smp_rmb();
+
+...
+
+smp_mb();
+pc->data_tail = tail;
+
+And using the right asm goo for the barriers. That said, all these asm
+barriers should include a compiler barriers (memory clobber) which
+_should_ avoid the worst compiler trickery -- although I don't think it
+completely obviates the need for ACCESS_ONCE() -- uncertain there.
