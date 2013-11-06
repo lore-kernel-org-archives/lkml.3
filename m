@@ -1,212 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab3KFB1z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 20:27:55 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:60093 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755763Ab3KFB1w (ORCPT
+	id S1755993Ab3KFB2i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 20:28:38 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:42214 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495Ab3KFB2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 20:27:52 -0500
-Date: Wed, 06 Nov 2013 10:27:49 +0900
-Sun-Java-System-SMTP-Warning: Lines longer than SMTP allows found and wrapped.
-From: Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH] usb: ohci-exynos: Change to use phy provided by the generic
- phy framework
-To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm@vger.kernel.org
-Cc: "'Kamil Debski'" <k.debski@samsung.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
-        "'Tomasz Figa'" <t.figa@samsung.com>,
-        "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
-        m.szyprowski@samsung.com, gautam.vivek@samsung.com,
-        "'Mateusz Krawczuk'" <mat.krawczuk@gmail.com>,
-        "'Yulgon Kim'" <yulgon.kim@samsung.com>,
-        "'Praveen Paneri'" <p.paneri@samsung.com>,
-        "'Anton Tikhomirov'" <av.tikhomirov@samsung.com>,
-        "'Kumar Gala'" <galak@codeaurora.org>,
-        "'Kamil Debski'" <k.debski@samsung.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Message-id: <001401ceda8f$67f1ee50$37d5caf0$%han@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7bit
-Thread-index: Ac7aj1XjuAwmVu70RKaqqxDTG9Gb3A==
-DLP-Filter: Pass
-X-AuditID: cbfee690-b7f3d6d000001c4a-2b-52799b16ba7e
-x-cr-hashedpuzzle: AOYY FEf+ M7u+ XK2A 5PeZ 5tuX 77Gn AEG1og== AGwc7g==
- AQkEWA== AU3PHA== AYiAGA== Aajlvw== AgGKow== AhMAOA==
- Aiiw4A==;18;YQB2AC4AdABpAGsAaABvAG0AaQByAG8AdgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AGQAZQB2AGkAYwBlAHQAcgBlAGUAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGcAYQBsAGEAawBAAGMAbwBkAGUAYQB1AHIAbwByAGEALgBvAHIAZwA7AGcAYQB1AHQAYQBtAC4AdgBpAHYAZQBrAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAagBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AGsALgBkAGUAYgBzAGsAaQBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AGsAaQBzAGgAbwBuAEAAdABpAC4AYwBvAG0AOwBrAHkAdQBuAGcAbQBpAG4ALgBwAGEAcgBrAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABpAG4AdQB4AC0AYQByAG0AQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBsAGkAbgB1AHgALQBzAGEAbQBzAHUAbgBnAC0AcwBvAGMAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAHUAcwBiAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBtAC4AcwB6AHkAcAByAG8AdwBzAGsAaQBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AG0AYQB0AC4AawByAGEAdwBjAHoAd
-	QBrAEAAZwBtAGEAaQBsAC4AYwBvAG0AOwBwAC4AcABhAG4AZQByAGkAQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBzAC4AbgBhAHcAcgBvAGMAawBpAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAdAAuAGYAaQBnAGEAQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwB5AHUAbABnAG8AbgAuAGsAaQBtAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtAA==;Sosha1_v1;7;{DF14907C-B18F-41BC-866B-84EC94F4E261};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Wed,
- 06 Nov 2013 01:27:19
- GMT;WwBQAEEAVABDAEgAXQAgAHUAcwBiADoAIABvAGgAYwBpAC0AZQB4AHkAbgBvAHMAOgAgAEMAaABhAG4AZwBlACAAdABvACAAdQBzAGUAIABwAGgAeQAgAHAAcgBvAHYAaQBkAGUAZAAgAGIAeQAgAHQAaABlACAAZwBlAG4AZQByAGkAYwAgAHAAaAB5ACAAZgByAGEAbQBlAHcAbwByAGsA
-x-cr-puzzleid: {DF14907C-B18F-41BC-866B-84EC94F4E261}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCKsWRmVeSWpSXmKPExsVy+t8zQ12x2ZVBBn37hC2W7L7BajH/yDlW
-	i/43C1kt2q4cZLe4vPASq8WP1xfYLC487WGzONv0ht1i2s7/rBaXd81hs5hxfh+TxaJlrcwW
-	a4/cZbc423+bzeL8lk4mi8Nv2lkt1s94zWLRcfYgu4OQx+W+XiaPnbPusnv0bVnF6HH8xnYm
-	j8+b5AJYo7hsUlJzMstSi/TtErgydl7aylywSq7iyfte1gbG1ZJdjJwcEgImEmtfn2CGsMUk
-	Ltxbz9bFyMUhJLCMUeLNixesMEV3+qcxgdhCAtMZJeatVIAo+sUocbV9DSNIQljAT6JpziSw
-	SWwCahJfvhxmB7FFBGYySmxebApiMwtsY5FYfUMWoj5G4nDTEqB6Dg4WAVWJN1tDQcK8ArYS
-	U/+sY4OwBSV+TL7HAtGqJbF+53EmCFteYvOat2CtEgLqEo/+6kJs0pPo+7GBGaJERGLfi3eM
-	IGdKCLzhkbjy9TnUk6YSJz5Ogkqc4JDY83QK2P0sAgIS3yYfYoEYKiux6QBUvaTEwRU3WCYw
-	Ss5CctIsJCfNQnLSLCS7FzCyrGIUTS1ILihOSi8y0StOzC0uzUvXS87P3cQISSETdjDeO2B9
-	iDEZaP1EZinR5HxgCsoriTc0NjOyMDUxNTYytzQjTVhJnFftUVKQkEB6YklqdmpqQWpRfFFp
-	TmrxIUYmDk6pBsaFO1xdD/mbT92sq7nZaXH3v6mfryl/T2t0XKcvtC1v0/1Lk2cdf9gpe6fk
-	/lWxDYvFA3setV+Qf5qh81XX5b+SScGeGcdctfrWcXMvTbAynWXYunPPMoe1ZTn7JU4YVby2
-	lErfuIZ5wvbH27jf1UXYBO5TPyFxqGVDkPbewvjak5UsU5SMH0xQYinOSDTUYi4qTgQAB4ay
-	RTcDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e+xoK7Y7Mogg7/dvBZLdt9gtZh/5Byr
-	Rf+bhawWbVcOsltcXniJ1eLH6wtsFhee9rBZnG16w24xbed/VovLu+awWcw4v4/JYtGyVmaL
-	tUfusluc7b/NZnF+SyeTxeE37awW62e8ZrHoOHuQ3UHI43JfL5PHzll32T36tqxi9Dh+YzuT
-	x+dNcgGsUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+Abpu
-	mTlA5ysplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM3Ze2spcsEqu4sn7
-	XtYGxtWSXYycHBICJhJ3+qcxQdhiEhfurWcDsYUEpjNKzFup0MXIBWT/YpS42r6GESQhLOAn
-	0TRnEjOIzSagJvHly2F2EFtEYCajxObFpiA2s8A2FonVN2Qh6mMkDjctAarn4GARUJV4szUU
-	JMwrYCsx9c86NghbUOLH5HssEK1aEut3HmeCsOUlNq95C9YqIaAu8eivLsQmPYm+HxuYIUpE
-	JPa9eMcIcqaEwBseiStfnzND/GIqceLjJMYJjMKzkKyYhWTFLCQrZiGZtYCRZRWjaGpBckFx
-	UnquoV5xYm5xaV66XnJ+7iZGcIJ6JrWDcWWDxSFGAQ5GJR7eBPnKICHWxLLiytxDjBIczEoi
-	vEpxQCHelMTKqtSi/Pii0pzU4kOMycAAmMgsJZqcD0yeeSXxhsYmZkaWRmYWRibm5qQJK4nz
-	Hmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXAeEb2h4rEDpsd9zYpfOjP35q78a7WNDbf75r76nj/
-	ib/W+1Qzjan9Yn3xZW2jqa7sEW18vhO+cqq8Pu+g82lvwPbJv9zWOd/yDIg4lNvN4BBawLH4
-	/YxfPLpP3ny289c0/FBz3K7PJJy9fNYmlax4tZrqCfK/JbZ+3dZj7XjszRLDj4bPDVL3K7EU
-	ZyQaajEXFScCACjEP+eUAwAA
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 5 Nov 2013 20:28:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131105143221.GA30006@quack.suse.cz>
+References: <CAOvWMLZ-ezykR6TkFAoZ1UW20QF6XMOKeZH8R-FdFJkXjAP9nA@mail.gmail.com>
+	<20131105003733.GA24531@quack.suse.cz>
+	<CAOvWMLZ6_boRgQi2L9kqR_bWcnLDHY+uFo9g4DP=zxeGtT+dag@mail.gmail.com>
+	<20131105143221.GA30006@quack.suse.cz>
+Date: Tue, 5 Nov 2013 17:28:35 -0800
+Message-ID: <CAOvWMLY9HAeQTsEwCchKNjL+1=-grBQrDO6-KCYcS-mxMYyRpw@mail.gmail.com>
+Subject: Re: [BUG][ext2] XIP does not work on ext2
+From: Andiry Xu <andiry@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Wang Shilong <wangsl-fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Andiry Xu <andiry.xu@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the phy provider used from the old usb phy specific to a new one
-using the generic phy framework.
+Hi,
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Cc: Kamil Debski <k.debski@samsung.com>
----
-Exynos OHCI driver also uses Exynos USB2.0 PHY. Thus, I make this
-patch based-on Kamil Debski's patchset for adding Exynos USB 2.0 PHY
-driver.
-(http://www.spinics.net/lists/linux-samsung-soc/msg24104.html)
+On Tue, Nov 5, 2013 at 6:32 AM, Jan Kara <jack@suse.cz> wrote:
+>   Hello,
+>
+> On Mon 04-11-13 18:37:40, Andiry Xu wrote:
+>> On Mon, Nov 4, 2013 at 4:37 PM, Jan Kara <jack@suse.cz> wrote:
+>> >   Hello,
+>> >
+>> > On Mon 04-11-13 14:31:34, Andiry Xu wrote:
+>> >> When I'm trying XIP on ext2, I find that xip does not work on ext2
+>> >> with latest kernel.
+>> >>
+>> >> Reproduce steps:
+>> >> Compile kernel with following configs:
+>> >> CONFIG_BLK_DEV_XIP=y
+>> >> CONFIG_EXT2_FS_XIP=y
+>> >>
+>> >> And run following commands:
+>> >> # mke2fs -b 4096 /dev/ram0
+>> >> # mount -t ext2 -o xip /dev/ram0 /mnt/ramdisk/
+>> >> # dd if=/dev/zero of=/mnt/ramdisk/test1 bs=1M count=16
+>> >>
+>> >> And it shows:
+>> >> dd: writing `/mnt/ramdisk/test1': No space left on device
+>> >>
+>> >> df also shows /mnt/ramdisk is 100% full. Its default size is 64MB so a
+>> >> 16MB write should only occupy 1/4 capacity.
+>> >>
+>> >> Criminal commit:
+>> >> After git bisect, it points to the following commit:
+>> >> 8e3dffc651cb668e1ff4d8b89cc1c3dde7540d3b
+>> >> Ext2: mark inode dirty after the function dquot_free_block_nodirty is called
+>> >   Thanks for report and the bisection!
+>> >
+>> >> Particularly, the following code:
+>> >> @@ -1412,9 +1415,11 @@ allocated:
+>> >> *errp = 0;
+>> >> brelse(bitmap_bh);
+>> >> -    dquot_free_block_nodirty(inode, *count-num);
+>> >> -    mark_inode_dirty(inode);
+>> >> -    *count = num;
+>> >> +    if (num < *count) {
+>> >> +        dquot_free_block_nodirty(inode, *count-num);
+>> >> +        mark_inode_dirty(inode);
+>> >> +        *count = num;
+>> >> +    }
+>> >>       return ret_block;
+>> >>
+>> >> Not mark_inode_dirty() is called only when num is less than *count.
+>> >> However, I've seen
+>> >> with the dd command, there is case where num >= *count.
+>> >>
+>> >> Fix:
+>> >> I've verified that the following patch fixes the issue:
+>> >> diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
+>> >> index 9f9992b..5446a52 100644
+>> >> --- a/fs/ext2/balloc.c
+>> >> +++ b/fs/ext2/balloc.c
+>> >> @@ -1406,11 +1406,10 @@ allocated:
+>> >>
+>> >>         *errp = 0;
+>> >>         brelse(bitmap_bh);
+>> >> -       if (num < *count) {
+>> >> +       if (num <= *count)
+>> >>                 dquot_free_block_nodirty(inode, *count-num);
+>> >> -               mark_inode_dirty(inode);
+>> >> -               *count = num;
+>> >> -       }
+>> >> +       mark_inode_dirty(inode);
+>> >> +       *count = num;
+>> >>         return ret_block;
+>> >>
+>> >>  io_error:
+>> >>
+>> >> However, I'm not familiar with ext2 source code and cannot tell if
+>> >> this is the correct fix. At least it fixes my issue.
+>> >   With this, you have essentially reverted a hunk from commit
+>> > 8e3dffc651cb668e1ff4d8b89cc1c3dde7540d3b. But I don't see a reason why it
+>> > should be reverted. num should never ever be greater than *count and when
+>> > num == count, we the code inside if doesn't do anything useful.
+>> >
+>> > I've looked into the code and I think I see the problem. It is a long
+>> > standing bug in __ext2_get_block() in fs/ext2/xip.c. It calls
+>> > ext2_get_block() asking for 0 blocks to map (while we really want 1 block).
+>> > ext2_get_block() just passes that request and ext2_get_blocks() actually
+>> > allocates 1 block. And that's were the commit you have identified makes a
+>> > difference because previously we returned that 1 block was allocated while
+>> > now we return that 0 blocks were allocated and thus allocation is repeated
+>> > until all free blocks are exhaused.
+>> >
+>> > Attached patch should fix the problem.
+>> >
+>>
+>> Thanks for the reply. I've verified that your patch fixes my issue.
+>> And it's absolutely better than my solution.
+>>
+>> Tested-by: Andiry Xu <andiry.xu@gmail.com>
+>   Thanks for testing!
+>
+>> I have another question about ext2 XIP performance, although it's not
+>> quite related to this thread.
+>>
+>> I'm testing xip with ext2 on a ram disk drive, the driver is brd.c.
+>> The RAM disk size is 2GB and I pre-fill it to guarantee that all pages
+>> reside in main memory.
+>> Then I use two different applications to write to the ram disk. One is
+>> open() with O_DIRECT flag, and writing with Posix write(). Another is
+>> open() with O_DIRECT, mmap() it to user space, then use memcpy() to
+>> write data. I use different request size to write data, from 512 bytes
+>> to 64MB.
+>>
+>> In my understanding, the mmap version bypasses the file system and
+>> does not go to kernel space, hence it should have better performance
+>> than the Posix-write version. However, my test result shows it's not
+>> always true: when the request size is between 8KB and 1MB, the
+>> Posix-write() version has bandwidth about 7GB/s and mmap version only
+>> has 5GB/s. The test is performed on a i7-3770K machine with 8GB
+>> memory, kernel 3.12. Also I have tested on kernel 3.2, in which mmap
+>> has really bad performance, only 2GB/s for all request sizes.
+>>
+>> Do you know the reason why write() outperforms mmap() in some cases? I
+>> know it's not related the thread but I really appreciate if you can
+>> answer my question.
+>   Well, I'm not completely sure. mmap()ed memory always works on page-by-page
+> basis - you first access the page, it gets faulted in and you can further
+> access it. So for small (sub page size) accesses this is a win because you
+> don't have an overhead of syscall and fs write path. For accesses larger
+> than page size the overhead of syscall and some initial checks is well
+> hidden by other things. I guess write() ends up being more efficient
+> because write path taken for each page is somewhat lighter than full page
+> fault. But you'd need to look into perf data to get some hard numbers on
+> where the time is spent.
+>
 
- drivers/usb/host/ohci-exynos.c |   28 ++++++++--------------------
- 1 file changed, 8 insertions(+), 20 deletions(-)
+Thanks for the reply. However I have filled up the whole RAM disk
+before doing the test, i.e. asked the brd driver to allocate all the
+pages initially. Moreover I have done the test on PMFS, a file system
+for persistent memory, and the result is the same. PMFS reserves some
+physical memory during system boot and then use it to emulate the
+persistent memory device, so there shouldn't be any page fault. I
+think there should be some other reason.
 
-diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-index a87baed..76eb4d3 100644
---- a/drivers/usb/host/ohci-exynos.c
-+++ b/drivers/usb/host/ohci-exynos.c
-@@ -17,12 +17,12 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/of.h>
-+#include <linux/phy/phy.h>
- #include <linux/platform_device.h>
- #include <linux/usb/phy.h>
- #include <linux/usb/samsung_usb_phy.h>
- #include <linux/usb.h>
- #include <linux/usb/hcd.h>
--#include <linux/usb/otg.h>
- 
- #include "ohci.h"
- 
-@@ -35,8 +35,7 @@ static struct hc_driver __read_mostly exynos_ohci_hc_driver;
- 
- struct exynos_ohci_hcd {
- 	struct clk *clk;
--	struct usb_phy *phy;
--	struct usb_otg *otg;
-+	struct phy *phy;
- };
- 
- static void exynos_ohci_phy_enable(struct platform_device *pdev)
-@@ -45,7 +44,7 @@ static void exynos_ohci_phy_enable(struct platform_device *pdev)
- 	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
- 
- 	if (exynos_ohci->phy)
--		usb_phy_init(exynos_ohci->phy);
-+		phy_power_on(exynos_ohci->phy);
- }
- 
- static void exynos_ohci_phy_disable(struct platform_device *pdev)
-@@ -54,7 +53,7 @@ static void exynos_ohci_phy_disable(struct platform_device *pdev)
- 	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
- 
- 	if (exynos_ohci->phy)
--		usb_phy_shutdown(exynos_ohci->phy);
-+		phy_power_off(exynos_ohci->phy);
- }
- 
- static int exynos_ohci_probe(struct platform_device *pdev)
-@@ -62,7 +61,8 @@ static int exynos_ohci_probe(struct platform_device *pdev)
- 	struct exynos_ohci_hcd *exynos_ohci;
- 	struct usb_hcd *hcd;
- 	struct resource *res;
--	struct usb_phy *phy;
-+	struct phy *phy;
-+	const char *phy_name;
- 	int irq;
- 	int err;
- 
-@@ -89,14 +89,14 @@ static int exynos_ohci_probe(struct platform_device *pdev)
- 					"samsung,exynos5440-ohci"))
- 		goto skip_phy;
- 
--	phy = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
-+	phy_name = of_get_property(pdev->dev.of_node, "phy-names", NULL);
-+	phy =  devm_phy_get(&pdev->dev, phy_name);
- 	if (IS_ERR(phy)) {
- 		usb_put_hcd(hcd);
- 		dev_warn(&pdev->dev, "no platform data or transceiver defined\n");
- 		return -EPROBE_DEFER;
- 	} else {
- 		exynos_ohci->phy = phy;
--		exynos_ohci->otg = phy->otg;
- 	}
- 
- skip_phy:
-@@ -135,9 +135,6 @@ skip_phy:
- 		goto fail_io;
- 	}
- 
--	if (exynos_ohci->otg)
--		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
--
- 	platform_set_drvdata(pdev, hcd);
- 
- 	exynos_ohci_phy_enable(pdev);
-@@ -165,9 +162,6 @@ static int exynos_ohci_remove(struct platform_device *pdev)
- 
- 	usb_remove_hcd(hcd);
- 
--	if (exynos_ohci->otg)
--		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
--
- 	exynos_ohci_phy_disable(pdev);
- 
- 	clk_disable_unprepare(exynos_ohci->clk);
-@@ -210,9 +204,6 @@ static int exynos_ohci_suspend(struct device *dev)
- 
- 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
- 
--	if (exynos_ohci->otg)
--		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
--
- 	exynos_ohci_phy_disable(pdev);
- 
- 	clk_disable_unprepare(exynos_ohci->clk);
-@@ -231,9 +222,6 @@ static int exynos_ohci_resume(struct device *dev)
- 
- 	clk_prepare_enable(exynos_ohci->clk);
- 
--	if (exynos_ohci->otg)
--		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
--
- 	exynos_ohci_phy_enable(pdev);
- 
- 	ohci_resume(hcd, false);
--- 
-1.7.10.4
+I will try to look into the perf data and see what happens. Thanks for
+the advice.
 
-
+Thanks,
+Andiry
