@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab3KFQzF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 11:55:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16589 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754348Ab3KFQzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 11:55:02 -0500
-Message-ID: <1383756897.28218.66.camel@flatline.rdu.redhat.com>
-Subject: Re: linux-next: build failure after merge of the audit tree
-From: Eric Paris <eparis@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Guy Briggs <rgb@redhat.com>
-Date: Wed, 06 Nov 2013 11:54:57 -0500
-In-Reply-To: <20131106172734.28986a5907009f84aead4e8b@canb.auug.org.au>
-References: <20131106172734.28986a5907009f84aead4e8b@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1755270Ab3KFQzV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 11:55:21 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47757 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871Ab3KFQzS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 11:55:18 -0500
+Message-ID: <527A7333.9090409@wwwdotorg.org>
+Date: Wed, 06 Nov 2013 09:49:55 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Duan Jiong <duanj.fnst@cn.fujitsu.com>, kernel@pengutronix.de,
+        linux@arm.linux.org.uk, a.zummo@towertech.it, airlied@linux.ie
+CC: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        Thierry Reding <treding@nvidia.com>,
+        =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
+Subject: Re: [PATCH] drm/tegra: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
+References: <1383724435-15380-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+In-Reply-To: <1383724435-15380-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-11-06 at 17:27 +1100, Stephen Rothwell wrote:
-> Hi Eric,
-> 
-> After merging the audit tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> kernel/auditsc.c: In function 'audit_set_loginuid':
-> kernel/auditsc.c:2003:15: error: incompatible types when assigning to type 'kuid_t' from type 'int'
->   oldsessionid = audit_get_sessionid(current);
->                ^
-> kernel/auditsc.c:2016:2: error: incompatible type for argument 3 of 'audit_log_set_loginuid'
->   audit_log_set_loginuid(oldloginuid, loginuid, oldsessionid, sessionid, rc);
->   ^
-> kernel/auditsc.c:1967:13: note: expected 'unsigned int' but argument is of type 'kuid_t'
->  static void audit_log_set_loginuid(kuid_t koldloginuid, kuid_t kloginuid,
->              ^
-> 
-> Caused by commit da0a610497ce ("audit: loginuid functions coding style").
-> 
-> I have used the version of the audit tree from next-20131105 for today.
-> 
+On 11/06/2013 12:53 AM, Duan Jiong wrote:
+> This patch fixes coccinelle error regarding usage of IS_ERR and
+> PTR_ERR instead of PTR_ERR_OR_ZERO.
 
-Should be fixed for tomorrow.  Thank you.
+> diff --git a/drivers/gpu/drm/tegra/gem.c b/drivers/gpu/drm/tegra/gem.c
 
+> @@ -199,10 +199,7 @@ int tegra_bo_dumb_create(struct drm_file *file, struct drm_device *drm,
+>  
+>  	bo = tegra_bo_create_with_handle(file, drm, args->size, 0,
+>  					 &args->handle);
+> -	if (IS_ERR(bo))
+> -		return PTR_ERR(bo);
+> -
+> -	return 0;
+> +	return PTR_ERR_OR_ZERO(bo);
+>  }
+
+I suppose that's fine, although I wonder if it'll cause churn should we
+ever need to add code to the tail end of the function.
+
+BTW, why were all the similar patches that had nothing to do with Tegra
+sent to the linux-tegra@ mailing list? You also didn't CC the
+maintainers of drivers/gpu/drm/tegra/ on this patch. Plus this patch has
+nothing to do with the rtc-linux@ mailing list.
