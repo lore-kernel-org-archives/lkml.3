@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487Ab3KFSGw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 13:06:52 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52876 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755083Ab3KFSGv (ORCPT
+	id S1755550Ab3KFSHr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 13:07:47 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:42767 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755083Ab3KFSHq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 13:06:51 -0500
-Date: Wed, 6 Nov 2013 10:06:33 -0800
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-4c08edd305019061bf1ac95ce089497bdbb8b8ac@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        kys@microsoft.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        kys@microsoft.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1381444224-3303-1-git-send-email-kys@microsoft.com>
-References: <1381444224-3303-1-git-send-email-kys@microsoft.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/hyperv] x86, hyperv:
-  Move a variable to avoid an unused variable warning
-Git-Commit-ID: 4c08edd305019061bf1ac95ce089497bdbb8b8ac
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Nov 2013 13:07:46 -0500
+From: "Gupta, Pekon" <pekon@ti.com>
+To: Brian Norris <computersforpeace@gmail.com>,
+        Wei Yongjun <weiyj.lk@gmail.com>
+CC: David Woodhouse <dwmw2@infradead.org>, Daniel Mack <zonque@gmail.com>,
+        "avinashphilip@ti.com" <avinashphilip@ti.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH -next] mtd: nand: omap: fix error return code in
+ omap_nand_probe()
+Thread-Topic: [PATCH -next] mtd: nand: omap: fix error return code in
+ omap_nand_probe()
+Thread-Index: AQHO1pecwFLnZOcECEijKtvUQDrmTJoPHfeAgAeTUoCAAdXdAA==
+Date: Wed, 6 Nov 2013 18:06:25 +0000
+Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EA31818@DBDE04.ent.ti.com>
+References: <CAPgLHd8V06KzBcPmFywSfNxM0q6=s86xn-AdLKeY9h5JZ_nP7g@mail.gmail.com>
+	<001101ced6a8$a18a2c80$e49e8580$%han@samsung.com>
+ <CAN8TOE9Eac0LDA+Ke_OCPc_AQGnyYB806pO8JP-qOB1Dr8N2pg@mail.gmail.com>
+In-Reply-To: <CAN8TOE9Eac0LDA+Ke_OCPc_AQGnyYB806pO8JP-qOB1Dr8N2pg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 06 Nov 2013 10:06:39 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4c08edd305019061bf1ac95ce089497bdbb8b8ac
-Gitweb:     http://git.kernel.org/tip/4c08edd305019061bf1ac95ce089497bdbb8b8ac
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Wed, 6 Nov 2013 10:00:05 -0800
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Wed, 6 Nov 2013 10:02:05 -0800
+> From: Brian Norris [mailto:computersforpeace@gmail.com]
+> > On Thu, Oct 31, 2013 at 7:18 PM, Jingoo Han <jg1.han@samsung.com>
+> >> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> >>
+> >> Fix to return a negative error code from the error handling
+> >> case instead of 0, as done elsewhere in this function.
+> >
+> > Commit message is right? :-(
+> 
+> It sounds OK by my reading. Unless you're having trouble parsing what
+> "as done elsewhere in this function" is being applied to. (IOW, is the
+> rest of the function returning a negative error code on the error
+> paths, or is it returning 0? Of course the answer is the former, but
+> it's possible to misread it.) If it helps, I can try to tweak the
+> wording a bit when applying this patch.
+> 
+> Pekon, can I get an Acked-by?
+> 
+Yes sure .. Sorry I was away from both mailbox and boards.
+Acked-by: Pekon Gupta <pekon@ti.com>
 
-x86, hyperv: Move a variable to avoid an unused variable warning
+And thanks much Wei Yongjun for fixing this .
 
-The variable hv_lapic_frequency causes an unused variable warning if
-CONFIG_X86_LOCAL_APIC is disabled.  Since the variable is only used
-inside a small if statement, move the declaration of that variable
-into the if statement itself.
 
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Link: http://lkml.kernel.org/r/1381444224-3303-1-git-send-email-kys@microsoft.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/cpu/mshyperv.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index 9f6e9f8..9f7ca26 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -70,8 +70,6 @@ static struct clocksource hyperv_cs = {
- 
- static void __init ms_hyperv_init_platform(void)
- {
--	u64	hv_lapic_frequency;
--
- 	/*
- 	 * Extract the features and hints
- 	 */
-@@ -86,6 +84,8 @@ static void __init ms_hyperv_init_platform(void)
- 		/*
- 		 * Get the APIC frequency.
- 		 */
-+		u64	hv_lapic_frequency;
-+
- 		rdmsrl(HV_X64_MSR_APIC_FREQUENCY, hv_lapic_frequency);
- 		hv_lapic_frequency = div_u64(hv_lapic_frequency, HZ);
- 		lapic_timer_frequency = hv_lapic_frequency;
+with regards, pekon
