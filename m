@@ -1,85 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756606Ab3KFPAH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 10:00:07 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:54110 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756363Ab3KFPAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 10:00:05 -0500
-X-IronPort-AV: E=Sophos;i="4.93,647,1378828800"; 
-   d="scan'208";a="8963090"
-Message-ID: <527A5985.6050309@cn.fujitsu.com>
-Date: Wed, 06 Nov 2013 23:00:21 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1756774Ab3KFPBo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 10:01:44 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:62702 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756635Ab3KFPBm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 10:01:42 -0500
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] srcu: API for barrier after srcu read unlock
-References: <1383592884-2535-1-git-send-email-mst@redhat.com> <20131104205524.GY3947@linux.vnet.ibm.com>
-In-Reply-To: <20131104205524.GY3947@linux.vnet.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/06 22:58:06,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/06 22:58:07,
-	Serialize complete at 2013/11/06 22:58:07
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CANP1eJEF4UTr-UC3S5TWsD9p69_gwy5i4_OkAmg=_GUFHF3TBQ@mail.gmail.com>
+References: <1383278208-4053-1-git-send-email-liwang@ubuntukylin.com>
+	<CANP1eJH2ewpYyWe2Oo4OMMg2UB+RE8DBt=Xg-MUDo6uJ5aGcpg@mail.gmail.com>
+	<alpine.DEB.2.00.1311051543170.9474@cobra.newdream.net>
+	<CANP1eJEF4UTr-UC3S5TWsD9p69_gwy5i4_OkAmg=_GUFHF3TBQ@mail.gmail.com>
+Date: Wed, 6 Nov 2013 23:01:40 +0800
+Message-ID: <CAAM7YAkOLM_C-ydXQN9wpCXuHTJL1drOucdLdVNX1UB66uaXbA@mail.gmail.com>
+Subject: Re: [PATCH] ceph: Update the pages in fscache in writepages() path
+From: "Yan, Zheng" <ukernel@gmail.com>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: Sage Weil <sage@inktank.com>, Li Wang <liwang@ubuntukylin.com>,
+        ceph-devel <ceph-devel@vger.kernel.org>,
+        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
+        linux-kernel@vger.kernel.org, Min Chen <minchen@ubuntukylin.com>,
+        Yunchuan Wen <yunchuanwen@ubuntukylin.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2013 04:55 AM, Paul E. McKenney wrote:
-> On Mon, Nov 04, 2013 at 10:36:17PM +0200, Michael S. Tsirkin wrote:
->> srcu read lock/unlock include a full memory barrier
->> but that's an implementation detail.
->> Add an API for make memory fencing explicit for
->> users that need this barrier, to make sure we
->> can change it as needed without breaking all users.
->>
->> Acked-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On Wed, Nov 6, 2013 at 9:41 PM, Milosz Tanski <milosz@adfin.com> wrote:
+> Sage,
+>
+> I think the incrementing version counter on the whole is a neater
+> solution then using size and mtime. If nothing else it's more explicit
+> in the the read cache version. With what you suggested plus additional
+> changes to the open code (where the cookie gets created) the
+> write-through scenario should be correct.
+>
+> Sadly, my understanding of the MDS protocol is still not great. So
+> when doing this in the first place I erred on the side of using what
+> was already in place.
+>
+> In a kind of un-related question. Is there a debug hook in the kclient
+> (or MDS for that matter) to dump the current file inodes (names) with
+> issues caps and to which hosts. This would be very helpful for
+> debugging, since from time to time I see a one of the clients get
+> stuck in getattr (via mdsc debug log).
+>
 
-Acked-by: "Lai Jiangshan" <laijs@cn.fujitsu.com>
+"ceph mds tell \* dumpcache" dump the mds cache to a file. the dump
+file contains caps information.
 
-> 
->> ---
->>  include/linux/srcu.h | 14 ++++++++++++++
->>  1 file changed, 14 insertions(+)
+Regards
+Yan, Zheng
+
+> Thanks,
+> - Milosz
+>
+> On Tue, Nov 5, 2013 at 6:56 PM, Sage Weil <sage@inktank.com> wrote:
+>> On Tue, 5 Nov 2013, Milosz Tanski wrote:
+>>> Li,
+>>>
+>>> First, sorry for the late reply on this.
+>>>
+>>> Currently fscache is only supported for files that are open in read
+>>> only mode. I originally was going to let fscache cache in the write
+>>> path as well as long as the file was open in with O_LAZY. I abandoned
+>>> that idea. When a user opens the file in O_LAZY we can cache things
+>>> locally with the assumption that the user will care of the
+>>> synchronization in some other manner. There is no way of invalidating
+>>> a subset of the pages in object cached by fscache, there is no way we
+>>> can make O_LAZY work well.
+>>>
+>>> The ceph_readpage_to_fscache() in writepage has no effect and it
+>>> should be removed. ceph_readpage_to_fscache() calls cache_valid() to
+>>> see if it should perform the page save, and since the file can't have
+>>> a CACHE cap at the point in time it doesn't do it.
 >>
->> diff --git a/include/linux/srcu.h b/include/linux/srcu.h
->> index c114614..9b058ee 100644
->> --- a/include/linux/srcu.h
->> +++ b/include/linux/srcu.h
->> @@ -237,4 +237,18 @@ static inline void srcu_read_unlock(struct srcu_struct *sp, int idx)
->>  	__srcu_read_unlock(sp, idx);
->>  }
+>> (Hmm, Dusting off my understanding of fscache and reading
+>> fs/ceph/cache.c; watch out!)  It looks like cache_valid is
 >>
->> +/**
->> + * smp_mb__after_srcu_read_unlock - ensure full ordering after srcu_read_unlock
->> + *
->> + * Converts the preceding srcu_read_unlock into a two-way memory barrier.
->> + *
->> + * Call this after srcu_read_unlock, to guarantee that all memory operations
->> + * that occur after smp_mb__after_srcu_read_unlock will appear to happen after
->> + * the preceding srcu_read_unlock.
->> + */
->> +static inline void smp_mb__after_srcu_read_unlock(void)
->> +{
->> +	/* __srcu_read_unlock has smp_mb() internally so nothing to do here. */
->> +}
->> +
->>  #endif
->> -- 
->> MST
+>> static inline int cache_valid(struct ceph_inode_info *ci)
+>> {
+>>         return ((ceph_caps_issued(ci) & CEPH_CAP_FILE_CACHE) &&
+>>                 (ci->i_fscache_gen == ci->i_rdcache_gen));
+>> }
 >>
-> 
+>> and in the FILE_EXCL case, the MDS will issue CACHE|BUFFER caps.  But I
+>> think the aux key (size+mtime) will prevent any use of the cache as soon
+>> as the first write happens and mtime changes, right?
+>>
+>> I think that in order to make this work, we need to fix/create a
+>> file_version (or something similar) field in the (mds) inode_t to have
+>> some useful value.  I.e., increment it any time
+>>
+>>  - a different client/writer comes along
+>>  - a file is modified by the mds (e.g., truncated or recovered)
+>>
+>> but allow it to otherwise remain the same as long as only a single client
+>> is working with the file exclusively.  This will be more precise than the
+>> (size, mtime) check that is currently used, and would remain valid when a
+>> single client opens the same file for exclusive read/write multiple times
+>> but there are no other intervening changes.
+>>
+>> Milosz, if that were in place, is there any reason not to wire up
+>> writepage and allow the fscache to be used write-through?
+>>
+>> sage
+>>
+>>
+>>
+>>
+>>>
+>>> Thanks,
+>>> - Milosz
+>>>
+>>> On Thu, Oct 31, 2013 at 11:56 PM, Li Wang <liwang@ubuntukylin.com> wrote:
+>>> > Currently, the pages in fscache only are updated in writepage() path,
+>>> > add the process in writepages().
+>>> >
+>>> > Signed-off-by: Min Chen <minchen@ubuntukylin.com>
+>>> > Signed-off-by: Li Wang <liwang@ubuntukylin.com>
+>>> > Signed-off-by: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
+>>> > ---
+>>> >  fs/ceph/addr.c |    8 +++++---
+>>> >  1 file changed, 5 insertions(+), 3 deletions(-)
+>>> >
+>>> > diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+>>> > index 6df8bd4..cc57911 100644
+>>> > --- a/fs/ceph/addr.c
+>>> > +++ b/fs/ceph/addr.c
+>>> > @@ -746,7 +746,7 @@ retry:
+>>> >
+>>> >         while (!done && index <= end) {
+>>> >                 int num_ops = do_sync ? 2 : 1;
+>>> > -               unsigned i;
+>>> > +               unsigned i, j;
+>>> >                 int first;
+>>> >                 pgoff_t next;
+>>> >                 int pvec_pages, locked_pages;
+>>> > @@ -894,7 +894,6 @@ get_more_pages:
+>>> >                 if (!locked_pages)
+>>> >                         goto release_pvec_pages;
+>>> >                 if (i) {
+>>> > -                       int j;
+>>> >                         BUG_ON(!locked_pages || first < 0);
+>>> >
+>>> >                         if (pvec_pages && i == pvec_pages &&
+>>> > @@ -924,7 +923,10 @@ get_more_pages:
+>>> >
+>>> >                 osd_req_op_extent_osd_data_pages(req, 0, pages, len, 0,
+>>> >                                                         !!pool, false);
+>>> > -
+>>> > +               for(j = 0; j < locked_pages; j++) {
+>>> > +                       struct page *page = pages[j];
+>>> > +                       ceph_readpage_to_fscache(inode, page);
+>>> > +               }
+>>> >                 pages = NULL;   /* request message now owns the pages array */
+>>> >                 pool = NULL;
+>>> >
+>>> > --
+>>> > 1.7.9.5
+>>> >
+>>> > --
+>>> > To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
+>>> > the body of a message to majordomo@vger.kernel.org
+>>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>>
+>>>
+>>> --
+>>> Milosz Tanski
+>>> CTO
+>>> 10 East 53rd Street, 37th floor
+>>> New York, NY 10022
+>>>
+>>> p: 646-253-9055
+>>> e: milosz@adfin.com
+>>>
+>>>
+>
+>
+>
+> --
+> Milosz Tanski
+> CTO
+> 10 East 53rd Street, 37th floor
+> New York, NY 10022
+>
+> p: 646-253-9055
+> e: milosz@adfin.com
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
