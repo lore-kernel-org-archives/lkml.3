@@ -1,63 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932595Ab3KFOxX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 09:53:23 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:61194 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932578Ab3KFOxU (ORCPT
+	id S932554Ab3KFOxH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 09:53:07 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:32083 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932493Ab3KFOxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 09:53:20 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <527A57D9.3070402@roeck-us.net>
-Date: Wed, 06 Nov 2013 06:53:13 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] OF: Introduce utility helper functions
-References: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com> <1383673816-29293-6-git-send-email-panto@antoniou-consulting.com> <527A0A12.2050803@nsn.com> <57092A71-2C68-4B92-A748-5D0DE69EC141@antoniou-consulting.com>
-In-Reply-To: <57092A71-2C68-4B92-A748-5D0DE69EC141@antoniou-consulting.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Nov 2013 09:53:03 -0500
+Message-Id: <20131106145258.254926021@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 06 Nov 2013 09:50:49 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>
+Subject: [for-next][PATCH 8/8] tracing: Add support for SOFT_DISABLE to syscall events
+References: <20131106145041.904349372@goodmis.org>
+Content-Disposition: inline; filename=0014-tracing-Add-support-for-SOFT_DISABLE-to-syscall-even.patch
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pantelis,
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
 
-On 11/06/2013 01:34 AM, Pantelis Antoniou wrote:
+The original SOFT_DISABLE patches didn't add support for soft disable
+of syscall events; this adds it.
 
->
-> As I mentioned earlier I'm trying to get this accepted in general term and then we'll
-> get around fixing any minor problems.
->
+Add an array of ftrace_event_file pointers indexed by syscall number
+to the trace array and remove the existing enabled bitmaps, which as a
+result are now redundant.  The ftrace_event_file structs in turn
+contain the soft disable flags we need for per-syscall soft disable
+accounting.
 
-I think it is quite likely at this point that your series will be accepted.
+Adding ftrace_event_files also means we can remove the USE_CALL_FILTER
+bit, thus enabling multibuffer filter support for syscall events.
 
-However, from my experience with larger submissions like this one, it is quite common
-that the maintainers ask for all feedback to be addressed before that happens -
-especially for feedback like this, where there is common understanding that some
-changes to the code are necessary.
+Link: http://lkml.kernel.org/r/6e72b566e85d8df8042f133efbc6c30e21fb017e.1382620672.git.tom.zanussi@linux.intel.com
 
-Maybe the device tree maintainers could chime in at this point and let us all know
-what will need to happen to get the series accepted.
+Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/syscalls.h      |  4 ++--
+ kernel/trace/trace.h          |  4 ++--
+ kernel/trace/trace_syscalls.c | 42 ++++++++++++++++++++++++++++++++----------
+ 3 files changed, 36 insertions(+), 14 deletions(-)
 
-Thanks,
-Guenter
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 10bafa9..2ef31bf 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -120,7 +120,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 		.class			= &event_class_syscall_enter,	\
+ 		.event.funcs            = &enter_syscall_print_funcs,	\
+ 		.data			= (void *)&__syscall_meta_##sname,\
+-		.flags			= TRACE_EVENT_FL_CAP_ANY | TRACE_EVENT_FL_USE_CALL_FILTER,\
++		.flags                  = TRACE_EVENT_FL_CAP_ANY,	\
+ 	};								\
+ 	static struct ftrace_event_call __used				\
+ 	  __attribute__((section("_ftrace_events")))			\
+@@ -134,7 +134,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 		.class			= &event_class_syscall_exit,	\
+ 		.event.funcs		= &exit_syscall_print_funcs,	\
+ 		.data			= (void *)&__syscall_meta_##sname,\
+-		.flags			= TRACE_EVENT_FL_CAP_ANY | TRACE_EVENT_FL_USE_CALL_FILTER,\
++		.flags                  = TRACE_EVENT_FL_CAP_ANY,	\
+ 	};								\
+ 	static struct ftrace_event_call __used				\
+ 	  __attribute__((section("_ftrace_events")))			\
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 12d1a61..9c27cda 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -192,8 +192,8 @@ struct trace_array {
+ #ifdef CONFIG_FTRACE_SYSCALLS
+ 	int			sys_refcount_enter;
+ 	int			sys_refcount_exit;
+-	DECLARE_BITMAP(enabled_enter_syscalls, NR_syscalls);
+-	DECLARE_BITMAP(enabled_exit_syscalls, NR_syscalls);
++	struct ftrace_event_file *enter_syscall_files[NR_syscalls];
++	struct ftrace_event_file *exit_syscall_files[NR_syscalls];
+ #endif
+ 	int			stop_count;
+ 	int			clock_id;
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 32644ee..e4b6d11 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -302,6 +302,7 @@ static int __init syscall_exit_define_fields(struct ftrace_event_call *call)
+ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
+ {
+ 	struct trace_array *tr = data;
++	struct ftrace_event_file *ftrace_file;
+ 	struct syscall_trace_enter *entry;
+ 	struct syscall_metadata *sys_data;
+ 	struct ring_buffer_event *event;
+@@ -314,7 +315,13 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
+ 	syscall_nr = trace_get_syscall_nr(current, regs);
+ 	if (syscall_nr < 0)
+ 		return;
+-	if (!test_bit(syscall_nr, tr->enabled_enter_syscalls))
++
++	/* Here we're inside tp handler's rcu_read_lock_sched (__DO_TRACE) */
++	ftrace_file = rcu_dereference_sched(tr->enter_syscall_files[syscall_nr]);
++	if (!ftrace_file)
++		return;
++
++	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
+ 		return;
+ 
+ 	sys_data = syscall_nr_to_meta(syscall_nr);
+@@ -336,8 +343,7 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
+ 	entry->nr = syscall_nr;
+ 	syscall_get_arguments(current, regs, 0, sys_data->nb_args, entry->args);
+ 
+-	if (!call_filter_check_discard(sys_data->enter_event, entry,
+-				       buffer, event))
++	if (!filter_check_discard(ftrace_file, entry, buffer, event))
+ 		trace_current_buffer_unlock_commit(buffer, event,
+ 						   irq_flags, pc);
+ }
+@@ -345,6 +351,7 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
+ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
+ {
+ 	struct trace_array *tr = data;
++	struct ftrace_event_file *ftrace_file;
+ 	struct syscall_trace_exit *entry;
+ 	struct syscall_metadata *sys_data;
+ 	struct ring_buffer_event *event;
+@@ -356,7 +363,13 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
+ 	syscall_nr = trace_get_syscall_nr(current, regs);
+ 	if (syscall_nr < 0)
+ 		return;
+-	if (!test_bit(syscall_nr, tr->enabled_exit_syscalls))
++
++	/* Here we're inside tp handler's rcu_read_lock_sched (__DO_TRACE()) */
++	ftrace_file = rcu_dereference_sched(tr->exit_syscall_files[syscall_nr]);
++	if (!ftrace_file)
++		return;
++
++	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
+ 		return;
+ 
+ 	sys_data = syscall_nr_to_meta(syscall_nr);
+@@ -377,8 +390,7 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
+ 	entry->nr = syscall_nr;
+ 	entry->ret = syscall_get_return_value(current, regs);
+ 
+-	if (!call_filter_check_discard(sys_data->exit_event, entry,
+-				       buffer, event))
++	if (!filter_check_discard(ftrace_file, entry, buffer, event))
+ 		trace_current_buffer_unlock_commit(buffer, event,
+ 						   irq_flags, pc);
+ }
+@@ -397,7 +409,7 @@ static int reg_event_syscall_enter(struct ftrace_event_file *file,
+ 	if (!tr->sys_refcount_enter)
+ 		ret = register_trace_sys_enter(ftrace_syscall_enter, tr);
+ 	if (!ret) {
+-		set_bit(num, tr->enabled_enter_syscalls);
++		rcu_assign_pointer(tr->enter_syscall_files[num], file);
+ 		tr->sys_refcount_enter++;
+ 	}
+ 	mutex_unlock(&syscall_trace_lock);
+@@ -415,10 +427,15 @@ static void unreg_event_syscall_enter(struct ftrace_event_file *file,
+ 		return;
+ 	mutex_lock(&syscall_trace_lock);
+ 	tr->sys_refcount_enter--;
+-	clear_bit(num, tr->enabled_enter_syscalls);
++	rcu_assign_pointer(tr->enter_syscall_files[num], NULL);
+ 	if (!tr->sys_refcount_enter)
+ 		unregister_trace_sys_enter(ftrace_syscall_enter, tr);
+ 	mutex_unlock(&syscall_trace_lock);
++	/*
++	 * Callers expect the event to be completely disabled on
++	 * return, so wait for current handlers to finish.
++	 */
++	synchronize_sched();
+ }
+ 
+ static int reg_event_syscall_exit(struct ftrace_event_file *file,
+@@ -435,7 +452,7 @@ static int reg_event_syscall_exit(struct ftrace_event_file *file,
+ 	if (!tr->sys_refcount_exit)
+ 		ret = register_trace_sys_exit(ftrace_syscall_exit, tr);
+ 	if (!ret) {
+-		set_bit(num, tr->enabled_exit_syscalls);
++		rcu_assign_pointer(tr->exit_syscall_files[num], file);
+ 		tr->sys_refcount_exit++;
+ 	}
+ 	mutex_unlock(&syscall_trace_lock);
+@@ -453,10 +470,15 @@ static void unreg_event_syscall_exit(struct ftrace_event_file *file,
+ 		return;
+ 	mutex_lock(&syscall_trace_lock);
+ 	tr->sys_refcount_exit--;
+-	clear_bit(num, tr->enabled_exit_syscalls);
++	rcu_assign_pointer(tr->exit_syscall_files[num], NULL);
+ 	if (!tr->sys_refcount_exit)
+ 		unregister_trace_sys_exit(ftrace_syscall_exit, tr);
+ 	mutex_unlock(&syscall_trace_lock);
++	/*
++	 * Callers expect the event to be completely disabled on
++	 * return, so wait for current handlers to finish.
++	 */
++	synchronize_sched();
+ }
+ 
+ static int __init init_syscall_trace(struct ftrace_event_call *call)
+-- 
+1.8.4.rc3
 
 
