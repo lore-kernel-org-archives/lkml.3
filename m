@@ -1,77 +1,557 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab3KFPzm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 10:55:42 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:61234 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720Ab3KFPzl (ORCPT
+	id S1754849Ab3KFQAe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 11:00:34 -0500
+Received: from demumfd002.nsn-inter.net ([93.183.12.31]:11195 "EHLO
+	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab3KFQAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 10:55:41 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] perf: Fix version when building out of tree - v2
-Date: Wed,  6 Nov 2013 08:55:35 -0700
-Message-Id: <1383753335-25782-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
+	Wed, 6 Nov 2013 11:00:32 -0500
+Message-ID: <527A6777.9080401@nsn.com>
+Date: Wed, 06 Nov 2013 16:59:51 +0100
+From: Alexander Sverdlin <alexander.sverdlin@nsn.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: ext Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+CC: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] OF: Introduce Device Tree resolve support.
+References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com> <1383676898-29819-2-git-send-email-panto@antoniou-consulting.com>
+In-Reply-To: <1383676898-29819-2-git-send-email-panto@antoniou-consulting.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-purgate-type: clean
+X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
+X-purgate: clean
+X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
+X-purgate-size: 15396
+X-purgate-ID: 151667::1383753598-00005753-6BBB1D4A/0-0/0-0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When building perf out of tree
-    make perf-tar-src-pkg
-    tar -xf perf-<ver>.tar -C /tmp
-    cd /tmp/perf<ver>
-    make -C tools/perf
+Hi!
 
-you get the warning message:
-    make[1]: *** No rule to make target `kernelversion'.  Stop.
+On 05/11/13 19:41, ext Pantelis Antoniou wrote:
+> Introduce support for dynamic device tree resolution.
+> Using it, it is possible to prepare a device tree that's
+> been loaded on runtime to be modified and inserted at the kernel
+> live tree.
+> 
+> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 
-Fix by saving the perf version in the tar file and using that for the
-out of tree builds.
+Reviewed-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
 
-v2: removed short form request and fixed up version string from usual output
+> ---
+>  .../devicetree/dynamic-resolution-notes.txt        |  25 ++
+>  drivers/of/Kconfig                                 |   9 +
+>  drivers/of/Makefile                                |   1 +
+>  drivers/of/resolver.c                              | 395 +++++++++++++++++++++
+>  include/linux/of.h                                 |  17 +
+>  5 files changed, 447 insertions(+)
+>  create mode 100644 Documentation/devicetree/dynamic-resolution-notes.txt
+>  create mode 100644 drivers/of/resolver.c
+> 
+> diff --git a/Documentation/devicetree/dynamic-resolution-notes.txt b/Documentation/devicetree/dynamic-resolution-notes.txt
+> new file mode 100644
+> index 0000000..0b396c4
+> --- /dev/null
+> +++ b/Documentation/devicetree/dynamic-resolution-notes.txt
+> @@ -0,0 +1,25 @@
+> +Device Tree Dynamic Resolver Notes
+> +----------------------------------
+> +
+> +This document describes the implementation of the in-kernel
+> +Device Tree resolver, residing in drivers/of/resolver.c and is a
+> +companion document to Documentation/devicetree/dt-object-internal.txt[1]
+> +
+> +How the resolver works
+> +----------------------
+> +
+> +The resolver is given as an input an arbitrary tree compiled with the
+> +proper dtc option and having a /plugin/ tag. This generates the
+> +appropriate __fixups__ & __local_fixups__ nodes as described in [1].
+> +
+> +In sequence the resolver works by the following steps:
+> +
+> +1. Get the maximum device tree phandle value from the live tree + 1.
+> +2. Adjust all the local phandles of the tree to resolve by that amount.
+> +3. Using the __local__fixups__ node information adjust all local references
+> +   by the same amount.
+> +4. For each property in the __fixups__ node locate the node it references
+> +   in the live tree. This is the label used to tag the node.
+> +5. Retrieve the phandle of the target of the fixup.
+> +5. For each fixup in the property locate the node:property:offset location
+> +   and replace it with the phandle value.
+> diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
+> index 78cc760..2a00ae5 100644
+> --- a/drivers/of/Kconfig
+> +++ b/drivers/of/Kconfig
+> @@ -74,4 +74,13 @@ config OF_MTD
+>  	depends on MTD
+>  	def_bool y
+>  
+> +config OF_RESOLVE
+> +	bool "OF Dynamic resolution support"
+> +	depends on OF
+> +	select OF_DYNAMIC
+> +	select OF_DEVICE
+> +	help
+> +	  Enable OF dynamic resolution support. This allows you to
+> +	  load Device Tree object fragments are run time.
+> +
+>  endmenu # OF
+> diff --git a/drivers/of/Makefile b/drivers/of/Makefile
+> index 9bc6d8c..93da457 100644
+> --- a/drivers/of/Makefile
+> +++ b/drivers/of/Makefile
+> @@ -9,3 +9,4 @@ obj-$(CONFIG_OF_MDIO)	+= of_mdio.o
+>  obj-$(CONFIG_OF_PCI)	+= of_pci.o
+>  obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
+>  obj-$(CONFIG_OF_MTD)	+= of_mtd.o
+> +obj-$(CONFIG_OF_RESOLVE)  += resolver.o
+> diff --git a/drivers/of/resolver.c b/drivers/of/resolver.c
+> new file mode 100644
+> index 0000000..da8cd34
+> --- /dev/null
+> +++ b/drivers/of/resolver.c
+> @@ -0,0 +1,395 @@
+> +/*
+> + * Functions for dealing with DT resolution
+> + *
+> + * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
+> + * Copyright (C) 2012 Texas Instruments Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * version 2 as published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_device.h>
+> +#include <linux/of_fdt.h>
+> +#include <linux/string.h>
+> +#include <linux/ctype.h>
+> +#include <linux/errno.h>
+> +#include <linux/string.h>
+> +#include <linux/slab.h>
+> +
+> +/**
+> + * Find a subtree's maximum phandle value.
+> + */
+> +static phandle __of_get_tree_max_phandle(struct device_node *node,
+> +		phandle max_phandle)
+> +{
+> +	struct device_node *child;
+> +
+> +	if (node->phandle != 0 && node->phandle != OF_PHANDLE_ILLEGAL &&
+> +			node->phandle > max_phandle)
+> +		max_phandle = node->phandle;
+> +
+> +	__for_each_child_of_node(node, child)
+> +		max_phandle = __of_get_tree_max_phandle(child, max_phandle);
+> +
+> +	return max_phandle;
+> +}
+> +
+> +/**
+> + * Find live tree's maximum phandle value.
+> + */
+> +static phandle of_get_tree_max_phandle(void)
+> +{
+> +	struct device_node *node;
+> +	phandle phandle;
+> +	unsigned long flags;
+> +
+> +	/* get root node */
+> +	node = of_find_node_by_path("/");
+> +	if (node == NULL)
+> +		return OF_PHANDLE_ILLEGAL;
+> +
+> +	/* now search recursively */
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+> +	phandle = __of_get_tree_max_phandle(node, 0);
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+> +
+> +	of_node_put(node);
+> +
+> +	return phandle;
+> +}
+> +
+> +/**
+> + * Adjust a subtree's phandle values by a given delta.
+> + * Makes sure not to just adjust the device node's phandle value,
+> + * but modify the phandle properties values as well.
+> + */
+> +static void __of_adjust_tree_phandles(struct device_node *node,
+> +		int phandle_delta)
+> +{
+> +	struct device_node *child;
+> +	struct property *prop;
+> +	phandle phandle;
+> +
+> +	/* first adjust the node's phandle direct value */
+> +	if (node->phandle != 0 && node->phandle != OF_PHANDLE_ILLEGAL)
+> +		node->phandle += phandle_delta;
+> +
+> +	/* now adjust phandle & linux,phandle values */
+> +	for_each_property_of_node(node, prop) {
+> +
+> +		/* only look for these two */
+> +		if (of_prop_cmp(prop->name, "phandle") != 0 &&
+> +		    of_prop_cmp(prop->name, "linux,phandle") != 0)
+> +			continue;
+> +
+> +		/* must be big enough */
+> +		if (prop->length < 4)
+> +			continue;
+> +
+> +		/* read phandle value */
+> +		phandle = be32_to_cpu(*(uint32_t *)prop->value);
+> +		if (phandle == OF_PHANDLE_ILLEGAL)	/* unresolved */
+> +			continue;
+> +
+> +		/* adjust */
+> +		*(uint32_t *)prop->value = cpu_to_be32(node->phandle);
+> +	}
+> +
+> +	/* now do the children recursively */
+> +	__for_each_child_of_node(node, child)
+> +		__of_adjust_tree_phandles(child, phandle_delta);
+> +}
+> +
+> +/**
+> + * Adjust the local phandle references by the given phandle delta.
+> + * Assumes the existances of a __local_fixups__ node at the root
+> + * of the tree. Does not take any devtree locks so make sure you
+> + * call this on a tree which is at the detached state.
+> + */
+> +static int __of_adjust_tree_phandle_references(struct device_node *node,
+> +		int phandle_delta)
+> +{
+> +	phandle phandle;
+> +	struct device_node *refnode, *child;
+> +	struct property *rprop, *sprop;
+> +	char *propval, *propcur, *propend, *nodestr, *propstr, *s;
+> +	int offset, propcurlen;
+> +	int err;
+> +
+> +	/* locate the symbols & fixups nodes on resolve */
+> +	__for_each_child_of_node(node, child)
+> +		if (of_node_cmp(child->name, "__local_fixups__") == 0)
+> +			break;
+> +
+> +	/* no local fixups */
+> +	if (child == NULL)
+> +		return 0;
+> +
+> +	/* find the local fixups property */
+> +	for_each_property_of_node(child, rprop) {
+> +
+> +		/* skip properties added automatically */
+> +		if (of_prop_cmp(rprop->name, "name") == 0)
+> +			continue;
+> +
+> +		/* make a copy */
+> +		propval = kmalloc(rprop->length, GFP_KERNEL);
+> +		if (propval == NULL) {
+> +			pr_err("%s: Could not copy value of '%s'\n",
+> +					__func__, rprop->name);
+> +			return -ENOMEM;
+> +		}
+> +		memcpy(propval, rprop->value, rprop->length);
+> +
+> +		propend = propval + rprop->length;
+> +		for (propcur = propval; propcur < propend;
+> +				propcur += propcurlen + 1) {
+> +
+> +			propcurlen = strlen(propcur);
+> +
+> +			nodestr = propcur;
+> +			s = strchr(propcur, ':');
+> +			if (s == NULL) {
+> +				pr_err("%s: Illegal symbol entry '%s' (1)\n",
+> +					__func__, propcur);
+> +				err = -EINVAL;
+> +				goto err_fail;
+> +			}
+> +			*s++ = '\0';
+> +
+> +			propstr = s;
+> +			s = strchr(s, ':');
+> +			if (s == NULL) {
+> +				pr_err("%s: Illegal symbol entry '%s' (2)\n",
+> +					__func__, (char *)rprop->value);
+> +				err = -EINVAL;
+> +				goto err_fail;
+> +			}
+> +
+> +			*s++ = '\0';
+> +			offset = simple_strtoul(s, NULL, 10);
+> +
+> +			/* look into the resolve node for the full path */
+> +			refnode = __of_find_node_by_full_name(node, nodestr);
+> +			if (refnode == NULL) {
+> +				pr_warn("%s: Could not find refnode '%s'\n",
+> +					__func__, (char *)rprop->value);
+> +				continue;
+> +			}
+> +
+> +			/* now find the property */
+> +			for_each_property_of_node(refnode, sprop) {
+> +				if (of_prop_cmp(sprop->name, propstr) == 0)
+> +					break;
+> +			}
+> +
+> +			if (sprop == NULL) {
+> +				pr_err("%s: Could not find property '%s'\n",
+> +					__func__, (char *)rprop->value);
+> +				err = -ENOENT;
+> +				goto err_fail;
+> +			}
+> +
+> +			phandle = be32_to_cpu(*(uint32_t *)
+> +					(sprop->value + offset));
+> +			*(uint32_t *)(sprop->value + offset) =
+> +				cpu_to_be32(phandle + phandle_delta);
+> +		}
+> +
+> +		kfree(propval);
+> +	}
+> +
+> +	return 0;
+> +
+> +err_fail:
+> +	kfree(propval);
+> +	return err;
+> +}
+> +
+> +/**
+> + * of_resolve	- Resolve the given node against the live tree.
+> + *
+> + * @resolve:	Node to resolve
+> + *
+> + * Perform dynamic Device Tree resolution against the live tree
+> + * to the given node to resolve. This depends on the live tree
+> + * having a __symbols__ node, and the resolve node the __fixups__ &
+> + * __local_fixups__ nodes (if needed).
+> + * The result of the operation is a resolve node that it's contents
+> + * are fit to be inserted or operate upon the live tree.
+> + * Returns 0 on success or a negative error value on error.
+> + */
+> +int of_resolve(struct device_node *resolve)
+> +{
+> +	struct device_node *child, *refnode;
+> +	struct device_node *root_sym, *resolve_sym, *resolve_fix;
+> +	struct property *rprop, *sprop;
+> +	const char *refpath;
+> +	char *propval, *propcur, *propend, *nodestr, *propstr, *s;
+> +	int offset, propcurlen;
+> +	phandle phandle, phandle_delta;
+> +	int err;
+> +
+> +	/* the resolve node must exist, and be detached */
+> +	if (resolve == NULL ||
+> +			!of_node_check_flag(resolve, OF_DETACHED)) {
+> +		return -EINVAL;
+> +	}
+> +
+> +	/* first we need to adjust the phandles */
+> +	phandle_delta = of_get_tree_max_phandle() + 1;
+> +	__of_adjust_tree_phandles(resolve, phandle_delta);
+> +	err = __of_adjust_tree_phandle_references(resolve, phandle_delta);
+> +	if (err != 0)
+> +		return err;
+> +
+> +	root_sym = NULL;
+> +	resolve_sym = NULL;
+> +	resolve_fix = NULL;
+> +
+> +	/* this may fail (if no fixups are required) */
+> +	root_sym = of_find_node_by_path("/__symbols__");
+> +
+> +	/* locate the symbols & fixups nodes on resolve */
+> +	__for_each_child_of_node(resolve, child) {
+> +
+> +		if (resolve_sym == NULL &&
+> +				of_node_cmp(child->name, "__symbols__") == 0)
+> +			resolve_sym = child;
+> +
+> +		if (resolve_fix == NULL &&
+> +				of_node_cmp(child->name, "__fixups__") == 0)
+> +			resolve_fix = child;
+> +
+> +		/* both found, don't bother anymore */
+> +		if (resolve_sym != NULL && resolve_fix != NULL)
+> +			break;
+> +	}
+> +
+> +	/* we do allow for the case where no fixups are needed */
+> +	if (resolve_fix == NULL)
+> +		goto merge_sym;
+> +
+> +	/* we need to fixup, but no root symbols... */
+> +	if (root_sym == NULL)
+> +		return -EINVAL;
+> +
+> +	for_each_property_of_node(resolve_fix, rprop) {
+> +
+> +		/* skip properties added automatically */
+> +		if (of_prop_cmp(rprop->name, "name") == 0)
+> +			continue;
+> +
+> +		err = of_property_read_string(root_sym,
+> +				rprop->name, &refpath);
+> +		if (err != 0) {
+> +			pr_err("%s: Could not find symbol '%s'\n",
+> +					__func__, rprop->name);
+> +			goto err_fail;
+> +		}
+> +
+> +		refnode = of_find_node_by_path(refpath);
+> +		if (refnode == NULL) {
+> +			pr_err("%s: Could not find node by path '%s'\n",
+> +					__func__, refpath);
+> +			err = -ENOENT;
+> +			goto err_fail;
+> +		}
+> +
+> +		phandle = refnode->phandle;
+> +		of_node_put(refnode);
+> +
+> +		pr_debug("%s: %s phandle is 0x%08x\n",
+> +				__func__, rprop->name, phandle);
+> +
+> +		/* make a copy */
+> +		propval = kmalloc(rprop->length, GFP_KERNEL);
+> +		if (propval == NULL) {
+> +			pr_err("%s: Could not copy value of '%s'\n",
+> +					__func__, rprop->name);
+> +			err = -ENOMEM;
+> +			goto err_fail;
+> +		}
+> +
+> +		memcpy(propval, rprop->value, rprop->length);
+> +
+> +		propend = propval + rprop->length;
+> +		for (propcur = propval; propcur < propend;
+> +				propcur += propcurlen + 1) {
+> +			propcurlen = strlen(propcur);
+> +
+> +			nodestr = propcur;
+> +			s = strchr(propcur, ':');
+> +			if (s == NULL) {
+> +				pr_err("%s: Illegal symbol "
+> +					"entry '%s' (1)\n",
+> +					__func__, (char *)rprop->value);
+> +				kfree(propval);
+> +				err = -EINVAL;
+> +				goto err_fail;
+> +			}
+> +			*s++ = '\0';
+> +
+> +			propstr = s;
+> +			s = strchr(s, ':');
+> +			if (s == NULL) {
+> +				pr_err("%s: Illegal symbol "
+> +					"entry '%s' (2)\n",
+> +					__func__, (char *)rprop->value);
+> +				kfree(propval);
+> +				err = -EINVAL;
+> +				goto err_fail;
+> +			}
+> +
+> +			*s++ = '\0';
+> +			offset = simple_strtoul(s, NULL, 10);
+> +
+> +			/* look into the resolve node for the full path */
+> +			refnode = __of_find_node_by_full_name(resolve,
+> +					nodestr);
+> +			if (refnode == NULL) {
+> +				pr_err("%s: Could not find refnode '%s'\n",
+> +					__func__, (char *)rprop->value);
+> +				kfree(propval);
+> +				err = -ENOENT;
+> +				goto err_fail;
+> +			}
+> +
+> +			/* now find the property */
+> +			for_each_property_of_node(refnode, sprop) {
+> +				if (of_prop_cmp(sprop->name, propstr) == 0)
+> +					break;
+> +			}
+> +
+> +			if (sprop == NULL) {
+> +				pr_err("%s: Could not find property '%s'\n",
+> +					__func__, (char *)rprop->value);
+> +				kfree(propval);
+> +				err = -ENOENT;
+> +				goto err_fail;
+> +			}
+> +
+> +			*(uint32_t *)(sprop->value + offset) =
+> +				cpu_to_be32(phandle);
+> +		}
+> +
+> +		kfree(propval);
+> +	}
+> +
+> +merge_sym:
+> +
+> +	of_node_put(root_sym);
+> +
+> +	return 0;
+> +
+> +err_fail:
+> +
+> +	if (root_sym != NULL)
+> +		of_node_put(root_sym);
+> +
+> +	return err;
+> +}
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index 9d69bd2..22d42e5 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -721,4 +721,21 @@ static inline int of_multi_prop_cmp(const struct property *prop, const char *val
+>  
+>  #endif	/* !CONFIG_OF */
+>  
+> +
+> +/* illegal phandle value (set when unresolved) */
+> +#define OF_PHANDLE_ILLEGAL	0xdeadbeef
+> +
+> +#ifdef CONFIG_OF_RESOLVE
+> +
+> +int of_resolve(struct device_node *resolve);
+> +
+> +#else
+> +
+> +static inline int of_resolve(struct device_node *resolve)
+> +{
+> +	return -ENOTSUPP;
+> +}
+> +
+> +#endif
+> +
+>  #endif /* _LINUX_OF_H */
+> 
 
-Suggested-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
----
- scripts/package/Makefile         | 4 +++-
- tools/perf/util/PERF-VERSION-GEN | 3 +++
- 2 files changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/scripts/package/Makefile b/scripts/package/Makefile
-index a4f31c900fa6..c5d473393816 100644
---- a/scripts/package/Makefile
-+++ b/scripts/package/Makefile
-@@ -115,7 +115,9 @@ git --git-dir=$(srctree)/.git archive --prefix=$(perf-tar)/         \
- 	-o $(perf-tar).tar;                                         \
- mkdir -p $(perf-tar);                                               \
- git --git-dir=$(srctree)/.git rev-parse HEAD > $(perf-tar)/HEAD;    \
--tar rf $(perf-tar).tar $(perf-tar)/HEAD;                            \
-+(cd $(srctree)/tools/perf;                                          \
-+util/PERF-VERSION-GEN ../../$(perf-tar)/ 2>/dev/null);              \
-+tar rf $(perf-tar).tar $(perf-tar)/HEAD $(perf-tar)/PERF-VERSION-FILE; \
- rm -r $(perf-tar);                                                  \
- $(if $(findstring tar-src,$@),,                                     \
- $(if $(findstring bz2,$@),bzip2,                                    \
-diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-index 15a77b7c0e36..00d88be4e50c 100755
---- a/tools/perf/util/PERF-VERSION-GEN
-+++ b/tools/perf/util/PERF-VERSION-GEN
-@@ -19,6 +19,9 @@ if test -d ../../.git -o -f ../../.git
- then
- 	TAG=$(git describe --abbrev=0 --match "v[0-9].[0-9]*" 2>/dev/null )
- 	CID=$(git log -1 --abbrev=4 --pretty=format:"%h" 2>/dev/null) && CID="-g$CID"
-+elif test -f ../../PERF-VERSION-FILE
-+then
-+	TAG=$(cut -d' ' -f3 ../../PERF-VERSION-FILE | sed -e 's/\"//g')
- fi
- if test -z "$TAG"
- then
 -- 
-1.8.3.4 (Apple Git-47)
-
+Best regards,
+Alexander Sverdlin.
