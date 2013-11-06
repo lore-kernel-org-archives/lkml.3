@@ -1,104 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756738Ab3KFMuy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 07:50:54 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:55897 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756258Ab3KFMuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 07:50:51 -0500
-Message-ID: <527A3B1C.50200@ti.com>
-Date: Wed, 6 Nov 2013 18:20:36 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756760Ab3KFMvN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 07:51:13 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:65365 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756736Ab3KFMvL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 07:51:11 -0500
 MIME-Version: 1.0
-To: Tomasz Figa <t.figa@samsung.com>
-CC: Kamil Debski <k.debski@samsung.com>, <linux-kernel@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm@vger.kernel.org>,
-        <kyungmin.park@samsung.com>, <s.nawrocki@samsung.com>,
-        <m.szyprowski@samsung.com>, <gautam.vivek@samsung.com>,
-        <mat.krawczuk@gmail.com>, <yulgon.kim@samsung.com>,
-        <p.paneri@samsung.com>, <av.tikhomirov@samsung.com>,
-        <jg1.han@samsung.com>, <galak@codeaurora.org>
-Subject: Re: [PATCH v3 1/3] phy: Add new Exynos USB PHY driver
-References: <1383668001-19141-1-git-send-email-k.debski@samsung.com> <1383668001-19141-2-git-send-email-k.debski@samsung.com> <5279FB45.3010808@ti.com> <2656549.jVSier62Qi@amdc1227>
-In-Reply-To: <2656549.jVSier62Qi@amdc1227>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131106123946.GJ10651@twins.programming.kicks-ass.net>
+References: <20131103151704.GJ19466@laptop.lan>
+	<CA+55aFx_kuvR-0dwJtjvnhtha5QBc5XcLZPRH=WKT+hYVAKOrw@mail.gmail.com>
+	<20131103200124.GK19466@laptop.lan>
+	<20131103224242.GF3947@linux.vnet.ibm.com>
+	<CA+55aFyD_kCkAHQwHCUBrumO-pH6LaZikTNvyWDW_tWsHdqk6Q@mail.gmail.com>
+	<20131104105059.GL3947@linux.vnet.ibm.com>
+	<20131104112254.GK28601@twins.programming.kicks-ass.net>
+	<20131104162732.GN3947@linux.vnet.ibm.com>
+	<20131104191127.GW16117@laptop.programming.kicks-ass.net>
+	<20131104205344.GW3947@linux.vnet.ibm.com>
+	<20131106123946.GJ10651@twins.programming.kicks-ass.net>
+Date: Wed, 6 Nov 2013 13:51:10 +0100
+X-Google-Sender-Auth: ZQQBe5yKp30ocPiynU2YHxIfZGI
+Message-ID: <CAMuHMdXZjQJvT7R4ODbDNBgAVwPUBPjB6UoR66_sNuFx7opUDw@mail.gmail.com>
+Subject: Re: [RFC] arch: Introduce new TSO memory barrier smp_tmb()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Michael Neuling <mikey@neuling.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Tony Luck <tony.luck@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Nov 6, 2013 at 1:39 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>  Documentation/memory-barriers.txt     |  157 +++++++++++++++++-----------------
+>  arch/alpha/include/asm/barrier.h      |   15 +++
+>  arch/arc/include/asm/barrier.h        |   15 +++
+>  arch/arm/include/asm/barrier.h        |   15 +++
+>  arch/arm64/include/asm/barrier.h      |   50 ++++++++++
+>  arch/avr32/include/asm/barrier.h      |   14 +++
+>  arch/blackfin/include/asm/barrier.h   |   15 +++
+>  arch/cris/include/asm/barrier.h       |   15 +++
+>  arch/frv/include/asm/barrier.h        |   15 +++
+>  arch/h8300/include/asm/barrier.h      |   15 +++
+>  arch/hexagon/include/asm/barrier.h    |   15 +++
+>  arch/ia64/include/asm/barrier.h       |   49 ++++++++++
+>  arch/m32r/include/asm/barrier.h       |   15 +++
+>  arch/m68k/include/asm/barrier.h       |   15 +++
+>  arch/metag/include/asm/barrier.h      |   15 +++
+>  arch/microblaze/include/asm/barrier.h |   15 +++
+>  arch/mips/include/asm/barrier.h       |   15 +++
+>  arch/mn10300/include/asm/barrier.h    |   15 +++
+>  arch/parisc/include/asm/barrier.h     |   15 +++
+>  arch/powerpc/include/asm/barrier.h    |   21 ++++
+>  arch/s390/include/asm/barrier.h       |   15 +++
+>  arch/score/include/asm/barrier.h      |   15 +++
+>  arch/sh/include/asm/barrier.h         |   15 +++
+>  arch/sparc/include/asm/barrier_32.h   |   15 +++
+>  arch/sparc/include/asm/barrier_64.h   |   15 +++
+>  arch/tile/include/asm/barrier.h       |   15 +++
+>  arch/unicore32/include/asm/barrier.h  |   15 +++
+>  arch/x86/include/asm/barrier.h        |   15 +++
+>  arch/xtensa/include/asm/barrier.h     |   15 +++
+>  include/linux/compiler.h              |    9 +
+>  30 files changed, 581 insertions(+), 79 deletions(-)
 
-On Wednesday 06 November 2013 05:08 PM, Tomasz Figa wrote:
-> Hi Kishon
->
-> On Wednesday 06 of November 2013 13:48:13 Kishon Vijay Abraham I wrote:
->> Hi,
->>
->> On Tuesday 05 November 2013 09:43 PM, Kamil Debski wrote:
->>> Add a new driver for the Exynos USB PHY. The new driver uses the generic
->>> PHY framework. The driver includes support for the Exynos 4x10 and 4x12
->>> SoC families.
->>>
->>> Signed-off-by: Kamil Debski <k.debski@samsung.com>
->>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->>> ---
->>>    .../devicetree/bindings/phy/samsung-usbphy.txt     |   52 ++++
->>>    drivers/phy/Kconfig                                |   23 +-
->>>    drivers/phy/Makefile                               |    4 +
->>>    drivers/phy/phy-exynos-usb2.c                      |  234 ++++++++++++++
->>>    drivers/phy/phy-exynos-usb2.h                      |   87 ++++++
->>>    drivers/phy/phy-exynos4210-usb2.c                  |  272 ++++++++++++++++
->>>    drivers/phy/phy-exynos4212-usb2.c                  |  324 ++++++++++++++++++++
->>>    7 files changed, 995 insertions(+), 1 deletion(-)
->>>    create mode 100644 Documentation/devicetree/bindings/phy/samsung-usbphy.txt
->>>    create mode 100644 drivers/phy/phy-exynos-usb2.c
->>>    create mode 100644 drivers/phy/phy-exynos-usb2.h
->>>    create mode 100644 drivers/phy/phy-exynos4210-usb2.c
->>>    create mode 100644 drivers/phy/phy-exynos4212-usb2.c
-> [snip]
->>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
->>> index a344f3d..bdf0fab 100644
->>> --- a/drivers/phy/Kconfig
->>> +++ b/drivers/phy/Kconfig
-> [snip]
->>> @@ -51,4 +51,25 @@ config PHY_EXYNOS_DP_VIDEO
->>>    	help
->>>    	  Support for Display Port PHY found on Samsung EXYNOS SoCs.
->>>
->>> +config PHY_EXYNOS_USB2
->>> +	tristate "Samsung USB 2.0 PHY driver"
->>> +	help
->>> +	  Enable this to support Samsung USB phy helper driver for Samsung SoCs.
->>> +	  This driver provides common interface to interact, for Samsung
->>> +	  USB 2.0 PHY driver.
->>
->> I still think we can get rid of this helper driver and have a single
->> driver for both PHY_EXYNOS4210_USB2 and PHY_EXYNOS4212_USB2.
->
-> This helper driver is a really nice way to avoid code duplication, while
-> still leaving the code clean and readable.
->
-> All the Samsung USB 2.0 PHYs require exactly the same semantics
-> (isolation, reference rate configuration, power up, power on), but each
-> one has completely different layout of registers and bits inside
-> registers.
+This is screaming for a default implementation in asm-generic.
 
-I just did a diff of registers in exynos 4210 and 4212 PHY drivers [1] 
-and couldn't find that big a difference in register layout. Of course 
-there are a few changes in HSIC bit fields and PHYFSEL but that's only 
-minimal and could well be handled in a single driver.
+Gr{oetje,eeting}s,
 
-[1] -> http://diffchecker.com/py3tp68m
->
-> Making a big single driver would end up being identical to the old Exynos
-> USB2PHY driver with a lot of if and switch statements inside most of
-> functions, which is not only ugly but makes any further extension hard.
+                        Geert
 
-Probably we shouldn't try to over design and just convert the old exynos 
-usb2 phy driver to the generic phy framework to begin with?
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Thanks
-Kishon
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
