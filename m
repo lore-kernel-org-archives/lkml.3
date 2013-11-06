@@ -1,120 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756463Ab3KFVCV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 16:02:21 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:48300 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756068Ab3KFVCU (ORCPT
+	id S932131Ab3KFVF2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 16:05:28 -0500
+Received: from cassarossa.samfundet.no ([193.35.52.29]:35951 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932081Ab3KFVF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 16:02:20 -0500
-Message-ID: <527AAE59.9060009@linaro.org>
-Date: Wed, 06 Nov 2013 22:02:17 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 6 Nov 2013 16:05:27 -0500
+Date: Wed, 6 Nov 2013 22:05:21 +0100
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: [PATCH] avr32: Remove HAVE_KPROBES from avr32 Kconfig
+Message-ID: <20131106210520.GA6825@samfundet.no>
+References: <20131106124330.4d73d200@gandalf.local.home>
 MIME-Version: 1.0
-To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-CC: michael@ellerman.id.au, scottwood@freescale.com,
-        srivatsa.bhat@linux.vnet.ibm.com, preeti@linux.vnet.ibm.com,
-        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com
-Subject: Re: [PATCH V7 4/7] pseries/cpuidle: Remove MAX_IDLE_STATE macro.
-References: <20131029110052.31547.82682.stgit@deepthi.in.ibm.com> <20131029110141.31547.23622.stgit@deepthi.in.ibm.com>
-In-Reply-To: <20131029110141.31547.23622.stgit@deepthi.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131106124330.4d73d200@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2013 12:01 PM, Deepthi Dharwar wrote:
-> This patch removes the usage of MAX_IDLE_STATE macro
-> and dead code around it. The number of states
-> are determined at run time based on the cpuidle
-> state table selected on a given platform
->
-> Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Around Wed 06 Nov 2013 12:43:30 -0500 or thereabout, Steven Rostedt wrote:
 
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Hello,
 
-> ---
->   drivers/cpuidle/cpuidle-ibm-power.c |   26 +++++++++-----------------
->   1 file changed, 9 insertions(+), 17 deletions(-)
->
-> diff --git a/drivers/cpuidle/cpuidle-ibm-power.c b/drivers/cpuidle/cpuidle-ibm-power.c
-> index 8c9e42c..e81c207 100644
-> --- a/drivers/cpuidle/cpuidle-ibm-power.c
-> +++ b/drivers/cpuidle/cpuidle-ibm-power.c
-> @@ -25,9 +25,7 @@ struct cpuidle_driver pseries_idle_driver = {
->   	.owner            = THIS_MODULE,
->   };
->
-> -#define MAX_IDLE_STATE_COUNT	2
-> -
-> -static int max_idle_state = MAX_IDLE_STATE_COUNT - 1;
-> +static int max_idle_state;
->   static struct cpuidle_state *cpuidle_state_table;
->
->   static inline void idle_loop_prolog(unsigned long *in_purr)
-> @@ -137,7 +135,7 @@ static int shared_cede_loop(struct cpuidle_device *dev,
->   /*
->    * States for dedicated partition case.
->    */
-> -static struct cpuidle_state dedicated_states[MAX_IDLE_STATE_COUNT] = {
-> +static struct cpuidle_state dedicated_states[] = {
->   	{ /* Snooze */
->   		.name = "snooze",
->   		.desc = "snooze",
-> @@ -157,7 +155,7 @@ static struct cpuidle_state dedicated_states[MAX_IDLE_STATE_COUNT] = {
->   /*
->    * States for shared partition case.
->    */
-> -static struct cpuidle_state shared_states[MAX_IDLE_STATE_COUNT] = {
-> +static struct cpuidle_state shared_states[] = {
->   	{ /* Shared Cede */
->   		.name = "Shared Cede",
->   		.desc = "Shared Cede",
-> @@ -227,11 +225,7 @@ static int pseries_cpuidle_driver_init(void)
->   	struct cpuidle_driver *drv = &pseries_idle_driver;
->
->   	drv->state_count = 0;
-> -
-> -	for (idle_state = 0; idle_state < MAX_IDLE_STATE_COUNT; ++idle_state) {
-> -
-> -		if (idle_state > max_idle_state)
-> -			break;
-> +	for (idle_state = 0; idle_state < max_idle_state; ++idle_state) {
->
->   		/* is the state not enabled? */
->   		if (cpuidle_state_table[idle_state].enter == NULL)
-> @@ -256,16 +250,14 @@ static int pseries_idle_probe(void)
->   	if (cpuidle_disable != IDLE_NO_OVERRIDE)
->   		return -ENODEV;
->
-> -	if (max_idle_state == 0) {
-> -		printk(KERN_DEBUG "pseries processor idle disabled.\n");
-> -		return -EPERM;
-> -	}
-> -
->   	if (firmware_has_feature(FW_FEATURE_SPLPAR)) {
-> -		if (lppaca_shared_proc(get_lppaca()))
-> +		if (lppaca_shared_proc(get_lppaca())) {
->   			cpuidle_state_table = shared_states;
-> -		else
-> +			max_idle_state = ARRAY_SIZE(shared_states);
-> +		} else {
->   			cpuidle_state_table = dedicated_states;
-> +			max_idle_state = ARRAY_SIZE(dedicated_states);
-> +		}
->   	} else
->   		return -ENODEV;
->
->
+> Although there's a arch/avr32/kernel/kprobes.c file, this arch does not
+> compile with kprobes enabled:
+> 
+>  In file included from cross-linux.git/arch/avr32/kernel/kprobes.c:14:
+>  cross-linux.git/include/linux/kprobes.h: In function 'get_kprobe_ctlblk':
+>  cross-linux.git/include/linux/kprobes.h:358: error: invalid use of undefined type 'struct kprobe_ctlblk'
+>  cross-linux.git/include/linux/kprobes.h:358: error: dereferencing pointer to incomplete type
+>  make[2]: *** [arch/avr32/kernel/kprobes.o] Error 1
+> 
+> This is because it does not define the required kprobe_ctlblk struct,
+> and fails to compile when CONFIG_KPROBES is set.
+> 
+> Unfortunately, this also makes my testing of various configs for
+> different archs to fail on avr32 as well.
+> 
+> If kprobes is not supported by avr32 than do not say that it is.
 
+kprobes is supposed to be supported on AVR32, but it seems to have broken
+somewhere down the road.
 
+I re-discovered an old patch fixing this from Eirik, I have added this to my
+for-linus branch instead of your proposed patch.
+
+https://git.kernel.org/cgit/linux/kernel/git/egtvedt/linux-avr32.git/log/?h=for-linus
+
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> diff --git a/arch/avr32/Kconfig b/arch/avr32/Kconfig
+> index b6878eb..25bcc62 100644
+> --- a/arch/avr32/Kconfig
+> +++ b/arch/avr32/Kconfig
+> @@ -5,7 +5,6 @@ config AVR32
+>  	select EXPERT
+>  	select HAVE_CLK
+>  	select HAVE_OPROFILE
+> -	select HAVE_KPROBES
+>  	select VIRT_TO_BUS
+>  	select GENERIC_IRQ_PROBE
+>  	select GENERIC_ATOMIC64
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+mvh
+Hans-Christian Egtvedt
