@@ -1,90 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab3KFUA7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 15:00:59 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:53465 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755427Ab3KFUA5 (ORCPT
+	id S1755739Ab3KFUCX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 15:02:23 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:47463 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755069Ab3KFUCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 15:00:57 -0500
-Date: Wed, 6 Nov 2013 12:00:44 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] srcu: API for barrier after srcu read unlock
-Message-ID: <20131106200044.GN18245@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1383592884-2535-1-git-send-email-mst@redhat.com>
- <20131104205524.GY3947@linux.vnet.ibm.com>
- <527A5985.6050309@cn.fujitsu.com>
+	Wed, 6 Nov 2013 15:02:22 -0500
+Date: Wed, 6 Nov 2013 15:02:04 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Joe Perches <joe@perches.com>
+Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org
+Subject: Re: [PATCH v2 2/2] x86: add prefetching to do_csum
+Message-ID: <20131106200204.GB11415@hmsreliant.think-freely.org>
+References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
+ <1383751399-10298-1-git-send-email-nhorman@tuxdriver.com>
+ <1383751399-10298-3-git-send-email-nhorman@tuxdriver.com>
+ <20131106153429.GA26336@redhat.com>
+ <20131106155445.GB6357@neilslaptop.think-freely.org>
+ <1383758363.7940.19.camel@joe-AO722>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <527A5985.6050309@cn.fujitsu.com>
+In-Reply-To: <1383758363.7940.19.camel@joe-AO722>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110620-6688-0000-0000-0000033C7B57
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 11:00:21PM +0800, Lai Jiangshan wrote:
-> On 11/05/2013 04:55 AM, Paul E. McKenney wrote:
-> > On Mon, Nov 04, 2013 at 10:36:17PM +0200, Michael S. Tsirkin wrote:
-> >> srcu read lock/unlock include a full memory barrier
-> >> but that's an implementation detail.
-> >> Add an API for make memory fencing explicit for
-> >> users that need this barrier, to make sure we
-> >> can change it as needed without breaking all users.
-> >>
-> >> Acked-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> >> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > 
-> > Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On Wed, Nov 06, 2013 at 09:19:23AM -0800, Joe Perches wrote:
+> On Wed, 2013-11-06 at 10:54 -0500, Neil Horman wrote:
+> > On Wed, Nov 06, 2013 at 10:34:29AM -0500, Dave Jones wrote:
+> > > On Wed, Nov 06, 2013 at 10:23:19AM -0500, Neil Horman wrote:
+> > >  > do_csum was identified via perf recently as a hot spot when doing
+> > >  > receive on ip over infiniband workloads.  After alot of testing and
+> > >  > ideas, we found the best optimization available to us currently is to
+> > >  > prefetch the entire data buffer prior to doing the checksum
+> []
+> > I'll fix this up and send a v3, but I'll give it a day in case there are more
+> > comments first.
 > 
-> Acked-by: "Lai Jiangshan" <laijs@cn.fujitsu.com>
-
-Very good, queued for 3.14.
-
-							Thanx, Paul
-
-> >> ---
-> >>  include/linux/srcu.h | 14 ++++++++++++++
-> >>  1 file changed, 14 insertions(+)
-> >>
-> >> diff --git a/include/linux/srcu.h b/include/linux/srcu.h
-> >> index c114614..9b058ee 100644
-> >> --- a/include/linux/srcu.h
-> >> +++ b/include/linux/srcu.h
-> >> @@ -237,4 +237,18 @@ static inline void srcu_read_unlock(struct srcu_struct *sp, int idx)
-> >>  	__srcu_read_unlock(sp, idx);
-> >>  }
-> >>
-> >> +/**
-> >> + * smp_mb__after_srcu_read_unlock - ensure full ordering after srcu_read_unlock
-> >> + *
-> >> + * Converts the preceding srcu_read_unlock into a two-way memory barrier.
-> >> + *
-> >> + * Call this after srcu_read_unlock, to guarantee that all memory operations
-> >> + * that occur after smp_mb__after_srcu_read_unlock will appear to happen after
-> >> + * the preceding srcu_read_unlock.
-> >> + */
-> >> +static inline void smp_mb__after_srcu_read_unlock(void)
-> >> +{
-> >> +	/* __srcu_read_unlock has smp_mb() internally so nothing to do here. */
-> >> +}
-> >> +
-> >>  #endif
-> >> -- 
-> >> MST
-> >>
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
+> Perhaps a reduction in prefetch loop count helps.
 > 
+> Was capping the amount prefetched and letting the
+> hardware prefetch also tested?
+> 
+> 	prefetch_lines(buff, min(len, cache_line_size() * 8u));
+> 
+> Also pedantry/trivial comments:
+> 
+> __always_inline instead of inline
+> static __always_inline void prefetch_lines(const void *addr, size_t len)
+> {
+> 	const void *end = addr + len;
+> ...
+> 
+> buff doesn't need a void * cast in prefetch_lines
+> 
+Actually I take back what I said here, we do need the cast, not for a conversion
+from unsigned char * to void *, but rather to discard the const qualifier
+without making the compiler complain.
 
+Neil
+
+> Beside the commit message, the comment above prefetch_lines
+> also needs updating to remove the "Manual Prefetching" line.
+> 
+> /*
+>  * Do a 64-bit checksum on an arbitrary memory area.
+>  * Returns a 32bit checksum.
+>  *
+>  * This isn't as time critical as it used to be because many NICs
+>  * do hardware checksumming these days.
+>  * 
+>  * Things tried and found to not make it faster:
+>  * Manual Prefetching
+>  * Unrolling to an 128 bytes inner loop.
+>  */
+> 
+> 
+> 
