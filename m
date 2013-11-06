@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab3KFIy7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 03:54:59 -0500
-Received: from demumfd002.nsn-inter.net ([93.183.12.31]:14420 "EHLO
-	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916Ab3KFIy5 (ORCPT
+	id S1756219Ab3KFIzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 03:55:33 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:40580 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916Ab3KFIzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 03:54:57 -0500
-Message-ID: <527A039A.8090409@nsn.com>
-Date: Wed, 06 Nov 2013 09:53:46 +0100
-From: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: ext Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-CC: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
-References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
-In-Reply-To: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 461
-X-purgate-ID: 151667::1383728029-00005753-4A888BB1/0-0/0-0
+	Wed, 6 Nov 2013 03:55:31 -0500
+Date: Wed, 6 Nov 2013 19:55:17 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the akpm tree with the net-next tree
+Message-Id: <20131106195517.044921fa5141fa781f8c87a9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__6_Nov_2013_19_55_17_+1100_zGp4lZPEjr2T9.em"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pantelis,
+--Signature=_Wed__6_Nov_2013_19_55_17_+1100_zGp4lZPEjr2T9.em
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 05/11/13 19:41, ext Pantelis Antoniou wrote:
-> The following patchset introduces Device Tree overlays, a method
-> of dynamically altering the kernel's live Device Tree, along with
-> a generic interface to use it in a board agnostic manner.
+Hi Andrew,
 
-I'm glad to see it again! Will test the whole series on our MIPS64 platforms
-(currently old patchset from bbxm tree is successfully used for a while).
+Today's linux-next merge of the akpm tree got a conflict in
+net/netfilter/ipset/ip_set_hash_netnet.c between commit 1a869205c75c
+("netfilter: ipset: The unnamed union initialization may lead to
+compilation error") from the net-next tree and commit
+"net/netfilter/ipset/ip_set_hash_netnet.c: fix build with older gcc" from
+the akpm tree.
 
--- 
-Best regards,
-Alexander Sverdlin.
+The latter is a subset of the former. so I just dropped the latter.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__6_Nov_2013_19_55_17_+1100_zGp4lZPEjr2T9.em
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSegP7AAoJEMDTa8Ir7ZwVjYUQAJQWDoNmcHTaa544TaUEh25e
+ZKVJhCmjKRm4K1i45yTrbYEz7F4FUQUG9i5fyoxhfAkcZdpgtYgqrZVJkiTyQfUk
+uL3eXSC1B+Dh26TMiDj9ORUd7No3+RBfk2Z6fHzxAFRfJ0WWHTbeqN0ipiWLUA7y
+vE+pSR1YYupDAtP4pruePAIp3uo+wzrNo2RZrVAEg4Dw3uLOPjhZPi1ei0CkazUT
+n7Txt+ltOFsu0g8kwf/oJ+2Nf6tF8dgROrdPoNzuGGYlDlpE8LvHbyHA3Udsbs78
+mNhqul7qOhhkeqsp2kQTR1I9d5VoL5IQZkyPU3wdpiW7Wk4Si6aX8pm+LSdy5R+L
+Mdt4s0+N4DuOAc969cKA4FTb7Eb0OQ4OBElMehwMFtU+nMxWSj0Rty7KZtniYVGj
+a+zlklhgmhG1b24VBk+y2+wBoJhlwihAwcJVvVL/J1RO+ixGCYYkKAXv6c5L2A9R
+eSCr55pI4Tpgehevgj9IPPDNbLsigI16Ee+mgSd74DqZUnXln7+H1Qv2XqNk72VI
+aB79FP4O0B3H0+PnhaxumQgIsUpRR/zoq9OCfezQyC5t39OShuPHJS3xgAzA4UcH
+vujyzdG+kNHT1Twbu9tf49AGrRx72VDkVW/L8+P3m7+T3IgwuaJ3lvLslGAPNmvO
+9dM8faaZAgspc/SrR9Ta
+=J9Un
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__6_Nov_2013_19_55_17_+1100_zGp4lZPEjr2T9.em--
