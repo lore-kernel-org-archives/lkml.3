@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685Ab3KFWan (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 17:30:43 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:32787 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813Ab3KFWal (ORCPT
+	id S1751859Ab3KFWbU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 17:31:20 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:55758 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869Ab3KFWbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 17:30:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAGXu5jJreo001uBLV8oAgR_Z2WZK2qtH8YfvriQJVAQ4SgdRzw@mail.gmail.com>
-References: <CALCETrUt7Ojh5Yy4KYgBPj_wBr=fzKKJ=OOgGP9BtXoKrr9QnA@mail.gmail.com>
-	<CAGXu5jJreo001uBLV8oAgR_Z2WZK2qtH8YfvriQJVAQ4SgdRzw@mail.gmail.com>
-Date: Wed, 6 Nov 2013 16:30:40 -0600
-Message-ID: <CAHCPf3umr-v+2oWyjG3F0W=+qu_NoXVVSN95RAJdrjaLxWAfow@mail.gmail.com>
-Subject: Re: ARM audit, seccomp, etc are broken wrt OABI syscalls
-From: Matt Sealey <neko@bakuhatsu.net>
-To: Kees Cook <keescook@chromium.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Paul Moore <paul@paul-moore.com>,
-        Richard Weinberger <richard@nod.at>,
-        libseccomp-discuss@lists.sourceforge.net,
-        Will Drewry <wad@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 6 Nov 2013 17:31:19 -0500
+Date: Thu, 7 Nov 2013 09:31:11 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Moore <paul@paul-moore.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: error when fetching the selinux tree
+Message-Id: <20131107093111.5b68d4af61ef2c507b2f355e@canb.auug.org.au>
+In-Reply-To: <1869239.Kz8bBo099V@sifl>
+References: <20131107092709.09c9e76757362bad1f1dd885@canb.auug.org.au>
+	<1869239.Kz8bBo099V@sifl>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__7_Nov_2013_09_31_11_+1100_uYoXyyJjv_c+Elv+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 5, 2013 at 6:14 PM, Kees Cook <keescook@chromium.org> wrote:
+--Signature=_Thu__7_Nov_2013_09_31_11_+1100_uYoXyyJjv_c+Elv+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Paul,
+
+On Wed, 06 Nov 2013 17:29:14 -0500 Paul Moore <paul@paul-moore.com> wrote:
 >
-> Alternatively, CONFIG_SECCOMP_FILTER could depend on
-> !CONFIG_OABI_COMPAT. That seems like the least work, given the desire
-> to kill OABI in the real world. (Though I would note that at least
-> Ubuntu's ARM kernels build with CONFIG_OABI_COMPAT; Chrome OS does
-> not.)
+> Sorry about that, a case of bad timing.  I'm doing some cleanup right now=
+, it=20
+> should be back up shortly.  That said, it should be empty today so no wor=
+ries=20
+> if you want to skip it today.
 
-I think CONFIG_OABI_COMPAT probably leaked in from the original
-configurations of the kernel taken from Debian.
+OK, no worries.  I would normally just use what I had fetched yesterday
+which was empty (relative to the security tree).
 
-There were several big decisions they made (build for ARMv5 soft
-float, then switch to ARMv7 softfp, then switch to ARMv7 hardfp, then
-switch to using THUMB2 kernels) which would have just broken OABI
-binaries at every step of the way since they had some subtle
-implications in kernel configuration (note: Ubuntu have never, ever
-enabled FPA emulation in the kernel, and all Debian's OABI userspace
-is built for FPA, for example. A good chunk of the original Debian arm
-port probably would just pitch a SIGILL if you ran it under an Ubuntu
-kernel).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I would ignore anyone who enables it in a distribution, since they
-probably weren't intending to enable it in the first place, and never
-noticed the.. what.. 3-4KiB it adds to the kernel?
+--Signature=_Thu__7_Nov_2013_09_31_11_+1100_uYoXyyJjv_c+Elv+
+Content-Type: application/pgp-signature
 
-Matt Sealey <neko@bakuhatsu.net>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSesM0AAoJEMDTa8Ir7ZwV318P/3LrCMBl0wD9ULz03knVmCeu
+bWS0sgHQk2P4A4uTKfdjwHzyHxkMYQMJ0Qr7G4SfpHCpV9oWEjLSjXoUns40B6jX
+AM31cIlvJd+WktU6VwvnAd5x1GMf3C+wqP5djygVGeNVSD03jzopOL9u28LxsWpe
+blvvP3Lddr3nlf9HTTp6GJJjj+qY0eahhRd58FdJk2acAQFqLv/W/Xsi5yEqbJ1i
+Zr6MKWb8YiROevaz1hjNmQSmrIUnYZnflnk3cEE7YqTElCZGCkoyEinFqxUcekQL
+JclStFWLdVoBWBREXrpXZj2yHAbnFkYehHcK4zIazyJs53V8YTEYFvFTHAA/Qznb
+GrCcnm3Sn79iU9pf5zJd9FQjRu/T7Bk1ANbWHItbSIlntzc/fzgzO5pbS/b5t/GJ
+Mq68mpEabh4wHSWgFbJTctbay8FScc231FyVgPEPl4C5fqUt9QWrD1d1BDBiNMQf
+WC1uyXyQbudz7rhJPFI1dIbUyk90spt9IdfQ/VISQFhlK7pt1PogD+hxYWfsrNpD
+AIDiozTW2GYeBlccTSr+p8vxQKC9iYFmNViKzVFLUiuOWqb0yFgGjQchEMQB1HaN
+Diu7JzJUzTGV7fiXh2Lyxhsq5d9i4OhIbmf9aW5xXS8cG2y30h87EGZsCjjAL0sz
+Gqgl0p6nWF1JvFwnBEPd
+=paya
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__7_Nov_2013_09_31_11_+1100_uYoXyyJjv_c+Elv+--
