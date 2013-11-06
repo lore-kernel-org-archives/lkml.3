@@ -1,74 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932400Ab3KFOp0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 09:45:26 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57826 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932113Ab3KFOpZ (ORCPT
+	id S932454Ab3KFOqz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 09:46:55 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:19440 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932113Ab3KFOqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 09:45:25 -0500
-Date: Wed, 6 Nov 2013 15:44:56 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vince@deater.net>
-Cc: mingo@kernel.org, hpa@zytor.com, anton@samba.org,
-        mathieu.desnoyers@polymtl.ca, linux-kernel@vger.kernel.org,
-        michael@ellerman.id.au, paulmck@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, fweisbec@gmail.com, VICTORK@il.ibm.com,
-        tglx@linutronix.de, oleg@redhat.com, mikey@neuling.org,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] tools/perf: Add required memory barriers
-Message-ID: <20131106144456.GI26785@twins.programming.kicks-ass.net>
-References: <20131030104246.GH16117@laptop.programming.kicks-ass.net>
- <tip-a94d342b9cb09edfe888ea972af0883b6a8d992b@git.kernel.org>
- <alpine.DEB.2.02.1311060847340.27224@pianoman.cluster.toy>
- <20131106140011.GL10651@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131106140011.GL10651@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 6 Nov 2013 09:46:54 -0500
+Date: Wed, 6 Nov 2013 09:46:49 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Dave Jones <davej@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        stable <stable@vger.kernel.org>, Kees Cook <keescook@google.com>
+Subject: Re: [GIT PULL][PATCH] perf/ftrace: Fix paranoid level for enabling
+ function tracer
+Message-ID: <20131106094649.4abc704f@gandalf.local.home>
+In-Reply-To: <20131105162407.59393ee1@gandalf.local.home>
+References: <20131105162407.59393ee1@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 03:00:11PM +0100, Peter Zijlstra wrote:
-> On Wed, Nov 06, 2013 at 08:50:47AM -0500, Vince Weaver wrote:
-> > On Wed, 6 Nov 2013, tip-bot for Peter Zijlstra wrote:
-> > 
-> > > +++ b/tools/perf/util/evlist.h
-> > > @@ -177,7 +177,7 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist, int err, char *buf, s
-> > >  static inline unsigned int perf_mmap__read_head(struct perf_mmap *mm)
-> > >  {
-> > >  	struct perf_event_mmap_page *pc = mm->base;
-> > > -	int head = pc->data_head;
-> > > +	int head = ACCESS_ONCE(pc->data_head);
-> > >  	rmb();
-> > >  	return head;
-> > 
-> > so is this ACCESS_ONCE required now for proper access to the mmap buffer?
+On Tue, 5 Nov 2013 16:24:07 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
 > 
-> Pretty much; otherwise your C compiler is allowed to mess it up.
+> Linus,
+> 
+> Please pull the latest ftrace/urgent tree, which can be found at:
+> 
 
-long head = ((__atomic long)pc->data_head).load(memory_order_acquire);
+As I usually send you signed tag pull releases, I made one of those too:
 
-coupled with:
 
-((__atomic long)pc->data_tail).store(tail, memory_order_release);
 
-might be the 'right' and proper C11 incantations to avoid having to
-touch kernel macros; but would obviously require a recent compiler.
+Linus,
 
-Barring that, I think we're stuck with:
+Please pull the latest ftrace-urgent-3.12 tree, which can be found at:
 
-long head = ACCESS_ONCE(pc->data_head);
-smp_rmb();
 
-...
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+ftrace-urgent-3.12
 
-smp_mb();
-pc->data_tail = tail;
+Tag SHA1: f54bbe2bc77806bf4d544652a2987dd9f784a5ba
+Head SHA1: d1356abac98cce8e7765186f8093da1442d74d1d
 
-And using the right asm goo for the barriers. That said, all these asm
-barriers should include a compiler barriers (memory clobber) which
-_should_ avoid the worst compiler trickery -- although I don't think it
-completely obviates the need for ACCESS_ONCE() -- uncertain there.
+
+Steven Rostedt (1):
+      perf/ftrace: Fix paranoid level for enabling function tracer
+
+----
+ kernel/trace/trace_event_perf.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+---------------------------
+commit d1356abac98cce8e7765186f8093da1442d74d1d
+Author: Steven Rostedt <rostedt@goodmis.org>
+Date:   Tue Nov 5 12:51:11 2013 -0500
+
+    perf/ftrace: Fix paranoid level for enabling function tracer
+    
+    The current default perf paranoid level is "1" which has
+    "perf_paranoid_kernel()" return false, and giving any operations that
+    use it, access to normal users. Unfortunately, this includes function
+    tracing and normal users should not be allowed to enable function
+    tracing by default.
+    
+    The proper level is defined at "-1" (full perf access), which
+    "perf_paranoid_tracepoint_raw()" will only give access to. Use that
+    check instead for enabling function tracing.
+    
+    Reported-by: Dave Jones <davej@redhat.com>
+    Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+    Cc: Peter Zijlstra <peterz@infradead.org>
+    Cc: Ingo Molnar <mingo@kernel.org>
+    Cc: Jiri Olsa <jolsa@redhat.com>
+    Cc: Frederic Weisbecker <fweisbec@gmail.com>
+    Cc: stable@vger.kernel.org # 3.4+
+    CVE: CVE-2013-2930
+    Fixes: ced39002f5ea ("ftrace, perf: Add support to use function tracepoint in perf")
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 80c36bc..78e27e3 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -26,7 +26,7 @@ static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
+ {
+ 	/* The ftrace function trace is allowed only for root. */
+ 	if (ftrace_event_is_function(tp_event) &&
+-	    perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
++	    perf_paranoid_tracepoint_raw() && !capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
+ 	/* No tracing, just counting, so no obvious leak */
+
