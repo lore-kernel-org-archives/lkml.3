@@ -1,51 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305Ab3KFKSa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 05:18:30 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:41013 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932194Ab3KFKRC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 05:17:02 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>,
-        alsa-devel@alsa-project.org, Mark Brown <broonie@kernel.org>
-Subject: [PATCH 08/13] ASoC: generic-dmaengine-pcm: Clear slave_config memory
-Date: Wed,  6 Nov 2013 10:16:20 +0000
-Message-Id: <1383732985-18928-9-git-send-email-lee.jones@linaro.org>
+	id S932319Ab3KFKSx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 05:18:53 -0500
+Received: from mail.southpole.se ([37.247.8.11]:33345 "EHLO mail.southpole.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932151Ab3KFKQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 05:16:58 -0500
+From: Jonas Bonn <jonas@southpole.se>
+To: richard@nod.at
+Cc: linux-kernel@vger.kernel.org, linux@openrisc.net,
+        Jonas Bonn <jonas@southpole.se>
+Subject: [PATCH 1/1] openrisc: Use get_signal() signal_setup_done()
+Date: Wed,  6 Nov 2013 11:17:31 +0100
+Message-Id: <1383733051-10112-1-git-send-email-jonas@southpole.se>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1383732985-18928-1-git-send-email-lee.jones@linaro.org>
-References: <1383732985-18928-1-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1381232035-4240-3-git-send-email-richard@nod.at>
+References: <1381232035-4240-3-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We currently assume that the DMA Slave Config will be fully populated
-by the platform, however some DMA Engines make decisions based on zero
-(default) flags such as DMA_SLAVE_BUSWIDTH_UNDEFINED and as this is a
-static declaration we need to memset it to clear the data area.
+From: Richard Weinberger <richard@nod.at>
 
-Cc: alsa-devel@alsa-project.org
-Cc: Mark Brown <broonie@kernel.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Use the more generic functions get_signal() signal_setup_done()
+for signal delivery.
+
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Jonas Bonn <jonas@southpole.se>
 ---
- sound/soc/soc-generic-dmaengine-pcm.c | 2 ++
- 1 file changed, 2 insertions(+)
 
-diff --git a/sound/soc/soc-generic-dmaengine-pcm.c b/sound/soc/soc-generic-dmaengine-pcm.c
-index ee07903..6ad4c7a 100644
---- a/sound/soc/soc-generic-dmaengine-pcm.c
-+++ b/sound/soc/soc-generic-dmaengine-pcm.c
-@@ -90,6 +90,8 @@ static int dmaengine_pcm_hw_params(struct snd_pcm_substream *substream,
- 	struct dma_slave_config slave_config;
+Hi Richard,
+
+What's the status of this patch series?  Are these lined up for 3.13 already?
+
+The changes look good but I've got a big rework of the signal handling code
+for OpenRISC and the patch doesn't apply cleanly.  I've reworked your patch
+(see below) and would just like you to verify that I haven't messed anything
+up.  If it's OK by you, I will take the below patch directly into the OpenRISC
+tree.
+
+Best regards,
+Jonas
+
+ arch/openrisc/kernel/signal.c | 59 ++++++++++++++++---------------------------
+ 1 file changed, 22 insertions(+), 37 deletions(-)
+
+diff --git a/arch/openrisc/kernel/signal.c b/arch/openrisc/kernel/signal.c
+index c277ec8..66775bc 100644
+--- a/arch/openrisc/kernel/signal.c
++++ b/arch/openrisc/kernel/signal.c
+@@ -166,20 +166,21 @@ static inline void __user *get_sigframe(struct k_sigaction *ka,
+  * trampoline which performs the syscall sigreturn, or a provided
+  * user-mode trampoline.
+  */
+-static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+-			  sigset_t *set, struct pt_regs *regs)
++static int setup_rt_frame(struct ksignal *ksig, sigset_t *set,
++			  struct pt_regs *regs)
+ {
+ 	struct rt_sigframe *frame;
+ 	unsigned long return_ip;
+ 	int err = 0;
+ 
+-	frame = get_sigframe(ka, regs, sizeof(*frame));
++	frame = get_sigframe(&ksig->ka, regs, sizeof(*frame));
++
+ 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	/* Create siginfo.  */
+-	if (ka->sa.sa_flags & SA_SIGINFO)
+-		err |= copy_siginfo_to_user(&frame->info, info);
++	if (ksig->ka.sa.sa_flags & SA_SIGINFO)
++		err |= copy_siginfo_to_user(&frame->info, &ksig->info);
+ 
+ 	/* Create the ucontext.  */
+ 	err |= __put_user(0, &frame->uc.uc_flags);
+@@ -190,7 +191,7 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
+ 
+ 	if (err)
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	/* trampoline - the desired return ip is the retcode itself */
+ 	return_ip = (unsigned long)&frame->retcode;
+@@ -204,14 +205,14 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	err |= __put_user(0x15000000, (unsigned long *)(frame->retcode + 8));
+ 
+ 	if (err)
+-		goto give_sigsegv;
++		return -EFAULT;
+ 
+ 	/* TODO what is the current->exec_domain stuff and invmap ? */
+ 
+ 	/* Set up registers for signal handler */
+-	regs->pc = (unsigned long)ka->sa.sa_handler; /* what we enter NOW */
++	regs->pc = (unsigned long)ksig->ka.sa.sa_handler; /* what we enter NOW */
+ 	regs->gpr[9] = (unsigned long)return_ip;     /* what we enter LATER */
+-	regs->gpr[3] = (unsigned long)sig;           /* arg 1: signo */
++	regs->gpr[3] = (unsigned long)ksig->sig;           /* arg 1: signo */
+ 	regs->gpr[4] = (unsigned long)&frame->info;  /* arg 2: (siginfo_t*) */
+ 	regs->gpr[5] = (unsigned long)&frame->uc;    /* arg 3: ucontext */
+ 
+@@ -219,25 +220,16 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	regs->sp = (unsigned long)frame;
+ 
+ 	return 0;
+-
+-give_sigsegv:
+-	force_sigsegv(sig, current);
+-	return -EFAULT;
+ }
+ 
+ static inline void
+-handle_signal(unsigned long sig,
+-	      siginfo_t *info, struct k_sigaction *ka,
+-	      struct pt_regs *regs)
++handle_signal(struct ksignal *ksig, struct pt_regs *regs)
+ {
  	int ret;
  
-+	memset(&slave_config, 0, sizeof(slave_config));
-+
- 	if (!pcm->config)
- 		prepare_slave_config = snd_dmaengine_pcm_prepare_slave_config;
- 	else
+-	ret = setup_rt_frame(sig, ka, info, sigmask_to_save(), regs);
+-	if (ret)
+-		return;
++	ret = setup_rt_frame(ksig, sigmask_to_save(), regs);
+ 
+-	signal_delivered(sig, info, ka, regs,
+-				 test_thread_flag(TIF_SINGLESTEP));
++	signal_setup_done(ret, ksig, test_thread_flag(TIF_SINGLESTEP));
+ }
+ 
+ /*
+@@ -254,9 +246,7 @@ handle_signal(unsigned long sig,
+ 
+ int do_signal(struct pt_regs *regs, int syscall)
+ {
+-	siginfo_t info;
+-	int signr;
+-	struct k_sigaction ka;
++	struct ksignal ksig;
+ 	unsigned long continue_addr = 0;
+ 	unsigned long restart_addr = 0;
+ 	unsigned long retval = 0;
+@@ -286,28 +276,23 @@ int do_signal(struct pt_regs *regs, int syscall)
+ 	}
+ 
+ 	/*
+-	 * Get the signal to deliver.  When running under ptrace, at this
+-	 * point the debugger may change all our registers ...
++	 * Get the signal to deliver.  During the call to get_signal the
++	 * debugger may change all our registers so we may need to revert
++	 * the decision to restart the syscall; specifically, if the PC is
++	 * changed, don't restart the syscall.
+ 	 */
+-	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
+-	/*
+-	 * Depending on the signal settings we may need to revert the
+-	 * decision to restart the system call.  But skip this if a
+-	 * debugger has chosen to restart at a different PC.
+-	 */
+-	if (signr > 0) {
++	if (get_signal(&ksig)) {
+ 		if (unlikely(restart) && regs->pc == restart_addr) {
+ 			if (retval == -ERESTARTNOHAND ||
+ 			    retval == -ERESTART_RESTARTBLOCK
+ 			    || (retval == -ERESTARTSYS
+-			        && !(ka.sa.sa_flags & SA_RESTART))) {
++			        && !(ksig.ka.sa.sa_flags & SA_RESTART))) {
+ 				/* No automatic restart */
+ 				regs->gpr[11] = -EINTR;
+ 				regs->pc = continue_addr;
+ 			}
+ 		}
+-
+-		handle_signal(signr, &info, &ka, regs);
++		handle_signal(&ksig, regs);
+ 	} else {
+ 		/* no handler */
+ 		restore_saved_sigmask();
 -- 
 1.8.1.2
 
