@@ -1,66 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756270Ab3KFKmA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 05:42:00 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37007 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755753Ab3KFKl7 (ORCPT
+	id S1756324Ab3KFKnO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 05:43:14 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51498 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756072Ab3KFKnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 05:41:59 -0500
-Date: Wed, 6 Nov 2013 10:41:10 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-Cc: Jiang Liu <liuj97@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 2/7] arm64: introduce interfaces to hotpatch kernel
- and module code
-Message-ID: <20131106104110.GC21074@mudshark.cambridge.arm.com>
-References: <1382109602-27432-1-git-send-email-liuj97@gmail.com>
- <1382109602-27432-3-git-send-email-liuj97@gmail.com>
- <20131030001245.GB25346@mudshark.cambridge.arm.com>
- <527671E9.8040704@gmail.com>
- <CA+b37P2WU74NU7wG_H+KfmL6Y-fdhipsuOruU-z=wv=8ENwrfQ@mail.gmail.com>
+	Wed, 6 Nov 2013 05:43:12 -0500
+Date: Wed, 6 Nov 2013 11:42:43 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
+        acme@redhat.com, jolsa@redhat.com, zheng.z.yan@intel.com, bp@alien8.de,
+        maria.n.dimakopoulou@gmail.com
+Subject: Re: [PATCH v5 3/4] perf,x86: add Intel RAPL PMU support
+Message-ID: <20131106104243.GF10651@twins.programming.kicks-ass.net>
+References: <1383670886-30827-1-git-send-email-eranian@google.com>
+ <1383670886-30827-4-git-send-email-eranian@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+b37P2WU74NU7wG_H+KfmL6Y-fdhipsuOruU-z=wv=8ENwrfQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1383670886-30827-4-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 04, 2013 at 03:12:56PM +0000, Sandeepa Prabhu wrote:
-> On 3 November 2013 23:55, Jiang Liu <liuj97@gmail.com> wrote:
-> > On 10/30/2013 08:12 AM, Will Deacon wrote:
-> >> On Fri, Oct 18, 2013 at 04:19:56PM +0100, Jiang Liu wrote:
-> >>> +    atomic_set(&text_patch_id, smp_processor_id());
-> >>> +    ret = stop_machine(aarch64_insn_patch_text_cb, &patch, cpu_online_mask);
-> >>
-> >> Instead of doing this, why not instead call aarch64_insn_patch_text_nosync
-> >> inline, then call kick_all_cpus_sync immediately afterwards, without the
-> >> need to stop_machine.
-> > Sandeepa, who is working on kprobe for ARM64, needs the stop_machine()
-> > mechanism to synchronize all online CPUs, so it's a preparation for
-> > kprobe.
-> 
-> I had published kprobes patches for ARM64:
-> http://lwn.net/Articles/570648/  and using your patcset (v3) for
-> patching support, it works so far.
-> I CCed you on my RFC but unfortunately to your huawei email not the gmail.
-> 
-> I can give a try with kick_all_cpus_sync but wanted to understand this
-> a bit  detail on hows different from stop_machine and how this work.
+On Tue, Nov 05, 2013 at 06:01:25PM +0100, Stephane Eranian wrote:
+> +static int rapl_cpu_dying(int cpu)
+> +{
+> +	struct rapl_pmu *pmu = per_cpu(rapl_pmu, cpu);
+> +	struct perf_event *event, *tmp;
+> +
+> +	if (!pmu)
+> +		return 0;
+> +
+> +	spin_lock(&rapl_hotplug_lock);
+> +
+> +	/*
+> +	 * stop all syswide RAPL events on that  CPU
+> +	 * as a consequence also stops the hrtimer
+> +	 */
+> +	list_for_each_entry_safe(event, tmp, &pmu->active_list, active_entry) {
+> +		rapl_pmu_event_stop(event, PERF_EF_UPDATE);
+> +	}
+> +
+> +	per_cpu(rapl_pmu, cpu) = NULL;
+> +
+> +	if (atomic_dec_and_test(&pmu->refcnt))
+> +		kfree(pmu);
+> +
+> +	spin_unlock(&rapl_hotplug_lock);
+> +	return 0;
+> +}
 
-My point was just that for nosync patching, the update to the instruction
-stream is atomic with respect to instruction fetch, so stop_machine seems a
-bit overkill. kick_all_cpus can be used to ensure visibility of the new
-instruction.
+Could you do an add-on patch similar to the below -- no need to respin
+the entire series once again for this.
 
-Jiang Liu seemed to imply that this isn't suitable for kprobes, but I would
-like to know if/why that is the case.
+---
+commit 22cc4ccf63e10e361531bf61e6e6c96c53a2f665
+Author: Yan, Zheng <zheng.z.yan@intel.com>
+Date:   Tue Apr 16 19:51:05 2013 +0800
 
-Will
+    perf/x86: Avoid kfree() in CPU_{STARTING,DYING}
+    
+    On -rt kfree() can schedule, but CPU_{STARTING,DYING} should be
+    atomic. So use a list to defer kfree until CPU_{ONLINE,DEAD}.
+    
+    Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+    Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Cc: peterz@infradead.org
+    Cc: eranian@google.com
+    Cc: ak@linux.intel.com
+    Link: http://lkml.kernel.org/r/1366113067-3262-2-git-send-email-zheng.z.yan@intel.com
+    Signed-off-by: Ingo Molnar <mingo@kernel.org>
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 75da9e18b128..50d4a1c58106 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2622,6 +2622,21 @@ static void __init uncore_pci_exit(void)
+ 	}
+ }
+ 
++/* CPU hot plug/unplug are serialized by cpu_add_remove_lock mutex */
++static LIST_HEAD(boxes_to_free);
++
++static void __cpuinit uncore_kfree_boxes(void)
++{
++	struct intel_uncore_box *box;
++
++	while (!list_empty(&boxes_to_free)) {
++		box = list_entry(boxes_to_free.next,
++				 struct intel_uncore_box, list);
++		list_del(&box->list);
++		kfree(box);
++	}
++}
++
+ static void __cpuinit uncore_cpu_dying(int cpu)
+ {
+ 	struct intel_uncore_type *type;
+@@ -2636,7 +2651,7 @@ static void __cpuinit uncore_cpu_dying(int cpu)
+ 			box = *per_cpu_ptr(pmu->box, cpu);
+ 			*per_cpu_ptr(pmu->box, cpu) = NULL;
+ 			if (box && atomic_dec_and_test(&box->refcnt))
+-				kfree(box);
++				list_add(&box->list, &boxes_to_free);
+ 		}
+ 	}
+ }
+@@ -2666,8 +2681,11 @@ static int __cpuinit uncore_cpu_starting(int cpu)
+ 				if (exist && exist->phys_id == phys_id) {
+ 					atomic_inc(&exist->refcnt);
+ 					*per_cpu_ptr(pmu->box, cpu) = exist;
+-					kfree(box);
+-					box = NULL;
++					if (box) {
++						list_add(&box->list,
++							 &boxes_to_free);
++						box = NULL;
++					}
+ 					break;
+ 				}
+ 			}
+@@ -2806,6 +2824,10 @@ static int
+ 	case CPU_DYING:
+ 		uncore_cpu_dying(cpu);
+ 		break;
++	case CPU_ONLINE:
++	case CPU_DEAD:
++		uncore_kfree_boxes();
++		break;
+ 	default:
+ 		break;
+ 	}
