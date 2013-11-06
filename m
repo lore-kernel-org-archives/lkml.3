@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542Ab3KFLmf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 06:42:35 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46669 "EHLO comal.ext.ti.com"
+	id S1756572Ab3KFLnQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 06:43:16 -0500
+Received: from mail.eperm.de ([89.247.134.16]:39795 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756494Ab3KFLmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 06:42:33 -0500
-Message-ID: <527A28AF.9040308@ti.com>
-Date: Wed, 6 Nov 2013 13:31:59 +0200
-From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1756546Ab3KFLnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 06:43:14 -0500
+From: Stephan Mueller <smueller@chronox.de>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, sandy harris <sandyinchina@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
+Date: Wed, 06 Nov 2013 12:42:47 +0100
+Message-ID: <6186307.PQMXWdkvke@tauon>
+User-Agent: KMail/4.11.2 (Linux/3.11.6-200.fc19.x86_64; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <7447932.fADKoNoZRI@tauon>
+References: <2579337.FPgJGgHYdz@tauon> <4763730.CsXSbevC1J@tauon> <7447932.fADKoNoZRI@tauon>
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>, <wim@iguana.be>,
-        <nsekhar@ti.com>, <linux-watchdog@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <galak@kernel.crashing.org>, <ijc+devicetree@hellion.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Fwd: [PATCH 3/8] watchdog: davinci: add GET_TIMELEFT option support
-References: <1383680783-12114-4-git-send-email-ivan.khoronzhuk@ti.com>
-In-Reply-To: <1383680783-12114-4-git-send-email-ivan.khoronzhuk@ti.com>
-X-Forwarded-Message-Id: <1383680783-12114-4-git-send-email-ivan.khoronzhuk@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.122]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the davinci watchdog can be read while counting,
-so we can add ability to report the remaining time before
-the system will reboot.
+Am Dienstag, 5. November 2013, 14:45:58 schrieb Stephan Mueller:
 
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
----
- drivers/watchdog/davinci_wdt.c |   28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+Hi Pavel,
 
-diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
-index 1fc2093..6cbf2e1 100644
---- a/drivers/watchdog/davinci_wdt.c
-+++ b/drivers/watchdog/davinci_wdt.c
-@@ -117,6 +117,33 @@ static int davinci_wdt_ping(struct watchdog_device *wdd)
- 	return 0;
- }
- 
-+static unsigned int davinci_wdt_get_timeleft(struct watchdog_device *wdd)
-+{
-+	u64 timer_counter;
-+	unsigned long freq;
-+	u32 val;
-+	struct davinci_wdt_device *davinci_wdt = watchdog_get_drvdata(wdd);
-+
-+	/* if timeout is occured then return 0 */
-+	val = ioread32(davinci_wdt->base + WDTCR);
-+	if (val & WDFLAG)
-+		return 0;
-+
-+	freq = clk_get_rate(davinci_wdt->clk);
-+
-+	if (!freq) {
-+		dev_err(wdd->dev, "clock freq is not set\n");
-+		return 0;
-+	}
-+
-+	timer_counter = ioread32(davinci_wdt->base + TIM12);
-+	timer_counter |= ((u64)ioread32(davinci_wdt->base + TIM34) << 32);
-+
-+	do_div(timer_counter, freq);
-+
-+	return wdd->timeout - timer_counter;
-+}
-+
- static const struct watchdog_info davinci_wdt_info = {
- 	.options = WDIOF_KEEPALIVEPING,
- 	.identity = "DaVinci Watchdog",
-@@ -127,6 +154,7 @@ static const struct watchdog_ops davinci_wdt_ops = {
- 	.start		= davinci_wdt_start,
- 	.stop		= davinci_wdt_ping,
- 	.ping		= davinci_wdt_ping,
-+	.get_timeleft	= davinci_wdt_get_timeleft,
- };
- 
- static int davinci_wdt_probe(struct platform_device *pdev)
--- 
-1.7.9.5
+>Am Dienstag, 5. November 2013, 13:25:40 schrieb Stephan Mueller:
+>
+>Hi Pavel,
+>
+>>Am Montag, 4. November 2013, 00:32:07 schrieb Pavel Machek:
+>>>But they usually _do_ have RTC or other clock, not driven by CPU
+>>>oscilator. Good.
+>>>
+>>>What about just
+>>>
+>>>while (!enough_entropy) {
+>>>
+>>>      cur_time = read_rtc();
+>>>      simulated_tsc = 0;
+>>>      while (cur_time == read_rtc())
+>>>      
+>>>      	    simulated_tsc++;
+>>>      
+>>>      gain_entropy_from(simulated_tsc)
+>>>
+>>>}
+>>
+>>That is an interesting piece of code -- what would you do in the
+>>gain_entropy_from function?
+>
+>Please disregard my question.
+>
+>I plugged that idea into my current Jitter RNG processing and disabled
+>the other jitter measurements to get a clear, isolated picture.
+>
+>The result is also a white noise! And it is even quite fast.
 
+After doing some more research on this approach, I have to admit that 
+the output not good (i.e. white noise) in all situations. Therefore, I 
+dropped that (for now).
 
+But thank you very much for your suggestion.
 
+Ciao
+Stephan
