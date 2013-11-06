@@ -1,135 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368Ab3KFM64 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 07:58:56 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:61351 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756152Ab3KFM6x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 07:58:53 -0500
-Date: Wed, 06 Nov 2013 13:58:45 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-Subject: Re: [PATCH v3 1/3] phy: Add new Exynos USB PHY driver
-In-reply-to: <527A3B1C.50200@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Kamil Debski <k.debski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm@vger.kernel.org,
-        kyungmin.park@samsung.com, s.nawrocki@samsung.com,
-        m.szyprowski@samsung.com, gautam.vivek@samsung.com,
-        mat.krawczuk@gmail.com, yulgon.kim@samsung.com, p.paneri@samsung.com,
-        av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org
-Message-id: <2413995.ezl3Ca2YTh@amdc1227>
-Organization: Samsung Poland R&D Center
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7Bit
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-fb-527a3d0abcab
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDLMWRmVeSWpSXmKPExsVy+t/xy7pctlVBBvuWGlss2X2D1WL+kXOs
-	Fv1vFrJatF05yG5xeeElVosfry+wWVx42sNmcbbpDbvFtJ3/WS0u75rDZjHj/D4mi0XLWpkt
-	1h65y25xtv82m8X5LZ1MFofftLNadJw9yO4g6HG5r5fJY+esu+wefVtWMXocv7GdyePzJrkA
-	1igum5TUnMyy1CJ9uwSujB9fH7MXvJavWHD2PXMD4wGJLkYODgkBE4muFQJdjJxAppjEhXvr
-	2boYuTiEBJYySszoeMQO4XQxSZy7vpwFpIpNQE3ic8MjNhBbREBL4vTOH8wgRcwCO5klenu6
-	mUESwgJ2Eo/OH2AEsVkEVCW2zrkA1sAroCnR8eQFWA2/gLrEu21PmUBsUQE3iek/DoLFOQVU
-	JFpe7gNbJiRQI3H2/mVmiF5BiR+T74HFmQXkJfbtn8oKYWtJrN95nGkCo+AsJGWzkJTNQlK2
-	gJF5FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIjH3Zwbj4mNUhRgEORiUe3gT5yiAh1sSy
-	4srcQ4wSHMxKIrxWBlVBQrwpiZVVqUX58UWlOanFhxiZODilGhgbKt+evdO4vaakxKLOYV3G
-	vqu/JXdkLrx5VNeRLS2Pna3qPtvqrqzaXcZfpn5gYJ96PKA2L8xz3XWmN29iZhfaB/xc/S76
-	ptKS/nd5a65fPJxdel7ntYTCG+mNjgZdU36d9cj64CS8d3fIaatt3xboZR6XCulaNU+9b7+I
-	0yUWtXVHN1Ulr5BSYinOSDTUYi4qTgQAa8RpMo8CAAA=
-References: <1383668001-19141-1-git-send-email-k.debski@samsung.com>
- <2656549.jVSier62Qi@amdc1227> <527A3B1C.50200@ti.com>
-User-Agent: KMail/4.11.2 (Linux/3.11.5-gentoo; KDE/4.11.2; x86_64; ; )
+	id S1756558Ab3KFNEm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 08:04:42 -0500
+Received: from imap.thunk.org ([74.207.234.97]:54931 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756292Ab3KFNEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 08:04:40 -0500
+Date: Wed, 6 Nov 2013 08:04:32 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: Pavel Machek <pavel@ucw.cz>, sandy harris <sandyinchina@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Nicholas Mc Guire <der.herr@hofr.at>
+Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and
+ /dev/random
+Message-ID: <20131106130432.GK14235@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Stephan Mueller <smueller@chronox.de>, Pavel Machek <pavel@ucw.cz>,
+	sandy harris <sandyinchina@gmail.com>, linux-kernel@vger.kernel.org,
+	linux-crypto@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
+References: <2579337.FPgJGgHYdz@tauon>
+ <4306229.ErfOL470s2@tauon>
+ <20131106124354.GJ14235@thunk.org>
+ <9172761.DO0L6FkY0c@tauon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9172761.DO0L6FkY0c@tauon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 06 of November 2013 18:20:36 Kishon Vijay Abraham I wrote:
-> Hi,
+On Wed, Nov 06, 2013 at 01:51:17PM +0100, Stephan Mueller wrote:
+> >That's unfortunate, since it leaves open the question of whether this
+> >jitter is something that could be at least somewhat predictable if you
+> >had a lot more information about the internal works of the CPU or
+> >not....
 > 
-> On Wednesday 06 November 2013 05:08 PM, Tomasz Figa wrote:
-> > Hi Kishon
-> >
-> > On Wednesday 06 of November 2013 13:48:13 Kishon Vijay Abraham I wrote:
-> >> Hi,
-> >>
-> >> On Tuesday 05 November 2013 09:43 PM, Kamil Debski wrote:
-> >>> Add a new driver for the Exynos USB PHY. The new driver uses the generic
-> >>> PHY framework. The driver includes support for the Exynos 4x10 and 4x12
-> >>> SoC families.
-> >>>
-> >>> Signed-off-by: Kamil Debski <k.debski@samsung.com>
-> >>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >>> ---
-> >>>    .../devicetree/bindings/phy/samsung-usbphy.txt     |   52 ++++
-> >>>    drivers/phy/Kconfig                                |   23 +-
-> >>>    drivers/phy/Makefile                               |    4 +
-> >>>    drivers/phy/phy-exynos-usb2.c                      |  234 ++++++++++++++
-> >>>    drivers/phy/phy-exynos-usb2.h                      |   87 ++++++
-> >>>    drivers/phy/phy-exynos4210-usb2.c                  |  272 ++++++++++++++++
-> >>>    drivers/phy/phy-exynos4212-usb2.c                  |  324 ++++++++++++++++++++
-> >>>    7 files changed, 995 insertions(+), 1 deletion(-)
-> >>>    create mode 100644 Documentation/devicetree/bindings/phy/samsung-usbphy.txt
-> >>>    create mode 100644 drivers/phy/phy-exynos-usb2.c
-> >>>    create mode 100644 drivers/phy/phy-exynos-usb2.h
-> >>>    create mode 100644 drivers/phy/phy-exynos4210-usb2.c
-> >>>    create mode 100644 drivers/phy/phy-exynos4212-usb2.c
-> > [snip]
-> >>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> >>> index a344f3d..bdf0fab 100644
-> >>> --- a/drivers/phy/Kconfig
-> >>> +++ b/drivers/phy/Kconfig
-> > [snip]
-> >>> @@ -51,4 +51,25 @@ config PHY_EXYNOS_DP_VIDEO
-> >>>    	help
-> >>>    	  Support for Display Port PHY found on Samsung EXYNOS SoCs.
-> >>>
-> >>> +config PHY_EXYNOS_USB2
-> >>> +	tristate "Samsung USB 2.0 PHY driver"
-> >>> +	help
-> >>> +	  Enable this to support Samsung USB phy helper driver for Samsung SoCs.
-> >>> +	  This driver provides common interface to interact, for Samsung
-> >>> +	  USB 2.0 PHY driver.
-> >>
-> >> I still think we can get rid of this helper driver and have a single
-> >> driver for both PHY_EXYNOS4210_USB2 and PHY_EXYNOS4212_USB2.
-> >
-> > This helper driver is a really nice way to avoid code duplication, while
-> > still leaving the code clean and readable.
-> >
-> > All the Samsung USB 2.0 PHYs require exactly the same semantics
-> > (isolation, reference rate configuration, power up, power on), but each
-> > one has completely different layout of registers and bits inside
-> > registers.
-> 
-> I just did a diff of registers in exynos 4210 and 4212 PHY drivers [1] 
-> and couldn't find that big a difference in register layout. Of course 
-> there are a few changes in HSIC bit fields and PHYFSEL but that's only 
-> minimal and could well be handled in a single driver.
-> 
-> [1] -> http://diffchecker.com/py3tp68m
+> I do not understand that answer: I thought we are talking about the 
+> search of non-predictable noise sources. If you cannot predict the 
+> sequence even if you have the state of the CPU, that is what we are 
+> looking for, is it not?
 
-This is quite a lot of differences, especially including shifted
-bitfields... In addition there is another set of available PHYs
-and inter-dependencies between them.
+I was asking the question about whether someone who knew more about
+the internal _workings_ of the CPU, note of the state of the CPU.
+This is not necessarily "the NSA guy", but someone who knows more
+about the internal workings of the Intel CPU (such as an Intel
+engineer --- and I've had Intel express misgivings about approaches
+which depend on "CPU jitter" approaches), or just someone who has
+spent a lot more time trying to examine the black box of the Intel CPU
+from the outside.
 
-> >
-> > Making a big single driver would end up being identical to the old Exynos
-> > USB2PHY driver with a lot of if and switch statements inside most of
-> > functions, which is not only ugly but makes any further extension hard.
-> 
-> Probably we shouldn't try to over design and just convert the old exynos 
-> usb2 phy driver to the generic phy framework to begin with?
+I remember making my own home-grown encryption algorithm before I
+entered college, secure in my arrogance that I had created something
+so complicated that no one could crack it.  Of course, as I got older
+and wiser, I realized that it just meant it was just something *I*
+couldn't yet anaylze and crack.  The argument "the internal state of
+the CPU is sooooo large, and the state transitions ar sooooo complex
+that it *must* be unpredictable, because *I* can't predict them" seems
+to be a very similar mistake that I made many years ago when I was in
+high school.
 
-The old exynos USB2 PHY driver is incomplete and has very limited
-functionality. It needs a complete redesign to support remaining features
-and this is the reason we decided to develop a new driver from scratch.
+Of course, some of the state in the CPU may not be unknown to the
+attacker, if it is derived by external events that are not visible to
+the attacker, such as a network interrupt.  But if that's the case,
+why not measure network interrupts directly?  We're much less likely
+to overestimate the amount of entropy we can extract the system in
+that case.
 
-I believe the way Kamil's driver is designed is definitely the way to go
-with Samsung's USB2 PHY drivers, especially considering that support for
-more SoCs using the same framework will be added - S3C64xx, S5PV210,
-and Exynos5250.
+> Also, does your answer mean you would disregard radioactive decay that 
+> is not predictable due to quantum physics and Heisenberg?
 
-Best regards.
-Tomasz
+No, because that's uncertainty that we can tie to a physical source.
+My concern about CPU state is that we haven't yet tied that to a
+physical source of entropy, or to exactly what external inputs that
+are not available to an external attacker.  We know that quantum
+events are not predictable.  We also know that digital circuits in
+general are very carefully designed to *be* predictable.
 
+Regards,
+
+						- Ted
