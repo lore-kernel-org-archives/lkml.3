@@ -1,127 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab3KFKuZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 05:50:25 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51653 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932075Ab3KFKuX (ORCPT
+	id S1756267Ab3KFKvF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 05:51:05 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:46843 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756068Ab3KFKvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 05:50:23 -0500
-Date: Wed, 6 Nov 2013 11:50:03 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
-        acme@redhat.com, jolsa@redhat.com, zheng.z.yan@intel.com, bp@alien8.de,
-        maria.n.dimakopoulou@gmail.com
-Subject: Re: [PATCH v5 3/4] perf,x86: add Intel RAPL PMU support
-Message-ID: <20131106105003.GG10651@twins.programming.kicks-ass.net>
-References: <1383670886-30827-1-git-send-email-eranian@google.com>
- <1383670886-30827-4-git-send-email-eranian@google.com>
+	Wed, 6 Nov 2013 05:51:02 -0500
+Message-ID: <527A1EC7.20400@ti.com>
+Date: Wed, 6 Nov 2013 16:19:43 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383670886-30827-4-git-send-email-eranian@google.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, Alex Elder <alex.elder@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 1/6] gpio: davinci: Fixed a check for unbanked gpio
+References: <1383406775-14902-1-git-send-email-prabhakar.csenng@gmail.com> <1383406775-14902-2-git-send-email-prabhakar.csenng@gmail.com> <CACRpkdZ7pwGQnK0NN4tybLUNdMxu5WVaGX8Dqu+kMgVBuyF16w@mail.gmail.com> <CA+V-a8tE3bxsHMSh2i3Xeq=kJUjmxTjcU25Kuka5e_iXeB--pQ@mail.gmail.com> <CACRpkdbLTopHMaog7FDW7O4-yLyv+mmnvgkNuXgeQR-pEtbz6Q@mail.gmail.com> <CA+V-a8tZTm9bh+arQ+uFyTVHxfdf07bWaM_Sdqo08TO=UCMMUg@mail.gmail.com>
+In-Reply-To: <CA+V-a8tZTm9bh+arQ+uFyTVHxfdf07bWaM_Sdqo08TO=UCMMUg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 05, 2013 at 06:01:25PM +0100, Stephane Eranian wrote:
-> +static DEFINE_SPINLOCK(rapl_hotplug_lock);
+On Wednesday 06 November 2013 03:45 PM, Prabhakar Lad wrote:
+> Hi Linus,
+> 
+> On Wed, Nov 6, 2013 at 3:26 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> On Wed, Nov 6, 2013 at 10:33 AM, Prabhakar Lad
+>> <prabhakar.csengg@gmail.com> wrote:
+>>> On Tue, Nov 5, 2013 at 6:09 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>>> On Sat, Nov 2, 2013 at 4:39 PM, Lad, Prabhakar
+>>>> <prabhakar.csengg@gmail.com> wrote:
+>>>>
+>>>>> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+>>>>>
+>>>>> This patch fixes the check for the offset in
+>>>>> gpio_to_irq_unbanked() function.
+>>>>>
+>>>>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>>>
+>>>> Is this a regression that should go in right now?
+>>>>
+>>> Yes it needs too.
+>>
+>> But on top of *what* exactly?
+>>
+>> This does not apply to my gpio tree devel branch and
+>> not even on the mainline kernel.
+>>
+> Looks like this needs to go via ARM tree as the earlier
+> patches have  gone via ARM tree itself [1].
+> If you can ACK it Sekhar can get it in via ARM tree.
 
-> +static void rapl_exit_cpu(int cpu)
-> +{
-> +	int i, phys_id = topology_physical_package_id(cpu);
-> +
-> +	spin_lock(&rapl_hotplug_lock);
+The dependent patches are all in linux-next through ARM SoC queued for
+v3.13 merge. This fix can either be sent late in merge cycle once Linus
+has pulled ARM SoC or after v3.13-rc1 comes out.
 
-> +	spin_unlock(&rapl_hotplug_lock);
-> +}
-> +
-> +static void rapl_init_cpu(int cpu)
-> +{
-> +	int i, phys_id = topology_physical_package_id(cpu);
-> +
-> +	spin_lock(&rapl_hotplug_lock);
-
-> +	spin_unlock(&rapl_hotplug_lock);
-> +}
-
-> +static int rapl_cpu_starting(int cpu)
-> +{
-> +	struct rapl_pmu *pmu2;
-> +	struct rapl_pmu *pmu1 = per_cpu(rapl_pmu, cpu);
-> +	int i, phys_id = topology_physical_package_id(cpu);
-> +
-> +	if (pmu1)
-> +		return 0;
-> +
-> +	spin_lock(&rapl_hotplug_lock);
-
-> +	spin_unlock(&rapl_hotplug_lock);
-> +	return 0;
-> +}
-> +
-> +static int rapl_cpu_dying(int cpu)
-> +{
-> +	struct rapl_pmu *pmu = per_cpu(rapl_pmu, cpu);
-> +	struct perf_event *event, *tmp;
-> +
-> +	if (!pmu)
-> +		return 0;
-> +
-> +	spin_lock(&rapl_hotplug_lock);
-
-> +	spin_unlock(&rapl_hotplug_lock);
-> +	return 0;
-> +}
-> +
-> +static int rapl_cpu_notifier(struct notifier_block *self,
-> +			     unsigned long action, void *hcpu)
-> +{
-> +	unsigned int cpu = (long)hcpu;
-> +
-> +	/* allocate/free data structure for uncore box */
-> +	switch (action & ~CPU_TASKS_FROZEN) {
-> +	case CPU_UP_PREPARE:
-> +		rapl_cpu_prepare(cpu);
-> +		break;
-> +	case CPU_STARTING:
-> +		rapl_cpu_starting(cpu);
-> +		break;
-> +	case CPU_UP_CANCELED:
-> +	case CPU_DYING:
-> +		rapl_cpu_dying(cpu);
-> +		break;
-> +	case CPU_ONLINE:
-> +		kfree(per_cpu(rapl_pmu_kfree, cpu));
-> +		per_cpu(rapl_pmu_kfree, cpu) = NULL;
-> +		break;
-> +	case CPU_DEAD:
-> +		per_cpu(rapl_pmu, cpu) = NULL;
-> +		break;
-> +	default:
-> +		break;
-> +	}
-> +
-> +	/* select the cpu that collects uncore events */
-> +	switch (action & ~CPU_TASKS_FROZEN) {
-> +	case CPU_DOWN_FAILED:
-> +	case CPU_STARTING:
-> +		rapl_init_cpu(cpu);
-> +		break;
-> +	case CPU_DOWN_PREPARE:
-> +		rapl_exit_cpu(cpu);
-> +		break;
-> +	default:
-> +		break;
-> +	}
-> +
-> +	return NOTIFY_OK;
-> +}
-
-What's the point of that rapl_hotplug_lock? It appears all methods its
-used from are called from hotplug notifiers and those are fully
-serialized by cpu_add_remove_lock.
-
+Thanks,
+Sekhar
 
