@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab3KFMTo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 07:19:44 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:10530 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756645Ab3KFMTh (ORCPT
+	id S1756723Ab3KFMVQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 07:21:16 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:3141 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756493Ab3KFMVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 07:19:37 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 06 Nov 2013 04:18:34 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <lee.jones@linaro.org>, <sameo@linux.intel.com>, <mturquette@linaro.org>,
-        <dwmw2@infradead.org>, <anton@enomsg.org>
-CC: <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <rob.herring@calxeda.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2 4/5] mfd: AS3722: add dt node properties for system power controller
-Date: Wed, 6 Nov 2013 17:48:22 +0530
-Message-ID: <1383740303-10956-5-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1383740303-10956-1-git-send-email-ldewangan@nvidia.com>
-References: <1383740303-10956-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 6 Nov 2013 07:21:15 -0500
+Date: Wed, 6 Nov 2013 07:21:09 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Uwe =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -tip v2 3/3] [BUGFIX] kprobes: Prohibit probing on
+ func_ptr_is_kernel_text
+Message-ID: <20131106072109.28fcb8ca@gandalf.local.home>
+In-Reply-To: <20131106060737.GC24044@gmail.com>
+References: <20131101112530.14657.87835.stgit@kbuild-fedora.novalocal>
+	<20131101112537.14657.88496.stgit@kbuild-fedora.novalocal>
+	<20131104210053.76c37210@gandalf.local.home>
+	<20131105060901.GA29936@gmail.com>
+	<5278973A.1010705@hitachi.com>
+	<20131105070537.GA2007@gmail.com>
+	<5278D89B.1070806@hitachi.com>
+	<20131106060737.GC24044@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ams AS3722 device supports the power off by turning off its all rails.
+On Wed, 6 Nov 2013 07:07:37 +0100
+Ingo Molnar <mingo@kernel.org> wrote:
 
-Add dt node properties to enable this functionality on this device.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1:
-- None
+> So until compilers get smarter (or there's some compiler trick I haven't 
+> noticed) lets stay with the separate section - it's not the end of the 
+> world, the (effective) 'noinline' aspect of noprobes changes code 
+> generation anyway.
+> 
 
- Documentation/devicetree/bindings/mfd/as3722.txt |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+It's fine now. I just wanted everyone to be ware if this annotation
+starts to get used a bit more, that it can cause unwanted side effects.
 
-diff --git a/Documentation/devicetree/bindings/mfd/as3722.txt b/Documentation/devicetree/bindings/mfd/as3722.txt
-index e782f39..1a2fa8a 100644
---- a/Documentation/devicetree/bindings/mfd/as3722.txt
-+++ b/Documentation/devicetree/bindings/mfd/as3722.txt
-@@ -121,6 +121,15 @@ The device node should have the optional properties to support the clock:
- #clock-cells: from common clock binding; shall be set to 1. The clock id for
- 	single clock output is 0.
- 
-+Power-off:
-+=========
-+
-+AS3722 supports the system power off by turning off all its rail. The power off
-+is provided through pm power off.
-+The device node should have the following properties to enable power-off
-+functionality from ams AS3722:
-+ams,system-power-controller: To enable the power off functionality through
-+	device.
- Example:
- --------
- #include <dt-bindings/mfd/as3722.h>
--- 
-1.7.1.1
-
+-- Steve
