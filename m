@@ -1,120 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932485Ab3KFPGE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 10:06:04 -0500
-Received: from relay.parallels.com ([195.214.232.42]:55719 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932252Ab3KFPGC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 10:06:02 -0500
-Subject: [PATCH] mm: add strictlimit knob -v2
-To: akpm@linux-foundation.org
-From: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: karl.kiniger@med.ge.com, tytso@mit.edu, linux-kernel@vger.kernel.org,
-        t.artem@lycos.com, linux-mm@kvack.org, mgorman@suse.de, jack@suse.cz,
-        fengguang.wu@intel.com, torvalds@linux-foundation.org,
-        mpatlasov@parallels.com
-Date: Wed, 06 Nov 2013 19:05:57 +0400
-Message-ID: <20131106150515.25906.55017.stgit@dhcp-10-30-17-2.sw.ru>
-In-Reply-To: <20131104140104.7936d263258a7a6753eb325e@linux-foundation.org>
-References: <20131104140104.7936d263258a7a6753eb325e@linux-foundation.org>
-User-Agent: StGit/0.16
+	id S932524Ab3KFPHV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 10:07:21 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:38189 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932252Ab3KFPHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 10:07:19 -0500
+Date: Wed, 6 Nov 2013 06:45:20 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, Will Deacon <will.deacon@arm.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v2 3/4] MCS Lock: Barrier corrections
+Message-ID: <20131106144520.GK18245@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <cover.1383670202.git.tim.c.chen@linux.intel.com>
+ <1383673356.11046.279.camel@schen9-DESK>
+ <20131105183744.GJ26895@mudshark.cambridge.arm.com>
+ <1383679317.11046.293.camel@schen9-DESK>
+ <20131105211803.GS28601@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131105211803.GS28601@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13110615-7182-0000-0000-000009054379
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"strictlimit" feature was introduced to enforce per-bdi dirty limits for
-FUSE which sets bdi max_ratio to 1% by default:
+On Tue, Nov 05, 2013 at 10:18:03PM +0100, Peter Zijlstra wrote:
+> On Tue, Nov 05, 2013 at 11:21:57AM -0800, Tim Chen wrote:
+> > On Tue, 2013-11-05 at 18:37 +0000, Will Deacon wrote:
+> > > On Tue, Nov 05, 2013 at 05:42:36PM +0000, Tim Chen wrote:
+> > > > This patch corrects the way memory barriers are used in the MCS lock
+> > > > and removes ones that are not needed. Also add comments on all barriers.
+> > > 
+> > > Hmm, I see that you're fixing up the barriers, but I still don't completely
+> > > understand how what you have is correct. Hopefully you can help me out :)
+> > > 
+> > > > Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > Reviewed-by: Tim Chen <tim.c.chen@linux.intel.com>
+> > > > Signed-off-by: Jason Low <jason.low2@hp.com>
+> > > > ---
+> > > >  include/linux/mcs_spinlock.h |   13 +++++++++++--
+> > > >  1 files changed, 11 insertions(+), 2 deletions(-)
+> > > > 
+> > > > diff --git a/include/linux/mcs_spinlock.h b/include/linux/mcs_spinlock.h
+> > > > index 96f14299..93d445d 100644
+> > > > --- a/include/linux/mcs_spinlock.h
+> > > > +++ b/include/linux/mcs_spinlock.h
+> > > > @@ -36,16 +36,19 @@ void mcs_spin_lock(struct mcs_spinlock **lock, struct mcs_spinlock *node)
+> > > >  	node->locked = 0;
+> > > >  	node->next   = NULL;
+> > > >  
+> > > > +	/* xchg() provides a memory barrier */
+> > > >  	prev = xchg(lock, node);
+> > > >  	if (likely(prev == NULL)) {
+> > > >  		/* Lock acquired */
+> > > >  		return;
+> > > >  	}
+> > > >  	ACCESS_ONCE(prev->next) = node;
+> > > > -	smp_wmb();
+> > > >  	/* Wait until the lock holder passes the lock down */
+> > > >  	while (!ACCESS_ONCE(node->locked))
+> > > >  		arch_mutex_cpu_relax();
+> > > > +
+> > > > +	/* Make sure subsequent operations happen after the lock is acquired */
+> > > > +	smp_rmb();
+> > > 
+> > > Ok, so this is an smp_rmb() because we assume that stores aren't speculated,
+> > > right? (i.e. the control dependency above is enough for stores to be ordered
+> > > with respect to taking the lock)...
+> 
+> PaulMck completely confused me a few days ago with control dependencies
+> etc.. Pretty much saying that C/C++ doesn't do those.
 
-http://article.gmane.org/gmane.linux.kernel.mm/105809
+I remember that there was a subtlety here, but don't remember what it was...
 
-However the feature can be useful for other relatively slow or untrusted
-BDIs like USB flash drives and DVD+RW. The patch adds a knob to enable the
-feature:
+And while I do remember reviewing this code, I don't find any evidence
+that I gave my "Reviewed-by".  Tim/Jason, if I fat-fingered this, please
+forward that email back to me.
 
-echo 1 > /sys/class/bdi/X:Y/strictlimit
-
-Being enabled, the feature enforces bdi max_ratio limit even if global (10%)
-dirty limit is not reached. Of course, the effect is not visible until
-/sys/class/bdi/X:Y/max_ratio is decreased to some reasonable value.
-
-Changed in v2:
- - updated patch description and documentation
-
-Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
----
- Documentation/ABI/testing/sysfs-class-bdi |    8 +++++++
- mm/backing-dev.c                          |   35 +++++++++++++++++++++++++++++
- 2 files changed, 43 insertions(+)
-
-diff --git a/Documentation/ABI/testing/sysfs-class-bdi b/Documentation/ABI/testing/sysfs-class-bdi
-index d773d56..3187a18 100644
---- a/Documentation/ABI/testing/sysfs-class-bdi
-+++ b/Documentation/ABI/testing/sysfs-class-bdi
-@@ -53,3 +53,11 @@ stable_pages_required (read-only)
- 
- 	If set, the backing device requires that all pages comprising a write
- 	request must not be changed until writeout is complete.
-+
-+strictlimit (read-write)
-+
-+	Forces per-BDI checks for the share of given device in the write-back
-+	cache even before the global background dirty limit is reached. This
-+	is useful in situations where the global limit is much higher than
-+	affordable for given relatively slow (or untrusted) device. Turning
-+	strictlimit on has no visible effect if max_ratio is equal to 100%.
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index ce682f7..4ee1d64 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -234,11 +234,46 @@ static ssize_t stable_pages_required_show(struct device *dev,
- }
- static DEVICE_ATTR_RO(stable_pages_required);
- 
-+static ssize_t strictlimit_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct backing_dev_info *bdi = dev_get_drvdata(dev);
-+	unsigned int val;
-+	ssize_t ret;
-+
-+	ret = kstrtouint(buf, 10, &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	switch (val) {
-+	case 0:
-+		bdi->capabilities &= ~BDI_CAP_STRICTLIMIT;
-+		break;
-+	case 1:
-+		bdi->capabilities |= BDI_CAP_STRICTLIMIT;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return count;
-+}
-+static ssize_t strictlimit_show(struct device *dev,
-+		struct device_attribute *attr, char *page)
-+{
-+	struct backing_dev_info *bdi = dev_get_drvdata(dev);
-+
-+	return snprintf(page, PAGE_SIZE-1, "%d\n",
-+			!!(bdi->capabilities & BDI_CAP_STRICTLIMIT));
-+}
-+static DEVICE_ATTR_RW(strictlimit);
-+
- static struct attribute *bdi_dev_attrs[] = {
- 	&dev_attr_read_ahead_kb.attr,
- 	&dev_attr_min_ratio.attr,
- 	&dev_attr_max_ratio.attr,
- 	&dev_attr_stable_pages_required.attr,
-+	&dev_attr_strictlimit.attr,
- 	NULL,
- };
- ATTRIBUTE_GROUPS(bdi_dev);
+							Thanx, Paul
 
