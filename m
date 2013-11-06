@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721Ab3KFMqE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 07:46:04 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:40145 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756530Ab3KFMp4 (ORCPT
+	id S1756776Ab3KFMrL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 07:47:11 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:50627 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756335Ab3KFMrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 07:45:56 -0500
+	Wed, 6 Nov 2013 07:47:08 -0500
 From: Frank Haverkamp <haver@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
@@ -14,116 +14,36 @@ Cc: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
         rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
         cascardo@linux.vnet.ibm.com, michael@ibmra.de,
         haver@linux.vnet.ibm.com
-Subject: [PATCH 4/6] GenWQE Debugfs interfaces
-Date: Wed,  6 Nov 2013 13:45:41 +0100
-Message-Id: <1383741943-14609-5-git-send-email-haver@linux.vnet.ibm.com>
+Subject: [PATCH 3/6] GenWQE Utility functions
+Date: Wed,  6 Nov 2013 13:45:40 +0100
+Message-Id: <1383741943-14609-4-git-send-email-haver@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1383741943-14609-1-git-send-email-haver@linux.vnet.ibm.com>
 References: <1383741943-14609-1-git-send-email-haver@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110612-3548-0000-0000-0000070FD3C4
+x-cbid: 13110612-4966-0000-0000-0000076A20E9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Debugfs interfaces for the GenWQE card. Help to debug potential
-problems. Dump internal chip state for debugging and failure
-determination.
+Miscelanous functionality used in the other GenWQE driver parts.
 
 Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
 Co-authors: Joerg-Stephan Vogt <jsvogt@de.ibm.com>,
             Michael Jung <MIJUNG@de.ibm.com>,
             Michael Ruettger <michael@ibmra.de>
 ---
- Documentation/ABI/testing/debugfs-driver-genwqe |   70 ++++
- drivers/misc/genwqe/card_debugfs.c              |  480 +++++++++++++++++++++++
- 2 files changed, 550 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/debugfs-driver-genwqe
- create mode 100644 drivers/misc/genwqe/card_debugfs.c
+ drivers/misc/genwqe/card_utils.c |  983 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 983 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/genwqe/card_utils.c
 
-diff --git a/Documentation/ABI/testing/debugfs-driver-genwqe b/Documentation/ABI/testing/debugfs-driver-genwqe
+diff --git a/drivers/misc/genwqe/card_utils.c b/drivers/misc/genwqe/card_utils.c
 new file mode 100644
-index 0000000..014a2d4
+index 0000000..5037e28
 --- /dev/null
-+++ b/Documentation/ABI/testing/debugfs-driver-genwqe
-@@ -0,0 +1,70 @@
-+What:           /sys/kernel/debug/genwqe/genwqe<n>_card/ddcb_info
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    DDCB queue dump used for debugging queueing problems.
-+
-+What:           /sys/kernel/debug/genwqe/genwqe<n>_card/curr_regs
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Dump of the current error registers.
-+
-+What:           /sys/kernel/debug/genwqe/genwqe<n>_card/curr_dbg_uid0
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Internal chip state of UID0 (unit id 0).
-+
-+What:           /sys/kernel/debug/genwqe/genwqe<n>_card/curr_dbg_uid1
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Internal chip state of UID1.
-+
-+What:           /sys/kernel/debug/genwqe/genwqe<n>_card/curr_dbg_uid2
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Internal chip state of UID2.
-+
-+What:           /sys/kernel/debug/genwqe/genwqe<n>_card/prev_regs
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Dump of the error registers before the last reset of
-+                the card occured.
-+
-+What:           /sys/kernel/debug/genwqe/genwqe<n>_card/prev_dbg_uid0
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Internal chip state of UID0 before card was reset.
-+
-+What:           /sys/kernel/debug/genwqe/genwqe<n>_card/prev_dbg_uid1
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Internal chip state of UID1 before card was reset.
-+
-+What:           /sys/kernel/debug/genwqe/genwqe<n>_card/prev_dbg_uid2
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Internal chip state of UID2 before card was reset.
-+
-+What:           /sys/kernel/debug/genwqe/genwqe<n>_card/info
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Comprehensive summary of bitstream version and software
-+                version. Used bitstream and bitstream clocking information.
-+
-+What:           /sys/kernel/debug/genwqe/genwqe<n>_card/err_inject
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Possibility to inject error cases to ensure that the drivers
-+                error handling code works well.
-+
-+What:           /sys/kernel/debug/genwqe/genwqe<n>_card/vf<0..14>_jobtimeout_msec
-+Date:           Oct 2013
-+Contact:        haver@linux.vnet.ibm.com
-+Description:    Default VF timeout 250ms. Testing might require 1000ms.
-+                Using 0 will use the cards default value (whatever that is).
-+
-+                The timeout depends on the max number of available cards
-+                in the system and the maximum allowed queue size.
-+
-+                The driver ensures that the settings are done just before
-+                the VFs get enabled. Changing the timeouts in flight is not
-+                possible.
-diff --git a/drivers/misc/genwqe/card_debugfs.c b/drivers/misc/genwqe/card_debugfs.c
-new file mode 100644
-index 0000000..e434eb1
---- /dev/null
-+++ b/drivers/misc/genwqe/card_debugfs.c
-@@ -0,0 +1,480 @@
++++ b/drivers/misc/genwqe/card_utils.c
+@@ -0,0 +1,983 @@
 +/**
 + * IBM Accelerator Family 'GenWQE'
 + *
@@ -145,464 +65,967 @@ index 0000000..e434eb1
 + */
 +
 +/*
-+ * Debugfs interfaces for the GenWQE card. Help to debug potential
-+ * problems. Dump internal chip state for debugging and failure
-+ * determination.
++ * Miscelanous functionality used in the other GenWQE driver parts.
 + */
 +
-+#include <linux/module.h>
 +#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/debugfs.h>
-+#include <linux/seq_file.h>
-+#include <linux/uaccess.h>
++#include <linux/dma-mapping.h>
++#include <linux/sched.h>
++#include <linux/vmalloc.h>
++#include <linux/page-flags.h>
++#include <linux/scatterlist.h>
++#include <linux/hugetlb.h>
++#include <linux/iommu.h>
++#include <linux/delay.h>
++#include <linux/pci.h>
++#include <linux/dma-mapping.h>
++#include <linux/ctype.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/delay.h>
++#include <asm/pgtable.h>
 +
++#include "genwqe_driver.h"
 +#include "card_base.h"
 +#include "card_ddcb.h"
 +
-+#define GENWQE_DEBUGFS_RO(_name, _showfn)				\
-+	static int genwqe_debugfs_##_name##_open(struct inode *inode,	\
-+						 struct file *file)	\
-+	{								\
-+		return single_open(file, _showfn, inode->i_private);	\
-+	}								\
-+	static const struct file_operations genwqe_##_name##_fops = {	\
-+		.open = genwqe_debugfs_##_name##_open,			\
-+		.read = seq_read,					\
-+		.llseek = seq_lseek,					\
-+		.release = single_release,				\
-+	}
-+
-+static void dbg_uidn_show(struct seq_file *s, struct genwqe_reg *regs,
-+			  int entries)
++/**
++ * __genwqe_writeq() - Write 64-bit register
++ * @cd:	        genwqe device descriptor
++ * @byte_offs:  byte offset within BAR
++ * @val:        64-bit value
++ *
++ * Return: 0 if success; < 0 if error
++ */
++int __genwqe_writeq(struct genwqe_dev *cd, u64 byte_offs, u64 val)
 +{
-+	unsigned int i;
-+	u32 v_hi, v_lo;
++	genwqe_dprintk(cd, dbg_card_regs,
++		   "  genwqe_writeq: reg=%08llx val=%016llx\n",
++		   byte_offs, val);
 +
-+	for (i = 0; i < entries; i++) {
-+		v_hi = (regs[i].val >> 32) & 0xffffffff;
-+		v_lo = (regs[i].val)       & 0xffffffff;
++	if (cd->err_inject & GENWQE_INJECT_HARDWARE_FAILURE)
++		return -EIO;
 +
-+		seq_printf(s, "  0x%08x 0x%08x 0x%08x 0x%08x EXT_ERR_REC\n",
-+			   regs[i].addr, regs[i].idx, v_hi, v_lo);
-+	}
-+}
++	if (cd->mmio == NULL)
++		return -EIO;
 +
-+static int curr_dbg_uidn_show(struct seq_file *s, void *unused, int uid)
-+{
-+	struct genwqe_dev *cd = s->private;
-+	int entries;
-+	struct genwqe_reg *regs;
-+
-+	entries = genwqe_ffdc_buff_size(cd, uid);
-+	if (entries < 0)
-+		return -EINVAL;
-+
-+	if (entries == 0)
-+		return 0;
-+
-+	regs = kcalloc(entries, sizeof(*regs), GFP_KERNEL);
-+	if (regs == NULL)
-+		return -ENOMEM;
-+
-+	genwqe_stop_traps(cd); /* halt the traps while dumping data */
-+	genwqe_ffdc_buff_read(cd, uid, regs, entries);
-+	genwqe_start_traps(cd);
-+
-+	dbg_uidn_show(s, regs, entries);
-+	kfree(regs);
++	__raw_writeq(cpu_to_be64((val)), (cd->mmio + byte_offs));
 +	return 0;
 +}
 +
-+static int genwqe_curr_dbg_uid0_show(struct seq_file *s, void *unused)
++/**
++ * __genwqe_readq() - Read 64-bit register
++ * @cd:         genwqe device descriptor
++ * @byte_offs:  offset within BAR
++ *
++ * Return: value from register
++ */
++u64 __genwqe_readq(struct genwqe_dev *cd, u64 byte_offs)
 +{
-+	return curr_dbg_uidn_show(s, unused, 0);
++	u64 val;
++
++	if (cd->err_inject & GENWQE_INJECT_HARDWARE_FAILURE)
++		return 0xffffffffffffffffull;
++
++	if ((cd->err_inject & GENWQE_INJECT_GFIR_FATAL) &&
++	    (byte_offs == IO_SLC_CFGREG_GFIR))
++		return 0x000000000000ffffull;
++
++	if ((cd->err_inject & GENWQE_INJECT_GFIR_INFO) &&
++	    (byte_offs == IO_SLC_CFGREG_GFIR))
++		return 0x00000000ffff0000ull;
++
++	if (cd->mmio == NULL)
++		return 0xffffffffffffffffull;
++
++	val = be64_to_cpu(__raw_readq(cd->mmio + byte_offs));
++
++	genwqe_dprintk(cd, dbg_card_regs,
++		       "  genwqe_readq:  reg=%08llx val=%016llx\n",
++		       byte_offs, val);
++
++	return val;
 +}
 +
-+GENWQE_DEBUGFS_RO(curr_dbg_uid0, genwqe_curr_dbg_uid0_show);
-+
-+static int genwqe_curr_dbg_uid1_show(struct seq_file *s, void *unused)
++/**
++ * __genwqe_writel() - Write 32-bit register
++ * @cd:	        genwqe device descriptor
++ * @byte_offs:  byte offset within BAR
++ * @val:        32-bit value
++ *
++ * Return: 0 if success; < 0 if error
++ */
++int __genwqe_writel(struct genwqe_dev *cd, uint64_t byte_offs, u32 val)
 +{
-+	return curr_dbg_uidn_show(s, unused, 1);
-+}
++	genwqe_dprintk(cd, dbg_card_regs,
++		       "  genwqe_writel: reg=%08llx val=%08x\n",
++		       byte_offs, val);
 +
-+GENWQE_DEBUGFS_RO(curr_dbg_uid1, genwqe_curr_dbg_uid1_show);
++	if (cd->err_inject & GENWQE_INJECT_HARDWARE_FAILURE)
++		return -EIO;
 +
-+static int genwqe_curr_dbg_uid2_show(struct seq_file *s, void *unused)
-+{
-+	return curr_dbg_uidn_show(s, unused, 2);
-+}
++	if (cd->mmio == NULL)
++		return -EIO;
 +
-+GENWQE_DEBUGFS_RO(curr_dbg_uid2, genwqe_curr_dbg_uid2_show);
-+
-+static int prev_dbg_uidn_show(struct seq_file *s, void *unused, int uid)
-+{
-+	struct genwqe_dev *cd = s->private;
-+
-+	dbg_uidn_show(s, cd->ffdc[uid].regs,  cd->ffdc[uid].entries);
++	__raw_writel(cpu_to_be32((val)), cd->mmio + byte_offs);
 +	return 0;
 +}
 +
-+static int genwqe_prev_dbg_uid0_show(struct seq_file *s, void *unused)
++/**
++ * __genwqe_readl() - Read 32-bit register
++ * @cd:         genwqe device descriptor
++ * @byte_offs:  offset within BAR
++ *
++ * Return: Value from register
++ */
++u32 __genwqe_readl(struct genwqe_dev *cd, uint64_t byte_offs)
 +{
-+	return prev_dbg_uidn_show(s, unused, 0);
++	if (cd->err_inject & GENWQE_INJECT_HARDWARE_FAILURE)
++		return 0xffffffff;
++
++	if (cd->mmio == NULL)
++		return 0xffffffff;
++
++	return be32_to_cpu(__raw_readl(cd->mmio + byte_offs));
 +}
 +
-+GENWQE_DEBUGFS_RO(prev_dbg_uid0, genwqe_prev_dbg_uid0_show);
-+
-+static int genwqe_prev_dbg_uid1_show(struct seq_file *s, void *unused)
++/**
++ * genwqe_read_app_id() - Extract app_id
++ *
++ * app_unitcfg need to be filled with valid data first
++ */
++int genwqe_read_app_id(struct genwqe_dev *cd, char *app_name, int len)
 +{
-+	return prev_dbg_uidn_show(s, unused, 1);
-+}
++	int i, j;
++	u32 app_id = (u32)cd->app_unitcfg;
 +
-+GENWQE_DEBUGFS_RO(prev_dbg_uid1, genwqe_prev_dbg_uid1_show);
-+
-+static int genwqe_prev_dbg_uid2_show(struct seq_file *s, void *unused)
-+{
-+	return prev_dbg_uidn_show(s, unused, 2);
-+}
-+
-+GENWQE_DEBUGFS_RO(prev_dbg_uid2, genwqe_prev_dbg_uid2_show);
-+
-+static int genwqe_curr_regs_show(struct seq_file *s, void *unused)
-+{
-+	struct genwqe_dev *cd = s->private;
-+	unsigned int i;
-+	struct genwqe_reg *regs;
-+
-+	regs = kcalloc(GENWQE_FFDC_REGS, sizeof(*regs), GFP_KERNEL);
-+	if (regs == NULL)
-+		return -ENOMEM;
-+
-+	genwqe_stop_traps(cd);
-+	genwqe_read_ffdc_regs(cd, regs, GENWQE_FFDC_REGS, 1);
-+	genwqe_start_traps(cd);
-+
-+	for (i = 0; i < GENWQE_FFDC_REGS; i++) {
-+		if (regs[i].addr == 0xffffffff)
-+			break;  /* invalid entries */
-+
-+		if (regs[i].val == 0x0ull)
-+			continue;  /* do not print 0x0 FIRs */
-+
-+		seq_printf(s, "  0x%08x 0x%016llx\n",
-+			   regs[i].addr, regs[i].val);
++	memset(app_name, 0, len);
++	for (i = 0, j = 0; j < min(len, 4); j++) {
++		char ch = (char)((app_id >> (24 - j*8)) & 0xff);
++		if (ch == ' ')
++			continue;
++		app_name[i++] = isprint(ch) ? ch : 'X';
 +	}
-+	return 0;
++	return i;
 +}
 +
-+GENWQE_DEBUGFS_RO(curr_regs, genwqe_curr_regs_show);
++/**
++ * init_crc32() - Prepare a lookup table for fast crc32 calculations
++ *
++ * Existing kernel functions seem to use a different polynom,
++ * therefore we could not use them here.
++ *
++ * Genwqe's Polynomial = 0x20044009
++ */
++#define CRC32_POLYNOMIAL	0x20044009
++static u32 crc32_tab[256];	/* crc32 lookup table */
 +
-+static int genwqe_prev_regs_show(struct seq_file *s, void *unused)
++void init_crc32(void)
 +{
-+	struct genwqe_dev *cd = s->private;
-+	unsigned int i;
-+	struct genwqe_reg *regs = cd->ffdc[GENWQE_DBG_REGS].regs;
++	int i, j;
++	u32 crc;
 +
-+	if (regs == NULL)
-+		return -EINVAL;
-+
-+	for (i = 0; i < GENWQE_FFDC_REGS; i++) {
-+		if (regs[i].addr == 0xffffffff)
-+			break;  /* invalid entries */
-+
-+		if (regs[i].val == 0x0ull)
-+			continue;  /* do not print 0x0 FIRs */
-+
-+		seq_printf(s, "  0x%08x 0x%016llx\n",
-+			   regs[i].addr, regs[i].val);
++	for (i = 0;  i < 256;  i++) {
++		crc = i << 24;
++		for (j = 0;  j < 8;  j++) {
++			if (crc & 0x80000000)
++				crc = (crc << 1) ^ CRC32_POLYNOMIAL;
++			else
++				crc = (crc << 1);
++		}
++		crc32_tab[i] = crc;
 +	}
-+	return 0;
 +}
 +
-+GENWQE_DEBUGFS_RO(prev_regs, genwqe_prev_regs_show);
++/**
++ * genwqe_crc32() - Generate 32-bit crc as required for DDCBs
++ * @buff:       pointer to data buffer
++ * @len:        length of data for calculation
++ * @init:       initial crc (0xffffffff at start)
++ *
++ * polynomial = x^32 * + x^29 + x^18 + x^14 + x^3 + 1 (0x20044009)
 +
-+static int genwqe_jtimer_show(struct seq_file *s, void *unused)
++ * Example: 4 bytes 0x01 0x02 0x03 0x04 with init=0xffffffff should
++ * result in a crc32 of 0xf33cb7d3.
++ *
++ * The existing kernel crc functions did not cover this polynom yet.
++ *
++ * Return: crc32 checksum.
++ */
++u32 genwqe_crc32(u8 *buff, size_t len, u32 init)
 +{
-+	struct genwqe_dev *cd = s->private;
-+	unsigned int vf_num;
-+	u64 jtimer;
++	int i;
++	u32 crc;
 +
-+	jtimer = genwqe_read_jtimer(cd, 0);
-+	seq_printf(s, "  PF   0x%016llx %d msec\n", jtimer,
-+		   genwqe_pf_jobtimeout_msec);
-+
-+	for (vf_num = 0; vf_num < cd->num_vfs; vf_num++) {
-+		jtimer = genwqe_read_jtimer(cd, vf_num + 1);
-+		seq_printf(s, "  VF%-2d 0x%016llx %d msec\n", vf_num, jtimer,
-+			   cd->vf_jobtimeout_msec[vf_num]);
++	crc = init;
++	while (len--) {
++		i = ((crc >> 24) ^ *buff++) & 0xFF;
++		crc = (crc << 8) ^ crc32_tab[i];
 +	}
-+	return 0;
++	return crc;
 +}
 +
-+GENWQE_DEBUGFS_RO(jtimer, genwqe_jtimer_show);
-+
-+static int genwqe_ddcb_info_show(struct seq_file *s, void *unused)
++void *__genwqe_alloc_consistent(struct genwqe_dev *cd, size_t size,
++			       dma_addr_t *dma_handle)
 +{
-+	struct genwqe_dev *cd = s->private;
-+	unsigned int i;
-+	struct ddcb_queue *queue;
-+	struct ddcb *pddcb;
++	if (get_order(size) > MAX_ORDER)
++		return NULL;
 +
-+	queue = &cd->queue;
-+	seq_puts(s, "DDCB QUEUE:\n");
-+	seq_printf(s, "  ddcb_max:            %d\n"
-+		   "  ddcb_daddr:          %016llx - %016llx\n"
-+		   "  ddcb_vaddr:          %016llx\n"
-+		   "  ddcbs_in_flight:     %u\n"
-+		   "  ddcbs_max_in_flight: %u\n"
-+		   "  ddcbs_completed:     %u\n"
-+		   "  busy:                %u\n"
-+		   "  irqs_processed:      %u\n",
-+		   queue->ddcb_max, (long long)queue->ddcb_daddr,
-+		   (long long)queue->ddcb_daddr +
-+		   (queue->ddcb_max * DDCB_LENGTH),
-+		   (long long)queue->ddcb_vaddr, queue->ddcbs_in_flight,
-+		   queue->ddcbs_max_in_flight, queue->ddcbs_completed,
-+		   queue->busy, cd->irqs_processed);
-+
-+	/* Hardware State */
-+	seq_printf(s, "  0x%08x 0x%016llx IO_QUEUE_CONFIG\n"
-+		   "  0x%08x 0x%016llx IO_QUEUE_STATUS\n"
-+		   "  0x%08x 0x%016llx IO_QUEUE_SEGMENT\n"
-+		   "  0x%08x 0x%016llx IO_QUEUE_INITSQN\n"
-+		   "  0x%08x 0x%016llx IO_QUEUE_WRAP\n"
-+		   "  0x%08x 0x%016llx IO_QUEUE_OFFSET\n"
-+		   "  0x%08x 0x%016llx IO_QUEUE_WTIME\n"
-+		   "  0x%08x 0x%016llx IO_QUEUE_ERRCNTS\n"
-+		   "  0x%08x 0x%016llx IO_QUEUE_LRW\n",
-+		   queue->IO_QUEUE_CONFIG,
-+		   __genwqe_readq(cd, queue->IO_QUEUE_CONFIG),
-+		   queue->IO_QUEUE_STATUS,
-+		   __genwqe_readq(cd, queue->IO_QUEUE_STATUS),
-+		   queue->IO_QUEUE_SEGMENT,
-+		   __genwqe_readq(cd, queue->IO_QUEUE_SEGMENT),
-+		   queue->IO_QUEUE_INITSQN,
-+		   __genwqe_readq(cd, queue->IO_QUEUE_INITSQN),
-+		   queue->IO_QUEUE_WRAP,
-+		   __genwqe_readq(cd, queue->IO_QUEUE_WRAP),
-+		   queue->IO_QUEUE_OFFSET,
-+		   __genwqe_readq(cd, queue->IO_QUEUE_OFFSET),
-+		   queue->IO_QUEUE_WTIME,
-+		   __genwqe_readq(cd, queue->IO_QUEUE_WTIME),
-+		   queue->IO_QUEUE_ERRCNTS,
-+		   __genwqe_readq(cd, queue->IO_QUEUE_ERRCNTS),
-+		   queue->IO_QUEUE_LRW,
-+		   __genwqe_readq(cd, queue->IO_QUEUE_LRW));
-+
-+	seq_printf(s, "DDCB list (ddcb_act=%d/ddcb_next=%d):\n",
-+		   queue->ddcb_act, queue->ddcb_next);
-+
-+	pddcb = queue->ddcb_vaddr;
-+	for (i = 0; i < queue->ddcb_max; i++) {
-+		seq_printf(s, "  %-3d: RETC=%03x SEQ=%04x HSI/SHI=%02x/%02x ",
-+			   i, be16_to_cpu(pddcb->retc_16),
-+			   be16_to_cpu(pddcb->seqnum_16),
-+			   pddcb->hsi, pddcb->shi);
-+		seq_printf(s, "PRIV=%06llx CMD=%02x\n",
-+			   be64_to_cpu(pddcb->priv_64), pddcb->cmd);
-+		pddcb++;
-+	}
-+	return 0;
++	return pci_alloc_consistent(cd->pci_dev, size, dma_handle);
 +}
 +
-+GENWQE_DEBUGFS_RO(ddcb_info, genwqe_ddcb_info_show);
-+
-+static int genwqe_info_show(struct seq_file *s, void *unused)
++void __genwqe_free_consistent(struct genwqe_dev *cd, size_t size,
++			     void *vaddr, dma_addr_t dma_handle)
 +{
-+	struct genwqe_dev *cd = s->private;
-+	u16 val16, type;
-+	u64 app_id, slu_id, bitstream = -1;
++	if (vaddr == NULL)
++		return;
++	pci_free_consistent(cd->pci_dev, size, vaddr, dma_handle);
++}
++
++static void genwqe_unmap_pages(struct genwqe_dev *cd, dma_addr_t *dma_list,
++			      int num_pages)
++{
++	int i;
 +	struct pci_dev *pci_dev = cd->pci_dev;
 +
-+	slu_id = __genwqe_readq(cd, IO_SLU_UNITCFG);
-+	app_id = __genwqe_readq(cd, IO_APP_UNITCFG);
++	for (i = 0; (i < num_pages) && (dma_list[i] != 0x0); i++) {
++		pci_unmap_page(pci_dev, dma_list[i],
++			       PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
++		dma_list[i] = 0x0;
++	}
++}
 +
-+	if (genwqe_is_privileged(cd))
-+		bitstream = __genwqe_readq(cd, IO_SLU_BITSTREAM);
++static int genwqe_map_pages(struct genwqe_dev *cd,
++			   struct page **page_list, int num_pages,
++			   dma_addr_t *dma_list)
++{
++	int i;
++	struct pci_dev *pci_dev = cd->pci_dev;
 +
-+	val16 = (u16)(slu_id & 0x0fLLU);
-+	type  = (u16)((slu_id >> 20) & 0xffLLU);
++	/* establish DMA mapping for requested pages */
++	for (i = 0; i < num_pages; i++) {
++		dma_addr_t daddr;
 +
-+	seq_printf(s, "%s driver version: %s\n"
-+		   "    Device Name/Type: %s %s CardIdx: %d\n"
-+		   "    SLU/APP Config  : 0x%016llx/0x%016llx\n"
-+		   "    Build Date      : %u/%x/%u\n"
-+		   "    Base Clock      : %u MHz\n"
-+		   "    Arch/SVN Release: %u/%llx\n"
-+		   "    Bitstream       : %llx\n",
-+		   GENWQE_DEVNAME, DRV_VERS_STRING, dev_name(&pci_dev->dev),
-+		   genwqe_is_privileged(cd) ?
-+		   "Physical" : "Virtual or no SR-IOV",
-+		   cd->card_idx, slu_id, app_id,
-+		   (u16)((slu_id >> 12) & 0x0fLLU),	   /* month */
-+		   (u16)((slu_id >>  4) & 0xffLLU),	   /* day */
-+		   (u16)((slu_id >> 16) & 0x0fLLU) + 2010, /* year */
-+		   genwqe_base_clock_frequency(cd),
-+		   (u16)((slu_id >> 32) & 0xffLLU), slu_id >> 40,
-+		   bitstream);
++		dma_list[i] = 0x0;
++		daddr = pci_map_page(pci_dev, page_list[i],
++				     0,	 /* map_offs */
++				     PAGE_SIZE,
++				     PCI_DMA_BIDIRECTIONAL);  /* FIXME rd/rw */
 +
++		if (pci_dma_mapping_error(pci_dev, daddr)) {
++			dev_err(&pci_dev->dev,
++				"[%s] err: no dma addr daddr=%016llx!\n",
++				__func__, (long long)daddr);
++			goto err;
++		}
++
++		dma_list[i] = daddr;
++	}
++	return 0;
++
++ err:
++	genwqe_unmap_pages(cd, dma_list, num_pages);
++	return -EIO;
++}
++
++static int genwqe_sgl_size(int num_pages)
++{
++	int len, num_tlb = num_pages / 7;
++
++	len = sizeof(struct sg_entry) * (num_pages+num_tlb + 1);
++	return roundup(len, PAGE_SIZE);
++}
++
++struct sg_entry *genwqe_alloc_sgl(struct genwqe_dev *cd, int num_pages,
++				  dma_addr_t *dma_addr, size_t *sgl_size)
++{
++	struct pci_dev *pci_dev = cd->pci_dev;
++	struct sg_entry *sgl;
++
++	*sgl_size = genwqe_sgl_size(num_pages);
++	if (get_order(*sgl_size) > MAX_ORDER) {
++		dev_err(&pci_dev->dev,
++			"[%s] err: too much memory requested!\n", __func__);
++		return NULL;
++	}
++
++	sgl = __genwqe_alloc_consistent(cd, *sgl_size, dma_addr);
++	if (sgl == NULL) {
++		dev_err(&pci_dev->dev,
++			"[%s] err: no memory available!\n", __func__);
++		return NULL;
++	}
++
++	return sgl;
++}
++
++static void genwqe_dump_sgl(struct genwqe_dev *cd, struct sg_entry *sgl,
++		    size_t sgl_size)
++{
++	unsigned int i, j;
++	struct pci_dev *pci_dev = cd->pci_dev;
++
++	for (j = 0, i = 0; i < sgl_size/sizeof(struct sg_entry); i++, j++) {
++		if (j == 8) {
++			dev_info(&pci_dev->dev, "  --\n");
++			j = 0;
++		}
++		dev_info(&pci_dev->dev, "  %016llx %08x %08x %s\n",
++			 be64_to_cpu(sgl[i].target_addr),
++			 be32_to_cpu(sgl[i].len),
++			 be32_to_cpu(sgl[i].flags),
++			 (be32_to_cpu(sgl[i].len) > PAGE_SIZE) ? "C" : "");
++
++		if (be32_to_cpu(sgl[i].flags) == SG_END_LIST)
++			break;
++	}
++}
++
++int genwqe_setup_sgl(struct genwqe_dev *cd,
++		    unsigned long offs,
++		    unsigned long size,
++		    struct sg_entry *sgl, /* genwqe sgl */
++		    dma_addr_t dma_addr, size_t sgl_size,
++		    dma_addr_t *dma_list, int page_offs, int num_pages)
++{
++	int i = 0, j = 0, p;
++	unsigned long dma_offs, map_offs;
++	struct pci_dev *pci_dev = cd->pci_dev;
++	dma_addr_t prev_daddr = 0;
++	struct sg_entry *s, *last_s = NULL;
++
++	/* sanity checks */
++	if (offs > PAGE_SIZE) {
++		dev_err(&pci_dev->dev,
++			"[%s] too large start offs %08lx\n", __func__, offs);
++		return -EFAULT;
++	}
++	if (sgl_size < genwqe_sgl_size(num_pages)) {
++		dev_err(&pci_dev->dev,
++			"[%s] sgl_size too small %08lx for %d pages\n",
++			__func__, sgl_size, num_pages);
++		return -EFAULT;
++	}
++
++	dma_offs = 128;		/* next block if needed/dma_offset */
++	map_offs = offs;	/* offset in first page */
++
++	s = &sgl[0];		/* first set of 8 entries */
++	p = 0;			/* page */
++	while (p < num_pages) {
++		dma_addr_t daddr;
++		unsigned int size_to_map;
++
++		/* always write the chaining entry, cleanup is done later */
++		j = 0;
++		s[j].target_addr = cpu_to_be64(dma_addr + dma_offs);
++		s[j].len	 = cpu_to_be32(128);
++		s[j].flags	 = cpu_to_be32(SG_CHAINED);
++		j++;
++
++		while (j < 8) {
++			/* DMA mapping for requested page, offs, size */
++			size_to_map = min(size, PAGE_SIZE - map_offs);
++			daddr = dma_list[page_offs + p] + map_offs;
++			size -= size_to_map;
++			map_offs = 0;
++
++			if (prev_daddr == daddr) {
++				u32 prev_len = be32_to_cpu(last_s->len);
++
++				/* pr_info("daddr combining: "
++					"%016llx/%08x -> %016llx\n",
++					prev_daddr, prev_len, daddr); */
++
++				last_s->len = cpu_to_be32(prev_len +
++							  size_to_map);
++
++				p++; /* process next page */
++				if (p == num_pages)
++					goto fixup;  /* nothing to do */
++
++				prev_daddr = daddr + size_to_map;
++				continue;
++			}
++
++			/* start new entry */
++			s[j].target_addr = cpu_to_be64(daddr);
++			s[j].len	 = cpu_to_be32(size_to_map);
++			s[j].flags	 = cpu_to_be32(SG_DATA);
++			prev_daddr = daddr + size_to_map;
++			last_s = &s[j];
++			j++;
++
++			p++;	/* process next page */
++			if (p == num_pages)
++				goto fixup;  /* nothing to do */
++		}
++		dma_offs += 128;
++		s += 8;		/* continue 8 elements further */
++	}
++ fixup:
++	if (j == 1) {		/* combining happend on last entry! */
++		s -= 8;		/* full shift needed on previous sgl block */
++		j =  7;		/* shift all elements */
++	}
++
++	for (i = 0; i < j; i++)	/* move elements 1 up */
++		s[i] = s[i + 1];
++
++	s[i].target_addr = cpu_to_be64(0);
++	s[i].len	 = cpu_to_be32(0);
++	s[i].flags	 = cpu_to_be32(SG_END_LIST);
++
++	if (cd->debug & dbg_card_sglist) {
++		genwqe_dprintk(cd, dbg_card_sglist,
++			       " genwqe_sglist %d/sgl poffs=%d %d\n",
++			       j, page_offs, num_pages);
++		genwqe_dump_sgl(cd, sgl, sgl_size);
++	}
 +	return 0;
 +}
 +
-+GENWQE_DEBUGFS_RO(info, genwqe_info_show);
-+
-+int genwqe_init_debugfs(struct genwqe_dev *cd)
++void genwqe_free_sgl(struct genwqe_dev *cd, struct sg_entry *sg_list,
++		    dma_addr_t dma_addr, size_t size)
 +{
-+	struct dentry *root;
-+	struct dentry *file;
-+	int ret;
-+	char card_name[64];
-+	char name[64];
++	__genwqe_free_consistent(cd, size, sg_list, dma_addr);
++}
++
++/**
++ * free_user_pages() - Give pinned pages back
++ *
++ * Documentation of get_user_pages is in mm/memory.c:
++ *
++ * If the page is written to, set_page_dirty (or set_page_dirty_lock,
++ * as appropriate) must be called after the page is finished with, and
++ * before put_page is called.
++ */
++static int free_user_pages(struct page **page_list, unsigned int nr_pages,
++			   int dirty)
++{
 +	unsigned int i;
 +
-+	sprintf(card_name, "%s%u_card", GENWQE_DEVNAME, cd->card_idx);
++	for (i = 0; i < nr_pages; i++) {
++		if (page_list[i] != NULL) {
++			if (dirty)
++				set_page_dirty_lock(page_list[i]);
++			put_page(page_list[i]);
++		}
++	}
++	return 0;
++}
 +
-+	root = debugfs_create_dir(card_name, cd->debugfs_genwqe);
-+	if (!root) {
-+		ret = -ENOMEM;
-+		goto err0;
++/**
++ * user_vmap() - Map user-space memory to virtual kernel memory
++ * @cd:         pointer to genwqe device
++ * @m:          mapping params
++ * @uaddr:      user virtual address
++ * @size:       size of memory to be mapped
++ *
++ * We need to think about how we could speed this up. Of course it is
++ * not a good idea to do this over and over again, like we are
++ * currently doing it. Nevertheless, I am curious where on the path
++ * the performance is spend. Most probably within the memory
++ * allocation functions, but maybe also in the DMA mapping code.
++ *
++ * Restrictions: The maximum size of the possible mapping currently depends
++ *               on the amount of memory we can get using kzalloc() for the
++ *               page_list and pci_alloc_coherent for the sg_list.
++ *               The sg_list is currently itself not scattered, which could
++ *               be fixed with some effort. The page_list must be split into
++ *               PAGE_SIZE chunks too. All that will make the complicated
++ *               code more complicated.
++ *
++ * Return: 0 if success
++ */
++int user_vmap(struct genwqe_dev *cd, struct dma_mapping *m, void *uaddr,
++	      unsigned long size, struct ddcb_requ *req)
++{
++	int rc = -EINVAL;
++	unsigned long data, offs;
++	struct pci_dev *pci_dev = cd->pci_dev;
++
++	if ((uaddr == NULL) || (size == 0)) {
++		m->size = 0;	/* mark unused and not added */
++		return -EINVAL;
++	}
++	m->u_vaddr = uaddr;
++	m->size    = size;
++
++	/* determine space needed for page_list. */
++	data = (unsigned long)uaddr;
++	offs = offset_in_page(data);
++	m->nr_pages = DIV_ROUND_UP(offs + size, PAGE_SIZE);
++
++	m->page_list = kcalloc(m->nr_pages,
++			       sizeof(struct page *) + sizeof(dma_addr_t),
++			       GFP_KERNEL);
++	if (!m->page_list) {
++		dev_err(&pci_dev->dev, "err: alloc page_list failed\n");
++		m->nr_pages = 0;
++		m->u_vaddr = NULL;
++		m->size = 0;	/* mark unused and not added */
++		return -ENOMEM;
++	}
++	m->dma_list = (dma_addr_t *)(m->page_list + m->nr_pages);
++
++	/* pin user pages in memory */
++	rc = get_user_pages_fast(data & PAGE_MASK, /* page aligned addr */
++				 m->nr_pages,
++				 1,		/* write by caller */
++				 m->page_list);	/* ptrs to pages */
++
++	/* assumption: get_user_pages can be killed by signals. */
++	if (rc < m->nr_pages) {
++		free_user_pages(m->page_list, rc, 0);
++		rc = -EFAULT;
++		goto fail_get_user_pages;
 +	}
 +
-+	/* non privileged interfaces are done here */
-+	file = debugfs_create_file("ddcb_info", S_IRUGO, root, cd,
-+				   &genwqe_ddcb_info_fops);
-+	if (!file) {
-+		ret = -ENOMEM;
-+		goto err1;
++	rc = genwqe_map_pages(cd, m->page_list, m->nr_pages, m->dma_list);
++	if (rc != 0)
++		goto fail_free_user_pages;
++
++	return 0;
++
++ fail_free_user_pages:
++	free_user_pages(m->page_list, m->nr_pages, 0);
++
++ fail_get_user_pages:
++	kfree(m->page_list);
++	m->page_list = NULL;
++	m->dma_list = NULL;
++	m->nr_pages = 0;
++	m->u_vaddr = NULL;
++	m->size = 0;		/* mark unused and not added */
++	return rc;
++}
++
++/**
++ * user_vunmap() - Undo mapping of user-space memory to virtual kernel memory
++ * @cd:         pointer to genwqe device
++ * @m:          mapping params
++ */
++int user_vunmap(struct genwqe_dev *cd, struct dma_mapping *m,
++		struct ddcb_requ *req)
++{
++	struct pci_dev *pci_dev = cd->pci_dev;
++
++	if (!dma_mapping_used(m)) {
++		dev_err(&pci_dev->dev, "[%s] err: mapping %p not used!\n",
++			__func__, m);
++		return -EINVAL;
 +	}
 +
-+	file = debugfs_create_file("info", S_IRUGO, root, cd,
-+				   &genwqe_info_fops);
-+	if (!file) {
-+		ret = -ENOMEM;
-+		goto err1;
++	if (m->dma_list)
++		genwqe_unmap_pages(cd, m->dma_list, m->nr_pages);
++
++	if (m->page_list) {
++		free_user_pages(m->page_list, m->nr_pages, 1);
++
++		kfree(m->page_list);
++		m->page_list = NULL;
++		m->dma_list = NULL;
++		m->nr_pages = 0;
 +	}
 +
-+	file = debugfs_create_x64("debug", 0666, root, &cd->debug);
-+	if (!file) {
-+		ret = -ENOMEM;
-+		goto err1;
++	m->u_vaddr = NULL;
++	m->size = 0;		/* mark as unused and not added */
++	return 0;
++}
++
++/**
++ * genwqe_card_type() - Get chip type SLU Configuration Register
++ * @cd:         pointer to the genwqe device descriptor
++ * Return: 0: Altera Stratix-IV 230
++ *         1: Altera Stratix-IV 530
++ *         2: Altera Stratix-V A4
++ *         3: Altera Stratix-V A7
++ */
++u8 genwqe_card_type(struct genwqe_dev *cd)
++{
++	u64 card_type = cd->slu_unitcfg;
++	return (u8)((card_type & SLU_UNITCFG_TYPE_MASK) >> 20);
++}
++
++/**
++ * genwqe_card_reset() - Reset the card
++ * @cd:         pointer to the genwqe device descriptor
++ */
++int genwqe_card_reset(struct genwqe_dev *cd)
++{
++	u64 softrst;
++	struct pci_dev *pci_dev = cd->pci_dev;
++
++	if (!genwqe_is_privileged(cd))
++		return -ENODEV;
++
++	/* new SL */
++	__genwqe_writeq(cd, IO_SLC_CFGREG_SOFTRESET, 0x1ull);
++	msleep(1000);
++	__genwqe_readq(cd, IO_HSU_FIR_CLR);
++	__genwqe_readq(cd, IO_APP_FIR_CLR);
++	__genwqe_readq(cd, IO_SLU_FIR_CLR);
++
++	/*
++	 * Read-modify-write to preserve the stealth bits
++	 *
++	 * For SL >= 039, Stealth WE bit allows removing
++	 * the read-modify-wrote.
++	 * r-m-w may require a mask 0x3C to avoid hitting hard
++	 * reset again for error reset (should be 0, chicken).
++	 */
++	softrst = __genwqe_readq(cd, IO_SLC_CFGREG_SOFTRESET) & 0x3cull;
++	__genwqe_writeq(cd, IO_SLC_CFGREG_SOFTRESET, softrst | 0x2ull);
++
++	/* give ERRORRESET some time to finish */
++	msleep(50);
++
++	if (genwqe_need_err_masking(cd)) {
++		dev_info(&pci_dev->dev,
++			 "[%s] masking errors for old bitstreams\n", __func__);
++		__genwqe_writeq(cd, IO_SLC_MISC_DEBUG, 0x0aull);
 +	}
++	return 0;
++}
 +
-+	file = debugfs_create_x64("err_inject", 0666, root, &cd->err_inject);
-+	if (!file) {
-+		ret = -ENOMEM;
-+		goto err1;
++int genwqe_read_softreset(struct genwqe_dev *cd)
++{
++	u64 bitstream;
++
++	if (!genwqe_is_privileged(cd))
++		return -ENODEV;
++
++	bitstream = __genwqe_readq(cd, IO_SLU_BITSTREAM) & 0x1;
++	cd->softreset = (bitstream == 0) ? 0x8ull : 0xcull;
++	return 0;
++}
++
++/**
++ * genwqe_set_interrupt_capability() - Configure MSI capability structure
++ * @cd:         pointer to the device
++ * Return: 0 if no error
++ */
++int genwqe_set_interrupt_capability(struct genwqe_dev *cd, int count)
++{
++	int rc;
++	struct pci_dev *pci_dev = cd->pci_dev;
++
++	rc = pci_enable_msi_block(pci_dev, count);
++	if (rc == 0)
++		cd->flags |= GENWQE_FLAG_MSI_ENABLED;
++	return rc;
++}
++
++/**
++ * genwqe_reset_interrupt_capability() - Undo genwqe_set_interrupt_capability()
++ * @cd:         pointer to the device
++ */
++void genwqe_reset_interrupt_capability(struct genwqe_dev *cd)
++{
++	struct pci_dev *pci_dev = cd->pci_dev;
++
++	if (cd->flags & GENWQE_FLAG_MSI_ENABLED) {
++		pci_disable_msi(pci_dev);
++		cd->flags &= ~GENWQE_FLAG_MSI_ENABLED;
 +	}
++}
 +
-+	file = debugfs_create_u32("ddcb_software_timeout", 0666, root,
-+				  &cd->ddcb_software_timeout);
-+	if (!file) {
-+		ret = -ENOMEM;
-+		goto err1;
-+	}
++/**
++ * set_reg_idx() - Fill array with data. Ignore illegal offsets.
++ * @cd:         card device
++ * @r:          debug register array
++ * @i:          index to desired entry
++ * @m:          maximum possible entries
++ * @addr:       addr which is read
++ * @index:      index in debug array
++ * @val:        read value
++ */
++static int set_reg_idx(struct genwqe_dev *cd, struct genwqe_reg *r,
++		       unsigned int *i, unsigned int m, u32 addr, u32 idx,
++		       u64 val)
++{
++	if (WARN_ON_ONCE(*i >= m))
++		return -EFAULT;
 +
-+	file = debugfs_create_u32("kill_timeout", 0666, root,
-+				  &cd->kill_timeout);
-+	if (!file) {
-+		ret = -ENOMEM;
-+		goto err1;
-+	}
++	r[*i].addr = addr;
++	r[*i].idx = idx;
++	r[*i].val = val;
++	++*i;
++	return 0;
++}
 +
-+	/* privileged interfaces follow here */
-+	if (!genwqe_is_privileged(cd)) {
-+		cd->debugfs_root = root;
-+		return 0;
-+	}
++static int set_reg(struct genwqe_dev *cd, struct genwqe_reg *r,
++		   unsigned int *i, unsigned int m, u32 addr, u64 val)
++{
++	return set_reg_idx(cd, r, i, m, addr, 0, val);
++}
 +
-+	file = debugfs_create_file("curr_regs", S_IRUGO, root, cd,
-+				   &genwqe_curr_regs_fops);
-+	if (!file) {
-+		ret = -ENOMEM;
-+		goto err1;
-+	}
++int genwqe_read_ffdc_regs(struct genwqe_dev *cd, struct genwqe_reg *regs,
++			 unsigned int max_regs, int all)
++{
++	unsigned int i, j, idx = 0;
++	u32 ufir_addr, ufec_addr, sfir_addr, sfec_addr;
++	u64 gfir, sluid, appid, ufir, ufec, sfir, sfec;
 +
-+	file = debugfs_create_file("curr_dbg_uid0", S_IRUGO, root, cd,
-+				   &genwqe_curr_dbg_uid0_fops);
-+	if (!file) {
-+		ret = -ENOMEM;
-+		goto err1;
-+	}
++	/* Global FIR */
++	gfir = __genwqe_readq(cd, IO_SLC_CFGREG_GFIR);
++	set_reg(cd, regs, &idx, max_regs, IO_SLC_CFGREG_GFIR, gfir);
 +
-+	file = debugfs_create_file("curr_dbg_uid1", S_IRUGO, root, cd,
-+				   &genwqe_curr_dbg_uid1_fops);
-+	if (!file) {
-+		ret = -ENOMEM;
-+		goto err1;
-+	}
++	/* UnitCfg for SLU */
++	sluid = __genwqe_readq(cd, IO_SLU_UNITCFG); /* 0x00000000 */
++	set_reg(cd, regs, &idx, max_regs, IO_SLU_UNITCFG, sluid);
 +
-+	file = debugfs_create_file("curr_dbg_uid2", S_IRUGO, root, cd,
-+				   &genwqe_curr_dbg_uid2_fops);
-+	if (!file) {
-+		ret = -ENOMEM;
-+		goto err1;
-+	}
++	/* UnitCfg for APP */
++	appid = __genwqe_readq(cd, IO_APP_UNITCFG); /* 0x02000000 */
++	set_reg(cd, regs, &idx, max_regs, IO_APP_UNITCFG, appid);
 +
-+	file = debugfs_create_file("prev_regs", S_IRUGO, root, cd,
-+				   &genwqe_prev_regs_fops);
-+	if (!file) {
-+		ret = -ENOMEM;
-+		goto err1;
-+	}
++	/* Check all chip Units */
++	for (i = 0; i < GENWQE_MAX_UNITS; i++) {
 +
-+	file = debugfs_create_file("prev_dbg_uid0", S_IRUGO, root, cd,
-+				   &genwqe_prev_dbg_uid0_fops);
-+	if (!file) {
-+		ret = -ENOMEM;
-+		goto err1;
-+	}
++		/* Unit FIR */
++		ufir_addr = (i << 24) | 0x008;
++		ufir = __genwqe_readq(cd, ufir_addr);
++		set_reg(cd, regs, &idx, max_regs, ufir_addr, ufir);
 +
-+	file = debugfs_create_file("prev_dbg_uid1", S_IRUGO, root, cd,
-+				   &genwqe_prev_dbg_uid1_fops);
-+	if (!file) {
-+		ret = -ENOMEM;
-+		goto err1;
-+	}
++		/* Unit FEC */
++		ufec_addr = (i << 24) | 0x018;
++		ufec = __genwqe_readq(cd, ufec_addr);
++		set_reg(cd, regs, &idx, max_regs, ufec_addr, ufec);
 +
-+	file = debugfs_create_file("prev_dbg_uid2", S_IRUGO, root, cd,
-+				   &genwqe_prev_dbg_uid2_fops);
-+	if (!file) {
-+		ret = -ENOMEM;
-+		goto err1;
-+	}
++		for (j = 0; j < 64; j++) {
++			/* wherever there is a primary 1, read the 2ndary */
++			if (!all && (!(ufir & (1ull << j))))
++				continue;
 +
-+	for (i = 0; i <  GENWQE_MAX_VFS; i++) {
-+		sprintf(name, "vf%d_jobtimeout_msec", i);
++			sfir_addr = (i << 24) | (0x100 + 8 * j);
++			sfir = __genwqe_readq(cd, sfir_addr);
++			set_reg(cd, regs, &idx, max_regs, sfir_addr, sfir);
 +
-+		file = debugfs_create_u32(name, 0666, root,
-+					  &cd->vf_jobtimeout_msec[i]);
-+		if (!file) {
-+			ret = -ENOMEM;
-+			goto err1;
++			sfec_addr = (i << 24) | (0x300 + 8 * j);
++			sfec = __genwqe_readq(cd, sfec_addr);
++			set_reg(cd, regs, &idx, max_regs, sfec_addr, sfec);
 +		}
 +	}
 +
-+	file = debugfs_create_file("jobtimer", S_IRUGO, root, cd,
-+				   &genwqe_jtimer_fops);
-+	if (!file) {
-+		ret = -ENOMEM;
-+		goto err1;
++	/* fill with invalid data until end */
++	for (i = idx; i < max_regs; i++) {
++		regs[i].addr = 0xffffffff;
++		regs[i].val = 0xffffffffffffffffull;
 +	}
-+
-+	file = debugfs_create_u32("skip_recovery", 0666, root,
-+				  &cd->skip_recovery);
-+	if (!file) {
-+		ret = -ENOMEM;
-+		goto err1;
-+	}
-+
-+	cd->debugfs_root = root;
-+	return 0;
-+err1:
-+	debugfs_remove_recursive(root);
-+err0:
-+	return ret;
++	return idx;
 +}
 +
-+void genqwe_exit_debugfs(struct genwqe_dev *cd)
++/**
++ * genwqe_ffdc_buff_size() - Calculates the number of dump registers
++ */
++int genwqe_ffdc_buff_size(struct genwqe_dev *cd, int uid)
 +{
-+	debugfs_remove_recursive(cd->debugfs_root);
++	int entries = 0, ring, traps, traces, trace_entries;
++	uint32_t eevptr_addr, l_addr, d_len, d_type;
++	uint64_t eevptr, val, addr;
++
++	eevptr_addr = UID_OFFS(uid) | IO_EXTENDED_ERROR_POINTER;
++	eevptr = __genwqe_readq(cd, eevptr_addr);
++
++	if ((eevptr != 0x0) && (eevptr != -1ull)) {
++		l_addr = UID_OFFS(uid) | eevptr;
++
++		while (1) {
++			val = __genwqe_readq(cd, l_addr);
++
++			if ((val == 0x0) || (val == -1ull))
++				break;
++
++			/* 38:24 */
++			d_len  = (val & 0x0000007fff000000ull) >> 24;
++
++			/* 39 */
++			d_type = (val & 0x0000008000000000ull) >> 36;
++
++			if (d_type) {	/* repeat */
++				entries += d_len;
++			} else {	/* size in bytes! */
++				entries += d_len >> 3;
++			}
++
++			l_addr += 8;
++		}
++	}
++
++	for (ring = 0; ring < 8; ring++) {
++		addr = UID_OFFS(uid) | IO_EXTENDED_DIAG_MAP(ring);
++		val = __genwqe_readq(cd, addr);
++
++		if ((val == 0x0ull) || (val == -1ull))
++			continue;
++
++		traps = (val >> 24) & 0xff;
++		traces = (val >> 16) & 0xff;
++		trace_entries = val & 0xffff;
++
++		entries += traps + (traces * trace_entries);
++	}
++	return entries;
++}
++
++/**
++ * genwqe_ffdc_buff_read() - Implements LogoutExtendedErrorRegisters procedure
++ */
++int genwqe_ffdc_buff_read(struct genwqe_dev *cd, int uid,
++			  struct genwqe_reg *regs, unsigned int max_regs)
++{
++	int i, traps, traces, trace, trace_entries, trace_entry, ring;
++	unsigned int idx = 0;
++	uint32_t eevptr_addr, l_addr, d_addr, d_len, d_type;
++	uint64_t eevptr, e, val, addr;
++
++	eevptr_addr = UID_OFFS(uid) | IO_EXTENDED_ERROR_POINTER;
++	eevptr = __genwqe_readq(cd, eevptr_addr);
++
++	if ((eevptr != 0x0) && (eevptr != 0xffffffffffffffffull)) {
++		l_addr = UID_OFFS(uid) | eevptr;
++		while (1) {
++			e = __genwqe_readq(cd, l_addr);
++			if ((e == 0x0) || (e == 0xffffffffffffffffull))
++				break;
++
++			d_addr = (e & 0x0000000000ffffffull);	    /* 23:0 */
++			d_len  = (e & 0x0000007fff000000ull) >> 24; /* 38:24 */
++			d_type = (e & 0x0000008000000000ull) >> 36; /* 39 */
++			d_addr |= UID_OFFS(uid);
++
++			if (d_type) {
++				for (i = 0; i < (int)d_len; i++) {
++					val = __genwqe_readq(cd, d_addr);
++					set_reg_idx(cd, regs, &idx, max_regs,
++						    d_addr, i, val);
++				}
++			} else {
++				d_len >>= 3; /* Size in bytes! */
++				for (i = 0; i < (int)d_len; i++, d_addr += 8) {
++					val = __genwqe_readq(cd, d_addr);
++					set_reg_idx(cd, regs, &idx, max_regs,
++						    d_addr, 0, val);
++				}
++			}
++			l_addr += 8;
++		}
++	}
++
++	/*
++	 * To save time, there are only 6 traces poplulated on Uid=2,
++	 * Ring=1. each with iters=512.
++	 */
++	for (ring = 0; ring < 8; ring++) { /* 0 is fls, 1 is fds,
++					      2...7 are ASI rings */
++		addr = UID_OFFS(uid) | IO_EXTENDED_DIAG_MAP(ring);
++		val = __genwqe_readq(cd, addr);
++
++		if ((val == 0x0ull) || (val == -1ull))
++			continue;
++
++		traps = (val >> 24) & 0xff;	/* Number of Traps	*/
++		traces = (val >> 16) & 0xff;	/* Number of Traces	*/
++		trace_entries = val & 0xffff;	/* Entries per trace	*/
++
++		/* Note: This is a combined loop that dumps both the traps */
++		/* (for the trace == 0 case) as well as the traces 1 to    */
++		/* 'traces'.						   */
++		for (trace = 0; trace <= traces; trace++) {
++			uint32_t diag_sel =
++				EXTENDED_DIAG_SELECTOR(ring, trace);
++
++			addr = UID_OFFS(uid) | IO_EXTENDED_DIAG_SELECTOR;
++			__genwqe_writeq(cd, addr, diag_sel);
++
++			for (trace_entry = 0;
++			     trace_entry < (trace ? trace_entries : traps);
++			     trace_entry++) {
++				addr = UID_OFFS(uid)|IO_EXTENDED_DIAG_READ_MBX;
++				val = __genwqe_readq(cd, addr);
++				set_reg_idx(cd, regs, &idx, max_regs, addr,
++					    (diag_sel<<16) | trace_entry, val);
++			}
++		}
++	}
++	return 0;
++}
++
++/**
++ * genwqe_write_jtimer() - Write jobtimeout register
++ *
++ * Sets the jobtimeout and heartbeat rate timers for this queue.
++ * Note, this register is accessible only to the PF through the
++ * VF-window. It is not intended for the VF to initialize this.
++ *
++ * It is an error to write to this register while the queue is active,
++ * i.e. when Queue Status(7:6) != 0.
++ */
++int genwqe_write_jtimer(struct genwqe_dev *cd, int func, u64 jtimer)
++{
++	__genwqe_writeq(cd, IO_PF_SLC_VIRTUAL_WINDOW, func & 0xf);
++	__genwqe_writeq(cd, IO_SLC_VF_APPJOB_TIMEOUT, jtimer);
++	return 0;
++}
++
++u64 genwqe_read_jtimer(struct genwqe_dev *cd, int func)
++{
++	u64 jtimer;
++
++	__genwqe_writeq(cd, IO_PF_SLC_VIRTUAL_WINDOW, func & 0xf);
++	jtimer = __genwqe_readq(cd, IO_SLC_VF_APPJOB_TIMEOUT);
++
++	return jtimer;
++}
++
++/**
++ * genwqe_base_clock_frequency() - Deteremine base clock frequency of the card
++ *
++ * Note: From a design perspective it turned out to be a bad idea to
++ * use codes here to specifiy the frequency/speed values. An old
++ * driver cannot understand new codes and is therefore always a
++ * problem. Better is to measure out the value or put the
++ * speed/frequency directly into a register which is always a valid
++ * value for old as well as for new software.
++ *
++ * Return: Card clock in MHz
++ */
++int genwqe_base_clock_frequency(struct genwqe_dev *cd)
++{
++	u16 speed;		/*         MHz  MHz  MHz  MHz */
++	static const int speed_grade[] = { 250, 200, 166, 175 };
++
++	speed = (u16)((cd->slu_unitcfg >> 28) & 0x0full);
++	if (speed >= ARRAY_SIZE(speed_grade))
++		return 0;	/* illegal value */
++
++	return speed_grade[speed];
++}
++
++/**
++ * genwqe_stop_traps() - Stop traps
++ *
++ * Before reading out the analysis data, we need to stop the traps.
++ */
++void genwqe_stop_traps(struct genwqe_dev *cd)
++{
++	/* Halt the traps while dumping FFDC. */
++	__genwqe_writeq(cd, IO_SLC_MISC_DEBUG_SET, 0xcull);
++}
++
++/**
++ * genwqe_start_traps() - Start traps
++ *
++ * After having read the data, we can/must enable the traps again.
++ */
++void genwqe_start_traps(struct genwqe_dev *cd)
++{
++	/* Restart the traps. */
++	__genwqe_writeq(cd, IO_SLC_MISC_DEBUG_CLR, 0xcull);
++
++	if (genwqe_need_err_masking(cd))
++		__genwqe_writeq(cd, IO_SLC_MISC_DEBUG, 0x0aull);
 +}
 -- 
 1.7.1
