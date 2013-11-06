@@ -1,110 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab3KFUFd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 15:05:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64044 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752017Ab3KFUFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 15:05:32 -0500
-Date: Wed, 6 Nov 2013 21:06:50 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Christian Seiler <christian@iwakd.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Lxc development list <lxc-devel@lists.sourceforge.net>
-Subject: Re: CLONE_PARENT after setns(CLONE_NEWPID)
-Message-ID: <20131106200650.GA20212@redhat.com>
-References: <20131106180232.GA8980@ac100> <20131106193311.GA18720@redhat.com> <CALCETrV=G30_4bVQbRF0Z9kzYpP8V+aUf-uZES+qVD5MXEAWZQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrV=G30_4bVQbRF0Z9kzYpP8V+aUf-uZES+qVD5MXEAWZQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755642Ab3KFUHi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 15:07:38 -0500
+Received: from smtprelay0146.hostedemail.com ([216.40.44.146]:37140 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755017Ab3KFUHh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 15:07:37 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:4321:4384:5007:7652:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: glue03_422727ffc0d07
+X-Filterd-Recvd-Size: 1913
+Message-ID: <1383768458.7940.33.camel@joe-AO722>
+Subject: Re: [PATCH v2 2/2] x86: add prefetching to do_csum
+From: Joe Perches <joe@perches.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org
+Date: Wed, 06 Nov 2013 12:07:38 -0800
+In-Reply-To: <20131106200204.GB11415@hmsreliant.think-freely.org>
+References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
+	 <1383751399-10298-1-git-send-email-nhorman@tuxdriver.com>
+	 <1383751399-10298-3-git-send-email-nhorman@tuxdriver.com>
+	 <20131106153429.GA26336@redhat.com>
+	 <20131106155445.GB6357@neilslaptop.think-freely.org>
+	 <1383758363.7940.19.camel@joe-AO722>
+	 <20131106200204.GB11415@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06, Andy Lutomirski wrote:
->
-> On Wed, Nov 6, 2013 at 11:33 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > Hi Serge,
-> >
-> > On 11/06, Serge Hallyn wrote:
-> >>
-> >> Hi Oleg,
-> >>
-> >> commit 40a0d32d1eaffe6aac7324ca92604b6b3977eb0e :
-> >> "fork: unify and tighten up CLONE_NEWUSER/CLONE_NEWPID checks"
-> >> breaks lxc-attach in 3.12.  That code forks a child which does
-> >> setns() and then does a clone(CLONE_PARENT).  That way the
-> >> grandchild can be in the right namespaces (which the child was
-> >> not) and be a child of the original task, which is the monitor.
-> >
-> > Thanks...
-> >
-> > Yes, this is what 40a0d32d1ea explicitly tries to disallow.
-> >
-> >> Is there a real danger in allowing CLONE_PARENT
-> >> when current->nsproxy->pidns_for_children is not our pidns,
-> >> or was this done out of an "over-abundance of caution"?
-> >
-> > I am not sure... This all was based on the long discussion, and
-> > it was decided that the CLONE_PARENT check should be consistent
-> > wrt CLONE_NEWPID and pidns_for_children != task_active_pid_ns().
-> >
-> >> Can we
-> >> safely revert that new extra check?
-> >
-> > Well, usually we do not break user-space, but I am not sure about
-> > this case...
->
-> Presumably if we allow this, then we should also allow
-> clone(CLONE_NEWPID | CLONE_PARENT).
+On Wed, 2013-11-06 at 15:02 -0500, Neil Horman wrote:
+> On Wed, Nov 06, 2013 at 09:19:23AM -0800, Joe Perches wrote:
+[]
+> > __always_inline instead of inline
+> > static __always_inline void prefetch_lines(const void *addr, size_t len)
+> > {
+> > 	const void *end = addr + len;
+> > ...
+> > 
+> > buff doesn't need a void * cast in prefetch_lines
+> > 
+> Actually I take back what I said here, we do need the cast, not for a conversion
+> from unsigned char * to void *, but rather to discard the const qualifier
+> without making the compiler complain.
 
-Yes, agreed. but this means another change, this was forbidden even
-before this commit.
+Not if the function is changed to const void *
+and end is also const void * as shown.
 
-> This seems a little odd, but off
-> the top of my head it doesn't seem obviously dangerous.
-
-I do not see any "strong" reason too. At least right now... But I would
-say that it would be better to not allow to abuse ->real_parent, it
-doesn't event know about the new child (if CLONE_PARENT).
-
-> (Why were we worried about this in the first place?  The comment says
-> that we don't want signal handlers or thread groups to span
-> namespaces, but CLONE_PARENT has nothing to do with that.)
-
-it also says "or parent" ;)
-
-> I feel like I'm rehashing something ancient, but shouldn't that code just be:
->
-> if (clone_flags & CLONE_VM) {
->   // check for unsharing namespaces
-
-No, this will break vfork().
-
-And note that CLONE_SIGHAND was disallowed "just in case" and because
-do_fork() had a similar check. Sharing the signal handlers is fine afaics.
-
->From e79f525e:
-
-	We could probably even drop CLONE_SIGHAND and use CLONE_THREAD, but it
-	would be safer to not do this.  The current check denies CLONE_SIGHAND
-	implicitely and there is no reason to change this.
-
-And I disagree with
-
-	Eric said "CLONE_SIGHAND is fine.  CLONE_THREAD would be even better.
-	Having shared signal handling between two different pid namespaces is
-	the case that we are fundamentally guarding against."
-
-added during the merging ;) Or perhaps I misunderstood the text above. But this
-all is off-topic.
-
-Oleg.
 
