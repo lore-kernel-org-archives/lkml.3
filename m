@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab3KFPe6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 10:34:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53359 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754026Ab3KFPe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 10:34:57 -0500
-Date: Wed, 6 Nov 2013 10:34:29 -0500
-From: Dave Jones <davej@redhat.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, sebastien.dugue@bull.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: Re: [PATCH v2 2/2] x86: add prefetching to do_csum
-Message-ID: <20131106153429.GA26336@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org,
-	sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-	x86@kernel.org
-References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
- <1383751399-10298-1-git-send-email-nhorman@tuxdriver.com>
- <1383751399-10298-3-git-send-email-nhorman@tuxdriver.com>
+	id S1754561Ab3KFPlq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 10:41:46 -0500
+Received: from demumfd001.nsn-inter.net ([93.183.12.32]:14576 "EHLO
+	demumfd001.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab3KFPlp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 10:41:45 -0500
+Message-ID: <527A6320.6040600@nsn.com>
+Date: Wed, 06 Nov 2013 16:41:20 +0100
+From: Alexander Sverdlin <alexander.sverdlin@nsn.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383751399-10298-3-git-send-email-nhorman@tuxdriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: ext Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+CC: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] OF: Fixes in preperation of DT overlays
+References: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com>
+In-Reply-To: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-purgate-type: clean
+X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
+X-purgate: clean
+X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
+X-purgate-size: 1127
+X-purgate-ID: 151667::1383752481-00004A43-9892A58C/0-0/0-0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 10:23:19AM -0500, Neil Horman wrote:
- > do_csum was identified via perf recently as a hot spot when doing
- > receive on ip over infiniband workloads.  After alot of testing and
- > ideas, we found the best optimization available to us currently is to
- > prefetch the entire data buffer prior to doing the checksum
- > 
- > diff --git a/arch/x86/lib/csum-partial_64.c b/arch/x86/lib/csum-partial_64.c
- > index 9845371..9f2d3ee 100644
- > --- a/arch/x86/lib/csum-partial_64.c
- > +++ b/arch/x86/lib/csum-partial_64.c
- > @@ -29,8 +29,15 @@ static inline unsigned short from32to16(unsigned a)
- >   * Things tried and found to not make it faster:
- >   * Manual Prefetching
- >   * Unrolling to an 128 bytes inner loop.
- > - * Using interleaving with more registers to break the carry chains.
- 
-Did you mean perhaps to remove the "Manual Prefetching" line instead ?
-(Curious, what was tried before that made it not worthwhile?)
- 
-	Dave
- 
+Hi!
+
+On 05/11/13 18:50, ext Pantelis Antoniou wrote:
+> This patchset introduces a number of fixes that are required
+> for the subsequent patches that add DT overlays support.
+> 
+> Most of them are trivial, adding small bits that are missing,
+> or exporting functions that were private before.
+> 
+> Pantelis Antoniou (5):
+>   OF: Clear detach flag on attach
+>   OF: Introduce device tree node flag helpers.
+>   OF: export of_property_notify
+>   OF: Export all DT proc update functions
+>   OF: Introduce utility helper functions
+
+All patches there we use as they are since July on our MIPS64 platforms. So, for all 5 patches:
+Tested-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
+Reviewed-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
+
+>  drivers/of/Makefile |   2 +-
+>  drivers/of/base.c   |  77 ++++++++--------
+>  drivers/of/util.c   | 253 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/of.h  | 119 ++++++++++++++++++++++++
+>  4 files changed, 413 insertions(+), 38 deletions(-)
+>  create mode 100644 drivers/of/util.c
+> 
+
+-- 
+Best regards,
+Alexander Sverdlin.
