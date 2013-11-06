@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084Ab3KFUYr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 15:24:47 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:43534 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754997Ab3KFUYq (ORCPT
+	id S1755730Ab3KFU1j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 15:27:39 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:48277 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754791Ab3KFU1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 15:24:46 -0500
-Date: Wed, 06 Nov 2013 15:24:43 -0500 (EST)
-Message-Id: <20131106.152443.1288760715552220036.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: dborkman@redhat.com, avagin@openvz.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ast@plumgrid.com, edumazet@google.com
-Subject: Re: [PATCH] net: don't forget to free sk_filter
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1383766098.21999.2.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <1383753106-26978-1-git-send-email-avagin@openvz.org>
-	<527A9638.4020404@redhat.com>
-	<1383766098.21999.2.camel@edumazet-glaptop2.roam.corp.google.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 06 Nov 2013 12:24:45 -0800 (PST)
+	Wed, 6 Nov 2013 15:27:37 -0500
+From: Julius Werner <jwerner@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Benson Leung <bleung@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Julius Werner <jwerner@chromium.org>
+Subject: [PATCH] usb: hub: Use correct reset for wedged USB3 devices that are NOTATTACHED
+Date: Wed,  6 Nov 2013 12:27:21 -0800
+Message-Id: <1383769641-22910-1-git-send-email-jwerner@chromium.org>
+X-Mailer: git-send-email 1.8.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Wed, 06 Nov 2013 11:28:18 -0800
+This patch adds a check for USB_STATE_NOTATTACHED to the
+hub_port_warm_reset_required() workaround for ports that end up in
+Compliance Mode in hub_events() when trying to decide which reset
+function to use. Trying to call usb_reset_device() with a NOTATTACHED
+device will just fail and leave the port broken.
 
-> On Wed, 2013-11-06 at 20:19 +0100, Daniel Borkmann wrote:
-> 
->> When you send v2 with Alexei's feedback, please also be more specific
->> in your subject like "net: x86: bpf: don't forget to free sk_filter"
->> or the like. Also it's enough to say 'This memory leak was introduced
->> by commit d45ed4a4e3 ("net: fix unsafe set_memory_rw from softirq")'
->> instead of copying the whole log. Anyways, for v2 with feedback included
->> then:
-> 
-> Actually, the new way [1] of doing this would be to use the 'Fixes:' tag
-> as in :
-> 
-> Fixes: <12 digits SHA1> ("net: fix unsafe set_memory_rw from softirq")
-> 
-> [1] As discussed at last Kernel Summit
-> 
-> Example in 
-> 
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6920a1bd037374a632d585de127b6f945199dcb8
+Also bumped the messages about this kind of reset failure from dev_dbg()
+to dev_warn() to make it easier to notice, since calling that function
+with a NOTATTACHED device would almost always be a bug
 
-Indeed, and I'm totally fine with this new mechanism too, please use it.
+Signed-off-by: Julius Werner <jwerner@chromium.org>
+---
+ drivers/usb/core/hub.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index e6b682c..0188056 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -4799,8 +4799,9 @@ static void hub_events(void)
+ 					hub->ports[i - 1]->child;
+ 
+ 				dev_dbg(hub_dev, "warm reset port %d\n", i);
+-				if (!udev || !(portstatus &
+-						USB_PORT_STAT_CONNECTION)) {
++				if (!udev ||
++				    !(portstatus & USB_PORT_STAT_CONNECTION) ||
++				    udev->state == USB_STATE_NOTATTACHED) {
+ 					status = hub_port_reset(hub, i,
+ 							NULL, HUB_BH_RESET_TIME,
+ 							true);
+@@ -5074,7 +5075,7 @@ static int usb_reset_and_verify_device(struct usb_device *udev)
+ 
+ 	if (udev->state == USB_STATE_NOTATTACHED ||
+ 			udev->state == USB_STATE_SUSPENDED) {
+-		dev_dbg(&udev->dev, "device reset not allowed in state %d\n",
++		dev_warn(&udev->dev, "device reset not allowed in state %d\n",
+ 				udev->state);
+ 		return -EINVAL;
+ 	}
+@@ -5237,7 +5238,7 @@ int usb_reset_device(struct usb_device *udev)
+ 
+ 	if (udev->state == USB_STATE_NOTATTACHED ||
+ 			udev->state == USB_STATE_SUSPENDED) {
+-		dev_dbg(&udev->dev, "device reset not allowed in state %d\n",
++		dev_warn(&udev->dev, "device reset not allowed in state %d\n",
+ 				udev->state);
+ 		return -EINVAL;
+ 	}
+-- 
+1.8.4.1
+
