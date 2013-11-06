@@ -1,24 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756592Ab3KFNT5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 08:19:57 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48896 "EHLO
+	id S932243Ab3KFNUP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 08:20:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48922 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756221Ab3KFNTz (ORCPT
+	with ESMTP id S1756607Ab3KFNUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 08:19:55 -0500
-Date: Wed, 6 Nov 2013 05:19:23 -0800
+	Wed, 6 Nov 2013 08:20:09 -0500
+Date: Wed, 6 Nov 2013 05:18:56 -0800
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-0a196848ca365ec582c6d86659be456be6d4ed96@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fweisbec@gmail.com, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20131030201622.GR16117@laptop.programming.kicks-ass.net>
-References: <20131030201622.GR16117@laptop.programming.kicks-ass.net>
+Message-ID: <tip-zfxnc58qxj0eawdoj31hhupv@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, anton@samba.org,
+        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, mingo@kernel.org,
+        michael@ellerman.id.au, peterz@infradead.org, vince@deater.net,
+        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        fweisbec@gmail.com, oleg@redhat.com, VICTORK@il.ibm.com,
+        tglx@linutronix.de, mikey@neuling.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, mathieu.desnoyers@polymtl.ca,
+        anton@samba.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
+        michael@ellerman.id.au, paulmck@linux.vnet.ibm.com, vince@deater.net,
+        fweisbec@gmail.com, benh@kernel.crashing.org, tglx@linutronix.de,
+        VICTORK@il.ibm.com, oleg@redhat.com, mikey@neuling.org
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Fix arch_perf_out_copy_user default
-Git-Commit-ID: 0a196848ca365ec582c6d86659be456be6d4ed96
+Subject: [tip:perf/core] perf: Optimize perf_output_begin()
+  -- lost_event case
+Git-Commit-ID: d20a973f46ed83e0d7d24f6c512064133038e193
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,193 +33,84 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 06 Nov 2013 05:19:30 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 06 Nov 2013 05:19:02 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0a196848ca365ec582c6d86659be456be6d4ed96
-Gitweb:     http://git.kernel.org/tip/0a196848ca365ec582c6d86659be456be6d4ed96
+Commit-ID:  d20a973f46ed83e0d7d24f6c512064133038e193
+Gitweb:     http://git.kernel.org/tip/d20a973f46ed83e0d7d24f6c512064133038e193
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 30 Oct 2013 21:16:22 +0100
+AuthorDate: Thu, 31 Oct 2013 17:29:29 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Nov 2013 12:34:25 +0100
+CommitDate: Wed, 6 Nov 2013 12:34:21 +0100
 
-perf: Fix arch_perf_out_copy_user default
+perf: Optimize perf_output_begin() -- lost_event case
 
-The arch_perf_output_copy_user() default of
-__copy_from_user_inatomic() returns bytes not copied, while all other
-argument functions given DEFINE_OUTPUT_COPY() return bytes copied.
+Avoid touching the lost_event and sample_data cachelines twince. Its
+not like we end up doing less work, but it might help to keep all
+accesses to these cachelines in one place.
 
-Since copy_from_user_nmi() is the odd duck out by returning bytes
-copied where all other *copy_{to,from}* functions return bytes not
-copied, change it over and ammend DEFINE_OUTPUT_COPY() to expect bytes
-not copied.
-
-Oddly enough DEFINE_OUTPUT_COPY() already returned bytes not copied
-while expecting its worker functions to return bytes copied.
+Due to code shuffle, this looses 4 bytes on x86_64-defconfig.
 
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Acked-by: will.deacon@arm.com
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/r/20131030201622.GR16117@laptop.programming.kicks-ass.net
+Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Michael Ellerman <michael@ellerman.id.au>
+Cc: Michael Neuling <mikey@neuling.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: james.hogan@imgtec.com
+Cc: Vince Weaver <vince@deater.net>
+Cc: Victor Kaplansky <VICTORK@il.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Anton Blanchard <anton@samba.org>
+Link: http://lkml.kernel.org/n/tip-zfxnc58qxj0eawdoj31hhupv@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event.c           |  4 ++--
- arch/x86/kernel/cpu/perf_event_intel_ds.c  |  2 +-
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |  2 +-
- arch/x86/lib/usercopy.c                    |  2 +-
- arch/x86/oprofile/backtrace.c              |  4 ++--
- kernel/events/internal.h                   | 35 ++++++++++++++++++++++--------
- 6 files changed, 33 insertions(+), 16 deletions(-)
+ kernel/events/ring_buffer.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 8a87a32..8e13293 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1989,7 +1989,7 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
- 		frame.return_address = 0;
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index 6ed16ec..e4d70f3 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -106,7 +106,6 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 	struct ring_buffer *rb;
+ 	unsigned long tail, offset, head;
+ 	int have_lost;
+-	struct perf_sample_data sample_data;
+ 	struct {
+ 		struct perf_event_header header;
+ 		u64			 id;
+@@ -132,10 +131,9 @@ int perf_output_begin(struct perf_output_handle *handle,
  
- 		bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
--		if (bytes != sizeof(frame))
-+		if (bytes != 0)
- 			break;
+ 	have_lost = local_read(&rb->lost);
+ 	if (unlikely(have_lost)) {
+-		lost_event.header.size = sizeof(lost_event);
+-		perf_event_header__init_id(&lost_event.header, &sample_data,
+-					   event);
+-		size += lost_event.header.size;
++		size += sizeof(lost_event);
++		if (event->attr.sample_id_all)
++			size += event->id_header_size;
+ 	}
  
- 		if (!valid_user_frame(fp, sizeof(frame)))
-@@ -2041,7 +2041,7 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
- 		frame.return_address = 0;
+ 	perf_output_get_handle(handle);
+@@ -169,11 +167,16 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 	handle->size = (PAGE_SIZE << page_order(rb)) - handle->size;
  
- 		bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
--		if (bytes != sizeof(frame))
-+		if (bytes != 0)
- 			break;
- 
- 		if (!valid_user_frame(fp, sizeof(frame)))
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index c1760ff..ae96cfa 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -789,7 +789,7 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
- 
- 		size = ip - to; /* Must fit our buffer, see above */
- 		bytes = copy_from_user_nmi(buf, (void __user *)to, size);
--		if (bytes != size)
-+		if (bytes != 0)
- 			return 0;
- 
- 		kaddr = buf;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 90ee6c1..d82d155 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -491,7 +491,7 @@ static int branch_type(unsigned long from, unsigned long to, int abort)
- 
- 		/* may fail if text not present */
- 		bytes = copy_from_user_nmi(buf, (void __user *)from, size);
--		if (bytes != size)
-+		if (bytes != 0)
- 			return X86_BR_NONE;
- 
- 		addr = buf;
-diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
-index 5465b86..ddf9ecb 100644
---- a/arch/x86/lib/usercopy.c
-+++ b/arch/x86/lib/usercopy.c
-@@ -31,6 +31,6 @@ copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
- 	ret = __copy_from_user_inatomic(to, from, n);
- 	pagefault_enable();
- 
--	return n - ret;
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(copy_from_user_nmi);
-diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
-index d6aa6e8..5d04be5 100644
---- a/arch/x86/oprofile/backtrace.c
-+++ b/arch/x86/oprofile/backtrace.c
-@@ -47,7 +47,7 @@ dump_user_backtrace_32(struct stack_frame_ia32 *head)
- 	unsigned long bytes;
- 
- 	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
--	if (bytes != sizeof(bufhead))
-+	if (bytes != 0)
- 		return NULL;
- 
- 	fp = (struct stack_frame_ia32 *) compat_ptr(bufhead[0].next_frame);
-@@ -93,7 +93,7 @@ static struct stack_frame *dump_user_backtrace(struct stack_frame *head)
- 	unsigned long bytes;
- 
- 	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
--	if (bytes != sizeof(bufhead))
-+	if (bytes != 0)
- 		return NULL;
- 
- 	oprofile_add_trace(bufhead[0].return_address);
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index ca65997..569b2187 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -82,16 +82,16 @@ static inline unsigned long perf_data_size(struct ring_buffer *rb)
- }
- 
- #define DEFINE_OUTPUT_COPY(func_name, memcpy_func)			\
--static inline unsigned int						\
-+static inline unsigned long						\
- func_name(struct perf_output_handle *handle,				\
--	  const void *buf, unsigned int len)				\
-+	  const void *buf, unsigned long len)				\
- {									\
- 	unsigned long size, written;					\
- 									\
- 	do {								\
--		size = min_t(unsigned long, handle->size, len);		\
--									\
-+		size    = min(handle->size, len);			\
- 		written = memcpy_func(handle->addr, buf, size);		\
-+		written = size - written;				\
- 									\
- 		len -= written;						\
- 		handle->addr += written;				\
-@@ -110,20 +110,37 @@ func_name(struct perf_output_handle *handle,				\
- 	return len;							\
- }
- 
--static inline int memcpy_common(void *dst, const void *src, size_t n)
-+static inline unsigned long
-+memcpy_common(void *dst, const void *src, unsigned long n)
- {
- 	memcpy(dst, src, n);
--	return n;
-+	return 0;
- }
- 
- DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
- 
--#define MEMCPY_SKIP(dst, src, n) (n)
-+static inline unsigned long
-+memcpy_skip(void *dst, const void *src, unsigned long n)
-+{
-+	return 0;
-+}
- 
--DEFINE_OUTPUT_COPY(__output_skip, MEMCPY_SKIP)
-+DEFINE_OUTPUT_COPY(__output_skip, memcpy_skip)
- 
- #ifndef arch_perf_out_copy_user
--#define arch_perf_out_copy_user __copy_from_user_inatomic
-+#define arch_perf_out_copy_user arch_perf_out_copy_user
+ 	if (unlikely(have_lost)) {
++		struct perf_sample_data sample_data;
 +
-+static inline unsigned long
-+arch_perf_out_copy_user(void *dst, const void *src, unsigned long n)
-+{
-+	unsigned long ret;
-+
-+	pagefault_disable();
-+	ret = __copy_from_user_inatomic(dst, src, n);
-+	pagefault_enable();
-+
-+	return ret;
-+}
- #endif
++		lost_event.header.size = sizeof(lost_event);
+ 		lost_event.header.type = PERF_RECORD_LOST;
+ 		lost_event.header.misc = 0;
+ 		lost_event.id          = event->id;
+ 		lost_event.lost        = local_xchg(&rb->lost, 0);
  
- DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
++		perf_event_header__init_id(&lost_event.header,
++					   &sample_data, event);
+ 		perf_output_put(handle, lost_event);
+ 		perf_event__output_id_sample(event, handle, &sample_data);
+ 	}
