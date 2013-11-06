@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab3KFBXI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 20:23:08 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55926 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755558Ab3KFBXG (ORCPT
+	id S1755928Ab3KFBZQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 20:25:16 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:62929 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755668Ab3KFBZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 20:23:06 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [fixup][PATCH 2/6] ACPI / hotplug: Refuse to hot-remove all objects with disabled hotplug
-Date: Wed, 06 Nov 2013 02:35:23 +0100
-Message-ID: <3139278.S6Gt6Dta9o@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1383698367.1847.18.camel@misato.fc.hp.com>
-References: <5839747.7HXXGHmMBd@vostro.rjw.lan> <5195965.AgE9G8aXP3@vostro.rjw.lan> <1383698367.1847.18.camel@misato.fc.hp.com>
+	Tue, 5 Nov 2013 20:25:14 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <alpine.DEB.2.02.1311051715090.29471@chino.kir.corp.google.com>
+References: <1383693987-14171-1-git-send-email-snanda@chromium.org>
+	<alpine.DEB.2.02.1311051715090.29471@chino.kir.corp.google.com>
+Date: Tue, 5 Nov 2013 17:25:13 -0800
+Message-ID: <CAA25o9SFZW7JxDQGv+h43EMSS3xH0eXy=LoHO_Psmk_n3dxqoA@mail.gmail.com>
+Subject: Re: [PATCH] mm, oom: Fix race when selecting process to kill
+From: Luigi Semenzato <semenzato@google.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Sameer Nanda <snanda@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>, mhocko@suse.cz,
+        Johannes Weiner <hannes@cmpxchg.org>, rusty@rustcorp.com.au,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 05, 2013 05:39:27 PM Toshi Kani wrote:
-> On Wed, 2013-11-06 at 00:27 +0100, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > In theory, an ACPI device object may be the parent of another
-> > device object whose hotplug is disabled by user space through its
-> > scan handler.  In that case, the eject operation targeting the
-> > parent should fail as though the parent's own hotplug was disabled,
-> > but currently this is not the case, because acpi_scan_hot_remove()
-> > doesn't check the disable/enable hotplug status of the children
-> > of the top-most object passed to it.
-> > 
-> > To fix this, modify acpi_bus_offline_companions() to return an
-> > error code if hotplug is disabled for the given device object.
-> > [Also change the name of the function to acpi_bus_offline(),
-> > because it is not only about companions any more, and change
-> > the name of acpi_bus_online_companions() accordingly.]  Make
-> > acpi_scan_hot_remove() propagate that error to its callers.
-> > 
->  :
-> > +static acpi_status acpi_bus_online(acpi_handle handle, u32 lvl, void *data,
-> > +				   void **ret_p)
-> >  {
-> >  	struct acpi_device *device = NULL;
-> >  	struct acpi_device_physical_node *pn;
-> > @@ -214,26 +220,32 @@ static int acpi_scan_hot_remove(struct a
-> >  	 * If the first pass is successful, the second one isn't needed, though.
-> >  	 */
-> >  	errdev = NULL;
-> > -	acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
-> > -			    NULL, acpi_bus_offline_companions,
-> > -			    (void *)false, (void **)&errdev);
-> > -	acpi_bus_offline_companions(handle, 0, (void *)false, (void **)&errdev);
-> > +	status = acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
-> > +				     NULL, acpi_bus_offline, (void *)false,
-> > +				     (void **)&errdev);
-> > +	if (status == AE_SUPPORT) {
-> > +		dev_warn(errdev, "Offline disabled.\n");
-> > +		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
-> > +				    acpi_bus_online, NULL, NULL, NULL);
-> > +		put_device(&device->dev);
-> > +		return -EPERM;
-> > +	}
-> > +	acpi_bus_offline(handle, 0, (void *)false, (void **)&errdev);
-> >  	if (errdev) {
-> 
-> If the target object failed with AE_SUPPORT, shouldn't we skip the 2nd
-> pass and return with -EPERM after rollback?
+It's not enough to hold a reference to the task struct, because it can
+still be taken out of the circular list of threads.  The RCU
+assumptions don't hold in that case.
 
-We've checked the target object already in acpi_hotplug_notify_cb() or in
-acpi_eject_store().
-
-Which is telling me that the previous version of the patch was better after
-all, because the hotplug.enabled thing takes precedence over
-acpi_force_hot_remove in the other places.  So this:
-
-https://patchwork.kernel.org/patch/3135841/
-
-is the right version.  Sorry for the confusion.
-
-Thanks,
-Rafael
-
+On Tue, Nov 5, 2013 at 5:18 PM, David Rientjes <rientjes@google.com> wrote:
+> On Tue, 5 Nov 2013, Sameer Nanda wrote:
+>
+>> The selection of the process to be killed happens in two spots -- first
+>> in select_bad_process and then a further refinement by looking for
+>> child processes in oom_kill_process. Since this is a two step process,
+>> it is possible that the process selected by select_bad_process may get a
+>> SIGKILL just before oom_kill_process executes. If this were to happen,
+>> __unhash_process deletes this process from the thread_group list. This
+>> then results in oom_kill_process getting stuck in an infinite loop when
+>> traversing the thread_group list of the selected process.
+>>
+>> Fix this race by holding the tasklist_lock across the calls to both
+>> select_bad_process and oom_kill_process.
+>>
+>> Change-Id: I8f96b106b3257b5c103d6497bac7f04f4dff4e60
+>> Signed-off-by: Sameer Nanda <snanda@chromium.org>
+>
+> Nack, we had to avoid taking tasklist_lock for this duration since it
+> stalls out forks and exits on other cpus trying to take the writeside with
+> irqs disabled to avoid watchdog problems.
+>
+> What kernel version are you patching?  If you check the latest Linus tree,
+> we hold a reference to the task_struct of the chosen process before
+> calling oom_kill_process() so the hypothesis would seem incorrect.
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
