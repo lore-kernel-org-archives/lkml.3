@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095Ab3KFTK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 14:10:29 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:57940 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab3KFTK2 (ORCPT
+	id S1754966Ab3KFTQg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 14:16:36 -0500
+Received: from a9-62.smtp-out.amazonses.com ([54.240.9.62]:47874 "EHLO
+	a9-62.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754495Ab3KFTQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 14:10:28 -0500
+	Wed, 6 Nov 2013 14:16:35 -0500
+Date: Wed, 6 Nov 2013 19:16:33 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Andreas Herrmann <andreas.herrmann@calxeda.com>
+cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/slub: Switch slub_debug kernel option to early_param
+ to avoid boot panic
+In-Reply-To: <20131106184529.GB5661@alberich>
+Message-ID: <000001422ed8406b-14bef091-eee0-4e0e-bcdd-a8909c605910-000000@email.amazonses.com>
+References: <20131106184529.GB5661@alberich>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1383676898-29819-4-git-send-email-panto@antoniou-consulting.com>
-References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
-	<1383676898-29819-4-git-send-email-panto@antoniou-consulting.com>
-Date: Wed, 6 Nov 2013 13:10:27 -0600
-Message-ID: <CAL_Jsq+k9NoHxOaNujTG2=0MHm=s4Mh+xhXCZbhPG1EnHvo50A@mail.gmail.com>
-Subject: Re: [PATCH 3/3] DT: proc: Add runtime overlay interface in /proc
-From: Rob Herring <robherring2@gmail.com>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.11.06-54.240.9.62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 5, 2013 at 12:41 PM, Pantelis Antoniou
-<panto@antoniou-consulting.com> wrote:
-> Add a runtime interface to /proc to enable generic device tree overlay
-> usage.
->
-> Two new /proc files are added:
->
-> /proc/device-tree-overlay & /proc/device-tree-overlay-status
+On Wed, 6 Nov 2013, Andreas Herrmann wrote:
 
-I think we really want all this to live under sysfs. Grant did patches
-to move /proc/device-tree to /sys, but it never went upstream:
+> When I've used slub_debug kernel option (e.g.
+> "slub_debug=,skbuff_fclone_cache" or similar) on a debug session I've
+> seen a panic like:
 
-v2: https://lkml.org/lkml/2013/3/21/215
-v1: https://lkml.org/lkml/2013/3/20/311
+Hmmm.. That looks like its due to some slabs not having names
+during early boot. kmem_cache_flags is called with NULL as a parameter.
 
-> /proc/device-tree-overlay accepts a stream of a device tree objects and
-> applies it to the running kernel's device tree.
->
->         $ cat ~/BB-UART2-00A0.dtbo >device-tree-overlay
->         overlay_proc_release: Applied #2 overlay segments @0
->
-> /proc/device-tree-overlay-status displays the the overlays added using
-> the /proc interface
->
->         $ cat device-tree-overlay-status
->         0: 861 bytes BB-UART2:00A0
+Are you sure that this fixes the issue? Looks like the
+kmem_cache_flag function should fail regardless of how early you set it.
 
-Is the size useful information?
+AFAICT the right fix would be:
 
->
-> The format of the status line is
->         <ID>: <SIZE> bytes <part-number>:<version>
->
-> <ID> is the id of the overlay
-> <SIZE> is the size of the overlay in bytes
-> <part-number>, <version> are (optional) root level properties of the DTBO
->
-> You can remove an overlay by echoing the <ID> number of the overlay
-> precedded with a '-'
->
-> So
->         $ echo "-0" >device-tree-overlay-status
->
-> Removes the overlay.
 
-This interface seems racy. Could the id change on you between reading
-the status and echoing to remove the overlay?
+Subject: slub: Handle NULL parameter in kmem_cache_flags
 
-I would rather see a file created for each overlay and simply echo 0
-or "remove" to remove the overlay. Or possibly it needs to be a
-directory per overlay with several files for info and control. This
-would be more inline with typical sysfs design.
+kmem_cache_flags may be called with NULL parameter during early boot.
+Skip the test in that case.
 
-Rob
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/mm/slub.c
+===================================================================
+--- linux.orig/mm/slub.c	2013-10-15 13:55:44.000000000 -0500
++++ linux/mm/slub.c	2013-11-06 13:09:21.810583134 -0600
+@@ -1217,7 +1217,7 @@ static unsigned long kmem_cache_flags(un
+ 	/*
+ 	 * Enable debugging if selected on the kernel commandline.
+ 	 */
+-	if (slub_debug && (!slub_debug_slabs ||
++	if (slub_debug && name && (!slub_debug_slabs ||
+ 		!strncmp(slub_debug_slabs, name, strlen(slub_debug_slabs))))
+ 		flags |= slub_debug;
+
+
+
