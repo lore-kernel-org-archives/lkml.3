@@ -1,108 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113Ab3KFIPK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 03:15:10 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:44965 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924Ab3KFIPI (ORCPT
+	id S1756126Ab3KFIQJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 03:16:09 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63210 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924Ab3KFIQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 03:15:08 -0500
-Date: Wed, 6 Nov 2013 19:14:54 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2?= =?UTF-8?B?bmlnIg==?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: linux-next: manual merge of the gpio tree with the arm-soc and
- cortex trees
-Message-Id: <20131106191454.5f45b0b5300f03e74a6a09eb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__6_Nov_2013_19_14_54_+1100_y8bxG1i+DucTpGYW"
+	Wed, 6 Nov 2013 03:16:08 -0500
+X-AuditID: 9c930197-b7c0bae0000007bd-d7-5279fac4f96f
+From: Namhyung Kim <namhyung@kernel.org>
+To: Rodrigo Campos <rodrigo@sdfg.com.ar>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 01/10] perf hists: Consolidate __hists__add_*entry()
+References: <1383682201-19399-1-git-send-email-acme@infradead.org>
+	<1383682201-19399-2-git-send-email-acme@infradead.org>
+	<20131105215243.GA8303@sdfg.com.ar>
+Date: Wed, 06 Nov 2013 17:16:04 +0900
+In-Reply-To: <20131105215243.GA8303@sdfg.com.ar> (Rodrigo Campos's message of
+	"Tue, 5 Nov 2013 21:52:43 +0000")
+Message-ID: <87habqx7wb.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__6_Nov_2013_19_14_54_+1100_y8bxG1i+DucTpGYW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Rodrigo,
 
-Hi Linus,
+On Tue, 5 Nov 2013 21:52:43 +0000, Rodrigo Campos wrote:
+> On Tue, Nov 05, 2013 at 05:09:52PM -0300, Arnaldo Carvalho de Melo wrote:
+>> @@ -486,15 +425,15 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+>>  		.ip	= al->addr,
+>>  		.level	= al->level,
+>>  		.stat = {
+>> -			.period	= period,
+>>  			.nr_events = 1,
+>> +			.period	= period,
+>>  			.weight = weight,
+>>  		},
+>
+> Isn't this seems unrelated and unneeded ?
+>
+> The "period" field is before the "nr_events" field in the struct, so maybe is
+> more clear to leave it as it was ?  The actual relative order (it has some more
+> fields) in the struct is: period, weigth, nr_events. Might be better if they
+> match that order here ? Although not sure since we are using the fields with
+> name and is clear enough.
 
-Today's linux-next merge of the gpio tree got a conflict in
-arch/arm/Kconfig between commit f3372c01816e ("ARM: gemini: convert to
-GENERIC_CLOCKEVENTS") from the arm-soc tree and f5caa3b59e18 ("ARM:
-deprecate mach/timex.h for !ARCH_MULTIPLATFORM") from the cortex tree and
-commits ffde39ea61ea ("ARM: mmp: delete the custom GPIO header"),
-88f718e3fa4d ("ARM: pxa: delete the custom GPIO header") and 85649711a895
-("ARM: gemini: delete <mach/gpio.h>") from the gpio tree.
+Yes, it just a small unrelated cosmetic change.  I don't think the order
+matters much - it just makes my eyes a bit more comfortable. :)
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+IOW, I changed it since _add_branch_entry() and _add_mem_entry() do it
+slightly different order.  So I decided to clean it up and putting
+nr_events at first looked reasonable to me.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/Kconfig
-index 568d6471dd18,c6debe07f036..000000000000
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@@ -397,10 -386,8 +397,9 @@@ config ARCH_CLPS711
-  config ARCH_GEMINI
-  	bool "Cortina Systems Gemini"
-  	select ARCH_REQUIRE_GPIOLIB
- -	select ARCH_USES_GETTIMEOFFSET
- +	select CLKSRC_MMIO
-  	select CPU_FA526
- +	select GENERIC_CLOCKEVENTS
-- 	select NEED_MACH_GPIO_H
-  	help
-  	  Support for the Cortina Systems Gemini family SoCs
- =20
-@@@ -593,8 -558,6 +592,7 @@@ config ARCH_MM
-  	select GPIO_PXA
-  	select IRQ_DOMAIN
-  	select MULTI_IRQ_HANDLER
-- 	select NEED_MACH_GPIO_H
- +	select NEED_MACH_TIMEX_H
-  	select PINCTRL
-  	select PLAT_PXA
-  	select SPARSE_IRQ
-@@@ -658,8 -620,6 +656,7 @@@ config ARCH_PX
-  	select GPIO_PXA
-  	select HAVE_IDE
-  	select MULTI_IRQ_HANDLER
-- 	select NEED_MACH_GPIO_H
- +	select NEED_MACH_TIMEX_H
-  	select PLAT_PXA
-  	select SPARSE_IRQ
-  	help
-
---Signature=_Wed__6_Nov_2013_19_14_54_+1100_y8bxG1i+DucTpGYW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSefqDAAoJEMDTa8Ir7ZwVQ/MP/Race/J+Lb9uhNafqypyW253
-U+dflHaEaExFmuneLmMwaMRzaZD5ek60F/IiCHr+ZDErPf2qjzhZB3xiwHmt5qFJ
-VoIu97EvHuRqLVJKur7lHZ6uBo4EOq6GJXNzDFjKn4yLYjZ+4bOTMqGkXJzAG1bm
-rAnx0X5qnGcSYQancIpsbjlZYkPahYeGPztcWrm7W/fomnuPtiaBVOgVsQ7aDols
-jXe+Bzi6xPoS4/Q1KPNPAGAwXfsRWL8ofNNLLxVfcY/irhrgs3rn28cmpeHI6vld
-Usrm6ifvxKD8ZhxuC6Th2l2/fPidC02Arwo9cCvWRFQqgkzXSGVVVkX6ovEs4bmY
-H3OQkvkLr0LDUWRARls/XDekBK31w363YQm1zc1KAmnV2UKG0kVHIWUbLuewUVFZ
-4eWvMfemGORpCn2aNI7YM/jzO08881XS3nBPFFCNyB1JQlcPJx6uS6BgJMfyDhDU
-qpa0ZWCTaSGFpU0aLRkzMiAUBJhMacy4kd4Hk1zjAvINDFhHd6movlU1e6n9eTGo
-ifMgXB/L1ofBrY39OJjMj+sNk7cXAY55cob/lpKec1jPtJ70bL4DaFrqBtVt+kJi
-p24s+hjJlZo4cCqt30a7N32kUTPE1RtUperAuhBfDA1offU0+G8m4WiR4roxGYc7
-jZos3oufnklJK28KZnbN
-=8P4D
------END PGP SIGNATURE-----
-
---Signature=_Wed__6_Nov_2013_19_14_54_+1100_y8bxG1i+DucTpGYW--
+Thanks,
+Namhyung
