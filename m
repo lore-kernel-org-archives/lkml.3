@@ -1,107 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932454Ab3KFOqz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 09:46:55 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:19440 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932113Ab3KFOqy (ORCPT
+	id S932429Ab3KFOul (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 09:50:41 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:60218 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932092Ab3KFOuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 09:46:54 -0500
-Date: Wed, 6 Nov 2013 09:46:49 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Dave Jones <davej@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        stable <stable@vger.kernel.org>, Kees Cook <keescook@google.com>
-Subject: Re: [GIT PULL][PATCH] perf/ftrace: Fix paranoid level for enabling
- function tracer
-Message-ID: <20131106094649.4abc704f@gandalf.local.home>
-In-Reply-To: <20131105162407.59393ee1@gandalf.local.home>
-References: <20131105162407.59393ee1@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Wed, 6 Nov 2013 09:50:40 -0500
+From: "ethan.zhao" <ethan.kernel@gmail.com>
+To: yu.zhao@intel.com, bhelgaas@google.com
+Cc: yinghai@kernel.org, linux-kernel@vger.kernel.org,
+        "ethan.zhao" <ethan.kernel@gmail.com>
+Subject: [PATCH] PCI: Init NumVFs register to zero in sriov_init()
+Date: Wed,  6 Nov 2013 22:49:13 +0800
+Message-Id: <1383749353-3510-1-git-send-email-ethan.kernel@gmail.com>
+X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Nov 2013 16:24:07 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+Though no specification about NumVFs register initial value after POST, to void the confusion
+lspci output as following before VF was enabled, we should clear the NumVFs value left by BIOS
+to zero:
 
-> 
-> Linus,
-> 
-> Please pull the latest ftrace/urgent tree, which can be found at:
-> 
+$lspci -vvv -s 03:00.0
+Ethernet controller: Intel Corporation 82599EB 10-Gigabit SFI/SFP+ Network Connection (rev 01)
+~
+Capabilities: [160 v1] Single Root I/O Virtualization (SR-IOV)
+		IOVCap:	Migration-, Interrupt Message Number: 000
+		IOVCtl:	Enable+ Migration- Interrupt- MSE+ ARIHierarchy+
+		IOVSta:	Migration-
+		Initial VFs: 64, Total VFs: 64, Number of VFs: 64, Function Dependency Link: 00
+                                                              ^dazed !
+~
+Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
+---
+ drivers/pci/iov.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-As I usually send you signed tag pull releases, I made one of those too:
-
-
-
-Linus,
-
-Please pull the latest ftrace-urgent-3.12 tree, which can be found at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-ftrace-urgent-3.12
-
-Tag SHA1: f54bbe2bc77806bf4d544652a2987dd9f784a5ba
-Head SHA1: d1356abac98cce8e7765186f8093da1442d74d1d
-
-
-Steven Rostedt (1):
-      perf/ftrace: Fix paranoid level for enabling function tracer
-
-----
- kernel/trace/trace_event_perf.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
----------------------------
-commit d1356abac98cce8e7765186f8093da1442d74d1d
-Author: Steven Rostedt <rostedt@goodmis.org>
-Date:   Tue Nov 5 12:51:11 2013 -0500
-
-    perf/ftrace: Fix paranoid level for enabling function tracer
-    
-    The current default perf paranoid level is "1" which has
-    "perf_paranoid_kernel()" return false, and giving any operations that
-    use it, access to normal users. Unfortunately, this includes function
-    tracing and normal users should not be allowed to enable function
-    tracing by default.
-    
-    The proper level is defined at "-1" (full perf access), which
-    "perf_paranoid_tracepoint_raw()" will only give access to. Use that
-    check instead for enabling function tracing.
-    
-    Reported-by: Dave Jones <davej@redhat.com>
-    Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-    Cc: Peter Zijlstra <peterz@infradead.org>
-    Cc: Ingo Molnar <mingo@kernel.org>
-    Cc: Jiri Olsa <jolsa@redhat.com>
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    Cc: stable@vger.kernel.org # 3.4+
-    CVE: CVE-2013-2930
-    Fixes: ced39002f5ea ("ftrace, perf: Add support to use function tracepoint in perf")
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 80c36bc..78e27e3 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -26,7 +26,7 @@ static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
- {
- 	/* The ftrace function trace is allowed only for root. */
- 	if (ftrace_event_is_function(tp_event) &&
--	    perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-+	    perf_paranoid_tracepoint_raw() && !capable(CAP_SYS_ADMIN))
- 		return -EPERM;
+diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+index de8ffac..a4941ad 100644
+--- a/drivers/pci/iov.c
++++ b/drivers/pci/iov.c
+@@ -439,6 +439,8 @@ static int sriov_init(struct pci_dev *dev, int pos)
  
- 	/* No tracing, just counting, so no obvious leak */
+ found:
+ 	pci_write_config_word(dev, pos + PCI_SRIOV_CTRL, ctrl);
++	/* VF Enable is cleared, so we could init the NumVFs register to 0 */
++	pci_write_config_word(dev, pos + PCI_SRIOV_NUM_VF, 0);
+ 	pci_read_config_word(dev, pos + PCI_SRIOV_VF_OFFSET, &offset);
+ 	pci_read_config_word(dev, pos + PCI_SRIOV_VF_STRIDE, &stride);
+ 	if (!offset || (total > 1 && !stride))
+-- 
+1.8.3.4 (Apple Git-47)
 
