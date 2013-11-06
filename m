@@ -1,121 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab3KFRU5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 12:20:57 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:45589 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab3KFRUy (ORCPT
+	id S1755013Ab3KFRX3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 12:23:29 -0500
+Received: from www.linutronix.de ([62.245.132.108]:46593 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017Ab3KFRX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 12:20:54 -0500
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-20-527a7a7330d7
-Message-id: <527A7A4E.4020702@samsung.com>
-Date: Wed, 06 Nov 2013 19:20:14 +0200
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.0
-MIME-version: 1.0
-To: David Howells <dhowells@redhat.com>, zohar@us.ibm.com
-Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 0/9] encrypted keys & key control op
-References: <20131104162216.10177.98067.stgit@warthog.procyon.org.uk>
-In-reply-to: <20131104162216.10177.98067.stgit@warthog.procyon.org.uk>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t/xK7rFVVVBBgeWG1u8a/rNYjF710MW
-	i8u75rBZfOh5xGbxuvsZswOrx7QTy1g83u+7yuZx7lofs8fnTXIBLFFcNimpOZllqUX6dglc
-	GfdP9LAV/JOsWP95BnsD4z7hLkZODgkBE4m/O2cwQdhiEhfurWcDsYUEljJKbHzH08XIBWQ3
-	Mkm8/LSdCcKZyyixbc1KsCpeAS2JQ7NesIDYLAKqEtcPPGQGsdkE9CQ2NP9gB7FFBSIkjq5+
-	xgpRLyjxY/I9sHoRAUuJlS2nwGxmgUSJ9X8WgtUIC9hKfH70jRHiCleJiaufgO3iFHCTWPdq
-	PSNEvbrEpHmLmCFseYnNa94yQ9SrSnSvXcsG8Y2ixOnJ55gnMArPQrJ6FpL2WUjaFzAyr2IU
-	TS1NLihOSs811CtOzC0uzUvXS87P3cQIiYgvOxgXH7M6xCjAwajEw5sgXxkkxJpYVlyZe4hR
-	goNZSYRXILQqSIg3JbGyKrUoP76oNCe1+BAjEwenVANjwWp9tfaisBLxq2c2MJStab24wjb3
-	dbn8MZElwatFhQWYVWfcSz1+c972nJbDWz16Zh/tbT+xMzxVImr+qZ6kkz/b/jvryWlOXHC5
-	x9oyUaFBsuD2fcEpjN2fo9zUsmYkf5WxEL+v0H1kstW8gxlzD3U+cMj7K/mZZf5iK534FmZr
-	3bTn8ziUWIozEg21mIuKEwFQE0AaZgIAAA==
+	Wed, 6 Nov 2013 12:23:26 -0500
+Date: Wed, 6 Nov 2013 18:23:21 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Andreas Schwab <schwab@linux-m68k.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: [patch 1/6] hardirq: Make hardirq bits generic
+In-Reply-To: <alpine.DEB.2.02.1311042032130.16975@ayla.of.borg>
+Message-ID: <alpine.DEB.2.02.1311061237430.23353@ionos.tec.linutronix.de>
+References: <20130917082838.218329307@infradead.org> <20130917182350.449685712@linutronix.de> <20130917183628.534494408@linutronix.de> <CAMuHMdWgrQf+ULDrZyY5R+vT3GtiWEgpsWxmfk0b5pivN7wBmg@mail.gmail.com> <alpine.DEB.2.02.1309172315550.4089@ionos.tec.linutronix.de>
+ <alpine.DEB.2.02.1309181159520.4089@ionos.tec.linutronix.de> <alpine.DEB.2.02.1309191652480.4089@ionos.tec.linutronix.de> <87txhg3ftx.fsf@igel.home> <CAMuHMdW-YBroi6GezUP-KQBVRAcmYtUQERvBC=ekmemopDhVow@mail.gmail.com> <alpine.DEB.2.02.1311041305540.28335@ionos.tec.linutronix.de>
+ <alpine.DEB.2.02.1311042032130.16975@ayla.of.borg>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello David,
+Geert,
 
-I will be looking to patches today...
+On Mon, 4 Nov 2013, Geert Uytterhoeven wrote:
+> But only if you look at "[m68k] IRQ: add handle_polled_irq() for timer
+> based soft interrupt" (http://www.spinics.net/lists/linux-m68k/msg05889.html)
+> first ;-)
 
-- Dmitry
+Done. Thanks for the reminder!
+ 
+> Below is a patch with some fixups, on top of your two patches.
+> 
+> Unfortunately it still hangs somewhere after mounting the root filesystem.
+> 
+> Using this debug code for do_IRQ():
+> 
+> diff --git a/arch/m68k/kernel/irq.c b/arch/m68k/kernel/irq.c
+> index aaf7b15fad41..da9687803d98 100644
+> --- a/arch/m68k/kernel/irq.c
+> +++ b/arch/m68k/kernel/irq.c
+> @@ -22,11 +22,21 @@ asmlinkage int do_IRQ(int irq, struct pt_regs *regs)
+>  	struct pt_regs *oldregs = set_irq_regs(regs);
+>  	int nested = regs->sr & ~ALLOWINT;
+>  
+> +static int nesting;
+> +const char prefix[] = "                ";
+> +unsigned long flags;
+> +local_irq_save(flags);
+> +nesting++;
+> +printk("# %sirq %d nested %d\n", &prefix[16-2*nesting], irq, nested);
+> +local_irq_restore(flags);
+>  	irq_enter();
+>  	generic_handle_irq(irq);
+>  	irq_exit_nested(nested);
+>  
+>  	set_irq_regs(oldregs);
+> +local_irq_save(flags);
+> +nesting--;
+> +local_irq_restore(flags);
+>  	return nested;
+>  }
+>  
+> I get output like
+> 
+> #   irq 15 nested 0
+> #     irq 15 nested 1024
+> 
+> irq 15 while irq 15 in progress??
 
-On 04/11/13 18:22, David Howells wrote:
-> Hi Mimi, Dmitry,
->
-> Here's a series of patches, the last three of which attempt to fix up a
-> problem with encrypted keys update method.  The preceding patches are fixes or
-> are preparatory for other changes that I want to put underneath.
->
-> I really want to make all key types use ->preparse() to avoid a deadlock in
-> the garbage collector with quota recycling, but encrypted_update() requires
-> access to the old key - which you can't have in ->preparse() because the
-> keyring isn't locked (and this lock is the root of the gc deadlock anyway).
->
-> Further, the existence of encrypted_update() means that add_key() will
-> sometimes get things wrong with encrypted keys (add_key() will call ->update()
-> if a matching key already exists rather than creating a new key).  But you
-> can't pre-search for the existence of a key and mould the payload accordingly
-> because that means you can race against both add_key() and keyctl_unlink().
->
-> My solution is to add a new keyctl function that allows the caller to perform
-> a type-specific operation on a key:
->
-> 	long keyctl_control(key_serial_t key_id,
-> 			    const char *command,
-> 			    char *reply_buffer,
-> 			    size_t reply_size);
->
-> This would then take a NUL-terminated string indicating the command and
-> arguments and potentially return a reply up to the buffer length.
->
-> For instance:
->
-> 	keyctl_control(1234, "encrypted change-master-key fred's key", NULL, 0);
->
-> or, from the shell:
->
-> 	keyctl control 1234 "encrypted change-master-key fred's key"
->
-> (I think that requiring the command string to be prefixed with the expected
-> key type is probably a good idea).
->
-> The control op could also be used for other things like pushing a key into a
-> TPM.
->
-> What do you think?
->
-> David
-> ---
-> David Howells (9):
->       KEYS: The RSA public key algorithm needs to select MPILIB
->       KEYS: Provide a generic instantiation function
->       KEYS: struct key_preparsed_payload should have two payload pointers
->       KEYS: Allow expiry time to be set when preparsing a key
->       KEYS: Call ->free_preparse() even after ->preparse() returns an error
->       KEYS: Trusted: Use key preparsing
->       KEYS: Add a keyctl function to alter/control a key in type-dependent way
->       KEYS: Implement keyctl control for encrypted keys
->       KEYS: Fix encrypted key type update method
->
->
->  Documentation/security/keys.txt          |   48 +++++++-
->  crypto/asymmetric_keys/Kconfig           |    1 
->  crypto/asymmetric_keys/asymmetric_type.c |   27 ----
->  crypto/asymmetric_keys/x509_public_key.c |    2 
->  include/linux/key-type.h                 |   11 ++
->  include/uapi/linux/keyctl.h              |    1 
->  security/keys/compat.c                   |    6 +
->  security/keys/encrypted-keys/encrypted.c |  111 +++++++++++++-----
->  security/keys/internal.h                 |    2 
->  security/keys/key.c                      |   49 +++++++-
->  security/keys/keyctl.c                   |  104 ++++++++++++++++
->  security/keys/trusted.c                  |  190 ++++++++++++++----------------
->  12 files changed, 385 insertions(+), 167 deletions(-)
->
->
+Huch, that's odd.
+ 
+> With similar debug code on the old working do_IRQ(), I get
+>   - slightly less deep nesting,
+>   - do_IRQ() is never re-entered with the same irq number.
+> 
+> Also note that the value of "nested" doesn't match the indentation level,
+> which depends on my own bookkeeping using "nesting".
 
+Well, nested is just an indicator. It's not the nest level.
+
+      nested = pt->sr & ~ALLOWINT;
+i.e.:
+      nested = pt->sr & 0x0700;
+
+So in the case above nested is 0x400
+ 
+> Anyone with an idea where it's going wrong?
+
+The original code does:
+
+    add_preempt_count(HARDIRQ_OFFSET);
+
+    do_IRQ()
+	irq_enter();
+	  add_preempt_count(HARDIRQ_OFFSET);
+
+	handle_irq();
+
+	irq_exit();
+	    local_irq_disable();
+	    sub_preempt_count(HARDIRQ_OFFSET);
+
+    sub_preempt_count(HARDIRQ_OFFSET);
+    
+    /* Check for nested irq */
+    if (in_hardirq())
+       reti();
+
+    /* Check for nested irq again */
+    if (pt->sr & ~ALLOWINT != 0)
+       reti();
+
+    do_softirq();
+       ....
+    ret_from_exception();
+
+With the patches in place it looks like this:
+
+     do_IRQ()
+	nested = pt->sr & ~ALLOWINT;
+
+	irq_enter();
+	  add_preempt_count(HARDIRQ_OFFSET);
+
+	handle_irq();
+
+	irq_exit_nested(nested);
+	    local_irq_disable();
+	    sub_preempt_count(HARDIRQ_OFFSET);
+	    if (!nested && !in_hardirq())
+	       do_softirq()
+		  
+	return nested;
+
+      if (nested)
+      	 reti();
+
+      ret_from_exception();
+
+So all it does essentially is to move the softirq invocation in the
+non nested case a tad earlier. I'm really puzzled as I can't spot the
+point where this change makes a real difference.
+
+Thanks,
+
+	tglx
