@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab3KFNVV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 08:21:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48990 "EHLO
+	id S932451Ab3KFNVn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 08:21:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49037 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932346Ab3KFNUu (ORCPT
+	with ESMTP id S932346Ab3KFNVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 08:20:50 -0500
-Date: Wed, 6 Nov 2013 05:20:09 -0800
-From: tip-bot for Vaidyanathan Srinivasan <tipbot@zytor.com>
-Message-ID: <tip-2042abe7977222ef606306faa2dce8fd51e98e65@git.kernel.org>
+	Wed, 6 Nov 2013 08:21:37 -0500
+Date: Wed, 6 Nov 2013 05:20:41 -0800
+From: tip-bot for John Stultz <tipbot@zytor.com>
+Message-ID: <tip-1ca7d67cf5d5a2aef26a8d9afd789006fa098347@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, michael.neuling@au1.ibm.com,
-        preeti@linux.vnet.ibm.com, tglx@linutronix.de,
-        svaidy@linux.vnet.ibm.com, mikey@neuling.org
+        mathieu.desnoyers@efficios.com, eric.dumazet@gmail.com,
+        peterz@infradead.org, davem@davemloft.net, john.stultz@linaro.org,
+        rostedt@goodmis.org, tglx@linutronix.de, lizefan@huawei.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, michael.neuling@au1.ibm.com,
-        preeti@linux.vnet.ibm.com, tglx@linutronix.de, mikey@neuling.org,
-        svaidy@linux.vnet.ibm.com
-In-Reply-To: <20131030031242.23426.13019.stgit@preeti.in.ibm.com>
-References: <20131030031242.23426.13019.stgit@preeti.in.ibm.com>
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
+        peterz@infradead.org, davem@davemloft.net, john.stultz@linaro.org,
+        rostedt@goodmis.org, tglx@linutronix.de, lizefan@huawei.com
+In-Reply-To: <1381186321-4906-3-git-send-email-john.stultz@linaro.org>
+References: <1381186321-4906-3-git-send-email-john.stultz@linaro.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix asymmetric scheduling for POWER7
-Git-Commit-ID: 2042abe7977222ef606306faa2dce8fd51e98e65
+Subject: [tip:core/locking] seqcount:
+  Add lockdep functionality to seqcount/seqlock structures
+Git-Commit-ID: 1ca7d67cf5d5a2aef26a8d9afd789006fa098347
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,65 +32,338 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 06 Nov 2013 05:20:17 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 06 Nov 2013 05:20:47 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2042abe7977222ef606306faa2dce8fd51e98e65
-Gitweb:     http://git.kernel.org/tip/2042abe7977222ef606306faa2dce8fd51e98e65
-Author:     Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-AuthorDate: Wed, 30 Oct 2013 08:42:42 +0530
+Commit-ID:  1ca7d67cf5d5a2aef26a8d9afd789006fa098347
+Gitweb:     http://git.kernel.org/tip/1ca7d67cf5d5a2aef26a8d9afd789006fa098347
+Author:     John Stultz <john.stultz@linaro.org>
+AuthorDate: Mon, 7 Oct 2013 15:51:59 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Nov 2013 12:37:54 +0100
+CommitDate: Wed, 6 Nov 2013 12:40:26 +0100
 
-sched: Fix asymmetric scheduling for POWER7
+seqcount: Add lockdep functionality to seqcount/seqlock structures
 
-Asymmetric scheduling within a core is a scheduler loadbalancing
-feature that is triggered when SD_ASYM_PACKING flag is set.  The goal
-for the load balancer is to move tasks to lower order idle SMT threads
-within a core on a POWER7 system.
+Currently seqlocks and seqcounts don't support lockdep.
 
-In nohz_kick_needed(), we intend to check if our sched domain (core)
-is completely busy or we have idle cpu.
+After running across a seqcount related deadlock in the timekeeping
+code, I used a less-refined and more focused variant of this patch
+to narrow down the cause of the issue.
 
-The following check for SD_ASYM_PACKING:
+This is a first-pass attempt to properly enable lockdep functionality
+on seqlocks and seqcounts.
 
-    (cpumask_first_and(nohz.idle_cpus_mask, sched_domain_span(sd)) < cpu)
+Since seqcounts are used in the vdso gettimeofday code, I've provided
+non-lockdep accessors for those needs.
 
-already covers the case of checking if the domain has an idle cpu,
-because cpumask_first_and() will not yield any set bits if this domain
-has no idle cpu.
+I've also handled one case where there were nested seqlock writers
+and there may be more edge cases.
 
-Hence, nr_busy check against group weight can be removed.
+Comments and feedback would be appreciated!
 
-Reported-by: Michael Neuling <michael.neuling@au1.ibm.com>
-Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Tested-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: vincent.guittot@linaro.org
-Cc: bitbucket@online.de
-Cc: benh@kernel.crashing.org
-Cc: anton@samba.org
-Cc: Morten.Rasmussen@arm.com
-Cc: pjt@google.com
-Link: http://lkml.kernel.org/r/20131030031242.23426.13019.stgit@preeti.in.ibm.com
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org
+Link: http://lkml.kernel.org/r/1381186321-4906-3-git-send-email-john.stultz@linaro.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/vdso/vclock_gettime.c |  8 ++---
+ fs/dcache.c                    |  4 +--
+ fs/fs_struct.c                 |  2 +-
+ include/linux/init_task.h      |  8 ++---
+ include/linux/lockdep.h        |  8 +++--
+ include/linux/seqlock.h        | 79 ++++++++++++++++++++++++++++++++++++++----
+ mm/filemap_xip.c               |  2 +-
+ 7 files changed, 90 insertions(+), 21 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 41c02b6..074551a 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6800,7 +6800,7 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
- 		if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
- 			goto need_kick_unlock;
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index 72074d5..2ada505 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -178,7 +178,7 @@ notrace static int __always_inline do_realtime(struct timespec *ts)
  
--		if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
-+		if (sd->flags & SD_ASYM_PACKING
- 		    && (cpumask_first_and(nohz.idle_cpus_mask,
- 					  sched_domain_span(sd)) < cpu))
- 			goto need_kick_unlock;
+ 	ts->tv_nsec = 0;
+ 	do {
+-		seq = read_seqcount_begin(&gtod->seq);
++		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
+ 		mode = gtod->clock.vclock_mode;
+ 		ts->tv_sec = gtod->wall_time_sec;
+ 		ns = gtod->wall_time_snsec;
+@@ -198,7 +198,7 @@ notrace static int do_monotonic(struct timespec *ts)
+ 
+ 	ts->tv_nsec = 0;
+ 	do {
+-		seq = read_seqcount_begin(&gtod->seq);
++		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
+ 		mode = gtod->clock.vclock_mode;
+ 		ts->tv_sec = gtod->monotonic_time_sec;
+ 		ns = gtod->monotonic_time_snsec;
+@@ -214,7 +214,7 @@ notrace static int do_realtime_coarse(struct timespec *ts)
+ {
+ 	unsigned long seq;
+ 	do {
+-		seq = read_seqcount_begin(&gtod->seq);
++		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
+ 		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
+ 		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
+ 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
+@@ -225,7 +225,7 @@ notrace static int do_monotonic_coarse(struct timespec *ts)
+ {
+ 	unsigned long seq;
+ 	do {
+-		seq = read_seqcount_begin(&gtod->seq);
++		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
+ 		ts->tv_sec = gtod->monotonic_time_coarse.tv_sec;
+ 		ts->tv_nsec = gtod->monotonic_time_coarse.tv_nsec;
+ 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
+diff --git a/fs/dcache.c b/fs/dcache.c
+index ae6ebb8..f750be2 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2574,7 +2574,7 @@ static void __d_move(struct dentry * dentry, struct dentry * target)
+ 	dentry_lock_for_move(dentry, target);
+ 
+ 	write_seqcount_begin(&dentry->d_seq);
+-	write_seqcount_begin(&target->d_seq);
++	write_seqcount_begin_nested(&target->d_seq, DENTRY_D_LOCK_NESTED);
+ 
+ 	/* __d_drop does write_seqcount_barrier, but they're OK to nest. */
+ 
+@@ -2706,7 +2706,7 @@ static void __d_materialise_dentry(struct dentry *dentry, struct dentry *anon)
+ 	dentry_lock_for_move(anon, dentry);
+ 
+ 	write_seqcount_begin(&dentry->d_seq);
+-	write_seqcount_begin(&anon->d_seq);
++	write_seqcount_begin_nested(&anon->d_seq, DENTRY_D_LOCK_NESTED);
+ 
+ 	dparent = dentry->d_parent;
+ 
+diff --git a/fs/fs_struct.c b/fs/fs_struct.c
+index d8ac61d..7dca743 100644
+--- a/fs/fs_struct.c
++++ b/fs/fs_struct.c
+@@ -161,6 +161,6 @@ EXPORT_SYMBOL(current_umask);
+ struct fs_struct init_fs = {
+ 	.users		= 1,
+ 	.lock		= __SPIN_LOCK_UNLOCKED(init_fs.lock),
+-	.seq		= SEQCNT_ZERO,
++	.seq		= SEQCNT_ZERO(init_fs.seq),
+ 	.umask		= 0022,
+ };
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 5cd0f09..b0ed422 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -32,10 +32,10 @@ extern struct fs_struct init_fs;
+ #endif
+ 
+ #ifdef CONFIG_CPUSETS
+-#define INIT_CPUSET_SEQ							\
+-	.mems_allowed_seq = SEQCNT_ZERO,
++#define INIT_CPUSET_SEQ(tsk)							\
++	.mems_allowed_seq = SEQCNT_ZERO(tsk.mems_allowed_seq),
+ #else
+-#define INIT_CPUSET_SEQ
++#define INIT_CPUSET_SEQ(tsk)
+ #endif
+ 
+ #define INIT_SIGNALS(sig) {						\
+@@ -220,7 +220,7 @@ extern struct task_group root_task_group;
+ 	INIT_FTRACE_GRAPH						\
+ 	INIT_TRACE_RECURSION						\
+ 	INIT_TASK_RCU_PREEMPT(tsk)					\
+-	INIT_CPUSET_SEQ							\
++	INIT_CPUSET_SEQ(tsk)						\
+ 	INIT_VTIME(tsk)							\
+ }
+ 
+diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+index cfc2f11..92b1bfc 100644
+--- a/include/linux/lockdep.h
++++ b/include/linux/lockdep.h
+@@ -497,6 +497,10 @@ static inline void print_irqtrace_events(struct task_struct *curr)
+ #define rwlock_acquire_read(l, s, t, i)		lock_acquire_shared_recursive(l, s, t, NULL, i)
+ #define rwlock_release(l, n, i)			lock_release(l, n, i)
+ 
++#define seqcount_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
++#define seqcount_acquire_read(l, s, t, i)	lock_acquire_shared_recursive(l, s, t, NULL, i)
++#define seqcount_release(l, n, i)		lock_release(l, n, i)
++
+ #define mutex_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
+ #define mutex_acquire_nest(l, s, t, n, i)	lock_acquire_exclusive(l, s, t, n, i)
+ #define mutex_release(l, n, i)			lock_release(l, n, i)
+@@ -504,11 +508,11 @@ static inline void print_irqtrace_events(struct task_struct *curr)
+ #define rwsem_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
+ #define rwsem_acquire_nest(l, s, t, n, i)	lock_acquire_exclusive(l, s, t, n, i)
+ #define rwsem_acquire_read(l, s, t, i)		lock_acquire_shared(l, s, t, NULL, i)
+-# define rwsem_release(l, n, i)			lock_release(l, n, i)
++#define rwsem_release(l, n, i)			lock_release(l, n, i)
+ 
+ #define lock_map_acquire(l)			lock_acquire_exclusive(l, 0, 0, NULL, _THIS_IP_)
+ #define lock_map_acquire_read(l)		lock_acquire_shared_recursive(l, 0, 0, NULL, _THIS_IP_)
+-# define lock_map_release(l)			lock_release(l, 1, _THIS_IP_)
++#define lock_map_release(l)			lock_release(l, 1, _THIS_IP_)
+ 
+ #ifdef CONFIG_PROVE_LOCKING
+ # define might_lock(lock) 						\
+diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
+index 21a2093..1e8a8b6 100644
+--- a/include/linux/seqlock.h
++++ b/include/linux/seqlock.h
+@@ -34,6 +34,7 @@
+ 
+ #include <linux/spinlock.h>
+ #include <linux/preempt.h>
++#include <linux/lockdep.h>
+ #include <asm/processor.h>
+ 
+ /*
+@@ -44,10 +45,50 @@
+  */
+ typedef struct seqcount {
+ 	unsigned sequence;
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	struct lockdep_map dep_map;
++#endif
+ } seqcount_t;
+ 
+-#define SEQCNT_ZERO { 0 }
+-#define seqcount_init(x)	do { *(x) = (seqcount_t) SEQCNT_ZERO; } while (0)
++static inline void __seqcount_init(seqcount_t *s, const char *name,
++					  struct lock_class_key *key)
++{
++	/*
++	 * Make sure we are not reinitializing a held lock:
++	 */
++	lockdep_init_map(&s->dep_map, name, key, 0);
++	s->sequence = 0;
++}
++
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++# define SEQCOUNT_DEP_MAP_INIT(lockname) \
++		.dep_map = { .name = #lockname } \
++
++# define seqcount_init(s)				\
++	do {						\
++		static struct lock_class_key __key;	\
++		__seqcount_init((s), #s, &__key);	\
++	} while (0)
++
++static inline void seqcount_lockdep_reader_access(const seqcount_t *s)
++{
++	seqcount_t *l = (seqcount_t *)s;
++	unsigned long flags;
++
++	local_irq_save(flags);
++	seqcount_acquire_read(&l->dep_map, 0, 0, _RET_IP_);
++	seqcount_release(&l->dep_map, 1, _RET_IP_);
++	local_irq_restore(flags);
++}
++
++#else
++# define SEQCOUNT_DEP_MAP_INIT(lockname)
++# define seqcount_init(s) __seqcount_init(s, NULL, NULL)
++# define seqcount_lockdep_reader_access(x)
++#endif
++
++#define SEQCNT_ZERO(lockname) { .sequence = 0, SEQCOUNT_DEP_MAP_INIT(lockname)}
++
+ 
+ /**
+  * __read_seqcount_begin - begin a seq-read critical section (without barrier)
+@@ -76,6 +117,22 @@ repeat:
+ }
+ 
+ /**
++ * read_seqcount_begin_no_lockdep - start seq-read critical section w/o lockdep
++ * @s: pointer to seqcount_t
++ * Returns: count to be passed to read_seqcount_retry
++ *
++ * read_seqcount_begin_no_lockdep opens a read critical section of the given
++ * seqcount, but without any lockdep checking. Validity of the critical
++ * section is tested by checking read_seqcount_retry function.
++ */
++static inline unsigned read_seqcount_begin_no_lockdep(const seqcount_t *s)
++{
++	unsigned ret = __read_seqcount_begin(s);
++	smp_rmb();
++	return ret;
++}
++
++/**
+  * read_seqcount_begin - begin a seq-read critical section
+  * @s: pointer to seqcount_t
+  * Returns: count to be passed to read_seqcount_retry
+@@ -86,9 +143,8 @@ repeat:
+  */
+ static inline unsigned read_seqcount_begin(const seqcount_t *s)
+ {
+-	unsigned ret = __read_seqcount_begin(s);
+-	smp_rmb();
+-	return ret;
++	seqcount_lockdep_reader_access(s);
++	return read_seqcount_begin_no_lockdep(s);
+ }
+ 
+ /**
+@@ -108,6 +164,8 @@ static inline unsigned read_seqcount_begin(const seqcount_t *s)
+ static inline unsigned raw_seqcount_begin(const seqcount_t *s)
+ {
+ 	unsigned ret = ACCESS_ONCE(s->sequence);
++
++	seqcount_lockdep_reader_access(s);
+ 	smp_rmb();
+ 	return ret & ~1;
+ }
+@@ -152,14 +210,21 @@ static inline int read_seqcount_retry(const seqcount_t *s, unsigned start)
+  * Sequence counter only version assumes that callers are using their
+  * own mutexing.
+  */
+-static inline void write_seqcount_begin(seqcount_t *s)
++static inline void write_seqcount_begin_nested(seqcount_t *s, int subclass)
+ {
+ 	s->sequence++;
+ 	smp_wmb();
++	seqcount_acquire(&s->dep_map, subclass, 0, _RET_IP_);
++}
++
++static inline void write_seqcount_begin(seqcount_t *s)
++{
++	write_seqcount_begin_nested(s, 0);
+ }
+ 
+ static inline void write_seqcount_end(seqcount_t *s)
+ {
++	seqcount_release(&s->dep_map, 1, _RET_IP_);
+ 	smp_wmb();
+ 	s->sequence++;
+ }
+@@ -188,7 +253,7 @@ typedef struct {
+  */
+ #define __SEQLOCK_UNLOCKED(lockname)			\
+ 	{						\
+-		.seqcount = SEQCNT_ZERO,		\
++		.seqcount = SEQCNT_ZERO(lockname),	\
+ 		.lock =	__SPIN_LOCK_UNLOCKED(lockname)	\
+ 	}
+ 
+diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
+index 28fe26b..d8d9fe3 100644
+--- a/mm/filemap_xip.c
++++ b/mm/filemap_xip.c
+@@ -26,7 +26,7 @@
+  * of ZERO_PAGE(), such as /dev/zero
+  */
+ static DEFINE_MUTEX(xip_sparse_mutex);
+-static seqcount_t xip_sparse_seq = SEQCNT_ZERO;
++static seqcount_t xip_sparse_seq = SEQCNT_ZERO(xip_sparse_seq);
+ static struct page *__xip_sparse_page;
+ 
+ /* called under xip_sparse_mutex */
