@@ -1,168 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab3KFQRi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 11:17:38 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:31456 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750755Ab3KFQRg (ORCPT
+	id S1753440Ab3KFQU3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 11:20:29 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42416 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab3KFQU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 11:17:36 -0500
-Date: Wed, 6 Nov 2013 11:17:32 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Geyslan G. Bem" <geyslan@gmail.com>
-Cc: kernel-br@googlegroups.com, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: Re: [PATCH 2/2] tracing: fix referencing after memory freeing and
- refactors code
-Message-ID: <20131106111732.5f4593f5@gandalf.local.home>
-In-Reply-To: <1382129982-9668-2-git-send-email-geyslan@gmail.com>
-References: <1382129982-9668-1-git-send-email-geyslan@gmail.com>
-	<1382129982-9668-2-git-send-email-geyslan@gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Wed, 6 Nov 2013 11:20:27 -0500
+Date: Wed, 6 Nov 2013 16:19:11 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, "Kristo, Tero" <t-kristo@ti.com>
+Subject: Re: [PATCH] clk: divider: fix rate calculation for fractional rates
+Message-ID: <20131106161911.GA16735@n2100.arm.linux.org.uk>
+References: <1383736008-22764-1-git-send-email-tomi.valkeinen@ti.com> <20131106111534.GW16735@n2100.arm.linux.org.uk> <527A2C9C.4080409@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <527A2C9C.4080409@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the late review, I was busy getting ready for kernel summit
-and then traveling too much.
-
-
-On Fri, 18 Oct 2013 17:59:42 -0300
-"Geyslan G. Bem" <geyslan@gmail.com> wrote:
-
-> In 'system_tr_open()':
-> Fix possible 'dir' assignment after freeing it.
+On Wed, Nov 06, 2013 at 01:48:44PM +0200, Tomi Valkeinen wrote:
+> On 2013-11-06 13:15, Russell King - ARM Linux wrote:
+> > On Wed, Nov 06, 2013 at 01:06:48PM +0200, Tomi Valkeinen wrote:
+> >> This means that the following code works a bit oddly:
+> >>
+> >> rate = clk_round_rate(clk, 123428572);
+> >> clk_set_rate(clk, rate);
+> > 
+> > You're right, but the above sequence is quite a crass thing to do.  Why?
 > 
-> In both functions:
-> Restructures logic conditions testing 'tracing_is_disabled()'
-> return before the others tests.
-> Centralizes the exiting in accordance to Coding Style, Chapter 7.
+> Do you mean that you think the fix is right, but the above example
+> sequence is silly, or that the fix is not needed either?
+
+I think a fix _is) required, because:
+
+	rate = clk_get_rate(clk);
+	clk_set_rate(clk, rate);
+	assert(clk_get_rate(clk) == rate);
+
+If not, there's something quite wrong.  However, I am saying that the
+sequence you provided was nevertheless silly - I've seen it in real code
+in the kernel, which is why I've commented about it.
+
+> Ok, if defined like that, then the current behavior is logical.
 > 
-> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
-> ---
->  kernel/trace/trace_events.c | 46 +++++++++++++++++++++++----------------------
->  1 file changed, 24 insertions(+), 22 deletions(-)
+> The comment in clk.h says "adjust a rate to the exact rate a clock can
+> provide", which does not contradict with what you said, but doesn't
+> really confirm it either. If I get "the exact rate a clock can provide"
+> I don't see why I can't use that exact clock rate for clk_set_rate.
+> Maybe the comment should be improved to state explicitly what it does.
 > 
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index 368a4d5..0f56ebf 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -1060,7 +1060,10 @@ static int subsystem_open(struct inode *inode, struct file *filp)
->  	struct event_subsystem *system = NULL;
->  	struct ftrace_subsystem_dir *dir = NULL; /* Initialize for gcc */
->  	struct trace_array *tr;
-> -	int ret;
-> +	int ret = -ENODEV;
-> +
-> +	if (tracing_is_disabled())
-> +		return ret;
->  
->  	/* Make sure the system still exists */
->  	mutex_lock(&trace_types_lock);
-> @@ -1082,23 +1085,21 @@ static int subsystem_open(struct inode *inode, struct file *filp)
->  	mutex_unlock(&trace_types_lock);
->  
->  	if (!system)
-> -		return -ENODEV;
-> +		return ret;
->  
->  	/* Some versions of gcc think dir can be uninitialized here */
->  	WARN_ON(!dir);
->  
->  	/* Still need to increment the ref count of the system */
-> -	if (trace_array_get(tr) < 0) {
-> -		put_system(dir);
-> -		return -ENODEV;
-> -	}
-> +	ret = trace_array_get(tr);
-> +	if (ret)
-> +		goto err_get;
->  
-> -	ret = tracing_open_generic(inode, filp);
-> -	if (ret < 0) {
-> -		trace_array_put(tr);
-> -		put_system(dir);
-> -	}
-> +	filp->private_data = dir;
-> +	return 0;
->  
-> +err_get:
-> +	put_system(dir);
->  	return ret;
+> However, how about the following sequence:
+> 
+> 	clk_set_rate(clk, 123428572);
+> 	rate = clk_get_rate(clk);
+> 	clk_set_rate(clk, rate);
+> 
+> I didn't test that but it should result in the clock first set to
+> 123428571, and then to 108000000. Obviously pointless if done exactly
+> like that, but I don't see why the above code sequence is wrong, yet it
+> gives a bit surprising result.
 
-I don't see any improvement in the above code, except for the initial
-check of tracing_is_disabled(). Just add:
+Does this help clarify it?
 
-	if (tracing_is_disabled())
-		return -ENODEV;
-
-no need for all the fancy work with using ret and goto.
-
-
->  }
->  
-> @@ -1106,28 +1107,29 @@ static int system_tr_open(struct inode *inode, struct file *filp)
->  {
->  	struct ftrace_subsystem_dir *dir;
->  	struct trace_array *tr = inode->i_private;
-> -	int ret;
-> +	int ret = -ENODEV;
->  
-> -	if (trace_array_get(tr) < 0)
-> -		return -ENODEV;
-> +	if (tracing_is_disabled())
-> +		return ret;
-> +
-> +	ret = trace_array_get(tr);
-> +	if (ret)
-> +		return ret;
->  
->  	/* Make a temporary dir that has no system but points to tr */
->  	dir = kzalloc(sizeof(*dir), GFP_KERNEL);
->  	if (!dir) {
-> -		trace_array_put(tr);
-> -		return -ENOMEM;
-> +		ret = -ENOMEM;
-> +		goto err_dir;
->  	}
->  
->  	dir->tr = tr;
->  
-> -	ret = tracing_open_generic(inode, filp);
-> -	if (ret < 0) {
-> -		trace_array_put(tr);
-> -		kfree(dir);
-> -	}
-> -
->  	filp->private_data = dir;
-> +	return 0;
->  
-
-Again, we don't need the goto and err_dir. The simple fix is to finish
-the function with:
-
-	ret = tracing_open_generic(inode, filp);
-	if (ret < 0) {
-		trace_array_put(tr);
-		kfree(dir);
-		return ret;
-	}
-
-	filp->private_data = dir;
-
-	return 0;
-
--- Steve
-
-> +err_dir:
-> +	trace_array_put(tr);
->  	return ret;
->  }
->  
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -228,6 +228,20 @@
+  * @clk: clock source
+  * @rate: desired clock rate in Hz
+  *
++ * This answers the question "if I were to pass @rate to clk_set_rate(),
++ * what clock rate would I end up with?" without changing the hardware
++ * in any way.  In other words:
++ *
++ *   rate = clk_round_rate(clk, r);
++ *
++ * and:
++ *
++ *   clk_set_rate(clk, r);
++ *   rate = clk_get_rate(clk);
++ *
++ * are equivalent except the former does not modify the clock hardware
++ * in any way.
++ *
+  * Returns rounded clock rate in Hz, or negative errno.
+  */
+ long clk_round_rate(struct clk *clk, unsigned long rate);
 
