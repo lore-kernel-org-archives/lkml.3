@@ -1,158 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab3KFSxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 13:53:48 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:47575 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026Ab3KFSxr (ORCPT
+	id S1755397Ab3KFSyN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 13:54:13 -0500
+Received: from ihemail2.lucent.com ([135.245.0.35]:58532 "EHLO
+	ihemail2.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755227Ab3KFSyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 13:53:47 -0500
-Date: Wed, 6 Nov 2013 13:52:33 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Matt Wilson <msw@linux.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Roger Pau =?iso-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xen.org, Matt Wilson <msw@amazon.com>
-Subject: Re: [Xen-devel] [PATCH] grant-table: don't set m2p override if
- kmap_ops is not set
-Message-ID: <20131106185233.GI17101@phenom.dumpdata.com>
-References: <5278E64C.40200@citrix.com>
- <527904EC.9090402@citrix.com>
- <20131105145607.GB25836@phenom.dumpdata.com>
- <5279085E.7070703@citrix.com>
- <1383664090.13961.88.camel@kazak.uk.xensource.com>
- <527916EE.6060104@citrix.com>
- <20131105200616.GA23362@u109add4315675089e695.ant.amazon.com>
- <878ux2vade.fsf@codemonkey.ws>
- <527A2943.7050400@citrix.com>
- <20131106175934.GA18002@u109add4315675089e695.ant.amazon.com>
+	Wed, 6 Nov 2013 13:54:12 -0500
+From: James Solner <solner@alcatel-lucent.com>
+To: dhowells@redhat.com, rusty@rustcorp.com.au, jwboyer@fedoraproject.org,
+        rdunlap@infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: [PATCH v3] Add Documentation/module-signing.txt file
+Date: Wed, 06 Nov 2013 12:53:36 -0600
+Message-ID: <2816992.xgHeIJfXWn@cmlinux10.ih.lucent.com>
+User-Agent: KMail/4.11.2 (Linux/3.11.6-PRV02+; KDE/4.11.2; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131106175934.GA18002@u109add4315675089e695.ant.amazon.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 09:59:34AM -0800, Matt Wilson wrote:
-> On Wed, Nov 06, 2013 at 11:34:27AM +0000, David Vrabel wrote:
-> [...]
-> > 
-> > Matt, Anthony, I presume you have profiling results or performance data
-> > that support this proposed change?  Can you provide them?
-> 
-> I've measured 10-20% performance improvement in configurations where:
-> 
-> 1) dom0 has a moderate number of vCPUs doing blkback work
-> 2) domU has 32 vCPUs
-> 3) 24 configured VBDs without persistent grant support
-> 4) some lock contention in grant table hypercalls has been alleviated
-> 
-> More specific results are still in the works.
-> 
-> > > It's perfectly fine to store a foreign pfn in the m2p table.  The m2p
-> > > override table is used by the grant device to allow a reverse lookup of
-> > > the real mfn to a pfn even if it's foreign.
-> > > 
-> > > blkback doesn't actually need this though.  This was introduced in:
-> > > 
-> > > commit 5dc03639cc903f887931831d69895facb5260f4b
-> > > Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > > Date:   Tue Mar 1 16:46:45 2011 -0500
-> > > 
-> > >     xen/blkback: Utilize the M2P override mechanism for GNTMAP_host_map
-> > > 
-> > > Purely as an optimization.  In practice though due to lock contention it
-> > > slows things down.
-> > 
-> > The full changeset description for this change doesn't make sense to me.
-> > 
-> >     xen/blkback: Utilize the M2P override mechanism for GNTMAP_host_map
-> > 
-> >     Instead of doing copy grants lets do mapping grants using
-> >     the M2P(and P2M) override mechanism.
-> > 
-> > As all it is doing is replacing set_phys_to_machine() calls with
-> > m2p_add_override().
-> 
-> Indeed, since this had nothing to do with copying. We were confused
-> also. Konrad?
+This patch adds the Documentation/module-signing.txt file that is
+currently missing from the Documentation directory. The init/Kconfig
+file references the Documentation/module-signing.txt file to explain
+how kernel module signing works. This patch supplies this documentation. 
 
-<confused as well>
+The initial version of this patch provided old documentation
+that was a mixture of the old RHEL style GPG signing. 
+Version 1 updated the documentation to described the current
+implementation using x509 certificate signing. 
+Version 2, fixes grammar/spelling mistakes and removes
+trailing whitespaces. Version 3, fixes grammar/spelling mistakes. 
 
-2011? Hm, I really don't remember. It does not look to be needed.
+Signed-off-by: James Solner <solner@alcatel-lucent.com>
 
-I think that back in 2011 the m2p override mechanism was much simpler
-and was just a wrapper around set_phys_to_machine with a non-lock
-write in the m2p override.
+---
+ Documentation/module-signing.txt | 115 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 115 insertions(+)
+ create mode 100644 Documentation/module-signing.txt
 
-The only concern I had, which David had looked at and I did here
-too was the DMA unmap operation, but as you can see from the
-writeup - it is not warranted.
+diff --git a/Documentation/module-signing.txt b/Documentation/module-signing.txt
+new file mode 100644
+index 0000000..42aa52e
+--- /dev/null
++++ b/Documentation/module-signing.txt
+@@ -0,0 +1,115 @@
++		==============================
++		KERNEL MODULE SIGNING FACILITY
++		==============================
++
++The module signing facility applies cryptographic signature checking
++when loading modules by checking its signature against a public key.
++This allows increased kernel security by disallowing loading unsigned
++modules or modules signed with an invalid key. Module signing increases
++the kernel security and reduces the odds of malicious modules being
++loading into Linux operating system.
++
++This facility uses X.509 ITU-T standard to perform the cryptographic
++work and to determine the format of the signatures and key data. The
++key type used is RSA and the possible hash algorithms that can be
++used are SHA-1, SHA-224, SHA-256, SHA-384, and SHA-512. These hash
++algorithms can be selected during the kernel configuration build:
++
++	CONFIG_SIG_SHA1
++	CONFIG_SIG_SHA224
++	CONFIG_SIG_SHA256
++	CONFIG_SIG_SHA384
++	CONFIG_SIG_SHA512
++
++The module signing facility is a kernel feature and is enabled through the
++Linux kernel configuration builder. In the "Enable Loadable Module Support"
++section of the kernel configuration, the CONFIG_MODULE_SIG symbol is enabled
++to activate this feature. This feature supports two options for signed
++module support: "permissive" and "restrictive".  The default is the
++"permissive" option and allows a module with a valid signature to be loaded.
++If the signature is invalid, the module is still loaded, but the kernel is
++marked as "tainted". The "restrictive" option (CONFIG_MODULE_SIG_FORCE)
++requires a valid signature before the module can be loaded.
++
++Modules can be signed using two methods: "automatically" or "manually".
++The CONFIG_MODULE_SIG_ALL symbol will automatically sign the modules
++during the "modules_install" part of the kernel build. A module can also
++be signed manually using the scripts/sign-file tool.
++
++================================================
++AUTOMATICALLY GENERATING PUBLIC AND PRIVATE KEYS
++================================================
++As part of "modules_install" kernel build, the Linux kernel build
++infrastructure will automatically create two files in the root node
++of the Linux kernel source tree. These files contain the public/private
++keys and are called "signing_key.x509" and "signing_key.priv".
++The public key is built into the kernel and used to verify modules'
++signatures when the modules are loaded.
++
++=================================================
++MANUALLY GENERATING PUBLIC AND PRIVATE KEYS
++=================================================
++To manually generate the key private/public files, use the x509.genkey key
++generation configuration file in the root node of the Linux kernel
++sources tree and the openssl command. The following is an example to
++generate the public/private key files:
++
++	openssl req -new -nodes -utf8 -sha256 -days 36500 -batch -x509 \
++	   -config x509.genkey -outform DER -out signing_key.x509 \
++	   -keyout signing_key.priv
++
++=========================
++MANUALLY SIGNING MODULES
++=========================
++To manually sign a module, use the scripts/sign-file tool available in
++the Linux kernel source tree. The script requires 4 arguments:
++
++	1. The hash algorithm (e.g., sha256)
++	2. The private key
++	3. The public key
++	4. The kernel module to be signed
++
++The following is an example to sign a kernel module:
++
++	scripts/sign-file sha512 kernel-signkey.priv \
++	    kernel-signkey.x509 module.ko
++
++============================
++SIGNED MODULES AND STRIPPING
++============================
++
++A signed module has a digital signature appended at the end. The string
++"~Module signature appended~." at the end of the module's file confirms
++that a signature is present. But, it does not confirm that the
++signature is valid!
++
++Signed modules are BRITTLE as the signature is outside of the defined
++ELF container.  Thus they MAY NOT be stripped once the signature is computed
++and attached. Note the entire module is the signed payload, including
++all the debug information present at the time of signing.
++
++======================
++LOADING SIGNED MODULES
++======================
++
++Modules are loaded with insmod, exactly as for unsigned modules.
++The signature checker checks at the end of the file for the signature
++marker and applies signature checking.
++
++=========================================
++NON-VALID SIGNATURES AND UNSIGNED MODULES
++=========================================
++
++If CONFIG_MODULE_SIG_FORCE is enabled or enforcemodulesig=1 is supplied on
++the kernel command line, the kernel will only load validly signed modules
++for which it has a public key.  Otherwise, it will also load modules that are
++unsigned.  Any module for which the kernel has a key, but which proves to have
++a signature mismatch will not be permitted to load.
++
++=========================================
++ADMINISTERING/PROTECTING THE PRIVATE KEY
++=========================================
++Since the private key is used to sign modules, malware can use
++the private key to sign modules and compromise the operating system.
++The private key must be moved to a secure location and not kept in
++the root node of the kernel source tree.
+-- 
+1.7.12.4
+---
 
-I think that the set_phys_to_machine is the way to go then
-and ditching the m2p_override. Two questions remain:
 
- - How does this work when block back is running in an HVM domain?
-
- - Stefano, do we need to worry about the crazy scenario of
-   dom0 using xen-blkfront and xen-blkback inside itself to fetch
-   bits of data from QEMU?
-
-?
-Here is how it interacts with SWIOTLB:
-
-
-1) Backend gets the foreign MFN from the grant call. Calls m2p_add_override
-   which calls set_phys_to_machine and also adds the MFN on the m2p_overrides.
-   Takes a lock.
-2). Backend submit_bio, it ends up in AHCI driver. Said driver does dma_map_sg
-3). We call xen_swiotlb_map_sg_attrs, which does:
-	a) pfn_to_mfn, gets from the P2M the MFN | FOREIGN_FRAME_BIT. Strips
-	   the FOREIGN_FRAME_BIT. Returns MFN.
-	b). Setups up the sg->dma_address
-	
-    But it also might setup an bounce buffer in case the AHCI can't reach
-    the MFN >> PAGE_SHIFT. At which point we just save the virtual
-    address of the page handed to us in the IOTLB.
-
-4). .. ahci driver does it cmd, once it is done it calls 'dma_unmap_sg'
-   which ends up in xen_swiotlb_unmap_sg_attrs and we call xen_unmap_single
-   which calls:
-
-393         phys_addr_t paddr = xen_bus_to_phys(dev_addr);                          
-   which ends up doing (in mfn_to_pfn):
-
-112         pfn = mfn_to_pfn_no_overrides(mfn);                                    
-
-   lookup in the M2P array. We find an MFN and then we check the P2M:
-
-113         if (get_phys_to_machine(pfn) != mfn) {                                  
-
-   Since the MFN hasn't changed (it is still the 'local' one instead
-   of the forign one - since we can't modify the M2P) we end up
-   with p2m(pfn) != mfn. As the p2m(pfn) ends up giving us the 'foreign'
-   MFN value and the m2p(pfn) ends up giving us the 'local' MFN.
-
-   So then we consult the override:
-114                 /*                                                              
-115                  * If this appears to be a foreign mfn (because the pfn         
-116                  * doesn't map back to the mfn), then check the local override  
-117                  * table to see if there's a better pfn to use.                 
-118                  *                                                              
-119                  * m2p_find_override_pfn returns ~0 if it doesn't find anything.
-120                  */                                                             
-121                 pfn = m2p_find_override_pfn(mfn, ~0);              
-
-   And we find it the MFN of the foreign domain, return it back to the SWIOTLB
-   as physical address (so mfn << PAGE_SHIFT) so it can a) either ignore it,
-   or b) if the bounce buffer ended up being used - ignore it too. As the
-   bounce buffer mechanism ends up using the original stashed virtual address
-   and bounces between the bounce buffer and foreign owned virtual address.
-
-   The dma_mark_clean is a nop.
