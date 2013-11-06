@@ -1,181 +1,357 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606Ab3KFCPX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 21:15:23 -0500
-Received: from cluster-d.mailcontrol.com ([85.115.60.190]:54631 "EHLO
-	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab3KFCPV convert rfc822-to-8bit (ORCPT
+	id S1755830Ab3KFCcN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 21:32:13 -0500
+Received: from TYO200.gate.nec.co.jp ([202.32.8.215]:46274 "EHLO
+	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050Ab3KFCcM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 21:15:21 -0500
-X-PGP-Universal: processed;
-	by shaapppus01.asia.root.pri on Wed, 06 Nov 2013 10:15:15 +0800
-From: Rongjun Ying <Rongjun.Ying@csr.com>
-To: Shawn Guo <shawn.guo@linaro.org>, Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjying <rjying@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "rongjun.ying@gcsr.com" <rongjun.ying@gcsr.com>
-Subject: RE: [PATCH 1/1] cpufreq: cpufreq-cpu0: use the max voltage instead
- of voltage-tolerance
-Thread-Topic: [PATCH 1/1] cpufreq: cpufreq-cpu0: use the max voltage instead
- of voltage-tolerance
-Thread-Index: AQHO2dSzt4p89ClR/0iIszhVSF2c8ZoVh94AgAB5jYCAAXZxwA==
-Date: Wed, 6 Nov 2013 02:15:07 +0000
-Message-ID: <86130EF012BDF348AA0D464A4F44947801295423DF@SHAASIEXM01.ASIA.ROOT.PRI>
-References: <1383621014-11202-1-git-send-email-rongjun.ying@csr.com>
- <CAKohpo=qR5WD=5VjGmeRraQ+_m5NUn8xiP5Z_ZuZWLv1hNx5KA@mail.gmail.com>
- <20131105115307.GN19770@S2101-09.ap.freescale.net>
-In-Reply-To: <20131105115307.GN19770@S2101-09.ap.freescale.net>
-Accept-Language: zh-CN, en-GB, en-US
+	Tue, 5 Nov 2013 21:32:12 -0500
+From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+To: "vgoyal@redhat.com" <vgoyal@redhat.com>
+CC: "jingbai.ma@hp.com" <jingbai.ma@hp.com>, "bhe@redhat.com" <bhe@redhat.com>,
+        "tom.vaden@hp.com" <tom.vaden@hp.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "ptesarik@suse.cz" <ptesarik@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lisa.mitchell@hp.com" <lisa.mitchell@hp.com>,
+        "d.hatayama@jp.fujitsu.com" <d.hatayama@jp.fujitsu.com>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "anderson@redhat.com" <anderson@redhat.com>
+Subject: Re: [PATCH 0/3] makedumpfile: hugepage filtering for vmcore dump
+Thread-Topic: [PATCH 0/3] makedumpfile: hugepage filtering for vmcore dump
+Thread-Index: Ac7aluz8xTFfSsYQRCSuusZ9e9zm3A==
+Date: Wed, 6 Nov 2013 02:21:39 +0000
+Message-ID: <0910DD04CBD6DE4193FCF86B9C00BE971BB7A9@BPXM01GP.gisp.nec.co.jp>
+References: <20131105134532.32112.78008.stgit@k.asiapacific.hpqcorp.net>
+ <20131105202631.GC4598@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.125.5.123]
-MIME-Version: 1.0
-Content-Language: zh-CN
-Content-Type: text/plain; charset="Windows-1252"
+x-originating-ip: [10.21.40.240]
+Content-Type: text/plain; charset="iso-2022-jp"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2013/11/06 5:27), Vivek Goyal wrote:
+> On Tue, Nov 05, 2013 at 09:45:32PM +0800, Jingbai Ma wrote:
+>> This patch set intend to exclude unnecessary hugepages from vmcore dump file.
+>>
+>> This patch requires the kernel patch to export necessary data structures into
+>> vmcore: "kexec: export hugepage data structure into vmcoreinfo"
+>> http://lists.infradead.org/pipermail/kexec/2013-November/009997.html
+>>
+>> This patch introduce two new dump levels 32 and 64 to exclude all unused and
+>> active hugepages. The level to exclude all unnecessary pages will be 127 now.
+>
+> Interesting. Why hugepages should be treated any differentely than normal
+> pages?
+>
+> If user asked to filter out free page, then it should be filtered and
+> it should not matter whether it is a huge page or not?
+
+I'm making a RFC patch of hugepages filtering based on such policy.
+
+I attach the prototype version.
+It's able to filter out also THPs, and suitable for cyclic processing
+because it depends on mem_map and looking up it can be divided into
+cycles. This is the same idea as page_is_buddy().
+
+So I think it's better.
+
+-- 
+Thanks
+Atsushi Kumagai
 
 
-> -----Original Message-----
-> From: Shawn Guo [mailto:shawn.guo@linaro.org]
-> Sent: Tuesday, November 05, 2013 7:53 PM
-> To: Viresh Kumar
-> Cc: rjying; Rafael J. Wysocki; cpufreq@vger.kernel.org; linux-
-> pm@vger.kernel.org; Linux Kernel Mailing List; rongjun.ying@gcsr.com;
-> Rongjun Ying
-> Subject: Re: [PATCH 1/1] cpufreq: cpufreq-cpu0: use the max voltage
-> instead of voltage-tolerance
-> 
-> On Tue, Nov 05, 2013 at 10:08:06AM +0530, Viresh Kumar wrote:
-> > Adding shawn in cc list..
-> >
-> > On 5 November 2013 08:40, rjying <rjying@gmail.com> wrote:
-> > > From: Rongjun Ying <rongjun.ying@csr.com>
-> > >
-> > > Sometime the regulator can't supply appropriate voltages for
-> requestion of cpu.
-> > > All voltage tolerance value can't figure out a good voltage.
-> 
-> The voltage-tolerance is an optional device tree property.  You can
-> omit it if you do not have a value for it.
-> 
-> Shawn
+From: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+Date: Wed, 6 Nov 2013 10:10:43 +0900
+Subject: [PATCH] [RFC] Exclude hugepages.
 
-It bounced for some reason, trying to send again.
+Signed-off-by: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
+---
+   makedumpfile.c | 122 ++++++++++++++++++++++++++++++++++++++++++++++++++++++---
+   makedumpfile.h |   8 ++++
+   2 files changed, 125 insertions(+), 5 deletions(-)
 
-If omit voltage-tolerance, sometimes also can't get appropriate voltages.
-For example:
-If the regulator IC only can supply min voltage is 1.000V and max voltage is 1.200V, and cpu work max voltage is 1.200V.
-But the cpu just need 1.100V when cpu run under a freq.
-So regulator_set_voltage_tol will return failed. 
-Because the regulator_set_voltage will invoke with min-uV is 1100000 and max-uV is 1100000 parameters.
-Regulator can't supply it.
-As this case, the regulator just need supply 1.200V.
+diff --git a/makedumpfile.c b/makedumpfile.c
+index 428c53e..75b7123 100644
+--- a/makedumpfile.c
++++ b/makedumpfile.c
+@@ -63,6 +63,7 @@ do { \
+   
+   static void check_cyclic_buffer_overrun(void);
+   static void setup_page_is_buddy(void);
++static void setup_page_is_hugepage(void);
+   
+   void
+   initialize_tables(void)
+@@ -270,6 +271,18 @@ update_mmap_range(off_t offset, int initial) {
+   }
+   
+   static int
++page_is_hugepage(unsigned long flags) {
++	if (NUMBER(PG_head) != NOT_FOUND_NUMBER) {
++		return isHead(flags);
++	} else if (NUMBER(PG_tail) != NOT_FOUND_NUMBER) {
++		return isTail(flags);
++	}if (NUMBER(PG_compound) != NOT_FOUND_NUMBER) {
++		return isCompound(flags);
++	}
++	return 0;
++}
++
++static int
+   is_mapped_with_mmap(off_t offset) {
+   
+   	if (info->flag_usemmap
+@@ -1107,6 +1120,8 @@ get_symbol_info(void)
+   		SYMBOL_ARRAY_LENGTH_INIT(node_remap_start_pfn,
+   					"node_remap_start_pfn");
+   
++	SYMBOL_INIT(free_huge_page, "free_huge_page");
++
+   	return TRUE;
+   }
+   
+@@ -1214,11 +1229,19 @@ get_structure_info(void)
+   
+   	ENUM_NUMBER_INIT(PG_lru, "PG_lru");
+   	ENUM_NUMBER_INIT(PG_private, "PG_private");
++	ENUM_NUMBER_INIT(PG_head, "PG_head");
++	ENUM_NUMBER_INIT(PG_tail, "PG_tail");
++	ENUM_NUMBER_INIT(PG_compound, "PG_compound");
+   	ENUM_NUMBER_INIT(PG_swapcache, "PG_swapcache");
+   	ENUM_NUMBER_INIT(PG_buddy, "PG_buddy");
+   	ENUM_NUMBER_INIT(PG_slab, "PG_slab");
+   	ENUM_NUMBER_INIT(PG_hwpoison, "PG_hwpoison");
+   
++	if (NUMBER(PG_head) == NOT_FOUND_NUMBER &&
++	    NUMBER(PG_compound) == NOT_FOUND_NUMBER)
++		/* Pre-2.6.26 kernels did not have pageflags */
++		NUMBER(PG_compound) = PG_compound_ORIGINAL;
++
+   	ENUM_TYPE_SIZE_INIT(pageflags, "pageflags");
+   
+   	TYPEDEF_SIZE_INIT(nodemask_t, "nodemask_t");
+@@ -1603,6 +1626,7 @@ write_vmcoreinfo_data(void)
+   	WRITE_SYMBOL("node_remap_start_vaddr", node_remap_start_vaddr);
+   	WRITE_SYMBOL("node_remap_end_vaddr", node_remap_end_vaddr);
+   	WRITE_SYMBOL("node_remap_start_pfn", node_remap_start_pfn);
++	WRITE_SYMBOL("free_huge_page", free_huge_page);
+   
+   	/*
+   	 * write the structure size of 1st kernel
+@@ -1685,6 +1709,9 @@ write_vmcoreinfo_data(void)
+   
+   	WRITE_NUMBER("PG_lru", PG_lru);
+   	WRITE_NUMBER("PG_private", PG_private);
++	WRITE_NUMBER("PG_head", PG_head);
++	WRITE_NUMBER("PG_tail", PG_tail);
++	WRITE_NUMBER("PG_compound", PG_compound);
+   	WRITE_NUMBER("PG_swapcache", PG_swapcache);
+   	WRITE_NUMBER("PG_buddy", PG_buddy);
+   	WRITE_NUMBER("PG_slab", PG_slab);
+@@ -1932,6 +1959,7 @@ read_vmcoreinfo(void)
+   	READ_SYMBOL("node_remap_start_vaddr", node_remap_start_vaddr);
+   	READ_SYMBOL("node_remap_end_vaddr", node_remap_end_vaddr);
+   	READ_SYMBOL("node_remap_start_pfn", node_remap_start_pfn);
++	READ_SYMBOL("free_huge_page", free_huge_page);
+   
+   	READ_STRUCTURE_SIZE("page", page);
+   	READ_STRUCTURE_SIZE("mem_section", mem_section);
+@@ -2000,6 +2028,9 @@ read_vmcoreinfo(void)
+   
+   	READ_NUMBER("PG_lru", PG_lru);
+   	READ_NUMBER("PG_private", PG_private);
++	READ_NUMBER("PG_head", PG_head);
++	READ_NUMBER("PG_tail", PG_tail);
++	READ_NUMBER("PG_compound", PG_compound);
+   	READ_NUMBER("PG_swapcache", PG_swapcache);
+   	READ_NUMBER("PG_slab", PG_slab);
+   	READ_NUMBER("PG_buddy", PG_buddy);
+@@ -3126,6 +3157,9 @@ out:
+   	if (!get_value_for_old_linux())
+   		return FALSE;
+   
++	/* Get page flags for compound pages */
++	setup_page_is_hugepage();
++
+   	/* use buddy identification of free pages whether cyclic or not */
+   	/* (this can reduce pages scan of 1TB memory from 60sec to 30sec) */
+   	if (info->dump_level & DL_EXCLUDE_FREE)
+@@ -4197,6 +4231,23 @@ out:
+   			  "follow free lists instead of mem_map array.\n");
+   }
+   
++static void
++setup_page_is_hugepage(void)
++{
++	if (NUMBER(PG_head) != NOT_FOUND_NUMBER) {
++		if (NUMBER(PG_tail) == NOT_FOUND_NUMBER) {
++			/* If PG_tail is not explicitly saved, then assume
++			 * that it immediately follows PG_head.
++			 */
++			NUMBER(PG_tail) = NUMBER(PG_head) + 1;
++		}
++	} else if ((NUMBER(PG_compound) != NOT_FOUND_NUMBER)
++		   && (info->dump_level & DL_EXCLUDE_USER_DATA)) {
++		MSG("Compound page bit could not be determined: ");
++		MSG("huge pages will NOT be filtered.\n");
++	}
++}
++
+   /*
+    * If using a dumpfile in kdump-compressed format as a source file
+    * instead of /proc/vmcore, 1st-bitmap of a new dumpfile must be
+@@ -4404,8 +4455,9 @@ __exclude_unnecessary_pages(unsigned long mem_map,
+   	unsigned long long pfn_read_start, pfn_read_end, index_pg;
+   	unsigned char page_cache[SIZE(page) * PGMM_CACHED];
+   	unsigned char *pcache;
+-	unsigned int _count, _mapcount = 0;
++	unsigned int _count, _mapcount = 0, compound_order = 0;
+   	unsigned long flags, mapping, private = 0;
++	unsigned long hugetlb_dtor;
+   
+   	/*
+   	 * Refresh the buffer of struct page, when changing mem_map.
+@@ -4459,6 +4511,27 @@ __exclude_unnecessary_pages(unsigned long mem_map,
+   		flags   = ULONG(pcache + OFFSET(page.flags));
+   		_count  = UINT(pcache + OFFSET(page._count));
+   		mapping = ULONG(pcache + OFFSET(page.mapping));
++
++		if (index_pg < PGMM_CACHED - 1) {
++			compound_order = ULONG(pcache + SIZE(page) + OFFSET(page.lru)
++					       + OFFSET(list_head.prev));
++			hugetlb_dtor = ULONG(pcache + SIZE(page) + OFFSET(page.lru)
++					     + OFFSET(list_head.next));
++		} else if (pfn + 1 < pfn_end) {
++			unsigned char page_cache_next[SIZE(page)];
++			if (!readmem(VADDR, mem_map, page_cache_next, SIZE(page))) {
++				ERRMSG("Can't read the buffer of struct page.\n");
++				return FALSE;
++			}
++			compound_order = ULONG(page_cache_next + OFFSET(page.lru)
++					       + OFFSET(list_head.prev));
++			hugetlb_dtor = ULONG(page_cache_next + OFFSET(page.lru)
++					     + OFFSET(list_head.next));
++		} else {
++			compound_order = 0;
++			hugetlb_dtor = 0;
++		}
++
+   		if (OFFSET(page._mapcount) != NOT_FOUND_STRUCTURE)
+   			_mapcount = UINT(pcache + OFFSET(page._mapcount));
+   		if (OFFSET(page.private) != NOT_FOUND_STRUCTURE)
+@@ -4497,6 +4570,10 @@ __exclude_unnecessary_pages(unsigned long mem_map,
+   		    && !isPrivate(flags) && !isAnon(mapping)) {
+   			if (clear_bit_on_2nd_bitmap_for_kernel(pfn))
+   				pfn_cache++;
++			/*
++			 * NOTE: If THP for cache is introduced, the check for
++			 *       compound pages is needed here.
++			 */
+   		}
+   		/*
+   		 * Exclude the cache page with the private page.
+@@ -4506,14 +4583,49 @@ __exclude_unnecessary_pages(unsigned long mem_map,
+   		    && !isAnon(mapping)) {
+   			if (clear_bit_on_2nd_bitmap_for_kernel(pfn))
+   				pfn_cache_private++;
++			/*
++			 * NOTE: If THP for cache is introduced, the check for
++			 *       compound pages is needed here.
++			 */
+   		}
+   		/*
+   		 * Exclude the data page of the user process.
+   		 */
+-		else if ((info->dump_level & DL_EXCLUDE_USER_DATA)
+-		    && isAnon(mapping)) {
+-			if (clear_bit_on_2nd_bitmap_for_kernel(pfn))
+-				pfn_user++;
++		else if (info->dump_level & DL_EXCLUDE_USER_DATA) {
++			/*
++			 * Exclude the anonnymous pages as user pages.
++			 */
++			if (isAnon(mapping)) {
++				if (clear_bit_on_2nd_bitmap_for_kernel(pfn))
++					pfn_user++;
++
++				/*
++				 * Check the compound page
++				 */
++				if (page_is_hugepage(flags) && compound_order > 0) {
++					int i, nr_pages = 1 << compound_order;
++
++					for (i = 1; i < nr_pages; ++i) {
++						if (clear_bit_on_2nd_bitmap_for_kernel(pfn + i))
++							pfn_user++;
++					}
++					pfn += nr_pages - 2;
++					mem_map += (nr_pages - 1) * SIZE(page);
++				}
++			}
++			/*
++			 * Exclude the hugetlbfs pages as user pages.
++			 */
++			else if (hugetlb_dtor == SYMBOL(free_huge_page)) {
++				int i, nr_pages = 1 << compound_order;
++
++				for (i = 0; i < nr_pages; ++i) {
++					if (clear_bit_on_2nd_bitmap_for_kernel(pfn + i))
++						pfn_user++;
++				}
++				pfn += nr_pages - 1;
++				mem_map += (nr_pages - 1) * SIZE(page);
++			}
+   		}
+   		/*
+   		 * Exclude the hwpoison page.
+diff --git a/makedumpfile.h b/makedumpfile.h
+index 3a7e61a..d6ee832 100644
+--- a/makedumpfile.h
++++ b/makedumpfile.h
+@@ -74,6 +74,7 @@ int get_mem_type(void);
+   #define PG_lru_ORIGINAL	 	(5)
+   #define PG_slab_ORIGINAL	(7)
+   #define PG_private_ORIGINAL	(11)	/* Has something at ->private */
++#define PG_compound_ORIGINAL	(14)	/* Is part of a compound page */
+   #define PG_swapcache_ORIGINAL	(15)	/* Swap page: swp_entry_t in private */
+   
+   #define PAGE_BUDDY_MAPCOUNT_VALUE_v2_6_38	(-2)
+@@ -140,6 +141,9 @@ test_bit(int nr, unsigned long addr)
+   
+   #define isLRU(flags)		test_bit(NUMBER(PG_lru), flags)
+   #define isPrivate(flags)	test_bit(NUMBER(PG_private), flags)
++#define isHead(flags)		test_bit(NUMBER(PG_head), flags)
++#define isTail(flags)		test_bit(NUMBER(PG_tail), flags)
++#define isCompound(flags)	test_bit(NUMBER(PG_compound), flags)
+   #define isSwapCache(flags)	test_bit(NUMBER(PG_swapcache), flags)
+   #define isHWPOISON(flags)	(test_bit(NUMBER(PG_hwpoison), flags) \
+   				&& (NUMBER(PG_hwpoison) != NOT_FOUND_NUMBER))
+@@ -1124,6 +1128,7 @@ struct symbol_table {
+   	unsigned long long	node_remap_start_vaddr;
+   	unsigned long long	node_remap_end_vaddr;
+   	unsigned long long	node_remap_start_pfn;
++	unsigned long long      free_huge_page;
+   
+   	/*
+   	 * for Xen extraction
+@@ -1383,6 +1388,9 @@ struct number_table {
+   	 */
+   	long	PG_lru;
+   	long	PG_private;
++	long	PG_head;
++	long	PG_tail;
++	long	PG_compound;
+   	long	PG_swapcache;
+   	long	PG_buddy;
+   	long	PG_slab;
+-- 
+1.8.0.2
 
-RongJun Ying
-> 
-> > >
-> > > Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
-> > > ---
-> > >  drivers/cpufreq/cpufreq-cpu0.c |   17 ++++++++++-------
-> > >  1 files changed, 10 insertions(+), 7 deletions(-)
-> > >
-> > > diff --git a/drivers/cpufreq/cpufreq-cpu0.c
-> > > b/drivers/cpufreq/cpufreq-cpu0.c index c522a95..0c9e6b9 100644
-> > > --- a/drivers/cpufreq/cpufreq-cpu0.c
-> > > +++ b/drivers/cpufreq/cpufreq-cpu0.c
-> > > @@ -23,7 +23,7 @@
-> > >  #include <linux/slab.h>
-> > >
-> > >  static unsigned int transition_latency; -static unsigned int
-> > > voltage_tolerance; /* in percentage */
-> > > +static unsigned int voltage_max;
-> > >
-> > >  static struct device *cpu_dev;
-> > >  static struct clk *cpu_clk;
-> > > @@ -45,7 +45,7 @@ static int cpu0_set_target(struct cpufreq_policy
-> > > *policy,  {
-> > >         struct cpufreq_freqs freqs;
-> > >         struct opp *opp;
-> > > -       unsigned long volt = 0, volt_old = 0, tol = 0;
-> > > +       unsigned long volt = 0, volt_old = 0;
-> > >         long freq_Hz, freq_exact;
-> > >         unsigned int index;
-> > >         int ret;
-> > > @@ -82,7 +82,6 @@ static int cpu0_set_target(struct cpufreq_policy
-> *policy,
-> > >                 }
-> > >                 volt = opp_get_voltage(opp);
-> > >                 rcu_read_unlock();
-> > > -               tol = volt * voltage_tolerance / 100;
-> > >                 volt_old = regulator_get_voltage(cpu_reg);
-> > >         }
-> > >
-> > > @@ -92,7 +91,7 @@ static int cpu0_set_target(struct cpufreq_policy
-> > > *policy,
-> > >
-> > >         /* scaling up?  scale voltage before frequency */
-> > >         if (!IS_ERR(cpu_reg) && freqs.new > freqs.old) {
-> > > -               ret = regulator_set_voltage_tol(cpu_reg, volt, tol);
-> > > +               ret = regulator_set_voltage(cpu_reg, volt,
-> > > + voltage_max);
-> > >                 if (ret) {
-> > >                         pr_err("failed to scale voltage up: %d\n",
-> ret);
-> > >                         freqs.new = freqs.old; @@ -104,14 +103,14
-> @@
-> > > static int cpu0_set_target(struct cpufreq_policy *policy,
-> > >         if (ret) {
-> > >                 pr_err("failed to set clock rate: %d\n", ret);
-> > >                 if (!IS_ERR(cpu_reg))
-> > > -                       regulator_set_voltage_tol(cpu_reg, volt_old,
-> tol);
-> > > +                       regulator_set_voltage(cpu_reg, volt_old,
-> > > + voltage_max);
-> > >                 freqs.new = freqs.old;
-> > >                 goto post_notify;
-> > >         }
-> > >
-> > >         /* scaling down?  scale voltage after frequency */
-> > >         if (!IS_ERR(cpu_reg) && freqs.new < freqs.old) {
-> > > -               ret = regulator_set_voltage_tol(cpu_reg, volt, tol);
-> > > +               ret = regulator_set_voltage(cpu_reg, volt,
-> > > + voltage_max);
-> > >                 if (ret) {
-> > >                         pr_err("failed to scale voltage down: %d\n",
-> ret);
-> > >                         clk_set_rate(cpu_clk, freqs.old * 1000); @@
-> > > -224,7 +223,11 @@ static int cpu0_cpufreq_probe(struct
-> platform_device *pdev)
-> > >                 goto out_put_node;
-> > >         }
-> > >
-> > > -       of_property_read_u32(np, "voltage-tolerance",
-> &voltage_tolerance);
-> > > +       ret = of_property_read_u32(np, "voltage-max", &voltage_max);
-> > > +       if (ret) {
-> > > +               pr_err("failed to get max voltage: %d\n", ret);
-> > > +               goto out_put_node;
-> > > +       }
-> > >
-> > >         if (of_property_read_u32(np, "clock-latency",
-> &transition_latency))
-> > >                 transition_latency = CPUFREQ_ETERNAL;
-> > > --
-> > > 1.7.5.4
-> > >
-> 
-> 
-> 
->  To report this email as spam click
-> https://www.mailcontrol.com/sr/MZbqvYs5QwJvpeaetUwhCQ==
-> X88IR7qi8t8XvyHQDjR!61qPoTyr8GNFXkv3KeH4!zzvzA== .
-
-
-Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
-More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
