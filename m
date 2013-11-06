@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab3KFIhG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 03:37:06 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57321 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753440Ab3KFIhF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 03:37:05 -0500
-X-AuditID: 9c930179-b7cdfae0000019c2-64-5279ffae4641
-From: Namhyung Kim <namhyung@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch methods (v6)
-References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
-	<20131102155458.GA6981@redhat.com> <87ob60366m.fsf@sejong.aot.lge.com>
-	<87fvrc35kj.fsf@sejong.aot.lge.com> <20131104155131.GD4440@redhat.com>
-	<20131104162229.GA8921@redhat.com> <20131104184741.GA15945@redhat.com>
-	<20131104185754.GA16428@redhat.com>
-	<8761s71rxw.fsf@sejong.aot.lge.com> <20131105164102.GC2460@redhat.com>
-Date: Wed, 06 Nov 2013 17:37:02 +0900
-In-Reply-To: <20131105164102.GC2460@redhat.com> (Oleg Nesterov's message of
-	"Tue, 5 Nov 2013 17:41:02 +0100")
-Message-ID: <874n7qx6xd.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1756144Ab3KFIha (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 03:37:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33259 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753440Ab3KFIh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 03:37:28 -0500
+Date: Wed, 6 Nov 2013 09:37:21 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT] pktcdvd, floppy for 3.13
+Message-ID: <alpine.LNX.2.00.1311060935590.835@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Nov 2013 17:41:02 +0100, Oleg Nesterov wrote:
-> On 11/05, Namhyung Kim wrote:
->>
->> On Mon, 4 Nov 2013 19:57:54 +0100, Oleg Nesterov wrote:
->> >>
->> >> 	static void __user *get_user_vaddr(struct pt_regs *regs, unsigned long addr)
->> >> 	{
->> >> 		return (void __force __user *)addr + instruction_pointer(regs);
->> >> 	}
->> >>
->> >> ?
->> >>
->> >> This should solve the problems with relocations/randomization/bss.
->> >>
->> >> The obvious disadvantage is that it is not easy to calculate the
->> >> offset we need to pass as an argument, it depends on the probed
->> >> function.
->> >
->> > forgot to mention... and instruction_pointer() can't work in ret-probe,
->> > we need to pass the "unsigned long func" arg somehow...
->>
->> Hmm.. what's the value of tu->offset in this case?  Does it have the
->> offset of the return address or the start of the function?
->
-> It is the offest of function. IOW, it is the same regardless of
-> is_ret_probe().
+Jens,
 
-Ah, okay.  Thanks for the info.  Then yes, it'd probably better to pass
-the func rather than regs since it's the only info we need, right?
+please pull from
 
-Thanks,
-Namhyung
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/linux-block.git for-jens
+
+to get two very simple patches for pktcdvd and floppy doc.
+
+I know it's quite late for 3.13, sorry for that. OTOH, the patches are so 
+simple, that no harm can be caused :)
+
+Thanks!
+
+
+
+Ben Harris (1):
+      floppy: Correct documentation of driver options when used as a module.
+
+Dan Carpenter (1):
+      pktcdvd: debugfs functions return NULL on error
+
+ Documentation/blockdev/floppy.txt |    6 +++---
+ drivers/block/pktcdvd.c           |   22 ++++------------------
+ 2 files changed, 7 insertions(+), 21 deletions(-)
+
+-- 
+Jiri Kosina
+SUSE Labs
