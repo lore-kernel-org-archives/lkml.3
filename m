@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab3KFOT0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 09:19:26 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45510 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756443Ab3KFOTY (ORCPT
+	id S1756730Ab3KFOTi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 09:19:38 -0500
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:53012 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756443Ab3KFOTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 09:19:24 -0500
-Date: Wed, 6 Nov 2013 15:19:23 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Sebastian Reichel <sre@ring0.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        alsa-devel@alsa-project.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Subject: Re: [RFC 2/4] ARM: OMAP: rx51: Register audio device
-Message-ID: <20131106141922.GB15551@amd.pavel.ucw.cz>
-References: <1382909086-10493-1-git-send-email-sre@debian.org>
- <1382909086-10493-3-git-send-email-sre@debian.org>
+	Wed, 6 Nov 2013 09:19:36 -0500
+Date: Wed, 6 Nov 2013 16:19:01 +0200
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Frank =?iso-8859-1?Q?Sch=E4fer?= <fschaefer.oss@googlemail.com>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        "open list:MT9M032 APTINA SE..." <linux-media@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] videodev2: Set vb2_rect's width and height as unsigned
+Message-ID: <20131106141901.GD24988@valkosipuli.retiisi.org.uk>
+References: <1383742165-17634-1-git-send-email-ricardo.ribalda@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1382909086-10493-3-git-send-email-sre@debian.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1383742165-17634-1-git-send-email-ricardo.ribalda@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Ricardo,
 
-> From: Pali Rohár <pali.rohar@gmail.com>
-> 
-> This patch adds support for the audio chip to the legacy
-> boardcode of the Nokia N900.
+Thanks for the patch.
 
-In 0/4, you said:
+On Wed, Nov 06, 2013 at 01:49:25PM +0100, Ricardo Ribalda Delgado wrote:
+...
+> diff --git a/drivers/media/i2c/smiapp/smiapp-core.c b/drivers/media/i2c/smiapp/smiapp-core.c
+> index ae66d91..9036e64 100644
+> --- a/drivers/media/i2c/smiapp/smiapp-core.c
+> +++ b/drivers/media/i2c/smiapp/smiapp-core.c
+> @@ -2028,8 +2028,8 @@ static int smiapp_set_crop(struct v4l2_subdev *subdev,
+>  	sel->r.width = min(sel->r.width, src_size->width);
+>  	sel->r.height = min(sel->r.height, src_size->height);
+>  
+> -	sel->r.left = min(sel->r.left, src_size->width - sel->r.width);
+> -	sel->r.top = min(sel->r.top, src_size->height - sel->r.height);
+> +	sel->r.left = min(sel->r.left, (int) (src_size->width - sel->r.width));
+> +	sel->r.top = min(sel->r.top, (int) (src_size->height - sel->r.height));
 
-> For example non DT boot
-> does not work, because I did not yet add pdata in boardcode.
+How about min_t(int, ... instead?
 
-So, perhaps we don't need this patch for now and can rely only do
-audio on device-tree-enabled configurations?
+>  	*crops[sel->pad] = sel->r;
+>  
+> @@ -2121,8 +2121,10 @@ static int smiapp_set_selection(struct v4l2_subdev *subdev,
+>  
+>  	sel->r.left = max(0, sel->r.left & ~1);
+>  	sel->r.top = max(0, sel->r.top & ~1);
+> -	sel->r.width = max(0, SMIAPP_ALIGN_DIM(sel->r.width, sel->flags));
+> -	sel->r.height = max(0, SMIAPP_ALIGN_DIM(sel->r.height, sel->flags));
+> +	sel->r.width = max_t(unsigned int, 0,
+> +			SMIAPP_ALIGN_DIM(sel->r.width, sel->flags));
+> +	sel->r.height = max_t(unsigned int, 0,
+> +			SMIAPP_ALIGN_DIM(sel->r.height, sel->flags));
 
-Thanks,
-							Pavel
+The purpose of this check is to ensure the number is at least zero, and as
+width and height are now unsigned, max_t() won't be needed anymore. Only
+SMIAPP_ALIGN_DIM() is.
+
+I can't see any harm from that, though --- there could be redundant checks
+in other drivers, too.
+
+>  	sel->r.width = max_t(unsigned int,
+>  			     sensor->limits[SMIAPP_LIMIT_MIN_X_OUTPUT_SIZE],
+
+Do you think it'd be worth adding a note on this change to the list of V4L2
+in each kernel version in Documentation/DocBook/media/v4l/compat.xml?
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Kind regards,
+
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
