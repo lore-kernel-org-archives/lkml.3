@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668Ab3KFXlo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 18:41:44 -0500
-Received: from arafel.iwakd.de ([78.46.72.57]:33833 "EHLO arafel.iwakd.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752583Ab3KFXlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 18:41:32 -0500
-X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Nov 2013 18:41:31 EST
-Message-ID: <527AD159.4080702@iwakd.de>
-Date: Thu, 07 Nov 2013 00:31:37 +0100
-From: Christian Seiler <christian@iwakd.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>
-CC: Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Brad Spengler <spender@grsecurity.net>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        Lxc development list <lxc-devel@lists.sourceforge.net>
-Subject: Re: CLONE_PARENT after setns(CLONE_NEWPID)
-References: <20131106180232.GA8980@ac100> <20131106193311.GA18720@redhat.com> <87vc05jgak.fsf@tw-ebiederman.twitter.com>
-In-Reply-To: <87vc05jgak.fsf@tw-ebiederman.twitter.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	id S1752336Ab3KFXlX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 18:41:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39991 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab3KFXlV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 18:41:21 -0500
+Date: Wed, 6 Nov 2013 15:41:20 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>, zhang.mingjun@linaro.org,
+        m.szyprowski@samsung.com, haojian.zhuang@linaro.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mingjun Zhang <troy.zhangmingjun@linaro.org>
+Subject: Re: [PATCH] mm: cma: free cma page to buddy instead of being cpu
+ hot page
+Message-Id: <20131106154120.477a4cd83f8fb120d4d4f6cf@linux-foundation.org>
+In-Reply-To: <20131106064302.GC30958@bbox>
+References: <1382960569-6564-1-git-send-email-zhang.mingjun@linaro.org>
+	<20131029093322.GA2400@suse.de>
+	<20131105134448.7677d6febbfff4721373be4b@linux-foundation.org>
+	<20131106064302.GC30958@bbox>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+On Wed, 6 Nov 2013 15:43:02 +0900 Minchan Kim <minchan@kernel.org> wrote:
 
-> Having used bash as an init process I know it can handle unexpeted
-> children.  However using CLONE_PARENT in this way still seems a little
-> dodgy.  Or am I misunderstanding why you are using CLONE_PARENT?
+> > The added overhead is pretty small - just a comparison of a local with
+> > a constant.  And that cost is not incurred for MIGRATE_UNMOVABLE,
+> > MIGRATE_RECLAIMABLE and MIGRATE_MOVABLE, which are the common cases
+> > (yes?).
+> 
+> True but bloat code might affect icache so we should be careful.
+> And what Mel has a concern is about zone->lock, which would be more contended.
+> I agree his opinion.
+> 
+> In addition, I think the gain is marginal because normally CMA is big range
+> so free_contig_range in dma release path will fill per_cpu_pages with freed pages
+> easily so it could drain per_cpu_pages frequently so race which steal page from
+> per_cpu_pages is not big, I guess.
+> 
+> Morever, we could change free_contig_range with batch_free_page which would
+> be useful for other cases if they want to free many number of pages
+> all at once.
+> 
+> The bottom line is we need *number and real scenario* for that.
 
-Since I (re)wrote that part of LXC, I should perhaps clarify how that is
-used: In case of LXC, the grandparent is lxc-attach itself. The logic
-goes as follows:
+Well yes, quantitative results are always good to have with a patch like
+this.
 
-  - user calls lxc-attach -n $container -- /bin/command/to/execute
-  - lxc-attach does a fork()
-  - child process does setns()
-  - child process does clone(CLONE_PARENT)
-  - child process exits
-  - new process is now in all of the correct namespaces
-  - new process does some IPC (socketpair() from before fork/clone) to
-    tell original lxc-attach process to finish initialization
-    (mainly: add new process to the proper cgroups)
-  - new process exec()s to /bin/command/to/execute
-  - original lxc-attach process waitpid()s for the attached process
-    to exit
-
-So the only process that needs to handle a new child is going to be
-lxc-attach itself, but that is designed in such a way that it expects
-the new child.
-
-(The initial fork is necessary because once setns(userns, mntns) has
-occurred, the cgroup tree may not be writable anymore (depening on
-further circumstances), so it would be impossible to just do setns() and
-then fork() if one then wants to add the new process to the proper cgroups.)
-
-> That trick sounds like it might be worth adding to nsenter in util-linux
-> just to simplify the code.
-
-I think nsenter currently only does setns() and then fork(), which is
-simpler than lxc-attach - mainly because there's no need to attach the
-process to cgroups etc. lxc-attach's approach does not eliminate the
-need for the original process wait()ing on the attached process, the
-CLONE_PARENT is really just used internally to simplify the process
-hierarchy and also the IPC required.
-
-Also, re: general point in this thread: I don't see how CLONE_PARENT
-could be harmful in any way when used after setns() moreso than it might
-already be harmful without setns(). I could always write a program that
-just does clone(CLONE_PARENT) (and nothing else) and then the calling
-process would also get an unexpected child - I don't see how the pid
-namespace status of that child would change anything here. So I'd
-definitely be in favor of allowing CLONE_PARENT after setns().
-
-Christian
+It doesn't actually compile (missing a "}"), which doesn't inspire
+confidence.  I'll make the patch go away for now
 
