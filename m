@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609Ab3KFOxY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 09:53:24 -0500
-Received: from smtpauth03h.mfg.siteprotect.com ([64.26.60.134]:52915 "EHLO
-	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932579Ab3KFOxU (ORCPT
+	id S932595Ab3KFOxX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 09:53:23 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:61194 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932578Ab3KFOxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Nov 2013 09:53:20 -0500
-Date: Wed, 6 Nov 2013 09:55:17 -0500 (EST)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Peter Zijlstra <peterz@infradead.org>
-cc: mingo@kernel.org, hpa@zytor.com, anton@samba.org,
-        mathieu.desnoyers@polymtl.ca, linux-kernel@vger.kernel.org,
-        michael@ellerman.id.au, paulmck@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, fweisbec@gmail.com, VICTORK@il.ibm.com,
-        tglx@linutronix.de, oleg@redhat.com, mikey@neuling.org,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] tools/perf: Add required memory barriers
-In-Reply-To: <20131106142840.GH26785@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.02.1311060938220.27607@pianoman.cluster.toy>
-References: <20131030104246.GH16117@laptop.programming.kicks-ass.net> <tip-a94d342b9cb09edfe888ea972af0883b6a8d992b@git.kernel.org> <alpine.DEB.2.02.1311060847340.27224@pianoman.cluster.toy> <20131106140011.GL10651@twins.programming.kicks-ass.net>
- <20131106142840.GH26785@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+X-Originating-IP: 108.223.40.66
+Message-ID: <527A57D9.3070402@roeck-us.net>
+Date: Wed, 06 Nov 2013 06:53:13 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020208.527A57DF.01C4,ss=1,re=0.100,fgs=0
+To: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] OF: Introduce utility helper functions
+References: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com> <1383673816-29293-6-git-send-email-panto@antoniou-consulting.com> <527A0A12.2050803@nsn.com> <57092A71-2C68-4B92-A748-5D0DE69EC141@antoniou-consulting.com>
+In-Reply-To: <57092A71-2C68-4B92-A748-5D0DE69EC141@antoniou-consulting.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Nov 2013, Peter Zijlstra wrote:
+Hi Pantelis,
 
-> On Wed, Nov 06, 2013 at 03:00:11PM +0100, Peter Zijlstra wrote:
-> > On Wed, Nov 06, 2013 at 08:50:47AM -0500, Vince Weaver wrote:
-> > 
-> > > remember that there are users trying to use this outside of the kernel 
-> > > where we don't necessarily have access to internal kernl macros.  Some of 
-> > > these users aren't necessarily GPLv2 compatible either (PAPI for example 
-> > > is more or less BSD licensed) so just cutting and pasting chunks of 
-> > > internal kernel macros isn't always the best route either.
-> > 
-> > Other license stuff is not my problem; that said I doubt there's much
-> > copyright to claim on a volatile cast.
+On 11/06/2013 01:34 AM, Pantelis Antoniou wrote:
 
-perhaps, but everytime some internal kernel stuff goes into the visible 
-API it makes it harder to use.  I don't think most other system calls leak 
-kernel interfaces like this.
+>
+> As I mentioned earlier I'm trying to get this accepted in general term and then we'll
+> get around fixing any minor problems.
+>
 
-It's also an issue because people build PAPI with non-gcc compilers like 
-Intel and clang so there's no guarantee kernel macro tricks are going to 
-work for everyone.
+I think it is quite likely at this point that your series will be accepted.
 
-Having perf in the kernel tree really makes it hard for you guys to keep a 
-clean API/ABI it seems.
+However, from my experience with larger submissions like this one, it is quite common
+that the maintainers ask for all feedback to be addressed before that happens -
+especially for feedback like this, where there is common understanding that some
+changes to the code are necessary.
 
-> Also, does PAPI actually use the buffer then? I thought that was
-> strictly self monitoring.
+Maybe the device tree maintainers could chime in at this point and let us all know
+what will need to happen to get the series accepted.
 
-PAPI has always supported a simplistic sampling mode, where you 
-enable a one-shot overflow signal handler to be triggered after X events, 
-and then read out the instruction pointer from the mmap buffer.  Then 
-usually you re-enable for the next sample.  (You may dimly remember this 
-because this usage style is very different than perf's so it breaks often 
-w/o anyone but us noticing).
+Thanks,
+Guenter
 
-Not very effective and not taking full advantage of all perf_event has to 
-support, but it's a cross-platform legacy interface supported easily by 
-most implementations.
 
-We've been planning to do a proper sampled perf_event interface but it's 
-been hard trying to hammer out a clean interface that fits well with the 
-existing PAPI design.
-
-Vince
