@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226Ab3KFKW7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 05:22:59 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:7910 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932159Ab3KFKW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 05:22:57 -0500
-X-IronPort-AV: E=Sophos;i="4.93,645,1378857600"; 
-   d="scan'208";a="68533754"
-Message-ID: <1383733369.26213.45.camel@kazak.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH] grant-table: don't set m2p override if
- kmap_ops is not set
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Anthony Liguori <anthony@codemonkey.ws>
-CC: Matt Wilson <msw@linux.com>,
-        Roger Pau =?ISO-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, David Vrabel <david.vrabel@citrix.com>,
-        Matt Wilson <msw@amazon.com>, <xen-devel@lists.xen.org>
-Date: Wed, 6 Nov 2013 10:22:49 +0000
-In-Reply-To: <878ux2vade.fsf@codemonkey.ws>
-References: <1383650649-13971-1-git-send-email-roger.pau@citrix.com>
-	 <5278E64C.40200@citrix.com> <527904EC.9090402@citrix.com>
-	 <20131105145607.GB25836@phenom.dumpdata.com> <5279085E.7070703@citrix.com>
-	 <1383664090.13961.88.camel@kazak.uk.xensource.com>
-	 <527916EE.6060104@citrix.com>
-	 <20131105200616.GA23362@u109add4315675089e695.ant.amazon.com>
-	 <878ux2vade.fsf@codemonkey.ws>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1756187Ab3KFKes (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 05:34:48 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36826 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755753Ab3KFKeq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 05:34:46 -0500
+Date: Wed, 6 Nov 2013 10:34:03 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] mm: create a separate slab for page->ptl allocation
+Message-ID: <20131106103403.GB21074@mudshark.cambridge.arm.com>
+References: <1382442839-7458-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20131105150145.734a5dd5b5d455800ebfa0d3@linux-foundation.org>
+ <20131105224217.GC20167@shutemov.name>
+ <20131105155619.021f32eba1ca8f15a73ed4c9@linux-foundation.org>
+ <20131105231310.GE20167@shutemov.name>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131105231310.GE20167@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-11-05 at 12:53 -0800, Anthony Liguori wrote:
-> >> Yes, you are completely right, then I have to figure out why blkback
-> >> works fine with this patch applied (or at least it seems to work fine).
-> >
-> > blkback also works for me when testing a similar patch. I'm still
-> > confused. One thing with your proposed patch: I'm not sure that you're
-> > putting back the correct mfn.
+On Tue, Nov 05, 2013 at 11:13:11PM +0000, Kirill A. Shutemov wrote:
+> On Tue, Nov 05, 2013 at 03:56:19PM -0800, Andrew Morton wrote:
+> > On Wed, 6 Nov 2013 00:42:17 +0200 "Kirill A. Shutemov" <kirill@shutemov.name> wrote:
+> > 
+> > > > >  #if USE_SPLIT_PTE_PTLOCKS
+> > > > > +struct kmem_cache *page_ptl_cachep;
+> > > > > +void __init ptlock_cache_init(void)
+> > > > > +{
+> > > > > +	if (sizeof(spinlock_t) > sizeof(long))
+> > > > > +		page_ptl_cachep = kmem_cache_create("page->ptl",
+> > > > > +				sizeof(spinlock_t), 0, SLAB_PANIC, NULL);
+> > > > > +}
+> > > > 
+> > > > Confused.  If (sizeof(spinlock_t) > sizeof(long)) happens to be false
+> > > > then the kernel will later crash.  It would be better to use BUILD_BUG_ON()
+> > > > here, if that works.  Otherwise BUG_ON.
+> > > 
+> > > if (sizeof(spinlock_t) > sizeof(long)) is false, we don't need dynamicly
+> > > allocate page->ptl. It's embedded to struct page itself. __ptlock_alloc()
+> > > never called in this case.
+> > 
+> > OK.  Please add a comment explaining this so the next reader doesn't get
+> > tripped up like I was.
+> 
+> Okay, I will tomorrow.
+> 
+> > Really the function shouldn't exist in this case.  It is __init so the
+> > sin is not terrible, but can this be arranged?
+> 
+> I would like to get rid of __ptlock_alloc()/__ptlock_free() too, but I
+> don't see a way within C: we need to know sizeof(spinlock_t) on
+> preprocessor stage.
 
-As long as it is unique and owned by the local domain I guess it doesn't
-matter which mfn goes back? It's going to get given back to the generic
-allocator so the content is irrelevant? (all speculation without looking
-at blkback)
+FWIW: if the architecture selects ARCH_USE_CMPXCHG_LOCKREF, then a spinlock_t
+is 32-bit (assuming that unsigned int is also 32-bit).
 
-> It's perfectly fine to store a foreign pfn in the m2p table.
-
-No, it's not. The m2p is host global and maps mfns to the pfns in the
-owning domain. A domain which grant maps a foreign mfn into its address
-space doesn't get to update the m2p for that mfn. Perhaps you were
-thinking of the p2m?
-
-Depending on how an OS mapping the foreign MFN does things it may well
-be accurate to say that having a foreign pfn in the m2p table is
-harmless, in as much as it will never try and use the m2p for foreign
-pages for anything real, but it depends on the implementation of the
-particular OS.
-
->   The m2p
-> override table is used by the grant device to allow a reverse lookup of
-> the real mfn to a pfn even if it's foreign.
-
-Classic Xen used an array of struct page * overrides in the struct vma
-for this sort of use case (e.g. in blktap). That obviously cannot fly
-for pvops...
-
-Ian.
-
+Will
