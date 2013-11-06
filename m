@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059Ab3KFQww (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 11:52:52 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:34562 "EHLO mail.skyhub.de"
+	id S1755222Ab3KFQzF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 11:55:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16589 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753140Ab3KFQwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 11:52:50 -0500
-Date: Wed, 6 Nov 2013 17:54:38 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Robert Richter <rric@kernel.org>, linux-edac@vger.kernel.org
-Subject: Re: [PATCH] edac, highbank: remove dependency on ARCH_HIGHBANK
-Message-ID: <20131106165437.GA21870@x1.alien8.de>
-References: <1383708352-19527-1-git-send-email-robherring2@gmail.com>
- <20131106142025.GB16072@x1.alien8.de>
- <527A6B08.5020302@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <527A6B08.5020302@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754348Ab3KFQzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 11:55:02 -0500
+Message-ID: <1383756897.28218.66.camel@flatline.rdu.redhat.com>
+Subject: Re: linux-next: build failure after merge of the audit tree
+From: Eric Paris <eparis@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Richard Guy Briggs <rgb@redhat.com>
+Date: Wed, 06 Nov 2013 11:54:57 -0500
+In-Reply-To: <20131106172734.28986a5907009f84aead4e8b@canb.auug.org.au>
+References: <20131106172734.28986a5907009f84aead4e8b@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 10:15:04AM -0600, Rob Herring wrote:
-> Other maintainers disagree because it reduces build coverage.
+On Wed, 2013-11-06 at 17:27 +1100, Stephen Rothwell wrote:
+> Hi Eric,
+> 
+> After merging the audit tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> kernel/auditsc.c: In function 'audit_set_loginuid':
+> kernel/auditsc.c:2003:15: error: incompatible types when assigning to type 'kuid_t' from type 'int'
+>   oldsessionid = audit_get_sessionid(current);
+>                ^
+> kernel/auditsc.c:2016:2: error: incompatible type for argument 3 of 'audit_log_set_loginuid'
+>   audit_log_set_loginuid(oldloginuid, loginuid, oldsessionid, sessionid, rc);
+>   ^
+> kernel/auditsc.c:1967:13: note: expected 'unsigned int' but argument is of type 'kuid_t'
+>  static void audit_log_set_loginuid(kuid_t koldloginuid, kuid_t kloginuid,
+>              ^
+> 
+> Caused by commit da0a610497ce ("audit: loginuid functions coding style").
+> 
+> I have used the version of the audit tree from next-20131105 for today.
+> 
 
-What possible build coverage are we talking about when building highbank
-on x86, for example? And what does a build failure in that configuration
-tell you if it builds and boots fine on your hardware?
+Should be fixed for tomorrow.  Thank you.
 
-> Having done some cross arch clean-up, I have to agree with that
-> position. Iterating builds over different arches is bad enough, but
-> iterating over all configs for each arch is a pain.
-
-So make highbank depend only on the arches for which it is supposed to
-work but not for *all* arches. Look at how the other edac drivers do it,
-x86 ones depend on X86, tile on tile, etc, etc. Why should highbank be
-special?
-
-> It would be nice to have a uniform policy here.
-
-Simple: drivers should be selectable/buildable only on the arches
-they're supposed to run on.
-
--- 
-Regards/Gruss,
-Boris.
