@@ -1,176 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554Ab3KFNSU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 08:18:20 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:55449 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756438Ab3KFNSS (ORCPT
+	id S1756592Ab3KFNT5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 08:19:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48896 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756221Ab3KFNTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 08:18:18 -0500
+	Wed, 6 Nov 2013 08:19:55 -0500
+Date: Wed, 6 Nov 2013 05:19:23 -0800
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-0a196848ca365ec582c6d86659be456be6d4ed96@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        fweisbec@gmail.com, peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20131030201622.GR16117@laptop.programming.kicks-ass.net>
+References: <20131030201622.GR16117@laptop.programming.kicks-ass.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: Fix arch_perf_out_copy_user default
+Git-Commit-ID: 0a196848ca365ec582c6d86659be456be6d4ed96
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <2064487.sPVcMNRS4J@amdc1032>
-References: <1377668719-8602-2-git-send-email-ch.naveen@samsung.com>
- <1381979473-7079-1-git-send-email-ch.naveen@samsung.com> <2064487.sPVcMNRS4J@amdc1032>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Wed, 6 Nov 2013 18:47:56 +0530
-Message-ID: <CAHfPSqAi5NdAcpiw4LXN0AHdd5t3EW1ATQq=cFsSEV+w36OnbA@mail.gmail.com>
-Subject: Re: [PATCH 1/3 v6] thermal: samsung: add intclr_fall_shift bit in exynos_tmu_register
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>, linux-pm@vger.kernel.org,
-        rui.zhang@intel.com, eduardo.valentin@ti.com,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, amit.daniel@samsung.com,
-        Kukjin Kim <kgene.kim@samsung.com>, devicetree@vger.kernel.org,
-        cpgs@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 06 Nov 2013 05:19:30 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Bartlomiej,
+Commit-ID:  0a196848ca365ec582c6d86659be456be6d4ed96
+Gitweb:     http://git.kernel.org/tip/0a196848ca365ec582c6d86659be456be6d4ed96
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Wed, 30 Oct 2013 21:16:22 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 6 Nov 2013 12:34:25 +0100
 
-My reply is very long delayed sorry.
+perf: Fix arch_perf_out_copy_user default
 
-On 17 October 2013 15:33, Bartlomiej Zolnierkiewicz
-<b.zolnierkie@samsung.com> wrote:
->
-> Hi Naveen,
->
-> On Thursday, October 17, 2013 08:41:13 AM Naveen Krishna Chatradhi wrote:
->> On Exynos5250, the FALL interrupt related en, status and clear bits are
->> available at an offset of
->> 16 in INTEN, INTSTAT registers and at an offset of
->> 12 in INTCLEAR register.
->>
->> On Exynos5420, the FALL interrupt related en, status and clear bits are
->> available at an offset of
->> 16 in INTEN, INTSTAT and INTCLEAR registers.
->>
->> On Exynos5440,
->> the FALL_IRQEN bits are at an offset of 4
->> and the RISE_IRQEN bits are at an offset of 0
->>
->> This patch introduces a new bit field intclr_fall_shift to handle the
->> offset for exyns5250 and exynos5440
->>
->> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->> ---
->> Changes since v1:
->> Changes since v2:
->> Changes since v3:
->>   None
->> Changes since v4:
->>  Correct the CLEAR_FALL_INT_SHIFT for Exynos5250/Exynos5440
->> Changes since v5:
->>  Modify the commit message
->
-> Thank you but v5 had more issues which are not fixed yet. Please see below.
->
->>  drivers/thermal/samsung/exynos_tmu.c      |    2 +-
->>  drivers/thermal/samsung/exynos_tmu.h      |    2 ++
->>  drivers/thermal/samsung/exynos_tmu_data.c |    2 ++
->>  drivers/thermal/samsung/exynos_tmu_data.h |    4 +++-
->>  4 files changed, 8 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
->> index 32f38b9..b2202fa 100644
->> --- a/drivers/thermal/samsung/exynos_tmu.c
->> +++ b/drivers/thermal/samsung/exynos_tmu.c
->> @@ -265,7 +265,7 @@ skip_calib_data:
->>                               data->base + reg->threshold_th1);
->>
->>               writel((reg->inten_rise_mask << reg->inten_rise_shift) |
->> -                     (reg->inten_fall_mask << reg->inten_fall_shift),
->> +                     (reg->inten_fall_mask << reg->intclr_fall_shift),
->>                               data->base + reg->tmu_intclear);
->>
->>               /* if last threshold limit is also present */
->> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
->> index 3fb6554..5f4fe6c 100644
->> --- a/drivers/thermal/samsung/exynos_tmu.h
->> +++ b/drivers/thermal/samsung/exynos_tmu.h
->> @@ -136,6 +136,7 @@ enum soc_type {
->>   * @inten_fall3_shift: shift bits of falling 3 interrupt bits.
->>   * @tmu_intstat: Register containing the interrupt status values.
->>   * @tmu_intclear: Register for clearing the raised interrupt status.
->> + * @intclr_fall_shift: shift bits for interrupt clear fall 0
->>   * @emul_con: TMU emulation controller register.
->>   * @emul_temp_shift: shift bits of emulation temperature.
->>   * @emul_time_shift: shift bits of emulation time.
->> @@ -207,6 +208,7 @@ struct exynos_tmu_registers {
->>       u32     tmu_intstat;
->>
->>       u32     tmu_intclear;
->> +     u32     intclr_fall_shift;
->>
->>       u32     emul_con;
->>       u32     emul_temp_shift;
->> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
->> index 073c292..09a8a27 100644
->> --- a/drivers/thermal/samsung/exynos_tmu_data.c
->> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
->> @@ -123,6 +123,7 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
->>       .inten_fall0_shift = EXYNOS_TMU_INTEN_FALL0_SHIFT,
->>       .tmu_intstat = EXYNOS_TMU_REG_INTSTAT,
->>       .tmu_intclear = EXYNOS_TMU_REG_INTCLEAR,
->> +     .intclr_fall_shift = EXYNOS5250_TMU_CLEAR_FALL_INT_SHIFT,
->>       .emul_con = EXYNOS_EMUL_CON,
->>       .emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
->>       .emul_time_shift = EXYNOS_EMUL_TIME_SHIFT,
->> @@ -228,6 +229,7 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
->>       .inten_fall0_shift = EXYNOS5440_TMU_INTEN_FALL0_SHIFT,
->>       .tmu_intstat = EXYNOS5440_TMU_S0_7_IRQ,
->>       .tmu_intclear = EXYNOS5440_TMU_S0_7_IRQ,
->> +     .intclr_fall_shift = EXYNOS5440_TMU_CLEAR_FALL_INT_SHIFT,
->>       .tmu_irqstatus = EXYNOS5440_TMU_IRQ_STATUS,
->>       .emul_con = EXYNOS5440_TMU_S0_7_DEBUG,
->>       .emul_temp_shift = EXYNOS_EMUL_DATA_SHIFT,
->> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
->> index a1ea19d..9c1e2c8 100644
->> --- a/drivers/thermal/samsung/exynos_tmu_data.h
->> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
->> @@ -69,9 +69,11 @@
->>  #define EXYNOS_TMU_RISE_INT_MASK     0x111
->>  #define EXYNOS_TMU_RISE_INT_SHIFT    0
->>  #define EXYNOS_TMU_FALL_INT_MASK     0x111
->> -#define EXYNOS_TMU_FALL_INT_SHIFT    12
->> +#define EXYNOS_TMU_FALL_INT_SHIFT    16
->>  #define EXYNOS_TMU_CLEAR_RISE_INT    0x111
->>  #define EXYNOS_TMU_CLEAR_FALL_INT    (0x111 << 12)
->> +#define EXYNOS5250_TMU_CLEAR_FALL_INT_SHIFT  12
->
-> The better name would be EXYNOS_TMU_CLEAR_FALL_INT_SHIFT because it is
-> also used on EXYNOS4412.
-Okey will do that,
->
-> Also in patch #3 you should define EXYNOS5420_TMU_CLEAR_FALL_INT_SHIFT
-> instead of re-using EXYNOS_TMU_FALL_INT_SHIFT.
-Exynos5440 has so will make for exynos5420 aswell
->
-> Finally please remove no longer used inten_fall_shift field and related
-inten_fall_shift is not used will remove
-> defines (EXYNOS_TMU_FALL_INT_MASK and EXYNOS5440_TMU_FALL_INT_MASK).
-These macros are used for inten_fall_shift which is used at
-drivers/thermal/samsung/exynos_tmu.c:273:
-(reg->inten_fall_mask << reg->intclr_fall_shift),
+The arch_perf_output_copy_user() default of
+__copy_from_user_inatomic() returns bytes not copied, while all other
+argument functions given DEFINE_OUTPUT_COPY() return bytes copied.
 
->
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
->
->> +#define EXYNOS5440_TMU_CLEAR_FALL_INT_SHIFT  4
->>  #define EXYNOS_TMU_TRIP_MODE_SHIFT   13
->>  #define EXYNOS_TMU_TRIP_MODE_MASK    0x7
->>  #define EXYNOS_TMU_THERM_TRIP_EN_SHIFT       12
->
-Will repost soon.
+Since copy_from_user_nmi() is the odd duck out by returning bytes
+copied where all other *copy_{to,from}* functions return bytes not
+copied, change it over and ammend DEFINE_OUTPUT_COPY() to expect bytes
+not copied.
 
+Oddly enough DEFINE_OUTPUT_COPY() already returned bytes not copied
+while expecting its worker functions to return bytes copied.
 
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Acked-by: will.deacon@arm.com
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Link: http://lkml.kernel.org/r/20131030201622.GR16117@laptop.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event.c           |  4 ++--
+ arch/x86/kernel/cpu/perf_event_intel_ds.c  |  2 +-
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |  2 +-
+ arch/x86/lib/usercopy.c                    |  2 +-
+ arch/x86/oprofile/backtrace.c              |  4 ++--
+ kernel/events/internal.h                   | 35 ++++++++++++++++++++++--------
+ 6 files changed, 33 insertions(+), 16 deletions(-)
 
--- 
-Shine bright,
-(: Nav :)
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 8a87a32..8e13293 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1989,7 +1989,7 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
+ 		frame.return_address = 0;
+ 
+ 		bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
+-		if (bytes != sizeof(frame))
++		if (bytes != 0)
+ 			break;
+ 
+ 		if (!valid_user_frame(fp, sizeof(frame)))
+@@ -2041,7 +2041,7 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
+ 		frame.return_address = 0;
+ 
+ 		bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
+-		if (bytes != sizeof(frame))
++		if (bytes != 0)
+ 			break;
+ 
+ 		if (!valid_user_frame(fp, sizeof(frame)))
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index c1760ff..ae96cfa 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -789,7 +789,7 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
+ 
+ 		size = ip - to; /* Must fit our buffer, see above */
+ 		bytes = copy_from_user_nmi(buf, (void __user *)to, size);
+-		if (bytes != size)
++		if (bytes != 0)
+ 			return 0;
+ 
+ 		kaddr = buf;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 90ee6c1..d82d155 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -491,7 +491,7 @@ static int branch_type(unsigned long from, unsigned long to, int abort)
+ 
+ 		/* may fail if text not present */
+ 		bytes = copy_from_user_nmi(buf, (void __user *)from, size);
+-		if (bytes != size)
++		if (bytes != 0)
+ 			return X86_BR_NONE;
+ 
+ 		addr = buf;
+diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
+index 5465b86..ddf9ecb 100644
+--- a/arch/x86/lib/usercopy.c
++++ b/arch/x86/lib/usercopy.c
+@@ -31,6 +31,6 @@ copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
+ 	ret = __copy_from_user_inatomic(to, from, n);
+ 	pagefault_enable();
+ 
+-	return n - ret;
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(copy_from_user_nmi);
+diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
+index d6aa6e8..5d04be5 100644
+--- a/arch/x86/oprofile/backtrace.c
++++ b/arch/x86/oprofile/backtrace.c
+@@ -47,7 +47,7 @@ dump_user_backtrace_32(struct stack_frame_ia32 *head)
+ 	unsigned long bytes;
+ 
+ 	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
+-	if (bytes != sizeof(bufhead))
++	if (bytes != 0)
+ 		return NULL;
+ 
+ 	fp = (struct stack_frame_ia32 *) compat_ptr(bufhead[0].next_frame);
+@@ -93,7 +93,7 @@ static struct stack_frame *dump_user_backtrace(struct stack_frame *head)
+ 	unsigned long bytes;
+ 
+ 	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
+-	if (bytes != sizeof(bufhead))
++	if (bytes != 0)
+ 		return NULL;
+ 
+ 	oprofile_add_trace(bufhead[0].return_address);
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index ca65997..569b2187 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -82,16 +82,16 @@ static inline unsigned long perf_data_size(struct ring_buffer *rb)
+ }
+ 
+ #define DEFINE_OUTPUT_COPY(func_name, memcpy_func)			\
+-static inline unsigned int						\
++static inline unsigned long						\
+ func_name(struct perf_output_handle *handle,				\
+-	  const void *buf, unsigned int len)				\
++	  const void *buf, unsigned long len)				\
+ {									\
+ 	unsigned long size, written;					\
+ 									\
+ 	do {								\
+-		size = min_t(unsigned long, handle->size, len);		\
+-									\
++		size    = min(handle->size, len);			\
+ 		written = memcpy_func(handle->addr, buf, size);		\
++		written = size - written;				\
+ 									\
+ 		len -= written;						\
+ 		handle->addr += written;				\
+@@ -110,20 +110,37 @@ func_name(struct perf_output_handle *handle,				\
+ 	return len;							\
+ }
+ 
+-static inline int memcpy_common(void *dst, const void *src, size_t n)
++static inline unsigned long
++memcpy_common(void *dst, const void *src, unsigned long n)
+ {
+ 	memcpy(dst, src, n);
+-	return n;
++	return 0;
+ }
+ 
+ DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
+ 
+-#define MEMCPY_SKIP(dst, src, n) (n)
++static inline unsigned long
++memcpy_skip(void *dst, const void *src, unsigned long n)
++{
++	return 0;
++}
+ 
+-DEFINE_OUTPUT_COPY(__output_skip, MEMCPY_SKIP)
++DEFINE_OUTPUT_COPY(__output_skip, memcpy_skip)
+ 
+ #ifndef arch_perf_out_copy_user
+-#define arch_perf_out_copy_user __copy_from_user_inatomic
++#define arch_perf_out_copy_user arch_perf_out_copy_user
++
++static inline unsigned long
++arch_perf_out_copy_user(void *dst, const void *src, unsigned long n)
++{
++	unsigned long ret;
++
++	pagefault_disable();
++	ret = __copy_from_user_inatomic(dst, src, n);
++	pagefault_enable();
++
++	return ret;
++}
+ #endif
+ 
+ DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
