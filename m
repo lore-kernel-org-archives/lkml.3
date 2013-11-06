@@ -1,117 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751274Ab3KFF4i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 00:56:38 -0500
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:43197 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803Ab3KFF4h (ORCPT
+	id S1751549Ab3KFGAv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 01:00:51 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:36280 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab3KFGAt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 00:56:37 -0500
-Date: Wed, 6 Nov 2013 06:56:34 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Josh Boyer <jwboyer@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, prarit@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>
-Subject: [PATCH v2 2/2] x86: Increase MAXSMP CPU count to 8192
-Message-ID: <20131106055634.GA24044@gmail.com>
-References: <20131101141148.GH8652@hansolo.jdub.homelinux.org>
- <20131105143728.GJ9944@hansolo.jdub.homelinux.org>
- <20131105143816.GK9944@hansolo.jdub.homelinux.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131105143816.GK9944@hansolo.jdub.homelinux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 6 Nov 2013 01:00:49 -0500
+X-AuditID: cbfee61a-b7f836d0000025d7-fa-5279db0f5ae7
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Gu Zheng'" <guz.fnst@cn.fujitsu.com>
+Cc: "'???'" <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
+        =?gb2312?B?J8y35q0n?= <shu.tan@samsung.com>
+References: <000001ceda8d$5b185bd0$11491370$@samsung.com>
+ <5279BA67.4040906@cn.fujitsu.com>
+ <000101cedaae$bb7ed820$327c8860$@samsung.com> <5279D078.8080803@cn.fujitsu.com>
+In-reply-to: <5279D078.8080803@cn.fujitsu.com>
+Subject: RE: [f2fs-dev] [PATCH] f2fs: avoid to use a NULL point in
+ destroy_segment_manager
+Date: Wed, 06 Nov 2013 13:59:13 +0800
+Message-id: <000201cedab5$89f0f9d0$9dd2ed70$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=gb2312
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQECxHgARzzGwNztGb8VlYqYPj89CQHEf8caAfZG76oC9eybaJt6VeHw
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsVy+t9jAV3+25VBBpO+mlk8bz/AbHF9118m
+	i0uL3C327D3JYnF51xw2i9aF55kd2Dz+H5zE7LF7wWcmj74tqxg9Pm+SC2CJ4rJJSc3JLEst
+	0rdL4MroeqNZ0CFScWfDZqYGxj6BLkZODgkBE4npm9pYIWwxiQv31rN1MXJxCAksYpQ40vqK
+	HcL5wShxaephdpAqNgEVieUd/5lAbBEBDYlpU/czgRQxC+xklNi9fgsrRMd6Rokr/0+ygVRx
+	CuhJbJnWDmRzcAgLxEhsuw+2mkVAVaLn4HmwEl4BS4kpr7czQ9iCEj8m32MBsZmBFvQv2sAG
+	YWtLPHl3AepUBYkdZ18zQhzhJjH18zRmiBpxiY1HbrFMYBSahWTULCSjZiEZNQtJywJGllWM
+	oqkFyQXFSem5hnrFibnFpXnpesn5uZsYwZHxTGoH48oGi0OMAhyMSjy8CfKVQUKsiWXFlbmH
+	GCU4mJVEeDfsAwrxpiRWVqUW5ccXleakFh9ilOZgURLnPdBqHSgkkJ5YkpqdmlqQWgSTZeLg
+	lGpgnLP/5AOjOWYb/PKKP2nYnNGbfm0uy9Ysn2Uier4xb9af4ru77p9gkvT5otwq3XVaor9u
+	TTYqY1TOur7LoSJseW+P9Iesg0ly3972KR2r70vtE/+3iv3+zwQlTtOzpoWClkI8ZZEzpjnW
+	R4Zu1lF7fsGbaYrU5dPNHzxmsLD2n+u1YQqcfYBXiaU4I9FQi7moOBEAnhH6PIgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Gu, 
 
-* Josh Boyer <jwboyer@redhat.com> wrote:
+Thanks for your reviewing!
 
-> The MAXSMP option is intended to enable silly large numbers of CPUs for
-> testing purposes.  The current value of 4096 isn't very silly any longer
-> as there are actual machines that approach 6096 CPUs when taking HT into
-> account.  Increase the value to 8192 to account for this and short term
-> future increases.
+Regards
+Yu
+
+> -----Original Message-----
+> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
+> Sent: Wednesday, November 06, 2013 1:16 PM
+> To: Chao Yu
+> Cc: '???'; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; 'Ì·æ­'
+> Subject: Re: [f2fs-dev] [PATCH] f2fs: avoid to use a NULL point in destroy_segment_manager
 > 
-> Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-> ---
->  arch/x86/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> On 11/06/2013 01:10 PM, Chao Yu wrote:
 > 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index f03e428..09f05cd 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -828,7 +828,7 @@ config NR_CPUS
->  	range 2 512 if SMP && !MAXSMP && !CPUMASK_OFFSTACK
->  	range 2 4096 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
->  	default "1" if !SMP
-> -	default "4096" if MAXSMP
-> +	default "8192" if MAXSMP
+> > Hi Gu,
+> >
+> >> -----Original Message-----
+> >> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
+> >> Sent: Wednesday, November 06, 2013 11:41 AM
+> >> To: Chao Yu
+> >> Cc: ???; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; Ì·æ­
+> >> Subject: Re: [f2fs-dev] [PATCH] f2fs: avoid to use a NULL point in destroy_segment_manager
+> >>
+> >> On 11/06/2013 09:12 AM, Chao Yu wrote:
+> >>
+> >>> A NULL point should avoid to be used in destroy_segment_manager after allocating memory fail for f2fs_sm_info.
+> >>
+> >> Though without this patch it still can work well, because if it failed
+> >> to allocate f2fs_sm_info, the sit_info, free_info... all were NULL, and
+> >> the destory path(e.g. destroy_dirty_segmap) can deal with them well.
+> >
+> > I think it could not work well. Without this patch we may got a segment
+> > fault in DIRTY_I(sbi) at the following code if it failed to allocate
+> > f2fs_sm_info memory(sbi->sm_info). Right?
+> 
+> Yes, you're right. SIT_I generates sit_info from f2fs_sm_info.
+> Sorry for my mistake.:(
+> 
+> Regards,
+> Gu
+> 
+> >
+> > static void destroy_dirty_segmap(struct f2fs_sb_info *sbi)
+> > {
+> > 	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
+> >
+> >> IMO, this patch is still a good catch.
+> >>
+> >> Regards,
+> >> Gu
+> >>
+> >>>
+> >>> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> >>> ---
+> >>>  fs/f2fs/segment.c |    2 ++
+> >>>  1 file changed, 2 insertions(+)
+> >>>
+> >>> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> >>> index 3d4d5fc..ff363e6
+> >>> --- a/fs/f2fs/segment.c
+> >>> +++ b/fs/f2fs/segment.c
+> >>> @@ -1744,6 +1744,8 @@ static void destroy_sit_info(struct f2fs_sb_info *sbi)
+> >>>  void destroy_segment_manager(struct f2fs_sb_info *sbi)
+> >>>  {
+> >>>  	struct f2fs_sm_info *sm_info = SM_I(sbi);
+> >>> +	if (!sm_info)
+> >>> +		return;
+> >>>  	destroy_dirty_segmap(sbi);
+> >>>  	destroy_curseg(sbi);
+> >>>  	destroy_free_segmap(sbi);
+> >
+> >
+> >
+> 
+> 
+> =
 
-So I changed the patch to up the regular range to 8192 as well: it's more 
-consistent if MAXSMP tracks the normal range, as long as the defaults are 
-sane. See the commit below.
-
-Note that 'normal users' won't ever see any max CPU count beyond the 
-current 512 (which is already kind of crazy for normal use), because 
-CPUMASK_OFFSTACK is turned off on all but MAXSMP configs (unless the
-user explicitly enables the option).
-
-So it's not really possible to accidentally wander into that option and 
-set it to an insane value - it takes some effort.
-
-[ I've Cc:-ed Linus, who had a strong opinion about these max-cpu limits
-  in the past - I hope the changes are fine in this form. ]
-
-Thanks,
-
-	Ingo
-
-=====================>
->From 07bce9fd69e8409740e63db0ab0755b84ee61a0c Mon Sep 17 00:00:00 2001
-From: Josh Boyer <jwboyer@redhat.com>
-Date: Tue, 5 Nov 2013 09:38:16 -0500
-Subject: [PATCH] x86/cpu: Increase max CPU count to 8192
-
-The MAXSMP option is intended to enable silly large numbers of
-CPUs for testing purposes.  The current value of 4096 isn't very
-silly any longer as there are actual SGI machines that approach
-6096 CPUs when taking HT into account.
-
-Increase the value to a nice round 8192 to account for this and
-allow for short term future increases.
-
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: prarit@redhat.com
-Cc: Russ Anderson <rja@sgi.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20131105143816.GK9944@hansolo.jdub.homelinux.org
-[ Tweaked it so that MAXSMP simply sets the maximum of the normal range. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/Kconfig | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index f03e428..805469a 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -826,9 +826,9 @@ config NR_CPUS
- 	int "Maximum number of CPUs" if SMP && !MAXSMP
- 	range 2 8 if SMP && X86_32 && !X86_BIGSMP
- 	range 2 512 if SMP && !MAXSMP && !CPUMASK_OFFSTACK
--	range 2 4096 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
-+	range 2 8192 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
- 	default "1" if !SMP
--	default "4096" if MAXSMP
-+	default "8192" if MAXSMP
- 	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
- 	default "8" if SMP
- 	---help---
