@@ -1,202 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab3KFQjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 11:39:13 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:46475 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026Ab3KFQjL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 11:39:11 -0500
-Message-ID: <527A70A1.7080200@gmail.com>
-Date: Thu, 07 Nov 2013 00:38:57 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1755058Ab3KFQl4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 11:41:56 -0500
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:2877 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750769Ab3KFQly convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 11:41:54 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(z37d4lzbb2dI98dI9371Ic89bh1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2149h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h906i1155h192ch)
+Date: Wed, 6 Nov 2013 08:41:44 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <monstr@monstr.eu>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 6/6] arm: zynq: headsmp: Move .glbl out of actual code
+References: <1383235819-2552-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1383235819-2552-7-git-send-email-soren.brinkmann@xilinx.com>
+ <5279F3DD.9040605@monstr.eu>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 6/7] arm64, jump label: optimize jump label implementation
-References: <1382109602-27432-1-git-send-email-liuj97@gmail.com> <1382109602-27432-7-git-send-email-liuj97@gmail.com> <20131030005558.GE25346@mudshark.cambridge.arm.com>
-In-Reply-To: <20131030005558.GE25346@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <5279F3DD.9040605@monstr.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <e1194cb0-825b-4cb1-919c-8879aef95d77@VA3EHSMHS008.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2013 08:55 AM, Will Deacon wrote:
-> On Fri, Oct 18, 2013 at 04:20:00PM +0100, Jiang Liu wrote:
->> From: Jiang Liu <jiang.liu@huawei.com>
->>
->> Optimize jump label implementation for ARM64 by dynamically patching
->> kernel text.
->>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> Cc: Jiang Liu <liuj97@gmail.com>
->> ---
->>  arch/arm64/Kconfig                  |  1 +
->>  arch/arm64/include/asm/jump_label.h | 52 +++++++++++++++++++++++++++++++++
->>  arch/arm64/kernel/Makefile          |  1 +
->>  arch/arm64/kernel/jump_label.c      | 58 +++++++++++++++++++++++++++++++++++++
->>  4 files changed, 112 insertions(+)
->>  create mode 100644 arch/arm64/include/asm/jump_label.h
->>  create mode 100644 arch/arm64/kernel/jump_label.c
->>
->> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
->> index c044548..da388e4 100644
->> --- a/arch/arm64/Kconfig
->> +++ b/arch/arm64/Kconfig
->> @@ -17,6 +17,7 @@ config ARM64
->>  	select GENERIC_SMP_IDLE_THREAD
->>  	select GENERIC_TIME_VSYSCALL
->>  	select HARDIRQS_SW_RESEND
->> +	select HAVE_ARCH_JUMP_LABEL
->>  	select HAVE_ARCH_TRACEHOOK
->>  	select HAVE_DEBUG_BUGVERBOSE
->>  	select HAVE_DEBUG_KMEMLEAK
->> diff --git a/arch/arm64/include/asm/jump_label.h b/arch/arm64/include/asm/jump_label.h
->> new file mode 100644
->> index 0000000..d268fab
->> --- /dev/null
->> +++ b/arch/arm64/include/asm/jump_label.h
->> @@ -0,0 +1,52 @@
->> +/*
->> + * Copyright (C) 2013 Huawei Ltd.
->> + * Author: Jiang Liu <jiang.liu@huawei.com>
->> + *
->> + * Based on arch/arm/include/asm/jump_label.h
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + *
->> + * You should have received a copy of the GNU General Public License
->> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
->> + */
->> +#ifndef _ASM_ARM64_JUMP_LABEL_H
->> +#define _ASM_ARM64_JUMP_LABEL_H
->> +#include <linux/types.h>
->> +
->> +#ifdef __KERNEL__
->> +
->> +#define JUMP_LABEL_NOP_SIZE 4
->> +
->> +static __always_inline bool arch_static_branch(struct static_key *key)
->> +{
->> +	asm goto("1:\n\t"
->> +		 "nop\n\t"
+On Wed, Nov 06, 2013 at 08:46:37AM +0100, Michal Simek wrote:
+> On 10/31/2013 05:10 PM, Soren Brinkmann wrote:
+> > Move the .glbl lines exporting symbols to the top of the file and out of
+> > the actual code, in order to make the code more readable.
+> > 
+> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > ---
+> >  arch/arm/mach-zynq/headsmp.S | 5 +++--
+> >  1 file changed, 3 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-zynq/headsmp.S b/arch/arm/mach-zynq/headsmp.S
+> > index 57a32869f0aa..12d1b40c7d78 100644
+> > --- a/arch/arm/mach-zynq/headsmp.S
+> > +++ b/arch/arm/mach-zynq/headsmp.S
+> > @@ -9,14 +9,15 @@
+> >  #include <linux/linkage.h>
+> >  #include <linux/init.h>
+> >  
+> > +.globl zynq_secondary_trampoline_jump
+> > +.globl zynq_secondary_trampoline_end
+> > +
+> >  ENTRY(zynq_secondary_trampoline)
+> >  	ldr	r0, [pc]
+> >  	bx	r0
+> > -.globl zynq_secondary_trampoline_jump
+> >  zynq_secondary_trampoline_jump:
+> >  	/* Space for jumping address */
+> >  	.word	/* cpu 1 */
+> > -.globl zynq_secondary_trampoline_end
+> >  zynq_secondary_trampoline_end:
+> >  ENDPROC(zynq_secondary_trampoline)
+> >  
 > 
-> Minor nit: can you put the label on the same line as the nop please?
-Sure, will refine it.
+> I don't want this one.
+> I have applied 1-5 to zynq/cleanup branch.
+Up to you. But having these .global statements in the middle of actual
+code does not help reading the code. And IMHO, they don't belong there.
 
-> 
->> +		 ".pushsection __jump_table,  \"aw\"\n\t"
->> +		 ".align 3\n\t"
->> +		 ".quad 1b, %l[l_yes], %c0\n\t"
->> +		 ".popsection\n\t"
->> +		 :  :  "i"(key) :  : l_yes);
->> +
->> +	return false;
->> +l_yes:
->> +	return true;
->> +}
->> +
->> +#endif /* __KERNEL__ */
->> +
->> +typedef u64 jump_label_t;
->> +
->> +struct jump_entry {
->> +	jump_label_t code;
->> +	jump_label_t target;
->> +	jump_label_t key;
->> +};
->> +
->> +#endif	/* _ASM_ARM64_JUMP_LABEL_H */
->> diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
->> index 9af6cb3..b7db65e 100644
->> --- a/arch/arm64/kernel/Makefile
->> +++ b/arch/arm64/kernel/Makefile
->> @@ -18,6 +18,7 @@ arm64-obj-$(CONFIG_SMP)			+= smp.o smp_spin_table.o smp_psci.o
->>  arm64-obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
->>  arm64-obj-$(CONFIG_HAVE_HW_BREAKPOINT)+= hw_breakpoint.o
->>  arm64-obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
->> +arm64-obj-$(CONFIG_JUMP_LABEL)		+= jump_label.o
->>  
->>  obj-y					+= $(arm64-obj-y) vdso/
->>  obj-m					+= $(arm64-obj-m)
->> diff --git a/arch/arm64/kernel/jump_label.c b/arch/arm64/kernel/jump_label.c
->> new file mode 100644
->> index 0000000..871786a
->> --- /dev/null
->> +++ b/arch/arm64/kernel/jump_label.c
->> @@ -0,0 +1,58 @@
->> +/*
->> + * Copyright (C) 2013 Huawei Ltd.
->> + * Author: Jiang Liu <jiang.liu@huawei.com>
->> + *
->> + * Based on arch/arm/kernel/jump_label.c
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + *
->> + * You should have received a copy of the GNU General Public License
->> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
->> + */
->> +#include <linux/kernel.h>
->> +#include <linux/jump_label.h>
->> +#include <asm/jump_label.h>
->> +#include <asm/insn.h>
->> +
->> +#ifdef HAVE_JUMP_LABEL
->> +
->> +static void __arch_jump_label_transform(struct jump_entry *entry,
->> +					enum jump_label_type type,
->> +					bool is_static)
->> +{
->> +	void *addr = (void *)entry->code;
->> +	u32 insn;
->> +
->> +	if (type == JUMP_LABEL_ENABLE) {
->> +		insn = aarch64_insn_gen_branch_imm(entry->code,
->> +						   entry->target, 0);
-> 
-> Maybe have an enum or #define for the last parameter -- it's not at all
-> obvious that '0' means `no link'.
-Thanks, will improve it.
+	Sören
 
-> 
->> +	} else {
->> +		insn = aarch64_insn_gen_nop();
->> +	}
->> +
->> +	if (is_static)
->> +		aarch64_insn_patch_text_nosync(&addr, &insn, 1);
-> 
-> I think I mentioned this before, but is it ever safe to patch more than one
-> instruction in the _nosync case? If not, I wouldn't even bother with that
-> last argument.
-I originally plan to optimize jump_label implementation with the third
-parameter. But for now, I will remove the third parameter to make code
-simple and add them back in future when needed.
-Thanks!
-
-> 
-> Will
-> 
 
