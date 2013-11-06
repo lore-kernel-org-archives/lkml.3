@@ -1,73 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab3KFVF2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 16:05:28 -0500
-Received: from cassarossa.samfundet.no ([193.35.52.29]:35951 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932081Ab3KFVF1 (ORCPT
+	id S932176Ab3KFVFj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 16:05:39 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:45609 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932081Ab3KFVFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 16:05:27 -0500
-Date: Wed, 6 Nov 2013 22:05:21 +0100
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [PATCH] avr32: Remove HAVE_KPROBES from avr32 Kconfig
-Message-ID: <20131106210520.GA6825@samfundet.no>
-References: <20131106124330.4d73d200@gandalf.local.home>
+	Wed, 6 Nov 2013 16:05:36 -0500
+Message-ID: <527AAF1D.5080605@linaro.org>
+Date: Wed, 06 Nov 2013 22:05:33 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131106124330.4d73d200@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>, benh@kernel.crashing.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+CC: michael@ellerman.id.au, scottwood@freescale.com,
+        srivatsa.bhat@linux.vnet.ibm.com, preeti@linux.vnet.ibm.com,
+        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com
+Subject: Re: [PATCH V7 5/7] POWER/cpuidle: Generic POWER CPUIDLE driver supporting
+ PSERIES.
+References: <20131029110052.31547.82682.stgit@deepthi.in.ibm.com> <20131029110148.31547.8944.stgit@deepthi.in.ibm.com>
+In-Reply-To: <20131029110148.31547.8944.stgit@deepthi.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Wed 06 Nov 2013 12:43:30 -0500 or thereabout, Steven Rostedt wrote:
+On 10/29/2013 12:01 PM, Deepthi Dharwar wrote:
+> This patch includes cleanup and refactoring of the
+> existing code to make the driver POWER generic.
+> * Re-naming the functions from pseries to generic power.
+> * Re-naming the backend driver from pseries_idle to
+>    ibm-power-idle.
+>
+> Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 
-Hello,
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-> Although there's a arch/avr32/kernel/kprobes.c file, this arch does not
-> compile with kprobes enabled:
-> 
->  In file included from cross-linux.git/arch/avr32/kernel/kprobes.c:14:
->  cross-linux.git/include/linux/kprobes.h: In function 'get_kprobe_ctlblk':
->  cross-linux.git/include/linux/kprobes.h:358: error: invalid use of undefined type 'struct kprobe_ctlblk'
->  cross-linux.git/include/linux/kprobes.h:358: error: dereferencing pointer to incomplete type
->  make[2]: *** [arch/avr32/kernel/kprobes.o] Error 1
-> 
-> This is because it does not define the required kprobe_ctlblk struct,
-> and fails to compile when CONFIG_KPROBES is set.
-> 
-> Unfortunately, this also makes my testing of various configs for
-> different archs to fail on avr32 as well.
-> 
-> If kprobes is not supported by avr32 than do not say that it is.
+... but I am wondering if 'power' name is not confusing with power 
+management and if 'powerpc' would suit better.
 
-kprobes is supposed to be supported on AVR32, but it seems to have broken
-somewhere down the road.
+> ---
+>   drivers/cpuidle/cpuidle-ibm-power.c |   32 ++++++++++++++++----------------
+>   1 file changed, 16 insertions(+), 16 deletions(-)
+>
+> diff --git a/drivers/cpuidle/cpuidle-ibm-power.c b/drivers/cpuidle/cpuidle-ibm-power.c
+> index e81c207..5b92242 100644
+> --- a/drivers/cpuidle/cpuidle-ibm-power.c
+> +++ b/drivers/cpuidle/cpuidle-ibm-power.c
+> @@ -20,8 +20,8 @@
+>   #include <asm/runlatch.h>
+>   #include <asm/plpar_wrappers.h>
+>
+> -struct cpuidle_driver pseries_idle_driver = {
+> -	.name             = "pseries_idle",
+> +struct cpuidle_driver power_idle_driver = {
+> +	.name             = "ibm_power_idle",
+>   	.owner            = THIS_MODULE,
+>   };
+>
+> @@ -182,7 +182,7 @@ void update_smt_snooze_delay(int cpu, int residency)
+>   			drv->states[1].target_residency = residency;
+>   }
+>
+> -static int pseries_cpuidle_add_cpu_notifier(struct notifier_block *n,
+> +static int power_cpuidle_add_cpu_notifier(struct notifier_block *n,
+>   			unsigned long action, void *hcpu)
+>   {
+>   	int hotcpu = (unsigned long)hcpu;
+> @@ -213,16 +213,16 @@ static int pseries_cpuidle_add_cpu_notifier(struct notifier_block *n,
+>   }
+>
+>   static struct notifier_block setup_hotplug_notifier = {
+> -	.notifier_call = pseries_cpuidle_add_cpu_notifier,
+> +	.notifier_call = power_cpuidle_add_cpu_notifier,
+>   };
+>
+>   /*
+> - * pseries_cpuidle_driver_init()
+> + * power_cpuidle_driver_init()
+>    */
+> -static int pseries_cpuidle_driver_init(void)
+> +static int power_cpuidle_driver_init(void)
+>   {
+>   	int idle_state;
+> -	struct cpuidle_driver *drv = &pseries_idle_driver;
+> +	struct cpuidle_driver *drv = &power_idle_driver;
+>
+>   	drv->state_count = 0;
+>   	for (idle_state = 0; idle_state < max_idle_state; ++idle_state) {
+> @@ -241,10 +241,10 @@ static int pseries_cpuidle_driver_init(void)
+>   }
+>
+>   /*
+> - * pseries_idle_probe()
+> + * power_idle_probe()
+>    * Choose state table for shared versus dedicated partition
+>    */
+> -static int pseries_idle_probe(void)
+> +static int power_idle_probe(void)
+>   {
+>
+>   	if (cpuidle_disable != IDLE_NO_OVERRIDE)
+> @@ -264,24 +264,24 @@ static int pseries_idle_probe(void)
+>   	return 0;
+>   }
+>
+> -static int __init pseries_processor_idle_init(void)
+> +static int __init power_processor_idle_init(void)
+>   {
+>   	int retval;
+>
+> -	retval = pseries_idle_probe();
+> +	retval = power_idle_probe();
+>   	if (retval)
+>   		return retval;
+>
+> -	pseries_cpuidle_driver_init();
+> -	retval = cpuidle_register(&pseries_idle_driver, NULL);
+> +	power_cpuidle_driver_init();
+> +	retval = cpuidle_register(&power_idle_driver, NULL);
+>   	if (retval) {
+> -		printk(KERN_DEBUG "Registration of pseries driver failed.\n");
+> +		printk(KERN_DEBUG "Registration of ibm_power_idle driver failed.\n");
+>   		return retval;
+>   	}
+>
+>   	register_cpu_notifier(&setup_hotplug_notifier);
+> -	printk(KERN_DEBUG "pseries_idle_driver registered\n");
+> +	printk(KERN_DEBUG "ibm_power_idle registered\n");
+>   	return 0;
+>   }
+>
+> -device_initcall(pseries_processor_idle_init);
+> +device_initcall(power_processor_idle_init);
+>
 
-I re-discovered an old patch fixing this from Eirik, I have added this to my
-for-linus branch instead of your proposed patch.
 
-https://git.kernel.org/cgit/linux/kernel/git/egtvedt/linux-avr32.git/log/?h=for-linus
-
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> diff --git a/arch/avr32/Kconfig b/arch/avr32/Kconfig
-> index b6878eb..25bcc62 100644
-> --- a/arch/avr32/Kconfig
-> +++ b/arch/avr32/Kconfig
-> @@ -5,7 +5,6 @@ config AVR32
->  	select EXPERT
->  	select HAVE_CLK
->  	select HAVE_OPROFILE
-> -	select HAVE_KPROBES
->  	select VIRT_TO_BUS
->  	select GENERIC_IRQ_PROBE
->  	select GENERIC_ATOMIC64
 -- 
-mvh
-Hans-Christian Egtvedt
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
