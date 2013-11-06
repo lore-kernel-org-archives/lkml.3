@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab3KFIes (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 03:34:48 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:64922 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932116Ab3KFIer (ORCPT
+	id S1756108Ab3KFIhG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 03:37:06 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57321 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440Ab3KFIhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 03:34:47 -0500
-X-AuditID: 9c93017e-b7c9fae00000057d-6b-5279ff25510d
+	Wed, 6 Nov 2013 03:37:05 -0500
+X-AuditID: 9c930179-b7cdfae0000019c2-64-5279ffae4641
 From: Namhyung Kim <namhyung@kernel.org>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
@@ -22,12 +22,13 @@ Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch method
 References: <1383029621-7384-1-git-send-email-namhyung@kernel.org>
 	<20131102155458.GA6981@redhat.com> <87ob60366m.fsf@sejong.aot.lge.com>
 	<87fvrc35kj.fsf@sejong.aot.lge.com> <20131104155131.GD4440@redhat.com>
-	<20131104162229.GA8921@redhat.com> <87mwlj1tm7.fsf@sejong.aot.lge.com>
-	<20131105163341.GB2460@redhat.com>
-Date: Wed, 06 Nov 2013 17:34:45 +0900
-In-Reply-To: <20131105163341.GB2460@redhat.com> (Oleg Nesterov's message of
-	"Tue, 5 Nov 2013 17:33:41 +0100")
-Message-ID: <878ux2x716.fsf@sejong.aot.lge.com>
+	<20131104162229.GA8921@redhat.com> <20131104184741.GA15945@redhat.com>
+	<20131104185754.GA16428@redhat.com>
+	<8761s71rxw.fsf@sejong.aot.lge.com> <20131105164102.GC2460@redhat.com>
+Date: Wed, 06 Nov 2013 17:37:02 +0900
+In-Reply-To: <20131105164102.GC2460@redhat.com> (Oleg Nesterov's message of
+	"Tue, 5 Nov 2013 17:41:02 +0100")
+Message-ID: <874n7qx6xd.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -36,33 +37,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Nov 2013 17:33:41 +0100, Oleg Nesterov wrote:
+On Tue, 5 Nov 2013 17:41:02 +0100, Oleg Nesterov wrote:
 > On 11/05, Namhyung Kim wrote:
 >>
->> On Mon, 4 Nov 2013 17:22:29 +0100, Oleg Nesterov wrote:
+>> On Mon, 4 Nov 2013 19:57:54 +0100, Oleg Nesterov wrote:
+>> >>
+>> >> 	static void __user *get_user_vaddr(struct pt_regs *regs, unsigned long addr)
+>> >> 	{
+>> >> 		return (void __force __user *)addr + instruction_pointer(regs);
+>> >> 	}
+>> >>
+>> >> ?
+>> >>
+>> >> This should solve the problems with relocations/randomization/bss.
+>> >>
+>> >> The obvious disadvantage is that it is not easy to calculate the
+>> >> offset we need to pass as an argument, it depends on the probed
+>> >> function.
 >> >
->> > So probably I was wrong and this all needs more thinking. Damn.
+>> > forgot to mention... and instruction_pointer() can't work in ret-probe,
+>> > we need to pass the "unsigned long func" arg somehow...
 >>
->> :)
+>> Hmm.. what's the value of tu->offset in this case?  Does it have the
+>> offset of the return address or the start of the function?
 >
-> Don't laugh at me ;)
+> It is the offest of function. IOW, it is the same regardless of
+> is_ret_probe().
 
-:)
-
-(And now I'm feeling guilty..)
-
->
->> > Perhaps we really need to pass @file/offset, but it is not clear what
->> > we can do with bss/anon-mapping.
->>
->> The @file/offset should work with bss since data in bss is accessed via
->> an offset in the program,
->
-> Yes, yes, but it is still not clear to me how we can identify the "right"
-> vma which doesn't cover the .bss address but can be used to calculate the
-> offset.
-
-Yes, that's the open problem for the cross-fetch.
+Ah, okay.  Thanks for the info.  Then yes, it'd probably better to pass
+the func rather than regs since it's the only info we need, right?
 
 Thanks,
 Namhyung
