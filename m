@@ -1,154 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab3KFFoW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 00:44:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44264 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998Ab3KFFoU (ORCPT
+	id S1751274Ab3KFF4i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 00:56:38 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:43197 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab3KFF4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 00:44:20 -0500
-Date: Tue, 5 Nov 2013 21:43:34 -0800
-From: tip-bot for David Ahern <tipbot@zytor.com>
-Message-ID: <tip-8e00ddc9dfe09ee131144fdaf6c96ebe95bbbbcb@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1383149707-1008-1-git-send-email-dsahern@gmail.com>
-References: <1383149707-1008-1-git-send-email-dsahern@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf list: Remove a level of indentation
-Git-Commit-ID: 8e00ddc9dfe09ee131144fdaf6c96ebe95bbbbcb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Nov 2013 00:56:37 -0500
+Date: Wed, 6 Nov 2013 06:56:34 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Josh Boyer <jwboyer@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, prarit@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>
+Subject: [PATCH v2 2/2] x86: Increase MAXSMP CPU count to 8192
+Message-ID: <20131106055634.GA24044@gmail.com>
+References: <20131101141148.GH8652@hansolo.jdub.homelinux.org>
+ <20131105143728.GJ9944@hansolo.jdub.homelinux.org>
+ <20131105143816.GK9944@hansolo.jdub.homelinux.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 05 Nov 2013 21:43:40 -0800 (PST)
+In-Reply-To: <20131105143816.GK9944@hansolo.jdub.homelinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8e00ddc9dfe09ee131144fdaf6c96ebe95bbbbcb
-Gitweb:     http://git.kernel.org/tip/8e00ddc9dfe09ee131144fdaf6c96ebe95bbbbcb
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Wed, 30 Oct 2013 10:15:06 -0600
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 5 Nov 2013 14:25:26 -0300
 
-perf list: Remove a level of indentation
+* Josh Boyer <jwboyer@redhat.com> wrote:
 
-With a return after the if check an indentation level can be removed.
-Indentation shift only; no functional changes.
+> The MAXSMP option is intended to enable silly large numbers of CPUs for
+> testing purposes.  The current value of 4096 isn't very silly any longer
+> as there are actual machines that approach 6096 CPUs when taking HT into
+> account.  Increase the value to 8192 to account for this and short term
+> future increases.
+> 
+> Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+> ---
+>  arch/x86/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index f03e428..09f05cd 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -828,7 +828,7 @@ config NR_CPUS
+>  	range 2 512 if SMP && !MAXSMP && !CPUMASK_OFFSTACK
+>  	range 2 4096 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
+>  	default "1" if !SMP
+> -	default "4096" if MAXSMP
+> +	default "8192" if MAXSMP
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1383149707-1008-1-git-send-email-dsahern@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+So I changed the patch to up the regular range to 8192 as well: it's more 
+consistent if MAXSMP tracks the normal range, as long as the defaults are 
+sane. See the commit below.
+
+Note that 'normal users' won't ever see any max CPU count beyond the 
+current 512 (which is already kind of crazy for normal use), because 
+CPUMASK_OFFSTACK is turned off on all but MAXSMP configs (unless the
+user explicitly enables the option).
+
+So it's not really possible to accidentally wander into that option and 
+set it to an insane value - it takes some effort.
+
+[ I've Cc:-ed Linus, who had a strong opinion about these max-cpu limits
+  in the past - I hope the changes are fine in this form. ]
+
+Thanks,
+
+	Ingo
+
+=====================>
+>From 07bce9fd69e8409740e63db0ab0755b84ee61a0c Mon Sep 17 00:00:00 2001
+From: Josh Boyer <jwboyer@redhat.com>
+Date: Tue, 5 Nov 2013 09:38:16 -0500
+Subject: [PATCH] x86/cpu: Increase max CPU count to 8192
+
+The MAXSMP option is intended to enable silly large numbers of
+CPUs for testing purposes.  The current value of 4096 isn't very
+silly any longer as there are actual SGI machines that approach
+6096 CPUs when taking HT into account.
+
+Increase the value to a nice round 8192 to account for this and
+allow for short term future increases.
+
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: prarit@redhat.com
+Cc: Russ Anderson <rja@sgi.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20131105143816.GK9944@hansolo.jdub.homelinux.org
+[ Tweaked it so that MAXSMP simply sets the maximum of the normal range. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/builtin-list.c | 73 ++++++++++++++++++++++++-----------------------
- 1 file changed, 37 insertions(+), 36 deletions(-)
+ arch/x86/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
-index e79f423..45000e7 100644
---- a/tools/perf/builtin-list.c
-+++ b/tools/perf/builtin-list.c
-@@ -17,48 +17,49 @@
- 
- int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
- {
-+	int i;
-+
- 	setup_pager();
- 
--	if (argc == 1)
-+	if (argc == 1) {
- 		print_events(NULL, false);
--	else {
--		int i;
--
--		for (i = 1; i < argc; ++i) {
--			if (i > 2)
--				putchar('\n');
--			if (strncmp(argv[i], "tracepoint", 10) == 0)
--				print_tracepoint_events(NULL, NULL, false);
--			else if (strcmp(argv[i], "hw") == 0 ||
--				 strcmp(argv[i], "hardware") == 0)
--				print_events_type(PERF_TYPE_HARDWARE);
--			else if (strcmp(argv[i], "sw") == 0 ||
--				 strcmp(argv[i], "software") == 0)
--				print_events_type(PERF_TYPE_SOFTWARE);
--			else if (strcmp(argv[i], "cache") == 0 ||
--				 strcmp(argv[i], "hwcache") == 0)
--				print_hwcache_events(NULL, false);
--			else if (strcmp(argv[i], "pmu") == 0)
--				print_pmu_events(NULL, false);
--			else if (strcmp(argv[i], "--raw-dump") == 0)
--				print_events(NULL, true);
--			else {
--				char *sep = strchr(argv[i], ':'), *s;
--				int sep_idx;
-+		return 0;
-+	}
- 
--				if (sep == NULL) {
--					print_events(argv[i], false);
--					continue;
--				}
--				sep_idx = sep - argv[i];
--				s = strdup(argv[i]);
--				if (s == NULL)
--					return -1;
-+	for (i = 1; i < argc; ++i) {
-+		if (i > 2)
-+			putchar('\n');
-+		if (strncmp(argv[i], "tracepoint", 10) == 0)
-+			print_tracepoint_events(NULL, NULL, false);
-+		else if (strcmp(argv[i], "hw") == 0 ||
-+			 strcmp(argv[i], "hardware") == 0)
-+			print_events_type(PERF_TYPE_HARDWARE);
-+		else if (strcmp(argv[i], "sw") == 0 ||
-+			 strcmp(argv[i], "software") == 0)
-+			print_events_type(PERF_TYPE_SOFTWARE);
-+		else if (strcmp(argv[i], "cache") == 0 ||
-+			 strcmp(argv[i], "hwcache") == 0)
-+			print_hwcache_events(NULL, false);
-+		else if (strcmp(argv[i], "pmu") == 0)
-+			print_pmu_events(NULL, false);
-+		else if (strcmp(argv[i], "--raw-dump") == 0)
-+			print_events(NULL, true);
-+		else {
-+			char *sep = strchr(argv[i], ':'), *s;
-+			int sep_idx;
- 
--				s[sep_idx] = '\0';
--				print_tracepoint_events(s, s + sep_idx + 1, false);
--				free(s);
-+			if (sep == NULL) {
-+				print_events(argv[i], false);
-+				continue;
- 			}
-+			sep_idx = sep - argv[i];
-+			s = strdup(argv[i]);
-+			if (s == NULL)
-+				return -1;
-+
-+			s[sep_idx] = '\0';
-+			print_tracepoint_events(s, s + sep_idx + 1, false);
-+			free(s);
- 		}
- 	}
- 	return 0;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index f03e428..805469a 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -826,9 +826,9 @@ config NR_CPUS
+ 	int "Maximum number of CPUs" if SMP && !MAXSMP
+ 	range 2 8 if SMP && X86_32 && !X86_BIGSMP
+ 	range 2 512 if SMP && !MAXSMP && !CPUMASK_OFFSTACK
+-	range 2 4096 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
++	range 2 8192 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
+ 	default "1" if !SMP
+-	default "4096" if MAXSMP
++	default "8192" if MAXSMP
+ 	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
+ 	default "8" if SMP
+ 	---help---
