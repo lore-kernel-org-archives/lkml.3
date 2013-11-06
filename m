@@ -1,32 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932368Ab3KFNUv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 08:20:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48977 "EHLO
+	id S932388Ab3KFNUz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 08:20:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48993 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932252Ab3KFNUq (ORCPT
+	with ESMTP id S932252Ab3KFNUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 08:20:46 -0500
-Date: Wed, 6 Nov 2013 05:19:33 -0800
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-a94d342b9cb09edfe888ea972af0883b6a8d992b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, mathieu.desnoyers@polymtl.ca,
-        anton@samba.org, hpa@zytor.com, mingo@kernel.org,
-        michael@ellerman.id.au, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, vince@deater.net, fweisbec@gmail.com,
-        benh@kernel.crashing.org, oleg@redhat.com, tglx@linutronix.de,
-        VICTORK@il.ibm.com, mikey@neuling.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, anton@samba.org,
-        mathieu.desnoyers@polymtl.ca, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, michael@ellerman.id.au, vince@deater.net,
-        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        fweisbec@gmail.com, VICTORK@il.ibm.com, tglx@linutronix.de,
-        oleg@redhat.com, mikey@neuling.org
-In-Reply-To: <20131030104246.GH16117@laptop.programming.kicks-ass.net>
-References: <20131030104246.GH16117@laptop.programming.kicks-ass.net>
+	Wed, 6 Nov 2013 08:20:52 -0500
+Date: Wed, 6 Nov 2013 05:20:18 -0800
+From: tip-bot for Preeti U Murthy <tipbot@zytor.com>
+Message-ID: <tip-37dc6b50cee97954c4e6edcd5b1fa614b76038ee@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        preeti@linux.vnet.ibm.com, peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        preeti@linux.vnet.ibm.com, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20131030031252.23426.4417.stgit@preeti.in.ibm.com>
+References: <20131030031252.23426.4417.stgit@preeti.in.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools/perf: Add required memory barriers
-Git-Commit-ID: a94d342b9cb09edfe888ea972af0883b6a8d992b
+Subject: [tip:sched/core] sched:
+  Remove unnecessary iteration over sched domains to update nr_busy_cpus
+Git-Commit-ID: 37dc6b50cee97954c4e6edcd5b1fa614b76038ee
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,227 +28,193 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 06 Nov 2013 05:19:39 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 06 Nov 2013 05:20:24 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a94d342b9cb09edfe888ea972af0883b6a8d992b
-Gitweb:     http://git.kernel.org/tip/a94d342b9cb09edfe888ea972af0883b6a8d992b
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 30 Oct 2013 11:42:46 +0100
+Commit-ID:  37dc6b50cee97954c4e6edcd5b1fa614b76038ee
+Gitweb:     http://git.kernel.org/tip/37dc6b50cee97954c4e6edcd5b1fa614b76038ee
+Author:     Preeti U Murthy <preeti@linux.vnet.ibm.com>
+AuthorDate: Wed, 30 Oct 2013 08:42:52 +0530
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Nov 2013 12:34:26 +0100
+CommitDate: Wed, 6 Nov 2013 12:37:55 +0100
 
-tools/perf: Add required memory barriers
+sched: Remove unnecessary iteration over sched domains to update nr_busy_cpus
 
-To match patch bf378d341e48 ("perf: Fix perf ring buffer memory
-ordering") change userspace to also adhere to the ordering outlined.
+nr_busy_cpus parameter is used by nohz_kick_needed() to find out the
+number of busy cpus in a sched domain which has SD_SHARE_PKG_RESOURCES
+flag set.  Therefore instead of updating nr_busy_cpus at every level
+of sched domain, since it is irrelevant, we can update this parameter
+only at the parent domain of the sd which has this flag set. Introduce
+a per-cpu parameter sd_busy which represents this parent domain.
 
+In nohz_kick_needed() we directly query the nr_busy_cpus parameter
+associated with the groups of sd_busy.
+
+By associating sd_busy with the highest domain which has
+SD_SHARE_PKG_RESOURCES flag set, we cover all lower level domains
+which could have this flag set and trigger nohz_idle_balancing if any
+of the levels have more than one busy cpu.
+
+sd_busy is irrelevant for asymmetric load balancing. However sd_asym
+has been introduced to represent the highest sched domain which has
+SD_ASYM_PACKING flag set so that it can be queried directly when
+required.
+
+While we are at it, we might as well change the nohz_idle parameter to
+be updated at the sd_busy domain level alone and not the base domain
+level of a CPU.  This will unify the concept of busy cpus at just one
+level of sched domain where it is currently used.
+
+Signed-off-by: Preeti U Murthy<preeti@linux.vnet.ibm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Michael Neuling <mikey@neuling.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: james.hogan@imgtec.com
-Cc: Vince Weaver <vince@deater.net>
-Cc: Victor Kaplansky <VICTORK@il.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Anton Blanchard <anton@samba.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: Michael Ellerman <michael@ellerman.id.au>
-Link: http://lkml.kernel.org/r/20131030104246.GH16117@laptop.programming.kicks-ass.net
+Cc: svaidy@linux.vnet.ibm.com
+Cc: vincent.guittot@linaro.org
+Cc: bitbucket@online.de
+Cc: benh@kernel.crashing.org
+Cc: anton@samba.org
+Cc: Morten.Rasmussen@arm.com
+Cc: pjt@google.com
+Cc: peterz@infradead.org
+Cc: mikey@neuling.org
+Link: http://lkml.kernel.org/r/20131030031252.23426.4417.stgit@preeti.in.ibm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/perf.h        | 59 ++++++++++++++++++++++++++++++++++++++----------
- tools/perf/tests/rdpmc.c |  2 --
- tools/perf/util/evlist.h |  4 ++--
- 3 files changed, 49 insertions(+), 16 deletions(-)
+ kernel/sched/core.c  |  6 ++++++
+ kernel/sched/fair.c  | 38 ++++++++++++++++++++------------------
+ kernel/sched/sched.h |  2 ++
+ 3 files changed, 28 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index f61c230..6a587e84 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -4,6 +4,8 @@
- #include <asm/unistd.h>
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index aa066f3..1deccd7 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4883,6 +4883,8 @@ DEFINE_PER_CPU(struct sched_domain *, sd_llc);
+ DEFINE_PER_CPU(int, sd_llc_size);
+ DEFINE_PER_CPU(int, sd_llc_id);
+ DEFINE_PER_CPU(struct sched_domain *, sd_numa);
++DEFINE_PER_CPU(struct sched_domain *, sd_busy);
++DEFINE_PER_CPU(struct sched_domain *, sd_asym);
  
- #if defined(__i386__)
-+#define mb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
-+#define wmb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
- #define rmb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
- #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
- #define CPUINFO_PROC	"model name"
-@@ -13,6 +15,8 @@
- #endif
+ static void update_top_cache_domain(int cpu)
+ {
+@@ -4894,6 +4896,7 @@ static void update_top_cache_domain(int cpu)
+ 	if (sd) {
+ 		id = cpumask_first(sched_domain_span(sd));
+ 		size = cpumask_weight(sched_domain_span(sd));
++		rcu_assign_pointer(per_cpu(sd_busy, cpu), sd->parent);
+ 	}
  
- #if defined(__x86_64__)
-+#define mb()		asm volatile("mfence" ::: "memory")
-+#define wmb()		asm volatile("sfence" ::: "memory")
- #define rmb()		asm volatile("lfence" ::: "memory")
- #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
- #define CPUINFO_PROC	"model name"
-@@ -23,45 +27,61 @@
+ 	rcu_assign_pointer(per_cpu(sd_llc, cpu), sd);
+@@ -4902,6 +4905,9 @@ static void update_top_cache_domain(int cpu)
  
- #ifdef __powerpc__
- #include "../../arch/powerpc/include/uapi/asm/unistd.h"
-+#define mb()		asm volatile ("sync" ::: "memory")
-+#define wmb()		asm volatile ("sync" ::: "memory")
- #define rmb()		asm volatile ("sync" ::: "memory")
--#define cpu_relax()	asm volatile ("" ::: "memory");
- #define CPUINFO_PROC	"cpu"
- #endif
- 
- #ifdef __s390__
-+#define mb()		asm volatile("bcr 15,0" ::: "memory")
-+#define wmb()		asm volatile("bcr 15,0" ::: "memory")
- #define rmb()		asm volatile("bcr 15,0" ::: "memory")
--#define cpu_relax()	asm volatile("" ::: "memory");
- #endif
- 
- #ifdef __sh__
- #if defined(__SH4A__) || defined(__SH5__)
-+# define mb()		asm volatile("synco" ::: "memory")
-+# define wmb()		asm volatile("synco" ::: "memory")
- # define rmb()		asm volatile("synco" ::: "memory")
- #else
-+# define mb()		asm volatile("" ::: "memory")
-+# define wmb()		asm volatile("" ::: "memory")
- # define rmb()		asm volatile("" ::: "memory")
- #endif
--#define cpu_relax()	asm volatile("" ::: "memory")
- #define CPUINFO_PROC	"cpu type"
- #endif
- 
- #ifdef __hppa__
-+#define mb()		asm volatile("" ::: "memory")
-+#define wmb()		asm volatile("" ::: "memory")
- #define rmb()		asm volatile("" ::: "memory")
--#define cpu_relax()	asm volatile("" ::: "memory");
- #define CPUINFO_PROC	"cpu"
- #endif
- 
- #ifdef __sparc__
-+#ifdef __LP64__
-+#define mb()		asm volatile("ba,pt %%xcc, 1f\n"	\
-+				     "membar #StoreLoad\n"	\
-+				     "1:\n":::"memory")
-+#else
-+#define mb()		asm volatile("":::"memory")
-+#endif
-+#define wmb()		asm volatile("":::"memory")
- #define rmb()		asm volatile("":::"memory")
--#define cpu_relax()	asm volatile("":::"memory")
- #define CPUINFO_PROC	"cpu"
- #endif
- 
- #ifdef __alpha__
-+#define mb()		asm volatile("mb" ::: "memory")
-+#define wmb()		asm volatile("wmb" ::: "memory")
- #define rmb()		asm volatile("mb" ::: "memory")
--#define cpu_relax()	asm volatile("" ::: "memory")
- #define CPUINFO_PROC	"cpu model"
- #endif
- 
- #ifdef __ia64__
-+#define mb()		asm volatile ("mf" ::: "memory")
-+#define wmb()		asm volatile ("mf" ::: "memory")
- #define rmb()		asm volatile ("mf" ::: "memory")
- #define cpu_relax()	asm volatile ("hint @pause" ::: "memory")
- #define CPUINFO_PROC	"model name"
-@@ -72,40 +92,55 @@
-  * Use the __kuser_memory_barrier helper in the CPU helper page. See
-  * arch/arm/kernel/entry-armv.S in the kernel source for details.
-  */
-+#define mb()		((void(*)(void))0xffff0fa0)()
-+#define wmb()		((void(*)(void))0xffff0fa0)()
- #define rmb()		((void(*)(void))0xffff0fa0)()
--#define cpu_relax()	asm volatile("":::"memory")
- #define CPUINFO_PROC	"Processor"
- #endif
- 
- #ifdef __aarch64__
--#define rmb()		asm volatile("dmb ld" ::: "memory")
-+#define mb()		asm volatile("dmb ish" ::: "memory")
-+#define wmb()		asm volatile("dmb ishld" ::: "memory")
-+#define rmb()		asm volatile("dmb ishst" ::: "memory")
- #define cpu_relax()	asm volatile("yield" ::: "memory")
- #endif
- 
- #ifdef __mips__
--#define rmb()		asm volatile(					\
-+#define mb()		asm volatile(					\
- 				".set	mips2\n\t"			\
- 				"sync\n\t"				\
- 				".set	mips0"				\
- 				: /* no output */			\
- 				: /* no input */			\
- 				: "memory")
--#define cpu_relax()	asm volatile("" ::: "memory")
-+#define wmb()	mb()
-+#define rmb()	mb()
- #define CPUINFO_PROC	"cpu model"
- #endif
- 
- #ifdef __arc__
-+#define mb()		asm volatile("" ::: "memory")
-+#define wmb()		asm volatile("" ::: "memory")
- #define rmb()		asm volatile("" ::: "memory")
--#define cpu_relax()	rmb()
- #define CPUINFO_PROC	"Processor"
- #endif
- 
- #ifdef __metag__
-+#define mb()		asm volatile("" ::: "memory")
-+#define wmb()		asm volatile("" ::: "memory")
- #define rmb()		asm volatile("" ::: "memory")
--#define cpu_relax()	asm volatile("" ::: "memory")
- #define CPUINFO_PROC	"CPU"
- #endif
- 
-+#define barrier() asm volatile ("" ::: "memory")
+ 	sd = lowest_flag_domain(cpu, SD_NUMA);
+ 	rcu_assign_pointer(per_cpu(sd_numa, cpu), sd);
 +
-+#ifndef cpu_relax
-+#define cpu_relax() barrier()
-+#endif
-+
-+#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
-+
-+
- #include <time.h>
- #include <unistd.h>
- #include <sys/types.h>
-diff --git a/tools/perf/tests/rdpmc.c b/tools/perf/tests/rdpmc.c
-index ff94886..46649c2 100644
---- a/tools/perf/tests/rdpmc.c
-+++ b/tools/perf/tests/rdpmc.c
-@@ -9,8 +9,6 @@
++	sd = highest_flag_domain(cpu, SD_ASYM_PACKING);
++	rcu_assign_pointer(per_cpu(sd_asym, cpu), sd);
+ }
  
- #if defined(__x86_64__) || defined(__i386__)
+ /*
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 074551a..df77c60 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6534,16 +6534,16 @@ static inline void nohz_balance_exit_idle(int cpu)
+ static inline void set_cpu_sd_state_busy(void)
+ {
+ 	struct sched_domain *sd;
++	int cpu = smp_processor_id();
  
--#define barrier() asm volatile("" ::: "memory")
+ 	rcu_read_lock();
+-	sd = rcu_dereference_check_sched_domain(this_rq()->sd);
++	sd = rcu_dereference(per_cpu(sd_busy, cpu));
+ 
+ 	if (!sd || !sd->nohz_idle)
+ 		goto unlock;
+ 	sd->nohz_idle = 0;
+ 
+-	for (; sd; sd = sd->parent)
+-		atomic_inc(&sd->groups->sgp->nr_busy_cpus);
++	atomic_inc(&sd->groups->sgp->nr_busy_cpus);
+ unlock:
+ 	rcu_read_unlock();
+ }
+@@ -6551,16 +6551,16 @@ unlock:
+ void set_cpu_sd_state_idle(void)
+ {
+ 	struct sched_domain *sd;
++	int cpu = smp_processor_id();
+ 
+ 	rcu_read_lock();
+-	sd = rcu_dereference_check_sched_domain(this_rq()->sd);
++	sd = rcu_dereference(per_cpu(sd_busy, cpu));
+ 
+ 	if (!sd || sd->nohz_idle)
+ 		goto unlock;
+ 	sd->nohz_idle = 1;
+ 
+-	for (; sd; sd = sd->parent)
+-		atomic_dec(&sd->groups->sgp->nr_busy_cpus);
++	atomic_dec(&sd->groups->sgp->nr_busy_cpus);
+ unlock:
+ 	rcu_read_unlock();
+ }
+@@ -6767,6 +6767,8 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+ {
+ 	unsigned long now = jiffies;
+ 	struct sched_domain *sd;
++	struct sched_group_power *sgp;
++	int nr_busy;
+ 
+ 	if (unlikely(idle_cpu(cpu)))
+ 		return 0;
+@@ -6792,22 +6794,22 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+ 		goto need_kick;
+ 
+ 	rcu_read_lock();
+-	for_each_domain(cpu, sd) {
+-		struct sched_group *sg = sd->groups;
+-		struct sched_group_power *sgp = sg->sgp;
+-		int nr_busy = atomic_read(&sgp->nr_busy_cpus);
++	sd = rcu_dereference(per_cpu(sd_busy, cpu));
+ 
+-		if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
+-			goto need_kick_unlock;
++	if (sd) {
++		sgp = sd->groups->sgp;
++		nr_busy = atomic_read(&sgp->nr_busy_cpus);
+ 
+-		if (sd->flags & SD_ASYM_PACKING
+-		    && (cpumask_first_and(nohz.idle_cpus_mask,
+-					  sched_domain_span(sd)) < cpu))
++		if (nr_busy > 1)
+ 			goto need_kick_unlock;
 -
- static u64 rdpmc(unsigned int counter)
- {
- 	unsigned int low, high;
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index e99eaed..ecaa582 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -177,7 +177,7 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist, int err, char *buf, s
- static inline unsigned int perf_mmap__read_head(struct perf_mmap *mm)
- {
- 	struct perf_event_mmap_page *pc = mm->base;
--	int head = pc->data_head;
-+	int head = ACCESS_ONCE(pc->data_head);
- 	rmb();
- 	return head;
- }
-@@ -190,7 +190,7 @@ static inline void perf_mmap__write_tail(struct perf_mmap *md,
- 	/*
- 	 * ensure all reads are done before we write the tail out.
- 	 */
--	/* mb(); */
-+	mb();
- 	pc->data_tail = tail;
- }
+-		if (!(sd->flags & (SD_SHARE_PKG_RESOURCES | SD_ASYM_PACKING)))
+-			break;
+ 	}
++
++	sd = rcu_dereference(per_cpu(sd_asym, cpu));
++
++	if (sd && (cpumask_first_and(nohz.idle_cpus_mask,
++				  sched_domain_span(sd)) < cpu))
++		goto need_kick_unlock;
++
+ 	rcu_read_unlock();
+ 	return 0;
  
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 4e650ac..88c85b2 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -623,6 +623,8 @@ DECLARE_PER_CPU(struct sched_domain *, sd_llc);
+ DECLARE_PER_CPU(int, sd_llc_size);
+ DECLARE_PER_CPU(int, sd_llc_id);
+ DECLARE_PER_CPU(struct sched_domain *, sd_numa);
++DECLARE_PER_CPU(struct sched_domain *, sd_busy);
++DECLARE_PER_CPU(struct sched_domain *, sd_asym);
+ 
+ struct sched_group_power {
+ 	atomic_t ref;
