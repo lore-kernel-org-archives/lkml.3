@@ -1,77 +1,36 @@
-Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819Ab3LAEhl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Nov 2013 23:37:41 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:23156 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab3LAEhk (ORCPT
+	id S1752211Ab3KFGVJ (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 6 Nov 2013 01:21:09 -0500
+Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.106]:27914
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750802Ab3KFGVH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Nov 2013 23:37:40 -0500
-Message-ID: <1385872653.17749.13.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [RFC patch 0/5] futex: Allow lockless empty check of hashbucket
- plist in futex_wake()
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Jason Low <jason.low2@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Darren Hart <dvhart@linux.intel.com>, Mike Galbraith <efault@gmx.de>,
-        Jeff Mahoney <jeffm@suse.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Scott Norton <scott.norton@hp.com>, Tom Vaden <tom.vaden@hp.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Waiman Long <Waiman.Long@hp.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Sat, 30 Nov 2013 20:37:33 -0800
-In-Reply-To: <20131128115946.GD13532@twins.programming.kicks-ass.net>
-References: <20131125203358.156292370@linutronix.de>
-	 <1385453551.12603.16.camel@buesod1.americas.hpqcorp.net>
-	 <20131126085256.GD789@laptop.programming.kicks-ass.net>
-	 <1385493911.25945.3.camel@buesod1.americas.hpqcorp.net>
-	 <1385499085.23083.7.camel@buesod1.americas.hpqcorp.net>
-	 <alpine.DEB.2.02.1311262206150.30673@ionos.tec.linutronix.de>
-	 <1385624678.22210.25.camel@buesod1.americas.hpqcorp.net>
-	 <20131128115946.GD13532@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Nov 2013 01:21:07 -0500
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: APPLY FOR LOAN NOW
+To: Recipients <sds@AngelaDawes239.onmicrosoft.com>
+From: HARTWELL LOAN <sds@AngelaDawes239.onmicrosoft.com>
+Date: Wed, 6 Nov 2013 11:34:21 +0530
+Reply-To: <rolandwilliams187@yahoo.com.sg>
+Message-ID: <0bf86588-56f6-4833-b04d-5c7e6d121bab@DB3PR07MB043.eurprd07.prod.outlook.com>
+X-Originating-IP: [115.242.38.235]
+X-ClientProxiedBy: SIXPR01CA002.apcprd01.prod.exchangelabs.com
+ (10.242.58.12) To DB3PR07MB043.eurprd07.prod.outlook.com (10.242.137.154)
+X-Forefront-PRVS: 0022134A87
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(189002)(199002)(19580395003)(19580405001)(83322001)(85306002)(80976001)(23676002)(87266001)(74876001)(325944007)(81342001)(69226001)(80022001)(83072001)(66066001)(81542001)(49866001)(50986001)(47776003)(76482001)(63696002)(4396001)(77096001)(56816003)(74316001)(50466002)(76796001)(76786001)(76576001)(54356001)(42186004)(81686001)(47736001)(65816001)(79102001)(51856001)(53256004)(46102001)(47976001)(31686002)(47446002)(74502001)(59766001)(77982001)(74662001)(54316002)(74706001)(56776001)(43066001)(33646001)(81816001)(74366001)(76176001)(62346009)(156063001);DIR:OUT;SFP:1501;SCL:5;SRVR:DB3PR07MB043;H:[115.242.38.235];CLIP:115.242.38.235;FPR:;RD:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: AngelaDawes239.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-11-28 at 12:59 +0100, Peter Zijlstra wrote:
-> On Wed, Nov 27, 2013 at 11:44:38PM -0800, Davidlohr Bueso wrote:
-> > How about both enlarging the table _and_ aligning the buckets? As you
-> > know, increasing the size of the table also benefits (particularly in
-> > larger systems) in having more spinlocks. So we reduce the amount of
-> > collisions and alleviate contention on the hb->lock. Btw, do you have
-> > any particular concerns about the larger hash table patch? 
-> 
-> My only concern was the amount of #ifdef.
-> 
-> Wouldn't something like the below also work?
-
-Below are the results for a workload that stresses the uaddr hashing for
-large amounts of futexes (just make waits fail the uval check, so no
-list handing overhead) on an 80 core, 1Tb NUMA system.
-
-+---------+--------------------+------------------------+-----------------------+-------------------------------+
-| threads | baseline (ops/sec) | aligned-only (ops/sec) | large table (ops/sec) | large table+aligned (ops/sec) |
-+---------+--------------------+------------------------+-----------------------+-------------------------------+
-|     512 |              32426 | 50531  (+55.8%)        | 255274  (+687.2%)     | 292553  (+802.2%)             |
-|     256 |              65360 | 99588  (+52.3%)        | 443563  (+578.6%)     | 508088  (+677.3%)             |
-|     128 |             125635 | 200075 (+59.2%)        | 742613  (+491.1%)     | 835452  (+564.9%)             |
-|      80 |             193559 | 323425 (+67.1%)        | 1028147 (+431.1%)     | 1130304 (+483.9%)             |
-|      64 |             247667 | 443740 (+79.1%)        | 997300  (+302.6%)     | 1145494 (+362.5%)             |
-|      32 |             628412 | 721401 (+14.7%)        | 965996  (+53.7%)      | 1122115 (+78.5%)              |
-+---------+--------------------+------------------------+-----------------------+-------------------------------+
-
-Baseline of course sucks compared to any other performance boost, and we
-get the best throughput when applying both optimizations, no surprise.
-We do particularly well for more than 32 threads, and the 'aligned-only'
-column nicely exemplifies the benefits of SMP aligning the buckets
-without considering the reduction in collisions.
-
-Thanks,
-Davidlohr
-
+This is to inform you that Trusted Financial Services is Granting loan facilities to everyone at three percent interest rate per annum. If you are interested in getting a loan from our company, reply this email: rolandwilliams187@yahoo.com.sg  with the below information:
+Name—-
+Amount—-
+Duration—-
+Phone number—
+Regards
+Trusted Financial Services 
