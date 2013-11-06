@@ -1,245 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab3KFNs1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 08:48:27 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:38348 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756734Ab3KFNsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 08:48:24 -0500
+	id S1756801Ab3KFNsh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 08:48:37 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:60796 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756780Ab3KFNse (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 08:48:34 -0500
 From: Zhi Yong Wu <zwu.kernel@gmail.com>
 To: viro@zeniv.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
         Chandra Seetharaman <sekharan@us.ibm.com>
-Subject: [PATCH v6 05/11] VFS hot tracking: Add an ioctl to get hot tracking information
-Date: Wed,  6 Nov 2013 21:45:38 +0800
-Message-Id: <1383745544-391-6-git-send-email-zwu.kernel@gmail.com>
+Subject: [PATCH v6 07/11] VFS hot tracking: Add a /proc interface to control memory usage
+Date: Wed,  6 Nov 2013 21:45:40 +0800
+Message-Id: <1383745544-391-8-git-send-email-zwu.kernel@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1383745544-391-1-git-send-email-zwu.kernel@gmail.com>
 References: <1383745544-391-1-git-send-email-zwu.kernel@gmail.com>
-X-TM-AS-MML: No
+X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110613-7182-0000-0000-00000904FC6E
+x-cbid: 13110613-1542-0000-0000-000002F825C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-FS_IOC_GET_HEAT_INFO: return a struct containing the various
-metrics collected in hot_freq_data structs, and also return a
-calculated data temperature based on those metrics.
-
-Optionally, retrieve the temperature from the hot data hash list
-instead of recalculating it.
+Introduce a /proc interface hot-mem-high-thresh and
+to cap the memory which is consumed by hot_inode_item
+and hot_range_item, and they will be in the unit of
+1M bytes.
 
 Signed-off-by: Chandra Seetharaman <sekharan@us.ibm.com>
 Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- fs/compat_ioctl.c                 |  5 +++
- fs/ioctl.c                        | 71 +++++++++++++++++++++++++++++++++++++++
- include/linux/hot_tracking.h      | 10 +++++-
- include/uapi/linux/hot_tracking.h | 33 ++++++++++++++++++
- 4 files changed, 118 insertions(+), 1 deletion(-)
- create mode 100644 include/uapi/linux/hot_tracking.h
+ fs/hot_tracking.c            | 29 +++++++++++++++++++++++++++++
+ fs/hot_tracking.h            | 23 +++++++++++++++++++++++
+ include/linux/hot_tracking.h |  3 +++
+ kernel/sysctl.c              |  7 +++++++
+ 4 files changed, 62 insertions(+)
 
-diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
-index 5d19acf..9026b8a 100644
---- a/fs/compat_ioctl.c
-+++ b/fs/compat_ioctl.c
-@@ -57,6 +57,7 @@
- #include <linux/i2c-dev.h>
- #include <linux/atalk.h>
- #include <linux/gfp.h>
-+#include <linux/hot_tracking.h>
- 
- #include <net/bluetooth/bluetooth.h>
- #include <net/bluetooth/hci.h>
-@@ -1399,6 +1400,9 @@ COMPATIBLE_IOCTL(TIOCSTART)
- COMPATIBLE_IOCTL(TIOCSTOP)
- #endif
- 
-+/*Hot data tracking*/
-+COMPATIBLE_IOCTL(FS_IOC_GET_HEAT_INFO)
-+
- /* fat 'r' ioctls. These are handled by fat with ->compat_ioctl,
-    but we don't want warnings on other file systems. So declare
-    them as compatible here. */
-@@ -1578,6 +1582,7 @@ asmlinkage long compat_sys_ioctl(unsigned int fd, unsigned int cmd,
- 	case FIBMAP:
- 	case FIGETBSZ:
- 	case FIONREAD:
-+	case FS_IOC_GET_HEAT_INFO:
- 		if (S_ISREG(file_inode(f.file)->i_mode))
- 			break;
- 		/*FALL THROUGH*/
-diff --git a/fs/ioctl.c b/fs/ioctl.c
-index fd507fb..b3693ea 100644
---- a/fs/ioctl.c
-+++ b/fs/ioctl.c
+diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+index 7a9bd4f..2c5a7fd 100644
+--- a/fs/hot_tracking.c
++++ b/fs/hot_tracking.c
 @@ -15,6 +15,7 @@
- #include <linux/writeback.h>
- #include <linux/buffer_head.h>
- #include <linux/falloc.h>
-+#include "hot_tracking.h"
+ #include <linux/sched.h>
+ #include "hot_tracking.h"
  
- #include <asm/ioctls.h>
++int sysctl_hot_mem_high_thresh __read_mostly = 0;
+ int sysctl_hot_update_interval __read_mostly = 150;
  
-@@ -537,6 +538,73 @@ static int ioctl_fsthaw(struct file *filp)
+ /* kmem_cache pointers for slab caches */
+@@ -32,6 +33,7 @@ static void hot_range_item_init(struct hot_range_item *hr,
+ 	hr->len = 1 << RANGE_BITS;
+ 	hr->hot_inode = he;
+ 	atomic_long_inc(&he->hot_root->hot_cnt);
++	hot_mem_limit_add(he->hot_root, sizeof(struct hot_range_item));
  }
  
- /*
-+ * Retrieve information about access frequency for the given inode.
-+ *
-+ * The temperature that is returned can be "live" -- that is, recalculated when
-+ * the ioctl is called -- or it can be returned from the map list, reflecting
-+ * the (possibly old) value that the system will use when considering files
-+ * for migration. This behavior is determined by hot_heat_info->live.
-+ */
-+static int ioctl_heat_info(struct file *file, void __user *argp)
+ static void hot_range_item_free_cb(struct rcu_head *head)
+@@ -55,6 +57,7 @@ static void hot_range_item_free(struct kref *kref)
+ 	spin_unlock(&root->m_lock);
+ 
+ 	atomic_long_dec(&root->hot_cnt);
++	hot_mem_limit_sub(root, sizeof(struct hot_range_item));
+ 	call_rcu(&hr->rcu, hot_range_item_free_cb);
+ }
+ 
+@@ -103,6 +106,8 @@ redo:
+ 				 * newly allocated item.
+ 				 */
+ 				atomic_long_dec(&he->hot_root->hot_cnt);
++				hot_mem_limit_sub(he->hot_root,
++						sizeof(struct hot_range_item));
+ 				kmem_cache_free(hot_range_item_cachep, hr_new);
+ 			}
+ 			spin_unlock(&he->i_lock);
+@@ -205,6 +210,7 @@ static void hot_inode_item_init(struct hot_inode_item *he,
+ 	he->hot_root = root;
+ 	spin_lock_init(&he->i_lock);
+ 	atomic_long_inc(&root->hot_cnt);
++	hot_mem_limit_add(root, sizeof(struct hot_inode_item));
+ }
+ 
+ static void hot_inode_item_free_cb(struct rcu_head *head)
+@@ -226,6 +232,7 @@ static void hot_inode_item_free(struct kref *kref)
+ 	hot_range_tree_free(he);
+ 
+ 	atomic_long_dec(&he->hot_root->hot_cnt);
++	hot_mem_limit_sub(he->hot_root, sizeof(struct hot_inode_item));
+ 	call_rcu(&he->rcu, hot_inode_item_free_cb);
+ }
+ 
+@@ -272,6 +279,8 @@ redo:
+ 				 * newly allocated item.
+ 				 */
+ 				atomic_long_dec(&root->hot_cnt);
++				hot_mem_limit_sub(root,
++						sizeof(struct hot_inode_item));
+ 				kmem_cache_free(hot_inode_item_cachep, he_new);
+ 			}
+ 			spin_unlock(&root->t_lock);
+@@ -534,6 +543,23 @@ static unsigned long hot_item_evict(struct hot_info *root, unsigned long work,
+ 	return freed;
+ }
+ 
++static void hot_mem_evict(struct hot_info *root)
 +{
-+	struct inode *inode = file_inode(file);
-+	struct hot_info *root = inode->i_sb->s_hot_root;
-+	struct hot_heat_info heat_info;
-+	struct hot_inode_item *he;
-+	int ret = 0;
++	unsigned long sum, thresh;
 +
-+	/* The 'live' field need to be read from the user space */
-+	if (copy_from_user((void *)&heat_info,
-+			argp,
-+			sizeof(struct hot_heat_info)) != 0) {
-+		ret = -EFAULT;
-+		goto err;
-+	}
++	if (sysctl_hot_mem_high_thresh == 0) 
++		return;
 +
-+	he = hot_inode_item_lookup(root, inode->i_ino);
-+	if (IS_ERR(he)) {
-+		/* we don't have any info on this file yet */
-+		ret = -ENODATA;
-+		goto err;
-+	}
++	sum = hot_mem_limit_sum(root);
++	/* Note: sysctl_** is in the unit of 1M bytes */
++	thresh = sysctl_hot_mem_high_thresh;
++	thresh *= 1024 * 1024;
++	if (sum <= thresh)
++		return;
 +
-+	heat_info.avg_delta_reads =
-+		(__u64) he->freq.avg_delta_reads;
-+	heat_info.avg_delta_writes =
-+		(__u64) he->freq.avg_delta_writes;
-+	heat_info.last_read_time =
-+	(__u64) timespec_to_ns(&he->freq.last_read_time);
-+	heat_info.last_write_time =
-+	(__u64) timespec_to_ns(&he->freq.last_write_time);
-+	heat_info.num_reads = (__u32) he->freq.nr_reads;
-+	heat_info.num_writes = (__u32) he->freq.nr_writes;
-+
-+	if (heat_info.live > 0) {
-+		/*
-+		 * got a request for live temperature,
-+		 * call hot_calc_temp() to recalculate
-+		 */
-+		heat_info.temp = hot_temp_calc(&he->freq);
-+	} else {
-+		/* not live temperature, get it from the map list */
-+		heat_info.temp = he->freq.last_temp;
-+	}
-+
-+	spin_lock(&root->t_lock);
-+	hot_inode_item_put(he);
-+	spin_unlock(&root->t_lock);
-+
-+	if (copy_to_user(argp, (void *)&heat_info,
-+			sizeof(struct hot_heat_info))) {
-+		ret = -EFAULT;
-+		goto err;
-+	}
-+
-+err:
-+	return ret;
++	hot_item_evict(root, sum - thresh, hot_mem_limit_sum);
 +}
 +
-+/*
-  * When you add any new common ioctls to the switches above and below
-  * please update compat_sys_ioctl() too.
-  *
-@@ -591,6 +659,9 @@ int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
- 	case FIGETBSZ:
- 		return put_user(inode->i_sb->s_blocksize, argp);
+ /*
+  * Every sync period we update temperatures for
+  * each hot inode item and hot range item for aging
+@@ -546,6 +572,8 @@ static void hot_update_worker(struct work_struct *work)
+ 	struct hot_inode_item *he;
+ 	struct rb_node *node;
  
-+	case FS_IOC_GET_HEAT_INFO:
-+		return ioctl_heat_info(filp, argp);
++	hot_mem_evict(root);
 +
- 	default:
- 		if (S_ISREG(inode->i_mode))
- 			error = file_ioctl(filp, cmd, arg);
+ 	rcu_read_lock();
+ 	node = root->hot_inode_tree.rb_node;
+ 	while (node) {
+@@ -753,6 +781,7 @@ int hot_track_init(struct super_block *sb)
+ 		goto err;
+ 	}
+ 
++	hot_mem_limit_init(root);
+ 	sb->s_hot_root = root;
+ 	sb->s_flags |= MS_HOTTRACK;
+ 
+diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
+index 6a6971e..4ee0b90 100644
+--- a/fs/hot_tracking.h
++++ b/fs/hot_tracking.h
+@@ -46,4 +46,27 @@ struct hot_inode_item *hot_inode_item_lookup(struct hot_info *root, u64 ino);
+ void hot_inode_item_unlink(struct inode *inode);
+ u32 hot_temp_calc(struct hot_freq *freq);
+ 
++/* Memory Tracking Functions. */
++static inline unsigned long hot_mem_limit_sum(struct hot_info *root)
++{
++	return atomic_long_read(&root->mem);
++}
++
++static inline void hot_mem_limit_sub(struct hot_info *root,
++				unsigned long count)
++{
++	atomic_long_sub(count, &root->mem);
++}
++
++static inline void hot_mem_limit_add(struct hot_info *root,
++				unsigned long count)
++{
++	atomic_long_add(count, &root->mem);
++}
++
++static inline void hot_mem_limit_init(struct hot_info *root)
++{
++	atomic_long_set(&root->mem, 0);
++}
++
+ #endif /* __HOT_TRACKING__ */
 diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
-index 67468a51..0ee9ca2 100644
+index 43df1b9..5c2c247 100644
 --- a/include/linux/hot_tracking.h
 +++ b/include/linux/hot_tracking.h
-@@ -15,11 +15,11 @@
- #ifndef _LINUX_HOTTRACK_H
- #define _LINUX_HOTTRACK_H
- 
--#include <linux/types.h>
- #include <linux/slab.h>
- #include <linux/rbtree.h>
- #include <linux/kref.h>
- #include <linux/fs.h>
-+#include <uapi/linux/hot_tracking.h>
- 
- #define MAP_BITS 8
- #define MAP_SIZE (1 << MAP_BITS)
-@@ -85,6 +85,14 @@ struct hot_info {
+@@ -83,10 +83,13 @@ struct hot_info {
+ 	struct workqueue_struct *update_wq;
+ 	struct delayed_work update_work;
  	struct shrinker hot_shrink;
++	atomic_long_t mem;
  };
  
-+/*
-+ * Hot data tracking ioctls:
-+ *
-+ * HOT_INFO - retrieve info on frequency of access
-+ */
-+#define FS_IOC_GET_HEAT_INFO _IOR('f', 17, \
-+			struct hot_heat_info)
-+
- extern int hot_track_init(struct super_block *sb);
- extern void hot_track_exit(struct super_block *sb);
- extern void hot_freqs_update(struct inode *inode, loff_t start,
-diff --git a/include/uapi/linux/hot_tracking.h b/include/uapi/linux/hot_tracking.h
-new file mode 100644
-index 0000000..09dfc00
---- /dev/null
-+++ b/include/uapi/linux/hot_tracking.h
-@@ -0,0 +1,33 @@
-+/*
-+ *  include/uapi/linux/hot_tracking.h
-+ *
-+ * This file has definitions for VFS hot tracking
-+ * structures etc.
-+ *
-+ * Copyright (C) 2013 IBM Corp. All rights reserved.
-+ * Written by Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public
-+ * License v2 as published by the Free Software Foundation.
-+ */
-+
-+#ifndef _UAPI_HOTTRACK_H
-+#define _UAPI_HOTTRACK_H
-+
-+#include <linux/types.h>
-+
-+struct hot_heat_info {
-+	__u8 live;
-+	__u8 resv[3];
-+	__u32 temp;
-+	__u64 avg_delta_reads;
-+	__u64 avg_delta_writes;
-+	__u64 last_read_time;
-+	__u64 last_write_time;
-+	__u32 num_reads;
-+	__u32 num_writes;
-+	__u64 future[4]; /* For future expansions */
-+};
-+
-+#endif /* _UAPI_HOTTRACK_H */
+ /* set how often to update temperatures (seconds) */
+ extern int sysctl_hot_update_interval;
++/* note: sysctl_** is in the unit of 1M bytes */
++extern int sysctl_hot_mem_high_thresh;
+ 
+ /*
+  * Hot data tracking ioctls:
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index e0b062a..fde8bc2 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1632,6 +1632,13 @@ static struct ctl_table fs_table[] = {
+ 		.extra1		= &pipe_min_size,
+ 	},
+ 	{
++		.procname       = "hot-mem-high-thresh",
++		.data           = &sysctl_hot_mem_high_thresh,
++		.maxlen         = sizeof(int),
++		.mode           = 0644,
++		.proc_handler   = proc_dointvec,
++	},
++	{
+ 		.procname	= "hot-update-interval",
+ 		.data		= &sysctl_hot_update_interval,
+ 		.maxlen		= sizeof(int),
 -- 
 1.7.11.7
 
