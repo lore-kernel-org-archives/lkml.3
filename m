@@ -1,181 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756305Ab3KFJbw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 04:31:52 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49140 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756154Ab3KFJbt (ORCPT
+	id S1756182Ab3KFJeW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 04:34:22 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:55571 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755921Ab3KFJeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 04:31:49 -0500
-Date: Wed, 6 Nov 2013 10:31:31 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH] mm: create a separate slab for page->ptl allocation
-Message-ID: <20131106093131.GU28601@twins.programming.kicks-ass.net>
-References: <1382442839-7458-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20131105150145.734a5dd5b5d455800ebfa0d3@linux-foundation.org>
- <20131105224217.GC20167@shutemov.name>
- <20131105155619.021f32eba1ca8f15a73ed4c9@linux-foundation.org>
- <20131105231310.GE20167@shutemov.name>
+	Wed, 6 Nov 2013 04:34:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131105231310.GE20167@shutemov.name>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CACRpkdZ7pwGQnK0NN4tybLUNdMxu5WVaGX8Dqu+kMgVBuyF16w@mail.gmail.com>
+References: <1383406775-14902-1-git-send-email-prabhakar.csenng@gmail.com>
+ <1383406775-14902-2-git-send-email-prabhakar.csenng@gmail.com> <CACRpkdZ7pwGQnK0NN4tybLUNdMxu5WVaGX8Dqu+kMgVBuyF16w@mail.gmail.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Wed, 6 Nov 2013 15:03:55 +0530
+Message-ID: <CA+V-a8tE3bxsHMSh2i3Xeq=kJUjmxTjcU25Kuka5e_iXeB--pQ@mail.gmail.com>
+Subject: Re: [PATCH v4 1/6] gpio: davinci: Fixed a check for unbanked gpio
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Sekhar Nori <nsekhar@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alex Elder <alex.elder@linaro.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 01:13:11AM +0200, Kirill A. Shutemov wrote:
-> I would like to get rid of __ptlock_alloc()/__ptlock_free() too, but I
-> don't see a way within C: we need to know sizeof(spinlock_t) on
-> preprocessor stage.
-> 
-> We can have a hack on kbuild level: write small helper program to find out
-> sizeof(spinlock_t) before start building and turn it into define.
-> But it's overkill from my POV. And cross-compilation will be a fun.
+Hi Linus,
 
-Ah, I just remembered, we have such a thing!
+On Tue, Nov 5, 2013 at 6:09 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Sat, Nov 2, 2013 at 4:39 PM, Lad, Prabhakar
+> <prabhakar.csengg@gmail.com> wrote:
+>
+>> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+>>
+>> This patch fixes the check for the offset in
+>> gpio_to_irq_unbanked() function.
+>>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>
+> Is this a regression that should go in right now?
+>
+Yes it needs too.
 
----
-Subject: mm: Properly separate the bloated ptl from the regular case
-
-Use kernel/bounds.c to convert build-time spinlock_t size into a
-preprocessor symbol and apply that to properly separate the page::ptl
-situation.
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- include/linux/mm.h       | 24 +++++++++++++-----------
- include/linux/mm_types.h |  9 +++++----
- kernel/bounds.c          |  2 ++
- mm/memory.c              | 11 +++++------
- 4 files changed, 25 insertions(+), 21 deletions(-)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index d0339741b6ce..6ab26704671b 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1317,27 +1317,29 @@ static inline pmd_t *pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long a
- #endif /* CONFIG_MMU && !__ARCH_HAS_4LEVEL_HACK */
- 
- #if USE_SPLIT_PTE_PTLOCKS
--bool __ptlock_alloc(struct page *page);
--void __ptlock_free(struct page *page);
-+#if BLOATED_SPINLOCKS
-+extern bool ptlock_alloc(struct page *page);
-+extern void ptlock_free(struct page *page);
-+
-+static inline spinlock_t *ptlock_ptr(struct page *page)
-+{
-+	return page->ptl;
-+}
-+#else /* BLOATED_SPINLOCKS */
- static inline bool ptlock_alloc(struct page *page)
- {
--	if (sizeof(spinlock_t) > sizeof(page->ptl))
--		return __ptlock_alloc(page);
- 	return true;
- }
-+
- static inline void ptlock_free(struct page *page)
- {
--	if (sizeof(spinlock_t) > sizeof(page->ptl))
--		__ptlock_free(page);
- }
- 
- static inline spinlock_t *ptlock_ptr(struct page *page)
- {
--	if (sizeof(spinlock_t) > sizeof(page->ptl))
--		return (spinlock_t *) page->ptl;
--	else
--		return (spinlock_t *) &page->ptl;
-+	return &page->ptl;
- }
-+#endif /* BLOATED_SPINLOCKS */
- 
- static inline spinlock_t *pte_lockptr(struct mm_struct *mm, pmd_t *pmd)
- {
-@@ -1354,7 +1356,7 @@ static inline bool ptlock_init(struct page *page)
- 	 * slab code uses page->slab_cache and page->first_page (for tail
- 	 * pages), which share storage with page->ptl.
- 	 */
--	VM_BUG_ON(page->ptl);
-+	VM_BUG_ON(*(unsigned long *)&page->ptl);
- 	if (!ptlock_alloc(page))
- 		return false;
- 	spin_lock_init(ptlock_ptr(page));
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 5bee515c4505..f706743b63bb 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -155,10 +155,11 @@ struct page {
- 						 * system if PG_buddy is set.
- 						 */
- #if USE_SPLIT_PTE_PTLOCKS
--		unsigned long ptl; /* It's spinlock_t if it fits to long,
--				    * otherwise it's pointer to dynamicaly
--				    * allocated spinlock_t.
--				    */
-+#if BLOATED_SPINLOCKS
-+		spinlock_t *ptl;
-+#else
-+		spinlock_t ptl;
-+#endif
- #endif
- 		struct kmem_cache *slab_cache;	/* SL[AU]B: Pointer to slab */
- 		struct page *first_page;	/* Compound tail pages */
-diff --git a/kernel/bounds.c b/kernel/bounds.c
-index e8ca97b5c386..5982437eca2c 100644
---- a/kernel/bounds.c
-+++ b/kernel/bounds.c
-@@ -11,6 +11,7 @@
- #include <linux/kbuild.h>
- #include <linux/page_cgroup.h>
- #include <linux/log2.h>
-+#include <linux/spinlock.h>
- 
- void foo(void)
- {
-@@ -21,5 +22,6 @@ void foo(void)
- #ifdef CONFIG_SMP
- 	DEFINE(NR_CPUS_BITS, ilog2(CONFIG_NR_CPUS));
- #endif
-+	DEFINE(BLOATED_SPINLOCKS, sizeof(spinlock_t) > sizeof(int));
- 	/* End of constants */
- }
-diff --git a/mm/memory.c b/mm/memory.c
-index 6f7bdee617e2..8356eac27d0a 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -4271,21 +4271,20 @@ void copy_user_huge_page(struct page *dst, struct page *src,
- }
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE || CONFIG_HUGETLBFS */
- 
--#if USE_SPLIT_PTE_PTLOCKS
--bool __ptlock_alloc(struct page *page)
-+#if USE_SPLIT_PTE_PTLOCKS && BLOATED_SPINLOCKS
-+bool ptlock_alloc(struct page *page)
- {
- 	spinlock_t *ptl;
- 
- 	ptl = kmalloc(sizeof(spinlock_t), GFP_KERNEL);
- 	if (!ptl)
- 		return false;
--	page->ptl = (unsigned long)ptl;
-+	page->ptl = ptl;
- 	return true;
- }
- 
--void __ptlock_free(struct page *page)
-+void ptlock_free(struct page *page)
- {
--	if (sizeof(spinlock_t) > sizeof(page->ptl))
--		kfree((spinlock_t *)page->ptl);
-+	kfree(page->ptl);
- }
- #endif
+Regards,
+--Prabhakar Lad
