@@ -1,71 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab3KFGkz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 01:40:55 -0500
-Received: from mga02.intel.com ([134.134.136.20]:46523 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab3KFGky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 01:40:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="430523999"
-Subject: [PATCH] devres: Freeing the drs after all release() are called
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: dmitry.torokhov@gmail.com, tj@kernel.org, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Nov 2013 14:40:18 +0800
-Message-ID: <1383720018.3650.37.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752418Ab3KFGmc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 01:42:32 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:45766 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab3KFGmb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 01:42:31 -0500
+X-AuditID: 9c93016f-b7bc7ae0000010eb-95-5279e4d5321d
+Date: Wed, 6 Nov 2013 15:43:02 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, zhang.mingjun@linaro.org,
+        m.szyprowski@samsung.com, haojian.zhuang@linaro.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mingjun Zhang <troy.zhangmingjun@linaro.org>
+Subject: Re: [PATCH] mm: cma: free cma page to buddy instead of being cpu hot
+ page
+Message-ID: <20131106064302.GC30958@bbox>
+References: <1382960569-6564-1-git-send-email-zhang.mingjun@linaro.org>
+ <20131029093322.GA2400@suse.de>
+ <20131105134448.7677d6febbfff4721373be4b@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131105134448.7677d6febbfff4721373be4b@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Andrew,
 
-In release_nodes(), it will call dr->node.release() and kfree
-dr one by one.
+On Tue, Nov 05, 2013 at 01:44:48PM -0800, Andrew Morton wrote:
+> On Tue, 29 Oct 2013 09:33:23 +0000 Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > On Mon, Oct 28, 2013 at 07:42:49PM +0800, zhang.mingjun@linaro.org wrote:
+> > > From: Mingjun Zhang <troy.zhangmingjun@linaro.org>
+> > > 
+> > > free_contig_range frees cma pages one by one and MIGRATE_CMA pages will be
+> > > used as MIGRATE_MOVEABLE pages in the pcp list, it causes unnecessary
+> > > migration action when these pages reused by CMA.
+> > > 
+> > > Signed-off-by: Mingjun Zhang <troy.zhangmingjun@linaro.org>
+> > > ---
+> > >  mm/page_alloc.c |    3 ++-
+> > >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > index 0ee638f..84b9d84 100644
+> > > --- a/mm/page_alloc.c
+> > > +++ b/mm/page_alloc.c
+> > > @@ -1362,7 +1362,8 @@ void free_hot_cold_page(struct page *page, int cold)
+> > >  	 * excessively into the page allocator
+> > >  	 */
+> > >  	if (migratetype >= MIGRATE_PCPTYPES) {
+> > > -		if (unlikely(is_migrate_isolate(migratetype))) {
+> > > +		if (unlikely(is_migrate_isolate(migratetype))
+> > > +			|| is_migrate_cma(migratetype))
+> > >  			free_one_page(zone, page, 0, migratetype);
+> > >  			goto out;
+> > 
+> > This slightly impacts the page allocator free path for a marginal gain
+> > on CMA which are relatively rare allocations. There is no obvious
+> > benefit to this patch as I expect CMA allocations to flush the PCP lists
+> > when a range of pages have been isolated and migrated. Is there any
+> > measurable benefit to this patch?
+> 
+> The added overhead is pretty small - just a comparison of a local with
+> a constant.  And that cost is not incurred for MIGRATE_UNMOVABLE,
+> MIGRATE_RECLAIMABLE and MIGRATE_MOVABLE, which are the common cases
+> (yes?).
 
-But sometimes the previous dr maybe be used by next .release(),
-such as:
-[50314.855534]  [<c12b172f>] ? synchronize_irq+0x3f/0xb0
-[50314.861193]  [<c12b18e9>] __free_irq+0x149/0x200
-[50314.866367]  [<c12b19e3>] free_irq+0x43/0xa0
-[50314.871152]  [<c12b4864>] devm_irq_release+0x14/0x20
-[50314.876713]  [<c169e806>] release_nodes+0x136/0x1b0
-[50314.882178]  [<c169ee79>] devres_release_all+0x39/0x60
-[50314.887935]  [<c169b411>] __device_release_driver+0x71/0xd0
+True but bloat code might affect icache so we should be careful.
+And what Mel has a concern is about zone->lock, which would be more contended.
+I agree his opinion.
 
-the free_irq() will sync the last irq handling, which maybe use
-freed dr, then it will cause memory corruption.
+In addition, I think the gain is marginal because normally CMA is big range
+so free_contig_range in dma release path will fill per_cpu_pages with freed pages
+easily so it could drain per_cpu_pages frequently so race which steal page from
+per_cpu_pages is not big, I guess.
 
-Here split the dr kfreeing actions after all dr->node.release().
+Morever, we could change free_contig_range with batch_free_page which would
+be useful for other cases if they want to free many number of pages
+all at once.
 
-Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
----
- drivers/base/devres.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+The bottom line is we need *number and real scenario* for that.
 
-diff --git a/drivers/base/devres.c b/drivers/base/devres.c
-index 507379e..66ff0be 100644
---- a/drivers/base/devres.c
-+++ b/drivers/base/devres.c
-@@ -490,9 +490,11 @@ static int release_nodes(struct device *dev, struct list_head *first,
- 	list_for_each_entry_safe_reverse(dr, tmp, &todo, node.entry) {
- 		devres_log(dev, &dr->node, "REL");
- 		dr->node.release(dev, dr->data);
--		kfree(dr);
- 	}
- 
-+	list_for_each_entry_safe_reverse(dr, tmp, &todo, node.entry)
-+		kfree(dr);
-+
- 	return cnt;
- }
- 
+If it's really needed, after merging this patch, we could enhance it with
+batch_free_page so we could solve Mel's concern, too.
+
+> 
+> This thread is a bit straggly and inconclusive, but it sounds to me
+> that the benefit to CMA users is quite large and the cost to others is
+> small, so I'm inclined to run with the original patch.  Someone stop me
+> if that's wrong.
+
+I want you to stop until we see the number.
+
+> 
+> (we could speed up some of the migratetype tests if the MIGRATE_foo
+> constants were converted to bitfields.  The above test becomes "if
+> (migratetype & (MIGRATE_CMA|MIGRATE_ISOLATE))").
+> 
+> (why is is_migrate_cma() implemented as a macro in mmzone.h while
+> is_migrate_isolate() is an inline in page-isolation.h?)
+
+Just preference?
+I like inline than macro and that's why is_migrate_isolate was inline.
+
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.7.9.5
-
-
-
+Kind regards,
+Minchan Kim
