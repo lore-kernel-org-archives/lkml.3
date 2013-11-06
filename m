@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166Ab3KFTb7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 14:31:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49323 "EHLO mx1.redhat.com"
+	id S1755851Ab3KFTcS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 14:32:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17154 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932141Ab3KFTbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 14:31:55 -0500
-Date: Wed, 6 Nov 2013 20:33:11 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Brad Spengler <spender@grsecurity.net>
-Cc: Christian Seiler <christian@iwakd.de>, lkml <linux-kernel@vger.kernel.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Lxc development list <lxc-devel@lists.sourceforge.net>
-Subject: Re: CLONE_PARENT after setns(CLONE_NEWPID)
-Message-ID: <20131106193311.GA18720@redhat.com>
-References: <20131106180232.GA8980@ac100>
+	id S1755444Ab3KFTcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 14:32:16 -0500
+Message-ID: <527A9903.3050700@redhat.com>
+Date: Wed, 06 Nov 2013 20:31:15 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131106180232.GA8980@ac100>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Andrey Vagin <avagin@openvz.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alexei Starovoitov <ast@plumgrid.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org.#.3.12
+Subject: Re: [PATCH] net: don't forget to free sk_filter
+References: <1383753106-26978-1-git-send-email-avagin@openvz.org>  <527A9638.4020404@redhat.com> <1383766098.21999.2.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1383766098.21999.2.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Serge,
-
-On 11/06, Serge Hallyn wrote:
+On 11/06/2013 08:28 PM, Eric Dumazet wrote:
+> On Wed, 2013-11-06 at 20:19 +0100, Daniel Borkmann wrote:
 >
-> Hi Oleg,
+>> When you send v2 with Alexei's feedback, please also be more specific
+>> in your subject like "net: x86: bpf: don't forget to free sk_filter"
+>> or the like. Also it's enough to say 'This memory leak was introduced
+>> by commit d45ed4a4e3 ("net: fix unsafe set_memory_rw from softirq")'
+>> instead of copying the whole log. Anyways, for v2 with feedback included
+>> then:
 >
-> commit 40a0d32d1eaffe6aac7324ca92604b6b3977eb0e :
-> "fork: unify and tighten up CLONE_NEWUSER/CLONE_NEWPID checks"
-> breaks lxc-attach in 3.12.  That code forks a child which does
-> setns() and then does a clone(CLONE_PARENT).  That way the
-> grandchild can be in the right namespaces (which the child was
-> not) and be a child of the original task, which is the monitor.
+> Actually, the new way [1] of doing this would be to use the 'Fixes:' tag
+> as in :
+>
+> Fixes: <12 digits SHA1> ("net: fix unsafe set_memory_rw from softirq")
+>
+> [1] As discussed at last Kernel Summit
+>
+> Example in
+>
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6920a1bd037374a632d585de127b6f945199dcb8
 
-Thanks...
-
-Yes, this is what 40a0d32d1ea explicitly tries to disallow.
-
-> Is there a real danger in allowing CLONE_PARENT
-> when current->nsproxy->pidns_for_children is not our pidns,
-> or was this done out of an "over-abundance of caution"?
-
-I am not sure... This all was based on the long discussion, and
-it was decided that the CLONE_PARENT check should be consistent
-wrt CLONE_NEWPID and pidns_for_children != task_active_pid_ns().
-
-> Can we
-> safely revert that new extra check?
-
-Well, usually we do not break user-space, but I am not sure about
-this case...
-
-Eric, Andy, what do you think?
-
-And if we allow CLONE_PARENT when ->pidns_for_children was changed,
-should we also allow, say, CLONE_NEWPID && CLONE_PARENT ?
-
-Oleg.
-
+Cool, good to know, that's even better!
