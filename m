@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932456Ab3KFLt6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 06:49:58 -0500
-Received: from mail.eperm.de ([89.247.134.16]:43434 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932177Ab3KFLtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 06:49:55 -0500
-From: Stephan Mueller <smueller@chronox.de>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Pavel Machek <pavel@ucw.cz>, sandy harris <sandyinchina@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        Nicholas Mc Guire <der.herr@hofr.at>
-Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
-Date: Wed, 06 Nov 2013 12:49:45 +0100
-Message-ID: <4306229.ErfOL470s2@tauon>
-User-Agent: KMail/4.11.2 (Linux/3.11.6-200.fc19.x86_64; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <1762585.cs6mj77ady@tauon>
-References: <2579337.FPgJGgHYdz@tauon> <20131103124135.GB32091@thunk.org> <1762585.cs6mj77ady@tauon>
+	id S932476Ab3KFLuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 06:50:10 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:54287 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932177Ab3KFLuI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 06:50:08 -0500
+Date: Wed, 6 Nov 2013 12:50:04 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH -tip v2 3/3] [BUGFIX] kprobes: Prohibit probing on
+ func_ptr_is_kernel_text
+Message-ID: <20131106115004.GB20249@gmail.com>
+References: <20131101112530.14657.87835.stgit@kbuild-fedora.novalocal>
+ <20131101112537.14657.88496.stgit@kbuild-fedora.novalocal>
+ <20131104210053.76c37210@gandalf.local.home>
+ <20131105060901.GA29936@gmail.com>
+ <5278973A.1010705@hitachi.com>
+ <20131105070537.GA2007@gmail.com>
+ <5278D89B.1070806@hitachi.com>
+ <20131106060737.GC24044@gmail.com>
+ <527A1B50.6080408@hitachi.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <527A1B50.6080408@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 5. November 2013, 13:20:57 schrieb Stephan Mueller:
 
-Hi Ted,
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
->Am Sonntag, 3. November 2013, 07:41:35 schrieb Theodore Ts'o:
->
->Hi Theodore,
->
->>On Sun, Nov 03, 2013 at 08:20:34AM +0100, Stephan Mueller wrote:
->>
->>Sandy Harris pointed out a very good paper that I would definitely
->>recommend that people read:
->>
->>http://lwn.net/images/conf/rtlws11/random-hardware.pdf
->>
->>It basically describes some efforts made in 2009 by folks to do
->>exactly the sort of experiments I was advocating.  What I actually
->
->I am wondering whether you have seen my last measurements where I
->effectively performed the tests you were asking for: disabling all
->possible CPU features and selectively enabling them.
->
->The tests described in the above mentioned documents and much more are
->all already in the test suite and test results I present here.
+> (2013/11/06 15:07), Ingo Molnar wrote:
+> > 
+> > * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> > 
+> >>>> [...] I hope to build the list when the kernel build time if 
+> >>>> possible... Would you have any idea to classify some annotated(but no 
+> >>>> side-effect) functions?
+> >>>
+> >>> The macro magic I can think of would need to change the syntax of the 
+> >>> function definition - for example that is how the SYSCALL_DEFINE*() 
+> >>> macros work.
+> >>
+> >> Would you mean something like the below macro? :)
+> >>
+> >> NOKPROBE_SYMBOL(int, func_ptr_is_kernel_text)(void *ptr)
+> > 
+> > I think this is rather ugly and harder to maintain. The whole _point_ of 
+> > such annotations is to make them 'easy on the eyes', to make it easy to 
+> > skip a 'noinline', 'noprobe' or 'notrace' tag.
+> > 
+> > Using something like NOKPROBE_SYMBOL() makes the whole construct ugly and 
+> > attention seeking.
+> 
+> Hmm, by the way how about Steven's idea? A macro like EXPORT_SYMBOL? At 
+> least for kprobes_blacklist, which is defined/maintained in kprobes.c 
+> for some symbols(*), that is useful for updating it because we can put 
+> it near the function definition.
 
-After this comment, I got back to one of the authors of the cited paper 
-(he is in CC).
+Dunno, it feels a bit fragile to me.
 
-Here is a quote from his answer to my question whether he was able to 
-identify the root cause:
+Thanks,
 
-"its inherent in the microtiming of Hardware and there is nothing you 
-can do about it if you want the root cause is quantum physics"
-
-That means, no matter how much CPU support you disable, you will always 
-have some jitter -- as I showed in my latest test results in appendix 
-F.46 of [1]. This statement is supported by my tests on even 
-microkernels which have no other job running than my test application. 
-Furthermore, as we see that phenomenon on every tested CPU type on every 
-tested operating system with every tested compiler, I am wondering what 
-else argument is needed to have this solution considered.
-
-[1] http://www.chronox.de/jent/doc/CPU-Jitter-NPTRNG.html
-
-Ciao
-Stephan
+	Ingo
