@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab3KFQpo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 11:45:44 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:30506 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754967Ab3KFQpc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 11:45:32 -0500
-Date: Wed, 6 Nov 2013 11:45:30 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 4/7] arm64: introduce
- aarch64_insn_gen_{nop|branch_imm}() helper functions
-Message-ID: <20131106114530.76b63b05@gandalf.local.home>
-In-Reply-To: <20131030004840.GC25346@mudshark.cambridge.arm.com>
-References: <1382109602-27432-1-git-send-email-liuj97@gmail.com>
-	<1382109602-27432-5-git-send-email-liuj97@gmail.com>
-	<20131030004840.GC25346@mudshark.cambridge.arm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	id S1751236Ab3KFQsM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 11:48:12 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:24930 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751361Ab3KFQsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 11:48:09 -0500
+X-IronPort-AV: E=Sophos;i="4.93,647,1378857600"; 
+   d="scan'208";a="71238851"
+Date: Wed, 6 Nov 2013 16:46:31 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Grant Likely <grant.likely@linaro.org>
+CC: Rob Herring <robherring2@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <stefano.stabellini@eu.citrix.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH] of: set dma_mask to point to coherent_dma_mask
+In-Reply-To: <20131102180724.D8FC5C40F02@trevor.secretlab.ca>
+Message-ID: <alpine.DEB.2.02.1311061642270.26077@kaball.uk.xensource.com>
+References: <1383109522-6879-1-git-send-email-robherring2@gmail.com> <20131102180724.D8FC5C40F02@trevor.secretlab.ca>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Oct 2013 00:48:40 +0000
-Will Deacon <will.deacon@arm.com> wrote:
-
-
-> > +}
-> > +
-> > +static __always_inline u32 aarch64_insn_gen_nop(void)
-> > +{
-> > +	return aarch64_insn_gen_hint(AARCH64_INSN_HINT_NOP);
-> > +}
+On Sat, 2 Nov 2013, Grant Likely wrote:
+> On Wed, 30 Oct 2013 00:05:22 -0500, Rob Herring <robherring2@gmail.com> wrote:
+> > From: Rob Herring <rob.herring@calxeda.com>
+> > 
+> > Platform devices created by DT code don't initialize dma_mask pointer to
+> > anything. Set it to coherent_dma_mask by default if the architecture
+> > code has not set it.
+> > 
+> > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
 > 
-> Either use plain old `inline' or write these as preprocessor macros.
-> 
+> I believe this is okay. I haven't done any testing to back up that
+> opinion though.
 
-I'm curious to why you say that? Preprocessor macros are rather ugly,
-and in x86 we use "__always_inline" quite liberally.
+Tested-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
--- Steve
+ 
+> > I think this is at least part of what is needed to fix dma_mask issue
+> > raised by Stefano [1]. Things should work AFAICT with just this, but
+> > I suppose the xgmac driver needs to set the mask as well (not relying
+> > on the default), but some pointing the dma_mask to a valid value is
+> > needed first.
+> > 
+> > Rob
+> > 
+> > [1] http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg528236.html
+> > 
+> >  drivers/of/platform.c | 2 ++
+> >  1 file changed, 2 insertions(+)
+> > 
+> > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> > index f6dcde2..fce088e 100644
+> > --- a/drivers/of/platform.c
+> > +++ b/drivers/of/platform.c
+> > @@ -215,6 +215,8 @@ static struct platform_device *of_platform_device_create_pdata(
+> >  	dev->archdata.dma_mask = 0xffffffffUL;
+> >  #endif
+> >  	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+> > +	if (!dev->dev.dma_mask)
+> > +		dev->dev.dma_mask = &dev->dev.coherent_dma_mask;
+> >  	dev->dev.bus = &platform_bus_type;
+> >  	dev->dev.platform_data = platform_data;
+> >  
