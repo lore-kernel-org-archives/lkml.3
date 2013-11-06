@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751607Ab3KFW30 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 17:29:26 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:56899 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab3KFW3Y (ORCPT
+	id S1751685Ab3KFWan (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 17:30:43 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:32787 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab3KFWal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 17:29:24 -0500
-From: Paul Moore <paul@paul-moore.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: error when fetching the selinux tree
-Date: Wed, 06 Nov 2013 17:29:14 -0500
-Message-ID: <1869239.Kz8bBo099V@sifl>
-User-Agent: KMail/4.11.2 (Linux/3.10.13-gentoo; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <20131107092709.09c9e76757362bad1f1dd885@canb.auug.org.au>
-References: <20131107092709.09c9e76757362bad1f1dd885@canb.auug.org.au>
+	Wed, 6 Nov 2013 17:30:41 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <CAGXu5jJreo001uBLV8oAgR_Z2WZK2qtH8YfvriQJVAQ4SgdRzw@mail.gmail.com>
+References: <CALCETrUt7Ojh5Yy4KYgBPj_wBr=fzKKJ=OOgGP9BtXoKrr9QnA@mail.gmail.com>
+	<CAGXu5jJreo001uBLV8oAgR_Z2WZK2qtH8YfvriQJVAQ4SgdRzw@mail.gmail.com>
+Date: Wed, 6 Nov 2013 16:30:40 -0600
+Message-ID: <CAHCPf3umr-v+2oWyjG3F0W=+qu_NoXVVSN95RAJdrjaLxWAfow@mail.gmail.com>
+Subject: Re: ARM audit, seccomp, etc are broken wrt OABI syscalls
+From: Matt Sealey <neko@bakuhatsu.net>
+To: Kees Cook <keescook@chromium.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, Paul Moore <paul@paul-moore.com>,
+        Richard Weinberger <richard@nod.at>,
+        libseccomp-discuss@lists.sourceforge.net,
+        Will Drewry <wad@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 07, 2013 09:27:09 AM Stephen Rothwell wrote:
-> Hi Paul,
-> 
-> Fetching the selinux tree
-> (git://git.infradead.org/users/pcmoore/selinux#master) produces this
-> error:
-> 
-> fatal: Couldn't find remote ref refs/heads/master
+On Tue, Nov 5, 2013 at 6:14 PM, Kees Cook <keescook@chromium.org> wrote:
+>
+> Alternatively, CONFIG_SECCOMP_FILTER could depend on
+> !CONFIG_OABI_COMPAT. That seems like the least work, given the desire
+> to kill OABI in the real world. (Though I would note that at least
+> Ubuntu's ARM kernels build with CONFIG_OABI_COMPAT; Chrome OS does
+> not.)
 
-Sorry about that, a case of bad timing.  I'm doing some cleanup right now, it 
-should be back up shortly.  That said, it should be empty today so no worries 
-if you want to skip it today.
+I think CONFIG_OABI_COMPAT probably leaked in from the original
+configurations of the kernel taken from Debian.
 
--Paul
+There were several big decisions they made (build for ARMv5 soft
+float, then switch to ARMv7 softfp, then switch to ARMv7 hardfp, then
+switch to using THUMB2 kernels) which would have just broken OABI
+binaries at every step of the way since they had some subtle
+implications in kernel configuration (note: Ubuntu have never, ever
+enabled FPA emulation in the kernel, and all Debian's OABI userspace
+is built for FPA, for example. A good chunk of the original Debian arm
+port probably would just pitch a SIGILL if you ran it under an Ubuntu
+kernel).
 
--- 
-paul moore
-www.paul-moore.com
+I would ignore anyone who enables it in a distribution, since they
+probably weren't intending to enable it in the first place, and never
+noticed the.. what.. 3-4KiB it adds to the kernel?
 
+Matt Sealey <neko@bakuhatsu.net>
