@@ -1,66 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755040Ab3KFQPb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 11:15:31 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:63495 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab3KFQPG (ORCPT
+	id S1754761Ab3KFQRi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 11:17:38 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:31456 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750755Ab3KFQRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 11:15:06 -0500
-Message-ID: <527A6B08.5020302@gmail.com>
-Date: Wed, 06 Nov 2013 10:15:04 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Robert Richter <rric@kernel.org>, linux-edac@vger.kernel.org
-Subject: Re: [PATCH] edac, highbank: remove dependency on ARCH_HIGHBANK
-References: <1383708352-19527-1-git-send-email-robherring2@gmail.com> <20131106142025.GB16072@x1.alien8.de>
-In-Reply-To: <20131106142025.GB16072@x1.alien8.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	Wed, 6 Nov 2013 11:17:36 -0500
+Date: Wed, 6 Nov 2013 11:17:32 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Geyslan G. Bem" <geyslan@gmail.com>
+Cc: kernel-br@googlegroups.com, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: Re: [PATCH 2/2] tracing: fix referencing after memory freeing and
+ refactors code
+Message-ID: <20131106111732.5f4593f5@gandalf.local.home>
+In-Reply-To: <1382129982-9668-2-git-send-email-geyslan@gmail.com>
+References: <1382129982-9668-1-git-send-email-geyslan@gmail.com>
+	<1382129982-9668-2-git-send-email-geyslan@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2013 08:20 AM, Borislav Petkov wrote:
-> On Tue, Nov 05, 2013 at 09:25:52PM -0600, Rob Herring wrote:
->> From: Rob Herring <rob.herring@calxeda.com>
->>
->> In order to enable on arm64 and improve the build coverage, remove the
->> dependency on ARCH_HIGHBANK.
->>
->> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
->> Cc: Doug Thompson <dougthompson@xmission.com>
->> Cc: Robert Richter <rric@kernel.org>
->> Cc: linux-edac@vger.kernel.org
->> ---
->>  drivers/edac/Kconfig | 4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
->> index 878f090..fc8aaaf 100644
->> --- a/drivers/edac/Kconfig
->> +++ b/drivers/edac/Kconfig
->> @@ -328,14 +328,14 @@ config EDAC_TILE
->>  
->>  config EDAC_HIGHBANK_MC
->>  	tristate "Highbank Memory Controller"
->> -	depends on EDAC_MM_EDAC && ARCH_HIGHBANK
->> +	depends on EDAC_MM_EDAC
+Sorry for the late review, I was busy getting ready for kernel summit
+and then traveling too much.
+
+
+On Fri, 18 Oct 2013 17:59:42 -0300
+"Geyslan G. Bem" <geyslan@gmail.com> wrote:
+
+> In 'system_tr_open()':
+> Fix possible 'dir' assignment after freeing it.
 > 
-> Please, no, this'll get enabled on other arches where this driver is
-> simply N/A. It should only depend on the ARM arches it supports.
+> In both functions:
+> Restructures logic conditions testing 'tracing_is_disabled()'
+> return before the others tests.
+> Centralizes the exiting in accordance to Coding Style, Chapter 7.
+> 
+> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+> ---
+>  kernel/trace/trace_events.c | 46 +++++++++++++++++++++++----------------------
+>  1 file changed, 24 insertions(+), 22 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+> index 368a4d5..0f56ebf 100644
+> --- a/kernel/trace/trace_events.c
+> +++ b/kernel/trace/trace_events.c
+> @@ -1060,7 +1060,10 @@ static int subsystem_open(struct inode *inode, struct file *filp)
+>  	struct event_subsystem *system = NULL;
+>  	struct ftrace_subsystem_dir *dir = NULL; /* Initialize for gcc */
+>  	struct trace_array *tr;
+> -	int ret;
+> +	int ret = -ENODEV;
+> +
+> +	if (tracing_is_disabled())
+> +		return ret;
+>  
+>  	/* Make sure the system still exists */
+>  	mutex_lock(&trace_types_lock);
+> @@ -1082,23 +1085,21 @@ static int subsystem_open(struct inode *inode, struct file *filp)
+>  	mutex_unlock(&trace_types_lock);
+>  
+>  	if (!system)
+> -		return -ENODEV;
+> +		return ret;
+>  
+>  	/* Some versions of gcc think dir can be uninitialized here */
+>  	WARN_ON(!dir);
+>  
+>  	/* Still need to increment the ref count of the system */
+> -	if (trace_array_get(tr) < 0) {
+> -		put_system(dir);
+> -		return -ENODEV;
+> -	}
+> +	ret = trace_array_get(tr);
+> +	if (ret)
+> +		goto err_get;
+>  
+> -	ret = tracing_open_generic(inode, filp);
+> -	if (ret < 0) {
+> -		trace_array_put(tr);
+> -		put_system(dir);
+> -	}
+> +	filp->private_data = dir;
+> +	return 0;
+>  
+> +err_get:
+> +	put_system(dir);
+>  	return ret;
 
-Other maintainers disagree because it reduces build coverage. Having
-done some cross arch clean-up, I have to agree with that position.
-Iterating builds over different arches is bad enough, but iterating over
-all configs for each arch is a pain. It would be nice to have a uniform
-policy here.
+I don't see any improvement in the above code, except for the initial
+check of tracing_is_disabled(). Just add:
 
-Rob
+	if (tracing_is_disabled())
+		return -ENODEV;
 
+no need for all the fancy work with using ret and goto.
+
+
+>  }
+>  
+> @@ -1106,28 +1107,29 @@ static int system_tr_open(struct inode *inode, struct file *filp)
+>  {
+>  	struct ftrace_subsystem_dir *dir;
+>  	struct trace_array *tr = inode->i_private;
+> -	int ret;
+> +	int ret = -ENODEV;
+>  
+> -	if (trace_array_get(tr) < 0)
+> -		return -ENODEV;
+> +	if (tracing_is_disabled())
+> +		return ret;
+> +
+> +	ret = trace_array_get(tr);
+> +	if (ret)
+> +		return ret;
+>  
+>  	/* Make a temporary dir that has no system but points to tr */
+>  	dir = kzalloc(sizeof(*dir), GFP_KERNEL);
+>  	if (!dir) {
+> -		trace_array_put(tr);
+> -		return -ENOMEM;
+> +		ret = -ENOMEM;
+> +		goto err_dir;
+>  	}
+>  
+>  	dir->tr = tr;
+>  
+> -	ret = tracing_open_generic(inode, filp);
+> -	if (ret < 0) {
+> -		trace_array_put(tr);
+> -		kfree(dir);
+> -	}
+> -
+>  	filp->private_data = dir;
+> +	return 0;
+>  
+
+Again, we don't need the goto and err_dir. The simple fix is to finish
+the function with:
+
+	ret = tracing_open_generic(inode, filp);
+	if (ret < 0) {
+		trace_array_put(tr);
+		kfree(dir);
+		return ret;
+	}
+
+	filp->private_data = dir;
+
+	return 0;
+
+-- Steve
+
+> +err_dir:
+> +	trace_array_put(tr);
+>  	return ret;
+>  }
+>  
 
