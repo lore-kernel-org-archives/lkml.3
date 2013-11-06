@@ -1,82 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab3KFPuq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 10:50:46 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:48664 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab3KFPup (ORCPT
+	id S1754815Ab3KFPvi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 10:51:38 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42411 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab3KFPvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 10:50:45 -0500
-Date: Wed, 6 Nov 2013 07:50:44 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Douglas Gilbert <dgilbert@interlog.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        vaughan <vaughan.cao@oracle.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] sg: O_EXCL and other lock handling
-Message-ID: <20131106155044.GA9323@infradead.org>
-References: <52718713.7050906@interlog.com>
- <20131031155653.GA16944@infradead.org>
- <5272AD80.90203@interlog.com>
+	Wed, 6 Nov 2013 10:51:37 -0500
+Date: Wed, 6 Nov 2013 15:51:04 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Eric Paris <eparis@redhat.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Kees Cook <keescook@chromium.org>,
+        Will Drewry <wad@chromium.org>, Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        libseccomp-discuss@lists.sourceforge.net,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [libseccomp-discuss] ARM audit, seccomp, etc are broken wrt
+	OABI syscalls
+Message-ID: <20131106155104.GZ16735@n2100.arm.linux.org.uk>
+References: <CALCETrUt7Ojh5Yy4KYgBPj_wBr=fzKKJ=OOgGP9BtXoKrr9QnA@mail.gmail.com> <1383751951.28218.64.camel@flatline.rdu.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5272AD80.90203@interlog.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1383751951.28218.64.camel@flatline.rdu.redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 03:20:32PM -0400, Douglas Gilbert wrote:
-> Yes, it is being used as a mutex. However looking at
-> their semantics (mutex.h versus semaphore.h), a mutex
-> takes into account the task owner. If the user space
-> wants to pass around a sg file descriptor in a Unix
-> domain socket (see TLPI, Kerrisk) I don't see why the
-> sg driver should object (and pay the small performance
-> hit for each check).
+On Wed, Nov 06, 2013 at 10:32:31AM -0500, Eric Paris wrote:
+> On Tue, 2013-11-05 at 14:36 -0800, Andy Lutomirski wrote:
+> > 1. Set a different audit arch for OABI syscalls (e.g.
+> > AUDIT_ARCH_ARMOABI).  That is, treat OABI syscall entries the same way
+> > that x86_64 treats int 80.
+> 
+> As the audit maintainer, I like #1.  It might break ABI, but the ABI is
+> flat wrong now and not maintainable...
 
-The sg driver won't object.  The lock is taken again and released
-during sg_open and sg_release, which are guranteed not to migrate
-to a different process during their run time.
-
-> section) but why bother. Give me a simple mutex and
-> I'll use it.
-
-mutex_init/mutex_lock/mutex_unlock from <linux/mutex.h>
-
-> Not (usually) in this case. The sdp->sfds list can only
-> be expanded by another sg_open(same_dev) but this has
-> been excluded by taking down(&sdp->or_sem) prior to that
-> call. The sdp->sfds list is only normally decreased by
-> sg_release() which is also excluded by down(&sdp->or_sem).
-
-> The abnormal case is device removal (detaching). Now an
-> open(same_dev, O_EXCL) may start waiting just after a
-> detach but miss the wake up on open_wait. That suggests
-> the wake_up(open_wait) in sg_remove() should also
-> take the sdp->or_sem semaphore.
-> Ah, and if sg_remove() can be called from an interrupt
-> context then that takes out using mutexes :-)
-
-I don't think that sg_remove can be called from irq context.
-It always is called through the class interface remove_dev
-method, which always is called under a lock.
-
-> The two level of locks in sg_remove() is already making me
-> uncomfortable, adding the sdp->or_sem semaphore to the
-> mix calls for more analysis.
-
-I would suggest to remove the list lock and only use the or_sem
-replacement.
-
-> IMO that is a bug in scsi_block_when_processing_errors()
-> and the down() is placed lower than it should be in
-> sg_open() to account for that bug.
-
-How about we get that fixed first?
-
+If you read the whole thread, you will see that this corner case is just
+not worth the effort to support.  Audit may as well be disabled by
+kernel config if any OABI support is enabled.
