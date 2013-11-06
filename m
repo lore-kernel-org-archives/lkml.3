@@ -1,116 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab3KFLrH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 06:47:07 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:37452 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756297Ab3KFLrF (ORCPT
+	id S1756628Ab3KFLrW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 06:47:22 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:44673 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756167Ab3KFLrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 06:47:05 -0500
-Date: Wed, 6 Nov 2013 12:47:01 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
-Subject: Re: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist
- periods (v2)
-Message-ID: <20131106114701.GA20249@gmail.com>
-References: <20131101075502.GA25547@gmail.com>
- <874n7w4gtm.fsf@sejong.aot.lge.com>
- <20131101092759.GC27063@gmail.com>
- <87bo1zz4mu.fsf@sejong.aot.lge.com>
- <20131105074650.GA2855@gmail.com>
- <87txfrxlq8.fsf@sejong.aot.lge.com>
- <20131105115802.GA12045@gmail.com>
- <87ppqex8tj.fsf@sejong.aot.lge.com>
- <20131106083046.GA4655@gmail.com>
- <87r4atx51i.fsf@sejong.aot.lge.com>
+	Wed, 6 Nov 2013 06:47:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87r4atx51i.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1383732985-18928-10-git-send-email-lee.jones@linaro.org>
+References: <1383732985-18928-1-git-send-email-lee.jones@linaro.org>
+	<1383732985-18928-10-git-send-email-lee.jones@linaro.org>
+Date: Wed, 6 Nov 2013 12:47:20 +0100
+Message-ID: <CACRpkdYCipiPM0YcosXV7t57LWnpeHRs=95bAs-v=wc-QRs00g@mail.gmail.com>
+Subject: Re: [PATCH 09/13] ASoC: Ux500: Match platform by device node when
+ booting Device Tree
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Mark Brown <broonie@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 6, 2013 at 11:16 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-* Namhyung Kim <namhyung@kernel.org> wrote:
+> We're getting closer to fully enabling the Ux500 ASoC driver for Device
+> Tree. When we switch over from using AUXDATA we'll need to match platform
+> by only Device Tree nodes. In this patch we NULL out the platform_name,
+> and supply nodes for each platform device.
+>
+> Cc: alsa-devel@alsa-project.org
+> Cc: Mark Brown <broonie@kernel.org>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-> On Wed, 6 Nov 2013 09:30:46 +0100, Ingo Molnar wrote:
-> > * Namhyung Kim <namhyung@kernel.org> wrote:
-> >
-> >> Hi Ingo,
-> >> 
-> >> On Tue, 5 Nov 2013 12:58:02 +0100, Ingo Molnar wrote:
-> >> > * Namhyung Kim <namhyung@kernel.org> wrote:
-> >> >> But the 'cumulative' (btw, I feel a bit hard to type this word..) is 
-> >> >> different in that it *generates* entries didn't get sampled originally. 
-> >> >> And as it requires callchains, total field will not work if callchains 
-> >> >> are missing.
-> >> >
-> >> > Well, 'total' should disappear if it's not available.
-> >> 
-> >> But what if it's the only sort key user gave?
-> >
-> > Do you mean something like:
-> >
-> >   -F self,name -s total
-> >
-> > i.e. if a sort key not displayed?
-> 
-> What I worry is when no -F option was given at all.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-In that case the default list applied, plus whatever new fields are 
-mentioned in -s would also be added (appended or prepended).
-
-The display order of columns should _probably_ be something like:
-
-  key1 key2 ... non-key1 non-key2
-
-there's not much point in sorting and then displaying the key not in 
-front, right?
-
-> > I think sort keys should be automatically added to the displayed 
-> > fields list.
-> 
-> Agreed.
-
-> > This problem should be solved if all -s fields are displayed - i.e. 
-> > they are added to the -F list, right?
-> 
-> But old users might not aware of the new -F option, and use -s option 
-> only.  If so, she will get output like the first example, right?
-
-Well, there's a default -F list that applies - so this shouldn't be a 
-problem, agreed? So output should be like the second (expected) example.
-
-> > Basically there's just a single concept: the -F list. The -s option 
-> > simply modifies and extends the -F list but internally perf report 
-> > would not know anything about '-s', it only knows about fields to 
-> > display and it would know which of those fields are to be sorted and 
-> > in what order.
-> >
-> > Does that make sense to you? Does it cover everything needed?
-> 
-> I like the concept.  I'm just looking for a way to add it without 
-> upsetting old users. :)
-
-If the default -F list matches our current displayed fields list then 
-there should not be much change in behavior (beyond the addition of total 
-for call-graph outputs - which can be kept completely separate).
-
-I'm not too worried about call-graph 'legacies': it generates such huge 
-perf.data files which is parsed so slowly at the moment that there's very 
-little user base ... Anyone who absolutely needs call-graph profiling uses 
-SysProf which performs well.
-
-Thanks,
-
-	Ingo
+Yours,
+Linus Walleij
