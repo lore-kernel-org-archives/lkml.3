@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab3KFPy5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 10:54:57 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:44502 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754470Ab3KFPy4 (ORCPT
+	id S1755027Ab3KFPzm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 10:55:42 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:61234 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab3KFPzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 10:54:56 -0500
-Date: Wed, 6 Nov 2013 10:54:45 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        sebastien.dugue@bull.net, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Subject: Re: [PATCH v2 2/2] x86: add prefetching to do_csum
-Message-ID: <20131106155445.GB6357@neilslaptop.think-freely.org>
-References: <1381510298-20572-1-git-send-email-nhorman@tuxdriver.com>
- <1383751399-10298-1-git-send-email-nhorman@tuxdriver.com>
- <1383751399-10298-3-git-send-email-nhorman@tuxdriver.com>
- <20131106153429.GA26336@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131106153429.GA26336@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+	Wed, 6 Nov 2013 10:55:41 -0500
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH] perf: Fix version when building out of tree - v2
+Date: Wed,  6 Nov 2013 08:55:35 -0700
+Message-Id: <1383753335-25782-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 10:34:29AM -0500, Dave Jones wrote:
-> On Wed, Nov 06, 2013 at 10:23:19AM -0500, Neil Horman wrote:
->  > do_csum was identified via perf recently as a hot spot when doing
->  > receive on ip over infiniband workloads.  After alot of testing and
->  > ideas, we found the best optimization available to us currently is to
->  > prefetch the entire data buffer prior to doing the checksum
->  > 
->  > diff --git a/arch/x86/lib/csum-partial_64.c b/arch/x86/lib/csum-partial_64.c
->  > index 9845371..9f2d3ee 100644
->  > --- a/arch/x86/lib/csum-partial_64.c
->  > +++ b/arch/x86/lib/csum-partial_64.c
->  > @@ -29,8 +29,15 @@ static inline unsigned short from32to16(unsigned a)
->  >   * Things tried and found to not make it faster:
->  >   * Manual Prefetching
->  >   * Unrolling to an 128 bytes inner loop.
->  > - * Using interleaving with more registers to break the carry chains.
->  
-> Did you mean perhaps to remove the "Manual Prefetching" line instead ?
-> (Curious, what was tried before that made it not worthwhile?)
->  
-Crap, I didn't notice that previously, thanks Dave.
+When building perf out of tree
+    make perf-tar-src-pkg
+    tar -xf perf-<ver>.tar -C /tmp
+    cd /tmp/perf<ver>
+    make -C tools/perf
 
-My guess was that the whole comment was made in reference to the fact that
-checksum offload negated all these advantages.  Thats not so true anymore, since
-infiniband needs csum in software for ipoib.
+you get the warning message:
+    make[1]: *** No rule to make target `kernelversion'.  Stop.
 
-I'll fix this up and send a v3, but I'll give it a day in case there are more
-comments first.
+Fix by saving the perf version in the tar file and using that for the
+out of tree builds.
 
-Thanks
-Neil
+v2: removed short form request and fixed up version string from usual output
 
-> 	Dave
->  
-> 
+Suggested-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+---
+ scripts/package/Makefile         | 4 +++-
+ tools/perf/util/PERF-VERSION-GEN | 3 +++
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/scripts/package/Makefile b/scripts/package/Makefile
+index a4f31c900fa6..c5d473393816 100644
+--- a/scripts/package/Makefile
++++ b/scripts/package/Makefile
+@@ -115,7 +115,9 @@ git --git-dir=$(srctree)/.git archive --prefix=$(perf-tar)/         \
+ 	-o $(perf-tar).tar;                                         \
+ mkdir -p $(perf-tar);                                               \
+ git --git-dir=$(srctree)/.git rev-parse HEAD > $(perf-tar)/HEAD;    \
+-tar rf $(perf-tar).tar $(perf-tar)/HEAD;                            \
++(cd $(srctree)/tools/perf;                                          \
++util/PERF-VERSION-GEN ../../$(perf-tar)/ 2>/dev/null);              \
++tar rf $(perf-tar).tar $(perf-tar)/HEAD $(perf-tar)/PERF-VERSION-FILE; \
+ rm -r $(perf-tar);                                                  \
+ $(if $(findstring tar-src,$@),,                                     \
+ $(if $(findstring bz2,$@),bzip2,                                    \
+diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
+index 15a77b7c0e36..00d88be4e50c 100755
+--- a/tools/perf/util/PERF-VERSION-GEN
++++ b/tools/perf/util/PERF-VERSION-GEN
+@@ -19,6 +19,9 @@ if test -d ../../.git -o -f ../../.git
+ then
+ 	TAG=$(git describe --abbrev=0 --match "v[0-9].[0-9]*" 2>/dev/null )
+ 	CID=$(git log -1 --abbrev=4 --pretty=format:"%h" 2>/dev/null) && CID="-g$CID"
++elif test -f ../../PERF-VERSION-FILE
++then
++	TAG=$(cut -d' ' -f3 ../../PERF-VERSION-FILE | sed -e 's/\"//g')
+ fi
+ if test -z "$TAG"
+ then
+-- 
+1.8.3.4 (Apple Git-47)
+
