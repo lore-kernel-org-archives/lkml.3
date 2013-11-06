@@ -1,31 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183Ab3KFUqK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 15:46:10 -0500
-Received: from emea01-db3-ndr.ptr.protection.outlook.com ([157.56.120.102]:12621
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755765Ab3KFUqI convert rfc822-to-8bit (ORCPT
+	id S1756172Ab3KFUt6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 15:49:58 -0500
+Received: from dkim1.fusionio.com ([66.114.96.53]:41600 "EHLO
+	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755702Ab3KFUt4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 15:46:08 -0500
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 6 Nov 2013 15:49:56 -0500
+X-ASG-Debug-ID: 1383770995-0421b57ae590a70001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: 
-To: Recipients <jerryfunds013@MrJerrySmith091.onmicrosoft.com>
-From: <jerryfunds013@MrJerrySmith091.onmicrosoft.com>
-Date: Thu, 7 Nov 2013 02:15:27 +0530
-Reply-To: <jerrysmith13@rediffmail.com>
-Message-ID: <1834113f-2ab2-4b0b-a4a0-76f48f680c43@SIXPR06MB125.apcprd06.prod.outlook.com>
-X-Originating-IP: [115.244.69.111]
-X-ClientProxiedBy: SINPR03CA009.apcprd03.prod.outlook.com (10.242.48.29) To
- SIXPR06MB125.apcprd06.prod.outlook.com (10.242.148.12)
-X-Forefront-PRVS: 0022134A87
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(199002)(189002)(77982001)(59766001)(83072001)(23756003)(42186004)(53256004)(4396001)(47736001)(79102001)(54356001)(66066001)(558084003)(65816001)(87976001)(87266001)(80022001)(51856001)(63696002)(47976001)(47776003)(46102001)(76482001)(74366001)(50986001)(74316001)(49866001)(81542001)(19580395003)(19580405001)(74662001)(74502001)(81342001)(80976001)(47446002)(83322001)(43066001)(25636003)(33646001)(85306002)(50466002)(81686001)(69226001)(81816001)(5406001)(31686002)(74706001)(76576001)(76786001)(56776001)(76796001)(74876001)(76176001)(56816003)(77096001)(54316002)(416774004);DIR:OUT;SFP:1501;SCL:5;SRVR:SIXPR06MB125;H:[115.244.69.111];CLIP:115.244.69.111;FPR:;RD:InfoNoRecords;A:0;MX:1;LANG:en;
-X-OriginatorOrg: MrJerrySmith091.onmicrosoft.com
+Content-Transfer-Encoding: 8BIT
+To: Mike Snitzer <snitzer@redhat.com>
+From: Chris Mason <chris.mason@fusionio.com>
+In-Reply-To: <20131106203639.GB2049@redhat.com>
+CC: Kent Overstreet <kmo@daterainc.com>, <axboe@kernel.dk>,
+        <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>,
+        Olof Johansson <olof@lixom.net>
+References: <1383709721-22809-1-git-send-email-kmo@daterainc.com>
+ <20131106161130.3802.97153@localhost.localdomain> <20131106200222.GA3842@kmo>
+ <20131106202236.3802.2079@localhost.localdomain>
+ <20131106203639.GB2049@redhat.com>
+Message-ID: <20131106204952.3802.28112@localhost.localdomain>
+User-Agent: alot/0.3.4
+Subject: Re: block: Revert bio_clone() default behaviour
+Date: Wed, 6 Nov 2013 15:49:52 -0500
+X-ASG-Orig-Subj: Re: block: Revert bio_clone() default behaviour
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas1.int.fusionio.com[10.101.1.40]
+X-Barracuda-Start-Time: 1383770995
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.142112
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do You Need A Loan? Email Us Now At jerrysmith13@rediffmail.com With Amount Needed As Loan And Phone Number.
+Quoting Mike Snitzer (2013-11-06 15:36:40)
+> On Wed, Nov 06 2013 at  3:22pm -0500,
+> Chris Mason <chris.mason@fusionio.com> wrote:
+> 
+> > Quoting Kent Overstreet (2013-11-06 15:02:22)
+> > > On Wed, Nov 06, 2013 at 11:11:30AM -0500, Chris Mason wrote:
+> > > > 
+> > > > I think the concept of bio ownership is still much too weak, at least
+> > > > for established users like MD and DM.  I don't know how to verify the
+> > > > sharing of bi_io_vec without some kind of reference counting on the
+> > > > iovec.
+> > > 
+> > > What's unclear about it? The rule is just - if you didn't allocate the biovec,
+> > > don't modify it or use bio_for_each_segment_all() (probably I didn't quite state
+> > > it clearly enough before though)
+> > 
+> > That part makes sense.  The new rule that scares me is that we can't
+> > free the src of the clone until all the clones are freed.  If it works
+> > with today's existing users it feels like it is more by accident than
+> > design.  I'm not saying we can't do it, we just need some bigger
+> > flashing warning lights.
+> 
+> But we probably don't want those warning lights to come with the cost of
+> managing extra refcounts in the fast path -- so maybe a debug-only
+> refcount?
+
+I'd be happy with some code comments and a few extra SOBs.  In general
+I'm happy with the new patches that add _fast and make us explicitly
+choose the sharing.  Lots of little chances for bugs, but opt-in is a
+much better starting point.
+
+-chris
