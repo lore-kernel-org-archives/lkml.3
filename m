@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932432Ab3KFNVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 08:21:41 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49039 "EHLO
+	id S932468Ab3KFNWR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 08:22:17 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48951 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932411Ab3KFNVi (ORCPT
+	with ESMTP id S932296Ab3KFNUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 08:21:38 -0500
-Date: Wed, 6 Nov 2013 05:20:49 -0800
-From: tip-bot for John Stultz <tipbot@zytor.com>
-Message-ID: <tip-db751fe3ea6880ff5ac5abe60cb7b80deb5a4140@git.kernel.org>
+	Wed, 6 Nov 2013 08:20:24 -0500
+Date: Wed, 6 Nov 2013 05:19:51 -0800
+From: "tip-bot for Yan, Zheng" <tipbot@zytor.com>
+Message-ID: <tip-d1e8f4a8365d16fd179cb8cad5b4d20aafd0a695@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        mathieu.desnoyers@efficios.com, peterz@infradead.org,
-        davem@davemloft.net, john.stultz@linaro.org, rostedt@goodmis.org,
-        tglx@linutronix.de, lizefan@huawei.com
+        peterz@infradead.org, zheng.z.yan@intel.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mathieu.desnoyers@efficios.com, peterz@infradead.org,
-        davem@davemloft.net, john.stultz@linaro.org, rostedt@goodmis.org,
-        tglx@linutronix.de, lizefan@huawei.com
-In-Reply-To: <1381186321-4906-4-git-send-email-john.stultz@linaro.org>
-References: <1381186321-4906-4-git-send-email-john.stultz@linaro.org>
+        zheng.z.yan@intel.com, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <1383197815-17706-1-git-send-email-zheng.z.yan@intel.com>
+References: <1383197815-17706-1-git-send-email-zheng.z.yan@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] cpuset: Fix potential deadlock w/
-  set_mems_allowed
-Git-Commit-ID: db751fe3ea6880ff5ac5abe60cb7b80deb5a4140
+Subject: [tip:perf/core] perf/x86/intel/uncore:
+  Add filter support for IvyBridge-EP QPI boxes
+Git-Commit-ID: d1e8f4a8365d16fd179cb8cad5b4d20aafd0a695
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,108 +28,117 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 06 Nov 2013 05:20:55 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 06 Nov 2013 05:19:56 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  db751fe3ea6880ff5ac5abe60cb7b80deb5a4140
-Gitweb:     http://git.kernel.org/tip/db751fe3ea6880ff5ac5abe60cb7b80deb5a4140
-Author:     John Stultz <john.stultz@linaro.org>
-AuthorDate: Mon, 7 Oct 2013 15:52:00 -0700
+Commit-ID:  d1e8f4a8365d16fd179cb8cad5b4d20aafd0a695
+Gitweb:     http://git.kernel.org/tip/d1e8f4a8365d16fd179cb8cad5b4d20aafd0a695
+Author:     Yan, Zheng <zheng.z.yan@intel.com>
+AuthorDate: Thu, 31 Oct 2013 13:36:54 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Nov 2013 12:40:27 +0100
+CommitDate: Wed, 6 Nov 2013 12:34:29 +0100
 
-cpuset: Fix potential deadlock w/ set_mems_allowed
+perf/x86/intel/uncore: Add filter support for IvyBridge-EP QPI boxes
 
-After adding lockdep support to seqlock/seqcount structures,
-I started seeing the following warning:
+The encoding for filter registers of IvyBridge-EP uncore QPI boxes is
+completely the same as SandyBridge-EP.
 
-[    1.070907] ======================================================
-[    1.072015] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
-[    1.073181] 3.11.0+ #67 Not tainted
-[    1.073801] ------------------------------------------------------
-[    1.074882] kworker/u4:2/708 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-[    1.076088]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff81187d7f>] new_slab+0x5f/0x280
-[    1.077572]
-[    1.077572] and this task is already holding:
-[    1.078593]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff81339f03>] blk_execute_rq_nowait+0x53/0xf0
-[    1.080042] which would create a new lock dependency:
-[    1.080042]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
-[    1.080042]
-[    1.080042] but this new dependency connects a SOFTIRQ-irq-safe lock:
-[    1.080042]  (&(&q->__queue_lock)->rlock){..-...}
-[    1.080042] ... which became SOFTIRQ-irq-safe at:
-[    1.080042]   [<ffffffff810ec179>] __lock_acquire+0x5b9/0x1db0
-[    1.080042]   [<ffffffff810edfe5>] lock_acquire+0x95/0x130
-[    1.080042]   [<ffffffff818968a1>] _raw_spin_lock+0x41/0x80
-[    1.080042]   [<ffffffff81560c9e>] scsi_device_unbusy+0x7e/0xd0
-[    1.080042]   [<ffffffff8155a612>] scsi_finish_command+0x32/0xf0
-[    1.080042]   [<ffffffff81560e91>] scsi_softirq_done+0xa1/0x130
-[    1.080042]   [<ffffffff8133b0f3>] blk_done_softirq+0x73/0x90
-[    1.080042]   [<ffffffff81095dc0>] __do_softirq+0x110/0x2f0
-[    1.080042]   [<ffffffff81095fcd>] run_ksoftirqd+0x2d/0x60
-[    1.080042]   [<ffffffff810bc506>] smpboot_thread_fn+0x156/0x1e0
-[    1.080042]   [<ffffffff810b3916>] kthread+0xd6/0xe0
-[    1.080042]   [<ffffffff818980ac>] ret_from_fork+0x7c/0xb0
-[    1.080042]
-[    1.080042] to a SOFTIRQ-irq-unsafe lock:
-[    1.080042]  (&p->mems_allowed_seq){+.+...}
-[    1.080042] ... which became SOFTIRQ-irq-unsafe at:
-[    1.080042] ...  [<ffffffff810ec1d3>] __lock_acquire+0x613/0x1db0
-[    1.080042]   [<ffffffff810edfe5>] lock_acquire+0x95/0x130
-[    1.080042]   [<ffffffff810b3df2>] kthreadd+0x82/0x180
-[    1.080042]   [<ffffffff818980ac>] ret_from_fork+0x7c/0xb0
-[    1.080042]
-[    1.080042] other info that might help us debug this:
-[    1.080042]
-[    1.080042]  Possible interrupt unsafe locking scenario:
-[    1.080042]
-[    1.080042]        CPU0                    CPU1
-[    1.080042]        ----                    ----
-[    1.080042]   lock(&p->mems_allowed_seq);
-[    1.080042]                                local_irq_disable();
-[    1.080042]                                lock(&(&q->__queue_lock)->rlock);
-[    1.080042]                                lock(&p->mems_allowed_seq);
-[    1.080042]   <Interrupt>
-[    1.080042]     lock(&(&q->__queue_lock)->rlock);
-[    1.080042]
-[    1.080042]  *** DEADLOCK ***
-
-The issue stems from the kthreadd() function calling set_mems_allowed
-with irqs enabled. While its possibly unlikely for the actual deadlock
-to trigger, a fix is fairly simple: disable irqs before taking the
-mems_allowed_seq lock.
-
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org
-Link: http://lkml.kernel.org/r/1381186321-4906-4-git-send-email-john.stultz@linaro.org
+Cc: eranian@google.com
+Cc: "Yan Zheng" <zheng.z.yan@intel.com>
+Link: http://lkml.kernel.org/r/1383197815-17706-1-git-send-email-zheng.z.yan@intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/cpuset.h | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 61 ++++++++++++++++++++++-----
+ 1 file changed, 51 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-index cc1b01c..3fe661f 100644
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -110,10 +110,14 @@ static inline bool put_mems_allowed(unsigned int seq)
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 4118f9f..6da3999 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -1099,6 +1099,24 @@ static struct attribute *ivt_uncore_qpi_formats_attr[] = {
+ 	&format_attr_umask.attr,
+ 	&format_attr_edge.attr,
+ 	&format_attr_thresh8.attr,
++	&format_attr_match_rds.attr,
++	&format_attr_match_rnid30.attr,
++	&format_attr_match_rnid4.attr,
++	&format_attr_match_dnid.attr,
++	&format_attr_match_mc.attr,
++	&format_attr_match_opc.attr,
++	&format_attr_match_vnw.attr,
++	&format_attr_match0.attr,
++	&format_attr_match1.attr,
++	&format_attr_mask_rds.attr,
++	&format_attr_mask_rnid30.attr,
++	&format_attr_mask_rnid4.attr,
++	&format_attr_mask_dnid.attr,
++	&format_attr_mask_mc.attr,
++	&format_attr_mask_opc.attr,
++	&format_attr_mask_vnw.attr,
++	&format_attr_mask0.attr,
++	&format_attr_mask1.attr,
+ 	NULL,
+ };
  
- static inline void set_mems_allowed(nodemask_t nodemask)
- {
-+	unsigned long flags;
+@@ -1312,17 +1330,30 @@ static struct intel_uncore_type ivt_uncore_imc = {
+ 	IVT_UNCORE_PCI_COMMON_INIT(),
+ };
+ 
++static struct intel_uncore_ops ivt_uncore_qpi_ops = {
++	.init_box	= ivt_uncore_pci_init_box,
++	.disable_box	= snbep_uncore_pci_disable_box,
++	.enable_box	= snbep_uncore_pci_enable_box,
++	.disable_event	= snbep_uncore_pci_disable_event,
++	.enable_event	= snbep_qpi_enable_event,
++	.read_counter	= snbep_uncore_pci_read_counter,
++	.hw_config	= snbep_qpi_hw_config,
++	.get_constraint	= uncore_get_constraint,
++	.put_constraint	= uncore_put_constraint,
++};
 +
- 	task_lock(current);
-+	local_irq_save(flags);
- 	write_seqcount_begin(&current->mems_allowed_seq);
- 	current->mems_allowed = nodemask;
- 	write_seqcount_end(&current->mems_allowed_seq);
-+	local_irq_restore(flags);
- 	task_unlock(current);
- }
+ static struct intel_uncore_type ivt_uncore_qpi = {
+-	.name		= "qpi",
+-	.num_counters   = 4,
+-	.num_boxes	= 3,
+-	.perf_ctr_bits	= 48,
+-	.perf_ctr	= SNBEP_PCI_PMON_CTR0,
+-	.event_ctl	= SNBEP_PCI_PMON_CTL0,
+-	.event_mask	= IVT_QPI_PCI_PMON_RAW_EVENT_MASK,
+-	.box_ctl	= SNBEP_PCI_PMON_BOX_CTL,
+-	.ops		= &ivt_uncore_pci_ops,
+-	.format_group	= &ivt_uncore_qpi_format_group,
++	.name			= "qpi",
++	.num_counters		= 4,
++	.num_boxes		= 3,
++	.perf_ctr_bits		= 48,
++	.perf_ctr		= SNBEP_PCI_PMON_CTR0,
++	.event_ctl		= SNBEP_PCI_PMON_CTL0,
++	.event_mask		= IVT_QPI_PCI_PMON_RAW_EVENT_MASK,
++	.box_ctl		= SNBEP_PCI_PMON_BOX_CTL,
++	.num_shared_regs	= 1,
++	.ops			= &ivt_uncore_qpi_ops,
++	.format_group		= &ivt_uncore_qpi_format_group,
+ };
+ 
+ static struct intel_uncore_type ivt_uncore_r2pcie = {
+@@ -1429,6 +1460,16 @@ static DEFINE_PCI_DEVICE_TABLE(ivt_uncore_pci_ids) = {
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe3e),
+ 		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_R3QPI, 2),
+ 	},
++	{ /* QPI Port 0 filter  */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe86),
++		.driver_data = UNCORE_PCI_DEV_DATA(UNCORE_EXTRA_PCI_DEV,
++						   SNBEP_PCI_QPI_PORT0_FILTER),
++	},
++	{ /* QPI Port 0 filter  */
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe96),
++		.driver_data = UNCORE_PCI_DEV_DATA(UNCORE_EXTRA_PCI_DEV,
++						   SNBEP_PCI_QPI_PORT1_FILTER),
++	},
+ 	{ /* end: all zeroes */ }
+ };
  
