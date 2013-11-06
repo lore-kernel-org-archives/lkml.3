@@ -1,93 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab3KFMvN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 07:51:13 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:65365 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756736Ab3KFMvL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 07:51:11 -0500
+	id S1756803Ab3KFMvd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 07:51:33 -0500
+Received: from mail.eperm.de ([89.247.134.16]:41853 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756729Ab3KFMvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 07:51:32 -0500
+From: Stephan Mueller <smueller@chronox.de>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Pavel Machek <pavel@ucw.cz>, sandy harris <sandyinchina@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Nicholas Mc Guire <der.herr@hofr.at>
+Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and /dev/random
+Date: Wed, 06 Nov 2013 13:51:17 +0100
+Message-ID: <9172761.DO0L6FkY0c@tauon>
+User-Agent: KMail/4.11.2 (Linux/3.11.6-200.fc19.x86_64; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <20131106124354.GJ14235@thunk.org>
+References: <2579337.FPgJGgHYdz@tauon> <4306229.ErfOL470s2@tauon> <20131106124354.GJ14235@thunk.org>
 MIME-Version: 1.0
-In-Reply-To: <20131106123946.GJ10651@twins.programming.kicks-ass.net>
-References: <20131103151704.GJ19466@laptop.lan>
-	<CA+55aFx_kuvR-0dwJtjvnhtha5QBc5XcLZPRH=WKT+hYVAKOrw@mail.gmail.com>
-	<20131103200124.GK19466@laptop.lan>
-	<20131103224242.GF3947@linux.vnet.ibm.com>
-	<CA+55aFyD_kCkAHQwHCUBrumO-pH6LaZikTNvyWDW_tWsHdqk6Q@mail.gmail.com>
-	<20131104105059.GL3947@linux.vnet.ibm.com>
-	<20131104112254.GK28601@twins.programming.kicks-ass.net>
-	<20131104162732.GN3947@linux.vnet.ibm.com>
-	<20131104191127.GW16117@laptop.programming.kicks-ass.net>
-	<20131104205344.GW3947@linux.vnet.ibm.com>
-	<20131106123946.GJ10651@twins.programming.kicks-ass.net>
-Date: Wed, 6 Nov 2013 13:51:10 +0100
-X-Google-Sender-Auth: ZQQBe5yKp30ocPiynU2YHxIfZGI
-Message-ID: <CAMuHMdXZjQJvT7R4ODbDNBgAVwPUBPjB6UoR66_sNuFx7opUDw@mail.gmail.com>
-Subject: Re: [RFC] arch: Introduce new TSO memory barrier smp_tmb()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 6, 2013 at 1:39 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->  Documentation/memory-barriers.txt     |  157 +++++++++++++++++-----------------
->  arch/alpha/include/asm/barrier.h      |   15 +++
->  arch/arc/include/asm/barrier.h        |   15 +++
->  arch/arm/include/asm/barrier.h        |   15 +++
->  arch/arm64/include/asm/barrier.h      |   50 ++++++++++
->  arch/avr32/include/asm/barrier.h      |   14 +++
->  arch/blackfin/include/asm/barrier.h   |   15 +++
->  arch/cris/include/asm/barrier.h       |   15 +++
->  arch/frv/include/asm/barrier.h        |   15 +++
->  arch/h8300/include/asm/barrier.h      |   15 +++
->  arch/hexagon/include/asm/barrier.h    |   15 +++
->  arch/ia64/include/asm/barrier.h       |   49 ++++++++++
->  arch/m32r/include/asm/barrier.h       |   15 +++
->  arch/m68k/include/asm/barrier.h       |   15 +++
->  arch/metag/include/asm/barrier.h      |   15 +++
->  arch/microblaze/include/asm/barrier.h |   15 +++
->  arch/mips/include/asm/barrier.h       |   15 +++
->  arch/mn10300/include/asm/barrier.h    |   15 +++
->  arch/parisc/include/asm/barrier.h     |   15 +++
->  arch/powerpc/include/asm/barrier.h    |   21 ++++
->  arch/s390/include/asm/barrier.h       |   15 +++
->  arch/score/include/asm/barrier.h      |   15 +++
->  arch/sh/include/asm/barrier.h         |   15 +++
->  arch/sparc/include/asm/barrier_32.h   |   15 +++
->  arch/sparc/include/asm/barrier_64.h   |   15 +++
->  arch/tile/include/asm/barrier.h       |   15 +++
->  arch/unicore32/include/asm/barrier.h  |   15 +++
->  arch/x86/include/asm/barrier.h        |   15 +++
->  arch/xtensa/include/asm/barrier.h     |   15 +++
->  include/linux/compiler.h              |    9 +
->  30 files changed, 581 insertions(+), 79 deletions(-)
+Am Mittwoch, 6. November 2013, 07:43:54 schrieb Theodore Ts'o:
 
-This is screaming for a default implementation in asm-generic.
+Hi Theodore,
 
-Gr{oetje,eeting}s,
+>On Wed, Nov 06, 2013 at 12:49:45PM +0100, Stephan Mueller wrote:
+>> Here is a quote from his answer to my question whether he was able to
+>> identify the root cause:
+>> 
+>> "its inherent in the microtiming of Hardware and there is nothing you
+>> can do about it if you want the root cause is quantum physics"
+>
+>That's unfortunate, since it leaves open the question of whether this
+>jitter is something that could be at least somewhat predictable if you
+>had a lot more information about the internal works of the CPU or
+>not....
 
-                        Geert
+I do not understand that answer: I thought we are talking about the 
+search of non-predictable noise sources. If you cannot predict the 
+sequence even if you have the state of the CPU, that is what we are 
+looking for, is it not?
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Besides, how on earth shall an attacker even gain knowledge about the 
+state of the CPU or disable CPU mechanisms? Oh, I forgot, your NSA guy. 
+But if he is able to do that, all discussions are moot because he simply 
+disables any noise sources by flipping a bit, reads the memory that is 
+used to hold the state of the RNG or just overwrites the memory 
+locations where data is collected, because the general protection 
+mechanisms offered by the kernel and the underlying hardware are broken.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Also, does your answer mean you would disregard radioactive decay that 
+is not predictable due to quantum physics and Heisenberg?
+
+Ciao
+Stephan
