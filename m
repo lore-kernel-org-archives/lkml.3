@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab3KFJ3v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 04:29:51 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:45558 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756151Ab3KFJ3s convert rfc822-to-8bit (ORCPT
+	id S1756244Ab3KFJbH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 04:31:07 -0500
+Received: from gerard.telenet-ops.be ([195.130.132.48]:43139 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756046Ab3KFJbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 04:29:48 -0500
+	Wed, 6 Nov 2013 04:31:05 -0500
+Date: Wed, 6 Nov 2013 10:31:03 +0100 (CET)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: Build regressions/improvements in v3.12
+In-Reply-To: <alpine.DEB.2.02.1311061028420.20227@ayla.of.borg>
+Message-ID: <alpine.DEB.2.02.1311061030340.20318@ayla.of.borg>
+References: <alpine.DEB.2.02.1311061028420.20227@ayla.of.borg>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <527835FE.2030102@wwwdotorg.org>
-References: <1380846199-12829-1-git-send-email-syin@broadcom.com>
-	<051069C10411E24D9749790C498526FA1BE0B7D7@SJEXCHMB12.corp.ad.broadcom.com>
-	<CACRpkdYSLxp2M4HghcUdjEYGh-UQ+DaiCGp6yee+Qds6DR9poA@mail.gmail.com>
-	<201311050026.56321.heiko@sntech.de>
-	<527835FE.2030102@wwwdotorg.org>
-Date: Wed, 6 Nov 2013 10:29:47 +0100
-Message-ID: <CACRpkdaNnsM1cVTooYH=ePgjtvjrCiwuOD4oyYBZ_uzTYBnA_A@mail.gmail.com>
-Subject: Re: [PATCH 3/4] ARM: pinctrl: Add Broadcom Capri pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Sherman Yin <syin@broadcom.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 5, 2013 at 1:04 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 11/04/2013 04:26 PM, Heiko Stübner wrote:
+On Wed, 6 Nov 2013, Geert Uytterhoeven wrote:
+> JFYI, when comparing v3.12 to v3.12-rc7[3], the summaries are:
+>   - build errors: +11/-6
 
-> Pure Boolean values should be represented as a valueless property. If
-> the property is present, the value is true, otherwise false.
->
-> However, pinctrl bindings often don't represent Boolean values, but
-> rather tri-states, with the following values:
->
-> * Don't touch this configuration option at all (missing)
-> * Enable the option (<1>)
-> * Disable the option (<0>)
+Nothing serious:
 
-But in this case we actually have these booleans to specify
-exactly what we want to do:
+  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_HIGH_MASK' undeclared (first use in this function):  => 98:12
+  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_HIGH_SHIFT' undeclared (first use in this function):  => 98:34, 145:10
+  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_LOW_MASK' undeclared (first use in this function):  => 97:21
+  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_LOW_SHIFT' undeclared (first use in this function):  => 97:42, 145:10
+  + /scratch/kisskb/src/arch/sh/mm/cache-sh4.c: error: 'cached_to_uncached' undeclared (first use in this function):  => 99:17
+  + /scratch/kisskb/src/arch/sh/mm/cache-sh4.c: error: implicit declaration of function 'cpu_context' [-Werror=implicit-function-declaration]:  => 192:2
 
-bias-disable            - disable any pin bias
-bias-high-impedance     - high impedance mode ("third-state", "floating")
-bias-bus-hold           - latch weakly
-bias-pull-up            - pull up the pin
-bias-pull-down          - pull down the pin
-bias-pull-pin-default   - use pin-default pull state
+sh-randconfig
 
-Yours,
-Linus Walleij
+  + error: "flush_cache_page" [drivers/staging/lustre/lustre/libcfs/libcfs.ko] undefined!:  => N/A
+
+parisc-allmodconfig (evil lustre)
+
+  + error: No rule to make target include/config/auto.conf:  => N/A
+
+powerpc-randconfig
+
+> [1] http://kisskb.ellerman.id.au/kisskb/head/6840/ (all 120 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/6819/ (119 out of 120 configs)
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
