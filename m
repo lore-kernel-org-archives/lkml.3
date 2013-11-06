@@ -1,119 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595Ab3KFFg7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 00:36:59 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:57673 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab3KFFg6 (ORCPT
+	id S1751164Ab3KFFkx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 00:40:53 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:56741 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab3KFFkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 00:36:58 -0500
-Date: Wed, 6 Nov 2013 06:36:54 +0100
+	Wed, 6 Nov 2013 00:40:52 -0500
+Date: Wed, 6 Nov 2013 06:40:48 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH] perf: Fix version when building out of tree
-Message-ID: <20131106053654.GA23746@gmail.com>
-References: <1383699213-23981-1-git-send-email-dsahern@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Michel Lespinasse <walken@google.com>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com, oleg@redhat.com,
+        dhowells@redhat.com, willy@linux.intel.com, tglx@linutronix.de,
+        rostedt@goodmis.org, airlied@gmail.com,
+        maarten.lankhorst@canonical.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/8] locking: Move mutex into kernel/locking/
+Message-ID: <20131106054048.GB23746@gmail.com>
+References: <20131105105244.666320103@infradead.org>
+ <20131105110026.878790658@infradead.org>
+ <CANN689EVEQUXUm9Nwu=-Gzr85tkMPVOEFWX=8dQQ3WbqfyZy5w@mail.gmail.com>
+ <20131105212029.GT28601@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383699213-23981-1-git-send-email-dsahern@gmail.com>
+In-Reply-To: <20131105212029.GT28601@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* David Ahern <dsahern@gmail.com> wrote:
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-> When building perf out of tree
->     make perf-tar-src-pkg
->     tar -xf perf-<ver>.tar -C /tmp
->     cd /tmp/perf<ver>
->     make -C tools/perf
+> On Tue, Nov 05, 2013 at 12:26:38PM -0800, Michel Lespinasse wrote:
+> > On Tue, Nov 5, 2013 at 4:10 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > Index: linux-2.6/kernel/Makefile
+> > > ===================================================================
+> > > --- linux-2.6.orig/kernel/Makefile
+> > > +++ linux-2.6/kernel/Makefile
+> > > @@ -7,7 +7,7 @@ obj-y     = fork.o exec_domain.o panic.o
+> > >             sysctl.o sysctl_binary.o capability.o ptrace.o timer.o user.o \
+> > >             signal.o sys.o kmod.o workqueue.o pid.o task_work.o \
+> > >             extable.o params.o posix-timers.o \
+> > > -           kthread.o sys_ni.o posix-cpu-timers.o mutex.o \
+> > > +           kthread.o sys_ni.o posix-cpu-timers.o \
+> > >             hrtimer.o rwsem.o nsproxy.o semaphore.o \
+> > >             notifier.o ksysfs.o cred.o reboot.o \
+> > >             async.o range.o groups.o lglock.o smpboot.o
+> > 
+> > This is probably a stupid question, but I haven't been able to find
+> > one kernel version that this applies cleanly over ???
 > 
-> you get the warning message:
->     make[1]: *** No rule to make target `kernelversion'.  Stop.
+> Oh my bad, it appears I made it against a working tree, not an actual 
+> published tree. That said, I don't think the rejects should be super 
+> hard to fix.
 > 
-> Fix by saving the perf version in the tar file and using that for the
-> out of tree builds.
-> 
-> Suggested-by: Ingo Molnar <mingo@kernel.org>
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> ---
->  scripts/package/Makefile         |    4 +++-
->  tools/perf/util/PERF-VERSION-GEN |   16 +++++++++++++++-
->  2 files changed, 18 insertions(+), 2 deletions(-)
-> 
-> diff --git a/scripts/package/Makefile b/scripts/package/Makefile
-> index a4f31c900fa6..e44653986e0a 100644
-> --- a/scripts/package/Makefile
-> +++ b/scripts/package/Makefile
-> @@ -115,7 +115,9 @@ git --git-dir=$(srctree)/.git archive --prefix=$(perf-tar)/         \
->  	-o $(perf-tar).tar;                                         \
->  mkdir -p $(perf-tar);                                               \
->  git --git-dir=$(srctree)/.git rev-parse HEAD > $(perf-tar)/HEAD;    \
-> -tar rf $(perf-tar).tar $(perf-tar)/HEAD;                            \
-> +(cd $(srctree)/tools/perf;                                          \
-> +util/PERF-VERSION-GEN short ../../$(perf-tar)/ 2>/dev/null);        \
-> +tar rf $(perf-tar).tar $(perf-tar)/HEAD $(perf-tar)/PERF-VERSION-FILE; \
->  rm -r $(perf-tar);                                                  \
->  $(if $(findstring tar-src,$@),,                                     \
->  $(if $(findstring bz2,$@),bzip2,                                    \
-> diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-> index 15a77b7c0e36..142d7dcccfd2 100755
-> --- a/tools/perf/util/PERF-VERSION-GEN
-> +++ b/tools/perf/util/PERF-VERSION-GEN
-> @@ -1,5 +1,12 @@
->  #!/bin/sh
->  
-> +SHORT_FORM=no
-> +
-> +if [ "$1" = "short" ]  ; then
-> +	SHORT_FORM=yes
-> +	shift
-> +fi
-> +
->  if [ $# -eq 1 ]  ; then
->  	OUTPUT=$1
->  fi
-> @@ -19,6 +26,9 @@ if test -d ../../.git -o -f ../../.git
->  then
->  	TAG=$(git describe --abbrev=0 --match "v[0-9].[0-9]*" 2>/dev/null )
->  	CID=$(git log -1 --abbrev=4 --pretty=format:"%h" 2>/dev/null) && CID="-g$CID"
-> +elif test -f ../../PERF-VERSION-FILE
-> +then
-> +	TAG=$(cat ../../PERF-VERSION-FILE)
->  fi
->  if test -z "$TAG"
->  then
-> @@ -41,7 +51,11 @@ else
->  fi
->  test "$VN" = "$VC" || {
->  	echo >&2 "PERF_VERSION = $VN"
-> -	echo "#define PERF_VERSION \"$VN\"" >$GVF
-> +	if [ "$SHORT_FORM" = "yes" ]; then
-> +		echo "$VN" >$GVF
-> +	else
-> +		echo "#define PERF_VERSION \"$VN\"" >$GVF
-> +	fi
->  }
+> If people don't object to the idea I'll respin against something 
+> published and testable.
 
-I think you could avoid the 'short' complication altogether by doing 
-something like this:
-
-> +elif test -f ../../PERF-VERSION-FILE
-> +then
-> +	TAG=$(cut -d' ' -f3 ../../PERF-VERSION-FILE)
-
-That extracts 'TAG' as a true sha1 and makes GVF correct on out of tree 
-builds as well.
-
-haven't tested it though.
+Please do it against the locking tree (tip:core/locking), it has pending 
+changes plus v3.12 as well.
 
 Thanks,
 
