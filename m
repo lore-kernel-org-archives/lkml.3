@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378Ab3KFLs0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 06:48:26 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:55619 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932240Ab3KFLsR (ORCPT
+	id S932359Ab3KFLsY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 06:48:24 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:50219 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932236Ab3KFLsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Nov 2013 06:48:17 -0500
-Message-Id: <20131106114812.801879299@openvz.org>
+Message-Id: <20131106114812.474330639@openvz.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 06 Nov 2013 15:47:46 +0400
+Date: Wed, 06 Nov 2013 15:47:43 +0400
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: linux-kernel@vger.kernel.org
 Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
@@ -21,12 +21,15 @@ Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
         Matthew Helsley <matt.helsley@gmail.com>,
         "J. Bruce Fields" <bfields@fieldses.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [patch 4/7] eventfd: Use sequential fdinfo engine
+Subject: [patch 1/7] seq-file: Export single_ helpers
 References: <20131106114742.988532945@openvz.org>
-Content-Disposition: inline; filename=0003-procfs-eventfd-2
+Content-Disposition: inline; filename=0000-seq-export-single
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+The single_ helpers will be used in fdinfo output to
+eliminate code duplication.
 
 Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 Cc: Pavel Emelyanov <xemul@parallels.com>
@@ -42,47 +45,53 @@ Cc: "J. Bruce Fields" <bfields@fieldses.org>
 Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- fs/eventfd.c |   19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+ fs/seq_file.c            |    9 ++++++---
+ include/linux/seq_file.h |    3 +++
+ 2 files changed, 9 insertions(+), 3 deletions(-)
 
-Index: linux-2.6.git/fs/eventfd.c
+Index: linux-2.6.git/fs/seq_file.c
 ===================================================================
---- linux-2.6.git.orig/fs/eventfd.c
-+++ linux-2.6.git/fs/eventfd.c
-@@ -287,23 +287,28 @@ static ssize_t eventfd_write(struct file
+--- linux-2.6.git.orig/fs/seq_file.c
++++ linux-2.6.git/fs/seq_file.c
+@@ -565,20 +565,23 @@ int seq_bitmap_list(struct seq_file *m,
  }
+ EXPORT_SYMBOL(seq_bitmap_list);
  
- #ifdef CONFIG_PROC_FS
--static int eventfd_show_fdinfo(struct seq_file *m, struct file *f)
-+static int seq_show(struct seq_file *m, void *v)
+-static void *single_start(struct seq_file *p, loff_t *pos)
++void *single_start(struct seq_file *p, loff_t *pos)
  {
--	struct eventfd_ctx *ctx = f->private_data;
--	int ret;
-+	struct eventfd_ctx *ctx = ((struct file *)m->private)->private_data;
- 
- 	spin_lock_irq(&ctx->wqh.lock);
--	ret = seq_printf(m, "eventfd-count: %16llx\n",
--			 (unsigned long long)ctx->count);
-+	seq_printf(m, "eventfd-count: %16llx\n", (unsigned long long)ctx->count);
- 	spin_unlock_irq(&ctx->wqh.lock);
- 
--	return ret;
-+	return 0;
+ 	return NULL + (*pos == 0);
  }
-+
-+static struct seq_operations eventfd_fdinfo_op = {
-+	.start		= single_start,
-+	.next		= single_next,
-+	.stop		= single_stop,
-+	.show		= seq_show,
-+};
- #endif
++EXPORT_SYMBOL(single_start);
  
- static const struct file_operations eventfd_fops = {
- #ifdef CONFIG_PROC_FS
--	.show_fdinfo	= eventfd_show_fdinfo,
-+	.fdinfo_op	= &eventfd_fdinfo_op,
- #endif
- 	.release	= eventfd_release,
- 	.poll		= eventfd_poll,
+-static void *single_next(struct seq_file *p, void *v, loff_t *pos)
++void *single_next(struct seq_file *p, void *v, loff_t *pos)
+ {
+ 	++*pos;
+ 	return NULL;
+ }
++EXPORT_SYMBOL(single_next);
+ 
+-static void single_stop(struct seq_file *p, void *v)
++void single_stop(struct seq_file *p, void *v)
+ {
+ }
++EXPORT_SYMBOL(single_stop);
+ 
+ int single_open(struct file *file, int (*show)(struct seq_file *, void *),
+ 		void *data)
+Index: linux-2.6.git/include/linux/seq_file.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/seq_file.h
++++ linux-2.6.git/include/linux/seq_file.h
+@@ -122,6 +122,9 @@ static inline int seq_nodemask_list(stru
+ 	return seq_bitmap_list(m, mask->bits, MAX_NUMNODES);
+ }
+ 
++void *single_start(struct seq_file *, loff_t *);
++void *single_next(struct seq_file *, void *, loff_t *);
++void single_stop(struct seq_file *, void *);
+ int single_open(struct file *, int (*)(struct seq_file *, void *), void *);
+ int single_open_size(struct file *, int (*)(struct seq_file *, void *), void *, size_t);
+ int single_release(struct inode *, struct file *);
 
