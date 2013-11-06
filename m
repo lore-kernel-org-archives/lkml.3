@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab3KFLTx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 06:19:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47481 "EHLO
+	id S932280Ab3KFLUK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 06:20:10 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47503 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932196Ab3KFLTu (ORCPT
+	with ESMTP id S932196Ab3KFLUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 06:19:50 -0500
-Date: Wed, 6 Nov 2013 03:19:18 -0800
+	Wed, 6 Nov 2013 06:20:07 -0500
+Date: Wed, 6 Nov 2013 03:19:34 -0800
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-ftycee88naznulqk7ei5mbci@git.kernel.org>
+Message-ID: <tip-x2y49rmxu5dljt66ai2lcfuw@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         akpm@linux-foundation.org, torvalds@linux-foundation.org,
         peterz@infradead.org, tglx@linutronix.de
@@ -17,8 +17,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, akpm@linux-foundation.org,
         peterz@infradead.org, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] sched: Move wait code from core.c to wait.c
-Git-Commit-ID: b4145872f7049e429718b40b86e1b46659988398
+Subject: [tip:core/locking] sched:
+  Move completion code from core.c to completion.c
+Git-Commit-ID: b8a216269ec0ce2e961d32e6d640d7010b8a818e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,277 +28,659 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 06 Nov 2013 03:19:24 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 06 Nov 2013 03:19:41 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b4145872f7049e429718b40b86e1b46659988398
-Gitweb:     http://git.kernel.org/tip/b4145872f7049e429718b40b86e1b46659988398
+Commit-ID:  b8a216269ec0ce2e961d32e6d640d7010b8a818e
+Gitweb:     http://git.kernel.org/tip/b8a216269ec0ce2e961d32e6d640d7010b8a818e
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Fri, 4 Oct 2013 17:24:35 +0200
+AuthorDate: Fri, 4 Oct 2013 22:06:53 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Nov 2013 07:49:18 +0100
+CommitDate: Wed, 6 Nov 2013 07:49:19 +0100
 
-sched: Move wait code from core.c to wait.c
+sched: Move completion code from core.c to completion.c
 
-For some reason only the wait part of the wait api lives in
-kernel/sched/wait.c and the wake part still lives in kernel/sched/core.c;
-ammend this.
+Completions already have their own header file: linux/completion.h
+Move the implementation out of kernel/sched/core.c and into its own
+file: kernel/sched/completion.c.
 
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-ftycee88naznulqk7ei5mbci@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-x2y49rmxu5dljt66ai2lcfuw@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c | 107 +---------------------------------------------------
- kernel/sched/wait.c | 103 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 105 insertions(+), 105 deletions(-)
+ include/linux/completion.h |   2 +-
+ kernel/sched/Makefile      |   2 +-
+ kernel/sched/completion.c  | 299 +++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/core.c        | 284 ------------------------------------------
+ 4 files changed, 301 insertions(+), 286 deletions(-)
 
+diff --git a/include/linux/completion.h b/include/linux/completion.h
+index 3cd574d..22c33e3 100644
+--- a/include/linux/completion.h
++++ b/include/linux/completion.h
+@@ -5,7 +5,7 @@
+  * (C) Copyright 2001 Linus Torvalds
+  *
+  * Atomic wait-for-completion handler data structures.
+- * See kernel/sched/core.c for details.
++ * See kernel/sched/completion.c for details.
+  */
+ 
+ #include <linux/wait.h>
+diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
+index f8d3f4b..7b62140 100644
+--- a/kernel/sched/Makefile
++++ b/kernel/sched/Makefile
+@@ -12,7 +12,7 @@ CFLAGS_core.o := $(PROFILING) -fno-omit-frame-pointer
+ endif
+ 
+ obj-y += core.o proc.o clock.o cputime.o idle_task.o fair.o rt.o stop_task.o
+-obj-y += wait.o
++obj-y += wait.o completion.o
+ obj-$(CONFIG_SMP) += cpupri.o
+ obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
+ obj-$(CONFIG_SCHEDSTATS) += stats.o
+diff --git a/kernel/sched/completion.c b/kernel/sched/completion.c
+new file mode 100644
+index 0000000..a63f4dc
+--- /dev/null
++++ b/kernel/sched/completion.c
+@@ -0,0 +1,299 @@
++/*
++ * Generic wait-for-completion handler;
++ *
++ * It differs from semaphores in that their default case is the opposite,
++ * wait_for_completion default blocks whereas semaphore default non-block. The
++ * interface also makes it easy to 'complete' multiple waiting threads,
++ * something which isn't entirely natural for semaphores.
++ *
++ * But more importantly, the primitive documents the usage. Semaphores would
++ * typically be used for exclusion which gives rise to priority inversion.
++ * Waiting for completion is a typically sync point, but not an exclusion point.
++ */
++
++#include <linux/sched.h>
++#include <linux/completion.h>
++
++/**
++ * complete: - signals a single thread waiting on this completion
++ * @x:  holds the state of this particular completion
++ *
++ * This will wake up a single thread waiting on this completion. Threads will be
++ * awakened in the same order in which they were queued.
++ *
++ * See also complete_all(), wait_for_completion() and related routines.
++ *
++ * It may be assumed that this function implies a write memory barrier before
++ * changing the task state if and only if any tasks are woken up.
++ */
++void complete(struct completion *x)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&x->wait.lock, flags);
++	x->done++;
++	__wake_up_locked(&x->wait, TASK_NORMAL, 1);
++	spin_unlock_irqrestore(&x->wait.lock, flags);
++}
++EXPORT_SYMBOL(complete);
++
++/**
++ * complete_all: - signals all threads waiting on this completion
++ * @x:  holds the state of this particular completion
++ *
++ * This will wake up all threads waiting on this particular completion event.
++ *
++ * It may be assumed that this function implies a write memory barrier before
++ * changing the task state if and only if any tasks are woken up.
++ */
++void complete_all(struct completion *x)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&x->wait.lock, flags);
++	x->done += UINT_MAX/2;
++	__wake_up_locked(&x->wait, TASK_NORMAL, 0);
++	spin_unlock_irqrestore(&x->wait.lock, flags);
++}
++EXPORT_SYMBOL(complete_all);
++
++static inline long __sched
++do_wait_for_common(struct completion *x,
++		   long (*action)(long), long timeout, int state)
++{
++	if (!x->done) {
++		DECLARE_WAITQUEUE(wait, current);
++
++		__add_wait_queue_tail_exclusive(&x->wait, &wait);
++		do {
++			if (signal_pending_state(state, current)) {
++				timeout = -ERESTARTSYS;
++				break;
++			}
++			__set_current_state(state);
++			spin_unlock_irq(&x->wait.lock);
++			timeout = action(timeout);
++			spin_lock_irq(&x->wait.lock);
++		} while (!x->done && timeout);
++		__remove_wait_queue(&x->wait, &wait);
++		if (!x->done)
++			return timeout;
++	}
++	x->done--;
++	return timeout ?: 1;
++}
++
++static inline long __sched
++__wait_for_common(struct completion *x,
++		  long (*action)(long), long timeout, int state)
++{
++	might_sleep();
++
++	spin_lock_irq(&x->wait.lock);
++	timeout = do_wait_for_common(x, action, timeout, state);
++	spin_unlock_irq(&x->wait.lock);
++	return timeout;
++}
++
++static long __sched
++wait_for_common(struct completion *x, long timeout, int state)
++{
++	return __wait_for_common(x, schedule_timeout, timeout, state);
++}
++
++static long __sched
++wait_for_common_io(struct completion *x, long timeout, int state)
++{
++	return __wait_for_common(x, io_schedule_timeout, timeout, state);
++}
++
++/**
++ * wait_for_completion: - waits for completion of a task
++ * @x:  holds the state of this particular completion
++ *
++ * This waits to be signaled for completion of a specific task. It is NOT
++ * interruptible and there is no timeout.
++ *
++ * See also similar routines (i.e. wait_for_completion_timeout()) with timeout
++ * and interrupt capability. Also see complete().
++ */
++void __sched wait_for_completion(struct completion *x)
++{
++	wait_for_common(x, MAX_SCHEDULE_TIMEOUT, TASK_UNINTERRUPTIBLE);
++}
++EXPORT_SYMBOL(wait_for_completion);
++
++/**
++ * wait_for_completion_timeout: - waits for completion of a task (w/timeout)
++ * @x:  holds the state of this particular completion
++ * @timeout:  timeout value in jiffies
++ *
++ * This waits for either a completion of a specific task to be signaled or for a
++ * specified timeout to expire. The timeout is in jiffies. It is not
++ * interruptible.
++ *
++ * Return: 0 if timed out, and positive (at least 1, or number of jiffies left
++ * till timeout) if completed.
++ */
++unsigned long __sched
++wait_for_completion_timeout(struct completion *x, unsigned long timeout)
++{
++	return wait_for_common(x, timeout, TASK_UNINTERRUPTIBLE);
++}
++EXPORT_SYMBOL(wait_for_completion_timeout);
++
++/**
++ * wait_for_completion_io: - waits for completion of a task
++ * @x:  holds the state of this particular completion
++ *
++ * This waits to be signaled for completion of a specific task. It is NOT
++ * interruptible and there is no timeout. The caller is accounted as waiting
++ * for IO.
++ */
++void __sched wait_for_completion_io(struct completion *x)
++{
++	wait_for_common_io(x, MAX_SCHEDULE_TIMEOUT, TASK_UNINTERRUPTIBLE);
++}
++EXPORT_SYMBOL(wait_for_completion_io);
++
++/**
++ * wait_for_completion_io_timeout: - waits for completion of a task (w/timeout)
++ * @x:  holds the state of this particular completion
++ * @timeout:  timeout value in jiffies
++ *
++ * This waits for either a completion of a specific task to be signaled or for a
++ * specified timeout to expire. The timeout is in jiffies. It is not
++ * interruptible. The caller is accounted as waiting for IO.
++ *
++ * Return: 0 if timed out, and positive (at least 1, or number of jiffies left
++ * till timeout) if completed.
++ */
++unsigned long __sched
++wait_for_completion_io_timeout(struct completion *x, unsigned long timeout)
++{
++	return wait_for_common_io(x, timeout, TASK_UNINTERRUPTIBLE);
++}
++EXPORT_SYMBOL(wait_for_completion_io_timeout);
++
++/**
++ * wait_for_completion_interruptible: - waits for completion of a task (w/intr)
++ * @x:  holds the state of this particular completion
++ *
++ * This waits for completion of a specific task to be signaled. It is
++ * interruptible.
++ *
++ * Return: -ERESTARTSYS if interrupted, 0 if completed.
++ */
++int __sched wait_for_completion_interruptible(struct completion *x)
++{
++	long t = wait_for_common(x, MAX_SCHEDULE_TIMEOUT, TASK_INTERRUPTIBLE);
++	if (t == -ERESTARTSYS)
++		return t;
++	return 0;
++}
++EXPORT_SYMBOL(wait_for_completion_interruptible);
++
++/**
++ * wait_for_completion_interruptible_timeout: - waits for completion (w/(to,intr))
++ * @x:  holds the state of this particular completion
++ * @timeout:  timeout value in jiffies
++ *
++ * This waits for either a completion of a specific task to be signaled or for a
++ * specified timeout to expire. It is interruptible. The timeout is in jiffies.
++ *
++ * Return: -ERESTARTSYS if interrupted, 0 if timed out, positive (at least 1,
++ * or number of jiffies left till timeout) if completed.
++ */
++long __sched
++wait_for_completion_interruptible_timeout(struct completion *x,
++					  unsigned long timeout)
++{
++	return wait_for_common(x, timeout, TASK_INTERRUPTIBLE);
++}
++EXPORT_SYMBOL(wait_for_completion_interruptible_timeout);
++
++/**
++ * wait_for_completion_killable: - waits for completion of a task (killable)
++ * @x:  holds the state of this particular completion
++ *
++ * This waits to be signaled for completion of a specific task. It can be
++ * interrupted by a kill signal.
++ *
++ * Return: -ERESTARTSYS if interrupted, 0 if completed.
++ */
++int __sched wait_for_completion_killable(struct completion *x)
++{
++	long t = wait_for_common(x, MAX_SCHEDULE_TIMEOUT, TASK_KILLABLE);
++	if (t == -ERESTARTSYS)
++		return t;
++	return 0;
++}
++EXPORT_SYMBOL(wait_for_completion_killable);
++
++/**
++ * wait_for_completion_killable_timeout: - waits for completion of a task (w/(to,killable))
++ * @x:  holds the state of this particular completion
++ * @timeout:  timeout value in jiffies
++ *
++ * This waits for either a completion of a specific task to be
++ * signaled or for a specified timeout to expire. It can be
++ * interrupted by a kill signal. The timeout is in jiffies.
++ *
++ * Return: -ERESTARTSYS if interrupted, 0 if timed out, positive (at least 1,
++ * or number of jiffies left till timeout) if completed.
++ */
++long __sched
++wait_for_completion_killable_timeout(struct completion *x,
++				     unsigned long timeout)
++{
++	return wait_for_common(x, timeout, TASK_KILLABLE);
++}
++EXPORT_SYMBOL(wait_for_completion_killable_timeout);
++
++/**
++ *	try_wait_for_completion - try to decrement a completion without blocking
++ *	@x:	completion structure
++ *
++ *	Return: 0 if a decrement cannot be done without blocking
++ *		 1 if a decrement succeeded.
++ *
++ *	If a completion is being used as a counting completion,
++ *	attempt to decrement the counter without blocking. This
++ *	enables us to avoid waiting if the resource the completion
++ *	is protecting is not available.
++ */
++bool try_wait_for_completion(struct completion *x)
++{
++	unsigned long flags;
++	int ret = 1;
++
++	spin_lock_irqsave(&x->wait.lock, flags);
++	if (!x->done)
++		ret = 0;
++	else
++		x->done--;
++	spin_unlock_irqrestore(&x->wait.lock, flags);
++	return ret;
++}
++EXPORT_SYMBOL(try_wait_for_completion);
++
++/**
++ *	completion_done - Test to see if a completion has any waiters
++ *	@x:	completion structure
++ *
++ *	Return: 0 if there are waiters (wait_for_completion() in progress)
++ *		 1 if there are no waiters.
++ *
++ */
++bool completion_done(struct completion *x)
++{
++	unsigned long flags;
++	int ret = 1;
++
++	spin_lock_irqsave(&x->wait.lock, flags);
++	if (!x->done)
++		ret = 0;
++	spin_unlock_irqrestore(&x->wait.lock, flags);
++	return ret;
++}
++EXPORT_SYMBOL(completion_done);
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 450a34b..91b2845 100644
+index 91b2845..aa066f3 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -2688,109 +2688,6 @@ int default_wake_function(wait_queue_t *curr, unsigned mode, int wake_flags,
+@@ -2688,290 +2688,6 @@ int default_wake_function(wait_queue_t *curr, unsigned mode, int wake_flags,
  }
  EXPORT_SYMBOL(default_wake_function);
  
--/*
-- * The core wakeup function. Non-exclusive wakeups (nr_exclusive == 0) just
-- * wake everything up. If it's an exclusive wakeup (nr_exclusive == small +ve
-- * number) then we wake all the non-exclusive tasks and one exclusive task.
+-/**
+- * complete: - signals a single thread waiting on this completion
+- * @x:  holds the state of this particular completion
 - *
-- * There are circumstances in which we can try to wake a task which has already
-- * started to run but is not in state TASK_RUNNING. try_to_wake_up() returns
-- * zero in this (rare) case, and we handle it by continuing to scan the queue.
+- * This will wake up a single thread waiting on this completion. Threads will be
+- * awakened in the same order in which they were queued.
+- *
+- * See also complete_all(), wait_for_completion() and related routines.
+- *
+- * It may be assumed that this function implies a write memory barrier before
+- * changing the task state if and only if any tasks are woken up.
 - */
--static void __wake_up_common(wait_queue_head_t *q, unsigned int mode,
--			int nr_exclusive, int wake_flags, void *key)
+-void complete(struct completion *x)
 -{
--	wait_queue_t *curr, *next;
+-	unsigned long flags;
 -
--	list_for_each_entry_safe(curr, next, &q->task_list, task_list) {
--		unsigned flags = curr->flags;
+-	spin_lock_irqsave(&x->wait.lock, flags);
+-	x->done++;
+-	__wake_up_locked(&x->wait, TASK_NORMAL, 1);
+-	spin_unlock_irqrestore(&x->wait.lock, flags);
+-}
+-EXPORT_SYMBOL(complete);
 -
--		if (curr->func(curr, mode, wake_flags, key) &&
--				(flags & WQ_FLAG_EXCLUSIVE) && !--nr_exclusive)
--			break;
+-/**
+- * complete_all: - signals all threads waiting on this completion
+- * @x:  holds the state of this particular completion
+- *
+- * This will wake up all threads waiting on this particular completion event.
+- *
+- * It may be assumed that this function implies a write memory barrier before
+- * changing the task state if and only if any tasks are woken up.
+- */
+-void complete_all(struct completion *x)
+-{
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&x->wait.lock, flags);
+-	x->done += UINT_MAX/2;
+-	__wake_up_locked(&x->wait, TASK_NORMAL, 0);
+-	spin_unlock_irqrestore(&x->wait.lock, flags);
+-}
+-EXPORT_SYMBOL(complete_all);
+-
+-static inline long __sched
+-do_wait_for_common(struct completion *x,
+-		   long (*action)(long), long timeout, int state)
+-{
+-	if (!x->done) {
+-		DECLARE_WAITQUEUE(wait, current);
+-
+-		__add_wait_queue_tail_exclusive(&x->wait, &wait);
+-		do {
+-			if (signal_pending_state(state, current)) {
+-				timeout = -ERESTARTSYS;
+-				break;
+-			}
+-			__set_current_state(state);
+-			spin_unlock_irq(&x->wait.lock);
+-			timeout = action(timeout);
+-			spin_lock_irq(&x->wait.lock);
+-		} while (!x->done && timeout);
+-		__remove_wait_queue(&x->wait, &wait);
+-		if (!x->done)
+-			return timeout;
 -	}
+-	x->done--;
+-	return timeout ?: 1;
+-}
+-
+-static inline long __sched
+-__wait_for_common(struct completion *x,
+-		  long (*action)(long), long timeout, int state)
+-{
+-	might_sleep();
+-
+-	spin_lock_irq(&x->wait.lock);
+-	timeout = do_wait_for_common(x, action, timeout, state);
+-	spin_unlock_irq(&x->wait.lock);
+-	return timeout;
+-}
+-
+-static long __sched
+-wait_for_common(struct completion *x, long timeout, int state)
+-{
+-	return __wait_for_common(x, schedule_timeout, timeout, state);
+-}
+-
+-static long __sched
+-wait_for_common_io(struct completion *x, long timeout, int state)
+-{
+-	return __wait_for_common(x, io_schedule_timeout, timeout, state);
 -}
 -
 -/**
-- * __wake_up - wake up threads blocked on a waitqueue.
-- * @q: the waitqueue
-- * @mode: which threads
-- * @nr_exclusive: how many wake-one or wake-many threads to wake up
-- * @key: is directly passed to the wakeup function
+- * wait_for_completion: - waits for completion of a task
+- * @x:  holds the state of this particular completion
 - *
-- * It may be assumed that this function implies a write memory barrier before
-- * changing the task state if and only if any tasks are woken up.
+- * This waits to be signaled for completion of a specific task. It is NOT
+- * interruptible and there is no timeout.
+- *
+- * See also similar routines (i.e. wait_for_completion_timeout()) with timeout
+- * and interrupt capability. Also see complete().
 - */
--void __wake_up(wait_queue_head_t *q, unsigned int mode,
--			int nr_exclusive, void *key)
+-void __sched wait_for_completion(struct completion *x)
 -{
--	unsigned long flags;
--
--	spin_lock_irqsave(&q->lock, flags);
--	__wake_up_common(q, mode, nr_exclusive, 0, key);
--	spin_unlock_irqrestore(&q->lock, flags);
+-	wait_for_common(x, MAX_SCHEDULE_TIMEOUT, TASK_UNINTERRUPTIBLE);
 -}
--EXPORT_SYMBOL(__wake_up);
--
--/*
-- * Same as __wake_up but called with the spinlock in wait_queue_head_t held.
-- */
--void __wake_up_locked(wait_queue_head_t *q, unsigned int mode, int nr)
--{
--	__wake_up_common(q, mode, nr, 0, NULL);
--}
--EXPORT_SYMBOL_GPL(__wake_up_locked);
--
--void __wake_up_locked_key(wait_queue_head_t *q, unsigned int mode, void *key)
--{
--	__wake_up_common(q, mode, 1, 0, key);
--}
--EXPORT_SYMBOL_GPL(__wake_up_locked_key);
+-EXPORT_SYMBOL(wait_for_completion);
 -
 -/**
-- * __wake_up_sync_key - wake up threads blocked on a waitqueue.
-- * @q: the waitqueue
-- * @mode: which threads
-- * @nr_exclusive: how many wake-one or wake-many threads to wake up
-- * @key: opaque value to be passed to wakeup targets
+- * wait_for_completion_timeout: - waits for completion of a task (w/timeout)
+- * @x:  holds the state of this particular completion
+- * @timeout:  timeout value in jiffies
 - *
-- * The sync wakeup differs that the waker knows that it will schedule
-- * away soon, so while the target thread will be woken up, it will not
-- * be migrated to another CPU - ie. the two threads are 'synchronized'
-- * with each other. This can prevent needless bouncing between CPUs.
+- * This waits for either a completion of a specific task to be signaled or for a
+- * specified timeout to expire. The timeout is in jiffies. It is not
+- * interruptible.
 - *
-- * On UP it can prevent extra preemption.
-- *
-- * It may be assumed that this function implies a write memory barrier before
-- * changing the task state if and only if any tasks are woken up.
+- * Return: 0 if timed out, and positive (at least 1, or number of jiffies left
+- * till timeout) if completed.
 - */
--void __wake_up_sync_key(wait_queue_head_t *q, unsigned int mode,
--			int nr_exclusive, void *key)
+-unsigned long __sched
+-wait_for_completion_timeout(struct completion *x, unsigned long timeout)
+-{
+-	return wait_for_common(x, timeout, TASK_UNINTERRUPTIBLE);
+-}
+-EXPORT_SYMBOL(wait_for_completion_timeout);
+-
+-/**
+- * wait_for_completion_io: - waits for completion of a task
+- * @x:  holds the state of this particular completion
+- *
+- * This waits to be signaled for completion of a specific task. It is NOT
+- * interruptible and there is no timeout. The caller is accounted as waiting
+- * for IO.
+- */
+-void __sched wait_for_completion_io(struct completion *x)
+-{
+-	wait_for_common_io(x, MAX_SCHEDULE_TIMEOUT, TASK_UNINTERRUPTIBLE);
+-}
+-EXPORT_SYMBOL(wait_for_completion_io);
+-
+-/**
+- * wait_for_completion_io_timeout: - waits for completion of a task (w/timeout)
+- * @x:  holds the state of this particular completion
+- * @timeout:  timeout value in jiffies
+- *
+- * This waits for either a completion of a specific task to be signaled or for a
+- * specified timeout to expire. The timeout is in jiffies. It is not
+- * interruptible. The caller is accounted as waiting for IO.
+- *
+- * Return: 0 if timed out, and positive (at least 1, or number of jiffies left
+- * till timeout) if completed.
+- */
+-unsigned long __sched
+-wait_for_completion_io_timeout(struct completion *x, unsigned long timeout)
+-{
+-	return wait_for_common_io(x, timeout, TASK_UNINTERRUPTIBLE);
+-}
+-EXPORT_SYMBOL(wait_for_completion_io_timeout);
+-
+-/**
+- * wait_for_completion_interruptible: - waits for completion of a task (w/intr)
+- * @x:  holds the state of this particular completion
+- *
+- * This waits for completion of a specific task to be signaled. It is
+- * interruptible.
+- *
+- * Return: -ERESTARTSYS if interrupted, 0 if completed.
+- */
+-int __sched wait_for_completion_interruptible(struct completion *x)
+-{
+-	long t = wait_for_common(x, MAX_SCHEDULE_TIMEOUT, TASK_INTERRUPTIBLE);
+-	if (t == -ERESTARTSYS)
+-		return t;
+-	return 0;
+-}
+-EXPORT_SYMBOL(wait_for_completion_interruptible);
+-
+-/**
+- * wait_for_completion_interruptible_timeout: - waits for completion (w/(to,intr))
+- * @x:  holds the state of this particular completion
+- * @timeout:  timeout value in jiffies
+- *
+- * This waits for either a completion of a specific task to be signaled or for a
+- * specified timeout to expire. It is interruptible. The timeout is in jiffies.
+- *
+- * Return: -ERESTARTSYS if interrupted, 0 if timed out, positive (at least 1,
+- * or number of jiffies left till timeout) if completed.
+- */
+-long __sched
+-wait_for_completion_interruptible_timeout(struct completion *x,
+-					  unsigned long timeout)
+-{
+-	return wait_for_common(x, timeout, TASK_INTERRUPTIBLE);
+-}
+-EXPORT_SYMBOL(wait_for_completion_interruptible_timeout);
+-
+-/**
+- * wait_for_completion_killable: - waits for completion of a task (killable)
+- * @x:  holds the state of this particular completion
+- *
+- * This waits to be signaled for completion of a specific task. It can be
+- * interrupted by a kill signal.
+- *
+- * Return: -ERESTARTSYS if interrupted, 0 if completed.
+- */
+-int __sched wait_for_completion_killable(struct completion *x)
+-{
+-	long t = wait_for_common(x, MAX_SCHEDULE_TIMEOUT, TASK_KILLABLE);
+-	if (t == -ERESTARTSYS)
+-		return t;
+-	return 0;
+-}
+-EXPORT_SYMBOL(wait_for_completion_killable);
+-
+-/**
+- * wait_for_completion_killable_timeout: - waits for completion of a task (w/(to,killable))
+- * @x:  holds the state of this particular completion
+- * @timeout:  timeout value in jiffies
+- *
+- * This waits for either a completion of a specific task to be
+- * signaled or for a specified timeout to expire. It can be
+- * interrupted by a kill signal. The timeout is in jiffies.
+- *
+- * Return: -ERESTARTSYS if interrupted, 0 if timed out, positive (at least 1,
+- * or number of jiffies left till timeout) if completed.
+- */
+-long __sched
+-wait_for_completion_killable_timeout(struct completion *x,
+-				     unsigned long timeout)
+-{
+-	return wait_for_common(x, timeout, TASK_KILLABLE);
+-}
+-EXPORT_SYMBOL(wait_for_completion_killable_timeout);
+-
+-/**
+- *	try_wait_for_completion - try to decrement a completion without blocking
+- *	@x:	completion structure
+- *
+- *	Return: 0 if a decrement cannot be done without blocking
+- *		 1 if a decrement succeeded.
+- *
+- *	If a completion is being used as a counting completion,
+- *	attempt to decrement the counter without blocking. This
+- *	enables us to avoid waiting if the resource the completion
+- *	is protecting is not available.
+- */
+-bool try_wait_for_completion(struct completion *x)
 -{
 -	unsigned long flags;
--	int wake_flags = WF_SYNC;
+-	int ret = 1;
 -
--	if (unlikely(!q))
--		return;
--
--	if (unlikely(nr_exclusive != 1))
--		wake_flags = 0;
--
--	spin_lock_irqsave(&q->lock, flags);
--	__wake_up_common(q, mode, nr_exclusive, wake_flags, key);
--	spin_unlock_irqrestore(&q->lock, flags);
+-	spin_lock_irqsave(&x->wait.lock, flags);
+-	if (!x->done)
+-		ret = 0;
+-	else
+-		x->done--;
+-	spin_unlock_irqrestore(&x->wait.lock, flags);
+-	return ret;
 -}
--EXPORT_SYMBOL_GPL(__wake_up_sync_key);
+-EXPORT_SYMBOL(try_wait_for_completion);
 -
--/*
-- * __wake_up_sync - see __wake_up_sync_key()
+-/**
+- *	completion_done - Test to see if a completion has any waiters
+- *	@x:	completion structure
+- *
+- *	Return: 0 if there are waiters (wait_for_completion() in progress)
+- *		 1 if there are no waiters.
+- *
 - */
--void __wake_up_sync(wait_queue_head_t *q, unsigned int mode, int nr_exclusive)
+-bool completion_done(struct completion *x)
 -{
--	__wake_up_sync_key(q, mode, nr_exclusive, NULL);
--}
--EXPORT_SYMBOL_GPL(__wake_up_sync);	/* For internal use only */
+-	unsigned long flags;
+-	int ret = 1;
 -
- /**
-  * complete: - signals a single thread waiting on this completion
-  * @x:  holds the state of this particular completion
-@@ -2809,7 +2706,7 @@ void complete(struct completion *x)
- 
- 	spin_lock_irqsave(&x->wait.lock, flags);
- 	x->done++;
--	__wake_up_common(&x->wait, TASK_NORMAL, 1, 0, NULL);
-+	__wake_up_locked(&x->wait, TASK_NORMAL, 1);
- 	spin_unlock_irqrestore(&x->wait.lock, flags);
- }
- EXPORT_SYMBOL(complete);
-@@ -2829,7 +2726,7 @@ void complete_all(struct completion *x)
- 
- 	spin_lock_irqsave(&x->wait.lock, flags);
- 	x->done += UINT_MAX/2;
--	__wake_up_common(&x->wait, TASK_NORMAL, 0, 0, NULL);
-+	__wake_up_locked(&x->wait, TASK_NORMAL, 0);
- 	spin_unlock_irqrestore(&x->wait.lock, flags);
- }
- EXPORT_SYMBOL(complete_all);
-diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
-index de21c63..7d50f79 100644
---- a/kernel/sched/wait.c
-+++ b/kernel/sched/wait.c
-@@ -53,6 +53,109 @@ EXPORT_SYMBOL(remove_wait_queue);
- 
- 
- /*
-+ * The core wakeup function. Non-exclusive wakeups (nr_exclusive == 0) just
-+ * wake everything up. If it's an exclusive wakeup (nr_exclusive == small +ve
-+ * number) then we wake all the non-exclusive tasks and one exclusive task.
-+ *
-+ * There are circumstances in which we can try to wake a task which has already
-+ * started to run but is not in state TASK_RUNNING. try_to_wake_up() returns
-+ * zero in this (rare) case, and we handle it by continuing to scan the queue.
-+ */
-+static void __wake_up_common(wait_queue_head_t *q, unsigned int mode,
-+			int nr_exclusive, int wake_flags, void *key)
-+{
-+	wait_queue_t *curr, *next;
-+
-+	list_for_each_entry_safe(curr, next, &q->task_list, task_list) {
-+		unsigned flags = curr->flags;
-+
-+		if (curr->func(curr, mode, wake_flags, key) &&
-+				(flags & WQ_FLAG_EXCLUSIVE) && !--nr_exclusive)
-+			break;
-+	}
-+}
-+
-+/**
-+ * __wake_up - wake up threads blocked on a waitqueue.
-+ * @q: the waitqueue
-+ * @mode: which threads
-+ * @nr_exclusive: how many wake-one or wake-many threads to wake up
-+ * @key: is directly passed to the wakeup function
-+ *
-+ * It may be assumed that this function implies a write memory barrier before
-+ * changing the task state if and only if any tasks are woken up.
-+ */
-+void __wake_up(wait_queue_head_t *q, unsigned int mode,
-+			int nr_exclusive, void *key)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&q->lock, flags);
-+	__wake_up_common(q, mode, nr_exclusive, 0, key);
-+	spin_unlock_irqrestore(&q->lock, flags);
-+}
-+EXPORT_SYMBOL(__wake_up);
-+
-+/*
-+ * Same as __wake_up but called with the spinlock in wait_queue_head_t held.
-+ */
-+void __wake_up_locked(wait_queue_head_t *q, unsigned int mode, int nr)
-+{
-+	__wake_up_common(q, mode, nr, 0, NULL);
-+}
-+EXPORT_SYMBOL_GPL(__wake_up_locked);
-+
-+void __wake_up_locked_key(wait_queue_head_t *q, unsigned int mode, void *key)
-+{
-+	__wake_up_common(q, mode, 1, 0, key);
-+}
-+EXPORT_SYMBOL_GPL(__wake_up_locked_key);
-+
-+/**
-+ * __wake_up_sync_key - wake up threads blocked on a waitqueue.
-+ * @q: the waitqueue
-+ * @mode: which threads
-+ * @nr_exclusive: how many wake-one or wake-many threads to wake up
-+ * @key: opaque value to be passed to wakeup targets
-+ *
-+ * The sync wakeup differs that the waker knows that it will schedule
-+ * away soon, so while the target thread will be woken up, it will not
-+ * be migrated to another CPU - ie. the two threads are 'synchronized'
-+ * with each other. This can prevent needless bouncing between CPUs.
-+ *
-+ * On UP it can prevent extra preemption.
-+ *
-+ * It may be assumed that this function implies a write memory barrier before
-+ * changing the task state if and only if any tasks are woken up.
-+ */
-+void __wake_up_sync_key(wait_queue_head_t *q, unsigned int mode,
-+			int nr_exclusive, void *key)
-+{
-+	unsigned long flags;
-+	int wake_flags = 1; /* XXX WF_SYNC */
-+
-+	if (unlikely(!q))
-+		return;
-+
-+	if (unlikely(nr_exclusive != 1))
-+		wake_flags = 0;
-+
-+	spin_lock_irqsave(&q->lock, flags);
-+	__wake_up_common(q, mode, nr_exclusive, wake_flags, key);
-+	spin_unlock_irqrestore(&q->lock, flags);
-+}
-+EXPORT_SYMBOL_GPL(__wake_up_sync_key);
-+
-+/*
-+ * __wake_up_sync - see __wake_up_sync_key()
-+ */
-+void __wake_up_sync(wait_queue_head_t *q, unsigned int mode, int nr_exclusive)
-+{
-+	__wake_up_sync_key(q, mode, nr_exclusive, NULL);
-+}
-+EXPORT_SYMBOL_GPL(__wake_up_sync);	/* For internal use only */
-+
-+/*
-  * Note: we use "set_current_state()" _after_ the wait-queue add,
-  * because we need a memory barrier there on SMP, so that any
-  * wake-function that tests for the wait-queue being active
+-	spin_lock_irqsave(&x->wait.lock, flags);
+-	if (!x->done)
+-		ret = 0;
+-	spin_unlock_irqrestore(&x->wait.lock, flags);
+-	return ret;
+-}
+-EXPORT_SYMBOL(completion_done);
+-
+ static long __sched
+ sleep_on_common(wait_queue_head_t *q, int state, long timeout)
+ {
