@@ -1,101 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755713Ab3KFAxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 19:53:41 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:38834 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755373Ab3KFAxk (ORCPT
+	id S932100Ab3KFAyj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 19:54:39 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:57358 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932065Ab3KFAyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 19:53:40 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] perf: Fix version when building out of tree
-Date: Tue,  5 Nov 2013 17:53:33 -0700
-Message-Id: <1383699213-23981-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Tue, 5 Nov 2013 19:54:38 -0500
+From: Olav Haugan <ohaugan@codeaurora.org>
+To: gregkh@linuxfoundation.org
+Cc: ngupta@vflare.org, sjenning@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, minchan@kernel.org,
+        linux-arm-msm@vger.kernel.org, Olav Haugan <ohaugan@codeaurora.org>
+Subject: [PATCH] staging: zsmalloc: Ensure handle is never 0 on success
+Date: Tue,  5 Nov 2013 16:54:12 -0800
+Message-Id: <1383699252-8898-1-git-send-email-ohaugan@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When building perf out of tree
-    make perf-tar-src-pkg
-    tar -xf perf-<ver>.tar -C /tmp
-    cd /tmp/perf<ver>
-    make -C tools/perf
+zsmalloc encodes a handle using the page pfn and an object
+index. On some hardware platforms the pfn could be 0 and this
+causes the encoded handle to be 0 which is interpreted as an
+allocation failure.
 
-you get the warning message:
-    make[1]: *** No rule to make target `kernelversion'.  Stop.
+To prevent this false error we ensure that the encoded handle
+will not be 0 when allocation succeeds.
 
-Fix by saving the perf version in the tar file and using that for the
-out of tree builds.
-
-Suggested-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Change-Id: Ifff930dcf254915b497aec5cb36f152a5e5365d6
+Signed-off-by: Olav Haugan <ohaugan@codeaurora.org>
 ---
- scripts/package/Makefile         |    4 +++-
- tools/perf/util/PERF-VERSION-GEN |   16 +++++++++++++++-
- 2 files changed, 18 insertions(+), 2 deletions(-)
+ drivers/staging/zsmalloc/zsmalloc-main.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/scripts/package/Makefile b/scripts/package/Makefile
-index a4f31c900fa6..e44653986e0a 100644
---- a/scripts/package/Makefile
-+++ b/scripts/package/Makefile
-@@ -115,7 +115,9 @@ git --git-dir=$(srctree)/.git archive --prefix=$(perf-tar)/         \
- 	-o $(perf-tar).tar;                                         \
- mkdir -p $(perf-tar);                                               \
- git --git-dir=$(srctree)/.git rev-parse HEAD > $(perf-tar)/HEAD;    \
--tar rf $(perf-tar).tar $(perf-tar)/HEAD;                            \
-+(cd $(srctree)/tools/perf;                                          \
-+util/PERF-VERSION-GEN short ../../$(perf-tar)/ 2>/dev/null);        \
-+tar rf $(perf-tar).tar $(perf-tar)/HEAD $(perf-tar)/PERF-VERSION-FILE; \
- rm -r $(perf-tar);                                                  \
- $(if $(findstring tar-src,$@),,                                     \
- $(if $(findstring bz2,$@),bzip2,                                    \
-diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-index 15a77b7c0e36..142d7dcccfd2 100755
---- a/tools/perf/util/PERF-VERSION-GEN
-+++ b/tools/perf/util/PERF-VERSION-GEN
-@@ -1,5 +1,12 @@
- #!/bin/sh
+diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+index 523b937..0e32c0f 100644
+--- a/drivers/staging/zsmalloc/zsmalloc-main.c
++++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+@@ -441,7 +441,7 @@ static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
+ 	}
  
-+SHORT_FORM=no
-+
-+if [ "$1" = "short" ]  ; then
-+	SHORT_FORM=yes
-+	shift
-+fi
-+
- if [ $# -eq 1 ]  ; then
- 	OUTPUT=$1
- fi
-@@ -19,6 +26,9 @@ if test -d ../../.git -o -f ../../.git
- then
- 	TAG=$(git describe --abbrev=0 --match "v[0-9].[0-9]*" 2>/dev/null )
- 	CID=$(git log -1 --abbrev=4 --pretty=format:"%h" 2>/dev/null) && CID="-g$CID"
-+elif test -f ../../PERF-VERSION-FILE
-+then
-+	TAG=$(cat ../../PERF-VERSION-FILE)
- fi
- if test -z "$TAG"
- then
-@@ -41,7 +51,11 @@ else
- fi
- test "$VN" = "$VC" || {
- 	echo >&2 "PERF_VERSION = $VN"
--	echo "#define PERF_VERSION \"$VN\"" >$GVF
-+	if [ "$SHORT_FORM" = "yes" ]; then
-+		echo "$VN" >$GVF
-+	else
-+		echo "#define PERF_VERSION \"$VN\"" >$GVF
-+	fi
+ 	handle = page_to_pfn(page) << OBJ_INDEX_BITS;
+-	handle |= (obj_idx & OBJ_INDEX_MASK);
++	handle |= ((obj_idx + 1) & OBJ_INDEX_MASK);
+ 
+ 	return (void *)handle;
+ }
+@@ -451,7 +451,7 @@ static void obj_handle_to_location(unsigned long handle, struct page **page,
+ 				unsigned long *obj_idx)
+ {
+ 	*page = pfn_to_page(handle >> OBJ_INDEX_BITS);
+-	*obj_idx = handle & OBJ_INDEX_MASK;
++	*obj_idx = (handle & OBJ_INDEX_MASK) - 1;
  }
  
- 
+ static unsigned long obj_idx_to_offset(struct page *page,
 -- 
-1.7.10.1
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
