@@ -1,40 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580Ab3KFNmP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 08:42:15 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:47383 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756432Ab3KFNmO (ORCPT
+	id S1756649Ab3KFNm0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 08:42:26 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56312 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756221Ab3KFNmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 08:42:14 -0500
+	Wed, 6 Nov 2013 08:42:24 -0500
+Date: Wed, 6 Nov 2013 10:42:10 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Rodrigo Campos <rodrigo@sdfg.com.ar>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 01/10] perf hists: Consolidate __hists__add_*entry()
+Message-ID: <20131106134210.GA2711@ghostprotocols.net>
+References: <1383682201-19399-1-git-send-email-acme@infradead.org>
+ <1383682201-19399-2-git-send-email-acme@infradead.org>
+ <20131105215243.GA8303@sdfg.com.ar>
 MIME-Version: 1.0
-In-Reply-To: <52782793.8040103@ahsoftware.de>
-References: <CA+55aFwLkvSkparyvekdmMyvr6Srw1KkzTBp=_w0oQRWnPpJug@mail.gmail.com>
-	<5277D2C3.3020203@ahsoftware.de>
-	<CAMuHMdUHcbHXa8YAvyRMG1+ww6yLZtiXdab47VT5EqY9oe_LtA@mail.gmail.com>
-	<52782793.8040103@ahsoftware.de>
-Date: Wed, 6 Nov 2013 08:42:12 -0500
-Message-ID: <CAHW+f2J8L8ys-=Eszf4QQHOkr=vC9nVv63Pz4v_=wZNxWCjDvQ@mail.gmail.com>
-Subject: Re: Linux 3.12 released .. and no merge window yet .. and 4.0 plans?
-From: Keith Curtis <keithcu@gmail.com>
-To: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131105215243.GA8303@sdfg.com.ar>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't know if you all should spend time working only on bugs, but I
-believe more time should be spent on the bug *list*. There are many
-users patiently waiting for the kernel to work for their computer. The
-pleas for help can be read in the bug database. The data can be used
-to determine the selective places in the code that need more
-brainpower. Send in the cavalry! Some have been waiting for years. I'm
-running into 9 kernel / X bugs on my new Lenovo Yoga 2 with 3.11.6. An
-unprioritized buglist also discourages people from entering new, valid
-ones. As the issue list gets in better shape, things will become a bit
-more relaxed. Quality metrics around bug count and age can be useful.
+Em Tue, Nov 05, 2013 at 09:52:43PM +0000, Rodrigo Campos escreveu:
+> On Tue, Nov 05, 2013 at 05:09:52PM -0300, Arnaldo Carvalho de Melo wrote:
+> > @@ -486,15 +425,15 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+> >  		.stat = {
+> > -			.period	= period,
+> >  			.nr_events = 1,
+> > +			.period	= period,
+> >  			.weight = weight,
+> >  		},
 
-Regards,
+> Isn't this seems unrelated and unneeded ?
 
--Keith
+> The "period" field is before the "nr_events" field in the struct, so maybe is
+> more clear to leave it as it was ?  The actual relative order (it has some more
+> fields) in the struct is: period, weigth, nr_events. Might be better if they
+> match that order here ? Although not sure since we are using the fields with
+> name and is clear enough.
+
+Yeah, this shouldn't be there, I thought about fixing this up to reduce
+the patch size, but ended up being lenient.
+
+Namhyung, please avoid such unneeded patch churn :-)
+
+- Arnaldo
