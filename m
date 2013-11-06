@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab3KFUeh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 15:34:37 -0500
-Received: from smtp137.dfw.emailsrvr.com ([67.192.241.137]:42804 "EHLO
-	smtp137.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754997Ab3KFUef (ORCPT
+	id S1756075Ab3KFUgP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 15:36:15 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:46590 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755423Ab3KFUgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 15:34:35 -0500
-Date: Wed, 6 Nov 2013 21:34:30 +0100
-From: Andreas Herrmann <andreas.herrmann@calxeda.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm/slub: Switch slub_debug kernel option to early_param
- to avoid boot panic
-Message-ID: <20131106203429.GL5661@alberich>
-References: <20131106184529.GB5661@alberich>
- <000001422ed8406b-14bef091-eee0-4e0e-bcdd-a8909c605910-000000@email.amazonses.com>
- <20131106195417.GK5661@alberich>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131106195417.GK5661@alberich>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 6 Nov 2013 15:36:14 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+To: konrad.wilk@oracle.com, david.vrabel@citrix.com
+Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        boris.ostrovsky@oracle.com
+Subject: [PATCH] xen/balloon: Set balloon's initial state to number of existing RAM pages
+Date: Wed,  6 Nov 2013 15:37:40 -0500
+Message-Id: <1383770260-15395-1-git-send-email-boris.ostrovsky@oracle.com>
+X-Mailer: git-send-email 1.8.1.4
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 08:54:17PM +0100, Andreas Herrmann wrote:
-> On Wed, Nov 06, 2013 at 02:16:33PM -0500, Christoph Lameter wrote:
-> > On Wed, 6 Nov 2013, Andreas Herrmann wrote:
-> > 
-> > > When I've used slub_debug kernel option (e.g.
-> > > "slub_debug=,skbuff_fclone_cache" or similar) on a debug session I've
-> > > seen a panic like:
-> > 
-> > Hmmm.. That looks like its due to some slabs not having names
-> > during early boot. kmem_cache_flags is called with NULL as a parameter.
-> 
-> That's because the slub_debug parameter is not evaluated before
-> kmem_cache_flags is called.
-> 
-> Older kernels didn't show this problem. I think the sequence of those
-> calls has changed. Not sure what patch set has made that change.
+Currently balloon's initial value is set to max_pfn which includes
+non-RAM ranges such as MMIO hole. As result, initial memory target
+(specified by guest's configuration file) will appear smaller than
+what balloon driver perceives to be the current number of available
+pages. Thus it will balloon down "extra" pages, decreasing amount of
+available memory for no good reason.
 
-Please ignore this comment.
-I revisisted the code and of course you are right.
-Hmm, now wondering why my patch covered the panic.
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+---
+ drivers/xen/balloon.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> > Are you sure that this fixes the issue? Looks like the
-> > kmem_cache_flag function should fail regardless of how early you set it.
-> > 
-> > AFAICT the right fix would be:
-> 
-> That would avoid the panic but I guess it won't enable slub debugging.
+diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+index b232908..1b62304 100644
+--- a/drivers/xen/balloon.c
++++ b/drivers/xen/balloon.c
+@@ -641,7 +641,7 @@ static int __init balloon_init(void)
+ 
+ 	balloon_stats.current_pages = xen_pv_domain()
+ 		? min(xen_start_info->nr_pages - xen_released_pages, max_pfn)
+-		: max_pfn;
++		: get_num_physpages();
+ 	balloon_stats.target_pages  = balloon_stats.current_pages;
+ 	balloon_stats.balloon_low   = 0;
+ 	balloon_stats.balloon_high  = 0;
+-- 
+1.8.1.4
 
-Ok, the latter is bogus. Of course debugging is switched on.
-
-> However I'll test this.
-
-Your patch fixed it.
-
-
-Andreas
