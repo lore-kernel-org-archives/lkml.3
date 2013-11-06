@@ -1,138 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509Ab3KFXef (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 18:34:35 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:64875 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab3KFXec (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 18:34:32 -0500
-Date: Wed, 6 Nov 2013 23:34:27 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Alan Tull <delicious.quinoa@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-doc@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jamie Iles <jamie@jamieiles.com>, Heiko Stuebner <heiko@sntech.de>,
-        Alan Tull <atull@altera.com>, Dinh Nguyen <dinguyen@altera.com>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>
-Subject: Re: [PATCH 1/1] gpio: add a driver for the Synopsys DesignWare APB
- GPIO block
-Message-ID: <20131106233427.GA6090@maple>
-References: <1383778182-16941-1-git-send-email-delicious.quinoa@gmail.com>
- <1383778182-16941-2-git-send-email-delicious.quinoa@gmail.com>
+	id S1752668Ab3KFXlo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 18:41:44 -0500
+Received: from arafel.iwakd.de ([78.46.72.57]:33833 "EHLO arafel.iwakd.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752583Ab3KFXlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 18:41:32 -0500
+X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Nov 2013 18:41:31 EST
+Message-ID: <527AD159.4080702@iwakd.de>
+Date: Thu, 07 Nov 2013 00:31:37 +0100
+From: Christian Seiler <christian@iwakd.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383778182-16941-2-git-send-email-delicious.quinoa@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>
+CC: Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Brad Spengler <spender@grsecurity.net>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        Lxc development list <lxc-devel@lists.sourceforge.net>
+Subject: Re: CLONE_PARENT after setns(CLONE_NEWPID)
+References: <20131106180232.GA8980@ac100> <20131106193311.GA18720@redhat.com> <87vc05jgak.fsf@tw-ebiederman.twitter.com>
+In-Reply-To: <87vc05jgak.fsf@tw-ebiederman.twitter.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+Hi there,
 
-On Wed, Nov 06, 2013 at 04:49:42PM -0600, Alan Tull wrote:
-> diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
-> new file mode 100644
-> index 0000000..7957dfd
-> --- /dev/null
-> +++ b/drivers/gpio/gpio-dwapb.c
-> @@ -0,0 +1,458 @@
-> +/*
-> + * Copyright (c) 2011 Jamie Iles
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * All enquiries to support@picochip.com
-> + */
-> +#include <linux/basic_mmio_gpio.h>
-> +#include <linux/init.h>
-> +#include <linux/io.h>
-> +#include <linux/ioport.h>
-> +#include <linux/irq.h>
-> +#include <linux/irqdomain.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/spinlock.h>
-> +
-> +#define GPIO_SWPORTA_DR		0x00
-> +#define GPIO_SWPORTA_DDR	0x04
-> +#define GPIO_SWPORTB_DR		0x0c
-> +#define GPIO_SWPORTB_DDR	0x10
-> +#define GPIO_SWPORTC_DR		0x18
-> +#define GPIO_SWPORTC_DDR	0x1c
-> +#define GPIO_SWPORTD_DR		0x24
-> +#define GPIO_SWPORTD_DDR	0x28
-> +#define GPIO_INTEN		0x30
-> +#define GPIO_INTMASK		0x34
-> +#define GPIO_INTTYPE_LEVEL	0x38
-> +#define GPIO_INT_POLARITY	0x3c
-> +#define GPIO_INTSTATUS		0x40
-> +#define GPIO_PORTA_EOI		0x4c
-> +#define GPIO_EXT_PORTA		0x50
-> +#define GPIO_EXT_PORTB		0x54
-> +#define GPIO_EXT_PORTC		0x58
-> +#define GPIO_EXT_PORTD		0x5c
-> +
-> +struct dwapb_gpio;
-> +
-> +struct dwapb_gpio_port {
-> +	struct bgpio_chip	bgc;
-> +	bool			is_registered;
-> +	struct dwapb_gpio	*gpio;
-> +};
-> +
-> +struct dwapb_gpio {
-> +	struct	device		*dev;
-> +	void __iomem		*regs;
-> +	struct dwapb_gpio_port	*ports;
-> +	unsigned int		nr_ports;
-> +	struct irq_domain	*domain;
-> +	int			hwirq;
+> Having used bash as an init process I know it can handle unexpeted
+> children.  However using CLONE_PARENT in this way still seems a little
+> dodgy.  Or am I misunderstanding why you are using CLONE_PARENT?
 
-I'm not sure I fully understand what hwirq is in this context - is it 
-the IRQ line from the Synopsys block to the system interrupt controller?  
-If so I don't think this covers all configurations - the Picochip 
-devices for instance have each GPIO in port A as an individual IRQ going 
-to the VIC.
+Since I (re)wrote that part of LXC, I should perhaps clarify how that is
+used: In case of LXC, the grandparent is lxc-attach itself. The logic
+goes as follows:
 
-It looks here like hwirq is used for all of the interrupt registers so 
-only one GPIO interrupt is supported?
+  - user calls lxc-attach -n $container -- /bin/command/to/execute
+  - lxc-attach does a fork()
+  - child process does setns()
+  - child process does clone(CLONE_PARENT)
+  - child process exits
+  - new process is now in all of the correct namespaces
+  - new process does some IPC (socketpair() from before fork/clone) to
+    tell original lxc-attach process to finish initialization
+    (mainly: add new process to the proper cgroups)
+  - new process exec()s to /bin/command/to/execute
+  - original lxc-attach process waitpid()s for the attached process
+    to exit
 
-> +static struct platform_driver dwapb_gpio_driver = {
-> +	.driver		= {
-> +		.name	= "gpio-dwapb",
-> +		.owner	= THIS_MODULE,
-> +		.of_match_table = of_match_ptr(dwapb_of_match),
-> +	},
-> +	.probe		= dwapb_gpio_probe,
-> +	.remove		= dwapb_gpio_remove,
-> +};
-> +
-> +static int __init dwapb_gpio_init(void)
-> +{
-> +	return platform_driver_register(&dwapb_gpio_driver);
-> +}
-> +postcore_initcall(dwapb_gpio_init);
-> +
-> +static void __exit dwapb_gpio_exit(void)
-> +{
-> +	platform_driver_unregister(&dwapb_gpio_driver);
-> +}
-> +module_exit(dwapb_gpio_exit);
+So the only process that needs to handle a new child is going to be
+lxc-attach itself, but that is designed in such a way that it expects
+the new child.
 
-We can replace the registration and unregistration with 
-module_platform_driver() now.
+(The initial fork is necessary because once setns(userns, mntns) has
+occurred, the cgroup tree may not be writable anymore (depening on
+further circumstances), so it would be impossible to just do setns() and
+then fork() if one then wants to add the new process to the proper cgroups.)
 
-Jamie
+> That trick sounds like it might be worth adding to nsenter in util-linux
+> just to simplify the code.
+
+I think nsenter currently only does setns() and then fork(), which is
+simpler than lxc-attach - mainly because there's no need to attach the
+process to cgroups etc. lxc-attach's approach does not eliminate the
+need for the original process wait()ing on the attached process, the
+CLONE_PARENT is really just used internally to simplify the process
+hierarchy and also the IPC required.
+
+Also, re: general point in this thread: I don't see how CLONE_PARENT
+could be harmful in any way when used after setns() moreso than it might
+already be harmful without setns(). I could always write a program that
+just does clone(CLONE_PARENT) (and nothing else) and then the calling
+process would also get an unexpected child - I don't see how the pid
+namespace status of that child would change anything here. So I'd
+definitely be in favor of allowing CLONE_PARENT after setns().
+
+Christian
+
