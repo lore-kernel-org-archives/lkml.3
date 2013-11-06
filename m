@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab3KFUdh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 15:33:37 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:58410 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755866Ab3KFUdf (ORCPT
+	id S1756151Ab3KFUeh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 15:34:37 -0500
+Received: from smtp137.dfw.emailsrvr.com ([67.192.241.137]:42804 "EHLO
+	smtp137.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754997Ab3KFUef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 15:33:35 -0500
+	Wed, 6 Nov 2013 15:34:35 -0500
+Date: Wed, 6 Nov 2013 21:34:30 +0100
+From: Andreas Herrmann <andreas.herrmann@calxeda.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/slub: Switch slub_debug kernel option to early_param
+ to avoid boot panic
+Message-ID: <20131106203429.GL5661@alberich>
+References: <20131106184529.GB5661@alberich>
+ <000001422ed8406b-14bef091-eee0-4e0e-bcdd-a8909c605910-000000@email.amazonses.com>
+ <20131106195417.GK5661@alberich>
 MIME-Version: 1.0
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E030458DEEC7E@US01WEMBX2.internal.synopsys.com>
-References: <20130821184042.GC3577@xanatos>
-	<CAODwPW8tCFaykJnatyweJ96UzntRVNmo3WU1UYXw9nwp2bq_Ow@mail.gmail.com>
-	<20130822004514.GB19747@xanatos>
-	<CAODwPW99gLBtNQD=UyPq9DqY0TtNubR_7e+FymkfO5u2+et++Q@mail.gmail.com>
-	<A2CA0424C0A6F04399FB9E1CD98E030458DEC6BC@US01WEMBX2.internal.synopsys.com>
-	<20130826191411.GG5112@xanatos>
-	<A2CA0424C0A6F04399FB9E1CD98E030458DED818@US01WEMBX2.internal.synopsys.com>
-	<20130828215142.GJ26483@xanatos>
-	<A2CA0424C0A6F04399FB9E1CD98E030458DEE7A3@US01WEMBX2.internal.synopsys.com>
-	<CAODwPW_nPvS3Y9J2J9nU49uuDSB0kVirnKTF7HejfcYJEhgsUw@mail.gmail.com>
-	<20130829171852.GB5538@xanatos>
-	<CAODwPW9inceudHq9L7JB60q+g91UFxqtdpiS7T6PWvwS7RwA4g@mail.gmail.com>
-	<A2CA0424C0A6F04399FB9E1CD98E030458DEEC7E@US01WEMBX2.internal.synopsys.com>
-Date: Wed, 6 Nov 2013 12:33:33 -0800
-X-Google-Sender-Auth: Y4WfYsBGOu9-rzalwFOgcYqnKuo
-Message-ID: <CAODwPW-maNXVMQM4WzZC8ZSM-2Zh=7wezfTQ8p=78HTb05gB=A@mail.gmail.com>
-Subject: Re: [PATCH] usb: xhci-plat: Enable USB 2.0 hardware LPM support for
- platform xHCs
-From: Julius Werner <jwerner@chromium.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Julius Werner <jwerner@chromium.org>,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Benson Leung <bleung@chromium.org>, Felipe Balbi <balbi@ti.com>,
-        "mathias.nyman@linux.intel.com" <mathias.nyman@linux.intel.com>,
-        Josh Triplett <josh.triplett@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131106195417.GK5661@alberich>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-*bump*
+On Wed, Nov 06, 2013 at 08:54:17PM +0100, Andreas Herrmann wrote:
+> On Wed, Nov 06, 2013 at 02:16:33PM -0500, Christoph Lameter wrote:
+> > On Wed, 6 Nov 2013, Andreas Herrmann wrote:
+> > 
+> > > When I've used slub_debug kernel option (e.g.
+> > > "slub_debug=,skbuff_fclone_cache" or similar) on a debug session I've
+> > > seen a panic like:
+> > 
+> > Hmmm.. That looks like its due to some slabs not having names
+> > during early boot. kmem_cache_flags is called with NULL as a parameter.
+> 
+> That's because the slub_debug parameter is not evaluated before
+> kmem_cache_flags is called.
+> 
+> Older kernels didn't show this problem. I think the sequence of those
+> calls has changed. Not sure what patch set has made that change.
 
-Hi Sarah, is there anything else that needs to be resolved to pick
-this patch up? Looks like Matthias' recent LPM fixes are all in now so
-there should be no way this could cause any trouble?
+Please ignore this comment.
+I revisisted the code and of course you are right.
+Hmm, now wondering why my patch covered the panic.
+
+> > Are you sure that this fixes the issue? Looks like the
+> > kmem_cache_flag function should fail regardless of how early you set it.
+> > 
+> > AFAICT the right fix would be:
+> 
+> That would avoid the panic but I guess it won't enable slub debugging.
+
+Ok, the latter is bogus. Of course debugging is switched on.
+
+> However I'll test this.
+
+Your patch fixed it.
+
+
+Andreas
