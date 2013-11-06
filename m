@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab3KFMoF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 07:44:05 -0500
-Received: from imap.thunk.org ([74.207.234.97]:54916 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756360Ab3KFMoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 07:44:02 -0500
-Date: Wed, 6 Nov 2013 07:43:54 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: Pavel Machek <pavel@ucw.cz>, sandy harris <sandyinchina@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        Nicholas Mc Guire <der.herr@hofr.at>
-Subject: Re: [PATCH] CPU Jitter RNG: inclusion into kernel crypto API and
- /dev/random
-Message-ID: <20131106124354.GJ14235@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Stephan Mueller <smueller@chronox.de>, Pavel Machek <pavel@ucw.cz>,
-	sandy harris <sandyinchina@gmail.com>, linux-kernel@vger.kernel.org,
-	linux-crypto@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
-References: <2579337.FPgJGgHYdz@tauon>
- <20131103124135.GB32091@thunk.org>
- <1762585.cs6mj77ady@tauon>
- <4306229.ErfOL470s2@tauon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4306229.ErfOL470s2@tauon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1756701Ab3KFMp4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 07:45:56 -0500
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:39532 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756363Ab3KFMpy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 07:45:54 -0500
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
+        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
+        cascardo@linux.vnet.ibm.com, michael@ibmra.de,
+        haver@linux.vnet.ibm.com
+Subject: [PATCH 0/6] Generic WorkQueue Engine (GenWQE) device driver (v7)
+Date: Wed,  6 Nov 2013 13:45:37 +0100
+Message-Id: <1383741943-14609-1-git-send-email-haver@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13110612-5024-0000-0000-000007BC6084
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 12:49:45PM +0100, Stephan Mueller wrote:
-> Here is a quote from his answer to my question whether he was able to 
-> identify the root cause:
-> 
-> "its inherent in the microtiming of Hardware and there is nothing you 
-> can do about it if you want the root cause is quantum physics"
+The GenWQE device is a PCIe card used to acclerate different tasks.
+Since it is configurable, it can be adjusted to different purposes.
+Our initial task for the card is to do zlib style compression/decompression
+RFC1950, RFC1951, and RFC1952.
 
-That's unfortunate, since it leaves open the question of whether this
-jitter is something that could be at least somewhat predictable if you
-had a lot more information about the internal works of the CPU or not....
+I kindly ask for your feedback on the code, such that I can do
+any change which helps me to get it integrated smoothly.
 
-      	       		   	     	      - Ted
+The genwqe driver has a user-space interface described in
+linux/include/genwqe/genwqe_card.h. There are several ioctls which can
+be used to talk to the driver.
+
+In addition there are some sysfs entries where information can be
+exchanged with user-space. The sysfs interface is described in
+Documentation/ABI/testing/sysfs-driver-genwqe.
+
+Now the driver has also a debugfs interface. This is described in
+Documentation/ABI/testing/debugfs-driver-genwqe.
+
+Frank Haverkamp (6):
+  GenWQE PCI support, health monitoring and recovery
+  GenWQE Character device and DDCB queue
+  GenWQE Utility functions
+  GenWQE Debugfs interfaces
+  GenWQE Sysfs interfaces
+  GenWQE Enable driver
+
+ Documentation/ABI/testing/debugfs-driver-genwqe |   70 ++
+ Documentation/ABI/testing/sysfs-driver-genwqe   |   50 +
+ drivers/misc/Kconfig                            |    1 +
+ drivers/misc/Makefile                           |    1 +
+ drivers/misc/genwqe/Kconfig                     |   13 +
+ drivers/misc/genwqe/Makefile                    |    8 +
+ drivers/misc/genwqe/card_base.c                 | 1203 ++++++++++++++++++
+ drivers/misc/genwqe/card_base.h                 |  570 +++++++++
+ drivers/misc/genwqe/card_ddcb.c                 | 1380 +++++++++++++++++++++
+ drivers/misc/genwqe/card_ddcb.h                 |  188 +++
+ drivers/misc/genwqe/card_debugfs.c              |  480 ++++++++
+ drivers/misc/genwqe/card_dev.c                  | 1499 +++++++++++++++++++++++
+ drivers/misc/genwqe/card_sysfs.c                |  277 +++++
+ drivers/misc/genwqe/card_utils.c                |  983 +++++++++++++++
+ drivers/misc/genwqe/genwqe_driver.h             |   75 ++
+ include/linux/genwqe/genwqe_card.h              |  547 +++++++++
+ 16 files changed, 7345 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/debugfs-driver-genwqe
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-genwqe
+ create mode 100644 drivers/misc/genwqe/Kconfig
+ create mode 100644 drivers/misc/genwqe/Makefile
+ create mode 100644 drivers/misc/genwqe/card_base.c
+ create mode 100644 drivers/misc/genwqe/card_base.h
+ create mode 100644 drivers/misc/genwqe/card_ddcb.c
+ create mode 100644 drivers/misc/genwqe/card_ddcb.h
+ create mode 100644 drivers/misc/genwqe/card_debugfs.c
+ create mode 100644 drivers/misc/genwqe/card_dev.c
+ create mode 100644 drivers/misc/genwqe/card_sysfs.c
+ create mode 100644 drivers/misc/genwqe/card_utils.c
+ create mode 100644 drivers/misc/genwqe/genwqe_driver.h
+ create mode 100644 include/linux/genwqe/genwqe_card.h
+
