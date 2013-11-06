@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab3KFTvX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 14:51:23 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:55656 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab3KFTvW (ORCPT
+	id S1755410Ab3KFTyZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 14:54:25 -0500
+Received: from smtp161.dfw.emailsrvr.com ([67.192.241.161]:58455 "EHLO
+	smtp161.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172Ab3KFTyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 14:51:22 -0500
+	Wed, 6 Nov 2013 14:54:23 -0500
+Date: Wed, 6 Nov 2013 20:54:17 +0100
+From: Andreas Herrmann <andreas.herrmann@calxeda.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/slub: Switch slub_debug kernel option to early_param
+ to avoid boot panic
+Message-ID: <20131106195417.GK5661@alberich>
+References: <20131106184529.GB5661@alberich>
+ <000001422ed8406b-14bef091-eee0-4e0e-bcdd-a8909c605910-000000@email.amazonses.com>
 MIME-Version: 1.0
-In-Reply-To: <20131106193311.GA18720@redhat.com>
-References: <20131106180232.GA8980@ac100> <20131106193311.GA18720@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 6 Nov 2013 11:50:59 -0800
-Message-ID: <CALCETrV=G30_4bVQbRF0Z9kzYpP8V+aUf-uZES+qVD5MXEAWZQ@mail.gmail.com>
-Subject: Re: CLONE_PARENT after setns(CLONE_NEWPID)
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Christian Seiler <christian@iwakd.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Lxc development list <lxc-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <000001422ed8406b-14bef091-eee0-4e0e-bcdd-a8909c605910-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 6, 2013 at 11:33 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> Hi Serge,
->
-> On 11/06, Serge Hallyn wrote:
->>
->> Hi Oleg,
->>
->> commit 40a0d32d1eaffe6aac7324ca92604b6b3977eb0e :
->> "fork: unify and tighten up CLONE_NEWUSER/CLONE_NEWPID checks"
->> breaks lxc-attach in 3.12.  That code forks a child which does
->> setns() and then does a clone(CLONE_PARENT).  That way the
->> grandchild can be in the right namespaces (which the child was
->> not) and be a child of the original task, which is the monitor.
->
-> Thanks...
->
-> Yes, this is what 40a0d32d1ea explicitly tries to disallow.
->
->> Is there a real danger in allowing CLONE_PARENT
->> when current->nsproxy->pidns_for_children is not our pidns,
->> or was this done out of an "over-abundance of caution"?
->
-> I am not sure... This all was based on the long discussion, and
-> it was decided that the CLONE_PARENT check should be consistent
-> wrt CLONE_NEWPID and pidns_for_children != task_active_pid_ns().
->
->> Can we
->> safely revert that new extra check?
->
-> Well, usually we do not break user-space, but I am not sure about
-> this case...
+On Wed, Nov 06, 2013 at 02:16:33PM -0500, Christoph Lameter wrote:
+> On Wed, 6 Nov 2013, Andreas Herrmann wrote:
+> 
+> > When I've used slub_debug kernel option (e.g.
+> > "slub_debug=,skbuff_fclone_cache" or similar) on a debug session I've
+> > seen a panic like:
+> 
+> Hmmm.. That looks like its due to some slabs not having names
+> during early boot. kmem_cache_flags is called with NULL as a parameter.
 
-Presumably if we allow this, then we should also allow
-clone(CLONE_NEWPID | CLONE_PARENT).  This seems a little odd, but off
-the top of my head it doesn't seem obviously dangerous.
+That's because the slub_debug parameter is not evaluated before
+kmem_cache_flags is called.
 
-(Why were we worried about this in the first place?  The comment says
-that we don't want signal handlers or thread groups to span
-namespaces, but CLONE_PARENT has nothing to do with that.)
+Older kernels didn't show this problem. I think the sequence of those
+calls has changed. Not sure what patch set has made that change.
 
-I feel like I'm rehashing something ancient, but shouldn't that code just be:
+> Are you sure that this fixes the issue? Looks like the
+> kmem_cache_flag function should fail regardless of how early you set it.
+> 
+> AFAICT the right fix would be:
 
-if (clone_flags & CLONE_VM) {
-  // check for unsharing namespaces
+That would avoid the panic but I guess it won't enable slub debugging.
 
-with an update to the comment that CLONE_THREAD and CLONE_SIGHAND both
-require CLONE_VM.
+However I'll test this.
 
---Andy
+
+Andreas
+
+> Subject: slub: Handle NULL parameter in kmem_cache_flags
+> 
+> kmem_cache_flags may be called with NULL parameter during early boot.
+> Skip the test in that case.
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> Index: linux/mm/slub.c
+> ===================================================================
+> --- linux.orig/mm/slub.c	2013-10-15 13:55:44.000000000 -0500
+> +++ linux/mm/slub.c	2013-11-06 13:09:21.810583134 -0600
+> @@ -1217,7 +1217,7 @@ static unsigned long kmem_cache_flags(un
+>  	/*
+>  	 * Enable debugging if selected on the kernel commandline.
+>  	 */
+> -	if (slub_debug && (!slub_debug_slabs ||
+> +	if (slub_debug && name && (!slub_debug_slabs ||
+>  		!strncmp(slub_debug_slabs, name, strlen(slub_debug_slabs))))
+>  		flags |= slub_debug;
+> 
+> 
+> 
