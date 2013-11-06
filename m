@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320Ab3KFTU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 14:20:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24735 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752217Ab3KFTUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 14:20:24 -0500
-Message-ID: <527A9638.4020404@redhat.com>
-Date: Wed, 06 Nov 2013 20:19:20 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Andrey Vagin <avagin@openvz.org>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org.#.3.12
-Subject: Re: [PATCH] net: don't forget to free sk_filter
-References: <1383753106-26978-1-git-send-email-avagin@openvz.org>
-In-Reply-To: <1383753106-26978-1-git-send-email-avagin@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755419Ab3KFTUe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 14:20:34 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:30617 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755335Ab3KFTUc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 14:20:32 -0500
+Date: Wed, 6 Nov 2013 14:20:28 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Geyslan G. Bem" <geyslan@gmail.com>
+Cc: kernel-br@googlegroups.com, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: Re: [PATCH v2] tracing: fix referencing after memory freeing and
+ refactors code
+Message-ID: <20131106142028.6ff5a4f9@gandalf.local.home>
+In-Reply-To: <1383764571-7318-1-git-send-email-geyslan@gmail.com>
+References: <1383764571-7318-1-git-send-email-geyslan@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2013 04:51 PM, Andrey Vagin wrote:
-> sk_filter isn't freed if bpf_func is equal to sk_run_filter.
->
-> This memory leak was introduced by
-> commit d45ed4a4e33ae103053c0a53d280014e7101bb5c
-> Author: Alexei Starovoitov <ast@plumgrid.com>
-> Date:   Fri Oct 4 00:14:06 2013 -0700
->
->      net: fix unsafe set_memory_rw from softirq
->
-> Before this patch sk_filter was freed in sk_filter_release_rcu,
-> now it is freed in bpf_jit_free.
->
-> Here is output of kmemleak:
-> unreferenced object 0xffff8800b774eab0 (size 128):
->    comm "systemd", pid 1, jiffies 4294669014 (age 124.062s)
->    hex dump (first 32 bytes):
->      00 00 00 00 0b 00 00 00 20 63 7f b7 00 88 ff ff  ........ c......
->      60 d4 55 81 ff ff ff ff 30 d9 55 81 ff ff ff ff  `.U.....0.U.....
->    backtrace:
->      [<ffffffff816444be>] kmemleak_alloc+0x4e/0xb0
->      [<ffffffff811845af>] __kmalloc+0xef/0x260
->      [<ffffffff81534028>] sock_kmalloc+0x38/0x60
->      [<ffffffff8155d4dd>] sk_attach_filter+0x5d/0x190
->      [<ffffffff815378a1>] sock_setsockopt+0x991/0x9e0
->      [<ffffffff81531bd6>] SyS_setsockopt+0xb6/0xd0
->      [<ffffffff8165f3e9>] system_call_fastpath+0x16/0x1b
->      [<ffffffffffffffff>] 0xffffffffffffffff
->
-> Cc: Alexei Starovoitov <ast@plumgrid.com>
-> Cc: Eric Dumazet <edumazet@google.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: stable@vger.kernel.org # 3.12
+On Wed,  6 Nov 2013 16:02:51 -0300
+"Geyslan G. Bem" <geyslan@gmail.com> wrote:
 
-^^^^ vi Documentation/networking/netdev-FAQ.txt +155
+> In 'system_tr_open()':
+> Fix possible 'dir' assignment after freeing it.
 
-> Signed-off-by: Andrey Vagin <avagin@openvz.org>
+I'll take this patch, but I'm going to reword the subject and the
+change log. The assignment of dir to filp->private_data after dir is
+freed is not as bad as it sounds. As we are returning an error,
+filp->private_data is never used.
 
-When you send v2 with Alexei's feedback, please also be more specific
-in your subject like "net: x86: bpf: don't forget to free sk_filter"
-or the like. Also it's enough to say 'This memory leak was introduced
-by commit d45ed4a4e3 ("net: fix unsafe set_memory_rw from softirq")'
-instead of copying the whole log. Anyways, for v2 with feedback included
-then:
+-- Steve
 
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
+
+> 
+> In both functions:
+> Restructures logic conditions testing 'tracing_is_disabled()'
+> return before the others tests.
+> 
+> Signed-off-by: Geyslan G. Bem <geyslan@gmail.com>
+> ---
+>  kernel/trace/trace_events.c | 9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+> index 368a4d5..b44a7ea 100644
+> --- a/kernel/trace/trace_events.c
+> +++ b/kernel/trace/trace_events.c
+> @@ -1062,6 +1062,9 @@ static int subsystem_open(struct inode *inode, struct file *filp)
+>  	struct trace_array *tr;
+>  	int ret;
+>  
+> +	if (tracing_is_disabled())
+> +		return -ENODEV;
+> +
+>  	/* Make sure the system still exists */
+>  	mutex_lock(&trace_types_lock);
+>  	mutex_lock(&event_mutex);
+> @@ -1108,6 +1111,9 @@ static int system_tr_open(struct inode *inode, struct file *filp)
+>  	struct trace_array *tr = inode->i_private;
+>  	int ret;
+>  
+> +	if (tracing_is_disabled())
+> +		return -ENODEV;
+> +
+>  	if (trace_array_get(tr) < 0)
+>  		return -ENODEV;
+>  
+> @@ -1124,11 +1130,12 @@ static int system_tr_open(struct inode *inode, struct file *filp)
+>  	if (ret < 0) {
+>  		trace_array_put(tr);
+>  		kfree(dir);
+> +		return ret;
+>  	}
+>  
+>  	filp->private_data = dir;
+>  
+> -	return ret;
+> +	return 0;
+>  }
+>  
+>  static int subsystem_release(struct inode *inode, struct file *file)
+
