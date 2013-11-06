@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509Ab3KFLbJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 06:31:09 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:52350 "EHLO bear.ext.ti.com"
+	id S1756517Ab3KFLdH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 06:33:07 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:45809 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756091Ab3KFLbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 06:31:07 -0500
-Message-ID: <527A284A.8000901@ti.com>
-Date: Wed, 6 Nov 2013 13:30:18 +0200
+	id S1756132Ab3KFLdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 06:33:04 -0500
+Message-ID: <527A28CE.2070802@ti.com>
+Date: Wed, 6 Nov 2013 13:32:30 +0200
 From: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
@@ -18,10 +18,10 @@ CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
         <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
         <galak@kernel.crashing.org>, <ijc+devicetree@hellion.org.uk>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Fwd: [PATCH 0/8] Update Davinci watchdog driver
-References: <1383680783-12114-1-git-send-email-ivan.khoronzhuk@ti.com>
-In-Reply-To: <1383680783-12114-1-git-send-email-ivan.khoronzhuk@ti.com>
-X-Forwarded-Message-Id: <1383680783-12114-1-git-send-email-ivan.khoronzhuk@ti.com>
+Subject: Fwd: [PATCH 4/8] watchdog: davinci: add GET_STATUS option support
+References: <1383680783-12114-5-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1383680783-12114-5-git-send-email-ivan.khoronzhuk@ti.com>
+X-Forwarded-Message-Id: <1383680783-12114-5-git-send-email-ivan.khoronzhuk@ti.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.167.145.122]
@@ -30,57 +30,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches are intended to update Davinci watchdog to use WDT core
-and reuse driver for keystone arch, because Keystone uses the similar
-IP like Davinci.
+When watchdog timer is expired we can know about it thought
+GET_STATUS ioctl option.
 
-See Documentation:
-Davinci DM646x - http://www.ti.com/lit/ug/spruer5b/spruer5b.pdf
-Keystone - http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+---
+ drivers/watchdog/davinci_wdt.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-Also:
- - improved to support GET_TIMELEFT and GET_STATUS options.
- - added "clocks" and "timeout-sec" properties to DT.
-
-Based on
-git://git.kernel.org/pub/scm/linux/kernel/git/ssantosh/linux-keystone.git
-keystone/master
-
-TO:
-Santosh Shilimkar <santosh.shilimkar@ti.com> (maintainer: TI KEYSTONE MACHIN...)
-Wim Van Sebroeck <wim@iguana.be> (maintainer:WATCHDOG DEVICE D...)
-Sekhar Nori <nsekhar@ti.com> (supporter:TI DAVINCI MACHIN...)
-linux-watchdog@vger.kernel.org (open list:WATCHDOG DEVICE D...)
-devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...)
-
-CC:
-Grant Likely <grant.likely@linaro.org> (maintainer:OPEN FIRMWARE AND...)
-Rob Herring <rob.herring@calxeda.com> (maintainer:OPEN FIRMWARE AND...)
-Pawel Moll <pawel.moll@arm.com> (maintainer:OPEN FIRMWARE AND...)
-Mark Rutland <mark.rutland@arm.com> (maintainer:OPEN FIRMWARE AND...)
-Stephen Warren <swarren@wwwdotorg.org> (maintainer:OPEN FIRMWARE AND...)
-Kumar Gala <galak@kernel.crashing.org>
-Ian Campbell <ijc+devicetree@hellion.org.uk> (maintainer:OPEN FIRMWARE AND...)
-linux-kernel@vger.kernel.org (open list)
-linux-arm-kernel@lists.infradead.org (moderated list:ARM SUB-ARCHITECT...)
-
-Ivan Khoronzhuk (8):
-  watchdog: davinci: change driver to use WDT core
-  watchdog: davinci: use davinci_wdt_device structure to hold device
-    data
-  watchdog: davinci: add GET_TIMELEFT option support
-  watchdog: davinci: add GET_STATUS option support
-  watchdog: davinci: add "timeout-sec" property
-  watchdog: davinci: reuse driver for keystone arch
-  watchdog: davinci: add "clocks" property
-  arm: dts: keystone: add watchdog entry
-
- .../devicetree/bindings/watchdog/davinci-wdt.txt   |   21 +-
- arch/arm/boot/dts/keystone.dts                     |    6 +
- drivers/watchdog/Kconfig                           |    5 +-
- drivers/watchdog/davinci_wdt.c                     |  234 ++++++++++----------
- 4 files changed, 139 insertions(+), 127 deletions(-)
-
+diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
+index 6cbf2e1..a371b2d 100644
+--- a/drivers/watchdog/davinci_wdt.c
++++ b/drivers/watchdog/davinci_wdt.c
+@@ -144,6 +144,18 @@ static unsigned int davinci_wdt_get_timeleft(struct watchdog_device *wdd)
+ 	return wdd->timeout - timer_counter;
+ }
+ 
++static unsigned int davinci_wdt_status(struct watchdog_device *wdd)
++{
++	u32 val;
++	struct davinci_wdt_device *davinci_wdt = watchdog_get_drvdata(wdd);
++
++	val = ioread32(davinci_wdt->base + WDTCR);
++	if (val & WDFLAG)
++		return WDIOF_CARDRESET;
++
++	return 0;
++}
++
+ static const struct watchdog_info davinci_wdt_info = {
+ 	.options = WDIOF_KEEPALIVEPING,
+ 	.identity = "DaVinci Watchdog",
+@@ -155,6 +167,7 @@ static const struct watchdog_ops davinci_wdt_ops = {
+ 	.stop		= davinci_wdt_ping,
+ 	.ping		= davinci_wdt_ping,
+ 	.get_timeleft	= davinci_wdt_get_timeleft,
++	.status		= davinci_wdt_status,
+ };
+ 
+ static int davinci_wdt_probe(struct platform_device *pdev)
 -- 
 1.7.9.5
 
