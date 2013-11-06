@@ -1,125 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932394Ab3KFOLL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 09:11:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50255 "EHLO mx1.redhat.com"
+	id S932418Ab3KFOMh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 09:12:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8387 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932127Ab3KFOLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 09:11:10 -0500
-Date: Wed, 6 Nov 2013 09:10:55 -0500
+	id S932127Ab3KFOMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 09:12:36 -0500
+Date: Wed, 6 Nov 2013 09:12:21 -0500
 From: Josh Boyer <jwboyer@redhat.com>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, prarit@redhat.com, x86@kernel.org,
         linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>
-Subject: Re: [PATCH v2 2/2] x86: Increase MAXSMP CPU count to 8192
-Message-ID: <20131106141055.GM9944@hansolo.jdub.homelinux.org>
+Subject: Re: [PATCH 1/2 v2] x86: Allow higher NR_CPUS values
+Message-ID: <20131106141221.GN9944@hansolo.jdub.homelinux.org>
 References: <20131101141148.GH8652@hansolo.jdub.homelinux.org>
  <20131105143728.GJ9944@hansolo.jdub.homelinux.org>
- <20131105143816.GK9944@hansolo.jdub.homelinux.org>
- <20131106055634.GA24044@gmail.com>
+ <20131106071540.GA3053@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131106055634.GA24044@gmail.com>
+In-Reply-To: <20131106071540.GA3053@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 06:56:34AM +0100, Ingo Molnar wrote:
+On Wed, Nov 06, 2013 at 08:15:40AM +0100, Ingo Molnar wrote:
 > 
 > * Josh Boyer <jwboyer@redhat.com> wrote:
 > 
-> > The MAXSMP option is intended to enable silly large numbers of CPUs for
-> > testing purposes.  The current value of 4096 isn't very silly any longer
-> > as there are actual machines that approach 6096 CPUs when taking HT into
-> > account.  Increase the value to 8192 to account for this and short term
-> > future increases.
-> > 
-> > Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-> > ---
-> >  arch/x86/Kconfig | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> > index f03e428..09f05cd 100644
-> > --- a/arch/x86/Kconfig
-> > +++ b/arch/x86/Kconfig
-> > @@ -828,7 +828,7 @@ config NR_CPUS
-> >  	range 2 512 if SMP && !MAXSMP && !CPUMASK_OFFSTACK
-> >  	range 2 4096 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
-> >  	default "1" if !SMP
-> > -	default "4096" if MAXSMP
-> > +	default "8192" if MAXSMP
+> > diff --git a/lib/Kconfig b/lib/Kconfig
+> > index b3c8be0..0ea738e 100644
+> > --- a/lib/Kconfig
+> > +++ b/lib/Kconfig
+> > @@ -342,7 +342,7 @@ config CHECK_SIGNATURE
+> >  	bool
+> >  
+> >  config CPUMASK_OFFSTACK
+> > -	bool "Force CPU masks off stack" if DEBUG_PER_CPU_MAPS
+> > +	bool "Force CPU masks off stack"
 > 
-> So I changed the patch to up the regular range to 8192 as well: it's more 
-> consistent if MAXSMP tracks the normal range, as long as the defaults are 
-> sane. See the commit below.
+> this aspect causes build failures with the attached config.
 
-OK.  That looks fine to me.
-
-> Note that 'normal users' won't ever see any max CPU count beyond the 
-> current 512 (which is already kind of crazy for normal use), because 
-> CPUMASK_OFFSTACK is turned off on all but MAXSMP configs (unless the
-> user explicitly enables the option).
-> 
-> So it's not really possible to accidentally wander into that option and 
-> set it to an insane value - it takes some effort.
-> 
-> [ I've Cc:-ed Linus, who had a strong opinion about these max-cpu limits
->   in the past - I hope the changes are fine in this form. ]
-
-Me too.
+Bother.  OK, I'll poke at it today.  You wouldn't happen to have a
+pointer to the build failure, would you?
 
 josh
-
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
-> =====================>
-> From 07bce9fd69e8409740e63db0ab0755b84ee61a0c Mon Sep 17 00:00:00 2001
-> From: Josh Boyer <jwboyer@redhat.com>
-> Date: Tue, 5 Nov 2013 09:38:16 -0500
-> Subject: [PATCH] x86/cpu: Increase max CPU count to 8192
-> 
-> The MAXSMP option is intended to enable silly large numbers of
-> CPUs for testing purposes.  The current value of 4096 isn't very
-> silly any longer as there are actual SGI machines that approach
-> 6096 CPUs when taking HT into account.
-> 
-> Increase the value to a nice round 8192 to account for this and
-> allow for short term future increases.
-> 
-> Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-> Cc: prarit@redhat.com
-> Cc: Russ Anderson <rja@sgi.com>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Link: http://lkml.kernel.org/r/20131105143816.GK9944@hansolo.jdub.homelinux.org
-> [ Tweaked it so that MAXSMP simply sets the maximum of the normal range. ]
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> ---
->  arch/x86/Kconfig | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index f03e428..805469a 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -826,9 +826,9 @@ config NR_CPUS
->  	int "Maximum number of CPUs" if SMP && !MAXSMP
->  	range 2 8 if SMP && X86_32 && !X86_BIGSMP
->  	range 2 512 if SMP && !MAXSMP && !CPUMASK_OFFSTACK
-> -	range 2 4096 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
-> +	range 2 8192 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
->  	default "1" if !SMP
-> -	default "4096" if MAXSMP
-> +	default "8192" if MAXSMP
->  	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
->  	default "8" if SMP
->  	---help---
