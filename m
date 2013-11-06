@@ -1,208 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932189Ab3KFVQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 16:16:59 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:12332 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756029Ab3KFVQz (ORCPT
+	id S932228Ab3KFVRL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 16:17:11 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:49590 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756029Ab3KFVRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 16:16:55 -0500
-Date: Wed, 6 Nov 2013 16:16:49 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        Jason Baron <jbaron@akamai.com>
-Subject: Re: [PATCH net-next v4 3/9] static_key: WARN on usage before
- jump_label_init was called
-Message-ID: <20131106161649.2bb1dbb0@gandalf.local.home>
-In-Reply-To: <1382212139-20301-4-git-send-email-hannes@stressinduktion.org>
-References: <1382212139-20301-1-git-send-email-hannes@stressinduktion.org>
-	<1382212139-20301-4-git-send-email-hannes@stressinduktion.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Wed, 6 Nov 2013 16:17:07 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, bhelgaas@google.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Subject: [PATCH] PCI: Introduce two new MSI infrastructure calls for masking/unmasking.
+Date: Wed,  6 Nov 2013 16:16:56 -0500
+Message-Id: <1383772616-23060-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the late reply, but this was sent while I was getting ready
-for my two week conference trip.
+Certain platforms do not allow writes in the MSI-X bars
+to setup or tear down vector values. To combat against
+the generic code trying to write to that and either silently
+being ignored or crashing due to the pagetables being marked r/o
+this patch introduces a platform over-write.
 
-Note, this should not go through the net tree, but instead should go
-through tip, as it deals with jump labels and not networking.
+Note that we keep two separate, non-weak, functions
+default_mask_msi_irqs() and default_mask_msix_irqs() for the
+behavior of the arch_mask_msi_irqs() and arch_mask_msix_irqs(),
+as the default behavior is needed by x86 PCI code.
 
-Otherwise, this patch looks good.
+For Xen, which does not allow the guest to write to MSI-X
+tables - as the hypervisor is solely responsible for setting
+the vector values - we implement two nops.
 
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
+CC: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/include/asm/x86_init.h |  3 +++
+ arch/x86/kernel/x86_init.c      | 10 ++++++++++
+ arch/x86/pci/xen.c              | 13 ++++++++++++-
+ drivers/pci/msi.c               | 22 ++++++++++++++++------
+ include/linux/msi.h             |  2 ++
+ 5 files changed, 43 insertions(+), 7 deletions(-)
 
-
--- Steve
-
-
-Sat, 19 Oct 2013 21:48:53 +0200
-Hannes Frederic Sowa <hannes@stressinduktion.org> wrote:
-
-> Usage of the static key primitives to toggle a branch must not be used
-> before jump_label_init() is called from init/main.c. jump_label_init
-> reorganizes and wires up the jump_entries so usage before that could
-> have unforeseen consequences.
-> 
-> Following primitives are now checked for correct use:
-> * static_key_slow_inc
-> * static_key_slow_dec
-> * static_key_slow_dec_deferred
-> * jump_label_rate_limit
-> 
-> The x86 architecture already checks this by testing if the default_nop
-> was already replaced with an optimal nop or with a branch instruction. It
-> will panic then. Other architectures don't check for this.
-> 
-> Because we need to relax this check for the x86 arch to allow code to
-> transition from default_nop to the enabled state and other architectures
-> did not check for this at all this patch introduces checking on the
-> static_key primitives in a non-arch dependent manner.
-> 
-> All checked functions are considered slow-path so the additional check
-> does no harm to performance.
-> 
-> The warnings are best observed with earlyprintk.
-> 
-> Based on a patch from Andi Kleen.
-> 
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-> ---
->  include/linux/jump_label.h           | 10 ++++++++++
->  include/linux/jump_label_ratelimit.h |  2 ++
->  init/main.c                          |  7 +++++++
->  kernel/jump_label.c                  |  5 +++++
->  4 files changed, 24 insertions(+)
-> 
-> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-> index a507907..e96be72 100644
-> --- a/include/linux/jump_label.h
-> +++ b/include/linux/jump_label.h
-> @@ -48,6 +48,13 @@
->  
->  #include <linux/types.h>
->  #include <linux/compiler.h>
-> +#include <linux/bug.h>
-> +
-> +extern bool static_key_initialized;
-> +
-> +#define STATIC_KEY_CHECK_USE() WARN(!static_key_initialized,		      \
-> +				    "%s used before call to jump_label_init", \
-> +				    __func__)
->  
->  #if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_JUMP_LABEL)
->  
-> @@ -128,6 +135,7 @@ struct static_key {
->  
->  static __always_inline void jump_label_init(void)
->  {
-> +	static_key_initialized = true;
->  }
->  
->  static __always_inline bool static_key_false(struct static_key *key)
-> @@ -146,11 +154,13 @@ static __always_inline bool static_key_true(struct static_key *key)
->  
->  static inline void static_key_slow_inc(struct static_key *key)
->  {
-> +	STATIC_KEY_CHECK_USE();
->  	atomic_inc(&key->enabled);
->  }
->  
->  static inline void static_key_slow_dec(struct static_key *key)
->  {
-> +	STATIC_KEY_CHECK_USE();
->  	atomic_dec(&key->enabled);
->  }
->  
-> diff --git a/include/linux/jump_label_ratelimit.h b/include/linux/jump_label_ratelimit.h
-> index 1137883..089f70f 100644
-> --- a/include/linux/jump_label_ratelimit.h
-> +++ b/include/linux/jump_label_ratelimit.h
-> @@ -23,12 +23,14 @@ struct static_key_deferred {
->  };
->  static inline void static_key_slow_dec_deferred(struct static_key_deferred *key)
->  {
-> +	STATIC_KEY_CHECK_USE();
->  	static_key_slow_dec(&key->key);
->  }
->  static inline void
->  jump_label_rate_limit(struct static_key_deferred *key,
->  		unsigned long rl)
->  {
-> +	STATIC_KEY_CHECK_USE();
->  }
->  #endif	/* HAVE_JUMP_LABEL */
->  #endif	/* _LINUX_JUMP_LABEL_RATELIMIT_H */
-> diff --git a/init/main.c b/init/main.c
-> index af310af..27bbec1a 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -136,6 +136,13 @@ static char *execute_command;
->  static char *ramdisk_execute_command;
->  
->  /*
-> + * Used to generate warnings if static_key manipulation functions are used
-> + * before jump_label_init is called.
-> + */
-> +bool static_key_initialized __read_mostly = false;
-> +EXPORT_SYMBOL_GPL(static_key_initialized);
-> +
-> +/*
->   * If set, this is an indication to the drivers that reset the underlying
->   * device before going ahead with the initialization otherwise driver might
->   * rely on the BIOS and skip the reset operation.
-> diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-> index 297a924..9019f15 100644
-> --- a/kernel/jump_label.c
-> +++ b/kernel/jump_label.c
-> @@ -58,6 +58,7 @@ static void jump_label_update(struct static_key *key, int enable);
->  
->  void static_key_slow_inc(struct static_key *key)
->  {
-> +	STATIC_KEY_CHECK_USE();
->  	if (atomic_inc_not_zero(&key->enabled))
->  		return;
->  
-> @@ -103,12 +104,14 @@ static void jump_label_update_timeout(struct work_struct *work)
->  
->  void static_key_slow_dec(struct static_key *key)
->  {
-> +	STATIC_KEY_CHECK_USE();
->  	__static_key_slow_dec(key, 0, NULL);
->  }
->  EXPORT_SYMBOL_GPL(static_key_slow_dec);
->  
->  void static_key_slow_dec_deferred(struct static_key_deferred *key)
->  {
-> +	STATIC_KEY_CHECK_USE();
->  	__static_key_slow_dec(&key->key, key->timeout, &key->work);
->  }
->  EXPORT_SYMBOL_GPL(static_key_slow_dec_deferred);
-> @@ -116,6 +119,7 @@ EXPORT_SYMBOL_GPL(static_key_slow_dec_deferred);
->  void jump_label_rate_limit(struct static_key_deferred *key,
->  		unsigned long rl)
->  {
-> +	STATIC_KEY_CHECK_USE();
->  	key->timeout = rl;
->  	INIT_DELAYED_WORK(&key->work, jump_label_update_timeout);
->  }
-> @@ -212,6 +216,7 @@ void __init jump_label_init(void)
->  		key->next = NULL;
->  #endif
->  	}
-> +	static_key_initialized = true;
->  	jump_label_unlock();
->  }
->  
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index 828a156..0f1be11 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -172,6 +172,7 @@ struct x86_platform_ops {
+ 
+ struct pci_dev;
+ struct msi_msg;
++struct msi_desc;
+ 
+ struct x86_msi_ops {
+ 	int (*setup_msi_irqs)(struct pci_dev *dev, int nvec, int type);
+@@ -182,6 +183,8 @@ struct x86_msi_ops {
+ 	void (*teardown_msi_irqs)(struct pci_dev *dev);
+ 	void (*restore_msi_irqs)(struct pci_dev *dev, int irq);
+ 	int  (*setup_hpet_msi)(unsigned int irq, unsigned int id);
++	u32 (*msi_mask_irq)(struct msi_desc *desc, u32 mask, u32 flag);
++	u32 (*msix_mask_irq)(struct msi_desc *desc, u32 flag);
+ };
+ 
+ struct IO_APIC_route_entry;
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index 8ce0072..021783b 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -116,6 +116,8 @@ struct x86_msi_ops x86_msi = {
+ 	.teardown_msi_irqs	= default_teardown_msi_irqs,
+ 	.restore_msi_irqs	= default_restore_msi_irqs,
+ 	.setup_hpet_msi		= default_setup_hpet_msi,
++	.msi_mask_irq		= default_msi_mask_irq,
++	.msix_mask_irq		= default_msix_mask_irq,
+ };
+ 
+ /* MSI arch specific hooks */
+@@ -138,6 +140,14 @@ void arch_restore_msi_irqs(struct pci_dev *dev, int irq)
+ {
+ 	x86_msi.restore_msi_irqs(dev, irq);
+ }
++u32 arch_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
++{
++	return x86_msi.msi_mask_irq(desc, mask, flag);
++}
++u32 arch_msix_mask_irq(struct msi_desc *desc, u32 flag)
++{
++	return x86_msi.msix_mask_irq(desc, flag);
++}
+ #endif
+ 
+ struct x86_io_apic_ops x86_io_apic_ops = {
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index 48e8461..5eee495 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -382,7 +382,14 @@ static void xen_teardown_msi_irq(unsigned int irq)
+ {
+ 	xen_destroy_irq(irq);
+ }
+-
++static u32 xen_nop_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
++{
++	return 0;
++}
++static u32 xen_nop_msix_mask_irq(struct msi_desc *desc, u32 flag)
++{
++	return 0;
++}
+ #endif
+ 
+ int __init pci_xen_init(void)
+@@ -406,6 +413,8 @@ int __init pci_xen_init(void)
+ 	x86_msi.setup_msi_irqs = xen_setup_msi_irqs;
+ 	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
+ 	x86_msi.teardown_msi_irqs = xen_teardown_msi_irqs;
++	x86_msi.msi_mask_irq = xen_nop_msi_mask_irq;
++	x86_msi.msix_mask_irq = xen_nop_msix_mask_irq;
+ #endif
+ 	return 0;
+ }
+@@ -485,6 +494,8 @@ int __init pci_xen_initial_domain(void)
+ 	x86_msi.setup_msi_irqs = xen_initdom_setup_msi_irqs;
+ 	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
+ 	x86_msi.restore_msi_irqs = xen_initdom_restore_msi_irqs;
++	x86_msi.msi_mask_irq = xen_nop_msi_mask_irq;
++	x86_msi.msix_mask_irq = xen_nop_msix_mask_irq;
+ #endif
+ 	xen_setup_acpi_sci();
+ 	__acpi_register_gsi = acpi_register_gsi_xen;
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index d5f90d6..7916699 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -185,7 +185,7 @@ static inline __attribute_const__ u32 msi_enabled_mask(u16 control)
+  * reliably as devices without an INTx disable bit will then generate a
+  * level IRQ which will never be cleared.
+  */
+-static u32 __msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
++u32 default_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+ {
+ 	u32 mask_bits = desc->masked;
+ 
+@@ -199,9 +199,14 @@ static u32 __msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+ 	return mask_bits;
+ }
+ 
++__weak u32 arch_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
++{
++	return default_msi_mask_irq(desc, mask, flag);
++}
++
+ static void msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+ {
+-	desc->masked = __msi_mask_irq(desc, mask, flag);
++	desc->masked = arch_msi_mask_irq(desc, mask, flag);
+ }
+ 
+ /*
+@@ -211,7 +216,7 @@ static void msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+  * file.  This saves a few milliseconds when initialising devices with lots
+  * of MSI-X interrupts.
+  */
+-static u32 __msix_mask_irq(struct msi_desc *desc, u32 flag)
++u32 default_msix_mask_irq(struct msi_desc *desc, u32 flag)
+ {
+ 	u32 mask_bits = desc->masked;
+ 	unsigned offset = desc->msi_attrib.entry_nr * PCI_MSIX_ENTRY_SIZE +
+@@ -224,9 +229,14 @@ static u32 __msix_mask_irq(struct msi_desc *desc, u32 flag)
+ 	return mask_bits;
+ }
+ 
++__weak u32 arch_msix_mask_irq(struct msi_desc *desc, u32 flag)
++{
++	return default_msix_mask_irq(desc, flag);
++}
++
+ static void msix_mask_irq(struct msi_desc *desc, u32 flag)
+ {
+-	desc->masked = __msix_mask_irq(desc, flag);
++	desc->masked = arch_msix_mask_irq(desc, flag);
+ }
+ 
+ static void msi_set_mask_bit(struct irq_data *data, u32 flag)
+@@ -902,7 +912,7 @@ void pci_msi_shutdown(struct pci_dev *dev)
+ 	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &ctrl);
+ 	mask = msi_capable_mask(ctrl);
+ 	/* Keep cached state to be restored */
+-	__msi_mask_irq(desc, mask, ~mask);
++	arch_msi_mask_irq(desc, mask, ~mask);
+ 
+ 	/* Restore dev->irq to its default pin-assertion irq */
+ 	dev->irq = desc->msi_attrib.default_irq;
+@@ -998,7 +1008,7 @@ void pci_msix_shutdown(struct pci_dev *dev)
+ 	/* Return the device with MSI-X masked as initial states */
+ 	list_for_each_entry(entry, &dev->msi_list, list) {
+ 		/* Keep cached states to be restored */
+-		__msix_mask_irq(entry, 1);
++		arch_msix_mask_irq(entry, 1);
+ 	}
+ 
+ 	msix_set_enable(dev, 0);
+diff --git a/include/linux/msi.h b/include/linux/msi.h
+index b17ead8..87cce50 100644
+--- a/include/linux/msi.h
++++ b/include/linux/msi.h
+@@ -64,6 +64,8 @@ void arch_restore_msi_irqs(struct pci_dev *dev, int irq);
+ 
+ void default_teardown_msi_irqs(struct pci_dev *dev);
+ void default_restore_msi_irqs(struct pci_dev *dev, int irq);
++u32 default_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag);
++u32 default_msix_mask_irq(struct msi_desc *desc, u32 flag);
+ 
+ struct msi_chip {
+ 	struct module *owner;
+-- 
+1.8.3.1
 
