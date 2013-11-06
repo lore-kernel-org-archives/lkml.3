@@ -1,70 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755135Ab3KFSLd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 13:11:33 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:47507 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754967Ab3KFSLb (ORCPT
+	id S1755433Ab3KFSOG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 13:14:06 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34697 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab3KFSOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 13:11:31 -0500
+	Wed, 6 Nov 2013 13:14:02 -0500
+Message-ID: <527A86E4.3020009@infradead.org>
+Date: Wed, 06 Nov 2013 10:13:56 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <1383747221.30870.7.camel@smile>
-References: <1362388174-3435-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1362388174-3435-10-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAA9_cmdYr_KMf7UyanX9QAndPoFa4fVW6=QwDJbH6pZExYUcpw@mail.gmail.com>
-	<1383747221.30870.7.camel@smile>
-Date: Wed, 6 Nov 2013 10:11:29 -0800
-X-Google-Sender-Auth: nmn9fR62wBExe0wcfN7_MV_j72Y
-Message-ID: <CAA9_cmfy6AEtEnEY60_YAL3jLLme98-oGjh12tHPJOH3AFqpEA@mail.gmail.com>
-Subject: Re: [PATCH 09/10] dmatest: gather test results in the linked list
-From: Dan Williams <dan.j.williams@intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, dmaengine@vger.kernel.org
+To: James Solner <solner@alcatel-lucent.com>, jwboyer@fedoraproject.org,
+        dhowells@redhat.com, rusty@rustcorp.com.au
+CC: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v2] Add Documentation/module-signing.txt file
+References: <2384279.YjFPkYfBD3@cmlinux10.ih.lucent.com>
+In-Reply-To: <2384279.YjFPkYfBD3@cmlinux10.ih.lucent.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ excuse the resend, always forget that mobile-gmail sends html by default ]
+On 11/06/13 08:14, James Solner wrote:
+> This patch adds the Documentation/module-signing.txt file that is
+> currently missing from the Documentation directory. The init/Kconfig
+> file references the Documentation/module-signing.txt file to explain
+> how kernel module signing works. This patch supplies this documentation. 
+> 
+> The initial version of this patch provided old documentation
+> that was a mixture of the old RHEL style GPG signing. 
+> Version 1 updated the documentation to described the current
+> implementation using x509 certificate signing. 
+> This new version, version 2, fixes grammar/spelling mistakes and removes
+> trailing white spaces. 
+> 
+> Signed-off-by: James Solner <solner@alcatel-lucent.com>
+> 
+> ---
+>  Documentation/module-signing.txt | 115 +++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 115 insertions(+)
+>  create mode 100644 Documentation/module-signing.txt
+> 
+> diff --git a/Documentation/module-signing.txt b/Documentation/module-signing.txt
+> new file mode 100644
+> index 0000000..29f8ec7
+> --- /dev/null
+> +++ b/Documentation/module-signing.txt
+> @@ -0,0 +1,115 @@
+> +		==============================
+> +		KERNEL MODULE SIGNING FACILITY
+> +		==============================
+> +
+> +The module signing facility applies cryptographic signature checking
+> +when loading modules by checking its signature against a public key.
+> +This allows increased kernel security by disallowing loading unsigned
+> +modules or modules signed with an invalid key. Module signing increases
+> +the kernel security and reduces the odds of malicious modules being
+> +loading into Linux operating system.
+> +
+> +This facility uses X.509 ITU-T standard to perform the cryptographic
+> +work and to determines the format of the signatures and key data. The
 
-On Wed, Nov 6, 2013 at 6:13 AM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> On Tue, 2013-11-05 at 11:58 -0800, Dan Williams wrote:
->> On Mon, Mar 4, 2013 at 1:09 AM, Andy Shevchenko
->> <andriy.shevchenko@linux.intel.com> wrote:
->> > The patch provides a storage for the test results in the linked list. The
->> > gathered data could be used after test is done.
->> >
->> > The new file 'results' represents gathered data of the in progress test. The
->> > messages collected are printed to the kernel log as well.
->> >
->> > Example of output:
->> >         % cat /sys/kernel/debug/dmatest/results
->> >         dma0chan0-copy0: #1: No errors with src_off=0x7bf dst_off=0x8ad len=0x3fea (0)
->> >
->> > The message format is unified across the different types of errors. A number in
->> > the parens represents additional information, e.g. error code, error counter,
->> > or status.
->> >
->> > Note that the buffer comparison is done in the old way, i.e. data is not
->> > collected and just printed out.
->> >
->>
->> I need to revert this to get my testing done as it just leaks memory
->> for no real benefit that I can see.  Outside of making the log
->> messages have a uniform format I'm not seeing the case for this?  I'll
->> revert and add a pr_fmt to make dmatest messages readily parseable.
->
->
-> The benefit of it is to access to the results asynchronously as many
-> times as tester wants to.
->
+               determine
 
-tail -f /var/log/messages is also asynchronous.
+> +key type used is RSA and the possible hash algorithms that can be
+> +used are SHA-1, SHA-224, SHA-256, SHA-384, and SHA-512. These hash
+> +algorithms can be selected during the kernel configuration build:
+> +
+> +	CONFIG_SIG_SHA1
+> +	CONFIG_SIG_SHA224
+> +	CONFIG_SIG_SHA256
+> +	CONFIG_SIG_SHA384
+> +	CONFIG_SIG_SHA512
+> +
+> +The module signing facility is a kernel feature and is enabled through the
+> +Linux kernel configuration builder. In the "Enable Loadable Module Support"
+> +section of the kernel configuration, the CONFIG_MODULE_SIG symbol is enabled
+> +to activate this feature. This feature supports two options for sign
 
-> Actually I wonder where you found memory leak. It keeps the result only
-> for the last test run.
+                                                                   signed
 
-In my test I hit the oom killer allocating the "OK" results.
+> +module support: "permissive" and "restrictive".  The default is the
+> +"permissive" option and allows a module with a valid signature to be loaded.
+> +If the signature is invalid, the module is still loaded, but the kernel is
+> +marked as "tainted". The "restrictive" option (CONFIG_MODULE_SIG_FORCE)
+> +requires a valid signature before the module can be loaded.
+> +
+> +Modules can be sign using two methodes: "automatically" or "manually".
+
+                  signed         methods:
+
+> +The CONFIG_MODULE_SIG_ALL symbol will automatically sign the modules
+> +during the "modules_install" part of the kernel build. A module can also
+> +be signed manually using the scripts/sign-file tool.
+> +
+> +================================================
+> +AUTOMATICALLY GENERATING PUBLIC AND PRIVATE KEYS
+> +================================================
+> +As part of "modules_install" kernel build, the Linux kernel build
+> +infrastructure will automatically create two files in the root node
+> +of the Linux kernel source tree. These files contain the public/private
+> +keys and are called "signing_key.x509" and "signing_key.priv".
+> +The public key is built into the kernel and used to verify modules'
+> +signatures when the modules are loaded.
+> +
+> +=================================================
+> +MANUALLY GENERATING PUBLIC AND PRIVATE KEYS
+> +=================================================
+> +To manually generate the key private/public files, use the x509.genkey key
+> +generation configuration file in the root node of the Linux kernel
+> +sources tree and the openssl command. The following is an example to
+> +generate the public/private key files:
+> +
+> +	openssl req -new -nodes -utf8 -sha256 -days 36500 -batch -x509 \
+> +	   -config x509.genkey -outform DER -out signing_key.x509 \
+> +	   -keyout signing_key.priv
+> +
+> +=========================
+> +MANUALLY SIGNING MODULES
+> +=========================
+> +To manually sign a module, use the scripts/sign-file tool available in
+> +the Linux kernel source tree. The script requires 4 arguments:
+> +
+> +	1. The hash algorithm (e.g., sha256)
+> +	2. The private key
+> +	3. The public key
+> +	4. The kernel module to be signed
+> +
+> +The following is an example to sign a kernel module:
+> +
+> +	scripts/sign-file sha512 kernel-signkey.priv \
+> +	    kernel-signkey.x509 module.ko
+> +
+> +============================
+> +SIGNED MODULES AND STRIPPING
+> +============================
+> +
+> +A signed module has a digital signature appended at the end. The string
+> +"~Module signature appended~." at the end of the module's file confirms
+> +that a signature is present. But, it does not confirm that the
+> +signature is valid!
+> +
+> +Signed modules are BRITTLE as the signature is outside of the defined
+> +ELF container.  Thus they MAY NOT be stripped once the signature is computed
+> +and attached. Note the entire module is the signed payload, including
+> +all the debug information present at the time of signing.
+> +
+> +======================
+> +LOADING SIGNED MODULES
+> +======================
+> +
+> +Modules are loaded with insmod, exactly as for unsigned modules.
+> +The signature checker checks at the end of the file for the signature
+> +marker and applies signature checking.
+> +
+> +=========================================
+> +NON-VALID SIGNATURES AND UNSIGNED MODULES
+> +=========================================
+> +
+> +If CONFIG_MODULE_SIG_FORCE is enabled or enforcemodulesig=1 is supplied on
+> +the kernel command line, the kernel will only load validly signed modules
+> +for which it has a public key.  Otherwise, it will also load modules that are
+> +unsigned.  Any module for which the kernel has a key, but which proves to have
+> +a signature mismatch will not be permitted to load.
+> +
+> +=========================================
+> +ADMINISTERING/PROTECTING THE PRIVATE KEY
+> +=========================================
+> +Since the private key is used to sign modules, malware can use
+> +the private key to sign modules and compromise the operating system.
+> +The private key must be moved to a secure location and not keep in
+
+                                                              kept
+
+> +the root node of the kernel source tree.
+> 
+
+
+-- 
+~Randy
