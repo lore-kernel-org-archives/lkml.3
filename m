@@ -1,82 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab3KFOIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 09:08:36 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56799 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932092Ab3KFOIf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 09:08:35 -0500
-Date: Wed, 6 Nov 2013 15:08:07 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Len Brown <len.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Lukasz Majewski <l.majewski@samsung.com>, james.hogan@imgtec.com,
-        heiko.carstens@de.ibm.com
-Subject: Re: [RFC][PATCH v5 01/14] sched: add a new arch_sd_local_flags for
- sched_domain init
-Message-ID: <20131106140807.GM10651@twins.programming.kicks-ass.net>
-References: <1382097147-30088-1-git-send-email-vincent.guittot@linaro.org>
- <1382097147-30088-2-git-send-email-vincent.guittot@linaro.org>
- <20131105140626.GP31370@twins.programming.kicks-ass.net>
- <CAKfTPtCYHKRv=w3b4tZV-2BW_a_T+tkO9Qpc0PhLD=uZY1yvfw@mail.gmail.com>
- <20131105222752.GD16117@laptop.programming.kicks-ass.net>
- <20131106145344.448d7733@mschwide>
+	id S932394Ab3KFOLL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 09:11:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50255 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932127Ab3KFOLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 09:11:10 -0500
+Date: Wed, 6 Nov 2013 09:10:55 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, prarit@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>
+Subject: Re: [PATCH v2 2/2] x86: Increase MAXSMP CPU count to 8192
+Message-ID: <20131106141055.GM9944@hansolo.jdub.homelinux.org>
+References: <20131101141148.GH8652@hansolo.jdub.homelinux.org>
+ <20131105143728.GJ9944@hansolo.jdub.homelinux.org>
+ <20131105143816.GK9944@hansolo.jdub.homelinux.org>
+ <20131106055634.GA24044@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131106145344.448d7733@mschwide>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131106055634.GA24044@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 02:53:44PM +0100, Martin Schwidefsky wrote:
-> On Tue, 5 Nov 2013 23:27:52 +0100
-> Peter Zijlstra <peterz@infradead.org> wrote:
+On Wed, Nov 06, 2013 at 06:56:34AM +0100, Ingo Molnar wrote:
 > 
-> > On Tue, Nov 05, 2013 at 03:57:23PM +0100, Vincent Guittot wrote:
-> > > Your proposal looks fine for me. It's clearly better to move in one
-> > > place the configuration of sched_domain fields. Have you already got
-> > > an idea about how to let architecture override the topology?
+> * Josh Boyer <jwboyer@redhat.com> wrote:
+> 
+> > The MAXSMP option is intended to enable silly large numbers of CPUs for
+> > testing purposes.  The current value of 4096 isn't very silly any longer
+> > as there are actual machines that approach 6096 CPUs when taking HT into
+> > account.  Increase the value to 8192 to account for this and short term
+> > future increases.
 > > 
-> > Maybe something like the below -- completely untested (my s390 compiler
-> > is on a machine that's currently powered off).
+> > Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+> > ---
+> >  arch/x86/Kconfig | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> > index f03e428..09f05cd 100644
+> > --- a/arch/x86/Kconfig
+> > +++ b/arch/x86/Kconfig
+> > @@ -828,7 +828,7 @@ config NR_CPUS
+> >  	range 2 512 if SMP && !MAXSMP && !CPUMASK_OFFSTACK
+> >  	range 2 4096 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
+> >  	default "1" if !SMP
+> > -	default "4096" if MAXSMP
+> > +	default "8192" if MAXSMP
 > 
-> In principle I do not see a reason why this should not work, but there
-> are a few more things to take care of. E.g. struct sd_data is defined
-> in kernel/sched/core.c, cpu_cpu_mask as well. These need to be moved
-> to a header where arch/s390/kernel/smp.c can pick it up.
+> So I changed the patch to up the regular range to 8192 as well: it's more 
+> consistent if MAXSMP tracks the normal range, as long as the defaults are 
+> sane. See the commit below.
+
+OK.  That looks fine to me.
+
+> Note that 'normal users' won't ever see any max CPU count beyond the 
+> current 512 (which is already kind of crazy for normal use), because 
+> CPUMASK_OFFSTACK is turned off on all but MAXSMP configs (unless the
+> user explicitly enables the option).
 > 
-> I do have the feeling that the sched_domain_topology should be left
-> where they are, or do we really want to expose more of the scheduler
-> internals?
+> So it's not really possible to accidentally wander into that option and 
+> set it to an insane value - it takes some effort.
+> 
+> [ I've Cc:-ed Linus, who had a strong opinion about these max-cpu limits
+>   in the past - I hope the changes are fine in this form. ]
 
-Ah, its a trade off; in that previous patch I removed the entire
-sched_domain initializers the archs used to 'have' to fill out. That
-exposed far too much behavioural stuff the archs really shouldn't
-bother with.
+Me too.
 
-In return we now provide a (hopefully) simpler interface that allows
-archs to communicate their topology to the scheduler -- without getting
-mixed up in the behavioural aspects (too much).
+josh
 
-Maybe s390 wasn't the best example to pick, as the book domain really
-isn't that exciting. Arguably I should have taken Power7+ and the
-ASYM_PACKING SMT thing.
-
-
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
+> =====================>
+> From 07bce9fd69e8409740e63db0ab0755b84ee61a0c Mon Sep 17 00:00:00 2001
+> From: Josh Boyer <jwboyer@redhat.com>
+> Date: Tue, 5 Nov 2013 09:38:16 -0500
+> Subject: [PATCH] x86/cpu: Increase max CPU count to 8192
+> 
+> The MAXSMP option is intended to enable silly large numbers of
+> CPUs for testing purposes.  The current value of 4096 isn't very
+> silly any longer as there are actual SGI machines that approach
+> 6096 CPUs when taking HT into account.
+> 
+> Increase the value to a nice round 8192 to account for this and
+> allow for short term future increases.
+> 
+> Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+> Cc: prarit@redhat.com
+> Cc: Russ Anderson <rja@sgi.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Link: http://lkml.kernel.org/r/20131105143816.GK9944@hansolo.jdub.homelinux.org
+> [ Tweaked it so that MAXSMP simply sets the maximum of the normal range. ]
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  arch/x86/Kconfig | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index f03e428..805469a 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -826,9 +826,9 @@ config NR_CPUS
+>  	int "Maximum number of CPUs" if SMP && !MAXSMP
+>  	range 2 8 if SMP && X86_32 && !X86_BIGSMP
+>  	range 2 512 if SMP && !MAXSMP && !CPUMASK_OFFSTACK
+> -	range 2 4096 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
+> +	range 2 8192 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
+>  	default "1" if !SMP
+> -	default "4096" if MAXSMP
+> +	default "8192" if MAXSMP
+>  	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
+>  	default "8" if SMP
+>  	---help---
