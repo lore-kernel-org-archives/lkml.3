@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451Ab3KFNVn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 08:21:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49037 "EHLO
+	id S932432Ab3KFNVl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 08:21:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49039 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932346Ab3KFNVh (ORCPT
+	with ESMTP id S932411Ab3KFNVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 08:21:37 -0500
-Date: Wed, 6 Nov 2013 05:20:41 -0800
+	Wed, 6 Nov 2013 08:21:38 -0500
+Date: Wed, 6 Nov 2013 05:20:49 -0800
 From: tip-bot for John Stultz <tipbot@zytor.com>
-Message-ID: <tip-1ca7d67cf5d5a2aef26a8d9afd789006fa098347@git.kernel.org>
+Message-ID: <tip-db751fe3ea6880ff5ac5abe60cb7b80deb5a4140@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        mathieu.desnoyers@efficios.com, eric.dumazet@gmail.com,
-        peterz@infradead.org, davem@davemloft.net, john.stultz@linaro.org,
-        rostedt@goodmis.org, tglx@linutronix.de, lizefan@huawei.com
+        mathieu.desnoyers@efficios.com, peterz@infradead.org,
+        davem@davemloft.net, john.stultz@linaro.org, rostedt@goodmis.org,
+        tglx@linutronix.de, lizefan@huawei.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
-        peterz@infradead.org, davem@davemloft.net, john.stultz@linaro.org,
-        rostedt@goodmis.org, tglx@linutronix.de, lizefan@huawei.com
-In-Reply-To: <1381186321-4906-3-git-send-email-john.stultz@linaro.org>
-References: <1381186321-4906-3-git-send-email-john.stultz@linaro.org>
+        mathieu.desnoyers@efficios.com, peterz@infradead.org,
+        davem@davemloft.net, john.stultz@linaro.org, rostedt@goodmis.org,
+        tglx@linutronix.de, lizefan@huawei.com
+In-Reply-To: <1381186321-4906-4-git-send-email-john.stultz@linaro.org>
+References: <1381186321-4906-4-git-send-email-john.stultz@linaro.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] seqcount:
-  Add lockdep functionality to seqcount/seqlock structures
-Git-Commit-ID: 1ca7d67cf5d5a2aef26a8d9afd789006fa098347
+Subject: [tip:core/locking] cpuset: Fix potential deadlock w/
+  set_mems_allowed
+Git-Commit-ID: db751fe3ea6880ff5ac5abe60cb7b80deb5a4140
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,338 +32,108 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 06 Nov 2013 05:20:47 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 06 Nov 2013 05:20:55 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1ca7d67cf5d5a2aef26a8d9afd789006fa098347
-Gitweb:     http://git.kernel.org/tip/1ca7d67cf5d5a2aef26a8d9afd789006fa098347
+Commit-ID:  db751fe3ea6880ff5ac5abe60cb7b80deb5a4140
+Gitweb:     http://git.kernel.org/tip/db751fe3ea6880ff5ac5abe60cb7b80deb5a4140
 Author:     John Stultz <john.stultz@linaro.org>
-AuthorDate: Mon, 7 Oct 2013 15:51:59 -0700
+AuthorDate: Mon, 7 Oct 2013 15:52:00 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Nov 2013 12:40:26 +0100
+CommitDate: Wed, 6 Nov 2013 12:40:27 +0100
 
-seqcount: Add lockdep functionality to seqcount/seqlock structures
+cpuset: Fix potential deadlock w/ set_mems_allowed
 
-Currently seqlocks and seqcounts don't support lockdep.
+After adding lockdep support to seqlock/seqcount structures,
+I started seeing the following warning:
 
-After running across a seqcount related deadlock in the timekeeping
-code, I used a less-refined and more focused variant of this patch
-to narrow down the cause of the issue.
+[    1.070907] ======================================================
+[    1.072015] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
+[    1.073181] 3.11.0+ #67 Not tainted
+[    1.073801] ------------------------------------------------------
+[    1.074882] kworker/u4:2/708 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+[    1.076088]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff81187d7f>] new_slab+0x5f/0x280
+[    1.077572]
+[    1.077572] and this task is already holding:
+[    1.078593]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff81339f03>] blk_execute_rq_nowait+0x53/0xf0
+[    1.080042] which would create a new lock dependency:
+[    1.080042]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
+[    1.080042]
+[    1.080042] but this new dependency connects a SOFTIRQ-irq-safe lock:
+[    1.080042]  (&(&q->__queue_lock)->rlock){..-...}
+[    1.080042] ... which became SOFTIRQ-irq-safe at:
+[    1.080042]   [<ffffffff810ec179>] __lock_acquire+0x5b9/0x1db0
+[    1.080042]   [<ffffffff810edfe5>] lock_acquire+0x95/0x130
+[    1.080042]   [<ffffffff818968a1>] _raw_spin_lock+0x41/0x80
+[    1.080042]   [<ffffffff81560c9e>] scsi_device_unbusy+0x7e/0xd0
+[    1.080042]   [<ffffffff8155a612>] scsi_finish_command+0x32/0xf0
+[    1.080042]   [<ffffffff81560e91>] scsi_softirq_done+0xa1/0x130
+[    1.080042]   [<ffffffff8133b0f3>] blk_done_softirq+0x73/0x90
+[    1.080042]   [<ffffffff81095dc0>] __do_softirq+0x110/0x2f0
+[    1.080042]   [<ffffffff81095fcd>] run_ksoftirqd+0x2d/0x60
+[    1.080042]   [<ffffffff810bc506>] smpboot_thread_fn+0x156/0x1e0
+[    1.080042]   [<ffffffff810b3916>] kthread+0xd6/0xe0
+[    1.080042]   [<ffffffff818980ac>] ret_from_fork+0x7c/0xb0
+[    1.080042]
+[    1.080042] to a SOFTIRQ-irq-unsafe lock:
+[    1.080042]  (&p->mems_allowed_seq){+.+...}
+[    1.080042] ... which became SOFTIRQ-irq-unsafe at:
+[    1.080042] ...  [<ffffffff810ec1d3>] __lock_acquire+0x613/0x1db0
+[    1.080042]   [<ffffffff810edfe5>] lock_acquire+0x95/0x130
+[    1.080042]   [<ffffffff810b3df2>] kthreadd+0x82/0x180
+[    1.080042]   [<ffffffff818980ac>] ret_from_fork+0x7c/0xb0
+[    1.080042]
+[    1.080042] other info that might help us debug this:
+[    1.080042]
+[    1.080042]  Possible interrupt unsafe locking scenario:
+[    1.080042]
+[    1.080042]        CPU0                    CPU1
+[    1.080042]        ----                    ----
+[    1.080042]   lock(&p->mems_allowed_seq);
+[    1.080042]                                local_irq_disable();
+[    1.080042]                                lock(&(&q->__queue_lock)->rlock);
+[    1.080042]                                lock(&p->mems_allowed_seq);
+[    1.080042]   <Interrupt>
+[    1.080042]     lock(&(&q->__queue_lock)->rlock);
+[    1.080042]
+[    1.080042]  *** DEADLOCK ***
 
-This is a first-pass attempt to properly enable lockdep functionality
-on seqlocks and seqcounts.
-
-Since seqcounts are used in the vdso gettimeofday code, I've provided
-non-lockdep accessors for those needs.
-
-I've also handled one case where there were nested seqlock writers
-and there may be more edge cases.
-
-Comments and feedback would be appreciated!
+The issue stems from the kthreadd() function calling set_mems_allowed
+with irqs enabled. While its possibly unlikely for the actual deadlock
+to trigger, a fix is fairly simple: disable irqs before taking the
+mems_allowed_seq lock.
 
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Li Zefan <lizefan@huawei.com>
+Acked-by: Li Zefan <lizefan@huawei.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: "David S. Miller" <davem@davemloft.net>
 Cc: netdev@vger.kernel.org
-Link: http://lkml.kernel.org/r/1381186321-4906-3-git-send-email-john.stultz@linaro.org
+Link: http://lkml.kernel.org/r/1381186321-4906-4-git-send-email-john.stultz@linaro.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/vdso/vclock_gettime.c |  8 ++---
- fs/dcache.c                    |  4 +--
- fs/fs_struct.c                 |  2 +-
- include/linux/init_task.h      |  8 ++---
- include/linux/lockdep.h        |  8 +++--
- include/linux/seqlock.h        | 79 ++++++++++++++++++++++++++++++++++++++----
- mm/filemap_xip.c               |  2 +-
- 7 files changed, 90 insertions(+), 21 deletions(-)
+ include/linux/cpuset.h | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index 72074d5..2ada505 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -178,7 +178,7 @@ notrace static int __always_inline do_realtime(struct timespec *ts)
+diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+index cc1b01c..3fe661f 100644
+--- a/include/linux/cpuset.h
++++ b/include/linux/cpuset.h
+@@ -110,10 +110,14 @@ static inline bool put_mems_allowed(unsigned int seq)
  
- 	ts->tv_nsec = 0;
- 	do {
--		seq = read_seqcount_begin(&gtod->seq);
-+		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
- 		mode = gtod->clock.vclock_mode;
- 		ts->tv_sec = gtod->wall_time_sec;
- 		ns = gtod->wall_time_snsec;
-@@ -198,7 +198,7 @@ notrace static int do_monotonic(struct timespec *ts)
- 
- 	ts->tv_nsec = 0;
- 	do {
--		seq = read_seqcount_begin(&gtod->seq);
-+		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
- 		mode = gtod->clock.vclock_mode;
- 		ts->tv_sec = gtod->monotonic_time_sec;
- 		ns = gtod->monotonic_time_snsec;
-@@ -214,7 +214,7 @@ notrace static int do_realtime_coarse(struct timespec *ts)
+ static inline void set_mems_allowed(nodemask_t nodemask)
  {
- 	unsigned long seq;
- 	do {
--		seq = read_seqcount_begin(&gtod->seq);
-+		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
- 		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
- 		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
- 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
-@@ -225,7 +225,7 @@ notrace static int do_monotonic_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
--		seq = read_seqcount_begin(&gtod->seq);
-+		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
- 		ts->tv_sec = gtod->monotonic_time_coarse.tv_sec;
- 		ts->tv_nsec = gtod->monotonic_time_coarse.tv_nsec;
- 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
-diff --git a/fs/dcache.c b/fs/dcache.c
-index ae6ebb8..f750be2 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2574,7 +2574,7 @@ static void __d_move(struct dentry * dentry, struct dentry * target)
- 	dentry_lock_for_move(dentry, target);
- 
- 	write_seqcount_begin(&dentry->d_seq);
--	write_seqcount_begin(&target->d_seq);
-+	write_seqcount_begin_nested(&target->d_seq, DENTRY_D_LOCK_NESTED);
- 
- 	/* __d_drop does write_seqcount_barrier, but they're OK to nest. */
- 
-@@ -2706,7 +2706,7 @@ static void __d_materialise_dentry(struct dentry *dentry, struct dentry *anon)
- 	dentry_lock_for_move(anon, dentry);
- 
- 	write_seqcount_begin(&dentry->d_seq);
--	write_seqcount_begin(&anon->d_seq);
-+	write_seqcount_begin_nested(&anon->d_seq, DENTRY_D_LOCK_NESTED);
- 
- 	dparent = dentry->d_parent;
- 
-diff --git a/fs/fs_struct.c b/fs/fs_struct.c
-index d8ac61d..7dca743 100644
---- a/fs/fs_struct.c
-+++ b/fs/fs_struct.c
-@@ -161,6 +161,6 @@ EXPORT_SYMBOL(current_umask);
- struct fs_struct init_fs = {
- 	.users		= 1,
- 	.lock		= __SPIN_LOCK_UNLOCKED(init_fs.lock),
--	.seq		= SEQCNT_ZERO,
-+	.seq		= SEQCNT_ZERO(init_fs.seq),
- 	.umask		= 0022,
- };
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index 5cd0f09..b0ed422 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -32,10 +32,10 @@ extern struct fs_struct init_fs;
- #endif
- 
- #ifdef CONFIG_CPUSETS
--#define INIT_CPUSET_SEQ							\
--	.mems_allowed_seq = SEQCNT_ZERO,
-+#define INIT_CPUSET_SEQ(tsk)							\
-+	.mems_allowed_seq = SEQCNT_ZERO(tsk.mems_allowed_seq),
- #else
--#define INIT_CPUSET_SEQ
-+#define INIT_CPUSET_SEQ(tsk)
- #endif
- 
- #define INIT_SIGNALS(sig) {						\
-@@ -220,7 +220,7 @@ extern struct task_group root_task_group;
- 	INIT_FTRACE_GRAPH						\
- 	INIT_TRACE_RECURSION						\
- 	INIT_TASK_RCU_PREEMPT(tsk)					\
--	INIT_CPUSET_SEQ							\
-+	INIT_CPUSET_SEQ(tsk)						\
- 	INIT_VTIME(tsk)							\
- }
- 
-diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-index cfc2f11..92b1bfc 100644
---- a/include/linux/lockdep.h
-+++ b/include/linux/lockdep.h
-@@ -497,6 +497,10 @@ static inline void print_irqtrace_events(struct task_struct *curr)
- #define rwlock_acquire_read(l, s, t, i)		lock_acquire_shared_recursive(l, s, t, NULL, i)
- #define rwlock_release(l, n, i)			lock_release(l, n, i)
- 
-+#define seqcount_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
-+#define seqcount_acquire_read(l, s, t, i)	lock_acquire_shared_recursive(l, s, t, NULL, i)
-+#define seqcount_release(l, n, i)		lock_release(l, n, i)
-+
- #define mutex_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
- #define mutex_acquire_nest(l, s, t, n, i)	lock_acquire_exclusive(l, s, t, n, i)
- #define mutex_release(l, n, i)			lock_release(l, n, i)
-@@ -504,11 +508,11 @@ static inline void print_irqtrace_events(struct task_struct *curr)
- #define rwsem_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
- #define rwsem_acquire_nest(l, s, t, n, i)	lock_acquire_exclusive(l, s, t, n, i)
- #define rwsem_acquire_read(l, s, t, i)		lock_acquire_shared(l, s, t, NULL, i)
--# define rwsem_release(l, n, i)			lock_release(l, n, i)
-+#define rwsem_release(l, n, i)			lock_release(l, n, i)
- 
- #define lock_map_acquire(l)			lock_acquire_exclusive(l, 0, 0, NULL, _THIS_IP_)
- #define lock_map_acquire_read(l)		lock_acquire_shared_recursive(l, 0, 0, NULL, _THIS_IP_)
--# define lock_map_release(l)			lock_release(l, 1, _THIS_IP_)
-+#define lock_map_release(l)			lock_release(l, 1, _THIS_IP_)
- 
- #ifdef CONFIG_PROVE_LOCKING
- # define might_lock(lock) 						\
-diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
-index 21a2093..1e8a8b6 100644
---- a/include/linux/seqlock.h
-+++ b/include/linux/seqlock.h
-@@ -34,6 +34,7 @@
- 
- #include <linux/spinlock.h>
- #include <linux/preempt.h>
-+#include <linux/lockdep.h>
- #include <asm/processor.h>
- 
- /*
-@@ -44,10 +45,50 @@
-  */
- typedef struct seqcount {
- 	unsigned sequence;
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	struct lockdep_map dep_map;
-+#endif
- } seqcount_t;
- 
--#define SEQCNT_ZERO { 0 }
--#define seqcount_init(x)	do { *(x) = (seqcount_t) SEQCNT_ZERO; } while (0)
-+static inline void __seqcount_init(seqcount_t *s, const char *name,
-+					  struct lock_class_key *key)
-+{
-+	/*
-+	 * Make sure we are not reinitializing a held lock:
-+	 */
-+	lockdep_init_map(&s->dep_map, name, key, 0);
-+	s->sequence = 0;
-+}
-+
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+# define SEQCOUNT_DEP_MAP_INIT(lockname) \
-+		.dep_map = { .name = #lockname } \
-+
-+# define seqcount_init(s)				\
-+	do {						\
-+		static struct lock_class_key __key;	\
-+		__seqcount_init((s), #s, &__key);	\
-+	} while (0)
-+
-+static inline void seqcount_lockdep_reader_access(const seqcount_t *s)
-+{
-+	seqcount_t *l = (seqcount_t *)s;
 +	unsigned long flags;
 +
+ 	task_lock(current);
 +	local_irq_save(flags);
-+	seqcount_acquire_read(&l->dep_map, 0, 0, _RET_IP_);
-+	seqcount_release(&l->dep_map, 1, _RET_IP_);
+ 	write_seqcount_begin(&current->mems_allowed_seq);
+ 	current->mems_allowed = nodemask;
+ 	write_seqcount_end(&current->mems_allowed_seq);
 +	local_irq_restore(flags);
-+}
-+
-+#else
-+# define SEQCOUNT_DEP_MAP_INIT(lockname)
-+# define seqcount_init(s) __seqcount_init(s, NULL, NULL)
-+# define seqcount_lockdep_reader_access(x)
-+#endif
-+
-+#define SEQCNT_ZERO(lockname) { .sequence = 0, SEQCOUNT_DEP_MAP_INIT(lockname)}
-+
- 
- /**
-  * __read_seqcount_begin - begin a seq-read critical section (without barrier)
-@@ -76,6 +117,22 @@ repeat:
+ 	task_unlock(current);
  }
  
- /**
-+ * read_seqcount_begin_no_lockdep - start seq-read critical section w/o lockdep
-+ * @s: pointer to seqcount_t
-+ * Returns: count to be passed to read_seqcount_retry
-+ *
-+ * read_seqcount_begin_no_lockdep opens a read critical section of the given
-+ * seqcount, but without any lockdep checking. Validity of the critical
-+ * section is tested by checking read_seqcount_retry function.
-+ */
-+static inline unsigned read_seqcount_begin_no_lockdep(const seqcount_t *s)
-+{
-+	unsigned ret = __read_seqcount_begin(s);
-+	smp_rmb();
-+	return ret;
-+}
-+
-+/**
-  * read_seqcount_begin - begin a seq-read critical section
-  * @s: pointer to seqcount_t
-  * Returns: count to be passed to read_seqcount_retry
-@@ -86,9 +143,8 @@ repeat:
-  */
- static inline unsigned read_seqcount_begin(const seqcount_t *s)
- {
--	unsigned ret = __read_seqcount_begin(s);
--	smp_rmb();
--	return ret;
-+	seqcount_lockdep_reader_access(s);
-+	return read_seqcount_begin_no_lockdep(s);
- }
- 
- /**
-@@ -108,6 +164,8 @@ static inline unsigned read_seqcount_begin(const seqcount_t *s)
- static inline unsigned raw_seqcount_begin(const seqcount_t *s)
- {
- 	unsigned ret = ACCESS_ONCE(s->sequence);
-+
-+	seqcount_lockdep_reader_access(s);
- 	smp_rmb();
- 	return ret & ~1;
- }
-@@ -152,14 +210,21 @@ static inline int read_seqcount_retry(const seqcount_t *s, unsigned start)
-  * Sequence counter only version assumes that callers are using their
-  * own mutexing.
-  */
--static inline void write_seqcount_begin(seqcount_t *s)
-+static inline void write_seqcount_begin_nested(seqcount_t *s, int subclass)
- {
- 	s->sequence++;
- 	smp_wmb();
-+	seqcount_acquire(&s->dep_map, subclass, 0, _RET_IP_);
-+}
-+
-+static inline void write_seqcount_begin(seqcount_t *s)
-+{
-+	write_seqcount_begin_nested(s, 0);
- }
- 
- static inline void write_seqcount_end(seqcount_t *s)
- {
-+	seqcount_release(&s->dep_map, 1, _RET_IP_);
- 	smp_wmb();
- 	s->sequence++;
- }
-@@ -188,7 +253,7 @@ typedef struct {
-  */
- #define __SEQLOCK_UNLOCKED(lockname)			\
- 	{						\
--		.seqcount = SEQCNT_ZERO,		\
-+		.seqcount = SEQCNT_ZERO(lockname),	\
- 		.lock =	__SPIN_LOCK_UNLOCKED(lockname)	\
- 	}
- 
-diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
-index 28fe26b..d8d9fe3 100644
---- a/mm/filemap_xip.c
-+++ b/mm/filemap_xip.c
-@@ -26,7 +26,7 @@
-  * of ZERO_PAGE(), such as /dev/zero
-  */
- static DEFINE_MUTEX(xip_sparse_mutex);
--static seqcount_t xip_sparse_seq = SEQCNT_ZERO;
-+static seqcount_t xip_sparse_seq = SEQCNT_ZERO(xip_sparse_seq);
- static struct page *__xip_sparse_page;
- 
- /* called under xip_sparse_mutex */
