@@ -1,53 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932336Ab3KFPEw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 10:04:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3461 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932252Ab3KFPEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 10:04:51 -0500
-Date: Wed, 6 Nov 2013 10:04:39 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, prarit@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>
-Subject: Re: [PATCH 1/2 v2] x86: Allow higher NR_CPUS values
-Message-ID: <20131106150439.GP9944@hansolo.jdub.homelinux.org>
-References: <20131101141148.GH8652@hansolo.jdub.homelinux.org>
- <20131105143728.GJ9944@hansolo.jdub.homelinux.org>
- <20131106071540.GA3053@gmail.com>
- <20131106141221.GN9944@hansolo.jdub.homelinux.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131106141221.GN9944@hansolo.jdub.homelinux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932409Ab3KFPFF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 10:05:05 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:18735 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932252Ab3KFPFE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 10:05:04 -0500
+Date: Wed, 6 Nov 2013 10:05:02 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [for-next][PATCH 0/8] tracing: Updates for 3.12^H3
+Message-ID: <20131106100502.2aa8fcfc@gandalf.local.home>
+In-Reply-To: <20131106145041.904349372@goodmis.org>
+References: <20131106145041.904349372@goodmis.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 09:12:21AM -0500, Josh Boyer wrote:
-> On Wed, Nov 06, 2013 at 08:15:40AM +0100, Ingo Molnar wrote:
-> > 
-> > * Josh Boyer <jwboyer@redhat.com> wrote:
-> > 
-> > > diff --git a/lib/Kconfig b/lib/Kconfig
-> > > index b3c8be0..0ea738e 100644
-> > > --- a/lib/Kconfig
-> > > +++ b/lib/Kconfig
-> > > @@ -342,7 +342,7 @@ config CHECK_SIGNATURE
-> > >  	bool
-> > >  
-> > >  config CPUMASK_OFFSTACK
-> > > -	bool "Force CPU masks off stack" if DEBUG_PER_CPU_MAPS
-> > > +	bool "Force CPU masks off stack"
-> > 
-> > this aspect causes build failures with the attached config.
-> 
-> Bother.  OK, I'll poke at it today.  You wouldn't happen to have a
-> pointer to the build failure, would you?
 
-Nevermind.  I got to it sooner than I expected.
+Subject should have been:
 
-josh
+[for-next][PATCH 0/8] tracing: Updates for 3.13
+
+-- Steve
