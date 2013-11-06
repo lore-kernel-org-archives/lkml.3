@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730Ab3KFU1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 15:27:39 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:48277 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754791Ab3KFU1h (ORCPT
+	id S1755871Ab3KFUbX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 15:31:23 -0500
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:54037 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754985Ab3KFUbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 15:27:37 -0500
-From: Julius Werner <jwerner@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Benson Leung <bleung@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Julius Werner <jwerner@chromium.org>
-Subject: [PATCH] usb: hub: Use correct reset for wedged USB3 devices that are NOTATTACHED
-Date: Wed,  6 Nov 2013 12:27:21 -0800
-Message-Id: <1383769641-22910-1-git-send-email-jwerner@chromium.org>
-X-Mailer: git-send-email 1.8.4.1
+	Wed, 6 Nov 2013 15:31:22 -0500
+Date: Wed, 6 Nov 2013 21:31:02 +0100
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
+Message-ID: <20131106203102.GB8662@breakpoint.cc>
+References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
+ <20131106190152.GA8662@breakpoint.cc>
+ <C10E33D7-53F6-4A50-9B84-1149DDBDC46F@antoniou-consulting.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C10E33D7-53F6-4A50-9B84-1149DDBDC46F@antoniou-consulting.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a check for USB_STATE_NOTATTACHED to the
-hub_port_warm_reset_required() workaround for ports that end up in
-Compliance Mode in hub_events() when trying to decide which reset
-function to use. Trying to call usb_reset_device() with a NOTATTACHED
-device will just fail and leave the port broken.
+On 06.11.13, Pantelis Antoniou wrote:
+> Hi Sebastian,
+Hi Pantelis,
 
-Also bumped the messages about this kind of reset failure from dev_dbg()
-to dev_warn() to make it easier to notice, since calling that function
-with a NOTATTACHED device would almost always be a bug
+> It has been discussed.
+> 
+> We are doing it because
+> 
+> a) We tried to do it in u-boot and it has been a complete disaster.
+> Regular users just can't handle bootloader updates.
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
----
- drivers/usb/core/hub.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+How so? The "additional" dtb piece was deleted by accident as part of
+the u-boot upgrade? Do you maybe a link which describes the disaster?
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index e6b682c..0188056 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -4799,8 +4799,9 @@ static void hub_events(void)
- 					hub->ports[i - 1]->child;
- 
- 				dev_dbg(hub_dev, "warm reset port %d\n", i);
--				if (!udev || !(portstatus &
--						USB_PORT_STAT_CONNECTION)) {
-+				if (!udev ||
-+				    !(portstatus & USB_PORT_STAT_CONNECTION) ||
-+				    udev->state == USB_STATE_NOTATTACHED) {
- 					status = hub_port_reset(hub, i,
- 							NULL, HUB_BH_RESET_TIME,
- 							true);
-@@ -5074,7 +5075,7 @@ static int usb_reset_and_verify_device(struct usb_device *udev)
- 
- 	if (udev->state == USB_STATE_NOTATTACHED ||
- 			udev->state == USB_STATE_SUSPENDED) {
--		dev_dbg(&udev->dev, "device reset not allowed in state %d\n",
-+		dev_warn(&udev->dev, "device reset not allowed in state %d\n",
- 				udev->state);
- 		return -EINVAL;
- 	}
-@@ -5237,7 +5238,7 @@ int usb_reset_device(struct usb_device *udev)
- 
- 	if (udev->state == USB_STATE_NOTATTACHED ||
- 			udev->state == USB_STATE_SUSPENDED) {
--		dev_dbg(&udev->dev, "device reset not allowed in state %d\n",
-+		dev_warn(&udev->dev, "device reset not allowed in state %d\n",
- 				udev->state);
- 		return -EINVAL;
- 	}
--- 
-1.8.4.1
+> b) It is similar to that. It was originally created for the beaglebone,
+> which has a concept of capes (similar to Arduino shields).
+> http://circuitco.com/support/index.php?title=BeagleBone_Capes
+> Turns out it's really useful to anyone doing reconfigurable hardware too,
+> so that's why FPGA people are thinking of using it.
 
+I am aware of this. My understanding is that those capes have hardware
+information encoded in an eeprom behind i2c _and_ you can't or should
+not replace capes at runtime.
+Naive as I am I *assume* it should be easy to read this eeprom in u-boot
+as part of the boot setup and extend the dtb before passing it to the
+kernel. In case this works well, the problem here is a) ?
+
+> c) There are people that want to tinker with Linux based hardware boards
+> but are not kernel developers. This gives them a way to do so without
+> having to recompile the kernel and/or reboot while tinkering.
+
+I understand that they want to avoid reboot. But they still need to
+recompile the device tree, don't they? Or does this allow to change the
+HW description without knowing the syntax of .dts?
+
+> Regards
+> 
+> -- Pantelis
+
+Sebastian
