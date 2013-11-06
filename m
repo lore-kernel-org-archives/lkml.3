@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756253Ab3KFH7B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 02:59:01 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:51612 "EHLO song.cn.fujitsu.com"
+	id S1752477Ab3KFH7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 02:59:11 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:51617 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751921Ab3KFH67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 02:58:59 -0500
+	id S1756258Ab3KFH7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 02:59:08 -0500
 X-IronPort-AV: E=Sophos;i="4.93,644,1378828800"; 
-   d="scan'208";a="8960259"
+   d="scan'208";a="8960260"
 From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 To: kernel@pengutronix.de, linux@arm.linux.org.uk, a.zummo@towertech.it,
         airlied@linux.ie, dmitry.torokhov@gmail.com, axboe@kernel.dk
@@ -16,14 +16,14 @@ Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
         linux-input@vger.kernel.org, devel@driverdev.osuosl.org,
         Duan Jiong <duanj.fnst@cn.fujitsu.com>
 Subject: [PATCH] block: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
-Date: Wed, 6 Nov 2013 15:56:39 +0800
-Message-Id: <1383724599-15754-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+Date: Wed, 6 Nov 2013 15:57:03 +0800
+Message-Id: <1383724623-15801-1-git-send-email-duanj.fnst@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.3.1
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/06 15:57:03,
+ 2013/11/06 15:57:13,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/06 15:57:04,
-	Serialize complete at 2013/11/06 15:57:04
+ 2013/11/06 15:57:13,
+	Serialize complete at 2013/11/06 15:57:13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
