@@ -1,135 +1,432 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab3KFJRu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 04:17:50 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:55850 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab3KFJRr (ORCPT
+	id S1756123Ab3KFJWB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 04:22:01 -0500
+Received: from demumfd002.nsn-inter.net ([93.183.12.31]:10426 "EHLO
+	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753444Ab3KFJVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 04:17:47 -0500
-X-AuditID: 9c93017e-b7c9fae00000057d-90-527a0939b4e1
-From: Namhyung Kim <namhyung@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Arun Sharma <asharma@fb.com>
-Subject: Re: [RFC/PATCHSET 00/14] perf report: Add support to accumulate hist periods (v2)
-References: <20131031080932.GA8479@gmail.com>
-	<87vc0c4ny2.fsf@sejong.aot.lge.com> <20131101075502.GA25547@gmail.com>
-	<874n7w4gtm.fsf@sejong.aot.lge.com> <20131101092759.GC27063@gmail.com>
-	<87bo1zz4mu.fsf@sejong.aot.lge.com> <20131105074650.GA2855@gmail.com>
-	<87txfrxlq8.fsf@sejong.aot.lge.com> <20131105115802.GA12045@gmail.com>
-	<87ppqex8tj.fsf@sejong.aot.lge.com> <20131106083046.GA4655@gmail.com>
-Date: Wed, 06 Nov 2013 18:17:45 +0900
-In-Reply-To: <20131106083046.GA4655@gmail.com> (Ingo Molnar's message of "Wed,
-	6 Nov 2013 09:30:46 +0100")
-Message-ID: <87r4atx51i.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 6 Nov 2013 04:21:54 -0500
+Message-ID: <527A0A12.2050803@nsn.com>
+Date: Wed, 06 Nov 2013 10:21:22 +0100
+From: Ionut Nicu <ioan.nicu.ext@nsn.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: ext Pantelis Antoniou <panto@antoniou-consulting.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] OF: Introduce utility helper functions
+References: <1383673816-29293-1-git-send-email-panto@antoniou-consulting.com> <1383673816-29293-6-git-send-email-panto@antoniou-consulting.com>
+In-Reply-To: <1383673816-29293-6-git-send-email-panto@antoniou-consulting.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-purgate-type: clean
+X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
+X-purgate: clean
+X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
+X-purgate-size: 12187
+X-purgate-ID: 151667::1383729686-00005753-9EEF66FE/0-0/0-0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Nov 2013 09:30:46 +0100, Ingo Molnar wrote:
-> * Namhyung Kim <namhyung@kernel.org> wrote:
->
->> Hi Ingo,
->> 
->> On Tue, 5 Nov 2013 12:58:02 +0100, Ingo Molnar wrote:
->> > * Namhyung Kim <namhyung@kernel.org> wrote:
->> >> But the 'cumulative' (btw, I feel a bit hard to type this word..) is 
->> >> different in that it *generates* entries didn't get sampled originally. 
->> >> And as it requires callchains, total field will not work if callchains 
->> >> are missing.
->> >
->> > Well, 'total' should disappear if it's not available.
->> 
->> But what if it's the only sort key user gave?
->
-> Do you mean something like:
->
->   -F self,name -s total
->
-> i.e. if a sort key not displayed?
+Hi,
 
-What I worry is when no -F option was given at all.
+First of all, good to see this patch set being submitted again!
 
->
-> I think sort keys should be automatically added to the displayed fields 
-> list.
+We're using an older version of your patch set for some time and
+they're working good for us.
 
-Agreed.
+On 05.11.2013 18:50, ext Pantelis Antoniou wrote:
+> Introduce helper functions for working with the live DT tree.
+> 
+> __of_free_property() frees a dynamically created property
+> __of_free_tree() recursively frees a device node tree
+> __of_copy_property() copies a property dynamically
+> __of_create_empty_node() creates an empty node
+> __of_find_node_by_full_name() finds the node with the full name
+> and
+> of_multi_prop_cmp() performs a multi property compare but without
+> having to take locks.
+> 
+> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+> ---
+>  drivers/of/Makefile |   2 +-
+>  drivers/of/util.c   | 253 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/of.h  |  59 ++++++++++++
+>  3 files changed, 313 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/of/util.c
+> 
+> diff --git a/drivers/of/Makefile b/drivers/of/Makefile
+> index efd0510..9bc6d8c 100644
+> --- a/drivers/of/Makefile
+> +++ b/drivers/of/Makefile
+> @@ -1,4 +1,4 @@
+> -obj-y = base.o device.o platform.o
+> +obj-y = base.o device.o platform.o util.o
+>  obj-$(CONFIG_OF_FLATTREE) += fdt.o
+>  obj-$(CONFIG_OF_PROMTREE) += pdt.o
+>  obj-$(CONFIG_OF_ADDRESS)  += address.o
+> diff --git a/drivers/of/util.c b/drivers/of/util.c
+> new file mode 100644
+> index 0000000..5117e2b
+> --- /dev/null
+> +++ b/drivers/of/util.c
+> @@ -0,0 +1,253 @@
+> +/*
+> + * Utility functions for working with device tree(s)
+> + *
+> + * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
+> + * Copyright (C) 2012 Texas Instruments Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * version 2 as published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_device.h>
+> +#include <linux/string.h>
+> +#include <linux/ctype.h>
+> +#include <linux/errno.h>
+> +#include <linux/string.h>
+> +#include <linux/slab.h>
+> +#include <linux/err.h>
+> +
+> +/**
+> + * __of_free_property - release the memory of an allocated property
+> + * @prop:	Property to release
+> + *
+> + * Release the memory of an allocated property only after checking
+> + * that the property has been marked as OF_DYNAMIC.
+> + * Only call on known allocated properties.
+> + */
+> +void __of_free_property(struct property *prop)
+> +{
+> +	if (prop == NULL)
+> +		return;
+> +
+> +	if (of_property_check_flag(prop, OF_DYNAMIC)) {
+> +		kfree(prop->value);
+> +		kfree(prop->name);
+> +		kfree(prop);
+> +	} else {
+> +		pr_warn("%s: property %p cannot be freed; memory is gone\n",
+> +				__func__, prop);
+> +	}
+> +}
+> +
+> +/**
+> + * __of_free_tree - release the memory of a device tree node and
+> + *		    of all it's children + properties.
+> + * @node:	Device Tree node to release
+> + *
+> + * Release the memory of a device tree node and of all it's children.
+> + * Also release the properties and the dead properties.
+> + * Only call on detached node trees, and you better be sure that
+> + * no pointer exist for any properties. Only safe to do if you 
+> + * absolutely control the life cycle of the node.
+> + * Also note that the node is not removed from the all_nodes list,
+> + * neither from the parent's child list; this should be handled before
+> + * calling this function.
+> + */
+> +void __of_free_tree(struct device_node *node)
+> +{
+> +	struct property *prop;
+> +	struct device_node *noden;
+> +
+> +	/* sanity check */
+> +	if (!node)
+> +		return;
+> +
+> +	/* free recursively any children */
+> +	while ((noden = node->child) != NULL) {
+> +		node->child = noden->sibling;
+> +		__of_free_tree(noden);
+> +	}
+> +
+> +	/* free every property already allocated */
+> +	while ((prop = node->properties) != NULL) {
+> +		node->properties = prop->next;
+> +		__of_free_property(prop);
+> +	}
+> +
+> +	/* free dead properties already allocated */
+> +	while ((prop = node->deadprops) != NULL) {
+> +		node->deadprops = prop->next;
+> +		__of_free_property(prop);
+> +	}
+> +
+> +	if (of_node_check_flag(node, OF_DYNAMIC)) {
+> +		kfree(node->type);
+> +		kfree(node->name);
+> +		kfree(node);
+> +	} else {
+> +		pr_warn("%s: node %p cannot be freed; memory is gone\n",
+> +				__func__, node);
+> +	}
+> +}
+> +
+> +/**
+> + * __of_copy_property - Copy a property dynamically.
+> + * @prop:	Property to copy
+> + * @flags:	Allocation flags (typically pass GFP_KERNEL)
+> + *
+> + * Copy a property by dynamically allocating the memory of both the
+> + * property stucture and the property name & contents. The property's
+> + * flags have the OF_DYNAMIC bit set so that we can differentiate between
+> + * dynamically allocated properties and not.
+> + * Returns the newly allocated property or NULL on out of memory error.
+> + */
+> +struct property *__of_copy_property(const struct property *prop, gfp_t flags)
+> +{
+> +	struct property *propn;
+> +
+> +	propn = kzalloc(sizeof(*prop), flags);
+> +	if (propn == NULL)
+> +		return NULL;
+> +
+> +	propn->name = kstrdup(prop->name, flags);
+> +	if (propn->name == NULL)
+> +		goto err_fail_name;
+> +
+> +	if (prop->length > 0) {
+> +		propn->value = kmalloc(prop->length, flags);
+> +		if (propn->value == NULL)
+> +			goto err_fail_value;
+> +		memcpy(propn->value, prop->value, prop->length);
+> +		propn->length = prop->length;
+> +	}
 
->
-> This rule is obviously met with the -F total:2,self:1,name:0 kind of 
-> sorting syntax (you can only sort by fields that get displayed) - if mixed 
-> with -s then it should be implicit I think.
->
->> >> But for compatibility we need to use 'self' sort key internally iff 
->> >> neither the -F option nor the config option was given by user.  And 
->> >> it might warn (or notice) users to add 'self' column in the sort key 
->> >> for future use.
->> >
->> > Mind explaining what the problem here is? I don't think I get it.
->> 
->> Well, normal users still use it as they used to - like 
->> 'perf report -s comm,dso' without -F option and the config.
->> 
->> In that case, what would the output look like?  According to the above
->> proposal it'd look like below.
->> 
->>   # Command  Shared object
->>   # .......  .............
->>         aaa  aaa
->>         aaa  libc.so
->>         bbb  bbb
->>         bbb  libc.so
->> 
->> 
->> But the user might want see this:
->> 
->>   # Overhead (self)  Command  Shared object
->>   # ...............  .......  .............
->>              30.00%      bbb  bbb
->>              25.00%      aaa  aaa
->>              25.00%      aaa  libc.so
->>              20.00%      bbb  libc.so
->> 
->> 
->> If she really wants to see it sorted by comm and dso, the command line
->> should be 'perf report -F self,comm,dso -s comm,dso'
->> (or just 'perf report -F self -s comm,dso' could do the same).
->> 
->>   # Overhead (self)  Command  Shared object
->>   # ...............  .......  .............
->>              25.00%      aaa  aaa
->>              25.00%      aaa  libc.so
->>              30.00%      bbb  bbb
->>              20.00%      bbb  libc.so
->
-> This problem should be solved if all -s fields are displayed - i.e. they 
-> are added to the -F list, right?
 
-But old users might not aware of the new -F option, and use -s option
-only.  If so, she will get output like the first example, right?
+I think the prop->length check, should be removed. Properties with length 0, such
+as "interrupt-controller;" have length 0 and some parts of the linux kernel actually
+rely on their value being not NULL.
 
->
-> Basically there's just a single concept: the -F list. The -s option simply 
-> modifies and extends the -F list but internally perf report would not know 
-> anything about '-s', it only knows about fields to display and it would 
-> know which of those fields are to be sorted and in what order.
->
-> Does that make sense to you? Does it cover everything needed?
+For example in drivers/of/irq.c, of_irq_map_raw() checks that a node is an interrupt
+controller by calling:
 
-I like the concept.  I'm just looking for a way to add it without
-upsetting old users. :)
+of_get_property(ipar, "interrupt-controller", NULL)
+
+and checking that it returns a non-null value.
+
+We can safely use kmalloc with size 0 which will return ZERO_SIZE_PTR. This will cause
+all the tests for non-null values in case of zero length properties to pass.
+
+I've sent you a patch a while ago for this. I'm not sure you had time to review it.
 
 Thanks,
-Namhyung
+Ionut
+
+> +
+> +	/* mark the property as dynamic */
+> +	of_property_set_flag(propn, OF_DYNAMIC);
+> +
+> +	return propn;
+> +
+> +err_fail_value:
+> +	kfree(propn->name);
+> +err_fail_name:
+> +	kfree(propn);
+> +	return NULL;
+> +}
+> +
+> +/**
+> + * __of_create_empty_node - Create an empty device node dynamically.
+> + * @name:	Name of the new device node
+> + * @type:	Type of the new device node
+> + * @full_name:	Full name of the new device node
+> + * @phandle:	Phandle of the new device node
+> + * @flags:	Allocation flags (typically pass GFP_KERNEL)
+> + *
+> + * Create an empty device tree node, suitable for further modification.
+> + * The node data are dynamically allocated and all the node flags
+> + * have the OF_DYNAMIC & OF_DETACHED bits set.
+> + * Returns the newly allocated node or NULL on out of memory error.
+> + */
+> +struct device_node *__of_create_empty_node(
+> +		const char *name, const char *type, const char *full_name,
+> +		phandle phandle, gfp_t flags)
+> +{
+> +	struct device_node *node;
+> +
+> +	node = kzalloc(sizeof(*node), flags);
+> +	if (node == NULL)
+> +		return NULL;
+> +
+> +	node->name = kstrdup(name, flags);
+> +	if (node->name == NULL)
+> +		goto err_return;
+> +
+> +	node->type = kstrdup(type, flags);
+> +	if (node->type == NULL)
+> +		goto err_return;
+> +
+> +	node->full_name = kstrdup(full_name, flags);
+> +	if (node->type == NULL)
+> +		goto err_return;
+> +
+> +	node->phandle = phandle;
+> +	kref_init(&node->kref);
+> +	of_node_set_flag(node, OF_DYNAMIC);
+> +	of_node_set_flag(node, OF_DETACHED);
+> +
+> +	return node;
+> +
+> +err_return:
+> +	__of_free_tree(node);
+> +	return NULL;
+> +}
+> +
+> +/**
+> + * __of_find_node_by_full_name - Find a node with the full name recursively
+> + * @node:	Root of the tree to perform the search
+> + * @full_name:	Full name of the node to find.
+> + *
+> + * Find a node with the give full name by recursively following any of 
+> + * the child node links.
+> + * Returns the matching node, or NULL if not found.
+> + * Note that the devtree lock is not taken, so this function is only
+> + * safe to call on either detached trees, or when devtree lock is already
+> + * taken.
+> + */
+> +struct device_node *__of_find_node_by_full_name(struct device_node *node,
+> +		const char *full_name)
+> +{
+> +	struct device_node *child, *found;
+> +
+> +	if (node == NULL)
+> +		return NULL;
+> +
+> +	/* check */
+> +	if (of_node_cmp(node->full_name, full_name) == 0)
+> +		return node;
+> +
+> +	__for_each_child_of_node(node, child) {
+> +		found = __of_find_node_by_full_name(child, full_name);
+> +		if (found != NULL)
+> +			return found;
+> +	}
+> +
+> +	return NULL;
+> +}
+> +
+> +/**
+> + * of_multi_prop_cmp - Check if a property matches a value
+> + * @prop:	Property to check
+> + * @value:	Value to check against
+> + *
+> + * Check whether a property matches a value, using the standard
+> + * of_compat_cmp() test on each string. It is similar to the test
+> + * of_device_is_compatible() makes, but it can be performed without
+> + * taking the devtree_lock, which is required in some cases.
+> + * Returns 0 on a match, -1 on no match.
+> + */
+> +int of_multi_prop_cmp(const struct property *prop, const char *value)
+> +{
+> +	const char *cp;
+> +	int cplen, vlen, l;
+> +
+> +	if (prop == NULL || value == NULL)
+> +		return -1;
+> +
+> +	cp = prop->value;
+> +	cplen = prop->length;
+> +	vlen = strlen(value);
+> +
+> +	while (cplen > 0) {
+> +		if (of_compat_cmp(cp, value, vlen) == 0)
+> +			return 0;
+> +		l = strlen(cp) + 1;
+> +		cp += l;
+> +		cplen -= l;
+> +	}
+> +
+> +	return -1;
+> +}
+> +
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index a56c450..9d69bd2 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -662,4 +662,63 @@ extern void proc_device_tree_update_prop(struct proc_dir_entry *pde,
+>  					 struct property *oldprop);
+>  #endif
+>  
+> +/**
+> + * General utilities for working with live trees.
+> + *
+> + * All functions with two leading underscores operate
+> + * without taking node references, so you either have to
+> + * own the devtree lock or work on detached trees only.
+> + */
+> +
+> +#ifdef CONFIG_OF
+> +
+> +/* iterator for internal use; not references, neither affects devtree lock */
+> +#define __for_each_child_of_node(dn, chld) \
+> +	for (chld = (dn)->child; chld != NULL; chld = chld->sibling)
+> +
+> +void __of_free_property(struct property *prop);
+> +void __of_free_tree(struct device_node *node);
+> +struct property *__of_copy_property(const struct property *prop, gfp_t flags);
+> +struct device_node *__of_create_empty_node( const char *name,
+> +		const char *type, const char *full_name,
+> +		phandle phandle, gfp_t flags);
+> +struct device_node *__of_find_node_by_full_name(struct device_node *node,
+> +		const char *full_name);
+> +int of_multi_prop_cmp(const struct property *prop, const char *value);
+> +
+> +#else /* !CONFIG_OF */
+> +
+> +#define __for_each_child_of_node(dn, chld) \
+> +	while (0)
+> +
+> +static inline void __of_free_property(struct property *prop) { }
+> +
+> +static inline void __of_free_tree(struct device_node *node) { }
+> +
+> +static inline struct property *__of_copy_property(const struct property *prop,
+> +		gfp_t flags)
+> +{
+> +	return NULL;
+> +}
+> +
+> +static inline struct device_node *__of_create_empty_node( const char *name,
+> +		const char *type, const char *full_name,
+> +		phandle phandle, gfp_t flags)
+> +{
+> +	return NULL;
+> +}
+> +
+> +static inline struct device_node *__of_find_node_by_full_name(struct device_node *node,
+> +		const char *full_name)
+> +{
+> +	return NULL;
+> +}
+> +
+> +static inline int of_multi_prop_cmp(const struct property *prop, const char *value)
+> +{
+> +	return -1;
+> +}
+> +
+> +#endif	/* !CONFIG_OF */
+> +
+>  #endif /* _LINUX_OF_H */
+> 
+
