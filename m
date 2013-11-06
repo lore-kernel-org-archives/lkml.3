@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317Ab3KFVZI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 16:25:08 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:57856 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754112Ab3KFVZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 16:25:07 -0500
-Date: Wed, 6 Nov 2013 13:24:39 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2] ARM: make OABI default to off
-Message-ID: <20131106212439.GA24343@www.outflux.net>
+	id S1756419Ab3KFVZv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 16:25:51 -0500
+Received: from dkim2.fusionio.com ([66.114.96.54]:49628 "EHLO
+	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756391Ab3KFVZu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 16:25:50 -0500
+X-ASG-Debug-ID: 1383773149-03d6a54d1b12c8d0001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+Content-Transfer-Encoding: 8BIT
+To: Kent Overstreet <kmo@daterainc.com>
+From: Chris Mason <chris.mason@fusionio.com>
+In-Reply-To: <20131106205734.GC3842@kmo>
+CC: <axboe@kernel.dk>, <linux-kernel@vger.kernel.org>,
+        Mike Snitzer <snitzer@redhat.com>, NeilBrown <neilb@suse.de>,
+        Olof Johansson <olof@lixom.net>
+References: <1383709721-22809-1-git-send-email-kmo@daterainc.com>
+ <20131106161130.3802.97153@localhost.localdomain> <20131106200222.GA3842@kmo>
+ <20131106202236.3802.2079@localhost.localdomain> <20131106205734.GC3842@kmo>
+Message-ID: <20131106212545.3802.19657@localhost.localdomain>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH] block: Revert bio_clone() default behaviour
+Date: Wed, 6 Nov 2013 16:25:45 -0500
+X-ASG-Orig-Subj: Re: [PATCH] block: Revert bio_clone() default behaviour
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
+X-Barracuda-Start-Time: 1383773149
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0713 1.0000 -1.5670
+X-Barracuda-Spam-Score: -1.57
+X-Barracuda-Spam-Status: No, SCORE=-1.57 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.142113
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Given recent discussions about the lack of OABI in the wild, switch
-CONFIG_OABI_COMPAT to off-by-default to encourage more system builders
-to avoid it.
+Quoting Kent Overstreet (2013-11-06 15:57:34)
+> On Wed, Nov 06, 2013 at 03:22:36PM -0500, Chris Mason wrote:
+> > Quoting Kent Overstreet (2013-11-06 15:02:22)
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
-v2:
- - drop "default n", it is redundant; Olof Johansson
----
- arch/arm/Kconfig |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+[ ... nods, thanks! ... ]
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 1ad6fb6c094d..0a1dc697333c 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1728,7 +1728,6 @@ config AEABI
- config OABI_COMPAT
- 	bool "Allow old ABI binaries to run with this kernel (EXPERIMENTAL)"
- 	depends on AEABI && !THUMB2_KERNEL
--	default y
- 	help
- 	  This option preserves the old syscall interface along with the
- 	  new (ARM EABI) one. It also provides a compatibility layer to
-@@ -1740,7 +1739,7 @@ config OABI_COMPAT
- 	  can say N here. If this option is not selected and you attempt
- 	  to execute a legacy ABI binary then the result will be
- 	  UNPREDICTABLE (in fact it can be predicted that it won't work
--	  at all). If in doubt say Y.
-+	  at all). If in doubt say N.
- 
- config ARCH_HAS_HOLES_MEMORYMODEL
- 	bool
--- 
-1.7.9.5
+> OTOH - with regards to just the ordering requirements, the more I look at
+> various code the less accidental the fact that that works seems to be: the best
+> explanation I've come up with so far is that you already needed to ensure that
+> the _pages_ the clone points to stick around until the clone completes, and if
+> you don't own the original bio the only way to do that is to not complete the
+> original bio until after the clone completes.
+> 
+> So if you're a driver cloning bios that were submitted to you, bio_clone_fast()
+> introduces no new ordering requirements.
+> 
+> On the third hand - if you're cloning (i.e. splitting) your own bios, in that
+> case it would be possible to screw up the ordering - I don't know of any code in
+> the kernel that does this today (except for, sort of, bcache) but my dio rewrite
+> takes this approach - but if you do the obvious and sane thing with bio_chain()
+> it's a non issue, it seems to me you'd have to come up with something pretty
+> contrived and dumb for this to actually be an issue in practice.
+> 
+> Anyways, I haven't come to any definite conclusions, those are just my
+> observations so far.
 
+I do think you're right.  We all seem to have clones doing work on
+behalf of the original, and when everyone is done we complete the
+original.
 
--- 
-Kees Cook
-Chrome OS Security
+But, btrfs does have silly things like this:
+
+        dio_end_io(dio_bio, err); // end and free the original
+	bio_put(bio); // free the clone
+
+It's not a bug yet, but given enough time the space between those two
+frees will grow new code that kills us all.
+
+Really though, the new stuff is better, thanks.
+
+-chris
