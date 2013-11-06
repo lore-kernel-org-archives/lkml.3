@@ -1,108 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab3KFTr4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 14:47:56 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:41822 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753042Ab3KFTrz (ORCPT
+	id S1755284Ab3KFTvX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 14:51:23 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:55656 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017Ab3KFTvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 14:47:55 -0500
-Date: Wed, 6 Nov 2013 14:47:53 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Dave Jones <davej@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        stable <stable@vger.kernel.org>, Kees Cook <keescook@google.com>
-Subject: Re: [GIT PULL][PATCH] perf/ftrace: Fix paranoid level for enabling
- function tracer
-Message-ID: <20131106144753.0ec28187@gandalf.local.home>
-In-Reply-To: <20131106094649.4abc704f@gandalf.local.home>
-References: <20131105162407.59393ee1@gandalf.local.home>
-	<20131106094649.4abc704f@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Wed, 6 Nov 2013 14:51:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131106193311.GA18720@redhat.com>
+References: <20131106180232.GA8980@ac100> <20131106193311.GA18720@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 6 Nov 2013 11:50:59 -0800
+Message-ID: <CALCETrV=G30_4bVQbRF0Z9kzYpP8V+aUf-uZES+qVD5MXEAWZQ@mail.gmail.com>
+Subject: Re: CLONE_PARENT after setns(CLONE_NEWPID)
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        Christian Seiler <christian@iwakd.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Lxc development list <lxc-devel@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Nov 2013 09:46:49 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> As I usually send you signed tag pull releases, I made one of those too:
-> 
-> 
+On Wed, Nov 6, 2013 at 11:33 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> Hi Serge,
+>
+> On 11/06, Serge Hallyn wrote:
+>>
+>> Hi Oleg,
+>>
+>> commit 40a0d32d1eaffe6aac7324ca92604b6b3977eb0e :
+>> "fork: unify and tighten up CLONE_NEWUSER/CLONE_NEWPID checks"
+>> breaks lxc-attach in 3.12.  That code forks a child which does
+>> setns() and then does a clone(CLONE_PARENT).  That way the
+>> grandchild can be in the right namespaces (which the child was
+>> not) and be a child of the original task, which is the monitor.
+>
+> Thanks...
+>
+> Yes, this is what 40a0d32d1ea explicitly tries to disallow.
+>
+>> Is there a real danger in allowing CLONE_PARENT
+>> when current->nsproxy->pidns_for_children is not our pidns,
+>> or was this done out of an "over-abundance of caution"?
+>
+> I am not sure... This all was based on the long discussion, and
+> it was decided that the CLONE_PARENT check should be consistent
+> wrt CLONE_NEWPID and pidns_for_children != task_active_pid_ns().
+>
+>> Can we
+>> safely revert that new extra check?
+>
+> Well, usually we do not break user-space, but I am not sure about
+> this case...
 
-I just included Vince's tested-by tag. Here's a new tag you can pull.
+Presumably if we allow this, then we should also allow
+clone(CLONE_NEWPID | CLONE_PARENT).  This seems a little odd, but off
+the top of my head it doesn't seem obviously dangerous.
 
--- Steve
+(Why were we worried about this in the first place?  The comment says
+that we don't want signal handlers or thread groups to span
+namespaces, but CLONE_PARENT has nothing to do with that.)
 
+I feel like I'm rehashing something ancient, but shouldn't that code just be:
 
-Linus,
+if (clone_flags & CLONE_VM) {
+  // check for unsharing namespaces
 
-Please pull the latest ftrace-urgent-3.12-v2 tree, which can be found at:
+with an update to the comment that CLONE_THREAD and CLONE_SIGHAND both
+require CLONE_VM.
 
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-ftrace-urgent-3.12-v2
-
-Tag SHA1: 84665f63eaea429fc56c9bc8c1b4e2da1ed697d5
-Head SHA1: 12ae030d54ef250706da5642fc7697cc60ad0df7
-
-
-Steven Rostedt (1):
-      perf/ftrace: Fix paranoid level for enabling function tracer
-
-----
- kernel/trace/trace_event_perf.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
----------------------------
-commit 12ae030d54ef250706da5642fc7697cc60ad0df7
-Author: Steven Rostedt <rostedt@goodmis.org>
-Date:   Tue Nov 5 12:51:11 2013 -0500
-
-    perf/ftrace: Fix paranoid level for enabling function tracer
-    
-    The current default perf paranoid level is "1" which has
-    "perf_paranoid_kernel()" return false, and giving any operations that
-    use it, access to normal users. Unfortunately, this includes function
-    tracing and normal users should not be allowed to enable function
-    tracing by default.
-    
-    The proper level is defined at "-1" (full perf access), which
-    "perf_paranoid_tracepoint_raw()" will only give access to. Use that
-    check instead for enabling function tracing.
-    
-    Reported-by: Dave Jones <davej@redhat.com>
-    Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-    Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-    Cc: Peter Zijlstra <peterz@infradead.org>
-    Cc: Ingo Molnar <mingo@kernel.org>
-    Cc: Jiri Olsa <jolsa@redhat.com>
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    Cc: stable@vger.kernel.org # 3.4+
-    CVE: CVE-2013-2930
-    Fixes: ced39002f5ea ("ftrace, perf: Add support to use function tracepoint in perf")
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 80c36bc..78e27e3 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -26,7 +26,7 @@ static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
- {
- 	/* The ftrace function trace is allowed only for root. */
- 	if (ftrace_event_is_function(tp_event) &&
--	    perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-+	    perf_paranoid_tracepoint_raw() && !capable(CAP_SYS_ADMIN))
- 		return -EPERM;
- 
- 	/* No tracing, just counting, so no obvious leak */
+--Andy
