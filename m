@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859Ab3KFWbU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 17:31:20 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:55758 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869Ab3KFWbT (ORCPT
+	id S1751947Ab3KFWcP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 17:32:15 -0500
+Received: from mga14.intel.com ([143.182.124.37]:30176 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751873Ab3KFWcO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 17:31:19 -0500
-Date: Thu, 7 Nov 2013 09:31:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Moore <paul@paul-moore.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: error when fetching the selinux tree
-Message-Id: <20131107093111.5b68d4af61ef2c507b2f355e@canb.auug.org.au>
-In-Reply-To: <1869239.Kz8bBo099V@sifl>
-References: <20131107092709.09c9e76757362bad1f1dd885@canb.auug.org.au>
-	<1869239.Kz8bBo099V@sifl>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__7_Nov_2013_09_31_11_+1100_uYoXyyJjv_c+Elv+"
+	Wed, 6 Nov 2013 17:32:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="385682266"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: H Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] x86/apic: Disable I/O APIC before shutdown local APIC
+Thread-Topic: [PATCH] x86/apic: Disable I/O APIC before shutdown local APIC
+Thread-Index: AQHO0XEQ1goUKaaSDkuV7+Ij2zXrD5oY1zMw
+Date: Wed, 6 Nov 2013 22:32:12 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712205A58164A@ORSMSX106.amr.corp.intel.com>
+References: <1382578212-4677-1-git-send-email-fenghua.yu@intel.com>
+ <20131025105742.GA5485@gmail.com>
+In-Reply-To: <20131025105742.GA5485@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__7_Nov_2013_09_31_11_+1100_uYoXyyJjv_c+Elv+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Ingo Molnar [mailto:mingo.kernel.org@gmail.com] wrote:
+> Friday, October 25, 2013 3:58 AM
+> 
+> * Fenghua Yu <fenghua.yu@intel.com> wrote:
+> 
+> > From: Fenghua Yu <fenghua.yu@intel.com>
+> >
+> > In reboot and crash path, when shutdown local APIC, I/O APIC is still
+> active.
+> > This may cause issues because external interrupts can still come in
+> and
+> > disturb local APIC during shutdown process. To quiet external
+> interrupts,
+> > disable I/O APIC before shutdown local APIC.
+> 
+> What specific 'issues' were observed, on what kind of systems?
+> 
 
-Hi Paul,
+This patch is a workaround for a to-be-published erratum; the erratum
+will be published in a few weeks.
 
-On Wed, 06 Nov 2013 17:29:14 -0500 Paul Moore <paul@paul-moore.com> wrote:
->
-> Sorry about that, a case of bad timing.  I'm doing some cleanup right now=
-, it=20
-> should be back up shortly.  That said, it should be empty today so no wor=
-ries=20
-> if you want to skip it today.
+Thanks.
 
-OK, no worries.  I would normally just use what I had fetched yesterday
-which was empty (relative to the security tree).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__7_Nov_2013_09_31_11_+1100_uYoXyyJjv_c+Elv+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSesM0AAoJEMDTa8Ir7ZwV318P/3LrCMBl0wD9ULz03knVmCeu
-bWS0sgHQk2P4A4uTKfdjwHzyHxkMYQMJ0Qr7G4SfpHCpV9oWEjLSjXoUns40B6jX
-AM31cIlvJd+WktU6VwvnAd5x1GMf3C+wqP5djygVGeNVSD03jzopOL9u28LxsWpe
-blvvP3Lddr3nlf9HTTp6GJJjj+qY0eahhRd58FdJk2acAQFqLv/W/Xsi5yEqbJ1i
-Zr6MKWb8YiROevaz1hjNmQSmrIUnYZnflnk3cEE7YqTElCZGCkoyEinFqxUcekQL
-JclStFWLdVoBWBREXrpXZj2yHAbnFkYehHcK4zIazyJs53V8YTEYFvFTHAA/Qznb
-GrCcnm3Sn79iU9pf5zJd9FQjRu/T7Bk1ANbWHItbSIlntzc/fzgzO5pbS/b5t/GJ
-Mq68mpEabh4wHSWgFbJTctbay8FScc231FyVgPEPl4C5fqUt9QWrD1d1BDBiNMQf
-WC1uyXyQbudz7rhJPFI1dIbUyk90spt9IdfQ/VISQFhlK7pt1PogD+hxYWfsrNpD
-AIDiozTW2GYeBlccTSr+p8vxQKC9iYFmNViKzVFLUiuOWqb0yFgGjQchEMQB1HaN
-Diu7JzJUzTGV7fiXh2Lyxhsq5d9i4OhIbmf9aW5xXS8cG2y30h87EGZsCjjAL0sz
-Gqgl0p6nWF1JvFwnBEPd
-=paya
------END PGP SIGNATURE-----
-
---Signature=_Thu__7_Nov_2013_09_31_11_+1100_uYoXyyJjv_c+Elv+--
+-Fenghua
