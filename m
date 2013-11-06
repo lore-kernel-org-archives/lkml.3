@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925Ab3KFBNM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Nov 2013 20:13:12 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:56956 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755558Ab3KFBNL (ORCPT
+	id S1755954Ab3KFBNp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Nov 2013 20:13:45 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:59032 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755927Ab3KFBNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Nov 2013 20:13:11 -0500
-X-AuditID: cbfee61b-b7fd56d000001fc6-a8-527997a541ac
-From: Chao Yu <chao2.yu@samsung.com>
-To: ??? <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
-Subject: [f2fs-dev] [PATCH] f2fs: avoid to use a NULL point in
- destroy_segment_manager
-Date: Wed, 06 Nov 2013 09:12:04 +0800
-Message-id: <000001ceda8d$5b185bd0$11491370$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=gb2312
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac7ai9d7ldkLUJU9T+ma4ZCP42i6Hg==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd2l0yuDDGatUbG4vusvk8WlRe4W
-	e/aeZLG4vGsOm0XrwvPMDqweuxd8ZvLo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujHPfVrEW
-	zGOtOPz7MXsD4zqWLkZODgkBE4k9U2czQ9hiEhfurWfrYuTiEBJYxCgxbeYEVpCEkMAPRolf
-	7SIgNpuAisTyjv9MILaIgKLEhvcb2EEamAVmMEocnvsPrEFYIEJi4aOH7CA2i4CqxOLpTWAN
-	vAKWEhvbd7JB2IISPybfA7uCWUBDon/RBjYIW15i85q3UBcpSOw4+5oRYpmexPf2w0wQNeIS
-	G4/cYpnAKDALyahZSEbNQjJqFpKWBYwsqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCg/qZ
-	9A7GVQ0WhxgFOBiVeHgT5CuDhFgTy4orcw8xSnAwK4nwKsUBhXhTEiurUovy44tKc1KLDzFK
-	c7AoifMebLUOFBJITyxJzU5NLUgtgskycXBKNTCuzv1Qu+b1k9nz+o/5Kl9xT/y2/4CwpdtB
-	7gtqWwor4h0rK70iNHWLXAWPrT+lUXDmsm74N6+H4oe//D2kfDFpezs7/7nz8pXPLtz9ePzo
-	4Sknmk79sVX8s3Z9fNGjWY/apgmfUZ7QMn+SK3dLTVh6kKTqVcuVeWtF+t/Ou8XBseDbQa+k
-	TPYmJZbijERDLeai4kQAM7Sgk2YCAAA=
+	Tue, 5 Nov 2013 20:13:44 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.37 with qID rA61DF6D017703, This message is accepted by code: ctloc85258
+Message-ID: <52799813.9050302@realsil.com.cn>
+Date: Wed, 6 Nov 2013 09:14:59 +0800
+From: micky <micky_ching@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <sameo@linux.intel.com>, <maximlevitsky@gmail.com>,
+        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
+        <oakad@yahoo.com>, <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH] memstick: rtsx: fix ms card data transfer bug
+References: <1383115216-11967-1-git-send-email-micky_ching@realsil.com.cn> <20131105131027.4ce3bc298266bd82104f5fce@linux-foundation.org>
+In-Reply-To: <20131105131027.4ce3bc298266bd82104f5fce@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A NULL point should avoid to be used in destroy_segment_manager after allocating memory fail for f2fs_sm_info.
+MS card can not use auto read/write mode, so it will fail at
+initialize and long data transfer. This patch is used to add
+support for ms card.
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/segment.c |    2 ++
- 1 file changed, 2 insertions(+)
+Shall I re-send this patch to add more info?
 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index 3d4d5fc..ff363e6
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -1744,6 +1744,8 @@ static void destroy_sit_info(struct f2fs_sb_info *sbi)
- void destroy_segment_manager(struct f2fs_sb_info *sbi)
- {
- 	struct f2fs_sm_info *sm_info = SM_I(sbi);
-+	if (!sm_info)
-+		return;
- 	destroy_dirty_segmap(sbi);
- 	destroy_curseg(sbi);
- 	destroy_free_segmap(sbi);
+On 11/06/2013 05:10 AM, Andrew Morton wrote:
+> On Wed, 30 Oct 2013 14:40:16 +0800 <micky_ching@realsil.com.cn> wrote:
+>
+>> unlike mspro card, ms card use normal read/write mode for DMA
+>> data transfer.
+> What are the user-visible effects of this bug?
+>
+> Please always include this information when fixing bugs so that others
+> can decide whether they (or their customers) need the patch.
+>
+> .
+>
+
+
 -- 
-1.7.9.5
+Best Regards
+Micky.
 
