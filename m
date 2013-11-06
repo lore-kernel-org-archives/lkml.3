@@ -1,80 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab3KFV0y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 16:26:54 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:37577 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518Ab3KFV0w (ORCPT
+	id S1756569Ab3KFV16 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 16:27:58 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:36164 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756081Ab3KFV15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 16:26:52 -0500
+	Wed, 6 Nov 2013 16:27:57 -0500
+Date: Wed, 6 Nov 2013 16:27:47 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Cc: Jan Beulich <JBeulich@suse.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Mukesh Rathor <mukesh.rathor@oracle.com>
+Subject: Re: [PATCH] xen/mcfg: Call PHYSDEVOP_pci_mmcfg_reserved for MCFG
+ areas.
+Message-ID: <20131106212747.GA23133@phenom.dumpdata.com>
+References: <1383769943-22636-1-git-send-email-konrad.wilk@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <CABqD9hbaZhAztYF_H8RTuTdhh+J4WHaGpdRLR3EqHbtH2OLU+Q@mail.gmail.com>
-References: <CALCETrUt7Ojh5Yy4KYgBPj_wBr=fzKKJ=OOgGP9BtXoKrr9QnA@mail.gmail.com>
-	<1383751951.28218.64.camel@flatline.rdu.redhat.com>
-	<20131106155104.GZ16735@n2100.arm.linux.org.uk>
-	<CABqD9hbaZhAztYF_H8RTuTdhh+J4WHaGpdRLR3EqHbtH2OLU+Q@mail.gmail.com>
-Date: Wed, 6 Nov 2013 13:26:52 -0800
-X-Google-Sender-Auth: Xx4GB0uICkzUy85LdN_10OHOnbo
-Message-ID: <CAGXu5jLr3G+n3SRrpJOZbHsdY76dN34TNP0arL2_FyBg7c2EAg@mail.gmail.com>
-Subject: Re: [libseccomp-discuss] ARM audit, seccomp, etc are broken wrt OABI syscalls
-From: Kees Cook <keescook@chromium.org>
-To: Will Drewry <wad@chromium.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Eric Paris <eparis@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
-        Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        libseccomp-discuss@lists.sourceforge.net,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383769943-22636-1-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 6, 2013 at 1:20 PM, Will Drewry <wad@chromium.org> wrote:
-> On Wed, Nov 6, 2013 at 9:51 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->> On Wed, Nov 06, 2013 at 10:32:31AM -0500, Eric Paris wrote:
->>> On Tue, 2013-11-05 at 14:36 -0800, Andy Lutomirski wrote:
->>> > 1. Set a different audit arch for OABI syscalls (e.g.
->>> > AUDIT_ARCH_ARMOABI).  That is, treat OABI syscall entries the same way
->>> > that x86_64 treats int 80.
->>>
->>> As the audit maintainer, I like #1.  It might break ABI, but the ABI is
->>> flat wrong now and not maintainable...
->>
->> If you read the whole thread, you will see that this corner case is just
->> not worth the effort to support.  Audit may as well be disabled by
->> kernel config if any OABI support is enabled.
->
-> This might be the best move for seccomp too (as Kees suggested).  I'd
-> love to have audit arch visibility, but it's not clear that it's worth
-> any sort of larger changes ...
->
-> ... like adding a task_thread_info.compat flag that bubbles up to
-> syscall_get_arch(), or if we assume consumers of syscall_get_nr() are
-> broken today (I haven't checked), then it would be possible to at
-> least re-add the 0x900000 bits, if compat, before handing back the
-> system call number but leave the audit arch pieces alone.
-
-How does this look, for the seccomp part?
-
--Kees
-
-diff --git a/arch/Kconfig b/arch/Kconfig
-index af2cc6eabcc7..3610c2d9910f 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -331,7 +331,7 @@ config HAVE_ARCH_SECCOMP_FILTER
-
- config SECCOMP_FILTER
-        def_bool y
--       depends on HAVE_ARCH_SECCOMP_FILTER && SECCOMP && NET
-+       depends on HAVE_ARCH_SECCOMP_FILTER && SECCOMP && NET && !OABI_COMPAT
-        help
-          Enable tasks to build secure computing environments defined
-          in terms of Berkeley Packet Filter programs which implement
-
-
--- 
-Kees Cook
-Chrome OS Security
+Resending it to LKML.
+On Wed, Nov 06, 2013 at 03:32:23PM -0500, Konrad Rzeszutek Wilk wrote:
+> The PCI MMCONFIG area is usually reserved via the E820 so the Xen hypervisor
+> is aware of these regions. But they can also be enumerated in the ACPI
+> DSDT which means the hypervisor won't know of them until the initial
+> domain informs it of via PHYSDEVOP_pci_mmcfg_reserved.
+> 
+> This is what this patch does for all of the MCFG regions that the
+> initial domain is aware of (E820 enumerated and ACPI).
+> 
+> Reported-by:  Santosh Jodh <Santosh.Jodh@citrix.com>
+> CC: Jan Beulich <JBeulich@suse.com>
+> CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> CC: David Vrabel <david.vrabel@citrix.com>
+> CC: Mukesh Rathor <mukesh.rathor@oracle.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> [v1: Redid it a bit]
+> [v2: Dropped the P2M 1-1 setting]
+> [v3: Check for Xen in-case we are running under baremetal]
+> ---
+>  drivers/xen/pci.c               | 45 +++++++++++++++++++++++++++++++++++++++++
+>  include/xen/interface/physdev.h | 11 ++++++++++
+>  2 files changed, 56 insertions(+)
+> 
+> diff --git a/drivers/xen/pci.c b/drivers/xen/pci.c
+> index 18fff88..0331fe9 100644
+> --- a/drivers/xen/pci.c
+> +++ b/drivers/xen/pci.c
+> @@ -26,6 +26,7 @@
+>  #include <asm/xen/hypervisor.h>
+>  #include <asm/xen/hypercall.h>
+>  #include "../pci/pci.h"
+> +#include <asm/pci_x86.h>
+>  
+>  static bool __read_mostly pci_seg_supported = true;
+>  
+> @@ -192,3 +193,47 @@ static int __init register_xen_pci_notifier(void)
+>  }
+>  
+>  arch_initcall(register_xen_pci_notifier);
+> +
+> +static int __init xen_mcfg_late(void)
+> +{
+> +	struct pci_mmcfg_region *cfg;
+> +	int rc;
+> +
+> +	if (!xen_initial_domain())
+> +		return 0;
+> +
+> +	if ((pci_probe & PCI_PROBE_MMCONF) == 0)
+> +		return 0;
+> +
+> +	if (list_empty(&pci_mmcfg_list))
+> +		return 0;
+> +
+> +	/* Check whether they are in the right area. */
+> +	list_for_each_entry(cfg, &pci_mmcfg_list, list) {
+> +		struct physdev_pci_mmcfg_reserved r;
+> +
+> +		r.address = cfg->address;
+> +		r.segment = cfg->segment;
+> +		r.start_bus = cfg->start_bus;
+> +		r.end_bus = cfg->end_bus;
+> +		r.flags = XEN_PCI_MMCFG_RESERVED;
+> +
+> +		rc = HYPERVISOR_physdev_op(PHYSDEVOP_pci_mmcfg_reserved, &r);
+> +		switch (rc) {
+> +		case 0:
+> +		case -ENOSYS:
+> +			continue;
+> +
+> +		default:
+> +			pr_warn("Failed to report MMCONFIG reservation"
+> +				" state for %s to hypervisor"
+> +				" (%d)\n",
+> +				cfg->name, rc);
+> +		}
+> +	}
+> +	return 0;
+> +}
+> +/*
+> + * Needs to be done after acpi_init which are subsys_initcall.
+> + */
+> +subsys_initcall_sync(xen_mcfg_late);
+> diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
+> index 7000bb1..42721d1 100644
+> --- a/include/xen/interface/physdev.h
+> +++ b/include/xen/interface/physdev.h
+> @@ -231,6 +231,17 @@ struct physdev_get_free_pirq {
+>  #define XEN_PCI_DEV_VIRTFN             0x2
+>  #define XEN_PCI_DEV_PXM                0x4
+>  
+> +#define XEN_PCI_MMCFG_RESERVED         0x1
+> +
+> +#define PHYSDEVOP_pci_mmcfg_reserved    24
+> +struct physdev_pci_mmcfg_reserved {
+> +    uint64_t address;
+> +    uint16_t segment;
+> +    uint8_t start_bus;
+> +    uint8_t end_bus;
+> +    uint32_t flags;
+> +};
+> +
+>  #define PHYSDEVOP_pci_device_add        25
+>  struct physdev_pci_device_add {
+>      /* IN */
+> -- 
+> 1.8.3.1
+> 
