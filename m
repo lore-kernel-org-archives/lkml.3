@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046Ab3KFWde (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 17:33:34 -0500
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:41314 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab3KFWdc (ORCPT
+	id S1751064Ab3KFWmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 17:42:00 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:56816 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab3KFWlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 17:33:32 -0500
+	Wed, 6 Nov 2013 17:41:55 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAHCPf3umr-v+2oWyjG3F0W=+qu_NoXVVSN95RAJdrjaLxWAfow@mail.gmail.com>
-References: <CALCETrUt7Ojh5Yy4KYgBPj_wBr=fzKKJ=OOgGP9BtXoKrr9QnA@mail.gmail.com>
- <CAGXu5jJreo001uBLV8oAgR_Z2WZK2qtH8YfvriQJVAQ4SgdRzw@mail.gmail.com> <CAHCPf3umr-v+2oWyjG3F0W=+qu_NoXVVSN95RAJdrjaLxWAfow@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 6 Nov 2013 14:33:10 -0800
-Message-ID: <CALCETrVe1mmrkSfoXkuLGmFaeRKbA7p1GsC9OeKH9NXMdtpvyg@mail.gmail.com>
-Subject: Re: ARM audit, seccomp, etc are broken wrt OABI syscalls
-To: Matt Sealey <neko@bakuhatsu.net>
-Cc: Kees Cook <keescook@chromium.org>, Paul Moore <paul@paul-moore.com>,
-        Richard Weinberger <richard@nod.at>,
-        libseccomp-discuss@lists.sourceforge.net,
-        Will Drewry <wad@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>
+In-Reply-To: <Pine.LNX.4.44L0.1311061648220.1220-100000@iolanthe.rowland.org>
+References: <1383769641-22910-1-git-send-email-jwerner@chromium.org>
+	<Pine.LNX.4.44L0.1311061648220.1220-100000@iolanthe.rowland.org>
+Date: Wed, 6 Nov 2013 14:41:54 -0800
+X-Google-Sender-Auth: i9T3j5A-MsqwOBpRk4JZBrrqiKo
+Message-ID: <CAODwPW8j2wGGgH_HjuXuH=95jd_B1iqWeifoT89xgJoEZRvphw@mail.gmail.com>
+Subject: Re: [PATCH] usb: hub: Use correct reset for wedged USB3 devices that
+ are NOTATTACHED
+From: Julius Werner <jwerner@chromium.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Julius Werner <jwerner@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Benson Leung <bleung@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 6, 2013 at 2:30 PM, Matt Sealey <neko@bakuhatsu.net> wrote:
-> On Tue, Nov 5, 2013 at 6:14 PM, Kees Cook <keescook@chromium.org> wrote:
->>
->> Alternatively, CONFIG_SECCOMP_FILTER could depend on
->> !CONFIG_OABI_COMPAT. That seems like the least work, given the desire
->> to kill OABI in the real world. (Though I would note that at least
->> Ubuntu's ARM kernels build with CONFIG_OABI_COMPAT; Chrome OS does
->> not.)
->
-> I think CONFIG_OABI_COMPAT probably leaked in from the original
-> configurations of the kernel taken from Debian.
->
-> There were several big decisions they made (build for ARMv5 soft
-> float, then switch to ARMv7 softfp, then switch to ARMv7 hardfp, then
-> switch to using THUMB2 kernels) which would have just broken OABI
-> binaries at every step of the way since they had some subtle
-> implications in kernel configuration (note: Ubuntu have never, ever
-> enabled FPA emulation in the kernel, and all Debian's OABI userspace
-> is built for FPA, for example. A good chunk of the original Debian arm
-> port probably would just pitch a SIGILL if you ran it under an Ubuntu
-> kernel).
->
-> I would ignore anyone who enables it in a distribution, since they
-> probably weren't intending to enable it in the first place, and never
-> noticed the.. what.. 3-4KiB it adds to the kernel?
->
+> Who makes those calls, drivers?  Any specific ones that you know need to
+be fixed?
 
-Forget the size -- it adds a fair amount of complexity and a D-cache
-miss on every syscall.
+Well, the one I'm worried about is the one this patch is fixing, in
+hub_events(). I have seen this happen when having certain USB3 devices
+plugged into a host controller that always looses power on
+suspend-to-ram (dwc3-exynos). Since the host controller resets itself
+the port no longer has PORT_STAT_ENABLE set and that causes
+hub_activate() to mark the device as USB_STATE_NOTATTACHED. The next
+time khubd runs hub_events(), the port may be in Compliance Mode
+(because the unexpected HC reset can confuse the link state machines
+on both sides) and the kernel correctly tries to reset it, but doesn't
+take the fact into account that usb_reset_device() doesn't work on
+NOTATTACHED devices.
 
---Andy
+> But what can a user do if those messages show up?
+
+Nothing. I was just thinking this might help developers follow the
+kernel decisions better and understand a potential problem faster
+(e.g. if the user posted his log in a bug report somewhere).
+
+> What if the device is in USB_STATE_SUSPENDED?
+
+I'm not sure that is possible at that point in hub_events(), I don't
+know of a way that could lead to this situation. I could still add the
+check just to be sure if you want it, though.
+
+> Not at all.  If a device is unplugged, its state changes to NOTATTACHED
+> before the driver is unbound.  During that time, the driver will see
+> all its URBs failing, so it may very well try to reset the device.
+> (For example, usbhid behaves like this.)  That isn't a bug.
+
+Oh, okay, I wasn't quite sure how that plays together. Would you think
+it's still valuable to print it out (maybe as dev_info() instead of
+dev_warn()) instead of just silently ignoring the reset request? It
+would have certainly been useful for me to find this problem faster,
+but I can take it out again if you think it would result in too much
+noise.
