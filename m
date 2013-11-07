@@ -1,82 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab3KGOFH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 09:05:07 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:51520 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750964Ab3KGOFE (ORCPT
+	id S1754504Ab3KGOF1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 09:05:27 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52700 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754376Ab3KGOFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 09:05:04 -0500
-Date: Thu, 7 Nov 2013 09:04:59 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Is there a notification mechanism for enabled/disabled trace
- events?
-Message-ID: <20131107090459.3be09ee4@gandalf.local.home>
-In-Reply-To: <CAAVeFuJWKwAQ338R86O3WMarFDP2ZJDayLddGio9uXiXPsuyFA@mail.gmail.com>
-References: <CAAVeFuJWKwAQ338R86O3WMarFDP2ZJDayLddGio9uXiXPsuyFA@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Thu, 7 Nov 2013 09:05:24 -0500
+Date: Thu, 7 Nov 2013 14:04:21 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "alex.shi@linaro.org" <alex.shi@linaro.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "paul@pwsan.com" <paul@pwsan.com>, "mgorman@suse.de" <mgorman@suse.de>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "markgross@thegnar.org" <markgross@thegnar.org>,
+        "khilman@linaro.org" <khilman@linaro.org>,
+        "Frank.Rowand@sonymobile.com" <Frank.Rowand@sonymobile.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Bench for testing scheduler
+Message-ID: <20131107140421.GF13674@arm.com>
+References: <CAKfTPtCh+f1FZxkWqU5=2PjGtfRaN8jVV3WdTCzLDAWSjMP7yw@mail.gmail.com>
+ <1383831224-26134-1-git-send-email-vincent.guittot@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1383831224-26134-1-git-send-email-vincent.guittot@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Nov 2013 17:42:54 +0900
-Alexandre Courbot <gnurou@gmail.com> wrote:
-
-> Hi everyone,
+On Thu, Nov 07, 2013 at 01:33:43PM +0000, Vincent Guittot wrote:
+> On 7 November 2013 12:32, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > On Thu, Nov 07, 2013 at 10:54:30AM +0000, Vincent Guittot wrote:
+> >> During the Energy-aware scheduling mini-summit, we spoke about benches
+> >> that should be used to evaluate the modifications of the scheduler.
+> >> I’d like to propose a bench that uses cyclictest to measure the wake
+> >> up latency and the power consumption. The goal of this bench is to
+> >> exercise the scheduler with various sleeping period and get the
+> >> average wakeup latency. The range of the sleeping period must cover
+> >> all residency times of the idle state table of the platform. I have
+> >> run such tests on a tc2 platform with the packing tasks patchset.
+> >> I have use the following command:
+> >> #cyclictest -t <number of cores> -q -e 10000000 -i <500-12000> -d 150 -l 2000
+> >
+> > cyclictest could be a good starting point but we need to improve it to
+> > allow threads of different loads, possibly starting multiple processes
+> > (can be done with a script), randomly varying load threads. These
+> > parameters should be loaded from a file so that we can have multiple
+> > configurations (per SoC and per use-case). But the big risk is that we
+> > try to optimise the scheduler for something which is not realistic.
 > 
-> Trace events can be enabled through debugfs by e.g. writing '1' into
-> their enable node. This is a very useful feature as some tracing
-> functions can introduce overhead and we only want them active when
-> needed.
-> 
-> There is one additional thing that I would need though, which is to be
-> notified when a given trace event is enabled or disabled.
-> 
-> Here is why: I have a power monitoring hardware that can report how
-> much power is currently used by the system. Having this information
-> correlated with other traces (cpufreq, cpuidle, ...) is very useful ;
-> it can be done by repeatedly scheduling a work that probes the power
-> usage and traces it. The job should only be running when the power
-> monitoring trace event is enabled, but AFAIK there is no way to be
-> notified when it is enabled or disabled. So here are a few questions:
+> The goal of this simple bench is to measure the wake up latency and
+> the reachable value of the scheduler on a platform but not to emulate
+> a "real" use case. In the same way than sched-pipe tests a specific
+> behavior of the scheduler, this bench tests the wake up latency of a
+> system.
 
-I'm a little confused by this. Your power monitoring is only enabled
-when someone enables the power tracepoints? Why not have the user start
-monitoring and have it enable the tracepoints itself?
+These figures are indeed useful to make sure we don't have any
+regression in terms of latency but I would not use cyclictest (as it is)
+to assess power improvements since the test is too artificial.
 
-> 
-> 1) Is there such a notification mechanism for trace events that I have missed?
+> Starting multi processes and adding some loads can also be useful but
+> the target will be a bit different from wake up latency. I have one
+> concern with randomness because it prevents from having repeatable and
+> comparable tests and results.
 
-That you missed? Can you elaborate here.
+We can avoid randomness but still make it varying by some predictable
+function.
 
-> 
-> 2) If not, is there any objection to having one? I'd say my use-case
-> is not so uncommon and others would certainly benefit from it.
-> 
-> 3) What would be the right place to have it? ftrace_event_reg() looks
-> like a good place to call a notifier chain, however I'm not sure where
-> the notifier head should be stored, due to my poor understanding of
-> ftrace.
+> I agree that we have to test "real" use cases but it doesn't prevent
+> from testing the limit of a characteristic on a system
 
-There is a way to hard code a notifier for tracepoints, look at how
-TRACE_EVENT_FN() is used (include/trace/events/syscalls.h)
+I agree. My point is not to use this as "the benchmark".
 
-But having a generic notifier may not be too hard or invasive to
-implement.
+I would prefer to assess the impact on latency (and power) using a tool
+independent from benchmarks like cyclictest (e.g. use the reports from
+power sched). The reason is that once we have those tools/scripts in the
+kernel, a third party can run it on real workloads and provide the
+kernel developers with real numbers on performance vs power scheduling,
+regressions between kernel versions etc. We can't create a power model
+that you can run on an x86 for example and give you an indication of the
+power saving on ARM, you need to run the benchmarks on the actual
+hardware (that's why I don't think linsched is of much use from a power
+perspective).
 
--- Steve
-
-> 
-> Any answer/comments greatly appreciated!
-> 
-> Thanks,
-> Alex.
-
+-- 
+Catalin
