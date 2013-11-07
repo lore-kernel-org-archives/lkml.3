@@ -1,112 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab3KGOOZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 09:14:25 -0500
-Received: from mga03.intel.com ([143.182.124.21]:15285 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753945Ab3KGOOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 09:14:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,652,1378882800"; 
-   d="scan'208";a="423762637"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 2/2] mm: create a separate slab for page->ptl allocation
-Date: Thu,  7 Nov 2013 16:14:04 +0200
-Message-Id: <1383833644-27091-2-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1383833644-27091-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1383833644-27091-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1753898Ab3KGOTK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 09:19:10 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:25791 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367Ab3KGOTF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 09:19:05 -0500
+X-AuditID: cbfec7f5-b7ef66d00000795a-ad-527ba157a6e1
+From: Tomasz Figa <t.figa@samsung.com>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-pm@vger.kernel.org, naveenkrishna.ch@gmail.com, rui.zhang@intel.com,
+        eduardo.valentin@ti.com, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, amit.daniel@samsung.com,
+        kgene.kim@samsung.com, devicetree@vger.kernel.org,
+        b.zolnierkie@samsung.com, cpgs@samsung.com
+Subject: Re: [PATCH] thermal: exynos: handle gate clock for misplaced TRIMINFO
+ register
+Date: Thu, 07 Nov 2013 15:18:57 +0100
+Message-id: <1695605.pk9l7dqkqm@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.11.2 (Linux/3.11.5-gentoo; KDE/4.11.2; x86_64; ; )
+In-reply-to: <1383828154-428-1-git-send-email-ch.naveen@samsung.com>
+References: <1383828154-428-1-git-send-email-ch.naveen@samsung.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t/xy7rhC6uDDFYv0LFouBpisXHGelaL
+	u88PM1q8PKRpMf/IOVaLNft/Mln0LrjKZnF51xw2i8+9RxgtZpzfx2SxaNt/ZosnD/vYHHg8
+	ds66y+6xeM9LJo++LasYPY7f2M7k8XmTXABrFJdNSmpOZllqkb5dAlfG5HdHmQq+8FV8unqe
+	sYFxGU8XIyeHhICJxJ0di1khbDGJC/fWs4HYQgJLGSUOPw/sYuQCsruYJDrv/QMrYhNQk/jc
+	8AisSASo+firM+wgRcwCS5kk5i9bxAySEBaIlNiz9yQTiM0ioCrx9dgGsAZeAU2Ju/MPMoLY
+	/ALqEu+2PQWrERVwk5j+4yBYL6eAi0TPh0ZmiCucJTbsOcIE0Sso8WPyPRYQm1lAXmLf/qms
+	ELaWxPqdx5kmMArOQlI2C0nZLCRlCxiZVzGKppYmFxQnpeca6RUn5haX5qXrJefnbmKERMvX
+	HYxLj1kdYhTgYFTi4Z1RUxUkxJpYVlyZe4hRgoNZSYTXdl51kBBvSmJlVWpRfnxRaU5q8SFG
+	Jg5OqQbGBu3AIE+7zWLrE3emem9quMJY8Ff//4ez7MYis7zSv00X2vNvwhFv450T+HinXT6q
+	0BAXPfWMo+x5PzVPMe/1Hd82fFJdeKCC/93+qJutn19pb1DMeqBrVLf5++OYI+4exjKSVvdM
+	Dk4Ql2/iMl5vFVtek9uTI313auGs0r/vm/mVGFQzj2xRYinOSDTUYi4qTgQAWTNWPXQCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If DEBUG_SPINLOCK and DEBUG_LOCK_ALLOC are enabled spinlock_t on x86_64
-is 72 bytes. For page->ptl they will be allocated from kmalloc-96 slab,
-so we loose 24 on each. An average system can easily allocate few tens
-thousands of page->ptl and overhead is significant.
+Hi Naveen,
 
-Let's create a separate slab for page->ptl allocation to solve this.
+On Thursday 07 of November 2013 18:12:34 Naveen Krishna Chatradhi wrote:
+> On Exynos5420 the TMU(4) for GPU has a seperate clock enable bit from
+> the other TMU channels(0 ~ 3). Hence, accessing TRIMINFO for base_second
+> should be acompanied by enabling the respective clock.
+> 
+> This patch which allow for a "clk_sec" clock to be specified in the
+> device-tree which will be ungated when accessing the TRIMINFO register.
+> 
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> ---
+>  drivers/thermal/samsung/exynos_tmu.c |   24 +++++++++++++++++++++++-
+>  1 file changed, 23 insertions(+), 1 deletion(-)
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- include/linux/mm.h | 9 +++++++++
- init/main.c        | 2 +-
- mm/memory.c        | 7 +++++++
- 3 files changed, 17 insertions(+), 1 deletion(-)
+This patch modifies the device binding, but fails to mention anything
+about the modification in respective documentation. Please do not do that.
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 1cedd000cf29..0548eb201e05 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1318,6 +1318,7 @@ static inline pmd_t *pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long a
- 
- #if USE_SPLIT_PTE_PTLOCKS
- #if BLOATED_SPINLOCKS
-+void __init ptlock_cache_init(void);
- extern bool ptlock_alloc(struct page *page);
- extern void ptlock_free(struct page *page);
- 
-@@ -1326,6 +1327,7 @@ static inline spinlock_t *ptlock_ptr(struct page *page)
- 	return page->ptl;
- }
- #else /* BLOATED_SPINLOCKS */
-+static inline void ptlock_cache_init(void) {}
- static inline bool ptlock_alloc(struct page *page)
- {
- 	return true;
-@@ -1378,10 +1380,17 @@ static inline spinlock_t *pte_lockptr(struct mm_struct *mm, pmd_t *pmd)
- {
- 	return &mm->page_table_lock;
- }
-+static inline void ptlock_cache_init(void) {}
- static inline bool ptlock_init(struct page *page) { return true; }
- static inline void pte_lock_deinit(struct page *page) {}
- #endif /* USE_SPLIT_PTE_PTLOCKS */
- 
-+static inline void pgtable_init(void)
-+{
-+	ptlock_cache_init();
-+	pgtable_cache_init();
-+}
-+
- static inline bool pgtable_page_ctor(struct page *page)
- {
- 	inc_zone_page_state(page, NR_PAGETABLE);
-diff --git a/init/main.c b/init/main.c
-index febc511e078a..01573fdfa186 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -476,7 +476,7 @@ static void __init mm_init(void)
- 	mem_init();
- 	kmem_cache_init();
- 	percpu_init_late();
--	pgtable_cache_init();
-+	pgtable_init();
- 	vmalloc_init();
- }
- 
-diff --git a/mm/memory.c b/mm/memory.c
-index f6cd03e4dec6..8e764473d0ff 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -4272,6 +4272,13 @@ void copy_user_huge_page(struct page *dst, struct page *src,
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE || CONFIG_HUGETLBFS */
- 
- #if USE_SPLIT_PTE_PTLOCKS && BLOATED_SPINLOCKS
-+static struct kmem_cache *page_ptl_cachep;
-+void __init ptlock_cache_init(void)
-+{
-+	page_ptl_cachep = kmem_cache_create("page->ptl", sizeof(spinlock_t), 0,
-+			SLAB_PANIC, NULL);
-+}
-+
- bool ptlock_alloc(struct page *page)
- {
- 	spinlock_t *ptl;
--- 
-1.8.4.2
+In addition, since the series adding support for Exynos 5420 has not been
+merged yet, I would rather make this patch a part of that series.
+
+Also please see my comment below.
+
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+> index b54825a..33edd1a 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+[snip]
+> @@ -641,6 +650,15 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+>  	if (ret)
+>  		return ret;
+>  
+> +	data->clk_sec = devm_clk_get(&pdev->dev, "tmu_apbif_sec");
+> +	if (!IS_ERR(data->clk_sec)) {
+
+This code does not check if the clock was specified for TMU channels that
+require it, i.e. the driver will not fail if you don't specify this clock.
+
+Instead, it would be better create a separate compatible value for such
+channels, like "samsung,exynos5420-tmu-broken-triminfo", for which this
+clock would be mandatory and for which, if this clock is not specified,
+the driver would fail.
+
+Best regards,
+Tomasz
 
