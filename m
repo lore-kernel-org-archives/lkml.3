@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab3KGC3T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 21:29:19 -0500
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:20841 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752508Ab3KGC3P (ORCPT
+	id S1753453Ab3KGCeF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 21:34:05 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:40700 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751924Ab3KGCeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 21:29:15 -0500
-From: Xiaoguang Chen <chenxg@marvell.com>
-To: <rjw@rjwysocki.net>, <viresh.kumar@linaro.org>, <cpufreq@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <chenxg@marvell.com>, <chenxg.marvell@gmail.com>
-Subject: [PATCH] cpufreq: conservative: fix requested_freq reduction issue
-Date: Thu, 7 Nov 2013 10:28:50 +0800
-Message-ID: <1383791330-8289-1-git-send-email-chenxg@marvell.com>
-X-Mailer: git-send-email 1.8.0
+	Wed, 6 Nov 2013 21:34:02 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Thu, 7 Nov 2013 10:34:47 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Jisheng Zhang <jszhang@marvell.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: phy: phy-mxs-usb: set the correct platform drvdata
+Message-ID: <20131107023446.GC5994@S2101-09.ap.freescale.net>
+References: <1383791180-3579-1-git-send-email-jszhang@marvell.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-11-06_06:2013-11-06,2013-11-06,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1311060250
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1383791180-3579-1-git-send-email-jszhang@marvell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When decreasing frequency, requested_freq may be less than
-freq_target, So requested_freq minus freq_target may be negative,
-But reqested_freq's unit is unsigned int, then the negative result
-will be one larger interger which may be even higher than
-requested_freq.
+On Thu, Nov 07, 2013 at 10:26:20AM +0800, Jisheng Zhang wrote:
+> We need to set mxs_phy rather as the platform drvdata so that we can get
+> the correct mxs_phy in mxs_phy_remove().
+> 
+> Change-Id: I6e1753cc978e2ed3fbb3d1865be0c54031d337d2
+> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
 
-This patch is to fix such issue. when result becomes negative,
-set requested_freq as the min value of policy.
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
-Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
----
- drivers/cpufreq/cpufreq_conservative.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+Change-Id should be dropped though.
 
-diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
-index f62d822..218460f 100644
---- a/drivers/cpufreq/cpufreq_conservative.c
-+++ b/drivers/cpufreq/cpufreq_conservative.c
-@@ -80,13 +80,18 @@ static void cs_check_cpu(int cpu, unsigned int load)
- 
- 	/* Check for frequency decrease */
- 	if (load < cs_tuners->down_threshold) {
-+		unsigned int freq_target;
- 		/*
- 		 * if we cannot reduce the frequency anymore, break out early
- 		 */
- 		if (policy->cur == policy->min)
- 			return;
- 
--		dbs_info->requested_freq -= get_freq_target(cs_tuners, policy);
-+		freq_target = get_freq_target(cs_tuners, policy);
-+		if (dbs_info->requested_freq > freq_target)
-+			dbs_info->requested_freq -= freq_target;
-+		else
-+			dbs_info->requested_freq = policy->min;
- 
- 		__cpufreq_driver_target(policy, dbs_info->requested_freq,
- 				CPUFREQ_RELATION_L);
--- 
-1.8.0
+Shawn
+
+> ---
+>  drivers/usb/phy/phy-mxs-usb.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/phy/phy-mxs-usb.c b/drivers/usb/phy/phy-mxs-usb.c
+> index fdd33b4..545844b 100644
+> --- a/drivers/usb/phy/phy-mxs-usb.c
+> +++ b/drivers/usb/phy/phy-mxs-usb.c
+> @@ -164,7 +164,7 @@ static int mxs_phy_probe(struct platform_device *pdev)
+>  
+>  	mxs_phy->clk = clk;
+>  
+> -	platform_set_drvdata(pdev, &mxs_phy->phy);
+> +	platform_set_drvdata(pdev, mxs_phy);
+>  
+>  	ret = usb_add_phy_dev(&mxs_phy->phy);
+>  	if (ret)
+> -- 
+> 1.8.4.2
+> 
 
