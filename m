@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab3KGAaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 19:30:06 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:50442 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752780Ab3KGAaE (ORCPT
+	id S1752929Ab3KGAaM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 19:30:12 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:56193 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752780Ab3KGAaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 19:30:04 -0500
-Date: Thu, 7 Nov 2013 09:29:59 +0900
-From: "tj@kernel.org" <tj@kernel.org>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] devres: Freeing the drs after all release() are called
-Message-ID: <20131107002959.GA32200@mtj.dyndns.org>
-References: <1383720018.3650.37.camel@cliu38-desktop-build>
- <20131106085859.GB9487@kroah.com>
- <27240C0AC20F114CBF8149A2696CBE4A01B86696@SHSMSX101.ccr.corp.intel.com>
+	Wed, 6 Nov 2013 19:30:07 -0500
+Date: Wed, 6 Nov 2013 16:30:05 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mel Gorman <mgorman@suse.de>
+cc: Don Morris <don.morris@hp.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: soft lockup - CPU#8 stuck for 22s!
+In-Reply-To: <20131104170413.GA25764@suse.de>
+Message-ID: <alpine.DEB.2.02.1311061626210.22318@chino.kir.corp.google.com>
+References: <5266B5F2.5070102@hp.com> <20131104170413.GA25764@suse.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A01B86696@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Liu.
+On Mon, 4 Nov 2013, Mel Gorman wrote:
 
-On Thu, Nov 07, 2013 at 12:27:56AM +0000, Liu, Chuansheng wrote:
-> The driver code is as below:
-> _INIT() {
+> This maybe?
 > 
-> A = devm_kzalloc();
-> B= devm_request_threaded_irq(isr_handler);
-> C = devm_kzalloc();
-> }
+> ---8<---
+> mm: memcontrol: Release css_set_lock when aborting an OOM scan
 > 
-> When driver _EXIT, the devres_release_all () will be called.
-> The C will be kfreed before B, but when freeing irq B, the pending isr_handler() possibly
-> will access the memory B which has been freed.
-> Then the memory corruption occurred.
+> css_task_iter_start acquires the css_set_lock and it must be released with
+> a call to css_task_iter_end. Commmit 9cbb78bb (mm, memcg: introduce own
+> oom handler to iterate only over its own threads) introduced a loop that
+> was not guaranteed to call css_task_iter_end.
 > 
-> This patch can solve this scenario.
+> Cc: stable <stable@vger.kernel.org>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 5ef8929..941f67d 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1795,6 +1795,7 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>  				mem_cgroup_iter_break(memcg, iter);
+>  				if (chosen)
+>  					put_task_struct(chosen);
+> +				css_task_iter_end(&it);
+>  				return;
+>  			case OOM_SCAN_OK:
+>  				break;
 
-Isn't the bug there IRQ being requested before all its resources are
-allocated?  The proposed change just masks the underlying issue or
-incorrectly ordered operations.
+What tree is this?
 
-Thanks.
-
--- 
-tejun
+I'm afraid I don't understand this at all, I thought css_task_iter_end() 
+was added to take over for cgroup_task_iter_end() and 
+mem_cgroup_out_of_memory() was modified with 72ec7029937f ("cgroup: make 
+task iterators deal with cgroup_subsys_state instead of cgroup") 
+correctly.  Why do we need to call css_task_iter_end() twice with your 
+patch?
