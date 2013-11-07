@@ -1,87 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab3KGJAH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 04:00:07 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:57758 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab3KGJAD (ORCPT
+	id S1753130Ab3KGJBR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 04:01:17 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:62656 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab3KGJBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 04:00:03 -0500
-X-AuditID: 9c93017e-b7c9fae00000057d-7c-527b5690b2cb
-From: Namhyung Kim <namhyung@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch methods (v6)
-References: <87ob60366m.fsf@sejong.aot.lge.com>
-	<87fvrc35kj.fsf@sejong.aot.lge.com> <20131104155131.GD4440@redhat.com>
-	<20131104162229.GA8921@redhat.com> <20131104184741.GA15945@redhat.com>
-	<87sivbz65t.fsf@sejong.aot.lge.com> <20131105174535.GA6385@redhat.com>
-	<20131105192401.GA772@redhat.com> <87vc05x5zf.fsf@sejong.aot.lge.com>
-	<20131106173754.GA11299@redhat.com>
-	<20131106182408.GA12922@redhat.com>
-Date: Thu, 07 Nov 2013 18:00:00 +0900
-In-Reply-To: <20131106182408.GA12922@redhat.com> (Oleg Nesterov's message of
-	"Wed, 6 Nov 2013 19:24:08 +0100")
-Message-ID: <8761s4wprj.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 7 Nov 2013 04:01:04 -0500
+Date: Thu, 7 Nov 2013 10:01:00 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Linux 3.12 released .. and no merge window yet .. and 4.0 plans?
+Message-ID: <20131107090100.GA403@gmail.com>
+References: <CA+55aFwLkvSkparyvekdmMyvr6Srw1KkzTBp=_w0oQRWnPpJug@mail.gmail.com>
+ <20131104062540.GA12149@gmail.com>
+ <20131107044052.GA11459@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131107044052.GA11459@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Nov 2013 19:24:08 +0100, Oleg Nesterov wrote:
-> Forgot to mention,
->
-> On 11/06, Oleg Nesterov wrote:
->>
->> I meant,
->>
->> 		saved_ip = instruction_pointer(regs);
->>
->> 		// pass the "ip" which was used to calculate
->> 		// the @addr argument to fetch_*() methods
->>
->> 		temp_ip = is_ret_probe(tu) ? func : saved_ip;
->> 		temp_ip -= tu->offset;
->> 		instruction_pointer_set(temp_ip);
->>
->> 		store_trace_args(...);
->
-> Note that instruction_pointer_set() is not really nice in any case,
-> this can obviously confuse FETCH_MTD_reg("ip").
 
-Yes.
+* Greg KH <gregkh@linuxfoundation.org> wrote:
 
->
-> But lets ignore this. The solution is simple, we can pass/use this
-> info via current->utask. We can either add the new member, or add
-> a union. Or simply reuse xol_vaddr. Doesn't matter.
+> > Thirdly, _users_ interested in stability can already go to the -stable 
+> > kernel, will will suck up 1 cycle worth of bugfixes out of the main 
+> > flow of changes. So users already have a stability choice of v-latest 
+> > and 'v-latest - 1' - plus the 'long term' stable kernels as well.
+> 
+> I think (but I'm probably biased here), that the -stable releases are 
+> doing this pretty well. [...]
 
-Okay, I'll take a look.
+I do think it's pretty healthy. (I just have no idea how you manage the 
+firehose of patches! :-)
 
->
-> So the only question is should we rely on instruction_pointer/func
-> to translate the address or we should do something else (say, vma).
->
-> So far I like this approach.
+The biggest weak spot I see is the lack of unbiased kernel stability 
+metrics. bugzillas are self-selecting and suffer from the squeakiest whell 
+problem. Distros are conservative and under-staffed, so there's 
+significant lag there.
 
-Me too. :)
+What would help a lot would be the revival of kerneloops.org.
 
-So, I'll wait for more feedbacks from others and then send a new
-version.  Actually I don't have much to do this these days - probably
-until next week (there'll be the KLF).  Please forgive my brevity in
-replies.
+Would people object to a mainline kernel opt-in kernel crash reporting 
+feature that would send a single UDP packet to a special port on 
+kernel.org on a kernel crash, sending a crash signature, a backtrace, a 
+kernel version string or so, a /dev/random generated system UUID, etc.?
 
-I'll be back with a new patchset then. :)
+A _lot_ of useful information can be squeezed into a 1.4k packet, and the 
+format would obviously be human readable but space-optimized.
+
+The upstream kernel crash reporting feature is off by default but distros 
+could turn it on and would allow users to opt-in via a nice GUI question 
+on install or first-bootup. (It would also be a fundamentally distro 
+neutral reporting facility, with immediate, very quick feedback to kernel 
+developers.)
+
+[ This crash reporting facility would utilize the netconsole
+  infrastructure to be able to send the crash-report packet from deep 
+  inside just about any kernel context, and and would thus work better 
+  than current oops gathering methods that all rely on user-space still 
+  functioning when the crash happens. Users could query the crashes 
+  reported for their UUIDs on kernel.org and could provide further 
+  feedback if they want to. ]
+
+> > Maybe ask first-hop maintainers to be extra super diligent about new 
+> > features in v4.0 by imposing an internal merge window deadline 2 weeks 
+> > before the real merge window [a fair chunk of patches hit maintainer 
+> > trees in the last 2 weeks of the development window, and those cause 
+> > much of the regressions], maybe even reject a few pulls during the 
+> > merge window that blatantly violate these pre-freeze rules, but don't 
+> > hold up the low-latency flow of steady improvements - much of which is 
+> > driver work, platform enablement work, small improvements, etc., which 
+> > isn't really a big source of real regressions for the existing 
+> > installed base.
+> 
+> A 2 week merge window deadline would help out a lot with a number of 
+> some of the bugs we get during the -rc cycle, but there's always going 
+> to be issues found with wider testing, so I'm not quite sure that will 
+> help out all that much in the end.
+
+I think we already had such a change in the recent past: Linus started 
+enforcing "no development during the merge window!" in ernest.
+
+That step, combined with linux-next testing, made the merge window a _lot_ 
+less painful over the last 1-2 years, eliminating much of the risk that 
+comes with pushing well intentioned but barely tested bits upstream.
+
+So you are probably right that extending that by 1-2 weeks would probably 
+bring diminishing returns, because the "no development during the merge 
+window" policy already eliminates the worst offenders.
 
 Thanks,
-Namhyung
+
+	Ingo
