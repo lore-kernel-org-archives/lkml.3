@@ -1,283 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab3KGPxx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 10:53:53 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:10296 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab3KGPxt (ORCPT
+	id S1755249Ab3KGPzZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 10:55:25 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:51662 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849Ab3KGPzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 10:53:49 -0500
-X-IronPort-AV: E=Sophos;i="4.93,652,1378857600"; 
-   d="scan'208";a="69100418"
-Date: Thu, 7 Nov 2013 15:52:30 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v9 03/18] arm/xen,arm64/xen: introduce p2m
-In-Reply-To: <1383835328.32399.45.camel@kazak.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1311071543100.26077@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1310251144020.26077@kaball.uk.xensource.com>  <1382698313-13161-3-git-send-email-stefano.stabellini@eu.citrix.com> <1383835328.32399.45.camel@kazak.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 7 Nov 2013 10:55:22 -0500
+Message-ID: <527BB7E6.9060402@gmail.com>
+Date: Thu, 07 Nov 2013 08:55:18 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+To: =?UTF-8?B?56em5om/5Yia?= <chenggang.qcg@alibaba-inc.com>,
+        Chenggang Qin <chenggang.qin@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Yanmin Zhang <yanmin.zhang@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?UTF-8?B?56em5om/5Yia?= <chenggang.qcg@taobao.com>
+Subject: Re: =?UTF-8?B?562U5aSN77ya562U5aSN77yaW1BBVENIIDIvNF0gcGVyZiB0b28=?=
+ =?UTF-8?B?bHM6IHJlbGF0ZSAnc3RhcnQnICYgJ2VuZCcgdG8gcGVyZl9zZXNzaW9u?=
+References: <1383298146-3860-1-git-send-email-chenggang.qin@gmail.com> <1383298146-3860-3-git-send-email-chenggang.qin@gmail.com>,52757E0B.3010805@gmail.com <f31aa7c2-c31a-47f2-a051-a5bd44f4d07d@alibaba-inc.com>,527A5D20.3000308@gmail.com <6d5d4b79-c25a-4f12-984a-58b310dae2a5@alibaba-inc.com>
+In-Reply-To: <6d5d4b79-c25a-4f12-984a-58b310dae2a5@alibaba-inc.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Nov 2013, Ian Campbell wrote:
-> On Fri, 2013-10-25 at 11:51 +0100, Stefano Stabellini wrote:
-> > Introduce physical to machine and machine to physical tracking
-> > mechanisms based on rbtrees for arm/xen and arm64/xen.
-> > 
-> > We need it because any guests on ARM are an autotranslate guests,
-> > therefore a physical address is potentially different from a machine
-> > address. When programming a device to do DMA, we need to be
-> > extra-careful to use machine addresses rather than physical addresses to
-> > program the device. Therefore we need to know the physical to machine
-> > mappings.
-> > 
-> > For the moment we assume that dom0 starts with a 1:1 physical to machine
-> > mapping, in other words physical addresses correspond to machine
-> > addresses. However when mapping a foreign grant reference, obviously the
-> > 1:1 model doesn't work anymore. So at the very least we need to be able
-> > to track grant mappings.
-> > 
-> > We need locking to protect accesses to the two trees.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > 
-> > Changes in v8:
-> > - move pfn_to_mfn and mfn_to_pfn to page.h as static inline functions;
-> > - no need to walk the tree if phys_to_mach.rb_node is NULL;
-> > - correctly handle multipage p2m entries;
-> > - substitute the spin_lock with a rwlock.
-> > ---
-> >  arch/arm/include/asm/xen/page.h |   49 ++++++++--
-> >  arch/arm/xen/Makefile           |    2 +-
-> >  arch/arm/xen/p2m.c              |  208 +++++++++++++++++++++++++++++++++++++++
-> >  arch/arm64/xen/Makefile         |    2 +-
-> >  4 files changed, 252 insertions(+), 9 deletions(-)
-> >  create mode 100644 arch/arm/xen/p2m.c
-> > 
-> > diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
-> > index 359a7b5..d1b5dd5 100644
-> > --- a/arch/arm/include/asm/xen/page.h
-> > +++ b/arch/arm/include/asm/xen/page.h
-> > @@ -7,11 +7,10 @@
-> >  #include <linux/pfn.h>
-> >  #include <linux/types.h>
-> >  
-> > +#include <xen/xen.h>
-> >  #include <xen/interface/grant_table.h>
-> >  
-> > -#define pfn_to_mfn(pfn)			(pfn)
-> >  #define phys_to_machine_mapping_valid(pfn) (1)
-> > -#define mfn_to_pfn(mfn)			(mfn)
-> >  #define mfn_to_virt(m)			(__va(mfn_to_pfn(m) << PAGE_SHIFT))
-> >  
-> >  #define pte_mfn	    pte_pfn
-> > @@ -32,6 +31,44 @@ typedef struct xpaddr {
-> >  
-> >  #define INVALID_P2M_ENTRY      (~0UL)
-> >  
-> > +unsigned long __pfn_to_mfn(unsigned long pfn);
-> > +unsigned long __mfn_to_pfn(unsigned long mfn);
-> > +extern struct rb_root phys_to_mach;
-> > +
-> > +static inline unsigned long pfn_to_mfn(unsigned long pfn)
-> > +{
-> > +	unsigned long mfn;
-> > +	
-> > +	if (phys_to_mach.rb_node != NULL) {
-> > +		mfn = __pfn_to_mfn(pfn);
-> > +		if (mfn != INVALID_P2M_ENTRY)
-> > +			return mfn;
-> > +	}
-> > +
-> > +	if (xen_initial_domain())
-> > +		return pfn;
-> > +	else
-> > +		return INVALID_P2M_ENTRY;
-> 
-> This breaks domU ballooning (for some reason only on 64-bit, I've no
-> clue why not 32-bit).
-> 
-> decrease_reservation does pfn_to_mfn in order to release the page, and
-> this ends up passing INVALID_P2M_ENTRY, which the hypervisor rightly
-> rejects.
->
-> > +static inline unsigned long mfn_to_pfn(unsigned long mfn)
-> > +{
-> > +	unsigned long pfn;
-> > +
-> > +	if (phys_to_mach.rb_node != NULL) {
-> > +		pfn = __mfn_to_pfn(mfn);
-> > +		if (pfn != INVALID_P2M_ENTRY)
-> > +			return pfn;
-> > +	}
-> > +
-> > +	if (xen_initial_domain())
-> > +		return mfn;
-> > +	else
-> > +		return INVALID_P2M_ENTRY;
-> 
-> Same here I think.
-> 
-> Both of these should unconditionally return their inputs for !
-> xen_initial_domain() I think.
- 
-The swiotlb code doesn't actually need pfn_to_mfn or mfn_to_pfn to
-return invalid. I did that to be able to spot cases where the generic
-code might do something that doesn't work properly with autotranslate
-guests. Although I still believe in the original concept I guess it
-might have been a bit premature. I'll fix the two function to return
-their input if phys_to_mach.rb_node != NULL and come up with a better
-patch later on.
+On 11/7/13, 5:14 AM, 秦承刚 wrote:
+> Hi, David
+> The samples for the task before the end of the time window are not
+> influenced by the time window. The time window only cover the sample
+> events in the ordered_samples. FORK, MMAP, COMM events are not in the
+> ordered_samples. They are delivered in the function
+> "perf_session__process_event". The task events that are after the end of
+> the time window can be ingnored safely.
+
+following builtin-report.c:
+perf_session__process_events() -> __perf_session__process_events() --> 
+perf_session__process_event():
+
+     ret = perf_evlist__parse_sample(session->evlist, event, &sample);
+     if (ret)
+         return ret;
+
+     if (tool->ordered_samples) {
+         ret = perf_session_queue_event(session, event, &sample,
+                            file_offset);
+         if (ret != -ETIME)
+             return ret;
+     }
+
+All samples are dropped into the ordered_samples queue if they have a 
+timestamp. And I believe it was the sample_id_all patch that put a 
+timestamp on task events too (~2.6.35 or 36 timeframe).
 
 
-> I presume hys_to_mach.rb_node != NULL should never trigger for a domU?
+> Would you give me a link to your patch?
 
-Theoretically it shouldn't but I would like to keep phys_to_mach.rb_node
-decoupled from concepts like dom0 and domU. I know that today we
-wouldn't use it unless we need to map foreign grants, and that would
-happen only in dom0, but I would rather keep the code more flexible
-retaining the phys_to_mach.rb_node != NULL check.
+https://github.com/dsahern/linux/blob/timehist-timeofday-3.9/tools/perf/util/time-utils.c
+and
+https://github.com/dsahern/linux/blob/timehist-timeofday-3.9/tools/perf/builtin-timehist.c
 
+I did not push the builtin-report.c change, but it follows directly from 
+the timehist command.
 
-> > +static int xen_add_phys_to_mach_entry(struct xen_p2m_entry *new)
-> > +{
-> > +	struct rb_node **link = &phys_to_mach.rb_node;
-> > +	struct rb_node *parent = NULL;
-> > +	struct xen_p2m_entry *entry;
-> > +	int rc = 0;
-> > +
-> > +	while (*link) {
-> > +		parent = *link;
-> > +		entry = rb_entry(parent, struct xen_p2m_entry, rbnode_phys);
-> > +
-> > +		if (new->mfn == entry->mfn)
-> > +			goto err_out;
-> > +		if (new->pfn == entry->pfn)
-> > +			goto err_out;
-> > +
-> > +		if (new->pfn < entry->pfn)
-> > +			link = &(*link)->rb_left;
-> > +		else
-> > +			link = &(*link)->rb_right;
-> > +	}
-> 
-> Are there really no helpers for walking an rbtree?
-
-None that I could find.
-
-
-> > +	rb_link_node(&new->rbnode_phys, parent, link);
-> > +	rb_insert_color(&new->rbnode_phys, &phys_to_mach);
-> > +	goto out;
-> > +
-> > +err_out:
-> > +	rc = -EINVAL;
-> > +	pr_warn("%s: cannot add pfn=%pa -> mfn=%pa: pfn=%pa -> mfn=%pa already exists\n",
-> > +			__func__, &new->pfn, &new->mfn, &entry->pfn, &entry->mfn);
-> > +out:
-> > +	return rc;
-> > +}
-> > +
-> > +unsigned long __pfn_to_mfn(unsigned long pfn)
-> > +{
-> > +	struct rb_node *n = phys_to_mach.rb_node;
-> > +	struct xen_p2m_entry *entry;
-> > +	unsigned long irqflags;
-> > +
-> > +	read_lock_irqsave(&p2m_lock, irqflags);
-> > +	while (n) {
-> > +		entry = rb_entry(n, struct xen_p2m_entry, rbnode_phys);
-> > +		if (entry->pfn <= pfn &&
-> > +				entry->pfn + entry->nr_pages > pfn) {
-> > +			read_unlock_irqrestore(&p2m_lock, irqflags);
-> > +			return entry->mfn + (pfn - entry->pfn);
-> > +		}
-> > +		if (pfn < entry->pfn)
-> > +			n = n->rb_left;
-> > +		else
-> > +			n = n->rb_right;
-> > +	}
-> > +	read_unlock_irqrestore(&p2m_lock, irqflags);
-> > +
-> > +	return INVALID_P2M_ENTRY;
-> > +}
-> > +EXPORT_SYMBOL_GPL(__pfn_to_mfn);
-> > +
-> > +static int xen_add_mach_to_phys_entry(struct xen_p2m_entry *new)
-> > +{
-> > +	struct rb_node **link = &mach_to_phys.rb_node;
-> > +	struct rb_node *parent = NULL;
-> > +	struct xen_p2m_entry *entry;
-> > +	int rc = 0;
-> > +
-> > +	while (*link) {
-> > +		parent = *link;
-> > +		entry = rb_entry(parent, struct xen_p2m_entry, rbnode_mach);
-> > +
-> > +		if (new->mfn == entry->mfn)
-> > +			goto err_out;
-> > +		if (new->pfn == entry->pfn)
-> > +			goto err_out;
-> > +
-> > +		if (new->mfn < entry->mfn)
-> > +			link = &(*link)->rb_left;
-> > +		else
-> > +			link = &(*link)->rb_right;
-> > +	}
-> 
-> This looks close to identical to the one in xen_add_phys_to_mach_entry.
-> You could combine them with a simple "lookup mfn" boolean.
-> 
-> 
-> > +	rb_link_node(&new->rbnode_mach, parent, link);
-> > +	rb_insert_color(&new->rbnode_mach, &mach_to_phys);
-> > +	goto out;
-> > +
-> > +err_out:
-> > +	rc = -EINVAL;
-> > +	pr_warn("%s: cannot add pfn=%pa -> mfn=%pa: pfn=%pa -> mfn=%pa already exists\n",
-> > +			__func__, &new->pfn, &new->mfn, &entry->pfn, &entry->mfn);
-> > +out:
-> > +	return rc;
-> > +}
-> > +
-> > +unsigned long __mfn_to_pfn(unsigned long mfn)
-> > +{
-> > +	struct rb_node *n = mach_to_phys.rb_node;
-> > +	struct xen_p2m_entry *entry;
-> > +	unsigned long irqflags;
-> > +
-> > +	read_lock_irqsave(&p2m_lock, irqflags);
-> > +	while (n) {
-> > +		entry = rb_entry(n, struct xen_p2m_entry, rbnode_mach);
-> > +		if (entry->mfn <= mfn &&
-> > +				entry->mfn + entry->nr_pages > mfn) {
-> > +			read_unlock_irqrestore(&p2m_lock, irqflags);
-> > +			return entry->pfn + (mfn - entry->mfn);
-> > +		}
-> > +		if (mfn < entry->mfn)
-> > +			n = n->rb_left;
-> > +		else
-> > +			n = n->rb_right;
-> > +	}
-> 
-> and this looks basically identical to __pfn_to_mfn in the same way.
-> 
-> > +	read_unlock_irqrestore(&p2m_lock, irqflags);
-> > +
-> > +	return INVALID_P2M_ENTRY;
-> > +}
-> > +EXPORT_SYMBOL_GPL(__mfn_to_pfn);
-> > +
-> 
-> Ian.
-> 
+David
