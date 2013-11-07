@@ -1,160 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab3KGHok (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 02:44:40 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:51987 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751315Ab3KGHoc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 02:44:32 -0500
-Subject: Re: [PATCH 3/3] DT: proc: Add runtime overlay interface in /proc
-Mime-Version: 1.0 (Apple Message framework v1085)
+	id S1753416Ab3KGHs0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 02:48:26 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:40313 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291Ab3KGHsR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 02:48:17 -0500
+Date: Thu, 7 Nov 2013 08:48:11 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        David Long <dave.long@linaro.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] uprobes: preparations for arm port
+Message-ID: <20131107074811.GA31560@gmail.com>
+References: <20131106191913.GA18661@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20131106201620.GN28156@beef>
-Date: Thu, 7 Nov 2013 09:44:23 +0200
-Cc: Rob Herring <robherring2@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <22F5FEA8-8ED8-4F3D-98F0-6689E0A1B091@antoniou-consulting.com>
-References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com> <1383676898-29819-4-git-send-email-panto@antoniou-consulting.com> <CAL_Jsq+k9NoHxOaNujTG2=0MHm=s4Mh+xhXCZbhPG1EnHvo50A@mail.gmail.com> <8EBC2D5B-74A4-4A85-8BEE-9EAEBFF045D4@antoniou-consulting.com> <20131106201620.GN28156@beef>
-To: Matt Porter <matt.porter@linaro.org>
-X-Mailer: Apple Mail (2.1085)
+Content-Disposition: inline
+In-Reply-To: <20131106191913.GA18661@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matt,
 
-On Nov 6, 2013, at 10:16 PM, Matt Porter wrote:
+* Oleg Nesterov <oleg@redhat.com> wrote:
 
-> On Wed, Nov 06, 2013 at 09:24:12PM +0200, Pantelis Antoniou wrote:
->> Hi Rob,
->> 
->> On Nov 6, 2013, at 9:10 PM, Rob Herring wrote:
->> 
->>> On Tue, Nov 5, 2013 at 12:41 PM, Pantelis Antoniou
->>> <panto@antoniou-consulting.com> wrote:
->>>> Add a runtime interface to /proc to enable generic device tree overlay
->>>> usage.
->>>> 
->>>> Two new /proc files are added:
->>>> 
->>>> /proc/device-tree-overlay & /proc/device-tree-overlay-status
->>> 
->>> I think we really want all this to live under sysfs. Grant did patches
->>> to move /proc/device-tree to /sys, but it never went upstream:
->>> 
->>> v2: https://lkml.org/lkml/2013/3/21/215
->>> v1: https://lkml.org/lkml/2013/3/20/311
->>> 
->> 
->> Yes, I'm aware; the location of this control interface in /proc is
->> unusual, but had to go somewhere. It should be easy enough to move it to
->> /sys.
->> 
->>>> /proc/device-tree-overlay accepts a stream of a device tree objects and
->>>> applies it to the running kernel's device tree.
->>>> 
->>>>       $ cat ~/BB-UART2-00A0.dtbo >device-tree-overlay
->>>>       overlay_proc_release: Applied #2 overlay segments @0
->>>> 
->>>> /proc/device-tree-overlay-status displays the the overlays added using
->>>> the /proc interface
->>>> 
->>>>       $ cat device-tree-overlay-status
->>>>       0: 861 bytes BB-UART2:00A0
->>> 
->>> Is the size useful information?
->>> 
->> 
->> If the overlay doesn't contain part-number/version properties there is nothing
->> to differentiate each one loaded. No file information, it is just a byte stream
->> interface.
->> 
->>>> 
->>>> The format of the status line is
->>>>       <ID>: <SIZE> bytes <part-number>:<version>
->>>> 
->>>> <ID> is the id of the overlay
->>>> <SIZE> is the size of the overlay in bytes
->>>> <part-number>, <version> are (optional) root level properties of the DTBO
->>>> 
->>>> You can remove an overlay by echoing the <ID> number of the overlay
->>>> precedded with a '-'
->>>> 
->>>> So
->>>>       $ echo "-0" >device-tree-overlay-status
->>>> 
->>>> Removes the overlay.
->>> 
->>> This interface seems racy. Could the id change on you between reading
->>> the status and echoing to remove the overlay?
->>> 
->>> I would rather see a file created for each overlay and simply echo 0
->>> or "remove" to remove the overlay. Or possibly it needs to be a
->>> directory per overlay with several files for info and control. This
->>> would be more inline with typical sysfs design.
->>> 
->> 
->> It was suggested to use a configfs interface. IIRC configfs can do what you
->> propose.
->> 
->> Something like 
->> 
->> /config/dto/add 	<- load by cat overlay.dtbo >/config/dto/load
+> Ingo, please pull from
 > 
-> In a configfs it makes more sense to mkdir. FWIW, USB gadget configfs
-> is a good example of this.
-> 
-> 	mkdir /config/dto/0
-> 
-> which would cause the kernel to create the attribute under that
-> directory:
-> 
-> 	/config/dto/0/load
-> 
-> Which you use to load as noted above.
-> 
-
-I see. This can be made to work.
-
-> Only problem is that configfs doesn't support binary attributes like
-> sysfs. If it is a agreed that overlays are configuration then that would
-> be a strong argument to bring over the binary attribute feature.
+>   git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
 > 
 > 
-
-Oops...
-
->> /config/dto/0/remove 	<- unload by echo 1 >/config/dto/0/remove
+> I have also attached the cumulative diff below. As you can see,
+> the changes are really simple and there are no functional changes.
 > 
-> 	rmdir /config/dto/0
+> However I think it makes sense to merge this now, this way the
+> upcoming arm port doesn't (almost) need the changes outside of
+> arch/arm and thus it would be simpler to route everything via
+> arm trees.
 > 
->> /config/dto/0/${prop}   <- root level properties that are ignore by the overlay
->> 			   mechanism
 > 
+> David A. Long (1):
+>       uprobes: Move function declarations out of arch
+> 
+> Oleg Nesterov (3):
+>       uprobes: Kill module_init() and module_exit()
+>       uprobes: Introduce arch_uprobe->ixol
+>       uprobes: Export write_opcode() as uprobe_write_opcode()
+> 
+>  arch/powerpc/include/asm/uprobes.h |    8 +-------
+>  arch/x86/include/asm/uprobes.h     |   12 ++++--------
+>  include/linux/uprobes.h            |    9 +++++++++
+>  kernel/events/uprobes.c            |   24 ++++++++++--------------
+>  4 files changed, 24 insertions(+), 29 deletions(-)
 
-Oh well, let's see what the maintainer have to say about which way to do.
-Any option of the tree presented would work fine.
+Pulled into tip:perf/core, thanks a lot Oleg!
 
-> -Matt
-
-Regards
-
--- Pantelis
-
+	Ingo
