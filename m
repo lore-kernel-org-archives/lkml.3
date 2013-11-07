@@ -1,73 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751964Ab3KGPCw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 10:02:52 -0500
-Received: from omr-d08.mx.aol.com ([205.188.109.207]:61671 "EHLO
-	omr-d08.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab3KGPCt convert rfc822-to-8bit (ORCPT
+	id S1752874Ab3KGPEg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 10:04:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55594 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961Ab3KGPEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 10:02:49 -0500
-X-Greylist: delayed 478 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Nov 2013 10:02:49 EST
-To: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Subject: IPIP6 Linux Kernel Implementation
-X-MB-Message-Source: WebUI
-X-MB-Message-Type: User
-MIME-Version: 1.0
-From: Pietro Paolini <pulsarpietro@aol.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-X-Mailer: AOL Webmail 38172-STANDARD
-Message-Id: <8D0A9E071C6D495-108C-DE6F@webmail-m208.sysops.aol.com>
-X-Originating-IP: [185.15.248.65]
-Date: Thu, 7 Nov 2013 09:54:50 -0500 (EST)
-x-aol-global-disposition: G
-x-aol-sid: 3039ac1d338a527ba9ba5e30
+	Thu, 7 Nov 2013 10:04:34 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 3/7] perf trace: Don't relookup fields by name in each sample
+Date: Thu,  7 Nov 2013 12:04:14 -0300
+Message-Id: <1383836658-10518-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1383836658-10518-1-git-send-email-acme@infradead.org>
+References: <1383836658-10518-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-I am writing you regarding the implementation of the IPIP6 tunnel
-contained in the Linux Kernel which I am trying to configure in order
-to obtain a DS-Lite (IPIP6) compliant tunnel on a router running a
-linux OS kernel version 2.6.33.
+Instead do the lookups just when creating the tracepoints, initially for
+the most common, raw_syscalls:sys_{enter,exit}.
 
-This my network topology :
+It works by having evsel->priv have a per tracepoint structure with
+entries for the fields, for direct access, with the offset and a
+function to get the value from the sample, doing the swap if needed.
 
-lan --> tun1 --> eth0
+Using a simple workload that does M millions write syscalls, we go from:
 
-where the MTU of all links is 1500.
+ # perf stat -i -e cycles /tmp/oldperf trace ./sc_hello 100 > /dev/null
 
-My problem comes up when the packet size of the incoming IPv4 datagram
-on my LAN interface is close to the MTU (1496 byte) : then the packet
-is "lost" in the file ip6_tunnel.c module at this point :
+ Performance counter stats for '/tmp/oldperf trace ./sc_hello 100':
 
-linux-2.6.33.5/net/ipv6/ip6_tunnel.c
-function ip6_tnl_xmit2()
-{
-....
-        mtu = dst_mtu(dst) - sizeof (*ipv6h);
-        if (skb->len > mtu) {              --> 1496 > 1460 <--
-                *pmtu = mtu;
-                err = -EMSGSIZE;
-                goto tx_err_dst_release;
-        }
-....
-}
+     8,366,771,459 cycles
 
-As I understand, I could be wrong of course,  IPv6 fragmentation is not
-handled in that module and packets bigger then the mtu - sizeof(IPv6)
-are discarded; I am wondering if I can find a workaround in order to
-solve this problem as in some way use the IPv6 stack which I assume
-handles fragmentation - I could be again wrong - or implement it in the
-ip6_tunnel.c module.
+       2.668025928 seconds time elapsed
 
-I am not an experienced kernel developer then is important for me
-understand if I am in the right direction and Linux kernel really does
-not provide this feature in a IPIP6 tunnel or if I am wrong; I need to
-have that for the implementation of a DS-Lite tunnel which as defined
-in the RFC6333 Section 5.3 requires IPv6 packet fragmentation.
+ # perf stat -i -e cycles perf trace ./sc_hello 100 > /dev/null
 
-Thanks a lot,
-Pietro.
+ Performance counter stats for 'perf trace ./sc_hello 100':
+
+     8,345,187,650 cycles
+
+       2.631748425 seconds time elapsed
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-eyfhvoo510a5i10b27dnvm88@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-trace.c | 199 ++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 188 insertions(+), 11 deletions(-)
+
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index ee59df300a34..329b7832b5da 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -35,6 +35,189 @@
+ # define MADV_UNMERGEABLE	13
+ #endif
+ 
++struct tp_field {
++	int offset;
++	union {
++		u64 (*integer)(struct tp_field *field, struct perf_sample *sample);
++		void *(*pointer)(struct tp_field *field, struct perf_sample *sample);
++	};
++};
++
++#define TP_UINT_FIELD(bits) \
++static u64 tp_field__u##bits(struct tp_field *field, struct perf_sample *sample) \
++{ \
++	return *(u##bits *)(sample->raw_data + field->offset); \
++}
++
++TP_UINT_FIELD(8);
++TP_UINT_FIELD(16);
++TP_UINT_FIELD(32);
++TP_UINT_FIELD(64);
++
++#define TP_UINT_FIELD__SWAPPED(bits) \
++static u64 tp_field__swapped_u##bits(struct tp_field *field, struct perf_sample *sample) \
++{ \
++	u##bits value = *(u##bits *)(sample->raw_data + field->offset); \
++	return bswap_##bits(value);\
++}
++
++TP_UINT_FIELD__SWAPPED(16);
++TP_UINT_FIELD__SWAPPED(32);
++TP_UINT_FIELD__SWAPPED(64);
++
++static int tp_field__init_uint(struct tp_field *field,
++			       struct format_field *format_field,
++			       bool needs_swap)
++{
++	field->offset = format_field->offset;
++
++	switch (format_field->size) {
++	case 1:
++		field->integer = tp_field__u8;
++		break;
++	case 2:
++		field->integer = needs_swap ? tp_field__swapped_u16 : tp_field__u16;
++		break;
++	case 4:
++		field->integer = needs_swap ? tp_field__swapped_u32 : tp_field__u32;
++		break;
++	case 8:
++		field->integer = needs_swap ? tp_field__swapped_u64 : tp_field__u64;
++		break;
++	default:
++		return -1;
++	}
++
++	return 0;
++}
++
++static void *tp_field__ptr(struct tp_field *field, struct perf_sample *sample)
++{
++	return sample->raw_data + field->offset;
++}
++
++static int tp_field__init_ptr(struct tp_field *field, struct format_field *format_field)
++{
++	field->offset = format_field->offset;
++	field->pointer = tp_field__ptr;
++	return 0;
++}
++
++struct syscall_tp {
++	struct tp_field id;
++	union {
++		struct tp_field args, ret;
++	};
++};
++
++static int perf_evsel__init_tp_uint_field(struct perf_evsel *evsel,
++					  struct tp_field *field,
++					  const char *name)
++{
++	struct format_field *format_field = perf_evsel__field(evsel, name);
++
++	if (format_field == NULL)
++		return -1;
++
++	return tp_field__init_uint(field, format_field, evsel->needs_swap);
++}
++
++#define perf_evsel__init_sc_tp_uint_field(evsel, name) \
++	({ struct syscall_tp *sc = evsel->priv;\
++	   perf_evsel__init_tp_uint_field(evsel, &sc->name, #name); })
++
++static int perf_evsel__init_tp_ptr_field(struct perf_evsel *evsel,
++					 struct tp_field *field,
++					 const char *name)
++{
++	struct format_field *format_field = perf_evsel__field(evsel, name);
++
++	if (format_field == NULL)
++		return -1;
++
++	return tp_field__init_ptr(field, format_field);
++}
++
++#define perf_evsel__init_sc_tp_ptr_field(evsel, name) \
++	({ struct syscall_tp *sc = evsel->priv;\
++	   perf_evsel__init_tp_ptr_field(evsel, &sc->name, #name); })
++
++static void perf_evsel__delete_priv(struct perf_evsel *evsel)
++{
++	free(evsel->priv);
++	evsel->priv = NULL;
++	perf_evsel__delete(evsel);
++}
++
++static struct perf_evsel *perf_evsel__syscall_newtp(const char *direction,
++						    void *handler, int idx)
++{
++	struct perf_evsel *evsel = perf_evsel__newtp("raw_syscalls", direction, idx);
++
++	if (evsel) {
++		evsel->priv = malloc(sizeof(struct syscall_tp));
++
++		if (evsel->priv == NULL)
++			goto out_delete;
++
++		if (perf_evsel__init_sc_tp_uint_field(evsel, id))
++			goto out_delete;
++
++		evsel->handler = handler;
++	}
++
++	return evsel;
++
++out_delete:
++	perf_evsel__delete_priv(evsel);
++	return NULL;
++}
++
++#define perf_evsel__sc_tp_uint(evsel, name, sample) \
++	({ struct syscall_tp *fields = evsel->priv; \
++	   fields->name.integer(&fields->name, sample); })
++
++#define perf_evsel__sc_tp_ptr(evsel, name, sample) \
++	({ struct syscall_tp *fields = evsel->priv; \
++	   fields->name.pointer(&fields->name, sample); })
++
++static int perf_evlist__add_syscall_newtp(struct perf_evlist *evlist,
++					  void *sys_enter_handler,
++					  void *sys_exit_handler)
++{
++	int ret = -1;
++	int idx = evlist->nr_entries;
++	struct perf_evsel *sys_enter, *sys_exit;
++
++	sys_enter = perf_evsel__syscall_newtp("sys_enter", sys_enter_handler, idx++);
++	if (sys_enter == NULL)
++		goto out;
++
++	if (perf_evsel__init_sc_tp_ptr_field(sys_enter, args))
++		goto out_delete_sys_enter;
++
++	sys_exit = perf_evsel__syscall_newtp("sys_exit", sys_exit_handler, idx++);
++	if (sys_exit == NULL)
++		goto out_delete_sys_enter;
++
++	if (perf_evsel__init_sc_tp_uint_field(sys_exit, ret))
++		goto out_delete_sys_exit;
++
++	perf_evlist__add(evlist, sys_enter);
++	perf_evlist__add(evlist, sys_exit);
++
++	ret = 0;
++out:
++	return ret;
++
++out_delete_sys_exit:
++	perf_evsel__delete_priv(sys_exit);
++out_delete_sys_enter:
++	perf_evsel__delete_priv(sys_enter);
++	goto out;
++}
++
++
+ struct syscall_arg {
+ 	unsigned long val;
+ 	struct thread *thread;
+@@ -1392,7 +1575,7 @@ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
+ 	void *args;
+ 	size_t printed = 0;
+ 	struct thread *thread;
+-	int id = perf_evsel__intval(evsel, sample, "id");
++	int id = perf_evsel__sc_tp_uint(evsel, id, sample);
+ 	struct syscall *sc = trace__syscall_info(trace, evsel, id);
+ 	struct thread_trace *ttrace;
+ 
+@@ -1407,12 +1590,7 @@ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
+ 	if (ttrace == NULL)
+ 		return -1;
+ 
+-	args = perf_evsel__rawptr(evsel, sample, "args");
+-	if (args == NULL) {
+-		fprintf(trace->output, "Problems reading syscall arguments\n");
+-		return -1;
+-	}
+-
++	args = perf_evsel__sc_tp_ptr(evsel, args, sample);
+ 	ttrace = thread->priv;
+ 
+ 	if (ttrace->entry_str == NULL) {
+@@ -1445,7 +1623,7 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
+ 	int ret;
+ 	u64 duration = 0;
+ 	struct thread *thread;
+-	int id = perf_evsel__intval(evsel, sample, "id");
++	int id = perf_evsel__sc_tp_uint(evsel, id, sample);
+ 	struct syscall *sc = trace__syscall_info(trace, evsel, id);
+ 	struct thread_trace *ttrace;
+ 
+@@ -1463,7 +1641,7 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
+ 	if (trace->summary)
+ 		thread__update_stats(ttrace, id, sample);
+ 
+-	ret = perf_evsel__intval(evsel, sample, "ret");
++	ret = perf_evsel__sc_tp_uint(evsel, ret, sample);
+ 
+ 	if (id == trace->audit.open_id && ret >= 0 && trace->last_vfs_getname) {
+ 		trace__set_fd_pathname(thread, ret, trace->last_vfs_getname);
+@@ -1675,8 +1853,7 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+ 		goto out;
+ 	}
+ 
+-	if (perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_enter", trace__sys_enter) ||
+-		perf_evlist__add_newtp(evlist, "raw_syscalls", "sys_exit", trace__sys_exit))
++	if (perf_evlist__add_syscall_newtp(evlist, trace__sys_enter, trace__sys_exit))
+ 		goto out_error_tp;
+ 
+ 	perf_evlist__add_vfs_getname(evlist);
+-- 
+1.8.1.4
+
