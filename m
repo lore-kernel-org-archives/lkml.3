@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab3KGMu0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 07:50:26 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:53809 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab3KGMuY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 07:50:24 -0500
+	id S1752192Ab3KGMwx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 07:52:53 -0500
+Received: from mga11.intel.com ([192.55.52.93]:25331 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750948Ab3KGMww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 07:52:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,652,1378882800"; 
+   d="scan'208";a="429392428"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
+CC: "Usyskin, Alexander" <alexander.usyskin@intel.com>,
+        Nicol? Costanza <abitrules@yahoo.it>,
+        Alex Burmashev <alex.burmashev@rosalab.ru>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: mei: cancel stall timers in mei_reset
+Thread-Topic: mei: cancel stall timers in mei_reset
+Thread-Index: AQHO1v25eHT6rrwZAkeTBc+srO32QJoTJVWQgAH12wCAARFxgIAAHv+AgAAeFACAACHsAIABJEKAgAD0PACAAJQjAIAAQ7VA
+Date: Thu, 7 Nov 2013 12:52:47 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AF07452@HASMSX106.ger.corp.intel.com>
+References: <5B8DA87D05A7694D9FA63FD143655C1B1AF0656E@HASMSX106.ger.corp.intel.com>
+ <1046189209.5373.1383806272671.JavaMail.root@collab.rosalab.ru>
+In-Reply-To: <1046189209.5373.1383806272671.JavaMail.root@collab.rosalab.ru>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.12]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwn1HUt3iXo6Zz8j1HUJi+qJ1NfcnUz-P+XCYLL7gjCMQ@mail.gmail.com>
-References: <cover.1383771175.git.tim.c.chen@linux.intel.com>
-	<1383773827.11046.355.camel@schen9-DESK>
-	<CA+55aFyNX=5i0hmk-KuD+Vk+yBD-kkAiywx1Lx_JJmHVPx=1wA@mail.gmail.com>
-	<CANN689HkNP-UZOu+vDCFPG5_k=BNZG6a+oP+Ope16vLc2ShFzw@mail.gmail.com>
-	<CA+55aFwn1HUt3iXo6Zz8j1HUJi+qJ1NfcnUz-P+XCYLL7gjCMQ@mail.gmail.com>
-Date: Thu, 7 Nov 2013 04:50:23 -0800
-Message-ID: <CANN689EgdDQV=srsLELUpiTGOSF0SLUZ=BC2LnMxNrYTv3H=Wg@mail.gmail.com>
-Subject: Re: [PATCH v3 3/5] MCS Lock: Barrier corrections
-From: Michel Lespinasse <walken@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Waiman Long <waiman.long@hp.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rik van Riel <riel@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "Figo. zhang" <figo1802@gmail.com>, linux-arch@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Alex Shi <alex.shi@linaro.org>, linux-kernel@vger.kernel.org,
-        Scott J Norton <scott.norton@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rA7CquYh031894
 
-On Thu, Nov 7, 2013 at 4:06 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> On Nov 7, 2013 6:55 PM, "Michel Lespinasse" <walken@google.com> wrote:
->>
->> Rather than writing arch-specific locking code, would you agree to
->> introduce acquire and release memory operations ?
->
-> Yes, that's probably the right thing to do. What ops do we need? Store with
-> release, cmpxchg and load with acquire? Anything else?
 
-Depends on what lock types we want to implement on top; for MCS we would need:
-- xchg acquire (common case) and load acquire (for spinning on our
-locker's wait word)
-- cmpxchg release (when there is no next locker) and store release
-(when writing to the next locker's wait word)
 
-One downside of the proposal is that using a load acquire for spinning
-puts the memory barrier within the spin loop. So this model is very
-intuitive and does not add unnecessary barriers on x86, but it my
-place the barriers in a suboptimal place for architectures that need
-them.
+> -----Original Message-----
+> From: Eugene Shatokhin [mailto:eugene.shatokhin@rosalab.ru]
+> Sent: Thursday, November 07, 2013 08:38
+> To: Winkler, Tomas
+> Cc: Usyskin, Alexander; Nicol? Costanza; Alex Burmashev; LKML
+> Subject: RE: mei: cancel stall timers in mei_reset
+> 
+> Hi,
+> 
+> > You can safely comment out all of the timer_work.
+> 
+> Well, I rebuilt the kernel with the schedule_... commented out (in
+> mei_me_pci_resume(), for the present). The errors are no longer visible in the
+> log. The full log is attached.
+> 
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Looks like there is a hiccup in scheduling during resume and timer work is kicked before its time and starts unnecessary  the reset flow.
+Can you check  that the device is in good state (<debugfs>/mei/devastate , it should be ENABLED).
+
+We will work on some solution. 
+
+Thanks
+Tomas
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
