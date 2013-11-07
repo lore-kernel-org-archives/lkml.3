@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316Ab3KGCKy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 21:10:54 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:41471 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab3KGCKv (ORCPT
+	id S1753415Ab3KGCP5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 21:15:57 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:21886 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753286Ab3KGCPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 21:10:51 -0500
-Date: Thu, 7 Nov 2013 13:10:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the drm tree with Linus' tree
-Message-Id: <20131107131039.ba60e7db9538175c7a479666@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__7_Nov_2013_13_10_39_+1100_d8w388ay+Kcr3MGg"
+	Wed, 6 Nov 2013 21:15:55 -0500
+X-AuditID: cbfee61a-b7f836d0000025d7-34-527af7da9d1f
+From: Chao Yu <chao2.yu@samsung.com>
+To: ??? <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
+Subject: [f2fs-dev] [PATCH] f2fs: fix memory leak after kobject init failed in
+ fill_super
+Date: Thu, 07 Nov 2013 10:14:51 +0800
+Message-id: <000001cedb5f$497b8190$dc7284b0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=gb2312
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac7bXRj/7AHcFqG9TyWAia3DvMwubw==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd1b36uCDGaekLe4vusvk8WlRe4W
+	e/aeZLG4vGsOm0XrwvPMDqweuxd8ZvLo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujLYDyxgL
+	VnJWnF15ia2BcT97FyMHh4SAicTic2ZdjJxAppjEhXvr2boYuTiEBBYxSpz4OJsdwvnBKHHt
+	x152kCo2ARWJ5R3/mUBsEQFFiQ3vN4AVMQvMYJQ4PPcfK0hCWCBa4n5HJxuIzSKgKvHm7Qtm
+	EJtXwFJi0cSXTBC2oMSPyfdYQGxmAQ2J/kUb2CBseYnNa94yQ5ykILHj7GtGiGV6Ek/eLWSH
+	qBGX2HjkFssERoFZSEbNQjJqFpJRs5C0LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kR
+	HNTPpHYwrmywOMQowMGoxMM7o6YqSIg1say4MvcQowQHs5II771nQCHelMTKqtSi/Pii0pzU
+	4kOM0hwsSuK8B1qtA4UE0hNLUrNTUwtSi2CyTBycUg2MplaPXotVRH+dc/jdwU2Zv2be97z5
+	S8mW6d8P5Zb6c4ekDFXTb5tJPv947+mMObILzseEBPh1r2AU+DZlhcHuaef1nofKSbdz23UV
+	GAbLvT3iIvX0xr5/nPNdNns5LZnHtWhLqqo7U6/+YfVf2rMDP1RteJpals1/ZnGucDXb26aO
+	zVYZT/OtlViKMxINtZiLihMBsLGXZ2YCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__7_Nov_2013_13_10_39_+1100_d8w388ay+Kcr3MGg
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If we failed to init&add kobject when fill_super, stats info and proc object of f2fs will not be released.
+We should free them before we finish fill_super.
 
-Hi Dave,
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/super.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/radeon/atombios_encoders.c between commit c23632d4e57c
-("Alex Deucher <alexander.deucher@amd.com>") from Linus' tree and commit
-43a340262ad4 ("drm/radeon/atom: don't call [EN|DIS]ABLE_OUTPUT on
-DCE3.x") from the drm tree.
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index e42351c..a754d14 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -974,12 +974,12 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 		/* After POR, we can run background GC thread.*/
+ 		err = start_gc_thread(sbi);
+ 		if (err)
+-			goto fail;
++			goto free_gc;
+ 	}
+ 
+ 	err = f2fs_build_stats(sbi);
+ 	if (err)
+-		goto fail;
++		goto free_gc;
+ 
+ 	if (f2fs_proc_root)
+ 		sbi->s_proc = proc_mkdir(sb->s_id, f2fs_proc_root);
+@@ -1005,6 +1005,12 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 
+ 	return 0;
+ fail:
++	if (sbi->s_proc) {
++		remove_proc_entry("segment_info", sbi->s_proc);
++		remove_proc_entry(sb->s_id, f2fs_proc_root);
++	}
++	f2fs_destroy_stats(sbi);
++free_gc:
+ 	stop_gc_thread(sbi);
+ free_root_inode:
+ 	dput(sb->s_root);
+-- 
+1.7.9.5
 
-I fixed it up (just using the latter version) and can carry the fix as
-necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__7_Nov_2013_13_10_39_+1100_d8w388ay+Kcr3MGg
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSevakAAoJEMDTa8Ir7ZwVmKAP/3byXWHIFK9qU+jramHe5SOv
-BTPOgtb4HGus+2AoB+27A7iyM39NXSxZKoyidAQ2aYsXszW45sWi5IKwRVCgvF6f
-DhpmOIpWpPEYPXhJCu0w9/4qcCuUGq5Y6/VDeqw3qlae9MoJ0yzvCGB1RAdLwwFv
-M9BUHAlIJToPT64GSu3yDkVCzr+TAwbrR6GOnw5/9c5HqZDUmeJjGe+0NSoIes0y
-NKO6LNRF09KOe6ihRTxxwqL7KkFBz0nVenBTHOUR6mi70oo48+pDwPFSE/YP7elc
-3HtdY0odk3xELqM0b9/2LhT2UfMPuhxZfPrBICPMkXJ77UQy16deKVzR/hEgJPrK
-banSTiP8AD2+Wel+EWumHRKq6E2SB+Nj+KqCYV5RuEA78gTtEjajx6LfUbejFsaq
-o9z7dei6Qze9qw8e1fC5PRdra42XVa1po7RadYtUXqnLTxi9JkyRLbMmw6AIJ5nF
-vlMTPN7zI5ME4wZOcP7Q5GulBrcKjBZp7Iyq29uRs8KuRaQ92q8NhHEmQo5kwiiE
-4v3ED06RpaTSL6ETMMMqg1KIV6/VcYLWQmKYK8EyBUrSRVaoWMXHfP+Kfj3tYWsq
-pZMlvbZh8JZY4WpcUp9SqzQYZQIlz2nqV1efbzKxm+OZGabJ2ZVQ/WLOmUQiDMVB
-kAGSTlODSgP363wUwzlh
-=N1yZ
------END PGP SIGNATURE-----
-
---Signature=_Thu__7_Nov_2013_13_10_39_+1100_d8w388ay+Kcr3MGg--
