@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867Ab3KGTWl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 14:22:41 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:43900 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab3KGTWY (ORCPT
+	id S1752737Ab3KGTZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 14:25:26 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:47837 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab3KGTZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 14:22:24 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH] n_tty: Protect minimum_to_wake reset for concurrent readers
-Date: Thu,  7 Nov 2013 14:01:57 -0500
-Message-Id: <1383850917-24416-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Thu, 7 Nov 2013 14:25:19 -0500
+Date: Thu, 7 Nov 2013 11:25:45 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>, Olof Johansson <olof@lixom.net>
+Subject: Re: linux-next: manual merge of the block tree with the  tree
+Message-ID: <20131107192545.GA20624@moria.home.lan>
+References: <20131101142026.10390b6e3f70de348770c137@canb.auug.org.au>
+ <5273C473.5070803@kernel.dk>
+ <20131102072252.88d2380fa392705b912dbfad@canb.auug.org.au>
+ <52740EB1.2070901@kernel.dk>
+ <527411DD.7050008@oracle.com>
+ <527414DE.9090704@kernel.dk>
+ <52756583.2030808@oracle.com>
+ <527BE7FA.90904@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <527BE7FA.90904@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With multiple, concurrent readers (each waiting to acquire the
-atomic_read_lock mutex), a departing reader may mistakenly reset
-minimum_to_wake after a new reader has already set a new value.
+On Thu, Nov 07, 2013 at 01:20:26PM -0600, Dave Kleikamp wrote:
+> On 11/02/2013 03:50 PM, Dave Kleikamp wrote:
+> > On 11/01/2013 03:53 PM, Jens Axboe wrote:
+> 
+> >> So we've three immediate options:
+> >>
+> >> 1) You base it on top of the block tree
+> >> 2) I carry the loop updates
+> >> 3) You hand Stephen a merge patch for the resulting merge of the two
+> > 
+> > Attached is a merge patch and the merged loop.c. I'm having problems
+> > with the loop driver with both the block and my tree. I'll continue to
+> > look at that, but everything should build cleanly with this.
+> 
+> Looking back, I obviously rushed the last patch out. This merge patch,
+> and the resulting loop.c, fix my problem. My code is working with Jens'
+> block tree now.
+> 
+> Jens,
+> I ended up replacing a call to bio_iovec_idx() with __bvec_iter_bvec()
+> since the former was removed. It's not very elegant, but it works. I'm
+> open to suggestions on a cleaner fix, but it can wait until one or both
+> of these trees is merged.
 
-Protect the minimum_to_wake reset with the atomic_read_lock critical
-section.
-
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/n_tty.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index ce11cd5..bf9650d 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -2253,12 +2253,12 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
- 	n_tty_set_room(tty);
- 	up_read(&tty->termios_rwsem);
- 
--	mutex_unlock(&ldata->atomic_read_lock);
- 	remove_wait_queue(&tty->read_wait, &wait);
--
- 	if (!waitqueue_active(&tty->read_wait))
- 		ldata->minimum_to_wake = minimum;
- 
-+	mutex_unlock(&ldata->atomic_read_lock);
-+
- 	__set_current_state(TASK_RUNNING);
- 	if (b - buf)
- 		retval = b - buf;
--- 
-1.8.1.2
-
+No, that's definitely wrong. Read Documentation/block/biovecs.txt - you
+need to use either the new bio_iovec() or bio_iovec() iter. I can do the
+conversion later today.
