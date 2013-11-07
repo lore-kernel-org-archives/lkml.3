@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab3KGDSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 22:18:55 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:6560 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752591Ab3KGDSy (ORCPT
+	id S1754161Ab3KGDTD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 22:19:03 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:42961 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753899Ab3KGDS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 22:18:54 -0500
+	Wed, 6 Nov 2013 22:18:58 -0500
 From: Jisheng Zhang <jszhang@marvell.com>
 To: <rob.herring@calxeda.com>, <linux@arm.linux.org.uk>,
         <kernel@pengutronix.de>, <baohua@kernel.org>, <dinguyen@altera.com>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Jisheng Zhang <jszhang@marvell.com>
-Subject: [PATCH V2 2/4] arm: imx: make use of common scu_a9_get_base() interface
-Date: Thu, 7 Nov 2013 11:16:42 +0800
-Message-ID: <1383794204-4714-3-git-send-email-jszhang@marvell.com>
+Subject: [PATCH V2 0/4] arm: make use of common scu_a9_get_base() interface
+Date: Thu, 7 Nov 2013 11:16:40 +0800
+Message-ID: <1383794204-4714-1-git-send-email-jszhang@marvell.com>
 X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1383794204-4714-1-git-send-email-jszhang@marvell.com>
-References: <1383794204-4714-1-git-send-email-jszhang@marvell.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
  definitions=2013-11-07_01:2013-11-06,2013-11-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=1 spamscore=1 suspectscore=0
  phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1311060262
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1311060263
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of common scu_a9_get_base() and delete the comment since the
-interface is self commented.
+Commit e9d6b3358ac35901ccc6a4a5a317670fa469db25 adds common APIs to
+get scu base address from CP15. This patch series connverts some platforms
+to use that interface.
 
-Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
----
- arch/arm/mach-imx/platsmp.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Jisheng Zhang (4):
+  arm: highbank: make use of common scu_a9_get_base() interface
+  arm: imx: make use of common scu_a9_get_base() interface
+  arm: prima2: make use of common scu_a9_get_base() interface
+  arm: socfgpa: make use of common scu_a9_get_base() interface
 
-diff --git a/arch/arm/mach-imx/platsmp.c b/arch/arm/mach-imx/platsmp.c
-index 1f24c1f..369a566 100644
---- a/arch/arm/mach-imx/platsmp.c
-+++ b/arch/arm/mach-imx/platsmp.c
-@@ -35,8 +35,7 @@ void __init imx_scu_map_io(void)
- {
- 	unsigned long base;
- 
--	/* Get SCU base */
--	asm("mrc p15, 4, %0, c15, c0, 0" : "=r" (base));
-+	base = scu_a9_get_base();
- 
- 	scu_io_desc.virtual = IMX_IO_P2V(base);
- 	scu_io_desc.pfn = __phys_to_pfn(base);
+ arch/arm/mach-highbank/highbank.c | 4 ++--
+ arch/arm/mach-imx/platsmp.c       | 3 +--
+ arch/arm/mach-prima2/platsmp.c    | 3 +--
+ arch/arm/mach-socfpga/socfpga.c   | 4 ++--
+ 4 files changed, 6 insertions(+), 8 deletions(-)
+
 -- 
 1.8.4.2
 
