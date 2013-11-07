@@ -1,121 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365Ab3KGVQO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 16:16:14 -0500
-Received: from mga02.intel.com ([134.134.136.20]:37389 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751993Ab3KGVQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 16:16:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
-   d="scan'208";a="405263125"
-Subject: Re: [PATCH v3 3/5] MCS Lock: Barrier corrections
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <waiman.long@hp.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rik van Riel <riel@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "Figo. zhang" <figo1802@gmail.com>, linux-arch@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        George Spelvin <linux@horizon.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Alex Shi <alex.shi@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>
-In-Reply-To: <CANN689FqUSnr=Prum0Kt6+0gr9dWKD8GT9Gbrtiyyg+PTyFkyA@mail.gmail.com>
-References: <cover.1383771175.git.tim.c.chen@linux.intel.com>
-	 <1383773827.11046.355.camel@schen9-DESK>
-	 <CA+55aFyNX=5i0hmk-KuD+Vk+yBD-kkAiywx1Lx_JJmHVPx=1wA@mail.gmail.com>
-	 <CANN689HkNP-UZOu+vDCFPG5_k=BNZG6a+oP+Ope16vLc2ShFzw@mail.gmail.com>
-	 <CA+55aFwn1HUt3iXo6Zz8j1HUJi+qJ1NfcnUz-P+XCYLL7gjCMQ@mail.gmail.com>
-	 <CANN689EgdDQV=srsLELUpiTGOSF0SLUZ=BC2LnMxNrYTv3H=Wg@mail.gmail.com>
-	 <20131107143139.GT18245@linux.vnet.ibm.com>
-	 <CANN689FqUSnr=Prum0Kt6+0gr9dWKD8GT9Gbrtiyyg+PTyFkyA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Nov 2013 13:15:51 -0800
-Message-ID: <1383858951.11046.399.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	id S1753847Ab3KGVWt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 16:22:49 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:48384 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009Ab3KGVWl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 16:22:41 -0500
+Message-ID: <527C049B.4030608@gmail.com>
+Date: Thu, 07 Nov 2013 22:22:35 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Jisheng Zhang <jszhang@marvell.com>, Russell King <linux@arm.linux.org.uk>,
+        Kevin Hilman <khilman@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 9/9] ARM: add initial support for Marvell Berlin SoCs
+References: <1381235073-17134-1-git-send-email-sebastian.hesselbarth@gmail.com> <20131107134033.59bd127a@xhacker> <527B67A1.3020803@gmail.com> <201311071720.47489.arnd@arndb.de>
+In-Reply-To: <201311071720.47489.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-11-07 at 11:59 -0800, Michel Lespinasse wrote:
-> On Thu, Nov 7, 2013 at 6:31 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Thu, Nov 07, 2013 at 04:50:23AM -0800, Michel Lespinasse wrote:
-> >> On Thu, Nov 7, 2013 at 4:06 AM, Linus Torvalds
-> >> <torvalds@linux-foundation.org> wrote:
-> >> >
-> >> > On Nov 7, 2013 6:55 PM, "Michel Lespinasse" <walken@google.com> wrote:
-> >> >>
-> >> >> Rather than writing arch-specific locking code, would you agree to
-> >> >> introduce acquire and release memory operations ?
-> >> >
-> >> > Yes, that's probably the right thing to do. What ops do we need? Store with
-> >> > release, cmpxchg and load with acquire? Anything else?
-> >>
-> >> Depends on what lock types we want to implement on top; for MCS we would need:
-> >> - xchg acquire (common case) and load acquire (for spinning on our
-> >> locker's wait word)
-> >> - cmpxchg release (when there is no next locker) and store release
-> >> (when writing to the next locker's wait word)
-> >>
-> >> One downside of the proposal is that using a load acquire for spinning
-> >> puts the memory barrier within the spin loop. So this model is very
-> >> intuitive and does not add unnecessary barriers on x86, but it my
-> >> place the barriers in a suboptimal place for architectures that need
-> >> them.
-> >
-> > OK, I will bite...  Why is a barrier in the spinloop suboptimal?
-> 
-> It's probably not a big deal - all I meant to say is that if you were
-> manually placing barriers, you would probably put one after the loop
-> instead. I don't deal much with architectures where such barriers are
-> needed, so I don't know for sure if the difference means much.
+On 11/07/2013 05:20 PM, Arnd Bergmann wrote:
+> On Thursday 07 November 2013, Sebastian Hesselbarth wrote:
+>> Actually, IIRC smp_twd does not compile without SMP set, so the above
+>> should at least be 'HAVE_ARM_TWD if SMP'. If you shrink MULTI_V7 down
+>> to non-SMP cores, you can disable it and it will fail to compile.
+>
+> If there are UP-systems for which TWD is the best clocksource, we should
+> probably fix the code to allow that configuration. IIRC there were already
+> patches recently in this area, maybe it's already solved.
 
-We could do a load acquire at the end of the 
-spin loop in the lock function and not in the spin loop itself if cost
-of barrier within spin loop is a concern.
+I just tried barebox bootloader to use TWD as timer on berlin2cd and it
+perfectly works, i.e. with time related commands I can see the timer
+register decreasing. So the timer is available on this UP SoC.
 
-Michel, are you planning to do an implementation of
-load-acquire/store-release functions of various architectures?
+As said before, compiling linux without CONFIG_SMP but with
+CONFIG_HAVE_ARM_TWD gives:
 
-Or is the approach of arch specific memory barrier for MCS 
-an acceptable one before load-acquire and store-release
-are available?  Are there any technical issues remaining with 
-the patchset after including including Waiman's arch specific barrier?
+warning: (SOC_OMAP5 && ARCH_ROCKCHIP && ARCH_SHMOBILE_MULTI && 
+MACH_BERLIN_BG2 && MACH_BERLIN_BG2CD) selects HAVE_ARM_TWD which has 
+unmet direct dependencies (SMP)
 
-Tim
+and
 
-> 
-> > Can't say that I have tried measuring it, but the barrier should not
-> > normally result in interconnect traffic.  Given that the barrier is
-> > required anyway, it should not affect lock-acquisition latency.
-> 
-> Agree
-> 
-> > So what am I missing here?
-> 
-> I think you read my second email as me trying to shoot down a proposal
-> - I wasn't, as I really like the acquire/release model and find it
-> easy to program with, which is why I'm proposing it in the first
-> place. I just wanted to be upfront about all potential downsides, so
-> we can consider them and see if they are significant - I don't think
-> they are, but I'm not the best person to judge that as I mostly just
-> deal with x86 stuff.
-> 
+arch/arm/kernel/smp_twd.c: In function 'twd_local_timer_of_register':
+arch/arm/kernel/smp_twd.c:391: error: 'setup_max_cpus' undeclared (first 
+use in this function)
+arch/arm/kernel/smp_twd.c:391: error: (Each undeclared identifier is 
+reported only once
+arch/arm/kernel/smp_twd.c:391: error: for each function it appears in.)
+make[1]: *** [arch/arm/kernel/smp_twd.o] Error 1
 
+I haven't looked deeper into this, but I guess it will not be hard
+to make ARM_TWD independent of SMP.
+
+Sebastian
 
