@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab3KGQFU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 11:05:20 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:40440 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751483Ab3KGQFQ (ORCPT
+	id S1754626Ab3KGQGN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 11:06:13 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:41805 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab3KGQGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 11:05:16 -0500
-Date: Thu, 7 Nov 2013 11:05:15 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Michal Nazarewicz <mina86@mina86.com>
-cc: David Cohen <david.a.cohen@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
-        <gregkh@linuxfoundation.org>, USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3/4] usb: ffs: check quirk to pad epout buf size when
- not aligned to maxpacketsize
-In-Reply-To: <xa1t1u2t1icl.fsf@mina86.com>
-Message-ID: <Pine.LNX.4.44L0.1311071053430.1401-100000@iolanthe.rowland.org>
+	Thu, 7 Nov 2013 11:06:10 -0500
+Message-ID: <527BBA6E.2040609@gmail.com>
+Date: Thu, 07 Nov 2013 09:06:06 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Ingo Molnar <mingo@kernel.org>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org, jolsa@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 4/4] perf record: mmap output file - v3
+References: <1383763297-27066-1-git-send-email-dsahern@gmail.com> <1383763297-27066-5-git-send-email-dsahern@gmail.com> <20131107080313.GB31926@gmail.com>
+In-Reply-To: <20131107080313.GB31926@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Nov 2013, Michal Nazarewicz wrote:
+On 11/7/13, 1:03 AM, Ingo Molnar wrote:
+>
+> * David Ahern <dsahern@gmail.com> wrote:
+>
+>> +--out-pages=::
+>> +	Number of pages to mmap while writing data to file (must be a power of two).
+>> +	Specification can be appended with unit character - B/K/M/G. The
+>> +	size is rounded up to have nearest pages power of two value.
+>
+> So why doesn't the code automatically round down (or up) to the next power
+> of 2 limit? We use computers to solve problems, not to introduce
+> additional ones! ;-)
 
-> On Tue, Nov 05 2013, Alan Stern wrote:
-> > Maybe Michal can enlighten us.
-> 
-> Sorry for late response, this thread fell under my radar for some
-> reason.
-> 
-> So here's how it works:
-> 
-> epfile represents an end point file on the fuctionfs file system,
-> i.e. what user space is seeing.  It's numbering is independent of which
-> USB configuration is chosen.
-> 
-> A FunctionFS user space daemon may read/write to those files regardless
-> of whether the function is enabled.  If it is not, the operation will
-> block until host enables the function.
+sure. It reuses perf_evlist__parse_mmap_pages which rounds so I will 
+update the description.
 
-What happens if the userspace daemon writes to epfile but the host 
-changes the config or altsetting before all the data can be sent?  Does 
-the remaining data get flushed?
 
-Similarly, what happens if the config or altsetting changes before a 
-read of epfile completes?  Does the read get terminated?
 
-> epfile->ep represents an actual USB end point, and it's number does not
-> have to correspond to the epfile file name, and may be different in
-> different configuration.  FunctionFS hides all that from the user space
-> daemon.
-> 
-> epfile->ep is set when host changes configuration (i.e. function's
-> set_alt or disable callbacks).  IIRC this implies that epfile->ep cannot
-> be protected by a mutex, and therefore is protected by a spinlock.
-> 
-> Since it is protected by a spinlock, the ffs_epfile_io function cannot
-> lock it and then proceed to allocating memory and copying data from user
-> space.  That's why there is the need for the loop since there is no way
-> to guarantee that while the memory was allocated and data was read from
-> user space (if it is a write), the function has not been disabled and
-> re-enabled.
+>> +static int do_mmap_output(struct perf_record *rec, void *buf, size_t size)
+>> +{
+>> +	struct perf_data_file *file = &rec->file;
+>> +	u64 remaining;
+>> +	off_t offset;
+>> +
+>> +	if (rec->mmap_addr == NULL) {
+>> +do_mmap:
+>> +		offset = rec->session->header.data_offset + rec->bytes_written;
+>> +		if (offset < (ssize_t) rec->mmap_out_size) {
+>> +			rec->mmap_offset = offset;
+>> +			offset = 0;
+>> +		} else
+>> +			rec->mmap_offset = 0;
+>
+> (Nit: unbalanced curly braces.)
 
-I'm still a little unclear on this.  Disabling the function ought to
-have much the same effect as changing the config or altsetting: Writes
-to endpoint files should be flushed and reads should be terminated.  
-Otherwise you would end up sending stale data to the host or reading 
-data that the daemon isn't prepared for.
+I believe checkpatch.pl complains, but will add.
 
-Given that, there doesn't seem to be any need for a loop.  Copy the 
-data; if the function was disabled in the meantime then throw away the 
-data and return an appropriate error code.
 
-I don't see any reason why you should ever have to copy the same data 
-from userspace multiple times.
+>> +	OPT_CALLBACK(0, "out-pages", &record.mmap_out_pages, "pages",
+>> +		     "number of pages to use for output chunks.",
+>> +		     perf_evlist__parse_mmap_pages),
+>
+> Nit: the short explanation here doesn't mention it at all to the user that
+> these 'out pages' are used in mmap.
+>
+> Shouldn't it say:
+>
+> 		     "number of pages mmap()ed for output chunks."
+>
+> ?
+>
+> Also, what happens if a user sets it to zero?
 
-> However, I'm not sure whether maxpacketsize can change.  It is part of
-> endpoint's descriptor and even though the endpoint number can change
-> while ffs_epfile_io is running, all the other descriptor fields should
-> stay the same.
+I was intending to use that as a way of disabling the mmap output - go 
+back to write(). I'll update the documentation.
 
-If the config or altsetting can change then the maxpacket size can 
-change too.  However, the reasoning above indicates that this should be 
-moot.
+Ack on all of the other comments.
 
-Alan Stern
+David
 
