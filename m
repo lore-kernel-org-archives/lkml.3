@@ -1,70 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab3KGJZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 04:25:40 -0500
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:53463 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab3KGJZh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 04:25:37 -0500
-Message-ID: <527B5C8E.6030102@linaro.org>
-Date: Thu, 07 Nov 2013 10:25:34 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753508Ab3KGJ2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 04:28:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41160 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752856Ab3KGJ2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 04:28:05 -0500
+Date: Thu, 7 Nov 2013 10:28:01 +0100
+From: Jan Kara <jack@suse.cz>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        EXT4 <linux-ext4@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        rostedt@goodmis.org, Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 07/11] fs/ext4: use rbtree postorder iteration helper
+ instead of opencoding
+Message-ID: <20131107092801.GB28464@quack.suse.cz>
+References: <1383788572-25938-1-git-send-email-cody@linux.vnet.ibm.com>
+ <1383788572-25938-8-git-send-email-cody@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Saumya Ranjan Kuanr <saumyakuanr@gmail.com>, rjw@rjwysocki.net
-CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpu-idle: cpuidle-ux500: fixed a coding style issue
-References: <1382167729-21232-1-git-send-email-saumyakuanr@gmail.com>
-In-Reply-To: <1382167729-21232-1-git-send-email-saumyakuanr@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383788572-25938-8-git-send-email-cody@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2013 09:28 AM, Saumya Ranjan Kuanr wrote:
-> Fixed a coding style issue
->
-> Signed-off-by: Saumya Ranjan Kuanr<saumyakuanr@gmail.com>
+On Wed 06-11-13 17:42:36, Cody P Schafer wrote:
+> Use rbtree_postorder_for_each_entry_safe() to destroy the rbtree instead
+> of opencoding an alternate postorder iteration that modifies the tree
+  The patch looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-Applied for 3.14.
+								Honza
 
-Changed the subject to:
-
-ux500: cpuidle: Fix indentation
-
-Thanks
-   -- Daniel
-
+> 
+> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 > ---
->   drivers/cpuidle/cpuidle-ux500.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/cpuidle/cpuidle-ux500.c b/drivers/cpuidle/cpuidle-ux500.c
-> index e056465..746d716 100644
-> --- a/drivers/cpuidle/cpuidle-ux500.c
-> +++ b/drivers/cpuidle/cpuidle-ux500.c
-> @@ -102,7 +102,7 @@ static struct cpuidle_driver ux500_idle_driver = {
->   			.exit_latency	  = 70,
->   			.target_residency = 260,
->   			.flags		  = CPUIDLE_FLAG_TIME_VALID |
-> -			                    CPUIDLE_FLAG_TIMER_STOP,
-> +						CPUIDLE_FLAG_TIMER_STOP,
->   			.name		  = "ApIdle",
->   			.desc		  = "ARM Retention",
->   		},
-> --
-> 1.7.9.5
->
->
->
-
-
+>  fs/ext4/block_validity.c | 33 ++++-----------------------------
+>  fs/ext4/dir.c            | 35 +++++------------------------------
+>  2 files changed, 9 insertions(+), 59 deletions(-)
+> 
+> diff --git a/fs/ext4/block_validity.c b/fs/ext4/block_validity.c
+> index 3f11656..41eb9dc 100644
+> --- a/fs/ext4/block_validity.c
+> +++ b/fs/ext4/block_validity.c
+> @@ -180,37 +180,12 @@ int ext4_setup_system_zone(struct super_block *sb)
+>  /* Called when the filesystem is unmounted */
+>  void ext4_release_system_zone(struct super_block *sb)
+>  {
+> -	struct rb_node	*n = EXT4_SB(sb)->system_blks.rb_node;
+> -	struct rb_node	*parent;
+> -	struct ext4_system_zone	*entry;
+> +	struct ext4_system_zone	*entry, *n;
+>  
+> -	while (n) {
+> -		/* Do the node's children first */
+> -		if (n->rb_left) {
+> -			n = n->rb_left;
+> -			continue;
+> -		}
+> -		if (n->rb_right) {
+> -			n = n->rb_right;
+> -			continue;
+> -		}
+> -		/*
+> -		 * The node has no children; free it, and then zero
+> -		 * out parent's link to it.  Finally go to the
+> -		 * beginning of the loop and try to free the parent
+> -		 * node.
+> -		 */
+> -		parent = rb_parent(n);
+> -		entry = rb_entry(n, struct ext4_system_zone, node);
+> +	rbtree_postorder_for_each_entry_safe(entry, n,
+> +			&EXT4_SB(sb)->system_blks, node)
+>  		kmem_cache_free(ext4_system_zone_cachep, entry);
+> -		if (!parent)
+> -			EXT4_SB(sb)->system_blks = RB_ROOT;
+> -		else if (parent->rb_left == n)
+> -			parent->rb_left = NULL;
+> -		else if (parent->rb_right == n)
+> -			parent->rb_right = NULL;
+> -		n = parent;
+> -	}
+> +
+>  	EXT4_SB(sb)->system_blks = RB_ROOT;
+>  }
+>  
+> diff --git a/fs/ext4/dir.c b/fs/ext4/dir.c
+> index 680bb33..d638c57 100644
+> --- a/fs/ext4/dir.c
+> +++ b/fs/ext4/dir.c
+> @@ -353,41 +353,16 @@ struct fname {
+>   */
+>  static void free_rb_tree_fname(struct rb_root *root)
+>  {
+> -	struct rb_node	*n = root->rb_node;
+> -	struct rb_node	*parent;
+> -	struct fname	*fname;
+> -
+> -	while (n) {
+> -		/* Do the node's children first */
+> -		if (n->rb_left) {
+> -			n = n->rb_left;
+> -			continue;
+> -		}
+> -		if (n->rb_right) {
+> -			n = n->rb_right;
+> -			continue;
+> -		}
+> -		/*
+> -		 * The node has no children; free it, and then zero
+> -		 * out parent's link to it.  Finally go to the
+> -		 * beginning of the loop and try to free the parent
+> -		 * node.
+> -		 */
+> -		parent = rb_parent(n);
+> -		fname = rb_entry(n, struct fname, rb_hash);
+> +	struct fname *fname, *next;
+> +
+> +	rbtree_postorder_for_each_entry_safe(fname, next, root, rb_hash)
+>  		while (fname) {
+>  			struct fname *old = fname;
+>  			fname = fname->next;
+>  			kfree(old);
+>  		}
+> -		if (!parent)
+> -			*root = RB_ROOT;
+> -		else if (parent->rb_left == n)
+> -			parent->rb_left = NULL;
+> -		else if (parent->rb_right == n)
+> -			parent->rb_right = NULL;
+> -		n = parent;
+> -	}
+> +
+> +	*root = RB_ROOT;
+>  }
+>  
+>  
+> -- 
+> 1.8.4.2
+> 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
