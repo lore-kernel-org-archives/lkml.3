@@ -1,142 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab3KGWNr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 17:13:47 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:54961 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755178Ab3KGWNl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 17:13:41 -0500
+	id S1754868Ab3KGWO7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 17:14:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44519 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755367Ab3KGWOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 17:14:50 -0500
+Date: Thu, 7 Nov 2013 23:14:46 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Cody P Schafer <cody@linux.vnet.ibm.com>,
+        EXT4 <linux-ext4@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        rostedt@goodmis.org, Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 01/11] rbtree: Fix
+ rbtree_postorder_for_each_entry_safe() iterator
+Message-ID: <20131107221446.GA2054@quack.suse.cz>
+References: <1383788572-25938-1-git-send-email-cody@linux.vnet.ibm.com>
+ <1383788572-25938-2-git-send-email-cody@linux.vnet.ibm.com>
+ <20131107133800.c779b2f2b2ec73c91cd25f47@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1383860919-1883-3-git-send-email-jack@suse.cz>
-References: <1383860919-1883-1-git-send-email-jack@suse.cz>
-	<1383860919-1883-3-git-send-email-jack@suse.cz>
-Date: Thu, 7 Nov 2013 23:13:39 +0100
-Message-ID: <CAFTL4hxLXb3hZacx_EdHeKZVfrpuyGoNqpGbX997XJx0UJSwyg@mail.gmail.com>
-Subject: Re: [PATCH 2/4] irq_work: Provide a irq work that can be processed on
- any cpu
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131107133800.c779b2f2b2ec73c91cd25f47@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/7 Jan Kara <jack@suse.cz>:
-> Provide new irq work flag - IRQ_WORK_UNBOUND - meaning that can be
-> processed on any cpu. This flag implies IRQ_WORK_LAZY so that things are
-> simple and we don't have to pick any particular cpu to do the work. We
-> just do the work from a timer tick on whichever cpu it happens first.
-> This is useful as a lightweight and simple code path without locking or
-> other dependencies to offload work to other cpu if possible.
->
-> We will use this type of irq work to make a guarantee of forward
-> progress of printing to a (serial) console when printing on one cpu
-> would cause interrupts to be disabled for too long.
->
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  include/linux/irq_work.h |  2 ++
->  kernel/irq_work.c        | 41 +++++++++++++++++++++++++----------------
->  2 files changed, 27 insertions(+), 16 deletions(-)
->
-> diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
-> index 66017028dcb3..ca07a16355ed 100644
-> --- a/include/linux/irq_work.h
-> +++ b/include/linux/irq_work.h
-> @@ -16,6 +16,8 @@
->  #define IRQ_WORK_BUSY          2UL
->  #define IRQ_WORK_FLAGS         3UL
->  #define IRQ_WORK_LAZY          4UL /* Doesn't want IPI, wait for tick */
-> +#define __IRQ_WORK_UNBOUND      8UL /* Use IRQ_WORK_UNBOUND instead! */
-> +#define IRQ_WORK_UNBOUND       (__IRQ_WORK_UNBOUND | IRQ_WORK_LAZY) /* Any cpu can process this work */
->
->  struct irq_work {
->         unsigned long flags;
-> diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-> index 55fcce6065cf..b06350b63c67 100644
-> --- a/kernel/irq_work.c
-> +++ b/kernel/irq_work.c
-> @@ -22,6 +22,9 @@
->  static DEFINE_PER_CPU(struct llist_head, irq_work_list);
->  static DEFINE_PER_CPU(int, irq_work_raised);
->
-> +/* List of irq-work any CPU can pick up */
-> +static LLIST_HEAD(unbound_irq_work_list);
-> +
->  /*
->   * Claim the entry so that no one else will poke at it.
->   */
-> @@ -70,12 +73,16 @@ void irq_work_queue(struct irq_work *work)
->         /* Queue the entry and raise the IPI if needed. */
->         preempt_disable();
->
-> -       llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
-> +       if (work->flags & __IRQ_WORK_UNBOUND)
-> +               llist_add(&work->llnode, &unbound_irq_work_list);
-> +       else
-> +               llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
->
->         /*
->          * If the work is not "lazy" or the tick is stopped, raise the irq
->          * work interrupt (if supported by the arch), otherwise, just wait
-> -        * for the next tick.
-> +        * for the next tick. We do this even for unbound work to make sure
-> +        * *some* CPU will be doing the work.
->          */
->         if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
->                 if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
-> @@ -100,28 +107,17 @@ bool irq_work_needs_cpu(void)
->         return true;
->  }
->
-> -static void __irq_work_run(void)
-> +static void process_irq_work_list(struct llist_head *llhead)
->  {
->         unsigned long flags;
->         struct irq_work *work;
-> -       struct llist_head *this_list;
->         struct llist_node *llnode;
->
-> -
-> -       /*
-> -        * Reset the "raised" state right before we check the list because
-> -        * an NMI may enqueue after we find the list empty from the runner.
-> -        */
-> -       __this_cpu_write(irq_work_raised, 0);
-> -       barrier();
-> -
-> -       this_list = &__get_cpu_var(irq_work_list);
-> -       if (llist_empty(this_list))
-> +       if (llist_empty(llhead))
->                 return;
->
->         BUG_ON(!irqs_disabled());
-> -
-> -       llnode = llist_del_all(this_list);
-> +       llnode = llist_del_all(llhead);
->         while (llnode != NULL) {
->                 work = llist_entry(llnode, struct irq_work, llnode);
->
-> @@ -146,6 +142,19 @@ static void __irq_work_run(void)
->         }
->  }
->
-> +static void __irq_work_run(void)
-> +{
-> +       /*
-> +        * Reset the "raised" state right before we check the list because
-> +        * an NMI may enqueue after we find the list empty from the runner.
-> +        */
-> +       __this_cpu_write(irq_work_raised, 0);
-> +       barrier();
-> +
-> +       process_irq_work_list(&__get_cpu_var(irq_work_list));
-> +       process_irq_work_list(&unbound_irq_work_list);
-> +}
-> +
+On Thu 07-11-13 13:38:00, Andrew Morton wrote:
+> On Wed,  6 Nov 2013 17:42:30 -0800 Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
+> 
+> > The iterator rbtree_postorder_for_each_entry_safe() relies on pointer
+> > underflow behavior when testing for loop termination. In particular
+> > it expects that
+> >   &rb_entry(NULL, type, field)->field
+> > is NULL. But the result of this expression is not defined by a C standard
+> > and some gcc versions (e.g. 4.3.4) assume the above expression can never
+> > be equal to NULL. The net result is an oops because the iteration is not
+> > properly terminated.
+> > 
+> > Fix the problem by modifying the iterator to avoid pointer underflows.
+> 
+> So the sole caller is in zswap.c.  Is that code actually generating oopses?
+  Oh, I didn't know there is any user of that iterator already in tree. Let
+me check... Umm, looking at the disassembly of
+zswap_frontswap_invalidate_aread:
+   0xffffffff8112c9a5 <+37>:	mov    %r13,%rdi
+   0xffffffff8112c9a8 <+40>:	callq  0xffffffff81227620 <rb_first_postorder>
+   0xffffffff8112c9ad <+45>:	mov    %rax,%rdi
+   0xffffffff8112c9b0 <+48>:	mov    %rax,%rbx
+   0xffffffff8112c9b3 <+51>:	callq  0xffffffff812275d0 <rb_next_postorder>
+   0xffffffff8112c9b8 <+56>:	mov    %rax,%r12
+   0xffffffff8112c9bb <+59>:	nopl   0x0(%rax,%rax,1)
+   0xffffffff8112c9c0 <+64>:	mov    0x28(%rbx),%rsi
+   0xffffffff8112c9c4 <+68>:	mov    0x40(%r13),%rdi
+   0xffffffff8112c9c8 <+72>:	callq  0xffffffff811352b0 <zbud_free>
+   0xffffffff8112c9cd <+77>:	mov    0x1105504(%rip),%rdi
+   0xffffffff8112c9d4 <+84>:	mov    %rbx,%rsi
+   0xffffffff8112c9d7 <+87>:	callq  0xffffffff81130b80 <kmem_cache_free>
+   0xffffffff8112c9dc <+92>:	lock decl 0x110539d(%rip)
+   0xffffffff8112c9e3 <+99>:	mov    %r12,%rdi
+   0xffffffff8112c9e6 <+102>:	mov    %r12,%rbx
+   0xffffffff8112c9e9 <+105>:	callq  0xffffffff812275d0 <rb_next_postorder>
+   0xffffffff8112c9ee <+110>:	mov    %rax,%r12
+   0xffffffff8112c9f1 <+113>:	jmp 0xffffffff8112c9c0 <zswap_frontswap_invalidate_area+64>
 
-But then, who's going to process that work if every CPUs is idle?
+So my gcc helpfully compiled that iterator into an endless loop as well,
+although now it is a perfectly valid C code.  According to our gcc guys
+that was a bug in some gcc versions which is already fixed.  But anyway
+pushing my patch to 3.12 or anything that actually uses that iterator will
+probably save us some bug reports.
+
+								Honza
+
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
