@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab3KGLcg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 06:32:36 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:17533 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801Ab3KGLcc (ORCPT
+	id S1754724Ab3KGLd2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 06:33:28 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50763 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754543Ab3KGLd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 06:32:32 -0500
-X-AuditID: cbfec7f5-b7ef66d00000795a-73-527b7a4e98d7
-From: Tomasz Figa <t.figa@samsung.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Olof Johansson <olof@lixom.net>, devicetree@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Thu, 7 Nov 2013 06:33:26 -0500
+Date: Thu, 7 Nov 2013 11:32:26 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Alex Shi <alex.shi@linaro.org>, Peter Zijlstra <peterz@infradead.org>,
+        Paul Turner <pjt@google.com>, Ingo Molnar <mingo@kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Paul Walmsley <paul@pwsan.com>, Mel Gorman <mgorman@suse.de>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "markgross@thegnar.org" <markgross@thegnar.org>,
         Kevin Hilman <khilman@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 1/2] of: irq: Fix interrupt-map entry matching
-Date: Thu, 07 Nov 2013 12:32:25 +0100
-Message-id: <1773667.KXPxL5WsyI@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11.2 (Linux/3.11.5-gentoo; KDE/4.11.2; x86_64; ; )
-In-reply-to: <2713030.RoDxNQo0oz@amdc1227>
-References: <1381869563-16083-1-git-send-email-grant.likely@linaro.org>
- <2177804.l4VGDTRFDu@amdc1227> <2713030.RoDxNQo0oz@amdc1227>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t/xy7r+VdVBBqcjLD40tTJbzD9yjtXi
-	wJ8djBZfD69gtLi8aw6bxanrn9kc2Dx63rSwety5tofN48qJJlaPz5vkAliiuGxSUnMyy1KL
-	9O0SuDJ2be5kKWjjrJj6/DlbA+NE9i5GTg4JAROJzz82QNliEhfurWfrYuTiEBJYyihxa9oe
-	Zgini0mie9s/FpAqNgE1ic8Nj9hAbBEBLYkncz6DdTALXGWUuLK8nxkkISzgJPG7ZQpYEYuA
-	qsTdBZfBmnkFNCX+fZ8Pto5fQF3i3banTCC2qICbxPQfB8F6OYGG/jyymB1icyujxPK1i9kg
-	mgUlfky+BzaIWUBeYt/+qawQtpbE+p3HmSYwCs5CUjYLSdksJGULGJlXMYqmliYXFCel5xrp
-	FSfmFpfmpesl5+duYoQE+9cdjEuPWR1iFOBgVOLhnVFTFSTEmlhWXJl7iFGCg1lJhLc5pDpI
-	iDclsbIqtSg/vqg0J7X4ECMTB6dUAyNj+Mej7w/53b+5aJr5Q2ZdycTcch8tofcr5Y3WSq8s
-	3HO5cp57VPSdHd3mT7s19RoK3bP8r/81UUo/ytkg6a6yfELBHPl6tbhtL9h1Kk8IBsbcFlsi
-	WhFxpuJrsrJb3/bD0w32fiwPviRlN6eOcS+j5Vql1Q/vmLOWNEwMuZ0yMeO8ShPbXCWW4oxE
-	Qy3mouJEALizmvBUAgAA
+        "Frank.Rowand@sonymobile.com" <Frank.Rowand@sonymobile.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Bench for testing scheduler
+Message-ID: <20131107113226.GE13674@arm.com>
+References: <CAKfTPtCh+f1FZxkWqU5=2PjGtfRaN8jVV3WdTCzLDAWSjMP7yw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKfTPtCh+f1FZxkWqU5=2PjGtfRaN8jVV3WdTCzLDAWSjMP7yw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+Hi Vincent,
 
-Could you pick this patch up? It fixes boot-up at least on several Exynos
-based platforms, which use interrupt-map nodes with #interrupt-cells
-higher than 1.
+(for whatever reason, the text is wrapped and results hard to read)
 
-Also please disregard patch 2/2, as your fix that has been merged seems
-to be fine.
+On Thu, Nov 07, 2013 at 10:54:30AM +0000, Vincent Guittot wrote:
+> During the Energy-aware scheduling mini-summit, we spoke about benches
+> that should be used to evaluate the modifications of the scheduler.
+> I’d like to propose a bench that uses cyclictest to measure the wake
+> up latency and the power consumption. The goal of this bench is to
+> exercise the scheduler with various sleeping period and get the
+> average wakeup latency. The range of the sleeping period must cover
+> all residency times of the idle state table of the platform. I have
+> run such tests on a tc2 platform with the packing tasks patchset.
+> I have use the following command:
+> #cyclictest -t <number of cores> -q -e 10000000 -i <500-12000> -d 150 -l 2000
 
-Best regards,
-Tomasz
+cyclictest could be a good starting point but we need to improve it to
+allow threads of different loads, possibly starting multiple processes
+(can be done with a script), randomly varying load threads. These
+parameters should be loaded from a file so that we can have multiple
+configurations (per SoC and per use-case). But the big risk is that we
+try to optimise the scheduler for something which is not realistic.
 
-On Tuesday 05 of November 2013 16:21:18 Tomasz Figa wrote:
-> This patch fixes interrupt-map entry matching code to properly match all
-> specifier cells with interrupt map entries.
-> 
-> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> ---
->  drivers/of/irq.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-> index 0ed5ed4..717eed4 100644
-> --- a/drivers/of/irq.c
-> +++ b/drivers/of/irq.c
-> @@ -195,7 +195,7 @@ int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq)
->  			/* Compare specifiers */
->  			match = 1;
->  			for (i = 0; i < (addrsize + intsize); i++, imaplen--)
-> -				match = !((match_array[i] ^ *imap++) & imask[i]);
-> +				match &= !((match_array[i] ^ *imap++) & imask[i]);
->  
->  			pr_debug(" -> match=%d (imaplen=%d)\n", match, imaplen);
->  
-> 
+We are working on describing some basic scenarios (plain English for
+now) and one of them could be video playing with threads for audio and
+video decoding with random change in the workload.
 
+So I think the first step should be a set of tools/scripts to analyse
+the scheduler behaviour, both in terms of latency and power, and these
+can use perf sched. We can then run some real life scenarios (e.g.
+Android video playback) and build a benchmark that matches such
+behaviour as close as possible. We can probably use (or improve) perf
+sched replay to also simulate such workload (we may need additional
+features like thread dependencies).
+
+> The figures below give the average wakeup latency and power
+> consumption for default scheduler behavior, packing tasks at cluster
+> level and packing tasks at core level. We can see both wakeup latency
+> and power consumption variation. The detailed result is not a simple
+> single value which makes comparison not so easy but the average of all
+> measurements should give us a usable “score”.
+
+How did you assess the power/energy?
+
+Thanks.
+
+-- 
+Catalin
