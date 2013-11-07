@@ -1,102 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab3KGVuT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 16:50:19 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:47242 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab3KGVuK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 16:50:10 -0500
+	id S1755895Ab3KGVw1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 16:52:27 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:51823 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752205Ab3KGVwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 16:52:21 -0500
+Date: Thu, 7 Nov 2013 15:52:28 -0600
+From: Alex Thorlton <athorlton@sgi.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: BUG: mm, numa: test segfaults, only when NUMA balancing is on
+Message-ID: <20131107215228.GA4236@sgi.com>
+References: <20131016155429.GP25735@sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <20131107210715.GA20104@quack.suse.cz>
-References: <CAOvWMLZ-ezykR6TkFAoZ1UW20QF6XMOKeZH8R-FdFJkXjAP9nA@mail.gmail.com>
-	<20131105003733.GA24531@quack.suse.cz>
-	<CAOvWMLZ6_boRgQi2L9kqR_bWcnLDHY+uFo9g4DP=zxeGtT+dag@mail.gmail.com>
-	<20131105143221.GA30006@quack.suse.cz>
-	<CAOvWMLY9HAeQTsEwCchKNjL+1=-grBQrDO6-KCYcS-mxMYyRpw@mail.gmail.com>
-	<20131106211858.GB20477@quack.suse.cz>
-	<CAOvWMLa38zOigzVkcF78ivtszd6F02aNKsB28=Sd58OMeqb9sQ@mail.gmail.com>
-	<20131107210715.GA20104@quack.suse.cz>
-Date: Thu, 7 Nov 2013 13:50:09 -0800
-Message-ID: <CAOvWMLYXUcYUnnzPzMTJZF8iZ73a+BuC+YRePjRZhY_WtL5Jfw@mail.gmail.com>
-Subject: Re: [BUG][ext2] XIP does not work on ext2
-From: Andiry Xu <andiry@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Wang Shilong <wangsl-fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Andiry Xu <andiry.xu@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131016155429.GP25735@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 7, 2013 at 1:07 PM, Jan Kara <jack@suse.cz> wrote:
-> On Thu 07-11-13 12:14:13, Andiry Xu wrote:
->> On Wed, Nov 6, 2013 at 1:18 PM, Jan Kara <jack@suse.cz> wrote:
->> > On Tue 05-11-13 17:28:35, Andiry Xu wrote:
->> >> >> Do you know the reason why write() outperforms mmap() in some cases? I
->> >> >> know it's not related the thread but I really appreciate if you can
->> >> >> answer my question.
->> >> >   Well, I'm not completely sure. mmap()ed memory always works on page-by-page
->> >> > basis - you first access the page, it gets faulted in and you can further
->> >> > access it. So for small (sub page size) accesses this is a win because you
->> >> > don't have an overhead of syscall and fs write path. For accesses larger
->> >> > than page size the overhead of syscall and some initial checks is well
->> >> > hidden by other things. I guess write() ends up being more efficient
->> >> > because write path taken for each page is somewhat lighter than full page
->> >> > fault. But you'd need to look into perf data to get some hard numbers on
->> >> > where the time is spent.
->> >> >
->> >>
->> >> Thanks for the reply. However I have filled up the whole RAM disk
->> >> before doing the test, i.e. asked the brd driver to allocate all the
->> >> pages initially.
->> >   Well, pages in ramdisk are always present, that's not an issue. But you
->> > will get a page fault to map a particular physical page in process'
->> > virtual address space when you first access that virtual address in the
->> > mapping from the process. The cost of setting up this virtual->physical
->> > mapping is what I'm talking about.
->> >
->>
->> Yes, you are right, there are page faults observed with perf. I
->> misunderstood page fault as copying pages between backing store and
->> physical memory.
->>
->> > If you had a process which first mmaps the file and writes to all pages in
->> > the mapping and *then* measure the cost of another round of writing to the
->> > mapping, I would expect you should see speeds close to those of memory bus.
->> >
->>
->> I've tried this as well. mmap() performance improves but still not as
->> good as write().
->> I used the perf report to compare write() and mmap() applications. For
->> write() version, top of perf report shows as:
->> 33.33%  __copy_user_nocache
->> 4.72%    ext2_get_blocks
->> 4.42%    mutex_unlock
->> 3.59%    __find_get_block
->>
->> which looks reasonable.
->>
->> However, for mmap() version, the perf report looks strange:
->> 94.98% libc-2.15.so       [.] 0x000000000014698d
->> 2.25%   page_fault
->> 0.18%   handle_mm_fault
->>
->> I don't know what the first item is but it took the majority of cycles.
->   The first item means that it's some userspace code in libc. My guess
-> would be that it's libc's memcpy() function (or whatever you use to write
-> to mmap). How do you access the mmap?
->
+On Wed, Oct 16, 2013 at 10:54:29AM -0500, Alex Thorlton wrote:
+> Hi guys,
+> 
+> I ran into a bug a week or so ago, that I believe has something to do
+> with NUMA balancing, but I'm having a tough time tracking down exactly
+> what is causing it.  When running with the following configuration
+> options set:
+> 
+> CONFIG_ARCH_SUPPORTS_NUMA_BALANCING=y
+> CONFIG_NUMA_BALANCING_DEFAULT_ENABLED=y
+> CONFIG_NUMA_BALANCING=y
+> # CONFIG_HUGETLBFS is not set
+> # CONFIG_HUGETLB_PAGE is not set
+> 
+> I get intermittent segfaults when running the memscale test that we've
+> been using to test some of the THP changes.  Here's a link to the test:
+> 
+> ftp://shell.sgi.com/collect/memscale/
 
-Like this:
+For anyone who's interested, this test has been moved to:
 
-fd = open(file_name, O_CREAT | O_RDWR | O_DIRECT, 0755);
-dest = (char *)mmap(NULL, FILE_SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
-for (i = 0; i < count; i++)
-{
-       memcpy(dest, src, request_size);
-       dest += request_size;
-}
+http://oss.sgi.com/projects/memtests/thp_memscale.tar.gz
 
-Thanks,
-Andiry
+It should remain there permanently.
+
+> 
+> I typically run the test with a line similar to this:
+> 
+> ./thp_memscale -C 0 -m 0 -c <cores> -b <memory>
+> 
+> Where <cores> is the number of cores to spawn threads on, and <memory>
+> is the amount of memory to reserve from each core.  The <memory> field
+> can accept values like 512m or 1g, etc.  I typically run 256 cores and
+> 512m, though I think the problem should be reproducable on anything with
+> 128+ cores.
+> 
+> The test never seems to have any problems when running with hugetlbfs
+> on and NUMA balancing off, but it segfaults every once in a while with
+> the config options above.  It seems to occur more frequently, the more
+> cores you run on.  It segfaults on about 50% of the runs at 256 cores,
+> and on almost every run at 512 cores.  The fewest number of cores I've
+> seen a segfault on has been 128, though it seems to be rare on this many
+> cores.
+> 
+> At this point, I'm not familiar enough with NUMA balancing code to know
+> what could be causing this, and we don't typically run with NUMA
+> balancing on, so I don't see this in my everyday testing, but I felt
+> that it was definitely worth bringing up.
+> 
+> If anybody has any ideas of where I could poke around to find a
+> solution, please let me know.
+> 
+> - Alex
