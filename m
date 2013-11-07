@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab3KGUZa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 15:25:30 -0500
-Received: from mdfmta010.mxout.tbr.inty.net ([91.221.168.51]:52420 "EHLO
+	id S1755252Ab3KGUZj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 15:25:39 -0500
+Received: from mdfmta010.mxout.tbr.inty.net ([91.221.168.51]:52436 "EHLO
 	smtp.demon.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754045Ab3KGUZX (ORCPT
+	with ESMTP id S1754778Ab3KGUZa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 15:25:23 -0500
+	Thu, 7 Nov 2013 15:25:30 -0500
 From: Phillip Lougher <phillip@squashfs.org.uk>
 To: linux-kernel@vger.kernel.org
 Cc: minchan@kernel.org, Phillip Lougher <phillip@squashfs.org.uk>
-Subject: [PATCH 2/6] Squashfs: enhance parallel I/O
-Date: Thu,  7 Nov 2013 20:24:21 +0000
-Message-Id: <1383855865-4683-3-git-send-email-phillip@squashfs.org.uk>
+Subject: [PATCH 3/6] Squashfs: add multi-threaded decompression using percpu variables
+Date: Thu,  7 Nov 2013 20:24:22 +0000
+Message-Id: <1383855865-4683-4-git-send-email-phillip@squashfs.org.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1383855865-4683-1-git-send-email-phillip@squashfs.org.uk>
 References: <1383855865-4683-1-git-send-email-phillip@squashfs.org.uk>
@@ -21,45 +21,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Minchan Kim <minchan@kernel.org>
+Add a multi-threaded decompression implementation which uses
+percpu variables.
 
-Now squashfs have used for only one stream buffer for decompression
-so it hurts parallel read performance so this patch supports
-multiple decompressor to enhance performance parallel I/O.
+Using percpu variables has advantages and disadvantages over
+implementations which do not use percpu variables.
 
-Four 1G file dd read on KVM machine which has 2 CPU and 4G memory.
+Advantages: the nature of percpu variables ensures decompression is
+load-balanced across the multiple cores.
 
-dd if=test/test1.dat of=/dev/null &
-dd if=test/test2.dat of=/dev/null &
-dd if=test/test3.dat of=/dev/null &
-dd if=test/test4.dat of=/dev/null &
+Disadvantages: it limits decompression to one thread per core.
 
-old : 1m39s -> new : 9s
-
-* From v1
-  * Change comp_strm with decomp_strm - Phillip
-  * Change/add comments - Phillip
-
-Signed-off-by: Minchan Kim <minchan@kernel.org>
 Signed-off-by: Phillip Lougher <phillip@squashfs.org.uk>
 ---
- fs/squashfs/Kconfig              |   13 +++
- fs/squashfs/Makefile             |    9 +-
- fs/squashfs/decompressor_multi.c |  200 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 221 insertions(+), 1 deletion(-)
- create mode 100644 fs/squashfs/decompressor_multi.c
+ fs/squashfs/Kconfig                     |   57 +++++++++++++----
+ fs/squashfs/Makefile                    |   10 +--
+ fs/squashfs/decompressor_multi_percpu.c |  105 +++++++++++++++++++++++++++++++
+ 3 files changed, 152 insertions(+), 20 deletions(-)
+ create mode 100644 fs/squashfs/decompressor_multi_percpu.c
 
 diff --git a/fs/squashfs/Kconfig b/fs/squashfs/Kconfig
-index c70111e..1c6d340 100644
+index 1c6d340..c92c75f 100644
 --- a/fs/squashfs/Kconfig
 +++ b/fs/squashfs/Kconfig
-@@ -63,6 +63,19 @@ config SQUASHFS_LZO
+@@ -25,6 +25,50 @@ config SQUASHFS
  
  	  If unsure, say N.
  
-+config SQUASHFS_MULTI_DECOMPRESSOR
-+	bool "Use multiple decompressors for handling parallel I/O"
++choice
++	prompt "Decompressor parallelisation options"
 +	depends on SQUASHFS
++	help
++	  Squashfs now supports three parallelisation options for
++	  decompression.  Each one exhibits various trade-offs between
++	  decompression performance and CPU and memory usage.
++
++	  If in doubt, select "Single threaded compression"
++
++config SQUASHFS_DECOMP_SINGLE
++	bool "Single threaded compression"
++	help
++	  Traditionally Squashfs has used single-threaded decompression.
++	  Only one block (data or metadata) can be decompressed at any
++	  one time.  This limits CPU and memory usage to a minimum.
++
++config SQUASHFS_DECOMP_MULTI
++	bool "Use multiple decompressors for parallel I/O"
 +	help
 +	  By default Squashfs uses a single decompressor but it gives
 +	  poor performance on parallel I/O workloads when using multiple CPU
@@ -68,52 +75,86 @@ index c70111e..1c6d340 100644
 +	  If you have a parallel I/O workload and your system has enough memory,
 +	  using this option may improve overall I/O performance.
 +
-+	  If unsure, say N.
++	  This decompressor implementation uses up to two parallel
++	  decompressors per core.  It dynamically allocates decompressors
++	  on a demand basis.
 +
++config SQUASHFS_DECOMP_MULTI_PERCPU
++       bool "Use percpu multiple decompressors for parallel I/O"
++	help
++	  By default Squashfs uses a single decompressor but it gives
++	  poor performance on parallel I/O workloads when using multiple CPU
++	  machines due to waiting on decompressor availability.
++
++	  This decompressor implementation uses a maximum of one
++	  decompressor per core.  It uses percpu variables to ensure
++	  decompression is load-balanced across the cores.
++
++endchoice
++
+ config SQUASHFS_XATTR
+ 	bool "Squashfs XATTR support"
+ 	depends on SQUASHFS
+@@ -63,19 +107,6 @@ config SQUASHFS_LZO
+ 
+ 	  If unsure, say N.
+ 
+-config SQUASHFS_MULTI_DECOMPRESSOR
+-	bool "Use multiple decompressors for handling parallel I/O"
+-	depends on SQUASHFS
+-	help
+-	  By default Squashfs uses a single decompressor but it gives
+-	  poor performance on parallel I/O workloads when using multiple CPU
+-	  machines due to waiting on decompressor availability.
+-
+-	  If you have a parallel I/O workload and your system has enough memory,
+-	  using this option may improve overall I/O performance.
+-
+-	  If unsure, say N.
+-
  config SQUASHFS_XZ
  	bool "Include support for XZ compressed file systems"
  	depends on SQUASHFS
 diff --git a/fs/squashfs/Makefile b/fs/squashfs/Makefile
-index c223c84..dfebc3b 100644
+index dfebc3b..5833b96 100644
 --- a/fs/squashfs/Makefile
 +++ b/fs/squashfs/Makefile
-@@ -4,8 +4,15 @@
- 
+@@ -5,14 +5,10 @@
  obj-$(CONFIG_SQUASHFS) += squashfs.o
  squashfs-y += block.o cache.o dir.o export.o file.o fragment.o id.o inode.o
--squashfs-y += namei.o super.o symlink.o decompressor.o decompressor_single.o
-+squashfs-y += namei.o super.o symlink.o decompressor.o
-+
+ squashfs-y += namei.o super.o symlink.o decompressor.o
+-
++squashfs-$(CONFIG_SQUASHFS_DECOMP_SINGLE) += decompressor_single.o
++squashfs-$(CONFIG_SQUASHFS_DECOMP_MULTI) += decompressor_multi.o
++squashfs-$(CONFIG_SQUASHFS_DECOMP_MULTI_PERCPU) += decompressor_multi_percpu.o
  squashfs-$(CONFIG_SQUASHFS_XATTR) += xattr.o xattr_id.o
  squashfs-$(CONFIG_SQUASHFS_LZO) += lzo_wrapper.o
  squashfs-$(CONFIG_SQUASHFS_XZ) += xz_wrapper.o
  squashfs-$(CONFIG_SQUASHFS_ZLIB) += zlib_wrapper.o
-+
-+ifdef CONFIG_SQUASHFS_MULTI_DECOMPRESSOR
-+	squashfs-y		+= decompressor_multi.o
-+else
-+	squashfs-y		+= decompressor_single.o
-+endif
-diff --git a/fs/squashfs/decompressor_multi.c b/fs/squashfs/decompressor_multi.c
+-
+-ifdef CONFIG_SQUASHFS_MULTI_DECOMPRESSOR
+-	squashfs-y		+= decompressor_multi.o
+-else
+-	squashfs-y		+= decompressor_single.o
+-endif
+diff --git a/fs/squashfs/decompressor_multi_percpu.c b/fs/squashfs/decompressor_multi_percpu.c
 new file mode 100644
-index 0000000..462731d
+index 0000000..b5598ab
 --- /dev/null
-+++ b/fs/squashfs/decompressor_multi.c
-@@ -0,0 +1,200 @@
++++ b/fs/squashfs/decompressor_multi_percpu.c
+@@ -0,0 +1,105 @@
 +/*
-+ *  Copyright (c) 2013
-+ *  Minchan Kim <minchan@kernel.org>
++ * Copyright (c) 2013
++ * Phillip Lougher <phillip@squashfs.org.uk>
 + *
-+ *  This work is licensed under the terms of the GNU GPL, version 2. See
-+ *  the COPYING file in the top-level directory.
++ * This work is licensed under the terms of the GNU GPL, version 2. See
++ * the COPYING file in the top-level directory.
 + */
++
 +#include <linux/types.h>
 +#include <linux/mutex.h>
 +#include <linux/slab.h>
 +#include <linux/buffer_head.h>
-+#include <linux/sched.h>
-+#include <linux/wait.h>
-+#include <linux/cpumask.h>
 +
 +#include "squashfs_fs.h"
 +#include "squashfs_fs_sb.h"
@@ -121,184 +162,91 @@ index 0000000..462731d
 +#include "squashfs.h"
 +
 +/*
-+ * This file implements multi-threaded decompression in the
-+ * decompressor framework
++ * This file implements multi-threaded decompression using percpu
++ * variables, one thread per cpu core.
 + */
-+
-+
-+/*
-+ * The reason that multiply two is that a CPU can request new I/O
-+ * while it is waiting previous request.
-+ */
-+#define MAX_DECOMPRESSOR	(num_online_cpus() * 2)
-+
-+
-+int squashfs_max_decompressors(void)
-+{
-+	return MAX_DECOMPRESSOR;
-+}
-+
 +
 +struct squashfs_stream {
-+	void			*comp_opts;
-+	struct list_head	strm_list;
-+	struct mutex		mutex;
-+	int			avail_decomp;
-+	wait_queue_head_t	wait;
++	void		*stream;
 +};
-+
-+
-+struct decomp_stream {
-+	void *stream;
-+	struct list_head list;
-+};
-+
-+
-+static void put_decomp_stream(struct decomp_stream *decomp_strm,
-+				struct squashfs_stream *stream)
-+{
-+	mutex_lock(&stream->mutex);
-+	list_add(&decomp_strm->list, &stream->strm_list);
-+	mutex_unlock(&stream->mutex);
-+	wake_up(&stream->wait);
-+}
 +
 +void *squashfs_decompressor_create(struct squashfs_sb_info *msblk,
-+				void *comp_opts)
++						void *comp_opts)
 +{
 +	struct squashfs_stream *stream;
-+	struct decomp_stream *decomp_strm = NULL;
-+	int err = -ENOMEM;
++	struct squashfs_stream __percpu *percpu;
++	int err, cpu, cpu0;
 +
-+	stream = kzalloc(sizeof(*stream), GFP_KERNEL);
-+	if (!stream)
-+		goto out;
-+
-+	stream->comp_opts = comp_opts;
-+	mutex_init(&stream->mutex);
-+	INIT_LIST_HEAD(&stream->strm_list);
-+	init_waitqueue_head(&stream->wait);
-+
-+	/*
-+	 * We should have a decompressor at least as default
-+	 * so if we fail to allocate new decompressor dynamically,
-+	 * we could always fall back to default decompressor and
-+	 * file system works.
-+	 */
-+	decomp_strm = kmalloc(sizeof(*decomp_strm), GFP_KERNEL);
-+	if (!decomp_strm)
-+		goto out;
-+
-+	decomp_strm->stream = msblk->decompressor->init(msblk,
-+						stream->comp_opts);
-+	if (IS_ERR(decomp_strm->stream)) {
-+		err = PTR_ERR(decomp_strm->stream);
-+		goto out;
++	percpu = alloc_percpu(struct squashfs_stream);
++	if (percpu == NULL) {
++		err = -ENOMEM;
++		goto out2;
 +	}
 +
-+	list_add(&decomp_strm->list, &stream->strm_list);
-+	stream->avail_decomp = 1;
-+	return stream;
++	for_each_possible_cpu(cpu) {
++		stream = per_cpu_ptr(percpu, cpu);
++		stream->stream = msblk->decompressor->init(msblk, comp_opts);
++		if (IS_ERR(stream->stream)) {
++			err = PTR_ERR(stream->stream);
++			goto out;
++		}
++	}
++
++	kfree(comp_opts);
++	return (__force void *) percpu;
 +
 +out:
-+	kfree(decomp_strm);
-+	kfree(stream);
++	for_each_possible_cpu(cpu0) {
++		if (cpu0 == cpu)
++			break;
++		stream = per_cpu_ptr(percpu, cpu0);
++		msblk->decompressor->free(stream->stream);
++	}
++	free_percpu(percpu);
++out2:
++	kfree(comp_opts);
 +	return ERR_PTR(err);
 +}
 +
-+
 +void squashfs_decompressor_destroy(struct squashfs_sb_info *msblk)
 +{
-+	struct squashfs_stream *stream = msblk->stream;
-+	if (stream) {
-+		struct decomp_stream *decomp_strm;
++	struct squashfs_stream __percpu *percpu =
++			(struct squashfs_stream __percpu *) msblk->stream;
++	struct squashfs_stream *stream;
++	int cpu;
 +
-+		while (!list_empty(&stream->strm_list)) {
-+			decomp_strm = list_entry(stream->strm_list.prev,
-+						struct decomp_stream, list);
-+			list_del(&decomp_strm->list);
-+			msblk->decompressor->free(decomp_strm->stream);
-+			kfree(decomp_strm);
-+			stream->avail_decomp--;
++	if (msblk->stream) {
++		for_each_possible_cpu(cpu) {
++			stream = per_cpu_ptr(percpu, cpu);
++			msblk->decompressor->free(stream->stream);
 +		}
++		free_percpu(percpu);
 +	}
-+
-+	WARN_ON(stream->avail_decomp);
-+	kfree(stream->comp_opts);
-+	kfree(stream);
 +}
-+
-+
-+static struct decomp_stream *get_decomp_stream(struct squashfs_sb_info *msblk,
-+					struct squashfs_stream *stream)
-+{
-+	struct decomp_stream *decomp_strm;
-+
-+	while (1) {
-+		mutex_lock(&stream->mutex);
-+
-+		/* There is available decomp_stream */
-+		if (!list_empty(&stream->strm_list)) {
-+			decomp_strm = list_entry(stream->strm_list.prev,
-+				struct decomp_stream, list);
-+			list_del(&decomp_strm->list);
-+			mutex_unlock(&stream->mutex);
-+			break;
-+		}
-+
-+		/*
-+		 * If there is no available decomp and already full,
-+		 * let's wait for releasing decomp from other users.
-+		 */
-+		if (stream->avail_decomp >= MAX_DECOMPRESSOR)
-+			goto wait;
-+
-+		/* Let's allocate new decomp */
-+		decomp_strm = kmalloc(sizeof(*decomp_strm), GFP_KERNEL);
-+		if (!decomp_strm)
-+			goto wait;
-+
-+		decomp_strm->stream = msblk->decompressor->init(msblk,
-+						stream->comp_opts);
-+		if (IS_ERR(decomp_strm->stream)) {
-+			kfree(decomp_strm);
-+			goto wait;
-+		}
-+
-+		stream->avail_decomp++;
-+		WARN_ON(stream->avail_decomp > MAX_DECOMPRESSOR);
-+
-+		mutex_unlock(&stream->mutex);
-+		break;
-+wait:
-+		/*
-+		 * If system memory is tough, let's for other's
-+		 * releasing instead of hurting VM because it could
-+		 * make page cache thrashing.
-+		 */
-+		mutex_unlock(&stream->mutex);
-+		wait_event(stream->wait,
-+			!list_empty(&stream->strm_list));
-+	}
-+
-+	return decomp_strm;
-+}
-+
 +
 +int squashfs_decompress(struct squashfs_sb_info *msblk,
 +	void **buffer, struct buffer_head **bh, int b, int offset, int length,
 +	int srclength, int pages)
 +{
 +	int res;
-+	struct squashfs_stream *stream = msblk->stream;
-+	struct decomp_stream *decomp_stream = get_decomp_stream(msblk, stream);
-+	res = msblk->decompressor->decompress(msblk, decomp_stream->stream,
-+		buffer, bh, b, offset, length, srclength, pages);
-+	put_decomp_stream(decomp_stream, stream);
++	struct squashfs_stream __percpu *percpu =
++			(struct squashfs_stream __percpu *) msblk->stream;
++	struct squashfs_stream *stream = get_cpu_ptr(percpu);
++
++	res = msblk->decompressor->decompress(msblk, stream->stream, buffer,
++		bh, b, offset, length, srclength, pages);
++	put_cpu_ptr(stream);
++
 +	if (res < 0)
 +		ERROR("%s decompression failed, data probably corrupt\n",
 +			msblk->decompressor->name);
++
 +	return res;
++}
++
++int squashfs_max_decompressors(void)
++{
++	return num_possible_cpus();
 +}
 -- 
 1.7.10.4
