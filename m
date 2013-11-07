@@ -1,105 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab3KGIRv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 03:17:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37583 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753447Ab3KGIRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 03:17:22 -0500
-Date: Thu, 7 Nov 2013 09:17:20 +0100
-From: Jan Kara <jack@suse.cz>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        EXT4 <linux-ext4@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        rostedt@goodmis.org, Andreas Dilger <adilger.kernel@dilger.ca>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 09/11] fs/ext3: use rbtree postorder iteration helper
- instead of opencoding
-Message-ID: <20131107081720.GA28464@quack.suse.cz>
-References: <1383788572-25938-1-git-send-email-cody@linux.vnet.ibm.com>
- <1383788572-25938-10-git-send-email-cody@linux.vnet.ibm.com>
+	id S1754180Ab3KGISV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 03:18:21 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:29994 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753226Ab3KGISM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 03:18:12 -0500
+Date: Thu, 7 Nov 2013 11:17:49 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Bill Pemberton <wfp5p@virginia.edu>, alsa-devel@alsa-project.org,
+        kernel-janitors@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
+        Ram Pai <linuxram@us.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [patch 1/2] resources: clean up pnp_irq() error return
+Message-ID: <20131107081748.GU21844@elgon.mountain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383788572-25938-10-git-send-email-cody@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 06-11-13 17:42:38, Cody P Schafer wrote:
-> Use rbtree_postorder_for_each_entry_safe() to destroy the rbtree instead
-> of opencoding an alternate postorder iteration that modifies the tree
-> 
-> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-  OK, since this patch now depends on rbtree_postorder... fix, I'll just
-give you my:
+pnp_irq() returns -1 on error but cast to an unsigned.  It is confusing
+for callers who assume that it returns a negative value.  I have
+introduced a new define IORESOURCE_INVALID which is the same value but
+hopefully it looks less like a negative value.
 
-Acked-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-and you can merge it with other patches in the series.
-
-								Honza
-> ---
->  fs/ext3/dir.c | 36 +++++-------------------------------
->  1 file changed, 5 insertions(+), 31 deletions(-)
-> 
-> diff --git a/fs/ext3/dir.c b/fs/ext3/dir.c
-> index bafdd48..a331ad1 100644
-> --- a/fs/ext3/dir.c
-> +++ b/fs/ext3/dir.c
-> @@ -309,43 +309,17 @@ struct fname {
->   */
->  static void free_rb_tree_fname(struct rb_root *root)
->  {
-> -	struct rb_node	*n = root->rb_node;
-> -	struct rb_node	*parent;
-> -	struct fname	*fname;
-> -
-> -	while (n) {
-> -		/* Do the node's children first */
-> -		if (n->rb_left) {
-> -			n = n->rb_left;
-> -			continue;
-> -		}
-> -		if (n->rb_right) {
-> -			n = n->rb_right;
-> -			continue;
-> -		}
-> -		/*
-> -		 * The node has no children; free it, and then zero
-> -		 * out parent's link to it.  Finally go to the
-> -		 * beginning of the loop and try to free the parent
-> -		 * node.
-> -		 */
-> -		parent = rb_parent(n);
-> -		fname = rb_entry(n, struct fname, rb_hash);
-> +	struct fname *fname, *next;
-> +
-> +	rbtree_postorder_for_each_entry_safe(fname, next, root, rb_hash)
->  		while (fname) {
->  			struct fname * old = fname;
->  			fname = fname->next;
->  			kfree (old);
->  		}
-> -		if (!parent)
-> -			*root = RB_ROOT;
-> -		else if (parent->rb_left == n)
-> -			parent->rb_left = NULL;
-> -		else if (parent->rb_right == n)
-> -			parent->rb_right = NULL;
-> -		n = parent;
-> -	}
-> -}
->  
-> +	*root = RB_ROOT;
-> +}
->  
->  static struct dir_private_info *ext3_htree_create_dir_info(struct file *filp,
->  							   loff_t pos)
-> -- 
-> 1.8.4.2
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+index 89b7c24..fdccfa5 100644
+--- a/include/linux/ioport.h
++++ b/include/linux/ioport.h
+@@ -55,6 +55,8 @@ struct resource {
+ #define IORESOURCE_AUTO		0x40000000
+ #define IORESOURCE_BUSY		0x80000000	/* Driver has marked this resource busy */
+ 
++#define IORESOURCE_INVALID	((resource_size_t)-1)
++
+ /* PnP IRQ specific bits (IORESOURCE_BITS) */
+ #define IORESOURCE_IRQ_HIGHEDGE		(1<<0)
+ #define IORESOURCE_IRQ_LOWEDGE		(1<<1)
+diff --git a/include/linux/pnp.h b/include/linux/pnp.h
+index 195aafc..818669c 100644
+--- a/include/linux/pnp.h
++++ b/include/linux/pnp.h
+@@ -151,7 +151,7 @@ static inline resource_size_t pnp_irq(struct pnp_dev *dev, unsigned int bar)
+ 
+ 	if (pnp_resource_valid(res))
+ 		return res->start;
+-	return -1;
++	return IORESOURCE_INVALID;
+ }
+ 
+ static inline unsigned long pnp_irq_flags(struct pnp_dev *dev, unsigned int bar)
