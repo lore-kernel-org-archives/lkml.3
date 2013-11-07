@@ -1,70 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab3KGWyU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 17:54:20 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:53070 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754261Ab3KGWyM (ORCPT
+	id S1753419Ab3KGWyg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 17:54:36 -0500
+Received: from caiajhbdcahe.dreamhost.com ([208.97.132.74]:57199 "EHLO
+	homiemail-a101.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754034Ab3KGWy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 17:54:12 -0500
-Date: Thu, 7 Nov 2013 23:54:10 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
+	Thu, 7 Nov 2013 17:54:26 -0500
+X-Greylist: delayed 56274 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Nov 2013 17:54:26 EST
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=novalis.org; h=message-id:subject
+	:from:to:cc:date:in-reply-to:references:content-type
+	:mime-version:content-transfer-encoding; q=dns; s=novalis.org;
+	 b=Z9DDSkEnNBw+WJudfpHbbX3Vu8ZrmNlzQzbepRDcGYb5EU3tFG0HJpygHj7lh
+	2UICesKTVkYXZ97IStt7R0JhvAEsCjAcQ8Qf4Lvd+VkWCb3vxOzFwjbw/0oPuLXi
+	s3AP+bp/ot+HDA72F+pPIUCCwLhj/e9X7/eLMvSIacxLpQ=
+Message-ID: <1383864864.23882.33.camel@chiang>
+Subject: [PATCH v2] ext4: Fix reading of extended tv_sec (bug 23732)
+From: David Turner <novalis@novalis.org>
 To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 2/4] irq_work: Provide a irq work that can be processed
- on any cpu
-Message-ID: <20131107225408.GD28130@localhost.localdomain>
-References: <1383860919-1883-1-git-send-email-jack@suse.cz>
- <1383860919-1883-3-git-send-email-jack@suse.cz>
- <CAFTL4hxLXb3hZacx_EdHeKZVfrpuyGoNqpGbX997XJx0UJSwyg@mail.gmail.com>
- <20131107221904.GB2054@quack.suse.cz>
- <20131107222311.GA28130@localhost.localdomain>
- <20131107225034.GD2054@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131107225034.GD2054@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Date: Thu, 07 Nov 2013 17:54:24 -0500
+In-Reply-To: <20131107160341.GA3850@quack.suse.cz>
+References: <1383808590.23882.13.camel@chiang>
+	 <20131107160341.GA3850@quack.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 07, 2013 at 11:50:34PM +0100, Jan Kara wrote:
-> On Thu 07-11-13 23:23:14, Frederic Weisbecker wrote:
-> > On Thu, Nov 07, 2013 at 11:19:04PM +0100, Jan Kara wrote:
-> > > On Thu 07-11-13 23:13:39, Frederic Weisbecker wrote:
-> > > > But then, who's going to process that work if every CPUs is idle?
-> > >   Have a look into irq_work_queue(). There is:
-> > >         /*
-> > >          * If the work is not "lazy" or the tick is stopped, raise the irq
-> > >          * work interrupt (if supported by the arch), otherwise, just wait
-> > >          * for the next tick. We do this even for unbound work to make sure
-> > >          * *some* CPU will be doing the work.
-> > >          */
-> > >         if (!(work->flags & IRQ_WORK_LAZY) || tick_nohz_tick_stopped()) {
-> > >                 if (!this_cpu_cmpxchg(irq_work_raised, 0, 1))
-> > >                         arch_irq_work_raise();
-> > >         }
-> > > 
-> > >   So we raise an interrupt if there would be no timer ticking (which is
-> > > what I suppose you mean by "CPU is idle"). That is nothing changed by my
-> > > patches...
-> > 
-> > Ok but we raise that interrupt locally, not to the other CPUs.
->   True, but that doesn't really matter in this case. Any CPU (including the
-> local one) can handle the unbound work. So from the definition of the
-> unbound work things are OK.
+On Thu, 2013-11-07 at 17:03 +0100, Jan Kara wrote:
+>   So I'm somewhat wondering: Previously we decoded tv_nsec regardless of
+> tv_sec size. After your patch we do it only if sizeof(time->tv_sec) > 4. Is
+> this an intended change? Why is it OK?
 
-I don't see how that can be ok. You want to offline a work because the local CPU
-can't handle it, right? If the local CPU can handle it you can just use local
-irq works.
+This is an error.  Here is a corrected version of the patch. 
 
-> 
-> Regarding my use for printk - if all (other) CPUs are idle then we can
-> easily afford making the current cpu busy printing, that's not a problem.
-> There's nothing else to do than to print what's remaining in the printk
-> buffer...
 
-So if the current CPU can handle it, what is the problem?
+--
+
+In ext4, the bottom two bits of {a,c,m}time_extra are used to extend
+the {a,c,m}time fields, deferring the year 2038 problem to the year
+2446.  The representation (which this patch does not alter) is a bit
+hackish, in that the most-significant bit is no longer (alone)
+sufficient to indicate the sign.  That's because we're representing an
+asymmetric range, with seven times as many positive values as
+negative.
+
+When decoding these extended fields, for times whose bottom 32 bits
+would represent a negative number, sign extension causes the 64-bit
+extended timestamp to be negative as well, which is not what's
+intended.  This patch corrects that issue, so that the only negative
+{a,c,m}times are those between 1901 and 1970 (as per 32-bit signed
+timestamps).
+
+Signed-off-by: David Turner <novalis@novalis.org>
+Reported-by: Mark Harris <mh8928@yahoo.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=23732
+---
+ fs/ext4/ext4.h | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index af815ea..3c2d0b3 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -722,10 +722,15 @@ static inline __le32 ext4_encode_extra_time(struct timespec *time)
+ 
+ static inline void ext4_decode_extra_time(struct timespec *time, __le32 extra)
+ {
+-       if (sizeof(time->tv_sec) > 4)
+-	       time->tv_sec |= (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK)
+-			       << 32;
+-       time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >> EXT4_EPOCH_BITS;
++	if (sizeof(time->tv_sec) > 4) {
++		u64 extra_bits = (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK);
++		if (time->tv_sec > 0 || extra_bits != EXT4_EPOCH_MASK) {
++			time->tv_sec &= 0xFFFFFFFF;
++			time->tv_sec |= extra_bits << 32;
++		}
++	}
++	time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >>
++		EXT4_EPOCH_BITS;
+ }
+ 
+ #define EXT4_INODE_SET_XTIME(xtime, inode, raw_inode)			       \
+-- 
+1.8.1.2
+
+
+
