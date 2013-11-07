@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab3KGPYu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 10:24:50 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:40391 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750996Ab3KGPYs (ORCPT
+	id S1753027Ab3KGPZf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 10:25:35 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:54971 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab3KGPZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 10:24:48 -0500
-Date: Thu, 7 Nov 2013 10:24:47 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: George Cherian <george.cherian@ti.com>
-cc: balbi@ti.com, <bigeasy@linutronix.de>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] usb: gadget: f_mass_storage: call try_to_freeze only
- when its safe
-In-Reply-To: <1383833210-26656-1-git-send-email-george.cherian@ti.com>
-Message-ID: <Pine.LNX.4.44L0.1311071021560.1401-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 7 Nov 2013 10:25:33 -0500
+Subject: Re: [PATCH v2 0/7] perf timechart improvements
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Stanislav Fomichev <stfomichev@yandex-team.ru>, a.p.zijlstra@chello.nl,
+        paulus@samba.org, mingo@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <20131106174803.GA14062@ghostprotocols.net>
+References: <1383323151-19810-1-git-send-email-stfomichev@yandex-team.ru>
+	 <20131105172812.GA7329@ghostprotocols.net>
+	 <87li12x8aw.fsf@sejong.aot.lge.com>
+	 <20131106174803.GA14062@ghostprotocols.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Nov 2013 00:25:27 +0900
+Message-ID: <1383837927.1731.1.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Nov 2013, George Cherian wrote:
+Hi Arnaldo and Stanislav,
 
-> Call try_to_freeze() in sleep_thread() only when its safe to sleep.
-> do_read() and do_write() calls sleep_thread with lock held.
-> Make sure these wont call try_to_freeze() by passing can_freeze flag
-> to sleep_thread.
+2013-11-06 (수), 14:48 -0300, Arnaldo Carvalho de Melo:
+> Em Wed, Nov 06, 2013 at 05:07:19PM +0900, Namhyung Kim escreveu:
+> > Hi Arnaldo,
+> > 
+> > On Tue, 5 Nov 2013 14:28:12 -0300, Arnaldo Carvalho de Melo wrote:
+> > > Em Fri, Nov 01, 2013 at 08:25:44PM +0400, Stanislav Fomichev escreveu:
+> > >> This patch series adds more features to the perf timechart command:
+> > >> * -n option that adds possibility to limit number of tasks on SVG
+> > >> * -T option that adds possibility to show only tasks related info
+> > >> * -T and -P options now work with `perf timechart record` command to keep
+> > >>   perf.data small
+> > >> * -g option that adds possibility to record and add callchain to the SVG so
+> > >>   it's now possible to understand why some task went to sleep or what code
+> > >>   path woke it up
+> > >> * add titles to the SVG blocks so it's possible to see how long task is
+> > >>   running/sleeping/blocked
+> > >> 
+> > >> v2:
+> > >> * fix errors pointed out by Namhyung Kim <namhyung@kernel.org>
+> > >
+> > > Namhyung, are you ok now? Acked-by?
+> > 
+> > Not having time to review this yet.  I think I can do it tomorrow.
 > 
-> Calling try_to_freeze() with a lock hold was done since day one in
-> f_mass_storage but since commit 0f9548ca1 ("lockdep: check that no
-> locks held at freeze time") lockdep complains about it.
+> Ok, just asked because you provided comments on a previous patchkit
+> version.
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+It seems to address all of my previous concerns, so
 
-Although I would have preferred it if you spelled "it's" and "won't"  
-with apostrophes in the first paragraph.  Without the apostrophes,
-"its" is a possessive pronoun (meaning "something belonging to it")
-and "wont" is a noun (meaning "habit").
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
-Alan Stern
+Thanks,
+Namhyung
+
+
+
 
