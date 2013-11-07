@@ -1,97 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab3KGS7r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 13:59:47 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:44486 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753180Ab3KGS7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 13:59:43 -0500
-Message-ID: <527BE30F.7090108@linux.vnet.ibm.com>
-Date: Thu, 07 Nov 2013 10:59:27 -0800
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753451Ab3KGTC7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 14:02:59 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:50275 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab3KGTCz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 14:02:55 -0500
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        EXT4 <linux-ext4@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        rostedt@goodmis.org, Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 01/11] rbtree: Fix rbtree_postorder_for_each_entry_safe()
- iterator
-References: <1383788572-25938-1-git-send-email-cody@linux.vnet.ibm.com> <1383788572-25938-2-git-send-email-cody@linux.vnet.ibm.com> <CANN689EhajVC4cq_oz2zaxOmMyYBZvGrKVsYYwkGH_C9jPGKag@mail.gmail.com>
-In-Reply-To: <CANN689EhajVC4cq_oz2zaxOmMyYBZvGrKVsYYwkGH_C9jPGKag@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110718-7182-0000-0000-0000090A5D66
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <CAOesGMjgvPWpZssrepDszTr0EexHtDXznWA4XYoZ6O_U=XJGAg@mail.gmail.com>
+References: <CAOesGMgV2UsBffPveaE+j1s-mDZ+cQvvQGLGAXjWSAv+a_56Fw@mail.gmail.com>
+	<52603CD6.6080507@linux.intel.com>
+	<CAOesGMjgvPWpZssrepDszTr0EexHtDXznWA4XYoZ6O_U=XJGAg@mail.gmail.com>
+Date: Thu, 7 Nov 2013 11:02:53 -0800
+Message-ID: <CAOesGMgiUbJF01+BPBDgJT3J-Sn6ewE04aMyCTYrwjKwY4S2SQ@mail.gmail.com>
+Subject: Re: Corrupted low memory in v3.9+
+From: Olof Johansson <olof@lixom.net>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2013 03:51 AM, Michel Lespinasse wrote:
-> On Wed, Nov 6, 2013 at 5:42 PM, Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
->> From: Jan Kara <jack@suse.cz>
-
-[...]
+On Thu, Oct 17, 2013 at 1:39 PM, Olof Johansson <olof@lixom.net> wrote:
+> On Thu, Oct 17, 2013 at 12:39 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>> On 10/17/2013 11:57 AM, Olof Johansson wrote:
+>>>
+>>> And the low memory checker never even ran before, since it had nothing
+>>> to check. Earlier the lower reserved region would be included in the
+>>> e820-reserved area if I read the code correctly, and now it's just
+>>> marked reserved by the memblock code.
+>>>
+>>> I guess it could be argued either way whether this is a regression or
+>>> not; but at the end of the day we now have systems where this warning
+>>> pops when it didn't use to. :(
+>>>
 >>
->> +#define rb_entry_safe(ptr, type, member) \
->> +       ({ typeof(ptr) ____ptr = (ptr); \
->> +          ____ptr ? rb_entry(____ptr, type, member) : NULL; \
->> +       })
->> +
->>   /**
->>    * rbtree_postorder_for_each_entry_safe - iterate over rb_root in post order of
->>    * given type safe against removal of rb_node entry
->> @@ -95,12 +100,9 @@ static inline void rb_link_node(struct rb_node * node, struct rb_node * parent,
->>    * @field:     the name of the rb_node field within 'type'.
->>    */
->>   #define rbtree_postorder_for_each_entry_safe(pos, n, root, field) \
-
-[...]
->> +       for (pos = rb_entry_safe(rb_first_postorder(root), typeof(*pos), field); \
->> +            pos && ({ n = rb_entry_safe(rb_next_postorder(&pos->field), \
->> +                       typeof(*pos), field); 1; }); \
->> +            pos = n)
-
+>> I'm wondering if this is a problem with the low memory checker (the
+>> residual value of which I have to admit to being skeptical of) or
+>> something else.
 >
-> Well, this really isn't pretty, and I'm not sure that
-> rbtree_postorder_for_each_entry_safe() is a good idea in the first
-> place. Note that we have never had or needed such a macro for the
-> common case of in-order iteration; why would we need it for the
-> less-common case of postorder iteration ?
-
-Well, maybe we should add a helper for in-order iteration if it 
-simplifies the code's appearance significantly. I added this one because 
-I think it's highly probable that users of the postorer iteration will 
-always want the *_entry_safe() style for_each, meaning I don't have to 
-add the other (non-safe, non-entry) variants.
-
-> I think it's just as well to have clients write something like
-> struct rb_node *rb_node = rb_first_postorder(root);
-> while (rb_node) {
->      struct rb_node *rb_next_node = rb_next_postorder(rb_node);
->      struct mystruct *node = rb_entry(rb_node, struct mystruct,
-> mystruct_rb_field);
->      .... do whatever, possibly destroying node ...
->      rb_node = rb_next_node;
-> }
+> There's a chance that it's a valid trip of the low-memory checker,
+> i.e. that we do have a bios (or more likely smm), that stomps on that
+> memory -- it was never checked for in the past and definitely not
+> warned about. I'm not sure if that was intentional behavior or not (to
+> not check this area), I lack history on the topic.
 >
-
-So, 4 extra lines per usage, an extra variable, and the need to split 
-the iteration's logic across the action performed.
-
-> That said, there is some precedent for this kind of API in
-> hlist_for_each_entry_safe, so I guess that's acceptable if there will
-> be enough users of this macro - but it seems very strange to me that
-> we would need it for the postorder traversal while we don't for the
-> in-order traversal. I would prefer keeping rbtree.h minimal if that is
-> possible.
+>> Could you boot the box with "debug memblock=debug" and earlyprintk
+>> turned on and send the boot output?
 >
+> Ah, yes, I did verify that the first 64K were indeed set aside as
+> reserved by doing just that:
+>
+> [    0.000000] MEMBLOCK configuration:
+> [    0.000000]  memory size = 0x7c750000 reserved size = 0xb05000
+> [    0.000000]  memory.cnt  = 0x6
+> [    0.000000]  memory[0x0] [0x00000000010000-0x0000000009ffff], 0x90000 bytes
+> [    0.000000]  memory[0x1] [0x00000000100000-0x00000000efffff], 0xe00000 bytes
+> [    0.000000]  memory[0x2] [0x00000001000000-0x0000001fffffff],
+> 0x1f000000 bytes
+> [    0.000000]  memory[0x3] [0x00000020200000-0x0000003fffffff],
+> 0x1fe00000 bytes
+> [    0.000000]  memory[0x4] [0x00000040200000-0x0000007c6bffff],
+> 0x3c4c0000 bytes
+> [    0.000000]  memory[0x5] [0x00000100000000-0x000001005fffff], 0x600000 bytes
+> [    0.000000]  reserved.cnt  = 0x2
+> [    0.000000]  reserved[0x0] [0x0000000009f000-0x000000000fffff], 0x61000 bytes
+> [    0.000000]  reserved[0x1] [0x00000001000000-0x00000001aa3fff],
+> 0xaa4000 bytes
+> [    0.000000] memblock_reserve: [0x00000000099000-0x0000000009f000]
+> reserve_real_mode+0x61/0x87
+> [    0.000000] Base memory trampoline at [ffff880000099000] 99000 size 24576
+> [    0.000000] reserving inaccessible SNB gfx pages
+> [    0.000000] memblock_reserve: [0x00000000000000-0x00000000100000]
+> setup_arch+0xa2d/0xa41
+> [...]
+>
+> Unfortunately x86 doesn't keep the memblock structures around, so
+> there's no way to verify after booting in debugfs, but based on the
+> above it should have been reserved properly.
 
-The other patches in this patchset add 16 usages of the for_each macro, 
-and these are only conversions of the simple cases I found by grepping 
-the kernel for rb_erase() and rb_(left|right) = NULL patterns. I others 
-have found other ways to do the same (or similar) things that I haven't 
-noticed.
+*prod*
 
+So, got a preference on solution for this? The warning seems harmless
+but still annoying to get used to ignoring false positives, etc.
+
+Disable the low memory checker by default? Hide it behind a debug
+option (runtime or build time)?
+
+
+-Olof
