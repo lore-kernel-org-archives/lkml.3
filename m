@@ -1,102 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab3KGON5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 09:13:57 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:46875 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab3KGONy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 09:13:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131103184832.GD5763@orbis-terrarum.net>
-References: <20131103184832.GD5763@orbis-terrarum.net>
-From: Veaceslav Falico <veaceslav@falico.eu>
-Date: Thu, 7 Nov 2013 15:13:33 +0100
-Message-ID: <CAE3RKNmuTNEJRy3E67E7vrC5+6E_59GH=N2wOzenRs=VG2mwRw@mail.gmail.com>
-Subject: Re: KMS/radeon regression: failure to set modes on CEDAR & TAHITI;
- v3.11 vs 3.12-rc5/rc7
-To: Linux-Kernel <linux-kernel@vger.kernel.org>, robbat2@gentoo.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754090Ab3KGOOL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 09:14:11 -0500
+Received: from mga14.intel.com ([143.182.124.37]:54627 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753916Ab3KGOOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 09:14:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="318249012"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH 1/2] mm: Properly separate the bloated ptl from the regular case
+Date: Thu,  7 Nov 2013 16:14:03 +0200
+Message-Id: <1383833644-27091-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 3, 2013 at 7:48 PM, Robin H. Johnson <robbat2@gentoo.org> wrote:
-> (Please CC, not sub'd to LKML; Was originally posted to
-> xorg-driver-ati@lists.x.org, dri-devel@lists.freedesktop.org, but I
-> think the dmesg attachments got it eaten as spam).
->
-> I apologize for not sending this sooner, but I wanted to be really sure that I
-> wasn't introducing the bug elsewhere, and I was lacking time to even narrow it
-> down this far.
->
-> TL;DR:
-> 3.11 kernel does proper modeset for dual 1920x1200 outputs
-> 3.12-rc5/rc7 kernel fails to do proper modeset, blank screen after radeon loaded
->
-> Symptoms:
-> - With implicit video= modes, after the radeon module loads, both monitors just go blank.
->   Kernel message: radeon 0000:01:00.0: No connectors reported connected with modes
->   X does not visible start, screen stays black.
-> - With explicit video= modes, after the radeon module loads, both monitors during the
->   kernel boot display very garbled output; after X starts, they are in
->   1024x768, with no higher modes listed.
->
-> Attached are four dmesg [1] runs, on v3.11 vs v3.12-rc7, with both explicit
-> video parameters, and implicit video parameters; as well as drm.debug=0x06 in
-> ALL cases; as well as two xorg logs (both from the implicit variants).
->
-> testcase 1 (implicit): modeset=1 fbcon=map:0 drm.debug=0x06
-> testcase 2 (explicit): video=HDMI-A-1:1920x1200e video=DVI-I-1:1920x1200e modeset=1 fbcon=map:0 drm.debug=0x06
->
-> I have produced this bug with three different cards:
-> CEDAR 0x1002:0x68F9 0x1043:0x03CA (used for all these bug reports)
-> CEDAR 0x1002:0x68F9 0x174B:0xE164
-> TAHITI 0x1002:0x6798 0x1458:0x2261 (7970, borrowed before)
->
-> This happened as far back as 3.12-rc5 for me, but I didn't debug more at the
-> time.
->
-> Monitors:
-> (Left) Dell U2410 via DVI
-> (Center) Dell U2413 via HDMI
-> (Right is another U2410, not connected at all)
->
-> Userspace:
-> xorg-server-1.14.3
-> mesa-9.2.1
-> xf86-video-ati-7.2.0
->
-> I think the error might be and off by one in the connector probing, based on
-> this:
->
-> 3.11:
-> [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:15:HDMI-A-1]
-> [drm:radeon_atombios_connected_scratch_regs], DFP1 connected
-> [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:15:HDMI-A-1] probed modes :
->
-> 3.12-rc7:
-> [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:16:HDMI-A-1]
-> [drm:radeon_process_i2c_ch], hw_i2c error
-> [drm:radeon_atombios_connected_scratch_regs], DFP1 disconnected
-> [drm:drm_helper_probe_single_connector_modes], [CONNECTOR:16:HDMI-A-1] disconnected
->
-> [1] yes I know about the bonding error, that's a separate issue I need
-> to mail to LKML/netdev.
+From: Peter Zijlstra <peterz@infradead.org>
 
-Bonding issue should be fixed with
-b32418705107265dfca5edfe2b547643e53a732e ("bonding: RCUify
-bond_set_rx_mode()") in net-next.
+Use kernel/bounds.c to convert build-time spinlock_t size check into
+a preprocessor symbol and apply that to properly separate the page::ptl
+situation.
 
->
-> --
-> Robin Hugh Johnson
-> Gentoo Linux: Developer, Trustee & Infrastructure Lead
-> E-Mail     : robbat2@gentoo.org
-> GnuPG FP   : 11ACBA4F 4778E3F6 E4EDF38E B27B944E 34884E85
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ include/linux/mm.h       | 24 +++++++++++++-----------
+ include/linux/mm_types.h |  9 +++++----
+ kernel/bounds.c          |  2 ++
+ mm/memory.c              | 11 +++++------
+ 4 files changed, 25 insertions(+), 21 deletions(-)
 
-
-
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index d0339741b6ce..1cedd000cf29 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1317,27 +1317,29 @@ static inline pmd_t *pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long a
+ #endif /* CONFIG_MMU && !__ARCH_HAS_4LEVEL_HACK */
+ 
+ #if USE_SPLIT_PTE_PTLOCKS
+-bool __ptlock_alloc(struct page *page);
+-void __ptlock_free(struct page *page);
++#if BLOATED_SPINLOCKS
++extern bool ptlock_alloc(struct page *page);
++extern void ptlock_free(struct page *page);
++
++static inline spinlock_t *ptlock_ptr(struct page *page)
++{
++	return page->ptl;
++}
++#else /* BLOATED_SPINLOCKS */
+ static inline bool ptlock_alloc(struct page *page)
+ {
+-	if (sizeof(spinlock_t) > sizeof(page->ptl))
+-		return __ptlock_alloc(page);
+ 	return true;
+ }
++
+ static inline void ptlock_free(struct page *page)
+ {
+-	if (sizeof(spinlock_t) > sizeof(page->ptl))
+-		__ptlock_free(page);
+ }
+ 
+ static inline spinlock_t *ptlock_ptr(struct page *page)
+ {
+-	if (sizeof(spinlock_t) > sizeof(page->ptl))
+-		return (spinlock_t *) page->ptl;
+-	else
+-		return (spinlock_t *) &page->ptl;
++	return &page->ptl;
+ }
++#endif /* BLOATED_SPINLOCKS */
+ 
+ static inline spinlock_t *pte_lockptr(struct mm_struct *mm, pmd_t *pmd)
+ {
+@@ -1354,7 +1356,7 @@ static inline bool ptlock_init(struct page *page)
+ 	 * slab code uses page->slab_cache and page->first_page (for tail
+ 	 * pages), which share storage with page->ptl.
+ 	 */
+-	VM_BUG_ON(page->ptl);
++	VM_BUG_ON(*(unsigned long *)&page->ptl);
+ 	if (!ptlock_alloc(page))
+ 		return false;
+ 	spin_lock_init(ptlock_ptr(page));
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 752b6d4ee5dc..7ddc3d5c7776 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -156,10 +156,11 @@ struct page {
+ 						 * system if PG_buddy is set.
+ 						 */
+ #if USE_SPLIT_PTE_PTLOCKS
+-		unsigned long ptl; /* It's spinlock_t if it fits to long,
+-				    * otherwise it's pointer to dynamicaly
+-				    * allocated spinlock_t.
+-				    */
++#if BLOATED_SPINLOCKS
++		spinlock_t *ptl;
++#else
++		spinlock_t ptl;
++#endif
+ #endif
+ 		struct kmem_cache *slab_cache;	/* SL[AU]B: Pointer to slab */
+ 		struct page *first_page;	/* Compound tail pages */
+diff --git a/kernel/bounds.c b/kernel/bounds.c
+index e8ca97b5c386..578782ef6ae1 100644
+--- a/kernel/bounds.c
++++ b/kernel/bounds.c
+@@ -11,6 +11,7 @@
+ #include <linux/kbuild.h>
+ #include <linux/page_cgroup.h>
+ #include <linux/log2.h>
++#include <linux/spinlock.h>
+ 
+ void foo(void)
+ {
+@@ -21,5 +22,6 @@ void foo(void)
+ #ifdef CONFIG_SMP
+ 	DEFINE(NR_CPUS_BITS, ilog2(CONFIG_NR_CPUS));
+ #endif
++	DEFINE(BLOATED_SPINLOCKS, sizeof(spinlock_t) > sizeof(int));
+ 	/* End of constants */
+ }
+diff --git a/mm/memory.c b/mm/memory.c
+index 6f7bdee617e2..f6cd03e4dec6 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -4271,21 +4271,20 @@ void copy_user_huge_page(struct page *dst, struct page *src,
+ }
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE || CONFIG_HUGETLBFS */
+ 
+-#if USE_SPLIT_PTE_PTLOCKS
+-bool __ptlock_alloc(struct page *page)
++#if USE_SPLIT_PTE_PTLOCKS && BLOATED_SPINLOCKS
++bool ptlock_alloc(struct page *page)
+ {
+ 	spinlock_t *ptl;
+ 
+ 	ptl = kmalloc(sizeof(spinlock_t), GFP_KERNEL);
+ 	if (!ptl)
+ 		return false;
+-	page->ptl = (unsigned long)ptl;
++	page->ptl = ptl;
+ 	return true;
+ }
+ 
+-void __ptlock_free(struct page *page)
++void ptlock_free(struct page *page)
+ {
+-	if (sizeof(spinlock_t) > sizeof(page->ptl))
+-		kfree((spinlock_t *)page->ptl);
++	kfree(page->ptl);
+ }
+ #endif
 -- 
-Best regards,
-Veaceslav Falico
+1.8.4.2
+
