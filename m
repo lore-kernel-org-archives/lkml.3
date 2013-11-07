@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252Ab3KGUZj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 15:25:39 -0500
-Received: from mdfmta010.mxout.tbr.inty.net ([91.221.168.51]:52436 "EHLO
+	id S1755525Ab3KGUZs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 15:25:48 -0500
+Received: from mdfmta010.mxout.tbr.inty.net ([91.221.168.51]:52460 "EHLO
 	smtp.demon.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754778Ab3KGUZa (ORCPT
+	with ESMTP id S1755242Ab3KGUZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 15:25:30 -0500
+	Thu, 7 Nov 2013 15:25:38 -0500
 From: Phillip Lougher <phillip@squashfs.org.uk>
 To: linux-kernel@vger.kernel.org
 Cc: minchan@kernel.org, Phillip Lougher <phillip@squashfs.org.uk>
-Subject: [PATCH 3/6] Squashfs: add multi-threaded decompression using percpu variables
-Date: Thu,  7 Nov 2013 20:24:22 +0000
-Message-Id: <1383855865-4683-4-git-send-email-phillip@squashfs.org.uk>
+Subject: [PATCH 5/6] Squashfs: restructure squashfs_readpage()
+Date: Thu,  7 Nov 2013 20:24:24 +0000
+Message-Id: <1383855865-4683-6-git-send-email-phillip@squashfs.org.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1383855865-4683-1-git-send-email-phillip@squashfs.org.uk>
 References: <1383855865-4683-1-git-send-email-phillip@squashfs.org.uk>
@@ -21,128 +21,216 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a multi-threaded decompression implementation which uses
-percpu variables.
+Restructure squashfs_readpage() splitting it into separate
+functions for datablocks, fragments and sparse blocks.
 
-Using percpu variables has advantages and disadvantages over
-implementations which do not use percpu variables.
+Move the memcpying (from squashfs cache entry) implementation of
+squashfs_readpage_block into file_cache.c
 
-Advantages: the nature of percpu variables ensures decompression is
-load-balanced across the multiple cores.
-
-Disadvantages: it limits decompression to one thread per core.
+This allows different implementations to be supported.
 
 Signed-off-by: Phillip Lougher <phillip@squashfs.org.uk>
 ---
- fs/squashfs/Kconfig                     |   57 +++++++++++++----
- fs/squashfs/Makefile                    |   10 +--
- fs/squashfs/decompressor_multi_percpu.c |  105 +++++++++++++++++++++++++++++++
- 3 files changed, 152 insertions(+), 20 deletions(-)
- create mode 100644 fs/squashfs/decompressor_multi_percpu.c
+ fs/squashfs/Makefile     |    2 +-
+ fs/squashfs/file.c       |  142 +++++++++++++++++++++++-----------------------
+ fs/squashfs/file_cache.c |   38 +++++++++++++
+ fs/squashfs/squashfs.h   |    7 +++
+ 4 files changed, 118 insertions(+), 71 deletions(-)
+ create mode 100644 fs/squashfs/file_cache.c
 
-diff --git a/fs/squashfs/Kconfig b/fs/squashfs/Kconfig
-index 1c6d340..c92c75f 100644
---- a/fs/squashfs/Kconfig
-+++ b/fs/squashfs/Kconfig
-@@ -25,6 +25,50 @@ config SQUASHFS
- 
- 	  If unsure, say N.
- 
-+choice
-+	prompt "Decompressor parallelisation options"
-+	depends on SQUASHFS
-+	help
-+	  Squashfs now supports three parallelisation options for
-+	  decompression.  Each one exhibits various trade-offs between
-+	  decompression performance and CPU and memory usage.
-+
-+	  If in doubt, select "Single threaded compression"
-+
-+config SQUASHFS_DECOMP_SINGLE
-+	bool "Single threaded compression"
-+	help
-+	  Traditionally Squashfs has used single-threaded decompression.
-+	  Only one block (data or metadata) can be decompressed at any
-+	  one time.  This limits CPU and memory usage to a minimum.
-+
-+config SQUASHFS_DECOMP_MULTI
-+	bool "Use multiple decompressors for parallel I/O"
-+	help
-+	  By default Squashfs uses a single decompressor but it gives
-+	  poor performance on parallel I/O workloads when using multiple CPU
-+	  machines due to waiting on decompressor availability.
-+
-+	  If you have a parallel I/O workload and your system has enough memory,
-+	  using this option may improve overall I/O performance.
-+
-+	  This decompressor implementation uses up to two parallel
-+	  decompressors per core.  It dynamically allocates decompressors
-+	  on a demand basis.
-+
-+config SQUASHFS_DECOMP_MULTI_PERCPU
-+       bool "Use percpu multiple decompressors for parallel I/O"
-+	help
-+	  By default Squashfs uses a single decompressor but it gives
-+	  poor performance on parallel I/O workloads when using multiple CPU
-+	  machines due to waiting on decompressor availability.
-+
-+	  This decompressor implementation uses a maximum of one
-+	  decompressor per core.  It uses percpu variables to ensure
-+	  decompression is load-balanced across the cores.
-+
-+endchoice
-+
- config SQUASHFS_XATTR
- 	bool "Squashfs XATTR support"
- 	depends on SQUASHFS
-@@ -63,19 +107,6 @@ config SQUASHFS_LZO
- 
- 	  If unsure, say N.
- 
--config SQUASHFS_MULTI_DECOMPRESSOR
--	bool "Use multiple decompressors for handling parallel I/O"
--	depends on SQUASHFS
--	help
--	  By default Squashfs uses a single decompressor but it gives
--	  poor performance on parallel I/O workloads when using multiple CPU
--	  machines due to waiting on decompressor availability.
--
--	  If you have a parallel I/O workload and your system has enough memory,
--	  using this option may improve overall I/O performance.
--
--	  If unsure, say N.
--
- config SQUASHFS_XZ
- 	bool "Include support for XZ compressed file systems"
- 	depends on SQUASHFS
 diff --git a/fs/squashfs/Makefile b/fs/squashfs/Makefile
-index dfebc3b..5833b96 100644
+index 5833b96..908c0d9 100644
 --- a/fs/squashfs/Makefile
 +++ b/fs/squashfs/Makefile
-@@ -5,14 +5,10 @@
+@@ -4,7 +4,7 @@
+ 
  obj-$(CONFIG_SQUASHFS) += squashfs.o
  squashfs-y += block.o cache.o dir.o export.o file.o fragment.o id.o inode.o
- squashfs-y += namei.o super.o symlink.o decompressor.o
+-squashfs-y += namei.o super.o symlink.o decompressor.o
++squashfs-y += namei.o super.o symlink.o decompressor.o file_cache.c
+ squashfs-$(CONFIG_SQUASHFS_DECOMP_SINGLE) += decompressor_single.o
+ squashfs-$(CONFIG_SQUASHFS_DECOMP_MULTI) += decompressor_multi.o
+ squashfs-$(CONFIG_SQUASHFS_DECOMP_MULTI_PERCPU) += decompressor_multi_percpu.o
+diff --git a/fs/squashfs/file.c b/fs/squashfs/file.c
+index 8ca62c2..e5c9689 100644
+--- a/fs/squashfs/file.c
++++ b/fs/squashfs/file.c
+@@ -370,77 +370,15 @@ static int read_blocklist(struct inode *inode, int index, u64 *block)
+ 	return le32_to_cpu(size);
+ }
+ 
 -
-+squashfs-$(CONFIG_SQUASHFS_DECOMP_SINGLE) += decompressor_single.o
-+squashfs-$(CONFIG_SQUASHFS_DECOMP_MULTI) += decompressor_multi.o
-+squashfs-$(CONFIG_SQUASHFS_DECOMP_MULTI_PERCPU) += decompressor_multi_percpu.o
- squashfs-$(CONFIG_SQUASHFS_XATTR) += xattr.o xattr_id.o
- squashfs-$(CONFIG_SQUASHFS_LZO) += lzo_wrapper.o
- squashfs-$(CONFIG_SQUASHFS_XZ) += xz_wrapper.o
- squashfs-$(CONFIG_SQUASHFS_ZLIB) += zlib_wrapper.o
+-static int squashfs_readpage(struct file *file, struct page *page)
++/* Copy data into page cache  */
++void squashfs_copy_cache(struct page *page, struct squashfs_cache_entry *buffer,
++	int bytes, int offset)
+ {
+ 	struct inode *inode = page->mapping->host;
+ 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+-	int bytes, i, offset = 0, sparse = 0;
+-	struct squashfs_cache_entry *buffer = NULL;
+ 	void *pageaddr;
 -
--ifdef CONFIG_SQUASHFS_MULTI_DECOMPRESSOR
--	squashfs-y		+= decompressor_multi.o
--else
--	squashfs-y		+= decompressor_single.o
--endif
-diff --git a/fs/squashfs/decompressor_multi_percpu.c b/fs/squashfs/decompressor_multi_percpu.c
+-	int mask = (1 << (msblk->block_log - PAGE_CACHE_SHIFT)) - 1;
+-	int index = page->index >> (msblk->block_log - PAGE_CACHE_SHIFT);
+-	int start_index = page->index & ~mask;
+-	int end_index = start_index | mask;
+-	int file_end = i_size_read(inode) >> msblk->block_log;
+-
+-	TRACE("Entered squashfs_readpage, page index %lx, start block %llx\n",
+-				page->index, squashfs_i(inode)->start);
+-
+-	if (page->index >= ((i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
+-					PAGE_CACHE_SHIFT))
+-		goto out;
+-
+-	if (index < file_end || squashfs_i(inode)->fragment_block ==
+-					SQUASHFS_INVALID_BLK) {
+-		/*
+-		 * Reading a datablock from disk.  Need to read block list
+-		 * to get location and block size.
+-		 */
+-		u64 block = 0;
+-		int bsize = read_blocklist(inode, index, &block);
+-		if (bsize < 0)
+-			goto error_out;
+-
+-		if (bsize == 0) { /* hole */
+-			bytes = index == file_end ?
+-				(i_size_read(inode) & (msblk->block_size - 1)) :
+-				 msblk->block_size;
+-			sparse = 1;
+-		} else {
+-			/*
+-			 * Read and decompress datablock.
+-			 */
+-			buffer = squashfs_get_datablock(inode->i_sb,
+-								block, bsize);
+-			if (buffer->error) {
+-				ERROR("Unable to read page, block %llx, size %x"
+-					"\n", block, bsize);
+-				squashfs_cache_put(buffer);
+-				goto error_out;
+-			}
+-			bytes = buffer->length;
+-		}
+-	} else {
+-		/*
+-		 * Datablock is stored inside a fragment (tail-end packed
+-		 * block).
+-		 */
+-		buffer = squashfs_get_fragment(inode->i_sb,
+-				squashfs_i(inode)->fragment_block,
+-				squashfs_i(inode)->fragment_size);
+-
+-		if (buffer->error) {
+-			ERROR("Unable to read page, block %llx, size %x\n",
+-				squashfs_i(inode)->fragment_block,
+-				squashfs_i(inode)->fragment_size);
+-			squashfs_cache_put(buffer);
+-			goto error_out;
+-		}
+-		bytes = i_size_read(inode) & (msblk->block_size - 1);
+-		offset = squashfs_i(inode)->fragment_offset;
+-	}
++	int i, mask = (1 << (msblk->block_log - PAGE_CACHE_SHIFT)) - 1;
++	int start_index = page->index & ~mask, end_index = start_index | mask;
+ 
+ 	/*
+ 	 * Loop copying datablock into pages.  As the datablock likely covers
+@@ -451,7 +389,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
+ 	for (i = start_index; i <= end_index && bytes > 0; i++,
+ 			bytes -= PAGE_CACHE_SIZE, offset += PAGE_CACHE_SIZE) {
+ 		struct page *push_page;
+-		int avail = sparse ? 0 : min_t(int, bytes, PAGE_CACHE_SIZE);
++		int avail = buffer ? min_t(int, bytes, PAGE_CACHE_SIZE) : 0;
+ 
+ 		TRACE("bytes %d, i %d, available_bytes %d\n", bytes, i, avail);
+ 
+@@ -475,11 +413,75 @@ skip_page:
+ 		if (i != page->index)
+ 			page_cache_release(push_page);
+ 	}
++}
++
++/* Read datablock stored packed inside a fragment (tail-end packed block) */
++static int squashfs_readpage_fragment(struct page *page)
++{
++	struct inode *inode = page->mapping->host;
++	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
++	struct squashfs_cache_entry *buffer = squashfs_get_fragment(inode->i_sb,
++		squashfs_i(inode)->fragment_block,
++		squashfs_i(inode)->fragment_size);
++	int res = buffer->error;
++
++	if (res)
++		ERROR("Unable to read page, block %llx, size %x\n",
++			squashfs_i(inode)->fragment_block,
++			squashfs_i(inode)->fragment_size);
++	else
++		squashfs_copy_cache(page, buffer, i_size_read(inode) &
++			(msblk->block_size - 1),
++			squashfs_i(inode)->fragment_offset);
++
++	squashfs_cache_put(buffer);
++	return res;
++}
+ 
+-	if (!sparse)
+-		squashfs_cache_put(buffer);
++static int squashfs_readpage_sparse(struct page *page, int index, int file_end)
++{
++	struct inode *inode = page->mapping->host;
++	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
++	int bytes = index == file_end ?
++			(i_size_read(inode) & (msblk->block_size - 1)) :
++			 msblk->block_size;
+ 
++	squashfs_copy_cache(page, NULL, bytes, 0);
+ 	return 0;
++}
++
++static int squashfs_readpage(struct file *file, struct page *page)
++{
++	struct inode *inode = page->mapping->host;
++	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
++	int index = page->index >> (msblk->block_log - PAGE_CACHE_SHIFT);
++	int file_end = i_size_read(inode) >> msblk->block_log;
++	int res;
++	void *pageaddr;
++
++	TRACE("Entered squashfs_readpage, page index %lx, start block %llx\n",
++				page->index, squashfs_i(inode)->start);
++
++	if (page->index >= ((i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
++					PAGE_CACHE_SHIFT))
++		goto out;
++
++	if (index < file_end || squashfs_i(inode)->fragment_block ==
++					SQUASHFS_INVALID_BLK) {
++		u64 block = 0;
++		int bsize = read_blocklist(inode, index, &block);
++		if (bsize < 0)
++			goto error_out;
++
++		if (bsize == 0)
++			res = squashfs_readpage_sparse(page, index, file_end);
++		else
++			res = squashfs_readpage_block(page, block, bsize);
++	} else
++		res = squashfs_readpage_fragment(page);
++
++	if (!res)
++		return 0;
+ 
+ error_out:
+ 	SetPageError(page);
+diff --git a/fs/squashfs/file_cache.c b/fs/squashfs/file_cache.c
 new file mode 100644
-index 0000000..b5598ab
+index 0000000..f2310d2
 --- /dev/null
-+++ b/fs/squashfs/decompressor_multi_percpu.c
-@@ -0,0 +1,105 @@
++++ b/fs/squashfs/file_cache.c
+@@ -0,0 +1,38 @@
 +/*
 + * Copyright (c) 2013
 + * Phillip Lougher <phillip@squashfs.org.uk>
@@ -151,103 +239,54 @@ index 0000000..b5598ab
 + * the COPYING file in the top-level directory.
 + */
 +
-+#include <linux/types.h>
-+#include <linux/mutex.h>
++#include <linux/fs.h>
++#include <linux/vfs.h>
++#include <linux/kernel.h>
 +#include <linux/slab.h>
-+#include <linux/buffer_head.h>
++#include <linux/string.h>
++#include <linux/pagemap.h>
++#include <linux/mutex.h>
 +
 +#include "squashfs_fs.h"
 +#include "squashfs_fs_sb.h"
-+#include "decompressor.h"
++#include "squashfs_fs_i.h"
 +#include "squashfs.h"
 +
-+/*
-+ * This file implements multi-threaded decompression using percpu
-+ * variables, one thread per cpu core.
-+ */
-+
-+struct squashfs_stream {
-+	void		*stream;
-+};
-+
-+void *squashfs_decompressor_create(struct squashfs_sb_info *msblk,
-+						void *comp_opts)
++/* Read separately compressed datablock and memcopy into page cache */
++int squashfs_readpage_block(struct page *page, u64 block, int bsize)
 +{
-+	struct squashfs_stream *stream;
-+	struct squashfs_stream __percpu *percpu;
-+	int err, cpu, cpu0;
++	struct inode *i = page->mapping->host;
++	struct squashfs_cache_entry *buffer = squashfs_get_datablock(i->i_sb,
++		block, bsize);
++	int res = buffer->error;
 +
-+	percpu = alloc_percpu(struct squashfs_stream);
-+	if (percpu == NULL) {
-+		err = -ENOMEM;
-+		goto out2;
-+	}
++	if (res)
++		ERROR("Unable to read page, block %llx, size %x\n", block,
++			bsize);
++	else
++		squashfs_copy_cache(page, buffer, buffer->length, 0);
 +
-+	for_each_possible_cpu(cpu) {
-+		stream = per_cpu_ptr(percpu, cpu);
-+		stream->stream = msblk->decompressor->init(msblk, comp_opts);
-+		if (IS_ERR(stream->stream)) {
-+			err = PTR_ERR(stream->stream);
-+			goto out;
-+		}
-+	}
-+
-+	kfree(comp_opts);
-+	return (__force void *) percpu;
-+
-+out:
-+	for_each_possible_cpu(cpu0) {
-+		if (cpu0 == cpu)
-+			break;
-+		stream = per_cpu_ptr(percpu, cpu0);
-+		msblk->decompressor->free(stream->stream);
-+	}
-+	free_percpu(percpu);
-+out2:
-+	kfree(comp_opts);
-+	return ERR_PTR(err);
-+}
-+
-+void squashfs_decompressor_destroy(struct squashfs_sb_info *msblk)
-+{
-+	struct squashfs_stream __percpu *percpu =
-+			(struct squashfs_stream __percpu *) msblk->stream;
-+	struct squashfs_stream *stream;
-+	int cpu;
-+
-+	if (msblk->stream) {
-+		for_each_possible_cpu(cpu) {
-+			stream = per_cpu_ptr(percpu, cpu);
-+			msblk->decompressor->free(stream->stream);
-+		}
-+		free_percpu(percpu);
-+	}
-+}
-+
-+int squashfs_decompress(struct squashfs_sb_info *msblk,
-+	void **buffer, struct buffer_head **bh, int b, int offset, int length,
-+	int srclength, int pages)
-+{
-+	int res;
-+	struct squashfs_stream __percpu *percpu =
-+			(struct squashfs_stream __percpu *) msblk->stream;
-+	struct squashfs_stream *stream = get_cpu_ptr(percpu);
-+
-+	res = msblk->decompressor->decompress(msblk, stream->stream, buffer,
-+		bh, b, offset, length, srclength, pages);
-+	put_cpu_ptr(stream);
-+
-+	if (res < 0)
-+		ERROR("%s decompression failed, data probably corrupt\n",
-+			msblk->decompressor->name);
-+
++	squashfs_cache_put(buffer);
 +	return res;
 +}
+diff --git a/fs/squashfs/squashfs.h b/fs/squashfs/squashfs.h
+index 6a97e63..9e1bb79 100644
+--- a/fs/squashfs/squashfs.h
++++ b/fs/squashfs/squashfs.h
+@@ -66,6 +66,13 @@ extern int squashfs_frag_lookup(struct super_block *, unsigned int, u64 *);
+ extern __le64 *squashfs_read_fragment_index_table(struct super_block *,
+ 				u64, u64, unsigned int);
+ 
++/* file.c */
++void squashfs_copy_cache(struct page *, struct squashfs_cache_entry *, int,
++				int);
 +
-+int squashfs_max_decompressors(void)
-+{
-+	return num_possible_cpus();
-+}
++/* file_xxx.c */
++extern int squashfs_readpage_block(struct page *, u64, int);
++
+ /* id.c */
+ extern int squashfs_get_id(struct super_block *, unsigned int, unsigned int *);
+ extern __le64 *squashfs_read_id_index_table(struct super_block *, u64, u64,
 -- 
 1.7.10.4
 
