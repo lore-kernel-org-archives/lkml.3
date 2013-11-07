@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab3KGNor (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 08:44:47 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:45511 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073Ab3KGNok (ORCPT
+	id S1753490Ab3KGNoz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 08:44:55 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:52028 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754201Ab3KGNot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 08:44:40 -0500
+	Thu, 7 Nov 2013 08:44:49 -0500
 From: Juri Lelli <juri.lelli@gmail.com>
 To: peterz@infradead.org, tglx@linutronix.de
 Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
@@ -19,9 +19,9 @@ Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
         raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
         jkacur@redhat.com, harald.gustafsson@ericsson.com,
         vincent.guittot@linaro.org, bruce.ashfield@windriver.com
-Subject: [PATCH 09/14] rtmutex: turn the plist into an rb-tree.
-Date: Thu,  7 Nov 2013 14:43:43 +0100
-Message-Id: <1383831828-15501-10-git-send-email-juri.lelli@gmail.com>
+Subject: [PATCH 12/14] sched: make dl_bw a sub-quota of rt_bw
+Date: Thu,  7 Nov 2013 14:43:46 +0100
+Message-Id: <1383831828-15501-13-git-send-email-juri.lelli@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
 References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
@@ -29,590 +29,665 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+Change real-time bandwidth management as to make dl_bw a sub-quota
+of rt_bw. This patch leaves rt_bw at its default value and sets
+dl_bw at 40% of rt_bw. It also remove sched_dl_period_us control
+knob using sched_rt_period_us as common period for both rt_bw and
+dl_bw.
 
-Turn the pi-chains from plist to rb-tree, in the rt_mutex code,
-and provide a proper comparison function for -deadline and
--priority tasks.
+Checks are made when the user tries to change dl_bw sub-quota as to
+not fall below what currently used. Since dl_bw now depends upon
+rt_bw, similar checks are performed when the users modifies rt_bw
+and dl_bw is changed accordingly. Setting rt_bw sysctl variable to
+-1 (actually disabling rt throttling) disables dl_bw checks as well.
 
-This is done mainly because:
- - classical prio field of the plist is just an int, which might
-   not be enough for representing a deadline;
- - manipulating such a list would become O(nr_deadline_tasks),
-   which might be to much, as the number of -deadline task increases.
-
-Therefore, an rb-tree is used, and tasks are queued in it according
-to the following logic:
- - among two -priority (i.e., SCHED_BATCH/OTHER/RR/FIFO) tasks, the
-   one with the higher (lower, actually!) prio wins;
- - among a -priority and a -deadline task, the latter always wins;
- - among two -deadline tasks, the one with the earliest deadline
-   wins.
-
-Queueing and dequeueing functions are changed accordingly, for both
-the list of a task's pi-waiters and the list of tasks blocked on
-a pi-lock.
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Dario Faggioli <raistlin@linux.it>
 Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
 ---
- include/linux/init_task.h |   10 +++
- include/linux/rtmutex.h   |   18 ++----
- include/linux/sched.h     |    4 +-
- kernel/fork.c             |    3 +-
- kernel/futex.c            |    2 +
- kernel/rtmutex-debug.c    |    8 +--
- kernel/rtmutex.c          |  152 ++++++++++++++++++++++++++++++++++++---------
- kernel/rtmutex_common.h   |   22 +++----
- kernel/sched/core.c       |    4 --
- 9 files changed, 157 insertions(+), 66 deletions(-)
+ include/linux/sched/deadline.h |    2 +
+ include/linux/sched/sysctl.h   |    2 -
+ kernel/sched/core.c            |  322 ++++++++++++++++++++--------------------
+ kernel/sched/deadline.c        |   13 +-
+ kernel/sched/sched.h           |   24 ++-
+ kernel/sysctl.c                |    7 -
+ 6 files changed, 173 insertions(+), 197 deletions(-)
 
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index 5cd0f09..69b97ea 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -11,6 +11,7 @@
- #include <linux/user_namespace.h>
- #include <linux/securebits.h>
- #include <linux/seqlock.h>
-+#include <linux/rbtree.h>
- #include <net/net_namespace.h>
- #include <linux/sched/rt.h>
+diff --git a/include/linux/sched/deadline.h b/include/linux/sched/deadline.h
+index 9d303b8..2e44877 100644
+--- a/include/linux/sched/deadline.h
++++ b/include/linux/sched/deadline.h
+@@ -21,4 +21,6 @@ static inline int dl_task(struct task_struct *p)
+ 	return dl_prio(p->prio);
+ }
  
-@@ -154,6 +155,14 @@ extern struct task_group root_task_group;
++extern inline struct dl_bw *dl_bw_of(int i);
++
+ #endif /* _SCHED_DEADLINE_H */
+diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
+index 33fbf32..444a257 100644
+--- a/include/linux/sched/sysctl.h
++++ b/include/linux/sched/sysctl.h
+@@ -86,10 +86,8 @@ extern int sysctl_sched_rt_runtime;
+ /*
+  *  control SCHED_DEADLINE reservations:
+  *
+- *  /proc/sys/kernel/sched_dl_period_us
+  *  /proc/sys/kernel/sched_dl_runtime_us
+  */
+-extern unsigned int sysctl_sched_dl_period;
+ extern int sysctl_sched_dl_runtime;
  
- #define INIT_TASK_COMM "swapper"
+ #ifdef CONFIG_CFS_BANDWIDTH
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index d8a8622..08500e0 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -297,13 +297,12 @@ __read_mostly int scheduler_running;
+ int sysctl_sched_rt_runtime = 950000;
  
-+#ifdef CONFIG_RT_MUTEXES
-+# define INIT_RT_MUTEXES(tsk)						\
-+	.pi_waiters = RB_ROOT,						\
-+	.pi_waiters_leftmost = NULL,
+ /*
+- * Maximum bandwidth available for all -deadline tasks and groups
+- * (if group scheduling is configured) on each CPU.
++ * Sub-quota or rt bandwidth available for all -deadline tasks
++ * on each CPU.
+  *
+- * default: 5%
++ * default: 40%
+  */
+-unsigned int sysctl_sched_dl_period = 1000000;
+-int sysctl_sched_dl_runtime = 50000;
++int sysctl_sched_dl_runtime = 400000;
+ 
+ 
+ 
+@@ -1770,6 +1769,28 @@ unsigned long to_ratio(u64 period, u64 runtime)
+ 	return div64_u64(runtime << 20, period);
+ }
+ 
++#ifdef CONFIG_SMP
++inline struct dl_bw *dl_bw_of(int i)
++{
++	return &cpu_rq(i)->rd->dl_bw;
++}
++
++static inline int __dl_span_weight(struct rq *rq)
++{
++	return cpumask_weight(rq->rd->span);
++}
 +#else
-+# define INIT_RT_MUTEXES(tsk)
++inline struct dl_bw *dl_bw_of(int i)
++{
++	return &cpu_rq(i)->dl.dl_bw;
++}
++
++static inline int __dl_span_weight(struct rq *rq)
++{
++	return 1;
++}
 +#endif
 +
- /*
-  *  INIT_TASK is used to set up the first task table, touch at
-  * your own risk!. Base=0, limit=0x1fffff (=2MB)
-@@ -221,6 +230,7 @@ extern struct task_group root_task_group;
- 	INIT_TRACE_RECURSION						\
- 	INIT_TASK_RCU_PREEMPT(tsk)					\
- 	INIT_CPUSET_SEQ							\
-+	INIT_RT_MUTEXES(tsk)						\
- 	INIT_VTIME(tsk)							\
- }
- 
-diff --git a/include/linux/rtmutex.h b/include/linux/rtmutex.h
-index de17134..3aed8d7 100644
---- a/include/linux/rtmutex.h
-+++ b/include/linux/rtmutex.h
-@@ -13,7 +13,7 @@
- #define __LINUX_RT_MUTEX_H
- 
- #include <linux/linkage.h>
--#include <linux/plist.h>
-+#include <linux/rbtree.h>
- #include <linux/spinlock_types.h>
- 
- extern int max_lock_depth; /* for sysctl */
-@@ -22,12 +22,14 @@ extern int max_lock_depth; /* for sysctl */
-  * The rt_mutex structure
-  *
-  * @wait_lock:	spinlock to protect the structure
-- * @wait_list:	pilist head to enqueue waiters in priority order
-+ * @waiters:	rbtree root to enqueue waiters in priority order
-+ * @waiters_leftmost: top waiter
-  * @owner:	the mutex owner
-  */
- struct rt_mutex {
- 	raw_spinlock_t		wait_lock;
--	struct plist_head	wait_list;
-+	struct rb_root          waiters;
-+	struct rb_node          *waiters_leftmost;
- 	struct task_struct	*owner;
- #ifdef CONFIG_DEBUG_RT_MUTEXES
- 	int			save_state;
-@@ -66,7 +68,7 @@ struct hrtimer_sleeper;
- 
- #define __RT_MUTEX_INITIALIZER(mutexname) \
- 	{ .wait_lock = __RAW_SPIN_LOCK_UNLOCKED(mutexname.wait_lock) \
--	, .wait_list = PLIST_HEAD_INIT(mutexname.wait_list) \
-+	, .waiters = RB_ROOT \
- 	, .owner = NULL \
- 	__DEBUG_RT_MUTEX_INITIALIZER(mutexname)}
- 
-@@ -98,12 +100,4 @@ extern int rt_mutex_trylock(struct rt_mutex *lock);
- 
- extern void rt_mutex_unlock(struct rt_mutex *lock);
- 
--#ifdef CONFIG_RT_MUTEXES
--# define INIT_RT_MUTEXES(tsk)						\
--	.pi_waiters	= PLIST_HEAD_INIT(tsk.pi_waiters),	\
--	INIT_RT_MUTEX_DEBUG(tsk)
+ static inline
+ void __dl_clear(struct dl_bw *dl_b, u64 tsk_bw)
+ {
+@@ -1800,19 +1821,11 @@ bool __dl_overflow(struct dl_bw *dl_b, int cpus, u64 old_bw, u64 new_bw)
+ static int dl_overflow(struct task_struct *p, int policy,
+ 		       const struct sched_param2 *param2)
+ {
+-#ifdef CONFIG_SMP
+-	struct dl_bw *dl_b = &task_rq(p)->rd->dl_bw;
 -#else
--# define INIT_RT_MUTEXES(tsk)
+-	struct dl_bw *dl_b = &task_rq(p)->dl.dl_bw;
 -#endif
++	struct dl_bw *dl_b = dl_bw_of(task_cpu(p));
+ 	u64 period = param2->sched_period;
+ 	u64 runtime = param2->sched_runtime;
+ 	u64 new_bw = dl_policy(policy) ? to_ratio(period, runtime) : 0;
+-#ifdef CONFIG_SMP
+-	int cpus = cpumask_weight(task_rq(p)->rd->span);
+-#else
+-	int cpus = 1;
+-#endif
++	int cpus = __dl_span_weight(task_rq(p));
+ 	int err = -1;
+ 
+ 	if (new_bw == p->dl.dl_bw)
+@@ -4685,8 +4698,8 @@ EXPORT_SYMBOL_GPL(set_cpus_allowed_ptr);
+ static inline
+ bool set_task_cpu_dl(struct task_struct *p, unsigned int cpu)
+ {
+-	struct dl_bw *dl_b = &task_rq(p)->rd->dl_bw;
+-	struct dl_bw *cpu_b = &cpu_rq(cpu)->rd->dl_bw;
++	struct dl_bw *dl_b = dl_bw_of(task_cpu(p));
++	struct dl_bw *cpu_b = dl_bw_of(cpu);
+ 	int ret = 1;
+ 	u64 bw;
+ 
+@@ -6815,6 +6828,8 @@ LIST_HEAD(task_groups);
+ 
+ DECLARE_PER_CPU(cpumask_var_t, load_balance_mask);
+ 
++static u64 actual_dl_runtime(void);
++
+ void __init sched_init(void)
+ {
+ 	int i, j;
+@@ -6856,15 +6871,14 @@ void __init sched_init(void)
+ #endif /* CONFIG_CPUMASK_OFFSTACK */
+ 	}
+ 
++	init_rt_bandwidth(&def_rt_bandwidth,
++			global_rt_period(), global_rt_runtime());
++	init_dl_bandwidth(&def_dl_bandwidth, actual_dl_runtime());
++
+ #ifdef CONFIG_SMP
+ 	init_defrootdomain();
+ #endif
+ 
+-	init_rt_bandwidth(&def_rt_bandwidth,
+-			global_rt_period(), global_rt_runtime());
+-	init_dl_bandwidth(&def_dl_bandwidth,
+-			global_dl_period(), global_dl_runtime());
 -
- #endif
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 3064319..f95bafd 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -16,6 +16,7 @@ struct sched_param {
- #include <linux/types.h>
- #include <linux/timex.h>
- #include <linux/jiffies.h>
-+#include <linux/plist.h>
- #include <linux/rbtree.h>
- #include <linux/thread_info.h>
- #include <linux/cpumask.h>
-@@ -1340,7 +1341,8 @@ struct task_struct {
- 
- #ifdef CONFIG_RT_MUTEXES
- 	/* PI waiters blocked on a rt_mutex held by this task */
--	struct plist_head pi_waiters;
-+	struct rb_root pi_waiters;
-+	struct rb_node *pi_waiters_leftmost;
- 	/* Deadlock detection and priority inheritance handling */
- 	struct rt_mutex_waiter *pi_blocked_on;
- #endif
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 55fc95f..aa6e18d 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1089,7 +1089,8 @@ static void rt_mutex_init_task(struct task_struct *p)
- {
- 	raw_spin_lock_init(&p->pi_lock);
- #ifdef CONFIG_RT_MUTEXES
--	plist_head_init(&p->pi_waiters);
-+	p->pi_waiters = RB_ROOT;
-+	p->pi_waiters_leftmost = NULL;
- 	p->pi_blocked_on = NULL;
- #endif
+ #ifdef CONFIG_RT_GROUP_SCHED
+ 	init_rt_bandwidth(&root_task_group.rt_bandwidth,
+ 			global_rt_period(), global_rt_runtime());
+@@ -7263,6 +7277,86 @@ void sched_move_task(struct task_struct *tsk)
  }
-diff --git a/kernel/futex.c b/kernel/futex.c
-index c3a1a55..ff7141e 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2315,6 +2315,8 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
- 	 * code while we sleep on uaddr.
- 	 */
- 	debug_rt_mutex_init_waiter(&rt_waiter);
-+	RB_CLEAR_NODE(&rt_waiter.pi_tree_entry);
-+	RB_CLEAR_NODE(&rt_waiter.tree_entry);
- 	rt_waiter.task = NULL;
+ #endif /* CONFIG_CGROUP_SCHED */
  
- 	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
-diff --git a/kernel/rtmutex-debug.c b/kernel/rtmutex-debug.c
-index 13b243a..49b2ed3 100644
---- a/kernel/rtmutex-debug.c
-+++ b/kernel/rtmutex-debug.c
-@@ -24,7 +24,7 @@
- #include <linux/kallsyms.h>
- #include <linux/syscalls.h>
- #include <linux/interrupt.h>
--#include <linux/plist.h>
-+#include <linux/rbtree.h>
- #include <linux/fs.h>
- #include <linux/debug_locks.h>
- 
-@@ -57,7 +57,7 @@ static void printk_lock(struct rt_mutex *lock, int print_owner)
- 
- void rt_mutex_debug_task_free(struct task_struct *task)
- {
--	DEBUG_LOCKS_WARN_ON(!plist_head_empty(&task->pi_waiters));
-+	DEBUG_LOCKS_WARN_ON(!RB_EMPTY_ROOT(&task->pi_waiters));
- 	DEBUG_LOCKS_WARN_ON(task->pi_blocked_on);
- }
- 
-@@ -154,16 +154,12 @@ void debug_rt_mutex_proxy_unlock(struct rt_mutex *lock)
- void debug_rt_mutex_init_waiter(struct rt_mutex_waiter *waiter)
- {
- 	memset(waiter, 0x11, sizeof(*waiter));
--	plist_node_init(&waiter->list_entry, MAX_PRIO);
--	plist_node_init(&waiter->pi_list_entry, MAX_PRIO);
- 	waiter->deadlock_task_pid = NULL;
- }
- 
- void debug_rt_mutex_free_waiter(struct rt_mutex_waiter *waiter)
- {
- 	put_pid(waiter->deadlock_task_pid);
--	DEBUG_LOCKS_WARN_ON(!plist_node_empty(&waiter->list_entry));
--	DEBUG_LOCKS_WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
- 	memset(waiter, 0x22, sizeof(*waiter));
- }
- 
-diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-index 0dd6aec..4ea7eaa 100644
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -91,10 +91,104 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
- }
- #endif
- 
-+static inline int
-+rt_mutex_waiter_less(struct rt_mutex_waiter *left,
-+		     struct rt_mutex_waiter *right)
++static u64 actual_dl_runtime(void)
 +{
-+	if (left->task->prio < right->task->prio)
-+		return 1;
++	u64 dl_runtime = global_dl_runtime();
++	u64 rt_runtime = global_rt_runtime();
++	u64 period = global_rt_period();
 +
 +	/*
-+	 * If both tasks are dl_task(), we check their deadlines.
++	 * We want to calculate the sub-quota of rt_bw actually available
++	 * for -dl tasks. It is a percentage of percentage. By default 95%
++	 * of system bandwidth is allocate to -rt tasks; among this, a 40%
++	 * quota is reserved for -dl tasks. To have the actual quota a simple
++	 * multiplication is needed: .95 * .40 = .38 (38% of system bandwidth
++	 * for deadline tasks).
++	 * What follows is basically the same, but using unsigned integers.
++	 *
++	 *                   dl_runtime   rt_runtime
++	 * actual_runtime =  ---------- * ---------- * period
++	 *                     period       period
 +	 */
-+	if (dl_prio(left->task->prio) && dl_prio(right->task->prio))
-+		return (left->task->dl.deadline < right->task->dl.deadline);
++	if (dl_runtime == RUNTIME_INF)
++		return RUNTIME_INF;
++
++	return div64_u64 (dl_runtime * rt_runtime, period);
++}
++
++static int check_dl_bw(void)
++{
++	int i;
++	u64 period = global_rt_period();
++	u64 dl_actual_runtime = def_dl_bandwidth.dl_runtime;
++	u64 new_bw = to_ratio(period, dl_actual_runtime);
++
++	/*
++	 * Here we want to check the bandwidth not being set to some
++	 * value smaller than the currently allocated bandwidth in
++	 * any of the root_domains.
++	 *
++	 * FIXME: Cycling on all the CPUs is overdoing, but simpler than
++	 * cycling on root_domains... Discussion on different/better
++	 * solutions is welcome!
++	 */
++	for_each_possible_cpu(i) {
++		struct dl_bw *dl_b = dl_bw_of(i);
++
++		raw_spin_lock(&dl_b->lock);
++		if (new_bw < dl_b->total_bw) {
++			raw_spin_unlock(&dl_b->lock);
++			return -EBUSY;
++		}
++		raw_spin_unlock(&dl_b->lock);
++	}
 +
 +	return 0;
 +}
 +
-+static void
-+rt_mutex_enqueue(struct rt_mutex *lock, struct rt_mutex_waiter *waiter)
++static void update_dl_bw(void)
 +{
-+	struct rb_node **link = &lock->waiters.rb_node;
-+	struct rb_node *parent = NULL;
-+	struct rt_mutex_waiter *entry;
-+	int leftmost = 1;
++	u64 new_bw;
++	int i;
 +
-+	while (*link) {
-+		parent = *link;
-+		entry = rb_entry(parent, struct rt_mutex_waiter, tree_entry);
-+		if (rt_mutex_waiter_less(waiter, entry)) {
-+			link = &parent->rb_left;
-+		} else {
-+			link = &parent->rb_right;
-+			leftmost = 0;
-+		}
++	def_dl_bandwidth.dl_runtime = actual_dl_runtime();
++	if (def_dl_bandwidth.dl_runtime == RUNTIME_INF ||
++	    global_rt_runtime() == RUNTIME_INF)
++		new_bw = ULLONG_MAX;
++	else {
++		new_bw = to_ratio(global_rt_period(),
++				  def_dl_bandwidth.dl_runtime);
 +	}
++	/*
++	 * FIXME: As above...
++	 */
++	for_each_possible_cpu(i) {
++		struct dl_bw *dl_b = dl_bw_of(i);
 +
-+	if (leftmost)
-+		lock->waiters_leftmost = &waiter->tree_entry;
-+
-+	rb_link_node(&waiter->tree_entry, parent, link);
-+	rb_insert_color(&waiter->tree_entry, &lock->waiters);
-+}
-+
-+static void
-+rt_mutex_dequeue(struct rt_mutex *lock, struct rt_mutex_waiter *waiter)
-+{
-+	if (RB_EMPTY_NODE(&waiter->tree_entry))
-+		return;
-+
-+	if (lock->waiters_leftmost == &waiter->tree_entry)
-+		lock->waiters_leftmost = rb_next(&waiter->tree_entry);
-+
-+	rb_erase(&waiter->tree_entry, &lock->waiters);
-+	RB_CLEAR_NODE(&waiter->tree_entry);
-+}
-+
-+static void
-+rt_mutex_enqueue_pi(struct task_struct *task, struct rt_mutex_waiter *waiter)
-+{
-+	struct rb_node **link = &task->pi_waiters.rb_node;
-+	struct rb_node *parent = NULL;
-+	struct rt_mutex_waiter *entry;
-+	int leftmost = 1;
-+
-+	while (*link) {
-+		parent = *link;
-+		entry = rb_entry(parent, struct rt_mutex_waiter, pi_tree_entry);
-+		if (rt_mutex_waiter_less(waiter, entry)) {
-+			link = &parent->rb_left;
-+		} else {
-+			link = &parent->rb_right;
-+			leftmost = 0;
-+		}
++		raw_spin_lock(&dl_b->lock);
++		dl_b->bw = new_bw;
++		raw_spin_unlock(&dl_b->lock);
 +	}
-+
-+	if (leftmost)
-+		task->pi_waiters_leftmost = &waiter->pi_tree_entry;
-+
-+	rb_link_node(&waiter->pi_tree_entry, parent, link);
-+	rb_insert_color(&waiter->pi_tree_entry, &task->pi_waiters);
 +}
 +
-+static void
-+rt_mutex_dequeue_pi(struct task_struct *task, struct rt_mutex_waiter *waiter)
-+{
-+	if (RB_EMPTY_NODE(&waiter->pi_tree_entry))
-+		return;
-+
-+	if (task->pi_waiters_leftmost == &waiter->pi_tree_entry)
-+		task->pi_waiters_leftmost = rb_next(&waiter->pi_tree_entry);
-+
-+	rb_erase(&waiter->pi_tree_entry, &task->pi_waiters);
-+	RB_CLEAR_NODE(&waiter->pi_tree_entry);
-+}
-+
+ #ifdef CONFIG_RT_GROUP_SCHED
  /*
-- * Calculate task priority from the waiter list priority
-+ * Calculate task priority from the waiter tree priority
-  *
-- * Return task->normal_prio when the waiter list is empty or when
-+ * Return task->normal_prio when the waiter tree is empty or when
-  * the waiter is not allowed to do priority boosting
-  */
- int rt_mutex_getprio(struct task_struct *task)
-@@ -102,7 +196,7 @@ int rt_mutex_getprio(struct task_struct *task)
- 	if (likely(!task_has_pi_waiters(task)))
- 		return task->normal_prio;
- 
--	return min(task_top_pi_waiter(task)->pi_list_entry.prio,
-+	return min(task_top_pi_waiter(task)->task->prio,
- 		   task->normal_prio);
+  * Ensure that the real time constraints are schedulable.
+@@ -7436,48 +7530,10 @@ static long sched_group_rt_period(struct task_group *tg)
+ 	do_div(rt_period_us, NSEC_PER_USEC);
+ 	return rt_period_us;
  }
- 
-@@ -233,7 +327,7 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 	 * When deadlock detection is off then we check, if further
- 	 * priority adjustment is necessary.
- 	 */
--	if (!detect_deadlock && waiter->list_entry.prio == task->prio)
-+	if (!detect_deadlock && waiter->task->prio == task->prio)
- 		goto out_unlock_pi;
- 
- 	lock = waiter->lock;
-@@ -254,9 +348,9 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 	top_waiter = rt_mutex_top_waiter(lock);
- 
- 	/* Requeue the waiter */
--	plist_del(&waiter->list_entry, &lock->wait_list);
--	waiter->list_entry.prio = task->prio;
--	plist_add(&waiter->list_entry, &lock->wait_list);
-+	rt_mutex_dequeue(lock, waiter);
-+	waiter->task->prio = task->prio;
-+	rt_mutex_enqueue(lock, waiter);
- 
- 	/* Release the task */
- 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-@@ -280,17 +374,15 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 
- 	if (waiter == rt_mutex_top_waiter(lock)) {
- 		/* Boost the owner */
--		plist_del(&top_waiter->pi_list_entry, &task->pi_waiters);
--		waiter->pi_list_entry.prio = waiter->list_entry.prio;
--		plist_add(&waiter->pi_list_entry, &task->pi_waiters);
-+		rt_mutex_dequeue_pi(task, top_waiter);
-+		rt_mutex_enqueue_pi(task, waiter);
- 		__rt_mutex_adjust_prio(task);
- 
- 	} else if (top_waiter == waiter) {
- 		/* Deboost the owner */
--		plist_del(&waiter->pi_list_entry, &task->pi_waiters);
-+		rt_mutex_dequeue_pi(task, waiter);
- 		waiter = rt_mutex_top_waiter(lock);
--		waiter->pi_list_entry.prio = waiter->list_entry.prio;
--		plist_add(&waiter->pi_list_entry, &task->pi_waiters);
-+		rt_mutex_enqueue_pi(task, waiter);
- 		__rt_mutex_adjust_prio(task);
- 	}
- 
-@@ -355,7 +447,7 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
- 	 * 3) it is top waiter
- 	 */
- 	if (rt_mutex_has_waiters(lock)) {
--		if (task->prio >= rt_mutex_top_waiter(lock)->list_entry.prio) {
-+		if (task->prio >= rt_mutex_top_waiter(lock)->task->prio) {
- 			if (!waiter || waiter != rt_mutex_top_waiter(lock))
- 				return 0;
- 		}
-@@ -369,7 +461,7 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
- 
- 		/* remove the queued waiter. */
- 		if (waiter) {
--			plist_del(&waiter->list_entry, &lock->wait_list);
-+			rt_mutex_dequeue(lock, waiter);
- 			task->pi_blocked_on = NULL;
- 		}
- 
-@@ -379,8 +471,7 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
- 		 */
- 		if (rt_mutex_has_waiters(lock)) {
- 			top = rt_mutex_top_waiter(lock);
--			top->pi_list_entry.prio = top->list_entry.prio;
--			plist_add(&top->pi_list_entry, &task->pi_waiters);
-+			rt_mutex_enqueue_pi(task, top);
- 		}
- 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 	}
-@@ -416,13 +507,11 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- 	__rt_mutex_adjust_prio(task);
- 	waiter->task = task;
- 	waiter->lock = lock;
--	plist_node_init(&waiter->list_entry, task->prio);
--	plist_node_init(&waiter->pi_list_entry, task->prio);
+-#endif /* CONFIG_RT_GROUP_SCHED */
 -
-+	
- 	/* Get the top priority waiter on the lock */
- 	if (rt_mutex_has_waiters(lock))
- 		top_waiter = rt_mutex_top_waiter(lock);
--	plist_add(&waiter->list_entry, &lock->wait_list);
-+	rt_mutex_enqueue(lock, waiter);
- 
- 	task->pi_blocked_on = waiter;
- 
-@@ -433,8 +522,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- 
- 	if (waiter == rt_mutex_top_waiter(lock)) {
- 		raw_spin_lock_irqsave(&owner->pi_lock, flags);
--		plist_del(&top_waiter->pi_list_entry, &owner->pi_waiters);
--		plist_add(&waiter->pi_list_entry, &owner->pi_waiters);
-+		rt_mutex_dequeue_pi(owner, top_waiter);
-+		rt_mutex_enqueue_pi(owner, waiter);
- 
- 		__rt_mutex_adjust_prio(owner);
- 		if (owner->pi_blocked_on)
-@@ -486,7 +575,7 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
- 	 * boosted mode and go back to normal after releasing
- 	 * lock->wait_lock.
- 	 */
--	plist_del(&waiter->pi_list_entry, &current->pi_waiters);
-+	rt_mutex_dequeue_pi(current, waiter);
- 
- 	rt_mutex_set_owner(lock, NULL);
- 
-@@ -510,7 +599,7 @@ static void remove_waiter(struct rt_mutex *lock,
- 	int chain_walk = 0;
- 
- 	raw_spin_lock_irqsave(&current->pi_lock, flags);
--	plist_del(&waiter->list_entry, &lock->wait_list);
-+	rt_mutex_dequeue(lock, waiter);
- 	current->pi_blocked_on = NULL;
- 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
- 
-@@ -521,13 +610,13 @@ static void remove_waiter(struct rt_mutex *lock,
- 
- 		raw_spin_lock_irqsave(&owner->pi_lock, flags);
- 
--		plist_del(&waiter->pi_list_entry, &owner->pi_waiters);
-+		rt_mutex_dequeue_pi(owner, waiter);
- 
- 		if (rt_mutex_has_waiters(lock)) {
- 			struct rt_mutex_waiter *next;
- 
- 			next = rt_mutex_top_waiter(lock);
--			plist_add(&next->pi_list_entry, &owner->pi_waiters);
-+			rt_mutex_enqueue_pi(owner, next);
- 		}
- 		__rt_mutex_adjust_prio(owner);
- 
-@@ -537,8 +626,6 @@ static void remove_waiter(struct rt_mutex *lock,
- 		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
- 	}
- 
--	WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
+-/*
+- * Coupling of -rt and -deadline bandwidth.
+- *
+- * Here we check if the new -rt bandwidth value is consistent
+- * with the system settings for the bandwidth available
+- * to -deadline tasks.
+- *
+- * IOW, we want to enforce that
+- *
+- *   rt_bandwidth + dl_bandwidth <= 100%
+- *
+- * is always true.
+- */
+-static bool __sched_rt_dl_global_constraints(u64 rt_bw)
+-{
+-	unsigned long flags;
+-	u64 dl_bw;
+-	bool ret;
 -
- 	if (!chain_walk)
- 		return;
+-	raw_spin_lock_irqsave(&def_dl_bandwidth.dl_runtime_lock, flags);
+-	if (global_rt_runtime() == RUNTIME_INF ||
+-	    global_dl_runtime() == RUNTIME_INF) {
+-		ret = true;
+-		goto unlock;
+-	}
+-
+-	dl_bw = to_ratio(def_dl_bandwidth.dl_period,
+-			 def_dl_bandwidth.dl_runtime);
+-
+-	ret = rt_bw + dl_bw <= to_ratio(RUNTIME_INF, RUNTIME_INF);
+-unlock:
+-	raw_spin_unlock_irqrestore(&def_dl_bandwidth.dl_runtime_lock, flags);
+-
+-	return ret;
+-}
  
-@@ -565,7 +652,7 @@ void rt_mutex_adjust_pi(struct task_struct *task)
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
- 
- 	waiter = task->pi_blocked_on;
--	if (!waiter || waiter->list_entry.prio == task->prio) {
-+	if (!waiter || waiter->task->prio == task->prio) {
- 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 		return;
- 	}
-@@ -638,6 +725,8 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
+-#ifdef CONFIG_RT_GROUP_SCHED
+ static int sched_rt_global_constraints(void)
+ {
+-	u64 runtime, period, bw;
++	u64 runtime, period;
  	int ret = 0;
  
- 	debug_rt_mutex_init_waiter(&waiter);
-+	RB_CLEAR_NODE(&waiter.pi_tree_entry);
-+	RB_CLEAR_NODE(&waiter.tree_entry);
+ 	if (sysctl_sched_rt_period <= 0)
+@@ -7492,9 +7548,13 @@ static int sched_rt_global_constraints(void)
+ 	if (runtime > period && runtime != RUNTIME_INF)
+ 		return -EINVAL;
  
- 	raw_spin_lock(&lock->wait_lock);
+-	bw = to_ratio(period, runtime);
+-	if (!__sched_rt_dl_global_constraints(bw))
+-		return -EINVAL;
++	/*
++	 * Check if changing rt_bw could have negative effects
++	 * on dl_bw
++	 */
++	ret = check_dl_bw();
++	if (ret)
++		return ret;
  
-@@ -904,7 +993,8 @@ void __rt_mutex_init(struct rt_mutex *lock, const char *name)
+ 	mutex_lock(&rt_constraints_mutex);
+ 	read_lock(&tasklist_lock);
+@@ -7518,18 +7578,27 @@ static int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk)
+ static int sched_rt_global_constraints(void)
  {
- 	lock->owner = NULL;
- 	raw_spin_lock_init(&lock->wait_lock);
--	plist_head_init(&lock->wait_list);
-+	lock->waiters = RB_ROOT;
-+	lock->waiters_leftmost = NULL;
+ 	unsigned long flags;
+-	int i, ret = 0;
+-	u64 bw;
++	int i, ret;
  
- 	debug_rt_mutex_init(lock, name);
+ 	if (sysctl_sched_rt_period <= 0)
+ 		return -EINVAL;
+ 
++	/*
++	 * There's always some RT tasks in the root group
++	 * -- migration, kstopmachine etc..
++	 */
++	if (sysctl_sched_rt_runtime == 0)
++		return -EBUSY;
++
++	/*
++	 * Check if changing rt_bw could have negative effects
++	 * on dl_bw
++	 */
++	ret = check_dl_bw();
++	if (ret)
++		return ret;
++
+ 	raw_spin_lock_irqsave(&def_rt_bandwidth.rt_runtime_lock, flags);
+-	bw = to_ratio(global_rt_period(), global_rt_runtime());
+-	if (!__sched_rt_dl_global_constraints(bw)) {
+-		ret = -EINVAL;
+-		goto unlock;
+-	}
+ 
+ 	for_each_possible_cpu(i) {
+ 		struct rt_rq *rt_rq = &cpu_rq(i)->rt;
+@@ -7538,48 +7607,12 @@ static int sched_rt_global_constraints(void)
+ 		rt_rq->rt_runtime = global_rt_runtime();
+ 		raw_spin_unlock(&rt_rq->rt_runtime_lock);
+ 	}
+-unlock:
+ 	raw_spin_unlock_irqrestore(&def_rt_bandwidth.rt_runtime_lock, flags);
+ 
+-	return ret;
++	return 0;
  }
-diff --git a/kernel/rtmutex_common.h b/kernel/rtmutex_common.h
-index 53a66c8..b65442f 100644
---- a/kernel/rtmutex_common.h
-+++ b/kernel/rtmutex_common.h
-@@ -40,13 +40,13 @@ extern void schedule_rt_mutex_test(struct rt_mutex *lock);
-  * This is the control structure for tasks blocked on a rt_mutex,
-  * which is allocated on the kernel stack on of the blocked task.
-  *
-- * @list_entry:		pi node to enqueue into the mutex waiters list
-- * @pi_list_entry:	pi node to enqueue into the mutex owner waiters list
-+ * @tree_entry:		pi node to enqueue into the mutex waiters tree
-+ * @pi_tree_entry:	pi node to enqueue into the mutex owner waiters tree
-  * @task:		task reference to the blocked task
-  */
- struct rt_mutex_waiter {
--	struct plist_node	list_entry;
--	struct plist_node	pi_list_entry;
-+	struct rb_node          tree_entry;
-+	struct rb_node          pi_tree_entry;
- 	struct task_struct	*task;
- 	struct rt_mutex		*lock;
- #ifdef CONFIG_DEBUG_RT_MUTEXES
-@@ -57,11 +57,11 @@ struct rt_mutex_waiter {
- };
+ #endif /* CONFIG_RT_GROUP_SCHED */
  
- /*
-- * Various helpers to access the waiters-plist:
-+ * Various helpers to access the waiters-tree:
-  */
- static inline int rt_mutex_has_waiters(struct rt_mutex *lock)
+-/*
+- * Coupling of -dl and -rt bandwidth.
+- *
+- * Here we check, while setting the system wide bandwidth available
+- * for -dl tasks and groups, if the new values are consistent with
+- * the system settings for the bandwidth available to -rt entities.
+- *
+- * IOW, we want to enforce that
+- *
+- *   rt_bandwidth + dl_bandwidth <= 100%
+- *
+- * is always true.
+- */
+-static bool __sched_dl_rt_global_constraints(u64 dl_bw)
+-{
+-	u64 rt_bw;
+-	bool ret;
+-
+-	raw_spin_lock(&def_rt_bandwidth.rt_runtime_lock);
+-	if (global_dl_runtime() == RUNTIME_INF ||
+-	    global_rt_runtime() == RUNTIME_INF) {
+-		ret = true;
+-		goto unlock;
+-	}
+-
+-	rt_bw = to_ratio(ktime_to_ns(def_rt_bandwidth.rt_period),
+-			 def_rt_bandwidth.rt_runtime);
+-
+-	ret = rt_bw + dl_bw <= to_ratio(RUNTIME_INF, RUNTIME_INF);
+-unlock:
+-	raw_spin_unlock(&def_rt_bandwidth.rt_runtime_lock);
+-
+-	return ret;
+-}
+-
+ static bool __sched_dl_global_constraints(u64 runtime, u64 period)
  {
--	return !plist_head_empty(&lock->wait_list);
-+	return !RB_EMPTY_ROOT(&lock->waiters);
+ 	if (!period || (runtime != RUNTIME_INF && runtime > period))
+@@ -7590,40 +7623,17 @@ static bool __sched_dl_global_constraints(u64 runtime, u64 period)
+ 
+ static int sched_dl_global_constraints(void)
+ {
+-	u64 runtime = global_dl_runtime();
+-	u64 period = global_dl_period();
+-	u64 new_bw = to_ratio(period, runtime);
+-	int ret, i;
++	u64 period = global_rt_period();
++	u64 dl_actual_runtime = def_dl_bandwidth.dl_runtime;
++	int ret;
+ 
+-	ret = __sched_dl_global_constraints(runtime, period);
++	ret = __sched_dl_global_constraints(dl_actual_runtime, period);
+ 	if (ret)
+ 		return ret;
+ 
+-	if (!__sched_dl_rt_global_constraints(new_bw))
+-		return -EINVAL;
+-
+-	/*
+-	 * Here we want to check the bandwidth not being set to some
+-	 * value smaller than the currently allocated bandwidth in
+-	 * any of the root_domains.
+-	 *
+-	 * FIXME: Cycling on all the CPUs is overdoing, but simpler than
+-	 * cycling on root_domains... Discussion on different/better
+-	 * solutions is welcome!
+-	 */
+-	for_each_possible_cpu(i) {
+-#ifdef CONFIG_SMP
+-		struct dl_bw *dl_b = &cpu_rq(i)->rd->dl_bw;
+-#else
+-		struct dl_bw *dl_b = &cpu_rq(i)->dl.dl_bw;
+-#endif
+-		raw_spin_lock(&dl_b->lock);
+-		if (new_bw < dl_b->total_bw) {
+-			raw_spin_unlock(&dl_b->lock);
+-			return -EBUSY;
+-		}
+-		raw_spin_unlock(&dl_b->lock);
+-	}
++	ret = check_dl_bw();
++	if (ret)
++		return ret;
+ 
+ 	return 0;
  }
+@@ -7654,6 +7664,7 @@ int sched_rt_handler(struct ctl_table *table, int write,
+ 	int ret;
+ 	int old_period, old_runtime;
+ 	static DEFINE_MUTEX(mutex);
++	unsigned long flags;
  
- static inline struct rt_mutex_waiter *
-@@ -69,8 +69,8 @@ rt_mutex_top_waiter(struct rt_mutex *lock)
+ 	mutex_lock(&mutex);
+ 	old_period = sysctl_sched_rt_period;
+@@ -7663,6 +7674,8 @@ int sched_rt_handler(struct ctl_table *table, int write,
+ 
+ 	if (!ret && write) {
+ 		ret = sched_rt_global_constraints();
++		raw_spin_lock_irqsave(&def_dl_bandwidth.dl_runtime_lock,
++				      flags);
+ 		if (ret) {
+ 			sysctl_sched_rt_period = old_period;
+ 			sysctl_sched_rt_runtime = old_runtime;
+@@ -7670,7 +7683,11 @@ int sched_rt_handler(struct ctl_table *table, int write,
+ 			def_rt_bandwidth.rt_runtime = global_rt_runtime();
+ 			def_rt_bandwidth.rt_period =
+ 				ns_to_ktime(global_rt_period());
++
++			update_dl_bw();
+ 		}
++		raw_spin_unlock_irqrestore(&def_dl_bandwidth.dl_runtime_lock,
++					   flags);
+ 	}
+ 	mutex_unlock(&mutex);
+ 
+@@ -7682,12 +7699,11 @@ int sched_dl_handler(struct ctl_table *table, int write,
+ 		loff_t *ppos)
  {
- 	struct rt_mutex_waiter *w;
+ 	int ret;
+-	int old_period, old_runtime;
++	int old_runtime;
+ 	static DEFINE_MUTEX(mutex);
+ 	unsigned long flags;
  
--	w = plist_first_entry(&lock->wait_list, struct rt_mutex_waiter,
--			       list_entry);
-+	w = rb_entry(lock->waiters_leftmost, struct rt_mutex_waiter,
-+		     tree_entry);
- 	BUG_ON(w->lock != lock);
+ 	mutex_lock(&mutex);
+-	old_period = sysctl_sched_dl_period;
+ 	old_runtime = sysctl_sched_dl_runtime;
  
- 	return w;
-@@ -78,14 +78,14 @@ rt_mutex_top_waiter(struct rt_mutex *lock)
+ 	ret = proc_dointvec(table, write, buffer, lenp, ppos);
+@@ -7698,33 +7714,9 @@ int sched_dl_handler(struct ctl_table *table, int write,
  
- static inline int task_has_pi_waiters(struct task_struct *p)
- {
--	return !plist_head_empty(&p->pi_waiters);
-+	return !RB_EMPTY_ROOT(&p->pi_waiters);
- }
- 
- static inline struct rt_mutex_waiter *
- task_top_pi_waiter(struct task_struct *p)
- {
--	return plist_first_entry(&p->pi_waiters, struct rt_mutex_waiter,
--				  pi_list_entry);
-+	return rb_entry(p->pi_waiters_leftmost, struct rt_mutex_waiter,
-+			pi_tree_entry);
- }
- 
- /*
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 7838eca..6a3ab87 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6728,10 +6728,6 @@ void __init sched_init(void)
- 	INIT_HLIST_HEAD(&init_task.preempt_notifiers);
- #endif
- 
--#ifdef CONFIG_RT_MUTEXES
--	plist_head_init(&init_task.pi_waiters);
+ 		ret = sched_dl_global_constraints();
+ 		if (ret) {
+-			sysctl_sched_dl_period = old_period;
+ 			sysctl_sched_dl_runtime = old_runtime;
+ 		} else {
+-			u64 new_bw;
+-			int i;
+-
+-			def_dl_bandwidth.dl_period = global_dl_period();
+-			def_dl_bandwidth.dl_runtime = global_dl_runtime();
+-			if (global_dl_runtime() == RUNTIME_INF)
+-				new_bw = -1;
+-			else
+-				new_bw = to_ratio(global_dl_period(),
+-						  global_dl_runtime());
+-			/*
+-			 * FIXME: As above...
+-			 */
+-			for_each_possible_cpu(i) {
+-#ifdef CONFIG_SMP
+-				struct dl_bw *dl_b = &cpu_rq(i)->rd->dl_bw;
+-#else
+-				struct dl_bw *dl_b = &cpu_rq(i)->dl.dl_bw;
 -#endif
 -
+-				raw_spin_lock(&dl_b->lock);
+-				dl_b->bw = new_bw;
+-				raw_spin_unlock(&dl_b->lock);
+-			}
++			update_dl_bw();
+ 		}
+ 
+ 		raw_spin_unlock_irqrestore(&def_dl_bandwidth.dl_runtime_lock,
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index fe39d7e..be84cb3 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -48,10 +48,9 @@ static inline int is_leftmost(struct task_struct *p, struct dl_rq *dl_rq)
+ 	return dl_rq->rb_leftmost == &dl_se->rb_node;
+ }
+ 
+-void init_dl_bandwidth(struct dl_bandwidth *dl_b, u64 period, u64 runtime)
++void init_dl_bandwidth(struct dl_bandwidth *dl_b, u64 runtime)
+ {
+ 	raw_spin_lock_init(&dl_b->dl_runtime_lock);
+-	dl_b->dl_period = period;
+ 	dl_b->dl_runtime = runtime;
+ }
+ 
+@@ -62,9 +61,9 @@ void init_dl_bw(struct dl_bw *dl_b)
+ 	raw_spin_lock_init(&dl_b->lock);
+ 	raw_spin_lock(&def_dl_bandwidth.dl_runtime_lock);
+ 	if (global_dl_runtime() == RUNTIME_INF)
+-		dl_b->bw = -1;
++		dl_b->bw = ULLONG_MAX;
+ 	else
+-		dl_b->bw = to_ratio(global_dl_period(), global_dl_runtime());
++		dl_b->bw = to_ratio(global_rt_period(), global_dl_runtime());
+ 	raw_spin_unlock(&def_dl_bandwidth.dl_runtime_lock);
+ 	dl_b->total_bw = 0;
+ }
+@@ -1061,11 +1060,7 @@ static void task_fork_dl(struct task_struct *p)
+ static void task_dead_dl(struct task_struct *p)
+ {
+ 	struct hrtimer *timer = &p->dl.dl_timer;
+-#ifdef CONFIG_SMP
+-	struct dl_bw *dl_b = &task_rq(p)->rd->dl_bw;
+-#else
+-	struct dl_bw *dl_b = &task_rq(p)->dl.dl_bw;
+-#endif
++	struct dl_bw *dl_b = dl_bw_of(task_cpu(p));
+ 
  	/*
- 	 * The boot idle thread does lazy MMU switching as well:
- 	 */
+ 	 * Since we are TASK_DEAD we won't slip out of the domain!
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 08931a6..bf4acf8 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -142,20 +142,20 @@ struct rt_bandwidth {
+ 	struct hrtimer		rt_period_timer;
+ };
+ /*
+- * To keep the bandwidth of -deadline tasks and groups under control
+- * we need some place where:
+- *  - store the maximum -deadline bandwidth of the system (the group);
++ * To keep the bandwidth of -deadline tasks under control we need some
++ * place where:
++ *  - store the maximum -deadline bandwidth of the system;
+  *  - cache the fraction of that bandwidth that is currently allocated.
+  *
+  * This is all done in the data structure below. It is similar to the
+  * one used for RT-throttling (rt_bandwidth), with the main difference
+  * that, since here we are only interested in admission control, we
+- * do not decrease any runtime while the group "executes", neither we
++ * do not decrease any runtime while the task "executes", neither we
+  * need a timer to replenish it.
+  *
+  * With respect to SMP, the bandwidth is given on a per-CPU basis,
+  * meaning that:
+- *  - dl_bw (< 100%) is the bandwidth of the system (group) on each CPU;
++ *  - dl_bw (< 100%) is the bandwidth of the system on each CPU;
+  *  - dl_total_bw array contains, in the i-eth element, the currently
+  *    allocated bandwidth on the i-eth CPU.
+  * Moreover, groups consume bandwidth on each CPU, while tasks only
+@@ -168,7 +168,6 @@ struct rt_bandwidth {
+ struct dl_bandwidth {
+ 	raw_spinlock_t dl_runtime_lock;
+ 	u64 dl_runtime;
+-	u64 dl_period;
+ };
+ 
+ static inline int dl_bandwidth_enabled(void)
+@@ -178,10 +177,12 @@ static inline int dl_bandwidth_enabled(void)
+ 
+ struct dl_bw {
+ 	raw_spinlock_t lock;
+-	u64 bw, total_bw;
++	/* default value */
++	u64 bw;
++	/* allocated */
++	u64 total_bw;
+ };
+ 
+-static inline u64 global_dl_period(void);
+ static inline u64 global_dl_runtime(void);
+ 
+ extern struct mutex sched_domains_mutex;
+@@ -924,11 +925,6 @@ static inline u64 global_rt_runtime(void)
+ 	return (u64)sysctl_sched_rt_runtime * NSEC_PER_USEC;
+ }
+ 
+-static inline u64 global_dl_period(void)
+-{
+-	return (u64)sysctl_sched_dl_period * NSEC_PER_USEC;
+-}
+-
+ static inline u64 global_dl_runtime(void)
+ {
+ 	if (sysctl_sched_dl_runtime < 0)
+@@ -1192,7 +1188,7 @@ extern struct rt_bandwidth def_rt_bandwidth;
+ extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime);
+ 
+ extern struct dl_bandwidth def_dl_bandwidth;
+-extern void init_dl_bandwidth(struct dl_bandwidth *dl_b, u64 period, u64 runtime);
++extern void init_dl_bandwidth(struct dl_bandwidth *dl_b, u64 runtime);
+ extern void init_dl_task_timer(struct sched_dl_entity *dl_se);
+ 
+ unsigned long to_ratio(u64 period, u64 runtime);
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 8492cbb..39167fc 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -415,13 +415,6 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= sched_rr_handler,
+ 	},
+ 	{
+-		.procname	= "sched_dl_period_us",
+-		.data		= &sysctl_sched_dl_period,
+-		.maxlen		= sizeof(unsigned int),
+-		.mode		= 0644,
+-		.proc_handler	= sched_dl_handler,
+-	},
+-	{
+ 		.procname	= "sched_dl_runtime_us",
+ 		.data		= &sysctl_sched_dl_runtime,
+ 		.maxlen		= sizeof(int),
 -- 
 1.7.9.5
 
