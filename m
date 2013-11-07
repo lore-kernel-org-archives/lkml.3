@@ -1,67 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab3KGCVO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 21:21:14 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:55506 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370Ab3KGCVN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 21:21:13 -0500
-Date: Thu, 7 Nov 2013 13:21:02 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: linux-next: manual merge of the drm tree with Linus' tree
-Message-Id: <20131107132102.17d5f340fdf80dc0faa80c4c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__7_Nov_2013_13_21_02_+1100_dqOA/LMkTNZ1gD2J"
+	id S1753552Ab3KGCVm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 21:21:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58943 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752680Ab3KGCVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Nov 2013 21:21:41 -0500
+Date: Thu, 7 Nov 2013 10:20:15 +0800
+From: Baoquan He <bhe@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: mwhitehe@redhat.com, x86@kernel.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, davej@fedoraproject.org,
+        mingo@redhat.com, holt@sgi.com, hpa@zytor.com,
+        rmk+kernel@arm.linux.org.uk, tglx@linutronix.de,
+        akpm@linux-foundation.org, chaowang@redhat.com
+Subject: Re: [PATCH] x86: make reboot task only run on the appropriate
+ processor
+Message-ID: <20131107022015.GA2491@dhcp-16-105.nay.redhat.com>
+References: <1383642967-12595-1-git-send-email-bhe@redhat.com>
+ <20131105202855.GD4598@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131105202855.GD4598@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__7_Nov_2013_13_21_02_+1100_dqOA/LMkTNZ1gD2J
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/05/13 at 03:28pm, Vivek Goyal wrote:
+> On Tue, Nov 05, 2013 at 05:16:07PM +0800, Baoquan He wrote:
+> > Currently system always reboot after below message when execute "kexec -e".
+> > 
+> > [    0.572119] smpboot: Booting Node   0, Processors  #   1 OK
+> > 
+> 
+> So is it same problem were we reboot on non-boot cpu and sending INIT
+> to boot cpu in second kernel brings down the machine?
 
-Hi Dave,
+I was wrong, they are the same problem. With multiple CPUs, by setting
+affinity to execute crash or kexec on CPUn(n!==0), they all reboot after
+the same message as below and then reboot through BIOS. It should be the
+BSP got a INIT IPI message and make system hang.
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/radeon/radeon_connectors.c between commit 108dc8e8b44a
-("drm/radeon: rework audio option") from Linus' tree and commit
-ad41550666f8 ("drm/radeon: enable hdmi audio by default") from the drm
-tree.
+[    0.572119] smpboot: Booting Node   0, Processors  #   1 OK
 
-I fixed it up (I used the latter version) and can carry the fix as
-necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__7_Nov_2013_13_21_02_+1100_dqOA/LMkTNZ1gD2J
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSevkTAAoJEMDTa8Ir7ZwVt3sQAIHLsZiiMcz5CTjUfUCaCPDQ
-/A5jywTGrsa8hhgMqtoquzEkOd0BoRZb7DAwG3OSX49Rv3g5WJeAtVOFmdDPQg0U
-01iWGyBnLCnJwi3hItYTSQchhoRiInDQEL6vxqqJZkxDVXz7NQ50ngw6QS5XFcVO
-P2UBy8L5oYkHRlMvqKP/kD8pTehdc6WVzBIPagp2bkaKwJy9guX2L8TfgULYoDQW
-O2WJqQHP8qWzt6nZ5QuPonHSi12L1BT84zVHCgwW2567WmCkCNuSX1m3JvluHUHM
-GM7fZSlTHvCaZ6op0JQtjB9LvesUopCMI2AqlTo2S/LvL/OUhqqljrOAvBI4J7cZ
-MSupzQdaSXnaNIweXSKG/ae6ZnzV7+Cs4Z3yvN9EHxcf5oD2ybNB/MzOF8PcRjEd
-5wJ+YXkRdrUQ31yczUafJlo2i4niV0dJI6ORWk4HvoeVzmOkZgtAcNUEdkj9GNAC
-48AgkG7mzFoTNF0/FPWp9e0BhTohkL5HIGcU4fCJi6K9jVSqAZkIQM1+J3RRd8nH
-XG07ReIgsleYiGFPuWFpW7Xxw0IPZlCMdXpTAzwfIRcg0xyxwg9klzEc67yAm21R
-2NveU++e0nfX2+Atx9ULomQshRkM05xyB/y+QcaeIzxBzzWFXDR4lL7ArbcXQdmB
-2pXKePaIY5oYX6w9Ind/
-=U+Gv
------END PGP SIGNATURE-----
-
---Signature=_Thu__7_Nov_2013_13_21_02_+1100_dqOA/LMkTNZ1gD2J--
+> 
+> I think for x86, it makes sense to reboot on boot cpu.
+> 
+> Thanks
+> Vivek
+> 
+> > In commit 1b3a5d02ee070c8f9943333b9b6370f486601e0f, reboot= handling was
+> > moved to kerne/reboot.c. However, the code to migrate current thread to
+> > reboot cpu was removed. That cause this incorrect kexec behavior.
+> > 
+> > Now add that code block back.
+> > 
+> > Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
+> > Reported-by: Dave Young <dyoung@redhat.com>
+> > Tested-by: WANG Chao <chaowang@redhat.com>
+> > Signed-off-by: Baoquan He <bhe@redhat.com>
+> > ---
+> >  arch/x86/kernel/reboot.c | 15 +++++++++++++++
+> >  1 file changed, 15 insertions(+)
+> > 
+> > diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+> > index 7e920bf..3049de9 100644
+> > --- a/arch/x86/kernel/reboot.c
+> > +++ b/arch/x86/kernel/reboot.c
+> > @@ -551,6 +551,21 @@ void native_machine_shutdown(void)
+> >  {
+> >  	/* Stop the cpus and apics */
+> >  #ifdef CONFIG_SMP
+> > +       /* The boot cpu is always logical cpu 0 */
+> > +       int reboot_cpu_id = 0;
+> > +
+> > +       /* See if there has been given a command line override */
+> > +       if ((reboot_cpu != -1) && (reboot_cpu < nr_cpu_ids) &&
+> > +               cpu_online(reboot_cpu))
+> > +               reboot_cpu_id = reboot_cpu;
+> > +
+> > +       /* Make certain the cpu I'm about to reboot on is online */
+> > +       if (!cpu_online(reboot_cpu_id))
+> > +               reboot_cpu_id = smp_processor_id();
+> > +
+> > +       /* Make certain I only run on the appropriate processor */
+> > +       set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
+> > +
+> >  	/*
+> >  	 * Stop all of the others. Also disable the local irq to
+> >  	 * not receive the per-cpu timer interrupt which may trigger
+> > -- 
+> > 1.8.3.1
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
