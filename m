@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751773Ab3KGF2J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 00:28:09 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:34542 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab3KGF2F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 00:28:05 -0500
-Message-ID: <527B24D4.30009@linux.vnet.ibm.com>
-Date: Thu, 07 Nov 2013 10:57:48 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751001Ab3KGFjq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 00:39:46 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:56543 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750875Ab3KGFjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 00:39:45 -0500
+Date: Thu, 7 Nov 2013 11:06:41 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        David Long <dave.long@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] uprobes: preparations for arm port
+Message-ID: <20131107053641.GC26744@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20131106191913.GA18661@redhat.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, michael@ellerman.id.au,
-        scottwood@freescale.com, srivatsa.bhat@linux.vnet.ibm.com,
-        preeti@linux.vnet.ibm.com, linux-pm@lists.linux-foundation.org,
-        svaidy@linux.vnet.ibm.com
-Subject: Re: [PATCH V7 5/7] POWER/cpuidle: Generic POWER CPUIDLE driver supporting
- PSERIES.
-References: <20131029110052.31547.82682.stgit@deepthi.in.ibm.com> <20131029110148.31547.8944.stgit@deepthi.in.ibm.com> <527AAF1D.5080605@linaro.org> <527B13C8.9030602@linux.vnet.ibm.com> <1383800462.4776.165.camel@pasglop>
-In-Reply-To: <1383800462.4776.165.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20131106191913.GA18661@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13110705-8256-0000-0000-00000A045048
+x-cbid: 13110705-5806-0000-0000-000023583E9A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2013 10:31 AM, Benjamin Herrenschmidt wrote:
-> On Thu, 2013-11-07 at 09:45 +0530, Deepthi Dharwar wrote:
->> 'powerpc' would be very generic arch and would comprise of all platforms
->> including embedded 32/64 bit to server 64 bit (similar to that of ARM).
->> This driver does not intend to support complete powerpc arch, but just
->> PSERIES and POWERNV platforms termed as 'POWER' processors. So to avoid
->> confusion btw 'power mgmt' and 'POWER' archs, I have prefixed both the
->> driver and file names with 'IBM'namely ibm-power-driver, cpuidle-ibm-power.
+* Oleg Nesterov <oleg@redhat.com> [2013-11-06 20:19:13]:
+
+> Ingo, please pull from
 > 
-
-Hi Ben,
-
-> Why not book3s ? powerpc-book3s ?
-
-I went with 'ibm-power' thinking it would resolve the confusion,
-but if ppl feel that is is good to get away from 'POWER' and have
-powerpc-book3s instead to make things clearer, I am open for it.
-
-
-Regards,
-Deepthi
-
-> That's what we use in other places to differenciate between the families
-> 
-> Ben.
+>   git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
 > 
 > 
+> I have also attached the cumulative diff below. As you can see,
+> the changes are really simple and there are no functional changes.
+> 
+> However I think it makes sense to merge this now, this way the
+> upcoming arm port doesn't (almost) need the changes outside of
+> arch/arm and thus it would be simpler to route everything via
+> arm trees.
+> 
+> 
+> David A. Long (1):
+>       uprobes: Move function declarations out of arch
+> 
+> Oleg Nesterov (3):
+>       uprobes: Kill module_init() and module_exit()
+>       uprobes: Introduce arch_uprobe->ixol
+>       uprobes: Export write_opcode() as uprobe_write_opcode()
+> 
+
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+for this series.
+
+-- 
+Thanks and Regards
+Srikar Dronamraju
 
