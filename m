@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556Ab3KGWWT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 17:22:19 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:49891 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753752Ab3KGWWK (ORCPT
+	id S1755796Ab3KGWWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 17:22:34 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37233 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755266Ab3KGWW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 17:22:10 -0500
-Date: Thu, 7 Nov 2013 14:22:05 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
-Message-ID: <20131107222205.GA24450@roeck-us.net>
-References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
- <20131106190152.GA8662@breakpoint.cc>
- <20131106193041.GA26796@roeck-us.net>
- <20131106203821.GC8662@breakpoint.cc>
- <20131106211754.GA29300@roeck-us.net>
- <20131107192558.GA11453@breakpoint.cc>
+	Thu, 7 Nov 2013 17:22:26 -0500
+Date: Thu, 7 Nov 2013 23:21:44 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Michel Lespinasse <walken@google.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rik van Riel <riel@redhat.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "Figo. zhang" <figo1802@gmail.com>, linux-arch@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, George Spelvin <linux@horizon.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Hurley <peter@hurleysoftware.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Alex Shi <alex.shi@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>
+Subject: Re: [PATCH v3 3/5] MCS Lock: Barrier corrections
+Message-ID: <20131107222144.GC19203@twins.programming.kicks-ass.net>
+References: <cover.1383771175.git.tim.c.chen@linux.intel.com>
+ <1383773827.11046.355.camel@schen9-DESK>
+ <CA+55aFyNX=5i0hmk-KuD+Vk+yBD-kkAiywx1Lx_JJmHVPx=1wA@mail.gmail.com>
+ <CANN689HkNP-UZOu+vDCFPG5_k=BNZG6a+oP+Ope16vLc2ShFzw@mail.gmail.com>
+ <CA+55aFwn1HUt3iXo6Zz8j1HUJi+qJ1NfcnUz-P+XCYLL7gjCMQ@mail.gmail.com>
+ <CANN689EgdDQV=srsLELUpiTGOSF0SLUZ=BC2LnMxNrYTv3H=Wg@mail.gmail.com>
+ <20131107143139.GT18245@linux.vnet.ibm.com>
+ <CANN689FqUSnr=Prum0Kt6+0gr9dWKD8GT9Gbrtiyyg+PTyFkyA@mail.gmail.com>
+ <1383858951.11046.399.camel@schen9-DESK>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131107192558.GA11453@breakpoint.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1383858951.11046.399.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 07, 2013 at 08:25:58PM +0100, Sebastian Andrzej Siewior wrote:
-> On 06.11.13, Guenter Roeck wrote:
-> |…
-> thanks for the explanation.
-> 
-> > We use DT overlays to describe the hardware on those boards and, if necessary,
-> > its configuration. For example, if there is a PCIe switch, the overlay would
-> > describe its memory and bus number configuration.
-> 
-> So have your "fix" configuration and a few overlays you switch at
-> runtime. The problem you have is that you want to switch a specific part
-> if your configuration at runtime. I assume you run DT on ARM. What
-> happens if you swtich from ARM to x86 and you "keep" your FPGA
-> configuration requirement? You can't use both, DT and ACPI, right? So
-> what happens then?
-> 
-We intend to use DT on x86 to augment ACPI data. There is a variety of reasons
-why we can not use ACPI, nor do we want to as we prefer a single method for
-handling OIR on all platforms. FWIW, the non-x86 platform is powerpc, not arm.
+On Thu, Nov 07, 2013 at 01:15:51PM -0800, Tim Chen wrote:
+> Michel, are you planning to do an implementation of
+> load-acquire/store-release functions of various architectures?
 
-Guenter
+A little something like this:
+http://marc.info/?l=linux-arch&m=138386254111507
+
+It so happens we were working on that the past week or so due to another
+issue ;-)
