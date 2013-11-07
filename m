@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465Ab3KGKnz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 05:43:55 -0500
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:46334 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab3KGKnw (ORCPT
+	id S1753874Ab3KGKsx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 05:48:53 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:25545 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783Ab3KGKst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 05:43:52 -0500
-Date: Thu, 7 Nov 2013 05:43:48 -0500 (EST)
-From: Jerome Marchand <jmarchan@redhat.com>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <1605509214.19935074.1383821028439.JavaMail.root@redhat.com>
-In-Reply-To: <527AD5A2.70902@intel.com>
-References: <1382101019-23563-1-git-send-email-jmarchan@redhat.com> <1382101019-23563-2-git-send-email-jmarchan@redhat.com> <20131105155319.732dcbefb162c2ee4716ef9d@linux-foundation.org> <1450211196.19341043.1383727340985.JavaMail.root@redhat.com> <20131106143313.1a368250df917fba0faf56fe@linux-foundation.org> <527AD5A2.70902@intel.com>
-Subject: Re: [PATCH v4 2/2] mm: allow to set overcommit ratio more precisely
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF22 (Linux)/8.0.3_GA_5664)
-Thread-Topic: allow to set overcommit ratio more precisely
-Thread-Index: X9lNhzCk/L5kqME+glrKuBjQvQRj/w==
+	Thu, 7 Nov 2013 05:48:49 -0500
+X-AuditID: cbfee61a-b7f836d0000025d7-de-527b7010b838
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-pm@vger.kernel.org, naveenkrishna.ch@gmail.com, rui.zhang@intel.com,
+        eduardo.valentin@ti.com, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, amit.daniel@samsung.com,
+        kgene.kim@samsung.com, devicetree@vger.kernel.org, cpgs@samsung.com
+Subject: Re: [PATCH 1/3 v8] thermal: samsung: add intclr_fall_shift bit in
+ exynos_tmu_register struct
+Date: Thu, 07 Nov 2013 11:48:42 +0100
+Message-id: <1864683.tCrpAXuim8@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <1383803562-31752-1-git-send-email-ch.naveen@samsung.com>
+References: <1381979473-7079-1-git-send-email-ch.naveen@samsung.com>
+ <1383803562-31752-1-git-send-email-ch.naveen@samsung.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t9jQV2Bguogg1MtwhYNV0Ms7j4/zGjx
+	8pCmxfwj51gt1uz/yWTRu+Aqm8XlXXPYLD73HmG0mHF+H5PFom3/mS2ePOxjc+D22DnrLrvH
+	4j0vmTz6tqxi9Dh+YzuTx+dNcgGsUVw2Kak5mWWpRfp2CVwZbb3HWQu+s1dsXXuFvYFxI1sX
+	IyeHhICJxPHtx5kgbDGJC/fWA8W5OIQEpjNKrDyzA8ppYZL4fnY9K0gVm4CVxMT2VYwgtghI
+	96sz7CBFzALdTBLLn1wDGyUskC5xpv8aM4jNIqAqsftLM5jNK6Ap8fLYbTBbVMBTYsf2lUAb
+	ODg4BdwkTv6shljWwCix5d1BqHpBiR+T77GA2MwC8hL79k9lhbB1JPa3TmObwCgwC0nZLCRl
+	s5CULWBkXsUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHA3PpHYwrmywOMQowMGoxMM7o6Yq
+	SIg1say4MvcQowQHs5IIb3NIdZAQb0piZVVqUX58UWlOavEhRmkOFiVx3gOt1oFCAumJJanZ
+	qakFqUUwWSYOTqkGRt6+4yc8Y85++ueWZFqX1hU4+cOfntV7My71PdvzzztKUMr2nswE0eYr
+	+xnEa8PWppzV6lkp02N07uxRsbLfC9tTtj//2O1yPWB9cd62fp2cVwev5nfzHNNUnsqf+/jU
+	gZIAaQNOg75jVluN3kTlKob1NJ4NMTHfoFCVzPNfNuiplM2RL5buSizFGYmGWsxFxYkA6Y8W
+	+IICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+Hi,
 
------ Original Message -----
-> From: "Dave Hansen" <dave.hansen@intel.com>
-> To: "Andrew Morton" <akpm@linux-foundation.org>, "Jerome Marchand" <jmarchan@redhat.com>
-> Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-> Sent: Thursday, November 7, 2013 12:49:54 AM
-> Subject: Re: [PATCH v4 2/2] mm: allow to set overcommit ratio more precisely
+On Thursday, November 07, 2013 11:22:42 AM Naveen Krishna Chatradhi wrote:
+> On Exynos5250, the FALL interrupt related en, status and clear bits are
+> available at an offset of
+> 16 in INTEN, INTSTAT registers and at an offset of
+> 12 in INTCLEAR register.
 > 
-> On 11/06/2013 02:33 PM, Andrew Morton wrote:
-> > On Wed, 6 Nov 2013 03:42:20 -0500 (EST) Jerome Marchand
-> > <jmarchan@redhat.com> wrote:
-> >> That was my first version of this patch (actually "kbytes" to avoid
-> >> overflow).
-> >> Dave raised the issue that it silently breaks the user interface:
-> >> overcommit_ratio is zero while the system behaves differently.
-> > 
-> > I don't understand that at all.  We keep overcommit_ratio as-is, with
-> > the same default values and add a different way of altering it.  That
-> > should be back-compatible?
+> On Exynos5420, the FALL interrupt related en, status and clear bits are
+> available at an offset of
+> 16 in INTEN, INTSTAT and INTCLEAR registers.
 > 
-> Reading the old thread, I think my main point was that we shouldn't
-> output overcommit_ratio=0 when overcommit_bytes>0. We need to round up
-> for numbers less than 1 so that folks don't think overcommit_ratio is _off_.
+> On Exynos5440,
+> the FALL_IRQEN bits are at an offset of 4
+> and the RISE_IRQEN bits are at an offset of 0
+> 
+> This patch introduces a new bit field intclr_fall_shift to handle the
+> offset for exyns5250 and exynos5440
+> Also removes the unused macros EXYNOS_TMU_FALL_INT_SHIFT and
+> EXYNOS5440_TMU_FALL_INT_SHIFT, inten_fall_shift field
 
-This is not how current *bytes work. Also the *ratio and *bytes value
-would diverge if the amount of memory changes (e.g. memory hotplug).
+Thanks for fixing this.  All three patches look good to me now.
 
-> 
-> I was really just trying to talk you in to cramming the extra precision
-> in to the _existing_ sysctl. :)  I don't think bytes vs. ratio is really
-> that big of a deal.
-> 
+Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-If everybody agrees on overcommit_kbytes, I can resend my original patch.
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
