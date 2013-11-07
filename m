@@ -1,98 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335Ab3KGS50 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 13:57:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44875 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750939Ab3KGS5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 13:57:24 -0500
-Message-ID: <1383850597.2938.52.camel@localhost>
-Subject: Re: [PATCH v2] seccomp: not compatible with ARM OABI
-From: Eric Paris <eparis@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
+	id S1752792Ab3KGS7B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 13:59:01 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45127 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751861Ab3KGS66 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 13:58:58 -0500
+Date: Thu, 7 Nov 2013 18:58:06 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: Joerg Roedel <joro@8bytes.org>,
+        "moderated list:ARM SMMU DRIVER" 
 	<linux-arm-kernel@lists.infradead.org>,
-        libseccomp-discuss@lists.sourceforge.net,
-        Will Drewry <wad@chromium.org>, James Hogan <james.hogan@imgtec.com>
-Date: Thu, 07 Nov 2013 13:56:37 -0500
-In-Reply-To: <CAGXu5jJFv8Nkb89zq5029+35d9AwA4k1PRmP1VdY-LCCrJ4U6g@mail.gmail.com>
-References: <20131107174746.GA22344@www.outflux.net>
-	 <CALCETrXpzmw7qvDPxkW+y=_h5W+a+uyJp1xkz55oBXu9sC+t3A@mail.gmail.com>
-	 <CAGXu5jJFv8Nkb89zq5029+35d9AwA4k1PRmP1VdY-LCCrJ4U6g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        "open list:IOMMU DRIVERS" <iommu@lists.linux-foundation.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "tech@virtualopensystems.com" <tech@virtualopensystems.com>,
+        "agraf@suse.de" <agraf@suse.de>,
+        "B08248@freescale.com" <B08248@freescale.com>
+Subject: Re: [PATCH 2/2] ARM: SMMU: return NULL on error in
+ arm_smmu_iova_to_phys
+Message-ID: <20131107185806.GN13139@mudshark.cambridge.arm.com>
+References: <1381497887-14586-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1381497887-14586-2-git-send-email-a.motakis@virtualopensystems.com>
+ <20131014124837.GD10491@mudshark.cambridge.arm.com>
+ <CAG8rG2yE=xWmYP_bOy7=jzWEQKNkbgk-9_Jecnx_XXx=jC9i_Q@mail.gmail.com>
+ <20131014170948.GS10491@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131014170948.GS10491@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-11-07 at 10:39 -0800, Kees Cook wrote:
-> On Thu, Nov 7, 2013 at 10:16 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> > On Thu, Nov 7, 2013 at 9:47 AM, Kees Cook <keescook@chromium.org> wrote:
-> >> Make sure that seccomp filter won't be built when ARM OABI is in use,
-> >> since there is work needed to distinguish calling conventions. Until
-> >> that is done (which is likely never since OABI is deprecated), make
-> >> sure seccomp filter is unavailable in the OABI world.
-> >>
-> >> Signed-off-by: Kees Cook <keescook@chromium.org>
-> >> ---
-> >> v2:
-> >>  - toggle availability via HAVE_ARCH_SECCOMP_FILTER; James Hogan.
-> >> ---
-> >>  arch/arm/Kconfig |    7 ++++++-
-> >>  1 file changed, 6 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> >> index 0a1dc697333c..a0a8590f3609 100644
-> >> --- a/arch/arm/Kconfig
-> >> +++ b/arch/arm/Kconfig
-> >> @@ -23,7 +23,7 @@ config ARM
-> >>         select HARDIRQS_SW_RESEND
-> >>         select HAVE_ARCH_JUMP_LABEL if !XIP_KERNEL
-> >>         select HAVE_ARCH_KGDB
-> >> -       select HAVE_ARCH_SECCOMP_FILTER
-> >> +       select HAVE_ARCH_SECCOMP_FILTER if (AEABI && !OABI_COMPAT)
-> >>         select HAVE_ARCH_TRACEHOOK
-> >>         select HAVE_BPF_JIT
-> >>         select HAVE_CONTEXT_TRACKING
-> >> @@ -1735,6 +1735,11 @@ config OABI_COMPAT
-> >>           in memory differs between the legacy ABI and the new ARM EABI
-> >>           (only for non "thumb" binaries). This option adds a tiny
-> >>           overhead to all syscalls and produces a slightly larger kernel.
-> >> +
-> >> +         The seccomp filter system will not be available when this is
-> >> +         selected, since there is no way yet to sensibly distinguish
-> >> +         between calling conventions during filtering.
-> >> +
-> >>           If you know you'll be using only pure EABI user space then you
-> >>           can say N here. If this option is not selected and you attempt
-> >>           to execute a legacy ABI binary then the result will be
-> >> --
-> >> 1.7.9.5
-> >>
-> >>
-> >
-> > FWIW, OABI-only (i.e. !AEABI, as opposed to OABI_COMPAT) is, in
-> > principle, supportable -- userspace would just have to know that, if
-> > build for OABI, the calling convention is different.
+On Mon, Oct 14, 2013 at 06:09:48PM +0100, Will Deacon wrote:
+> On Mon, Oct 14, 2013 at 04:17:51PM +0100, Antonios Motakis wrote:
+> > On Mon, Oct 14, 2013 at 2:48 PM, Will Deacon <will.deacon@arm.com> wrote:
+> > > On Fri, Oct 11, 2013 at 02:24:47PM +0100, Antonios Motakis wrote:
+> > VFIO will exercise this code path every time when mapping DMA memory.
+> > This is normal and VFIO *expects* the function to fail - it is only if
+> > the function succeeds that VFIO needs to back down from the DMA
+> > mapping and fail.
+> > 
+> > This means that there would be a warning every time a VFIO user maps
+> > some memory for DMA use, even though nothing went wrong.
 > 
-> Right -- I opted for enforcing seccomp-on-ARM-means-EABI.
-> 
-> > I doubt this is worth supporting, though, and, if no one complains
-> > about your patch for a couple releases, then that would mean we could
-> > get away with adding AUDIT_ARCH_ARM_OABI or something (maybe for
-> > seccomp only) if needed.
+> Ok, in which case it might be worth reworking arm_smmu_iova_to_phys to treat
+> {pgd,pud,pmd,pte}_none different from {pgd,pud,pmd,pte}_bad.
 
-Audit already has: (ARM && AEABI && !OABI_COMPAT)  adding
-AUDIT_ARCH_ARM_OABI means we could support it and no worries about ABI
-breakage.
+Just an FYI, but I realised the page table locking is broken in my driver
+(hold a spinlock over a non-atomic allocation; looks like the exynos guys do
+this too), so I've just reworked a bunch of iova_to_phys and incorporated this
+change as part of that.
 
-Isn't x32 similarly screwy?  Does it work because the syscall numbers
-are different?
+Cheers,
 
--Eric
-
-
+Will
