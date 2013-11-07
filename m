@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab3KGKHF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 05:07:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8373 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751121Ab3KGKHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 05:07:00 -0500
-Date: Thu, 7 Nov 2013 11:06:19 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 0/2] perf record: mmap output file - v3
-Message-ID: <20131107100619.GB1251@krava.brq.redhat.com>
-References: <1383589905-10208-1-git-send-email-jolsa@redhat.com>
- <527A81B8.7040505@gmail.com>
+	id S1752905Ab3KGKMP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 05:12:15 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:5346 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859Ab3KGKML (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 05:12:11 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 07 Nov 2013 02:11:04 -0800
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tomasz Figa <t.figa@samsung.com>
+CC: Olof Johansson <olof@lixom.net>, Dave Martin <Dave.Martin@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v10 0/7] ARM: support for Trusted Foundations secure monitor
+Date: Thu, 7 Nov 2013 19:11:39 +0900
+Message-ID: <1383819106-1400-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.4.2
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <527A81B8.7040505@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 10:51:52AM -0700, David Ahern wrote:
-> On 11/4/13, 11:31 AM, Jiri Olsa wrote:
-> >hi,
-> >after discussion with David, sending his change
-> >updated into the new data file object.
-> >
-> >David's original post:
-> >   http://marc.info/?l=linux-kernel&m=138180575328977&w=2
-> >
-> >Here's the change:
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-> >   perf/mmap1
-> >
-> 
-> Not having any luck with these patches. Basic use case:
-> 
-> perf trace record -a -- sleep 5
-> perf trace --summary
-> 
-> With your patches I get a parse error. With my latest versions
-> everything works clean.
+Just a set of small fixes to address the concerns expressed on v9 with the
+non-prefixed version DT properties. I hope there won't be a need for an
+eleventh (!) version. :P
 
-hum, 
-perf trace --summary seems stuck in a loop, but that's no
-different from current acme's perf/core.
+Changelog from v9:
+- Renamed tl vendor prefix to tlm (for Trusted Logic Mobility)
+- Prefixed version properties with "tlm,"
+- Split the DT bindings patches as per new recommendations
 
-Anyway I'll postpone the change till your v3 goes in
-and go from there.
+Alexandre Courbot (7):
+  ARM: add basic support for Trusted Foundations
+  of: add vendor prefix for Trusted Logic Mobility
+  of: add Trusted Foundations bindings
+  ARM: tegra: add support for Trusted Foundations
+  ARM: tegra: split setting of CPU reset handler
+  ARM: tegra: set CPU reset handler with firmware op
+  ARM: tegra: support Trusted Foundations by default
 
-jirka
+ .../arm/firmware/tlm,trusted-foundations.txt       | 20 ++++++
+ Documentation/devicetree/bindings/arm/tegra.txt    |  5 ++
+ .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+ arch/arm/Kconfig                                   |  2 +
+ arch/arm/Makefile                                  |  1 +
+ arch/arm/configs/tegra_defconfig                   |  1 +
+ arch/arm/firmware/Kconfig                          | 28 ++++++++
+ arch/arm/firmware/Makefile                         |  1 +
+ arch/arm/firmware/trusted_foundations.c            | 81 ++++++++++++++++++++++
+ arch/arm/include/asm/trusted_foundations.h         | 67 ++++++++++++++++++
+ arch/arm/mach-tegra/Kconfig                        |  1 +
+ arch/arm/mach-tegra/common.c                       |  2 +
+ arch/arm/mach-tegra/reset.c                        | 40 ++++++++---
+ 13 files changed, 239 insertions(+), 11 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/firmware/tlm,trusted-foundations.txt
+ create mode 100644 arch/arm/firmware/Kconfig
+ create mode 100644 arch/arm/firmware/Makefile
+ create mode 100644 arch/arm/firmware/trusted_foundations.c
+ create mode 100644 arch/arm/include/asm/trusted_foundations.h
+
+-- 
+1.8.4.2
+
