@@ -1,200 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab3KGAxG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 19:53:06 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64968 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752823Ab3KGAxD (ORCPT
+	id S1753242Ab3KGAxx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 19:53:53 -0500
+Received: from mga02.intel.com ([134.134.136.20]:30356 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752856Ab3KGAxw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 19:53:03 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Archit Taneja <archit@ti.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: Async runtime put in __device_release_driver()
-Date: Thu, 07 Nov 2013 02:05:22 +0100
-Message-ID: <1492779.QFdev7puUr@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAGa+x84096yRRU4PvV4jte28_YtXXNECgtp8N6gm9-GT+BjRvw@mail.gmail.com>
-References: <Pine.LNX.4.44L0.1311061656450.1220-100000@iolanthe.rowland.org> <5303847.vEYmuQ7tHR@vostro.rjw.lan> <CAGa+x84096yRRU4PvV4jte28_YtXXNECgtp8N6gm9-GT+BjRvw@mail.gmail.com>
+	Wed, 6 Nov 2013 19:53:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,535,1378882800"; 
+   d="scan'208";a="404775954"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "tj@kernel.org" <tj@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] devres: Freeing the drs after all release() are called
+Thread-Topic: [PATCH] devres: Freeing the drs after all release() are called
+Thread-Index: AQHO21LjpGDSPvR9lU2EoHoV9k41NpoY71fg
+Date: Thu, 7 Nov 2013 00:53:47 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01B86713@SHSMSX101.ccr.corp.intel.com>
+References: <1383720018.3650.37.camel@cliu38-desktop-build>
+ <20131106085859.GB9487@kroah.com>
+ <27240C0AC20F114CBF8149A2696CBE4A01B86696@SHSMSX101.ccr.corp.intel.com>
+ <20131107002959.GA32200@mtj.dyndns.org>
+ <27240C0AC20F114CBF8149A2696CBE4A01B866C7@SHSMSX101.ccr.corp.intel.com>
+ <20131107004659.GA3312@core.coreip.homeip.net>
+In-Reply-To: <20131107004659.GA3312@core.coreip.homeip.net>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 06, 2013 04:21:48 PM Kevin Hilman wrote:
-> On Wed, Nov 6, 2013 at 4:16 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Wednesday, November 06, 2013 11:48:24 PM Ulf Hansson wrote:
-> >>
-> >> "Rafael J. Wysocki" <rjw@rjwysocki.net> skrev:
-> >> >On Wednesday, November 06, 2013 05:02:12 PM Alan Stern wrote:
-> >> >> On Wed, 6 Nov 2013, Rafael J. Wysocki wrote:
-> >> >>
-> >> >> > On Wednesday, November 06, 2013 09:51:42 AM Tomi Valkeinen wrote:
-> >> >> > > On 2013-11-05 23:29, Ulf Hansson wrote:
-> >> >> > > > On 23 October 2013 12:11, Tomi Valkeinen
-> >> ><tomi.valkeinen@ti.com> wrote:
-> >> >> > > >> Hi,
-> >> >> > > >>
-> >> >> > > >> I was debugging why clocks were left enabled after removing
-> >> >omapdss
-> >> >> > > >> driver, and I found this commit:
-> >> >> > > >>
-> >> >> > > >> fa180eb448fa263cf18dd930143b515d27d70d7b (PM / Runtime: Idle
-> >> >devices
-> >> >> > > >> asynchronously after probe|release)
-> >> >> > > >>
-> >> >> > > >> I don't understand how that is supposed to work.
-> >> >> > > >>
-> >> >> > > >> When a driver is removed, instead of using
-> >> >pm_runtime_put_sync() the
-> >> >> > > >> commit uses pm_runtime_put(), so the runtime_suspend call is
-> >> >queued. But
-> >> >> > > >> who is going to handle the queued suspend call, as the driver
-> >> >is already
-> >> >> > > >> removed? At least in my case, obviously nobody, as I only get
-> >> >> > > >> runtime_resume call in my driver, never the runtime_suspend.
-> >> >> > > >>
-> >> >> > > >> Is there something I need to add to my driver to make this
-> >> >work, or
-> >> >> > > >> should that part of the patch be reverted?
-> >> >> > > >
-> >> >> > > > I believe it is quite common that a device driver calls
-> >> >> > > > pm_runtime_get_sync as a part of it's remove callback, then it
-> >> >> > > > explicitly returns it's resources that has been fetched during
-> >> >probe.
-> >> >> > > > Like a clk_disable_unprepare for example.
-> >> >> > >
-> >> >> > > I guess you mean the driver calls pm_runtime_get_sync _and_
-> >> >> > > pm_runtime_put_sync as part of its remove callback?
-> >> >> > >
-> >> >> > > Probably bus drivers need to do that, but for memory mapped
-> >> >devices in a
-> >> >> > > SoC, I don't think there's normally any need to do
-> >> >> > > pm_runtime_get/put_sync during the remove callback.
-> >> >> > >
-> >> >> > > > The idea behind the change in __device_release_driver, was to
-> >> >try to
-> >> >> > > > prevent  devices from going active->idle->active and instead
-> >> >just
-> >> >> > > > remain active (if possible).
-> >> >> > > >
-> >> >> > > > In your case, which seems like a more modern way of
-> >> >implementing
-> >> >> > > > "remove", you shall call "pm_runtime_suspend" to make sure the
-> >> >> > > > runtime_suspend callbacks gets called.
-> >> >> > >
-> >> >> > > And as far as I understand, the change creates an explicit
-> >> >requirement
-> >> >> > > to do either pm_runtime_get/put_sync or pm_runtime_suspend inside
-> >> >> > > driver's remove callback. If so, that should be mentioned in big
-> >> >red
-> >> >> > > letters in the pm-runtime documentation.
-> >> >> > >
-> >> >> > > The runtime_pm.txt doc does mention something related to this
-> >> >(and btw,
-> >> >> > > the doc says pm_runtime_put_sync is being called, which is no
-> >> >longer
-> >> >> > > true), but nothing clear about how the driver remove callback
-> >> >must be
-> >> >> > > implemented.
-> >> >> >
-> >> >> > That's correct.
-> >> >> >
-> >> >> > > I tried grepping the kernel sources to find out if
-> >> >pm_runtime_suspend is
-> >> >> > > widely used to get SoC platform devices to suspend, but it
-> >> >doesn't seem
-> >> >> > > like it is. I didn't see pm_runtime_get/put_sync being used in
-> >> >remove
-> >> >> > > callbacks widely either, but that was more difficult one to grep.
-> >> >> >
-> >> >> > I think your observations are valid, which unfortunately means that
-> >> >we'll
-> >> >> > need to revert the commit in question, because it has changed the
-> >> >behavior
-> >> >> > that drivers are perfectly fine to expect given the existing
-> >> >documentation
-> >> >> > etc.  It looks like the change was premature at least.
-> >> >> >
-> >> >> > Greg, I wonder if you can queue up a revert of fa180eb448fa for
-> >> >3.13, or
-> >> >> > do you want me to do that?
-> >> >>
-> >> >> Would it be better to leave the runtime-idle callbacks (invoked
-> >> >during
-> >> >> probe) async and revert only the change to __device_release_driver()?
-> >> >>
-> >> >> Having an async callback after probe shouldn't cause problems,
-> >> >because
-> >> >> the driver will then be bound (assuming the probe succeeded).
-> >> >
-> >> >Right.  OK, I'll prepare a patch.
-> >>
-> >> That seems like a good way forward.
-> >
-> > There you go.
-> >
-> > ---
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Subject: PM / runtime: Use pm_runtime_put_sync() in __device_release_driver()
-> >
-> > Commit fa180eb448fa (PM / Runtime: Idle devices asynchronously after
-> > probe|release) modified __device_release_driver() to call
-> > pm_runtime_put(dev) instead of pm_runtime_put_sync(dev) before
-> > detaching the driver from the device.  However, that was a mistake,
-> > because pm_runtime_put(dev) causes rpm_idle() to be queued up and
-> > the driver may be gone already when that function is executed.
-> > That breaks the assumptions the drivers have the right to make
-> > about the core's behavior on the basis of the existing documentation
-> > and actually causes problems to happen, so revert that part of
-> > commit fa180eb448fa and restore the previous behavior of
-> > __device_release_driver().
-> >
-> > Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> > Fixes: fa180eb448fa (PM / Runtime: Idle devices asynchronously after probe|release)
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Cc: 3.10+ <stable@vger.kernel.org> # 3.10+
+
+
+> -----Original Message-----
+> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
+> Sent: Thursday, November 07, 2013 8:47 AM
+> To: Liu, Chuansheng
+> Cc: tj@kernel.org; Greg KH; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] devres: Freeing the drs after all release() are called
 > 
-> Acked-by: Kevin Hilman <khilman@linaro.org>
+> On Thu, Nov 07, 2013 at 12:36:56AM +0000, Liu, Chuansheng wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Tejun Heo [mailto:htejun@gmail.com] On Behalf Of tj@kernel.org
+> > > Sent: Thursday, November 07, 2013 8:30 AM
+> > > To: Liu, Chuansheng
+> > > Cc: Greg KH; dmitry.torokhov@gmail.com; linux-kernel@vger.kernel.org
+> > > Subject: Re: [PATCH] devres: Freeing the drs after all release() are called
+> > >
+> > > Hello, Liu.
+> > >
+> > > On Thu, Nov 07, 2013 at 12:27:56AM +0000, Liu, Chuansheng wrote:
+> > > > The driver code is as below:
+> > > > _INIT() {
+> > > >
+> > > > A = devm_kzalloc();
+> > > > B= devm_request_threaded_irq(isr_handler);
+> > > > C = devm_kzalloc();
+> > > > }
+> > > >
+> > > > When driver _EXIT, the devres_release_all () will be called.
+> > > > The C will be kfreed before B, but when freeing irq B, the pending
+> isr_handler()
+> > > possibly
+> > > > will access the memory B which has been freed.
+> > > > Then the memory corruption occurred.
+> > > >
+> > > > This patch can solve this scenario.
+> > >
+> > > Isn't the bug there IRQ being requested before all its resources are
+> > > allocated?  The proposed change just masks the underlying issue or
+> > > incorrectly ordered operations.
+> > Yes, I knew I can put the code always like below:
+> > A = devm_kzalloc();
+> > C = devm_kzalloc();
+> > ...
+> > B= devm_request_threaded_irq(isr_handler);
+> >
+> > But, the above is just one simple coding prototype, if there are many calling:
+> > E -- > F -- > D -- >... then to devm_kzalloc().
+> >
+> > To be honest, it will make code too hard to always adapt the rule?
+> > And I trying to find out every potential devm_kzalloc() before irq requesting.
 > 
-> I like this fix since I don't want to add any more requirements to drivers.
+> Such code is already broken anyway and has to be fixed - if your IRQ
+> handler accesses data allocated by devm_kzalloc that you call only
+> _after_ you called devm_request_irq() then interrupt arriving at
+> unfortunate moment will crash your driver at the probing stage.
 
-OK, I've queued this up for 3.13.
+Not exactly, request_irq() does not means the device irq is enabled indeed.
 
-Thanks!
+After using devres_release_all() to free the device resources, it hiddenly
+force all drivers probe() to put the request_irq() at the end of probe() function.
+Moreover, you can not call devres_alloc* again after probe()....
+Otherwise, there are potential memory corruption.
+
+And except for irq related, maybe there are other things.
+
+So I just feel this rule is too restricted?
 
 
-> > ---
-> >  drivers/base/dd.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > Index: linux-pm/drivers/base/dd.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/base/dd.c
-> > +++ linux-pm/drivers/base/dd.c
-> > @@ -499,7 +499,7 @@ static void __device_release_driver(stru
-> >                                                      BUS_NOTIFY_UNBIND_DRIVER,
-> >                                                      dev);
-> >
-> > -               pm_runtime_put(dev);
-> > +               pm_runtime_put_sync(dev);
-> >
-> >                 if (dev->bus && dev->bus->remove)
-> >                         dev->bus->remove(dev);
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
