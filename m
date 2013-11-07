@@ -1,40 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab3KGUhl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 15:37:41 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:54977 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336Ab3KGUhb (ORCPT
+	id S1753327Ab3KGUqz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 15:46:55 -0500
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:57899 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751010Ab3KGUqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 15:37:31 -0500
-Date: Thu, 07 Nov 2013 15:37:29 -0500 (EST)
-Message-Id: <20131107.153729.485901803954655270.davem@davemloft.net>
-To: jonas.jensen@gmail.com
-Cc: netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        f.fainelli@gmail.com, grant.likely@secretlab.ca
-Subject: Re: [PATCH v2] phy: Add MOXA MDIO driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1383666901-22354-1-git-send-email-jonas.jensen@gmail.com>
-References: <1383317673-14704-1-git-send-email-jonas.jensen@gmail.com>
-	<1383666901-22354-1-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 07 Nov 2013 12:37:31 -0800 (PST)
+	Thu, 7 Nov 2013 15:46:46 -0500
+Date: Thu, 7 Nov 2013 21:46:26 +0100
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
+Message-ID: <20131107204626.GA11746@breakpoint.cc>
+References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
+ <20131106190152.GA8662@breakpoint.cc>
+ <20131106193041.GA26796@roeck-us.net>
+ <20131106203821.GC8662@breakpoint.cc>
+ <20131106211754.GA29300@roeck-us.net>
+ <20131107192558.GA11453@breakpoint.cc>
+ <4F47D5F8-F3C7-45CA-9D88-2D814BDC1BC7@antoniou-consulting.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F47D5F8-F3C7-45CA-9D88-2D814BDC1BC7@antoniou-consulting.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonas Jensen <jonas.jensen@gmail.com>
-Date: Tue,  5 Nov 2013 16:55:01 +0100
+On 07.11.13, Pantelis Antoniou wrote:
+> Hi Sebastian,
+Hi Pantelis,
 
-> The MOXA UC-711X hardware(s) has an ethernet controller that seem
-> to be developed internally. The IC used is "RTL8201CP".
-> 
-> This patch adds an MDIO driver which handles the MII bus.
-> 
-> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+> FWIW DT has been ported to x86. And is present on arm/powerpc/mips/arc and possibly
+> others.
 
-Applied, thanks Jonas.
+Yes, I know. I am the one that did the work for CE4100, the first one
+that boots with DT on x86.
+
+> So what are we talking about again? If you care about the non-DT case, why
+> don't you make a patch about how you could support Guenter's use case on
+> the x86.
+
+I am only saying that this "hot-plug a device at a non hot-plugagle bus at
+runtime" is not limited to DT but this solution is. X86 + ACPI is not
+the only limitation. ARM is (forced) going to ACPI as well as far I
+know. And this solution is limited to DT. This is what I am pointing
+out.
+
+> His use case is not uncommon, believe it or not, and x86 would benefit from
+> something this flexible.
+
+I *think* a more flexible solution would be something like bus_type which is
+exposed via configfs. It would be attached behind a certain device/bus where
+the "physical" hotplug interface is. The user would then be able to read the
+configuration based on whatever information he has and could then create
+devices he likes at runtime. This wouldn't depend much on the firmware that is
+used but would require a little more work I think.
+
+> Regards
+> 
+> -- Pantelis
+
+Sebastian
