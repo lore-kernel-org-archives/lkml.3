@@ -1,131 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab3KGUzx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 15:55:53 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:39913 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010Ab3KGUzq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 15:55:46 -0500
+	id S1754426Ab3KGU7i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 15:59:38 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:51479 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751010Ab3KGU7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 15:59:31 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>, <paul@pwsan.com>
+CC: <rnayak@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH] ARM: OMAP2+: omap_device: maintain sane runtime pm status around suspend/resume
+Date: Thu, 7 Nov 2013 14:59:01 -0600
+Message-ID: <1383857942-23630-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <20131107193339.GB3129@localhost.localdomain>
-References: <1383844657-17487-1-git-send-email-ard.biesheuvel@linaro.org>
-	<1383844657-17487-3-git-send-email-ard.biesheuvel@linaro.org>
-	<20131107193339.GB3129@localhost.localdomain>
-Date: Thu, 7 Nov 2013 21:55:44 +0100
-Message-ID: <CAKv+Gu90zfrMfQKo2frX0hRWqjQNm0sw_dJpFdXZ+AWrbATz-Q@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/4] cpu: advertise CPU features over udev in a
- generic way
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Dave Martin <Dave.Martin@arm.com>
-Cc: "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 November 2013 20:33, Dave Martin <Dave.Martin@arm.com> wrote:
-> On Thu, Nov 07, 2013 at 06:17:35PM +0100, Ard Biesheuvel wrote:
->> This patch implements a generic modalias 'cpu:feature:...' which
->> enables CPU feature flag based module loading in a generic way.
->> All the arch needs to do is enable CONFIG_ARCH_HAS_CPU_AUTOPROBE
->> and export a u32 called 'cpu_features'. (What each bit actually
->> means is irrelevant on this level.)
+OMAP device hooks around suspend|resume_noirq ensures that hwmod
+devices are forced to idle using omap_device_idle/enable as part of
+the last stage of suspend activity.
 
-[ ... ]
+For a device such as i2c who uses autosuspend, it is possible to enter
+the suspend path with dev->power.runtime_status = RPM_ACTIVE.
 
-> Why is this __weak?  Surely CONFIG_ARCH_HAS_CPU_AUTOPROBE=y makes no
-> sense if the arch code does not define either cpu_features or
-> arch_print_cpu_modalias()?  The build should be made to fail in that
-> case...
->
+As part of the suspend flow, the generic runtime logic would increment
+it's dev->power.disable_depth to 1. This should prevent further
+pm_runtime_get_sync from succeeding once the runtime_status has been
+set to RPM_SUSPENDED.
 
-If you define the latter but not the former, you will still get a link
-error. But indeed, getting this stuff right is the main point of this
-RFC series.
-Just putting a '#define arch_print_cpu_modalias
-arch_print_cpu_modalias' in the right place and testing for it here is
-indeed a lot better.
+Now, as part of the suspend_noirq handler in omap_device, we force the
+following: if the device status is !suspended, we force the device
+to idle using omap_device_idle (clocks are cut etc..). This ensures
+that from a hardware perspective, the device is "suspended". However,
+runtime_status is left to be active.
 
->> +     ssize_t n;
->> +     int i;
->> +     u32 f;
->> +
->> +     /*
->> +      * With 32 features maximum (taking 3 bytes each to print), we don't
->> +      * need to worry about overrunning the PAGE_SIZE sized buffer.
->> +      */
->> +     n = sprintf(buf, "cpu:feature:");
->> +     for (f = cpu_features, i = 0; f; f >>= 1, i++)
->> +             if (f & 1)
->> +                     n += sprintf(&buf[n], ",%02X", i);
->
-> Why can't this overflow buf?
->
+*if* an operation is attempted after this point to
+pm_runtime_get_sync, runtime framework depends on runtime_status to
+indicate accurately the device status, and since it sees it to be
+ACTIVE, it assumes the module is functional and returns a non-error
+value. As a result the user will see pm_runtime_get succeed, however a
+register access will crash due to the lack of clocks.
 
-Because there are only so many bits you can shift out of a u32 before
-it becomes zero.
+To prevent this from happening, we should ensure that runtime_status
+exactly indicates the device status. As a result of this change
+any further calls to pm_runtime_get* would return -EACCES (since
+disable_depth is 1). On resume, we restore the clocks and runtime
+status exactly as we suspended with.
 
-> modalias matching is pretty much based on string matching, so I wonder
-> whether we could use the human-readable feature strings instead.
-> Those are already a stable ABI.  Relying on numbers unnecessarily
-> encrypts the udev/modprobe config.
->
+Reported-by: J Keerthy <j-keerthy@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Acked-by: Rajendra Nayak <rnayak@ti.com>
+---
+patch baseline: V3.12 tag (also applies on linux-next next-20131107 tag)
 
-Introducing symbolic names would add an arch specific dependency to
-the host tool that is used to generate the .ko metadata from the
-custom ELF sections. This being a port of a similar feature on x86,
-the comments in scripts/mod/file2alias.c were helpful in figuring out
-that that was deemed too complicated at the time. And we don't resolve
-PCI or USB VIDs to vendor names either, as this is just module
-metadata for machine matching.
+Logs from 3.12 based vendor kernel:
+Before: http://pastebin.com/m5KxnB7a
+After: http://pastebin.com/8AfX4e7r
 
-> Otherwise, "%02X" seems to place an arbitrary limit of 256 features.
-> I'm not sure that padding these numbers to a particular width is
-> advantageous for the parser.
->
+The discussion on cpufreq side of the story which triggered this scenario:
+	http://marc.info/?l=linux-pm&m=138263811321921&w=2
 
-Using a u32 already brings it down to 32, but it is sufficient for now
-and I think changing it later if necessary should be doable.
+Tested on TI vendor kernel (with dt boot):
+	AM335x: evm, BBB, sk, BBW
+	OMAP5uEVM, DRA7-evm
 
->> +     buf[n++] = '\n';
->> +     return n;
->> +}
->> +
->> +ssize_t __attribute__((weak, alias("print_cpu_modalias")))
->> +arch_print_cpu_modalias(struct device *, struct device_attribute *, char *);
->> +
->
-> If an implementation of arch_print_cpu_modalias() is linked with this,
-> won't that result in the print_cpu_modalias() defined here just being
-> included as dead code?
->
-> i.e., we knowingly link into the kernel some code that the build-time
-> configuration tells us is dead.
->
+ arch/arm/mach-omap2/omap_device.c |   16 ++++++++++++++--
+ arch/arm/mach-omap2/omap_device.h |    1 +
+ 2 files changed, 15 insertions(+), 2 deletions(-)
 
-Absolutely true. See the above.
-
-> Maybe I'm misunderstanding things here, but I think this weak-symbol
-> stuff is mainly useful when shipping a binary blob in which people can
-> override certain symbols at link time.
->
-> We build vmlinux in one go, so I'm not sure that's appropriate here (?)
->
-
-I agree, and (as I pointed out in my cover letter) I was prepared for
-people perhaps having problems with that.
-But yes, it seems just #defining arch_print_cpu_modalias in the
-appropriate place and #ifndef'ing on it seems much bettter.
-
+diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+index b69dd9a..87ecbb0 100644
+--- a/arch/arm/mach-omap2/omap_device.c
++++ b/arch/arm/mach-omap2/omap_device.c
+@@ -621,6 +621,13 @@ static int _od_suspend_noirq(struct device *dev)
+ 
+ 	if (!ret && !pm_runtime_status_suspended(dev)) {
+ 		if (pm_generic_runtime_suspend(dev) == 0) {
++			if (!pm_runtime_suspended(dev)) {
++				/* NOTE: *might* indicate driver race */
++				dev_dbg(dev, "%s: Force suspending\n",
++					__func__);
++				pm_runtime_set_suspended(dev);
++				od->flags |= OMAP_DEVICE_SUSPEND_FORCED;
++			}
+ 			omap_device_idle(pdev);
+ 			od->flags |= OMAP_DEVICE_SUSPENDED;
+ 		}
+@@ -634,10 +641,15 @@ static int _od_resume_noirq(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct omap_device *od = to_omap_device(pdev);
+ 
+-	if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
+-	    !pm_runtime_status_suspended(dev)) {
++	if (od->flags & OMAP_DEVICE_SUSPENDED) {
+ 		od->flags &= ~OMAP_DEVICE_SUSPENDED;
+ 		omap_device_enable(pdev);
++
++		if (od->flags & OMAP_DEVICE_SUSPEND_FORCED) {
++			pm_runtime_set_active(dev);
++			od->flags &= ~OMAP_DEVICE_SUSPEND_FORCED;
++		}
++
+ 		pm_generic_runtime_resume(dev);
+ 	}
+ 
+diff --git a/arch/arm/mach-omap2/omap_device.h b/arch/arm/mach-omap2/omap_device.h
+index 17ca1ae..45885b0 100644
+--- a/arch/arm/mach-omap2/omap_device.h
++++ b/arch/arm/mach-omap2/omap_device.h
+@@ -38,6 +38,7 @@ extern struct dev_pm_domain omap_device_pm_domain;
+ 
+ /* omap_device.flags values */
+ #define OMAP_DEVICE_SUSPENDED		BIT(0)
++#define OMAP_DEVICE_SUSPEND_FORCED	BIT(1)
+ 
+ /**
+  * struct omap_device - omap_device wrapper for platform_devices
 -- 
-Ard.
+1.7.9.5
+
