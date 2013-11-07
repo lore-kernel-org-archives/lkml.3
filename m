@@ -1,273 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab3KGQpP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 11:45:15 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:58443 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739Ab3KGQpK (ORCPT
+	id S1753812Ab3KGRAR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 12:00:17 -0500
+Received: from a14-6.smtp-out.amazonses.com ([54.240.14.6]:54044 "EHLO
+	a14-6.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751759Ab3KGRAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 11:45:10 -0500
-Message-ID: <527BC380.4070300@infradead.org>
-Date: Thu, 07 Nov 2013 08:44:48 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 7 Nov 2013 12:00:12 -0500
+X-Greylist: delayed 1019 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Nov 2013 12:00:12 EST
+Date: Thu, 7 Nov 2013 16:43:11 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: [PATCH] kmod: Run usermodehelpers only on cpus allowed for kthreadd
+ V2
+In-Reply-To: <20131017122344.39d55db97c3923131bdf2831@linux-foundation.org>
+Message-ID: <0000014233722db9-cc00d0af-a5fa-4090-83bd-73c87377b892-000000@email.amazonses.com>
+References: <00000141c1b99b20-64f9d142-961a-447e-8ebe-40f86b638278-000000@email.amazonses.com> <20131016141326.2e517e18e4d8af880c97a282@linux-foundation.org> <00000141c36b03b6-2f9bd3de-d153-4359-901f-084aeb4c040d-000000@email.amazonses.com>
+ <20131017122344.39d55db97c3923131bdf2831@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Juri Lelli <juri.lelli@gmail.com>, peterz@infradead.org,
-        tglx@linutronix.de
-CC: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com
-Subject: Re: [PATCH 14/14] sched: add sched_dl documentation.
-References: <1383832027-15666-1-git-send-email-juri.lelli@gmail.com>
-In-Reply-To: <1383832027-15666-1-git-send-email-juri.lelli@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.11.07-54.240.14.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+usermodehelper() threads can currently run on all processors.
+This is an issue for low latency cores. Spawnig a new thread causes
+cpu holdoffs in the range of hundreds of microseconds to a few
+milliseconds. Not good for cores on which processes run that need
+to react as fast as possible.
 
-Just a few minor edits...
+kthreadd threads can be restricted using taskset to a limited set
+of processors. Then the kernel thread pool will not fork processes
+on those anymore thereby protecting those processors from additional
+latencies.
 
+Make usermodehelper() threads obey the limitations that kthreadd is
+restricted to. Kthreadd is not the parent of usermodehelper threads
+so we need to explicitly get the allowed processors for kthreadd.
 
-On 11/07/13 05:47, Juri Lelli wrote:
-> From: Dario Faggioli <raistlin@linux.it>
-> 
-> Add in Documentation/scheduler/ some hints about the design
-> choices, the usage and the future possible developments of the
-> sched_dl scheduling class and of the SCHED_DEADLINE policy.
-> 
-> Signed-off-by: Dario Faggioli <raistlin@linux.it>
-> Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
-> ---
->  Documentation/scheduler/sched-deadline.txt |  196 ++++++++++++++++++++++++++++
->  kernel/sched/deadline.c                    |    3 +-
->  2 files changed, 198 insertions(+), 1 deletion(-)
->  create mode 100644 Documentation/scheduler/sched-deadline.txt
-> 
-> diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
-> new file mode 100644
-> index 0000000..4d1ed52
-> --- /dev/null
-> +++ b/Documentation/scheduler/sched-deadline.txt
-> @@ -0,0 +1,196 @@
-> +			  Deadline Task Scheduling
-> +			  ------------------------
-> +
-> +CONTENTS
-> +========
-> +
-> +0. WARNING
-> +1. Overview
-> +2. Task scheduling
-> +2. The Interface
-> +3. Bandwidth management
-> +  3.1 System-wide settings
-> +  3.2 Task interface
-> +  3.4 Default behavior
-> +4. Tasks CPU affinity
-> +  4.1 SCHED_DEADLINE and cpusets HOWTO
-> +5. Future plans
-> +
-> +
-> +0. WARNING
-> +==========
-> +
-> + Fiddling with these settings can result in an unpredictable or even unstable
-> + system behavior. As for -rt (group) scheduling, it is assumed that root users
-> + know what they're doing.
-> +
-> +
-> +1. Overview
-> +===========
-> +
-> + The SCHED_DEADLINE policy contained inside the sched_dl scheduling class is
-> + basically an implementation of the Earliest Deadline First (EDF) scheduling
-> + algorithm, augmented with a mechanism (called Constant Bandwidth Server, CBS)
-> + that makes it possible to isolate the behavior of tasks between each other.
-> +
-> +
-> +2. Task scheduling
-> +==================
-> +
-> + The typical -deadline task is composed of a computation phase (instance)
-> + which is activated on a periodic or sporadic fashion. The expected (maximum)
-> + duration of such computation is called the task's runtime; the time interval
-> + by which each instance needs to be completed is called the task's relative
-> + deadline. The task's absolute deadline is dynamically calculated as the
-> + time instant a task (or, more properly) activates plus the relative
-> + deadline.
-> +
-> + The EDF[1] algorithm selects the task with the smallest absolute deadline as
-> + the one to be executed first, while the CBS[2,3] ensures that each task runs
-> + for at most its runtime every period, avoiding any interference between
-> + different tasks (bandwidth isolation).
-> + Thanks to this feature, also tasks that do not strictly comply with the
-> + computational model described above can effectively use the new policy.
-> + IOW, there are no limitations on what kind of task can exploit this new
-> + scheduling discipline, even if it must be said that it is particularly
-> + suited for periodic or sporadic tasks that need guarantees on their
-> + timing behavior, e.g., multimedia, streaming, control applications, etc.
-> +
-> + References:
-> +  1 - C. L. Liu and J. W. Layland. Scheduling algorithms for multiprogram-
-> +      ming in a hard-real-time environment. Journal of the Association for
-> +      Computing Machinery, 20(1), 1973.
-> +  2 - L. Abeni , G. Buttazzo. Integrating Multimedia Applications in Hard
-> +      Real-Time Systems. Proceedings of the 19th IEEE Real-time Systems
-> +      Symposium, 1998. http://retis.sssup.it/~giorgio/paps/1998/rtss98-cbs.pdf
-> +  3 - L. Abeni. Server Mechanisms for Multimedia Applications. ReTiS Lab
-> +      Technical Report. http://xoomer.virgilio.it/lucabe72/pubs/tr-98-01.ps
-> +
-> +3. Bandwidth management
-> +=======================
-> +
-> + In order for the -deadline scheduling to be effective and useful, it is
-> + important to have some method to keep the allocation of the available CPU
-> + bandwidth to the tasks under control.
-> + This is usually called "admission control" and if it is not performed at all,
-> + no guarantee can be given on the actual scheduling of the -deadline tasks.
-> +
-> + Since when RT-throttling has been introduced each task group has a bandwidth
-> + associated, calculated as a certain amount of runtime over a period.
-> + Moreover, to make it possible to manipulate such bandwidth, readable/writable
-> + controls have been added to both procfs (for system wide settings) and cgroupfs
-> + (for per-group settings).
-> + Therefore, the same interface is being used for controlling the bandwidth
-> + distrubution to -deadline tasks and task groups, i.e., new controls but with
-> + similar names, equivalent meaning and with the same usage paradigm are added.
-> +
-> + However, more discussion is needed in order to figure out how we want to manage
-> + SCHED_DEADLINE bandwidth at the task group level. Therefore, SCHED_DEADLINE
-> + uses (for now) a less sophisticated, but actually very sensible, mechanism to
-> + ensure that a certain utilization cap is not overcome per each root_domain.
-> +
-> + Another main difference between deadline bandwidth management and RT-throttling
-> + is that -deadline tasks have bandwidth on their own (while -rt ones don't!),
-> + and thus we don't need an higher level throttling mechanism to enforce the
-> + desired bandwidth.
-> +
-> +3.1 System wide settings
-> +------------------------
-> +
-> + The system wide settings are configured under the /proc virtual file system.
-> +
-> + The control knob that is added to the /proc virtual file system is
-> + /proc/sys/kernel/sched_dl_runtime_us. It accepts (if written) and provides (if
-> + read) the new runtime for each CPU in each root_domain. The period control knob
-> + is instead shared with -rt settings (/proc/sys/kernel/sched_rt_period_us). 
-> +
-> + The CPU bandwidth available to -deadline tasks is actually a sub-quota of
-> + the -rt bandwidth. By default 95% of system bandwidth is allocate to -rt tasks;
-> + among this, a 40% quota is reserved for -dl tasks. To have the actual quota a
+Before this patch there is no way to limit the cpus that usermodehelper
+can run on since the affinity is set when the thread is spawned to
+all processors.
 
-s/among/within/
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-> + simple multiplication is needed: .95 * .40 = .38 (38% of system bandwidth for
-> + deadline tasks).
-> +
-> + This means that, for a root_domain comprising M CPUs, -deadline tasks
-> + can be created until the sum of their bandwidths stay below:
+Index: linux/include/linux/kthread.h
+===================================================================
+--- linux.orig/include/linux/kthread.h	2013-11-07 10:31:46.667807582 -0600
++++ linux/include/linux/kthread.h	2013-11-07 10:31:46.663807693 -0600
+@@ -51,6 +51,7 @@ void kthread_parkme(void);
+ int kthreadd(void *unused);
+ extern struct task_struct *kthreadd_task;
+ extern int tsk_fork_get_node(struct task_struct *tsk);
++void set_kthreadd_affinity(void);
 
-                   while                             stays
+ /*
+  * Simple work processor based on kthread.
+Index: linux/kernel/kmod.c
+===================================================================
+--- linux.orig/kernel/kmod.c	2013-11-07 10:31:46.667807582 -0600
++++ linux/kernel/kmod.c	2013-11-07 10:35:28.825645008 -0600
+@@ -40,6 +40,7 @@
+ #include <linux/ptrace.h>
+ #include <linux/async.h>
+ #include <asm/uaccess.h>
++#include <linux/kthread.h>
 
-> +
-> +   M * (sched_dl_runtime_us * rt_bw)
-> +
-> + It is also possible to disable this bandwidth management logic, and
-> + be thus free of oversubscribing the system up to any arbitrary level.
-> + This is done by writing -1 in /proc/sys/kernel/sched_dl_runtime_us or
-> + in /proc/sys/kernel/sched_rt_runtime_us.
-> +
-> +
-> +3.2 Task interface
-> +------------------
-> +
-> + Specifying a periodic/sporadic task that executes for a given amount of
-> + runtime at each instance, and that is scheduled according to the urgency of
-> + its own timing constraints needs, in general, a way of declaring:
-> +  - a (maximum/typical) instance execution time,
-> +  - a minimum interval between consecutive instances,
-> +  - a time constraint by which each instance must be completed.
-> +
-> + Therefore:
-> +  * a new struct sched_param2, containing all the necessary fields is
-> +    provided;
-> +  * the new scheduling related syscalls that manipulate it, i.e.,
-> +    sched_setscheduler2(), sched_setparam2() and sched_getparam2()
-> +    are implemented.
-> +
-> +
-> +3.3 Default behavior
-> +---------------------
-> +
-> +The default value for SCHED_DEADLINE bandwidth is to have dl_runtime equal to
-> +40000. Being rt_period equal to 1000000, by default, it means that -deadline
+ #include <trace/events/module.h>
 
-          With rt_period equal to 1000000,
+@@ -209,8 +210,13 @@ static int ____call_usermodehelper(void
+ 	flush_signal_handlers(current, 1);
+ 	spin_unlock_irq(&current->sighand->siglock);
 
-> +tasks can use at most 40%, multiplied by the number of CPUs that compose the
-> +root_domain, for each root_domain.
-> +
-> +A -deadline task cannot fork.
-> +
-> +4. Tasks CPU affinity
-> +=====================
-> +
-> +-deadline tasks cannot have an affinity mask smaller that the entire
-> +root_domain they are created on. However, affinities can be specified
-> +through the cpuset facility (Documentation/cgroups/cpusets.txt).
-> +
-> +4.1 SCHED_DEADLINE and cpusets HOWTO
-> +------------------------------------
-> +
-> +An example of a simple configuration (pin a -deadline task to CPU0)
-> +follows (rt-app is used to create a -deadline task).
-> +
-> +mkdir /dev/cpuset
-> +mount -t cgroup -o cpuset cpuset /dev/cpuset
-> +cd /dev/cpuset
-> +mkdir cpu0
-> +echo 0 > cpu0/cpuset.cpus
-> +echo 0 > cpu0/cpuset.mems
-> +echo 1 > cpuset.cpu_exclusive
-> +echo 0 > cpuset.sched_load_balance
-> +echo 1 > cpu0/cpuset.cpu_exclusive
-> +echo 1 > cpu0/cpuset.mem_exclusive
-> +echo $$ > cpu0/tasks
-> +rt-app -t 100000:10000:d:0 -D5 (it is now actually superfluous to specify
-> +task affinity)
-> +
-> +5. Future plans
-> +===============
-> +
-> +Still missing:
-> +
-> + - refinements to deadline inheritance, especially regarding the possibility
-> +   of retaining bandwidth isolation among non-interacting tasks. This is
-> +   being studied from both theoretical and practical point of views, and
+-	/* We can run anywhere, unlike our parent keventd(). */
+-	set_cpus_allowed_ptr(current, cpu_all_mask);
++	/*
++	 * Kthreadd can be restricted to a set of processors if the user wants to
++	 * protect other processors from OS latencies. If that has happened then
++	 * we do not want to disturb the other processors here either so we start
++	 * the usermode helper threads only on the processors allowed for kthreadd.
++	 */
++	set_kthreadd_affinity();
 
-                                                        points of view,
+ 	/*
+ 	 * Our parent is keventd, which runs with elevated scheduling priority.
+Index: linux/kernel/kthread.c
+===================================================================
+--- linux.orig/kernel/kthread.c	2013-11-07 10:31:46.667807582 -0600
++++ linux/kernel/kthread.c	2013-11-07 10:31:46.667807582 -0600
+@@ -136,6 +136,15 @@ void *kthread_data(struct task_struct *t
+ 	return to_kthread(task)->data;
+ }
 
-> +   hopefully we should be able to produce some demonstrative code soon;
-> + - (c)group based bandwidth management, and maybe scheduling;
-> + - access control for non-root users (and related security concerns to
-> +   address), which is the best way to allow unprivileged use of the mechanisms
-> +   and how to prevent non-root users "cheat" the system?
-> +
-> +As already discussed, we are planning also to merge this work with the EDF
-> +throttling patches [https://lkml.org/lkml/2010/2/23/239] but we still are in
-> +the preliminary phases of the merge and we really seek feedback that would
-> +help us decide on the direction it should take.
-
-
--- 
-~Randy
++/*
++ * Set the affinity of the calling task to be the same
++ * as the kthreadd affinities.
++ */
++void set_kthreadd_affinity(void)
++{
++	set_cpus_allowed(current, kthreadd_task->cpus_allowed);
++}
++
+ /**
+  * probe_kthread_data - speculative version of kthread_data()
+  * @task: possible kthread task in question
