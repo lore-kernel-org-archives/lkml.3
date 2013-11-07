@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab3KGRM1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 12:12:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15429 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751405Ab3KGRMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 12:12:24 -0500
-Message-ID: <527BC98B.5060701@redhat.com>
-Date: Thu, 07 Nov 2013 12:10:35 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1753251Ab3KGRQC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 12:16:02 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:61513 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab3KGRP7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 12:15:59 -0500
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg KH <gregkh@linuxfoundation.org>, Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, lliubbo@gmail.com,
-        jmarchan@redhat.com, mgorman@suse.de, hughd@google.com,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: zsmalloc: Ensure handle is never 0 on success
-References: <20131107070451.GA10645@bbox>
-In-Reply-To: <20131107070451.GA10645@bbox>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1383748818-22487-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1383748818-22487-1-git-send-email-ricardo.ribalda@gmail.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Thu, 7 Nov 2013 22:45:38 +0530
+Message-ID: <CA+V-a8t6GDkmutbc0cL0Xqi4iwr-29sg9c09vsXqafeBNjA4mw@mail.gmail.com>
+Subject: Re: [PATCH v2] ths7303: Declare as static a private function
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        "open list:MEDIA INPUT INFRA..." <linux-media@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2013 02:04 AM, Minchan Kim wrote:
+Hi Ricardo,
 
-> I'm guilty and I have been busy by other stuff. Sorry for that.
-> Fortunately, I discussed this issue with Hugh in this Linuxcon for a
-> long time(Thanks Hugh!) he felt zram's block device abstraction is
-> better design rather than frontswap backend stuff although it's a question
-> where we put zsmalloc. I will CC Hugh because many of things is related
-> to swap subsystem and his opinion is really important.
-> And I discussed it with Rik and he feel positive about zram.
+Thanks for the patch.
 
-To clarify that, I agree with Minchan that there are certain
-workloads where zram is probably more appropriate than zswap.
+On Wed, Nov 6, 2013 at 8:10 PM, Ricardo Ribalda Delgado
+<ricardo.ribalda@gmail.com> wrote:
+> git grep shows that the function is only called from ths7303.c
+>
+> Fix this build warning:
+>
+> CC      drivers/media/i2c/ths7303.o
+> drivers/media/i2c/ths7303.c:86:5: warning: no previous prototype for  ‘ths7303_setval’ [-Wmissing-prototypes]
+>    int ths7303_setval(struct v4l2_subdev *sd, enum ths7303_filter_mode mode)
+>         ^
+>
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-For most of the workloads that I am interested in, zswap will
-be more interesting, but zram seems to have its own niche, and
-I certainly do not want to hold back the embedded folks...
+Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
+Regards,
+--Prabhakar Lad
