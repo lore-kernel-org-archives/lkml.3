@@ -1,66 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab3KGWvD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 17:51:03 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46350 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754793Ab3KGWuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755748Ab3KGWvP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 17:51:15 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:57602 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754776Ab3KGWuy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Nov 2013 17:50:54 -0500
-Message-ID: <527C1911.9030900@zytor.com>
-Date: Thu, 07 Nov 2013 14:49:53 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Andi Kleen <ak@linux.intel.com>
-CC: x86@kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+Date: Thu, 7 Nov 2013 23:50:51 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        gregkh@linuxfoundation.org, Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, tglx@linutronix.de,
-        Ingo Molnar <mingo@kernel.org>, Steve Capper <steve.capper@linaro.org>
-Subject: Re: [RFC PATCH 0/4] wire up CPU features to udev based module loading
-References: <1383844657-17487-1-git-send-email-ard.biesheuvel@linaro.org>	<527C0195.50008@zytor.com>	<20131107213944.GJ1962@tassilo.jf.intel.com> <CAKv+Gu9W-Pu4DGgB-85A3D4Ps9_FLSQgyK3EM7=k7KE1=xsnwg@mail.gmail.com>
-In-Reply-To: <CAKv+Gu9W-Pu4DGgB-85A3D4Ps9_FLSQgyK3EM7=k7KE1=xsnwg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [PATCH] kmod: Run usermodehelpers only on cpus allowed for
+ kthreadd V2
+Message-ID: <20131107225049.GC28130@localhost.localdomain>
+References: <00000141c1b99b20-64f9d142-961a-447e-8ebe-40f86b638278-000000@email.amazonses.com>
+ <20131016141326.2e517e18e4d8af880c97a282@linux-foundation.org>
+ <00000141c36b03b6-2f9bd3de-d153-4359-901f-084aeb4c040d-000000@email.amazonses.com>
+ <20131017122344.39d55db97c3923131bdf2831@linux-foundation.org>
+ <0000014233722db9-cc00d0af-a5fa-4090-83bd-73c87377b892-000000@email.amazonses.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0000014233722db9-cc00d0af-a5fa-4090-83bd-73c87377b892-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2013 02:15 PM, Ard Biesheuvel wrote:
+On Thu, Nov 07, 2013 at 04:43:11PM +0000, Christoph Lameter wrote:
+> usermodehelper() threads can currently run on all processors.
+> This is an issue for low latency cores. Spawnig a new thread causes
+> cpu holdoffs in the range of hundreds of microseconds to a few
+> milliseconds. Not good for cores on which processes run that need
+> to react as fast as possible.
 > 
-> That would involve repurposing/generalizing a bit more of the existing
-> x86-only code than I did the first time around, but if you (as x86
-> maintainers) are happy with that, I'm all for it.
+> kthreadd threads can be restricted using taskset to a limited set
+> of processors. Then the kernel thread pool will not fork processes
+> on those anymore thereby protecting those processors from additional
+> latencies.
 > 
-> I do have a couple of questions then
-> - the module aliases host tool has no arch specific dependencies at
-> all except having x86cpu as one of the entries: would you mind
-> dropping the x86 prefix there? Or rather add dependencies on $ARCH?
-> (If we drop it there, we basically end up with 'cpu:' everywhere)
+> Make usermodehelper() threads obey the limitations that kthreadd is
+> restricted to. Kthreadd is not the parent of usermodehelper threads
+> so we need to explicitly get the allowed processors for kthreadd.
+> 
+> Before this patch there is no way to limit the cpus that usermodehelper
+> can run on since the affinity is set when the thread is spawned to
+> all processors.
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> Index: linux/include/linux/kthread.h
+> ===================================================================
+> --- linux.orig/include/linux/kthread.h	2013-11-07 10:31:46.667807582 -0600
+> +++ linux/include/linux/kthread.h	2013-11-07 10:31:46.663807693 -0600
+> @@ -51,6 +51,7 @@ void kthread_parkme(void);
+>  int kthreadd(void *unused);
+>  extern struct task_struct *kthreadd_task;
+>  extern int tsk_fork_get_node(struct task_struct *tsk);
+> +void set_kthreadd_affinity(void);
+> 
+>  /*
+>   * Simple work processor based on kthread.
+> Index: linux/kernel/kmod.c
+> ===================================================================
+> --- linux.orig/kernel/kmod.c	2013-11-07 10:31:46.667807582 -0600
+> +++ linux/kernel/kmod.c	2013-11-07 10:35:28.825645008 -0600
+> @@ -40,6 +40,7 @@
+>  #include <linux/ptrace.h>
+>  #include <linux/async.h>
+>  #include <asm/uaccess.h>
+> +#include <linux/kthread.h>
+> 
+>  #include <trace/events/module.h>
+> 
+> @@ -209,8 +210,13 @@ static int ____call_usermodehelper(void
+>  	flush_signal_handlers(current, 1);
+>  	spin_unlock_irq(&current->sighand->siglock);
+> 
+> -	/* We can run anywhere, unlike our parent keventd(). */
+> -	set_cpus_allowed_ptr(current, cpu_all_mask);
+> +	/*
+> +	 * Kthreadd can be restricted to a set of processors if the user wants to
+> +	 * protect other processors from OS latencies. If that has happened then
+> +	 * we do not want to disturb the other processors here either so we start
+> +	 * the usermode helper threads only on the processors allowed for kthreadd.
+> +	 */
+> +	set_kthreadd_affinity();
 
-I think it makes sense to indicate what kind of CPU the string refers
-to, as the top-level indicator of what is going on.  This might be
-possible to macroize the generation of this prefix, though.
+I'm sorry to burden again on this but this looks too odd.
 
-> - in the vendor/family/model case, it may be preferable to drop these
-> fields entirely from certain modules' aliases if they match on 'any'
-> (provided that the module tools permit this) rather than add
-> architecture, variant, revision, etc  fields for all architectures if
-> they can only ever match on one
+usermodehelper works are created via workqueues, right? And workqueues are an issue as
+well for those who want CPU isolation.
 
-I think that can be CPU dependent.
+So this looks like a more general problem than just call_usermodehelper.
 
-> - some of the X86_ macros would probable be redefined in terms of the
-> generic macros rather than the other way around, which would result in
-> some changes under arch/x86 as well, is that acceptable for you?
+Last time I checked, it seemed to me that this is an unbound workqueue? If so can't we tune
+the affinity of this workqueue? If not perhaps that's something we want to solve and which
+could be useful for all the users who don't want their CPU to be disturbed.
 
-If you are talking about X86_FEATURE_* then almost certainly no,
-although I'm willing to listen to what you have in mind.
-
-	-hpa
-
-
+Thanks.
