@@ -1,96 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752251Ab3KGSjD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 13:39:03 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:61062 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab3KGSjB (ORCPT
+	id S1752006Ab3KGSnj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 13:43:39 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:63821 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750964Ab3KGSnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 13:39:01 -0500
+	Thu, 7 Nov 2013 13:43:35 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Kevin Hilman <khilman@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Archit Taneja <archit@ti.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: Async runtime put in __device_release_driver()
+Date: Thu, 07 Nov 2013 19:55:55 +0100
+Message-ID: <2120140.KNmcSko2m0@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAPDyKFoZTMKEcGRLAgR8y1=_iuocrwgXJDADhMgK_MeZAnAuPg@mail.gmail.com>
+References: <Pine.LNX.4.44L0.1311061656450.1220-100000@iolanthe.rowland.org> <1492779.QFdev7puUr@vostro.rjw.lan> <CAPDyKFoZTMKEcGRLAgR8y1=_iuocrwgXJDADhMgK_MeZAnAuPg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXpzmw7qvDPxkW+y=_h5W+a+uyJp1xkz55oBXu9sC+t3A@mail.gmail.com>
-References: <20131107174746.GA22344@www.outflux.net>
-	<CALCETrXpzmw7qvDPxkW+y=_h5W+a+uyJp1xkz55oBXu9sC+t3A@mail.gmail.com>
-Date: Thu, 7 Nov 2013 10:39:00 -0800
-X-Google-Sender-Auth: 8iglGmHqLNmFhoj97l2Ucy2az5Y
-Message-ID: <CAGXu5jJFv8Nkb89zq5029+35d9AwA4k1PRmP1VdY-LCCrJ4U6g@mail.gmail.com>
-Subject: Re: [PATCH v2] seccomp: not compatible with ARM OABI
-From: Kees Cook <keescook@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Eric Paris <eparis@redhat.com>,
-        libseccomp-discuss@lists.sourceforge.net,
-        Will Drewry <wad@chromium.org>, James Hogan <james.hogan@imgtec.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 7, 2013 at 10:16 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Thu, Nov 7, 2013 at 9:47 AM, Kees Cook <keescook@chromium.org> wrote:
->> Make sure that seccomp filter won't be built when ARM OABI is in use,
->> since there is work needed to distinguish calling conventions. Until
->> that is done (which is likely never since OABI is deprecated), make
->> sure seccomp filter is unavailable in the OABI world.
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->> v2:
->>  - toggle availability via HAVE_ARCH_SECCOMP_FILTER; James Hogan.
->> ---
->>  arch/arm/Kconfig |    7 ++++++-
->>  1 file changed, 6 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
->> index 0a1dc697333c..a0a8590f3609 100644
->> --- a/arch/arm/Kconfig
->> +++ b/arch/arm/Kconfig
->> @@ -23,7 +23,7 @@ config ARM
->>         select HARDIRQS_SW_RESEND
->>         select HAVE_ARCH_JUMP_LABEL if !XIP_KERNEL
->>         select HAVE_ARCH_KGDB
->> -       select HAVE_ARCH_SECCOMP_FILTER
->> +       select HAVE_ARCH_SECCOMP_FILTER if (AEABI && !OABI_COMPAT)
->>         select HAVE_ARCH_TRACEHOOK
->>         select HAVE_BPF_JIT
->>         select HAVE_CONTEXT_TRACKING
->> @@ -1735,6 +1735,11 @@ config OABI_COMPAT
->>           in memory differs between the legacy ABI and the new ARM EABI
->>           (only for non "thumb" binaries). This option adds a tiny
->>           overhead to all syscalls and produces a slightly larger kernel.
->> +
->> +         The seccomp filter system will not be available when this is
->> +         selected, since there is no way yet to sensibly distinguish
->> +         between calling conventions during filtering.
->> +
->>           If you know you'll be using only pure EABI user space then you
->>           can say N here. If this option is not selected and you attempt
->>           to execute a legacy ABI binary then the result will be
->> --
->> 1.7.9.5
->>
->>
->
-> FWIW, OABI-only (i.e. !AEABI, as opposed to OABI_COMPAT) is, in
-> principle, supportable -- userspace would just have to know that, if
-> build for OABI, the calling convention is different.
+On Thursday, November 07, 2013 09:18:52 AM Ulf Hansson wrote:
+> On 7 November 2013 02:05, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Wednesday, November 06, 2013 04:21:48 PM Kevin Hilman wrote:
+> >> On Wed, Nov 6, 2013 at 4:16 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> >> > On Wednesday, November 06, 2013 11:48:24 PM Ulf Hansson wrote:
+> >> >>
+> >> >> "Rafael J. Wysocki" <rjw@rjwysocki.net> skrev:
+> >> >> >On Wednesday, November 06, 2013 05:02:12 PM Alan Stern wrote:
+> >> >> >> On Wed, 6 Nov 2013, Rafael J. Wysocki wrote:
+> >> >> >>
+> >> >> >> > On Wednesday, November 06, 2013 09:51:42 AM Tomi Valkeinen wrote:
+> >> >> >> > > On 2013-11-05 23:29, Ulf Hansson wrote:
+> >> >> >> > > > On 23 October 2013 12:11, Tomi Valkeinen
+> >> >> ><tomi.valkeinen@ti.com> wrote:
+> >> >> >> > > >> Hi,
+> >> >> >> > > >>
+> >> >> >> > > >> I was debugging why clocks were left enabled after removing
+> >> >> >omapdss
+> >> >> >> > > >> driver, and I found this commit:
+> >> >> >> > > >>
+> >> >> >> > > >> fa180eb448fa263cf18dd930143b515d27d70d7b (PM / Runtime: Idle
+> >> >> >devices
+> >> >> >> > > >> asynchronously after probe|release)
+> >> >> >> > > >>
+> >> >> >> > > >> I don't understand how that is supposed to work.
+> >> >> >> > > >>
+> >> >> >> > > >> When a driver is removed, instead of using
+> >> >> >pm_runtime_put_sync() the
+> >> >> >> > > >> commit uses pm_runtime_put(), so the runtime_suspend call is
+> >> >> >queued. But
+> >> >> >> > > >> who is going to handle the queued suspend call, as the driver
+> >> >> >is already
+> >> >> >> > > >> removed? At least in my case, obviously nobody, as I only get
+> >> >> >> > > >> runtime_resume call in my driver, never the runtime_suspend.
+> >> >> >> > > >>
+> >> >> >> > > >> Is there something I need to add to my driver to make this
+> >> >> >work, or
+> >> >> >> > > >> should that part of the patch be reverted?
+> >> >> >> > > >
+> >> >> >> > > > I believe it is quite common that a device driver calls
+> >> >> >> > > > pm_runtime_get_sync as a part of it's remove callback, then it
+> >> >> >> > > > explicitly returns it's resources that has been fetched during
+> >> >> >probe.
+> >> >> >> > > > Like a clk_disable_unprepare for example.
+> >> >> >> > >
+> >> >> >> > > I guess you mean the driver calls pm_runtime_get_sync _and_
+> >> >> >> > > pm_runtime_put_sync as part of its remove callback?
+> >> >> >> > >
+> >> >> >> > > Probably bus drivers need to do that, but for memory mapped
+> >> >> >devices in a
+> >> >> >> > > SoC, I don't think there's normally any need to do
+> >> >> >> > > pm_runtime_get/put_sync during the remove callback.
+> >> >> >> > >
+> >> >> >> > > > The idea behind the change in __device_release_driver, was to
+> >> >> >try to
+> >> >> >> > > > prevent  devices from going active->idle->active and instead
+> >> >> >just
+> >> >> >> > > > remain active (if possible).
+> >> >> >> > > >
+> >> >> >> > > > In your case, which seems like a more modern way of
+> >> >> >implementing
+> >> >> >> > > > "remove", you shall call "pm_runtime_suspend" to make sure the
+> >> >> >> > > > runtime_suspend callbacks gets called.
+> >> >> >> > >
+> >> >> >> > > And as far as I understand, the change creates an explicit
+> >> >> >requirement
+> >> >> >> > > to do either pm_runtime_get/put_sync or pm_runtime_suspend inside
+> >> >> >> > > driver's remove callback. If so, that should be mentioned in big
+> >> >> >red
+> >> >> >> > > letters in the pm-runtime documentation.
+> >> >> >> > >
+> >> >> >> > > The runtime_pm.txt doc does mention something related to this
+> >> >> >(and btw,
+> >> >> >> > > the doc says pm_runtime_put_sync is being called, which is no
+> >> >> >longer
+> >> >> >> > > true), but nothing clear about how the driver remove callback
+> >> >> >must be
+> >> >> >> > > implemented.
+> >> >> >> >
+> >> >> >> > That's correct.
+> >> >> >> >
+> >> >> >> > > I tried grepping the kernel sources to find out if
+> >> >> >pm_runtime_suspend is
+> >> >> >> > > widely used to get SoC platform devices to suspend, but it
+> >> >> >doesn't seem
+> >> >> >> > > like it is. I didn't see pm_runtime_get/put_sync being used in
+> >> >> >remove
+> >> >> >> > > callbacks widely either, but that was more difficult one to grep.
+> >> >> >> >
+> >> >> >> > I think your observations are valid, which unfortunately means that
+> >> >> >we'll
+> >> >> >> > need to revert the commit in question, because it has changed the
+> >> >> >behavior
+> >> >> >> > that drivers are perfectly fine to expect given the existing
+> >> >> >documentation
+> >> >> >> > etc.  It looks like the change was premature at least.
+> >> >> >> >
+> >> >> >> > Greg, I wonder if you can queue up a revert of fa180eb448fa for
+> >> >> >3.13, or
+> >> >> >> > do you want me to do that?
+> >> >> >>
+> >> >> >> Would it be better to leave the runtime-idle callbacks (invoked
+> >> >> >during
+> >> >> >> probe) async and revert only the change to __device_release_driver()?
+> >> >> >>
+> >> >> >> Having an async callback after probe shouldn't cause problems,
+> >> >> >because
+> >> >> >> the driver will then be bound (assuming the probe succeeded).
+> >> >> >
+> >> >> >Right.  OK, I'll prepare a patch.
+> >> >>
+> >> >> That seems like a good way forward.
+> >> >
+> >> > There you go.
+> >> >
+> >> > ---
+> >> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >> > Subject: PM / runtime: Use pm_runtime_put_sync() in __device_release_driver()
+> >> >
+> >> > Commit fa180eb448fa (PM / Runtime: Idle devices asynchronously after
+> >> > probe|release) modified __device_release_driver() to call
+> >> > pm_runtime_put(dev) instead of pm_runtime_put_sync(dev) before
+> >> > detaching the driver from the device.  However, that was a mistake,
+> >> > because pm_runtime_put(dev) causes rpm_idle() to be queued up and
+> >> > the driver may be gone already when that function is executed.
+> >> > That breaks the assumptions the drivers have the right to make
+> >> > about the core's behavior on the basis of the existing documentation
+> >> > and actually causes problems to happen, so revert that part of
+> >> > commit fa180eb448fa and restore the previous behavior of
+> >> > __device_release_driver().
+> >> >
+> >> > Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> >> > Fixes: fa180eb448fa (PM / Runtime: Idle devices asynchronously after probe|release)
+> >> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >> > Cc: 3.10+ <stable@vger.kernel.org> # 3.10+
+> >>
+> >> Acked-by: Kevin Hilman <khilman@linaro.org>
+> >>
+> >> I like this fix since I don't want to add any more requirements to drivers.
+> 
+> Agree!
+> 
+> >
+> > OK, I've queued this up for 3.13.
+> 
+> If not to late:
+> 
+> Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-Right -- I opted for enforcing seccomp-on-ARM-means-EABI.
+No, it isn't, thanks!
 
-> I doubt this is worth supporting, though, and, if no one complains
-> about your patch for a couple releases, then that would mean we could
-> get away with adding AUDIT_ARCH_ARM_OABI or something (maybe for
-> seccomp only) if needed.
+> BTW, I start creating a patch on the doc to align it to the changes
+> that the "async" patches made.
 
-Agreed.
-
-Thanks again for looking at all this!
-
--Kees
+I've seen it, please address the Alan's comments in that patch.
 
 -- 
-Kees Cook
-Chrome OS Security
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
