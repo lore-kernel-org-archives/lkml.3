@@ -1,57 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087Ab3KGS70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 13:59:26 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:61791 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841Ab3KGS7Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 13:59:24 -0500
-From: Julius Werner <jwerner@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Benson Leung <bleung@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Julius Werner <jwerner@chromium.org>
-Subject: [PATCH v2] usb: hub: Use correct reset for wedged USB3 devices that are NOTATTACHED
-Date: Thu,  7 Nov 2013 10:59:14 -0800
-Message-Id: <1383850754-21856-1-git-send-email-jwerner@chromium.org>
-X-Mailer: git-send-email 1.8.4.1
-In-Reply-To: <CAODwPW_bCirtddPssYQ8MFE8_6M47Fcs-sYH8Xb7TuuGysGL=Q@mail.gmail.com>
-References: <CAODwPW_bCirtddPssYQ8MFE8_6M47Fcs-sYH8Xb7TuuGysGL=Q@mail.gmail.com> <CAODwPW8j2wGGgH_HjuXuH=95jd_B1iqWeifoT89xgJoEZRvphw@mail.gmail.com> <Pine.LNX.4.44L0.1311071026480.1401-100000@iolanthe.rowland.org>
+	id S1753447Ab3KGS7r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 13:59:47 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:44486 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753180Ab3KGS7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 13:59:43 -0500
+Message-ID: <527BE30F.7090108@linux.vnet.ibm.com>
+Date: Thu, 07 Nov 2013 10:59:27 -0800
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Michel Lespinasse <walken@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        EXT4 <linux-ext4@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        rostedt@goodmis.org, Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 01/11] rbtree: Fix rbtree_postorder_for_each_entry_safe()
+ iterator
+References: <1383788572-25938-1-git-send-email-cody@linux.vnet.ibm.com> <1383788572-25938-2-git-send-email-cody@linux.vnet.ibm.com> <CANN689EhajVC4cq_oz2zaxOmMyYBZvGrKVsYYwkGH_C9jPGKag@mail.gmail.com>
+In-Reply-To: <CANN689EhajVC4cq_oz2zaxOmMyYBZvGrKVsYYwkGH_C9jPGKag@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13110718-7182-0000-0000-0000090A5D66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a check for USB_STATE_NOTATTACHED to the
-hub_port_warm_reset_required() workaround for ports that end up in
-Compliance Mode in hub_events() when trying to decide which reset
-function to use. Trying to call usb_reset_device() with a NOTATTACHED
-device will just fail and leave the port broken.
+On 11/07/2013 03:51 AM, Michel Lespinasse wrote:
+> On Wed, Nov 6, 2013 at 5:42 PM, Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
+>> From: Jan Kara <jack@suse.cz>
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
----
- drivers/usb/core/hub.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+[...]
+>>
+>> +#define rb_entry_safe(ptr, type, member) \
+>> +       ({ typeof(ptr) ____ptr = (ptr); \
+>> +          ____ptr ? rb_entry(____ptr, type, member) : NULL; \
+>> +       })
+>> +
+>>   /**
+>>    * rbtree_postorder_for_each_entry_safe - iterate over rb_root in post order of
+>>    * given type safe against removal of rb_node entry
+>> @@ -95,12 +100,9 @@ static inline void rb_link_node(struct rb_node * node, struct rb_node * parent,
+>>    * @field:     the name of the rb_node field within 'type'.
+>>    */
+>>   #define rbtree_postorder_for_each_entry_safe(pos, n, root, field) \
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index e6b682c..0188056 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -4799,8 +4799,9 @@ static void hub_events(void)
- 					hub->ports[i - 1]->child;
- 
- 				dev_dbg(hub_dev, "warm reset port %d\n", i);
--				if (!udev || !(portstatus &
--						USB_PORT_STAT_CONNECTION)) {
-+				if (!udev ||
-+				    !(portstatus & USB_PORT_STAT_CONNECTION) ||
-+				    udev->state == USB_STATE_NOTATTACHED) {
- 					status = hub_port_reset(hub, i,
- 							NULL, HUB_BH_RESET_TIME,
- 							true);
--- 
-1.8.4.1
+[...]
+>> +       for (pos = rb_entry_safe(rb_first_postorder(root), typeof(*pos), field); \
+>> +            pos && ({ n = rb_entry_safe(rb_next_postorder(&pos->field), \
+>> +                       typeof(*pos), field); 1; }); \
+>> +            pos = n)
+
+>
+> Well, this really isn't pretty, and I'm not sure that
+> rbtree_postorder_for_each_entry_safe() is a good idea in the first
+> place. Note that we have never had or needed such a macro for the
+> common case of in-order iteration; why would we need it for the
+> less-common case of postorder iteration ?
+
+Well, maybe we should add a helper for in-order iteration if it 
+simplifies the code's appearance significantly. I added this one because 
+I think it's highly probable that users of the postorer iteration will 
+always want the *_entry_safe() style for_each, meaning I don't have to 
+add the other (non-safe, non-entry) variants.
+
+> I think it's just as well to have clients write something like
+> struct rb_node *rb_node = rb_first_postorder(root);
+> while (rb_node) {
+>      struct rb_node *rb_next_node = rb_next_postorder(rb_node);
+>      struct mystruct *node = rb_entry(rb_node, struct mystruct,
+> mystruct_rb_field);
+>      .... do whatever, possibly destroying node ...
+>      rb_node = rb_next_node;
+> }
+>
+
+So, 4 extra lines per usage, an extra variable, and the need to split 
+the iteration's logic across the action performed.
+
+> That said, there is some precedent for this kind of API in
+> hlist_for_each_entry_safe, so I guess that's acceptable if there will
+> be enough users of this macro - but it seems very strange to me that
+> we would need it for the postorder traversal while we don't for the
+> in-order traversal. I would prefer keeping rbtree.h minimal if that is
+> possible.
+>
+
+The other patches in this patchset add 16 usages of the for_each macro, 
+and these are only conversions of the simple cases I found by grepping 
+the kernel for rb_erase() and rb_(left|right) = NULL patterns. I others 
+have found other ways to do the same (or similar) things that I haven't 
+noticed.
 
