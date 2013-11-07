@@ -1,87 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750904Ab3KGFAJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 00:00:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40189 "EHLO mx2.suse.de"
+	id S1751018Ab3KGFBc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 00:01:32 -0500
+Received: from gate.crashing.org ([63.228.1.57]:43676 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750725Ab3KGFAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 00:00:06 -0500
-Date: Thu, 7 Nov 2013 15:59:50 +1100
-From: NeilBrown <neilb@suse.de>
-To: Chris Mason <chris.mason@fusionio.com>
-Cc: Kent Overstreet <kmo@daterainc.com>, <axboe@kernel.dk>,
-        <linux-kernel@vger.kernel.org>, Mike Snitzer <snitzer@redhat.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH] block: Revert bio_clone() default behaviour
-Message-ID: <20131107155950.564ffc0c@notabene.brown>
-In-Reply-To: <20131106202236.3802.2079@localhost.localdomain>
-References: <1383709721-22809-1-git-send-email-kmo@daterainc.com>
-	<20131106161130.3802.97153@localhost.localdomain>
-	<20131106200222.GA3842@kmo>
-	<20131106202236.3802.2079@localhost.localdomain>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+	id S1750956Ab3KGFBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 00:01:31 -0500
+Message-ID: <1383800462.4776.165.camel@pasglop>
+Subject: Re: [PATCH V7 5/7] POWER/cpuidle: Generic POWER CPUIDLE driver
+ supporting PSERIES.
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, michael@ellerman.id.au,
+        scottwood@freescale.com, srivatsa.bhat@linux.vnet.ibm.com,
+        preeti@linux.vnet.ibm.com, linux-pm@lists.linux-foundation.org,
+        svaidy@linux.vnet.ibm.com
+Date: Thu, 07 Nov 2013 16:01:02 +1100
+In-Reply-To: <527B13C8.9030602@linux.vnet.ibm.com>
+References: <20131029110052.31547.82682.stgit@deepthi.in.ibm.com>
+	 <20131029110148.31547.8944.stgit@deepthi.in.ibm.com>
+	 <527AAF1D.5080605@linaro.org> <527B13C8.9030602@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/9ixTTc2si_xTGig=rMS3fA="; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/9ixTTc2si_xTGig=rMS3fA=
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2013-11-07 at 09:45 +0530, Deepthi Dharwar wrote:
+> 'powerpc' would be very generic arch and would comprise of all platforms
+> including embedded 32/64 bit to server 64 bit (similar to that of ARM).
+> This driver does not intend to support complete powerpc arch, but just
+> PSERIES and POWERNV platforms termed as 'POWER' processors. So to avoid
+> confusion btw 'power mgmt' and 'POWER' archs, I have prefixed both the
+> driver and file names with 'IBM'namely ibm-power-driver, cpuidle-ibm-power.
 
-On Wed, 6 Nov 2013 15:22:36 -0500 Chris Mason <chris.mason@fusionio.com>
-wrote:
+Why not book3s ? powerpc-book3s ?
 
+That's what we use in other places to differenciate between the families
 
-> > Yup - that should actually be safe for all the existing bio_clone() use=
-rs
-> > actually, I audited all of them - because normally you're not going to =
-complete
-> > the original bio until the clone finishes.
->=20
-> I'd say we need an ack from Neil before we can switch to _fast.  The
-> completions look non-trivial and _fast adds new ordering requirements on
-> free.
-
-I think it should be fairly straight forward to use _fast in md.
-As Kent says, the original bio that is cloned is (almost) never going to ha=
-ve
-endio called until all the clones have done their thing and finished up.
-
-The only exception is the "behind_pages" stuff in raid1.c.  We clearly need
-to be more careful there.
-If the  "ordering requirements" you mention are simply that the owner of the
-original may free the biovec, so the clone must have finished using it befo=
-re
-that can happen, then that would most easily be fix with
-   mbio->bi_io_vec =3D r1_bio->behind_bvecs;
-rather than the current loop which copies all the bv_page pointers.
-
-NeilBrown
+Ben.
 
 
---Sig_/9ixTTc2si_xTGig=rMS3fA=
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUnseRjnsnt1WYoG5AQKaDw/9E4Hd0LzBaswR4rodvTMKP4WWfiGdu2cN
-oICMo39mPDPWw4eCn9kNW5i4P9tmeMd8zeqbLeoZKd4L0MEL4eGgoMgUQJIwW3gt
-gr9DIAplXVrNQwhbojJTQR8qocrU6uEK+i4UU6D8XQ0H3rFlOS7Pis9BeHp2hAqf
-BZkmCX77fk9xwwqm6lwUha48Pc0lbOeIGV+03ODF8yGVoMq2ekyNC4/PXBvcdxRW
-uieeBhFjZwUVhkgYEhCJIr9C4ebP4pjR1lpcbmLbMy44C6VHFaPBmT8WsTaHmNoL
-CK9D8wN2U4csGbNI8bloOqgRCcWohJC4xA9kF9I0FsLA/NWigFwY0fzZp+sBuVqV
-pNkZS77nuhP0v8XGEjELkkWvMNdUR4bBfMEhLKrqL7RnvSLyWZOOI9oyATPiQers
-keInlid50xL+DLiNA63AX7bxkY5nsZJu9uihlC1EGlx0zoPGIXPpBiUs/IxpRCEj
-PhIQ6zXSG56SQqCI3iq0TMxlKMoIGeO7ujsiozAXLHtVx0QCIKYzdE+zryUAgpnO
-GGyEurAuWEvFS+w9DTT9D3YJOln2jz2ffYt77t2AyjYPC5AdYqE0m8o5HpkYLfWW
-SgOvu5fFUB8qjNzJfi0IJrt2B3XLJ2oTOqvQeSmv35BQfFAnRLXBopEe7VZjy+S7
-f0+cFVekFFU=
-=XVO2
------END PGP SIGNATURE-----
-
---Sig_/9ixTTc2si_xTGig=rMS3fA=--
