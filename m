@@ -1,86 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab3KGOCx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 09:02:53 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:37346 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab3KGOCs (ORCPT
+	id S1753814Ab3KGODD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 09:03:03 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:59095 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075Ab3KGOCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 09:02:48 -0500
+	Thu, 7 Nov 2013 09:02:53 -0500
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-ima-devel@lists.sourceforge.net,
         zohar@us.ibm.com, d.kasatkin@samsung.com, james.l.morris@oracle.com,
         Roberto Sassu <roberto.sassu@polito.it>
-Subject: [RFC][PATCH 1/4] ima: added error messages to template-related functions
-Date: Thu,  7 Nov 2013 15:00:42 +0100
-Message-Id: <1383832849-17125-2-git-send-email-roberto.sassu@polito.it>
+Subject: [RFC][PATCH 2/4] ima: make a copy of template_fmt in template_desc_init_fields()
+Date: Thu,  7 Nov 2013 15:00:43 +0100
+Message-Id: <1383832849-17125-3-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1383832849-17125-1-git-send-email-roberto.sassu@polito.it>
 References: <1383832849-17125-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----7FBBBFCA0B8489FF78112C2EA086C802"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----CF67E0C23098ED87F7483CD02FCB1EBA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------7FBBBFCA0B8489FF78112C2EA086C802
+------CF67E0C23098ED87F7483CD02FCB1EBA
 
-This patch adds some error messages to inform users about the following
-events: template descriptor not found, template field not found, and
-template initialization failed.
+This patch makes a copy of the 'template_fmt' function argument so that
+the latter will not be modified by strsep(), which does the splitting by
+replacing the given separator with '\0'.
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 ---
- security/integrity/ima/ima_template.c | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ security/integrity/ima/ima_template.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
-index 4e5da99..7bcff5c 100644
+index 7bcff5c..bb33576 100644
 --- a/security/integrity/ima/ima_template.c
 +++ b/security/integrity/ima/ima_template.c
-@@ -49,8 +49,11 @@ static int __init ima_template_setup(char *str)
- 	 * If not, use CONFIG_IMA_DEFAULT_TEMPLATE.
- 	 */
- 	template_desc = lookup_template_desc(str);
--	if (!template_desc)
-+	if (!template_desc) {
-+		pr_err("IMA: template %s not found, using %s\n",
-+		       str, CONFIG_IMA_DEFAULT_TEMPLATE);
- 		return 1;
-+	}
+@@ -113,13 +113,19 @@ static int template_desc_init_fields(char *template_fmt,
+ 				     struct ima_template_field ***fields,
+ 				     int *num_fields)
+ {
+-	char *c, *template_fmt_ptr = template_fmt;
++	char *c, *template_fmt_ptr, *template_fmt_copy = NULL;
+ 	int template_num_fields = template_fmt_size(template_fmt);
+ 	int i, result = 0;
  
- 	/*
- 	 * Verify whether the current hash algorithm is supported
-@@ -127,6 +130,7 @@ static int template_desc_init_fields(char *template_fmt,
- 		struct ima_template_field *f = lookup_template_field(c);
+ 	if (template_num_fields > IMA_TEMPLATE_NUM_FIELDS_MAX)
+ 		return -EINVAL;
  
- 		if (!f) {
-+			pr_err("IMA: field '%s' not found\n", c);
- 			result = -ENOENT;
- 			goto out;
- 		}
-@@ -152,8 +156,12 @@ static int init_defined_templates(void)
- 		result = template_desc_init_fields(template->fmt,
- 						   &(template->fields),
- 						   &(template->num_fields));
--		if (result < 0)
-+		if (result < 0) {
-+			pr_err("IMA: template %s init failed, result: %d\n",
-+			       (strlen(template->name) ?
-+			       template->name : template->fmt), result);
- 			return result;
-+		}
- 	}
++	/* copying is needed as strsep() modifies the original buffer */
++	template_fmt_copy = kstrdup(template_fmt, GFP_KERNEL);
++	if (template_fmt_copy == NULL)
++		return -ENOMEM;
++
++	template_fmt_ptr = template_fmt_copy;
+ 	*fields = kzalloc(template_num_fields * sizeof(*fields), GFP_KERNEL);
+ 	if (*fields == NULL) {
+ 		result = -ENOMEM;
+@@ -139,6 +145,7 @@ static int template_desc_init_fields(char *template_fmt,
+ 	*num_fields = i;
+ 	return 0;
+ out:
++	kfree(template_fmt_copy);
+ 	kfree(*fields);
+ 	*fields = NULL;
  	return result;
- }
 -- 
 1.8.1.4
 
 
-------7FBBBFCA0B8489FF78112C2EA086C802
+------CF67E0C23098ED87F7483CD02FCB1EBA
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -118,17 +112,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMzExMDcxNDAxMjJaMCMGCSqG
-SIb3DQEJBDEWBBQXwSI064zuBQ8s5AElBMEkyJefezB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMzExMDcxNDAxMjdaMCMGCSqG
+SIb3DQEJBDEWBBTlZiBP5IOG4YF9o41iyE4Tw47YyzB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQCjAOxP9YSbnRhBNs81TOJavNaw
-xuaPf+7kz1DYUFvcY/+dfXStq+beFAh1ye8NZCPdpVs+wxpOD6X/MhrT10oKB0ud
-8uxuR/hfhdsmm2cKPB4EBOWFAClT0ESac4/RYjVvERBbBUFKrQvIdu06I7MYbgBL
-sVgez8QWh0KNtgUqvUXUP3rsP7KX6eUreJpQXSJeFql7myzRG4HmR9hu2nArG1c/
-AuAb2eMyDiAvJGuq+CloiJQYXygRVuuL0CBnYtb4kEx7kUpTJqdwysY8t/enUckI
-4Vt0fwaAbAdHKpELJ8yiLf+iq+ftncPHvNnYVLIdhdN3Dk5XTnsSo44Gxwnh
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQA7Mxuv4m8LRBEH4Vok3ZSd6RDG
+Sp+qTtQTBfx/pFWopqhyaP89hCHgHd9Zx1fodRXpyq4XH5yfVYHgajJzZJfsPZd7
+My2PmSnq7H1M5E1u3Ihi9rbJnVNDwMQzZrne/EdJpVnLlVrCGzp3CXQYr2UCBVSC
+WkTPEvVYKd9Jovz6NA5MHGrl3kM7pwI1c2Y0QciHXwyLlrxTjQDVI/QVfMGCfBJ1
+CxeX03XAbNg1u218wa6zU7ufr8wQ3aWoEFSZw9KzyrNakqg3Gmfd5qC7mLX7yN2/
+TMoc0WbU8Dv7SRy7rmK3h+eVy7+AmvwtX3QOiEa2D85YBHm+40PcxcXSXihp
 
-------7FBBBFCA0B8489FF78112C2EA086C802--
+------CF67E0C23098ED87F7483CD02FCB1EBA--
 
 
