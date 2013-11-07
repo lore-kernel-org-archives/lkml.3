@@ -1,125 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab3KGTjT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 14:39:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50390 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754466Ab3KGTjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 14:39:11 -0500
-Date: Thu, 7 Nov 2013 20:40:32 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        David Long <dave.long@linaro.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] uprobes: Fix the memory out of bound overwrite in
-	copy_insn()
-Message-ID: <20131107194032.GB29154@redhat.com>
-References: <20131106191913.GA18661@redhat.com> <20131107075151.GB31560@gmail.com> <20131107143432.GA6240@redhat.com> <20131107151601.GA5163@gmail.com> <20131107162736.GA31834@redhat.com> <20131107194010.GA29154@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131107194010.GA29154@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754603Ab3KGTkV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 14:40:21 -0500
+Received: from smtprelay0066.hostedemail.com ([216.40.44.66]:47785 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751692Ab3KGTkR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 14:40:17 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:1801:2393:2553:2559:2562:2691:2693:2828:2892:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4037:4321:4605:5007:7652:7903:8527:8531:9592:10004:10400:10848:11026:11232:11658:119
+X-HE-Tag: veil87_1f1e003ca863e
+X-Filterd-Recvd-Size: 3409
+Message-ID: <1383853221.9263.14.camel@joe-AO722>
+Subject: Re: [PATCH] wcn36xx: Fix logging macro with unnecessary semicolon
+From: Joe Perches <joe@perches.com>
+To: Eugene Krasnikov <k.eugene.e@gmail.com>
+Cc: "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        wcn36xx <wcn36xx@lists.infradead.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ath5k-devel@venema.h4ckr.net,
+        ath9k-devel <ath9k-devel@venema.h4ckr.net>, ath10k@lists.infradead.org,
+        Kalle Valo <kvalo@qca.qualcomm.com>, wil6210@qca.qualcomm.com
+Date: Thu, 07 Nov 2013 11:40:21 -0800
+In-Reply-To: <CAFSJ42Y-3BZqj+JRNa8wdxjnm1fguD8ToH5Oj0m56yT5NexdVQ@mail.gmail.com>
+References: <1383684000.4387.42.camel@joe-AO722>
+	 <CAFSJ42YQy96Sko8CuG9BGjHzTV7TkRp2=NVt036APxSKpPB=Ag@mail.gmail.com>
+	 <1383760556.7940.28.camel@joe-AO722>
+	 <CAFSJ42Y-3BZqj+JRNa8wdxjnm1fguD8ToH5Oj0m56yT5NexdVQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. copy_insn() doesn't look very nice, all calculations are
-   confusing and it is not immediately clear why do we read
-   the 2nd page first.
+On Thu, 2013-11-07 at 07:32 +0000, Eugene Krasnikov wrote:
+> Hi Joe,
 
-2. The usage of inode->i_size is wrong on 32-bit machines.
+Hi Eugene.
 
-3. "Instruction at end of binary" logic is simply wrong, it
-   doesn't handle the case when uprobe->offset > inode->i_size.
+> I personally like the idea of making some kind of framework on top of
+> printing because all ath drivers are using the same printing approach
+> and combining all that code in one place will reduce amount of code in
+> each particular driver. As a true engineer i like when it's less code
+> = less work to do = less bugs:)
+> 
+> Suggestion is to send a patch with semicolon fix only
 
-   In this case "bytes" overflows, and __copy_insn() writes to
-   the memory outside of uprobe->arch.insn.
+It's a one line fix, and pretty trivial to do yourself if you
+want it.
 
-   Yes, uprobe_register() checks i_size_read(), but this file
-   can be truncated after that. All i_size checks are racy, we
-   do this only to catch the obvious mistakes.
+I do think though the slightly odd wcn36xx_<level> uses of:
 
-Change copy_insn() to call __copy_insn() in a loop, simplify
-and fix the bytes/nbytes calculations.
-
-Note: we do not care if offset + size > i_size, the users of
-arch_uprobe->insn can't know how many bytes were actually copied
-anyway. But perhaps this needs more changes.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/events/uprobes.c |   47 +++++++++++++++++++++++------------------------
- 1 files changed, 23 insertions(+), 24 deletions(-)
-
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index e615b78..db2802b 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -503,9 +503,8 @@ static bool consumer_del(struct uprobe *uprobe, struct uprobe_consumer *uc)
- 	return ret;
- }
- 
--static int
--__copy_insn(struct address_space *mapping, struct file *filp, char *insn,
--			unsigned long nbytes, loff_t offset)
-+static int __copy_insn(struct address_space *mapping, struct file *filp,
-+			void *insn, int nbytes, loff_t offset)
- {
- 	struct page *page;
- 
-@@ -527,28 +526,28 @@ __copy_insn(struct address_space *mapping, struct file *filp, char *insn,
- 
- static int copy_insn(struct uprobe *uprobe, struct file *filp)
- {
--	struct address_space *mapping;
--	unsigned long nbytes;
--	int bytes;
+-#define wcn36xx_err(fmt, arg...)                               \
+-       printk(KERN_ERR pr_fmt("ERROR " fmt), ##arg);
 -
--	nbytes = PAGE_SIZE - (uprobe->offset & ~PAGE_MASK);
--	mapping = uprobe->inode->i_mapping;
-+	struct address_space *mapping = uprobe->inode->i_mapping;
-+	loff_t offs = uprobe->offset;
-+	void *insn = uprobe->arch.insn;
-+	int size = MAX_UINSN_BYTES;
-+	int len, err = -EIO;
- 
--	/* Instruction at end of binary; copy only available bytes */
--	if (uprobe->offset + MAX_UINSN_BYTES > uprobe->inode->i_size)
--		bytes = uprobe->inode->i_size - uprobe->offset;
--	else
--		bytes = MAX_UINSN_BYTES;
-+	do {
-+		/* Copy only available bytes, but -EIO if nothing was read */
-+		if (offs >= i_size_read(uprobe->inode))
-+			break;
- 
--	/* Instruction at the page-boundary; copy bytes in second page */
--	if (nbytes < bytes) {
--		int err = __copy_insn(mapping, filp, uprobe->arch.insn + nbytes,
--				bytes - nbytes, uprobe->offset + nbytes);
-+		len = min_t(int, size, PAGE_SIZE - (offs & ~PAGE_MASK));
-+		err = __copy_insn(mapping, filp, insn, len, offs);
- 		if (err)
--			return err;
--		bytes = nbytes;
--	}
--	return __copy_insn(mapping, filp, uprobe->arch.insn, bytes, uprobe->offset);
-+			break;
-+
-+		insn += len;
-+		offs += len;
-+		size -= len;
-+	} while (size);
-+
-+	return err;
- }
- 
- static int prepare_uprobe(struct uprobe *uprobe, struct file *file,
--- 
-1.5.5.1
+-#define wcn36xx_warn(fmt, arg...)                              \
+-       printk(KERN_WARNING pr_fmt("WARNING " fmt), ##arg)
+-
+-#define wcn36xx_info(fmt, arg...)              \
+-       printk(KERN_INFO pr_fmt(fmt), ##arg)
+-
+[]
++#define wcn36xx_err(fmt, ...)                                  \
++       pr_err("ERROR " fmt, ##__VA_ARGS__)
++#define wcn36xx_warn(fmt, ...)                                 \
++       pr_warn("WARNING " fmt, ##__VA_ARGS__)
++#define wcn36xx_info(fmt, ...)                                 \
++       pr_info(fmt, ##__VA_ARGS__)
 
+should still be converted to more normal pr_<level> like I did.
+
+I don't believe that prefixing of "ERROR " and "WARNING " to
+pr_err and pr_warn actually gain anything as the same level
+information can be got already with dmesg -r via the "<3>" and
+"<4>" prefixes or dmesg -l3 -l4
+
+> have a
+> second round of convincing ath guys to change printing code. How does
+> that sound?
+
+Luis?  Kalle?  Other Qualcomm/Atheros folk?
+
+One of the nominal benefits of separating the ath_<level>
+macros by subsystem was perf/tracing.  I believe some of the
+ath subsystems have integrated the dmesg and tracing code.
+
+I'm not sure how separable those may be here or if it's even
+desirable to separate them.  I'd guess not.
 
