@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab3KGB3I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 20:29:08 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:39519 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752053Ab3KGB3G convert rfc822-to-8bit (ORCPT
+	id S1752892Ab3KGBnf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 20:43:35 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:34829 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab3KGBnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 20:29:06 -0500
-X-IronPort-AV: E=Sophos;i="4.93,647,1378828800"; 
-   d="scan'208";a="8966375"
-Message-ID: <527AE9A5.8080003@cn.fujitsu.com>
-Date: Thu, 07 Nov 2013 09:15:17 +0800
-From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>, kernel@pengutronix.de,
-        linux@arm.linux.org.uk, a.zummo@towertech.it, airlied@linux.ie
-CC: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        Thierry Reding <treding@nvidia.com>,
-        =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-Subject: Re: [PATCH] drm/tegra: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
-References: <1383724435-15380-1-git-send-email-duanj.fnst@cn.fujitsu.com> <527A7333.9090409@wwwdotorg.org>
-In-Reply-To: <527A7333.9090409@wwwdotorg.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/07 09:15:22,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/11/07 09:27:09
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 6 Nov 2013 20:43:32 -0500
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        EXT4 <linux-ext4@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        rostedt@goodmis.org, Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 01/11] rbtree: Fix rbtree_postorder_for_each_entry_safe() iterator
+Date: Wed,  6 Nov 2013 17:42:30 -0800
+Message-Id: <1383788572-25938-2-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1383788572-25938-1-git-send-email-cody@linux.vnet.ibm.com>
+References: <1383788572-25938-1-git-send-email-cody@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13110701-8236-0000-0000-000003830DF4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年11月07日 00:49, Stephen Warren 写道:
-> On 11/06/2013 12:53 AM, Duan Jiong wrote:
->> This patch fixes coccinelle error regarding usage of IS_ERR and
->> PTR_ERR instead of PTR_ERR_OR_ZERO.
-> 
->> diff --git a/drivers/gpu/drm/tegra/gem.c b/drivers/gpu/drm/tegra/gem.c
-> 
->> @@ -199,10 +199,7 @@ int tegra_bo_dumb_create(struct drm_file *file, struct drm_device *drm,
->>  
->>  	bo = tegra_bo_create_with_handle(file, drm, args->size, 0,
->>  					 &args->handle);
->> -	if (IS_ERR(bo))
->> -		return PTR_ERR(bo);
->> -
->> -	return 0;
->> +	return PTR_ERR_OR_ZERO(bo);
->>  }
-> 
-> I suppose that's fine, although I wonder if it'll cause churn should we
-> ever need to add code to the tail end of the function.
-> 
-> BTW, why were all the similar patches that had nothing to do with Tegra
-> sent to the linux-tegra@ mailing list? You also didn't CC the
-> maintainers of drivers/gpu/drm/tegra/ on this patch. Plus this patch has
-> nothing to do with the rtc-linux@ mailing list.
+From: Jan Kara <jack@suse.cz>
 
-I'm sorry for that. i just get the maintainers and the mail lists by the script
-get_maintainer.pl.
+The iterator rbtree_postorder_for_each_entry_safe() relies on pointer
+underflow behavior when testing for loop termination. In particular
+it expects that
+  &rb_entry(NULL, type, field)->field
+is NULL. But the result of this expression is not defined by a C standard
+and some gcc versions (e.g. 4.3.4) assume the above expression can never
+be equal to NULL. The net result is an oops because the iteration is not
+properly terminated.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Fix the problem by modifying the iterator to avoid pointer underflows.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+ include/linux/rbtree.h | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
+
+diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
+index aa870a4..57e75ae 100644
+--- a/include/linux/rbtree.h
++++ b/include/linux/rbtree.h
+@@ -85,6 +85,11 @@ static inline void rb_link_node(struct rb_node * node, struct rb_node * parent,
+ 	*rb_link = node;
+ }
+ 
++#define rb_entry_safe(ptr, type, member) \
++	({ typeof(ptr) ____ptr = (ptr); \
++	   ____ptr ? rb_entry(____ptr, type, member) : NULL; \
++	})
++
+ /**
+  * rbtree_postorder_for_each_entry_safe - iterate over rb_root in post order of
+  * given type safe against removal of rb_node entry
+@@ -95,12 +100,9 @@ static inline void rb_link_node(struct rb_node * node, struct rb_node * parent,
+  * @field:	the name of the rb_node field within 'type'.
+  */
+ #define rbtree_postorder_for_each_entry_safe(pos, n, root, field) \
+-	for (pos = rb_entry(rb_first_postorder(root), typeof(*pos), field),\
+-		n = rb_entry(rb_next_postorder(&pos->field), \
+-			typeof(*pos), field); \
+-	     &pos->field; \
+-	     pos = n, \
+-		n = rb_entry(rb_next_postorder(&pos->field), \
+-			typeof(*pos), field))
++	for (pos = rb_entry_safe(rb_first_postorder(root), typeof(*pos), field); \
++	     pos && ({ n = rb_entry_safe(rb_next_postorder(&pos->field), \
++			typeof(*pos), field); 1; }); \
++	     pos = n)
+ 
+ #endif	/* _LINUX_RBTREE_H */
+-- 
+1.8.4.2
 
