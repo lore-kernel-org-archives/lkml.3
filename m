@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab3KGNYm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 08:24:42 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:36683 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752797Ab3KGNYg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 08:24:36 -0500
-USER-AGENT: Mutt/1.5.21 (2010-09-15)
+	id S1753717Ab3KGNZL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 08:25:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51773 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750956Ab3KGNZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 08:25:08 -0500
+Date: Thu, 7 Nov 2013 14:25:05 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jerome Marchand <jmarchan@redhat.com>, kbuild-all@01.org,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        fengguang.wu@intel.com
+Subject: Re: [memcg:since-3.12 75/75] fs/proc/meminfo.c:undefined reference
+ to `vm_commit_limit'
+Message-ID: <20131107132505.GA16393@dhcp22.suse.cz>
+References: <527b74a0.xBELNKuc6Ws8XONb%fengguang.wu@intel.com>
 MIME-Version: 1.0
-Message-ID: <20131107122249.GN20521@mwanda>
-Date: Thu, 7 Nov 2013 04:22:49 -0800 (PST)
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Mugunthan V N <mugunthanvnm@ti.com>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] net: make ndev->irq signed for error handling
-References: <20131107074849.GF21844@elgon.mountain> <527B842E.2060909@ti.com>
-In-Reply-To: <527B842E.2060909@ti.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Disposition: inline
+In-Reply-To: <527b74a0.xBELNKuc6Ws8XONb%fengguang.wu@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 07, 2013 at 05:44:38PM +0530, Mugunthan V N wrote:
-> On Thursday 07 November 2013 01:18 PM, Dan Carpenter wrote:
-> > There is a bug in cpsw_probe() where we do:
-> >
-> > 	ndev->irq = platform_get_irq(pdev, 0);
-> > 	if (ndev->irq < 0) {
-> >
-> > The problem is that "ndev->irq" is unsigned so the error handling
-> > doesn't work.  I have changed it to a regular int.
-> >
-> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> ndev->irq is never used any where in the driver, I think its better to
-> remove this part of code from probe. If every one is ok, I can send a
-> patch to remove the code.
+On Thu 07-11-13 19:08:16, Wu Fengguang wrote:
+> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git since-3.12
+> head:   2f11d7af8df66cb4f217b6293ad8189aa101d601
+> commit: 2f11d7af8df66cb4f217b6293ad8189aa101d601 [75/75] mm-factor-commit-limit-calculation-fix
+> config: make ARCH=blackfin BF526-EZBRD_defconfig
+> 
+> All error/warnings:
+> 
+>    mm/built-in.o: In function `__vm_enough_memory':
+>    (.text+0x11b4c): undefined reference to `vm_commit_limit'
+>    fs/built-in.o: In function `meminfo_proc_show':
+> >> fs/proc/meminfo.c:(.text+0x37ef0): undefined reference to `vm_commit_limit'
 
-It seems like cpsw_ndo_poll_controller() uses it.
+Andrew, it seems that moving vm_commit_limit out of mman.h is not that
+easy because it breaks NOMMU configurations. mm/mmap.o is not part of
+the nommu build apparently.
 
-regards,
-dan carpenter
+So either we move it back to mman.h or put it somewhere else. I do not
+have a good idea where, though.
+
+I have dropped mm-factor-commit-limit-calculation-fix from mm-git tree
+for now.
+-- 
+Michal Hocko
+SUSE Labs
