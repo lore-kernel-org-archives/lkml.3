@@ -1,75 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756548Ab3KHD4F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 22:56:05 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:64896 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756085Ab3KHD4D (ORCPT
+	id S1756453Ab3KHD7e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 22:59:34 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.182]:46443 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753652Ab3KHD7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 22:56:03 -0500
-MIME-Version: 1.0
-X-Originating-IP: [111.240.70.217]
-In-Reply-To: <87zjpf4w0j.fsf@rustcorp.com.au>
-References: <1383789208.5970.1.camel@phoenix>
-	<CACVXFVMn6RSXchQ8u47F35_J+YSnp1bwF1tr-8uCEYwvFsOfgQ@mail.gmail.com>
-	<CAFRkauAEt-YhBt11opj_GVCLrxGsTSd2LowWGmukTSmGuJkd3A@mail.gmail.com>
-	<CACVXFVO=QA-R1+twCL9fc_3vASg6Ap-3ezi=tU1MV1pdPYrfWw@mail.gmail.com>
-	<CAFRkauAdR3=ByE0_B3OsqOBjmbz2a02EXb+6g-vn=1TJ7AZc8Q@mail.gmail.com>
-	<CACVXFVMaLOfDvzdn_1NryQY59cgtLdMMqHL-_ZAa95MPz4p56Q@mail.gmail.com>
-	<CAFRkauDe7V3N0AbfvE_=GEXHZ_Fw62VsA8p50wSUYE1-TRqMfw@mail.gmail.com>
-	<87zjpf4w0j.fsf@rustcorp.com.au>
-Date: Fri, 8 Nov 2013 11:56:02 +0800
-Message-ID: <CAFRkauAH7VeuxCU7xQm8+26-P49FjmNyhOu8c4+G2Ki40xTA8g@mail.gmail.com>
-Subject: Re: kernel BUG at kernel/kallsyms.c:222!
-From: Axel Lin <axel.lin@ingics.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Ming Lei <tom.leiming@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Michal Marek <mmarek@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 7 Nov 2013 22:59:31 -0500
+X-Greylist: delayed 574 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Nov 2013 22:59:31 EST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvYaABK/CFHO+Ip3/2dsb2JhbABEJrhWhhIXc4IfAQUnExsBIxALISUPBSUkE4gRwS2QKWEDiGGJeYMyiVCFHoFegxU
+X-IPAS-Result: AvYaABK/CFHO+Ip3/2dsb2JhbABEJrhWhhIXc4IfAQUnExsBIxALISUPBSUkE4gRwS2QKWEDiGGJeYMyiVCFHoFegxU
+X-IronPort-AV: E=Sophos;i="4.84,565,1355115600"; 
+   d="scan'208";a="37359027"
+Date: Thu, 7 Nov 2013 18:50:01 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Victor Kaplansky <VICTORK@il.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Michael Neuling <mikey@neuling.org>
+Subject: Re: [RFC] arch: Introduce new TSO memory barrier smp_tmb()
+Message-ID: <20131107235001.GA30034@Krystal>
+References: <20131101145634.GH19466@laptop.lan>
+ <20131102173239.GB3947@linux.vnet.ibm.com>
+ <20131103144017.GA25118@linux.vnet.ibm.com>
+ <20131103151704.GJ19466@laptop.lan>
+ <CA+55aFx_kuvR-0dwJtjvnhtha5QBc5XcLZPRH=WKT+hYVAKOrw@mail.gmail.com>
+ <20131103200124.GK19466@laptop.lan>
+ <20131103224242.GF3947@linux.vnet.ibm.com>
+ <CA+55aFyD_kCkAHQwHCUBrumO-pH6LaZikTNvyWDW_tWsHdqk6Q@mail.gmail.com>
+ <20131104105059.GL3947@linux.vnet.ibm.com>
+ <20131104112254.GK28601@twins.programming.kicks-ass.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20131104112254.GK28601@twins.programming.kicks-ass.net>
+X-Editor: vi
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/8 Rusty Russell <rusty@rustcorp.com.au>:
-> Axel Lin <axel.lin@ingics.com> writes:
->> 2013/11/7 Ming Lei <tom.leiming@gmail.com>:
->>> Hi,
->>>
->>> On Thu, Nov 7, 2013 at 10:47 AM, Axel Lin <axel.lin@ingics.com> wrote:
->>>>
->>>> hi Ming,
->>>> Seems CONFIG_PAGE_OFFSET is not configurabe in "make menuconfig".
->>>> And I found CONFIG_PAGE_OFFSET=0xC0000000 for all below configs...
->>>> $ make at91_dt_defconfig; grep  CONFIG_PAGE_OFFSET .config
->>>> $ make ep93xx_defconfig; grep  CONFIG_PAGE_OFFSET .config
->>>> $ make imx_v4_v5_defconfig; grep CONFIG_PAGE_OFFSET .config
->>>> $ make mxs_defconfig; grep CONFIG_PAGE_OFFSET .config
->>>> $ make omap2plus_defconfig; grep CONFIG_PAGE_OFFSET .config
->>>> $ make s3c6400_defconfig; grep CONFIG_PAGE_OFFSET .config
->>>> $ make at91x40_defconfig; grep CONFIG_PAGE_OFFSET .config
->>>> ( at91x40_defconfig is also arm7tdmi )
->>>
->>> Firstly it can be configured via VMSPLIT_3GVMSPLIT_2G/VMSPLIT_1G.
->>>
->>> Secondly, configurable or not isn't the point, and maybe some uclinux
->>> platforms do not use CONFIG_PAGE_OFFSET at all, but they should
->>> set it as a reasonable value or at least be below than the start link
->>> address of vmlinux.
->>
->> Hi Ming,
->>
->> I found in arch/arm/include/asm/memory.h:
->> CONFIG_PAGE_OFFSET is not used if !CONFIG_MMU.
->> So looks like setting CONFIG_PAGE_OFFSET to other value still won't work.
->
-> This seems like the simplest solution, but it may mean you still have
-> crap in /proc/kallsyms.
->
-> Does it work for you?
+* Peter Zijlstra (peterz@infradead.org) wrote:
 
-Yes, it works.
+[...]
+
+Hi Peter,
+
+Looking at this simplified version of perf's ring buffer
+synchronization, I get concerned about the following issue:
+
+> /*
+>  * One important detail is that the kbuf part and the kbuf_writer() are
+>  * strictly per cpu and we can thus rely on program order for those.
+>  *
+>  * Only the userspace consumer can possibly run on another cpu, and thus we
+>  * need to ensure data consistency for those.
+>  */
+> 
+> struct buffer {
+>         u64 size;
+>         u64 tail;
+>         u64 head;
+>         void *data;
+> };
+> 
+> struct buffer *kbuf, *ubuf;
+> 
+> /*
+>  * If there's space in the buffer; store the data @buf; otherwise
+>  * discard it.
+>  */
+> void kbuf_write(int sz, void *buf)
+> {
+> 	u64 tail, head, offset;
+> 
+> 	do {
+> 		tail = ACCESS_ONCE(ubuf->tail);
+> 		offset = head = kbuf->head;
+> 		if (CIRC_SPACE(head, tail, kbuf->size) < sz) {
+> 			/* discard @buf */
+> 			return;
+> 		}
+> 		head += sz;
+> 	} while (local_cmpxchg(&kbuf->head, offset, head) != offset)
+> 
+
+Let's suppose we have a thread executing kbuf_write(), interrupted by an
+IRQ or NMI right after a successful local_cmpxchg() (space reservation
+in the buffer). If the nested execution context also calls kbuf_write(),
+it will therefore update ubuf->head (below) with the second reserved
+space, and only after that will it return to the original thread context
+and continue executing kbuf_write(), thus overwriting ubuf->head with
+the prior-to-last reserved offset.
+
+All this probably works OK most of the times, when we have an event flow
+guaranteeing that a following event will fix things up, but there
+appears to be a risk of losing events near the end of the trace when
+those are in nested execution contexts.
+
+Thoughts ?
 
 Thanks,
-Axel
+
+Mathieu
+
+>         /*
+>          * Ensure that if we see the userspace tail (ubuf->tail) such
+>          * that there is space to write @buf without overwriting data
+>          * userspace hasn't seen yet, we won't in fact store data before
+>          * that read completes.
+>          */
+> 
+>         smp_mb(); /* A, matches with D */
+> 
+>         memcpy(kbuf->data + offset, buf, sz);
+> 
+>         /*
+>          * Ensure that we write all the @buf data before we update the
+>          * userspace visible ubuf->head pointer.
+>          */
+>         smp_wmb(); /* B, matches with C */
+> 
+>         ubuf->head = kbuf->head;
+> }
+> 
+> /*
+>  * Consume the buffer data and update the tail pointer to indicate to
+>  * kernel space there's 'free' space.
+>  */
+> void ubuf_read(void)
+> {
+>         u64 head, tail;
+> 
+>         tail = ACCESS_ONCE(ubuf->tail);
+>         head = ACCESS_ONCE(ubuf->head);
+> 
+>         /*
+>          * Ensure we read the buffer boundaries before the actual buffer
+>          * data...
+>          */
+>         smp_rmb(); /* C, matches with B */
+> 
+>         while (tail != head) {
+>                 obj = ubuf->data + tail;
+>                 /* process obj */
+>                 tail += obj->size;
+>                 tail %= ubuf->size;
+>         }
+> 
+>         /*
+>          * Ensure all data reads are complete before we issue the
+>          * ubuf->tail update; once that update hits, kbuf_write() can
+>          * observe and overwrite data.
+>          */
+>         smp_mb(); /* D, matches with A */
+> 
+>         ubuf->tail = tail;
+> }
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
