@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab3KGCiB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 21:38:01 -0500
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:26877 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751777Ab3KGCh6 (ORCPT
+	id S1753708Ab3KGCiH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 21:38:07 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:54874 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753616Ab3KGCiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 21:37:58 -0500
-Date: Thu, 7 Nov 2013 10:36:07 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: phy: phy-mxs-usb: set the correct platform drvdata
-Message-ID: <20131107103607.53489c5d@xhacker>
-In-Reply-To: <20131107023446.GC5994@S2101-09.ap.freescale.net>
-References: <1383791180-3579-1-git-send-email-jszhang@marvell.com>
-	<20131107023446.GC5994@S2101-09.ap.freescale.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-11-07_01:2013-11-06,2013-11-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1311060253
+	Wed, 6 Nov 2013 21:38:04 -0500
+Date: Thu, 7 Nov 2013 13:37:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
+        <dri-devel@lists.freedesktop.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dave Airlie <airlied@linux.ie>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: linux-next: manual merge of the drm-intel tree with the drm tree
+Message-Id: <20131107133751.95ceeb3ddf512a0af6f78f2a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__7_Nov_2013_13_37_51_+1100_cMYts=mQQgxRz=4R"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Nov 2013 18:34:47 -0800
-Shawn Guo <shawn.guo@linaro.org> wrote:
+--Signature=_Thu__7_Nov_2013_13_37_51_+1100_cMYts=mQQgxRz=4R
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Thu, Nov 07, 2013 at 10:26:20AM +0800, Jisheng Zhang wrote:
-> > We need to set mxs_phy rather as the platform drvdata so that we can get
-> > the correct mxs_phy in mxs_phy_remove().
-> > 
-> > Change-Id: I6e1753cc978e2ed3fbb3d1865be0c54031d337d2
-> > Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> 
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
-> 
-> Change-Id should be dropped though.
+Hi all,
 
-OOPs, sorry, I should take care of that. I'll remind myself every time.
+Today's linux-next merge of the drm-intel tree got a conflict in
+drivers/gpu/drm/i915/intel_panel.c between commit 5bdebb183c97
+("drm/sysfs: sort out minor and connector device object lifetimes") from
+the drm tree and commit 752aa88a1e78 ("drm/i915: make backlight functions
+take a connector") from the drm-intel tree.
 
-Thank you for your pointing out
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Jisheng
-> 
-> Shawn
-> 
-> > ---
-> >  drivers/usb/phy/phy-mxs-usb.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/usb/phy/phy-mxs-usb.c b/drivers/usb/phy/phy-mxs-usb.c
-> > index fdd33b4..545844b 100644
-> > --- a/drivers/usb/phy/phy-mxs-usb.c
-> > +++ b/drivers/usb/phy/phy-mxs-usb.c
-> > @@ -164,7 +164,7 @@ static int mxs_phy_probe(struct platform_device *pdev)
-> >  
-> >  	mxs_phy->clk = clk;
-> >  
-> > -	platform_set_drvdata(pdev, &mxs_phy->phy);
-> > +	platform_set_drvdata(pdev, mxs_phy);
-> >  
-> >  	ret = usb_add_phy_dev(&mxs_phy->phy);
-> >  	if (ret)
-> > -- 
-> > 1.8.4.2
-> > 
-> 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/gpu/drm/i915/intel_panel.c
+index 09b2994c9b37,cad41ac330e8..000000000000
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@@ -726,7 -802,8 +802,8 @@@ int intel_panel_setup_backlight(struct=20
+  	}
+  	dev_priv->backlight.device =3D
+  		backlight_device_register("intel_backlight",
+- 					  connector->kdev, dev,
+ -					  &connector->kdev,
+++					  connector->kdev,
++ 					  to_intel_connector(connector),
+  					  &intel_panel_bl_ops, &props);
+ =20
+  	if (IS_ERR(dev_priv->backlight.device)) {
+
+--Signature=_Thu__7_Nov_2013_13_37_51_+1100_cMYts=mQQgxRz=4R
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSev0EAAoJEMDTa8Ir7ZwV38UP/iQx9XMRlFMmfJ4xEzWMhCbH
+J+Lt7eRL0gQhTWTN5Pek5/eDe/Bj8QDg2O89JGERBddh8iVghxlV6SQIIfYN/XLY
+R/I1Y399hb4/C1hNxCWt4L7guwL1yZGA/I83gl6LGf51O7Tx9Guuhi4sCUcJnWUk
+nu3+vDw2eIBDwZTM0OYzSdbqDftqM2rRqia40jksBQ4as0iUfk+x0Tj8SW/F41zs
+Kq2D8L68Huq8NtocZZsvO6Gq53nVicmfX3FpAVZ5nvdfcWozBQDvyY3PI/mppd10
+J4C4PZ/bEqn8QFbaAlU7ToxP8XvRN0alqajeIpME7TgSyePk4IlFaL88yB/AZyTh
+o4IXtnDz4zkEUMkkhMXBZ4PukGw1dvyngwlnC5pATHcCv7j9/w8/3XoVS14xRnUC
+6MYVIxSyEoB9UHcc8qkZeGGxgrx0NdFLAhm0u6i2QpYuRLK2py0XarOVZIyUziUb
+Syo1B4ud4mS0ucWgbJgKRtqlkpzBG9JRnRwrvrKOyXO9feC2tweTouJq5QJhPOfC
+zB1xnRfSK2xKt+/QBK3OWtJsXJ03uJSHt8OuuphhOgXmbWbPExwDnE6l+gxpqbzf
+WVlUckjO1CqNWXGqXGgiuvdQMJ98BAwxxvlY4b95UB5Zp/2Nn78vMB+Wd+a/yt0K
+Fjq1LLceg0t/SEf6M7eV
+=DQ8q
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__7_Nov_2013_13_37_51_+1100_cMYts=mQQgxRz=4R--
