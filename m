@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913Ab3KGW4X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 17:56:23 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:43872 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690Ab3KGW4P (ORCPT
+	id S1755994Ab3KGW5M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 17:57:12 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:51484 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584Ab3KGW5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 17:56:15 -0500
+	Thu, 7 Nov 2013 17:57:06 -0500
+Message-ID: <527C1AC0.2040206@codeaurora.org>
+Date: Thu, 07 Nov 2013 14:57:04 -0800
+From: Olav Haugan <ohaugan@codeaurora.org>
+Organization: Qualcomm Innovation Center, Inc.
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <20131101133345.03db24ec@notabene.brown>
-References: <20131101133345.03db24ec@notabene.brown>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Thu, 7 Nov 2013 14:55:54 -0800
-Message-ID: <CAK5ve-JO3-f53SpfJb5P4kK+z3rATsS8cXAjnDr5RmCAZEPKjA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] LEDS: tca6507 - fix bugs in parsing of device-tree configuration.
-To: NeilBrown <neilb@suse.de>
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Belisko Marek <marek.belisko@gmail.com>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: ngupta@vflare.org, sjenning@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, minchan@kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH] staging: zsmalloc: Ensure handle is never 0 on success
+References: <1383699252-8898-1-git-send-email-ohaugan@codeaurora.org> <20131106015645.GA28769@kroah.com> <527AD802.6020902@codeaurora.org> <20131107030640.GD8482@kroah.com>
+In-Reply-To: <20131107030640.GD8482@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 7:33 PM, NeilBrown <neilb@suse.de> wrote:
->
->
-> 1/ The led_info array must be allocated to allow the full number
->   of LEDs even if not all are present.  The array maybe be sparsely
->   filled but it is indexed by device address so we must at least
->   allocate as many slots as the highest address used.  It is easiest
->   just to allocate all 7.
->
-> 2/ range check the 'reg' value properly.
->
-> 3/ led.flags must be initialised to zero, else all leds could
->    be treated as GPIOs (depending on what happens to be on the stack).
->
-> Signed-off-by: NeilBrown <neilb@suse.de>
->
+On 11/6/2013 7:06 PM, Greg KH wrote:
+> On Wed, Nov 06, 2013 at 04:00:02PM -0800, Olav Haugan wrote:
+>> On 11/5/2013 5:56 PM, Greg KH wrote:
+>>> On Tue, Nov 05, 2013 at 04:54:12PM -0800, Olav Haugan wrote:
+>>>> zsmalloc encodes a handle using the page pfn and an object
+>>>> index. On some hardware platforms the pfn could be 0 and this
+>>>> causes the encoded handle to be 0 which is interpreted as an
+>>>> allocation failure.
+>>>
+>>> What platforms specifically have this issue?
+>>
+>> Currently some of Qualcomm SoC's have physical memory that starts at
+>> address 0x0 which causes this problem.
+> 
+> Then say this, and list the exact SoC's that can have this problem so
+> people know how to evaluate the bugfix and see if it is relevant for
+> their systems.
+> 
+>> I believe this could be a problem
+>> on any platforms if memory is configured to be starting at physical
+>> address 0x0 for these platforms.
+> 
+> Have you seen this be a problem?  So it's just a theoretical issue at
+> this point in time?
 
-Thanks, queued into devel branch of my tree for 3.14 kernel.
+Yes, I can consistently reproduce it. It is not just theoretical.
 
--Bryan
+Thanks,
 
-> diff --git a/drivers/leds/leds-tca6507.c b/drivers/leds/leds-tca6507.c
-> index 8cc304f36728..f5063f447463 100644
-> --- a/drivers/leds/leds-tca6507.c
-> +++ b/drivers/leds/leds-tca6507.c
-> @@ -682,7 +682,7 @@ tca6507_led_dt_init(struct i2c_client *client)
->                 return ERR_PTR(-ENODEV);
->
->         tca_leds = devm_kzalloc(&client->dev,
-> -                       sizeof(struct led_info) * count, GFP_KERNEL);
-> +                       sizeof(struct led_info) * NUM_LEDS, GFP_KERNEL);
->         if (!tca_leds)
->                 return ERR_PTR(-ENOMEM);
->
-> @@ -695,9 +695,9 @@ tca6507_led_dt_init(struct i2c_client *client)
->                         of_get_property(child, "label", NULL) ? : child->name;
->                 led.default_trigger =
->                         of_get_property(child, "linux,default-trigger", NULL);
-> -
-> +               led.flags = 0;
->                 ret = of_property_read_u32(child, "reg", &reg);
-> -               if (ret != 0)
-> +               if (ret != 0 || reg < 0 || reg >= NUM_LEDS)
->                         continue;
->
->                 tca_leds[reg] = led;
-> @@ -708,7 +708,7 @@ tca6507_led_dt_init(struct i2c_client *client)
->                 return ERR_PTR(-ENOMEM);
->
->         pdata->leds.leds = tca_leds;
-> -       pdata->leds.num_leds = count;
-> +       pdata->leds.num_leds = NUM_LEDS;
->
->         return pdata;
->  }
+Olav Haugan
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
