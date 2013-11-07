@@ -1,103 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab3KGVGI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 16:06:08 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:52192 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab3KGVGG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 16:06:06 -0500
+	id S1754485Ab3KGVHW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 16:07:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42630 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750939Ab3KGVHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 16:07:17 -0500
+Date: Thu, 7 Nov 2013 22:07:15 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andiry Xu <andiry@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Wang Shilong <wangsl-fnst@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Andiry Xu <andiry.xu@gmail.com>
+Subject: Re: [BUG][ext2] XIP does not work on ext2
+Message-ID: <20131107210715.GA20104@quack.suse.cz>
+References: <CAOvWMLZ-ezykR6TkFAoZ1UW20QF6XMOKeZH8R-FdFJkXjAP9nA@mail.gmail.com>
+ <20131105003733.GA24531@quack.suse.cz>
+ <CAOvWMLZ6_boRgQi2L9kqR_bWcnLDHY+uFo9g4DP=zxeGtT+dag@mail.gmail.com>
+ <20131105143221.GA30006@quack.suse.cz>
+ <CAOvWMLY9HAeQTsEwCchKNjL+1=-grBQrDO6-KCYcS-mxMYyRpw@mail.gmail.com>
+ <20131106211858.GB20477@quack.suse.cz>
+ <CAOvWMLa38zOigzVkcF78ivtszd6F02aNKsB28=Sd58OMeqb9sQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <527AD477.9080704@gmail.com>
-References: <1383778182-16941-1-git-send-email-delicious.quinoa@gmail.com>
-	<1383778182-16941-2-git-send-email-delicious.quinoa@gmail.com>
-	<20131106233427.GA6090@maple>
-	<527AD477.9080704@gmail.com>
-Date: Thu, 7 Nov 2013 15:06:04 -0600
-Message-ID: <CANk1AXQSoZPpMFu3qWqHW9HurGA868RLTFei8cdxuS9wCnWTbg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] gpio: add a driver for the Synopsys DesignWare APB
- GPIO block
-From: delicious quinoa <delicious.quinoa@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jamie Iles <jamie@jamieiles.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-gpio@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOvWMLa38zOigzVkcF78ivtszd6F02aNKsB28=Sd58OMeqb9sQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 6, 2013 at 5:44 PM, Sebastian Hesselbarth
-<sebastian.hesselbarth@gmail.com> wrote:
->>> +struct dwapb_gpio {
->>> +       struct  device          *dev;
->>> +       void __iomem            *regs;
->>> +       struct dwapb_gpio_port  *ports;
->>> +       unsigned int            nr_ports;
->>> +       struct irq_domain       *domain;
->>> +       int                     hwirq;
->>
->>
->> I'm not sure I fully understand what hwirq is in this context - is it
->> the IRQ line from the Synopsys block to the system interrupt controller?
->> If so I don't think this covers all configurations - the Picochip
->> devices for instance have each GPIO in port A as an individual IRQ going
->> to the VIC.
->
->
-> Usually, hwirq is the interrupt as seen from this very device, i.e. in
-> this case it is 0 up to 32 referencing the portA gpio line that
-> triggered an interrupt. In this drivers context 'hwirq' above is
-> actually the virtual irq number Linux made up to identify an interrupt
-> coming from this IP block.
->
-> Therefore, above should really be irq instead of hwirq - but with a
-> more detailed review, I think it can be removed completely.
->
->> It looks here like hwirq is used for all of the interrupt registers so
->> only one GPIO interrupt is supported?
->
->
-> Looking in _probe, currently only one upstream interrupt is requested.
-> Jamie is right, that you should grab all interrupts - but you can forget
-> their virtual number after registering the handler. There are helper
-> functions to get it back in irq handler.
->
+On Thu 07-11-13 12:14:13, Andiry Xu wrote:
+> On Wed, Nov 6, 2013 at 1:18 PM, Jan Kara <jack@suse.cz> wrote:
+> > On Tue 05-11-13 17:28:35, Andiry Xu wrote:
+> >> >> Do you know the reason why write() outperforms mmap() in some cases? I
+> >> >> know it's not related the thread but I really appreciate if you can
+> >> >> answer my question.
+> >> >   Well, I'm not completely sure. mmap()ed memory always works on page-by-page
+> >> > basis - you first access the page, it gets faulted in and you can further
+> >> > access it. So for small (sub page size) accesses this is a win because you
+> >> > don't have an overhead of syscall and fs write path. For accesses larger
+> >> > than page size the overhead of syscall and some initial checks is well
+> >> > hidden by other things. I guess write() ends up being more efficient
+> >> > because write path taken for each page is somewhat lighter than full page
+> >> > fault. But you'd need to look into perf data to get some hard numbers on
+> >> > where the time is spent.
+> >> >
+> >>
+> >> Thanks for the reply. However I have filled up the whole RAM disk
+> >> before doing the test, i.e. asked the brd driver to allocate all the
+> >> pages initially.
+> >   Well, pages in ramdisk are always present, that's not an issue. But you
+> > will get a page fault to map a particular physical page in process'
+> > virtual address space when you first access that virtual address in the
+> > mapping from the process. The cost of setting up this virtual->physical
+> > mapping is what I'm talking about.
+> >
+> 
+> Yes, you are right, there are page faults observed with perf. I
+> misunderstood page fault as copying pages between backing store and
+> physical memory.
+> 
+> > If you had a process which first mmaps the file and writes to all pages in
+> > the mapping and *then* measure the cost of another round of writing to the
+> > mapping, I would expect you should see speeds close to those of memory bus.
+> >
+> 
+> I've tried this as well. mmap() performance improves but still not as
+> good as write().
+> I used the perf report to compare write() and mmap() applications. For
+> write() version, top of perf report shows as:
+> 33.33%  __copy_user_nocache
+> 4.72%    ext2_get_blocks
+> 4.42%    mutex_unlock
+> 3.59%    __find_get_block
+> 
+> which looks reasonable.
+> 
+> However, for mmap() version, the perf report looks strange:
+> 94.98% libc-2.15.so       [.] 0x000000000014698d
+> 2.25%   page_fault
+> 0.18%   handle_mm_fault
+> 
+> I don't know what the first item is but it took the majority of cycles.
+  The first item means that it's some userspace code in libc. My guess
+would be that it's libc's memcpy() function (or whatever you use to write
+to mmap). How do you access the mmap?
 
-The IP configuration I have has only one irq line going to the gic,
-(that is the "hwirq" here) so I had one hwirq (the gic) for each IP
-instance.  The domain maps a Linux IRQ number for each gpio line.
-
-I will need to rework this to also support both this (one irq per IP
-block) and the picochip (one irq per gpio line coming out of the IP
-block).
-
->>> +static void __exit dwapb_gpio_exit(void)
->>> +{
->>> +       platform_driver_unregister(&dwapb_gpio_driver);
->>> +}
->>> +module_exit(dwapb_gpio_exit);
->>
->>
->> We can replace the registration and unregistration with
->> module_platform_driver() now.
->
->
-> +1 (again)
-
-OK
-
-Alan
-
->
-> Sebastian
->
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
