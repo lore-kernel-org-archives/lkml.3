@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab3KGNr0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 08:47:26 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:52766 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753361Ab3KGNrV (ORCPT
+	id S1754928Ab3KGNru (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 08:47:50 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:50843 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753087Ab3KGNoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 08:47:21 -0500
+	Thu, 7 Nov 2013 08:44:20 -0500
 From: Juri Lelli <juri.lelli@gmail.com>
 To: peterz@infradead.org, tglx@linutronix.de
 Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
@@ -19,244 +19,57 @@ Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
         raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
         jkacur@redhat.com, harald.gustafsson@ericsson.com,
         vincent.guittot@linaro.org, bruce.ashfield@windriver.com
-Subject: [PATCH 14/14] sched: add sched_dl documentation.
-Date: Thu,  7 Nov 2013 14:47:07 +0100
-Message-Id: <1383832027-15666-1-git-send-email-juri.lelli@gmail.com>
+Subject: [PATCH 01/14] sched: add sched_class->task_dead.
+Date: Thu,  7 Nov 2013 14:43:35 +0100
+Message-Id: <1383831828-15501-2-git-send-email-juri.lelli@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
+References: <1383831828-15501-1-git-send-email-juri.lelli@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dario Faggioli <raistlin@linux.it>
 
-Add in Documentation/scheduler/ some hints about the design
-choices, the usage and the future possible developments of the
-sched_dl scheduling class and of the SCHED_DEADLINE policy.
+Add a new function to the scheduling class interface. It is called
+at the end of a context switch, if the prev task is in TASK_DEAD state.
+
+It might be useful for the scheduling classes that want to be notified
+when one of their task dies, e.g. to perform some cleanup actions.
 
 Signed-off-by: Dario Faggioli <raistlin@linux.it>
 Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
 ---
- Documentation/scheduler/sched-deadline.txt |  196 ++++++++++++++++++++++++++++
- kernel/sched/deadline.c                    |    3 +-
- 2 files changed, 198 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/scheduler/sched-deadline.txt
+ kernel/sched/core.c  |    3 +++
+ kernel/sched/sched.h |    1 +
+ 2 files changed, 4 insertions(+)
 
-diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
-new file mode 100644
-index 0000000..4d1ed52
---- /dev/null
-+++ b/Documentation/scheduler/sched-deadline.txt
-@@ -0,0 +1,196 @@
-+			  Deadline Task Scheduling
-+			  ------------------------
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5ac63c9..850a02c 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1890,6 +1890,9 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
+ 	if (mm)
+ 		mmdrop(mm);
+ 	if (unlikely(prev_state == TASK_DEAD)) {
++		if (prev->sched_class->task_dead)
++			prev->sched_class->task_dead(prev);
 +
-+CONTENTS
-+========
-+
-+0. WARNING
-+1. Overview
-+2. Task scheduling
-+2. The Interface
-+3. Bandwidth management
-+  3.1 System-wide settings
-+  3.2 Task interface
-+  3.4 Default behavior
-+4. Tasks CPU affinity
-+  4.1 SCHED_DEADLINE and cpusets HOWTO
-+5. Future plans
-+
-+
-+0. WARNING
-+==========
-+
-+ Fiddling with these settings can result in an unpredictable or even unstable
-+ system behavior. As for -rt (group) scheduling, it is assumed that root users
-+ know what they're doing.
-+
-+
-+1. Overview
-+===========
-+
-+ The SCHED_DEADLINE policy contained inside the sched_dl scheduling class is
-+ basically an implementation of the Earliest Deadline First (EDF) scheduling
-+ algorithm, augmented with a mechanism (called Constant Bandwidth Server, CBS)
-+ that makes it possible to isolate the behavior of tasks between each other.
-+
-+
-+2. Task scheduling
-+==================
-+
-+ The typical -deadline task is composed of a computation phase (instance)
-+ which is activated on a periodic or sporadic fashion. The expected (maximum)
-+ duration of such computation is called the task's runtime; the time interval
-+ by which each instance needs to be completed is called the task's relative
-+ deadline. The task's absolute deadline is dynamically calculated as the
-+ time instant a task (or, more properly) activates plus the relative
-+ deadline.
-+
-+ The EDF[1] algorithm selects the task with the smallest absolute deadline as
-+ the one to be executed first, while the CBS[2,3] ensures that each task runs
-+ for at most its runtime every period, avoiding any interference between
-+ different tasks (bandwidth isolation).
-+ Thanks to this feature, also tasks that do not strictly comply with the
-+ computational model described above can effectively use the new policy.
-+ IOW, there are no limitations on what kind of task can exploit this new
-+ scheduling discipline, even if it must be said that it is particularly
-+ suited for periodic or sporadic tasks that need guarantees on their
-+ timing behavior, e.g., multimedia, streaming, control applications, etc.
-+
-+ References:
-+  1 - C. L. Liu and J. W. Layland. Scheduling algorithms for multiprogram-
-+      ming in a hard-real-time environment. Journal of the Association for
-+      Computing Machinery, 20(1), 1973.
-+  2 - L. Abeni , G. Buttazzo. Integrating Multimedia Applications in Hard
-+      Real-Time Systems. Proceedings of the 19th IEEE Real-time Systems
-+      Symposium, 1998. http://retis.sssup.it/~giorgio/paps/1998/rtss98-cbs.pdf
-+  3 - L. Abeni. Server Mechanisms for Multimedia Applications. ReTiS Lab
-+      Technical Report. http://xoomer.virgilio.it/lucabe72/pubs/tr-98-01.ps
-+
-+3. Bandwidth management
-+=======================
-+
-+ In order for the -deadline scheduling to be effective and useful, it is
-+ important to have some method to keep the allocation of the available CPU
-+ bandwidth to the tasks under control.
-+ This is usually called "admission control" and if it is not performed at all,
-+ no guarantee can be given on the actual scheduling of the -deadline tasks.
-+
-+ Since when RT-throttling has been introduced each task group has a bandwidth
-+ associated, calculated as a certain amount of runtime over a period.
-+ Moreover, to make it possible to manipulate such bandwidth, readable/writable
-+ controls have been added to both procfs (for system wide settings) and cgroupfs
-+ (for per-group settings).
-+ Therefore, the same interface is being used for controlling the bandwidth
-+ distrubution to -deadline tasks and task groups, i.e., new controls but with
-+ similar names, equivalent meaning and with the same usage paradigm are added.
-+
-+ However, more discussion is needed in order to figure out how we want to manage
-+ SCHED_DEADLINE bandwidth at the task group level. Therefore, SCHED_DEADLINE
-+ uses (for now) a less sophisticated, but actually very sensible, mechanism to
-+ ensure that a certain utilization cap is not overcome per each root_domain.
-+
-+ Another main difference between deadline bandwidth management and RT-throttling
-+ is that -deadline tasks have bandwidth on their own (while -rt ones don't!),
-+ and thus we don't need an higher level throttling mechanism to enforce the
-+ desired bandwidth.
-+
-+3.1 System wide settings
-+------------------------
-+
-+ The system wide settings are configured under the /proc virtual file system.
-+
-+ The control knob that is added to the /proc virtual file system is
-+ /proc/sys/kernel/sched_dl_runtime_us. It accepts (if written) and provides (if
-+ read) the new runtime for each CPU in each root_domain. The period control knob
-+ is instead shared with -rt settings (/proc/sys/kernel/sched_rt_period_us). 
-+
-+ The CPU bandwidth available to -deadline tasks is actually a sub-quota of
-+ the -rt bandwidth. By default 95% of system bandwidth is allocate to -rt tasks;
-+ among this, a 40% quota is reserved for -dl tasks. To have the actual quota a
-+ simple multiplication is needed: .95 * .40 = .38 (38% of system bandwidth for
-+ deadline tasks).
-+
-+ This means that, for a root_domain comprising M CPUs, -deadline tasks
-+ can be created until the sum of their bandwidths stay below:
-+
-+   M * (sched_dl_runtime_us * rt_bw)
-+
-+ It is also possible to disable this bandwidth management logic, and
-+ be thus free of oversubscribing the system up to any arbitrary level.
-+ This is done by writing -1 in /proc/sys/kernel/sched_dl_runtime_us or
-+ in /proc/sys/kernel/sched_rt_runtime_us.
-+
-+
-+3.2 Task interface
-+------------------
-+
-+ Specifying a periodic/sporadic task that executes for a given amount of
-+ runtime at each instance, and that is scheduled according to the urgency of
-+ its own timing constraints needs, in general, a way of declaring:
-+  - a (maximum/typical) instance execution time,
-+  - a minimum interval between consecutive instances,
-+  - a time constraint by which each instance must be completed.
-+
-+ Therefore:
-+  * a new struct sched_param2, containing all the necessary fields is
-+    provided;
-+  * the new scheduling related syscalls that manipulate it, i.e.,
-+    sched_setscheduler2(), sched_setparam2() and sched_getparam2()
-+    are implemented.
-+
-+
-+3.3 Default behavior
-+---------------------
-+
-+The default value for SCHED_DEADLINE bandwidth is to have dl_runtime equal to
-+40000. Being rt_period equal to 1000000, by default, it means that -deadline
-+tasks can use at most 40%, multiplied by the number of CPUs that compose the
-+root_domain, for each root_domain.
-+
-+A -deadline task cannot fork.
-+
-+4. Tasks CPU affinity
-+=====================
-+
-+-deadline tasks cannot have an affinity mask smaller that the entire
-+root_domain they are created on. However, affinities can be specified
-+through the cpuset facility (Documentation/cgroups/cpusets.txt).
-+
-+4.1 SCHED_DEADLINE and cpusets HOWTO
-+------------------------------------
-+
-+An example of a simple configuration (pin a -deadline task to CPU0)
-+follows (rt-app is used to create a -deadline task).
-+
-+mkdir /dev/cpuset
-+mount -t cgroup -o cpuset cpuset /dev/cpuset
-+cd /dev/cpuset
-+mkdir cpu0
-+echo 0 > cpu0/cpuset.cpus
-+echo 0 > cpu0/cpuset.mems
-+echo 1 > cpuset.cpu_exclusive
-+echo 0 > cpuset.sched_load_balance
-+echo 1 > cpu0/cpuset.cpu_exclusive
-+echo 1 > cpu0/cpuset.mem_exclusive
-+echo $$ > cpu0/tasks
-+rt-app -t 100000:10000:d:0 -D5 (it is now actually superfluous to specify
-+task affinity)
-+
-+5. Future plans
-+===============
-+
-+Still missing:
-+
-+ - refinements to deadline inheritance, especially regarding the possibility
-+   of retaining bandwidth isolation among non-interacting tasks. This is
-+   being studied from both theoretical and practical point of views, and
-+   hopefully we should be able to produce some demonstrative code soon;
-+ - (c)group based bandwidth management, and maybe scheduling;
-+ - access control for non-root users (and related security concerns to
-+   address), which is the best way to allow unprivileged use of the mechanisms
-+   and how to prevent non-root users "cheat" the system?
-+
-+As already discussed, we are planning also to merge this work with the EDF
-+throttling patches [https://lkml.org/lkml/2010/2/23/239] but we still are in
-+the preliminary phases of the merge and we really seek feedback that would
-+help us decide on the direction it should take.
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 9c1fd55..2e762b5 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -350,7 +350,8 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se,
-  * disrupting the schedulability of the system. Otherwise, we should
-  * refill the runtime and set the deadline a period in the future,
-  * because keeping the current (absolute) deadline of the task would
-- * result in breaking guarantees promised to other tasks.
-+ * result in breaking guarantees promised to other tasks (refer to
-+ * Documentation/scheduler/sched-deadline.txt for more informations).
-  *
-  * This function returns true if:
-  *
+ 		/*
+ 		 * Remove function-return probe instances associated with this
+ 		 * task and put them back on the free list.
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index b3c5653..64eda5c 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -992,6 +992,7 @@ struct sched_class {
+ 	void (*set_curr_task) (struct rq *rq);
+ 	void (*task_tick) (struct rq *rq, struct task_struct *p, int queued);
+ 	void (*task_fork) (struct task_struct *p);
++	void (*task_dead) (struct task_struct *p);
+ 
+ 	void (*switched_from) (struct rq *this_rq, struct task_struct *task);
+ 	void (*switched_to) (struct rq *this_rq, struct task_struct *task);
 -- 
 1.7.9.5
 
