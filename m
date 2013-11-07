@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404Ab3KGMzh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 07:55:37 -0500
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:41927 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750956Ab3KGMzg (ORCPT
+	id S1752772Ab3KGM7f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 07:59:35 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:63980 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab3KGM7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 07:55:36 -0500
-X-Sasl-enc: uSQUVXHcsX1Z7345CnPoiuUsRnsdXyTzsXgqGckJwlfA 1383828935
-Date: Thu, 7 Nov 2013 10:55:32 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>, Paul Moore <paul@paul-moore.com>,
-        Richard Weinberger <richard@nod.at>,
-        libseccomp-discuss@lists.sourceforge.net,
-        Will Drewry <wad@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: ARM audit, seccomp, etc are broken wrt OABI syscalls
-Message-ID: <20131107125532.GB3355@khazad-dum.debian.net>
-References: <CALCETrUt7Ojh5Yy4KYgBPj_wBr=fzKKJ=OOgGP9BtXoKrr9QnA@mail.gmail.com>
- <CAGXu5jJreo001uBLV8oAgR_Z2WZK2qtH8YfvriQJVAQ4SgdRzw@mail.gmail.com>
- <20131106004058.GU16735@n2100.arm.linux.org.uk>
- <CALCETrXd7SknNCptTTojBzOo+RNzPwGrgjigVdVeOkGMAtajWg@mail.gmail.com>
+	Thu, 7 Nov 2013 07:59:31 -0500
+Date: Thu, 7 Nov 2013 13:59:26 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mike Galbraith <bitbucket@online.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo
+Message-ID: <20131107125923.GB24644@localhost.localdomain>
+References: <1383228427.5272.36.camel@marge.simpson.net>
+ <alpine.DEB.2.02.1311061842160.23353@ionos.tec.linutronix.de>
+ <1383794799.5441.16.camel@marge.simpson.net>
+ <1383798668.5441.25.camel@marge.simpson.net>
+ <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrXd7SknNCptTTojBzOo+RNzPwGrgjigVdVeOkGMAtajWg@mail.gmail.com>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
+In-Reply-To: <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 05 Nov 2013, Andy Lutomirski wrote:
-> Maybe the thing to do is to put a warning in the config text for
-> CONFIG_OABI_COMPAT that describes the problems (malicious userspace
-> can confuse syscall auditors, strace, etc.), change the "if in doubt"
-> part to N, and disable seccomp filters if CONFIG_OABI_COMPAT.  That
-> might even get Debian to change their default.
+On Thu, Nov 07, 2013 at 12:21:11PM +0100, Thomas Gleixner wrote:
+> Mike,
+> 
+> On Thu, 7 Nov 2013, Mike Galbraith wrote:
+> 
+> > On Thu, 2013-11-07 at 04:26 +0100, Mike Galbraith wrote: 
+> > > On Wed, 2013-11-06 at 18:49 +0100, Thomas Gleixner wrote: 
+> > 
+> > > > I bet you are trying to work around some of the side effects of the
+> > > > occasional tick which is still necessary despite of full nohz, right?
+> > > 
+> > > Nope, I wanted to check out cost of nohz_full for rt, and found that it
+> > > doesn't work at all instead, looked, and found that the sole running
+> > > task has just awakened ksoftirqd when it wants to shut the tick down, so
+> > > that shutdown never happens. 
+> > 
+> > Like so in virgin 3.10-rt.  Box is x3550 M3 booted nowatchdog
+> > rcu_nocbs=1-3 nohz_full=1-3, and CPUs1-3 are completely isolated via
+> > cpusets as well.
+> 
+> well, that very same problem is in mainline if you add "threadirqs" to
+> the command line. But we can be smart about this. The untested patch
+> below should address that issue. If that works on mainline we can
+> adapt it for RT (needs a trylock(&base->lock) there).
+> 
+> Though it's not a full solution. It needs some thought versus the
+> softirq code of timers. Assume we have only one timer queued 1000
+> ticks into the future. So this change will cause the timer softirq not
+> to be called until that timer expires and then the timer softirq is
+> going to do 1000 loops until it catches up with jiffies. That's
+> anything but pretty ...
+> 
+> What worries me more is this one:
+> 
+>   pert-5229  [003] d..h1..   684.482618: softirq_raise: vec=9 [action=RCU]
+> 
+> The CPU has no callbacks as you shoved them over to cpu 0, so why is
+> the RCU softirq raised?
 
-Bug reported to the Debian BTS: #728975
-http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=728975
+I see, so the problem is that we raise the timer softirq unconditionally
+from the tick?
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Ok we definetly don't want to keep that behaviour, even if softirqs are not
+threaded, that's an overhead. So I'm looking at that loop in __run_timers()
+and I guess you mean the "base->timer_jiffies" incrementation?
+
+That's indeed not pretty. How do we handle exit from long dynticks idle periods? Are we
+doing that loop until we catch up with the new jiffies?
+
+Then it relies on the timer cascade stuff which is very obscure code to me...
