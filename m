@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727Ab3KGLy6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 06:54:58 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:39223 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958Ab3KGLyz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 06:54:55 -0500
-Date: Thu, 7 Nov 2013 11:54:48 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org
-Subject: Re: [PATCH 3/7] ARM: ux500: Remove ATAG support for SDI (MMC)
-Message-ID: <20131107115448.GO30901@lee--X1>
-References: <1383732348-18576-1-git-send-email-lee.jones@linaro.org>
- <1383732348-18576-4-git-send-email-lee.jones@linaro.org>
- <20131107114654.GF16735@n2100.arm.linux.org.uk>
+	id S1751188Ab3KGMAs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 07:00:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50794 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750869Ab3KGMAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 07:00:46 -0500
+Date: Thu, 7 Nov 2013 20:00:12 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: matt.fleming@intel.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] efi earlyprintk fix
+Message-ID: <20131107120012.GA4116@dhcp-16-126.nay.redhat.com>
+References: <20131103121647.GA4770@dhcp-16-126.nay.redhat.com>
+ <20131104103739.GD21688@console-pimps.org>
+ <20131104125853.GB5118@dhcp-16-126.nay.redhat.com>
+ <20131106084921.GA22856@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131107114654.GF16735@n2100.arm.linux.org.uk>
+In-Reply-To: <20131106084921.GA22856@console-pimps.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 07 Nov 2013, Russell King - ARM Linux wrote:
-
-> On Wed, Nov 06, 2013 at 10:05:44AM +0000, Lee Jones wrote:
-> > This hasn't been used since we moved over to a Device Tree only platform.
+On 11/06/13 at 08:49am, Matt Fleming wrote:
+> On Mon, 04 Nov, at 08:58:53PM, Dave Young wrote:
+> > On 11/04/13 at 10:37am, Matt Fleming wrote:
+> > > On Sun, 03 Nov, at 08:16:47PM, Dave Young wrote:
+> > > > 
+> > > > there's below one line shift problem:
+> > > > 
+> > > >                      ACPI=0xdabfe000  ACPI 2.0=0xdabfe014  SMBIOS=0xdaa9e000
+> > > > [    0.000000] efi:  
+> > > > 
+> > > > In fact check efi_y and the lfb_height should be compared at the begin of the
+> > > > loop of early_efi_write
+> > >  
+> > > Hmm... this is interesting. I can't produce this on any of my machines.
+> > > Where did you see this? What hardware?
+> > 
+> > It's my laptop Thinkpad T420, the screen scolls very fast, I use boot_delay=500
+> > to verify it with my patch for moving boot_delay param an early param.
 > 
-> The patch summary line is slightly off.  There's nothing here to do with
-> ATAGs.
+> Dave, how are you booting your laptop? Are you using grub? Does the
+> earlyprintk output start at the bottom of the screen? Do you set any
+> parameters for efifb?
 
-Oh I see. Yes you're right, it was just what Arnd, myself and a few
-others called non-DT 'cos it was easier.
-
-Linus are you happy to fixup the subject lines of these two commits or
-would you like me to re-submit?
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I tried both grub and efi stub. The messages seems come from the n-1 line
+of the screen. I did not set any parameters by myself.
