@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab3KGCTA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Nov 2013 21:19:00 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:37986 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753136Ab3KGCS7 (ORCPT
+	id S1753402Ab3KGCVO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Nov 2013 21:21:14 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:55506 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370Ab3KGCVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Nov 2013 21:18:59 -0500
-MIME-Version: 1.0
-X-Originating-IP: [111.240.52.201]
-In-Reply-To: <CACVXFVMn6RSXchQ8u47F35_J+YSnp1bwF1tr-8uCEYwvFsOfgQ@mail.gmail.com>
-References: <1383789208.5970.1.camel@phoenix>
-	<CACVXFVMn6RSXchQ8u47F35_J+YSnp1bwF1tr-8uCEYwvFsOfgQ@mail.gmail.com>
-Date: Thu, 7 Nov 2013 10:18:58 +0800
-Message-ID: <CAFRkauAEt-YhBt11opj_GVCLrxGsTSd2LowWGmukTSmGuJkd3A@mail.gmail.com>
-Subject: Re: kernel BUG at kernel/kallsyms.c:222!
-From: Axel Lin <axel.lin@ingics.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Russell King <linux@arm.linux.org.uk>, Michal Marek <mmarek@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 6 Nov 2013 21:21:13 -0500
+Date: Thu, 7 Nov 2013 13:21:02 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: linux-next: manual merge of the drm tree with Linus' tree
+Message-Id: <20131107132102.17d5f340fdf80dc0faa80c4c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__7_Nov_2013_13_21_02_+1100_dqOA/LMkTNZ1gD2J"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/11/7 Ming Lei <tom.leiming@gmail.com>:
-> Hi,
->
-> On Thu, Nov 7, 2013 at 9:53 AM, Axel Lin <axel.lin@ingics.com> wrote:
->> Hi,
->> I got below oops while debugging a sd controller driver:
->>
->> [    4.032026] ------------[ cut here ]------------
->> [    4.036730] kernel BUG at kernel/kallsyms.c:222!
->> [    4.041501] Internal error: Oops - BUG: 0 [#1] ARM
->> [    4.046847] CPU: 0 PID: 6 Comm: kworker/u2:0 Not tainted 3.12.0-00061-g0835d93-dirty #1657
->>
->> I can avoid the oops by either revert commit f6537f2f0eba4eba
->> "scripts/kallsyms: filter symbols not in kernel address space",
->> or comment out below line in drivers/mmc/core/sdio.c.
->>         dev_dbg(&card->dev, "calling %pF\n", f->vendor_fixup);
->>
->> The f->vendor_fixup points to add_quirk_for_sdio_devices.
->> It looks like the symbol add_quirk_for_sdio_devices is missing.
->>
->> So I revert commit f6537f2f and check /proc/kallsyms:
->> ~ # grep add_quirk_for_sdio_devices /proc/kallsyms
->> 00157bf8 t add_quirk_for_sdio_devices
->>
->> If I don't revert commit f6537f2f and just comment out above dev_dbg line,
->> Checking /proc/kallsyms then I got:
->> ~ # grep add_quirk_for_sdio_devices /proc/kallsyms
->> [sched_delayed] sched: RT throttling activated
->> BUG: soft lockup - CPU#0 stuck for 21s! [grep:59]
->>
->> CPU: 0 PID: 59 Comm: grep Not tainted 3.12.0-00061-g0835d93-dirty #1675
->> task: 01d36320 ti: 008be000 task.ti: 008be000
->>
->> BTW, I'm testing it on a noMMU platform (arm7tdmi).
->
-> Could you share what is the value of CONFIG_PAGE_OFFSET
-> on your noMMU platform?
+--Signature=_Thu__7_Nov_2013_13_21_02_+1100_dqOA/LMkTNZ1gD2J
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-$ grep  CONFIG_PAGE_OFFSET .config
-CONFIG_PAGE_OFFSET=0xC0000000
+Hi Dave,
 
->
->
-> Thanks,
-> --
-> Ming Lei
+Today's linux-next merge of the drm tree got a conflict in
+drivers/gpu/drm/radeon/radeon_connectors.c between commit 108dc8e8b44a
+("drm/radeon: rework audio option") from Linus' tree and commit
+ad41550666f8 ("drm/radeon: enable hdmi audio by default") from the drm
+tree.
+
+I fixed it up (I used the latter version) and can carry the fix as
+necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__7_Nov_2013_13_21_02_+1100_dqOA/LMkTNZ1gD2J
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSevkTAAoJEMDTa8Ir7ZwVt3sQAIHLsZiiMcz5CTjUfUCaCPDQ
+/A5jywTGrsa8hhgMqtoquzEkOd0BoRZb7DAwG3OSX49Rv3g5WJeAtVOFmdDPQg0U
+01iWGyBnLCnJwi3hItYTSQchhoRiInDQEL6vxqqJZkxDVXz7NQ50ngw6QS5XFcVO
+P2UBy8L5oYkHRlMvqKP/kD8pTehdc6WVzBIPagp2bkaKwJy9guX2L8TfgULYoDQW
+O2WJqQHP8qWzt6nZ5QuPonHSi12L1BT84zVHCgwW2567WmCkCNuSX1m3JvluHUHM
+GM7fZSlTHvCaZ6op0JQtjB9LvesUopCMI2AqlTo2S/LvL/OUhqqljrOAvBI4J7cZ
+MSupzQdaSXnaNIweXSKG/ae6ZnzV7+Cs4Z3yvN9EHxcf5oD2ybNB/MzOF8PcRjEd
+5wJ+YXkRdrUQ31yczUafJlo2i4niV0dJI6ORWk4HvoeVzmOkZgtAcNUEdkj9GNAC
+48AgkG7mzFoTNF0/FPWp9e0BhTohkL5HIGcU4fCJi6K9jVSqAZkIQM1+J3RRd8nH
+XG07ReIgsleYiGFPuWFpW7Xxw0IPZlCMdXpTAzwfIRcg0xyxwg9klzEc67yAm21R
+2NveU++e0nfX2+Atx9ULomQshRkM05xyB/y+QcaeIzxBzzWFXDR4lL7ArbcXQdmB
+2pXKePaIY5oYX6w9Ind/
+=U+Gv
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__7_Nov_2013_13_21_02_+1100_dqOA/LMkTNZ1gD2J--
