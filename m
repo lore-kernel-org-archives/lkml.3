@@ -1,195 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730Ab3KGHE5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 02:04:57 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56116 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751642Ab3KGHEt (ORCPT
+	id S1753937Ab3KGHHI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 02:07:08 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61773 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752667Ab3KGHHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 02:04:49 -0500
-X-AuditID: 9c930179-b7cebae000001cfe-45-527b3b9089f0
-Date: Thu, 7 Nov 2013 16:04:51 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, lliubbo@gmail.com,
-        jmarchan@redhat.com, mgorman@suse.de, riel@redhat.com,
-        hughd@google.com, akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: zsmalloc: Ensure handle is never 0 on success
-Message-ID: <20131107070451.GA10645@bbox>
+	Thu, 7 Nov 2013 02:07:05 -0500
+X-AuditID: 9c93016f-b7bb9ae000001e30-ca-527b3c173868
+From: Namhyung Kim <namhyung@kernel.org>
+To: Rodrigo Campos <rodrigo@sdfg.com.ar>
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@redhat.com, acme@ghostprotocols.net
+Subject: Re: [PATCH] perf: Remove unneeded include
+References: <1383776454-10595-1-git-send-email-rodrigo@sdfg.com.ar>
+Date: Thu, 07 Nov 2013 16:07:03 +0900
+In-Reply-To: <1383776454-10595-1-git-send-email-rodrigo@sdfg.com.ar> (Rodrigo
+	Campos's message of "Wed, 6 Nov 2013 22:20:54 +0000")
+Message-ID: <87iow4wuzs.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 06, 2013 at 07:05:11PM -0800, Greg KH wrote:
-> On Wed, Nov 06, 2013 at 03:46:19PM -0800, Nitin Gupta wrote:
->  > I'm getting really tired of them hanging around in here for many years
-> > > now...
-> > >
-> > 
-> > Minchan has tried many times to promote zram out of staging. This was
-> > his most recent attempt:
-> > 
-> > https://lkml.org/lkml/2013/8/21/54
-> > 
-> > There he provided arguments for zram inclusion, how it can help in
-> > situations where zswap can't and why generalizing /dev/ramX would
-> > not be a great idea. So, cannot say why it wasn't picked up
-> > for inclusion at that time.
-> > 
-> > > Should I just remove them if no one is working on getting them merged
-> > > "properly"?
-> > >
-> > 
-> > Please refer the mail thread (link above) and see Minchan's
-> > justifications for zram.
-> > If they don't sound convincing enough then please remove zram+zsmalloc
-> > from staging.
-> 
-> You don't need to be convincing me, you need to be convincing the
-> maintainers of the area of the kernel you are working with.
-> 
-> And since the last time you all tried to get this merged was back in
-> August, I'm feeling that you all have given up, so it needs to be
-> deleted.  I'll go do that for 3.14, and if someone wants to pick it up
-> and merge it properly, they can easily revert it.
+Hi Rodrigo,
 
-I'm guilty and I have been busy by other stuff. Sorry for that.
-Fortunately, I discussed this issue with Hugh in this Linuxcon for a
-long time(Thanks Hugh!) he felt zram's block device abstraction is
-better design rather than frontswap backend stuff although it's a question
-where we put zsmalloc. I will CC Hugh because many of things is related
-to swap subsystem and his opinion is really important.
-And I discussed it with Rik and he feel positive about zram.
+On Wed,  6 Nov 2013 22:20:54 +0000, Rodrigo Campos wrote:
+> There is no point in sort.h including itself.
+>
+> The include was added when the file was created, in commit "perf tools: Create
+> util/sort.and use it" (dd68ada2d) and added a include to "sort.h" in lot of
+> files (all the files that started using the file). It was probably added by
+> mistake on sort.h too.
 
-Last impression Andrw gave me by private mail is he want to merge
-zram's functionality into zswap or vise versa.
-If I misunderstood, please correct me.
-I understand his concern but I guess he didn't have a time to read
-my long description due to a ton of works at that time.
-So, I will try one more time.
-I hope I'd like to listen feedback than *silence* so that we can
-move forward than stall.
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
-Recently, Bob tried to move zsmalloc under mm directory to unify
-zram and zswap with adding pseudo block device in zswap(It's
-very weired to me. I think it's horrible monster which is lying
-between mm and block in layering POV) but he was ignoring zram's
-block device (a.k.a zram-blk) feature and considered only swap
-usecase of zram, in turn, it lose zram's good concept. 
-I already convered other topics Bob raised in this thread[1]
-and why I think zram is better in the thread.
-
-Will repeat one more time and hope gray beards penguins grab a
-time in this time and they give a conclusion/direction to me so
-that we don't lose lots of user and functionality.
-
-========== &< ===========
-
-Mel raised an another issue in v6, "maintainance headache".
-He claimed zswap and zram has a similar goal that is to compresss
-swap pages so if we promote zram, maintainance headache happens
-sometime by diverging implementaion between zswap and zram
-so that he want to unify zram and zswap. For it, he want zswap
-to implement pseudo block device like Bob did to emulate zram so
-zswap can have an advantage of writeback as well as zram's benefit.
-But I wonder frontswap-based zswap's writeback is really good
-approach for writeback POV. I think that problem isn't only
-specific for zswap. If we want to configure multiple swap hierarchy
-with various speed device such as RAM, NVRAM, SSD, eMMC, NAS etc,
-it would be a general problem. So we should think of more general
-approach. At a glance, I can see two approach.
-
-First, VM could be aware of heterogeneous swap configuration
-so it could aim for being able to configure cache hierarchy
-among swap devices. It may need indirction layer on swap, which
-was already talked about that way so VM can migrate a block from
-A to B easily. It will support various configuration with VM's
-hints, maybe, in future.
-http://lkml.indiana.edu/hypermail/linux/kernel/1203.3/03812.html
-
-Second, as more practical solution, we could use device mapper like
-dm-cache(https://lwn.net/Articles/540996/), which makes it very
-flexible. Now, it supports various configruation and cache policy
-(block size, writeback/writethrough, LRU, MFU although MQ is merged
-now) so it would be good fit for our purpose. Even, it can make zram
-support writeback. I tested it following as following scenario
-in KVM 4 CPU, 1G DRAM with background 800M memory hogger, which is
-allocates random data up to 800M.
-
-1) zram swap disk 1G, untar kernel.tgz to tmpfs, build -j 4
-   Fail to untar due to shortage of memory space by tmpfs default size limit
-
-2) zram swap disk 1G, untar kernel.tgz to ext2 on zram-blk, build -j 4
-   OOM happens while building the kernel but it untar successfully
-   on ext2 based on zram-blk. The reason OOM happend is zram can not find
-   free pages from main memory to store swap out pages although empty
-   swap space is still enough.
-
-3) dm-cache swap disk 1G, untar kernel.tgz to ext2 on zram-blk, build -j 4
-   dmcache consists of zram-meta 10M, zram-cache 1G and real swap storage 1G
-   No OOM happens and successfully building done.
-
-Above tests proves zram can support writeback into real swap storage
-so that zram-cache can always have a free space. If necessary, we could
-add new plugin in dm-cache. I see It's really flexible and well-layered
-architecure so zram-blk's concept is good for us and it has lots of
-potential to be enhanced by MM/FS/Block developers.
-
-As other disadvantage of zswap writeback, frontswap's semantic is
-synchronous API so zswap should decompress in memory zpage
-right before writeback and even, it writes pages one by one,
-not a batch. If we extend frontswap API, we would enhance it but
-I belive we can do better in device mapper layer which is aware of
-block align, bandwidth, mapping table, asynchronous and lots of hints
-from the block layer. Nonetheless, if we should merge zram's
-functionality to zswap, I think zram should include zswap's
-functionaliy(But I hope it will never happen) because old age zram
-already has lots of real users rather than new young zswap so it's
-more handy to unify them with keeping changelog which is one of
-valuable things getting from staging stay for a long time.
-
-The reason zram doesn't support writeback until now is just shortage
-of needs. The zram's main customers were embedded people so writeback
-into real swap storage is too bad for interactivity and wear-leveling
-on low falsh devices. But like above, zram has a potential to support
-writeback with other block drivers or more reasonable VM enhance
-so I'd like to claim zram's block concept is really good.
-
-Another zram-blk's usecase is following as.
-The admin can format /dev/zramX with any FS and mount on it.
-It could help small memory system, too. For exmaple, many embedded
-system don't have swap so although tmpfs can support swapout,
-it's pointless. Then, let's assume temp file growing up until half
-of system memory once in a while. We don't want to write it on flash
-by wear-leveing issue and response problem so we want to keep in-memory.
-But if we use tmpfs, it should evict half of working set to cover them
-when the size reach peak. In the case, zram-blk would be good fit, too.
-
-I'd like to enhance zram with more features like zsmalloc-compaction,
-, async I/O, parallel decompression and so on but zram developers cannot
-do it now because Greg, staging maintainer, doesn't want to add new feature
-until promotion is done because zram have been in staging for a very long time.
-Acutally, some patches about enhance are pending for a long time.
-
-[1] https://lkml.org/lkml/2013/8/21/141
-
-> 
-> thanks,
-> 
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Kind regards,
-Minchan Kim
+Thanks,
+Namhyung
