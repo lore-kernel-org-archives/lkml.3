@@ -1,157 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018Ab3KGXja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 18:39:30 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:62497 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755805Ab3KGXjW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 18:39:22 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131101134120.13a44225@notabene.brown>
-References: <20131101134120.13a44225@notabene.brown>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Thu, 7 Nov 2013 15:39:00 -0800
-Message-ID: <CAK5ve-LzYLr0xuvNA3MX=pECPPfAkDFqExPpmQt8GF+9jf5uHg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] LEDS: tca6502: add device-tree support for GPIO configuration.
-To: NeilBrown <neilb@suse.de>
-Cc: Richard Purdie <rpurdie@rpsys.net>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Belisko Marek <marek.belisko@gmail.com>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755959Ab3KGXlT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 18:41:19 -0500
+Received: from mail.tpi.com ([74.45.170.26]:45571 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753085Ab3KGXlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 18:41:10 -0500
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>, Jeff Layton <jlayton@redhat.com>,
+        Steve French <sfrench@samba.org>
+Subject: [PATCH linux-next] cifs: Use data structures to compute NTLMv2 response offsets
+Date: Thu,  7 Nov 2013 16:40:57 -0700
+Message-Id: <1383867657-110399-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 31, 2013 at 7:41 PM, NeilBrown <neilb@suse.de> wrote:
->
+A bit of cleanup plus some gratuitous variable renaming. I think using
+structures instead of numeric offsets makes this code much more
+understandable.
 
-[PATCH 2/2] LEDS: tca6502: add device-tree support for GPIO configuration.
+Also added a comment about current time range expected by
+the server.
 
-I think it should be tca6507, right? Typo?
+Cc: Jeff Layton <jlayton@redhat.com>
+Cc: Steve French <sfrench@samba.org>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
 
-For other parts of this patch, I'm OK for them.
+The comment about time of day needing to be within 5 minutes is important (to me
+at least). I spent the best part of a week thinking I had endian issues on powerpc
+when in truth I was just too stupid to notice that the clock
+was not updated. Danged embedded platforms...
 
-And just a quick scan of the leds-tca6507, I found bunch of typos in
-the comments:
+checkpatch has some problems with this patch regarding attribute packed, but I chose
+to remain consistent with existing code.
 
-* An led-tca6507 device must be provided with platform data.  This data
- * lists for each output: the name, default trigger, and whether the signal
- * is being used as a GPiO rather than an led.  'struct led_plaform_data'
+WARNING: __packed is preferred over __attribute__((packed))
+#141: FILE: fs/cifs/cifspdu.h:705:
++	    } __attribute__((packed)) challenge;
 
-Can we unify to use GPIO and gpio?
+WARNING: __packed is preferred over __attribute__((packed))
+#142: FILE: fs/cifs/cifspdu.h:706:
++	} __attribute__((packed));
 
- * is used for this.  If 'name' is NULL, the output isn't used.  If 'flags'
- * is TCA6507_MAKE_CPIO, the output is a GPO.
+total: 0 errors, 2 warnings, 99 lines checked
 
-Here should be TCA6507_MAKE_GPIO and GPIO instead of GPO
+Tested on cifs-2.6 for-linus (c481e9feee78c6ce1ba0a1c8c892049f6514f6cf) by mounting
+to iOS 10.8 and Win 8.0 Pro.
 
- * The "struct led_platform_data" can be embedded in a
- * "struct tca6507_platform_data" which adds a 'gpio_base' for the GPiOs,
- * and a 'setup' callback which is called once the GPiOs are available.
+rtg
 
-Don't use GPiO, please.
+ fs/cifs/cifsencrypt.c |   40 ++++++++++++++++++++++++----------------
+ fs/cifs/cifspdu.h     |    8 +++++++-
+ 2 files changed, 31 insertions(+), 17 deletions(-)
 
-Could you please review the code again and submit a cleanup patch to
-fix those typos?
+diff --git a/fs/cifs/cifsencrypt.c b/fs/cifs/cifsencrypt.c
+index fc6f4f3..4934347 100644
+--- a/fs/cifs/cifsencrypt.c
++++ b/fs/cifs/cifsencrypt.c
+@@ -548,7 +548,13 @@ static int
+ CalcNTLMv2_response(const struct cifs_ses *ses, char *ntlmv2_hash)
+ {
+ 	int rc;
+-	unsigned int offset = CIFS_SESS_KEY_SIZE + 8;
++	struct ntlmv2_resp *ntlmv2 = (struct ntlmv2_resp *)
++	    (ses->auth_key.response + CIFS_SESS_KEY_SIZE);
++	unsigned int hash_len;
++
++	/* The MD5 hash starts at challenge_key.key */
++	hash_len = ses->auth_key.len - (CIFS_SESS_KEY_SIZE +
++		offsetof(struct ntlmv2_resp, challenge.key[0]));
+ 
+ 	if (!ses->server->secmech.sdeschmacmd5) {
+ 		cifs_dbg(VFS, "%s: can't generate ntlmv2 hash\n", __func__);
+@@ -556,7 +562,7 @@ CalcNTLMv2_response(const struct cifs_ses *ses, char *ntlmv2_hash)
+ 	}
+ 
+ 	rc = crypto_shash_setkey(ses->server->secmech.hmacmd5,
+-				ntlmv2_hash, CIFS_HMAC_MD5_HASH_SIZE);
++				 ntlmv2_hash, CIFS_HMAC_MD5_HASH_SIZE);
+ 	if (rc) {
+ 		cifs_dbg(VFS, "%s: Could not set NTLMV2 Hash as a key\n",
+ 			 __func__);
+@@ -570,20 +576,21 @@ CalcNTLMv2_response(const struct cifs_ses *ses, char *ntlmv2_hash)
+ 	}
+ 
+ 	if (ses->server->negflavor == CIFS_NEGFLAVOR_EXTENDED)
+-		memcpy(ses->auth_key.response + offset,
+-			ses->ntlmssp->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
++		memcpy(ntlmv2->challenge.key,
++		       ses->ntlmssp->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
+ 	else
+-		memcpy(ses->auth_key.response + offset,
+-			ses->server->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
++		memcpy(ntlmv2->challenge.key,
++		       ses->server->cryptkey, CIFS_SERVER_CHALLENGE_SIZE);
+ 	rc = crypto_shash_update(&ses->server->secmech.sdeschmacmd5->shash,
+-		ses->auth_key.response + offset, ses->auth_key.len - offset);
++				 ntlmv2->challenge.key, hash_len);
+ 	if (rc) {
+ 		cifs_dbg(VFS, "%s: Could not update with response\n", __func__);
+ 		return rc;
+ 	}
+ 
++	/* Note that the MD5 digest over writes anon.challenge_key.key */
+ 	rc = crypto_shash_final(&ses->server->secmech.sdeschmacmd5->shash,
+-		ses->auth_key.response + CIFS_SESS_KEY_SIZE);
++				ntlmv2->ntlmv2_hash);
+ 	if (rc)
+ 		cifs_dbg(VFS, "%s: Could not generate md5 hash\n", __func__);
+ 
+@@ -627,7 +634,7 @@ setup_ntlmv2_rsp(struct cifs_ses *ses, const struct nls_table *nls_cp)
+ 	int rc;
+ 	int baselen;
+ 	unsigned int tilen;
+-	struct ntlmv2_resp *buf;
++	struct ntlmv2_resp *ntlmv2;
+ 	char ntlmv2_hash[16];
+ 	unsigned char *tiblob = NULL; /* target info blob */
+ 
+@@ -660,13 +667,14 @@ setup_ntlmv2_rsp(struct cifs_ses *ses, const struct nls_table *nls_cp)
+ 	}
+ 	ses->auth_key.len += baselen;
+ 
+-	buf = (struct ntlmv2_resp *)
++	ntlmv2 = (struct ntlmv2_resp *)
+ 			(ses->auth_key.response + CIFS_SESS_KEY_SIZE);
+-	buf->blob_signature = cpu_to_le32(0x00000101);
+-	buf->reserved = 0;
+-	buf->time = cpu_to_le64(cifs_UnixTimeToNT(CURRENT_TIME));
+-	get_random_bytes(&buf->client_chal, sizeof(buf->client_chal));
+-	buf->reserved2 = 0;
++	ntlmv2->blob_signature = cpu_to_le32(0x00000101);
++	ntlmv2->reserved = 0;
++	/* Must be within 5 minutes of the server */
++	ntlmv2->time = cpu_to_le64(cifs_UnixTimeToNT(CURRENT_TIME));
++	get_random_bytes(&ntlmv2->client_chal, sizeof(ntlmv2->client_chal));
++	ntlmv2->reserved2 = 0;
+ 
+ 	memcpy(ses->auth_key.response + baselen, tiblob, tilen);
+ 
+@@ -706,7 +714,7 @@ setup_ntlmv2_rsp(struct cifs_ses *ses, const struct nls_table *nls_cp)
+ 	}
+ 
+ 	rc = crypto_shash_update(&ses->server->secmech.sdeschmacmd5->shash,
+-		ses->auth_key.response + CIFS_SESS_KEY_SIZE,
++		ntlmv2->ntlmv2_hash,
+ 		CIFS_HMAC_MD5_HASH_SIZE);
+ 	if (rc) {
+ 		cifs_dbg(VFS, "%s: Could not update with response\n", __func__);
+diff --git a/fs/cifs/cifspdu.h b/fs/cifs/cifspdu.h
+index 9e5ee34..33df36e 100644
+--- a/fs/cifs/cifspdu.h
++++ b/fs/cifs/cifspdu.h
+@@ -697,7 +697,13 @@ struct ntlmssp2_name {
+ } __attribute__((packed));
+ 
+ struct ntlmv2_resp {
+-	char ntlmv2_hash[CIFS_ENCPWD_SIZE];
++	union {
++	    char ntlmv2_hash[CIFS_ENCPWD_SIZE];
++	    struct {
++		__u8 reserved[8];
++		__u8 key[CIFS_SERVER_CHALLENGE_SIZE];
++	    } __attribute__((packed)) challenge;
++	} __attribute__((packed));
+ 	__le32 blob_signature;
+ 	__u32  reserved;
+ 	__le64  time;
+-- 
+1.7.9.5
 
-Thanks,
--Bryan
-
-
-> The 7 lines driven by the TCA6507 can either drive LEDs or act as output-only
-> GPIOs.
->
-> To make this distinction in devicetree we use the "compatible" property.
->
-> If the device attached to a line is "compatible" with "gpio", we treat it
-> like a GPIO.  If it is "compatible" with "led" (or if no "compatible" value
-> is set) we treat it like an LED.
->
-> Signed-off-by: NeilBrown <neilb@suse.de>
->
-> diff --git a/Documentation/devicetree/bindings/leds/tca6507.txt b/Documentation/devicetree/bindings/leds/tca6507.txt
-> index 80ff3dfb1f32..d7221b84987c 100644
-> --- a/Documentation/devicetree/bindings/leds/tca6507.txt
-> +++ b/Documentation/devicetree/bindings/leds/tca6507.txt
-> @@ -2,6 +2,13 @@ LEDs connected to tca6507
->
->  Required properties:
->  - compatible : should be : "ti,tca6507".
-> +- #address-cells: must be 1
-> +- #size-cells: must be 0
-> +- reg: typically 0x45.
-> +
-> +Optional properties:
-> +- gpio-controller: allows lines to be used as output-only GPIOs.
-> +- #gpio-cells: if present, must be 0.
->
->  Each led is represented as a sub-node of the ti,tca6507 device.
->
-> @@ -10,6 +17,7 @@ LED sub-node properties:
->  - reg : number of LED line (could be from 0 to 6)
->  - linux,default-trigger : (optional)
->     see Documentation/devicetree/bindings/leds/common.txt
-> +- compatible: either "led" (the default) or "gpio".
->
->  Examples:
->
-> @@ -19,6 +27,9 @@ tca6507@45 {
->         #size-cells = <0>;
->         reg = <0x45>;
->
-> +       gpio-controller;
-> +       #gpio-cells = <2>;
-> +
->         led0: red-aux@0 {
->                 label = "red:aux";
->                 reg = <0x0>;
-> @@ -29,5 +40,10 @@ tca6507@45 {
->                 reg = <0x5>;
->                 linux,default-trigger = "default-on";
->         };
-> +
-> +       wifi-reset@6 {
-> +               reg = <0x6>;
-> +               compatible = "gpio";
-> +       };
->  };
->
-> diff --git a/drivers/leds/leds-tca6507.c b/drivers/leds/leds-tca6507.c
-> index f5063f447463..93a2b1759054 100644
-> --- a/drivers/leds/leds-tca6507.c
-> +++ b/drivers/leds/leds-tca6507.c
-> @@ -638,6 +638,9 @@ static int tca6507_probe_gpios(struct i2c_client *client,
->         tca->gpio.direction_output = tca6507_gpio_direction_output;
->         tca->gpio.set = tca6507_gpio_set_value;
->         tca->gpio.dev = &client->dev;
-> +#ifdef CONFIG_OF_GPIO
-> +       tca->gpio.of_node = of_node_get(client->dev.of_node);
-> +#endif
->         err = gpiochip_add(&tca->gpio);
->         if (err) {
->                 tca->gpio.ngpio = 0;
-> @@ -696,6 +699,8 @@ tca6507_led_dt_init(struct i2c_client *client)
->                 led.default_trigger =
->                         of_get_property(child, "linux,default-trigger", NULL);
->                 led.flags = 0;
-> +               if (of_property_match_string(child, "compatible", "gpio") >= 0)
-> +                       led.flags |= TCA6507_MAKE_GPIO;
->                 ret = of_property_read_u32(child, "reg", &reg);
->                 if (ret != 0 || reg < 0 || reg >= NUM_LEDS)
->                         continue;
-> @@ -709,6 +714,7 @@ tca6507_led_dt_init(struct i2c_client *client)
->
->         pdata->leds.leds = tca_leds;
->         pdata->leds.num_leds = NUM_LEDS;
-> +       pdata->gpio_base = -1;
->
->         return pdata;
->  }
