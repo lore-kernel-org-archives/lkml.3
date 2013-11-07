@@ -1,45 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751281Ab3KGLrU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 06:47:20 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:45409 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767Ab3KGLrR (ORCPT
+	id S1751591Ab3KGLri (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 06:47:38 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42479 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767Ab3KGLrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 06:47:17 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+e8u6z4BcCikeivQl9nHCMjHaxgh5t+qo=
-Date: Thu, 7 Nov 2013 06:47:14 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Jisheng Zhang <jszhang@marvell.com>
-Cc: mturquette@linaro.org, gregory.clement@free-electrons.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clk: mvebu: staticize of_cpu_clk_setup
-Message-ID: <20131107114714.GI8308@titan.lakedaemon.net>
-References: <1383814773-5231-1-git-send-email-jszhang@marvell.com>
+	Thu, 7 Nov 2013 06:47:35 -0500
+Date: Thu, 7 Nov 2013 11:46:54 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org
+Subject: Re: [PATCH 3/7] ARM: ux500: Remove ATAG support for SDI (MMC)
+Message-ID: <20131107114654.GF16735@n2100.arm.linux.org.uk>
+References: <1383732348-18576-1-git-send-email-lee.jones@linaro.org> <1383732348-18576-4-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1383814773-5231-1-git-send-email-jszhang@marvell.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1383732348-18576-4-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 07, 2013 at 04:59:33PM +0800, Jisheng Zhang wrote:
-> This symbol is used only in this file. The patch fix the following
-> sparse warning:
-> warning: symbol 'of_cpu_clk_setup' was not declared. Should it be static?
-> 
-> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> ---
->  drivers/clk/mvebu/clk-cpu.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On Wed, Nov 06, 2013 at 10:05:44AM +0000, Lee Jones wrote:
+> This hasn't been used since we moved over to a Device Tree only platform.
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-
-thx,
-
-Jason.
+The patch summary line is slightly off.  There's nothing here to do with
+ATAGs.
