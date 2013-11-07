@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755915Ab3KGX3r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 18:29:47 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:57766 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753752Ab3KGX3k (ORCPT
+	id S1756007Ab3KGXbv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 18:31:51 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:37275 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753899Ab3KGXbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 18:29:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <1379421817-15759-1-git-send-email-Russ.Dill@ti.com>
-References: <1379421817-15759-1-git-send-email-Russ.Dill@ti.com>
-Date: Thu, 7 Nov 2013 15:29:38 -0800
-Message-ID: <CAGa+x85AJ6e4W3S73cv_ZJtb+uCLYTMk_DPmQO3Nj656-7QJMg@mail.gmail.com>
-Subject: Re: [RFC PATCH 00/11] Embeddable Position Independent Executable
-From: Kevin Hilman <khilman@linaro.org>
-To: Russ Dill <Russ.Dill@ti.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>, linux-kbuild@vger.kernel.org,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>, mans@mansr.com,
-        Shawn Guo <shawn.guo@linaro.org>, Dave Martin <Dave.Martin@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 7 Nov 2013 18:31:44 -0500
+Date: Thu, 7 Nov 2013 18:31:42 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH 2/4] irq_work: Provide a irq work that can be processed
+ on any cpu
+Message-ID: <20131107183142.4ae4345e@gandalf.local.home>
+In-Reply-To: <20131107230111.GF2054@quack.suse.cz>
+References: <1383860919-1883-1-git-send-email-jack@suse.cz>
+	<1383860919-1883-3-git-send-email-jack@suse.cz>
+	<CAFTL4hxLXb3hZacx_EdHeKZVfrpuyGoNqpGbX997XJx0UJSwyg@mail.gmail.com>
+	<20131107221904.GB2054@quack.suse.cz>
+	<20131107222311.GA28130@localhost.localdomain>
+	<20131107225034.GD2054@quack.suse.cz>
+	<20131107225408.GD28130@localhost.localdomain>
+	<20131107230111.GF2054@quack.suse.cz>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 5:43 AM, Russ Dill <Russ.Dill@ti.com> wrote:
-> This patch adds support for and demonstrates the usage of an embedded
-> position independent executable (PIE). The goal is to allow the use of C
-> code in situations where carefully written position independent assembly
-> was previously required.
+On Fri, 8 Nov 2013 00:01:11 +0100
+Jan Kara <jack@suse.cz> wrote:
 
-Hmm, I thought I had already replied to this but it appears that I haven't.
+> On Thu 07-11-13 23:54:10, Frederic Weisbecker wrote:
 
-I really like this approach and think it's a major improvement on what
-we're already doing on OMAP and a few other ARM platforms.  This
-approach is done in a way that's significantly easier to maintain and
-extend IMO.
+> > So if the current CPU can handle it, what is the problem?
+>   I hope this gets cleared out in my other email. But to make sure: If
+> other CPUs are idle (i.e. not appending to the printk buffer), we can well
+> handle the printing on the current CPU (with some breaks to allow
+> interrupts to be served etc.). If other CPUs are also appending to printk
+> buffer, that's where we really want to push the work to other CPUs.
 
-As a next step, I think you should drop the RFC and split it up into a
-few series that can go via the right trees:
+I guess the question is, how does it migrate? I guess that's not so
+clear. Or do you just hope that the timer tick on another CPU will come
+in first and finish the job for you? As the list is global and all CPUs
+get to see it.
 
-- asm-generic and lib/devres (patches 1, 2, 4)
-- drivers/sram (patch 3)
-- generic PIE: (patch 5)
-- core PIE: (patch 5-8)
-- AM33xx support (patch 9-11)
-
-Kevin
+-- Steve
