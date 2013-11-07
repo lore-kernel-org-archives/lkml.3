@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab3KGHRJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 02:17:09 -0500
-Received: from hapkido.dreamhost.com ([66.33.216.122]:43344 "EHLO
-	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752450Ab3KGHRE (ORCPT
+	id S1754306Ab3KGHSX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 02:18:23 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:59908 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033Ab3KGHSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 02:17:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=novalis.org; h=message-id:subject
-	:from:to:cc:date:content-type:mime-version:
-	content-transfer-encoding; q=dns; s=novalis.org; b=egyEzDWUVRqh/
-	Wc82Y0xPBv0/DbGOe1UNH9f8QN4Wr7OQrAFbTysouhiPUgdSQAEEeoz4NSvne3dh
-	2GGUcg6oX34jPRm9TKA5/qMI7bwb26g5rcEVru3QuDxIugAfgE6NJqk3zNun6lph
-	fKycnWwRouZ0wRA3XflG1ypX52GfJ0=
-Message-ID: <1383808590.23882.13.camel@chiang>
-Subject: [PATCH] ext4: Fix reading of extended tv_sec (bug 23732)
-From: David Turner <novalis@novalis.org>
-To: linux-ext4@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Date: Thu, 07 Nov 2013 02:16:30 -0500
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Nov 2013 02:18:16 -0500
+Date: Wed, 6 Nov 2013 23:18:07 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Jingoo Han <jg1.han@samsung.com>, "Gupta, Pekon" <pekon@ti.com>,
+        Wei Yongjun <weiyj.lk@gmail.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Daniel Mack <zonque@gmail.com>, yongjun_wei@trendmicro.com.cn,
+        avinashphilip@ti.com,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH -next] mtd: nand: omap: fix error return code in
+ omap_nand_probe()
+Message-ID: <20131107071807.GA3805@norris.computersforpeace.net>
+References: <CAPgLHd8V06KzBcPmFywSfNxM0q6=s86xn-AdLKeY9h5JZ_nP7g@mail.gmail.com>
+ <001101ced6a8$a18a2c80$e49e8580$%han@samsung.com>
+ <CAN8TOE9Eac0LDA+Ke_OCPc_AQGnyYB806pO8JP-qOB1Dr8N2pg@mail.gmail.com>
+ <20131105224526.GA11759@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131105224526.GA11759@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In ext4, the bottom two bits of {a,c,m}time_extra are used to extend
-the {a,c,m}time fields, deferring the year 2038 problem to the year
-2446.  The representation (which this patch does not alter) is a bit
-hackish, in that the most-significant bit is no longer (alone)
-sufficient to indicate the sign.  That's because we're representing an
-asymmetric range, with seven times as many positive values as
-negative.
+On Tue, Nov 05, 2013 at 07:45:27PM -0300, Ezequiel Garcia wrote:
+> On Tue, Nov 05, 2013 at 01:59:25PM -0800, Brian Norris wrote:
+> > On Thu, Oct 31, 2013 at 7:18 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+> > > On Friday, November 01, 2013 9:16 AM, Wei Yongjun wrote:
+> > >>
+> > >> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> > >>
+> > >> Fix to return a negative error code from the error handling
+> > >> case instead of 0, as done elsewhere in this function.
+> > >
+> > > Commit message is right? :-(
+> > 
+> > It sounds OK by my reading. Unless you're having trouble parsing what
+> > "as done elsewhere in this function" is being applied to. (IOW, is the
+> > rest of the function returning a negative error code on the error
+> > paths, or is it returning 0? Of course the answer is the former, but
+> > it's possible to misread it.) If it helps, I can try to tweak the
+> > wording a bit when applying this patch.
+> > 
+> > Pekon, can I get an Acked-by?
+> > 
+> 
+> I guess you'd prefer Pekon's ack than mine, but anyway:
 
-When decoding these extended fields, for times whose bottom 32 bits
-would represent a negative number, sign extension causes the 64-bit
-extended timestamp to be negative as well, which is not what's
-intended.  This patch corrects that issue, so that the only negative
-{a,c,m}times are those between 1901 and 1970 (as per 32-bit signed
-timestamps).
+Eh, this patch was pretty small anyway. But extra eyes are good.
 
-Signed-off-by: David Turner <novalis@novalis.org>
-Reported-by: Mark Harris <mh8928@yahoo.com>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=23732
----
- fs/ext4/ext4.h | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+> Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index af815ea..7b73c26 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -722,10 +722,15 @@ static inline __le32 ext4_encode_extra_time(struct timespec *time)
- 
- static inline void ext4_decode_extra_time(struct timespec *time, __le32 extra)
- {
--       if (sizeof(time->tv_sec) > 4)
--	       time->tv_sec |= (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK)
--			       << 32;
--       time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >> EXT4_EPOCH_BITS;
-+	if (sizeof(time->tv_sec) > 4) {
-+		u64 extra_bits = (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK);
-+		if (time->tv_sec > 0 || extra_bits != EXT4_EPOCH_MASK) {
-+			time->tv_sec &= 0xFFFFFFFF;
-+			time->tv_sec |= extra_bits << 32;
-+		}
-+		time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >>
-+			EXT4_EPOCH_BITS;
-+	}
- }
- 
- #define EXT4_INODE_SET_XTIME(xtime, inode, raw_inode)			       \
--- 
-1.8.1.2
+Thanks.
 
+> I'd like to point out this driver has other "mis-behaviors" in returning codes
+> in some other places.
+> 
+> In particular, this pattern can be found repeatedly:
+> 
+> 	if (do_something()) {
+> 		err = -ENXIO;
+> 		goto some_other_place;
+> 	}
+> 
+> Which should probably be:
+> 
+> 	err = do_something();
+> 	if (err)
+> 		goto some_other_place;
 
+Yeah, these could be made more consistent. If the callee is choosing
+good error codes, then we can just return them. But this is mostly
+cosmetic.
 
+> Wei: maybe you'd like to prepare some more patches?
+
+Brian
