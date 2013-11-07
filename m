@@ -1,53 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab3KGOFd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 09:05:33 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:60984 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754516Ab3KGOF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 09:05:29 -0500
-Message-ID: <527B9E1A.7000002@ti.com>
-Date: Thu, 7 Nov 2013 19:35:14 +0530
+	id S1753510Ab3KGOHD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 09:07:03 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:56957 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483Ab3KGOG7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 09:06:59 -0500
 From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+To: <balbi@ti.com>, <stern@rowland.harvard.edu>, <bigeasy@linutronix.de>
+CC: <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, George Cherian <george.cherian@ti.com>
+Subject: [PATCH v2] usb: gadget: f_mass_storage: call try_to_freeze only when its safe
+Date: Thu, 7 Nov 2013 19:36:50 +0530
+Message-ID: <1383833210-26656-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.1
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: <balbi@ti.com>, <stern@rowland.harvard.edu>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget: f_mass_storage: call try_to_freeze only
- when its safe
-References: <1383831439-25558-1-git-send-email-george.cherian@ti.com> <527B9A7F.8000006@linutronix.de>
-In-Reply-To: <527B9A7F.8000006@linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/7/2013 7:19 PM, Sebastian Andrzej Siewior wrote:
-> On 11/07/2013 02:37 PM, George Cherian wrote:
->> Call try_to_freeze() in sleep_thread() only when its safe to sleep.
->> do_read() and do_write() calls sleep_thread with lock held.
->> Make sure these wont call try_to_freeze() by passing can_freeze flag
->> to sleep_thread.
-> Thank you. This is was Alan asked for and I forgot.
->
-> You could add
->
-> |Calling try_to_freeze() with a lock hold was done since day one in
-> |f_mass_storage but since commit 0f9548ca1 ("lockdep: check that no
-> |locks held at freeze time") lockdep complains about it.
->
-> so we have an explanation why it is suddenly a bad thing.
+Call try_to_freeze() in sleep_thread() only when its safe to sleep.
+do_read() and do_write() calls sleep_thread with lock held.
+Make sure these wont call try_to_freeze() by passing can_freeze flag
+to sleep_thread.
 
-okay will send v2 with commit log amend and your Acked-by
->
->> Signed-off-by: George Cherian <george.cherian@ti.com>
-> Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
->
-> Sebastian
+Calling try_to_freeze() with a lock hold was done since day one in
+f_mass_storage but since commit 0f9548ca1 ("lockdep: check that no
+locks held at freeze time") lockdep complains about it.
 
+Signed-off-by: George Cherian <george.cherian@ti.com>
+Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+change from v1 -> v2
+	amend the commit log
 
+ drivers/usb/gadget/f_mass_storage.c | 23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index a03ba2c..f2d0d4b 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -602,13 +602,14 @@ static bool start_out_transfer(struct fsg_common *common, struct fsg_buffhd *bh)
+ 	return true;
+ }
+ 
+-static int sleep_thread(struct fsg_common *common)
++static int sleep_thread(struct fsg_common *common, bool can_freeze)
+ {
+ 	int	rc = 0;
+ 
+ 	/* Wait until a signal arrives or we are woken up */
+ 	for (;;) {
+-		try_to_freeze();
++		if (can_freeze)
++			try_to_freeze();
+ 		set_current_state(TASK_INTERRUPTIBLE);
+ 		if (signal_pending(current)) {
+ 			rc = -EINTR;
+@@ -682,7 +683,7 @@ static int do_read(struct fsg_common *common)
+ 		/* Wait for the next buffer to become available */
+ 		bh = common->next_buffhd_to_fill;
+ 		while (bh->state != BUF_STATE_EMPTY) {
+-			rc = sleep_thread(common);
++			rc = sleep_thread(common, false);
+ 			if (rc)
+ 				return rc;
+ 		}
+@@ -937,7 +938,7 @@ static int do_write(struct fsg_common *common)
+ 		}
+ 
+ 		/* Wait for something to happen */
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, false);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -1504,7 +1505,7 @@ static int throw_away_data(struct fsg_common *common)
+ 		}
+ 
+ 		/* Otherwise wait for something to happen */
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, true);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -1625,7 +1626,7 @@ static int send_status(struct fsg_common *common)
+ 	/* Wait for the next buffer to become available */
+ 	bh = common->next_buffhd_to_fill;
+ 	while (bh->state != BUF_STATE_EMPTY) {
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, true);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -1828,7 +1829,7 @@ static int do_scsi_command(struct fsg_common *common)
+ 	bh = common->next_buffhd_to_fill;
+ 	common->next_buffhd_to_drain = bh;
+ 	while (bh->state != BUF_STATE_EMPTY) {
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, true);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -2174,7 +2175,7 @@ static int get_next_command(struct fsg_common *common)
+ 	/* Wait for the next buffer to become available */
+ 	bh = common->next_buffhd_to_fill;
+ 	while (bh->state != BUF_STATE_EMPTY) {
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, true);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -2193,7 +2194,7 @@ static int get_next_command(struct fsg_common *common)
+ 
+ 	/* Wait for the CBW to arrive */
+ 	while (bh->state != BUF_STATE_FULL) {
+-		rc = sleep_thread(common);
++		rc = sleep_thread(common, true);
+ 		if (rc)
+ 			return rc;
+ 	}
+@@ -2379,7 +2380,7 @@ static void handle_exception(struct fsg_common *common)
+ 			}
+ 			if (num_active == 0)
+ 				break;
+-			if (sleep_thread(common))
++			if (sleep_thread(common, true))
+ 				return;
+ 		}
+ 
+@@ -2516,7 +2517,7 @@ static int fsg_main_thread(void *common_)
+ 		}
+ 
+ 		if (!common->running) {
+-			sleep_thread(common);
++			sleep_thread(common, true);
+ 			continue;
+ 		}
+ 
 -- 
--George
+1.8.1
 
