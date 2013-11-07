@@ -1,122 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424Ab3KGMqw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 07:46:52 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:63505 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab3KGMqt (ORCPT
+	id S1752686Ab3KGMu0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 07:50:26 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:53809 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948Ab3KGMuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 07:46:49 -0500
-Message-ID: <527B8BB4.3050200@gmail.com>
-Date: Thu, 07 Nov 2013 13:46:44 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-To: Jisheng Zhang <jszhang@marvell.com>, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, rob@landley.net, linux@arm.linux.org.uk
-CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] ARM: l2x0: add prefetch and power ctrl registers configuration
- support
-References: <1383800872-7982-1-git-send-email-jszhang@marvell.com>
-In-Reply-To: <1383800872-7982-1-git-send-email-jszhang@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Nov 2013 07:50:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFwn1HUt3iXo6Zz8j1HUJi+qJ1NfcnUz-P+XCYLL7gjCMQ@mail.gmail.com>
+References: <cover.1383771175.git.tim.c.chen@linux.intel.com>
+	<1383773827.11046.355.camel@schen9-DESK>
+	<CA+55aFyNX=5i0hmk-KuD+Vk+yBD-kkAiywx1Lx_JJmHVPx=1wA@mail.gmail.com>
+	<CANN689HkNP-UZOu+vDCFPG5_k=BNZG6a+oP+Ope16vLc2ShFzw@mail.gmail.com>
+	<CA+55aFwn1HUt3iXo6Zz8j1HUJi+qJ1NfcnUz-P+XCYLL7gjCMQ@mail.gmail.com>
+Date: Thu, 7 Nov 2013 04:50:23 -0800
+Message-ID: <CANN689EgdDQV=srsLELUpiTGOSF0SLUZ=BC2LnMxNrYTv3H=Wg@mail.gmail.com>
+Subject: Re: [PATCH v3 3/5] MCS Lock: Barrier corrections
+From: Michel Lespinasse <walken@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Waiman Long <waiman.long@hp.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rik van Riel <riel@redhat.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "Figo. zhang" <figo1802@gmail.com>, linux-arch@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Alex Shi <alex.shi@linaro.org>, linux-kernel@vger.kernel.org,
+        Scott J Norton <scott.norton@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Matthew R Wilcox <matthew.r.wilcox@intel.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/13 06:07, Jisheng Zhang wrote:
-> PL310 supports Prefetch offset/control register from r2p0 and Power
-> control register from r3p0. This patch adds the support to configure
-> these two registers if there are. The dt binding document is also updated.
+On Thu, Nov 7, 2013 at 4:06 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> ---
->   Documentation/devicetree/bindings/arm/l2cc.txt |  4 ++++
->   arch/arm/mm/cache-l2x0.c                       | 19 +++++++++++++++++++
->   2 files changed, 23 insertions(+)
+> On Nov 7, 2013 6:55 PM, "Michel Lespinasse" <walken@google.com> wrote:
+>>
+>> Rather than writing arch-specific locking code, would you agree to
+>> introduce acquire and release memory operations ?
 >
-> diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
-> index c0c7626..32cd08c 100644
-> --- a/Documentation/devicetree/bindings/arm/l2cc.txt
-> +++ b/Documentation/devicetree/bindings/arm/l2cc.txt
-> @@ -39,6 +39,10 @@ Optional properties:
->   - arm,filter-ranges : <start length> Starting address and length of window to
->     filter. Addresses in the filter window are directed to the M1 port. Other
->     addresses will go to the M0 port.
-> +- arm,prefetch-ctrl : The value for Prefetch Offset/Control Register if there
-> +  is. This is a single cell.
-> +- arm,pwr-ctrl : The value for Power Control Register if there is. This is a
-> +  single cell.
+> Yes, that's probably the right thing to do. What ops do we need? Store with
+> release, cmpxchg and load with acquire? Anything else?
 
-Jisheng,
+Depends on what lock types we want to implement on top; for MCS we would need:
+- xchg acquire (common case) and load acquire (for spinning on our
+locker's wait word)
+- cmpxchg release (when there is no next locker) and store release
+(when writing to the next locker's wait word)
 
-I did some research over L2x0/L310 aux-ctrl registers and possible
-properties for them. Both properties introduced here, just allow you
-to put in a magic number, while IMHO properties should better reflect
-the actual function rather than hard-coded values.
+One downside of the proposal is that using a load acquire for spinning
+puts the memory barrier within the spin loop. So this model is very
+intuitive and does not add unnecessary barriers on x86, but it my
+place the barriers in a suboptimal place for architectures that need
+them.
 
-A quick look at L310 TRM for Power Control Register gives:
-
-Bit 1: dynamic_clk_gating_en (1=enabled, 0=masked)
-Bit 0: standby mode en (1=enabled, 0=masked)
-
-So, properties should one of:
-
-(a) arm,dynamic-clock-gating = <0/1>
-     arm,standby-mode = <0/1>
-(b) arm,dynamic-clock-gating-enable/-disable;
-     arm,standby-mode-enable/-disable
-
-If we want to have set/clear/don't touch behavior, I'd prefer (a) as
-it is easier to deal with in code. Moreover, -enable/-disable of (b)
-may not always fit the property name, so there will also be
-arm,no-feature-foo or arm,force-feature-bar.
-
-The same also applies for Prefetch Control register, too.
-
-Sebastian
-
->   - interrupts : 1 combined interrupt.
->   - cache-id-part: cache id part number to be used if it is not present
->     on hardware
-> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-> index 447da6f..8f536ea 100644
-> --- a/arch/arm/mm/cache-l2x0.c
-> +++ b/arch/arm/mm/cache-l2x0.c
-> @@ -704,6 +704,8 @@ static void __init pl310_of_setup(const struct device_node *np,
->   	u32 data[3] = { 0, 0, 0 };
->   	u32 tag[3] = { 0, 0, 0 };
->   	u32 filter[2] = { 0, 0 };
-> +	u32 l2x0_revision = readl_relaxed(l2x0_base + L2X0_CACHE_ID) &
-> +		L2X0_CACHE_ID_RTL_MASK;
->
->   	of_property_read_u32_array(np, "arm,tag-latency", tag, ARRAY_SIZE(tag));
->   	if (tag[0] && tag[1] && tag[2])
-> @@ -730,6 +732,23 @@ static void __init pl310_of_setup(const struct device_node *np,
->   		writel_relaxed((filter[0] & ~(SZ_1M - 1)) | L2X0_ADDR_FILTER_EN,
->   			       l2x0_base + L2X0_ADDR_FILTER_START);
->   	}
-> +
-> +	if (l2x0_revision >= L2X0_CACHE_ID_RTL_R2P0) {
-> +		u32 prefetch_ctrl = 0;
-> +
-> +		of_property_read_u32(np, "arm,prefetch-ctrl",
-> +				     &prefetch_ctrl);
-> +		if (prefetch_ctrl)
-> +			writel_relaxed(prefetch_ctrl, l2x0_base +
-> +					L2X0_PREFETCH_CTRL);
-> +		if (l2x0_revision >= L2X0_CACHE_ID_RTL_R3P0) {
-> +			u32 pwr_ctrl = 0;
-> +			of_property_read_u32(np, "arm,pwr-ctrl", &pwr_ctrl);
-> +			if (pwr_ctrl)
-> +				writel_relaxed(pwr_ctrl, l2x0_base +
-> +						L2X0_POWER_CTRL);
-> +		}
-> +	}
->   }
->
->   static void __init pl310_save(void)
->
-
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
