@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab3KGWyg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 17:54:36 -0500
-Received: from caiajhbdcahe.dreamhost.com ([208.97.132.74]:57199 "EHLO
-	homiemail-a101.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754034Ab3KGWy0 (ORCPT
+	id S1754913Ab3KGW4X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 17:56:23 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:43872 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752690Ab3KGW4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 17:54:26 -0500
-X-Greylist: delayed 56274 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Nov 2013 17:54:26 EST
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=novalis.org; h=message-id:subject
-	:from:to:cc:date:in-reply-to:references:content-type
-	:mime-version:content-transfer-encoding; q=dns; s=novalis.org;
-	 b=Z9DDSkEnNBw+WJudfpHbbX3Vu8ZrmNlzQzbepRDcGYb5EU3tFG0HJpygHj7lh
-	2UICesKTVkYXZ97IStt7R0JhvAEsCjAcQ8Qf4Lvd+VkWCb3vxOzFwjbw/0oPuLXi
-	s3AP+bp/ot+HDA72F+pPIUCCwLhj/e9X7/eLMvSIacxLpQ=
-Message-ID: <1383864864.23882.33.camel@chiang>
-Subject: [PATCH v2] ext4: Fix reading of extended tv_sec (bug 23732)
-From: David Turner <novalis@novalis.org>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Date: Thu, 07 Nov 2013 17:54:24 -0500
-In-Reply-To: <20131107160341.GA3850@quack.suse.cz>
-References: <1383808590.23882.13.camel@chiang>
-	 <20131107160341.GA3850@quack.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Nov 2013 17:56:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131101133345.03db24ec@notabene.brown>
+References: <20131101133345.03db24ec@notabene.brown>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Thu, 7 Nov 2013 14:55:54 -0800
+Message-ID: <CAK5ve-JO3-f53SpfJb5P4kK+z3rATsS8cXAjnDr5RmCAZEPKjA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] LEDS: tca6507 - fix bugs in parsing of device-tree configuration.
+To: NeilBrown <neilb@suse.de>
+Cc: Richard Purdie <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Belisko Marek <marek.belisko@gmail.com>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-11-07 at 17:03 +0100, Jan Kara wrote:
->   So I'm somewhat wondering: Previously we decoded tv_nsec regardless of
-> tv_sec size. After your patch we do it only if sizeof(time->tv_sec) > 4. Is
-> this an intended change? Why is it OK?
+On Thu, Oct 31, 2013 at 7:33 PM, NeilBrown <neilb@suse.de> wrote:
+>
+>
+> 1/ The led_info array must be allocated to allow the full number
+>   of LEDs even if not all are present.  The array maybe be sparsely
+>   filled but it is indexed by device address so we must at least
+>   allocate as many slots as the highest address used.  It is easiest
+>   just to allocate all 7.
+>
+> 2/ range check the 'reg' value properly.
+>
+> 3/ led.flags must be initialised to zero, else all leds could
+>    be treated as GPIOs (depending on what happens to be on the stack).
+>
+> Signed-off-by: NeilBrown <neilb@suse.de>
+>
 
-This is an error.  Here is a corrected version of the patch. 
+Thanks, queued into devel branch of my tree for 3.14 kernel.
 
+-Bryan
 
---
-
-In ext4, the bottom two bits of {a,c,m}time_extra are used to extend
-the {a,c,m}time fields, deferring the year 2038 problem to the year
-2446.  The representation (which this patch does not alter) is a bit
-hackish, in that the most-significant bit is no longer (alone)
-sufficient to indicate the sign.  That's because we're representing an
-asymmetric range, with seven times as many positive values as
-negative.
-
-When decoding these extended fields, for times whose bottom 32 bits
-would represent a negative number, sign extension causes the 64-bit
-extended timestamp to be negative as well, which is not what's
-intended.  This patch corrects that issue, so that the only negative
-{a,c,m}times are those between 1901 and 1970 (as per 32-bit signed
-timestamps).
-
-Signed-off-by: David Turner <novalis@novalis.org>
-Reported-by: Mark Harris <mh8928@yahoo.com>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=23732
----
- fs/ext4/ext4.h | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index af815ea..3c2d0b3 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -722,10 +722,15 @@ static inline __le32 ext4_encode_extra_time(struct timespec *time)
- 
- static inline void ext4_decode_extra_time(struct timespec *time, __le32 extra)
- {
--       if (sizeof(time->tv_sec) > 4)
--	       time->tv_sec |= (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK)
--			       << 32;
--       time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >> EXT4_EPOCH_BITS;
-+	if (sizeof(time->tv_sec) > 4) {
-+		u64 extra_bits = (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK);
-+		if (time->tv_sec > 0 || extra_bits != EXT4_EPOCH_MASK) {
-+			time->tv_sec &= 0xFFFFFFFF;
-+			time->tv_sec |= extra_bits << 32;
-+		}
-+	}
-+	time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >>
-+		EXT4_EPOCH_BITS;
- }
- 
- #define EXT4_INODE_SET_XTIME(xtime, inode, raw_inode)			       \
--- 
-1.8.1.2
-
-
-
+> diff --git a/drivers/leds/leds-tca6507.c b/drivers/leds/leds-tca6507.c
+> index 8cc304f36728..f5063f447463 100644
+> --- a/drivers/leds/leds-tca6507.c
+> +++ b/drivers/leds/leds-tca6507.c
+> @@ -682,7 +682,7 @@ tca6507_led_dt_init(struct i2c_client *client)
+>                 return ERR_PTR(-ENODEV);
+>
+>         tca_leds = devm_kzalloc(&client->dev,
+> -                       sizeof(struct led_info) * count, GFP_KERNEL);
+> +                       sizeof(struct led_info) * NUM_LEDS, GFP_KERNEL);
+>         if (!tca_leds)
+>                 return ERR_PTR(-ENOMEM);
+>
+> @@ -695,9 +695,9 @@ tca6507_led_dt_init(struct i2c_client *client)
+>                         of_get_property(child, "label", NULL) ? : child->name;
+>                 led.default_trigger =
+>                         of_get_property(child, "linux,default-trigger", NULL);
+> -
+> +               led.flags = 0;
+>                 ret = of_property_read_u32(child, "reg", &reg);
+> -               if (ret != 0)
+> +               if (ret != 0 || reg < 0 || reg >= NUM_LEDS)
+>                         continue;
+>
+>                 tca_leds[reg] = led;
+> @@ -708,7 +708,7 @@ tca6507_led_dt_init(struct i2c_client *client)
+>                 return ERR_PTR(-ENOMEM);
+>
+>         pdata->leds.leds = tca_leds;
+> -       pdata->leds.num_leds = count;
+> +       pdata->leds.num_leds = NUM_LEDS;
+>
+>         return pdata;
+>  }
