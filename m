@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751032Ab3KGLpG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 06:45:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48070 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750824Ab3KGLpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 06:45:02 -0500
-Date: Thu, 7 Nov 2013 12:44:59 +0100
-From: Jan Kara <jack@suse.cz>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] fs/buffer.c: exit if already confirmed page has
- dirty and writeback buffers
-Message-ID: <20131107114459.GB31798@quack.suse.cz>
-References: <5278C21B.7010204@cn.fujitsu.com>
+	id S1751281Ab3KGLrU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 06:47:20 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:45409 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767Ab3KGLrR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 06:47:17 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+e8u6z4BcCikeivQl9nHCMjHaxgh5t+qo=
+Date: Thu, 7 Nov 2013 06:47:14 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: mturquette@linaro.org, gregory.clement@free-electrons.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clk: mvebu: staticize of_cpu_clk_setup
+Message-ID: <20131107114714.GI8308@titan.lakedaemon.net>
+References: <1383814773-5231-1-git-send-email-jszhang@marvell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5278C21B.7010204@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1383814773-5231-1-git-send-email-jszhang@marvell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 05-11-13 18:02:03, Gu Zheng wrote:
-> Stop the loop of iterating bh if we have confirmed page
-> has dirty and writeback buffers.
-  Thanks for the patch. What I'm somewhat missing here is a motivation of
-the patch. For the common case where blocksize == pagesize this is a noop
-(only adds some code). For the case where blocksize < pagesize we can
-possibly save checking some buffers but how common is that going be? Does
-that minimal speed up outweight the cost of additional check / code
-complication?
-
-								Honza
-
+On Thu, Nov 07, 2013 at 04:59:33PM +0800, Jisheng Zhang wrote:
+> This symbol is used only in this file. The patch fix the following
+> sparse warning:
+> warning: symbol 'of_cpu_clk_setup' was not declared. Should it be static?
 > 
-> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
 > ---
->  fs/buffer.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index 6024877..519cc5c 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -112,7 +112,7 @@ void buffer_check_dirty_writeback(struct page *page,
->  			*dirty = true;
->  
->  		bh = bh->b_this_page;
-> -	} while (bh != head);
-> +	} while ((bh != head) && !(*writeback && *dirty));
->  }
->  EXPORT_SYMBOL(buffer_check_dirty_writeback);
->  
-> -- 
-> 1.7.7
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>  drivers/clk/mvebu/clk-cpu.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+
+thx,
+
+Jason.
