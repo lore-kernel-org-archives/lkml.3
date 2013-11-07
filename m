@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab3KGPau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 10:30:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40757 "EHLO
+	id S1754098Ab3KGPbZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 10:31:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40795 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab3KGPat (ORCPT
+	with ESMTP id S1753251Ab3KGPbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 10:30:49 -0500
-Date: Thu, 7 Nov 2013 07:30:35 -0800
+	Thu, 7 Nov 2013 10:31:22 -0500
+Date: Thu, 7 Nov 2013 07:31:03 -0800
 From: tip-bot for David Ahern <tipbot@zytor.com>
-Message-ID: <tip-a614d01bdd0cc8200d917da25f5a3d539b944193@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, namhyung@kernel.org, jolsa@redhat.com,
+Message-ID: <tip-f34b9001f9a2f6fa41d3582fe515d194cc86bfb2@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, jolsa@redhat.com, fweisbec@gmail.com,
         dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, namhyung@kernel.org, jolsa@redhat.com,
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, jolsa@redhat.com, fweisbec@gmail.com,
         dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1383753335-25782-1-git-send-email-dsahern@gmail.com>
-References: <1383753335-25782-1-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1383763297-27066-3-git-send-email-dsahern@gmail.com>
+References: <1383763297-27066-3-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Fix version when building out of tree
-Git-Commit-ID: a614d01bdd0cc8200d917da25f5a3d539b944193
+Subject: [tip:perf/core] perf record: Remove advance_output function
+Git-Commit-ID: f34b9001f9a2f6fa41d3582fe515d194cc86bfb2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,73 +31,59 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 07 Nov 2013 07:30:41 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 07 Nov 2013 07:31:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a614d01bdd0cc8200d917da25f5a3d539b944193
-Gitweb:     http://git.kernel.org/tip/a614d01bdd0cc8200d917da25f5a3d539b944193
+Commit-ID:  f34b9001f9a2f6fa41d3582fe515d194cc86bfb2
+Gitweb:     http://git.kernel.org/tip/f34b9001f9a2f6fa41d3582fe515d194cc86bfb2
 Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Wed, 6 Nov 2013 08:55:35 -0700
+AuthorDate: Wed, 6 Nov 2013 11:41:35 -0700
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 7 Nov 2013 10:40:47 -0300
+CommitDate: Thu, 7 Nov 2013 10:43:15 -0300
 
-perf tools: Fix version when building out of tree
+perf record: Remove advance_output function
 
-When building perf out of tree:
-
-  $ make perf-tar-src-pkg
-  $ tar -xf perf-<ver>.tar -C /tmp
-  $ cd /tmp/perf<ver>
-  $ make -C tools/perf
-
-you get this warning message:
-    make[1]: *** No rule to make target `kernelversion'.  Stop.
-
-Fix it by saving the perf version in the tar file and using that for the
-out of tree builds.
-
-v2: removed short form request and fixed up version string from usual output.
+1 line function with only 1 user; might as well embed directly.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Suggested-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1383753335-25782-1-git-send-email-dsahern@gmail.com
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1383763297-27066-3-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- scripts/package/Makefile         | 4 +++-
- tools/perf/util/PERF-VERSION-GEN | 3 +++
- 2 files changed, 6 insertions(+), 1 deletion(-)
+ tools/perf/builtin-record.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/scripts/package/Makefile b/scripts/package/Makefile
-index a4f31c9..c5d4733 100644
---- a/scripts/package/Makefile
-+++ b/scripts/package/Makefile
-@@ -115,7 +115,9 @@ git --git-dir=$(srctree)/.git archive --prefix=$(perf-tar)/         \
- 	-o $(perf-tar).tar;                                         \
- mkdir -p $(perf-tar);                                               \
- git --git-dir=$(srctree)/.git rev-parse HEAD > $(perf-tar)/HEAD;    \
--tar rf $(perf-tar).tar $(perf-tar)/HEAD;                            \
-+(cd $(srctree)/tools/perf;                                          \
-+util/PERF-VERSION-GEN ../../$(perf-tar)/ 2>/dev/null);              \
-+tar rf $(perf-tar).tar $(perf-tar)/HEAD $(perf-tar)/PERF-VERSION-FILE; \
- rm -r $(perf-tar);                                                  \
- $(if $(findstring tar-src,$@),,                                     \
- $(if $(findstring bz2,$@),bzip2,                                    \
-diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-index ce7a804..39f1750 100755
---- a/tools/perf/util/PERF-VERSION-GEN
-+++ b/tools/perf/util/PERF-VERSION-GEN
-@@ -19,6 +19,9 @@ if test -d ../../.git -o -f ../../.git
- then
- 	TAG=$(git describe --abbrev=0 --match "v[0-9].[0-9]*" 2>/dev/null )
- 	CID=$(git log -1 --abbrev=4 --pretty=format:"%h" 2>/dev/null) && CID="-g$CID"
-+elif test -f ../../PERF-VERSION-FILE
-+then
-+	TAG=$(cut -d' ' -f3 ../../PERF-VERSION-FILE | sed -e 's/\"//g')
- fi
- if test -z "$TAG"
- then
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 2932069..19c4db6 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -77,11 +77,6 @@ struct perf_record {
+ 	off_t			post_processing_offset;
+ };
+ 
+-static void advance_output(struct perf_record *rec, size_t size)
+-{
+-	rec->bytes_written += size;
+-}
+-
+ static int write_output(struct perf_record *rec, void *buf, size_t size)
+ {
+ 	struct perf_data_file *file = &rec->file;
+@@ -461,7 +456,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 				pr_err("Couldn't record tracing data.\n");
+ 				goto out_delete_session;
+ 			}
+-			advance_output(rec, err);
++			rec->bytes_written += err;
+ 		}
+ 	}
+ 
