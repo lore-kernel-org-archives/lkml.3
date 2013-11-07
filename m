@@ -1,118 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab3KGPvo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 10:51:44 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:38431 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754404Ab3KGPvk (ORCPT
+	id S1754725Ab3KGPv5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 10:51:57 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:55447 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754626Ab3KGPvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 10:51:40 -0500
+	Thu, 7 Nov 2013 10:51:53 -0500
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-ima-devel@lists.sourceforge.net,
         zohar@us.ibm.com, d.kasatkin@samsung.com, james.l.morris@oracle.com,
         Roberto Sassu <roberto.sassu@polito.it>
-Subject: [RFC][PATCH 3/6] ima: added ima_get_template_desc() for templates dynamic registration
-Date: Thu,  7 Nov 2013 16:49:38 +0100
-Message-Id: <1383839383-18152-4-git-send-email-roberto.sassu@polito.it>
+Subject: [RFC][PATCH 5/6] ima: added ima_template and ima_template_fmt new policy options
+Date: Thu,  7 Nov 2013 16:49:40 +0100
+Message-Id: <1383839383-18152-6-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1383839383-18152-1-git-send-email-roberto.sassu@polito.it>
 References: <1383839383-18152-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----6DF40AE3B345A64BB7391EC8958F611A"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----AF3EF54B09DE7DE83297149D66813B95"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------6DF40AE3B345A64BB7391EC8958F611A
+------AF3EF54B09DE7DE83297149D66813B95
 
-This patch introduces the ima_get_template_desc() function which returns
-a template descriptor depending on the template name and format passed
-as arguments. If the first argument is not NULL, the new function
-searches an existing template descriptor by name among those defined
-and returns it to the caller. Instead, if the second argument is not
-NULL and the first is NULL, it does a template lookup by format and,
-if not found, creates a new one before returning the pointer to the
-caller. Finally, if both arguments are NULL or the template creation
-failed, it returns the default template descriptor.
+This patch adds the support for 'ima_template' and 'ima_template_fmt'
+policy options. They allow to define which template and, thus, which
+information should be included in measurements entries generated from
+events that match other rules' criteria.
+
+With this feature, it is possible to include for each measurement entry
+only relevant information. For example, while measurements that report
+the execution of the execve() system call may contain the credentials
+being installed on the current process (stored in the 'cred' field of the
+'linux_binprm' structure), others should not include it (also because
+the pointer to the above structure is not available from other IMA hooks).
+
+A sample policy to produce measurements the way is described above may be:
+
+---
+measure func=BPRM_CHECK mask=MAY_EXEC ima_template_fmt=d-ng|n-ng|bprm-type
+measure func=FILE_MMAP mask=MAY_EXEC
+---
+
+where 'bprm-type' is the identifier of a field (whose code is not yet
+upstreamed) which displays the type part of a LSM label from credentials
+stored in the 'linux_binprm' structure.
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 ---
- security/integrity/ima/ima.h          |  2 ++
- security/integrity/ima/ima_template.c | 40 +++++++++++++++++++++++++++++++++++
- 2 files changed, 42 insertions(+)
+ Documentation/ABI/testing/ima_policy     |  6 ++++-
+ Documentation/security/IMA-templates.txt | 19 ++++++++------
+ security/integrity/ima/ima_policy.c      | 45 +++++++++++++++++++++++++++++++-
+ 3 files changed, 60 insertions(+), 10 deletions(-)
 
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 5cbe881..d7b4c19 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -107,6 +107,8 @@ int ima_init_crypto(void);
- void ima_putc(struct seq_file *m, void *data, int datalen);
- void ima_print_digest(struct seq_file *m, u8 *digest, int size);
- struct ima_template_desc *ima_template_desc_current(void);
-+struct ima_template_desc *ima_get_template_desc(char *template_name,
-+						char *template_fmt);
- int ima_init_template(void);
+diff --git a/Documentation/ABI/testing/ima_policy b/Documentation/ABI/testing/ima_policy
+index f1c5cc9..7fbe47d 100644
+--- a/Documentation/ABI/testing/ima_policy
++++ b/Documentation/ABI/testing/ima_policy
+@@ -23,7 +23,7 @@ Description:
+ 				 [fowner]]
+ 			lsm:	[[subj_user=] [subj_role=] [subj_type=]
+ 				 [obj_user=] [obj_role=] [obj_type=]]
+-			option:	[[appraise_type=]]
++			option:	[[appraise_type=] [ima_template=] [ima_template_fmt=]]
  
- int ima_init_template(void);
-diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
-index c849723..7daf2ba 100644
---- a/security/integrity/ima/ima_template.c
-+++ b/security/integrity/ima/ima_template.c
-@@ -248,6 +248,46 @@ struct ima_template_desc *ima_template_desc_current(void)
- 	return ima_template;
- }
+ 		base: 	func:= [BPRM_CHECK][MMAP_CHECK][FILE_CHECK][MODULE_CHECK]
+ 			mask:= [MAY_READ] [MAY_WRITE] [MAY_APPEND] [MAY_EXEC]
+@@ -33,6 +33,10 @@ Description:
+ 			fowner:=decimal value
+ 		lsm:  	are LSM specific
+ 		option:	appraise_type:= [imasig]
++			ima_template:= an already defined template
++			ima_template_fmt:= a custom template format
++					   (see Documentation/security/IMA-templates.txt
++					   for more details)
  
-+struct ima_template_desc *ima_get_template_desc(char *template_name,
-+						char *template_fmt)
-+{
-+	struct ima_template_desc *desc = NULL;
-+	int result;
+ 		default policy:
+ 			# PROC_SUPER_MAGIC
+diff --git a/Documentation/security/IMA-templates.txt b/Documentation/security/IMA-templates.txt
+index 08ea2da..61d9f0d 100644
+--- a/Documentation/security/IMA-templates.txt
++++ b/Documentation/security/IMA-templates.txt
+@@ -36,13 +36,14 @@ from the set of the supported ones.
+ After the initialization step, IMA will call ima_alloc_init_template()
+ (new function defined within the patches for the new template management
+ mechanism) to generate a new measurement entry by using the template
+-descriptor chosen through the kernel configuration or through the newly
+-introduced 'ima_template' and 'ima_template_fmt' kernel command line parameters.
+-It is during this phase that the advantages of the new architecture are
+-clearly shown: the latter function will not contain specific code to handle
+-a given template but, instead, it simply calls the init() method of the template
+-fields associated to the chosen template descriptor and store the result
+-(pointer to allocated data and data length) in the measurement entry structure.
++descriptor chosen through the kernel configuration, the newly introduced
++'ima_template' and 'ima_template_fmt' kernel command line parameters and
++new policy options with the same names. It is during this phase that the
++advantages of the new architecture are clearly shown: the latter function
++will not contain specific code to handle a given template but, instead, it
++simply calls the init() method of the template fields associated to the
++chosen template descriptor and store the result (pointer to allocated data
++and data length) in the measurement entry structure.
+ 
+ The same mechanism is employed to display measurements entries.
+ The functions ima[_ascii]_measurements_show() retrieve, for each entry,
+@@ -83,4 +84,6 @@ currently the following methods are supported:
+  - specify a template descriptor name from the kernel command line through
+    the 'ima_template=' parameter;
+  - register a new template descriptor with custom format through the kernel
+-   command line parameter 'ima_template_fmt='.
++   command line parameter 'ima_template_fmt=';
++ - provide desired template name or custom format for specific events through
++   the new policy options 'ima_template=' and 'ima_template_fmt='.
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index a9c3d3c..df852ec 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -50,6 +50,8 @@ struct ima_rule_entry {
+ 	u8 fsuuid[16];
+ 	kuid_t uid;
+ 	kuid_t fowner;
++	char *template_name;
++	char *template_fmt;
+ 	struct {
+ 		void *rule;	/* LSM file metadata specific */
+ 		void *args_p;	/* audit value */
+@@ -351,7 +353,8 @@ enum {
+ 	Opt_obj_user, Opt_obj_role, Opt_obj_type,
+ 	Opt_subj_user, Opt_subj_role, Opt_subj_type,
+ 	Opt_func, Opt_mask, Opt_fsmagic, Opt_uid, Opt_fowner,
+-	Opt_appraise_type, Opt_fsuuid
++	Opt_appraise_type, Opt_fsuuid,
++	Opt_ima_template, Opt_ima_template_fmt
+ };
+ 
+ static match_table_t policy_tokens = {
+@@ -373,6 +376,8 @@ static match_table_t policy_tokens = {
+ 	{Opt_uid, "uid=%s"},
+ 	{Opt_fowner, "fowner=%s"},
+ 	{Opt_appraise_type, "appraise_type=%s"},
++	{Opt_ima_template, "ima_template=%s"},
++	{Opt_ima_template_fmt, "ima_template_fmt=%s"},
+ 	{Opt_err, NULL}
+ };
+ 
+@@ -421,6 +426,7 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 	entry->action = UNKNOWN;
+ 	while ((p = strsep(&rule, " \t")) != NULL) {
+ 		substring_t args[MAX_OPT_ARGS];
++		struct ima_template_desc *desc;
+ 		int token;
+ 		unsigned long lnum;
+ 
+@@ -621,6 +627,43 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+ 			else
+ 				result = -EINVAL;
+ 			break;
++		case Opt_ima_template:
++			ima_log_string(ab, "ima_template", args[0].from);
 +
-+	if (template_name == NULL && template_fmt == NULL)
-+		goto out;
++			if (entry->template_name || entry->template_fmt) {
++				result = -EINVAL;
++				break;
++			}
 +
-+	if (template_name) {
-+		desc = lookup_template_desc_by_name(template_name);
-+	} else {
-+		desc = lookup_template_desc_by_fmt(template_fmt);
-+		if (desc == NULL) {
-+			desc = kzalloc(sizeof(*desc), GFP_KERNEL);
-+			if (desc == NULL)
-+				goto out;
-+		}
-+		desc->name = "";
-+		desc->fmt = kstrdup(template_fmt, GFP_KERNEL);
-+		if (desc->fmt == NULL)
-+			goto out_free;
++			desc = ima_get_template_desc(args[0].from, NULL);
++			if (strcmp(desc->name, args[0].from) != 0) {
++				result = -EINVAL;
++				break;
++			}
 +
-+		result = template_desc_init_fields(desc->fmt, &(desc->fields),
-+						   &(desc->num_fields));
-+		if (result < 0)
-+			goto out_free_fmt;
-+	}
-+out:
-+	if (desc == NULL)
-+		desc = ima_template_desc_current();
-+	return desc;
-+out_free_fmt:
-+	kfree(desc->fmt);
-+out_free:
-+	kfree(desc);
-+	desc = NULL;
-+	goto out;
-+}
++			entry->template_name = kstrdup(args[0].from,
++						       GFP_KERNEL);
++			if (!entry->template_name)
++				result = -EINVAL;
++			break;
++		case Opt_ima_template_fmt:
++			ima_log_string(ab, "ima_template_fmt", args[0].from);
 +
- int ima_init_template(void)
- {
- 	int result;
++			if (entry->template_fmt || entry->template_name) {
++				result = -EINVAL;
++				break;
++			}
++
++			desc = ima_get_template_desc(NULL, args[0].from);
++			if (strcmp(desc->fmt, args[0].from) != 0) {
++				result = -EINVAL;
++				break;
++			}
++
++			entry->template_fmt = kstrdup(args[0].from, GFP_KERNEL);
++			if (!entry->template_fmt)
++				result = -EINVAL;
++			break;
+ 		case Opt_err:
+ 			ima_log_string(ab, "UNKNOWN", p);
+ 			result = -EINVAL;
 -- 
 1.8.1.4
 
 
-------6DF40AE3B345A64BB7391EC8958F611A
+------AF3EF54B09DE7DE83297149D66813B95
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -150,17 +242,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMzExMDcxNTUwMTVaMCMGCSqG
-SIb3DQEJBDEWBBTVgDo50UZQk+PglGOHPL6ueJfsGTB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMzExMDcxNTUwMjZaMCMGCSqG
+SIb3DQEJBDEWBBQGF8iA79pJJNs3swVJRqbjn0PZaTB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQB/ttm8RW3rqXX7dWG5IoUWRueI
-j4kumW/Nrgx1n2fKy5QDWakI7h7XUeTquBY1CdeIAq0H43jEWjj8SwNVMW+bHAue
-IR346UHDDqqA7khuXD/99eA4Z8aeWzBPFtnJhMEIvjmg2jr5l/NM95kSCjF4zFtT
-hm0guMnYxT+dnafXnYjDsiR32ILE4DoFgJrZ/c03istLsl+y8IOlKBGPepmFw9YX
-N6YlyXNTCdUL+iKzrMTg1wlY2sP7OPl+1fYNYFms9JZTDqjH9bNqS0ADCQTWt32M
-JQxGTlJ4+fqF6ZFP1zD2ODJpESZksN12i6fydbBbKPO7xJbIeLYi1slz53l1
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQBfmMjda1proN4Wzn9y3eHG+8/S
+75jlPee8QXJdvRdXRPjnoMz/H92SI3LDd016aU+QBZZNC4Rq6cZZdBnutjzAzNpc
+udDgG+GJIX0ug1Hpy6kv6R1cSRPoU9nxvSqRJDQlvMwDmhtVWu6MxD2XvH686AJ3
+ajTaCR+o5DYj69SoFjIrN/43EYwWFpGwHR4+4tWlAPlkln+fTLYvVmsvj/+3JgJi
+6USsUuUD7GtqbwAOF9LVuNk/z8haIibb2CmDGZGYLHty8r6Ifx95DIKnpbb6fLIO
+rpRfR70zZH927INu6M+ixARd8YEHUHLMH7ccq3FgJZsdZ3AVzcWtWmlgXmn3
 
-------6DF40AE3B345A64BB7391EC8958F611A--
+------AF3EF54B09DE7DE83297149D66813B95--
 
 
