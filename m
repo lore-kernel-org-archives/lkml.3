@@ -1,113 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab3KGP1C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 10:27:02 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:35314 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab3KGP1A (ORCPT
+	id S1753832Ab3KGP3f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 10:29:35 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56932 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038Ab3KGP3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 10:27:00 -0500
-Date: Thu, 7 Nov 2013 16:26:54 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/7] perf/core improvements and fixes
-Message-ID: <20131107152649.GA6337@gmail.com>
-References: <1383836658-10518-1-git-send-email-acme@infradead.org>
+	Thu, 7 Nov 2013 10:29:33 -0500
+Message-ID: <527BB1D8.9070702@kernel.dk>
+Date: Thu, 07 Nov 2013 08:29:28 -0700
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1383836658-10518-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [GIT] pktcdvd, floppy for 3.13
+References: <alpine.LNX.2.00.1311060935590.835@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1311060935590.835@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/06/2013 01:37 AM, Jiri Kosina wrote:
+> Jens,
+> 
+> please pull from
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jikos/linux-block.git for-jens
+> 
+> to get two very simple patches for pktcdvd and floppy doc.
+> 
+> I know it's quite late for 3.13, sorry for that. OTOH, the patches are so 
+> simple, that no harm can be caused :)
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+It's minor stuff, so no worries. Pulled in.
 
-> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit 8a4d0b56b031455adcbe4a9383c3b497456fcfac:
-> 
->   Merge branch 'uprobes/core' of git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc into perf/core (2013-11-07 08:46:13 +0100)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to 8ce000e83848578a621d64eccdc88bd34c2fc70c:
-> 
->   perf tools: Remove unneeded include (2013-11-07 11:51:19 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes:
-> 
-> . Fix version when building out of tree, as when using one of these:
-> 
->   $ make help | grep perf
->     perf-tar-src-pkg    - Build perf-3.12.0.tar source tarball
->     perf-targz-src-pkg  - Build perf-3.12.0.tar.gz source tarball
->     perf-tarbz2-src-pkg - Build perf-3.12.0.tar.bz2 source tarball
->     perf-tarxz-src-pkg  - Build perf-3.12.0.tar.xz source tarball
->   $
-> 
->   from David Ahern.
-> 
-> . Don't relookup fields by name in each sample in 'trace'.
-> 
-> . 'perf record' code cleanups, from David Ahern.
-> 
-> . Remove unneeded include in sort.h, from Rodrigo Campos.
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Arnaldo Carvalho de Melo (2):
->       perf evsel: Ditch evsel->handler.data field
->       perf trace: Don't relookup fields by name in each sample
-> 
-> David Ahern (4):
->       perf tools: Fix version when building out of tree
->       perf record: Refactor feature handling into a separate function
->       perf record: Remove advance_output function
->       perf record: Remove post_processing_offset variable
-> 
-> Rodrigo Campos (1):
->       perf tools: Remove unneeded include
-> 
->  scripts/package/Makefile         |   4 +-
->  tools/perf/builtin-inject.c      |  10 +-
->  tools/perf/builtin-kmem.c        |   4 +-
->  tools/perf/builtin-lock.c        |   4 +-
->  tools/perf/builtin-record.c      |  48 ++++-----
->  tools/perf/builtin-sched.c       |   4 +-
->  tools/perf/builtin-timechart.c   |   4 +-
->  tools/perf/builtin-trace.c       | 205 ++++++++++++++++++++++++++++++++++++---
->  tools/perf/util/PERF-VERSION-GEN |   3 +
->  tools/perf/util/evlist.c         |   2 +-
->  tools/perf/util/evsel.h          |   5 +-
->  tools/perf/util/session.c        |   4 +-
->  tools/perf/util/sort.h           |   1 -
->  13 files changed, 239 insertions(+), 59 deletions(-)
+-- 
+Jens Axboe
 
-Pulled, thanks a lot Arnaldo!
-
-	Ingo
