@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab3KGT0Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 14:26:25 -0500
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:57653 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751743Ab3KGT0R (ORCPT
+	id S1753956Ab3KGT27 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 14:28:59 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:48091 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861Ab3KGT2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 14:26:17 -0500
-Date: Thu, 7 Nov 2013 20:25:58 +0100
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
-Message-ID: <20131107192558.GA11453@breakpoint.cc>
-References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com>
- <20131106190152.GA8662@breakpoint.cc>
- <20131106193041.GA26796@roeck-us.net>
- <20131106203821.GC8662@breakpoint.cc>
- <20131106211754.GA29300@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131106211754.GA29300@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 7 Nov 2013 14:28:51 -0500
+From: Rob Herring <robherring2@gmail.com>
+To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>, davem@davemloft.net,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH 1/2] dt: disable self-tests for !OF_IRQ
+Date: Thu,  7 Nov 2013 12:15:48 -0600
+Message-Id: <1383848149-15488-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.11.13, Guenter Roeck wrote:
-|…
-thanks for the explanation.
+From: Rob Herring <rob.herring@calxeda.com>
 
-> We use DT overlays to describe the hardware on those boards and, if necessary,
-> its configuration. For example, if there is a PCIe switch, the overlay would
-> describe its memory and bus number configuration.
+Fix OF selftest compile on sparc which does not enable OF_IRQ.
 
-So have your "fix" configuration and a few overlays you switch at
-runtime. The problem you have is that you want to switch a specific part
-if your configuration at runtime. I assume you run DT on ARM. What
-happens if you swtich from ARM to x86 and you "keep" your FPGA
-configuration requirement? You can't use both, DT and ACPI, right? So
-what happens then?
+drivers/of/selftest.c:177: undefined reference to `of_irq_parse_one'
+drivers/of/selftest.c:197: undefined reference to `of_irq_parse_one'
+drivers/of/selftest.c:248: undefined reference to `of_irq_parse_one'
 
-> 
-> Guenter
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+---
+ drivers/of/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-Sebastian
+diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
+index 9d2009a..9b28f8b 100644
+--- a/drivers/of/Kconfig
++++ b/drivers/of/Kconfig
+@@ -17,6 +17,7 @@ config PROC_DEVICETREE
+ 
+ config OF_SELFTEST
+ 	bool "Device Tree Runtime self tests"
++	depends on OF_IRQ
+ 	help
+ 	  This option builds in test cases for the device tree infrastructure
+ 	  that are executed one at boot time, and the results dumped to the
+-- 
+1.8.1.2
+
