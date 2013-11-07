@@ -1,176 +1,510 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab3KGLVU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 06:21:20 -0500
-Received: from www.linutronix.de ([62.245.132.108]:50912 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801Ab3KGLVS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 06:21:18 -0500
-Date: Thu, 7 Nov 2013 12:21:11 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mike Galbraith <bitbucket@online.de>
-cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo
-In-Reply-To: <1383798668.5441.25.camel@marge.simpson.net>
-Message-ID: <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de>
-References: <1383228427.5272.36.camel@marge.simpson.net>  <alpine.DEB.2.02.1311061842160.23353@ionos.tec.linutronix.de>  <1383794799.5441.16.camel@marge.simpson.net> <1383798668.5441.25.camel@marge.simpson.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754606Ab3KGL0p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 06:26:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47004 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754033Ab3KGL0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 06:26:41 -0500
+Date: Thu, 7 Nov 2013 12:26:30 +0100
+From: Jan Kara <jack@suse.cz>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, axboe@kernel.dk, hch@infradead.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Jaegeuk Kim <jaegeuk.kim@samsung.com>, Joern Engel <joern@logfs.org>,
+        Prasad Joshi <prasadjoshi.linux@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: [PATCH 1/9] block: Convert various code to bio_for_each_segment()
+Message-ID: <20131107112630.GA31798@quack.suse.cz>
+References: <1383608187-27368-1-git-send-email-kmo@daterainc.com>
+ <1383608187-27368-2-git-send-email-kmo@daterainc.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1383608187-27368-2-git-send-email-kmo@daterainc.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike,
+On Mon 04-11-13 15:36:19, Kent Overstreet wrote:
+> With immutable biovecs we don't want code accessing bi_io_vec directly -
+> the uses this patch changes weren't incorrect since they all own the
+> bio, but it makes the code harder to audit for no good reason - also,
+> this will help with multipage bvecs later.
+  I think you've missed the code in fs/ext4/page-io.c in the conversion
+(likely because it was added relatively recently).
 
-On Thu, 7 Nov 2013, Mike Galbraith wrote:
-
-> On Thu, 2013-11-07 at 04:26 +0100, Mike Galbraith wrote: 
-> > On Wed, 2013-11-06 at 18:49 +0100, Thomas Gleixner wrote: 
+								Honza
 > 
-> > > I bet you are trying to work around some of the side effects of the
-> > > occasional tick which is still necessary despite of full nohz, right?
-> > 
-> > Nope, I wanted to check out cost of nohz_full for rt, and found that it
-> > doesn't work at all instead, looked, and found that the sole running
-> > task has just awakened ksoftirqd when it wants to shut the tick down, so
-> > that shutdown never happens. 
+> Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> Cc: Chris Mason <chris.mason@fusionio.com>
+> Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> Cc: Joern Engel <joern@logfs.org>
+> Cc: Prasad Joshi <prasadjoshi.linux@gmail.com>
+> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+> ---
+>  fs/btrfs/compression.c           | 10 ++++------
+>  fs/btrfs/disk-io.c               | 11 ++++-------
+>  fs/btrfs/extent_io.c             | 37 ++++++++++++++-----------------------
+>  fs/btrfs/inode.c                 | 15 ++++++---------
+>  fs/f2fs/data.c                   | 13 +++++--------
+>  fs/f2fs/segment.c                | 12 +++++-------
+>  fs/logfs/dev_bdev.c              | 18 +++++++-----------
+>  fs/mpage.c                       | 17 ++++++++---------
+>  fs/nfs/blocklayout/blocklayout.c | 34 +++++++++++++---------------------
+>  9 files changed, 66 insertions(+), 101 deletions(-)
 > 
-> Like so in virgin 3.10-rt.  Box is x3550 M3 booted nowatchdog
-> rcu_nocbs=1-3 nohz_full=1-3, and CPUs1-3 are completely isolated via
-> cpusets as well.
-
-well, that very same problem is in mainline if you add "threadirqs" to
-the command line. But we can be smart about this. The untested patch
-below should address that issue. If that works on mainline we can
-adapt it for RT (needs a trylock(&base->lock) there).
-
-Though it's not a full solution. It needs some thought versus the
-softirq code of timers. Assume we have only one timer queued 1000
-ticks into the future. So this change will cause the timer softirq not
-to be called until that timer expires and then the timer softirq is
-going to do 1000 loops until it catches up with jiffies. That's
-anything but pretty ...
-
-What worries me more is this one:
-
-  pert-5229  [003] d..h1..   684.482618: softirq_raise: vec=9 [action=RCU]
-
-The CPU has no callbacks as you shoved them over to cpu 0, so why is
-the RCU softirq raised?
-
-Thanks,
-
-	tglx
-------------------
-
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index d19a5c2..0816a50 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -445,9 +445,8 @@ extern int schedule_hrtimeout_range_clock(ktime_t *expires,
- 		unsigned long delta, const enum hrtimer_mode mode, int clock);
- extern int schedule_hrtimeout(ktime_t *expires, const enum hrtimer_mode mode);
- 
--/* Soft interrupt function to run the hrtimer queues: */
-+/* Called from the periodic timer tick */
- extern void hrtimer_run_queues(void);
--extern void hrtimer_run_pending(void);
- 
- /* Bootup initialization: */
- extern void __init hrtimers_init(void);
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 383319b..7359eaa 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1450,30 +1450,6 @@ static inline void __hrtimer_peek_ahead_timers(void) { }
- #endif	/* !CONFIG_HIGH_RES_TIMERS */
- 
- /*
-- * Called from timer softirq every jiffy, expire hrtimers:
-- *
-- * For HRT its the fall back code to run the softirq in the timer
-- * softirq context in case the hrtimer initialization failed or has
-- * not been done yet.
-- */
--void hrtimer_run_pending(void)
--{
--	if (hrtimer_hres_active())
--		return;
--
--	/*
--	 * This _is_ ugly: We have to check in the softirq context,
--	 * whether we can switch to highres and / or nohz mode. The
--	 * clocksource switch happens in the timer interrupt with
--	 * xtime_lock held. Notification from there only sets the
--	 * check bit in the tick_oneshot code, otherwise we might
--	 * deadlock vs. xtime_lock.
--	 */
--	if (tick_check_oneshot_change(!hrtimer_is_hres_enabled()))
--		hrtimer_switch_to_hres();
--}
--
--/*
-  * Called from hardirq context every jiffy
-  */
- void hrtimer_run_queues(void)
-@@ -1486,6 +1462,13 @@ void hrtimer_run_queues(void)
- 	if (hrtimer_hres_active())
- 		return;
- 
-+	/*
-+	 * Check whether we can switch to highres mode.
-+	 */
-+	if (tick_check_oneshot_change(!hrtimer_is_hres_enabled())
-+	    && hrtimer_switch_to_hres())
-+		return;
-+
- 	for (index = 0; index < HRTIMER_MAX_CLOCK_BASES; index++) {
- 		base = &cpu_base->clock_base[index];
- 		if (!timerqueue_getnext(&base->active))
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 4296d13..ba8ee94 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1370,8 +1370,6 @@ static void run_timer_softirq(struct softirq_action *h)
- {
- 	struct tvec_base *base = __this_cpu_read(tvec_bases);
- 
--	hrtimer_run_pending();
--
- 	if (time_after_eq(jiffies, base->timer_jiffies))
- 		__run_timers(base);
- }
-@@ -1381,8 +1379,20 @@ static void run_timer_softirq(struct softirq_action *h)
-  */
- void run_local_timers(void)
- {
-+	struct tvec_base *base = __this_cpu_read(tvec_bases);
-+
- 	hrtimer_run_queues();
--	raise_softirq(TIMER_SOFTIRQ);
-+	/*
-+	 * We can access this lockless as we are in the timer
-+	 * interrupt. If there are no timers queued, nothing to do in
-+	 * the timer softirq.
-+	 */
-+	if (!base->active_timers)
-+		return;
-+
-+	/* Check whether the next pending timer has expired */
-+	if (time_before_eq(base->next_timer, jiffies))
-+		raise_softirq(TIMER_SOFTIRQ);
- }
- 
- #ifdef __ARCH_WANT_SYS_ALARM
-
-
-
+> diff --git a/fs/btrfs/compression.c b/fs/btrfs/compression.c
+> index 06ab821..52e7848 100644
+> --- a/fs/btrfs/compression.c
+> +++ b/fs/btrfs/compression.c
+> @@ -203,18 +203,16 @@ csum_failed:
+>  	if (cb->errors) {
+>  		bio_io_error(cb->orig_bio);
+>  	} else {
+> -		int bio_index = 0;
+> -		struct bio_vec *bvec = cb->orig_bio->bi_io_vec;
+> +		int i;
+> +		struct bio_vec *bvec;
+>  
+>  		/*
+>  		 * we have verified the checksum already, set page
+>  		 * checked so the end_io handlers know about it
+>  		 */
+> -		while (bio_index < cb->orig_bio->bi_vcnt) {
+> +		bio_for_each_segment_all(bvec, cb->orig_bio, i)
+>  			SetPageChecked(bvec->bv_page);
+> -			bvec++;
+> -			bio_index++;
+> -		}
+> +
+>  		bio_endio(cb->orig_bio, 0);
+>  	}
+>  
+> diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+> index 62176ad..733182e 100644
+> --- a/fs/btrfs/disk-io.c
+> +++ b/fs/btrfs/disk-io.c
+> @@ -850,20 +850,17 @@ int btrfs_wq_submit_bio(struct btrfs_fs_info *fs_info, struct inode *inode,
+>  
+>  static int btree_csum_one_bio(struct bio *bio)
+>  {
+> -	struct bio_vec *bvec = bio->bi_io_vec;
+> -	int bio_index = 0;
+> +	struct bio_vec *bvec;
+>  	struct btrfs_root *root;
+> -	int ret = 0;
+> +	int i, ret = 0;
+>  
+> -	WARN_ON(bio->bi_vcnt <= 0);
+> -	while (bio_index < bio->bi_vcnt) {
+> +	bio_for_each_segment_all(bvec, bio, i) {
+>  		root = BTRFS_I(bvec->bv_page->mapping->host)->root;
+>  		ret = csum_dirty_buffer(root, bvec->bv_page);
+>  		if (ret)
+>  			break;
+> -		bio_index++;
+> -		bvec++;
+>  	}
+> +
+>  	return ret;
+>  }
+>  
+> diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+> index 0df176a..ea5a08b 100644
+> --- a/fs/btrfs/extent_io.c
+> +++ b/fs/btrfs/extent_io.c
+> @@ -2014,7 +2014,7 @@ int repair_io_failure(struct btrfs_fs_info *fs_info, u64 start,
+>  	}
+>  	bio->bi_bdev = dev->bdev;
+>  	bio_add_page(bio, page, length, start - page_offset(page));
+> -	btrfsic_submit_bio(WRITE_SYNC, bio);
+> +	btrfsic_submit_bio(WRITE_SYNC, bio); /* XXX: submit_bio_wait() */
+>  	wait_for_completion(&compl);
+>  
+>  	if (!test_bit(BIO_UPTODATE, &bio->bi_flags)) {
+> @@ -2340,12 +2340,13 @@ int end_extent_writepage(struct page *page, int err, u64 start, u64 end)
+>   */
+>  static void end_bio_extent_writepage(struct bio *bio, int err)
+>  {
+> -	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
+> +	struct bio_vec *bvec;
+>  	struct extent_io_tree *tree;
+>  	u64 start;
+>  	u64 end;
+> +	int i;
+>  
+> -	do {
+> +	bio_for_each_segment_all(bvec, bio, i) {
+>  		struct page *page = bvec->bv_page;
+>  		tree = &BTRFS_I(page->mapping->host)->io_tree;
+>  
+> @@ -2363,14 +2364,11 @@ static void end_bio_extent_writepage(struct bio *bio, int err)
+>  		start = page_offset(page);
+>  		end = start + bvec->bv_offset + bvec->bv_len - 1;
+>  
+> -		if (--bvec >= bio->bi_io_vec)
+> -			prefetchw(&bvec->bv_page->flags);
+> -
+>  		if (end_extent_writepage(page, err, start, end))
+>  			continue;
+>  
+>  		end_page_writeback(page);
+> -	} while (bvec >= bio->bi_io_vec);
+> +	}
+>  
+>  	bio_put(bio);
+>  }
+> @@ -2400,9 +2398,8 @@ endio_readpage_release_extent(struct extent_io_tree *tree, u64 start, u64 len,
+>   */
+>  static void end_bio_extent_readpage(struct bio *bio, int err)
+>  {
+> +	struct bio_vec *bvec;
+>  	int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+> -	struct bio_vec *bvec_end = bio->bi_io_vec + bio->bi_vcnt - 1;
+> -	struct bio_vec *bvec = bio->bi_io_vec;
+>  	struct btrfs_io_bio *io_bio = btrfs_io_bio(bio);
+>  	struct extent_io_tree *tree;
+>  	u64 offset = 0;
+> @@ -2413,11 +2410,12 @@ static void end_bio_extent_readpage(struct bio *bio, int err)
+>  	u64 extent_len = 0;
+>  	int mirror;
+>  	int ret;
+> +	int i;
+>  
+>  	if (err)
+>  		uptodate = 0;
+>  
+> -	do {
+> +	bio_for_each_segment_all(bvec, bio, i) {
+>  		struct page *page = bvec->bv_page;
+>  		struct inode *inode = page->mapping->host;
+>  
+> @@ -2441,9 +2439,6 @@ static void end_bio_extent_readpage(struct bio *bio, int err)
+>  		end = start + bvec->bv_offset + bvec->bv_len - 1;
+>  		len = bvec->bv_len;
+>  
+> -		if (++bvec <= bvec_end)
+> -			prefetchw(&bvec->bv_page->flags);
+> -
+>  		mirror = io_bio->mirror_num;
+>  		if (likely(uptodate && tree->ops &&
+>  			   tree->ops->readpage_end_io_hook)) {
+> @@ -2524,7 +2519,7 @@ readpage_ok:
+>  			extent_start = start;
+>  			extent_len = end + 1 - start;
+>  		}
+> -	} while (bvec <= bvec_end);
+> +	}
+>  
+>  	if (extent_len)
+>  		endio_readpage_release_extent(tree, extent_start, extent_len,
+> @@ -2555,7 +2550,6 @@ btrfs_bio_alloc(struct block_device *bdev, u64 first_sector, int nr_vecs,
+>  	}
+>  
+>  	if (bio) {
+> -		bio->bi_iter.bi_size = 0;
+>  		bio->bi_bdev = bdev;
+>  		bio->bi_iter.bi_sector = first_sector;
+>  		btrfs_bio = btrfs_io_bio(bio);
+> @@ -3418,20 +3412,18 @@ static void end_extent_buffer_writeback(struct extent_buffer *eb)
+>  
+>  static void end_bio_extent_buffer_writepage(struct bio *bio, int err)
+>  {
+> -	int uptodate = err == 0;
+> -	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
+> +	struct bio_vec *bvec;
+>  	struct extent_buffer *eb;
+> -	int done;
+> +	int i, done;
+>  
+> -	do {
+> +	bio_for_each_segment_all(bvec, bio, i) {
+>  		struct page *page = bvec->bv_page;
+>  
+> -		bvec--;
+>  		eb = (struct extent_buffer *)page->private;
+>  		BUG_ON(!eb);
+>  		done = atomic_dec_and_test(&eb->io_pages);
+>  
+> -		if (!uptodate || test_bit(EXTENT_BUFFER_IOERR, &eb->bflags)) {
+> +		if (err || test_bit(EXTENT_BUFFER_IOERR, &eb->bflags)) {
+>  			set_bit(EXTENT_BUFFER_IOERR, &eb->bflags);
+>  			ClearPageUptodate(page);
+>  			SetPageError(page);
+> @@ -3443,10 +3435,9 @@ static void end_bio_extent_buffer_writepage(struct bio *bio, int err)
+>  			continue;
+>  
+>  		end_extent_buffer_writeback(eb);
+> -	} while (bvec >= bio->bi_io_vec);
+> +	}
+>  
+>  	bio_put(bio);
+> -
+>  }
+>  
+>  static int write_one_eb(struct extent_buffer *eb,
+> diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+> index 6f5a64d..b7209a6 100644
+> --- a/fs/btrfs/inode.c
+> +++ b/fs/btrfs/inode.c
+> @@ -6765,17 +6765,16 @@ unlock_err:
+>  static void btrfs_endio_direct_read(struct bio *bio, int err)
+>  {
+>  	struct btrfs_dio_private *dip = bio->bi_private;
+> -	struct bio_vec *bvec_end = bio->bi_io_vec + bio->bi_vcnt - 1;
+> -	struct bio_vec *bvec = bio->bi_io_vec;
+> +	struct bio_vec *bvec;
+>  	struct inode *inode = dip->inode;
+>  	struct btrfs_root *root = BTRFS_I(inode)->root;
+>  	struct bio *dio_bio;
+>  	u32 *csums = (u32 *)dip->csum;
+> -	int index = 0;
+>  	u64 start;
+> +	int i;
+>  
+>  	start = dip->logical_offset;
+> -	do {
+> +	bio_for_each_segment_all(bvec, bio, i) {
+>  		if (!(BTRFS_I(inode)->flags & BTRFS_INODE_NODATASUM)) {
+>  			struct page *page = bvec->bv_page;
+>  			char *kaddr;
+> @@ -6791,18 +6790,16 @@ static void btrfs_endio_direct_read(struct bio *bio, int err)
+>  			local_irq_restore(flags);
+>  
+>  			flush_dcache_page(bvec->bv_page);
+> -			if (csum != csums[index]) {
+> +			if (csum != csums[i]) {
+>  				btrfs_err(root->fs_info, "csum failed ino %llu off %llu csum %u expected csum %u",
+>  					  btrfs_ino(inode), start, csum,
+> -					  csums[index]);
+> +					  csums[i]);
+>  				err = -EIO;
+>  			}
+>  		}
+>  
+>  		start += bvec->bv_len;
+> -		bvec++;
+> -		index++;
+> -	} while (bvec <= bvec_end);
+> +	}
+>  
+>  	unlock_extent(&BTRFS_I(inode)->io_tree, dip->logical_offset,
+>  		      dip->logical_offset + dip->bytes - 1);
+> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+> index 97d8b34..dd02271 100644
+> --- a/fs/f2fs/data.c
+> +++ b/fs/f2fs/data.c
+> @@ -357,23 +357,20 @@ repeat:
+>  
+>  static void read_end_io(struct bio *bio, int err)
+>  {
+> -	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+> -	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
+> +	struct bio_vec *bvec;
+> +	int i;
+>  
+> -	do {
+> +	bio_for_each_segment_all(bvec, bio, i) {
+>  		struct page *page = bvec->bv_page;
+>  
+> -		if (--bvec >= bio->bi_io_vec)
+> -			prefetchw(&bvec->bv_page->flags);
+> -
+> -		if (uptodate) {
+> +		if (!err) {
+>  			SetPageUptodate(page);
+>  		} else {
+>  			ClearPageUptodate(page);
+>  			SetPageError(page);
+>  		}
+>  		unlock_page(page);
+> -	} while (bvec >= bio->bi_io_vec);
+> +	}
+>  	bio_put(bio);
+>  }
+>  
+> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> index 9d77ce1..4382c90 100644
+> --- a/fs/f2fs/segment.c
+> +++ b/fs/f2fs/segment.c
+> @@ -575,16 +575,14 @@ static const struct segment_allocation default_salloc_ops = {
+>  
+>  static void f2fs_end_io_write(struct bio *bio, int err)
+>  {
+> -	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+> -	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
+>  	struct bio_private *p = bio->bi_private;
+> +	struct bio_vec *bvec;
+> +	int i;
+>  
+> -	do {
+> +	bio_for_each_segment_all(bvec, bio, i) {
+>  		struct page *page = bvec->bv_page;
+>  
+> -		if (--bvec >= bio->bi_io_vec)
+> -			prefetchw(&bvec->bv_page->flags);
+> -		if (!uptodate) {
+> +		if (err) {
+>  			SetPageError(page);
+>  			if (page->mapping)
+>  				set_bit(AS_EIO, &page->mapping->flags);
+> @@ -593,7 +591,7 @@ static void f2fs_end_io_write(struct bio *bio, int err)
+>  		}
+>  		end_page_writeback(page);
+>  		dec_page_count(p->sbi, F2FS_WRITEBACK);
+> -	} while (bvec >= bio->bi_io_vec);
+> +	}
+>  
+>  	if (p->is_sync)
+>  		complete(p->wait);
+> diff --git a/fs/logfs/dev_bdev.c b/fs/logfs/dev_bdev.c
+> index a1b161f..ca42715 100644
+> --- a/fs/logfs/dev_bdev.c
+> +++ b/fs/logfs/dev_bdev.c
+> @@ -67,22 +67,18 @@ static DECLARE_WAIT_QUEUE_HEAD(wq);
+>  static void writeseg_end_io(struct bio *bio, int err)
+>  {
+>  	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+> -	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
+> +	struct bio_vec *bvec;
+> +	int i;
+>  	struct super_block *sb = bio->bi_private;
+>  	struct logfs_super *super = logfs_super(sb);
+> -	struct page *page;
+>  
+>  	BUG_ON(!uptodate); /* FIXME: Retry io or write elsewhere */
+>  	BUG_ON(err);
+> -	BUG_ON(bio->bi_vcnt == 0);
+> -	do {
+> -		page = bvec->bv_page;
+> -		if (--bvec >= bio->bi_io_vec)
+> -			prefetchw(&bvec->bv_page->flags);
+> -
+> -		end_page_writeback(page);
+> -		page_cache_release(page);
+> -	} while (bvec >= bio->bi_io_vec);
+> +
+> +	bio_for_each_segment_all(bvec, bio, i) {
+> +		end_page_writeback(bvec->bv_page);
+> +		page_cache_release(bvec->bv_page);
+> +	}
+>  	bio_put(bio);
+>  	if (atomic_dec_and_test(&super->s_pending_writes))
+>  		wake_up(&wq);
+> diff --git a/fs/mpage.c b/fs/mpage.c
+> index 92b125f..4979ffa 100644
+> --- a/fs/mpage.c
+> +++ b/fs/mpage.c
+> @@ -43,16 +43,14 @@
+>   */
+>  static void mpage_end_io(struct bio *bio, int err)
+>  {
+> -	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+> -	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
+> +	struct bio_vec *bv;
+> +	int i;
+>  
+> -	do {
+> -		struct page *page = bvec->bv_page;
+> +	bio_for_each_segment_all(bv, bio, i) {
+> +		struct page *page = bv->bv_page;
+>  
+> -		if (--bvec >= bio->bi_io_vec)
+> -			prefetchw(&bvec->bv_page->flags);
+>  		if (bio_data_dir(bio) == READ) {
+> -			if (uptodate) {
+> +			if (!err) {
+>  				SetPageUptodate(page);
+>  			} else {
+>  				ClearPageUptodate(page);
+> @@ -60,14 +58,15 @@ static void mpage_end_io(struct bio *bio, int err)
+>  			}
+>  			unlock_page(page);
+>  		} else { /* bio_data_dir(bio) == WRITE */
+> -			if (!uptodate) {
+> +			if (err) {
+>  				SetPageError(page);
+>  				if (page->mapping)
+>  					set_bit(AS_EIO, &page->mapping->flags);
+>  			}
+>  			end_page_writeback(page);
+>  		}
+> -	} while (bvec >= bio->bi_io_vec);
+> +	}
+> +
+>  	bio_put(bio);
+>  }
+>  
+> diff --git a/fs/nfs/blocklayout/blocklayout.c b/fs/nfs/blocklayout/blocklayout.c
+> index af73896..56ff823 100644
+> --- a/fs/nfs/blocklayout/blocklayout.c
+> +++ b/fs/nfs/blocklayout/blocklayout.c
+> @@ -202,18 +202,14 @@ static struct bio *bl_add_page_to_bio(struct bio *bio, int npg, int rw,
+>  static void bl_end_io_read(struct bio *bio, int err)
+>  {
+>  	struct parallel_io *par = bio->bi_private;
+> -	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+> -	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
+> +	struct bio_vec *bvec;
+> +	int i;
+>  
+> -	do {
+> -		struct page *page = bvec->bv_page;
+> +	if (!err)
+> +		bio_for_each_segment_all(bvec, bio, i)
+> +			SetPageUptodate(bvec->bv_page);
+>  
+> -		if (--bvec >= bio->bi_io_vec)
+> -			prefetchw(&bvec->bv_page->flags);
+> -		if (uptodate)
+> -			SetPageUptodate(page);
+> -	} while (bvec >= bio->bi_io_vec);
+> -	if (!uptodate) {
+> +	if (err) {
+>  		struct nfs_read_data *rdata = par->data;
+>  		struct nfs_pgio_header *header = rdata->header;
+>  
+> @@ -384,20 +380,16 @@ static void mark_extents_written(struct pnfs_block_layout *bl,
+>  static void bl_end_io_write_zero(struct bio *bio, int err)
+>  {
+>  	struct parallel_io *par = bio->bi_private;
+> -	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+> -	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
+> -
+> -	do {
+> -		struct page *page = bvec->bv_page;
+> +	struct bio_vec *bvec;
+> +	int i;
+>  
+> -		if (--bvec >= bio->bi_io_vec)
+> -			prefetchw(&bvec->bv_page->flags);
+> +	bio_for_each_segment_all(bvec, bio, i) {
+>  		/* This is the zeroing page we added */
+> -		end_page_writeback(page);
+> -		page_cache_release(page);
+> -	} while (bvec >= bio->bi_io_vec);
+> +		end_page_writeback(bvec->bv_page);
+> +		page_cache_release(bvec->bv_page);
+> +	}
+>  
+> -	if (unlikely(!uptodate)) {
+> +	if (unlikely(err)) {
+>  		struct nfs_write_data *data = par->data;
+>  		struct nfs_pgio_header *header = data->header;
+>  
+> -- 
+> 1.8.4.rc3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
