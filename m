@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab3KGHtj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 02:49:39 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:38238 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291Ab3KGHta (ORCPT
+	id S1754267Ab3KGHwB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 02:52:01 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:59242 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab3KGHvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 02:49:30 -0500
-Date: Thu, 7 Nov 2013 10:49:19 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Suman Anna <s-anna@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] mailbox/omap: make mbox->irq signed for error handling
-Message-ID: <20131107074918.GG21844@elgon.mountain>
+	Thu, 7 Nov 2013 02:51:54 -0500
+Date: Thu, 7 Nov 2013 08:51:51 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        David Long <dave.long@linaro.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] uprobes: preparations for arm port
+Message-ID: <20131107075151.GB31560@gmail.com>
+References: <20131106191913.GA18661@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20131106191913.GA18661@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a bug in omap2_mbox_probe() where we try do:
 
-		mbox->irq = platform_get_irq(pdev, info->irq_id);
-		if (mbox->irq < 0) {
+* Oleg Nesterov <oleg@redhat.com> wrote:
 
-The problem is that mbox->irq is unsigned so the error handling doesn't
-work.  I've changed it to a signed integer.
+> --- a/arch/powerpc/include/asm/uprobes.h
+> +++ b/arch/powerpc/include/asm/uprobes.h
+> @@ -37,6 +37,7 @@ typedef ppc_opcode_t uprobe_opcode_t;
+>  struct arch_uprobe {
+>  	union {
+>  		u8	insn[MAX_UINSN_BYTES];
+> +		u8	ixol[MAX_UINSN_BYTES];
+>  		u32	ainsn;
+>  	};
+>  };
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> --- a/arch/x86/include/asm/uprobes.h
+> +++ b/arch/x86/include/asm/uprobes.h
+> @@ -35,7 +35,10 @@ typedef u8 uprobe_opcode_t;
+>  
+>  struct arch_uprobe {
+>  	u16				fixups;
+> -	u8				insn[MAX_UINSN_BYTES];
+> +	union {
+> +		u8			insn[MAX_UINSN_BYTES];
+> +		u8			ixol[MAX_UINSN_BYTES];
+> +	};
+>  #ifdef CONFIG_X86_64
+>  	unsigned long			rip_rela_target_address;
+>  #endif
 
-diff --git a/drivers/mailbox/omap-mbox.h b/drivers/mailbox/omap-mbox.h
-index 6cd38fc..86d7518 100644
---- a/drivers/mailbox/omap-mbox.h
-+++ b/drivers/mailbox/omap-mbox.h
-@@ -52,7 +52,7 @@ struct omap_mbox_queue {
- 
- struct omap_mbox {
- 	const char		*name;
--	unsigned int		irq;
-+	int			irq;
- 	struct omap_mbox_queue	*txq, *rxq;
- 	struct omap_mbox_ops	*ops;
- 	struct device		*dev;
+Btw., at least on the surface, the powerpc and x86 definitions seem rather 
+similar, barring senseless variations. Would it make sense to generalize 
+the data structure a bit more?
+
+Also, we all hate data structures that are not self-documenting. What does 
+'ixol' mean and what is its role? Is it obvious to the reader of that 
+file?
+
+Thanks,
+
+	Ingo
