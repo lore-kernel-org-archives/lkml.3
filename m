@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820Ab3KGUG0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 15:06:26 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56808 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191Ab3KGUGR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 15:06:17 -0500
-Date: Thu, 7 Nov 2013 11:36:11 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, alsa-devel@alsa-project.org
-Message-ID: <20131107113611.GV2493@sirena.org.uk>
-References: <1383732985-18928-1-git-send-email-lee.jones@linaro.org>
- <1383732985-18928-9-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="L7QcuKEPlEDqpLxW"
-Content-Disposition: inline
-In-Reply-To: <1383732985-18928-9-git-send-email-lee.jones@linaro.org>
-X-Cookie: You love peace.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 86.186.138.96
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 08/13] ASoC: generic-dmaengine-pcm: Clear slave_config
- memory
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1754612Ab3KGUGr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 15:06:47 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:40612 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752191Ab3KGUGk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 15:06:40 -0500
+Subject: Re: [PATCH 0/3 - V2] Introducing Device Tree Overlays
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=windows-1252
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20131107192558.GA11453@breakpoint.cc>
+Date: Thu, 7 Nov 2013 22:06:31 +0200
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4F47D5F8-F3C7-45CA-9D88-2D814BDC1BC7@antoniou-consulting.com>
+References: <1383676898-29819-1-git-send-email-panto@antoniou-consulting.com> <20131106190152.GA8662@breakpoint.cc> <20131106193041.GA26796@roeck-us.net> <20131106203821.GC8662@breakpoint.cc> <20131106211754.GA29300@roeck-us.net> <20131107192558.GA11453@breakpoint.cc>
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Sebastian,
 
---L7QcuKEPlEDqpLxW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Nov 7, 2013, at 9:25 PM, Sebastian Andrzej Siewior wrote:
 
-On Wed, Nov 06, 2013 at 10:16:20AM +0000, Lee Jones wrote:
-> We currently assume that the DMA Slave Config will be fully populated
-> by the platform, however some DMA Engines make decisions based on zero
-> (default) flags such as DMA_SLAVE_BUSWIDTH_UNDEFINED and as this is a
-> static declaration we need to memset it to clear the data area.
+> On 06.11.13, Guenter Roeck wrote:
+> |…
+> thanks for the explanation.
+> 
+>> We use DT overlays to describe the hardware on those boards and, if necessary,
+>> its configuration. For example, if there is a PCIe switch, the overlay would
+>> describe its memory and bus number configuration.
+> 
+> So have your "fix" configuration and a few overlays you switch at
+> runtime. The problem you have is that you want to switch a specific part
+> if your configuration at runtime. I assume you run DT on ARM. What
+> happens if you swtich from ARM to x86 and you "keep" your FPGA
+> configuration requirement? You can't use both, DT and ACPI, right? So
+> what happens then?
+> 
 
-Applied, thanks - given how near we are to the merge window the whole
-series isn't going to go in for v3.13 but this ought to do so.
+FWIW DT has been ported to x86. And is present on arm/powerpc/mips/arc and possibly
+others.
 
---L7QcuKEPlEDqpLxW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+So what are we talking about again? If you care about the non-DT case, why
+don't you make a patch about how you could support Guenter's use case on
+the x86.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+His use case is not uncommon, believe it or not, and x86 would benefit from
+something this flexible.
 
-iQIcBAEBAgAGBQJSe3soAAoJELSic+t+oim9oMoP/jiczpygUVwN4NKHW6y4HsEs
-9Zlb0PM6MhSJ3tME3rrqeqVgXx3W3YEEh5QGzzaBO0JxBIobwBjNuWrZPRW5T/qO
-jAj2R+c0Q+Fy5FXuFebsa+9DaQA2gI4Zh/6UXVWhPmKqNWJirViId+HKX7XtQUAg
-/lv1c+myIju/yRa72ftQhTN4WlfVadr12VqjbNZMUtF22opQm68Jl1+Nuiv4I665
-xBF4ekFCQvG80p4jo6OZeiR0rkuOYE9JWXBWLrTLCHuLtVxhYUQ+8EkUdd82hzy1
-kLS7fGfluQ749xUuQev/vvvnKUkYL/4xeyDrR2JFOUOE9I0Z7fclaLXH+Tnsc72M
-UEKy7d3lQGepxP4/ufQ92k4gTdFN+HObp0PZYjwxTC3FS6FOYlBznYkmVLbF5PYz
-Qoc1qNfyLxoh+eSS4QpcT9EA9/NbisIS7MuGx1WuV8NcWrEy4LzWCIrWCGz8Cnzm
-rYtRfogWPuYWErAKR9OLbWNWgNmr82HHjXx7X6aQ+ZUmQhzni5zjDG1e97StgmnX
-R34Yz4/0GHR4pls0YrpxLpH1bJKBFZ66ppWfU9YwqabRhHfqHILvCGfk5+iVDgZY
-dTYXf1QxTGZQnBeQ8nS9e1QgyYU568U3ZGxbN0Rr+nX1QnaZGnFzqiNstQZgXOpc
-XwYo8Pnbi7K8LDv+Qfjr
-=Y9mU
------END PGP SIGNATURE-----
+>> 
+>> Guenter
+> 
+> Sebastian
 
---L7QcuKEPlEDqpLxW--
+Regards
+
+-- Pantelis
