@@ -1,185 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751138Ab3KGFD2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Nov 2013 00:03:28 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48134 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab3KGFD1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Nov 2013 00:03:27 -0500
-Date: Wed, 6 Nov 2013 21:03:24 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon updates for 3.13-rc1
-Message-ID: <20131107050324.GA6205@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NzB8fVQJ5HfG6fxh"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751654Ab3KGFDz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Nov 2013 00:03:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40467 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751143Ab3KGFDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Nov 2013 00:03:48 -0500
+Date: Thu, 7 Nov 2013 13:38:38 +1100
+From: NeilBrown <neilb@suse.de>
+To: "Baldysiak, Pawel" <pawel.baldysiak@intel.com>
+Cc: "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "shli@kernel.org" <shli@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] raid0: Set discard_granularity to correct value after
+ reshape.
+Message-ID: <20131107133838.742d83b1@notabene.brown>
+In-Reply-To: <84A53BEA6EAC69439B7E311E9B17A76F01783D0B@IRSMSX105.ger.corp.intel.com>
+References: <20131030122022.20862.97997.stgit@gklab-154-222.igk.intel.com>
+	<20131031111612.2735d0c1@notabene.brown>
+	<84A53BEA6EAC69439B7E311E9B17A76F01783D0B@IRSMSX105.ger.corp.intel.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/rKqHyDjE6jlNFe_j18iH3ZL"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/rKqHyDjE6jlNFe_j18iH3ZL
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
---NzB8fVQJ5HfG6fxh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Tue, 5 Nov 2013 14:25:19 +0000 "Baldysiak, Pawel"
+<pawel.baldysiak@intel.com> wrote:
 
-Hi Linus,
+> On Thursday, October 31, 2013 1:16 AM NeilBrown <neilb@suse.de> wrote:
+> > On Wed, 30 Oct 2013 13:20:22 +0100 Pawel Baldysiak
+> > <pawel.baldysiak@intel.com> wrote:
+> >=20
+> > > In case of reshape of raid0 through raid4 a value of
+> > > discard_granularity will be set to stripe size. MD driver should
+> > > re-set this value to correct one when migration will be finished.
+> > > Otherwise array will be left with wrong value and discard operations =
+will not
+> > work properly.
+> > >
+> > > Signed-off-by: Pawel Baldysiak <pawel.baldysiak@intel.com>
+> > > Cc: Shaohua Li <shli@kernel.org>
+> > > ---
+> > >  drivers/md/raid0.c |    2 ++
+> > >  1 file changed, 2 insertions(+)
+> > >
+> > > diff --git a/drivers/md/raid0.c b/drivers/md/raid0.c index
+> > > c4d420b..807ca3a 100644
+> > > --- a/drivers/md/raid0.c
+> > > +++ b/drivers/md/raid0.c
+> > > @@ -266,6 +266,8 @@ static int create_strip_zones(struct mddev *mddev,
+> > struct r0conf **private_conf)
+> > >  	}
+> > >  	mddev->queue->backing_dev_info.congested_fn =3D raid0_congested;
+> > >  	mddev->queue->backing_dev_info.congested_data =3D mddev;
+> > > +	mddev->queue->limits.discard_granularity =3D
+> > > +			queue_logical_block_size(mddev->queue);
+> > >
+> > >  	/*
+> > >  	 * now since we have the hard sector sizes, we can make sure
+> >=20
+> > Thanks, but this doesn't seem like the right sort of fix.  It is to spe=
+cific to the
+> > symptom rather than trying to address the underlying problem.
+> >=20
+> > Maybe something like this?  Can you review and test?
+> >=20
+> > Thanks,
+> > NeilBrown
+> >=20
+> >=20
+> > diff --git a/drivers/md/md.c b/drivers/md/md.c index
+> > 628cd529343f..740b6340f980 100644
+> > --- a/drivers/md/md.c
+> > +++ b/drivers/md/md.c
+> > @@ -3620,6 +3620,7 @@ level_store(struct mddev *mddev, const char
+> > *buf, size_t len)
+> >  		mddev->in_sync =3D 1;
+> >  		del_timer_sync(&mddev->safemode_timer);
+> >  	}
+> > +	blk_set_stacking_limit(&mddev->queue->limits);
+> >  	pers->run(mddev);
+> >  	set_bit(MD_CHANGE_DEVS, &mddev->flags);
+> >  	mddev_resume(mddev);
+> Hi Neil,
+> I have tested Yours patch, and everything works well.
+> TRIM operation are made correctly.
+> Could You apply it to upstream?=20
+>=20
+> BTW. Correct name of this function is blk_set_stacking_limits();
+>=20
+> Thanks,
+> Pawe=C5=82 Baldysiak
 
-Please pull hwmon updates for Linux 3.13-rc1 from signed tag:
+Thanks for testing.  I've queue the following up for submission soonish.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+NeilBrown
 
-Thanks,
-Guenter
-------
+=46rom 3d2b31bb23ccb8170fafdf358098bb3cb0836080 Mon Sep 17 00:00:00 2001
+From: NeilBrown <neilb@suse.de>
+Date: Thu, 7 Nov 2013 13:36:36 +1100
+Subject: [PATCH] md: fix calculation of stacking limits on level change.
 
-The following changes since commit 61e6cfa80de5760bbe406f4e815b7739205754d2:
+The various ->run routines of md personalities assume that the 'queue'
+has been initialised by the blk_set_stacking_limits() call in
+md_alloc().
 
-  Linux 3.12-rc5 (2013-10-13 15:41:28 -0700)
+However when the level is changed (by level_store()) the ->run routine
+for the new level is called for an array which has already had the
+stacking limits modified.  This can result in incorrect final
+settings.
 
-are available in the git repository at:
+So call blk_set_stacking_limits() before ->run in level_store().
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
+A specific consequence of this bug is that it causes
+discard_granularity to be set incorrectly when reshaping a RAID4 to a
+RAID0.
 
-for you to fetch changes up to 26336c8a36c0a6a28b9ecf6f1bb8c8f5605d6a21:
+This is suitable for any -stable kernel since 3.3 in which
+blk_set_stacking_limits() was introduced.
 
-  hwmon: (w83793) Clean up a signedness issue (2013-10-19 09:04:25 -0700)
+Cc: stable@vger.kernel.org (3.3+)
+Reported-by: "Baldysiak, Pawel" <pawel.baldysiak@intel.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 
-----------------------------------------------------------------
-hwmon updates for 3.13-rc1
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 628cd529343f..b3a75afee560 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -3620,6 +3620,7 @@ level_store(struct mddev *mddev, const char *buf, siz=
+e_t len)
+ 		mddev->in_sync =3D 1;
+ 		del_timer_sync(&mddev->safemode_timer);
+ 	}
++	blk_set_stacking_limits(&mddev->queue->limits);
+ 	pers->run(mddev);
+ 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
+ 	mddev_resume(mddev);
 
-Introduce new hwmon API functions hwmon_device_register_with_groups and
-devm_hwmon_device_register_with_groups, and convert several drivers to use the
-new API.
-Add support for EMC1404, EMC1424, LTC2977, LTC2978A, LM25063 to exiting drivers
-Various cleanups in several drivers
-
-----------------------------------------------------------------
-Dan Carpenter (2):
-      hwmon: (nct6775) Remove an unused variable
-      hwmon: (w83793) Clean up a signedness issue
-
-Fengguang Wu (7):
-      hwmon: (nct6775) fix coccinelle warnings
-      hwmon: (ds1621) fix coccinelle warnings
-      hwmon: (max6642 fix coccinelle warnings
-      hwmon: (max6697) fix coccinelle warnings
-      hwmon: (lm95234) fix coccinelle warnings
-      hwmon: (ltc4261) fix coccinelle warnings
-      hwmon: (jc42) fix coccinelle warnings
-
-Guenter Roeck (36):
-      hwmon: Remove unnecessary semicolons
-      hwmon: (nct6775) Use return value from find_temp_source
-      hwmon: (nct6775) Check array index when accessing temp_offset
-      hwmon: (mc13783-adc) Increase size of name string
-      hwmon: (pmbus) Don't unnecessarily crash the kernel
-      hwmon: (adt7462) Use error value returned from find_trange_value()
-      hwmon: (gpio_fan) Use error value returned from get_fan_speed_index()
-      hwmon: (acpi_power_meter) Don't crash the kernel unnecessarily
-      hwmon: (acpi_power_meter) Use return value from acpi_bus_register_driver
-      hwmon: (atxp1) Set and use error code from vid_to_reg()
-      hwmon: (f75375s) Don't crash the kernel unnecessarily
-      hwmon: (f71882fg) Remove extra return statement
-      hwmon: Introduce hwmon_device_register_with_groups
-      hwmon: (ds1621) Convert to use hwmon_device_register_with_groups
-      hwmon: (gpio-fan) Convert to use hwmon_device_register_with_groups
-      hwmon: (ltc4245) Convert to use hwmon_device_register_with_groups
-      hwmon: (pmbus) Convert to use hwmon_device_register_with_groups
-      hwmon: (nct6775) Convert to use hwmon_device_register_with_groups
-      hwmon: Provide managed hwmon registration
-      hwmon: (nct6775) Convert to use devm_hwmon_device_register_with_groups
-      hwmon: (ds1621) Convert to use devm_hwmon_device_register_with_groups
-      hwmon: (max6642) Convert to use devm_hwmon_device_register_with_groups
-      hwmon: (lm73) Convert to use devm_hwmon_device_register_with_groups
-      hwmon: (max6697) Convert to use devm_hwmon_device_register_with_groups
-      hwmon: (max16065) Convert to use devm_hwmon_device_register_with_groups
-      hwmon: (ina2xx) Convert to use devm_hwmon_device_register_with_groups
-      hwmon: (tmp401) Convert to use devm_hwmon_device_register_with_groups
-      hwmon: (lm95234) Convert to use devm_hwmon_device_register_with_groups
-      hwmon: (ina209) Convert to use devm_hwmon_device_register_with_groups
-      hwmon: (ltc4261) Convert to use devm_hwmon_device_register_with_groups
-      hwmon: (jc42) Convert to use devm_hwmon_device_register_with_groups
-      hwmon: (pmbus/lm25066) Add support for LM25063
-      hwmon: (pmbus/ltc2978): Add support for LTC2977
-      hwmon: (pmbus/ltc2978): Add support for LTC2978A
-      hwmon: (emc1403) Convert to use devm_hwmon_device_register_with_groups
-      hwmon: (emc1403) Add support for EMC1404 and EMC1424
-
-LABBE Corentin (1):
-      hwmon: Correct some typos
-
-Sachin Kamat (3):
-      hwmon: (adcxx) Remove redundant spi_set_drvdata
-      hwmon: (lm70) Remove redundant spi_set_drvdata
-      hwmon: (gpio-fan) Include linux/of.h header
-
- Documentation/hwmon/lm25066      |   20 ++++-
- Documentation/hwmon/ltc2978      |   44 +++++----
- drivers/hwmon/abituguru.c        |    6 +-
- drivers/hwmon/abituguru3.c       |    2 +-
- drivers/hwmon/acpi_power_meter.c |   13 ++-
- drivers/hwmon/adcxx.c            |    2 -
- drivers/hwmon/adm1026.c          |    6 +-
- drivers/hwmon/adt7462.c          |    5 +-
- drivers/hwmon/asc7621.c          |   12 +--
- drivers/hwmon/asus_atk0110.c     |    2 +-
- drivers/hwmon/atxp1.c            |    3 +-
- drivers/hwmon/ds1621.c           |   63 ++++---------
- drivers/hwmon/emc1403.c          |  120 +++++++++++++++----------
- drivers/hwmon/f71882fg.c         |    1 -
- drivers/hwmon/f75375s.c          |    4 +-
- drivers/hwmon/gpio-fan.c         |   46 ++++------
- drivers/hwmon/hwmon.c            |  185 ++++++++++++++++++++++++++++++++++----
- drivers/hwmon/ina209.c           |   46 ++++------
- drivers/hwmon/ina2xx.c           |   64 +++++--------
- drivers/hwmon/jc42.c             |   62 +++++--------
- drivers/hwmon/lm70.c             |    2 -
- drivers/hwmon/lm73.c             |   70 +++++----------
- drivers/hwmon/lm95234.c          |  138 ++++++++++------------------
- drivers/hwmon/ltc4245.c          |   78 +++++-----------
- drivers/hwmon/ltc4261.c          |   56 ++++--------
- drivers/hwmon/max16065.c         |  124 +++++++++++--------------
- drivers/hwmon/max6642.c          |   73 +++++----------
- drivers/hwmon/max6650.c          |    2 +-
- drivers/hwmon/max6697.c          |   55 ++++--------
- drivers/hwmon/mc13783-adc.c      |    2 +-
- drivers/hwmon/nct6775.c          |  143 +++++++++--------------------
- drivers/hwmon/pmbus/lm25066.c    |   91 +++++++++++++++++--
- drivers/hwmon/pmbus/ltc2978.c    |   16 +++-
- drivers/hwmon/pmbus/pmbus_core.c |   24 ++---
- drivers/hwmon/tmp401.c           |   92 ++++++-------------
- drivers/hwmon/w83791d.c          |    2 +-
- drivers/hwmon/w83792d.c          |    2 +-
- drivers/hwmon/w83793.c           |    5 +-
- include/linux/hwmon-vid.h        |    2 +-
- include/linux/hwmon.h            |   10 +++
- 40 files changed, 805 insertions(+), 888 deletions(-)
-
---NzB8fVQJ5HfG6fxh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--Sig_/rKqHyDjE6jlNFe_j18iH3ZL
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSex8cAAoJEMsfJm/On5mBDysQAIKAaxaqlgy8wZEmU/rxAyf3
-mid7psuPzQnG6clQHg4tS/I3TUpKdOxOWDNQTKDSshufKkzagsq8axR0Kz/h374d
-VLmxrNuTTvdkVlRZgAPU77bThfhtaGwX3UeV5pEk2SRBpmNuzXaafkpwlsT6YwjC
-d1E7kZqX5oEotu+L3nv4kiFFas09f1Sn5+baO413TjbHbzldAOT/j1RdeWj8y1Hv
-FP9HyKVQzbMq/rMmrh8MZfAATFmQUa4IrmdTOA2foqgrRv81BrqqiYOa+S8NDvhm
-3Q/nKWwvfcXA1Tq55e7IA2sIOTyn85OMdt6Yl2711FAO6eKCmA41qTjlA9lbGC0t
-NnsxeqnttFB0MGLg3/cNCcNaxcpZGh5mcq9IC1N+dFEQR6c+UefeBXqrdfeuELdt
-023u22jucadtiDxnSOHYlT04GvIiek5BdckEsn50PUpGpKSRNoBgUNiIT4m0bJBt
-NwKNWvqlVgKnn9rW4JMX2EtCe52zgwAzM/6krMOTFttP71DWtIdiBd1o6FcWUxji
-C44trs5NvydmdAWLiXR5+qfc7vs9WksTk1lU7/XtQmCvfWzBXXiHtAe9daVVLQX5
-tGXlAOCfbenFvhv2UbzUGLB7Z818BOJnxylGI8oiQb0J0R4XMZogNZMMoWv96MMO
-8oYU/YNl7T+iHAFYGiRF
-=OtI2
+iQIVAwUBUnr9Ljnsnt1WYoG5AQLIyg//QRKMfZOJ6b25ayXzh7+hn9oHl6YLf0xI
+O23WZs6JsMQ7fHUYzHQUCCc6m9X+DUZdYqlhZVRXYesiRaPYtppezvS6WXuzH1/O
+IDxfhcNjox7UwvS62RnWuTNIZEi1TWk+yHrRyDylsrlwbnhM7wBhlCJo8vWR/fB5
+7pn1sbV803wsEO5KFPl7FXqp38ScaPnMDaSBwOWGkoQBFO27+6yPG5Qte+rPRI23
+Pl03pGGiZPVp4AvWCAXMloVNgBCT0V8mo7GyiVZN++S5rQTDuub6ONUh0/4ThwJ1
+LPngSBVSMrolXqo5nsfun+VXJTBv3Eel5BnkWGlcmFf0j9FXjtsncXcDjv+Q7Tw/
+38Mw4cONDd81TYS7KjDfsdu0YKuNnaNDJIO2J1tjziXx8q/h8j3JMoq4yaTDkQes
+fF3v4A8YvKeDFzIiCAwma6p8cfUF8j3y+GAKrlWLwbB6clSKtnrIaNz13Tdnb6W+
+H2MMn29P3KKGZNx2umwow/a43lERY1wVeR3PbglGJ7/zJdlU0wDgLw5chIY8ZkRf
+iFS426Svceg6lA/2xtWBdW23Kis99xCibCQaZ6PpgIW0aUuHhL8qO+RS3FbkSOxN
+2GGpSOjnaAXRAKqt/Z6xVU+oQO3qz5oMSrJZZQbiJiXLktHN84LdmSQfjmeKaZOv
+f+jfbOEDkvU=
+=4TFx
 -----END PGP SIGNATURE-----
 
---NzB8fVQJ5HfG6fxh--
+--Sig_/rKqHyDjE6jlNFe_j18iH3ZL--
